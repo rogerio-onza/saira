@@ -95,6 +95,11 @@ load_dwc_synonyms_v1 <- function(path = NULL) {
         resolved_path <- path
     } else {
         candidates <- c(
+            system.file("extdata", "dwc_synonyms_v1.rds", package = "finch"),
+            here::here("inst", "extdata", "dwc_synonyms_v1.rds"),
+            file.path("inst", "extdata", "dwc_synonyms_v1.rds"),
+            file.path("..", "..", "inst", "extdata", "dwc_synonyms_v1.rds"),
+            # Backward-compatible fallbacks for dev environments not yet migrated
             system.file("data", "dwc_synonyms_v1.rds", package = "finch"),
             here::here("data", "dwc_synonyms_v1.rds"),
             file.path("data", "dwc_synonyms_v1.rds"),

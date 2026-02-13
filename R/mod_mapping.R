@@ -111,7 +111,6 @@ mod_mapping_ui <- function(id) {
         )
     )
 }
-
 #' Mapping Module Server
 #'
 #' @param id Module namespace ID
@@ -142,6 +141,41 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         # Category filter options
         all_filter_categories <- c("Record-level", "Occurrence", "Event", "Location", "Taxon", "Identification")
         syncing_select_all <- shiny::reactiveVal(FALSE)
+
+        category_labels <- function() {
+            c(
+                tr("class_record", lang_r()),
+                tr("class_occurrence", lang_r()),
+                tr("class_event", lang_r()),
+                tr("class_location", lang_r()),
+                tr("class_taxon", lang_r()),
+                tr("class_identification", lang_r())
+            )
+        }
+
+        category_choices <- function() {
+            stats::setNames(all_filter_categories, category_labels())
+        }
+
+        category_label <- function(category_value) {
+            idx <- match(category_value, all_filter_categories)
+            if (is.na(idx)) {
+                return(category_value)
+            }
+
+            category_labels()[[idx]]
+        }
+
+        custom_language_choices <- function() {
+            stats::setNames(
+                c("pt", "en", "es"),
+                c(
+                    sprintf("%s (pt)", tr("lang_pt", lang_r())),
+                    sprintf("%s (en)", tr("lang_en", lang_r())),
+                    sprintf("%s (es)", tr("lang_es", lang_r()))
+                )
+            )
+        }
 
         # Load DwC terms as list (reactive to language)
         dwc_all <- shiny::reactive({
@@ -286,7 +320,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             total_steps <- max(1L, as.integer(total_steps))
             bounded_step <- max(0L, min(as.integer(step), total_steps))
             phrase_count <- length(loading_phrase_specs)
-            phrase_order <- isolate(rv$automap_phrase_order)
+            phrase_order <- shiny::isolate(rv$automap_phrase_order)
             if (length(phrase_order) != phrase_count) {
                 phrase_order <- seq_len(phrase_count)
             }
@@ -618,22 +652,22 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                     rv$is_programmatic_update <- FALSE
                 }
 
-                old_value <- isolate(rv$map_values[[term]])
+                old_value <- shiny::isolate(rv$map_values[[term]])
                 if (is.null(old_value)) {
                     old_value <- ""
                 }
 
                 if (!identical(old_value, sanitized)) {
                     rv$map_values[[term]] <- sanitized
-                    is_programmatic_term <- term %in% isolate(rv$programmatic_terms)
+                    is_programmatic_term <- term %in% shiny::isolate(rv$programmatic_terms)
                     if (is_programmatic_term) {
-                        rv$programmatic_terms <- setdiff(isolate(rv$programmatic_terms), term)
+                        rv$programmatic_terms <- setdiff(shiny::isolate(rv$programmatic_terms), term)
                     }
 
                     if (isTRUE(input$enable_automap_v1) &&
                         !isTRUE(rv$is_programmatic_update) &&
                         !is_programmatic_term) {
-                        previous_meta <- isolate(rv$map_meta[[term]])
+                        previous_meta <- shiny::isolate(rv$map_meta[[term]])
                         previous_score <- if (is.null(previous_meta) || is.null(previous_meta$score)) {
                             NA_real_
                         } else {
@@ -665,7 +699,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 return(invisible(NULL))
             }
 
-            previous_meta <- isolate(rv$map_meta[[term]])
+            previous_meta <- shiny::isolate(rv$map_meta[[term]])
             previous_score <- if (is.null(previous_meta) || is.null(previous_meta$score)) {
                 NA_real_
             } else {
@@ -736,6 +770,23 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             ignoreInit = TRUE
         )
 
+        shiny::observeEvent(lang_r(),
+            {
+                current <- shiny::isolate(input$filter_categories)
+                if (is.null(current)) {
+                    current <- all_filter_categories
+                }
+
+                shiny::updateCheckboxGroupInput(
+                    session,
+                    "filter_categories",
+                    choices = category_choices(),
+                    selected = current
+                )
+            },
+            ignoreInit = FALSE
+        )
+
         # Category filter: select all / unselect all
         shiny::observeEvent(input$select_all_categories,
             {
@@ -804,7 +855,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                     cat_class <- paste0("cat-", tolower(gsub("-", "", cat)))
 
                     shiny::tagList(
-                        shiny::div(class = "category-header", cat),
+                        shiny::div(class = "category-header", category_label(cat)),
                         shiny::div(
                             class = "two-column-layout",
                             lapply(cat_fields, function(item) {
@@ -865,7 +916,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                         )
                                     } else if (term == "datasetName") {
                                         # datasetName: dropdown + separate text input
-                                        saved_custom <- isolate(input$custom_datasetName)
+                                        saved_custom <- shiny::isolate(input$custom_datasetName)
                                         shiny::tagList(
                                             shiny::selectInput(
                                                 ns(paste0("map_", term)),
@@ -884,14 +935,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                                 ns("custom_datasetName"),
                                                 NULL,
                                                 value = if (!is.null(saved_custom)) saved_custom else "",
-                                                placeholder = "Ex: Meu Dataset de Biodiversidade",
+                                                placeholder = tr("mapping_dataset_placeholder", lang_r()),
                                                 width = "100%"
                                             )
                                         )
                                     } else if (term == "modified") {
                                         # modified: checkbox "today" + date picker (ISO 8601)
-                                        saved_check <- isolate(input$modified_use_today)
-                                        saved_date <- isolate(input$custom_modified_date)
+                                        saved_check <- shiny::isolate(input$modified_use_today)
+                                        saved_date <- shiny::isolate(input$custom_modified_date)
                                         shiny::tagList(
                                             shiny::checkboxInput(
                                                 ns("modified_use_today"),
@@ -912,7 +963,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                         )
                                     } else if (term == "license") {
                                         # license: square checkboxes (single-select)
-                                        saved_license <- isolate(input$custom_license)
+                                        saved_license <- shiny::isolate(input$custom_license)
                                         shiny::tagList(
                                             shiny::tags$label(
                                                 class = "custom-field-label",
@@ -933,7 +984,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                         )
                                     } else if (term == "language") {
                                         # language: square checkboxes (single-select)
-                                        saved_lang <- isolate(input$custom_language)
+                                        saved_lang <- shiny::isolate(input$custom_language)
                                         shiny::tagList(
                                             shiny::tags$label(
                                                 class = "custom-field-label",
@@ -942,11 +993,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                             shiny::checkboxGroupInput(
                                                 ns("custom_language"),
                                                 NULL,
-                                                choices = c(
-                                                    "PortuguÃªs (pt)" = "pt",
-                                                    "English (en)" = "en",
-                                                    "EspaÃ±ol (es)" = "es"
-                                                ),
+                                                choices = custom_language_choices(),
                                                 selected = if (!is.null(saved_lang)) saved_lang else character(0),
                                                 inline = TRUE,
                                                 width = "100%"
@@ -977,7 +1024,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                                     ns(paste0("sep_", term)),
                                                     NULL,
                                                     value = item$sep,
-                                                    placeholder = "Sep",
+                                                    placeholder = tr("mapping_separator_placeholder", lang_r()),
                                                     width = "100%"
                                                 )
                                             }
@@ -1358,3 +1405,4 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         return(processed_data)
     })
 }
+

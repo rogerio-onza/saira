@@ -1,7 +1,7 @@
 # Title: Validate Names Module
-# Author: RogÃ©rio Nunes Oliveira
-# Date: 2026-02-08
-# Version: 1.0
+# Author: Rogerio Nunes Oliveira
+# Date: 2026-02-13
+# Version: 1.1
 
 #' Validate Names Module UI
 #'
@@ -46,12 +46,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
-        # Load dependencies
-
-        # Reactive values
         validation_result <- shiny::reactiveVal(NULL)
 
-        # Dynamic UI elements
         output$title <- shiny::renderUI({
             shiny::h3(tr("validate_names_title", lang_r()), class = "text-mono")
         })
@@ -64,26 +60,19 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r) {
             tr("validate_names_run", lang_r())
         })
 
-        # Validation action
         shiny::observeEvent(input$validate, {
             shiny::req(mapped_data_r())
 
             df <- mapped_data_r()
 
-            # Check if scientificName column exists
             if (!"scientificName" %in% names(df)) {
                 shiny::showNotification(
-                    if (lang_r() == "pt") {
-                        "Coluna 'scientificName' nÃ£o encontrada. Mapeie primeiro."
-                    } else {
-                        "'scientificName' column not found. Map it first."
-                    },
+                    tr("validate_names_missing_scientific_name", lang_r()),
                     type = "warning"
                 )
                 return()
             }
 
-            # Simple validation (placeholder for taxadb integration)
             names_vec <- df$scientificName
 
             result <- data.frame(
@@ -99,7 +88,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r) {
             validation_result(result)
         })
 
-        # Stats output
         output$stats <- shiny::renderUI({
             res <- validation_result()
             if (is.null(res)) {
@@ -139,14 +127,12 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r) {
             )
         })
 
-        # Results table
         output$results <- shiny::renderUI({
             res <- validation_result()
             if (is.null(res)) {
                 return(NULL)
             }
 
-            # Show only issues
             issues <- res[res$status != "valid", ]
 
             if (nrow(issues) == 0) {
@@ -154,7 +140,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r) {
                     class = "alert alert-success",
                     shiny::icon("check-circle"),
                     " ",
-                    if (lang_r() == "pt") "Todos os nomes sÃ£o vÃ¡lidos!" else "All names are valid!"
+                    tr("validate_names_all_valid", lang_r())
                 )
             } else {
                 DT::dataTableOutput(ns("issues_table"))

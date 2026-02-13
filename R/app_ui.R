@@ -1,7 +1,7 @@
 # Title: Main Application UI
-# Author: RogÃ©rio Nunes Oliveira
-# Date: 2026-02-08
-# Version: 1.0
+# Author: Rogerio Nunes Oliveira
+# Date: 2026-02-13
+# Version: 1.1
 
 #' Main Application UI
 #'
@@ -10,8 +10,6 @@
 #' @return A Shiny UI object
 #' @export
 app_ui <- function() {
-    # Load i18n dictionary
-
     bslib::page_navbar(
         id = "main_nav",
         title = shiny::tags$div(
@@ -56,11 +54,12 @@ app_ui <- function() {
             )
         ),
 
-        # Tab: InÃ­cio (Home) - first item on left side
+        # Tab: Home
         bslib::nav_panel(
             title = shiny::tags$span(
                 shiny::icon("home", class = "fa-solid"),
-                " InÃ­cio"
+                " ",
+                shiny::uiOutput("nav_upload_title", inline = TRUE)
             ),
             value = "upload",
             mod_upload_ui("upload")
@@ -82,7 +81,7 @@ app_ui <- function() {
             mod_preview_ui("preview")
         ),
 
-        # Dropdown: ValidaÃ§Ã£o
+        # Dropdown: Validation
         bslib::nav_menu(
             title = shiny::tags$span(
                 shiny::icon("check-circle"),
@@ -125,12 +124,12 @@ app_ui <- function() {
         # Spacer pushes language selector to the right
         bslib::nav_spacer(),
 
-        # Language selector at the far right
+        # Language selector
         bslib::nav_item(
             shiny::selectInput(
                 inputId = "lang_switch",
                 label = NULL,
-                choices = c("PortuguÃªs" = "pt", "English" = "en"),
+                choices = c("Portuguese" = "pt", "English" = "en"),
                 selected = "pt",
                 width = "130px"
             )

@@ -1,7 +1,7 @@
 # Title: Preview Module
-# Author: RogÃ©rio Nunes Oliveira
-# Date: 2026-02-08
-# Version: 1.0
+# Author: Rogerio Nunes Oliveira
+# Date: 2026-02-13
+# Version: 1.1
 
 #' Preview Module UI
 #'
@@ -45,9 +45,6 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
-        # Load dependencies
-
-        # Dynamic UI elements
         output$title <- shiny::renderUI({
             shiny::h3(tr("preview_title", lang_r()), class = "text-mono")
         })
@@ -63,7 +60,6 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
             )
         })
 
-        # Preview data: First 100 rows only (fast, vectorized)
         preview_data <- shiny::reactive({
             shiny::req(mapped_data_r())
             preview_df <- utils::head(mapped_data_r(), 100)
@@ -71,7 +67,6 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
             preview_df
         })
 
-        # Render table or message
         output$table_or_message <- shiny::renderUI({
             if (is.null(mapped_data_r()) || ncol(mapped_data_r()) == 0) {
                 shiny::div(
@@ -85,7 +80,6 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
             }
         })
 
-        # Data table output
         output$datatable <- DT::renderDataTable({
             shiny::req(preview_data())
 
@@ -95,15 +89,9 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
                     pageLength = 25,
                     scrollX = TRUE,
                     language = list(
-                        search = tr("wiki_search", lang_r()),
-                        lengthMenu = paste(
-                            if (lang_r() == "pt") "Mostrar _MENU_ registros" else "Show _MENU_ entries"
-                        ),
-                        info = if (lang_r() == "pt") {
-                            "Mostrando _START_ a _END_ de _TOTAL_ registros"
-                        } else {
-                            "Showing _START_ to _END_ of _TOTAL_ entries"
-                        }
+                        search = tr("preview_datatable_search", lang_r()),
+                        lengthMenu = tr("preview_datatable_length_menu", lang_r()),
+                        info = tr("preview_datatable_info", lang_r())
                     )
                 ),
                 class = "display compact",
@@ -111,7 +99,6 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
             )
         })
 
-        # Download handler - Full processing
         output$download <- shiny::downloadHandler(
             filename = function() {
                 paste0("dwc_export_", Sys.Date(), ".csv")
@@ -119,10 +106,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
             content = function(file) {
                 shiny::req(mapped_data_r())
 
-                # Process full data for export
                 full_data <- process_for_export(mapped_data_r())
-
-                # Write CSV
                 readr::write_csv(full_data, file, na = "")
 
                 shiny::showNotification(
@@ -132,7 +116,6 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
             }
         )
 
-        # Explicit return
         return(preview_data)
     })
 }

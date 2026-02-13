@@ -1,12 +1,14 @@
 pkg_root <- normalizePath(file.path(testthat::test_path(), "..", ".."), winslash = "/", mustWork = TRUE)
 
 test_data_path <- function(filename) {
-    installed_path <- system.file("data", filename, package = "finch")
+    installed_path <- system.file("extdata", filename, package = "finch")
     if (nzchar(installed_path) && file.exists(installed_path)) {
         return(installed_path)
     }
 
     local_candidates <- c(
+        file.path(pkg_root, "inst", "extdata", filename),
+        file.path("inst", "extdata", filename),
         file.path(pkg_root, "data", filename),
         file.path("data", filename)
     )

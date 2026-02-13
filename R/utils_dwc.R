@@ -51,6 +51,11 @@ validate_occurrence_id <- function(ids) {
 #' @export
 load_dwc_terms_rds <- function() {
     candidates <- c(
+        system.file("extdata", "dwc_terms.rds", package = "finch"),
+        here::here("inst", "extdata", "dwc_terms.rds"),
+        file.path("inst", "extdata", "dwc_terms.rds"),
+        file.path("..", "..", "inst", "extdata", "dwc_terms.rds"),
+        # Backward-compatible fallbacks for dev environments not yet migrated
         system.file("data", "dwc_terms.rds", package = "finch"),
         here::here("data", "dwc_terms.rds"),
         file.path("data", "dwc_terms.rds"),

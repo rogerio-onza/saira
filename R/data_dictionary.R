@@ -16,9 +16,11 @@ i18n_dict <- list(
     ),
 
     # Navigation
+    nav_home = list(pt = "Inicio", en = "Home"),
     nav_upload = list(pt = "Upload", en = "Upload"),
     nav_mapping = list(pt = "Mapeamento", en = "Mapping"),
     nav_preview = list(pt = "Pré-visualização", en = "Preview"),
+    nav_validate = list(pt = "Validacao", en = "Validation"),
     nav_validate_names = list(pt = "Nomes", en = "Names"),
     nav_validate_coords = list(pt = "Coordenadas", en = "Coordinates"),
     nav_wiki = list(pt = "Wiki DwC", en = "DwC Wiki"),
@@ -29,6 +31,7 @@ i18n_dict <- list(
     lang_pt = list(pt = "Português", en = "Portuguese"),
     lang_en = list(pt = "English", en = "English"),
 
+    lang_es = list(pt = "Espanhol", en = "Spanish"),
     # Upload Module
     upload_title = list(
         pt = "Carregar Dados",
@@ -216,6 +219,12 @@ i18n_dict <- list(
         en = "Map CSV column:"
     ),
 
+    mapping_dataset_placeholder = list(
+        pt = "Ex: Meu Dataset de Biodiversidade",
+        en = "Ex: My Biodiversity Dataset"
+    ),
+    mapping_separator_placeholder = list(pt = "Sep", en = "Sep"),
+
     # Preview Module
     preview_title = list(
         pt = "Pré-visualização dos Dados",
@@ -234,6 +243,10 @@ i18n_dict <- list(
         en = "No data to display. Map your columns first."
     ),
 
+    preview_datatable_search = list(pt = "Buscar:", en = "Search:"),
+    preview_datatable_length_menu = list(pt = "Mostrar _MENU_ registros", en = "Show _MENU_ entries"),
+    preview_datatable_info = list(pt = "Mostrando _START_ a _END_ de _TOTAL_ registros", en = "Showing _START_ to _END_ of _TOTAL_ entries"),
+
     # Validation - Names
     validate_names_title = list(
         pt = "Validação Taxonômica",
@@ -247,6 +260,12 @@ i18n_dict <- list(
     validate_names_valid = list(pt = "Válidos", en = "Valid"),
     validate_names_invalid = list(pt = "Inválidos", en = "Invalid"),
     validate_names_unresolved = list(pt = "Não resolvidos", en = "Unresolved"),
+
+    validate_names_missing_scientific_name = list(
+        pt = "Coluna 'scientificName' nao encontrada. Mapeie primeiro.",
+        en = "'scientificName' column not found. Map it first."
+    ),
+    validate_names_all_valid = list(pt = "Todos os nomes sao validos!", en = "All names are valid!"),
 
     # Validation - Coordinates
     validate_coords_title = list(
@@ -262,6 +281,12 @@ i18n_dict <- list(
     validate_coords_invalid = list(pt = "Inválidas", en = "Invalid"),
     validate_coords_missing = list(pt = "Ausentes", en = "Missing"),
 
+    validate_coords_missing_columns = list(
+        pt = "Colunas 'decimalLatitude' e/ou 'decimalLongitude' nao encontradas.",
+        en = "'decimalLatitude' and/or 'decimalLongitude' columns not found."
+    ),
+    validate_coords_all_valid = list(pt = "Todas as coordenadas sao validas!", en = "All coordinates are valid!"),
+
     # Wiki Module
     wiki_title = list(
         pt = "Wiki de Termos Darwin Core",
@@ -272,6 +297,10 @@ i18n_dict <- list(
         en = "Check the documentation of SiBBr DwC terms"
     ),
     wiki_search = list(pt = "Buscar termo...", en = "Search term..."),
+    wiki_search_placeholder = list(pt = "Buscar termo...", en = "Search term..."),
+    wiki_datatable_search = list(pt = "Buscar:", en = "Search:"),
+    wiki_class_all = list(pt = "Todas as classes", en = "All classes"),
+    wiki_term = list(pt = "Termo", en = "Term"),
     wiki_class = list(pt = "Classe", en = "Class"),
     wiki_definition = list(pt = "Definição", en = "Definition"),
     wiki_example = list(pt = "Exemplo", en = "Example"),

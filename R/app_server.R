@@ -1,7 +1,7 @@
 # Title: Main Application Server
-# Author: RogÃ©rio Nunes Oliveira
-# Date: 2026-02-08
-# Version: 1.0
+# Author: Rogerio Nunes Oliveira
+# Date: 2026-02-13
+# Version: 1.1
 
 #' Main Application Server
 #'
@@ -12,8 +12,6 @@
 #' @param session Shiny session
 #' @export
 app_server <- function(input, output, session) {
-    # Load dependencies
-
     # Reactive: Selected language
     lang_r <- shiny::reactive({
         input$lang_switch %||% "pt"
@@ -21,7 +19,7 @@ app_server <- function(input, output, session) {
 
     # Dynamic navigation titles based on language
     output$nav_upload_title <- shiny::renderUI({
-        tr("nav_upload", lang_r())
+        tr("nav_home", lang_r())
     })
 
     output$nav_mapping_title <- shiny::renderUI({
@@ -33,7 +31,7 @@ app_server <- function(input, output, session) {
     })
 
     output$nav_validate_title <- shiny::renderUI({
-        shiny::tags$span("ValidaÃ§Ã£o")
+        tr("nav_validate", lang_r())
     })
 
     output$nav_validate_names_title <- shiny::renderUI({
@@ -53,7 +51,6 @@ app_server <- function(input, output, session) {
     })
 
     # Chain of Reactivity: Data Flow
-    # Upload -> Mapping -> Preview/Validations
     raw_data <- mod_upload_server("upload", lang_r)
     mapped_data <- mod_mapping_server("mapping", raw_data, lang_r)
 

@@ -1,7 +1,7 @@
 # Title: Validate Coordinates Module
-# Author: RogÃ©rio Nunes Oliveira
-# Date: 2026-02-08
-# Version: 1.0
+# Author: Rogerio Nunes Oliveira
+# Date: 2026-02-13
+# Version: 1.1
 
 #' Validate Coordinates Module UI
 #'
@@ -46,12 +46,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
-        # Load dependencies
-
-        # Reactive values
         validation_result <- shiny::reactiveVal(NULL)
 
-        # Dynamic UI elements
         output$title <- shiny::renderUI({
             shiny::h3(tr("validate_coords_title", lang_r()), class = "text-mono")
         })
@@ -64,29 +60,22 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r) {
             tr("validate_coords_run", lang_r())
         })
 
-        # Validation action
         shiny::observeEvent(input$validate, {
             shiny::req(mapped_data_r())
 
             df <- mapped_data_r()
 
-            # Check for coordinate columns
             has_lat <- "decimalLatitude" %in% names(df)
             has_lon <- "decimalLongitude" %in% names(df)
 
             if (!has_lat || !has_lon) {
                 shiny::showNotification(
-                    if (lang_r() == "pt") {
-                        "Colunas 'decimalLatitude' e/ou 'decimalLongitude' nÃ£o encontradas."
-                    } else {
-                        "'decimalLatitude' and/or 'decimalLongitude' columns not found."
-                    },
+                    tr("validate_coords_missing_columns", lang_r()),
                     type = "warning"
                 )
                 return()
             }
 
-            # Validate coordinates
             result <- validate_coords(
                 lat = df$decimalLatitude,
                 lon = df$decimalLongitude
@@ -95,7 +84,6 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r) {
             validation_result(result)
         })
 
-        # Stats output
         output$stats <- shiny::renderUI({
             res <- validation_result()
             if (is.null(res)) {
@@ -135,14 +123,12 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r) {
             )
         })
 
-        # Results
         output$results <- shiny::renderUI({
             res <- validation_result()
             if (is.null(res)) {
                 return(NULL)
             }
 
-            # Show only issues
             issues <- res[!res$valid | is.na(res$valid), ]
 
             if (nrow(issues) == 0) {
@@ -150,7 +136,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r) {
                     class = "alert alert-success",
                     shiny::icon("check-circle"),
                     " ",
-                    if (lang_r() == "pt") "Todas as coordenadas sÃ£o vÃ¡lidas!" else "All coordinates are valid!"
+                    tr("validate_coords_all_valid", lang_r())
                 )
             } else {
                 DT::dataTableOutput(ns("issues_table"))

@@ -1,6 +1,6 @@
-# Decises de Arquitetura
+# Decisoes de Arquitetura
 
-Registro de decises tcnicas significativas do Finch.
+Registro de decisoes tecnicas significativas do Finch.
 Formato: ADR leve (Architecture Decision Record).
 
 ---
@@ -8,9 +8,9 @@ Formato: ADR leve (Architecture Decision Record).
 ## ADR-001: Estrutura de pacote R em vez de `global.R`
 
 - **Data**: 2026-02-08
-- **Contexto**: Shiny apps convencionais usam `global.R` + `ui.R` + `server.R`. ?? medida que o Finch cresce em mdulos, precisamos de namespace limpo e testabilidade.
-- **Deciso**: Usar estrutura de pacote R com `DESCRIPTION`, `R/`, e entrada via `pkgload::load_all()`.
-- **Consequncias**: Namespace automtico, sem `source()` manual, dependncias declaradas, funes testveis com `testthat`.
+- **Contexto**: Shiny apps convencionais usam `global.R` + `ui.R` + `server.R`. A medida que o Finch cresce em modulos, precisamos de namespace limpo e testabilidade.
+- **Decisao**: Usar estrutura de pacote R com `DESCRIPTION`, `R/`, e entrada via `pkgload::load_all()`.
+- **Consequencias**: Namespace automatico, sem `source()` manual, dependencias declaradas, funcoes testaveis com `testthat`.
 
 ---
 
@@ -18,78 +18,79 @@ Formato: ADR leve (Architecture Decision Record).
 
 - **Data**: 2026-02-08
 - **Contexto**: Datasets com 99k+ linhas travam `DT::datatable` no navegador.
-- **Deciso**: `head(df, 100)` para preview, `process_for_export(df)` com dados completos no download.
-- **Consequncias**: UI responsiva mantendo fidelidade total no arquivo exportado.
+- **Decisao**: `head(df, 100)` para preview, `process_for_export(df)` com dados completos no download.
+- **Consequencias**: UI responsiva mantendo fidelidade total no arquivo exportado.
 
 ---
 
-## ADR-003: Separador `;` (entrada) e ` | ` (sada DwC)
+## ADR-003: Separador `;` (entrada) e ` | ` (saida DwC)
 
 - **Data**: 2026-02-11
-- **Contexto**: Planilhas brasileiras usam `;` como separador de tokens dentro de clulas. O padro DwC usa ` | ` para campos multivalorados.
-- **Deciso**: Split por `;`, join com ` | `. Vrgula nunca  tratada como delimitador de tokens.
-- **Alternativas**: Usar `,` como delimitador adicional ??" rejeitado porque interfere com valores de coordenadas decimais (ex: `-23,55`).
-- **Consequncias**: Consistente com dados brasileiros. Documentado na tela de upload como recomendao.
+- **Contexto**: Planilhas brasileiras usam `;` como separador de tokens dentro de celulas. O padrao DwC usa ` | ` para campos multivalorados.
+- **Decisao**: Split por `;`, join com ` | `. Virgula nunca eh tratada como delimitador de tokens.
+- **Alternativas**: Usar `,` como delimitador adicional -- rejeitado porque interfere com valores de coordenadas decimais (ex: `-23,55`).
+- **Consequencias**: Consistente com dados brasileiros. Documentado na tela de upload como recomendacao.
 
 ---
 
-## ADR-004: `scientificName` como seleo nica
+## ADR-004: `scientificName` como selecao unica
 
 - **Data**: 2026-02-12
-- **Contexto**: O `selectInput` genrico permitia mltiplas colunas, gerando `Nome1 | Nome2` ??" invlido como nome taxonmico.
-- **Deciso**: `multiple = (term != "scientificName")`. Se houver seleo antiga com mltiplos valores, manter apenas o primeiro.
-- **Consequncias**: Derivao automtica de `genus`, `specificEpithet` e `taxonRank` funciona corretamente com valor escalar.
+- **Contexto**: O `selectInput` generico permitia multiplas colunas, gerando `Nome1 | Nome2` -- invalido como nome taxonomico.
+- **Decisao**: `multiple = (term != "scientificName")`. Se houver selecao antiga com multiplos valores, manter apenas o primeiro.
+- **Consequencias**: Derivacao automatica de `genus`, `specificEpithet` e `taxonRank` funciona corretamente com valor escalar.
 
 ---
 
 ## ADR-005: Campos especiais com inputs customizados
 
 - **Data**: 2026-02-11
-- **Contexto**: Quatro campos do Record-level (`datasetName`, `modified`, `license`, `language`) no se beneficiam do mapeamento genrico dropdown ??' coluna.
-- **Deciso**: Inputs customizados dentro do mesmo `renderUI`:
+- **Contexto**: Quatro campos do Record-level (`datasetName`, `modified`, `license`, `language`) nao se beneficiam do mapeamento generico dropdown -> coluna.
+- **Decisao**: Inputs customizados dentro do mesmo `renderUI`:
   - `datasetName`: Dropdown + `textInput` (texto tem prioridade)
-  - `modified`: Checkbox "data de hoje" + `dateInput` (sempre visvel)
-  - `license`: Checkboxes CC com seleo nica forada
+  - `modified`: Checkbox "data de hoje" + `dateInput` (sempre visivel)
+  - `license`: Checkboxes CC com selecao unica forcada
   - `language`: Checkboxes inline (`pt`, `en`, `es`)
-- **Consequncias**: UX mais intuitiva, mas necessita `isolate()` para preservar valores entre re-renders.
+- **Consequencias**: UX mais intuitiva, mas necessita `isolate()` para preservar valores entre re-renders.
 
 ---
 
 ## ADR-006: Motor Rostrum como opt-in via toggle
 
 - **Data**: 2026-02-12
-- **Contexto**: O auto-mapping com scoring (name + value)  experimental e pode produzir mapeamentos incorretos.
-- **Deciso**: Toggle `bslib::input_switch` desligado por padro. Rtulo "Rostrum (beta)" explicita o estado experimental.
-- **Consequncias**: Motor legado continua acessvel. Usurios avanados podem ativar Rostrum conscientemente.
+- **Contexto**: O auto-mapping com scoring (name + value) eh experimental e pode produzir mapeamentos incorretos.
+- **Decisao**: Toggle `bslib::input_switch` desligado por padrao. Rotulo "Rostrum (beta)" explicita o estado experimental.
+- **Consequencias**: Motor legado continua acessivel. Usuarios avancados podem ativar Rostrum conscientemente.
 
 ---
 
-## ADR-007: Derivao taxonmica no-destrutiva
+## ADR-007: Derivacao taxonomica nao-destrutiva
 
 - **Data**: 2026-02-12
 - **Contexto**: Ao mapear `scientificName`, o sistema pode derivar `genus`, `specificEpithet` e `taxonRank`.
-- **Deciso**: Apenas completar campos vazios/NA. Nunca sobrescrever valores j mapeados pelo usurio.
-- **Consequncias**: Segurana de dados preservada. Usurio mantm controle total sobre campos preenchidos manualmente.
+- **Decisao**: Apenas completar campos vazios/NA. Nunca sobrescrever valores ja mapeados pelo usuario.
+- **Consequencias**: Seguranca de dados preservada. Usuario mantem controle total sobre campos preenchidos manualmente.
 
 ---
 
-## ADR-008: Licenas abreviadas no preview e export
+## ADR-008: Licencas abreviadas no preview e export
 
 - **Data**: 2026-02-12
-- **Contexto**: Licenas so armazenadas como URLs longas (ex: `https://creativecommons.org/publicdomain/zero/1.0/legalcode`). No preview e no CSV, essas URLs ocupam espao visual excessivo.
-- **Deciso**: Normalizar URLs conhecidas para labels curtas (`CC0`, `CC-BY`, `CC-BY-NC`). Valores fora do mapeamento permanecem inalterados.
+- **Contexto**: Licencas sao armazenadas como URLs longas (ex: `https://creativecommons.org/publicdomain/zero/1.0/legalcode`). No preview e no CSV, essas URLs ocupam espaco visual excessivo.
+- **Decisao**: Normalizar URLs conhecidas para labels curtas (`CC0`, `CC-BY`, `CC-BY-NC`). Valores fora do mapeamento permanecem inalterados.
 - **Variantes tratadas**: com/sem `http(s)://`, com/sem `/legalcode`, com/sem `/` final.
-- **Consequncias**: Preview legvel e CSV mais limpo, sem perda de informao.
+- **Consequencias**: Preview legivel e CSV mais limpo, sem perda de informacao.
 
 ---
 
 ## ADR-009: Loading bloqueante com feedback visual client-side
 
 - **Data**: 2026-02-12
-- **Contexto**: `withProgress()` do Shiny no bloqueia interao durante processamento. Em Shiny sncrono, loops bloqueantes no atualizam a UI.
-- **Deciso**: Modal com `easyClose = FALSE`, barra de progresso em HTML esttico, atualizao via JavaScript client-side com timer.
-- **Alternativas**: `shiny::withProgress()` ??" rejeitado por no bloquear UI. `future/promises` ??" complexidade excessiva para o escopo atual.
-- **Consequncias**: Feedback visual contnuo mesmo durante processamento pesado. Timer JS limpo no `on.exit()`.
+- **Contexto**: `withProgress()` do Shiny nao bloqueia interacao durante processamento. Em Shiny sincrono, loops bloqueantes nao atualizam a UI.
+- **Decisao**: Modal com `easyClose = FALSE`, barra de progresso em HTML estatico, atualizacao via JavaScript client-side com timer.
+- **Alternativas**: `shiny::withProgress()` -- rejeitado por nao bloquear UI. `future/promises` -- complexidade excessiva para o escopo atual.
+- **Consequencias**: Feedback visual continuo mesmo durante processamento pesado. Timer JS limpo no `on.exit()`.
+
 ---
 
 ## ADR-010: Package-safe loading sem `source()` em `R/` e testes tarball-safe
@@ -108,3 +109,20 @@ Formato: ADR leve (Architecture Decision Record).
   - `check` deixa de falhar por erro estrutural de testes/deploy.
   - Fluxo de carga fica consistente entre desenvolvimento, instalacao e check.
   - Testes ficam menos acoplados ao layout local do projeto.
+
+---
+
+## ADR-011: Qualificacao explicita de isolate e limpeza de Imports nao usados
+
+- **Data**: 2026-02-13
+- **Contexto**: Apos Onda 1, o `R CMD check` ainda reportava NOTES por `Imports` nao usados (`dplyr`, `lubridate`, `shinyFeedback`) e por `isolate` sem namespace explicito em `mod_mapping`.
+- **Decisao**:
+  - Remover de `DESCRIPTION` pacotes em `Imports` sem uso real no codigo.
+  - Qualificar chamadas reativas como `shiny::isolate(...)` para evitar ambiguidades no check.
+- **Alternativas**:
+  - Manter pacotes "reservados" em `Imports` para uso futuro - rejeitado por gerar ruido no check e mascarar dependencias reais.
+  - Usar `importFrom(shiny, isolate)` em NAMESPACE - rejeitado neste ciclo por preferencia de namespace explicito no ponto de uso.
+- **Consequencias**:
+  - `checking dependencies in R code ... OK`.
+  - `checking R code for possible problems ... OK` (sem NOTE de `isolate`).
+  - Mantem-se apenas o warning conhecido de non-ASCII (fora do escopo desta onda).
