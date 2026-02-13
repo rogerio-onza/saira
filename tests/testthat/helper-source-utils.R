@@ -1,0 +1,44 @@
+pkg_root <- normalizePath(file.path(testthat::test_path(), "..", ".."), winslash = "/", mustWork = TRUE)
+
+test_data_path <- function(filename) {
+    installed_path <- system.file("data", filename, package = "finch")
+    if (nzchar(installed_path) && file.exists(installed_path)) {
+        return(installed_path)
+    }
+
+    local_candidates <- c(
+        file.path(pkg_root, "data", filename),
+        file.path("data", filename)
+    )
+    existing <- local_candidates[file.exists(local_candidates)]
+
+    if (length(existing) > 0) {
+        return(normalizePath(existing[[1]], winslash = "/", mustWork = TRUE))
+    }
+
+    stop(sprintf("Test data file not found: %s", filename))
+}
+
+helper_env <- environment()
+needed_functions <- c(
+    "normalize_semicolon_tokens",
+    "collapse_mapped_values",
+    "detect_eventdate_roles",
+    "parse_month_to_number",
+    "build_eventdate_interval",
+    "extract_scientific_name_components",
+    "fill_missing_character_values",
+    "replace_na_with_blank",
+    "load_dwc_synonyms_v1",
+    "load_dwc_terms_rds",
+    "compute_name_score",
+    "compute_value_score",
+    "run_automap_v1",
+    "mod_mapping_server"
+)
+
+for (fn_name in needed_functions) {
+    if (!exists(fn_name, envir = helper_env, mode = "function", inherits = FALSE)) {
+        assign(fn_name, getFromNamespace(fn_name, "finch"), envir = helper_env)
+    }
+}

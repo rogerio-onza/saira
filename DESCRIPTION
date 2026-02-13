@@ -1,0 +1,29 @@
+Package: finch
+Title: Biodiversity Data Standardization to Darwin Core
+Version: 0.1.0
+Authors@R: person("RogÃ©rio", "Nunes Oliveira", email = "rogerio@example.com", role = c("aut", "cre"))
+Description: Shiny application for standardizing biodiversity datasets to the 
+    Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools 
+    for data validation, column mapping, and taxonomic verification. Designed 
+    for use with SiBBr (Sistema de InformaÃ§Ã£o sobre a Biodiversidade Brasileira).
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.0
+Imports:
+    shiny (>= 1.7.0),
+    bslib (>= 0.5.0),
+    dplyr (>= 1.1.0),
+    readr (>= 2.1.0),
+    stringr (>= 1.5.0),
+    lubridate (>= 1.9.0),
+    DT (>= 0.28),
+    shinyFeedback (>= 0.4.0),
+    ids (>= 1.0.0),
+    here (>= 1.0.0),
+    jsonlite (>= 1.8.0)
+Suggests:
+    testthat (>= 3.0.0),
+    devtools,
+    roxygen2,
+    pkgload

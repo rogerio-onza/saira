@@ -1,0 +1,304 @@
+# Title: Tests for Mapping Utilities
+# Author: RogÃ©rio Nunes Oliveira
+# Date: 2026-02-11
+# Version: 1.0
+
+testthat::test_that("normalize_semicolon_tokens converts semicolon lists to pipe", {
+    x <- c(
+        "Alexandra Cravino; Alejandro Brazeiro",
+        "Native Forest, Grassland, Afforestation",
+        " ; ",
+        "",
+        NA_character_
+    )
+
+    out <- normalize_semicolon_tokens(x)
+
+    testthat::expect_identical(out[[1]], "Alexandra Cravino | Alejandro Brazeiro")
+    testthat::expect_identical(out[[2]], "Native Forest, Grassland, Afforestation")
+    testthat::expect_true(is.na(out[[3]]))
+    testthat::expect_true(is.na(out[[4]]))
+    testthat::expect_true(is.na(out[[5]]))
+})
+
+testthat::test_that("collapse_mapped_values preserves token order and ignores comma as delimiter", {
+    df <- data.frame(
+        col_a = c(
+            "B; A",
+            "Native Forest, Grassland, Afforestation",
+            NA_character_
+        ),
+        col_b = c(
+            "C",
+            "Silviculture",
+            "X; Y"
+        ),
+        stringsAsFactors = FALSE
+    )
+
+    out <- collapse_mapped_values(df, cols = c("col_a", "col_b"))
+
+    testthat::expect_identical(out[[1]], "B | A | C")
+    testthat::expect_identical(out[[2]], "Native Forest, Grassland, Afforestation | Silviculture")
+    testthat::expect_identical(out[[3]], "X | Y")
+})
+
+testthat::test_that("detect_eventdate_roles uses heuristics and falls back to selected order", {
+    by_name <- detect_eventdate_roles(c("COL_START_MO", "COL_START_YR", "COL_END_MO", "COL_END_YR"))
+    testthat::expect_identical(by_name$start_month, 1L)
+    testthat::expect_identical(by_name$start_year, 2L)
+    testthat::expect_identical(by_name$end_month, 3L)
+    testthat::expect_identical(by_name$end_year, 4L)
+    testthat::expect_false(by_name$used_fallback)
+
+    fallback <- detect_eventdate_roles(c("A", "B", "C", "D"))
+    testthat::expect_identical(fallback$start_month, 1L)
+    testthat::expect_identical(fallback$start_year, 2L)
+    testthat::expect_identical(fallback$end_month, 3L)
+    testthat::expect_identical(fallback$end_year, 4L)
+    testthat::expect_true(fallback$used_fallback)
+})
+
+testthat::test_that("parse_month_to_number supports numeric, Portuguese and English values", {
+    testthat::expect_identical(parse_month_to_number("8"), "08")
+    testthat::expect_identical(parse_month_to_number("Aug"), "08")
+    testthat::expect_identical(parse_month_to_number("August"), "08")
+    testthat::expect_identical(parse_month_to_number("Ago"), "08")
+    testthat::expect_identical(parse_month_to_number("Agosto"), "08")
+    testthat::expect_identical(parse_month_to_number("Jun"), "06")
+    testthat::expect_identical(parse_month_to_number("June"), "06")
+    testthat::expect_identical(parse_month_to_number("Junho"), "06")
+    testthat::expect_true(is.na(parse_month_to_number("foo")))
+})
+
+testthat::test_that("build_eventdate_interval produces YYYY-MM/YYYY-MM and keeps raw fallback on failures", {
+    df <- data.frame(
+        COL_START_MO = c("Aug", "Agosto", "foo"),
+        COL_START_YR = c("2017", "2017", "2017"),
+        COL_END_MO = c("Jun", "June", "Jun"),
+        COL_END_YR = c("2018", "2018", "2018"),
+        stringsAsFactors = FALSE
+    )
+
+    out <- build_eventdate_interval(
+        df = df,
+        cols = c("COL_START_MO", "COL_START_YR", "COL_END_MO", "COL_END_YR"),
+        fallback_raw = TRUE
+    )
+
+    testthat::expect_identical(out$values[[1]], "2017-08/2018-06")
+    testthat::expect_identical(out$values[[2]], "2017-08/2018-06")
+    testthat::expect_identical(out$values[[3]], "foo | 2017 | Jun | 2018")
+    testthat::expect_identical(out$failure_count, 1L)
+    testthat::expect_true(out$failed_rows[[3]])
+})
+
+testthat::test_that("build_eventdate_interval uses order fallback when column names are generic", {
+    df <- data.frame(
+        A = "Aug",
+        B = "2017",
+        C = "Jun",
+        D = "2018",
+        stringsAsFactors = FALSE
+    )
+
+    out <- build_eventdate_interval(
+        df = df,
+        cols = c("A", "B", "C", "D"),
+        fallback_raw = TRUE
+    )
+
+    testthat::expect_identical(out$values[[1]], "2017-08/2018-06")
+    testthat::expect_true(out$role_map$used_fallback)
+})
+
+testthat::test_that("extract_scientific_name_components parses binomial and genus-only patterns", {
+    parsed <- extract_scientific_name_components(c(
+        "Lycalopex gymnocercus",
+        "Leopardus sp",
+        "Leopardus sp.",
+        "Leopardus",
+        "Leopardus cf. pardalis",
+        "",
+        NA_character_
+    ))
+
+    testthat::expect_identical(parsed$genus[[1]], "Lycalopex")
+    testthat::expect_identical(parsed$specificEpithet[[1]], "gymnocercus")
+    testthat::expect_identical(parsed$taxonRank[[1]], "species")
+
+    testthat::expect_identical(parsed$genus[[2]], "Leopardus")
+    testthat::expect_true(is.na(parsed$specificEpithet[[2]]))
+    testthat::expect_identical(parsed$taxonRank[[2]], "genus")
+
+    testthat::expect_identical(parsed$genus[[3]], "Leopardus")
+    testthat::expect_true(is.na(parsed$specificEpithet[[3]]))
+    testthat::expect_identical(parsed$taxonRank[[3]], "genus")
+
+    testthat::expect_identical(parsed$genus[[4]], "Leopardus")
+    testthat::expect_true(is.na(parsed$specificEpithet[[4]]))
+    testthat::expect_identical(parsed$taxonRank[[4]], "genus")
+
+    testthat::expect_identical(parsed$genus[[5]], "Leopardus")
+    testthat::expect_identical(parsed$specificEpithet[[5]], "pardalis")
+    testthat::expect_identical(parsed$taxonRank[[5]], "species")
+
+    testthat::expect_true(is.na(parsed$genus[[6]]))
+    testthat::expect_true(is.na(parsed$specificEpithet[[6]]))
+    testthat::expect_true(is.na(parsed$taxonRank[[6]]))
+
+    testthat::expect_true(is.na(parsed$genus[[7]]))
+    testthat::expect_true(is.na(parsed$specificEpithet[[7]]))
+    testthat::expect_true(is.na(parsed$taxonRank[[7]]))
+})
+
+testthat::test_that("fill_missing_character_values only fills blank positions", {
+    existing <- c("species", NA_character_, "", "  ", "genus")
+    fallback <- c("ignored", "species", "species", "species", "ignored")
+
+    out <- fill_missing_character_values(existing, fallback)
+
+    testthat::expect_identical(
+        out,
+        c("species", "species", "species", "species", "genus")
+    )
+})
+
+testthat::test_that("replace_na_with_blank converts missing values to empty strings", {
+    df <- data.frame(
+        char_col = c("a", NA_character_, "c"),
+        num_col = c(1, NA_real_, 3),
+        stringsAsFactors = FALSE
+    )
+
+    out <- replace_na_with_blank(df)
+
+    testthat::expect_identical(out$char_col, c("a", "", "c"))
+    testthat::expect_identical(out$num_col, c("1", "", "3"))
+})
+
+testthat::test_that("load_dwc_synonyms_v1 loads and validates schema", {
+    syn <- load_dwc_synonyms_v1(path = test_data_path("dwc_synonyms_v1.rds"))
+
+    required_cols <- c("term", "synonym", "name_score", "lang", "active")
+    testthat::expect_true(all(required_cols %in% names(syn)))
+    testthat::expect_true(all(syn$name_score >= 0.90 & syn$name_score <= 0.98))
+})
+
+testthat::test_that("compute_name_score prioritizes exact match and synonyms", {
+    syn <- data.frame(
+        term = c("scientificName"),
+        synonym = c("nome cientifico"),
+        name_score = c(0.98),
+        lang = c("pt"),
+        active = c(TRUE),
+        stringsAsFactors = FALSE
+    )
+
+    exact_res <- compute_name_score("scientificName", "scientificName", syn)
+    syn_res <- compute_name_score("nome cientifico", "scientificName", syn)
+    low_res <- compute_name_score("unrelated_column", "scientificName", syn)
+
+    testthat::expect_identical(exact_res$reason, "exact_match")
+    testthat::expect_identical(exact_res$score, 1)
+    testthat::expect_identical(syn_res$reason, "known_synonym")
+    testthat::expect_true(syn_res$score >= 0.90)
+    testthat::expect_true(low_res$score <= 0.60)
+})
+
+testthat::test_that("compute_value_score validates coordinates and blocks incompatible type", {
+    lat_ok <- c("-12.1", "-23.5", "0.0", "45.9")
+    lat_bad <- c("abc", "texto", "sem numero", "x")
+
+    ok_res <- compute_value_score(lat_ok, term = "decimalLatitude", name_score = 1.0)
+    bad_res <- compute_value_score(lat_bad, term = "decimalLatitude", name_score = 1.0)
+
+    testthat::expect_true(ok_res$score >= 0.90)
+    testthat::expect_true(ok_res$compatible_type)
+
+    testthat::expect_true(bad_res$score <= 0.60)
+    testthat::expect_false(bad_res$compatible_type)
+})
+
+testthat::test_that("compute_value_score validates scientificName and individualCount", {
+    sn_ok <- c("Panthera onca", "Leopardus sp.", "Leopardus cf. pardalis")
+    sn_bad <- c("foo", "123", "???")
+
+    count_ok <- c("1", "2", "0", "9")
+    count_bad <- c("one", "-1", "3.7", "abc")
+
+    sn_ok_res <- compute_value_score(sn_ok, term = "scientificName", name_score = 1.0)
+    sn_bad_res <- compute_value_score(sn_bad, term = "scientificName", name_score = 1.0)
+    count_ok_res <- compute_value_score(count_ok, term = "individualCount", name_score = 1.0)
+    count_bad_res <- compute_value_score(count_bad, term = "individualCount", name_score = 1.0)
+
+    testthat::expect_true(sn_ok_res$score > sn_bad_res$score)
+    testthat::expect_true(count_ok_res$score > count_bad_res$score)
+})
+
+testthat::test_that("run_automap_v1 excludes temporal inference except exact match", {
+    syn <- data.frame(
+        term = c("eventDate"),
+        synonym = c("data coleta"),
+        name_score = c(0.95),
+        lang = c("pt"),
+        active = c(TRUE),
+        stringsAsFactors = FALSE
+    )
+    dwc_terms <- data.frame(term = c("eventDate"), stringsAsFactors = FALSE)
+
+    df_synonym_only <- data.frame(
+        data_coleta = c("2024-01-01", "2024-01-02"),
+        stringsAsFactors = FALSE
+    )
+    out_synonym <- run_automap_v1(df_synonym_only, dwc_terms, syn)
+    testthat::expect_identical(out_synonym$status[[1]], "MANUAL")
+    testthat::expect_true(is.na(out_synonym$selected_col[[1]]))
+
+    df_exact <- data.frame(
+        eventDate = c("2024-01-01", "2024-01-02"),
+        stringsAsFactors = FALSE
+    )
+    out_exact <- run_automap_v1(df_exact, dwc_terms, syn)
+    testthat::expect_true(out_exact$status[[1]] %in% c("AUTO", "SUGERIDO"))
+    testthat::expect_identical(out_exact$selected_col[[1]], "eventDate")
+})
+
+testthat::test_that("run_automap_v1 resolves conflicts by strongest score", {
+    syn <- data.frame(
+        term = c("individualCount", "samplingEffort"),
+        synonym = c("count", "count"),
+        name_score = c(0.97, 0.93),
+        lang = c("any", "any"),
+        active = c(TRUE, TRUE),
+        stringsAsFactors = FALSE
+    )
+
+    dwc_terms <- data.frame(term = c("individualCount", "samplingEffort"), stringsAsFactors = FALSE)
+    df <- data.frame(count = c("1", "2", "3"), stringsAsFactors = FALSE)
+
+    out <- run_automap_v1(df, dwc_terms, syn)
+    count_rows <- out[out$term %in% c("individualCount", "samplingEffort"), , drop = FALSE]
+
+    testthat::expect_identical(sum(count_rows$applied), 1L)
+    testthat::expect_true(any(count_rows$status == "MANUAL"))
+    testthat::expect_true(any(count_rows$reason == "conflict_lost"))
+})
+
+testthat::test_that("run_automap_v1 returns expected columns and status thresholds", {
+    syn <- load_dwc_synonyms_v1(path = test_data_path("dwc_synonyms_v1.rds"))
+    dwc_terms <- data.frame(term = c("scientificName", "recordedBy", "decimalLatitude"), stringsAsFactors = FALSE)
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        collector = c("A", "B"),
+        decimalLatitude = c("texto", "invalido"),
+        stringsAsFactors = FALSE
+    )
+
+    out <- run_automap_v1(df, dwc_terms, syn)
+
+    testthat::expect_true(all(c("term", "selected_col", "name_score", "value_score", "final_score", "status", "reason", "applied") %in% names(out)))
+    testthat::expect_true(out$status[out$term == "scientificName"] %in% c("AUTO", "SUGERIDO"))
+    testthat::expect_true(out$status[out$term == "recordedBy"] %in% c("SUGERIDO", "MANUAL"))
+    testthat::expect_false(out$status[out$term == "decimalLatitude"] == "AUTO")
+})
