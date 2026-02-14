@@ -5,6 +5,25 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ---
 
+## [0.1.1] - 2026-02-14
+
+### Alterado
+#### Onda 3 - performance de datas
+- `parse_dates_to_iso()` refatorada para parsing vetorizado por formato com mascaras estritas
+- Regra `DD/MM/YY` com cutoff dinamico por ano atual (`YY <= ano atual (2 digitos) -> 20YY`, senao `19YY`)
+- `fix_dates_to_iso()` passa a delegar parsing para `parse_dates_to_iso()` nas colunas `eventDate`, `dateIdentified` e `modified`
+
+### Corrigido
+- Semantica de export preservada para invalidos nao vazios: valor bruto mantido em `fix_dates_to_iso()`
+- `NA` e string vazia continuam resultando em `NA` nas colunas de data do export
+
+### Adicionado
+- Novos testes de regressao: `tests/testthat/test-utils-io.R` e `tests/testthat/test-utils-export.R`
+- Script de benchmark 100k: `tests/bench/benchmark_dates_onda3.R`
+- Relatorio comparativo da Onda 3: `docs/archive/benchmark_onda3_2026-02-14.md`
+
+---
+
 ## [0.1.0] - 2026-02-13
 
 ### Adicionado

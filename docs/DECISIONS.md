@@ -126,3 +126,23 @@ Formato: ADR leve (Architecture Decision Record).
   - `checking dependencies in R code ... OK`.
   - `checking R code for possible problems ... OK` (sem NOTE de `isolate`).
   - Mantem-se apenas o warning conhecido de non-ASCII (fora do escopo desta onda).
+
+---
+
+## ADR-012: Vetorizacao de parsing de datas com cutoff dinamico para `DD/MM/YY`
+
+- **Data**: 2026-02-14
+- **Contexto**: O baseline da Onda 0 mostrou custo alto no parsing de datas em 100k linhas (`parse_dates_to_iso()` e `fix_dates_to_iso()`). Tambem havia comportamento ambiguo para ano com 2 digitos (`DD/MM/YY`) e risco de parse parcial sem mascara estrita.
+- **Decisao**:
+  - Vetorizar `parse_dates_to_iso()` por formato com mascaras regex estritas.
+  - Em `DD/MM/YY`, aplicar cutoff dinamico por ano atual: `YY <= ano_atual_2d -> 20YY`, senao `19YY`.
+  - Refatorar `fix_dates_to_iso()` para delegar parsing ao parser vetorizado.
+  - Preservar semantica de export: em valor invalido nao vazio, manter valor bruto; em `NA`/`""`, manter `NA`.
+- **Alternativas**:
+  - Manter loop element-wise com `sapply()` e `for` - rejeitado por custo alto em datasets grandes.
+  - Usar cutoff fixo (ex: 70) - rejeitado por ser menos aderente ao contexto temporal atual definido para o projeto.
+  - Tratar `YY` sempre como invalido - rejeitado por piorar compatibilidade com dados legados ja usados no fluxo.
+- **Consequencias**:
+  - Ganho mensuravel de performance em benchmark 100k (Onda 3).
+  - Comportamento de seculo para `YY` documentado e testado, sem ambiguidade implícita.
+  - Fluxo de export mantem compatibilidade funcional para invalidos nao vazios.

@@ -48,6 +48,8 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 ## Performance
 
 - **`sapply()` element-wise** eh lento com 99k+ linhas. Vetorizar parsing de datas testando cada formato em lote.
+- **`as.Date(..., format=...)` sem mascara previa** pode aceitar entradas parcialmente e gerar anos incorretos (ex: `0023`). Usar regex estrita por formato antes de parsear.
+- **Ano com 2 digitos (`DD/MM/YY`)** precisa de regra de seculo explicita. No Finch: cutoff dinamico (`YY <= ano atual (2d) -> 20YY`, senao `19YY`).
 - **RDS estatico** (como `dwc_terms.rds`) nao deve ser relido do disco a cada mudanca reativa. Cachear na primeira leitura.
 
 ## Testes

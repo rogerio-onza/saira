@@ -119,33 +119,70 @@ detect_delimiter <- function(file_path) {
 #' @return Character vector of ISO-formatted dates
 #' @export
 parse_dates_to_iso <- function(date_vector) {
-    # Common Brazilian formats
-    formats <- c(
-        "%d/%m/%Y", # 25/12/2023
-        "%d-%m-%Y", # 25-12-2023
-        "%Y-%m-%d", # 2023-12-25 (ISO)
-        "%d/%m/%y", # 25/12/23
-        "%d.%m.%Y" # 25.12.2023
+    date_chr <- as.character(date_vector)
+    result <- rep(NA_character_, length(date_chr))
+    remaining <- !is.na(date_chr) & nzchar(date_chr)
+
+    if (!any(remaining)) {
+        return(result)
+    }
+
+    # Parse in batches by format to avoid element-wise loops.
+    format_specs <- list(
+        list(regex = "^\\d{4}-\\d{2}-\\d{2}$", fmt = "%Y-%m-%d"), # 2023-12-25 (ISO)
+        list(regex = "^\\d{2}/\\d{2}/\\d{4}$", fmt = "%d/%m/%Y"), # 25/12/2023
+        list(regex = "^\\d{2}-\\d{2}-\\d{4}$", fmt = "%d-%m-%Y"), # 25-12-2023
+        list(regex = "^\\d{2}\\.\\d{2}\\.\\d{4}$", fmt = "%d.%m.%Y") # 25.12.2023
     )
 
-    result <- rep(NA_character_, length(date_vector))
+    for (spec in format_specs) {
+        idx <- which(remaining)
+        if (!length(idx)) {
+            break
+        }
 
-    for (i in seq_along(date_vector)) {
-        if (is.na(date_vector[i]) || date_vector[i] == "") {
+        candidates <- date_chr[idx]
+        matches <- grepl(spec$regex, candidates)
+        if (!any(matches)) {
             next
         }
 
-        for (fmt in formats) {
-            parsed <- tryCatch(
-                {
-                    as.Date(date_vector[i], format = fmt)
-                },
-                error = function(e) NA
+        parsed <- as.Date(candidates[matches], format = spec$fmt)
+        success <- !is.na(parsed)
+
+        if (any(success)) {
+            resolved_idx <- idx[matches][success]
+            result[resolved_idx] <- format(parsed[success], "%Y-%m-%d")
+            remaining[resolved_idx] <- FALSE
+        }
+    }
+
+    # Handle DD/MM/YY with dynamic century cutoff.
+    idx <- which(remaining)
+    if (length(idx)) {
+        yy_candidates <- date_chr[idx]
+        yy_mask <- grepl("^\\d{2}/\\d{2}/\\d{2}$", yy_candidates)
+
+        if (any(yy_mask)) {
+            yy_values <- yy_candidates[yy_mask]
+            day <- as.integer(substr(yy_values, 1, 2))
+            month <- as.integer(substr(yy_values, 4, 5))
+            year_two_digits <- as.integer(substr(yy_values, 7, 8))
+            current_yy <- as.integer(format(Sys.Date(), "%y"))
+            full_year <- ifelse(
+                year_two_digits <= current_yy,
+                2000L + year_two_digits,
+                1900L + year_two_digits
             )
 
-            if (!is.na(parsed)) {
-                result[i] <- format(parsed, "%Y-%m-%d")
-                break
+            iso_candidates <- sprintf("%04d-%02d-%02d", full_year, month, day)
+            parsed <- as.Date(iso_candidates, format = "%Y-%m-%d")
+            success <- !is.na(parsed)
+
+            if (any(success)) {
+                resolved_idx <- idx[yy_mask][success]
+                result[resolved_idx] <- format(parsed[success], "%Y-%m-%d")
+                remaining[resolved_idx] <- FALSE
             }
         }
     }

@@ -87,46 +87,11 @@ fix_dates_to_iso <- function(df) {
 
     for (col in date_cols) {
         if (col %in% names(df)) {
-            # Try to parse and convert
-            df[[col]] <- sapply(df[[col]], function(x) {
-                if (is.na(x) || x == "") {
-                    return(NA_character_)
-                }
-
-                # Already in ISO format?
-                if (grepl("^\\d{4}-\\d{2}-\\d{2}", x)) {
-                    return(as.character(x))
-                }
-
-                # Try Brazilian format DD/MM/YYYY
-                parsed <- tryCatch(
-                    {
-                        d <- as.Date(x, format = "%d/%m/%Y")
-                        if (!is.na(d)) format(d, "%Y-%m-%d") else NA_character_
-                    },
-                    error = function(e) NA_character_
-                )
-
-                if (!is.na(parsed)) {
-                    return(parsed)
-                }
-
-                # Try DD-MM-YYYY
-                parsed <- tryCatch(
-                    {
-                        d <- as.Date(x, format = "%d-%m-%Y")
-                        if (!is.na(d)) format(d, "%Y-%m-%d") else NA_character_
-                    },
-                    error = function(e) NA_character_
-                )
-
-                if (!is.na(parsed)) {
-                    return(parsed)
-                }
-
-                # Return original if can't parse
-                return(as.character(x))
-            })
+            original_values <- as.character(df[[col]])
+            parsed_values <- parse_dates_to_iso(df[[col]])
+            keep_raw <- is.na(parsed_values) & !is.na(original_values) & nzchar(original_values)
+            parsed_values[keep_raw] <- original_values[keep_raw]
+            df[[col]] <- parsed_values
         }
     }
 
