@@ -33,6 +33,72 @@ split_output_tokens <- function(value, out_sep = " | ") {
     parts[nzchar(parts)]
 }
 
+has_selected_value <- function(value) {
+    !is.null(value) && length(value) > 0 && any(value != "")
+}
+
+sanitize_map_selection <- function(term, value) {
+    if (is.null(value) || length(value) == 0) {
+        return("")
+    }
+
+    value_chr <- as.character(value)
+    value_chr <- value_chr[!is.na(value_chr)]
+    value_chr <- trimws(value_chr)
+    value_chr <- value_chr[nzchar(value_chr)]
+
+    if (length(value_chr) == 0) {
+        return("")
+    }
+
+    if (identical(term, "scientificName")) {
+        return(value_chr[[1]])
+    }
+
+    value_chr
+}
+
+default_meta <- function() {
+    list(
+        status = NA_character_,
+        score = NA_real_,
+        reason = NA_character_,
+        source = NA_character_
+    )
+}
+
+empty_map_values <- function(terms) {
+    stats::setNames(lapply(seq_along(terms), function(i) ""), terms)
+}
+
+empty_map_meta <- function(terms) {
+    stats::setNames(lapply(seq_along(terms), function(i) default_meta()), terms)
+}
+
+build_manual_meta <- function(previous_meta, has_value) {
+    previous_score <- if (is.null(previous_meta) || is.null(previous_meta$score)) {
+        NA_real_
+    } else {
+        suppressWarnings(as.numeric(previous_meta$score))
+    }
+
+    if (isTRUE(has_value)) {
+        return(list(
+            status = "EDITADO",
+            score = previous_score,
+            reason = "manual_adjust",
+            source = "manual"
+        ))
+    }
+
+    list(
+        status = "MANUAL",
+        score = NA_real_,
+        reason = "manual_cleared",
+        source = "manual"
+    )
+}
+
 normalize_for_matching <- function(x) {
     x_chr <- as.character(x)
     normalized <- tolower(x_chr)
@@ -948,5 +1014,149 @@ build_eventdate_interval <- function(df, cols, fallback_raw = TRUE) {
         failed_rows = failed_rows,
         failure_count = sum(failed_rows),
         role_map = role_map
+    )
+}
+
+build_processed_mapping_df <- function(
+    df,
+    dwc_terms,
+    map_values,
+    occurrence_ids,
+    custom_dataset_name = NULL,
+    modified_use_today = FALSE,
+    custom_modified_date = NULL,
+    custom_license = NULL,
+    custom_language = NULL,
+    now_utc = Sys.time(),
+    out_sep = " | "
+) {
+    if (length(occurrence_ids) != nrow(df)) {
+        stop("occurrence_ids must have the same length as nrow(df).")
+    }
+
+    df_final <- data.frame(matrix(ncol = 0, nrow = nrow(df)))
+    eventdate_failure_count <- 0L
+    selected_terms <- character(0)
+
+    for (item in dwc_terms) {
+        term <- item$term
+
+        if (term == "occurrenceID") {
+            df_final[[term]] <- occurrence_ids
+            selected_terms <- c(selected_terms, term)
+            next
+        }
+
+        if (term == "datasetName") {
+            if (!is.null(custom_dataset_name) && nchar(trimws(custom_dataset_name)) > 0) {
+                df_final[[term]] <- rep(trimws(custom_dataset_name), nrow(df))
+                selected_terms <- c(selected_terms, term)
+                next
+            }
+        }
+
+        if (term == "modified") {
+            if (isTRUE(modified_use_today)) {
+                date_str <- format(now_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+                df_final[[term]] <- rep(date_str, nrow(df))
+                selected_terms <- c(selected_terms, term)
+            } else if (!is.null(custom_modified_date)) {
+                date_str <- format(as.Date(custom_modified_date), "%Y-%m-%d")
+                df_final[[term]] <- rep(date_str, nrow(df))
+                selected_terms <- c(selected_terms, term)
+            }
+            next
+        }
+
+        if (term == "license") {
+            if (!is.null(custom_license) && length(custom_license) > 0) {
+                df_final[[term]] <- rep(custom_license[[1]], nrow(df))
+                selected_terms <- c(selected_terms, term)
+            }
+            next
+        }
+
+        if (term == "language") {
+            if (!is.null(custom_language) && length(custom_language) > 0) {
+                df_final[[term]] <- rep(custom_language[[1]], nrow(df))
+                selected_terms <- c(selected_terms, term)
+            }
+            next
+        }
+
+        user_cols <- sanitize_map_selection(term, map_values[[term]])
+        if (!has_selected_value(user_cols)) {
+            next
+        }
+
+        if (term == "scientificName" && length(user_cols) > 1) {
+            user_cols <- user_cols[[1]]
+        }
+
+        selected_terms <- c(selected_terms, term)
+
+        if (term == "eventDate" && length(user_cols) == 4) {
+            event_result <- build_eventdate_interval(
+                df = df,
+                cols = user_cols,
+                fallback_raw = TRUE
+            )
+            df_final[[term]] <- event_result$values
+            eventdate_failure_count <- eventdate_failure_count + event_result$failure_count
+        } else if (length(user_cols) == 1) {
+            df_final[[term]] <- normalize_semicolon_tokens(
+                df[[user_cols[[1]]]],
+                out_sep = out_sep
+            )
+        } else {
+            df_final[[term]] <- collapse_mapped_values(
+                df = df,
+                cols = user_cols,
+                out_sep = out_sep
+            )
+        }
+    }
+
+    if ("scientificName" %in% names(df_final)) {
+        scientific_parts <- extract_scientific_name_components(df_final$scientificName)
+        selected_terms <- c(selected_terms, "genus", "specificEpithet", "taxonRank")
+
+        if (!"genus" %in% names(df_final)) {
+            df_final$genus <- scientific_parts$genus
+        } else {
+            df_final$genus <- fill_missing_character_values(
+                df_final$genus,
+                scientific_parts$genus
+            )
+        }
+
+        if (!"specificEpithet" %in% names(df_final)) {
+            df_final$specificEpithet <- scientific_parts$specificEpithet
+        } else {
+            df_final$specificEpithet <- fill_missing_character_values(
+                df_final$specificEpithet,
+                scientific_parts$specificEpithet
+            )
+        }
+
+        if (!"taxonRank" %in% names(df_final)) {
+            df_final$taxonRank <- scientific_parts$taxonRank
+        } else {
+            df_final$taxonRank <- fill_missing_character_values(
+                df_final$taxonRank,
+                scientific_parts$taxonRank
+            )
+        }
+    }
+
+    selected_terms <- unique(selected_terms)
+    non_missing_cols <- colSums(!is.na(df_final)) > 0
+    keep_selected_cols <- names(df_final) %in% selected_terms
+    df_final <- df_final[, non_missing_cols | keep_selected_cols, drop = FALSE]
+    df_final <- replace_na_with_blank(df_final)
+
+    list(
+        data = df_final,
+        eventdate_failure_count = as.integer(eventdate_failure_count)
     )
 }

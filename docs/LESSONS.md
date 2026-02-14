@@ -57,6 +57,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **`testthat.R`** na raiz de `tests/` eh o runner padrao do pacote.
 - **Testes de regressao**: ao corrigir bug de badges/estado reativo, adicionar teste que alterna filtros e verifica estabilidade.
 - **Funcoes puras em `utils_*.R`** devem ser testaveis sem carregar Shiny. Extrair logica dos modulos para utilities.
+- **Extracao de reactive para funcao pura**: para preservar contrato e observabilidade, retornar lista composta com `data` e contadores auxiliares (ex.: `eventdate_failure_count`) e sincronizar estado reativo no modulo.
 
 ## Package Check / Deploy
 

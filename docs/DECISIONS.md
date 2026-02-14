@@ -146,3 +146,21 @@ Formato: ADR leve (Architecture Decision Record).
   - Ganho mensuravel de performance em benchmark 100k (Onda 3).
   - Comportamento de seculo para `YY` documentado e testado, sem ambiguidade implícita.
   - Fluxo de export mantem compatibilidade funcional para invalidos nao vazios.
+
+---
+
+## ADR-013: Centralizar montagem de `processed_data` em utilitario puro de mapping
+
+- **Data**: 2026-02-14
+- **Contexto**: `mod_mapping` concentrava logica de transformacao de dados dentro de `processed_data` reactive, dificultando testes unitarios fora de Shiny e aumentando acoplamento com estado de interface.
+- **Decisao**:
+  - Extrair para `R/utils_mapping.R` a funcao pura `build_processed_mapping_df(...)` com retorno composto (`data` + `eventdate_failure_count`).
+  - Extrair helpers puros de estado/selecao (`has_selected_value`, `sanitize_map_selection`, `default_meta`, `empty_map_values`, `empty_map_meta`, `build_manual_meta`).
+  - Manter em `mod_mapping` apenas wiring reativo, atualizacao de inputs, renderizacao e sincronizacao de `rv$eventdate_parse_failures`.
+- **Alternativas**:
+  - Manter toda a montagem no reactive do modulo - rejeitado por baixa testabilidade e alto acoplamento.
+  - Extrair tambem logica de badges/UI na mesma onda - rejeitado neste ciclo para reduzir risco funcional.
+- **Consequencias**:
+  - A montagem final de dados passa a ser testavel por `testthat` sem `testServer`.
+  - Contrato publico do modulo permanece inalterado (`mod_mapping_server()` retorna `reactive(data.frame)`).
+  - Regressao de estado reativo continua coberta por testes de modulo.

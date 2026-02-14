@@ -13,6 +13,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - Regra `DD/MM/YY` com cutoff dinamico por ano atual (`YY <= ano atual (2 digitos) -> 20YY`, senao `19YY`)
 - `fix_dates_to_iso()` passa a delegar parsing para `parse_dates_to_iso()` nas colunas `eventDate`, `dateIdentified` e `modified`
 
+#### Onda 4 - modularizacao de mod_mapping
+- `processed_data` do `mod_mapping` foi centralizado na funcao pura `build_processed_mapping_df()` em `R/utils_mapping.R`
+- Helpers puros de estado/mapeamento foram extraidos para `R/utils_mapping.R` (`has_selected_value`, `sanitize_map_selection`, `default_meta`, `empty_map_values`, `empty_map_meta`, `build_manual_meta`)
+- `mod_mapping_server()` manteve assinatura e retorno (`reactive(data.frame)`), preservando wiring reativo e comportamento de UI
+
 ### Corrigido
 - Semantica de export preservada para invalidos nao vazios: valor bruto mantido em `fix_dates_to_iso()`
 - `NA` e string vazia continuam resultando em `NA` nas colunas de data do export
@@ -21,6 +26,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - Novos testes de regressao: `tests/testthat/test-utils-io.R` e `tests/testthat/test-utils-export.R`
 - Script de benchmark 100k: `tests/bench/benchmark_dates_onda3.R`
 - Relatorio comparativo da Onda 3: `docs/archive/benchmark_onda3_2026-02-14.md`
+- Novos testes de regressao da Onda 4 em `tests/testthat/test-utils-mapping.R` e `tests/testthat/test-mod-mapping-server.R`
 
 ---
 

@@ -302,3 +302,149 @@ testthat::test_that("run_automap_v1 returns expected columns and status threshol
     testthat::expect_true(out$status[out$term == "recordedBy"] %in% c("SUGERIDO", "MANUAL"))
     testthat::expect_false(out$status[out$term == "decimalLatitude"] == "AUTO")
 })
+
+testthat::test_that("sanitize_map_selection and has_selected_value keep mapping semantics", {
+    testthat::expect_false(has_selected_value(NULL))
+    testthat::expect_false(has_selected_value(character(0)))
+    testthat::expect_false(has_selected_value(""))
+    testthat::expect_true(has_selected_value(c("", "col_a")))
+
+    testthat::expect_identical(
+        sanitize_map_selection("scientificName", c(" scientific_col ", "other_col")),
+        "scientific_col"
+    )
+    testthat::expect_identical(
+        sanitize_map_selection("recordedBy", c(" col_a ", "", NA_character_, " col_b ")),
+        c("col_a", "col_b")
+    )
+    testthat::expect_identical(sanitize_map_selection("recordedBy", NULL), "")
+})
+
+testthat::test_that("mapping state helpers build empty structures and manual metadata transitions", {
+    terms <- c("scientificName", "eventDate")
+    expected_default_meta <- list(
+        status = NA_character_,
+        score = NA_real_,
+        reason = NA_character_,
+        source = NA_character_
+    )
+
+    testthat::expect_identical(default_meta(), expected_default_meta)
+
+    values_state <- empty_map_values(terms)
+    testthat::expect_identical(values_state$scientificName, "")
+    testthat::expect_identical(values_state$eventDate, "")
+
+    meta_state <- empty_map_meta(terms)
+    testthat::expect_identical(meta_state$scientificName, expected_default_meta)
+    testthat::expect_identical(meta_state$eventDate, expected_default_meta)
+
+    previous_meta <- list(
+        status = "AUTO",
+        score = "0.95",
+        reason = "exact_match",
+        source = "auto"
+    )
+    edited <- build_manual_meta(previous_meta = previous_meta, has_value = TRUE)
+    cleared <- build_manual_meta(previous_meta = previous_meta, has_value = FALSE)
+
+    testthat::expect_identical(
+        edited,
+        list(
+            status = "EDITADO",
+            score = 0.95,
+            reason = "manual_adjust",
+            source = "manual"
+        )
+    )
+    testthat::expect_identical(
+        cleared,
+        list(
+            status = "MANUAL",
+            score = NA_real_,
+            reason = "manual_cleared",
+            source = "manual"
+        )
+    )
+})
+
+testthat::test_that("build_processed_mapping_df enforces occurrence_ids length", {
+    df <- data.frame(col_a = c("x", "y"), stringsAsFactors = FALSE)
+    terms <- list(list(term = "occurrenceID"))
+
+    testthat::expect_error(
+        build_processed_mapping_df(
+            df = df,
+            dwc_terms = terms,
+            map_values = list(),
+            occurrence_ids = "id-1"
+        ),
+        "occurrence_ids must have the same length as nrow\\(df\\)"
+    )
+})
+
+testthat::test_that("build_processed_mapping_df preserves processed_data contract for special fields and eventDate", {
+    df <- data.frame(
+        dataset_col = c("from_column_1", "from_column_2"),
+        start_mo = c("Aug", "foo"),
+        start_yr = c("2017", "2017"),
+        end_mo = c("Jun", "Jun"),
+        end_yr = c("2018", "2018"),
+        scientific_col = c("Panthera onca", "Leopardus"),
+        recorded_col = c("Ana; Bruno", NA_character_),
+        count_col = c("1", "2"),
+        stringsAsFactors = FALSE
+    )
+
+    dwc_terms <- list(
+        list(term = "occurrenceID"),
+        list(term = "datasetName"),
+        list(term = "modified"),
+        list(term = "license"),
+        list(term = "language"),
+        list(term = "eventDate"),
+        list(term = "scientificName"),
+        list(term = "recordedBy"),
+        list(term = "individualCount"),
+        list(term = "genus"),
+        list(term = "specificEpithet"),
+        list(term = "taxonRank")
+    )
+
+    map_values <- empty_map_values(vapply(dwc_terms, function(item) item$term, FUN.VALUE = character(1)))
+    map_values$datasetName <- "dataset_col"
+    map_values$eventDate <- c("start_mo", "start_yr", "end_mo", "end_yr")
+    map_values$scientificName <- "scientific_col"
+    map_values$recordedBy <- "recorded_col"
+    map_values$individualCount <- "count_col"
+
+    fixed_now <- as.POSIXct("2026-02-14 10:11:12", tz = "UTC")
+    result <- build_processed_mapping_df(
+        df = df,
+        dwc_terms = dwc_terms,
+        map_values = map_values,
+        occurrence_ids = c("id-1", "id-2"),
+        custom_dataset_name = "Dataset Custom",
+        modified_use_today = TRUE,
+        custom_modified_date = as.Date("2025-01-01"),
+        custom_license = c("CC0", "CC-BY"),
+        custom_language = c("pt", "en"),
+        now_utc = fixed_now
+    )
+
+    out <- result$data
+    testthat::expect_identical(result$eventdate_failure_count, 1L)
+    testthat::expect_identical(out$occurrenceID, c("id-1", "id-2"))
+    testthat::expect_identical(out$datasetName, c("Dataset Custom", "Dataset Custom"))
+    testthat::expect_identical(out$modified, c("2026-02-14T10:11:12Z", "2026-02-14T10:11:12Z"))
+    testthat::expect_identical(out$license, c("CC0", "CC0"))
+    testthat::expect_identical(out$language, c("pt", "pt"))
+    testthat::expect_identical(out$eventDate[[1]], "2017-08/2018-06")
+    testthat::expect_identical(out$eventDate[[2]], "foo | 2017 | Jun | 2018")
+    testthat::expect_identical(out$recordedBy[[1]], "Ana | Bruno")
+    testthat::expect_identical(out$recordedBy[[2]], "")
+    testthat::expect_identical(out$genus, c("Panthera", "Leopardus"))
+    testthat::expect_identical(out$specificEpithet, c("onca", ""))
+    testthat::expect_identical(out$taxonRank, c("species", "genus"))
+    testthat::expect_false(any(is.na(out)))
+})

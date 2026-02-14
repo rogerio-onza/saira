@@ -23,6 +23,13 @@ test_data_path <- function(filename) {
 
 helper_env <- environment()
 needed_functions <- c(
+    "has_selected_value",
+    "sanitize_map_selection",
+    "default_meta",
+    "empty_map_values",
+    "empty_map_meta",
+    "build_manual_meta",
+    "build_processed_mapping_df",
     "normalize_semicolon_tokens",
     "collapse_mapped_values",
     "detect_eventdate_roles",

@@ -760,20 +760,19 @@ Esperado: latitude → decimalLatitude, lat → verbatimLatitude
 15. ✅ Detecção de ambiguidade legítima
 16. ✅ Testes de integração com datasets reais
 
-### V3 - Aprendizado (3-4 semanas)
-**Objetivo**: Melhoria contínua
+### V3 - Templates (3-4 semanas)
+**Objetivo**: Reprodutibilidade e Compartilhamento
 
-17. ✅ Aliases de usuário (namespace pessoal)
-18. ✅ Dashboard de auditoria
-19. ✅ Sistema de revisão/reversão
-20. ✅ Logging de erros do motor para análise
+17. ✅ **Templates de Mapeamento (JSON)**: Salvar configurações de colunas para termos DwC em arquivos portáveis.
+18. ✅ **Export/Import de Mapeamentos**: Interface para baixar o JSON do estado atual e carregar em novos datasets.
+19. ✅ **Prioridade de Template**: O motor prioriza o arquivo carregado (`🤖 TEMPLATE`) sobre as sugestões nebulosas.
+20. ✅ **Validação de Schema**: Garantir que templates carregados sejam íntegros e sigam a versão atual do app.
 
 ### V4+ - Futuro (conforme demanda)
-- Namespace institucional (compartilhamento)
-- Aliases públicos validados
-- Processamento paralelo
-- Suporte a mais idiomas (francês, alemão)
-- Machine learning para casos não-estruturados (opcional, só se regras falharem consistentemente)
+- **Repositório de Templates**: Galeria interna com modelos para instituições famosas (ex: INPA, Reflora).
+- **Dashboard de Auditoria**: Visualizar inconsistências entre templates e dados reais.
+- **Processamento paralelo**: Para datasets com centenas de colunas.
+- **Machine learning**: Apenas para casos não-estruturados, caso as regras e templates falhem consistentemente.
 
 ---
 

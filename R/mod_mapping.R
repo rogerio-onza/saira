@@ -186,48 +186,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             vapply(dwc_all(), function(x) x$term, FUN.VALUE = character(1))
         })
 
-        has_selected_value <- function(value) {
-            !is.null(value) && length(value) > 0 && any(value != "")
-        }
-
-        sanitize_map_selection <- function(term, value) {
-            if (is.null(value) || length(value) == 0) {
-                return("")
-            }
-
-            value_chr <- as.character(value)
-            value_chr <- value_chr[!is.na(value_chr)]
-            value_chr <- trimws(value_chr)
-            value_chr <- value_chr[nzchar(value_chr)]
-
-            if (length(value_chr) == 0) {
-                return("")
-            }
-
-            if (identical(term, "scientificName")) {
-                return(value_chr[[1]])
-            }
-
-            value_chr
-        }
-
-        empty_map_values <- function(terms) {
-            stats::setNames(lapply(seq_along(terms), function(i) ""), terms)
-        }
-
-        default_meta <- function() {
-            list(
-                status = NA_character_,
-                score = NA_real_,
-                reason = NA_character_,
-                source = NA_character_
-            )
-        }
-
-        empty_map_meta <- function(terms) {
-            stats::setNames(lapply(seq_along(terms), function(i) default_meta()), terms)
-        }
-
         reason_key_from_code <- function(reason_code) {
             switch(
                 as.character(reason_code),
@@ -668,27 +626,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                         !isTRUE(rv$is_programmatic_update) &&
                         !is_programmatic_term) {
                         previous_meta <- shiny::isolate(rv$map_meta[[term]])
-                        previous_score <- if (is.null(previous_meta) || is.null(previous_meta$score)) {
-                            NA_real_
-                        } else {
-                            suppressWarnings(as.numeric(previous_meta$score))
-                        }
-
-                        if (has_selected_value(sanitized)) {
-                            rv$map_meta[[term]] <- list(
-                                status = "EDITADO",
-                                score = previous_score,
-                                reason = "manual_adjust",
-                                source = "manual"
-                            )
-                        } else {
-                            rv$map_meta[[term]] <- list(
-                                status = "MANUAL",
-                                score = NA_real_,
-                                reason = "manual_cleared",
-                                source = "manual"
-                            )
-                        }
+                        rv$map_meta[[term]] <- build_manual_meta(
+                            previous_meta = previous_meta,
+                            has_value = has_selected_value(sanitized)
+                        )
                     }
                 }
             }
@@ -700,27 +641,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             }
 
             previous_meta <- shiny::isolate(rv$map_meta[[term]])
-            previous_score <- if (is.null(previous_meta) || is.null(previous_meta$score)) {
-                NA_real_
-            } else {
-                suppressWarnings(as.numeric(previous_meta$score))
-            }
-
-            if (isTRUE(has_value)) {
-                rv$map_meta[[term]] <- list(
-                    status = "EDITADO",
-                    score = previous_score,
-                    reason = "manual_adjust",
-                    source = "manual"
-                )
-            } else {
-                rv$map_meta[[term]] <- list(
-                    status = "MANUAL",
-                    score = NA_real_,
-                    reason = "manual_cleared",
-                    source = "manual"
-                )
-            }
+            rv$map_meta[[term]] <- build_manual_meta(
+                previous_meta = previous_meta,
+                has_value = has_value
+            )
 
             invisible(NULL)
         }
@@ -1266,139 +1190,29 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             shiny::req(raw_data_r())
 
             df <- raw_data_r()
-            df_final <- data.frame(matrix(ncol = 0, nrow = nrow(df)))
-            eventdate_failure_count <- 0L
-            selected_terms <- character(0)
-
-            for (item in dwc_all()) {
-                term <- item$term
-
-                if (term == "occurrenceID") {
-                    if (is.null(rv$occurrence_ids) || length(rv$occurrence_ids) != nrow(df)) {
-                        rv$occurrence_ids <- ids::uuid(n = nrow(df))
-                    }
-                    df_final[[term]] <- rv$occurrence_ids
-                    selected_terms <- c(selected_terms, term)
-                    next
-                }
-
-                # --- Special fields with custom inputs ---
-                if (term == "datasetName") {
-                    custom_val <- input$custom_datasetName
-                    if (!is.null(custom_val) && nchar(trimws(custom_val)) > 0) {
-                        # Text input has priority over dropdown
-                        df_final[[term]] <- rep(trimws(custom_val), nrow(df))
-                        selected_terms <- c(selected_terms, term)
-                        next
-                    }
-                    # Fall through to generic column mapping below
-                }
-
-                if (term == "modified") {
-                    if (isTRUE(input$modified_use_today)) {
-                        # ISO 8601 format with time
-                        date_str <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-                        df_final[[term]] <- rep(date_str, nrow(df))
-                        selected_terms <- c(selected_terms, term)
-                    } else if (!is.null(input$custom_modified_date)) {
-                        # ISO 8601 date only
-                        date_str <- format(as.Date(input$custom_modified_date), "%Y-%m-%d")
-                        df_final[[term]] <- rep(date_str, nrow(df))
-                        selected_terms <- c(selected_terms, term)
-                    }
-                    next
-                }
-
-                if (term == "license") {
-                    if (!is.null(input$custom_license) && length(input$custom_license) > 0) {
-                        df_final[[term]] <- rep(input$custom_license[1], nrow(df))
-                        selected_terms <- c(selected_terms, term)
-                    }
-                    next
-                }
-
-                if (term == "language") {
-                    if (!is.null(input$custom_language) && length(input$custom_language) > 0) {
-                        df_final[[term]] <- rep(input$custom_language[1], nrow(df))
-                        selected_terms <- c(selected_terms, term)
-                    }
-                    next
-                }
-
-                user_cols <- sanitize_map_selection(term, rv$map_values[[term]])
-
-                if (has_selected_value(user_cols)) {
-                    if (term == "scientificName" && length(user_cols) > 1) {
-                        user_cols <- user_cols[[1]]
-                    }
-
-                    selected_terms <- c(selected_terms, term)
-
-                    if (term == "eventDate" && length(user_cols) == 4) {
-                        event_result <- build_eventdate_interval(
-                            df = df,
-                            cols = user_cols,
-                            fallback_raw = TRUE
-                        )
-                        df_final[[term]] <- event_result$values
-                        eventdate_failure_count <- eventdate_failure_count + event_result$failure_count
-                    } else if (length(user_cols) == 1) {
-                        df_final[[term]] <- normalize_semicolon_tokens(
-                            df[[user_cols[[1]]]],
-                            out_sep = " | "
-                        )
-                    } else {
-                        df_final[[term]] <- collapse_mapped_values(
-                            df = df,
-                            cols = user_cols,
-                            out_sep = " | "
-                        )
-                    }
-                }
+            if (is.null(rv$occurrence_ids) || length(rv$occurrence_ids) != nrow(df)) {
+                rv$occurrence_ids <- ids::uuid(n = nrow(df))
             }
 
-            if (!identical(rv$eventdate_parse_failures, eventdate_failure_count)) {
-                rv$eventdate_parse_failures <- eventdate_failure_count
+            processed_result <- build_processed_mapping_df(
+                df = df,
+                dwc_terms = dwc_all(),
+                map_values = rv$map_values,
+                occurrence_ids = rv$occurrence_ids,
+                custom_dataset_name = input$custom_datasetName,
+                modified_use_today = isTRUE(input$modified_use_today),
+                custom_modified_date = input$custom_modified_date,
+                custom_license = input$custom_license,
+                custom_language = input$custom_language,
+                now_utc = Sys.time(),
+                out_sep = " | "
+            )
+
+            if (!identical(rv$eventdate_parse_failures, processed_result$eventdate_failure_count)) {
+                rv$eventdate_parse_failures <- processed_result$eventdate_failure_count
             }
 
-            if ("scientificName" %in% names(df_final)) {
-                scientific_parts <- extract_scientific_name_components(df_final$scientificName)
-                selected_terms <- c(selected_terms, "genus", "specificEpithet", "taxonRank")
-
-                if (!"genus" %in% names(df_final)) {
-                    df_final$genus <- scientific_parts$genus
-                } else {
-                    df_final$genus <- fill_missing_character_values(
-                        df_final$genus,
-                        scientific_parts$genus
-                    )
-                }
-
-                if (!"specificEpithet" %in% names(df_final)) {
-                    df_final$specificEpithet <- scientific_parts$specificEpithet
-                } else {
-                    df_final$specificEpithet <- fill_missing_character_values(
-                        df_final$specificEpithet,
-                        scientific_parts$specificEpithet
-                    )
-                }
-
-                if (!"taxonRank" %in% names(df_final)) {
-                    df_final$taxonRank <- scientific_parts$taxonRank
-                } else {
-                    df_final$taxonRank <- fill_missing_character_values(
-                        df_final$taxonRank,
-                        scientific_parts$taxonRank
-                    )
-                }
-            }
-
-            selected_terms <- unique(selected_terms)
-            non_missing_cols <- colSums(!is.na(df_final)) > 0
-            keep_selected_cols <- names(df_final) %in% selected_terms
-            df_final <- df_final[, non_missing_cols | keep_selected_cols, drop = FALSE]
-            df_final <- replace_na_with_blank(df_final)
-            return(df_final)
+            return(processed_result$data)
         })
 
         # Explicit return
