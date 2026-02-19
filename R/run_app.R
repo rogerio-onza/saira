@@ -11,6 +11,8 @@
 #' @return A Shiny app object
 #' @export
 run_app <- function(...) {
+    options(encoding = "UTF-8")
+
     # Set max upload file size to 500 MB
     options(shiny.maxRequestSize = 500 * 1024^2)
 

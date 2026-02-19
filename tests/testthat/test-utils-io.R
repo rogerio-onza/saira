@@ -12,6 +12,57 @@ expected_year_from_two_digits <- function(two_digits) {
     )
 }
 
+write_temp_text_file <- function(lines, fileext = ".csv") {
+    path <- tempfile(fileext = fileext)
+    writeLines(lines, path, useBytes = TRUE)
+    path
+}
+
+testthat::test_that("detect_delimiter detects comma semicolon tab and tab tie rule", {
+    comma_file <- write_temp_text_file(c("a,b", "1,2"))
+    semicolon_file <- write_temp_text_file(c("a;b", "1;2"))
+    tab_file <- write_temp_text_file(c("a\tb", "1\t2"))
+    tie_file <- write_temp_text_file(c("a,b;c\td", "1,2;3\t4"))
+    on.exit(unlink(c(comma_file, semicolon_file, tab_file, tie_file)), add = TRUE)
+
+    testthat::expect_identical(detect_delimiter(comma_file), ",")
+    testthat::expect_identical(detect_delimiter(semicolon_file), ";")
+    testthat::expect_identical(detect_delimiter(tab_file), "\t")
+    testthat::expect_identical(detect_delimiter(tie_file), "\t")
+})
+
+testthat::test_that("detect_encoding returns UTF-8 when BOM is present", {
+    bom_file <- tempfile(fileext = ".csv")
+    on.exit(unlink(bom_file), add = TRUE)
+
+    bom <- as.raw(c(0xEF, 0xBB, 0xBF))
+    payload <- charToRaw("col1,col2\nA,B\n")
+    writeBin(c(bom, payload), bom_file)
+
+    testthat::expect_identical(detect_encoding(bom_file), "UTF-8")
+})
+
+testthat::test_that("read_biodiversity_csv reads file and repairs duplicate names", {
+    input_file <- write_temp_text_file(
+        c(
+            "name;name;count",
+            "A;B;1",
+            "C;D;2"
+        )
+    )
+    on.exit(unlink(input_file), add = TRUE)
+
+    out <- read_biodiversity_csv(input_file)
+
+    testthat::expect_s3_class(out, "data.frame")
+    testthat::expect_identical(detect_delimiter(input_file), ";")
+    testthat::expect_equal(nrow(out), 2L)
+    testthat::expect_identical(anyDuplicated(names(out)), 0L)
+    testthat::expect_equal(out[[1]], c("A", "C"))
+    testthat::expect_equal(out[[2]], c("B", "D"))
+    testthat::expect_equal(as.integer(out[[3]]), c(1L, 2L))
+})
+
 testthat::test_that("parse_dates_to_iso parses supported formats and keeps invalid as NA", {
     input <- c(
         "2023-12-25",

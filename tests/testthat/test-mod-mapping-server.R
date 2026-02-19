@@ -28,6 +28,77 @@ testthat::test_that("legacy auto-map works with toggle off and keeps badges hidd
     )
 })
 
+testthat::test_that("mod_mapping_server exposes lightweight preview_data alongside full reactive output", {
+    df <- data.frame(
+        scientificName = sprintf("name_%03d", seq_len(150)),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            returned <- session$getReturned()
+            testthat::expect_true(shiny::is.reactive(returned))
+
+            full_df <- returned()
+            testthat::expect_true(is.data.frame(full_df))
+            testthat::expect_equal(nrow(full_df), 150L)
+
+            preview_r <- attr(returned, "preview_data")
+            testthat::expect_true(shiny::is.reactive(preview_r))
+
+            preview_df <- preview_r()
+            testthat::expect_true(is.data.frame(preview_df))
+            testthat::expect_equal(nrow(preview_df), 100L)
+            testthat::expect_true("occurrenceID" %in% names(preview_df))
+            testthat::expect_match(preview_df$occurrenceID[[1]], "^preview-", perl = TRUE)
+        }
+    )
+})
+
+testthat::test_that("mod_mapping_server exposes validation_gate reactive with expected transitions", {
+    raw_data_state <- shiny::reactiveVal(NULL)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(raw_data_state()),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            returned <- session$getReturned()
+            validation_gate <- attr(returned, "validation_gate")
+
+            testthat::expect_true(shiny::is.reactive(validation_gate))
+
+            gate <- validation_gate()
+            testthat::expect_identical(gate$status, "no_data")
+            testthat::expect_false(gate$has_data)
+            testthat::expect_identical(gate$scientific_col, "")
+
+            raw_data_state(data.frame(scientificName = c("Puma concolor"), stringsAsFactors = FALSE))
+            session$flushReact()
+
+            gate <- validation_gate()
+            testthat::expect_identical(gate$status, "missing_scientific")
+            testthat::expect_true(gate$has_data)
+            testthat::expect_identical(gate$scientific_col, "")
+
+            session$setInputs(map_scientificName = "scientificName")
+            session$flushReact()
+
+            gate <- validation_gate()
+            testthat::expect_identical(gate$status, "ok")
+            testthat::expect_true(gate$has_data)
+            testthat::expect_identical(gate$scientific_col, "scientificName")
+        }
+    )
+})
+
 testthat::test_that("v1 auto-map applies metadata and manual override becomes EDITADO", {
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis"),
@@ -231,6 +302,151 @@ testthat::test_that("reactive mapping state remains consistent after filter togg
             testthat::expect_true("occurrenceID" %in% names(out_after_reset))
             testthat::expect_identical(rv$map_values$scientificName, "")
             testthat::expect_true(is.na(rv$map_meta$datasetName$status))
+        }
+    )
+})
+
+testthat::test_that("basisOfRecord assistant persists mapping and processed_data keeps single value", {
+    df <- data.frame(
+        basis_raw = c(
+            "Active searching, Camera trap, Opportunistic",
+            "humanobservation",
+            "Unknown method"
+        ),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(map_basisOfRecord = "basis_raw")
+            session$flushReact()
+
+            session$setInputs(open_basis_of_record_assistant = 1)
+            session$flushReact()
+
+            testthat::expect_true(nrow(rv$basis_of_record_entries) >= 2)
+
+            first_idx <- rv$basis_of_record_entries$idx[[1]]
+            first_key <- rv$basis_of_record_entries$key[[1]]
+            dynamic_input <- list()
+            dynamic_input[[paste0("basis_of_record_target_", first_idx)]] <- "HumanObservation"
+            do.call(session$setInputs, dynamic_input)
+            session$flushReact()
+
+            testthat::expect_false(first_key %in% names(rv$basis_of_record_draft_map))
+
+            session$setInputs(save_basis_of_record_assistant = 1)
+            session$flushReact()
+
+            testthat::expect_identical(rv$basis_of_record_map[[first_key]], "HumanObservation")
+
+            out <- processed_data()
+            testthat::expect_true("basisOfRecord" %in% names(out))
+            testthat::expect_false(any(grepl("\\|", out$basisOfRecord)))
+        }
+    )
+})
+
+testthat::test_that("basisOfRecord assistant allows overriding auto-suggestion with skip", {
+    df <- data.frame(
+        basis_raw = c("humanobservation"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(map_basisOfRecord = "basis_raw")
+            session$setInputs(open_basis_of_record_assistant = 1)
+            session$flushReact()
+
+            testthat::expect_identical(nrow(rv$basis_of_record_entries), 1L)
+            first_idx <- rv$basis_of_record_entries$idx[[1]]
+            first_key <- rv$basis_of_record_entries$key[[1]]
+
+            dynamic_input <- list()
+            dynamic_input[[paste0("basis_of_record_target_", first_idx)]] <- ""
+            do.call(session$setInputs, dynamic_input)
+            session$setInputs(save_basis_of_record_assistant = 1)
+            session$flushReact()
+
+            testthat::expect_true(first_key %in% names(rv$basis_of_record_map))
+            testthat::expect_identical(rv$basis_of_record_map[[first_key]], "")
+
+            out <- processed_data()
+            testthat::expect_identical(out$basisOfRecord[[1]], "")
+        }
+    )
+})
+
+testthat::test_that("basisOfRecord assistant map is cleared when source column changes", {
+    df <- data.frame(
+        bor_a = c("HumanObservation", "Unknown method"),
+        bor_b = c("MachineObservation", "PreservedSpecimen"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(map_basisOfRecord = "bor_a")
+            session$setInputs(open_basis_of_record_assistant = 1)
+            session$flushReact()
+
+            if (nrow(rv$basis_of_record_entries) > 0) {
+                first_idx <- rv$basis_of_record_entries$idx[[1]]
+                dynamic_input <- list()
+                dynamic_input[[paste0("basis_of_record_target_", first_idx)]] <- "HumanObservation"
+                do.call(session$setInputs, dynamic_input)
+                session$setInputs(save_basis_of_record_assistant = 1)
+                session$flushReact()
+                testthat::expect_true(length(rv$basis_of_record_map) > 0)
+            }
+
+            session$setInputs(map_basisOfRecord = "bor_b")
+            session$flushReact()
+
+            testthat::expect_identical(length(rv$basis_of_record_map), 0L)
+            testthat::expect_identical(rv$basis_of_record_source_col, "bor_b")
+        }
+    )
+})
+
+testthat::test_that("basisOfRecord assistant opens using input fallback when rv map is not yet synced", {
+    df <- data.frame(
+        basis_raw = c("HumanObservation", "Unknown method", "MachineObservation"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(map_basisOfRecord = "basis_raw")
+            session$flushReact()
+
+            rv$map_values$basisOfRecord <- ""
+            session$setInputs(open_basis_of_record_assistant = 1)
+            session$flushReact()
+
+            testthat::expect_identical(rv$basis_of_record_source_col, "basis_raw")
+            testthat::expect_true(nrow(rv$basis_of_record_entries) >= 2)
         }
     )
 })

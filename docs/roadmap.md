@@ -47,16 +47,31 @@ This document outlines the strategic evolution of the **Finch** Biodiversity Dat
   - Detect dates outside of historical collector ranges.
 - **Value**: automated scientific vetting.
 
+### 7. Conversor de GMS para Decimal 📍
+- **Objective**: Assist in digitizing legacy data.
+- **Details**: A utility to convert Degrees, Minutes, Seconds (e.g., 23°30'S) to Decimal (-23.5) during the mapping or validation phase.
+- **Value**: Extremely common pain point in herbarium/collection digitalization.
+
+### 8. Relatório de Qualidade (PDF/HTML) 📄
+- **Objective**: Offline data audit.
+- **Details**: A downloadable report summarizing the "DwC Compliance Score", listing specific missing fields and coordinate outliers.
+- **Value**: Formal documentation for curators and project leads.
+
 ---
 
 ## 🌐 Long-term (Vision)
 
-### 6. Institutional Template Hub 🏛️
+### 9. Darwin Core Archive (DwC-A) Packager 📦
+- **Objective**: Generate the "Gold Standard" of biodiversity data.
+- **Details**: Instead of just a CSV, the app generates the full `.zip` containing `occurrence.txt`, `meta.xml`, and the `eml.xml`.
+- **Value**: Professional-grade publication readiness.
+
+### 10. Institutional Template Hub 🏛️
 - **Objective**: A centralized cloud/local library of mapping templates.
-- **Details**: Pre-configured templates for SiBBr, Reflora, INPA, and other major biodiversity nodes.
+- **Details**: Pre-configured templates for SiBBr, Reflora, INPA, and other major nodes.
 - **Value**: Standards-as-a-service.
 
-### 7. Direct API Integration (IPT Connector) 📡
-- **Objective**: Bypass file downloads entirely.
-- **Details**: Directly push standardized data to an IPT instance via API.
+### 11. Direct API Integration (IPT Connector) 📡
+- **Objective**: Push data directly to a repository.
+- **Details**: Push standardized data and metadata to an IPT instance via API.
 - **Value**: Seamless end-to-end biodiversity data workflows.

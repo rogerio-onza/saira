@@ -4,7 +4,10 @@
 \alias{load_dwc_terms_rds}
 \title{Load Darwin Core terms from RDS}
 \usage{
-load_dwc_terms_rds()
+load_dwc_terms_rds(force = FALSE)
+}
+\arguments{
+\item{force}{Logical scalar. If TRUE, invalidate cache and reload from disk.}
 }
 \value{
 Data frame with DwC terms

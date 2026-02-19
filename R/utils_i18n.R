@@ -65,7 +65,7 @@ get_languages <- function() {
 #' @export
 get_language_name <- function(lang_code) {
     names <- list(
-        pt = "Português",
+        pt = "Portugu\u00EAs",
         en = "English"
     )
 

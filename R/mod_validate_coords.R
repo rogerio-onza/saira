@@ -139,7 +139,10 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r) {
                     tr("validate_coords_all_valid", lang_r())
                 )
             } else {
-                DT::dataTableOutput(ns("issues_table"))
+                shiny::div(
+                    class = "finch-table-shell",
+                    DT::dataTableOutput(ns("issues_table"))
+                )
             }
         })
 
@@ -151,8 +154,26 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r) {
 
             DT::datatable(
                 issues,
-                options = list(pageLength = 10, scrollX = TRUE),
-                class = "display compact",
+                options = list(
+                    pageLength = 10,
+                    lengthMenu = c(10, 25, 50, 100),
+                    scrollX = TRUE,
+                    autoWidth = FALSE,
+                    language = list(
+                        search = tr("validate_coords_datatable_search", lang_r()),
+                        lengthMenu = tr("validate_coords_datatable_length_menu", lang_r()),
+                        info = tr("validate_coords_datatable_info", lang_r()),
+                        emptyTable = tr("validate_coords_datatable_empty", lang_r()),
+                        zeroRecords = tr("validate_coords_datatable_zero_records", lang_r()),
+                        paginate = list(
+                            first = tr("validate_coords_datatable_first", lang_r()),
+                            last = tr("validate_coords_datatable_last", lang_r()),
+                            `next` = tr("validate_coords_datatable_next", lang_r()),
+                            previous = tr("validate_coords_datatable_prev", lang_r())
+                        )
+                    )
+                ),
+                class = "display compact stripe",
                 rownames = FALSE
             )
         })

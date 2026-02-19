@@ -1,6 +1,6 @@
 # Title: Tests for i18n dictionary and translations
 # Author: Rogerio Nunes Oliveira
-# Date: 2026-02-13
+# Date: 2026-02-14
 # Version: 1.0
 
 testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
@@ -15,14 +15,114 @@ testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
         "preview_datatable_search",
         "preview_datatable_length_menu",
         "preview_datatable_info",
+        "preview_stats_total_rows",
+        "preview_stats_with_coords",
+        "preview_stats_with_date",
+        "preview_stats_unique_ids",
+        "preview_stats_duplicates",
+        "preview_readiness_title",
+        "preview_readiness_present",
+        "preview_readiness_missing",
+        "preview_exporting",
+        "preview_no_data_title",
+        "preview_datatable_empty",
+        "preview_datatable_zero_records",
+        "preview_datatable_first",
+        "preview_datatable_last",
+        "preview_datatable_next",
+        "preview_datatable_prev",
         "validate_names_missing_scientific_name",
+        "validate_names_loading_title",
+        "validate_names_loading_status",
+        "validate_names_loading_phase_prepare",
+        "validate_names_loading_phase_provider",
+        "validate_names_loading_phase_consolidate",
+        "validate_names_loading_phase_finalize",
+        "validate_names_loading_phase_done",
+        "validate_names_loading_phase_failed",
+        "validate_names_unique_notice",
+        "validate_names_provider_used_summary",
+        "validate_names_provider_none_summary",
+        "validate_names_provider_failed_warning",
+        "validate_names_providers_card_title",
+        "validate_names_provider_gbif_full",
+        "validate_names_provider_gbif_desc",
+        "validate_names_provider_priority_badge",
+        "validate_names_priority_reset_notice",
+        "validate_names_options_card_title",
+        "validate_names_action_card_title",
+        "validate_names_action_metric_providers",
+        "validate_names_action_metric_unique",
+        "validate_names_action_metric_options",
+        "validate_names_ready_hint_title",
+        "validate_names_ready_hint_body",
+        "validate_names_progress_title",
+        "validate_names_progress_counter",
+        "validate_names_progress_phase_provider_query_batch",
+        "validate_names_stream_title",
+        "validate_names_stream_empty_filter",
+        "validate_names_stream_filter_all",
+        "validate_names_stream_filter_problems",
+        "validate_names_stream_filter_not_found",
+        "validate_names_stream_filter_ambiguous",
+        "validate_names_stream_filter_synonym",
+        "validate_names_stream_filter_ignored",
+        "validate_names_stream_window_note",
+        "validate_names_provider_failed_stream_item",
+        "validate_names_table_col_scientific_name",
+        "validate_names_table_col_status",
+        "validate_names_table_col_provider",
+        "validate_names_table_col_taxonomic_status",
+        "validate_names_table_col_query_name",
+        "validate_names_table_col_input_name",
+        "validate_names_status_badge_accepted",
+        "validate_names_status_badge_synonym",
+        "validate_names_status_badge_not_found",
+        "validate_names_status_badge_ambiguous",
+        "validate_names_status_badge_ignored",
+        "validate_names_datatable_search",
+        "validate_names_datatable_length_menu",
+        "validate_names_datatable_info",
+        "validate_names_datatable_empty",
+        "validate_names_datatable_zero_records",
+        "validate_names_datatable_first",
+        "validate_names_datatable_last",
+        "validate_names_datatable_next",
+        "validate_names_datatable_prev",
+        "validate_names_cancelled_notice",
         "validate_names_all_valid",
         "validate_coords_missing_columns",
         "validate_coords_all_valid",
+        "validate_coords_datatable_search",
+        "validate_coords_datatable_length_menu",
+        "validate_coords_datatable_info",
+        "validate_coords_datatable_empty",
+        "validate_coords_datatable_zero_records",
+        "validate_coords_datatable_first",
+        "validate_coords_datatable_last",
+        "validate_coords_datatable_next",
+        "validate_coords_datatable_prev",
         "wiki_search_placeholder",
         "wiki_datatable_search",
+        "wiki_datatable_length_menu",
+        "wiki_datatable_info",
+        "wiki_datatable_empty",
+        "wiki_datatable_zero_records",
+        "wiki_datatable_first",
+        "wiki_datatable_last",
+        "wiki_datatable_next",
+        "wiki_datatable_prev",
         "wiki_class_all",
-        "wiki_term"
+        "wiki_term",
+        "wiki_required_badge_required",
+        "wiki_required_badge_optional",
+        "bor_assistant_button",
+        "bor_assistant_title",
+        "bor_assistant_skip_option",
+        "bor_assistant_progress",
+        "bor_assistant_preview_title",
+        "bor_vocab_humanobservation",
+        "bor_desc_humanobservation"
     )
 
     missing_keys <- setdiff(required_keys, names(dict))
@@ -52,10 +152,33 @@ testthat::test_that("tr resolves onda 2 keys in pt and en", {
         "nav_validate",
         "mapping_dataset_placeholder",
         "preview_datatable_length_menu",
+        "preview_stats_total_rows",
+        "preview_readiness_title",
+        "preview_exporting",
+        "preview_datatable_empty",
+        "preview_datatable_next",
+        "validate_names_loading_title",
+        "validate_names_loading_status",
+        "validate_names_unique_notice",
+        "validate_names_progress_title",
+        "validate_names_stream_title",
+        "validate_names_stream_filter_problems",
+        "validate_names_status_badge_not_found",
+        "validate_names_datatable_length_menu",
+        "validate_names_cancelled_notice",
+        "validate_names_provider_used_summary",
         "validate_names_all_valid",
         "validate_coords_all_valid",
+        "validate_coords_datatable_length_menu",
         "wiki_class_all",
-        "wiki_term"
+        "wiki_datatable_length_menu",
+        "wiki_datatable_empty",
+        "wiki_required_badge_required",
+        "wiki_term",
+        "bor_assistant_title",
+        "bor_assistant_progress",
+        "bor_assistant_preview_title",
+        "bor_assistant_skip_option"
     )
 
     for (key in keys) {
@@ -76,4 +199,50 @@ testthat::test_that("pt-en alternation yields distinct navigation labels", {
     testthat::expect_false(identical(tr_fn("nav_validate", "pt"), tr_fn("nav_validate", "en")))
     testthat::expect_false(identical(tr_fn("validate_names_all_valid", "pt"), tr_fn("validate_names_all_valid", "en")))
     testthat::expect_false(identical(tr_fn("validate_coords_all_valid", "pt"), tr_fn("validate_coords_all_valid", "en")))
+})
+
+testthat::test_that("tr returns key placeholder and warning for missing key", {
+    tr_fn <- getFromNamespace("tr", "finch")
+
+    testthat::expect_warning(
+        value <- tr_fn("nonexistent_wave6_key", "en"),
+        "Translation key not found: nonexistent_wave6_key"
+    )
+    testthat::expect_identical(value, "[nonexistent_wave6_key]")
+})
+
+testthat::test_that("tr falls back to english and warns for missing language entry", {
+    tr_fn <- getFromNamespace("tr", "finch")
+
+    expected_en <- tr_fn("nav_home", "en")
+    testthat::expect_warning(
+        out <- tr_fn("nav_home", "es"),
+        "Translation missing for nav_home in es"
+    )
+    testthat::expect_identical(out, expected_en)
+})
+
+testthat::test_that("get_languages returns supported language codes", {
+    testthat::expect_identical(get_languages(), c("pt", "en"))
+})
+
+testthat::test_that("get_language_name resolves known and unknown language codes", {
+    testthat::expect_identical(get_language_name("pt"), "Português")
+    testthat::expect_identical(get_language_name("en"), "English")
+    testthat::expect_identical(get_language_name("es"), "es")
+})
+
+testthat::test_that("all dictionary keys contain non-empty pt and en translations", {
+    dict <- get("i18n_dict", envir = asNamespace("finch"))
+
+    for (key in names(dict)) {
+        testthat::expect_true(
+            !is.null(dict[[key]][["pt"]]) && nzchar(dict[[key]][["pt"]]),
+            info = paste("Missing pt translation for key:", key)
+        )
+        testthat::expect_true(
+            !is.null(dict[[key]][["en"]]) && nzchar(dict[[key]][["en"]]),
+            info = paste("Missing en translation for key:", key)
+        )
+    }
 })

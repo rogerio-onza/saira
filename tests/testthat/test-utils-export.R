@@ -3,6 +3,81 @@
 # Date: 2026-02-14
 # Version: 1.0
 
+testthat::test_that("abbreviate_license normalizes known values and preserves unknowns", {
+    licenses <- c(
+        "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
+        "http://creativecommons.org/publicdomain/zero/1.0/",
+        "CC0",
+        "https://creativecommons.org/licenses/by/4.0/",
+        "http://creativecommons.org/licenses/by/4.0/legalcode",
+        "cc-by",
+        "https://creativecommons.org/licenses/by-nc/4.0/",
+        "CC-BY-NC",
+        "custom-license",
+        NA_character_
+    )
+
+    out <- abbreviate_license(licenses)
+    expected <- c(
+        "CC0",
+        "CC0",
+        "CC0",
+        "CC-BY",
+        "CC-BY",
+        "CC-BY",
+        "CC-BY-NC",
+        "CC-BY-NC",
+        "custom-license",
+        NA_character_
+    )
+    testthat::expect_identical(out, expected)
+})
+
+testthat::test_that("abbreviate_license_column handles missing and existing columns", {
+    no_license <- data.frame(id = c("a", "b"), stringsAsFactors = FALSE)
+    with_license <- data.frame(
+        license = c("https://creativecommons.org/licenses/by/4.0/", "custom-license"),
+        stringsAsFactors = FALSE
+    )
+
+    testthat::expect_identical(abbreviate_license_column(no_license), no_license)
+    out <- abbreviate_license_column(with_license)
+    testthat::expect_identical(out$license, c("CC-BY", "custom-license"))
+})
+
+testthat::test_that("clean_coordinate_separators converts decimal comma and invalids to NA", {
+    df <- data.frame(
+        decimalLatitude = c("-23,55", "foo", ""),
+        decimalLongitude = c("-46,63", "181,00", "bar"),
+        stringsAsFactors = FALSE
+    )
+
+    out <- clean_coordinate_separators(df)
+    testthat::expect_equal(out$decimalLatitude, c(-23.55, NA_real_, NA_real_))
+    testthat::expect_equal(out$decimalLongitude, c(-46.63, 181.00, NA_real_))
+})
+
+testthat::test_that("add_occurrence_ids creates ids when column is absent", {
+    df <- data.frame(scientificName = c("A", "B", "C"), stringsAsFactors = FALSE)
+    out <- add_occurrence_ids(df)
+
+    testthat::expect_true("occurrenceID" %in% names(out))
+    testthat::expect_equal(length(out$occurrenceID), nrow(df))
+    testthat::expect_false(any(is.na(out$occurrenceID) | out$occurrenceID == ""))
+})
+
+testthat::test_that("add_occurrence_ids preserves existing values and fills missing", {
+    df <- data.frame(
+        occurrenceID = c("keep-id", "", NA_character_),
+        stringsAsFactors = FALSE
+    )
+    out <- add_occurrence_ids(df)
+
+    testthat::expect_identical(out$occurrenceID[1], "keep-id")
+    testthat::expect_false(any(is.na(out$occurrenceID) | out$occurrenceID == ""))
+    testthat::expect_true(all(out$occurrenceID[2:3] != "keep-id"))
+})
+
 testthat::test_that("fix_dates_to_iso delegates to parser and preserves raw invalid values", {
     input_dates <- c(
         "2023-12-25",

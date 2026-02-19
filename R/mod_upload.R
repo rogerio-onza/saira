@@ -35,31 +35,29 @@ mod_upload_ui <- function(id) {
                                 )
                             ),
 
-                            # File specifications box
+                            # Compact upload hints
                             shiny::div(
-                                class = "file-specs-box",
-                                shiny::tags$p(
+                                class = "upload-hints-compact",
+                                shiny::div(
+                                    class = "upload-hint-row hint-spec",
                                     shiny::icon("file", class = "fa-solid"),
                                     shiny::uiOutput(ns("max_size_text"), inline = TRUE)
                                 ),
-                                shiny::tags$p(
+                                shiny::div(
+                                    class = "upload-hint-row hint-spec",
                                     shiny::icon("code", class = "fa-solid"),
                                     shiny::uiOutput(ns("encoding_text"), inline = TRUE)
+                                ),
+                                shiny::div(
+                                    class = "upload-hint-row hint-privacy",
+                                    shiny::icon("lock", class = "fa-solid"),
+                                    shiny::uiOutput(ns("privacy_text"), inline = TRUE)
+                                ),
+                                shiny::div(
+                                    class = "upload-hint-row hint-recommendation",
+                                    shiny::icon("lightbulb", class = "fa-solid"),
+                                    shiny::uiOutput(ns("recommendation_text"), inline = TRUE)
                                 )
-                            ),
-
-                            # Privacy alert
-                            shiny::div(
-                                class = "alert alert-info privacy-alert",
-                                shiny::icon("lock", class = "fa-solid"),
-                                shiny::uiOutput(ns("privacy_text"), inline = TRUE)
-                            ),
-
-                            # Recommendations
-                            shiny::div(
-                                class = "recommendation-box",
-                                shiny::icon("lightbulb", class = "fa-solid"),
-                                shiny::uiOutput(ns("recommendation_text"), inline = TRUE)
                             ),
 
                             # Stats after upload
@@ -134,7 +132,7 @@ mod_upload_ui <- function(id) {
                         )
                     )
                 )
-            )
+                )
         )
     )
 }
@@ -225,8 +223,28 @@ mod_upload_server <- function(id, lang_r) {
             shiny::tags$span(tr("workflow_step4_desc", lang_r()))
         })
 
-        # Required DwC fields (static guidance)
-        required_terms <- get_required_dwc_terms()
+        # Required DwC fields aligned with preview readiness checklist
+        required_fields <- c(
+            "scientificName",
+            "eventDate",
+            "decimalLatitude",
+            "decimalLongitude",
+            "basisOfRecord",
+            "occurrenceID"
+        )
+        class_fallback <- c(
+            "scientificName" = "Taxon",
+            "eventDate" = "Occurrence",
+            "decimalLatitude" = "Location",
+            "decimalLongitude" = "Location",
+            "basisOfRecord" = "Record-level",
+            "occurrenceID" = "Occurrence"
+        )
+        category_order <- c("Record-level", "Occurrence", "Taxon", "Location")
+        required_terms_all <- get_dwc_terms()
+        required_terms <- required_terms_all[required_terms_all$term %in% required_fields, , drop = FALSE]
+        required_terms <- required_terms[match(required_fields, required_terms$term), , drop = FALSE]
+        required_terms <- required_terms[!is.na(required_terms$term), , drop = FALSE]
 
         output$dwc_required <- shiny::renderUI({
             lang <- lang_r()
@@ -243,33 +261,35 @@ mod_upload_server <- function(id, lang_r) {
             class_labels <- c(
                 "Record-level" = tr("class_record", lang),
                 "Occurrence" = tr("class_occurrence", lang),
-                "Event" = tr("class_event", lang),
                 "Location" = tr("class_location", lang),
-                "Identification" = tr("class_identification", lang),
                 "Taxon" = tr("class_taxon", lang)
             )
+            required_terms_view <- required_terms
+            fallback_classes <- unname(class_fallback[required_terms_view$term])
+            invalid_class <- !required_terms_view$class %in% names(class_labels)
+            required_terms_view$class[invalid_class] <- fallback_classes[invalid_class]
+            required_terms_view$class[is.na(required_terms_view$class)] <- "Record-level"
+            categories_available <- category_order[category_order %in% unique(required_terms_view$class)]
 
-            classes_order <- unique(required_terms$class)
+            groups_ui <- lapply(categories_available, function(category_name) {
+                category_label <- class_labels[[category_name]]
+                group_df <- required_terms_view[required_terms_view$class == category_name, , drop = FALSE]
 
-            groups_ui <- lapply(classes_order, function(class_name) {
-                group_df <- required_terms[required_terms$class == class_name, , drop = FALSE]
-                group_label <- if (!is.null(class_labels[[class_name]])) class_labels[[class_name]] else class_name
-
-                chips <- lapply(seq_len(nrow(group_df)), function(i) {
+                chips_ui <- lapply(seq_len(nrow(group_df)), function(i) {
                     term <- group_df$term[i]
                     definition <- if (lang == "pt") group_df$definition_pt[i] else group_df$definition_en[i]
 
                     shiny::tags$span(
                         class = "dwc-term-chip",
-                        title = definition,
+                        title = if (is.na(definition)) "" else definition,
                         term
                     )
                 })
 
                 shiny::div(
-                    class = "dwc-group",
-                    shiny::div(class = "dwc-group-title", group_label),
-                    shiny::div(class = "dwc-group-list", chips)
+                    class = "dwc-inline-group",
+                    shiny::div(class = "dwc-inline-group-label", category_label),
+                    shiny::div(class = "dwc-term-chip-list", chips_ui)
                 )
             })
 
@@ -286,7 +306,7 @@ mod_upload_server <- function(id, lang_r) {
                     class = "dwc-required-hint"
                 ),
                 shiny::div(
-                    class = "dwc-required-groups",
+                    class = "dwc-inline-groups",
                     groups_ui
                 )
             )

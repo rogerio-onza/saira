@@ -51,11 +51,136 @@ sanitize_map_selection <- function(term, value) {
         return("")
     }
 
-    if (identical(term, "scientificName")) {
+    if (term %in% c("scientificName", "basisOfRecord")) {
         return(value_chr[[1]])
     }
 
     value_chr
+}
+
+normalize_basis_of_record_key <- function(value) {
+    if (is_blank_value(value)) {
+        return("")
+    }
+
+    normalized <- trimws(as.character(value))
+    normalized <- tolower(normalized)
+    normalized
+}
+
+normalize_basis_of_record_keys <- function(values) {
+    chr <- as.character(values)
+    chr[is.na(values)] <- ""
+    tolower(trimws(chr))
+}
+
+sanitize_basis_of_record_term <- function(value) {
+    if (is_blank_value(value)) {
+        return("")
+    }
+
+    candidate <- trimws(as.character(value)[[1]])
+    allowed_terms <- get_basis_of_record_terms()
+
+    if (!candidate %in% allowed_terms) {
+        return("")
+    }
+
+    candidate
+}
+
+sanitize_basis_of_record_terms <- function(values) {
+    allowed <- get_basis_of_record_terms()
+    chr <- trimws(as.character(values))
+    chr[is.na(values)] <- ""
+    ifelse(chr %in% allowed, chr, "")
+}
+
+auto_suggest_basis_of_record_term <- function(raw_value) {
+    if (is_blank_value(raw_value)) {
+        return("")
+    }
+
+    allowed_terms <- get_basis_of_record_terms()
+    term_match <- match(
+        tolower(trimws(as.character(raw_value)[[1]])),
+        tolower(allowed_terms)
+    )
+
+    if (is.na(term_match)) {
+        return("")
+    }
+
+    allowed_terms[[term_match]]
+}
+
+sanitize_basis_of_record_map <- function(basis_of_record_map) {
+    if (is.null(basis_of_record_map) || length(basis_of_record_map) == 0) {
+        return(stats::setNames(character(0), character(0)))
+    }
+
+    raw_values <- unlist(basis_of_record_map, use.names = FALSE)
+    raw_keys <- names(basis_of_record_map)
+
+    if (is.null(raw_keys)) {
+        raw_keys <- rep("", length(raw_values))
+    }
+
+    clean_keys <- normalize_basis_of_record_keys(raw_keys)
+    clean_values <- sanitize_basis_of_record_terms(raw_values)
+    keep <- nzchar(clean_keys)
+
+    if (!any(keep)) {
+        return(stats::setNames(character(0), character(0)))
+    }
+
+    stats::setNames(clean_values[keep], clean_keys[keep])
+}
+
+extract_basis_of_record_unique_entries <- function(raw_values) {
+    raw_chr <- as.character(raw_values)
+    raw_chr[is.na(raw_values)] <- ""
+    raw_chr <- trimws(raw_chr)
+
+    keys <- normalize_basis_of_record_keys(raw_chr)
+    keep_idx <- which(nzchar(keys))
+    if (length(keep_idx) == 0) {
+        return(data.frame(
+            idx = integer(0),
+            key = character(0),
+            raw = character(0),
+            stringsAsFactors = FALSE
+        ))
+    }
+
+    keys_non_blank <- keys[keep_idx]
+    raw_non_blank <- raw_chr[keep_idx]
+    first_occurrence <- !duplicated(keys_non_blank)
+    unique_keys <- keys_non_blank[first_occurrence]
+    raw_display <- raw_non_blank[first_occurrence]
+
+    data.frame(
+        idx = seq_along(unique_keys),
+        key = unique_keys,
+        raw = raw_display,
+        stringsAsFactors = FALSE
+    )
+}
+
+map_basis_of_record_values <- function(raw_values, basis_of_record_map = NULL) {
+    raw_chr <- as.character(raw_values)
+    raw_chr[is.na(raw_values)] <- ""
+    keys <- normalize_basis_of_record_keys(raw_chr)
+
+    if (is.null(basis_of_record_map) || length(basis_of_record_map) == 0) {
+        return(rep("", length(keys)))
+    }
+
+    clean_map <- sanitize_basis_of_record_map(basis_of_record_map)
+    mapped <- unname(clean_map[keys])
+    mapped[is.na(mapped)] <- ""
+    mapped <- sanitize_basis_of_record_terms(mapped)
+    mapped
 }
 
 default_meta <- function() {
@@ -154,33 +279,79 @@ sanitize_synonyms_table <- function(synonyms_tbl) {
     clean_tbl
 }
 
-load_dwc_synonyms_v1 <- function(path = NULL) {
-    resolved_path <- NULL
+dwc_synonyms_cache_env <- new.env(parent = emptyenv())
+dwc_synonyms_cache_env$value <- NULL
+dwc_synonyms_cache_env$path <- NULL
+dwc_synonyms_cache_env$load_count <- 0L
 
-    if (!is.null(path)) {
-        resolved_path <- path
-    } else {
-        candidates <- c(
-            system.file("extdata", "dwc_synonyms_v1.rds", package = "finch"),
-            here::here("inst", "extdata", "dwc_synonyms_v1.rds"),
-            file.path("inst", "extdata", "dwc_synonyms_v1.rds"),
-            file.path("..", "..", "inst", "extdata", "dwc_synonyms_v1.rds"),
-            # Backward-compatible fallbacks for dev environments not yet migrated
-            system.file("data", "dwc_synonyms_v1.rds", package = "finch"),
-            here::here("data", "dwc_synonyms_v1.rds"),
-            file.path("data", "dwc_synonyms_v1.rds"),
-            file.path("..", "..", "data", "dwc_synonyms_v1.rds")
-        )
-        candidates <- unique(candidates[nzchar(candidates)])
-        resolved_path <- candidates[file.exists(candidates)][1]
+validate_synonyms_force_flag <- function(force) {
+    if (!is.logical(force) || length(force) != 1L || is.na(force)) {
+        stop("force must be a single TRUE or FALSE value.")
     }
+}
 
-    if (is.null(resolved_path) || !file.exists(resolved_path)) {
+resolve_dwc_synonyms_path <- function() {
+    candidates <- c(
+        system.file("extdata", "dwc_synonyms_v1.rds", package = "finch"),
+        here::here("inst", "extdata", "dwc_synonyms_v1.rds"),
+        file.path("inst", "extdata", "dwc_synonyms_v1.rds"),
+        file.path("..", "..", "inst", "extdata", "dwc_synonyms_v1.rds")
+    )
+    candidates <- unique(candidates[nzchar(candidates)])
+    path <- candidates[file.exists(candidates)][1]
+
+    if (is.null(path) || !file.exists(path)) {
         stop("dwc_synonyms_v1.rds not found in expected locations.")
     }
 
-    synonyms_tbl <- readRDS(resolved_path)
-    sanitize_synonyms_table(synonyms_tbl)
+    path
+}
+
+resolve_explicit_synonyms_path <- function(path) {
+    if (!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path)) {
+        stop("path must be a non-empty character scalar when provided.")
+    }
+    if (!file.exists(path)) {
+        stop("dwc_synonyms_v1.rds not found at explicit path.")
+    }
+    path
+}
+
+reset_dwc_synonyms_cache <- function() {
+    dwc_synonyms_cache_env$value <- NULL
+    dwc_synonyms_cache_env$path <- NULL
+    dwc_synonyms_cache_env$load_count <- 0L
+    invisible(TRUE)
+}
+
+dwc_synonyms_cache_state <- function() {
+    list(
+        has_value = !is.null(dwc_synonyms_cache_env$value),
+        path = dwc_synonyms_cache_env$path,
+        load_count = as.integer(dwc_synonyms_cache_env$load_count)
+    )
+}
+
+load_dwc_synonyms_v1 <- function(path = NULL, force = FALSE) {
+    validate_synonyms_force_flag(force)
+
+    if (!is.null(path)) {
+        explicit_path <- resolve_explicit_synonyms_path(path)
+        return(sanitize_synonyms_table(readRDS(explicit_path)))
+    }
+
+    if (!isTRUE(force) && !is.null(dwc_synonyms_cache_env$value)) {
+        return(dwc_synonyms_cache_env$value)
+    }
+
+    resolved_path <- resolve_dwc_synonyms_path()
+    synonyms_tbl <- sanitize_synonyms_table(readRDS(resolved_path))
+
+    dwc_synonyms_cache_env$value <- synonyms_tbl
+    dwc_synonyms_cache_env$path <- resolved_path
+    dwc_synonyms_cache_env$load_count <- as.integer(dwc_synonyms_cache_env$load_count) + 1L
+
+    synonyms_tbl
 }
 
 tokenize_for_matching <- function(x) {
@@ -1018,17 +1189,18 @@ build_eventdate_interval <- function(df, cols, fallback_raw = TRUE) {
 }
 
 build_processed_mapping_df <- function(
-    df,
-    dwc_terms,
-    map_values,
-    occurrence_ids,
-    custom_dataset_name = NULL,
-    modified_use_today = FALSE,
-    custom_modified_date = NULL,
-    custom_license = NULL,
-    custom_language = NULL,
-    now_utc = Sys.time(),
-    out_sep = " | "
+  df,
+  dwc_terms,
+  map_values,
+  occurrence_ids,
+  custom_dataset_name = NULL,
+  modified_use_today = FALSE,
+  custom_modified_date = NULL,
+  custom_license = NULL,
+  custom_language = NULL,
+  basis_of_record_map = NULL,
+  now_utc = Sys.time(),
+  out_sep = " | "
 ) {
     if (length(occurrence_ids) != nrow(df)) {
         stop("occurrence_ids must have the same length as nrow(df).")
@@ -1095,7 +1267,12 @@ build_processed_mapping_df <- function(
 
         selected_terms <- c(selected_terms, term)
 
-        if (term == "eventDate" && length(user_cols) == 4) {
+        if (term == "basisOfRecord") {
+            df_final[[term]] <- map_basis_of_record_values(
+                raw_values = df[[user_cols[[1]]]],
+                basis_of_record_map = basis_of_record_map
+            )
+        } else if (term == "eventDate" && length(user_cols) == 4) {
             event_result <- build_eventdate_interval(
                 df = df,
                 cols = user_cols,

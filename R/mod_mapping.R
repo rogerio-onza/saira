@@ -131,6 +131,17 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             last_eventdate_warn_count = NA_integer_,
             map_values = list(),
             map_meta = list(),
+            basis_of_record_map = stats::setNames(character(0), character(0)),
+            basis_of_record_auto_map = stats::setNames(character(0), character(0)),
+            basis_of_record_source_col = "",
+            basis_of_record_draft_map = stats::setNames(character(0), character(0)),
+            basis_of_record_entries = data.frame(
+                idx = integer(0),
+                key = character(0),
+                raw = character(0),
+                stringsAsFactors = FALSE
+            ),
+            basis_of_record_page = 1L,
             is_programmatic_update = FALSE,
             programmatic_terms = character(0),
             automap_progress = 0L,
@@ -187,8 +198,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         })
 
         reason_key_from_code <- function(reason_code) {
-            switch(
-                as.character(reason_code),
+            switch(as.character(reason_code),
                 exact_match = "badge_reason_exact_match",
                 known_synonym = "badge_reason_known_synonym",
                 content_validated = "badge_reason_content_validated",
@@ -210,8 +220,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             }
 
             status <- toupper(as.character(meta$status)[1])
-            badge_class <- switch(
-                status,
+            badge_class <- switch(status,
                 AUTO = "badge field-status-badge bg-success",
                 SUGERIDO = "badge field-status-badge bg-warning",
                 EDITADO = "badge field-status-badge bg-info",
@@ -219,8 +228,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 "badge field-status-badge bg-light text-muted border"
             )
 
-            badge_label <- switch(
-                status,
+            badge_label <- switch(status,
                 AUTO = tr("badge_auto", lang_r()),
                 SUGERIDO = tr("badge_suggested", lang_r()),
                 EDITADO = tr("badge_edited", lang_r()),
@@ -253,6 +261,101 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 rv$programmatic_terms <- unique(c(rv$programmatic_terms, term))
                 shiny::updateSelectInput(session, input_id, selected = sanitized_value)
             }
+        }
+
+        basis_of_record_page_size <- 20L
+
+        get_basis_of_record_source_col <- function() {
+            selected <- sanitize_map_selection("basisOfRecord", rv$map_values[["basisOfRecord"]])
+            if (has_selected_value(selected)) {
+                return(as.character(selected[[1]]))
+            }
+
+            input_selected <- sanitize_map_selection("basisOfRecord", input$map_basisOfRecord)
+            if (has_selected_value(input_selected)) {
+                return(as.character(input_selected[[1]]))
+            }
+
+            ""
+        }
+
+        basis_of_record_page_count <- function() {
+            total_items <- nrow(rv$basis_of_record_entries)
+            if (total_items <= 0) {
+                return(1L)
+            }
+
+            max(1L, as.integer(ceiling(total_items / basis_of_record_page_size)))
+        }
+
+        get_basis_of_record_page_entries <- function() {
+            entries <- rv$basis_of_record_entries
+            if (nrow(entries) == 0) {
+                return(entries)
+            }
+
+            total_pages <- basis_of_record_page_count()
+            current_page <- max(1L, min(as.integer(rv$basis_of_record_page), total_pages))
+            start_idx <- ((current_page - 1L) * basis_of_record_page_size) + 1L
+            end_idx <- min(nrow(entries), start_idx + basis_of_record_page_size - 1L)
+            entries[start_idx:end_idx, , drop = FALSE]
+        }
+
+        basis_of_record_target_choices <- function() {
+            get_basis_of_record_term_choices(
+                lang = lang_r(),
+                include_skip = TRUE,
+                with_description = TRUE,
+                skip_label = tr("bor_assistant_skip_option", lang_r())
+            )
+        }
+
+        get_effective_basis_of_record_map <- function() {
+            entries <- rv$basis_of_record_entries
+            if (nrow(entries) == 0) {
+                return(stats::setNames(character(0), character(0)))
+            }
+
+            keys <- entries$key
+            auto_map <- sanitize_basis_of_record_map(rv$basis_of_record_auto_map)
+            draft_map <- sanitize_basis_of_record_map(rv$basis_of_record_draft_map)
+
+            effective <- auto_map[keys]
+            effective[is.na(effective)] <- ""
+
+            draft_values <- draft_map[keys]
+            has_draft <- !is.na(draft_values)
+            effective[has_draft] <- draft_values[has_draft]
+
+            effective <- sanitize_basis_of_record_terms(effective)
+            stats::setNames(as.character(effective), keys)
+        }
+
+        sync_current_page_to_draft <- function() {
+            entries <- get_basis_of_record_page_entries()
+            if (nrow(entries) == 0) {
+                return(invisible(NULL))
+            }
+
+            for (i in seq_len(nrow(entries))) {
+                entry <- entries[i, , drop = FALSE]
+                input_id <- paste0("basis_of_record_target_", entry$idx[[1]])
+                input_value <- input[[input_id]]
+                if (is.null(input_value)) {
+                    next
+                }
+
+                sanitized_value <- sanitize_basis_of_record_term(input_value)
+                key <- entry$key[[1]]
+                has_key <- key %in% names(rv$basis_of_record_draft_map)
+                current_value <- if (has_key) as.character(rv$basis_of_record_draft_map[[key]])[[1]] else NA_character_
+
+                if (!has_key || !identical(current_value, sanitized_value)) {
+                    rv$basis_of_record_draft_map[[entry$key[[1]]]] <- sanitized_value
+                }
+            }
+
+            invisible(NULL)
         }
 
         loading_phrase_specs <- list(
@@ -542,6 +645,294 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         })
         shiny::outputOptions(output, "file_uploaded", suspendWhenHidden = FALSE)
 
+        output$basis_of_record_assistant_progress <- shiny::renderUI({
+            entries <- rv$basis_of_record_entries
+            total <- nrow(entries)
+            if (total == 0) {
+                return(NULL)
+            }
+
+            effective_map <- get_effective_basis_of_record_map()
+            mapped_values <- effective_map[entries$key]
+            mapped_values[is.na(mapped_values)] <- ""
+            mapped_count <- sum(nzchar(mapped_values))
+            progress_pct <- as.integer(round((mapped_count / total) * 100))
+
+            shiny::div(
+                class = "bor-assistant-progress-wrap",
+                shiny::div(
+                    class = "bor-assistant-progress-text",
+                    sprintf(tr("bor_assistant_progress", lang_r()), mapped_count, total)
+                ),
+                shiny::div(
+                    class = "bor-assistant-progress",
+                    shiny::div(
+                        class = "bor-assistant-progress-bar",
+                        style = paste0("width: ", progress_pct, "%;")
+                    )
+                )
+            )
+        })
+
+        output$basis_of_record_assistant_pagination <- shiny::renderUI({
+            entries <- rv$basis_of_record_entries
+            total <- nrow(entries)
+            if (total <= basis_of_record_page_size) {
+                return(NULL)
+            }
+
+            shiny::div(
+                class = "bor-assistant-pagination",
+                shiny::actionButton(
+                    ns("basis_of_record_page_prev"),
+                    label = tr("bor_assistant_prev", lang_r()),
+                    class = "btn btn-secondary btn-sm"
+                ),
+                shiny::actionButton(
+                    ns("basis_of_record_page_next"),
+                    label = tr("bor_assistant_next", lang_r()),
+                    class = "btn btn-secondary btn-sm"
+                )
+            )
+        })
+
+        output$basis_of_record_assistant_rows <- shiny::renderUI({
+            entries <- get_basis_of_record_page_entries()
+            if (nrow(entries) == 0) {
+                return(shiny::div(
+                    class = "alert alert-info",
+                    tr("bor_assistant_no_values", lang_r())
+                ))
+            }
+
+            choices <- basis_of_record_target_choices()
+            effective_map <- get_effective_basis_of_record_map()
+
+            shiny::tags$table(
+                class = "table table-sm bor-assistant-table",
+                shiny::tags$thead(
+                    shiny::tags$tr(
+                        shiny::tags$th(tr("bor_assistant_col_raw", lang_r())),
+                        shiny::tags$th(tr("bor_assistant_col_target", lang_r()))
+                    )
+                ),
+                shiny::tags$tbody(
+                    lapply(seq_len(nrow(entries)), function(i) {
+                        entry <- entries[i, , drop = FALSE]
+                        current_target <- effective_map[[entry$key[[1]]]]
+                        if (is.null(current_target)) {
+                            current_target <- ""
+                        }
+
+                        shiny::tags$tr(
+                            shiny::tags$td(
+                                shiny::div(
+                                    class = "bor-assistant-raw-value",
+                                    entry$raw[[1]]
+                                )
+                            ),
+                            shiny::tags$td(
+                                shiny::selectInput(
+                                    ns(paste0("basis_of_record_target_", entry$idx[[1]])),
+                                    label = NULL,
+                                    choices = choices,
+                                    selected = current_target,
+                                    multiple = FALSE,
+                                    selectize = FALSE,
+                                    width = "100%"
+                                )
+                            )
+                        )
+                    })
+                )
+            )
+        })
+
+        output$basis_of_record_assistant_preview <- shiny::renderUI({
+            shiny::req(raw_data_r())
+            source_col <- get_basis_of_record_source_col()
+            if (!nzchar(source_col) || !(source_col %in% names(raw_data_r()))) {
+                return(NULL)
+            }
+
+            all_raw <- as.character(raw_data_r()[[source_col]])
+            all_raw[is.na(raw_data_r()[[source_col]])] <- ""
+            effective_map <- get_effective_basis_of_record_map()
+
+            preview_n <- min(5L, length(all_raw))
+            if (preview_n == 0) {
+                return(NULL)
+            }
+
+            preview_raw <- trimws(all_raw[seq_len(preview_n)])
+            preview_mapped <- map_basis_of_record_values(
+                all_raw[seq_len(preview_n)],
+                effective_map
+            )
+            preview_mapped_display <- ifelse(
+                nzchar(preview_mapped),
+                preview_mapped,
+                tr("bor_assistant_empty_value", lang_r())
+            )
+
+            keys <- normalize_basis_of_record_keys(all_raw)
+            clean_map <- sanitize_basis_of_record_map(effective_map)
+            mapped_all <- unname(clean_map[keys])
+            mapped_all[is.na(mapped_all)] <- ""
+            non_blank_raw <- nzchar(trimws(all_raw))
+            unmapped_row_count <- sum(non_blank_raw & !nzchar(mapped_all))
+
+            shiny::tagList(
+                shiny::div(
+                    class = "bor-assistant-preview-title",
+                    tr("bor_assistant_preview_title", lang_r())
+                ),
+                shiny::tags$table(
+                    class = "table table-sm bor-assistant-preview-table",
+                    shiny::tags$thead(
+                        shiny::tags$tr(
+                            shiny::tags$th(tr("bor_assistant_preview_original", lang_r())),
+                            shiny::tags$th(tr("bor_assistant_preview_result", lang_r()))
+                        )
+                    ),
+                    shiny::tags$tbody(
+                        lapply(seq_len(preview_n), function(i) {
+                            shiny::tags$tr(
+                                shiny::tags$td(preview_raw[[i]]),
+                                shiny::tags$td(preview_mapped_display[[i]])
+                            )
+                        })
+                    )
+                ),
+                shiny::div(
+                    class = "bor-assistant-unmapped-count",
+                    sprintf(tr("bor_assistant_unmapped_rows", lang_r()), unmapped_row_count)
+                )
+            )
+        })
+
+        shiny::observeEvent(input$basis_of_record_page_prev,
+            {
+                sync_current_page_to_draft()
+                current_page <- as.integer(rv$basis_of_record_page)
+                rv$basis_of_record_page <- max(1L, current_page - 1L)
+            },
+            ignoreInit = TRUE
+        )
+
+        shiny::observeEvent(input$basis_of_record_page_next,
+            {
+                sync_current_page_to_draft()
+                current_page <- as.integer(rv$basis_of_record_page)
+                rv$basis_of_record_page <- min(basis_of_record_page_count(), current_page + 1L)
+            },
+            ignoreInit = TRUE
+        )
+
+        shiny::observeEvent(input$open_basis_of_record_assistant, {
+            shiny::req(raw_data_r())
+
+            tryCatch(
+                {
+                    source_col <- get_basis_of_record_source_col()
+                    if (!nzchar(source_col) || !(source_col %in% names(raw_data_r()))) {
+                        shiny::showNotification(
+                            tr("bor_assistant_select_column_first", lang_r()),
+                            type = "warning",
+                            duration = 4
+                        )
+                        return(invisible(NULL))
+                    }
+
+                    entries <- extract_basis_of_record_unique_entries(raw_data_r()[[source_col]])
+                    existing_map <- sanitize_basis_of_record_map(rv$basis_of_record_map)
+                    next_map <- existing_map
+                    next_auto <- stats::setNames(character(0), character(0))
+
+                    if (nrow(entries) > 0) {
+                        allowed_terms <- get_basis_of_record_terms()
+                        match_idx <- match(
+                            tolower(trimws(entries$raw)),
+                            tolower(allowed_terms)
+                        )
+                        suggested <- rep("", nrow(entries))
+                        matched <- !is.na(match_idx)
+                        suggested[matched] <- allowed_terms[match_idx[matched]]
+                        next_auto <- stats::setNames(suggested, entries$key)
+                    }
+
+                    rv$basis_of_record_entries <- entries
+                    rv$basis_of_record_auto_map <- next_auto
+                    rv$basis_of_record_draft_map <- next_map
+                    rv$basis_of_record_page <- 1L
+                    rv$basis_of_record_source_col <- source_col
+
+                    shiny::showModal(shiny::modalDialog(
+                        title = tr("bor_assistant_title", lang_r()),
+                        size = "l",
+                        easyClose = TRUE,
+                        shiny::div(
+                            class = "bor-assistant-modal",
+                            shiny::p(
+                                class = "bor-assistant-subtitle",
+                                tr("bor_assistant_subtitle", lang_r())
+                            ),
+                            shiny::uiOutput(ns("basis_of_record_assistant_progress")),
+                            shiny::uiOutput(ns("basis_of_record_assistant_pagination")),
+                            shiny::div(
+                                class = "bor-assistant-table-wrap",
+                                shiny::uiOutput(ns("basis_of_record_assistant_rows"))
+                            ),
+                            shiny::hr(),
+                            shiny::uiOutput(ns("basis_of_record_assistant_preview"))
+                        ),
+                        footer = shiny::tagList(
+                            shiny::modalButton(tr("btn_cancel", lang_r())),
+                            shiny::actionButton(
+                                ns("save_basis_of_record_assistant"),
+                                tr("bor_assistant_save", lang_r()),
+                                class = "btn-primary"
+                            )
+                        )
+                    ))
+                },
+                error = function(e) {
+                    shiny::showNotification(
+                        sprintf(tr("bor_assistant_open_error", lang_r()), e$message),
+                        type = "error",
+                        duration = 7
+                    )
+                }
+            )
+        })
+
+        shiny::observeEvent(input$save_basis_of_record_assistant, {
+            sync_current_page_to_draft()
+            entries <- rv$basis_of_record_entries
+            effective_map <- get_effective_basis_of_record_map()
+            final_map <- stats::setNames(character(0), character(0))
+
+            if (nrow(entries) > 0) {
+                final_map <- effective_map[entries$key]
+                final_map[is.na(final_map)] <- ""
+                final_map <- stats::setNames(as.character(final_map), entries$key)
+            }
+
+            rv$basis_of_record_map <- final_map
+            rv$basis_of_record_source_col <- get_basis_of_record_source_col()
+
+            shiny::removeModal()
+            shiny::showNotification(
+                sprintf(
+                    tr("bor_assistant_saved", lang_r()),
+                    sum(vapply(final_map, function(x) nzchar(x), FUN.VALUE = logical(1))),
+                    length(final_map)
+                ),
+                type = "message",
+                duration = 4
+            )
+        })
+
         shiny::observe({
             term_names <- all_term_names()
             if (length(term_names) == 0) {
@@ -578,6 +969,17 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 rv$eventdate_parse_failures <- 0L
                 rv$last_eventdate_warn_count <- NA_integer_
                 rv$programmatic_terms <- character(0)
+                rv$basis_of_record_map <- stats::setNames(character(0), character(0))
+                rv$basis_of_record_auto_map <- stats::setNames(character(0), character(0))
+                rv$basis_of_record_source_col <- ""
+                rv$basis_of_record_draft_map <- stats::setNames(character(0), character(0))
+                rv$basis_of_record_entries <- data.frame(
+                    idx = integer(0),
+                    key = character(0),
+                    raw = character(0),
+                    stringsAsFactors = FALSE
+                )
+                rv$basis_of_record_page <- 1L
             },
             ignoreNULL = TRUE
         )
@@ -604,7 +1006,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
                 sanitized <- sanitize_map_selection(term, input_value)
 
-                if (identical(term, "scientificName") && length(input_value) > 1) {
+                if (term %in% c("scientificName", "basisOfRecord") && length(input_value) > 1) {
                     rv$is_programmatic_update <- TRUE
                     shiny::updateSelectInput(session, input_id, selected = sanitized)
                     rv$is_programmatic_update <- FALSE
@@ -617,6 +1019,30 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
                 if (!identical(old_value, sanitized)) {
                     rv$map_values[[term]] <- sanitized
+
+                    if (identical(term, "basisOfRecord")) {
+                        next_source_col <- if (has_selected_value(sanitized)) {
+                            as.character(sanitized[[1]])
+                        } else {
+                            ""
+                        }
+                        previous_source_col <- shiny::isolate(rv$basis_of_record_source_col)
+
+                        if (!identical(previous_source_col, next_source_col)) {
+                            rv$basis_of_record_source_col <- next_source_col
+                            rv$basis_of_record_map <- stats::setNames(character(0), character(0))
+                            rv$basis_of_record_auto_map <- stats::setNames(character(0), character(0))
+                            rv$basis_of_record_draft_map <- stats::setNames(character(0), character(0))
+                            rv$basis_of_record_entries <- data.frame(
+                                idx = integer(0),
+                                key = character(0),
+                                raw = character(0),
+                                stringsAsFactors = FALSE
+                            )
+                            rv$basis_of_record_page <- 1L
+                        }
+                    }
+
                     is_programmatic_term <- term %in% shiny::isolate(rv$programmatic_terms)
                     if (is_programmatic_term) {
                         rv$programmatic_terms <- setdiff(shiny::isolate(rv$programmatic_terms), term)
@@ -923,6 +1349,32 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                                 width = "100%"
                                             )
                                         )
+                                    } else if (term == "basisOfRecord") {
+                                        basis_selected <- if (has_selected_value(current_val)) {
+                                            as.character(current_val[[1]])
+                                        } else {
+                                            ""
+                                        }
+
+                                        shiny::tagList(
+                                            shiny::selectInput(
+                                                ns(paste0("map_", term)),
+                                                NULL,
+                                                choices = cols,
+                                                selected = basis_selected,
+                                                multiple = FALSE,
+                                                selectize = TRUE,
+                                                width = "100%"
+                                            ),
+                                            if (has_selected_value(basis_selected)) {
+                                                shiny::actionButton(
+                                                    ns("open_basis_of_record_assistant"),
+                                                    tr("bor_assistant_button", lang_r()),
+                                                    class = "btn btn-outline-primary btn-sm w-100 mt-2",
+                                                    icon = shiny::icon("list-check")
+                                                )
+                                            }
+                                        )
                                     } else {
                                         bslib::layout_columns(
                                             col_widths = if (item$sep != "") c(8, 4) else c(12),
@@ -931,7 +1383,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                                 NULL,
                                                 choices = cols,
                                                 selected = if (has_selected_value(current_val)) {
-                                                    if (term == "scientificName") {
+                                                    if (term %in% c("scientificName", "basisOfRecord")) {
                                                         if (length(current_val) > 0) current_val[[1]] else ""
                                                     } else {
                                                         current_val
@@ -939,7 +1391,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                                 } else {
                                                     ""
                                                 },
-                                                multiple = term != "scientificName",
+                                                multiple = !(term %in% c("scientificName", "basisOfRecord")),
                                                 selectize = TRUE,
                                                 width = "100%"
                                             ),
@@ -974,10 +1426,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             if (!isTRUE(input$enable_automap_v1)) {
                 mapped_count <- 0L
                 rv$is_programmatic_update <- TRUE
-                on.exit({
-                    rv$is_programmatic_update <- FALSE
-                    rv$programmatic_terms <- character(0)
-                }, add = TRUE)
+                on.exit(
+                    {
+                        rv$is_programmatic_update <- FALSE
+                        rv$programmatic_terms <- character(0)
+                    },
+                    add = TRUE
+                )
 
                 total_terms <- max(1L, length(terms))
                 for (i in seq_along(terms)) {
@@ -1008,70 +1463,76 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             auto_count <- 0L
             suggested_count <- 0L
 
-            tryCatch({
-                dwc_terms_df <- load_dwc_terms_rds()
-                synonyms_tbl <- load_dwc_synonyms_v1()
-                auto_results <- run_automap_v1(
-                    df = raw_data_r(),
-                    dwc_terms_df = dwc_terms_df,
-                    synonyms_tbl = synonyms_tbl
-                )
-
-                rv$is_programmatic_update <- TRUE
-                on.exit({
-                    rv$is_programmatic_update <- FALSE
-                    rv$programmatic_terms <- character(0)
-                }, add = TRUE)
-                next_meta <- empty_map_meta(term_names)
-                total_rows <- max(1L, nrow(auto_results))
-
-                for (i in seq_len(nrow(auto_results))) {
-                    term <- as.character(auto_results$term[[i]])
-                    status <- as.character(auto_results$status[[i]])
-                    reason <- as.character(auto_results$reason[[i]])
-                    score_value <- suppressWarnings(as.numeric(auto_results$final_score[[i]]))
-                    selected_col <- as.character(auto_results$selected_col[[i]])
-                    is_applied <- isTRUE(auto_results$applied[[i]])
-
-                    next_meta[[term]] <- list(
-                        status = status,
-                        score = score_value,
-                        reason = reason,
-                        source = "auto"
+            tryCatch(
+                {
+                    dwc_terms_df <- load_dwc_terms_rds()
+                    synonyms_tbl <- load_dwc_synonyms_v1()
+                    auto_results <- run_automap_v1(
+                        df = raw_data_r(),
+                        dwc_terms_df = dwc_terms_df,
+                        synonyms_tbl = synonyms_tbl
                     )
 
-                    if (!(term %in% special_fields) && is_applied && !is.na(selected_col) && nzchar(selected_col)) {
-                        set_map_value(term, selected_col, update_input = TRUE)
-                        if (identical(status, "AUTO")) {
-                            auto_count <- auto_count + 1L
-                        } else if (identical(status, "SUGERIDO")) {
-                            suggested_count <- suggested_count + 1L
+                    rv$is_programmatic_update <- TRUE
+                    on.exit(
+                        {
+                            rv$is_programmatic_update <- FALSE
+                            rv$programmatic_terms <- character(0)
+                        },
+                        add = TRUE
+                    )
+                    next_meta <- empty_map_meta(term_names)
+                    total_rows <- max(1L, nrow(auto_results))
+
+                    for (i in seq_len(nrow(auto_results))) {
+                        term <- as.character(auto_results$term[[i]])
+                        status <- as.character(auto_results$status[[i]])
+                        reason <- as.character(auto_results$reason[[i]])
+                        score_value <- suppressWarnings(as.numeric(auto_results$final_score[[i]]))
+                        selected_col <- as.character(auto_results$selected_col[[i]])
+                        is_applied <- isTRUE(auto_results$applied[[i]])
+
+                        next_meta[[term]] <- list(
+                            status = status,
+                            score = score_value,
+                            reason = reason,
+                            source = "auto"
+                        )
+
+                        if (!(term %in% special_fields) && is_applied && !is.na(selected_col) && nzchar(selected_col)) {
+                            set_map_value(term, selected_col, update_input = TRUE)
+                            if (identical(status, "AUTO")) {
+                                auto_count <- auto_count + 1L
+                            } else if (identical(status, "SUGERIDO")) {
+                                suggested_count <- suggested_count + 1L
+                            }
                         }
+
+                        update_automap_loading(i, total_rows)
                     }
 
-                    update_automap_loading(i, total_rows)
+                    if (nrow(auto_results) == 0) {
+                        update_automap_loading(1L, 1L)
+                    }
+
+                    rv$map_meta <- next_meta
+
+                    shiny::showNotification(
+                        sprintf(tr("notif_auto_mapping_v1", lang_r()), auto_count, suggested_count),
+                        type = "message",
+                        duration = 6
+                    )
+                },
+                error = function(e) {
+                    rv$is_programmatic_update <- FALSE
+                    rv$programmatic_terms <- character(0)
+                    shiny::showNotification(
+                        sprintf(tr("notif_auto_mapping_v1_error", lang_r()), e$message),
+                        type = "error",
+                        duration = 7
+                    )
                 }
-
-                if (nrow(auto_results) == 0) {
-                    update_automap_loading(1L, 1L)
-                }
-
-                rv$map_meta <- next_meta
-
-                shiny::showNotification(
-                    sprintf(tr("notif_auto_mapping_v1", lang_r()), auto_count, suggested_count),
-                    type = "message",
-                    duration = 6
-                )
-            }, error = function(e) {
-                rv$is_programmatic_update <- FALSE
-                rv$programmatic_terms <- character(0)
-                shiny::showNotification(
-                    sprintf(tr("notif_auto_mapping_v1_error", lang_r()), e$message),
-                    type = "error",
-                    duration = 7
-                )
-            })
+            )
         })
 
         # Reset mapping
@@ -1104,6 +1565,17 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             shiny::updateDateInput(session, "custom_modified_date", value = Sys.Date())
             shiny::updateCheckboxGroupInput(session, "custom_license", selected = character(0))
             shiny::updateCheckboxGroupInput(session, "custom_language", selected = character(0))
+            rv$basis_of_record_map <- stats::setNames(character(0), character(0))
+            rv$basis_of_record_auto_map <- stats::setNames(character(0), character(0))
+            rv$basis_of_record_source_col <- ""
+            rv$basis_of_record_draft_map <- stats::setNames(character(0), character(0))
+            rv$basis_of_record_entries <- data.frame(
+                idx = integer(0),
+                key = character(0),
+                raw = character(0),
+                stringsAsFactors = FALSE
+            )
+            rv$basis_of_record_page <- 1L
             rv$is_programmatic_update <- FALSE
             rv$programmatic_terms <- character(0)
             shiny::removeModal()
@@ -1185,7 +1657,24 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             length(dwc_all())
         })
 
-        # Process data
+        build_mapped_result <- function(df_input, occurrence_ids_input) {
+            build_processed_mapping_df(
+                df = df_input,
+                dwc_terms = dwc_all(),
+                map_values = rv$map_values,
+                occurrence_ids = occurrence_ids_input,
+                custom_dataset_name = input$custom_datasetName,
+                modified_use_today = isTRUE(input$modified_use_today),
+                custom_modified_date = input$custom_modified_date,
+                custom_license = input$custom_license,
+                custom_language = input$custom_language,
+                basis_of_record_map = rv$basis_of_record_map,
+                now_utc = Sys.time(),
+                out_sep = " | "
+            )
+        }
+
+        # Full mapped data (used by export and validation modules)
         processed_data <- shiny::reactive({
             shiny::req(raw_data_r())
 
@@ -1194,29 +1683,64 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 rv$occurrence_ids <- ids::uuid(n = nrow(df))
             }
 
-            processed_result <- build_processed_mapping_df(
-                df = df,
-                dwc_terms = dwc_all(),
-                map_values = rv$map_values,
-                occurrence_ids = rv$occurrence_ids,
-                custom_dataset_name = input$custom_datasetName,
-                modified_use_today = isTRUE(input$modified_use_today),
-                custom_modified_date = input$custom_modified_date,
-                custom_license = input$custom_license,
-                custom_language = input$custom_language,
-                now_utc = Sys.time(),
-                out_sep = " | "
+            processed_result <- build_mapped_result(
+                df_input = df,
+                occurrence_ids_input = rv$occurrence_ids
             )
 
             if (!identical(rv$eventdate_parse_failures, processed_result$eventdate_failure_count)) {
                 rv$eventdate_parse_failures <- processed_result$eventdate_failure_count
             }
 
-            return(processed_result$data)
+            processed_result$data
         })
+
+        # Lightweight gate for validation modules: avoid materializing processed_data
+        # just to know if scientificName mapping is ready.
+        validation_gate_r <- shiny::reactive({
+            raw_df <- raw_data_r()
+            if (is.null(raw_df) || !is.data.frame(raw_df) || nrow(raw_df) == 0L) {
+                return(list(status = "no_data", has_data = FALSE, scientific_col = ""))
+            }
+
+            selected <- sanitize_map_selection("scientificName", rv$map_values[["scientificName"]])
+            if (!has_selected_value(selected)) {
+                selected <- sanitize_map_selection("scientificName", input$map_scientificName)
+            }
+
+            scientific_col <- if (has_selected_value(selected)) as.character(selected[[1]]) else ""
+            has_scientific <- nzchar(scientific_col) && scientific_col %in% names(raw_df)
+
+            list(
+                status = if (has_scientific) "ok" else "missing_scientific",
+                has_data = TRUE,
+                scientific_col = scientific_col
+            )
+        })
+
+        # Lightweight mapped preview (first 100 raw rows only)
+        preview_processed_data <- shiny::reactive({
+            shiny::req(raw_data_r())
+
+            preview_raw <- utils::head(raw_data_r(), 100L)
+            preview_occurrence_ids <- if (nrow(preview_raw) > 0L) {
+                sprintf("preview-%06d", seq_len(nrow(preview_raw)))
+            } else {
+                character(0)
+            }
+
+            preview_result <- build_mapped_result(
+                df_input = preview_raw,
+                occurrence_ids_input = preview_occurrence_ids
+            )
+
+            preview_result$data
+        })
+
+        attr(processed_data, "preview_data") <- preview_processed_data
+        attr(processed_data, "validation_gate") <- validation_gate_r
 
         # Explicit return
         return(processed_data)
     })
 }
-

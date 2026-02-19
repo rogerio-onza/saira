@@ -374,7 +374,7 @@ Suggests:
 # ✅ CORRECT (package development)
 validate_names <- function(names_vector) {
   db <- taxadb::td_create("gbif")
-  results <- taxadb::td_validate(names_vector, db = db)
+  results <- taxadb::filter_name(names_vector, provider = "gbif", db = db)
   
   cleaned <- results |>
     dplyr::filter(!is.na(scientificName)) |>

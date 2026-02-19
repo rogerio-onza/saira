@@ -74,17 +74,12 @@
 ```css
 /* Headings - Use Mono */
 --text-xs: 0.75rem;      /* 12px */
---text-sm: 0.85rem;      /* 13.6px */
---text-base: 0.9rem;     /* 14.4px */
---text-md: 0.95rem;      /* 15.2px */
---text-lg: 1rem;         /* 16px */
---text-xl: 1.1rem;       /* 17.6px */
---text-2xl: 1.25rem;     /* 20px */
-
-/* Body - Use Sans */
---body-sm: 0.85rem;
---body-base: 0.9rem;
---body-md: 0.95rem;
+--text-sm: 0.8rem;       /* 12.8px */
+--text-base: 0.95rem;    /* 15.2px */
+--text-md: 1.1rem;       /* 17.6px */
+--text-lg: 1.25rem;      /* 20px */
+--text-xl: 1.5rem;       /* 24px */
+--text-2xl: 1.75rem;     /* 28px */
 ```
 
 ### Font Weights
@@ -368,7 +363,7 @@
 - **Body:** IBM Plex Sans with weight 400, line-height 1.5
 - **Never use yellow text on light backgrounds** (contrast failure)
 - **Code/Data:** Always monospace font
-- **Button labels:** Monospace, weight 600, 0.9rem
+- **Button labels:** Monospace, weight 600, `var(--text-base)` (0.95rem)
 
 ### Spacing Consistency
 
@@ -487,5 +482,5 @@ If you decide to add dark mode later, prepare these alternate values:
 ---
 
 **Version:** 1.0  
-**Last Updated:** February 2026  
+**Last Updated:** February 14, 2026  
 **Maintained By:** Design System Team

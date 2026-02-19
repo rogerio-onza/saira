@@ -3,6 +3,14 @@
 # Date: 2026-02-11
 # Version: 1.0
 
+reset_synonyms_cache <- function() {
+    getFromNamespace("reset_dwc_synonyms_cache", "finch")()
+}
+
+synonyms_cache_state <- function() {
+    getFromNamespace("dwc_synonyms_cache_state", "finch")()
+}
+
 testthat::test_that("normalize_semicolon_tokens converts semicolon lists to pipe", {
     x <- c(
         "Alexandra Cravino; Alejandro Brazeiro",
@@ -183,6 +191,48 @@ testthat::test_that("load_dwc_synonyms_v1 loads and validates schema", {
     required_cols <- c("term", "synonym", "name_score", "lang", "active")
     testthat::expect_true(all(required_cols %in% names(syn)))
     testthat::expect_true(all(syn$name_score >= 0.90 & syn$name_score <= 0.98))
+})
+
+testthat::test_that("load_dwc_synonyms_v1 reuses cache and reloads with force", {
+    reset_synonyms_cache()
+    on.exit(reset_synonyms_cache(), add = TRUE)
+
+    first <- load_dwc_synonyms_v1()
+    state_after_first <- synonyms_cache_state()
+    second <- load_dwc_synonyms_v1()
+    state_after_second <- synonyms_cache_state()
+    forced <- load_dwc_synonyms_v1(force = TRUE)
+    state_after_force <- synonyms_cache_state()
+
+    testthat::expect_true(state_after_first$has_value)
+    testthat::expect_identical(state_after_first$load_count, 1L)
+    testthat::expect_identical(state_after_second$load_count, 1L)
+    testthat::expect_identical(state_after_force$load_count, 2L)
+    testthat::expect_identical(first, second)
+    testthat::expect_identical(first, forced)
+})
+
+testthat::test_that("load_dwc_synonyms_v1 explicit path bypasses cache state", {
+    reset_synonyms_cache()
+    on.exit(reset_synonyms_cache(), add = TRUE)
+
+    syn_path <- test_data_path("dwc_synonyms_v1.rds")
+    from_path <- load_dwc_synonyms_v1(path = syn_path)
+    state_after_path <- synonyms_cache_state()
+
+    cached <- load_dwc_synonyms_v1()
+    state_after_cache <- synonyms_cache_state()
+
+    from_path_again <- load_dwc_synonyms_v1(path = syn_path, force = TRUE)
+    state_after_path_again <- synonyms_cache_state()
+
+    testthat::expect_false(state_after_path$has_value)
+    testthat::expect_identical(state_after_path$load_count, 0L)
+    testthat::expect_true(state_after_cache$has_value)
+    testthat::expect_identical(state_after_cache$load_count, 1L)
+    testthat::expect_identical(state_after_path_again$load_count, 1L)
+    testthat::expect_identical(from_path, cached)
+    testthat::expect_identical(from_path, from_path_again)
 })
 
 testthat::test_that("compute_name_score prioritizes exact match and synonyms", {
@@ -447,4 +497,74 @@ testthat::test_that("build_processed_mapping_df preserves processed_data contrac
     testthat::expect_identical(out$specificEpithet, c("onca", ""))
     testthat::expect_identical(out$taxonRank, c("species", "genus"))
     testthat::expect_false(any(is.na(out)))
+})
+
+testthat::test_that("basisOfRecord helpers normalize and auto-suggest canonical terms", {
+    testthat::expect_identical(normalize_basis_of_record_key("  HumanObservation  "), "humanobservation")
+    testthat::expect_identical(normalize_basis_of_record_key(NA_character_), "")
+    testthat::expect_identical(auto_suggest_basis_of_record_term("humanobservation"), "HumanObservation")
+    testthat::expect_identical(auto_suggest_basis_of_record_term("HumanObservation"), "HumanObservation")
+    testthat::expect_identical(auto_suggest_basis_of_record_term("camera trap"), "")
+})
+
+testthat::test_that("sanitize_basis_of_record_map filters invalid terms and keeps keys normalized", {
+    raw_map <- c(
+        "HumanObservation",
+        "InvalidTerm",
+        "",
+        "Occurrence"
+    )
+    names(raw_map) <- c(" HumanObservation ", "camera trap", "  ", "OCCURRENCE")
+
+    out <- sanitize_basis_of_record_map(raw_map)
+
+    testthat::expect_identical(out[["humanobservation"]], "HumanObservation")
+    testthat::expect_identical(out[["camera trap"]], "")
+    testthat::expect_identical(out[["occurrence"]], "Occurrence")
+    testthat::expect_false("" %in% names(out))
+})
+
+testthat::test_that("build_processed_mapping_df enforces single mapped value for basisOfRecord", {
+    df <- data.frame(
+        bor_raw = c(
+            "Active searching, Camera trap, Opportunistic",
+            "humanobservation",
+            "Unknown method",
+            NA_character_
+        ),
+        stringsAsFactors = FALSE
+    )
+
+    dwc_terms <- list(
+        list(term = "occurrenceID"),
+        list(term = "basisOfRecord")
+    )
+
+    map_values <- empty_map_values(vapply(dwc_terms, function(item) item$term, FUN.VALUE = character(1)))
+    map_values$basisOfRecord <- "bor_raw"
+
+    basis_map <- c(
+        "HumanObservation",
+        "HumanObservation"
+    )
+    names(basis_map) <- c(
+        "active searching, camera trap, opportunistic",
+        "humanobservation"
+    )
+
+    result <- build_processed_mapping_df(
+        df = df,
+        dwc_terms = dwc_terms,
+        map_values = map_values,
+        occurrence_ids = c("id-1", "id-2", "id-3", "id-4"),
+        basis_of_record_map = basis_map
+    )
+
+    out <- result$data
+    testthat::expect_true("basisOfRecord" %in% names(out))
+    testthat::expect_identical(
+        out$basisOfRecord,
+        c("HumanObservation", "HumanObservation", "", "")
+    )
+    testthat::expect_false(any(grepl("\\|", out$basisOfRecord)))
 })

@@ -10,8 +10,11 @@
 #' @return A Shiny UI object
 #' @export
 app_ui <- function() {
+    css_version <- as.integer(Sys.time())
+
     bslib::page_navbar(
         id = "main_nav",
+        lang = "pt-BR",
         title = shiny::tags$div(
             class = "navbar-brand-wrapper",
             shiny::tags$img(
@@ -46,7 +49,11 @@ app_ui <- function() {
                 integrity = "sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==",
                 crossorigin = "anonymous"
             ),
-            shiny::tags$link(rel = "stylesheet", type = "text/css", href = "www/custom.css"),
+            shiny::tags$link(
+                rel = "stylesheet",
+                type = "text/css",
+                href = paste0("www/custom.css?v=", css_version)
+            ),
             shiny::tags$link(
                 rel = "icon",
                 type = "image/png",

@@ -53,10 +53,23 @@ app_server <- function(input, output, session) {
     # Chain of Reactivity: Data Flow
     raw_data <- mod_upload_server("upload", lang_r)
     mapped_data <- mod_mapping_server("mapping", raw_data, lang_r)
+    preview_data <- attr(mapped_data, "preview_data")
+    validation_gate <- attr(mapped_data, "validation_gate")
+    if (is.null(preview_data) || !shiny::is.reactive(preview_data)) {
+        preview_data <- mapped_data
+    }
+    if (is.null(validation_gate) || !shiny::is.reactive(validation_gate)) {
+        validation_gate <- NULL
+    }
 
     # Consumers of mapped_data
-    mod_preview_server("preview", mapped_data, lang_r)
-    mod_validate_names_server("validate_names", mapped_data, lang_r)
+    mod_preview_server(
+        "preview",
+        preview_data,
+        lang_r,
+        download_data_r = mapped_data
+    )
+    mod_validate_names_server("validate_names", mapped_data, lang_r, validation_gate_r = validation_gate)
     mod_validate_coords_server("validate_coords", mapped_data, lang_r)
 
     # Independent modules (no data dependency)

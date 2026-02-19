@@ -4,7 +4,7 @@
 \alias{mod_validate_names_server}
 \title{Validate Names Module Server}
 \usage{
-mod_validate_names_server(id, mapped_data_r, lang_r)
+mod_validate_names_server(id, mapped_data_r, lang_r, validation_gate_r = NULL)
 }
 \arguments{
 \item{id}{Module ID}
@@ -12,6 +12,8 @@ mod_validate_names_server(id, mapped_data_r, lang_r)
 \item{mapped_data_r}{Reactive data frame with mapped data}
 
 \item{lang_r}{Reactive language value}
+
+\item{validation_gate_r}{Optional lightweight gate reactive from mapping module}
 }
 \description{
 Validate Names Module Server

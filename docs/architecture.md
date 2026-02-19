@@ -298,18 +298,18 @@ VignetteBuilder: knitr
 # ✅ CORRETO: Uso explícito com ::
 validate_scientific_names <- function(names_vector) {
   db <- taxadb::td_create("gbif")
-  results <- taxadb::td_validate(names_vector, db = db)
+  results <- taxadb::filter_name(names_vector, provider = "gbif", db = db)
   
   cleaned <- results |>
     dplyr::filter(!is.na(scientificName)) |>
-    dplyr::select(input, scientificName, taxonomicStatus)
+    dplyr::select(scientificName, taxonomicStatus, acceptedNameUsageID)
   
   return(cleaned)
 }
 
 # ❌ ERRADO: Nunca faça isso em pacotes
 library(taxadb)  # Proibido em R/*.R
-validate_names <- function(x) td_validate(x)  # Namespace poluído
+validate_names <- function(x) filter_name(x)  # Namespace poluído
 ```
 
 ---
@@ -321,7 +321,7 @@ validate_names <- function(x) td_validate(x)  # Namespace poluído
 | 1 | `upload` | `mod_upload` | Importação CSV com detecção de encoding | `reactive(raw_data)` |
 | 2 | `mapping` | `mod_mapping` | Mapeamento de colunas para termos DwC | `reactive(mapped_data)` |
 | 3 | `preview` | `mod_preview` | Visualização rápida + Download completo | `reactive(preview_data)` |
-| 4a | `validate_names` | `mod_validate_names` | Validação taxonômica via GBIF/COL | `reactive(validation_report)` |
+| 4a | `validate_names` | `mod_validate_names` | Validação taxonômica via taxadb (GBIF/ITIS/COL/NCBI) | `reactive(validation_report)` |
 | 4b | `validate_coords` | `mod_validate_coords` | Validação geográfica (WGS84, outliers) | `reactive(coord_issues)` |
 | 5 | `wiki` | `mod_wiki` | Documentação interativa de termos DwC | - |
 | 6 | `help` | `mod_help` | Tutorial do sistema | - |

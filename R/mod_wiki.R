@@ -1,7 +1,7 @@
 # Title: Wiki Module
 # Author: Rogerio Nunes Oliveira
-# Date: 2026-02-13
-# Version: 1.1
+# Date: 2026-02-19
+# Version: 1.2
 
 #' Wiki Module UI
 #'
@@ -13,25 +13,24 @@ mod_wiki_ui <- function(id) {
 
     shiny::tagList(
         shiny::div(
-            class = "container-fluid",
+            class = "container-fluid wiki-module",
             shiny::uiOutput(ns("title")),
             shiny::uiOutput(ns("subtitle")),
             shiny::br(),
 
-            # Search and filters
-            shiny::fluidRow(
-                shiny::column(
-                    width = 6,
-                    shiny::uiOutput(ns("search_input"))
-                ),
-                shiny::column(
-                    width = 6,
-                    shiny::uiOutput(ns("class_filter_input"))
-                )
+            # Search input (primary) + hidden class filter for compatibility
+            shiny::uiOutput(ns("search_input")),
+            shiny::div(
+                class = "wiki-class-filter-compat",
+                shiny::uiOutput(ns("class_filter_input"))
             ),
+            shiny::uiOutput(ns("class_filter_pills")),
 
             # Terms table
-            DT::dataTableOutput(ns("terms_table"))
+            shiny::div(
+                class = "wiki-table finch-table-shell",
+                DT::dataTableOutput(ns("terms_table"))
+            )
         )
     )
 }
@@ -92,21 +91,29 @@ mod_wiki_server <- function(id, lang_r) {
             )
         })
 
-        filtered_terms <- shiny::reactive({
+        output$class_filter_pills <- shiny::renderUI({
+            labels <- class_labels()
+            buttons <- lapply(seq_along(class_values), function(i) {
+                is_active <- i == 1L
+                shiny::tags$button(
+                    type = "button",
+                    class = paste(
+                        "dwc-tab-btn wiki-filter-pill",
+                        if (is_active) "active" else ""
+                    ),
+                    `data-filter` = class_values[[i]],
+                    `aria-pressed` = if (is_active) "true" else "false",
+                    labels[[i]]
+                )
+            })
+            shiny::div(
+                class = "wiki-filter-pills",
+                buttons
+            )
+        })
+
+        terms_table_data <- shiny::reactive({
             df <- dwc_terms
-
-            if (!is.null(input$class_filter) && input$class_filter != "") {
-                df <- df[df$class == input$class_filter, ]
-            }
-
-            if (!is.null(input$search) && nchar(input$search) > 0) {
-                search_term <- tolower(input$search)
-                df <- df[
-                    grepl(search_term, tolower(df$term)) |
-                        grepl(search_term, tolower(df$definition_pt)) |
-                        grepl(search_term, tolower(df$definition_en)),
-                ]
-            }
 
             definition_col <- switch(
                 lang_r(),
@@ -128,19 +135,115 @@ mod_wiki_server <- function(id, lang_r) {
         })
 
         output$terms_table <- DT::renderDataTable({
+            required_badge_labels <- list(
+                required = tr("wiki_required_badge_required", lang_r()),
+                optional = tr("wiki_required_badge_optional", lang_r())
+            )
+
+            required_badge_js <- DT::JS(
+                sprintf(
+                    paste0(
+                        "function(data, type, row) {",
+                        "  if (type !== 'display') {",
+                        "    return data;",
+                        "  }",
+                        "  var value = data;",
+                        "  var normalized = String(value === null || value === undefined ? '' : value).trim().toLowerCase();",
+                        "  var isRequired = (value === true || value === 1 || normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'sim');",
+                        "  var labels = %s;",
+                        "  if (isRequired) {",
+                        "    return '<span class=\"dwc-required-badge dwc-required-true\">' + labels.required + '</span>';",
+                        "  }",
+                        "  return '<span class=\"dwc-required-badge dwc-required-false\">' + labels.optional + '</span>';",
+                        "}"
+                    ),
+                    jsonlite::toJSON(required_badge_labels, auto_unbox = TRUE)
+                )
+            )
+
+            filter_callback_js <- DT::JS(
+                sprintf(
+                    paste0(
+                        "var searchInputId = %s;",
+                        "var classFilterId = %s;",
+                        "var $searchInput = $('#' + searchInputId);",
+                        "var $classFilter = $('#' + classFilterId);",
+                        "var $module = $(table.table().container()).closest('.wiki-module');",
+                        "var $pills = $module.find('.wiki-filter-pill');",
+                        "var setActivePill = function(filterValue) {",
+                        "  var value = String(filterValue || '');",
+                        "  $pills.removeClass('active').attr('aria-pressed', 'false');",
+                        "  var $target = $pills.filter(function() {",
+                        "    return String($(this).attr('data-filter') || '') === value;",
+                        "  });",
+                        "  if ($target.length === 0) {",
+                        "    $target = $pills.filter('[data-filter=\"\"]');",
+                        "  }",
+                        "  $target.addClass('active').attr('aria-pressed', 'true');",
+                        "};",
+                        "var applyClassFilter = function(filterValue, syncSelect) {",
+                        "  var value = String(filterValue || '');",
+                        "  table.column(1).search(value).draw();",
+                        "  setActivePill(value);",
+                        "  if (syncSelect && $classFilter.length && String($classFilter.val() || '') !== value) {",
+                        "    $classFilter.val(value).trigger('change');",
+                        "  }",
+                        "};",
+                        "$searchInput.off('input.wikiFilter').on('input.wikiFilter', function() {",
+                        "  table.search(this.value || '').draw();",
+                        "});",
+                        "$classFilter.off('change.wikiFilter').on('change.wikiFilter', function() {",
+                        "  applyClassFilter($(this).val() || '', false);",
+                        "});",
+                        "$pills.off('click.wikiFilter').on('click.wikiFilter', function() {",
+                        "  var value = $(this).attr('data-filter') || '';",
+                        "  applyClassFilter(value, true);",
+                        "});",
+                        "if ($searchInput.length) {",
+                        "  table.search($searchInput.val() || '');",
+                        "}",
+                        "if ($classFilter.length) {",
+                        "  applyClassFilter($classFilter.val() || '', false);",
+                        "} else {",
+                        "  applyClassFilter('', false);",
+                        "}"
+                    ),
+                    jsonlite::toJSON(ns("search"), auto_unbox = TRUE),
+                    jsonlite::toJSON(ns("class_filter"), auto_unbox = TRUE)
+                )
+            )
+
             DT::datatable(
-                filtered_terms(),
+                terms_table_data(),
                 options = list(
-                    pageLength = 15,
+                    pageLength = 10,
+                    lengthMenu = c(10, 25, 50, 100),
                     scrollX = TRUE,
+                    columnDefs = list(
+                        list(
+                            targets = 4,
+                            render = required_badge_js
+                        )
+                    ),
                     language = list(
-                        search = tr("wiki_datatable_search", lang_r())
+                        search = tr("wiki_datatable_search", lang_r()),
+                        lengthMenu = tr("wiki_datatable_length_menu", lang_r()),
+                        info = tr("wiki_datatable_info", lang_r()),
+                        emptyTable = tr("wiki_datatable_empty", lang_r()),
+                        zeroRecords = tr("wiki_datatable_zero_records", lang_r()),
+                        paginate = list(
+                            first = tr("wiki_datatable_first", lang_r()),
+                            last = tr("wiki_datatable_last", lang_r()),
+                            `next` = tr("wiki_datatable_next", lang_r()),
+                            previous = tr("wiki_datatable_prev", lang_r())
+                        )
                     )
                 ),
+                callback = filter_callback_js,
                 class = "display compact",
                 rownames = FALSE,
                 escape = FALSE
             )
-        })
+        }, server = FALSE)
     })
 }
