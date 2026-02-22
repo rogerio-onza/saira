@@ -99,6 +99,67 @@ testthat::test_that("mod_mapping_server exposes validation_gate reactive with ex
     )
 })
 
+testthat::test_that("mod_mapping_server exposes coordinate validation gate with expected transitions", {
+    raw_data_state <- shiny::reactiveVal(NULL)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(raw_data_state()),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            returned <- session$getReturned()
+            coord_gate <- attr(returned, "validation_gate_coords")
+
+            testthat::expect_true(shiny::is.reactive(coord_gate))
+
+            gate <- coord_gate()
+            testthat::expect_identical(gate$coords_status, "no_data")
+            testthat::expect_false(gate$has_data)
+            testthat::expect_identical(gate$lat_col, "")
+            testthat::expect_identical(gate$lon_col, "")
+            testthat::expect_identical(gate$country_col, "")
+
+            raw_data_state(data.frame(
+                decimalLatitude = c("-10.1"),
+                decimalLongitude = c("-45.2"),
+                country_name = c("Brasil"),
+                stringsAsFactors = FALSE
+            ))
+            session$flushReact()
+
+            gate <- coord_gate()
+            testthat::expect_identical(gate$coords_status, "missing_multiple")
+            testthat::expect_true(gate$has_data)
+            testthat::expect_false(gate$has_lat)
+            testthat::expect_false(gate$has_lon)
+            testthat::expect_false(gate$has_country)
+
+            session$setInputs(map_decimalLatitude = "decimalLatitude")
+            session$flushReact()
+            gate <- coord_gate()
+            testthat::expect_identical(gate$coords_status, "missing_multiple")
+            testthat::expect_identical(gate$lat_col, "decimalLatitude")
+            testthat::expect_true(gate$has_lat)
+
+            session$setInputs(map_decimalLongitude = "decimalLongitude")
+            session$flushReact()
+            gate <- coord_gate()
+            testthat::expect_identical(gate$coords_status, "missing_country")
+            testthat::expect_true(gate$has_lon)
+            testthat::expect_identical(gate$lon_col, "decimalLongitude")
+
+            session$setInputs(map_country = "country_name")
+            session$flushReact()
+            gate <- coord_gate()
+            testthat::expect_identical(gate$coords_status, "ok")
+            testthat::expect_true(gate$has_country)
+            testthat::expect_identical(gate$country_col, "country_name")
+        }
+    )
+})
+
 testthat::test_that("v1 auto-map applies metadata and manual override becomes EDITADO", {
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis"),

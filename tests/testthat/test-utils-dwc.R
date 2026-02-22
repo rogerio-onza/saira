@@ -11,7 +11,7 @@ terms_cache_state <- function() {
     getFromNamespace("dwc_terms_cache_state", "finch")()
 }
 
-testthat::test_that("validate_coords handles decimal comma bounds and missing values", {
+testthat::test_that("validate_coords handles decimal comma bounds and returns issue types", {
     out <- validate_coords(
         lat = c("-23,55", "91", NA_character_, "10"),
         lon = c("-46,63", "-46,63", "-46,63", "181")
@@ -20,10 +20,11 @@ testthat::test_that("validate_coords handles decimal comma bounds and missing va
     testthat::expect_s3_class(out, "data.frame")
     testthat::expect_equal(out$decimalLatitude[1], -23.55)
     testthat::expect_equal(out$decimalLongitude[1], -46.63)
-    testthat::expect_identical(out$valid, c(TRUE, FALSE, FALSE, FALSE))
-    testthat::expect_identical(out$error[2], "Latitude out of range (-90 to 90)")
-    testthat::expect_identical(out$error[3], "Missing coordinates")
-    testthat::expect_identical(out$error[4], "Longitude out of range (-180 to 180)")
+    testthat::expect_identical(out$issue_type, c("ok", "swapped", "missing", "lon_range"))
+    testthat::expect_identical(out$valid, c(TRUE, TRUE, FALSE, FALSE))
+    testthat::expect_identical(out$error_key[2], "validate_coords_badge_swapped")
+    testthat::expect_identical(out$error_key[3], "validate_coords_badge_missing")
+    testthat::expect_identical(out$error_key[4], "validate_coords_badge_lon_range")
 })
 
 testthat::test_that("validate_occurrence_id enforces uniqueness and non-empty values", {

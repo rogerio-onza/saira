@@ -54,6 +54,12 @@ app_ui <- function() {
                 type = "text/css",
                 href = paste0("www/custom.css?v=", css_version)
             ),
+            shiny::tags$script(
+                src = paste0("www/upload-dropzone.js?v=", css_version)
+            ),
+            shiny::tags$script(
+                src = "https://unpkg.com/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js"
+            ),
             shiny::tags$link(
                 rel = "icon",
                 type = "image/png",

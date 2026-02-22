@@ -517,3 +517,221 @@ Formato: ADR leve (Architecture Decision Record).
   - Consistencia visual entre todas as tabelas e controles de navegacao.
   - Menor custo de manutencao futura para ajustes de UX de DataTable.
   - Diretriz tecnica explicita para novas tabelas no projeto.
+
+---
+
+## ADR-031: Restaurar upload dropzone de superficie inteira com copy central e fallback cross-browser
+
+- **Data**: 2026-02-21
+- **Contexto**: A homepage sofreu regressao apos reversoes de UI: o upload perdeu o comportamento esperado de dropzone grande e voltou a exibir conflitos visuais com a caixa nativa do `fileInput`. Alem disso, em parte dos navegadores o drag-and-drop nao iniciava de forma consistente por deteccao rigida de `dataTransfer.types`.
+- **Decisao**:
+  - Carregar `www/upload-dropzone.js` via `app_ui` com versionamento no `src` para evitar cache stale em iteracoes de UI.
+  - Manter `fileInput` como backend de upload, mas remover o wrapper visual nativo (`.input-group`) durante o bind JS; o input real e reanexado no container da dropzone para preservar eventos `change` do Shiny.
+  - Tornar a deteccao de arquivos no drag-and-drop resiliente (`types.contains`, `types.indexOf`, iteracao com `item()`), evitando dependencia exclusiva de `Array.prototype.includes`.
+  - Restaurar visual de dropzone de superficie inteira com area clicavel completa, watermark CSV opaco ao fundo e copy centralizada.
+  - Mover o texto de tamanho maximo para dentro da dropzone junto da instrucao de acao, mantendo tipografia alinhada ao design system (`IBM Plex Sans` para instrucao e `IBM Plex Mono` para metadado).
+- **Alternativas**:
+  - Manter `fileInput` nativo com botao/campo conectados e apenas estilizar borda externa - rejeitado por nao recuperar a UX esperada de "box de arraste" e por manter ruido visual.
+  - Esconder a caixa nativa apenas via CSS - rejeitado por fragilidade entre temas/markup e por nao resolver completamente sobreposicoes.
+  - Deixar o texto de tamanho maximo fora da area de drop - rejeitado por reduzir clareza contextual no ponto de acao.
+- **Consequencias**:
+  - Upload volta ao padrao visual esperado pelo produto com feedback claro de arrastar/soltar.
+  - Menor risco de regressao cross-browser no evento de drop.
+  - Menor acoplamento entre UX custom e markup interno do Bootstrap/Shiny no componente de upload.
+
+---
+
+## ADR-032: Compatibilidade de contrato no gate da validacao de coordenadas com fallback seguro
+
+- **Data**: 2026-02-21
+- **Contexto**: `app_server` repassa `attr(mapped_data, "validation_gate")` vindo de `mod_mapping`, cujo contrato atual e orientado a nomes (`status/has_data/scientific_col`). `mod_validate_coords` passou a tentar consumir esse atributo como se fosse contrato de coordenadas (`coords_status/lat_col/lon_col`), causando estado incorreto de prontidao e bloqueio indevido do botao em parte dos cenarios.
+- **Decisao**:
+  - Tratar o gate por atributo como opcional e orientado a capacidade: somente usar quando o contrato de coordenadas estiver presente (`coords_status` ou `lat_col`/`lon_col`).
+  - Quando o contrato esperado nao existir, aplicar fallback explicito para deteccao de prontidao via `mapped_data_r()` (`decimalLatitude`/`decimalLongitude`).
+  - Completar no CSS as classes ja referenciadas por `mod_validate_coords` (cards, pills, badges e legenda) para evitar divergencia entre estrutura renderizada e estilo aplicado.
+- **Alternativas**:
+  - Exigir que `mod_mapping` passe imediatamente um segundo gate especifico de coordenadas - rejeitado neste ciclo por ampliar superficie de contrato publico sem necessidade imediata.
+  - Ignorar totalmente `attr(..., "validation_gate")` em coordenadas - rejeitado por descartar compatibilidade futura com gates leves especificos.
+  - Habilitar sempre o botao e validar apenas no clique - rejeitado por piorar feedback preventivo da UI.
+- **Consequencias**:
+  - Elimina falso negativo de prontidao na aba de coordenadas quando o atributo recebido nao corresponde ao contrato esperado.
+  - Preserva compatibilidade progressiva para adoção futura de gate leve especifico de coordenadas.
+  - Reforca a pratica de validacao de contrato entre modulos para atributos internos compartilhados.
+
+---
+
+## ADR-033: Gate leve dedicado e layout em paineis para validacao de coordenadas
+
+- **Data**: 2026-02-21
+- **Contexto**: Mesmo com o fallback do ADR-032, a aba de coordenadas ainda dependia de `mapped_data_r()` para prontidao em cenarios sem contrato completo de gate. Alem disso, o layout concentrava stats/mapa/tabela em um bloco monolitico, dificultando manutencao e posicionamento consistente da coluna de contexto.
+- **Decisao**:
+  - Introduzir `validation_gate_coords` no `mod_mapping` como canal leve dedicado (`coords_status`, `has_data`, `lat_col`, `lon_col`), sem materializar `processed_data`.
+  - Propagar o gate dedicado no `app_server` para `mod_validate_coords_server(..., validation_gate_r = ...)`.
+  - Refatorar `mod_validate_coords` para UI em paineis independentes (`stats_panel`, `filter_pills`, `map_panel`, `table_panel`) no grid `col-lg-3/9`.
+  - Manter `validate_coords` como wrapper legado, mas delegando a validacao para `validate_coords_df` e preservando assinatura historica.
+- **Alternativas**:
+  - Permanecer apenas com fallback em `mapped_data_r()` - rejeitado por ainda acoplar prontidao da UI ao caminho pesado.
+  - Manter `results_panel` unico - rejeitado por dificultar evolucao do layout lateral sticky e reaproveitamento de blocos.
+- **Consequencias**:
+- Habilitacao da validacao de coordenadas responde de forma previsivel com custo leve.
+- Estrutura visual da aba de coordenadas fica modular e alinhada ao padrao dos modulos recentes.
+- Compatibilidade retroativa de chamadas antigas de `validate_coords` e `mod_validate_coords_server` e preservada.
+
+---
+
+## ADR-034: Motor canonico de coordenadas com CoordinateCleaner, gate com country e diagnostico deterministico
+
+- **Data**: 2026-02-21
+- **Contexto**: O motor legado de coordenadas era limitado para deteccao geoespacial e nao cobria checks de referencia espacial (mar, pais, capitais, centroids, instituicoes). Tambem havia ambiguidade na UI sobre quando permitir execucao, especialmente sem `country` mapeado.
+- **Decisao**:
+  - Adotar `CoordinateCleaner` como engine principal da aba de coordenadas via `validate_coords_cc_df(...)`.
+  - Manter `validate_coords_df()` como legado para compatibilidade, mas remover seu uso como caminho primario da aba.
+  - Exigir gate de entrada com `lat/lon/country` mapeados antes de iniciar validacao.
+  - Evoluir o contrato de gate para estados granulares:
+    - `no_data`
+    - `ok`
+    - `missing_lat`
+    - `missing_lon`
+    - `missing_country`
+    - `missing_multiple`
+  - Resolver `country` para ISO3 internamente no pipeline com cadeia de fallback (`iso3c -> iso2c -> country.name`) e mapa minimo de aliases frequentes.
+  - Definir `seas_scale = 110` como resolucao oficial do check de mar.
+  - Definir dois perfis de execucao:
+    - `complete` (todos os checks principais)
+    - `fast` (subset orientado a throughput)
+  - Preservar heuristicas legadas fora do escopo nativo do CoordinateCleaner:
+    - `swapped`
+    - `identical_all`
+  - Definir diagnostico final deterministico por prioridade, com uma classe final por linha e familias canonicamente expostas para UI:
+    - `ok`, `validity`, `country`, `sea`, `zero_equal`, `reference`
+  - Garantir contrato nao-destrutivo: nenhuma linha e removida, apenas flag/diagnostico.
+  - Declarar dependencias espaciais em `Imports` (`CoordinateCleaner`, `countrycode`, `sf`, `rnaturalearth`, `rnaturalearthdata`) para reduzir variabilidade de ambiente.
+- **Alternativas**:
+  - Manter motor legado como principal e usar `CoordinateCleaner` apenas opcionalmente - rejeitado por cobertura geoespacial inferior.
+  - Tratar dependencias espaciais em `Suggests` - rejeitado por aumentar risco de runtime inconsistente no fluxo principal da aba.
+  - Permitir validacao sem `country` - rejeitado por comprometer checks de consistencia por pais.
+- **Consequencias**:
+  - Maior robustez dos diagnosticos geoespaciais e melhor alinhamento com praticas de qualidade de dados de biodiversidade.
+  - Custo de instalacao maior por dependencias espaciais pesadas, compensado por previsibilidade operacional.
+  - Contrato de dados da aba de coordenadas fica explicito e testavel de ponta a ponta.
+
+---
+
+## ADR-035: Full-width local da aba de coordenadas com divisao 2/10 + 6/6 e legenda por familia
+
+- **Data**: 2026-02-21
+- **Contexto**: A aba de coordenadas apresentava sobras laterais e distribuicao espacial subotima para leitura de mapa/tabela. O requisito de produto pedia melhor aproveitamento horizontal, com coluna de controle compacta na esquerda e resultados ocupando a largura util.
+- **Decisao**:
+  - Remover limite de largura fixa da pagina de coordenadas (`max-width` inline).
+  - Adotar grid principal `col-lg-2` (controle + stats, sticky) e `col-lg-10` (resultado).
+  - Dentro do resultado, manter divisao `50/50` (`col-lg-6` mapa, `col-lg-6` tabela), conforme requisito funcional.
+  - Aplicar override de padding lateral local da aba via seletor contextual (`:has(.validate-coords-page)`), sem afetar outras tabs.
+  - Reorganizar UI em paineis independentes (`action_card`, `stats_panel`, `filter_pills`, `map_panel`, `table_panel`) para reduzir acoplamento.
+  - Migrar filtros para familias de diagnostico e alinhar legenda do mapa ao mesmo contrato.
+  - Manter nota explicativa de cluster para evitar associacao incorreta entre cor de cluster e tipo de issue.
+- **Alternativas**:
+  - Ajustar apenas larguras de coluna sem mexer em max-width/padding da aba - rejeitado por manter sobras laterais.
+  - Usar proporcao 7/5 para mapa/tabela - rejeitado neste ciclo por conflito com requisito explicito de 50/50.
+  - Sobrescrever layout global de todas as tabs - rejeitado por risco de regressao visual fora do modulo.
+- **Consequencias**:
+  - Melhor uso horizontal da tela e leitura mais equilibrada entre mapa e tabela.
+  - Isolamento de estilo reduz risco de regressao transversal em outras areas da aplicacao.
+  - Contrato visual da aba de coordenadas fica coerente com o contrato de dados por familia de diagnostico.
+
+---
+
+## ADR-036: Resolucao de pais em cascata com aliases externalizados em `.rds` e fuzzy conservador
+
+- **Data**: 2026-02-22
+- **Contexto**: A primeira versao do `country -> ISO3` no pipeline de coordenadas usava uma cadeia curta (`iso3c -> iso2c -> country.name`) e um mapa minimo hard-coded. Em bases reais, isso mantinha volume alto de `country_unresolved` para variacoes de idioma, abreviacoes e erros leves de digitacao.
+- **Decisao**:
+  - Externalizar aliases customizados para `inst/extdata/country_aliases.rds` e remover o hard-code interno como fonte primaria.
+  - Criar script reprodutivel `data-raw/generate_country_aliases.R` para regenerar o `.rds` versionado.
+  - Reescrever `coords_country_to_iso3()` em 5 camadas deterministicas:
+    - `iso3c` estrito
+    - `iso2c` estrito
+    - nomes CLDR multilíngues (`countrycode::codelist` + `custom_dict`)
+    - aliases do `.rds`
+    - fuzzy matching conservador com guardrails
+  - Aplicar estrategia de performance por deduplicacao (`unique -> resolve -> match de volta`) e cache de referencia:
+    - cache de aliases carregados (`coords_load_aliases()`)
+    - cache da referencia fuzzy multilíngue (`coords_build_fuzzy_reference()`)
+  - Manter `coords_alias_map()` como wrapper de compatibilidade para evitar quebra de chamadas legadas.
+  - Resolver path do `.rds` com fallback robusto entre ambiente de desenvolvimento e pacote instalado (`resolve_country_aliases_path()`).
+- **Alternativas**:
+  - Manter dicionario hard-coded dentro da funcao - rejeitado por baixa escalabilidade e alto custo de manutencao.
+  - Usar `.csv` como fonte principal de aliases - rejeitado por custo de parse, fragilidade de encoding e divergencia do padrao de artefatos RDS do projeto.
+  - Aplicar fuzzy agressivo sem restricoes - rejeitado por risco de falso positivo em siglas curtas e nomes proximos.
+- **Consequencias**:
+  - Queda de falsos `country_unresolved` em dados heterogeneos sem alterar o contrato nao-destrutivo do pipeline.
+  - Maior previsibilidade na manutencao de aliases (dados versionados fora do codigo).
+  - Custos de CPU controlados por deduplicacao e cache, com cobertura de testes dedicada para regressao funcional e performance.
+
+---
+
+## ADR-037: Foco do diagnostico em `sea/swapped/reference` e remocao de `cc_coun` do fluxo principal
+
+- **Data**: 2026-02-22
+- **Contexto**: Em dados reais (inclusive planilhas de publicacao cientifica), o teste `cc_coun` vinha gerando volume alto de `country_mismatch` sem sinal operacional claro, especialmente em zonas costeiras/fronteiras/territorios especiais. Isso passou a competir com os sinais mais acionaveis para o produto (`sea`, `swapped`, `reference`).
+- **Decisao**:
+  - Remover `cc_coun` do pipeline de diagnostico principal da aba `validate_coords`.
+  - Remover a familia `country` dos filtros/pills/legenda e do fluxo de contagem de diagnosticos.
+  - Manter o gate de entrada com `lat/lon/country` (o campo `country` continua obrigatorio para o contrato do modulo).
+  - Manter `seas_scale = 110` fixo no motor.
+  - Tornar `reference` autoexplicativo na UI com nota textual dedicada na legenda.
+  - Reverter o experimento de fundo vetorial no Leaflet para tiles padrao (`CartoDB.Positron`) por robustez visual imediata em runtime.
+- **Alternativas**:
+  - Manter `cc_coun` como parte obrigatoria do diagnostico final - rejeitado por ruido elevado na triagem.
+  - Remover totalmente qualquer dependencia de `country` da aba - rejeitado para preservar contrato de mapeamento e compatibilidade do fluxo.
+  - Manter fundo vetorial `rnaturalearth` no mapa da UI - rejeitado neste ciclo apos regressao visual de exibicao em runtime.
+- **Consequencias**:
+  - Stream de problemas fica mais aderente ao objetivo operacional da aba (mar, inversao e hotspots de referencia).
+  - Reducao de falso alerta na categoria de pais inconsistente.
+  - Menor atrito de interpretacao no mapa, com legenda mais clara para `reference`.
+
+---
+
+## ADR-038: Modal de loading resiliente em `validate_coords` e basemap selecionavel no Leaflet
+
+- **Data**: 2026-02-22
+- **Contexto**: O modal de loading da validacao de coordenadas passou a falhar com `attempt to apply non-function` ao tentar renderizar `<lottie-player>` via `shiny::tags$` em uma custom tag com hifen. A falha ocorria antes da transicao para `run_requested`, interrompendo a execucao e criando percepcao de lentidao/travamento. Em paralelo, havia requisito de produto para alternar basemap entre `OpenStreetMap` e `Esri.WorldImagery`.
+- **Decisao**:
+  - Renderizar o web component Lottie com HTML explicito (`shiny::HTML("<lottie-player ...>")`) em vez de `shiny::tags$` para custom tag.
+  - Manter `src` do asset com prefixo `www/` (`www/lottie/...`) porque o app serve assets via `addResourcePath("www", ...)`.
+  - Blindar o arranque da validacao em `observeEvent(rv$start_requested, ...)` com `tryCatch`:
+    - falha de modal nao bloqueia pipeline;
+    - `rv$run_requested <- TRUE` sempre executa;
+    - aviso leve informa fallback sem animacao.
+  - Ajustar tamanho do Lottie no modal para metade (melhor proporcao visual).
+  - Trocar basemap padrao para `OpenStreetMap` e adicionar `Esri.WorldImagery` como opcao selecionavel via `addLayersControl`.
+  - Definir `OpenStreetMap` como camada inicial visivel; `Esri.WorldImagery` inicia oculto.
+- **Alternativas**:
+  - Trocar `src` para `lottie/...` sem `www/` - rejeitado por incompatibilidade com o contrato atual de assets do app.
+  - Manter modal sem `tryCatch` - rejeitado por permitir que erro visual bloqueie validacao de backend.
+  - Expor seletor de basemap fora do Leaflet (UI externa) - rejeitado neste ciclo por aumento de complexidade sem ganho funcional imediato.
+- **Consequencias**:
+  - Elimina o erro fatal de modal e restaura fluxo de validacao.
+  - Falhas de UI no loading deixam de afetar a execucao funcional.
+  - Usuario passa a controlar contexto cartografico (rua vs satelite) sem perder padrao default.
+  - Suite `test-mod-validate-coords-server` volta a verde e ganha cobertura de regressao para falha de modal.
+
+---
+
+## ADR-039: Enquadramento dinamico do mapa de coordenadas por pontos filtrados
+
+- **Data**: 2026-02-22
+- **Contexto**: A aba `validate_coords` ainda inicializava o mapa com `fitBounds` fixo (bounding box da America do Sul), o que gerava foco geografico inconsistente apos validacao/filtro, principalmente para datasets de outras regioes.
+- **Decisao**:
+  - Remover o `fitBounds` fixo da inicializacao do `renderLeaflet`.
+  - Inicializar o mapa com visao neutra (`setView(0, 0, zoom = 2)`), sem supor regiao.
+  - No observer de atualizacao (`leafletProxy`), apos `addCircleMarkers`, calcular limites reais do subconjunto exibido (`lat_num`/`lon_num`) e aplicar `fitBounds`.
+  - Tratar caso degenerado (todos os pontos no mesmo par lat/lon) com `setView(..., zoom = 8)` para evitar comportamento ruim de `fitBounds` com bbox zero.
+  - Aplicar o ajuste por filtro ativo (pills), de forma que cada familia mostre seu proprio enquadramento.
+- **Alternativas**:
+  - Manter bbox fixa regional - rejeitado por viés geografico e UX inconsistente.
+  - Calcular bounds apenas no dataset completo (ignorando filtro ativo) - rejeitado por reduzir utilidade dos pills.
+  - Ajustar bounds antes de adicionar marcadores - rejeitado por pior rastreabilidade do estado final renderizado no proxy.
+- **Consequencias**:
+  - Mapa passa a abrir e reposicionar de acordo com os dados realmente exibidos.
+  - Reduz a necessidade de pan/zoom manual apos cada validacao ou troca de filtro.
+  - Mantem comportamento robusto para cenarios de ponto unico e para subsets pequenos.

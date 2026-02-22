@@ -25,24 +25,30 @@ mod_upload_ui <- function(id) {
                         bslib::card_body(
                             # File input with icon-only button
                             shiny::div(
-                                class = "upload-section",
+                                class = "upload-section upload-dropzone",
                                 shiny::fileInput(
                                     inputId = ns("file"),
                                     label = NULL,
                                     accept = c(".csv", "text/csv"),
                                     buttonLabel = shiny::icon("upload", class = "fa-solid"),
                                     placeholder = ""
+                                ),
+                                shiny::div(
+                                    class = "upload-dropzone-copy",
+                                    shiny::div(
+                                        class = "upload-dropzone-hint",
+                                        shiny::uiOutput(ns("dropzone_hint_text"), inline = TRUE)
+                                    ),
+                                    shiny::div(
+                                        class = "upload-dropzone-max-size",
+                                        shiny::uiOutput(ns("max_size_text"), inline = TRUE)
+                                    )
                                 )
                             ),
 
                             # Compact upload hints
                             shiny::div(
                                 class = "upload-hints-compact",
-                                shiny::div(
-                                    class = "upload-hint-row hint-spec",
-                                    shiny::icon("file", class = "fa-solid"),
-                                    shiny::uiOutput(ns("max_size_text"), inline = TRUE)
-                                ),
                                 shiny::div(
                                     class = "upload-hint-row hint-spec",
                                     shiny::icon("code", class = "fa-solid"),
@@ -164,6 +170,10 @@ mod_upload_server <- function(id, lang_r) {
 
         output$file_placeholder_text <- shiny::renderUI({
             shiny::tags$span(tr("upload_no_file", lang_r()))
+        })
+
+        output$dropzone_hint_text <- shiny::renderUI({
+            shiny::tags$span(tr("upload_dropzone_hint", lang_r()))
         })
 
         output$max_size_text <- shiny::renderUI({

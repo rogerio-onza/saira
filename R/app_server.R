@@ -55,11 +55,15 @@ app_server <- function(input, output, session) {
     mapped_data <- mod_mapping_server("mapping", raw_data, lang_r)
     preview_data <- attr(mapped_data, "preview_data")
     validation_gate <- attr(mapped_data, "validation_gate")
+    coord_validation_gate <- attr(mapped_data, "validation_gate_coords")
     if (is.null(preview_data) || !shiny::is.reactive(preview_data)) {
         preview_data <- mapped_data
     }
     if (is.null(validation_gate) || !shiny::is.reactive(validation_gate)) {
         validation_gate <- NULL
+    }
+    if (is.null(coord_validation_gate) || !shiny::is.reactive(coord_validation_gate)) {
+        coord_validation_gate <- NULL
     }
 
     # Consumers of mapped_data
@@ -70,7 +74,12 @@ app_server <- function(input, output, session) {
         download_data_r = mapped_data
     )
     mod_validate_names_server("validate_names", mapped_data, lang_r, validation_gate_r = validation_gate)
-    mod_validate_coords_server("validate_coords", mapped_data, lang_r)
+    coord_validation_r <- mod_validate_coords_server(
+        "validate_coords",
+        mapped_data,
+        lang_r,
+        validation_gate_r = coord_validation_gate
+    )
 
     # Independent modules (no data dependency)
     mod_wiki_server("wiki", lang_r)

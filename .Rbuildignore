@@ -4,6 +4,7 @@
 ^README\.md$
 ^CHANGELOG\.md$
 ^docs$
+^data-raw$
 ^app\.R$
 ^\.github$
 ^\.agent$

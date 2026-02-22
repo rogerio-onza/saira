@@ -105,35 +105,49 @@ dwc_terms_cache_state <- function() {
     )
 }
 
-#' Validate coordinates (WGS84)
+#' Validate coordinates (legacy wrapper)
+#'
+#' Legacy API wrapper around `validate_coords_df()`. Kept for backward
+#' compatibility with existing callers that pass latitude/longitude vectors.
 #'
 #' @param lat Numeric vector of latitudes
 #' @param lon Numeric vector of longitudes
 #' @return Data frame with validation results
 #' @export
 validate_coords <- function(lat, lon) {
-    # Convert to numeric if needed
-    lat <- suppressWarnings(as.numeric(gsub(",", ".", lat)))
-    lon <- suppressWarnings(as.numeric(gsub(",", ".", lon)))
-
-    # Check ranges
-    lat_valid <- !is.na(lat) & lat >= -90 & lat <= 90
-    lon_valid <- !is.na(lon) & lon >= -180 & lon <= 180
-
-    # Combined validity
-    valid <- lat_valid & lon_valid
-
-    # Generate error messages
-    error <- rep(NA_character_, length(lat))
-    error[!lat_valid & !is.na(lat)] <- "Latitude out of range (-90 to 90)"
-    error[!lon_valid & !is.na(lon)] <- "Longitude out of range (-180 to 180)"
-    error[is.na(lat) | is.na(lon)] <- "Missing coordinates"
-
-    data.frame(
+    input_df <- data.frame(
         decimalLatitude = lat,
         decimalLongitude = lon,
-        valid = valid,
-        error = error,
+        stringsAsFactors = FALSE
+    )
+
+    result_df <- validate_coords_df(
+        df = input_df,
+        lat_col = "decimalLatitude",
+        lon_col = "decimalLongitude"
+    )
+
+    legacy_error_map <- c(
+        ok = NA_character_,
+        missing = "Missing coordinates",
+        lat_range = "Latitude out of range (-90 to 90)",
+        lon_range = "Longitude out of range (-180 to 180)",
+        zero_zero = "Zero-zero coordinates",
+        swapped = "Possible latitude/longitude swap",
+        identical_all = "Identical coordinates in all rows"
+    )
+    issue_key <- as.character(result_df$issue_type)
+    issue_key[is.na(issue_key) | !nzchar(issue_key)] <- "missing"
+    legacy_error <- unname(legacy_error_map[issue_key])
+    legacy_error[issue_key == "ok"] <- NA_character_
+
+    data.frame(
+        decimalLatitude = result_df$decimalLatitude,
+        decimalLongitude = result_df$decimalLongitude,
+        valid = result_df$valid,
+        issue_type = result_df$issue_type,
+        error_key = result_df$error_key,
+        error = legacy_error,
         stringsAsFactors = FALSE
     )
 }

@@ -5,6 +5,184 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ---
 
+## [0.1.17] - 2026-02-22
+
+### Alterado
+- Reposicionamento do mapa de `validate_coords` passou a usar enquadramento dinamico pelos pontos exibidos no filtro ativo:
+  - removido `fitBounds` fixo da America do Sul na inicializacao;
+  - inicializacao padrao com `setView(0, 0, zoom = 2)`;
+  - apos plotar marcadores, `leafletProxy` calcula limites reais (`min/max` de `lat_num/lon_num`) e aplica `fitBounds`.
+- Tratamento de ponto unico adicionado no mapa de coordenadas:
+  - quando todos os pontos visiveis colapsam no mesmo par lat/lon, o app usa `setView(..., zoom = 8)` em vez de `fitBounds` degenerado.
+
+### Corrigido
+- Evitado viés regional no mapa apos validacao (antes o foco inicial sempre voltava para bounding box fixo).
+- Melhorado o foco visual apos troca de pills/filtros, mantendo o mapa centralizado no subconjunto realmente exibido.
+
+---
+
+## [0.1.16] - 2026-02-22
+
+### Alterado
+- Modal de loading da aba `validate_coords` passou a renderizar o web component de animacao com HTML explicito (`<lottie-player ...>`) em vez de `shiny::tags$` para tag customizada.
+- Fluxo de arranque da validacao em `observeEvent(rv$start_requested)` ficou resiliente a falhas visuais de modal:
+  - `showModal()` protegido por `tryCatch`;
+  - `rv$run_requested <- TRUE` preservado mesmo com erro de UI;
+  - aviso de fallback adicionado (`validate_coords_modal_fallback`).
+- Tamanho do icone/animação de loading reduzido para metade no modal de coordenadas (`.coords-loading-lottie`: `90x70`).
+- Basemap do mapa de coordenadas atualizado para oferecer escolha entre:
+  - `providers$OpenStreetMap` (padrao)
+  - `providers$Esri.WorldImagery` (opcional via controle de camadas)
+
+### Corrigido
+- Erro fatal no clique de validacao de coordenadas: `attempt to apply non-function` ao abrir modal com `lottie-player`.
+- Regressao de UX onde a validacao aparentava "demorar" por abortar antes do processamento real quando o modal falhava.
+
+### Testes
+- `devtools::test(filter='mod-validate-coords-server')` verde (`PASS 16`, `FAIL 0`), incluindo novo teste de regressao para falha em `showModal()`.
+
+---
+
+## [0.1.15] - 2026-02-22
+
+### Alterado
+- Removido `cc_coun` (country mismatch) do pipeline de diagnóstico da aba `validate_coords`.
+
+---
+
+## [0.1.14] - 2026-02-22
+
+### Adicionado
+- Artefato de aliases de pais externalizado em `inst/extdata/country_aliases.rds` (seed inicial com aliases frequentes), substituindo a dependencia de dicionario hard-coded em codigo
+- Script reprodutivel `data-raw/generate_country_aliases.R` para gerar e atualizar `country_aliases.rds`
+- Novas funcoes internas em `R/utils_coords.R` para suporte ao novo fluxo:
+  - `resolve_country_aliases_path()` para resolver caminho do `.rds` em ambiente de desenvolvimento e pacote instalado
+  - `coords_sanitize_aliases_table()` para validar/sanitizar estrutura `alias`/`iso3c`
+  - `coords_load_aliases()` com cache em sessao para leitura unica do `.rds`
+  - `coords_build_fuzzy_reference()` com cache da referencia multilíngue usada no fallback fuzzy
+- Nova suite dedicada de testes `tests/testthat/test-coords-country-to-iso3.R` cobrindo camadas de resolucao, casos negativos e budget de performance
+
+### Alterado
+- `coords_country_to_iso3()` foi reescrita em cascata de 5 camadas:
+  - `iso3c` estrito
+  - `iso2c` estrito
+  - CLDR multilíngue via `countrycode::codelist` + `custom_dict`
+  - aliases customizados via `.rds`
+  - fuzzy matching conservador
+- Conversao de pais agora deduplica valores unicos, resolve em lote e re-expande para o vetor original, preservando cardinalidade e ordem
+- `coords_alias_map()` foi mantida por compatibilidade retroativa, mas passou a ser wrapper do `.rds` (sem hard-code interno)
+- `validate_coords_cc_df()` passou a herdar automaticamente o novo comportamento de resolucao de pais via `coords_country_to_iso3()`
+- `.Rbuildignore` atualizado para ignorar `data-raw/` no build do pacote
+
+### Corrigido
+- Reducao relevante de `country_unresolved` para entradas heterogeneas (PT/EN/ES, siglas, abreviacoes e erros de digitacao leves)
+- Endurecimento do fuzzy para reduzir falso positivo: comprimento minimo, distancia maxima relativa, exigencia de melhor match unico e margem para segundo melhor candidato
+
+### Testes
+- `devtools::test(filter = "coords-country-to-iso3|utils-coords")` verde
+- `devtools::test(filter = "mod-validate-coords-server|mod-mapping-server")` verde
+
+---
+
+## [0.1.13] - 2026-02-21
+
+### Adicionado
+- Novo motor canonico de coordenadas em `R/utils_coords.R` com `validate_coords_cc_df(df, lat_col, lon_col, country_col, profile, seas_scale)` usando `CoordinateCleaner` como engine principal
+- Conversao `country -> ISO3` com cadeia de resolucao (`iso3c -> iso2c -> country.name`) e mapa minimo de aliases para reduzir falhas de mapeamento
+- Diagnostico final deterministico por linha (`diagnostic` + `diagnostic_family`) sem exclusao de registros, com preservacao de cardinalidade (`nrow(out) == nrow(in)`)
+- Perfis de execucao no motor de coordenadas:
+  - `complete`: `capitals`, `centroids`, `countries`, `equal`, `gbif`, `institutions`, `seas`, `zeros`
+  - `fast`: `countries`, `equal`, `seas`, `zeros`
+- Pos-processamento legado apos `CoordinateCleaner` preservado para:
+  - `swapped` (possivel inversao lat/lon)
+  - `identical_all` (todas as coordenadas completas identicas)
+- Novo contrato de gate leve de coordenadas em `mod_mapping` com suporte a `country`:
+  - `coords_status`, `has_data`, `lat_col`, `lon_col`, `country_col`, `has_lat`, `has_lon`, `has_country`
+  - estados granulares: `no_data`, `ok`, `missing_lat`, `missing_lon`, `missing_country`, `missing_multiple`
+- Nova suite de testes de modulo para coordenadas: `tests/testthat/test-mod-validate-coords-server.R`
+
+### Alterado
+- Aba `validate_coords` migrada para layout full-width real:
+  - remocao de `max-width` fixo no container
+  - grid principal `col-lg-2` (esquerda) + `col-lg-10` (direita)
+  - area de resultados em `50/50` (`col-lg-6` mapa + `col-lg-6` tabela)
+- Fluxo de execucao da validacao refeito para usar exclusivamente `validate_coords_cc_df(...)` no clique de validar
+- Gate da UI de coordenadas passou a bloquear execucao ate haver mapeamento de `lat/lon/country`
+- Card de acao da validacao ganhou seletor de perfil (`Complete`/`Fast`)
+- Pills da aba de coordenadas migradas para familias de diagnostico:
+  - `all`, `problems`, `validity`, `country`, `sea`, `zero_equal`, `reference`
+- Tabela de diagnostico expandida para 6 colunas:
+  - `Linha`, `Diagnostico`, `Latitude`, `Longitude`, `Country`, `ISO3`
+- Legenda do mapa alinhada ao novo contrato por familias de diagnostico, mantendo nota de cluster para evitar interpretacao incorreta de cor
+- `DESCRIPTION` atualizado para incluir dependencias espaciais em `Imports`:
+  - `CoordinateCleaner`, `countrycode`, `sf`, `rnaturalearth`, `rnaturalearthdata`
+- `NAMESPACE` atualizado para exportar `validate_coords_cc_df`
+
+### Corrigido
+- Fluxo reativo interno da validacao de coordenadas ajustado para executar corretamente no primeiro disparo e em ambiente de teste (`testServer`)
+- Observer de warning de conversao de coordenadas endurecido para tratar atributos ausentes em cenarios mockados
+- Testes de filtro da aba de coordenadas ajustados ao comportamento oficial da UI (filtro padrao pos-validacao em `problems`)
+
+### Testes
+- Atualizada cobertura de `tests/testthat/test-utils-coords.R` para pipeline CC completo:
+  - parse decimal com virgula
+  - `country` resolvido e nao resolvido
+  - `validity_missing` e `validity_bounds`
+  - mapeamento de flags CC para familias/diagnostico
+  - prioridade de diagnostico
+  - `swapped` e `identical_all`
+  - garantia de cardinalidade
+- Atualizada cobertura de gate em `tests/testthat/test-mod-mapping-server.R` com `country_col` e estados granulares
+- Nova cobertura de integracao da aba em `tests/testthat/test-mod-validate-coords-server.R`:
+  - bloqueio sem `country`
+  - execucao com `lat/lon/country`
+  - troca de perfil
+  - filtros por familia afetando stream de dados
+
+---
+
+## [0.1.12] - 2026-02-21
+
+### Adicionado
+- Gate leve dedicado para coordenadas no `mod_mapping` (`validation_gate_coords`) com contrato `coords_status/lat_col/lon_col`
+- Wiring no `app_server` para repassar gate de coordenadas ao `mod_validate_coords`
+- Layout da aba `validate_coords` reorganizado em painéis separados (`stats_panel`, `filter_pills`, `map_panel`, `table_panel`) com grid `col-lg-3/9`
+- Estilos de sidebar sticky e classes semânticas para estatísticas de coordenadas (`stat-box-ok/error/warn/muted`)
+
+### Alterado
+- `validate_coords` (wrapper legado) passou a delegar para `validate_coords_df`, mantendo assinatura e adicionando `issue_type/error_key` no retorno
+- Aba de coordenadas passou a usar gate explícito por parâmetro opcional em `mod_validate_coords_server(..., validation_gate_r = NULL)`
+- `DESCRIPTION` atualizado com `leaflet (>= 2.1.0)` em `Imports`
+
+### Corrigido
+- Dependência ausente de `leaflet` que poderia quebrar `R CMD check`
+- Habilitação da validação de coordenadas desacoplada do caminho pesado de `mapped_data` quando gate leve está disponível
+- Sinal visual de "Válidas" na aba de coordenadas alinhado para classe semântica (`stat-box-ok`) em vez de cor inline inconsistente
+
+---
+
+## [0.1.11] - 2026-02-21
+
+### Adicionado
+- Drag-and-drop robusto de upload na homepage com `upload-dropzone.js` carregado no `app_ui` com cache-busting
+- Copy central dentro do dropzone com duas linhas i18n (`upload_dropzone_hint` e `upload_max_size`)
+- Classes CSS dedicadas ao dropzone de superficie inteira (`upload-dropzone-copy`, `upload-dropzone-max-size`) e estados (`is-dragover`, `has-file`)
+- Classes CSS ausentes da aba `validate_coords` para suportar cards, pills, badges de issue e legenda do mapa (`validate-coords-card`, `coords-gate-*`, `coords-filter-pills`, `coord-issue-badge-*`, `coords-map-legend-*`)
+
+### Alterado
+- Homepage Upload restaurada para o padrao de dropzone grande com area clicavel inteira, hint centralizado e watermark CSV opaco de fundo
+- Bloco "Tamanho maximo de arquivo" movido da lista de hints para dentro do dropzone, junto com a instrucao de arrastar/soltar
+- Texto do hint de upload atualizado para instrucao unica de acao ("arraste/solte ou clique")
+- `mod_validate_coords` passou a validar contrato do gate recebido por atributo antes de usar (`coords_status/lat_col/lon_col`); quando o contrato nao existe, aplica fallback seguro em `mapped_data_r()`
+
+### Corrigido
+- Regressao de drag-and-drop em navegadores com `dataTransfer.types` sem suporte uniforme a `includes`; deteccao de arquivos agora cobre `contains/indexOf/item`
+- Regressao visual da homepage onde a caixa nativa do `fileInput` reaparecia junto do dropzone custom; wrapper visual nativo agora e removido no bind e o input real e reanexado ao container
+- Regressao funcional na aba `validate_coords` em cenarios onde `validation_gate` de nomes era reaproveitado indevidamente e bloqueava o botao de validacao
+- Regressao visual na aba `validate_coords` por classes referenciadas no modulo sem definicao no stylesheet
+
+---
+
 ## [0.1.10] - 2026-02-19
 
 ### Adicionado

@@ -1012,6 +1012,154 @@ i18n_dict <- list(
     validate_coords_datatable_next = list(pt = "Pr\u00F3xima", en = "Next"),
     validate_coords_datatable_prev = list(pt = "Anterior", en = "Previous"),
 
+
+    validate_coords_action_card_title = list(
+        pt = "Configurar Validação",
+        en = "Configure Validation"
+    ),
+    validate_coords_status_lat = list(pt = "Latitude", en = "Latitude"),
+    validate_coords_status_lon = list(pt = "Longitude", en = "Longitude"),
+    validate_coords_status_not_mapped = list(
+        pt = "não mapeada",
+        en = "not mapped"
+    ),
+    validate_coords_run_running = list(pt = "Validando...", en = "Validating..."),
+    validate_coords_action_ready = list(
+        pt = "Pronto para validar. Clique em Validar Coordenadas.",
+        en = "Ready to validate. Click Validate Coordinates."
+    ),
+    validate_coords_no_data = list(
+        pt = "Nenhum dado mapeado disponível para validar.",
+        en = "No mapped data available for validation."
+    ),
+    validate_coords_lat_missing = list(
+        pt = "Latitude não mapeada. Mapeie decimalLatitude antes de validar.",
+        en = "Latitude not mapped. Map decimalLatitude before validating."
+    ),
+    validate_coords_lon_missing = list(
+        pt = "Longitude não mapeada. Mapeie decimalLongitude antes de validar.",
+        en = "Longitude not mapped. Map decimalLongitude before validating."
+    ),
+    validate_coords_pre_hint_title = list(pt = "Configure e valide", en = "Configure and validate"),
+    validate_coords_pre_hint_body = list(
+        pt = "Mapeie decimalLatitude, decimalLongitude e country na aba Mapeamento, depois clique em Validar.",
+        en = "Map decimalLatitude, decimalLongitude and country in the Mapping tab, then click Validate."
+    ),
+    validate_coords_pre_hint_prefix = list(pt = "Mapeie ", en = "Map "),
+    validate_coords_pre_hint_suffix = list(
+        pt = " na aba Mapeamento, depois clique em Validar.",
+        en = " in the Mapping tab, then click Validate."
+    ),
+    validate_coords_loading_title = list(pt = "Validando Coordenadas", en = "Validating Coordinates"),
+    validate_coords_modal_fallback = list(
+        pt = "Falha ao exibir a anima\u00E7\u00E3o de carregamento. A valida\u00E7\u00E3o continuar\u00E1 normalmente.",
+        en = "Failed to display loading animation. Validation will continue normally."
+    ),
+    validate_coords_loading_status = list(pt = "Analisando... %s%%", en = "Analyzing... %s%%"),
+    validate_coords_loading_phase_prepare = list(pt = "Preparando dados", en = "Preparing data"),
+    validate_coords_loading_phase_validate = list(pt = "Validando coordenadas", en = "Validating coordinates"),
+    validate_coords_loading_phase_map = list(pt = "Gerando mapa", en = "Generating map"),
+    validate_coords_loading_phase_finalize = list(pt = "Finalizando", en = "Finalizing"),
+    validate_coords_failed = list(
+        pt = "Falha na validação de coordenadas: %s",
+        en = "Coordinate validation failed: %s"
+    ),
+    validate_coords_conversion_warning = list(
+        pt = "%s valor(es) não puderam ser convertidos para número e foram tratados como ausentes.",
+        en = "%s value(s) could not be converted to numbers and were treated as missing."
+    ),
+    validate_coords_warnings = list(pt = "Avisos", en = "Warnings"),
+    validate_coords_all_valid = list(
+        pt = "Todas as coordenadas são válidas!",
+        en = "All coordinates are valid!"
+    ),
+    validate_coords_filter_all = list(pt = "Todos", en = "All"),
+    validate_coords_filter_problems = list(pt = "Problemas", en = "Problems"),
+    validate_coords_filter_missing = list(pt = "Ausentes", en = "Missing"),
+    validate_coords_filter_lat = list(pt = "Lat inválida", en = "Invalid Lat"),
+    validate_coords_filter_lon = list(pt = "Lon inválida", en = "Invalid Lon"),
+    validate_coords_zero_zero = list(pt = "Zero-Zero", en = "Zero-Zero"),
+    validate_coords_filter_swapped = list(pt = "Invertidas", en = "Swapped"),
+    validate_coords_badge_missing = list(pt = "ausente", en = "missing"),
+    validate_coords_badge_lat_range = list(pt = "lat fora do range", en = "lat out of range"),
+    validate_coords_badge_lon_range = list(pt = "lon fora do range", en = "lon out of range"),
+    validate_coords_badge_zero_zero = list(pt = "zero-zero", en = "zero-zero"),
+    validate_coords_badge_swapped = list(pt = "possível inversão", en = "possible swap"),
+    validate_coords_badge_identical_all = list(pt = "coords idênticas", en = "identical coords"),
+    validate_coords_col_row = list(pt = "Linha", en = "Row"),
+    validate_coords_col_issue = list(pt = "Diagn\u00F3stico", en = "Diagnosis"),
+    validate_coords_table_title = list(pt = "Diagn\u00F3stico de Coordenadas", en = "Coordinate Diagnostics"),
+    validate_coords_col_lat = list(pt = "Latitude", en = "Latitude"),
+    validate_coords_col_lon = list(pt = "Longitude", en = "Longitude"),
+    validate_coords_map_title = list(pt = "Distribuição Geográfica", en = "Geographic Distribution"),
+    validate_coords_map_subtitle = list(
+        pt = "Pontos coloridos por tipo de issue. Clique em um ponto para ver detalhes.",
+        en = "Points colored by issue type. Click a point to see details."
+    ),
+    validate_coords_map_empty = list(
+        pt = "Nenhum ponto para exibir com o filtro selecionado.",
+        en = "No points to display for the selected filter."
+    ),
+    validate_coords_map_legend_ok = list(pt = "Válida", en = "Valid"),
+    validate_coords_map_legend_error = list(pt = "Inválida", en = "Invalid"),
+    validate_coords_map_legend_warning = list(pt = "Aviso", en = "Warning"),
+    validate_coords_map_legend_zero_zero = list(pt = "Zero-Zero", en = "Zero-Zero"),
+    validate_coords_map_legend_swapped = list(pt = "Posic. Invertida", en = "Swapped"),
+    validate_coords_map_legend_identical = list(pt = "Id\u00EAnticas", en = "Identical"),
+    validate_coords_map_legend_missing = list(pt = "Ausente", en = "Missing"),
+    validate_coords_map_legend_cluster_note = list(
+        pt = "Clusters com muitos pontos usam cores autom\u00E1ticas (verde\u2192laranja) e n\u00E3o indicam o tipo de coordenada.",
+        en = "Clusters with many points use automatic colors (green\u2192orange) and do not indicate the coordinate type."
+    ),
+    validate_coords_popup_row = list(pt = "Linha", en = "Row"),
+    validate_coords_popup_issue = list(pt = "Issue", en = "Issue"),
+    validate_coords_datatable_search = list(pt = "Buscar:", en = "Search:"),
+    validate_coords_datatable_length_menu = list(pt = "Mostrar _MENU_ registros", en = "Show _MENU_ entries"),
+    validate_coords_datatable_info = list(
+        pt = "Mostrando _START_ a _END_ de _TOTAL_ registros",
+        en = "Showing _START_ to _END_ of _TOTAL_ entries"
+    ),
+    validate_coords_datatable_empty = list(pt = "Nenhum registro na tabela", en = "No records available"),
+    validate_coords_datatable_zero_records = list(pt = "Nenhum registro encontrado", en = "No matching records found"),
+    validate_coords_datatable_first = list(pt = "Primeira", en = "First"),
+    validate_coords_datatable_last = list(pt = "Última", en = "Last"),
+    validate_coords_datatable_next = list(pt = "Próxima", en = "Next"),
+    validate_coords_datatable_prev = list(pt = "Anterior", en = "Previous"),
+    validate_coords_status_country = list(pt = "Country", en = "Country"),
+    validate_coords_country_missing = list(
+        pt = "Country n\u00E3o mapeado. Mapeie country antes de validar.",
+        en = "Country not mapped. Map country before validating."
+    ),
+    validate_coords_missing_multiple = list(
+        pt = "Mapeie latitude, longitude e country antes de validar.",
+        en = "Map latitude, longitude and country before validating."
+    ),
+    validate_coords_profile_label = list(pt = "Perfil", en = "Profile"),
+    validate_coords_profile_complete = list(pt = "Completo", en = "Complete"),
+    validate_coords_profile_fast = list(pt = "R\u00E1pido", en = "Fast"),
+    validate_coords_filter_validity = list(pt = "Inv\u00E1lida", en = "Invalid"),
+    validate_coords_filter_sea = list(pt = "Mar", en = "Sea"),
+    validate_coords_filter_zero_equal = list(pt = "Zero/Equal", en = "Zero/Equal"),
+    validate_coords_filter_reference = list(pt = "Refer\u00EAncia", en = "Reference"),
+    validate_coords_col_country = list(pt = "Country", en = "Country"),
+    validate_coords_col_iso3 = list(pt = "ISO3", en = "ISO3"),
+    validate_coords_diag_ok = list(pt = "OK", en = "OK"),
+    validate_coords_diag_validity_missing = list(pt = "Coordenada ausente", en = "Missing coordinate"),
+    validate_coords_diag_validity_bounds = list(pt = "Fora dos limites", en = "Out of bounds"),
+    validate_coords_diag_swapped = list(pt = "Poss\u00EDvel invers\u00E3o", en = "Possible swap"),
+    validate_coords_diag_sea = list(pt = "Em mar aberto", en = "At sea"),
+    validate_coords_diag_zero_equal = list(pt = "Zero/Equal", en = "Zero/Equal"),
+    validate_coords_diag_identical_all = list(pt = "Todas id\u00EAnticas", en = "All identical"),
+    validate_coords_diag_reference = list(pt = "Refer\u00EAncia sens\u00EDvel", en = "Reference hotspot"),
+    validate_coords_map_legend_validity = list(pt = "Inv\u00E1lida", en = "Invalid"),
+    validate_coords_map_legend_sea = list(pt = "Mar", en = "Sea"),
+    validate_coords_map_legend_zero_equal = list(pt = "Zero/Equal", en = "Zero/Equal"),
+    validate_coords_map_legend_reference = list(pt = "Refer\u00EAncia sens\u00EDvel", en = "Reference hotspot"),
+    validate_coords_map_legend_reference_note = list(
+        pt = "Refer\u00EAncia sens\u00EDvel = ponto pr\u00F3ximo de capital, centr\u00F3ide, sede GBIF ou institui\u00E7\u00E3o biol\u00F3gica.",
+        en = "Reference hotspot = point near a capital, centroid, GBIF HQ, or biodiversity institution."
+    ),
+
     # Wiki Module
     wiki_title = list(
         pt = "Wiki de Termos Darwin Core",
@@ -1134,6 +1282,10 @@ i18n_dict <- list(
     upload_no_file = list(
         pt = "Nenhum arquivo selecionado",
         en = "No file selected"
+    ),
+    upload_dropzone_hint = list(
+        pt = "Arraste e solte seu arquivo CSV aqui ou clique para selecionar.",
+        en = "Drag and drop your CSV file here or click to select."
     ),
     upload_btn_label = list(
         pt = "Enviar",

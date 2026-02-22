@@ -1718,6 +1718,68 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             )
         })
 
+        # Lightweight gate for coordinate validation without materializing processed_data
+        coord_validation_gate_r <- shiny::reactive({
+            raw_df <- raw_data_r()
+            if (is.null(raw_df) || !is.data.frame(raw_df) || nrow(raw_df) == 0L) {
+                return(list(
+                    coords_status = "no_data",
+                    has_data = FALSE,
+                    lat_col = "",
+                    lon_col = "",
+                    country_col = "",
+                    has_lat = FALSE,
+                    has_lon = FALSE,
+                    has_country = FALSE
+                ))
+            }
+
+            lat_selected <- sanitize_map_selection("decimalLatitude", rv$map_values[["decimalLatitude"]])
+            if (!has_selected_value(lat_selected)) {
+                lat_selected <- sanitize_map_selection("decimalLatitude", input$map_decimalLatitude)
+            }
+            lon_selected <- sanitize_map_selection("decimalLongitude", rv$map_values[["decimalLongitude"]])
+            if (!has_selected_value(lon_selected)) {
+                lon_selected <- sanitize_map_selection("decimalLongitude", input$map_decimalLongitude)
+            }
+            country_selected <- sanitize_map_selection("country", rv$map_values[["country"]])
+            if (!has_selected_value(country_selected)) {
+                country_selected <- sanitize_map_selection("country", input$map_country)
+            }
+
+            lat_col <- if (has_selected_value(lat_selected)) as.character(lat_selected[[1]]) else ""
+            lon_col <- if (has_selected_value(lon_selected)) as.character(lon_selected[[1]]) else ""
+            country_col <- if (has_selected_value(country_selected)) as.character(country_selected[[1]]) else ""
+
+            has_lat <- nzchar(lat_col) && lat_col %in% names(raw_df)
+            has_lon <- nzchar(lon_col) && lon_col %in% names(raw_df)
+            has_country <- nzchar(country_col) && country_col %in% names(raw_df)
+
+            missing_count <- sum(!c(has_lat, has_lon, has_country))
+            status <- if (has_lat && has_lon && has_country) {
+                "ok"
+            } else if (missing_count >= 2L) {
+                "missing_multiple"
+            } else if (!has_lat) {
+                "missing_lat"
+            } else if (!has_lon) {
+                "missing_lon"
+            } else {
+                "missing_country"
+            }
+
+            list(
+                coords_status = status,
+                has_data = TRUE,
+                lat_col = lat_col,
+                lon_col = lon_col,
+                country_col = country_col,
+                has_lat = has_lat,
+                has_lon = has_lon,
+                has_country = has_country
+            )
+        })
+
         # Lightweight mapped preview (first 100 raw rows only)
         preview_processed_data <- shiny::reactive({
             shiny::req(raw_data_r())
@@ -1739,6 +1801,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
         attr(processed_data, "preview_data") <- preview_processed_data
         attr(processed_data, "validation_gate") <- validation_gate_r
+        attr(processed_data, "validation_gate_coords") <- coord_validation_gate_r
 
         # Explicit return
         return(processed_data)
