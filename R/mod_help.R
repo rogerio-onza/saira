@@ -188,12 +188,7 @@ mod_help_ui <- function(id) {
             shiny::div(
                 class = "help-search-container",
                 shiny::icon("search", class = "help-search-icon"),
-                shiny::textInput(
-                    inputId = ns("help_search"),
-                    label = NULL,
-                    placeholder = "Buscar na ajuda...",
-                    width = "100%"
-                )
+                shiny::uiOutput(ns("help_search_input"))
             ),
             shiny::uiOutput(ns("help_content"))
         )
@@ -215,6 +210,15 @@ mod_help_server <- function(id, lang_r) {
 
         output$subtitle <- shiny::renderUI({
             shiny::p(tr("help_subtitle", lang_r()), class = "text-accent")
+        })
+
+        output$help_search_input <- shiny::renderUI({
+            shiny::textInput(
+                inputId = ns("help_search"),
+                label = shiny::tags$span(tr("a11y_help_search_label", lang_r()), class = "visually-hidden"),
+                placeholder = tr("a11y_help_search_label", lang_r()),
+                width = "100%"
+            )
         })
 
         output$help_content <- shiny::renderUI({

@@ -74,3 +74,48 @@ testthat::test_that("custom.css does not use opacity 0.45 in DataTables paginati
         info = "Found opacity: 0.45 in disabled pagination controls"
     )
 })
+
+testthat::test_that("custom.css enforces navbar spacing and language dropdown guardrails", {
+    css_path <- resolve_css_path()
+    css_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+
+    testthat::expect_true(
+        grepl("gap:\\s*var\\(--space-5\\)(\\s*!important)?;", css_text, perl = TRUE),
+        info = "Navbar nav items should use gap var(--space-5)"
+    )
+
+    testthat::expect_true(
+        grepl("\\.navbar\\s+\\.navbar-nav>li>a", css_text, perl = TRUE) &&
+            grepl("padding:\\s*0\\.64rem\\s+1\\.3rem\\s*!important;", css_text, perl = TRUE),
+        info = "Navbar links should use 0.64rem 1.3rem padding"
+    )
+
+    testthat::expect_true(
+        grepl("\\.navbar\\s+\\.navbar-nav>li\\.dropdown>a\\.dropdown-toggle", css_text, perl = TRUE) &&
+            grepl("padding:\\s*0\\.64rem\\s+1\\.3rem\\s*!important;", css_text, perl = TRUE),
+        info = "Navbar dropdown toggle should use 0.64rem 1.3rem padding"
+    )
+
+    testthat::expect_true(
+        grepl("\\.navbar\\s+#lang_switch", css_text, perl = TRUE) &&
+            grepl("min-width:\\s*150px;", css_text, perl = TRUE),
+        info = "Language select should have min-width 150px"
+    )
+
+    testthat::expect_true(
+        grepl("\\.navbar\\s+#lang_switch", css_text, perl = TRUE) &&
+            grepl("padding:\\s*0\\.5rem\\s+2\\.5rem\\s+0\\.5rem\\s+0\\.95rem;", css_text, perl = TRUE),
+        info = "Language select should have increased right padding"
+    )
+
+    testthat::expect_true(
+        grepl("\\.navbar\\s+#lang_switch", css_text, perl = TRUE) &&
+            grepl("background-position:\\s*right\\s+0\\.75rem\\s+center;", css_text, perl = TRUE),
+        info = "Language select should keep explicit arrow position"
+    )
+
+    testthat::expect_true(
+        grepl("content:\\s*'\\\\25BE';", css_text, perl = TRUE),
+        info = "Dropdown caret must use escaped content '\\25BE'"
+    )
+})

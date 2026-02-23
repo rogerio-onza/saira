@@ -23,45 +23,50 @@ mod_upload_ui <- function(id) {
                             shiny::uiOutput(ns("data_title"))
                         ),
                         bslib::card_body(
-                            # File input with icon-only button
+                            # File input with dropzone and detached native progress row
                             shiny::div(
-                                class = "upload-section upload-dropzone",
-                                shiny::fileInput(
-                                    inputId = ns("file"),
-                                    label = NULL,
-                                    accept = c(".csv", "text/csv"),
-                                    buttonLabel = shiny::icon("upload", class = "fa-solid"),
-                                    placeholder = ""
+                                class = "upload-section",
+                                shiny::div(
+                                    class = "upload-dropzone",
+                                    shiny::div(
+                                        class = "upload-dropzone-copy",
+                                        shiny::div(
+                                            class = "upload-dropzone-hint",
+                                            shiny::uiOutput(ns("dropzone_hint_text"), inline = TRUE)
+                                        ),
+                                        shiny::div(
+                                            class = "upload-dropzone-max-size",
+                                            shiny::uiOutput(ns("max_size_text"), inline = TRUE)
+                                        )
+                                    )
                                 ),
                                 shiny::div(
-                                    class = "upload-dropzone-copy",
-                                    shiny::div(
-                                        class = "upload-dropzone-hint",
-                                        shiny::uiOutput(ns("dropzone_hint_text"), inline = TRUE)
-                                    ),
-                                    shiny::div(
-                                        class = "upload-dropzone-max-size",
-                                        shiny::uiOutput(ns("max_size_text"), inline = TRUE)
+                                    class = "upload-native-input",
+                                    shiny::fileInput(
+                                        inputId = ns("file"),
+                                        label = shiny::tags$span(tr("a11y_upload_file_label", "pt"), class = "visually-hidden"),
+                                        accept = c(".csv", "text/csv"),
+                                        buttonLabel = shiny::icon("upload", class = "fa-solid"),
+                                        placeholder = ""
                                     )
                                 )
                             ),
-
-                            # Compact upload hints
+                            # Upload info chips
                             shiny::div(
-                                class = "upload-hints-compact",
+                                class = "upload-info-chips",
                                 shiny::div(
-                                    class = "upload-hint-row hint-spec",
-                                    shiny::icon("code", class = "fa-solid"),
+                                    class = "upload-info-chip upload-info-chip--neutral",
+                                    shiny::HTML('<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>'),
                                     shiny::uiOutput(ns("encoding_text"), inline = TRUE)
                                 ),
                                 shiny::div(
-                                    class = "upload-hint-row hint-privacy",
-                                    shiny::icon("lock", class = "fa-solid"),
+                                    class = "upload-info-chip upload-info-chip--privacy",
+                                    shiny::HTML('<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'),
                                     shiny::uiOutput(ns("privacy_text"), inline = TRUE)
                                 ),
                                 shiny::div(
-                                    class = "upload-hint-row hint-recommendation",
-                                    shiny::icon("lightbulb", class = "fa-solid"),
+                                    class = "upload-info-chip upload-info-chip--tip",
+                                    shiny::HTML('<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>'),
                                     shiny::uiOutput(ns("recommendation_text"), inline = TRUE)
                                 )
                             ),
@@ -76,10 +81,9 @@ mod_upload_ui <- function(id) {
                 shiny::column(
                     width = 7,
                     bslib::card(
-                        bslib::card_header(
-                            shiny::uiOutput(ns("welcome_title"))
-                        ),
                         bslib::card_body(
+                            shiny::uiOutput(ns("welcome_header")),
+
                             # Description
                             shiny::uiOutput(ns("welcome_description")),
 
@@ -93,43 +97,31 @@ mod_upload_ui <- function(id) {
                                 class = "workflow-steps",
                                 # Step 1
                                 shiny::div(
-                                    class = "workflow-step",
+                                    class = "workflow-step is-active",
                                     shiny::div(class = "step-icon", shiny::icon("upload", class = "fa-solid")),
-                                    shiny::div(
-                                        class = "step-content",
-                                        shiny::uiOutput(ns("step1_title"), inline = TRUE),
-                                        shiny::tags$small(shiny::uiOutput(ns("step1_desc")))
-                                    )
+                                    shiny::div(class = "step-label", shiny::uiOutput(ns("step1_title"), inline = TRUE)),
+                                    shiny::div(class = "step-sublabel", shiny::uiOutput(ns("step1_desc"), inline = TRUE))
                                 ),
                                 # Step 2
                                 shiny::div(
                                     class = "workflow-step",
                                     shiny::div(class = "step-icon", shiny::icon("arrows-alt", class = "fa-solid")),
-                                    shiny::div(
-                                        class = "step-content",
-                                        shiny::uiOutput(ns("step2_title"), inline = TRUE),
-                                        shiny::tags$small(shiny::uiOutput(ns("step2_desc")))
-                                    )
+                                    shiny::div(class = "step-label", shiny::uiOutput(ns("step2_title"), inline = TRUE)),
+                                    shiny::div(class = "step-sublabel", shiny::uiOutput(ns("step2_desc"), inline = TRUE))
                                 ),
                                 # Step 3
                                 shiny::div(
                                     class = "workflow-step",
                                     shiny::div(class = "step-icon", shiny::icon("check-circle", class = "fa-solid")),
-                                    shiny::div(
-                                        class = "step-content",
-                                        shiny::uiOutput(ns("step3_title"), inline = TRUE),
-                                        shiny::tags$small(shiny::uiOutput(ns("step3_desc")))
-                                    )
+                                    shiny::div(class = "step-label", shiny::uiOutput(ns("step3_title"), inline = TRUE)),
+                                    shiny::div(class = "step-sublabel", shiny::uiOutput(ns("step3_desc"), inline = TRUE))
                                 ),
                                 # Step 4
                                 shiny::div(
                                     class = "workflow-step",
                                     shiny::div(class = "step-icon", shiny::icon("download", class = "fa-solid")),
-                                    shiny::div(
-                                        class = "step-content",
-                                        shiny::uiOutput(ns("step4_title"), inline = TRUE),
-                                        shiny::tags$small(shiny::uiOutput(ns("step4_desc")))
-                                    )
+                                    shiny::div(class = "step-label", shiny::uiOutput(ns("step4_title"), inline = TRUE)),
+                                    shiny::div(class = "step-sublabel", shiny::uiOutput(ns("step4_desc"), inline = TRUE))
                                 )
                             ),
 
@@ -173,7 +165,7 @@ mod_upload_server <- function(id, lang_r) {
         })
 
         output$dropzone_hint_text <- shiny::renderUI({
-            shiny::tags$span(tr("upload_dropzone_hint", lang_r()))
+            shiny::tags$span(tr("upload_dropzone_cta", lang_r()))
         })
 
         output$max_size_text <- shiny::renderUI({
@@ -193,8 +185,20 @@ mod_upload_server <- function(id, lang_r) {
         })
 
         # Column 2: Welcome Section UI
-        output$welcome_title <- shiny::renderUI({
-            shiny::h3(tr("welcome_title", lang_r()), class = "text-mono")
+        output$welcome_header <- shiny::renderUI({
+            shiny::div(
+                class = "welcome-header",
+                shiny::div(
+                    class = "welcome-eyebrow",
+                    tr("welcome_eyebrow", lang_r())
+                ),
+                shiny::tags$h1(
+                    class = "welcome-main-title",
+                    tr("welcome_title_prefix", lang_r()),
+                    " ",
+                    shiny::tags$span("Finch", class = "welcome-main-title-brand")
+                )
+            )
         })
 
         output$welcome_description <- shiny::renderUI({
@@ -206,28 +210,28 @@ mod_upload_server <- function(id, lang_r) {
         })
 
         output$step1_title <- shiny::renderUI({
-            shiny::tags$strong(tr("workflow_step1", lang_r()))
+            shiny::tags$span(tr("workflow_step1", lang_r()))
         })
         output$step1_desc <- shiny::renderUI({
             shiny::tags$span(tr("workflow_step1_desc", lang_r()))
         })
 
         output$step2_title <- shiny::renderUI({
-            shiny::tags$strong(tr("workflow_step2", lang_r()))
+            shiny::tags$span(tr("workflow_step2", lang_r()))
         })
         output$step2_desc <- shiny::renderUI({
             shiny::tags$span(tr("workflow_step2_desc", lang_r()))
         })
 
         output$step3_title <- shiny::renderUI({
-            shiny::tags$strong(tr("workflow_step3", lang_r()))
+            shiny::tags$span(tr("workflow_step3", lang_r()))
         })
         output$step3_desc <- shiny::renderUI({
             shiny::tags$span(tr("workflow_step3_desc", lang_r()))
         })
 
         output$step4_title <- shiny::renderUI({
-            shiny::tags$strong(tr("workflow_step4", lang_r()))
+            shiny::tags$span(tr("workflow_step4", lang_r()))
         })
         output$step4_desc <- shiny::renderUI({
             shiny::tags$span(tr("workflow_step4_desc", lang_r()))
@@ -284,6 +288,14 @@ mod_upload_server <- function(id, lang_r) {
             groups_ui <- lapply(categories_available, function(category_name) {
                 category_label <- class_labels[[category_name]]
                 group_df <- required_terms_view[required_terms_view$class == category_name, , drop = FALSE]
+                category_slug <- switch(
+                    category_name,
+                    "Record-level" = "record-level",
+                    "Occurrence" = "occurrence",
+                    "Taxon" = "taxon",
+                    "Location" = "location",
+                    "record-level"
+                )
 
                 chips_ui <- lapply(seq_len(nrow(group_df)), function(i) {
                     term <- group_df$term[i]
@@ -297,8 +309,11 @@ mod_upload_server <- function(id, lang_r) {
                 })
 
                 shiny::div(
-                    class = "dwc-inline-group",
-                    shiny::div(class = "dwc-inline-group-label", category_label),
+                    class = paste("dwc-inline-group", paste0("dwc-inline-group--", category_slug)),
+                    shiny::div(
+                        class = paste("dwc-inline-group-label", paste0("dwc-group-badge--", category_slug)),
+                        category_label
+                    ),
                     shiny::div(class = "dwc-term-chip-list", chips_ui)
                 )
             })

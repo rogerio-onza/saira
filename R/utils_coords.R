@@ -881,14 +881,14 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
         }
 
         color_map <- c(
-            ok = "#2d6a4f",
-            validity = "#d62828",
-            sea = "#1d4ed8",
-            zero_equal = "#f77f00",
+            ok = "#00A86B",
+            validity = "#C0392B",
+            sea = "#252659",
+            zero_equal = "#FFA204",
             reference = "#8b5cf6"
         )
         color_vec <- unname(color_map[out$diagnostic_family])
-        color_vec[is.na(color_vec)] <- "#d62828"
+        color_vec[is.na(color_vec)] <- "#C0392B"
 
         label_map <- c(
             ok = "OK",
@@ -980,13 +980,13 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
     }
 
     color_map <- c(
-        ok = "#2d6a4f",
-        missing = "rgba(0,29,61,0.35)",
-        lat_range = "#d62828",
-        lon_range = "#d62828",
-        zero_zero = "#f77f00",
+        ok = "#00A86B",
+        missing = "rgba(28,28,38,0.35)",
+        lat_range = "#C0392B",
+        lon_range = "#C0392B",
+        zero_zero = "#FFA204",
         swapped = "#8b5cf6",
-        identical_all = "#ffc300"
+        identical_all = "#FFE005"
     )
     label_map <- c(
         ok = "ok",

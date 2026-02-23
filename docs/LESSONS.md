@@ -15,6 +15,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 ## Shiny / Reactive Patterns
 
 - **`renderUI` recria inputs** a cada invalidacao. Usar `isolate(input$...)` para preservar valores do usuario entre re-renders.
+- **Controles externos de DataTable renderizados via `renderUI`** devem usar eventos delegados (`$(document).on(...)`) com namespace por instancia; binding direto no elemento tende a quebrar busca/filtros quando o DOM e recriado.
 - **Checkboxes de selecao unica**: `checkboxGroupInput` + `observeEvent` no server para forcar single-select. Mantem a estetica de checkbox quadrado.
 - **Loops bloqueantes** em Shiny sincrono nao atualizam UI durante execucao. Progresso real requer HTML estatico + atualizacao JS client-side.
 - **`shiny::toJSON`** pode nao estar disponivel em todas as versoes. Preferir `jsonlite::toJSON(...)` com dependencia declarada.
@@ -31,6 +32,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Gates reativos leves evitam latencia na troca de abas**: apos mapear `scientificName`, voltar para a aba de validacao pode ficar lento se `quick_inputs()` materializar `processed_data`; um gate com `status = no_data/missing_scientific/ok` elimina esse acoplamento.
 - **Para validacoes distintas, use gates leves distintos**: compartilhar gate de nomes na aba de coordenadas gera contrato ambiguo; prefira um gate dedicado (`validation_gate_coords`) com campos especificos do dominio.
 - **Compatibilidade progressiva em modulos Shiny**: ao introduzir canal reativo leve novo (`validation_gate_r`), manter fallback legado para `mapped_data_r()` evita quebrar chamadas antigas de `mod_validate_names_server`.
+- **Gate leve nao pode quebrar quando upstream usa `req()`**: se o gate consome reactive de upload (`raw_data_r`) que faz `req(input$file)`, capturar `shiny.silent.error` e retornar estado estavel (`no_data`) evita UI em branco antes do upload.
 - **Em encadeamento por flags (`start_requested`/`run_requested`), `ignoreInit = TRUE` pode suprimir o primeiro ciclo util**: quando a flag muda de `FALSE -> TRUE` pela primeira vez, o observer pode nao executar em ambiente de teste. Para eventos internos de orquestracao, preferir `ignoreInit = FALSE`.
 - **`session$onFlushed()` nem sempre e a melhor ancora para teste de servidor**: para fluxos de execucao sincrona em `testServer`, disparo direto de estado costuma ser mais estavel que depender de flush de UI.
 - **Quando o modulo define filtro pos-execucao por padrao (ex.: `problems`)**, os testes devem refletir esse contrato antes de afirmar contagem de `all`.
@@ -49,11 +51,18 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **`fileInput` gera `input-group`** do Bootstrap. Nao forcar flex externo -- estilizar o `input-group` diretamente.
 - **Variaveis CSS referenciadas no codigo devem existir no `:root`**. Gradientes com variaveis indefinidas resultam em UI invisivel (ex: texto branco em fundo transparente).
 - **Evitar `!important` como estrategia padrao**: prefira seletores mais especificos e ordem de carregamento correta para sobrescrever estilos do tema `bslib`.
+- **Boxes informativos nao devem usar borda grossa unilateral**: evitar padrao de "linha grossa na esquerda"; usar borda completa fina e semantica para `alert`, `notification` e caixas de suporte.
+- **Seta de dropdown em pseudo-elemento deve usar escape CSS**: prefira `content: '\25BE'` em vez de caractere literal para evitar glitch de encoding (`â–¾`).
+- **Navbar precisa de alinhamento explicito entre nav-links e seletor de idioma**: definir `align-items: center`, altura minima coerente e `gap` entre itens evita desalinhamento horizontal/vertical.
+- **`selectInput` no navbar precisa de largura coerente com o padding interno**: manter `width` compativel com `padding-right` e `background-position` evita sobreposicao da seta sobre o texto selecionado.
+- **`bslib::page_navbar` pode renderizar links como `ul.navbar-nav > li > a` (sem classes `.nav-item/.nav-link`)**: em regressao de espacamento/padding no header, estilizar tambem o markup `li > a` e nao depender apenas de classes BS5.
+- **Seletor de idioma com poucas opcoes no navbar funciona melhor sem selectize**: usar `selectize = FALSE` evita sobreposicao visual da seta e reduz custo de inicializacao.
 - **`border-radius` em inputs conectados**: primeiro elemento `X 0 0 X`, segundo `0 X X 0`.
 - **`backdrop-filter: blur()`** em modais cria efeito "debaixo d'agua" indesejado. Usar escurecimento simples (`rgba(0,0,0,0.45)`).
 - **Scroll container**: usar `scrollbar-gutter: stable` para evitar sobreposicao da barra de rolagem sobre conteudo.
 - **`dataTables_length select` pode sobrepor seta e valor** quando herda padding generico de `form-select`; aplicar regra especifica com `padding-right` maior e `background-position` evita colisao visual.
 - **Padrao oficial de tabelas do app**: toda `DT::datatable` deve ficar dentro de `.finch-table-shell` para herdar header azul, paginacao compacta e dimensoes consistentes de busca/length menu.
+- **Ao alterar `pageLength` por controle externo**, aplicar `table.page.len(len)` seguido de `table.page('first').draw('page')` evita o falso sintoma de "nao mudou para 15" quando a tabela estava em pagina posterior.
 - **Quando stats, filtros, mapa e tabela evoluem em ritmos diferentes**, prefira `uiOutput`s separados por painel em vez de um `results_panel` monolitico; isso reduz acoplamento de layout e simplifica manutencao.
 - **Full-width por modulo e melhor com override contextual**: usar seletor local (`.tab-content > .tab-pane:has(.validate-coords-page)`) permite remover sobras laterais de uma aba sem quebrar o layout global.
 - **Legenda de mapa deve seguir o contrato de dados usado em pills/tabela**: quando filtros usam familias (`validity`, `country`, `sea`, etc.), a legenda precisa usar as mesmas familias para evitar ambiguidade cognitiva.
@@ -153,3 +162,14 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - Para remover warning de portabilidade por non-ASCII em `R/*.R`, usar escapes Unicode (`\\uXXXX`) preserva o valor das strings em runtime sem mudar API.
 - Quando criar scripts auxiliares em `data-raw/`, adicionar `^data-raw$` em `.Rbuildignore` evita levar material de geracao para o build final do pacote.
 - Quando o app usa `addResourcePath("www", ...)`, assets internos devem manter prefixo `www/` nas URLs de runtime (`www/lottie/...`, `www/custom.css`, etc.). Trocar para caminho sem prefixo pode gerar 404 em runtime.
+
+## Upload / Dropzone (2026-02-23)
+
+- **Separar responsabilidade visual evita regressao recorrente**: tratar dropzone (`upload-dropzone`) e progresso nativo (`upload-native-input`) como blocos distintos simplifica manutencao e impede que a barra "vaze" para dentro da area de arrastar/soltar.
+- **No `fileInput` do Shiny, remover apenas o shell visual (`.input-group`) e mais seguro que substituir o componente inteiro**: manter o `input[type=file]` real preserva binding, upload e lifecycle nativo.
+- **Se o JS faz detach de markup nativo, o seletor de busca do input precisa cobrir os dois contextos (dropzone e container irmao)** para evitar quebra quando o DOM muda entre iteracoes.
+- **A barra de progresso do Shiny recebe estilo inline no elemento `#<id>_progress`**: para largura realmente integral, usar seletor especifico com `width/min-width/max-width` e `!important` no escopo local.
+- **Container de progress com `border/background` vira "chip involuntario"**: para mostrar apenas a barra verde, deixar o container transparente e aplicar a aparencia somente em `.progress-bar`.
+- **Espacamento com chips precisa de valor explicito**: definir `margin-bottom` da progress evita variacao herdada do Bootstrap e permite ajuste fino (neste caso, `0px`).
+- **Guardrail CSS dedicado reduz regressao visual**: esconder progresso dentro da dropzone (`display: none !important` no escopo `.upload-dropzone`) evita retorno acidental do problema em refactors futuros.
+- **Mudancas de UX sensiveis exigem validacao visual por screenshot a cada iteracao**: em upload, pequenos detalhes de margem/borda alteram percepcao de qualidade e precisam de confirmacao rapida com imagem.

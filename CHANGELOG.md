@@ -5,6 +5,112 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ---
 
+## [0.1.21] - 2026-02-23
+
+### Corrigido
+- Aba `wiki`: callback da toolbar externa do DataTable refeito com eventos delegados e namespace por modulo, restaurando sincronizacao de busca em tempo real e filtro por chips de classe.
+- Aba `wiki`: seletor `Mostrar` corrigido para aplicar `pageLength` corretamente (incluindo `15`) e reposicionar para a primeira pagina ao trocar a quantidade.
+- Aba `wiki`: shell da tabela ajustado para arredondamento continuo nos cantos superiores e inferiores.
+
+---
+
+## [0.1.20] - 2026-02-23
+
+### Alterado
+- Redesign completo da aba `wiki` com novo header card, toolbar unificada (busca + seletor de quantidade + filtros por classe) e layout de tabela alinhado ao design system v4.
+- `R/mod_wiki.R` reestruturado para:
+  - substituir `title/subtitle` simples por card de cabecalho com metricas dinamicas (`50 termos`, `12 obrigatorios`, `6 classes`);
+  - usar controles externos de busca/filtro/page-length sincronizados com a API do DataTables;
+  - renderizar `Termo`, `Classe`, `Definicao`, `Exemplo` e `Obrigatorio` via callbacks de linha/cabecalho para aplicar badges e estilos sem alterar a assinatura publica do modulo.
+- `inst/app/www/custom.css` recebeu bloco escopado da Wiki (`.wiki-module`) cobrindo:
+  - header card e stat pills;
+  - toolbar card e pills por classe com estados ativos tematicos;
+  - thead custom com icone de sort, zebra/hover em `tbody`, badges de classe/obrigatoriedade e footer wrapper da paginacao.
+- Contrato de link da Wiki atualizado para URL generica oficial do ciclo: `https://sibbr.gov.br` (subtitulo e links de termo).
+
+### i18n
+- Novas chaves adicionadas em `R/data_dictionary.R` para textos do novo header/toolbar da Wiki:
+  - `wiki_header_eyebrow`, `wiki_header_link_label`
+  - `wiki_stats_terms_label`, `wiki_stats_required_label`, `wiki_stats_classes_label`
+  - `wiki_show_label`, `wiki_records_label`
+  - `a11y_wiki_page_length_label`
+- Textos existentes da Wiki refinados:
+  - `wiki_subtitle` atualizado para copy de documentacao oficial;
+  - `wiki_search_placeholder` expandido para busca por termo/definicao/exemplo;
+  - `wiki_class_all` encurtado para `Todas` / `All`.
+
+### Testes
+- Suites de i18n atualizadas para cobrir as novas chaves da Wiki:
+  - `tests/testthat/test-utils-i18n.R`
+  - `tests/testthat/test-i18n-a11y-keys.R`
+
+### Documentacao
+- `docs/DECISIONS.md`: novo ADR formalizando contrato visual/funcional da Wiki com controles externos e escopo CSS local.
+- `docs/LESSONS.md`: nova licao sobre uso de toolbar externa em DataTables com footer wrapper sem alterar a paginacao interna.
+
+---
+
+## [0.1.19] - 2026-02-23
+
+### Corrigido
+- Regressao visual do header apos rollout do design-v4:
+  - mais espacamento entre itens de navegacao;
+  - padding ajustado dos links para evitar "box colado" no texto;
+  - alinhamento vertical do seletor de idioma com os demais itens do navbar.
+- Ajuste fino do seletor de idioma no header (desktop/tablet):
+  - largura do `selectInput` ampliada para `150px`, alinhada ao padding interno;
+  - `padding-right` e `background-position` do select ajustados para evitar colisao da seta com o texto;
+  - fallback mobile mantido compacto via breakpoint `@media (max-width: 767.98px)`.
+- Correcao de aplicacao de estilos no header em markup real do `page_navbar`:
+  - overrides de espacamento/padding atualizados para `ul.navbar-nav > li > a` (alem de `.nav-link`);
+  - seletor de idioma no navbar alterado para `selectize = FALSE`, eliminando sobreposicao da seta sobre o texto.
+- Aba `validate_coords`: card de configuracao volta a renderizar antes do upload:
+  - gates leves de validacao (`validation_gate` e `validation_gate_coords`) passaram a tratar `shiny.silent.error` de `req(input$file)` como estado `no_data`;
+  - botao de validar permanece bloqueado ate cumprir as regras existentes de prontidao (`status == ok`).
+- Regressao do indicador de dropdown na aba de mapeamento:
+  - substituido glifo suscetivel a encoding por escape CSS seguro (`content: '\25BE'`), eliminando exibicao `â–¾`.
+- Removido ultimo caso remanescente de borda lateral grossa unilateral em box estilizado, reforcando padrao de borda fina completa.
+
+### Documentacao
+- `docs/architecture.md`: adicionada secao de guardrails visuais obrigatorios para caixas, navbar e indicadores de dropdown.
+- `docs/DECISIONS.md`: novo `ADR-040` formalizando contrato visual anti-regressao.
+- `docs/LESSONS.md`: reforcadas licoes de CSS sobre bordas unilaterais, encoding de seta de dropdown e alinhamento de navbar.
+
+---
+
+## [0.1.18] - 2026-02-22
+
+### Alterado
+- Rework completo do design system para o `design-v4`, com migração da paleta principal do app para a nova identidade (`primary/accent/success/warning/error/info`) e manutenção do fundo base `#f4f3ee`.
+- `bs_theme` do `app_ui` alinhado ao v4 mantendo `bootswatch = "flatly"` para reduzir risco de regressão funcional.
+- `inst/app/www/custom.css` atualizado com tokens v4, novos tokens semânticos de formulário/navbar, sombras/focus rings e compatibilização dos componentes existentes (`buttons`, `alerts`, `badges`, `stream pills`, `status badges`, `coord badges`).
+- Cores de diagnóstico de coordenadas alinhadas ao v4 em `R/utils_coords.R` para manter consistência entre tabela, badges e mapa.
+- Estado vazio da aba de mapeamento passou de estilos inline hardcoded para classes CSS (`mapping-empty-state`, `mapping-empty-icon`).
+
+### Corrigido
+- Falhas pré-existentes da suíte `test-css-guardrails`:
+  - removido uso de tokens CSS indefinidos;
+  - removido excesso de `!important` (limite hard guardrail);
+  - removido `opacity: 0.45` da paginação desabilitada do DataTables.
+- Falhas pré-existentes da suíte `test-i18n-a11y-keys` com adição das 9 chaves ausentes no dicionário.
+
+### Acessibilidade
+- Inputs sem label visível receberam labels acessíveis:
+  - seletor de idioma no navbar;
+  - upload de arquivo;
+  - busca da ajuda;
+  - busca e filtro de classe da Wiki;
+  - selects de destino no assistente `basisOfRecord`.
+- Sidebar de mapeamento ganhou rótulos semânticos para seções de ações e filtros.
+
+### Documentação
+- `docs/design.md` sobrescrito pelo conteúdo de `design-v4.md`, consolidando oficialmente o novo design do app.
+
+### Testes
+- `devtools::test()` verde (`PASS 1900`, `FAIL 0`).
+
+---
+
 ## [0.1.17] - 2026-02-22
 
 ### Alterado

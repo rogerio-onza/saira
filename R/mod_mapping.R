@@ -38,6 +38,7 @@ mod_mapping_ui <- function(id) {
                 class = "mapping-beta-help",
                 shiny::uiOutput(ns("toggle_automap_v1_help"), inline = TRUE)
             ),
+            shiny::uiOutput(ns("sidebar_actions_label")),
             shiny::actionButton(
                 ns("auto_map"),
                 shiny::uiOutput(ns("btn_auto_map_label"), inline = TRUE),
@@ -51,6 +52,7 @@ mod_mapping_ui <- function(id) {
                 icon = shiny::icon("rotate-left", class = "fa-solid")
             ),
             shiny::hr(),
+            shiny::uiOutput(ns("sidebar_filters_label")),
             shiny::checkboxInput(
                 ns("show_only_mapped"),
                 shiny::uiOutput(ns("filter_mapped_label"), inline = TRUE),
@@ -101,8 +103,8 @@ mod_mapping_ui <- function(id) {
                 shiny::conditionalPanel(
                     condition = paste0("!output['", ns("file_uploaded"), "']"),
                     shiny::div(
-                        style = "text-align: center; padding: 60px; color: #95a5a6;",
-                        shiny::icon("upload", style = "font-size: 4em; opacity: 0.3;"),
+                        class = "mapping-empty-state",
+                        shiny::icon("upload", class = "mapping-empty-icon"),
                         shiny::h4(shiny::uiOutput(ns("no_file_msg"))),
                         shiny::p(shiny::uiOutput(ns("upload_first_msg")))
                     )
@@ -607,6 +609,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             tr("btn_reset", lang_r())
         })
 
+        output$sidebar_actions_label <- shiny::renderUI({
+            shiny::tags$label(tr("mapping_sidebar_actions", lang_r()), class = "form-label")
+        })
+
+        output$sidebar_filters_label <- shiny::renderUI({
+            shiny::tags$label(tr("mapping_sidebar_filters", lang_r()), class = "form-label")
+        })
+
         output$filter_mapped_label <- shiny::renderUI({
             tr("filter_mapped_only", lang_r())
         })
@@ -734,7 +744,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                             shiny::tags$td(
                                 shiny::selectInput(
                                     ns(paste0("basis_of_record_target_", entry$idx[[1]])),
-                                    label = NULL,
+                                    label = shiny::tags$span(
+                                        sprintf(tr("a11y_bor_target_label", lang_r()), entry$raw[[1]]),
+                                        class = "visually-hidden"
+                                    ),
                                     choices = choices,
                                     selected = current_target,
                                     multiple = FALSE,
@@ -1695,10 +1708,24 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             processed_result$data
         })
 
+        # Gates must survive upstream `req()` (e.g., upload without file) and
+        # report a stable "no_data" state instead of aborting UI render.
+        safe_raw_data_for_gate <- function() {
+            tryCatch(
+                raw_data_r(),
+                error = function(e) {
+                    if (inherits(e, "shiny.silent.error")) {
+                        return(NULL)
+                    }
+                    stop(e)
+                }
+            )
+        }
+
         # Lightweight gate for validation modules: avoid materializing processed_data
         # just to know if scientificName mapping is ready.
         validation_gate_r <- shiny::reactive({
-            raw_df <- raw_data_r()
+            raw_df <- safe_raw_data_for_gate()
             if (is.null(raw_df) || !is.data.frame(raw_df) || nrow(raw_df) == 0L) {
                 return(list(status = "no_data", has_data = FALSE, scientific_col = ""))
             }
@@ -1720,7 +1747,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
         # Lightweight gate for coordinate validation without materializing processed_data
         coord_validation_gate_r <- shiny::reactive({
-            raw_df <- raw_data_r()
+            raw_df <- safe_raw_data_for_gate()
             if (is.null(raw_df) || !is.data.frame(raw_df) || nrow(raw_df) == 0L) {
                 return(list(
                     coords_status = "no_data",

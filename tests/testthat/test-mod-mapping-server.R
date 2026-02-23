@@ -160,6 +160,36 @@ testthat::test_that("mod_mapping_server exposes coordinate validation gate with 
     )
 })
 
+testthat::test_that("validation gates stay in no_data when upstream raw_data_r is req-gated", {
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive({
+                shiny::req(FALSE)
+                data.frame(scientificName = "x", stringsAsFactors = FALSE)
+            }),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            returned <- session$getReturned()
+            validation_gate <- attr(returned, "validation_gate")
+            coord_gate <- attr(returned, "validation_gate_coords")
+
+            gate <- validation_gate()
+            testthat::expect_identical(gate$status, "no_data")
+            testthat::expect_false(gate$has_data)
+            testthat::expect_identical(gate$scientific_col, "")
+
+            cgate <- coord_gate()
+            testthat::expect_identical(cgate$coords_status, "no_data")
+            testthat::expect_false(cgate$has_data)
+            testthat::expect_identical(cgate$lat_col, "")
+            testthat::expect_identical(cgate$lon_col, "")
+            testthat::expect_identical(cgate$country_col, "")
+        }
+    )
+})
+
 testthat::test_that("v1 auto-map applies metadata and manual override becomes EDITADO", {
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis"),

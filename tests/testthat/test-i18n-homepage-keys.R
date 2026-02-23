@@ -1,21 +1,13 @@
-# Title: i18n tests for new a11y/ui keys
+# Title: i18n tests for homepage welcome keys
 # Author: Codex
-# Date: 2026-02-20
+# Date: 2026-02-23
 
-testthat::test_that("a11y/ui keys for this cycle exist in pt/en", {
+testthat::test_that("homepage welcome keys exist in pt/en", {
     dict <- get("i18n_dict", envir = asNamespace("finch"))
 
     required_keys <- c(
-        "a11y_lang_switch_label",
-        "a11y_upload_file_label",
-        "upload_dropzone_cta",
-        "a11y_help_search_label",
-        "a11y_wiki_search_label",
-        "a11y_wiki_class_filter_label",
-        "a11y_wiki_page_length_label",
-        "a11y_bor_target_label",
-        "mapping_sidebar_actions",
-        "mapping_sidebar_filters"
+        "welcome_eyebrow",
+        "welcome_title_prefix"
     )
 
     missing_keys <- setdiff(required_keys, names(dict))
@@ -37,21 +29,9 @@ testthat::test_that("a11y/ui keys for this cycle exist in pt/en", {
     }
 })
 
-testthat::test_that("a11y/ui keys resolve with tr in pt/en", {
+testthat::test_that("homepage welcome keys resolve with tr in pt/en", {
     tr_fn <- getFromNamespace("tr", "finch")
-
-    keys <- c(
-        "a11y_lang_switch_label",
-        "a11y_upload_file_label",
-        "upload_dropzone_cta",
-        "a11y_help_search_label",
-        "a11y_wiki_search_label",
-        "a11y_wiki_class_filter_label",
-        "a11y_wiki_page_length_label",
-        "a11y_bor_target_label",
-        "mapping_sidebar_actions",
-        "mapping_sidebar_filters"
-    )
+    keys <- c("welcome_eyebrow", "welcome_title_prefix")
 
     for (key in keys) {
         pt_value <- tr_fn(key, "pt")

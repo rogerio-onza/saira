@@ -196,6 +196,21 @@ load_dwc_terms <- function() {
 
 ---
 
+### 3.4 Guardrails de UI: caixas, navbar e indicadores de dropdown
+
+**Contexto**: Regressões visuais mostraram instabilidade em navegação, alinhamento de header e caixas de status.
+
+**Regras obrigatórias**:
+- Caixas de status/informação (`alert`, `notification` e caixas de suporte) não devem usar borda grossa em apenas um lado.
+  Usar borda fina completa com fundo semântico.
+- Links do navbar e seletor de idioma devem manter alinhamento vertical consistente e espaçamento horizontal mínimo entre itens.
+- Indicador de dropdown em CSS não deve usar glifo Unicode literal sujeito a corrupção de encoding.
+  Preferir escape CSS (`\25BE`) ou ícone em SVG/background-image.
+
+**Consequência arquitetural**: estas regras são contrato de estabilidade visual e devem ser tratadas como regressão quando violadas.
+
+---
+
 ## 4. Fluxo de Dados (Chain of Reactivity)
 
 ### 4.1 Diagrama de Comunicação

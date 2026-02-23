@@ -31,6 +31,10 @@ i18n_dict <- list(
     lang_pt = list(pt = "Portugu\u00EAs", en = "Portuguese"),
     lang_en = list(pt = "English", en = "English"),
     lang_es = list(pt = "Espanhol", en = "Spanish"),
+    a11y_lang_switch_label = list(
+        pt = "Selecionar idioma da interface",
+        en = "Select interface language"
+    ),
     # Upload Module
     upload_title = list(
         pt = "Carregar Dados",
@@ -67,6 +71,8 @@ i18n_dict <- list(
     mapping_clear = list(pt = "Limpar", en = "Clear"),
     mapping_unmapped = list(pt = "-- N\u00E3o mapeado --", en = "-- Not mapped --"),
     mapping_sidebar_title = list(pt = "Ferramentas", en = "Tools"),
+    mapping_sidebar_actions = list(pt = "A\u00E7\u00F5es", en = "Actions"),
+    mapping_sidebar_filters = list(pt = "Filtros", en = "Filters"),
     mapping_required = list(pt = "Obrigat\u00F3rio", en = "Required"),
     mapping_optional = list(pt = "Opcional", en = "Optional"),
 
@@ -117,6 +123,10 @@ i18n_dict <- list(
     bor_assistant_col_target = list(
         pt = "Destino DwC",
         en = "DwC target"
+    ),
+    a11y_bor_target_label = list(
+        pt = "Destino DwC para o valor bruto: %s",
+        en = "DwC target for raw value: %s"
     ),
     bor_assistant_progress = list(
         pt = "%s/%s valores mapeados",
@@ -1166,11 +1176,17 @@ i18n_dict <- list(
         en = "Darwin Core Terms Wiki"
     ),
     wiki_subtitle = list(
-        pt = "Consulte a documenta\u00E7\u00E3o dos termos DwC do SiBBr",
-        en = "Check the documentation of SiBBr DwC terms"
+        pt = "Consulte a documenta\u00E7\u00E3o oficial dos termos DwC do",
+        en = "Check the official documentation of DwC terms from"
     ),
     wiki_search = list(pt = "Buscar termo...", en = "Search term..."),
-    wiki_search_placeholder = list(pt = "Buscar termo...", en = "Search term..."),
+    wiki_search_placeholder = list(
+        pt = "Buscar termo, defini\u00E7\u00E3o ou exemplo...",
+        en = "Search term, definition, or example..."
+    ),
+    a11y_wiki_search_label = list(pt = "Buscar termos Darwin Core", en = "Search Darwin Core terms"),
+    a11y_wiki_class_filter_label = list(pt = "Filtrar por classe Darwin Core", en = "Filter by Darwin Core class"),
+    a11y_wiki_page_length_label = list(pt = "Quantidade de registros por p\u00E1gina", en = "Entries per page"),
     wiki_datatable_search = list(pt = "Buscar:", en = "Search:"),
     wiki_datatable_length_menu = list(pt = "Mostrar _MENU_ registros", en = "Show _MENU_ entries"),
     wiki_datatable_info = list(pt = "Mostrando _START_ a _END_ de _TOTAL_ registros", en = "Showing _START_ to _END_ of _TOTAL_ entries"),
@@ -1186,7 +1202,14 @@ i18n_dict <- list(
     wiki_datatable_last = list(pt = "\u00DAltima", en = "Last"),
     wiki_datatable_next = list(pt = "Pr\u00F3xima", en = "Next"),
     wiki_datatable_prev = list(pt = "Anterior", en = "Previous"),
-    wiki_class_all = list(pt = "Todas as classes", en = "All classes"),
+    wiki_class_all = list(pt = "Todas", en = "All"),
+    wiki_header_eyebrow = list(pt = "Darwin Core \u00B7 SiBBr", en = "Darwin Core \u00B7 SiBBr"),
+    wiki_header_link_label = list(pt = "SiBBr \u2192", en = "SiBBr \u2192"),
+    wiki_stats_terms_label = list(pt = "termos", en = "terms"),
+    wiki_stats_required_label = list(pt = "obrigat\u00F3rios", en = "required"),
+    wiki_stats_classes_label = list(pt = "classes", en = "classes"),
+    wiki_show_label = list(pt = "Mostrar", en = "Show"),
+    wiki_records_label = list(pt = "registros", en = "entries"),
     wiki_term = list(pt = "Termo", en = "Term"),
     wiki_class = list(pt = "Classe", en = "Class"),
     wiki_definition = list(pt = "Defini\u00E7\u00E3o", en = "Definition"),
@@ -1203,6 +1226,10 @@ i18n_dict <- list(
     help_subtitle = list(
         pt = "Tutorial e FAQ",
         en = "Tutorial and FAQ"
+    ),
+    a11y_help_search_label = list(
+        pt = "Buscar na ajuda",
+        en = "Search help"
     ),
     help_getting_started = list(pt = "Come\u00E7ando", en = "Getting Started"),
     help_faq = list(pt = "Perguntas Frequentes", en = "FAQ"),
@@ -1287,6 +1314,14 @@ i18n_dict <- list(
         pt = "Arraste e solte seu arquivo CSV aqui ou clique para selecionar.",
         en = "Drag and drop your CSV file here or click to select."
     ),
+    upload_dropzone_cta = list(
+        pt = "Arraste e solte seu arquivo CSV aqui ou clique para selecionar.",
+        en = "Drag and drop your CSV file here or click to select."
+    ),
+    a11y_upload_file_label = list(
+        pt = "Selecionar arquivo CSV para upload",
+        en = "Select CSV file for upload"
+    ),
     upload_btn_label = list(
         pt = "Enviar",
         en = "Upload"
@@ -1301,6 +1336,14 @@ i18n_dict <- list(
     ),
 
     # Homepage - Welcome Section
+    welcome_eyebrow = list(
+        pt = "Padronizador Darwin Core",
+        en = "Darwin Core Standardizer"
+    ),
+    welcome_title_prefix = list(
+        pt = "Bem-vindo ao",
+        en = "Welcome to"
+    ),
     welcome_title = list(
         pt = "Bem-vindo ao Finch!",
         en = "Welcome to Finch!"

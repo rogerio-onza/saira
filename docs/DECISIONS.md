@@ -735,3 +735,106 @@ Formato: ADR leve (Architecture Decision Record).
   - Mapa passa a abrir e reposicionar de acordo com os dados realmente exibidos.
   - Reduz a necessidade de pan/zoom manual apos cada validacao ou troca de filtro.
   - Mantem comportamento robusto para cenarios de ponto unico e para subsets pequenos.
+
+---
+
+## ADR-040: Guardrails visuais obrigatorios para caixas, navbar e seta de dropdown
+
+- **Data**: 2026-02-23
+- **Contexto**: A migração para o design v4 introduziu regressões de UX já tratadas anteriormente: caixas com borda grossa unilateral, desalinhamento do seletor de idioma no header, espaçamento insuficiente entre itens de navegação e corrupção visual do indicador de dropdown (`â–¾`).
+- **Decisao**:
+  - Proibir borda grossa em apenas um lado para caixas de informação/status (`alert`, `notification` e componentes equivalentes).
+  - Adotar borda fina completa (quatro lados) com fundo semântico como padrão oficial.
+  - Fixar contrato de navbar com alinhamento vertical consistente entre links e seletor de idioma, incluindo espaçamento horizontal mínimo entre itens.
+  - Para setas de dropdown em pseudo-elemento CSS, usar escape seguro de encoding (`content: '\25BE'`) ou SVG; não usar glifo Unicode literal.
+- **Alternativas**:
+  - Manter destaque por barra lateral grossa nas caixas - rejeitado por inconsistência visual e recorrência de regressão.
+  - Manter caractere literal de seta no CSS - rejeitado por risco conhecido de corrupção de encoding em build/deploy.
+  - Tratar alinhamento do header apenas por ajuste local pontual - rejeitado por não estabelecer contrato estável para regressões futuras.
+- **Consequencias**:
+  - Padrão visual das caixas fica consistente em todo o app.
+  - Header mantém alinhamento previsível entre navegação e idioma em diferentes viewports.
+  - Indicadores de dropdown deixam de depender de encoding do arquivo CSS.
+
+---
+
+## ADR-041: Progresso de upload fora da dropzone, largura integral e sem "chip-container"
+
+- **Data**: 2026-02-23
+- **Contexto**: A UX do upload apresentou regressao recorrente: a barra nativa de progresso do `fileInput` aparecia dentro da dropzone (ou visualmente acoplada a ela), com largura inconsistente em relacao aos chips informativos e, em uma iteracao, encapsulada por uma caixa extra parecida com chip.
+- **Decisao**:
+  - Separar estruturalmente a area de upload em dois blocos:
+    - `upload-dropzone`: apenas superficie de arrastar/soltar e copy visual.
+    - `upload-native-input`: container do `fileInput` nativo e do progresso.
+  - Manter o `input[type=file]` funcional para o binding do Shiny e para o clique da dropzone, removendo apenas o shell visual nativo (`.input-group`) em runtime via `upload-dropzone.js`.
+  - Atualizar o binding JS para localizar o `fileInput` tanto dentro da dropzone quanto no container irmao (`.upload-native-input`), preservando compatibilidade com o novo DOM.
+  - Instituir guardrail de CSS para impedir progresso dentro da dropzone:
+    - `.upload-dropzone .progress`, `.upload-dropzone .shiny-file-input-progress`, `.upload-dropzone [id$="_progress"]` => `display: none !important`.
+  - Estilizar o progresso oficial apenas em `.upload-native-input`, com altura padronizada em `40px` e largura integral.
+  - Forcar largura integral com alta especificidade (`width`, `min-width`, `max-width` + `!important`) para neutralizar estilo inline que o Shiny injeta em `#<id>_progress`.
+  - Remover o "container-chip" em volta da barra (sem borda/fundo no container da progress), deixando o visual somente na `.progress-bar` interna.
+  - Reduzir o espacamento entre barra e chips para `0px`, conforme ajuste final solicitado.
+- **Alternativas**:
+  - Manter progresso dentro da dropzone com posicionamento absoluto: rejeitado por conflito com requisito de produto e por ambiguidade visual.
+  - Reimplementar progresso 100% custom (sem barra nativa do Shiny): rejeitado neste ciclo por custo de manutencao e risco de divergir do lifecycle nativo.
+  - Aceitar largura automatica da progress sem override: rejeitado, pois estilo inline do Shiny manteve barra curta em cenarios reais.
+- **Consequencias**:
+  - A barra deixa de competir visualmente com a dropzone e passa a ocupar area propria, previsivel.
+  - O componente fica consistente com chips adjacentes em dimensao e alinhamento.
+  - Reduz risco de regressao por acoplamento DOM/CSS, com guardrails explicitos.
+  - O uso de `!important` fica documentado como excecao tecnica controlada para override de estilo inline.
+
+---
+
+## ADR-042: Redesign da Wiki com toolbar externa e tabela estilizada por callbacks
+
+- **Data**: 2026-02-23
+- **Contexto**: A aba `wiki` ainda usava composicao simples de titulo/subtitulo + busca/filtros separados e tabela com estilizacao parcial, ficando abaixo do contrato visual do design-v4 para componentes informativos. Tambem era necessario preservar o padrao arquitetural do app: `DT::datatable` client-side dentro de `.finch-table-shell`, i18n completo e baixo risco de regressao em outros modulos.
+- **Decisao**:
+  - Reestruturar o topo da Wiki para um card unico (`header_card`) com:
+    - eyebrow,
+    - titulo com palavra destacada,
+    - subtitulo com icone + link,
+    - estatisticas dinamicas da base (`termos`, `obrigatorios`, `classes`).
+  - Substituir controles fragmentados por uma toolbar unica (`toolbar_card`) contendo:
+    - busca externa custom,
+    - seletor de quantidade (`Mostrar ... registros`),
+    - pills de classe com estado ativo e cores por categoria.
+  - Sincronizar toolbar e DataTable via API no callback JS:
+    - `table.search(...)`,
+    - `table.column(1).search(...)`,
+    - `table.page.len(...)`.
+  - Aplicar redesign da tabela sem alterar assinatura publica do modulo:
+    - `rowCallback` para badges/links/codigo/estado obrigatorio;
+    - `headerCallback` para layout de `th` e icone de sort;
+    - `dom = "t<'wiki-table-footer'ip>"` para posicionar `info` e paginacao em barra de rodape sem alterar o componente interno de pagina.
+  - Escopar todo CSS novo da Wiki em `.wiki-module`/`.wiki-table` para evitar side effects em `preview`, `validate_names` e `validate_coords`.
+  - Definir link generico oficial deste ciclo para Wiki: `https://sibbr.gov.br`.
+- **Alternativas**:
+  - Manter renderizacao padrao do DataTables com `columnDefs/render` minimo - rejeitado por nao atingir o contrato visual completo solicitado.
+  - Criar tabela HTML manual fora do DataTables - rejeitado por perder paginacao/ordenação nativa e aumentar custo de manutencao.
+  - Aplicar estilos globais de tabela sem escopo local - rejeitado por risco de regressao cross-modulo (contrario ao ADR-030).
+- **Consequencias**:
+  - Wiki passa a ter linguagem visual equivalente aos componentes premium do app, com melhor escaneabilidade.
+  - Fluxo de busca/filtro/quantidade fica consistente e responsivo via API do DataTables.
+  - Superficie de i18n aumenta (novas chaves), exigindo manutencao conjunta de testes.
+  - Risco de regressao reduzido por escopo CSS local e preservacao de contratos existentes de modulo.
+
+---
+
+## ADR-043: Hotfix de binding da toolbar da Wiki e paginação deterministica
+
+- **Data**: 2026-02-23
+- **Contexto**: Apos o ADR-042, foram observadas regressoes na Wiki: busca externa sem atualizar em tempo real, chips de classe sem refletir estado/filtro e seletor `Mostrar` sem aplicar `15` linhas de forma confiavel.
+- **Decisao**:
+  - Reforcar o callback JS da Wiki com eventos delegados em `document` e namespace por instancia de modulo.
+  - Sincronizar filtro por classe via API do DataTables (`column().search`) mantendo estado visual dos chips no mesmo fluxo.
+  - Tornar o ajuste de quantidade deterministico com `page.len(len)` e reposicionamento para a primeira pagina (`page('first').draw('page')`).
+  - Ajustar acabamento visual do shell da tabela para cantos arredondados continuos (topo e rodape).
+- **Alternativas**:
+  - Manter binding direto em elementos renderizados por `renderUI` - rejeitado por fragilidade quando o DOM e recriado.
+  - Forcar redraw completo sem reposicionamento de pagina - rejeitado por comportamento ambiguo ao trocar `10 -> 15`.
+- **Consequencias**:
+  - Busca, chips e seletor `Mostrar` voltam a operar de forma previsivel em runtime.
+  - Reduz regressao intermitente associada a recriacao de DOM em controles externos.
+  - Contrato visual da Wiki permanece consistente com o redesign do ADR-042.

@@ -1,7 +1,7 @@
 # Title: Wiki Module
 # Author: Rogerio Nunes Oliveira
-# Date: 2026-02-19
-# Version: 1.2
+# Date: 2026-02-23
+# Version: 1.3
 
 #' Wiki Module UI
 #'
@@ -14,19 +14,8 @@ mod_wiki_ui <- function(id) {
     shiny::tagList(
         shiny::div(
             class = "container-fluid wiki-module",
-            shiny::uiOutput(ns("title")),
-            shiny::uiOutput(ns("subtitle")),
-            shiny::br(),
-
-            # Search input (primary) + hidden class filter for compatibility
-            shiny::uiOutput(ns("search_input")),
-            shiny::div(
-                class = "wiki-class-filter-compat",
-                shiny::uiOutput(ns("class_filter_input"))
-            ),
-            shiny::uiOutput(ns("class_filter_pills")),
-
-            # Terms table
+            shiny::uiOutput(ns("header_card")),
+            shiny::uiOutput(ns("toolbar_card")),
             shiny::div(
                 class = "wiki-table finch-table-shell",
                 DT::dataTableOutput(ns("terms_table"))
@@ -46,6 +35,50 @@ mod_wiki_server <- function(id, lang_r) {
 
         dwc_terms <- get_dwc_terms()
         class_values <- c("", "Record-level", "Occurrence", "Event", "Location", "Identification", "Taxon")
+        class_slug_map <- c(
+            "all",
+            "record-level",
+            "occurrence",
+            "event",
+            "location",
+            "identification",
+            "taxon"
+        )
+        names(class_slug_map) <- class_values
+
+        info_icon_svg <- paste0(
+            "<svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'>",
+            "<circle cx='12' cy='12' r='9'></circle>",
+            "<path d='M12 8h.01'></path>",
+            "<path d='M11 12h1v4h1'></path>",
+            "</svg>"
+        )
+
+        list_icon_svg <- paste0(
+            "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.3'>",
+            "<line x1='8' y1='6' x2='20' y2='6'></line>",
+            "<line x1='8' y1='12' x2='20' y2='12'></line>",
+            "<line x1='8' y1='18' x2='20' y2='18'></line>",
+            "<circle cx='4' cy='6' r='1'></circle>",
+            "<circle cx='4' cy='12' r='1'></circle>",
+            "<circle cx='4' cy='18' r='1'></circle>",
+            "</svg>"
+        )
+
+        check_icon_svg <- paste0(
+            "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4'>",
+            "<polyline points='20 6 9 17 4 12'></polyline>",
+            "</svg>"
+        )
+
+        grid_icon_svg <- paste0(
+            "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.3'>",
+            "<rect x='4' y='4' width='6' height='6'></rect>",
+            "<rect x='14' y='4' width='6' height='6'></rect>",
+            "<rect x='4' y='14' width='6' height='6'></rect>",
+            "<rect x='14' y='14' width='6' height='6'></rect>",
+            "</svg>"
+        )
 
         class_labels <- shiny::reactive({
             c(
@@ -59,56 +92,160 @@ mod_wiki_server <- function(id, lang_r) {
             )
         })
 
-        output$title <- shiny::renderUI({
-            shiny::h3(tr("wiki_title", lang_r()), class = "text-mono")
-        })
-
-        output$subtitle <- shiny::renderUI({
-            shiny::p(tr("wiki_subtitle", lang_r()), class = "text-accent")
-        })
-
-        output$search_input <- shiny::renderUI({
-            shiny::textInput(
-                inputId = ns("search"),
-                label = NULL,
-                placeholder = tr("wiki_search_placeholder", lang_r()),
-                width = "100%"
+        build_stat_pill <- function(icon_svg, value, label) {
+            shiny::tags$div(
+                class = "wiki-stat-pill",
+                shiny::tags$span(class = "wiki-stat-icon", shiny::HTML(icon_svg)),
+                shiny::tags$span(class = "wiki-stat-value", as.character(value)),
+                shiny::tags$span(class = "wiki-stat-label", label)
             )
-        })
+        }
 
-        output$class_filter_input <- shiny::renderUI({
-            current_value <- input$class_filter
-            if (is.null(current_value)) {
-                current_value <- ""
+        output$header_card <- shiny::renderUI({
+            term_count <- nrow(dwc_terms)
+            required_count <- sum(as.logical(dwc_terms$required), na.rm = TRUE)
+            class_count <- length(unique(as.character(dwc_terms$class)))
+
+            title_text <- tr("wiki_title", lang_r())
+            highlight_word <- if (identical(lang_r(), "pt")) "Termos" else "Terms"
+            highlighted_title <- title_text
+            if (grepl(highlight_word, title_text, fixed = TRUE)) {
+                highlighted_title <- sub(
+                    highlight_word,
+                    paste0("<span class='wiki-title-accent'>", highlight_word, "</span>"),
+                    title_text,
+                    fixed = TRUE
+                )
             }
 
-            shiny::selectInput(
-                inputId = ns("class_filter"),
-                label = NULL,
-                choices = stats::setNames(class_values, class_labels()),
-                selected = current_value,
-                width = "100%"
+            shiny::tags$div(
+                class = "wiki-header-card",
+                shiny::tags$div(
+                    class = "wiki-header-left",
+                    shiny::tags$div(class = "wiki-header-eyebrow", tr("wiki_header_eyebrow", lang_r())),
+                    shiny::tags$h1(class = "wiki-header-title", shiny::HTML(highlighted_title)),
+                    shiny::tags$div(
+                        class = "wiki-header-subtitle",
+                        shiny::tags$span(class = "wiki-header-subtitle-icon", shiny::HTML(info_icon_svg)),
+                        shiny::tags$span(tr("wiki_subtitle", lang_r())),
+                        shiny::tags$a(
+                            href = "https://sibbr.gov.br",
+                            class = "wiki-header-link",
+                            target = "_blank",
+                            rel = "noopener noreferrer",
+                            tr("wiki_header_link_label", lang_r())
+                        )
+                    )
+                ),
+                shiny::tags$div(
+                    class = "wiki-header-stats",
+                    build_stat_pill(list_icon_svg, term_count, tr("wiki_stats_terms_label", lang_r())),
+                    build_stat_pill(check_icon_svg, required_count, tr("wiki_stats_required_label", lang_r())),
+                    build_stat_pill(grid_icon_svg, class_count, tr("wiki_stats_classes_label", lang_r()))
+                )
             )
         })
 
-        output$class_filter_pills <- shiny::renderUI({
+        output$toolbar_card <- shiny::renderUI({
             labels <- class_labels()
-            buttons <- lapply(seq_along(class_values), function(i) {
-                is_active <- i == 1L
+
+            pills <- lapply(seq_along(class_values), function(i) {
+                value <- class_values[[i]]
+                slug <- if (!nzchar(value)) "all" else unname(class_slug_map[value])
+                if (is.na(slug) || !nzchar(slug)) {
+                    slug <- "all"
+                }
+                is_active <- identical(value, "")
                 shiny::tags$button(
                     type = "button",
                     class = paste(
-                        "dwc-tab-btn wiki-filter-pill",
+                        "wiki-filter-pill",
+                        paste0("wiki-filter-pill--", slug),
                         if (is_active) "active" else ""
                     ),
-                    `data-filter` = class_values[[i]],
+                    `data-filter` = value,
                     `aria-pressed` = if (is_active) "true" else "false",
-                    labels[[i]]
+                    shiny::tags$span(class = "wiki-filter-pill-dot"),
+                    shiny::tags$span(class = "wiki-filter-pill-text", labels[[i]])
                 )
             })
-            shiny::div(
-                class = "wiki-filter-pills",
-                buttons
+
+            shiny::tags$div(
+                class = "wiki-toolbar-card",
+                shiny::tags$div(
+                    class = "wiki-toolbar-row wiki-toolbar-row-top",
+                    shiny::tags$div(
+                        class = "wiki-search-wrap",
+                        shiny::tags$label(
+                            `for` = ns("search"),
+                            class = "visually-hidden",
+                            tr("a11y_wiki_search_label", lang_r())
+                        ),
+                        shiny::tags$span(
+                            class = "wiki-search-icon",
+                            shiny::HTML(
+                                paste0(
+                                    "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.2'>",
+                                    "<circle cx='11' cy='11' r='7'></circle>",
+                                    "<path d='m20 20-3.5-3.5'></path>",
+                                    "</svg>"
+                                )
+                            )
+                        ),
+                        shiny::tags$input(
+                            id = ns("search"),
+                            type = "search",
+                            class = "wiki-search-input",
+                            placeholder = tr("wiki_search_placeholder", lang_r()),
+                            autocomplete = "off",
+                            spellcheck = "false"
+                        )
+                    ),
+                    shiny::tags$div(
+                        class = "wiki-show-wrap",
+                        shiny::tags$label(class = "wiki-show-label", tr("wiki_show_label", lang_r())),
+                        shiny::tags$label(
+                            `for` = ns("page_length"),
+                            class = "visually-hidden",
+                            tr("a11y_wiki_page_length_label", lang_r())
+                        ),
+                        shiny::tags$select(
+                            id = ns("page_length"),
+                            class = "wiki-show-select",
+                            `aria-label` = tr("a11y_wiki_page_length_label", lang_r()),
+                            lapply(c(10, 15, 25, 50, 100), function(size) {
+                                shiny::tags$option(value = size, size)
+                            })
+                        ),
+                        shiny::tags$span(class = "wiki-show-records", tr("wiki_records_label", lang_r()))
+                    )
+                ),
+                shiny::tags$div(
+                    class = "wiki-toolbar-row wiki-toolbar-row-bottom",
+                    shiny::tags$span(class = "wiki-filter-label", tr("wiki_class", lang_r())),
+                    shiny::tags$div(class = "wiki-filter-pills", pills)
+                ),
+                shiny::tags$div(
+                    class = "wiki-class-filter-compat",
+                    shiny::tags$label(
+                        `for` = ns("class_filter"),
+                        class = "visually-hidden",
+                        tr("a11y_wiki_class_filter_label", lang_r())
+                    ),
+                    shiny::tags$select(
+                        id = ns("class_filter"),
+                        class = "wiki-class-filter-select",
+                        lapply(seq_along(class_values), function(i) {
+                            value <- class_values[[i]]
+                            label <- labels[[i]]
+                            if (identical(value, "")) {
+                                shiny::tags$option(value = value, selected = "selected", label)
+                            } else {
+                                shiny::tags$option(value = value, label)
+                            }
+                        })
+                    )
+                )
             )
         })
 
@@ -140,24 +277,75 @@ mod_wiki_server <- function(id, lang_r) {
                 optional = tr("wiki_required_badge_optional", lang_r())
             )
 
-            required_badge_js <- DT::JS(
+            row_callback_js <- DT::JS(
                 sprintf(
                     paste0(
-                        "function(data, type, row) {",
-                        "  if (type !== 'display') {",
-                        "    return data;",
-                        "  }",
-                        "  var value = data;",
-                        "  var normalized = String(value === null || value === undefined ? '' : value).trim().toLowerCase();",
-                        "  var isRequired = (value === true || value === 1 || normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'sim');",
+                        "function(row, data) {",
                         "  var labels = %s;",
-                        "  if (isRequired) {",
-                        "    return '<span class=\"dwc-required-badge dwc-required-true\">' + labels.required + '</span>';",
+                        "  var termUrl = %s;",
+                        "  var normalizeBoolean = function(value) {",
+                        "    var normalized = String(value === null || value === undefined ? '' : value).trim().toLowerCase();",
+                        "    return value === true || value === 1 || normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'sim';",
+                        "  };",
+                        "  var escapeHtml = function(value) {",
+                        "    return String(value === null || value === undefined ? '' : value)",
+                        "      .replace(/&/g, '&amp;')",
+                        "      .replace(/</g, '&lt;')",
+                        "      .replace(/>/g, '&gt;')",
+                        "      .replace(/\\\"/g, '&quot;')",
+                        "      .replace(/'/g, '&#39;');",
+                        "  };",
+                        "  var classSlugMap = {",
+                        "    'record-level': 'record-level',",
+                        "    'occurrence': 'occurrence',",
+                        "    'event': 'event',",
+                        "    'location': 'location',",
+                        "    'identification': 'identification',",
+                        "    'taxon': 'taxon'",
+                        "  };",
+                        "  var requiredIcon = \"<svg width='9' height='9' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3'><polyline points='20 6 9 17 4 12'/></svg>\";",
+                        "  var termText = String(data[0] === null || data[0] === undefined ? '' : data[0]);",
+                        "  var classText = String(data[1] === null || data[1] === undefined ? '' : data[1]);",
+                        "  var definitionText = String(data[2] === null || data[2] === undefined ? '' : data[2]);",
+                        "  var exampleText = String(data[3] === null || data[3] === undefined ? '' : data[3]);",
+                        "  var isRequired = normalizeBoolean(data[4]);",
+                        "  var classSlug = classSlugMap[classText.trim().toLowerCase()] || 'record-level';",
+                        "  $('td:eq(0)', row).html(\"<a class='wiki-term-link' href='\" + termUrl + \"' target='_blank' rel='noopener noreferrer'>\" + escapeHtml(termText) + \"</a>\");",
+                        "  $('td:eq(1)', row).html(\"<span class='wiki-class-badge wiki-class-badge--\" + classSlug + \"'>\" + escapeHtml(classText) + \"</span>\");",
+                        "  var $definitionCell = $('td:eq(2)', row);",
+                        "  $definitionCell.text(definitionText);",
+                        "  $definitionCell.toggleClass('is-required', isRequired);",
+                        "  if (exampleText.trim().length > 0) {",
+                        "    $('td:eq(3)', row).html(\"<code class='wiki-example-code' title='\" + escapeHtml(exampleText) + \"'>\" + escapeHtml(exampleText) + \"</code>\");",
+                        "  } else {",
+                        "    $('td:eq(3)', row).empty();",
                         "  }",
-                        "  return '<span class=\"dwc-required-badge dwc-required-false\">' + labels.optional + '</span>';",
+                        "  if (isRequired) {",
+                        "    $('td:eq(4)', row).html(\"<span class='wiki-required-badge wiki-required-badge--true'>\" + requiredIcon + escapeHtml(labels.required) + \"</span>\");",
+                        "  } else {",
+                        "    $('td:eq(4)', row).html(\"<span class='wiki-required-badge wiki-required-badge--false'>\" + escapeHtml(labels.optional) + \"</span>\");",
+                        "  }",
+                        "  $('td:eq(4)', row).addClass('wiki-required-cell');",
                         "}"
                     ),
-                    jsonlite::toJSON(required_badge_labels, auto_unbox = TRUE)
+                    jsonlite::toJSON(required_badge_labels, auto_unbox = TRUE),
+                    jsonlite::toJSON("https://sibbr.gov.br", auto_unbox = TRUE)
+                )
+            )
+
+            header_callback_js <- DT::JS(
+                paste0(
+                    "function(thead) {",
+                    "  var sortIcon = \"<svg class='wiki-sort-icon' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'><path d='m7 15 5 5 5-5'></path><path d='m7 9 5-5 5 5'></path></svg>\";",
+                    "  $(thead).find('th').each(function(index) {",
+                    "    var $th = $(this);",
+                    "    var label = $th.text();",
+                    "    var centerClass = index === 4 ? ' wiki-th-content--center' : '';",
+                    "    if ($th.find('.wiki-th-content').length === 0) {",
+                    "      $th.html(\"<div class='wiki-th-content\" + centerClass + \"'><span class='wiki-th-label'>\" + label + \"</span>\" + sortIcon + \"</div>\");",
+                    "    }",
+                    "  });",
+                    "}"
                 )
             )
 
@@ -166,12 +354,41 @@ mod_wiki_server <- function(id, lang_r) {
                     paste0(
                         "var searchInputId = %s;",
                         "var classFilterId = %s;",
-                        "var $searchInput = $('#' + searchInputId);",
-                        "var $classFilter = $('#' + classFilterId);",
-                        "var $module = $(table.table().container()).closest('.wiki-module');",
-                        "var $pills = $module.find('.wiki-filter-pill');",
+                        "var pageLengthId = %s;",
+                        "var searchSelector = '#' + searchInputId;",
+                        "var classSelector = '#' + classFilterId;",
+                        "var pageSelector = '#' + pageLengthId;",
+                        "var pillsSelector = '.wiki-filter-pill';",
+                        "var nsSafe = searchInputId.replace(/[^a-zA-Z0-9_-]/g, '');",
+                        "var eventNs = '.wikiFilter.' + nsSafe;",
+                        "var $doc = $(document);",
+                        "var getModule = function() {",
+                        "  var $candidate = $(searchSelector).closest('.wiki-module');",
+                        "  if ($candidate.length) {",
+                        "    return $candidate;",
+                        "  }",
+                        "  $candidate = $(classSelector).closest('.wiki-module');",
+                        "  if ($candidate.length) {",
+                        "    return $candidate;",
+                        "  }",
+                        "  $candidate = $(pageSelector).closest('.wiki-module');",
+                        "  if ($candidate.length) {",
+                        "    return $candidate;",
+                        "  }",
+                        "  return $(table.table().container()).closest('.wiki-module');",
+                        "};",
+                        "var $module = getModule();",
+                        "var getPills = function() {",
+                        "  return $module.length ? $module.find(pillsSelector) : $(pillsSelector);",
+                        "};",
+                        "var getClassFilter = function() { return $(classSelector); };",
+                        "var getPageLength = function() { return $(pageSelector); };",
                         "var setActivePill = function(filterValue) {",
                         "  var value = String(filterValue || '');",
+                        "  var $pills = getPills();",
+                        "  if (!$pills.length) {",
+                        "    return;",
+                        "  }",
                         "  $pills.removeClass('active').attr('aria-pressed', 'false');",
                         "  var $target = $pills.filter(function() {",
                         "    return String($(this).attr('data-filter') || '') === value;",
@@ -183,33 +400,84 @@ mod_wiki_server <- function(id, lang_r) {
                         "};",
                         "var applyClassFilter = function(filterValue, syncSelect) {",
                         "  var value = String(filterValue || '');",
-                        "  table.column(1).search(value).draw();",
+                        "  table.column(1).search(value).draw(false);",
                         "  setActivePill(value);",
-                        "  if (syncSelect && $classFilter.length && String($classFilter.val() || '') !== value) {",
-                        "    $classFilter.val(value).trigger('change');",
+                        "  if (syncSelect) {",
+                        "    var $classFilter = getClassFilter();",
+                        "    if ($classFilter.length && String($classFilter.val() || '') !== value) {",
+                        "      $classFilter.val(value);",
+                        "    }",
                         "  }",
                         "};",
-                        "$searchInput.off('input.wikiFilter').on('input.wikiFilter', function() {",
-                        "  table.search(this.value || '').draw();",
+                        "var applyGlobalSearch = function(value) {",
+                        "  table.search(String(value || '')).draw(false);",
+                        "};",
+                        "var applyPageLength = function(value) {",
+                        "  var len = parseInt(value, 10);",
+                        "  if (!isNaN(len) && len > 0) {",
+                        "    if (table.page.len() !== len) {",
+                        "      table.page.len(len);",
+                        "    }",
+                        "    table.page('first').draw('page');",
+                        "  }",
+                        "};",
+                        "$doc.off('input' + eventNs, searchSelector);",
+                        "$doc.off('keyup' + eventNs, searchSelector);",
+                        "$doc.off('search' + eventNs, searchSelector);",
+                        "$doc.off('change' + eventNs, classSelector);",
+                        "$doc.off('change' + eventNs, pageSelector);",
+                        "$doc.off('click' + eventNs, pillsSelector);",
+                        "$doc.on('input' + eventNs, searchSelector, function() {",
+                        "  applyGlobalSearch(this.value);",
                         "});",
-                        "$classFilter.off('change.wikiFilter').on('change.wikiFilter', function() {",
+                        "$doc.on('keyup' + eventNs, searchSelector, function() {",
+                        "  applyGlobalSearch(this.value);",
+                        "});",
+                        "$doc.on('search' + eventNs, searchSelector, function() {",
+                        "  applyGlobalSearch(this.value);",
+                        "});",
+                        "$doc.on('change' + eventNs, classSelector, function() {",
                         "  applyClassFilter($(this).val() || '', false);",
                         "});",
-                        "$pills.off('click.wikiFilter').on('click.wikiFilter', function() {",
+                        "$doc.on('click' + eventNs, pillsSelector, function() {",
+                        "  if ($module.length && $(this).closest('.wiki-module')[0] !== $module[0]) {",
+                        "    return;",
+                        "  }",
                         "  var value = $(this).attr('data-filter') || '';",
                         "  applyClassFilter(value, true);",
                         "});",
+                        "$doc.on('change' + eventNs, pageSelector, function() {",
+                        "  applyPageLength($(this).val());",
+                        "});",
+                        "table.off('length.dt' + eventNs).on('length.dt' + eventNs, function(e, settings, len) {",
+                        "  var $pageLength = getPageLength();",
+                        "  if ($pageLength.length) {",
+                        "    $pageLength.val(String(len));",
+                        "  }",
+                        "});",
+                        "var $searchInput = $(searchSelector);",
                         "if ($searchInput.length) {",
                         "  table.search($searchInput.val() || '');",
                         "}",
+                        "var $classFilter = getClassFilter();",
                         "if ($classFilter.length) {",
                         "  applyClassFilter($classFilter.val() || '', false);",
                         "} else {",
                         "  applyClassFilter('', false);",
-                        "}"
+                        "}",
+                        "var $pageLength = getPageLength();",
+                        "if ($pageLength.length) {",
+                        "  var selectedLen = parseInt($pageLength.val(), 10);",
+                        "  if (!isNaN(selectedLen)) {",
+                        "    table.page.len(selectedLen);",
+                        "  }",
+                        "  $pageLength.val(String(table.page.len()));",
+                        "}",
+                        "table.draw(false);"
                     ),
                     jsonlite::toJSON(ns("search"), auto_unbox = TRUE),
-                    jsonlite::toJSON(ns("class_filter"), auto_unbox = TRUE)
+                    jsonlite::toJSON(ns("class_filter"), auto_unbox = TRUE),
+                    jsonlite::toJSON(ns("page_length"), auto_unbox = TRUE)
                 )
             )
 
@@ -217,14 +485,12 @@ mod_wiki_server <- function(id, lang_r) {
                 terms_table_data(),
                 options = list(
                     pageLength = 10,
-                    lengthMenu = c(10, 25, 50, 100),
+                    lengthMenu = c(10, 15, 25, 50, 100),
+                    dom = "t<'wiki-table-footer'ip>",
                     scrollX = TRUE,
-                    columnDefs = list(
-                        list(
-                            targets = 4,
-                            render = required_badge_js
-                        )
-                    ),
+                    autoWidth = FALSE,
+                    rowCallback = row_callback_js,
+                    headerCallback = header_callback_js,
                     language = list(
                         search = tr("wiki_datatable_search", lang_r()),
                         lengthMenu = tr("wiki_datatable_length_menu", lang_r()),

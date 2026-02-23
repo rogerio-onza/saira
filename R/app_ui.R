@@ -29,13 +29,13 @@ app_ui <- function() {
             version = 5,
             bootswatch = "flatly",
             bg = "#f4f3ee",
-            fg = "#001d3d",
-            primary = "#ffc300",
-            secondary = "#003566",
-            success = "#2d6a4f",
-            info = "#003566",
-            warning = "#f77f00",
-            danger = "#d62828",
+            fg = "#1C1C26",
+            primary = "#38CFF6",
+            secondary = "#2833AC",
+            success = "#00A86B",
+            info = "#252659",
+            warning = "#FFA204",
+            danger = "#C0392B",
             base_font = bslib::font_google("IBM Plex Sans"),
             heading_font = bslib::font_google("IBM Plex Mono"),
             code_font = bslib::font_google("IBM Plex Mono")
@@ -141,10 +141,11 @@ app_ui <- function() {
         bslib::nav_item(
             shiny::selectInput(
                 inputId = "lang_switch",
-                label = NULL,
+                label = shiny::tags$span(tr("a11y_lang_switch_label", "pt"), class = "visually-hidden"),
                 choices = c("Portuguese" = "pt", "English" = "en"),
                 selected = "pt",
-                width = "130px"
+                width = "150px",
+                selectize = FALSE
             )
         )
     )

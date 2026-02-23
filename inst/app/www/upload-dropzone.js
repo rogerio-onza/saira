@@ -45,14 +45,24 @@
   function bindDropzone(dropzone) {
     if (!dropzone || dropzone.dataset.dropzoneBound === "true") return;
 
+    var section = dropzone.closest(".upload-section");
     var fileInput = dropzone.querySelector("input.shiny-input-file[type='file'], input[type='file']");
+    if (!fileInput && section) {
+      fileInput = section.querySelector(".upload-native-input input.shiny-input-file[type='file'], .upload-native-input input[type='file']");
+    }
+    if (!fileInput && section) {
+      fileInput = section.querySelector("input.shiny-input-file[type='file'], input[type='file']");
+    }
     if (!fileInput) return;
 
     var inputGroup = dropzone.querySelector(".input-group");
+    if (!inputGroup && section) {
+      inputGroup = section.querySelector(".upload-native-input .input-group");
+    }
     if (inputGroup && !dropzone.dataset.dropzoneInputDetached) {
       try {
-        // Detach native input from Shiny's default visual wrapper so
-        // the dropzone owns the interaction area without the extra box.
+        // Detach the native file input from Shiny's visual shell so we can
+        // hide the shell while keeping the file picker callable via JS click.
         dropzone.appendChild(fileInput);
         inputGroup.remove();
         dropzone.dataset.dropzoneInputDetached = "true";
