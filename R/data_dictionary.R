@@ -639,6 +639,10 @@ i18n_dict <- list(
         en = "The first provider with a match defines the verdict."
     ),
     validate_names_run = list(pt = "Validar Nomes", en = "Validate Names"),
+    validate_names_run_cta = list(
+        pt = "\u25B6 Validar Nomes",
+        en = "\u25B6 Validate Names"
+    ),
     validate_names_run_running = list(
         pt = "Validando nomes...",
         en = "Validating names..."
@@ -699,6 +703,10 @@ i18n_dict <- list(
         pt = "Progresso da Validacao",
         en = "Validation Progress"
     ),
+    validate_names_progress_label = list(
+        pt = "Progresso",
+        en = "Progress"
+    ),
     validate_names_progress_idle = list(
         pt = "Inicie a validacao para acompanhar o progresso em tempo real.",
         en = "Start validation to follow real-time progress."
@@ -734,6 +742,14 @@ i18n_dict <- list(
     validate_names_progress_batch_label = list(
         pt = "Lote",
         en = "Batch"
+    ),
+    validate_names_progress_meta_line1 = list(
+        pt = "Fase: %s | Lote %s",
+        en = "Phase: %s | Batch %s"
+    ),
+    validate_names_progress_meta_line2 = list(
+        pt = "Provedor: %s | %d de %d nomes",
+        en = "Provider: %s | %d of %d names"
     ),
     validate_names_progress_phase_prepare = list(
         pt = "Preparando nomes",
@@ -774,6 +790,10 @@ i18n_dict <- list(
     validate_names_stream_title = list(
         pt = "Stream de Nomes Processados",
         en = "Processed Names Stream"
+    ),
+    validate_names_stream_panel_title = list(
+        pt = "\u2261 Stream de Nomes Processados",
+        en = "\u2261 Processed Names Stream"
     ),
     validate_names_stream_waiting = list(
         pt = "Aguardando primeiros resultados...",
@@ -910,6 +930,22 @@ i18n_dict <- list(
         en = "Some providers failed and were skipped: %s"
     ),
     validate_names_all_valid = list(pt = "Todos os nomes s\u00E3o v\u00E1lidos!", en = "All names are valid!"),
+    validate_names_report_title = list(
+        pt = "\u229E Relatorio de Nomes",
+        en = "\u229E Names Report"
+    ),
+    validate_names_report_search_placeholder = list(
+        pt = "Buscar nome...",
+        en = "Search name..."
+    ),
+    validate_names_report_show_n = list(
+        pt = "Mostrar %d",
+        en = "Show %d"
+    ),
+    validate_names_report_empty = list(
+        pt = "Nenhum resultado de validacao disponivel ainda.",
+        en = "No validation results available yet."
+    ),
     validate_names_table_col_scientific_name = list(
         pt = "Nome Cient\u00EDfico",
         en = "Scientific Name"
@@ -1227,9 +1263,277 @@ i18n_dict <- list(
         pt = "Tutorial e FAQ",
         en = "Tutorial and FAQ"
     ),
+    help_header_eyebrow = list(
+        pt = "Tutorial \u00B7 FAQ \u00B7 Documenta\u00E7\u00E3o",
+        en = "Tutorial \u00B7 FAQ \u00B7 Documentation"
+    ),
+    help_header_title_prefix = list(
+        pt = "Central de",
+        en = "Help"
+    ),
+    help_header_title_highlight = list(
+        pt = "Ajuda",
+        en = "Center"
+    ),
+    help_header_subtitle = list(
+        pt = "Tudo o que voc\u00EA precisa para usar o Finch com confian\u00E7a.",
+        en = "Everything you need to use Finch with confidence."
+    ),
     a11y_help_search_label = list(
         pt = "Buscar na ajuda",
         en = "Search help"
+    ),
+    help_search_placeholder = list(
+        pt = "Buscar t\u00F3picos, termos e respostas...",
+        en = "Search topics, terms, and answers..."
+    ),
+    help_empty_state = list(
+        pt = "Nenhum conte\u00FAdo encontrado para a busca informada.",
+        en = "No help content matched your search."
+    ),
+    help_section_dwc_title = list(
+        pt = "Darwin Core",
+        en = "Darwin Core"
+    ),
+    help_section_faq_title = list(
+        pt = "FAQ",
+        en = "FAQ"
+    ),
+    help_section_formats_title = list(
+        pt = "Formatos aceitos",
+        en = "Accepted formats"
+    ),
+    help_section_separator_title = list(
+        pt = "Separador de m\u00FAltiplos valores",
+        en = "Multi-value separator"
+    ),
+    help_dwc_term_label = list(
+        pt = "Darwin Core (DwC)",
+        en = "Darwin Core (DwC)"
+    ),
+    help_dwc_p1_prefix = list(
+        pt = "\u00E9 um padr\u00E3o de dados para compartilhamento de informa\u00E7\u00F5es sobre biodiversidade, mantido pela",
+        en = "is a data standard for sharing biodiversity information, maintained by"
+    ),
+    help_dwc_p1_suffix = list(
+        pt = ".",
+        en = "."
+    ),
+    help_dwc_p2 = list(
+        pt = "Ele fornece um vocabul\u00E1rio est\u00E1vel para descrever ocorr\u00EAncias, localiza\u00E7\u00F5es, taxonomia e eventos de coleta.",
+        en = "It provides a stable vocabulary to describe occurrences, locations, taxonomy, and collection events."
+    ),
+    help_dwc_bullet_occurrence = list(
+        pt = "Ocorr\u00EAncias de esp\u00E9cies com estrutura compat\u00EDvel para publica\u00E7\u00E3o.",
+        en = "Species occurrences structured for publication."
+    ),
+    help_dwc_bullet_location = list(
+        pt = "Localiza\u00E7\u00F5es geogr\u00E1ficas com foco em coordenadas e pa\u00EDs.",
+        en = "Geographic locations with emphasis on coordinates and country."
+    ),
+    help_dwc_bullet_taxonomy = list(
+        pt = "Taxonomia com nomes cient\u00EDficos e classifica\u00E7\u00E3o.",
+        en = "Taxonomy with scientific names and classification."
+    ),
+    help_dwc_bullet_event = list(
+        pt = "Eventos de coleta com datas e contexto de amostragem.",
+        en = "Collection events with dates and sampling context."
+    ),
+    help_dwc_p3_prefix = list(
+        pt = "No Brasil, o",
+        en = "In Brazil, the"
+    ),
+    help_dwc_p3_suffix = list(
+        pt = "adota o Darwin Core como refer\u00EAncia para publica\u00E7\u00E3o de dados.",
+        en = "adopts Darwin Core as a reference for data publication."
+    ),
+    help_link_tdwg = list(
+        pt = "TDWG",
+        en = "TDWG"
+    ),
+    help_link_sibbr = list(
+        pt = "SiBBr",
+        en = "SiBBr"
+    ),
+    help_faq_q1 = list(
+        pt = "Quais formatos de arquivo s\u00E3o aceitos?",
+        en = "What file formats are accepted?"
+    ),
+    help_faq_a1 = list(
+        pt = "A aba de upload trabalha com arquivos CSV (.csv).",
+        en = "The upload tab works with CSV files (.csv)."
+    ),
+    help_faq_q2 = list(
+        pt = "Qual o tamanho m\u00E1ximo de arquivo?",
+        en = "What is the maximum file size?"
+    ),
+    help_faq_a2 = list(
+        pt = "O limite padr\u00E3o \u00E9 500 MB por arquivo.",
+        en = "The default limit is 500 MB per file."
+    ),
+    help_faq_q3 = list(
+        pt = "Como o Finch interpreta datas?",
+        en = "How does Finch interpret dates?"
+    ),
+    help_faq_a3_prefix = list(
+        pt = "No export, o campo",
+        en = "On export, the"
+    ),
+    help_faq_a3_suffix = list(
+        pt = "\u00E9 normalizado para o formato ISO quando poss\u00EDvel.",
+        en = "field is normalized to ISO format whenever possible."
+    ),
+    help_faq_q4 = list(
+        pt = "Meus dados ficam armazenados em servidor?",
+        en = "Is my data stored on any server?"
+    ),
+    help_faq_a4 = list(
+        pt = "N\u00E3o. O processamento ocorre localmente na sess\u00E3o da aplica\u00E7\u00E3o.",
+        en = "No. Processing runs locally in the application session."
+    ),
+    help_formats_p1 = list(
+        pt = "O Finch aceita arquivos CSV e foi otimizado para planilhas com delimitador ponto e v\u00EDrgula (;).",
+        en = "Finch accepts CSV files and is optimized for spreadsheets that use semicolon (;) as delimiter."
+    ),
+    help_formats_p2 = list(
+        pt = "Para reduzir erros de importa\u00E7\u00E3o, revise encoding e colunas antes do mapeamento.",
+        en = "To reduce import errors, review encoding and columns before mapping."
+    ),
+    help_formats_bullet_1 = list(
+        pt = "Formato suportado: arquivos .csv com cabe\u00E7alho na primeira linha.",
+        en = "Supported format: .csv files with headers on the first row."
+    ),
+    help_formats_bullet_2 = list(
+        pt = "Encoding recomendado: UTF-8. O app tamb\u00E9m lida com Latin-1 quando necess\u00E1rio.",
+        en = "Recommended encoding: UTF-8. The app also handles Latin-1 when needed."
+    ),
+    help_formats_bullet_3 = list(
+        pt = "Para campos multivalorados na entrada, use ponto e v\u00EDrgula (;).",
+        en = "For multi-value fields in input data, use semicolon (;)."
+    ),
+    help_formats_bullet_4 = list(
+        pt = "Mantenha nomes de colunas consistentes para melhorar o auto-mapeamento.",
+        en = "Keep column names consistent to improve auto-mapping."
+    ),
+    help_separator_p1 = list(
+        pt = "Campos com m\u00FAltiplos valores entram com ponto e v\u00EDrgula (;) e saem no padr\u00E3o DwC com pipe ( | ).",
+        en = "Fields with multiple values enter using semicolon (;) and are exported in DwC format with pipe ( | )."
+    ),
+    help_separator_p2 = list(
+        pt = "Esse ajuste reduz ambiguidades e melhora a compatibilidade para valida\u00E7\u00E3o e exporta\u00E7\u00E3o.",
+        en = "This conversion reduces ambiguity and improves compatibility for validation and export."
+    ),
+    help_separator_demo_input = list(
+        pt = "Entrada",
+        en = "Input"
+    ),
+    help_separator_bullet_1 = list(
+        pt = "Use ; apenas para separar tokens dentro da mesma c\u00E9lula.",
+        en = "Use ; only to separate tokens inside the same cell."
+    ),
+    help_separator_bullet_2 = list(
+        pt = "Evite v\u00EDrgula como separador de tokens, pois ela pode aparecer em coordenadas decimais.",
+        en = "Avoid comma as token separator because it can appear in decimal coordinates."
+    ),
+    help_separator_bullet_3 = list(
+        pt = "Na exporta\u00E7\u00E3o, o Finch converte automaticamente para o formato com pipe.",
+        en = "During export, Finch automatically converts values to the pipe-based format."
+    ),
+    help_author_role = list(
+        pt = "Maintainer",
+        en = "Maintainer"
+    ),
+    help_author_contact_email = list(
+        pt = "Email:",
+        en = "Email:"
+    ),
+    help_author_contact_repository = list(
+        pt = "Reposit\u00F3rio:",
+        en = "Repository:"
+    ),
+    help_author_version_label = list(
+        pt = "Vers\u00E3o",
+        en = "Version"
+    ),
+    help_bug_title = list(
+        pt = "Reportar bug",
+        en = "Report bug"
+    ),
+    help_bug_body = list(
+        pt = "Encontrou comportamento inesperado? Abra uma issue com detalhes para investigarmos.",
+        en = "Found unexpected behavior? Open an issue with details so we can investigate."
+    ),
+    help_bug_button = list(
+        pt = "Abrir GitHub Issues",
+        en = "Open GitHub Issues"
+    ),
+    a11y_help_bug_link = list(
+        pt = "Abrir p\u00E1gina de issues do Finch no GitHub",
+        en = "Open Finch issues page on GitHub"
+    ),
+    help_links_title = list(
+        pt = "Links \u00FAteis",
+        en = "Useful links"
+    ),
+    help_links_dwc = list(
+        pt = "DwC TDWG",
+        en = "DwC TDWG"
+    ),
+    help_links_sibbr = list(
+        pt = "SiBBr",
+        en = "SiBBr"
+    ),
+    help_links_gbif = list(
+        pt = "GBIF",
+        en = "GBIF"
+    ),
+    help_links_ala = list(
+        pt = "Atlas of Living Australia",
+        en = "Atlas of Living Australia"
+    ),
+    a11y_help_external_link = list(
+        pt = "Abrir link externo",
+        en = "Open external link"
+    ),
+    help_stack_title = list(
+        pt = "Constru\u00EDdo com",
+        en = "Built with"
+    ),
+    help_stack_r = list(
+        pt = "R",
+        en = "R"
+    ),
+    help_stack_shiny = list(
+        pt = "Shiny",
+        en = "Shiny"
+    ),
+    help_stack_bslib = list(
+        pt = "bslib",
+        en = "bslib"
+    ),
+    help_stack_dt = list(
+        pt = "DT",
+        en = "DT"
+    ),
+    help_stack_leaflet = list(
+        pt = "Leaflet",
+        en = "Leaflet"
+    ),
+    help_stack_coordinatecleaner = list(
+        pt = "CoordinateCleaner",
+        en = "CoordinateCleaner"
+    ),
+    help_stack_taxadb = list(
+        pt = "taxadb",
+        en = "taxadb"
+    ),
+    help_stack_codex = list(
+        pt = "Codex 5.3",
+        en = "Codex 5.3"
+    ),
+    help_stack_sonnet = list(
+        pt = "Sonnet 4.6",
+        en = "Sonnet 4.6"
     ),
     help_getting_started = list(pt = "Come\u00E7ando", en = "Getting Started"),
     help_faq = list(pt = "Perguntas Frequentes", en = "FAQ"),

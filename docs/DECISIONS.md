@@ -838,3 +838,106 @@ Formato: ADR leve (Architecture Decision Record).
   - Busca, chips e seletor `Mostrar` voltam a operar de forma previsivel em runtime.
   - Reduz regressao intermitente associada a recriacao de DOM em controles externos.
   - Contrato visual da Wiki permanece consistente com o redesign do ADR-042.
+
+---
+
+## ADR-044: Redesign da Help com acordeao custom, sidebar sticky e escopo CSS local
+
+- **Data**: 2026-02-23
+- **Contexto**: A aba `help` usava layout simples em coluna unica com `bslib::accordion`, sem estrutura editorial, sem sidebar informativa e com baixo alinhamento ao design v4 aplicado nas abas mais recentes.
+- **Decisao**:
+  - Migrar a aba para grid de duas colunas (`1fr + 320px`) com wrapper local (`max-width: 1400px`) e quebra responsiva para coluna unica em telas menores.
+  - Substituir o cabecalho solto por card de header e mover o campo de busca para card dedicado.
+  - Trocar `bslib::accordion` por markup custom (header/body por item) com estados `is-open`, `aria-expanded`, `aria-hidden` e animacao de `max-height`.
+  - Definir 4 secoes canonicas da Help:
+    - `Darwin Core`
+    - `FAQ`
+    - `Formatos aceitos`
+    - `Separador de multiplos valores`
+  - Adicionar script dedicado `www/help-accordion.js` com event delegation no `document` para manter funcionamento apos re-render de `renderUI`.
+  - Introduzir sidebar sticky com quatro cards:
+    - Autor (metadados atuais do pacote, versao e contatos)
+    - Reportar bug (link para GitHub Issues)
+    - Links uteis (TDWG/DwC, SiBBr, GBIF, ALA)
+    - Construido com (stack base + chips de IA)
+  - Escopar todo o CSS novo em `.help-module`/`.help-*` para evitar regressao visual em Wiki/Preview/Validacoes.
+- **Alternativas**:
+  - Manter `bslib::accordion` e aplicar apenas skin visual - rejeitado por limitar controle de estrutura, animacao e estados de acessibilidade.
+  - Reaproveitar classes globais de cards/tabela sem escopo local - rejeitado por aumentar risco de side effects cross-modulo.
+  - Implementar sidebar sem comportamento sticky - rejeitado por reduzir utilidade de cards de referencia em telas desktop.
+- **Consequencias**:
+  - A aba `help` passa a ter paridade visual com o design system v4 e melhor escaneabilidade de conteudo.
+  - A camada de i18n cresce com novas chaves de conteudo e acessibilidade, exigindo sincronizacao dos testes no mesmo ciclo.
+  - O JS do acordeao fica desacoplado da instancia de modulo e resiliente a rebuild de DOM por `renderUI`.
+
+---
+
+## ADR-045: Alinhamento definitivo da lupa no campo de busca da Help
+
+- **Data**: 2026-02-24
+- **Contexto**: O icone de busca da aba `help` apresentava deslocamento horizontal/vertical em runtime e, em alguns cenarios, parecia fora da caixa. A causa foi a combinacao de estilos herdados de `textInput` (Shiny/Bootstrap) com posicionamento absoluto sem contrato geometrico rigido.
+- **Decisao**:
+  - Fixar contrato estrutural do campo de busca:
+    - wrapper imediato `.help-search-input-wrap` com `position: relative`;
+    - icone `.help-search-icon` com `position: absolute`, `left: 13px`, `top: 50%`, `transform: translateY(-50%)`, `width/height: 14px`, `line-height: 1`, `display: inline-flex`, `align-items: center`, `justify-content: center`;
+    - input com `height: 42px` e `padding-left: 42px` para reservar area do icone.
+  - Neutralizar espacamento herdado do stack Shiny/Bootstrap no card de busca:
+    - `.help-search-card .shiny-input-container { margin-bottom: 0; }`
+    - `.help-search-card .control-label { margin-bottom: 0; }`
+- **Alternativas**:
+  - Usar `input-group` Bootstrap com prepend de icone - rejeitado por conflitar com o contrato visual custom da Help.
+  - Ajustar por tentativa (`margin-top`/`top` fixo) sem caixa fixa do icone - rejeitado por baixa estabilidade entre navegadores e breakpoints.
+- **Consequencias**:
+  - Alinhamento da lupa passa a ser deterministico e resiliente a variacao de fonte/line-height.
+  - Campo de busca fica estavel em PT/EN, desktop e mobile, sem regressao de colisao com placeholder.
+
+---
+
+## ADR-046: Migracao tipografica global para design v5 com tokens e alias de compatibilidade
+
+- **Data**: 2026-02-24
+- **Contexto**: O design-v5 introduziu mudanca de tipografia (Cormorant Garamond + Space Mono) mantendo a paleta/camadas visuais do v4. O CSS acumulava hardcodes de `IBM Plex` em blocos locais (`help`, `wiki`, validacoes, preview), o que elevava risco de regressao e inconsistencias ao trocar familias globais.
+- **Decisao**:
+  - Adotar `Cormorant Garamond` como base serif e `Space Mono` como mono oficial.
+  - Carregar Google Fonts v5 explicitamente no `head` de `app_ui`.
+  - Em `bs_theme`, usar `font_collection(...)` (sem `font_google` por familia antiga) para alinhar fallback local e evitar acoplamento com import implicito.
+  - Remover `@import` legado de IBM no `custom.css` e centralizar tipografia por tokens:
+    - `--font-serif: 'Cormorant Garamond', Georgia, serif;`
+    - `--font-mono: 'Space Mono', 'IBM Plex Mono', monospace;`
+    - `--font-sans: var(--font-serif);` (alias temporario de compatibilidade nesta onda)
+  - Eliminar hardcodes de `font-family: "IBM Plex ..."` em componentes locais e substituir por tokens.
+  - Preservar guardrails visuais existentes (ADR-040/041/045), sem mexer em geometria, spacing ou wiring dos componentes.
+  - Incluir guardrail de legibilidade para diagnosticos compactos de coordenadas (< `0.85rem`) com ajuste tipografico leve (`letter-spacing` + `tabular nums`) sem alterar layout.
+- **Alternativas**:
+  - Migrar apenas tokens globais e manter hardcodes locais - rejeitado por manter incoerencia visual e custo recorrente de manutencao.
+  - Substituir todas as ocorrencias por serif/mono sem alias de compatibilidade - rejeitado por maior risco de regressao transversal nesta onda.
+  - Manter `font_google("IBM Plex ...")` no tema e trocar apenas CSS - rejeitado por divergencia entre tema runtime e design system oficial.
+- **Consequencias**:
+  - Tipografia do app passa a seguir contrato unico e rastreavel por tokens.
+  - Reduz regressao futura em refactors de modulo, pois evita familia hardcoded dispersa.
+  - Mantem compatibilidade progressiva durante a transicao por alias `--font-sans`.
+
+---
+
+## ADR-047: Layout tri-coluna para `validate_names` com painel de configuracao fixo e relatorio com toolbar externa
+
+- **Data**: 2026-02-24
+- **Contexto**: A aba `validate_names` usava composicao `col-lg-6/col-lg-6` com cards fragmentados (`providers`, `options`, `action`, `summary`, `stats`, `results`, `stream`) e alto custo de scroll para alternar entre configuracao, monitoramento e leitura de tabela. O contrato visual alvo exigia: coluna esquerda fixa de configuracao, coluna central de stream em tempo real e coluna direita fixa de relatorio.
+- **Decisao**:
+  - Refatorar `mod_validate_names_ui()` para shell horizontal unico (`config_panel`, `stream_panel`, `report_panel`), mantendo assinatura publica do modulo e retorno reativo inalterados.
+  - Consolidar configuracao em `config_panel`:
+    - provedores em cards empilhados com destaque de prioridade 1;
+    - toggles de normalizacao;
+    - CTA `Validar Nomes`, mini-stats e progresso textual/visual.
+  - Manter stream incremental no centro com pills ativas por status e itens semanticos.
+  - Migrar tabela para `report_panel` com `DT::datatable` + toolbar externa (busca e `Mostrar N`) sincronizada via callback JS delegado.
+  - Isolar estilizacao em namespace local `.vn-*` dentro de `custom.css`, evitando regressao transversal em `validate_coords`, `wiki` e `help`.
+- **Alternativas**:
+  - Manter grid `6/6` e apenas "skin" visual - rejeitado por nao resolver acoplamento funcional entre configuracao/stream/tabela.
+  - Substituir `DT` por tabela HTML manual - rejeitado por perda de ordenacao/paginacao nativas e aumento de custo de manutencao.
+  - Reusar classes antigas `validate-names-*` sem namespace novo - rejeitado por risco de colisao CSS com regras legadas.
+- **Consequencias**:
+  - Fluxo operacional da aba fica mais previsivel: configurar (esquerda), monitorar (centro), auditar (direita).
+  - Contrato de API do modulo permanece estavel (sem impacto em `app_server`).
+  - Superficie de i18n cresce (novas chaves `validate_names_*`), exigindo atualizacao conjunta de testes.
+  - Guardrails visuais passam a exigir larguras fixas dos paines laterais e altura de workspace por viewport tokenizada.

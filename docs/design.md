@@ -2,7 +2,7 @@
 
 > **Background:** `#f4f3ee` (warm beige) — non-negotiable  
 > **Palette:** *Tangara fastuosa* + estados semânticos com personalidade  
-> **Version:** 4.0 — paleta final
+> **Version:** 4.1 — tipografia atualizada
 
 ---
 
@@ -107,29 +107,106 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 
 ## 📝 Typography
 
-```css
---font-mono: 'IBM Plex Mono', 'Courier New', monospace;
---font-sans: 'IBM Plex Sans', -apple-system, sans-serif;
+### Google Fonts Import
 
-/* Scale */
---text-xs: 0.75rem;   --text-sm: 0.8rem;    --text-base: 0.95rem;
---text-md: 1.1rem;    --text-lg: 1.25rem;   --text-xl: 1.5rem;
---text-2xl: 1.75rem;
-
-/* Weights */
---weight-regular: 400;  --weight-medium: 500;
---weight-semibold: 600; --weight-bold: 700;
-
-/* Line heights */
---leading-tight: 1.25;  --leading-normal: 1.5;  --leading-relaxed: 1.75;
+```html
+<!-- Importar apenas os pesos efetivamente usados -->
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Space+Mono:ital@0;1&display=swap" rel="stylesheet">
 ```
 
-**Regras:**
-- Headings → IBM Plex Mono, 600, letter-spacing -0.01em
-- Body → IBM Plex Sans, 400
-- `<p>` color → `var(--accent)` `#2833AC`
-- Buttons → IBM Plex Mono, 600
-- Code/Data → IBM Plex Mono, 400
+> **Nota:** O peso 300 foi excluído intencionalmente. O Cormorant Garamond tem traços finos por natureza (serifa old-style com alto contraste entre grosso e fino) — o 300 desaparece em tela, especialmente no fundo bege `#f4f3ee`. Não importar pesos não-utilizados também reduz o tempo de carregamento no Shiny.
+
+### Variáveis
+
+```css
+/* Famílias */
+--font-serif: 'Cormorant Garamond', Georgia, serif;
+--font-mono:  'Space Mono', 'IBM Plex Mono', monospace;
+
+/* Scale */
+--text-xs:   0.75rem;
+--text-sm:   0.8rem;
+--text-base: 0.95rem;
+--text-md:   1.1rem;
+--text-lg:   1.25rem;
+--text-xl:   1.5rem;
+--text-2xl:  1.75rem;
+
+/* Weights */
+--weight-medium:   500;   /* Body — compensa a leveza da serifa em tela */
+--weight-semibold: 600;   /* Headings */
+```
+
+### Regras de Aplicação
+
+| Contexto | Família | Peso | Observação |
+|---|---|---|---|
+| `h1`, `h2` | Cormorant Garamond | 700 | `2rem` / `1.6rem` com tracking negativo |
+| `h3`, `h4` | Cormorant Garamond | 600 | `1.3rem` / `1.15rem` |
+| Body / `<p>` | Cormorant Garamond | 600 | `1.05rem`, `line-height: 1.65`, `letter-spacing: 0.01em` |
+| Texto corrido em cards/painéis | Cormorant Garamond | 600 | `1.1rem`, `line-height: 1.7` |
+| `.subtitle`, `.section-label`, `.step-label` | Cormorant Garamond | 600 | `1rem`, `letter-spacing: 0.015em` |
+| Botões | Space Mono | 400 | preserva sensação de "ferramenta" |
+| Labels de inputs | Space Mono | 400 | legibilidade em tamanho pequeno |
+| Dados / tabelas / coordenadas | Space Mono | 400 | ⚠️ testar em `0.75rem` e `0.8rem` — ver nota abaixo |
+| Código | Space Mono | 400 | — |
+| Itálico decorativo | Cormorant Garamond | 500 italic | apenas em displays grandes |
+
+> ⚠️ **Atenção — Space Mono em tamanhos pequenos:** O Space Mono pode apresentar kerning apertado em `font-size < 0.85rem`, especialmente nos pares `fi`, `fl` e nos dígitos `1` e `7`. Testar obrigatoriamente nas tabelas de coordenadas antes de fazer deploy. Se necessário, usar `IBM Plex Mono` como fallback apenas nesses contextos menores (já declarado no stack acima).
+
+### CSS de Aplicação
+
+```css
+/* Headings */
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+  line-height: var(--leading-tight);
+}
+h1 { font-size: 2rem;    font-weight: 700; letter-spacing: -0.02em; }
+h2 { font-size: 1.6rem;  font-weight: 700; letter-spacing: -0.015em; }
+h3 { font-size: 1.3rem;  font-weight: 600; letter-spacing: -0.01em; }
+h4 { font-size: 1.15rem; font-weight: 600; }
+
+/* Body */
+body, p, .body-text {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  letter-spacing: 0.01em;
+  color: var(--accent);   /* #2833AC — mantido da v4.0 */
+}
+
+/* Texto corrido em cards e painéis */
+.card p, .panel p, .description, .welcome-text {
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1.7;
+}
+
+/* Subtítulos e labels descritivos (não são inputs) */
+.subtitle, .section-label, .step-label {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.015em;
+}
+
+/* UI — botões, labels, dados */
+button, .btn, label, .ui-label,
+code, .data-cell, .coord-value {
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+```
+
+### Line Heights
+
+```css
+--leading-tight:   1.25;
+--leading-normal:  1.5;
+--leading-relaxed: 1.75;
+```
 
 ---
 
@@ -189,6 +266,7 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 .btn-primary {
   background: #38CFF6;
   color: #1C1C26;        /* preto azulado — contraste 8.1:1 ✅ */
+  font-family: var(--font-mono);
   box-shadow: var(--shadow-primary);
 }
 .btn-primary:hover { background: #16B3BD; transform: translateY(-1px); }
@@ -197,6 +275,7 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 .btn-success {
   background: #00A86B;
   color: #ffffff;        /* contraste 4.7:1 ✅ */
+  font-family: var(--font-mono);
   box-shadow: var(--shadow-success);
 }
 .btn-success:hover { background: #009960; }
@@ -205,6 +284,7 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 .btn-warning {
   background: #FFA204;
   color: #1C1C26;        /* contraste 9.8:1 ✅ */
+  font-family: var(--font-mono);
 }
 .btn-warning:hover { background: #E09000; }
 
@@ -212,6 +292,7 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 .btn-error {
   background: #C0392B;
   color: #ffffff;        /* contraste 5.9:1 ✅ */
+  font-family: var(--font-mono);
   box-shadow: var(--shadow-error);
 }
 .btn-error:hover { background: #A93226; }
@@ -221,6 +302,7 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
   background: transparent;
   border: 1.5px solid #2833AC;
   color: #2833AC;
+  font-family: var(--font-mono);
 }
 .btn-secondary:hover { background: #2833AC; color: #ffffff; }
 ```
@@ -256,6 +338,9 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 --input-focus-ring-error: var(--focus-ring-error);
 --input-bg-disabled:      rgba(40,51,172,0.05);
 --input-text-disabled:    rgba(28,28,38,0.35);
+
+/* Labels de input usam Space Mono */
+label, .input-label { font-family: var(--font-mono); font-size: var(--text-sm); }
 ```
 
 ### Navbar
@@ -317,6 +402,9 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 4. ❌ **Não misturar famílias tipográficas** no mesmo componente
 5. ❌ **Não remover focus rings**
 6. ❌ **Não criar componentes sem os 5 estados** (default/hover/active/focus/disabled)
+7. ❌ **Não usar Cormorant Garamond peso 300** — desaparece em tela, especialmente em monitores não-retina
+8. ❌ **Não usar Cormorant Garamond em labels de input ou dados tabulares** — usar Space Mono nesses contextos
+9. ❌ **Não importar pesos tipográficos não-utilizados** — impacta performance de carregamento no Shiny
 
 ---
 
@@ -341,11 +429,13 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 ## 📚 Referências
 
 - **Pixel sampling:** Pillow/Python sobre 3 fotografias originais de *Tangara fastuosa*
-- **IBM Plex:** [Google Fonts](https://fonts.google.com/specimen/IBM+Plex+Sans)
+- **Cormorant Garamond:** [Google Fonts](https://fonts.google.com/specimen/Cormorant+Garamond)
+- **Space Mono:** [Google Fonts](https://fonts.google.com/specimen/Space+Mono)
 - **Contrast:** [WebAIM](https://webaim.org/resources/contrastchecker/)
 
 ---
 
-**Version:** 4.0 — paleta final  
+**Version:** 4.1 — tipografia atualizada (Cormorant Garamond + Space Mono)  
+**Previous:** 4.0 — IBM Plex Sans + IBM Plex Mono  
 **Last Updated:** Fevereiro 2026  
 **Maintained By:** Rogério Nunes Oliveira

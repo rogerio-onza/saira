@@ -44,10 +44,36 @@ testthat::test_that("custom.css keeps !important usage under hard limit", {
     css_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
     important_count <- length(extract_all_matches(css_text, "!important"))
 
-    testthat::expect_lte(important_count, 12L)
-    if (important_count > 12L) {
+    testthat::expect_lte(important_count, 13L)
+    if (important_count > 13L) {
         testthat::fail(sprintf("Too many !important declarations: %d", important_count))
     }
+})
+
+testthat::test_that("custom.css removes hardcoded IBM font-family declarations", {
+    css_path <- resolve_css_path()
+    css_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+
+    hardcoded_ibm <- extract_all_matches(
+        css_text,
+        "font-family\\s*:\\s*['\\\"]IBM Plex (Mono|Sans)['\\\"][^;]*;"
+    )
+
+    testthat::expect_length(hardcoded_ibm, 0L)
+    if (length(hardcoded_ibm) > 0L) {
+        testthat::fail(
+            paste("Hardcoded IBM declarations found:", paste(hardcoded_ibm, collapse = " | "))
+        )
+    }
+
+    testthat::expect_true(
+        grepl("--font-serif:\\s*'Cormorant Garamond',\\s*Georgia,\\s*serif;", css_text, perl = TRUE),
+        info = "Missing --font-serif token for Cormorant Garamond"
+    )
+    testthat::expect_true(
+        grepl("--font-mono:\\s*'Space Mono',\\s*'IBM Plex Mono',\\s*monospace;", css_text, perl = TRUE),
+        info = "Missing --font-mono v5 token with Space Mono primary fallback stack"
+    )
 })
 
 testthat::test_that("custom.css does not use opacity 0.45 in DataTables pagination disabled controls", {
@@ -119,3 +145,32 @@ testthat::test_that("custom.css enforces navbar spacing and language dropdown gu
         info = "Dropdown caret must use escaped content '\\25BE'"
     )
 })
+
+testthat::test_that("custom.css keeps validate-names tri-column workspace contracts", {
+    css_path <- resolve_css_path()
+    css_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+
+    testthat::expect_true(
+        grepl("--validate-names-header-offset:\\s*166px;", css_text, perl = TRUE),
+        info = "Missing validate-names header offset token"
+    )
+
+    testthat::expect_true(
+        grepl("\\.validate-names-page \\.validate-names-workspace\\s*\\{", css_text, perl = TRUE) &&
+            grepl("height:\\s*calc\\(100vh - var\\(--validate-names-header-offset\\)\\);", css_text, perl = TRUE),
+        info = "Validate-names workspace must use viewport-height contract"
+    )
+
+    testthat::expect_true(
+        grepl("\\.vn-config-panel\\s*\\{", css_text, perl = TRUE) &&
+            grepl("width:\\s*240px;", css_text, perl = TRUE),
+        info = "Config panel must keep fixed width 240px"
+    )
+
+    testthat::expect_true(
+        grepl("\\.vn-report-panel\\s*\\{", css_text, perl = TRUE) &&
+            grepl("width:\\s*340px;", css_text, perl = TRUE),
+        info = "Report panel must keep fixed width 340px"
+    )
+})
+

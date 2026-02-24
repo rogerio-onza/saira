@@ -45,6 +45,8 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Contratos de atributos reativos compartilhados devem ser validados por capacidade**: antes de consumir `attr(reactive, "validation_gate")`, checar se os campos esperados existem; em ausencia, aplicar fallback seguro no dado canonico.
 - **Web components com nome de tag customizado (ex.: `<lottie-player>`) nao devem ser criados com `shiny::tags$`**: em cenarios com hifen no nome da tag, isso pode disparar `attempt to apply non-function`. Preferir HTML explicito (`shiny::HTML(...)`) ou construcao de tag custom segura.
 - **Falha visual nao pode bloquear fluxo funcional**: em eventos de arranque (`start_requested -> run_requested`), envolver `showModal()` em `tryCatch` e manter o disparo do processamento mesmo quando a UI de loading falhar.
+- **Em rework de modulo para shell tri-coluna, consolidar outputs por intencao (config/stream/report)** reduz acoplamento entre cards e evita cascata de re-render em layouts com muitos `uiOutput`s fragmentados.
+- **Toolbar externa de DataTable em modulo reativo exige eventos delegados com namespace por instancia** para manter busca/paginacao funcionais apos recreacao de DOM por `renderUI`.
 
 ## CSS / Bootstrap / bslib
 
@@ -76,6 +78,16 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Em dropzone de superficie inteira, separar copy visual do input nativo**: manter um bloco de texto central com `pointer-events: none` evita captura acidental de clique e simplifica evolucao de layout.
 - **Ao mover texto funcional para dentro do ponto de acao, manter hierarquia tipografica do design system**: instrucao em `font-sans` e metadado tecnico (ex.: tamanho maximo) em `font-mono` melhora leitura sem poluir a interface.
 - **Se o JS remove markup nativo em runtime, limpar CSS dependente desse markup**: evita regras mortas e estados visuais incoerentes apos refactor.
+- **Redesign local de modulo deve usar escopo CSS dedicado**: para telas premium como `help` e `wiki`, prefira classes-raiz (`.help-module`, `.wiki-module`) para impedir regressao transversal em outras abas.
+- **Acordeao renderizado por `renderUI` precisa de binding resiliente**: usar event delegation em `document` (`closest('[data-*]')`) evita perder eventos quando o DOM da aba e recriado por busca/idioma.
+- **Para acessibilidade em acordeao custom, sincronizar estado visual e ARIA no mesmo ponto**: sempre atualizar `is-open`, `aria-expanded` e `aria-hidden` juntos evita discrepancia entre leitor de tela e animacao.
+- **Layout tri-coluna com paineis laterais fixos fica mais estavel com token de offset de header no `:root`** (`calc(100vh - var(--offset))`) em vez de hardcode espalhado por seletor.
+- **Badges semanticos reutilizaveis (`badge-success/warning/error/info/muted`) simplificam consistencia visual** entre stream e tabela quando ambos representam o mesmo status de dominio.
+- **Icone de busca em `textInput` custom so fica estavel com contrato completo de geometria**: use wrapper imediato com `position: relative`, icone absoluto com caixa fixa (`14x14`) e centralizacao real (`top: 50%` + `translateY(-50%)`), e reserve espaco no input com `padding-left` dedicado.
+- **No card de busca do Shiny, zere o espacamento herdado antes de ajustar pixel**: definir `margin-bottom: 0` para `.shiny-input-container` e `.control-label` evita deslocamento vertical do icone e elimina o efeito de lupa "fora da caixa".
+- **Troca de tipografia global exige tokens, nao hardcodes por modulo**: manter `font-family` literal (ex.: IBM Plex) em blocos locais cria regressao silenciosa; prefira `var(--font-*)` em todo componente reutilizavel.
+- **Carregamento de Google Fonts deve ficar no shell da app (`app_ui`)**: evitar `@import` em `custom.css` reduz duplicacao de request e facilita governanca de versao/weights.
+- **Mono em tamanhos muito pequenos (< 0.85rem) precisa de ajuste fino**: em badges/tabelas compactas, `letter-spacing` leve e `tabular nums` melhoram legibilidade sem alterar layout.
 
 ## i18n / Internacionalizacao
 

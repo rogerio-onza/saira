@@ -36,13 +36,17 @@ app_ui <- function() {
             info = "#252659",
             warning = "#FFA204",
             danger = "#C0392B",
-            base_font = bslib::font_google("IBM Plex Sans"),
-            heading_font = bslib::font_google("IBM Plex Mono"),
-            code_font = bslib::font_google("IBM Plex Mono")
+            base_font = bslib::font_collection("Cormorant Garamond", "Georgia", "serif"),
+            heading_font = bslib::font_collection("Cormorant Garamond", "Georgia", "serif"),
+            code_font = bslib::font_collection("Space Mono", "monospace")
         ),
 
         # Include custom CSS and FontAwesome
         shiny::tags$head(
+            shiny::tags$link(
+                rel = "stylesheet",
+                href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Space+Mono:ital@0;1&display=swap"
+            ),
             shiny::tags$link(
                 rel = "stylesheet",
                 href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css",
@@ -56,6 +60,9 @@ app_ui <- function() {
             ),
             shiny::tags$script(
                 src = paste0("www/upload-dropzone.js?v=", css_version)
+            ),
+            shiny::tags$script(
+                src = paste0("www/help-accordion.js?v=", css_version)
             ),
             shiny::tags$script(
                 src = "https://unpkg.com/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js"

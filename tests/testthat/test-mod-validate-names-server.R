@@ -113,6 +113,31 @@ testthat::test_that("completed validation defaults stream filter to problems", {
     )
 })
 
+testthat::test_that("report status counts classify valid, invalid and unresolved buckets", {
+    mapped_df <- data.frame(scientificName = c("Puma concolor"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            mock_report <- data.frame(
+                scientificName = c("A", "B", "C", "D", "E"),
+                validation_status = c("accepted", "synonym", "ignored", "not_found", "ambiguous"),
+                stringsAsFactors = FALSE
+            )
+
+            counts <- report_status_counts(mock_report)
+            testthat::expect_identical(as.integer(counts[["valid"]]), 2L)
+            testthat::expect_identical(as.integer(counts[["invalid"]]), 1L)
+            testthat::expect_identical(as.integer(counts[["unresolved"]]), 2L)
+            testthat::expect_identical(as.integer(counts[["total"]]), 5L)
+        }
+    )
+})
+
 testthat::test_that("module stream state grows incrementally per processed batch", {
     mapped_df <- data.frame(
         scientificName = paste("Species", seq_len(250)),

@@ -5,6 +5,112 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ---
 
+## [0.1.25] - 2026-02-24
+
+### Alterado
+- Aba `validate_names` refatorada para shell tri-coluna:
+  - coluna esquerda fixa (`240px`) para configuracao (provedores, toggles e acao);
+  - coluna central flexivel para stream de nomes processados;
+  - coluna direita fixa (`340px`) para relatorio tabular.
+- `R/mod_validate_names.R` reorganizado para novos outputs:
+  - `config_panel`
+  - `stream_panel`
+  - `report_panel`
+  - `report_table`
+- Seletor de provedores migrado para cards empilhados com estado ativo e destaque de prioridade 1.
+- Painel de acao consolidado com:
+  - botao principal `▶ Validar Nomes`,
+  - mini-stats (provedores/opcoes),
+  - barra de progresso com metadados de fase/lote/provedor.
+- Stream central ganhou layout dedicado com pills de filtro visiveis (`Todos`, `So problematicos`, `Nao encontrados`, `Ambiguos`, `Sinonimos`) e itens coloridos por status.
+- Relatorio da direita passou a usar toolbar externa (busca + `Mostrar N`) sincronizada via callback JS com `DT::datatable`.
+- `inst/app/www/custom.css` expandido com namespace local `.vn-*` para evitar side effects cross-modulo e com novos utilitarios de badge (`badge-success`, `badge-warning`, `badge-error`, `badge-info`, `badge-muted`).
+- Novas chaves i18n adicionadas para os textos da UI v3 de validacao de nomes (acao, progresso, stream e relatorio).
+
+### Corrigido
+- Contraste semantico da tabela de relatorio por status alinhado ao `design.md`:
+  - sinonimo (`info-bg`),
+  - ambiguo (`warning-bg`),
+  - nao encontrado (`error-bg`),
+  - aceito/ignorado (`#ffffff`).
+
+### Testes
+- `tests/testthat/test-mod-validate-names-server.R` ampliado com cobertura de classificacao dos buckets de relatorio (`valid`, `invalid`, `unresolved`, `total`).
+- `tests/testthat/test-utils-i18n.R` atualizado para exigir e resolver as novas chaves `validate_names_*` da UI v3.
+- `tests/testthat/test-css-guardrails.R` ampliado com guardrails do layout tri-coluna (`token de altura`, `larguras fixas 240/340`).
+
+### Documentacao
+- `docs/DECISIONS.md`: novo ADR sobre o contrato tri-coluna da aba `validate_names` e sincronizacao de controles externos com `DT`.
+- `docs/LESSONS.md`: novas licoes sobre shell tri-coluna com altura de viewport e binding delegado para toolbar externa de DataTable.
+
+## [0.1.24] - 2026-02-24
+
+### Alterado
+- Migracao tipografica global para `design-v5`: `Cormorant Garamond` (serif) + `Space Mono` (mono), preservando paleta, layout e interacoes do v4.
+- `R/app_ui.R` atualizado para:
+  - usar `font_collection` v5 no `bs_theme` (`base_font`/`heading_font` serif e `code_font` mono);
+  - carregar explicitamente a URL oficial do Google Fonts do v5 no `head`.
+- `inst/app/www/custom.css` atualizado com fundacao tipografica v5:
+  - remocao do `@import` antigo de IBM Plex;
+  - novos tokens `--font-serif`, `--font-mono` e alias `--font-sans -> --font-serif`;
+  - body/headings/labels/code/buttons alinhados ao novo contrato tipografico.
+- Hardcodes tipograficos de IBM foram removidos dos modulos locais (`wiki`, `help`, `upload`, `mapping`, `preview`, `validate_names`, `validate_coords`) em favor de tokens CSS.
+- Guardrail de legibilidade para diagnosticos compactos de coordenadas adicionado com ajuste de `letter-spacing` e `tabular nums`, sem alterar geometria/layout dos componentes.
+- `docs/design.md` atualizado para o conteudo de `design_v5.md` como referencia oficial do design system.
+
+### Testes
+- `tests/testthat/test-css-guardrails.R` expandido para bloquear regressao de hardcoded `font-family` IBM e validar tokens tipograficos v5.
+- Nova suite `tests/testthat/test-app-ui-fonts.R` adicionada para validar:
+  - injecao do Google Fonts v5 no `app_ui`;
+  - ausencia de referencias antigas IBM no `bs_theme`;
+  - manutencao de `custom.css` com cache-busting.
+
+### Documentacao
+- `docs/DECISIONS.md`: novo ADR sobre estrategia de migracao tipografica v5 com aliases de compatibilidade e guardrails anti-regressao.
+- `docs/LESSONS.md`: novas licoes sobre evitar hardcode de familia tipografica em CSS e validar legibilidade de mono em tamanhos pequenos.
+
+---
+
+## [0.1.23] - 2026-02-24
+
+### Corrigido
+- Aba `help`: alinhamento definitivo da lupa no campo de busca com ancoragem no wrapper relativo `.help-search-input-wrap`, mantendo o icone dentro da caixa em todos os breakpoints.
+- Posicionamento da lupa estabilizado com caixa fixa (`14x14`), `left: 13px`, `top: 50%` e `transform: translateY(-50%)`, combinado com `padding-left: 42px` no input para evitar colisao com o texto.
+- Interferencia de espacamento do Shiny/Bootstrap removida no card de busca (`.shiny-input-container` e `.control-label` com `margin-bottom: 0`), garantindo baseline consistente entre icone e placeholder.
+
+---
+
+## [0.1.22] - 2026-02-23
+
+### Alterado
+- Redesign completo da aba `help` com novo layout em duas colunas (`conteudo + sidebar sticky`) e wrapper expandido para `max-width: 1400px`.
+- `R/mod_help.R` refatorado para:
+  - substituir acordeao `bslib::accordion` por acordeao custom com toggles semanticos (`aria-expanded`) e estrutura visual dedicada;
+  - adotar 4 secoes finais da ajuda (`Darwin Core`, `FAQ`, `Formatos aceitos`, `Separador de multiplos valores`);
+  - mover busca para card isolado e header para card editorial;
+  - adicionar sidebar com cards de `Autor`, `Reportar bug`, `Links uteis` e `Construido com`.
+- Novo asset client-side `inst/app/www/help-accordion.js` com event delegation para abrir/fechar itens do acordeao mantendo compatibilidade com re-render da UI.
+- `R/app_ui.R` atualizado para carregar `www/help-accordion.js` com cache-busting no mesmo padrao dos demais assets.
+- `inst/app/www/custom.css` recebeu novo bloco escopado da Help (`.help-module`) com estilos completos de layout, acordeao, FAQ grid, demo de separador e cards de sidebar.
+
+### i18n
+- `R/data_dictionary.R` expandido com novas chaves PT/EN da Help:
+  - header e busca (`help_header_*`, `help_search_placeholder`, `help_empty_state`);
+  - secoes e conteudo (`help_section_*`, `help_dwc_*`, `help_faq_*`, `help_formats_*`, `help_separator_*`);
+  - sidebar (`help_author_*`, `help_bug_*`, `help_links_*`, `help_stack_*`);
+  - acessibilidade (`a11y_help_bug_link`, `a11y_help_external_link`).
+
+### Testes
+- Suites de i18n atualizadas para exigir e resolver as novas chaves da Help:
+  - `tests/testthat/test-utils-i18n.R`
+  - `tests/testthat/test-i18n-a11y-keys.R`
+
+### Documentacao
+- `docs/DECISIONS.md`: novo ADR formalizando o redesign da Help com acordeao custom e sidebar sticky.
+- `docs/LESSONS.md`: novas licoes sobre escopo CSS local da Help e comportamento resiliente de acordeao com event delegation.
+
+---
+
 ## [0.1.21] - 2026-02-23
 
 ### Corrigido
