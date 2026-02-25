@@ -49,14 +49,12 @@ coords_fuzzy_cache_env$value <- NULL
 coords_fuzzy_cache_env$load_count <- 0L
 
 coords_validate_force_flag <- function(force) {
-    if (!is.logical(force) || length(force) != 1L || is.na(force)) {
-        stop("force must be a single TRUE or FALSE value.", call. = FALSE)
-    }
+    validate_force_flag(force)
 }
 
 resolve_country_aliases_path <- function() {
     candidates <- c(
-        system.file("extdata", "country_aliases.rds", package = "finch"),
+        system.file("extdata", "country_aliases.rds", package = "saira"),
         here::here("inst", "extdata", "country_aliases.rds"),
         file.path("inst", "extdata", "country_aliases.rds"),
         file.path("..", "..", "inst", "extdata", "country_aliases.rds")

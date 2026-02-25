@@ -1,5 +1,5 @@
 # Title: Mapping Utilities
-# Author: Rogério Nunes Oliveira
+# Author: Rogerio Nunes Oliveira
 # Date: 2026-02-11
 # Version: 1.0
 
@@ -285,14 +285,12 @@ dwc_synonyms_cache_env$path <- NULL
 dwc_synonyms_cache_env$load_count <- 0L
 
 validate_synonyms_force_flag <- function(force) {
-    if (!is.logical(force) || length(force) != 1L || is.na(force)) {
-        stop("force must be a single TRUE or FALSE value.")
-    }
+    validate_force_flag(force)
 }
 
 resolve_dwc_synonyms_path <- function() {
     candidates <- c(
-        system.file("extdata", "dwc_synonyms_v1.rds", package = "finch"),
+        system.file("extdata", "dwc_synonyms_v1.rds", package = "saira"),
         here::here("inst", "extdata", "dwc_synonyms_v1.rds"),
         file.path("inst", "extdata", "dwc_synonyms_v1.rds"),
         file.path("..", "..", "inst", "extdata", "dwc_synonyms_v1.rds")

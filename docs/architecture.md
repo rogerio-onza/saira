@@ -1,4 +1,4 @@
-# Finch Project - Architecture Documentation
+# Saira Project - Architecture Documentation
 
 > **Documento de Arquitetura Revisado** | Versão 2.0 | 07/02/2026  
 > Conformidade estrita com `claude.md` (Diretrizes de Desenvolvimento)
@@ -26,12 +26,12 @@ Ferramenta para padronização de dados de biodiversidade segundo o padrão **Da
 
 ## 2. Estrutura de Arquivos (Package-based)
 ```text
-finch/
+saira/
 ├── DESCRIPTION             # Metadados + Dependências (Imports/Suggests)
 ├── NAMESPACE               # Auto-gerado via roxygen2
 ├── LICENSE                 # Licença do projeto
 │
-├── app.R                   # Entry point: library(finch); run_app()
+├── app.R                   # Entry point: library(saira); run_app()
 ├── R/
 │   ├── run_app.R           # Função exportada: run_app() -> shinyApp()
 │   ├── app_ui.R            # UI principal (page_navbar)
@@ -72,7 +72,7 @@ finch/
 │           ├── custom.css
 │           ├── mapping_filters.js
 │           └── images/
-│               ├── finch_alone.png
+│               ├── saira_alone.png
 │               └── hexagon_logo.png
 │
 └── man/                    # Documentação (gerada via roxygen2)
@@ -186,7 +186,7 @@ test_that("Export converts Brazilian dates to ISO", {
 ```r
 # Opção 1: Carregado sob demanda (para usuário final)
 load_dwc_terms <- function() {
-  path <- system.file("extdata", "dwc_terms.rds", package = "finch")
+  path <- system.file("extdata", "dwc_terms.rds", package = "saira")
   readRDS(path)
 }
 
@@ -270,7 +270,7 @@ app_server <- function(input, output, session) {
 
 ### 5.1 DESCRIPTION (Configuração Completa)
 ```r
-Package: finch
+Package: saira
 Title: Biodiversity Data Standardization to Darwin Core
 Version: 0.1.0
 Authors@R: person("Seu", "Nome", email = "email@example.com", role = c("aut", "cre"))
@@ -586,10 +586,10 @@ devtools::check()
 ### 10.2 Instalação como Pacote
 ```r
 # Via GitHub
-remotes::install_github("seu_usuario/finch")
+remotes::install_github("seu_usuario/saira")
 
 # Uso
-library(finch)
+library(saira)
 run_app()
 ```
 
@@ -597,13 +597,13 @@ run_app()
 ```r
 # shinyapps.io
 rsconnect::deployApp(
-  appDir = system.file("app", package = "finch"),
-  appName = "finch-biodiversity"
+  appDir = system.file("app", package = "saira"),
+  appName = "saira-biodiversity"
 )
 
 # Shiny Server (open-source)
-# Copiar o pacote instalado para /srv/shiny-server/finch/
-# Criar app.R que chama library(finch); run_app()
+# Copiar o pacote instalado para /srv/shiny-server/saira/
+# Criar app.R que chama library(saira); run_app()
 ```
 
 ---
@@ -633,7 +633,7 @@ rsconnect::deployApp(
 ## 12. Contato e Contribuição
 
 **Mantenedor**: [Seu Nome]  
-**Repositório**: `https://github.com/seu_usuario/finch`  
+**Repositório**: `https://github.com/seu_usuario/saira`  
 **Licença**: MIT
 
 ### Como Contribuir

@@ -39,7 +39,7 @@ A seção de validação de coordenadas (`mod_validate_coords` + `validate_coord
 | Q2 | Baixa cobertura de testes: faltam zero-zero, inversão, missing parcial, performance. | Baixa cobertura de regressão |
 | Q3 | `suppressWarnings(as.numeric(...))` silencioso. Não registra conversões falhas. | Falha silenciosa |
 | Q4 | `renderUI` usado para retornar apenas uma string. Anti-padrão. | DOM desnecessário |
-| Q5 | Sem `notify_finch()` local (ADR-034). Notificações podem empilhar. | Inconsistência com ADR-034 |
+| Q5 | Sem `notify_saira()` local (ADR-034). Notificações podem empilhar. | Inconsistência com ADR-034 |
 
 ---
 
@@ -53,8 +53,8 @@ A seção de validação de coordenadas (`mod_validate_coords` + `validate_coord
 4. **ADR-021** (pipeline duplo): Gate leve antes de qualquer `observeEvent`.
 5. **ADR-027** (duas fases): `starting → running` para feedback imediato.
 6. **ADR-029** (pré-validação + filtros): Estado orientativo e pills nos resultados.
-7. **ADR-030** (`.finch-table-shell`): Wrapper padrão na tabela de issues.
-8. **ADR-034** (notificações estáveis): `notify_finch` local no módulo.
+7. **ADR-030** (`.saira-table-shell`): Wrapper padrão na tabela de issues.
+8. **ADR-034** (notificações estáveis): `notify_saira` local no módulo.
 9. **Retorno explícito** (architecture.md §8): Server retorna um reactive.
 
 ---
@@ -244,11 +244,11 @@ mod_validate_coords_ui <- function(id) {
 - `output$stats_panel` — extração do bloco de stats do `results_panel` atual (linhas 578–600).
 - `output$filter_pills` — extração das pills do `results_panel` atual (linhas 549–576).
 - `output$map_panel` — wrapper do `leafletOutput` dentro de `bslib::card` (visível apenas pós-validação).
-- `output$table_panel` — wrapper do `DT::dataTableOutput` dentro de `.finch-table-shell`.
+- `output$table_panel` — wrapper do `DT::dataTableOutput` dentro de `.saira-table-shell`.
 - Gate leve sem materializar `mapped_data_r()`.
 - Duas fases (`starting → running`) via `session$onFlushed`.
 - Modal bloqueante no padrão Rostrum.
-- `notify_finch()` local com ID estável.
+- `notify_saira()` local com ID estável.
 - `return(coord_validation_r)` — reactive explícito.
 
 ---
@@ -422,7 +422,7 @@ Novas chaves (manter todas as existentes `validate_coords_*` sem alteração):
 
 **Tabela de coordenadas — altura máxima acompanha o mapa:**
 ```css
-.validate-coords-table-col .finch-table-shell {
+.validate-coords-table-col .saira-table-shell {
   max-height: calc(420px + 2.5rem); /* acompanha mapa + header do card */
   overflow-y: auto;
 }

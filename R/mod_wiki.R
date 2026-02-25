@@ -17,7 +17,7 @@ mod_wiki_ui <- function(id) {
             shiny::uiOutput(ns("header_card")),
             shiny::uiOutput(ns("toolbar_card")),
             shiny::div(
-                class = "wiki-table finch-table-shell",
+                class = "wiki-table saira-table-shell",
                 DT::dataTableOutput(ns("terms_table"))
             )
         )

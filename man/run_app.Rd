@@ -2,7 +2,7 @@
 % Please edit documentation in R/run_app.R
 \name{run_app}
 \alias{run_app}
-\title{Run the Finch Shiny Application}
+\title{Run the Saira Shiny Application}
 \usage{
 run_app(...)
 }
@@ -13,5 +13,5 @@ run_app(...)
 A Shiny app object
 }
 \description{
-Starts the Finch app for biodiversity data standardization
+Starts the Saira app for biodiversity data standardization
 }

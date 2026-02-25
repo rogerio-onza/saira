@@ -1,5 +1,5 @@
 # Title: I/O Utilities
-# Author: Rogério Nunes Oliveira
+# Author: Rogerio Nunes Oliveira
 # Date: 2026-02-08
 # Version: 1.0
 
@@ -89,6 +89,14 @@ detect_encoding <- function(file_path) {
     return("Windows-1252")
 }
 
+#' Strip UTF-8 BOM from text
+#'
+#' @param text Character vector
+#' @return Character vector without BOM prefix
+strip_bom <- function(text) {
+    sub("^\ufeff", "", text)
+}
+
 #' Detect CSV delimiter
 #'
 #' @param file_path Path to CSV file
@@ -96,7 +104,11 @@ detect_encoding <- function(file_path) {
 #' @export
 detect_delimiter <- function(file_path) {
     # Read first line
-    first_line <- readLines(file_path, n = 1, warn = FALSE)
+    first_line <- readLines(file_path, n = 1, warn = FALSE, encoding = "UTF-8")
+    if (length(first_line) == 0L || !nzchar(first_line)) {
+        return(",")
+    }
+    first_line <- strip_bom(first_line)
 
     # Count potential delimiters
     comma_count <- stringr::str_count(first_line, ",")

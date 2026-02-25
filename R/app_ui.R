@@ -21,9 +21,9 @@ app_ui <- function() {
                 src = "www/images/hexagon_logo.png",
                 height = "72px",
                 class = "navbar-logo",
-                alt = "Finch Logo"
+                alt = "Saira Logo"
             ),
-            shiny::tags$span("Finch", class = "navbar-title")
+            shiny::tags$span("Saira", class = "navbar-title")
         ),
         theme = bslib::bs_theme(
             version = 5,

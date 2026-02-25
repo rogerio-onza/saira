@@ -1,5 +1,5 @@
 # Title: Export Utilities
-# Author: Rogério Nunes Oliveira
+# Author: Rogerio Nunes Oliveira
 # Date: 2026-02-08
 # Version: 1.0
 

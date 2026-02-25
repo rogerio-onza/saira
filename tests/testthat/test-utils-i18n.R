@@ -4,7 +4,7 @@
 # Version: 1.0
 
 testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
-    dict <- get("i18n_dict", envir = asNamespace("finch"))
+    dict <- get("i18n_dict", envir = asNamespace("saira"))
 
     required_keys <- c(
         "nav_home",
@@ -227,7 +227,7 @@ testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
 })
 
 testthat::test_that("tr resolves onda 2 keys in pt and en", {
-    tr_fn <- getFromNamespace("tr", "finch")
+    tr_fn <- getFromNamespace("tr", "saira")
 
     keys <- c(
         "nav_home",
@@ -294,7 +294,7 @@ testthat::test_that("tr resolves onda 2 keys in pt and en", {
 })
 
 testthat::test_that("pt-en alternation yields distinct navigation labels", {
-    tr_fn <- getFromNamespace("tr", "finch")
+    tr_fn <- getFromNamespace("tr", "saira")
 
     testthat::expect_false(identical(tr_fn("nav_home", "pt"), tr_fn("nav_home", "en")))
     testthat::expect_false(identical(tr_fn("nav_validate", "pt"), tr_fn("nav_validate", "en")))
@@ -303,7 +303,7 @@ testthat::test_that("pt-en alternation yields distinct navigation labels", {
 })
 
 testthat::test_that("tr returns key placeholder and warning for missing key", {
-    tr_fn <- getFromNamespace("tr", "finch")
+    tr_fn <- getFromNamespace("tr", "saira")
 
     testthat::expect_warning(
         value <- tr_fn("nonexistent_wave6_key", "en"),
@@ -313,7 +313,7 @@ testthat::test_that("tr returns key placeholder and warning for missing key", {
 })
 
 testthat::test_that("tr falls back to english and warns for missing language entry", {
-    tr_fn <- getFromNamespace("tr", "finch")
+    tr_fn <- getFromNamespace("tr", "saira")
 
     expected_en <- tr_fn("nav_home", "en")
     testthat::expect_warning(
@@ -334,7 +334,7 @@ testthat::test_that("get_language_name resolves known and unknown language codes
 })
 
 testthat::test_that("all dictionary keys contain non-empty pt and en translations", {
-    dict <- get("i18n_dict", envir = asNamespace("finch"))
+    dict <- get("i18n_dict", envir = asNamespace("saira"))
 
     for (key in names(dict)) {
         testthat::expect_true(

@@ -1,4 +1,4 @@
-# Finch App - Erros e Correções
+# Saira App - Erros e Correções
 
 > Documento de referência com todos os erros encontrados durante o desenvolvimento e suas correções.
 
@@ -86,7 +86,7 @@ Error: Could not find a root 'DESCRIPTION' file that starts with '^Package'
 
 **Correção:** Definir o diretório correto antes de carregar:
 ```r
-setwd("c:/Users/Admin/OneDrive/Finch - Claude/finch")
+setwd("c:/Users/Admin/OneDrive/Saira - Claude/saira")
 pkgload::load_all()
 ```
 
@@ -105,7 +105,7 @@ pkgload::load_all()
 ## Como Executar o App
 
 ```r
-setwd("c:/Users/Admin/OneDrive/Finch - Claude/finch")
+setwd("c:/Users/Admin/OneDrive/Saira - Claude/saira")
 pkgload::load_all()
 run_app()
 ```
@@ -115,16 +115,16 @@ run_app()
 ## 6. Correções da Página Inicial (08/02/2026)
 
 **Solicitação:**
-- Adicionar logo do Finch no navbar
+- Adicionar logo do Saira no navbar
 - Usar ícones FontAwesome classic solid em todo o app
 - Reestruturar página inicial em duas colunas
 
 ### 6.1 Logo Atualizado
 
-**Alteração:** Em `R/app_ui.R`, alterado logo de `finch_alone.png` para `hexagon_logo.png`.
+**Alteração:** Em `R/app_ui.R`, alterado logo de `saira_alone.png` para `hexagon_logo.png`.
 
 ```diff
-- src = "www/images/finch_alone.png",
+- src = "www/images/saira_alone.png",
 - height = "32px",
 + src = "www/images/hexagon_logo.png",
 + height = "36px",
@@ -155,7 +155,7 @@ shiny::tags$link(
 - Recomendação: `[fa-lightbulb] Utilize ; como separador`
 
 **Coluna 2 - Bem-vindo:**
-- Título: "Bem-vindo ao Finch!"
+- Título: "Bem-vindo ao Saira!"
 - Descrição do objetivo (padronização DwC)
 - Workflow com 4 passos:
   1. `[fa-upload]` Upload
@@ -205,7 +205,7 @@ Novos componentes:
 ## Como Executar o App
 
 ```r
-setwd("c:/Users/Admin/OneDrive/Finch - Claude/finch")
+setwd("c:/Users/Admin/OneDrive/Saira - Claude/saira")
 pkgload::load_all()
 run_app()
 ```
@@ -215,7 +215,7 @@ run_app()
 ## 7. Correções de Interface - Rodada 2 (08/02/2026)
 
 **Solicitações do usuário:**
-1. Logo do Finch maior (como nos pacotes R)
+1. Logo do Saira maior (como nos pacotes R)
 2. Abas do header à esquerda, seletor de idioma à direita
 3. Alinhar elementos do header com logo e nome
 4. Colunas da página inicial preenchendo todo o espaço
@@ -242,7 +242,7 @@ run_app()
 
 Adicionados estilos para:
 - `.navbar-logo` - Logo 56px com alinhamento vertical
-- `.navbar-title` - Título "Finch" alinhado
+- `.navbar-title` - Título "Saira" alinhado
 - `.navbar-nav` - Alinhamento de itens
 - `.navbar .nav-item:has(.form-select)` - Seletor de idioma à direita com `margin-left: auto`
 
@@ -833,7 +833,7 @@ data_quality_rows = list(pt = "Total de Linhas", en = "Total Rows")
 ## 13. Hierarquia Tipográfica Harmoniosa - Rodada 8 (09/02/2026)
 
 **Solicitações do usuário:**
-1. Título do header (Finch) maior que títulos das colunas
+1. Título do header (Saira) maior que títulos das colunas
 2. Campos DwC em linha horizontal (não colunas)
 3. Boxes compactos, não ocupando largura total
 4. Padding maior nos card headers
@@ -1145,7 +1145,7 @@ Adicionado highlight verde sutil para cards mapeados (usando `--success`):
   - `loading_automap_status`
   - `loading_automap_phrase_1..4`
 - Em `inst/app/www/custom.css`, criados estilos do modal:
-  - logo Finch + icone de mapeamento
+  - logo Saira + icone de mapeamento
   - barra de progresso com transicao suave
   - tipografia e espacamento responsivos
   - animacao leve no icone

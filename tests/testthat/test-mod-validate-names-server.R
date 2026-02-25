@@ -155,7 +155,7 @@ testthat::test_that("module stream state grows incrementally per processed batch
                 stringsAsFactors = FALSE
             )
         },
-        .package = "finch",
+        .package = "saira",
         {
             shiny::testServer(
                 mod_validate_names_server,
@@ -214,7 +214,7 @@ testthat::test_that("cancel path marks unresolved names after abort flag", {
                 stringsAsFactors = FALSE
             )
         },
-        .package = "finch",
+        .package = "saira",
         {
             shiny::testServer(
                 mod_validate_names_server,

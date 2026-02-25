@@ -87,11 +87,11 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
                 "(function () {
                     var clickChannel = %s;
                     var finishChannel = %s;
-                    window.__finchPreviewDownloadHandlers = window.__finchPreviewDownloadHandlers || {};
-                    if (window.__finchPreviewDownloadHandlers[clickChannel]) {
+                    window.__sairaPreviewDownloadHandlers = window.__sairaPreviewDownloadHandlers || {};
+                    if (window.__sairaPreviewDownloadHandlers[clickChannel]) {
                         return;
                     }
-                    window.__finchPreviewDownloadHandlers[clickChannel] = true;
+                    window.__sairaPreviewDownloadHandlers[clickChannel] = true;
 
                     Shiny.addCustomMessageHandler(clickChannel, function (payload) {
                         var btn = document.getElementById(payload.id);
@@ -401,9 +401,9 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
                     shiny::div(
                         class = "automap-loading-brand-row",
                         shiny::img(
-                            src = "www/images/finch_alone.svg",
+                            src = "www/images/saira_alone.svg",
                             class = "automap-loading-logo",
-                            alt = "Finch"
+                            alt = "Saira"
                         )
                     ),
                     shiny::div(
@@ -546,7 +546,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
                 )
             } else {
                 shiny::div(
-                    class = "preview-table-shell finch-table-shell",
+                    class = "preview-table-shell saira-table-shell",
                     DT::dataTableOutput(ns("datatable"))
                 )
             }

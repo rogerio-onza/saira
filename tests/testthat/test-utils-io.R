@@ -42,6 +42,29 @@ testthat::test_that("detect_encoding returns UTF-8 when BOM is present", {
     testthat::expect_identical(detect_encoding(bom_file), "UTF-8")
 })
 
+testthat::test_that("strip_bom removes UTF-8 BOM prefix", {
+    strip_bom <- getFromNamespace("strip_bom", "saira")
+    with_bom <- paste0("\ufeff", "scientificName;eventDate")
+    without_bom <- "scientificName;eventDate"
+
+    testthat::expect_identical(strip_bom(with_bom), without_bom)
+    testthat::expect_identical(strip_bom(without_bom), without_bom)
+})
+
+testthat::test_that("detect_delimiter handles UTF-8 BOM and empty first line", {
+    bom_file <- tempfile(fileext = ".csv")
+    empty_file <- tempfile(fileext = ".csv")
+    on.exit(unlink(c(bom_file, empty_file)), add = TRUE)
+
+    bom <- as.raw(c(0xEF, 0xBB, 0xBF))
+    payload <- charToRaw("col1;col2\nA;B\n")
+    writeBin(c(bom, payload), bom_file)
+    writeLines(character(0), empty_file, useBytes = TRUE)
+
+    testthat::expect_identical(detect_delimiter(bom_file), ";")
+    testthat::expect_identical(detect_delimiter(empty_file), ",")
+})
+
 testthat::test_that("read_biodiversity_csv reads file and repairs duplicate names", {
     input_file <- write_temp_text_file(
         c(

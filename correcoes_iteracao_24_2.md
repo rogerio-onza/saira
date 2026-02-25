@@ -1,4 +1,4 @@
-# Plano de Implementação em Ondas — Finch App
+# Plano de Implementação em Ondas — Saira App
 
 > **Princípio:** Do mais seguro ao mais arriscado. Cada onda é independente — pode ser executada e testada isoladamente. Se qualquer onda causar regressão, revertemos só ela.
 
@@ -10,7 +10,7 @@ Nenhuma dessas mudanças toca código executável. Impossível quebrar o app.
 
 ### 1.1 Criar `.editorconfig` na raiz
 
-[NEW] [.editorconfig](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/.editorconfig)
+[NEW] [.editorconfig](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/.editorconfig)
 
 ```ini
 root = true
@@ -30,7 +30,7 @@ insert_final_newline = true
 
 ### 1.2 Criar `.gitattributes` na raiz
 
-[NEW] [.gitattributes](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/.gitattributes)
+[NEW] [.gitattributes](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/.gitattributes)
 
 ```
 *.R text eol=lf
@@ -45,7 +45,7 @@ insert_final_newline = true
 
 ### 1.3 Corrigir encoding corrompido no `DESCRIPTION`
 
-[MODIFY] [DESCRIPTION](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/DESCRIPTION)
+[MODIFY] [DESCRIPTION](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/DESCRIPTION)
 
 ```diff
 -Authors@R: person("RogÃ©rio", "Nunes Oliveira", ...)
@@ -61,7 +61,7 @@ insert_final_newline = true
 
 ### 1.4 Adicionar versões mínimas faltando no `DESCRIPTION`
 
-[MODIFY] [DESCRIPTION](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/DESCRIPTION)
+[MODIFY] [DESCRIPTION](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/DESCRIPTION)
 
 ```diff
 -    sf,
@@ -91,12 +91,12 @@ Arquivos afetados: `mod_upload.R`, `utils_io.R`, `utils_export.R`, `utils_mappin
 
 ### 1.6 Diretriz de Encoding para IA (documento de referência)
 
-[NEW] [docs/ENCODING_RULES.md](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/docs/ENCODING_RULES.md)
+[NEW] [docs/ENCODING_RULES.md](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/docs/ENCODING_RULES.md)
 
 Documento para consultar ou fornecer à IA que trabalha no código:
 
 ```markdown
-# Encoding Rules — Finch Project
+# Encoding Rules — Saira Project
 
 1. Todos os source files (.R, .css, .js, .md) → UTF-8 SEM BOM.
 2. Strings R com caracteres não-ASCII → usar \uXXXX.
@@ -126,7 +126,7 @@ Toca funções utilitárias com testes existentes. Aditivo — nenhuma lógica e
 
 ### 2.1 Criar `strip_bom()` e corrigir `detect_delimiter()`
 
-[MODIFY] [utils_io.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/utils_io.R)
+[MODIFY] [utils_io.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/utils_io.R)
 
 **Adicionar** no topo do arquivo:
 
@@ -158,14 +158,14 @@ strip_bom <- function(text) {
 
 ### 2.2 Remover `options(encoding = "UTF-8")` — depreciado
 
-[MODIFY] [run_app.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/run_app.R)
+[MODIFY] [run_app.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/run_app.R)
 
 ```diff
  run_app <- function(...) {
 -    options(encoding = "UTF-8")
 ```
 
-[MODIFY] [app.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/app.R)
+[MODIFY] [app.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/app.R)
 
 ```diff
 -options(encoding = "UTF-8")
@@ -192,14 +192,14 @@ Adições de segurança. Todo o comportamento existente é preservado; estamos s
 
 ### 3.1 Proteger startup do upload module contra falha de RDS
 
-[MODIFY] [mod_upload.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_upload.R)
+[MODIFY] [mod_upload.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_upload.R)
 
 ```diff
 -        required_terms_all <- get_dwc_terms()
 +        required_terms_all <- tryCatch(
 +            get_dwc_terms(),
 +            error = function(e) {
-+                message("[Finch] Failed to load DwC terms: ", e$message)
++                message("[Saira] Failed to load DwC terms: ", e$message)
 +                data.frame(
 +                    term = character(0),
 +                    class = character(0),
@@ -218,19 +218,19 @@ Adições de segurança. Todo o comportamento existente é preservado; estamos s
 
 ### 3.2 Adicionar logging no fallback de `app_server.R`
 
-[MODIFY] [app_server.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/app_server.R)
+[MODIFY] [app_server.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/app_server.R)
 
 ```diff
      if (is.null(preview_data) || !shiny::is.reactive(preview_data)) {
-+        message("[Finch] preview_data attr missing from mapping module, using mapped_data fallback")
++        message("[Saira] preview_data attr missing from mapping module, using mapped_data fallback")
          preview_data <- mapped_data
      }
      if (is.null(validation_gate) || !shiny::is.reactive(validation_gate)) {
-+        message("[Finch] validation_gate attr missing, gate disabled")
++        message("[Saira] validation_gate attr missing, gate disabled")
          validation_gate <- NULL
      }
      if (is.null(coord_validation_gate) || !shiny::is.reactive(coord_validation_gate)) {
-+        message("[Finch] coord_validation_gate attr missing, gate disabled")
++        message("[Saira] coord_validation_gate attr missing, gate disabled")
          coord_validation_gate <- NULL
      }
 ```
@@ -243,9 +243,9 @@ Adições de segurança. Todo o comportamento existente é preservado; estamos s
 
 A mesma lógica existe em **3 arquivos diferentes**. Extrair para um lugar só:
 
-[MODIFY] [utils_dwc.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/utils_dwc.R) — manter como a versão canônica
+[MODIFY] [utils_dwc.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/utils_dwc.R) — manter como a versão canônica
 
-[MODIFY] [utils_coords.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/utils_coords.R)
+[MODIFY] [utils_coords.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/utils_coords.R)
 
 ```diff
 -coords_validate_force_flag <- function(force) {
@@ -257,7 +257,7 @@ A mesma lógica existe em **3 arquivos diferentes**. Extrair para um lugar só:
 +coords_validate_force_flag <- validate_force_flag
 ```
 
-[MODIFY] [utils_mapping.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/utils_mapping.R) — mesma mudança
+[MODIFY] [utils_mapping.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/utils_mapping.R) — mesma mudança
 
 **Por quê:** Elimina código duplicado. Se a validação mudar, muda em um lugar só.
 
@@ -265,14 +265,14 @@ A mesma lógica existe em **3 arquivos diferentes**. Extrair para um lugar só:
 
 ### 3.4 Cleanup de sessão
 
-[MODIFY] [app_server.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/app_server.R)
+[MODIFY] [app_server.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/app_server.R)
 
 Adicionar antes do fechamento da função:
 
 ```r
     # Cleanup on session end
     session$onSessionEnded(function() {
-        message("[Finch] Session ended, cleanup complete")
+        message("[Saira] Session ended, cleanup complete")
     })
 ```
 
@@ -294,7 +294,7 @@ Rscript -e "renv::init(); renv::snapshot()"
 
 ```bash
 Rscript -e "devtools::test()"       # Todos os testes devem passar
-Rscript -e "source('app.R')"        # App deve iniciar com mensagens [Finch] no console
+Rscript -e "source('app.R')"        # App deve iniciar com mensagens [Saira] no console
 ```
 
 ---
@@ -305,7 +305,7 @@ Estas mudanças alteram timing de reatividade. Podem causar comportamento difere
 
 ### 4.1 Debounce no seletor de idioma
 
-[MODIFY] [app_server.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/app_server.R)
+[MODIFY] [app_server.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/app_server.R)
 
 ```diff
      lang_r <- shiny::reactive({
@@ -322,7 +322,7 @@ Estas mudanças alteram timing de reatividade. Podem causar comportamento difere
 
 ### 4.2 Batch `adist()` no fuzzy matching de países
 
-[MODIFY] [utils_coords.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/utils_coords.R#L306-L344)
+[MODIFY] [utils_coords.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/utils_coords.R#L306-L344)
 
 Substituir o loop individual por operação matricial:
 

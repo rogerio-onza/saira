@@ -19,15 +19,15 @@ help_or_default <- function(value, default) {
 help_get_author_meta <- function() {
     default_name <- "Rog\u00E9rio Nunes Oliveira"
     default_email <- "rogerio.onza@outlook.com"
-    default_repo <- "https://github.com/rogerio-onza/finch"
+    default_repo <- "https://github.com/rogerio-onza/saira"
 
     desc <- tryCatch(
-        utils::packageDescription("finch"),
+        utils::packageDescription("saira"),
         error = function(e) NULL
     )
 
     version_value <- tryCatch(
-        as.character(utils::packageVersion("finch")),
+        as.character(utils::packageVersion("saira")),
         error = function(e) {
             if (!is.null(desc)) {
                 help_or_default(desc$Version, "0.1.0")
@@ -350,7 +350,7 @@ help_sidebar_bug_card <- function(lang) {
             shiny::p(tr("help_bug_body", lang))
         ),
         shiny::a(
-            href = "https://github.com/rogerio-onza/finch/issues",
+            href = "https://github.com/rogerio-onza/saira/issues",
             class = "help-bug-button",
             target = "_blank",
             rel = "noopener noreferrer",

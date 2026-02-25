@@ -1,11 +1,11 @@
-Package: finch
+Package: saira
 Title: Biodiversity Data Standardization to Darwin Core
 Version: 0.1.0
-Authors@R: person("RogÃ©rio", "Nunes Oliveira", email = "rogerio@example.com", role = c("aut", "cre"))
+Authors@R: person("Rog\u00E9rio", "Nunes Oliveira", email = "rogerio@example.com", role = c("aut", "cre"))
 Description: Shiny application for standardizing biodiversity datasets to the 
     Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools 
     for data validation, column mapping, and taxonomic verification. Designed 
-    for use with SiBBr (Sistema de InformaÃ§Ã£o sobre a Biodiversidade Brasileira).
+    for use with SiBBr (Sistema de Informa\u00E7\u00E3o sobre a Biodiversidade Brasileira).
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -18,9 +18,9 @@ Imports:
     taxadb (>= 0.2.0),
     CoordinateCleaner (>= 3.0.0),
     countrycode (>= 1.6.0),
-    sf,
-    rnaturalearth,
-    rnaturalearthdata,
+    sf (>= 1.0.0),
+    rnaturalearth (>= 1.0.0),
+    rnaturalearthdata (>= 1.0.0),
     DT (>= 0.28),
     leaflet (>= 2.1.0),
     ids (>= 1.0.0),

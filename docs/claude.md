@@ -1,4 +1,4 @@
-# Finch Project - Biodiversity Data Standardization Tool
+# Saira Project - Biodiversity Data Standardization Tool
 
 ## 1. Project Overview
 **Goal**: Standardize biodiversity data to **Darwin Core (DwC)**.  
@@ -11,7 +11,7 @@
 ## 2. File Structure
 We follow the R Package structure. All logic and module definitions live in `R/`.
 ```text
-finch/
+saira/
 ├── CHANGELOG.md            # What changed and when (Keep a Changelog format)
 ├── DESCRIPTION             # Package dependencies
 ├── app.R                   # Launch script: pkgload::load_all(); run_app()

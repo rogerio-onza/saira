@@ -528,7 +528,7 @@ Se alias "collector" → decimalLatitude foi erro:
 
 **Considerações**:
 - Em Shiny Server multi-usuário: arquivo por usuário em pasta com permissões
-- Em Desktop: arquivo local em `~/.finch/user_aliases.csv`
+- Em Desktop: arquivo local em `~/.saira/user_aliases.csv`
 - Evitar localStorage do navegador (problemático em Shiny)
 - Usar `flock` ou similar para evitar condições de corrida em escrita
 

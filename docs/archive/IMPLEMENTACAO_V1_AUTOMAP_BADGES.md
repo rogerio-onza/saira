@@ -1,7 +1,7 @@
 # Implementacao V1 - Auto-Map + Badges (Backend Primeiro)
 
 Data: 2026-02-12  
-Projeto: Finch  
+Projeto: Saira  
 Escopo: V1 sem inferencia automatica de datas/horarios (exceto match exato)
 
 ## 1. Objetivo da versao

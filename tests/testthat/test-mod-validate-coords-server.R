@@ -66,7 +66,7 @@ testthat::test_that("validate coords runs with lat/lon/country and respects prof
                 stringsAsFactors = FALSE
             )
         },
-        .package = "finch"
+        .package = "saira"
     )
 
     gate_r <- shiny::reactive({
@@ -134,7 +134,7 @@ testthat::test_that("family filter changes filtered output for map and table", {
                 stringsAsFactors = FALSE
             )
         },
-        .package = "finch"
+        .package = "saira"
     )
 
     gate_r <- shiny::reactive({
@@ -212,7 +212,7 @@ testthat::test_that("validate coords keeps running when loading modal fails", {
                 stringsAsFactors = FALSE
             )
         },
-        .package = "finch"
+        .package = "saira"
     )
     testthat::local_mocked_bindings(
         showModal = function(...) stop("modal failure"),

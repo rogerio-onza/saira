@@ -57,7 +57,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
-        notify_finch <- function(message, type = "message", duration = NULL, key = NULL) {
+        notify_saira <- function(message, type = "message", duration = NULL, key = NULL) {
             if (is.null(duration)) {
                 duration <- switch(type,
                     error = 7,
@@ -76,7 +76,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     class = "automap-loading-modal validate-coords-loading-modal",
                     shiny::div(class = "automap-loading-title", tr("validate_coords_loading_title", lang_r())),
                     shiny::HTML(
-                        '<lottie-player src="www/lottie/lottieflow-loading-07-finch.json" background="transparent" speed="1" loop autoplay class="coords-loading-lottie"></lottie-player>'
+                        '<lottie-player src="www/lottie/lottieflow-loading-07-saira.json" background="transparent" speed="1" loop autoplay class="coords-loading-lottie"></lottie-player>'
                     )
                 ),
                 class = "automap-loading-host",
@@ -562,7 +562,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     tr("validate_coords_datatable_zero_records", lang_r())
                 )
             } else {
-                shiny::div(class = "finch-table-shell", DT::dataTableOutput(ns("issues_table")))
+                shiny::div(class = "saira-table-shell", DT::dataTableOutput(ns("issues_table")))
             }
 
             bslib::card(
@@ -767,7 +767,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                         missing_country = tr("validate_coords_country_missing", lang_r()),
                         tr("validate_coords_missing_multiple", lang_r())
                     )
-                    notify_finch(message = msg, type = "warning", key = "coords_gate")
+                    notify_saira(message = msg, type = "warning", key = "coords_gate")
                     return(invisible(NULL))
                 }
 
@@ -796,7 +796,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                         show_validation_modal()
                     },
                     error = function(e) {
-                        notify_finch(
+                        notify_saira(
                             message = tr("validate_coords_modal_fallback", lang_r()),
                             type = "warning",
                             key = "coords_modal_fallback"
@@ -855,7 +855,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                         )
                     },
                     error = function(e) {
-                        notify_finch(
+                        notify_saira(
                             message = sprintf(tr("validate_coords_failed", lang_r()), as.character(e$message)),
                             type = "error",
                             key = "coords_failed"
@@ -878,7 +878,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 if (length(total_conversion_failures) == 1L &&
                     !is.na(total_conversion_failures) &&
                     total_conversion_failures > 0L) {
-                    notify_finch(
+                    notify_saira(
                         message = sprintf(tr("validate_coords_conversion_warning", lang_r()), total_conversion_failures),
                         type = "warning",
                         key = "coords_conversion"

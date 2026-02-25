@@ -1,7 +1,7 @@
-﻿# Plano de Implementacao - V1 + Badges (sem datas/horarios)
+# Plano de Implementacao - V1 + Badges (sem datas/horarios)
 
 ## 1) Objetivo
-Entregar um auto-mapeamento mais inteligente no Finch sem aumentar risco de regressao no app Shiny.
+Entregar um auto-mapeamento mais inteligente no Saira sem aumentar risco de regressao no app Shiny.
 
 No V1, ao clicar em "Auto-mapear", o sistema deve:
 - analisar nome da coluna + amostra de valores;
@@ -13,7 +13,7 @@ No V1, ao clicar em "Auto-mapear", o sistema deve:
 Fluxo esperado:
 1. Usuario sobe CSV.
 2. Clica em `Auto-mapear`.
-3. Finch preenche varios campos DwC automaticamente.
+3. Saira preenche varios campos DwC automaticamente.
 4. Cada campo aparece com um badge:
 - `AUTO` (verde): confianca alta, pode seguir.
 - `SUGERIDO` (amarelo): preencheu, mas vale revisar.
@@ -72,7 +72,7 @@ Decisao para este V1:
 - Nao implementar composicao `genus + specificEpithet -> scientificName` neste ciclo.
 
 Conclusao objetiva:
-- `scientificName` esta resolvido para o fluxo atual do Finch.
+- `scientificName` esta resolvido para o fluxo atual do Saira.
 - O que fica pendente (intencionalmente) e composicao avancada, que e escopo de fase futura.
 
 ## 6) Regras tecnicas do motor (Stage 1)

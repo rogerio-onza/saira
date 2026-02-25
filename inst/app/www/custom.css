@@ -1,5 +1,5 @@
 /* =============================================================================
-   FINCH DESIGN SYSTEM
+   SAIRA DESIGN SYSTEM
    Based on design-v5 specifications
    Author: Rogerio Nunes Oliveira
    Date: 2026-02-24
@@ -789,17 +789,17 @@ label,
   display: none;
 }
 
-.wiki-table.finch-table-shell {
+.wiki-table.saira-table-shell {
   padding: 0;
   border-radius: 16px;
   overflow: hidden;
 }
 
-.wiki-table.finch-table-shell .dataTables_wrapper {
+.wiki-table.saira-table-shell .dataTables_wrapper {
   padding: 0;
 }
 
-.wiki-table.finch-table-shell table.dataTable {
+.wiki-table.saira-table-shell table.dataTable {
   margin: 0;
   border-collapse: separate;
   border-spacing: 0;
@@ -1149,7 +1149,7 @@ label,
   color: #ffffff;
 }
 
-.wiki-table.finch-table-shell table.dataTable thead th {
+.wiki-table.saira-table-shell table.dataTable thead th {
   background: #2833ac;
   padding: 13px 18px;
   font-family: var(--font-mono);
@@ -1164,19 +1164,19 @@ label,
   border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.wiki-table.finch-table-shell table.dataTable thead th:last-child {
+.wiki-table.saira-table-shell table.dataTable thead th:last-child {
   border-right: none;
 }
 
-.wiki-table.finch-table-shell table.dataTable thead th:first-child {
+.wiki-table.saira-table-shell table.dataTable thead th:first-child {
   border-top-left-radius: 16px;
 }
 
-.wiki-table.finch-table-shell table.dataTable thead th:last-child {
+.wiki-table.saira-table-shell table.dataTable thead th:last-child {
   border-top-right-radius: 16px;
 }
 
-.wiki-table.finch-table-shell table.dataTable thead th:nth-child(5) {
+.wiki-table.saira-table-shell table.dataTable thead th:nth-child(5) {
   text-align: center;
 }
 
@@ -1194,39 +1194,39 @@ label,
   opacity: 0.45;
 }
 
-.wiki-table.finch-table-shell table.dataTable thead>tr>th.sorting::before,
-.wiki-table.finch-table-shell table.dataTable thead>tr>th.sorting::after,
-.wiki-table.finch-table-shell table.dataTable thead>tr>th.sorting_asc::before,
-.wiki-table.finch-table-shell table.dataTable thead>tr>th.sorting_asc::after,
-.wiki-table.finch-table-shell table.dataTable thead>tr>th.sorting_desc::before,
-.wiki-table.finch-table-shell table.dataTable thead>tr>th.sorting_desc::after {
+.wiki-table.saira-table-shell table.dataTable thead>tr>th.sorting::before,
+.wiki-table.saira-table-shell table.dataTable thead>tr>th.sorting::after,
+.wiki-table.saira-table-shell table.dataTable thead>tr>th.sorting_asc::before,
+.wiki-table.saira-table-shell table.dataTable thead>tr>th.sorting_asc::after,
+.wiki-table.saira-table-shell table.dataTable thead>tr>th.sorting_desc::before,
+.wiki-table.saira-table-shell table.dataTable thead>tr>th.sorting_desc::after {
   display: none;
 }
 
-.wiki-table.finch-table-shell table.dataTable tbody td {
+.wiki-table.saira-table-shell table.dataTable tbody td {
   padding: 12px 18px;
   font-size: 0.82rem;
   vertical-align: middle;
   border-bottom: 1px solid rgba(40, 51, 172, 0.08);
 }
 
-.wiki-table.finch-table-shell table.dataTable tbody tr {
+.wiki-table.saira-table-shell table.dataTable tbody tr {
   transition: background 0.15s ease;
 }
 
-.wiki-table.finch-table-shell table.dataTable tbody tr:nth-child(even) td {
+.wiki-table.saira-table-shell table.dataTable tbody tr:nth-child(even) td {
   background: rgba(40, 51, 172, 0.02);
 }
 
-.wiki-table.finch-table-shell table.dataTable tbody tr:hover td {
+.wiki-table.saira-table-shell table.dataTable tbody tr:hover td {
   background: rgba(56, 207, 246, 0.04);
 }
 
-.wiki-table.finch-table-shell table.dataTable tbody tr:nth-child(even):hover td {
+.wiki-table.saira-table-shell table.dataTable tbody tr:nth-child(even):hover td {
   background: rgba(56, 207, 246, 0.05);
 }
 
-.wiki-table.finch-table-shell table.dataTable tbody tr:last-child td {
+.wiki-table.saira-table-shell table.dataTable tbody tr:last-child td {
   border-bottom: none;
 }
 
@@ -1295,7 +1295,7 @@ label,
   border: 1px solid rgba(192, 57, 43, 0.2);
 }
 
-.wiki-table.finch-table-shell table.dataTable tbody td:nth-child(3) {
+.wiki-table.saira-table-shell table.dataTable tbody td:nth-child(3) {
   color: #1c1c26;
   font-weight: 400;
   line-height: 1.5;
@@ -1303,7 +1303,7 @@ label,
   white-space: normal;
 }
 
-.wiki-table.finch-table-shell table.dataTable tbody td.is-required {
+.wiki-table.saira-table-shell table.dataTable tbody td.is-required {
   color: #2833ac;
   font-weight: 500;
 }
@@ -1324,7 +1324,7 @@ label,
 }
 
 .wiki-required-cell,
-.wiki-table.finch-table-shell table.dataTable tbody td:nth-child(5) {
+.wiki-table.saira-table-shell table.dataTable tbody td:nth-child(5) {
   text-align: center;
 }
 
@@ -1355,7 +1355,7 @@ label,
   border: 1px solid rgba(40, 51, 172, 0.08);
 }
 
-.wiki-table.finch-table-shell .wiki-table-footer {
+.wiki-table.saira-table-shell .wiki-table-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1369,7 +1369,7 @@ label,
   border-bottom-right-radius: 16px;
 }
 
-.wiki-table.finch-table-shell .wiki-table-footer .dataTables_info {
+.wiki-table.saira-table-shell .wiki-table-footer .dataTables_info {
   float: none;
   padding-top: 0;
   margin: 0;
@@ -1377,12 +1377,12 @@ label,
   color: #6c757d;
 }
 
-.wiki-table.finch-table-shell .wiki-table-footer .dataTables_paginate {
+.wiki-table.saira-table-shell .wiki-table-footer .dataTables_paginate {
   float: none;
   margin-top: 0;
 }
 
-.wiki-table.finch-table-shell .wiki-table-footer .dataTables_paginate .pagination {
+.wiki-table.saira-table-shell .wiki-table-footer .dataTables_paginate .pagination {
   margin-bottom: 0;
 }
 
@@ -1520,7 +1520,7 @@ label,
   line-height: 1;
 }
 
-.finch-table-shell {
+.saira-table-shell {
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
   background-color: var(--bg-card);
@@ -1528,20 +1528,20 @@ label,
   padding: var(--space-3);
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_length,
-.finch-table-shell .dataTables_wrapper .dataTables_filter {
+.saira-table-shell .dataTables_wrapper .dataTables_length,
+.saira-table-shell .dataTables_wrapper .dataTables_filter {
   margin-bottom: var(--space-3);
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_length label,
-.finch-table-shell .dataTables_wrapper .dataTables_filter label {
+.saira-table-shell .dataTables_wrapper .dataTables_length label,
+.saira-table-shell .dataTables_wrapper .dataTables_filter label {
   font-family: var(--font-sans);
   font-size: var(--text-sm);
   color: var(--accent);
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_length select,
-.finch-table-shell .dataTables_wrapper .dataTables_length select.form-select {
+.saira-table-shell .dataTables_wrapper .dataTables_length select,
+.saira-table-shell .dataTables_wrapper .dataTables_length select.form-select {
   min-width: 3.2rem;
   height: 34px;
   font-size: var(--text-sm);
@@ -1550,39 +1550,39 @@ label,
   border-radius: var(--radius);
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_filter input {
+.saira-table-shell .dataTables_wrapper .dataTables_filter input {
   height: 34px;
   border-radius: var(--radius);
   font-size: var(--text-sm);
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_info {
+.saira-table-shell .dataTables_wrapper .dataTables_info {
   font-size: var(--text-xs);
   color: var(--text-muted);
   padding-top: var(--space-2);
 }
 
-.finch-table-shell table.dataTable thead th {
+.saira-table-shell table.dataTable thead th {
   background: var(--accent);
   color: #ffffff;
   border-bottom: 1px solid var(--border-strong);
 }
 
-.finch-table-shell table.dataTable thead>tr>th.sorting::before,
-.finch-table-shell table.dataTable thead>tr>th.sorting::after,
-.finch-table-shell table.dataTable thead>tr>th.sorting_asc::before,
-.finch-table-shell table.dataTable thead>tr>th.sorting_asc::after,
-.finch-table-shell table.dataTable thead>tr>th.sorting_desc::before,
-.finch-table-shell table.dataTable thead>tr>th.sorting_desc::after {
+.saira-table-shell table.dataTable thead>tr>th.sorting::before,
+.saira-table-shell table.dataTable thead>tr>th.sorting::after,
+.saira-table-shell table.dataTable thead>tr>th.sorting_asc::before,
+.saira-table-shell table.dataTable thead>tr>th.sorting_asc::after,
+.saira-table-shell table.dataTable thead>tr>th.sorting_desc::before,
+.saira-table-shell table.dataTable thead>tr>th.sorting_desc::after {
   color: rgba(255, 255, 255, 0.85);
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_paginate {
+.saira-table-shell .dataTables_wrapper .dataTables_paginate {
   margin-top: var(--space-2);
 }
 
 /* --- Classic DT paginate_button (non-Bootstrap rendering) --- */
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button {
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button {
   border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   background: var(--bg-card);
@@ -1596,23 +1596,23 @@ label,
   transition: var(--transition-fast);
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
   border-color: var(--accent);
   background: var(--hover-bg);
   color: var(--text-primary);
   box-shadow: none;
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button.current,
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
   border-color: var(--accent);
   background: var(--accent);
   color: #ffffff;
   box-shadow: none;
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button.disabled,
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
   opacity: 0.55;
   cursor: not-allowed;
   background: var(--bg-main);
@@ -1624,7 +1624,7 @@ label,
 /* --- Bootstrap pagination (page-item / page-link) --- */
 
 /* Reset the <li> wrapper so it adds no extra border or background */
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item {
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item {
   border: none;
   background: transparent;
   box-shadow: none;
@@ -1632,11 +1632,11 @@ label,
   padding: 0;
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .pagination {
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .pagination {
   gap: 4px;
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item .page-link {
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item .page-link {
   border: 1px solid var(--border-default);
   border-radius: var(--radius-sm);
   background: var(--bg-card);
@@ -1651,26 +1651,26 @@ label,
   transition: var(--transition-fast);
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item .page-link:hover {
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item .page-link:hover {
   border-color: var(--accent);
   background: var(--hover-bg);
   color: var(--text-primary);
   box-shadow: none;
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item .page-link:focus {
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item .page-link:focus {
   box-shadow: var(--focus-ring-accent);
   outline: none;
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item.active .page-link {
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item.active .page-link {
   border-color: var(--accent);
   background: var(--accent);
   color: #ffffff;
   box-shadow: none;
 }
 
-.finch-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item.disabled .page-link {
+.saira-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item.disabled .page-link {
   opacity: 0.55;
   cursor: not-allowed;
   background: var(--bg-main);
@@ -3940,7 +3940,7 @@ table.dataTable tbody tr.validate-invalid td {
   flex-direction: column;
 }
 
-.validate-coords-table-card .card-body .finch-table-shell {
+.validate-coords-table-card .card-body .saira-table-shell {
   flex: 1 1 auto;
 }
 
@@ -5834,4 +5834,4 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 
-
+

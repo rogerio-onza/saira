@@ -1,9 +1,51 @@
 # Changelog
 
-Todas as mudancas notaveis do Finch sao documentadas aqui.
+Todas as mudancas notaveis do Saira sao documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ---
+
+## [0.1.26] - 2026-02-24
+
+### Alterado
+- Rename global do projeto para `saira` em identificadores tecnicos e branding:
+  - `DESCRIPTION::Package` para `saira`
+  - referencias de namespace (`package =`, `asNamespace`, `getFromNamespace`, `library`, `test_check`) atualizadas
+  - textos de UI/documentacao/README atualizados para `Saira`
+  - classe compartilhada de tabela padronizada para `.saira-table-shell`
+- Assets renomeados para o novo prefixo:
+  - `inst/app/www/images/saira.svg`
+  - `inst/app/www/images/saira_alone.svg`
+  - `inst/app/www/images/saira_alone.png`
+  - `inst/app/www/lottie/lottieflow-loading-07-saira.json`
+- Onda 1 implementada:
+  - criados `.editorconfig` e `.gitattributes` com contrato de UTF-8/LF
+  - `DESCRIPTION` com correcoes de encoding (`\\uXXXX`) e versoes minimas para `sf`, `rnaturalearth`, `rnaturalearthdata`
+  - headers `# Author:` padronizados em ASCII para `Rogerio Nunes Oliveira`
+  - novo `docs/ENCODING_RULES.md`
+  - `.Rbuildignore` atualizado para ignorar artefatos de infraestrutura (`.editorconfig`, `.gitattributes`, `.Rprofile`, `renv`, `renv.lock`)
+- Onda 2 implementada:
+  - `R/utils_io.R` recebeu `strip_bom()`
+  - `detect_delimiter()` agora le em UTF-8, remove BOM e trata primeira linha vazia com fallback `,`
+  - removido `options(encoding = "UTF-8")` de `app.R` e `R/run_app.R`
+- Onda 3 implementada:
+  - `R/mod_upload.R` agora protege `get_dwc_terms()` com `tryCatch` e fallback seguro em caso de falha de RDS
+  - `R/app_server.R` passou a logar fallbacks reativos e encerra sessao com log de cleanup (`[Saira] ...`)
+  - validacao de `force` consolidada em `validate_force_flag()` canonica (`utils_coords` e `utils_mapping` delegam para ela)
+  - `renv` inicializado com `renv.lock` versionado
+
+### Adicionado
+- Nova suite de teste `tests/testthat/test-mod-upload-server.R` cobrindo startup resiliente de `mod_upload_server()` quando `get_dwc_terms()` falha.
+- Novos testes de I/O para BOM/delimitador:
+  - `strip_bom()` remove BOM corretamente
+  - `detect_delimiter()` com BOM e arquivo vazio
+- Novos testes de validacao de `force`:
+  - `load_dwc_synonyms_v1(force = ...)`
+  - `coords_load_aliases(force = ...)`
+
+### Documentacao
+- `docs/DECISIONS.md`: novos ADRs para rename global `Saira` e hardening de encoding/BOM/defesas.
+- `docs/LESSONS.md`: novas licoes sobre rename de pacote sem compat legada, BOM em delimitador e fallback defensivo de startup.
 
 ## [0.1.25] - 2026-02-24
 
@@ -398,13 +440,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [0.1.10] - 2026-02-19
 
 ### Adicionado
-- Classe CSS compartilhada `.finch-table-shell` para padrao visual de DataTables no app inteiro
+- Classe CSS compartilhada `.saira-table-shell` para padrao visual de DataTables no app inteiro
 - Novas chaves i18n de DataTable na validacao de coordenadas (search/length/info/empty/zero/paginacao)
-- Diretriz tecnica documentada para uso de `.finch-table-shell` em novas tabelas (`docs/LESSONS.md`) e decisao arquitetural formal (`ADR-030`)
+- Diretriz tecnica documentada para uso de `.saira-table-shell` em novas tabelas (`docs/LESSONS.md`) e decisao arquitetural formal (`ADR-030`)
 
 ### Alterado
 - Estilo da tabela de preview aplicado de forma consistente nas tabelas de `validate_names`, `validate_coords` e `wiki` (header, busca, length menu e paginação)
-- Wrappers de tabela unificados para usar `.finch-table-shell` em todos os modulos com `DT::datatable`
+- Wrappers de tabela unificados para usar `.saira-table-shell` em todos os modulos com `DT::datatable`
 - `lengthMenu` padronizado para `10/25/50/100` nas tabelas de validacao de nomes, validacao de coordenadas e wiki
 - Tabela da Wiki passa a abrir com 10 linhas por pagina para alinhar com o padrao visual e de navegacao do app
 

@@ -7,7 +7,7 @@ O módulo `mod_validate_names` (v2.2, 866 linhas) é o mais maduro do app. Já i
 - Duas fases `starting → running` (ADR-027)
 - Stream ao vivo com pills de filtro (ADR-029)
 - Painel de progresso com barra, fases e falhas de provedor
-- `notify_finch()` local com IDs estáveis (ADR-034)
+- `notify_saira()` local com IDs estáveis (ADR-034)
 - Retorno explícito `shiny::reactive(validation_result())` (architecture.md §8)
 - DataTable com badges coloridos, italic em `scientificName`, `rowCallback`
 
@@ -296,7 +296,7 @@ output$results_tabs <- shiny::renderUI({
       bslib::input_switch(ns("show_all_results"),
                           tr("validate_names_table_show_all", lang_r()),
                           value = FALSE),
-      shiny::div(class = "finch-table-shell validate-names-table-shell",
+      shiny::div(class = "saira-table-shell validate-names-table-shell",
                  DT::dataTableOutput(ns("issues_table")))
     ),
     # Aba 2: Stream de resolução

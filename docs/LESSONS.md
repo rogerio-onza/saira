@@ -1,6 +1,6 @@
 # Licoes Aprendidas
 
-Conhecimento reutilizavel extraido do desenvolvimento do Finch.
+Conhecimento reutilizavel extraido do desenvolvimento do Saira.
 Indexado por **tema** -- consulte antes de implementar algo similar.
 
 ---
@@ -11,6 +11,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Todo pacote usado com `::`** precisa estar no `Imports` do DESCRIPTION. Exemplo: `here`, `jsonlite`.
 - **`pkgload::load_all()`** carrega todos os arquivos de `R/` automaticamente -- nao precisa de `source()` em cada modulo.
 - **Diretorio de trabalho**: `pkgload::load_all()` precisa ser chamado a partir do diretorio que contem `DESCRIPTION`.
+- **Rename de pacote sem compat legada exige varredura por string literal**: atualizar `Package`, `library()`, `test_check()`, `system.file(package=...)`, `asNamespace()` e `getFromNamespace()` no mesmo ciclo evita ambiente parcialmente quebrado.
 
 ## Shiny / Reactive Patterns
 
@@ -47,6 +48,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Falha visual nao pode bloquear fluxo funcional**: em eventos de arranque (`start_requested -> run_requested`), envolver `showModal()` em `tryCatch` e manter o disparo do processamento mesmo quando a UI de loading falhar.
 - **Em rework de modulo para shell tri-coluna, consolidar outputs por intencao (config/stream/report)** reduz acoplamento entre cards e evita cascata de re-render em layouts com muitos `uiOutput`s fragmentados.
 - **Toolbar externa de DataTable em modulo reativo exige eventos delegados com namespace por instancia** para manter busca/paginacao funcionais apos recreacao de DOM por `renderUI`.
+- **Fallback de startup em modulo deve ser tipado e observavel**: quando dependencia estatica falha (ex.: `get_dwc_terms()`), retornar estrutura vazia com schema esperado + log explicito evita crash silencioso.
 
 ## CSS / Bootstrap / bslib
 
@@ -63,7 +65,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **`backdrop-filter: blur()`** em modais cria efeito "debaixo d'agua" indesejado. Usar escurecimento simples (`rgba(0,0,0,0.45)`).
 - **Scroll container**: usar `scrollbar-gutter: stable` para evitar sobreposicao da barra de rolagem sobre conteudo.
 - **`dataTables_length select` pode sobrepor seta e valor** quando herda padding generico de `form-select`; aplicar regra especifica com `padding-right` maior e `background-position` evita colisao visual.
-- **Padrao oficial de tabelas do app**: toda `DT::datatable` deve ficar dentro de `.finch-table-shell` para herdar header azul, paginacao compacta e dimensoes consistentes de busca/length menu.
+- **Padrao oficial de tabelas do app**: toda `DT::datatable` deve ficar dentro de `.saira-table-shell` para herdar header azul, paginacao compacta e dimensoes consistentes de busca/length menu.
 - **Ao alterar `pageLength` por controle externo**, aplicar `table.page.len(len)` seguido de `table.page('first').draw('page')` evita o falso sintoma de "nao mudou para 15" quando a tabela estava em pagina posterior.
 - **Quando stats, filtros, mapa e tabela evoluem em ritmos diferentes**, prefira `uiOutput`s separados por painel em vez de um `results_panel` monolitico; isso reduz acoplamento de layout e simplifica manutencao.
 - **Full-width por modulo e melhor com override contextual**: usar seletor local (`.tab-content > .tab-pane:has(.validate-coords-page)`) permite remover sobras laterais de uma aba sem quebrar o layout global.
@@ -93,6 +95,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 
 - **Todo texto visivel** deve passar por `tr(key, lang_r())`. Strings inline do tipo `if (lang == "pt") "X" else "Y"` violam o sistema i18n.
 - **Encoding UTF-8** deve ser verificado ao editar `data_dictionary.R`. Caracteres acentuados podem corromper se o editor salvar em Latin-1.
+- **Encoding de metadados do pacote e mais seguro com escapes Unicode**: para campos como `Authors@R`/`Description`, `\uXXXX` reduz risco de mojibake entre editores/SO.
 - **Placeholder de `selectInput`** nao aceita `uiOutput` -- usar `update*Input()` no server.
 - **`DT::datatable` precisa de objeto `language` completo** em apps bilingues: incluir `emptyTable`, `zeroRecords` e `paginate.first/last/next/previous` evita sobras de texto no idioma errado.
 - **Ao adicionar novas labels de tabela/filtros em modulo bilingue, atualizar a suite de i18n no mesmo ciclo** previne regressao silenciosa de traducao.
@@ -124,7 +127,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 
 - **`sapply()` element-wise** eh lento com 99k+ linhas. Vetorizar parsing de datas testando cada formato em lote.
 - **`as.Date(..., format=...)` sem mascara previa** pode aceitar entradas parcialmente e gerar anos incorretos (ex: `0023`). Usar regex estrita por formato antes de parsear.
-- **Ano com 2 digitos (`DD/MM/YY`)** precisa de regra de seculo explicita. No Finch: cutoff dinamico (`YY <= ano atual (2d) -> 20YY`, senao `19YY`).
+- **Ano com 2 digitos (`DD/MM/YY`)** precisa de regra de seculo explicita. No Saira: cutoff dinamico (`YY <= ano atual (2d) -> 20YY`, senao `19YY`).
 - **RDS estatico** (como `dwc_terms.rds`) nao deve ser relido do disco a cada mudanca reativa. Cachear na primeira leitura.
 - **Quando houver artefatos estaticos correlatos** (ex.: termos e sinonimos), aplicar o mesmo padrao de cache para manter consistencia arquitetural e evitar "ilhas" de I/O repetido.
 - **Preview de assistente em dataset grande**: limitar mapeamento ao subconjunto exibido (ex.: primeiras 5 linhas) e usar lookup vetorizado para contagens globais evita recomputacao pesada a cada interacao de UI.
@@ -162,12 +165,14 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Para UX de acoes longas, testar transicao de estado e nao so resultado final**: validar estados intermediarios (`starting`, `running`) reduz regressao de feedback visual em cliques.
 - **Em testes de resolucao de pais, cobrir casos adversariais de fuzzy e obrigatorio**: alem dos matches esperados, validar entradas sem solucao (`xyzxyz`) e ambiguas para evitar falso positivo silencioso.
 - **Benchmark funcional deve acompanhar mudancas em fallback de pais**: manter budget explicito (ex.: 10k linhas < 1s em ambiente local) ajuda a detectar regressao de performance cedo.
+- **Ao endurecer parser de CSV, cobrir BOM + arquivo vazio no mesmo ciclo**: isso evita regressao em `detect_delimiter()` para entradas exportadas por Notepad/Excel.
+- **Para hardening de startup, adicionar teste de modulo com dependencia mockada em erro**: validar que o modulo sobe mesmo com falha externa previne regressao de disponibilidade.
 
 ## Package Check / Deploy
 
 - Em pacote R, evitar `source()` dentro de arquivos em `R/`; carregar funcoes via namespace previne divergencia entre ambiente dev e tarball.
 - Em testes executados por `R CMD check`, nao depender de caminho local para `R/*.R`; preferir `getFromNamespace()` para funcoes internas.
-- Para arquivos de teste (ex.: RDS), preferir `system.file(..., package = "finch")` com fallback de desenvolvimento quando necessario.
+- Para arquivos de teste (ex.: RDS), preferir `system.file(..., package = "saira")` com fallback de desenvolvimento quando necessario.
 - Ao adicionar chamadas `pkg::fun()`, garantir dependencia declarada em `Imports` para evitar warning de dependencia nao declarada.
 - Ao introduzir `leaflet` em modulo Shiny, declarar `leaflet` em `DESCRIPTION::Imports`; uso apenas com `leaflet::` nao elimina a necessidade no check do pacote.
 - Dependencias espaciais do CoordinateCleaner em fluxo principal devem ser declaradas explicitamente em `Imports` (`CoordinateCleaner`, `countrycode`, `sf`, `rnaturalearth`, `rnaturalearthdata`) para reduzir drift entre ambientes.

@@ -1,5 +1,5 @@
 # Title: Upload Module
-# Author: RogÃ©rio Nunes Oliveira
+# Author: Rogerio Nunes Oliveira
 # Date: 2026-02-08
 # Version: 2.0 - Two-column layout with welcome and financing
 
@@ -196,7 +196,7 @@ mod_upload_server <- function(id, lang_r) {
                     class = "welcome-main-title",
                     tr("welcome_title_prefix", lang_r()),
                     " ",
-                    shiny::tags$span("Finch", class = "welcome-main-title-brand")
+                    shiny::tags$span("Saira", class = "welcome-main-title-brand")
                 )
             )
         })
@@ -255,7 +255,20 @@ mod_upload_server <- function(id, lang_r) {
             "occurrenceID" = "Occurrence"
         )
         category_order <- c("Record-level", "Occurrence", "Taxon", "Location")
-        required_terms_all <- get_dwc_terms()
+        required_terms_all <- tryCatch(
+            get_dwc_terms(),
+            error = function(e) {
+                message("[Saira] Failed to load DwC terms: ", e$message)
+                data.frame(
+                    term = character(0),
+                    class = character(0),
+                    required = logical(0),
+                    definition_pt = character(0),
+                    definition_en = character(0),
+                    stringsAsFactors = FALSE
+                )
+            }
+        )
         required_terms <- required_terms_all[required_terms_all$term %in% required_fields, , drop = FALSE]
         required_terms <- required_terms[match(required_fields, required_terms$term), , drop = FALSE]
         required_terms <- required_terms[!is.na(required_terms$term), , drop = FALSE]

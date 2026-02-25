@@ -2,21 +2,25 @@
 % Please edit documentation in R/utils_coords.R
 \name{validate_coords_df}
 \alias{validate_coords_df}
-\title{Validate latitude/longitude columns with extended issue typing}
+\title{Validate latitude/longitude columns with legacy issue typing}
 \usage{
-validate_coords_df(df, lat_col = "decimalLatitude", lon_col = "decimalLongitude")
+validate_coords_df(
+  df,
+  lat_col = "decimalLatitude",
+  lon_col = "decimalLongitude"
+)
 }
 \arguments{
 \item{df}{Data frame containing coordinate columns}
 
-\item{lat_col}{Name of latitude column in \code{df}}
+\item{lat_col}{Name of latitude column in `df`}
 
-\item{lon_col}{Name of longitude column in \code{df}}
+\item{lon_col}{Name of longitude column in `df`}
 }
 \value{
-Data frame with \code{.row_index}, numeric coordinates, \code{valid},
-\code{issue_type}, and \code{error_key}
+Data frame with `.row_index`, numeric coordinates, `valid`,
+  `issue_type`, and `error_key`
 }
 \description{
-Validate latitude/longitude columns with extended issue typing.
+Validate latitude/longitude columns with legacy issue typing
 }

@@ -3,7 +3,7 @@
 # Date: 2026-02-23
 
 testthat::test_that("homepage welcome keys exist in pt/en", {
-    dict <- get("i18n_dict", envir = asNamespace("finch"))
+    dict <- get("i18n_dict", envir = asNamespace("saira"))
 
     required_keys <- c(
         "welcome_eyebrow",
@@ -30,7 +30,7 @@ testthat::test_that("homepage welcome keys exist in pt/en", {
 })
 
 testthat::test_that("homepage welcome keys resolve with tr in pt/en", {
-    tr_fn <- getFromNamespace("tr", "finch")
+    tr_fn <- getFromNamespace("tr", "saira")
     keys <- c("welcome_eyebrow", "welcome_title_prefix")
 
     for (key in keys) {

@@ -42,7 +42,7 @@ A aba **Pré-visualização** (`mod_preview.R`, 122 linhas) é a interface onde 
 
 O foco deste painel é responder objetivamente: **"Meus dados estão prontos para submissão?"**. Nenhuma métrica genérica — apenas indicadores acionáveis que o pesquisador precisa verificar antes de enviar dados ao GBIF/SiBBr.
 
-#### [MODIFY] [mod_preview.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_preview.R)
+#### [MODIFY] [mod_preview.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_preview.R)
 
 **UI**: Adicionar `uiOutput(ns("readiness_panel"))` entre o subtítulo e a tabela.
 
@@ -65,7 +65,7 @@ Isso dá ao pesquisador um "checklist visual de prontidão" sem precisar scrolla
 
 Usa o mesmo estilo `.stats-container` + `.stat-box` da Home para consistência visual. A checklist usa chips com estilo `.dwc-term-chip` já existente (mesmo padrão da Home).
 
-#### [MODIFY] [data_dictionary.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/data_dictionary.R)
+#### [MODIFY] [data_dictionary.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/data_dictionary.R)
 
 Novas chaves i18n:
 ```r
@@ -83,7 +83,7 @@ preview_readiness_missing = list(pt = "ausente", en = "missing")
 
 ### Onda 2 — Download Button Fix + Feedback de Export
 
-#### [MODIFY] [mod_preview.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_preview.R)
+#### [MODIFY] [mod_preview.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_preview.R)
 
 **Fix do botão de download**: O label do `downloadButton` atual usa `uiOutput` aninhado, que é frágil. Substituir por `renderUI` que gera o `downloadButton` inteiro com label fixo via `tr()`:
 
@@ -125,7 +125,7 @@ output$download <- shiny::downloadHandler(
 )
 ```
 
-#### [MODIFY] [data_dictionary.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/data_dictionary.R)
+#### [MODIFY] [data_dictionary.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/data_dictionary.R)
 
 Nova chave:
 ```r
@@ -136,7 +136,7 @@ preview_exporting = list(pt = "Exportando dados...", en = "Exporting data...")
 
 ### Onda 3 — DataTable UX Improvements
 
-#### [MODIFY] [mod_preview.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_preview.R)
+#### [MODIFY] [mod_preview.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_preview.R)
 
 **Column formatting**: Adicionar `columnDefs` no DT para:
 - Truncar valores longos (>80 chars) com `...` e tooltip completo
@@ -186,7 +186,7 @@ DT::datatable(
 
 ### Onda 4 — Empty State Aprimorado
 
-#### [MODIFY] [mod_preview.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_preview.R)
+#### [MODIFY] [mod_preview.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_preview.R)
 
 Substituir o empty state simples por um card visual com ícone grande e orientação:
 
@@ -199,7 +199,7 @@ shiny::div(
 )
 ```
 
-#### [MODIFY] [data_dictionary.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/data_dictionary.R)
+#### [MODIFY] [data_dictionary.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/data_dictionary.R)
 
 Nova chave:
 ```r
@@ -209,7 +209,7 @@ preview_no_data_title = list(
 )
 ```
 
-#### [MODIFY] [custom.css](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/inst/app/www/custom.css)
+#### [MODIFY] [custom.css](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/inst/app/www/custom.css)
 
 Adicionar seção dedicada ao Preview:
 ```css
@@ -258,7 +258,7 @@ Adicionar seção dedicada ao Preview:
 
 ### Onda 5 — i18n Completeness
 
-#### [MODIFY] [data_dictionary.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/data_dictionary.R)
+#### [MODIFY] [data_dictionary.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/data_dictionary.R)
 
 Adicionar todas as chaves DT faltantes:
 ```r
@@ -280,15 +280,15 @@ preview_datatable_prev = list(pt = "Anterior", en = "Previous")
 
 ### Onda 6 — Documentação
 
-#### [MODIFY] [CHANGELOG.md](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/CHANGELOG.md)
+#### [MODIFY] [CHANGELOG.md](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/CHANGELOG.md)
 
 Nova entrada em `[Unreleased]` ou nova versão com seções `Adicionado`, `Alterado`, `Corrigido`.
 
-#### [MODIFY] [DECISIONS.md](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/docs/DECISIONS.md)
+#### [MODIFY] [DECISIONS.md](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/docs/DECISIONS.md)
 
 Novo ADR-019 documentando as decisões de UI do Preview tab (stats panel, empty state, truncation).
 
-#### [MODIFY] [LESSONS.md](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/docs/LESSONS.md)
+#### [MODIFY] [LESSONS.md](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/docs/LESSONS.md)
 
 Novas lições sobre:
 - `downloadButton` com label dinâmico via `renderUI` container
@@ -302,7 +302,7 @@ Novas lições sobre:
 ### Automated Tests
 
 ```bash
-cd c:\Users\Admin\OneDrive\Finch - Claude\finch
+cd c:\Users\Admin\OneDrive\Saira - Claude\saira
 Rscript -e "devtools::test()"
 ```
 
@@ -314,7 +314,7 @@ O baseline atual (812 testes) deve permanecer 100% verde. As ondas propostas nã
 > A verificação visual é essencial para esta task, já que as mudanças são primariamente de UI/UX.
 
 1. **Iniciar o app**:
-   - Abrir RStudio no projeto `finch`
+   - Abrir RStudio no projeto `saira`
    - Executar `devtools::load_all(); run_app()`
 
 2. **Carregar CSV de teste** na aba Home (de preferência um dataset com 1000+ linhas para testar performance do stats panel)

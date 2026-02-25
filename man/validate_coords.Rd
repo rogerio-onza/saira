@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_dwc.R
 \name{validate_coords}
 \alias{validate_coords}
-\title{Validate coordinates (WGS84)}
+\title{Validate coordinates (legacy wrapper)}
 \usage{
 validate_coords(lat, lon)
 }
@@ -15,5 +15,6 @@ validate_coords(lat, lon)
 Data frame with validation results
 }
 \description{
-Validate coordinates (WGS84)
+Legacy API wrapper around `validate_coords_df()`. Kept for backward
+compatibility with existing callers that pass latitude/longitude vectors.
 }

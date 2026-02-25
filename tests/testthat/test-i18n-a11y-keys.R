@@ -3,7 +3,7 @@
 # Date: 2026-02-20
 
 testthat::test_that("a11y/ui keys for this cycle exist in pt/en", {
-    dict <- get("i18n_dict", envir = asNamespace("finch"))
+    dict <- get("i18n_dict", envir = asNamespace("saira"))
 
     required_keys <- c(
         "a11y_lang_switch_label",
@@ -40,7 +40,7 @@ testthat::test_that("a11y/ui keys for this cycle exist in pt/en", {
 })
 
 testthat::test_that("a11y/ui keys resolve with tr in pt/en", {
-    tr_fn <- getFromNamespace("tr", "finch")
+    tr_fn <- getFromNamespace("tr", "saira")
 
     keys <- c(
         "a11y_lang_switch_label",

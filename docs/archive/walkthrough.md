@@ -1,4 +1,4 @@
-# 🐦 Finch — Auditoria de Segurança e Arquitetura
+# 🐦 Saira — Auditoria de Segurança e Arquitetura
 
 > **Data**: 2026-02-13 | **Baseado em**: `claude.md`, `architecture.md`, `skill.md`
 
@@ -32,7 +32,7 @@
 
 ### 1.2 ⚠️ `app_server.R` contém lógica de UI (não é orquestrador puro)
 
-**Problema**: [app_server.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/app_server.R) (L25-55) contém **8 blocos `renderUI()`** para títulos de navegação. Isso é lógica de apresentação, não orquestração.
+**Problema**: [app_server.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/app_server.R) (L25-55) contém **8 blocos `renderUI()`** para títulos de navegação. Isso é lógica de apresentação, não orquestração.
 
 **Regra violada**: `claude.md` §8 — "app_server.R (APENAS orquestração, zero lógica de negócios)". `architecture.md` §4.2 — "APENAS chamadas de módulos".
 
@@ -40,7 +40,7 @@
 
 ### 1.3 ⚠️ Hardcoded string na navegação de validação
 
-**Arquivo**: [app_server.R:38](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/app_server.R#L38)
+**Arquivo**: [app_server.R:38](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/app_server.R#L38)
 
 ```r
 # ❌ Hardcoded (não usa i18n)
@@ -60,7 +60,7 @@ output$nav_validate_title <- shiny::renderUI({
 
 ### 1.4 ⚠️ Hardcoded string na tab "Início"
 
-**Arquivo**: [app_ui.R:65](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/app_ui.R#L65)
+**Arquivo**: [app_ui.R:65](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/app_ui.R#L65)
 
 ```r
 # ❌ Hardcoded
@@ -74,7 +74,7 @@ shiny::icon("home", class = "fa-solid"),
 
 ### 1.5 ⚠️ `<<-` usado em `utils_mapping.R`
 
-**Arquivo**: [utils_mapping.R:825](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/utils_mapping.R#L825)
+**Arquivo**: [utils_mapping.R:825](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/utils_mapping.R#L825)
 
 ```r
 used[idx[1]] <<- TRUE  # Dentro de pick_first(), closure interna
@@ -103,7 +103,7 @@ detect_eventdate_roles <- function(col_names) {
 
 ### 1.6 🔴 Lógica de negócios massiva em `mod_mapping.R`
 
-**Problema**: [mod_mapping.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_mapping.R) tem **1365 linhas** e contém lógica de negócios significativa que deveria estar em `utils_mapping.R`:
+**Problema**: [mod_mapping.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_mapping.R) tem **1365 linhas** e contém lógica de negócios significativa que deveria estar em `utils_mapping.R`:
 
 | Lógica | Linhas | Deveria estar em |
 |--------|--------|------------------|
@@ -124,7 +124,7 @@ detect_eventdate_roles <- function(col_names) {
 
 ### 2.1 ⚠️ `load_dwc_terms_rds()` chamada repetidamente
 
-**Problema**: A função `load_dwc_terms_rds()` em [utils_dwc.R](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/utils_dwc.R) faz I/O (lê `readRDS()`) e é chamada por:
+**Problema**: A função `load_dwc_terms_rds()` em [utils_dwc.R](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/utils_dwc.R) faz I/O (lê `readRDS()`) e é chamada por:
 - `get_dwc_terms()` (L73-75)
 - `get_required_dwc_terms()` (L81-83)
 - `get_dwc_terms_list()` (L94-126)
@@ -213,7 +213,7 @@ Imports:
 
 ### 3.5 ⚠️ Tratamento de erros incompleto em módulos de validação
 
-**Arquivo**: [mod_validate_names.R:78-83](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_validate_names.R#L78)
+**Arquivo**: [mod_validate_names.R:78-83](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_validate_names.R#L78)
 
 ```r
 # ❌ Hardcoded bilingual strings (não usa tr())
@@ -227,7 +227,7 @@ shiny::showNotification(
 )
 ```
 
-**O mesmo problema** em [mod_validate_coords.R:82-86](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_validate_coords.R#L82) e [mod_validate_names.R:159](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_validate_names.R#L159) e [mod_validate_coords.R:156](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_validate_coords.R#L156).
+**O mesmo problema** em [mod_validate_coords.R:82-86](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_validate_coords.R#L82) e [mod_validate_names.R:159](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_validate_names.R#L159) e [mod_validate_coords.R:156](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_validate_coords.R#L156).
 
 **Regra violada**: `claude.md` §9.4 — "Never hardcode text."
 
@@ -238,13 +238,13 @@ shiny::showNotification(tr("err_no_scientific_name", lang_r()), type = "warning"
 
 ### 3.6 ⚠️ Hardcoded strings em `mod_help.R`
 
-**Arquivo**: [mod_help.R:59-155](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_help.R#L59)
+**Arquivo**: [mod_help.R:59-155](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_help.R#L59)
 
 Todo o conteúdo de ajuda usa blocos `if (is_pt) { shiny::HTML("...") } else { shiny::HTML("...") }` com texto embutido no código. Isso viola `claude.md` §9.4 mas é um caso pragmático dado o volume de HTML. **Recomendação**: Mover para o dicionário i18n progressivamente ou manter como exceção documentada.
 
 ### 3.7 ⚠️ Hardcoded strings em `mod_wiki.R`
 
-**Arquivo**: [mod_wiki.R:28-29](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_wiki.R#L28)
+**Arquivo**: [mod_wiki.R:28-29](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_wiki.R#L28)
 
 ```r
 placeholder = "Buscar termo..."  # ❌ Hardcoded em português
@@ -254,7 +254,7 @@ E também as `choices` do filtro de classes (L38-44) são hardcoded em portuguê
 
 ### 3.8 ⚠️ Hardcoded placeholder em `mod_mapping.R`
 
-**Arquivo**: [mod_mapping.R:891](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_mapping.R#L891)
+**Arquivo**: [mod_mapping.R:891](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_mapping.R#L891)
 
 ```r
 placeholder = "Ex: Meu Dataset de Biodiversidade"  # ❌ Hardcoded em PT
@@ -262,7 +262,7 @@ placeholder = "Ex: Meu Dataset de Biodiversidade"  # ❌ Hardcoded em PT
 
 ### 3.9 ⚠️ Hardcoded strings no DT de `mod_preview.R`
 
-**Arquivo**: [mod_preview.R:103-109](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_preview.R#L103)
+**Arquivo**: [mod_preview.R:103-109](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_preview.R#L103)
 
 ```r
 # ❌ Strings inline em vez de tr()
@@ -282,7 +282,7 @@ info = if (lang_r() == "pt") {
 
 ### 4.1 🔴 `sapply()` com loop element-wise em `fix_dates_to_iso()`
 
-**Arquivo**: [utils_export.R:91](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/utils_export.R#L91)
+**Arquivo**: [utils_export.R:91](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/utils_export.R#L91)
 
 ```r
 df[[col]] <- sapply(df[[col]], function(x) { ... })
@@ -308,7 +308,7 @@ fix_dates_to_iso <- function(df) {
 
 ### 4.2 ⚠️ `for` loop em `parse_dates_to_iso()` de `utils_io.R`
 
-**Arquivo**: [utils_io.R:133](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/utils_io.R#L133)
+**Arquivo**: [utils_io.R:133](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/utils_io.R#L133)
 
 O loop `for (i in seq_along(...))` com `for (fmt in formats)` internamente é O(n × m). Pode ser vetorizado:
 
@@ -334,17 +334,17 @@ parse_dates_to_iso <- function(date_vector) {
 
 ### 4.3 ⚠️ `for` loop em `build_eventdate_interval()`
 
-**Arquivo**: [utils_mapping.R:916](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/utils_mapping.R#L916)
+**Arquivo**: [utils_mapping.R:916](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/utils_mapping.R#L916)
 
 O loop `for (i in seq_len(nrow(df)))` pode ser parcialmente vetorizado com `vapply()` e vetorização dos campos month/year.
 
 ### 4.4 ✅ Preview é eficiente
 
-[mod_preview.R:72](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_preview.R#L72) usa `head(mapped_data_r(), 100)` conforme prescrito por `architecture.md` §3.2.
+[mod_preview.R:72](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_preview.R#L72) usa `head(mapped_data_r(), 100)` conforme prescrito por `architecture.md` §3.2.
 
 ### 4.5 ⚠️ `dwc_terms.rds` recarregado dentro de reactive
 
-**Arquivo**: [mod_mapping.R:151-153](file:///c:/Users/Admin/OneDrive/Finch%20-%20Claude/finch/R/mod_mapping.R#L151)
+**Arquivo**: [mod_mapping.R:151-153](file:///c:/Users/Admin/OneDrive/Saira%20-%20Claude/saira/R/mod_mapping.R#L151)
 
 ```r
 dwc_all <- shiny::reactive({

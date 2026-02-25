@@ -1,5 +1,5 @@
 # Title: Mapping Module - Darwin Core Field Mapping
-# Author: RogÃ©rio Nunes Oliveira
+# Author: Rogerio Nunes Oliveira
 # Date: 2026-02-09
 # Version: 2.0 - Enhanced with filters and UUID generation
 
@@ -529,9 +529,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                     shiny::div(
                         class = "automap-loading-brand-row",
                         shiny::img(
-                            src = "www/images/finch_alone.svg",
+                            src = "www/images/saira_alone.svg",
                             class = "automap-loading-logo",
-                            alt = "Finch"
+                            alt = "Saira"
                         )
                     ),
                     shiny::div(

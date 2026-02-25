@@ -1,7 +1,7 @@
 pkg_root <- normalizePath(file.path(testthat::test_path(), "..", ".."), winslash = "/", mustWork = TRUE)
 
 test_data_path <- function(filename) {
-    installed_path <- system.file("extdata", filename, package = "finch")
+    installed_path <- system.file("extdata", filename, package = "saira")
     if (nzchar(installed_path) && file.exists(installed_path)) {
         return(installed_path)
     }
@@ -58,6 +58,6 @@ needed_functions <- c(
 
 for (fn_name in needed_functions) {
     if (!exists(fn_name, envir = helper_env, mode = "function", inherits = FALSE)) {
-        assign(fn_name, getFromNamespace(fn_name, "finch"), envir = helper_env)
+        assign(fn_name, getFromNamespace(fn_name, "saira"), envir = helper_env)
     }
 }

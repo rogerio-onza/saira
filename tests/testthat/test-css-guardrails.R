@@ -12,7 +12,7 @@ extract_all_matches <- function(text, pattern) {
 }
 
 resolve_css_path <- function() {
-    installed_path <- system.file("app", "www", "custom.css", package = "finch")
+    installed_path <- system.file("app", "www", "custom.css", package = "saira")
     if (nzchar(installed_path) && file.exists(installed_path)) {
         return(installed_path)
     }
@@ -173,4 +173,4 @@ testthat::test_that("custom.css keeps validate-names tri-column workspace contra
         info = "Report panel must keep fixed width 340px"
     )
 })
-
+

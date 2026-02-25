@@ -1,6 +1,6 @@
-# Finch - Biodiversity Data Standardization 🧬
+# Saira - Biodiversity Data Standardization 🧬
 
-**Finch** is a Shiny application designed to simplify the standardization of biodiversity datasets to the **Darwin Core (DwC)** standard. It provides a robust, user-friendly interface for researchers and institutions to validate, map, and verify taxonomic data, primarily focused on integration with the **SiBBr** (Sistema de Informação sobre a Biodiversidade Brasileira).
+**Saira** is a Shiny application designed to simplify the standardization of biodiversity datasets to the **Darwin Core (DwC)** standard. It provides a robust, user-friendly interface for researchers and institutions to validate, map, and verify taxonomic data, primarily focused on integration with the **SiBBr** (Sistema de Informação sobre a Biodiversidade Brasileira).
 
 ---
 
@@ -29,8 +29,8 @@ install.packages(c("shiny", "bslib", "readr", "stringr", "DT", "ids", "here", "j
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/rogerio-onza/finch.git
-    cd finch
+    git clone https://github.com/rogerio-onza/saira.git
+    cd saira
     ```
 2.  Run the app in R/RStudio:
     ```r

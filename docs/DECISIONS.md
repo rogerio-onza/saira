@@ -1,6 +1,6 @@
 # Decisoes de Arquitetura
 
-Registro de decisoes tecnicas significativas do Finch.
+Registro de decisoes tecnicas significativas do Saira.
 Formato: ADR leve (Architecture Decision Record).
 
 ---
@@ -8,7 +8,7 @@ Formato: ADR leve (Architecture Decision Record).
 ## ADR-001: Estrutura de pacote R em vez de `global.R`
 
 - **Data**: 2026-02-08
-- **Contexto**: Shiny apps convencionais usam `global.R` + `ui.R` + `server.R`. A medida que o Finch cresce em modulos, precisamos de namespace limpo e testabilidade.
+- **Contexto**: Shiny apps convencionais usam `global.R` + `ui.R` + `server.R`. A medida que o Saira cresce em modulos, precisamos de namespace limpo e testabilidade.
 - **Decisao**: Usar estrutura de pacote R com `DESCRIPTION`, `R/`, e entrada via `pkgload::load_all()`.
 - **Consequencias**: Namespace automatico, sem `source()` manual, dependencias declaradas, funcoes testaveis com `testthat`.
 
@@ -99,8 +99,8 @@ Formato: ADR leve (Architecture Decision Record).
 - **Contexto**: O `devtools::check(document = FALSE, manual = FALSE)` falhava no tarball porque helper de teste carregava `R/*.R` por caminho local, e havia uso de `source(here::here(...))` dentro de arquivos em `R/`.
 - **Decisao**:
   - Remover `source()` de todos os arquivos em `R/` e confiar no namespace do pacote.
-  - Resolver `i18n_dict` em `tr()` via ambiente/namespace (`asNamespace("finch")`) em vez de leitura por `source()`.
-  - Em testes, substituir carregamento por path local de `R/*.R` por `getFromNamespace()` e usar `system.file(..., package = "finch")` para arquivos de dados com fallback de desenvolvimento.
+  - Resolver `i18n_dict` em `tr()` via ambiente/namespace (`asNamespace("saira")`) em vez de leitura por `source()`.
+  - Em testes, substituir carregamento por path local de `R/*.R` por `getFromNamespace()` e usar `system.file(..., package = "saira")` para arquivos de dados com fallback de desenvolvimento.
   - Declarar explicitamente `jsonlite` em `Imports` e usar `utils::head(...)` em preview para evitar warning de global function.
 - **Alternativas**:
   - Manter `source()` condicional por ambiente de desenvolvimento - rejeitado por fragilidade em `R CMD check` e comportamento divergente entre dev e tarball.
@@ -209,7 +209,7 @@ Formato: ADR leve (Architecture Decision Record).
 ## ADR-016: `basisOfRecord` com valor unico por linha via assistente dedicado
 
 - **Data**: 2026-02-14
-- **Contexto**: O mapeamento generico do Finch permite concatenacao de multiplos valores (` | `), mas `basisOfRecord` usa vocabulario controlado e deve refletir apenas uma categoria por registro.
+- **Contexto**: O mapeamento generico do Saira permite concatenacao de multiplos valores (` | `), mas `basisOfRecord` usa vocabulario controlado e deve refletir apenas uma categoria por registro.
 - **Decisao**:
   - Tratar `basisOfRecord` como fluxo especial com coluna fonte unica no card de mapeamento.
   - Usar assistente modal para mapear cada valor bruto da celula inteira para um dos 8 termos oficiais GBIF/TDWG ou "Nao mapear".
@@ -506,8 +506,8 @@ Formato: ADR leve (Architecture Decision Record).
 - **Data**: 2026-02-19
 - **Contexto**: O estilo mais refinado de tabela (header azul, controles compactos e paginacao consistente) estava restrito a aba Preview, enquanto validacao de nomes, validacao de coordenadas e Wiki ainda usavam variacoes locais.
 - **Decisao**:
-  - Extrair o estilo de tabela para uma classe compartilhada: `.finch-table-shell`.
-  - Aplicar o wrapper `.finch-table-shell` em todas as tabelas `DT::datatable` do app (`preview`, `validate_names`, `validate_coords`, `wiki`).
+  - Extrair o estilo de tabela para uma classe compartilhada: `.saira-table-shell`.
+  - Aplicar o wrapper `.saira-table-shell` em todas as tabelas `DT::datatable` do app (`preview`, `validate_names`, `validate_coords`, `wiki`).
   - Padronizar configuracao de paginacao para `pageLength = 10` com `lengthMenu = 10/25/50/100`.
   - Completar localizacao de DataTables na validacao de coordenadas (search/length/info/empty/zero/paginate) para alinhar com os demais modulos bilingues.
 - **Alternativas**:
@@ -789,7 +789,7 @@ Formato: ADR leve (Architecture Decision Record).
 ## ADR-042: Redesign da Wiki com toolbar externa e tabela estilizada por callbacks
 
 - **Data**: 2026-02-23
-- **Contexto**: A aba `wiki` ainda usava composicao simples de titulo/subtitulo + busca/filtros separados e tabela com estilizacao parcial, ficando abaixo do contrato visual do design-v4 para componentes informativos. Tambem era necessario preservar o padrao arquitetural do app: `DT::datatable` client-side dentro de `.finch-table-shell`, i18n completo e baixo risco de regressao em outros modulos.
+- **Contexto**: A aba `wiki` ainda usava composicao simples de titulo/subtitulo + busca/filtros separados e tabela com estilizacao parcial, ficando abaixo do contrato visual do design-v4 para componentes informativos. Tambem era necessario preservar o padrao arquitetural do app: `DT::datatable` client-side dentro de `.saira-table-shell`, i18n completo e baixo risco de regressao em outros modulos.
 - **Decisao**:
   - Reestruturar o topo da Wiki para um card unico (`header_card`) com:
     - eyebrow,
@@ -941,3 +941,45 @@ Formato: ADR leve (Architecture Decision Record).
   - Contrato de API do modulo permanece estavel (sem impacto em `app_server`).
   - Superficie de i18n cresce (novas chaves `validate_names_*`), exigindo atualizacao conjunta de testes.
   - Guardrails visuais passam a exigir larguras fixas dos paines laterais e altura de workspace por viewport tokenizada.
+
+---
+
+## ADR-048: Rename global do pacote e branding para `saira`
+
+- **Data**: 2026-02-24
+- **Contexto**: O nome do produto e do pacote precisava migrar do nome anterior para `saira` em toda a base, sem manter camada de compatibilidade legada.
+- **Decisao**:
+  - Adotar `saira` como identificador tecnico unico do pacote (`DESCRIPTION::Package`, namespace em codigo/testes e comandos de uso).
+  - Adotar `Saira` como branding unico em UI, i18n, README e documentacao.
+  - Renomear classes e assets com prefixo antigo para `saira-*` (incluindo arquivos de imagem/lottie).
+  - Aplicar rename tambem em documentacao historica/versionada dentro do repositorio para eliminar referencias residuais.
+- **Alternativas**:
+  - Manter aliases de transicao (nome anterior + `saira`) - rejeitado por aumentar custo de manutencao e superficie de erro.
+  - Renomear apenas branding visual mantendo pacote no nome anterior - rejeitado por incoerencia tecnica e operacional.
+- **Consequencias**:
+  - Mudanca e breaking para quem importava o pacote pelo nome anterior diretamente.
+  - Menor ambiguidade futura por existir apenas um nome tecnico e de produto.
+  - Necessidade de atualizar todos os testes/utilitarios que consultam namespace por string literal.
+
+---
+
+## ADR-049: Hardening de encoding/BOM e startup defensivo nas ondas 1-3
+
+- **Data**: 2026-02-24
+- **Contexto**: Havia mistura de encoding/line endings, uso de `options(encoding = "UTF-8")`, detecao de delimitador sem tratamento de BOM e pontos de startup suscetiveis a falha dura.
+- **Decisao**:
+  - Instituir contrato de arquivo via `.editorconfig` + `.gitattributes` e guia operacional `docs/ENCODING_RULES.md`.
+  - Corrigir `DESCRIPTION` com escapes Unicode e padronizar headers de autor em ASCII.
+  - Implementar `strip_bom()` e fortalecer `detect_delimiter()` para UTF-8, BOM e primeira linha vazia.
+  - Remover `options(encoding = "UTF-8")` de `app.R` e `run_app.R`.
+  - Tornar `mod_upload` resiliente a falha em `get_dwc_terms()` com `tryCatch` + fallback tipado.
+  - Tornar `app_server` observavel em fallbacks reativos e registrar encerramento de sessao.
+  - Consolidar validacao de `force` em `validate_force_flag()` canonica.
+  - Inicializar `renv` e versionar `renv.lock`.
+- **Alternativas**:
+  - Tratar apenas sintoma pontual de encoding - rejeitado por nao enderecar causa raiz.
+  - Manter validacoes `force` duplicadas por modulo - rejeitado por risco de drift.
+- **Consequencias**:
+  - Menor risco de regressao por encoding e BOM em CSV.
+  - Startup mais robusto quando artefatos estaticos falham.
+  - Melhor observabilidade operacional via logs explicitos.

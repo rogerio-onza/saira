@@ -12,8 +12,8 @@ resolve_i18n_dict <- function() {
         }
     }
 
-    if ("finch" %in% loadedNamespaces()) {
-        ns <- asNamespace("finch")
+    if ("saira" %in% loadedNamespaces()) {
+        ns <- asNamespace("saira")
         if (exists("i18n_dict", envir = ns, inherits = FALSE)) {
             dict <- get("i18n_dict", envir = ns, inherits = FALSE)
             if (is.list(dict)) {

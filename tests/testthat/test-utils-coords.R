@@ -2,11 +2,19 @@
 # Author: Codex
 # Date: 2026-02-21
 
+testthat::test_that("coords_load_aliases validates force flag via canonical validator", {
+    coords_load_aliases <- getFromNamespace("coords_load_aliases", "saira")
+
+    testthat::expect_error(coords_load_aliases(force = NA), "force must be a single TRUE or FALSE value")
+    testthat::expect_error(coords_load_aliases(force = c(TRUE, FALSE)), "force must be a single TRUE or FALSE value")
+    testthat::expect_error(coords_load_aliases(force = "TRUE"), "force must be a single TRUE or FALSE value")
+})
+
 testthat::test_that("validate_coords_cc_df handles empty pipeline", {
     testthat::local_mocked_bindings(
         coords_assert_cc_dependencies = function() NULL,
         coords_country_to_iso3 = function(country_values) rep(NA_character_, length(country_values)),
-        .package = "finch"
+        .package = "saira"
     )
 
     df <- data.frame(
@@ -35,7 +43,7 @@ testthat::test_that("validate_coords_cc_df parses decimal comma and preserves ca
         coords_assert_cc_dependencies = function() NULL,
         coords_country_to_iso3 = function(country_values) rep("BRA", length(country_values)),
         coords_cc_flagged = function(fun_name, x, ...) rep(TRUE, nrow(x)),
-        .package = "finch"
+        .package = "saira"
     )
 
     df <- data.frame(
@@ -63,7 +71,7 @@ testthat::test_that("validate_coords_cc_df resolves country_iso3 but does not em
     testthat::local_mocked_bindings(
         coords_assert_cc_dependencies = function() NULL,
         coords_cc_flagged = function(fun_name, x, ...) rep(TRUE, nrow(x)),
-        .package = "finch"
+        .package = "saira"
     )
 
     df <- data.frame(
@@ -90,7 +98,7 @@ testthat::test_that("validate_coords_cc_df flags validity_missing and validity_b
         coords_assert_cc_dependencies = function() NULL,
         coords_country_to_iso3 = function(country_values) rep("BRA", length(country_values)),
         coords_cc_flagged = function(fun_name, x, ...) rep(TRUE, nrow(x)),
-        .package = "finch"
+        .package = "saira"
     )
 
     df <- data.frame(
@@ -126,7 +134,7 @@ testthat::test_that("validate_coords_cc_df maps cc flags to sea, zero_equal and 
             if (fun_name %in% c("cc_cen", "cc_gbif", "cc_inst")) return(rep(TRUE, n))
             rep(TRUE, n)
         },
-        .package = "finch"
+        .package = "saira"
     )
 
     df <- data.frame(
@@ -153,7 +161,7 @@ testthat::test_that("validate_coords_cc_df preserves swapped and identical_all h
         coords_assert_cc_dependencies = function() NULL,
         coords_country_to_iso3 = function(country_values) rep("BRA", length(country_values)),
         coords_cc_flagged = function(fun_name, x, ...) rep(TRUE, nrow(x)),
-        .package = "finch"
+        .package = "saira"
     )
 
     df_swapped <- data.frame(
@@ -195,7 +203,7 @@ testthat::test_that("validate_coords_cc_df prioritizes sea without country diagn
             }
             rep(TRUE, nrow(x))
         },
-        .package = "finch"
+        .package = "saira"
     )
 
     df <- data.frame(
@@ -222,7 +230,7 @@ testthat::test_that("validate_coords_cc_df keeps cardinality for mixed scenarios
         coords_assert_cc_dependencies = function() NULL,
         coords_country_to_iso3 = function(country_values) rep("BRA", length(country_values)),
         coords_cc_flagged = function(fun_name, x, ...) rep(TRUE, nrow(x)),
-        .package = "finch"
+        .package = "saira"
     )
 
     df <- data.frame(
@@ -249,7 +257,7 @@ testthat::test_that("performance budget for profile fast and complete (mocked CC
         coords_assert_cc_dependencies = function() NULL,
         coords_country_to_iso3 = function(country_values) rep("BRA", length(country_values)),
         coords_cc_flagged = function(fun_name, x, ...) rep(TRUE, nrow(x)),
-        .package = "finch"
+        .package = "saira"
     )
 
     n <- 100000L

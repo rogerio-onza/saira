@@ -23,7 +23,7 @@ license: MIT
 Every script must start exactly with this block:
 ```r
 # Title: [Objective of the script]
-# Author: Rogério Nunes Oliveira
+# Author: Rogerio Nunes Oliveira
 # Date: [YYYY-MM-DD format, e.g., 2026-02-06]
 # Version: [1.0]
 ```
@@ -325,11 +325,11 @@ project/
 
 ### 9.2 Shiny Package Structure (from claude.md & architecture.md)
 ```
-finch/
+saira/
 ├── DESCRIPTION            # Package metadata + dependencies
 ├── NAMESPACE              # Auto-generated via roxygen2
 ├── LICENSE
-├── app.R                  # Entry point: library(finch); run_app()
+├── app.R                  # Entry point: library(saira); run_app()
 ├── R/
 │   ├── run_app.R          # Exported function to launch app
 │   ├── app_ui.R           # Main UI
@@ -392,13 +392,13 @@ validate_names <- function(x) { ... }
 ### 10.2 Installation & Loading
 ```r
 # User installs once
-remotes::install_github("user/finch")
+remotes::install_github("user/saira")
 
 # Dependencies (taxadb, dplyr, etc.) are installed AUTOMATICALLY
 # User NEVER needs to install them manually
 
 # Usage
-library(finch)
+library(saira)
 run_app()
 ```
 
@@ -548,7 +548,7 @@ Is this a standalone analysis/script?
 
 ## 16. Compatibility Matrix
 
-| Aspect | Solo Scripts | Shiny Packages (finch) | General R Packages |
+| Aspect | Solo Scripts | Shiny Packages (saira) | General R Packages |
 |--------|--------------|------------------------|---------------------|
 | Header | ✅ Mandatory | ✅ Mandatory | ✅ Optional (roxygen2 header) |
 | roxygen2 | ❌ Never | ✅ For utils_*.R | ✅ For all exported functions |

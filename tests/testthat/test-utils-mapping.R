@@ -4,11 +4,11 @@
 # Version: 1.0
 
 reset_synonyms_cache <- function() {
-    getFromNamespace("reset_dwc_synonyms_cache", "finch")()
+    getFromNamespace("reset_dwc_synonyms_cache", "saira")()
 }
 
 synonyms_cache_state <- function() {
-    getFromNamespace("dwc_synonyms_cache_state", "finch")()
+    getFromNamespace("dwc_synonyms_cache_state", "saira")()
 }
 
 testthat::test_that("normalize_semicolon_tokens converts semicolon lists to pipe", {
@@ -210,6 +210,15 @@ testthat::test_that("load_dwc_synonyms_v1 reuses cache and reloads with force", 
     testthat::expect_identical(state_after_force$load_count, 2L)
     testthat::expect_identical(first, second)
     testthat::expect_identical(first, forced)
+})
+
+testthat::test_that("load_dwc_synonyms_v1 validates force flag", {
+    reset_synonyms_cache()
+    on.exit(reset_synonyms_cache(), add = TRUE)
+
+    testthat::expect_error(load_dwc_synonyms_v1(force = NA), "force must be a single TRUE or FALSE value")
+    testthat::expect_error(load_dwc_synonyms_v1(force = c(TRUE, FALSE)), "force must be a single TRUE or FALSE value")
+    testthat::expect_error(load_dwc_synonyms_v1(force = "TRUE"), "force must be a single TRUE or FALSE value")
 })
 
 testthat::test_that("load_dwc_synonyms_v1 explicit path bypasses cache state", {

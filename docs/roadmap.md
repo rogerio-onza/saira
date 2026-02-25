@@ -1,6 +1,6 @@
-# Finch - Future Roadmap 🚀
+# Saira - Future Roadmap 🚀
 
-This document outlines the strategic evolution of the **Finch** Biodiversity Data Standardization tool.
+This document outlines the strategic evolution of the **Saira** Biodiversity Data Standardization tool.
 
 ---
 

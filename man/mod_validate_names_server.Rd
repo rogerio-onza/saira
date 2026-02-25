@@ -15,6 +15,9 @@ mod_validate_names_server(id, mapped_data_r, lang_r, validation_gate_r = NULL)
 
 \item{validation_gate_r}{Optional lightweight gate reactive from mapping module}
 }
+\value{
+Reactive validation report data frame
+}
 \description{
 Validate Names Module Server
 }

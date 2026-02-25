@@ -1,5 +1,5 @@
 # Title: Translation Dictionary (i18n)
-# Author: Rog\u00E9rio Nunes Oliveira
+# Author: Rogerio Nunes Oliveira
 # Date: 2026-02-08
 # Version: 1.0
 
@@ -11,8 +11,8 @@
 i18n_dict <- list(
     # App Title
     app_title = list(
-        pt = "Finch - Padroniza\u00E7\u00E3o DwC",
-        en = "Finch - DwC Standardization"
+        pt = "Saira - Padroniza\u00E7\u00E3o DwC",
+        en = "Saira - DwC Standardization"
     ),
 
     # Navigation
@@ -1276,8 +1276,8 @@ i18n_dict <- list(
         en = "Center"
     ),
     help_header_subtitle = list(
-        pt = "Tudo o que voc\u00EA precisa para usar o Finch com confian\u00E7a.",
-        en = "Everything you need to use Finch with confidence."
+        pt = "Tudo o que voc\u00EA precisa para usar o Saira com confian\u00E7a.",
+        en = "Everything you need to use Saira with confidence."
     ),
     a11y_help_search_label = list(
         pt = "Buscar na ajuda",
@@ -1372,8 +1372,8 @@ i18n_dict <- list(
         en = "The default limit is 500 MB per file."
     ),
     help_faq_q3 = list(
-        pt = "Como o Finch interpreta datas?",
-        en = "How does Finch interpret dates?"
+        pt = "Como o Saira interpreta datas?",
+        en = "How does Saira interpret dates?"
     ),
     help_faq_a3_prefix = list(
         pt = "No export, o campo",
@@ -1392,8 +1392,8 @@ i18n_dict <- list(
         en = "No. Processing runs locally in the application session."
     ),
     help_formats_p1 = list(
-        pt = "O Finch aceita arquivos CSV e foi otimizado para planilhas com delimitador ponto e v\u00EDrgula (;).",
-        en = "Finch accepts CSV files and is optimized for spreadsheets that use semicolon (;) as delimiter."
+        pt = "O Saira aceita arquivos CSV e foi otimizado para planilhas com delimitador ponto e v\u00EDrgula (;).",
+        en = "Saira accepts CSV files and is optimized for spreadsheets that use semicolon (;) as delimiter."
     ),
     help_formats_p2 = list(
         pt = "Para reduzir erros de importa\u00E7\u00E3o, revise encoding e colunas antes do mapeamento.",
@@ -1436,8 +1436,8 @@ i18n_dict <- list(
         en = "Avoid comma as token separator because it can appear in decimal coordinates."
     ),
     help_separator_bullet_3 = list(
-        pt = "Na exporta\u00E7\u00E3o, o Finch converte automaticamente para o formato com pipe.",
-        en = "During export, Finch automatically converts values to the pipe-based format."
+        pt = "Na exporta\u00E7\u00E3o, o Saira converte automaticamente para o formato com pipe.",
+        en = "During export, Saira automatically converts values to the pipe-based format."
     ),
     help_author_role = list(
         pt = "Maintainer",
@@ -1468,8 +1468,8 @@ i18n_dict <- list(
         en = "Open GitHub Issues"
     ),
     a11y_help_bug_link = list(
-        pt = "Abrir p\u00E1gina de issues do Finch no GitHub",
-        en = "Open Finch issues page on GitHub"
+        pt = "Abrir p\u00E1gina de issues do Saira no GitHub",
+        en = "Open Saira issues page on GitHub"
     ),
     help_links_title = list(
         pt = "Links \u00FAteis",
@@ -1649,12 +1649,12 @@ i18n_dict <- list(
         en = "Welcome to"
     ),
     welcome_title = list(
-        pt = "Bem-vindo ao Finch!",
-        en = "Welcome to Finch!"
+        pt = "Bem-vindo ao Saira!",
+        en = "Welcome to Saira!"
     ),
     welcome_description = list(
-        pt = "O Finch \u00E9 uma ferramenta para padroniza\u00E7\u00E3o de dados de biodiversidade segundo o padr\u00E3o Darwin Core (DwC). Carregue seus dados, mapeie as colunas, valide e exporte em formato DwC.",
-        en = "Finch is a tool for standardizing biodiversity data according to the Darwin Core (DwC) standard. Upload your data, map columns, validate and export in DwC format."
+        pt = "O Saira \u00E9 uma ferramenta para padroniza\u00E7\u00E3o de dados de biodiversidade segundo o padr\u00E3o Darwin Core (DwC). Carregue seus dados, mapeie as colunas, valide e exporte em formato DwC.",
+        en = "Saira is a tool for standardizing biodiversity data according to the Darwin Core (DwC) standard. Upload your data, map columns, validate and export in DwC format."
     ),
 
     # Homepage - Workflow

@@ -4,43 +4,43 @@
 # Version: 1.0
 
 normalize_scientific_name <- function(...) {
-    getFromNamespace("normalize_scientific_name", "finch")(...)
+    getFromNamespace("normalize_scientific_name", "saira")(...)
 }
 
 prepare_taxadb_inputs <- function(...) {
-    getFromNamespace("prepare_taxadb_inputs", "finch")(...)
+    getFromNamespace("prepare_taxadb_inputs", "saira")(...)
 }
 
 resolve_taxadb_matches <- function(...) {
-    getFromNamespace("resolve_taxadb_matches", "finch")(...)
+    getFromNamespace("resolve_taxadb_matches", "saira")(...)
 }
 
 run_taxadb_cascade <- function(...) {
-    getFromNamespace("run_taxadb_cascade", "finch")(...)
+    getFromNamespace("run_taxadb_cascade", "saira")(...)
 }
 
 build_validation_report <- function(...) {
-    getFromNamespace("build_validation_report", "finch")(...)
+    getFromNamespace("build_validation_report", "saira")(...)
 }
 
 init_taxadb_run_state <- function(...) {
-    getFromNamespace("init_taxadb_run_state", "finch")(...)
+    getFromNamespace("init_taxadb_run_state", "saira")(...)
 }
 
 next_taxadb_run_step <- function(...) {
-    getFromNamespace("next_taxadb_run_step", "finch")(...)
+    getFromNamespace("next_taxadb_run_step", "saira")(...)
 }
 
 is_taxadb_run_done <- function(...) {
-    getFromNamespace("is_taxadb_run_done", "finch")(...)
+    getFromNamespace("is_taxadb_run_done", "saira")(...)
 }
 
 finalize_taxadb_run <- function(...) {
-    getFromNamespace("finalize_taxadb_run", "finch")(...)
+    getFromNamespace("finalize_taxadb_run", "saira")(...)
 }
 
 append_stream_items <- function(...) {
-    getFromNamespace("append_stream_items", "finch")(...)
+    getFromNamespace("append_stream_items", "saira")(...)
 }
 
 testthat::test_that("normalize_scientific_name removes authors and qualifiers", {
@@ -82,7 +82,7 @@ testthat::test_that("prepare_taxadb_inputs normalizes only unique raw names", {
             }
             out
         },
-        .package = "finch",
+        .package = "saira",
         {
             names_vec <- c(" Puma concolor ", "Puma concolor", "Puma concolor", "Abies alba", "Abies alba", NA_character_, "")
             out <- prepare_taxadb_inputs(
@@ -294,7 +294,7 @@ testthat::test_that("state machine appends stream incrementally by batch", {
     testthat::with_mocked_bindings(
         init_taxadb_provider = function(provider) list(provider = provider),
         query_taxadb_batch = fake_query,
-        .package = "finch",
+        .package = "saira",
         {
             state <- init_taxadb_run_state(
                 input_df = input_df,
@@ -345,7 +345,7 @@ testthat::test_that("aborted run moves to consolidate before next batch", {
                 stringsAsFactors = FALSE
             )
         },
-        .package = "finch",
+        .package = "saira",
         {
             state <- init_taxadb_run_state(
                 input_df = input_df,

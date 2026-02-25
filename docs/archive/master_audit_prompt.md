@@ -1,11 +1,11 @@
-# 🦅 Finch Project - Master Audit Prompt
+# 🦅 Saira Project - Master Audit Prompt
 
-Este documento contém um prompt estruturado para realizar uma varredura completa ("deep-dive audit") no projeto Finch. Ele foi desenhado para ser utilizado em uma ferramenta de IA (como Gemini ou Claude) para identificar gargalos, redundâncias e violações arquiteturais.
+Este documento contém um prompt estruturado para realizar uma varredura completa ("deep-dive audit") no projeto Saira. Ele foi desenhado para ser utilizado em uma ferramenta de IA (como Gemini ou Claude) para identificar gargalos, redundâncias e violações arquiteturais.
 
 ---
 
 ## 🎯 Objetivo da Auditoria
-Avaliar a saúde técnica do projeto Finch, garantindo conformidade estrita com as diretrizes de desenvolvimento (`claude.md`), arquitetura (`architecture.md`) e padrões de codificação (`skill.md`), focando em:
+Avaliar a saúde técnica do projeto Saira, garantindo conformidade estrita com as diretrizes de desenvolvimento (`claude.md`), arquitetura (`architecture.md`) e padrões de codificação (`skill.md`), focando em:
 1.  **Conformidade Arquitetural** (Modularização e Golem-style).
 2.  **Redundância de Código** (Lógica duplicada ou "Distributed Monolith").
 3.  **Otimização de Performance** (Vetorização e I/O).
@@ -20,7 +20,7 @@ Copie e cole o bloco abaixo em uma nova sessão de chat com sua IA preferida, ga
 
 ### 🚀 [COPIAR ABAIXO] 🚀
 
-"Atue como um Arquiteto de Software R especialista em Shiny (Golem/Package-based) e Biodiversity Informatics. Seu objetivo é realizar um **Code Review de Segurança e Arquitetura** abrangente no projeto **Finch**.
+"Atue como um Arquiteto de Software R especialista em Shiny (Golem/Package-based) e Biodiversity Informatics. Seu objetivo é realizar um **Code Review de Segurança e Arquitetura** abrangente no projeto **Saira**.
 
 ### 📖 Contexto de Referência
 Você deve basear todas as suas análises nos seguintes arquivos mestres que definem as 'leis' deste projeto:

@@ -4,11 +4,11 @@
 # Version: 1.0
 
 reset_terms_cache <- function() {
-    getFromNamespace("reset_dwc_terms_cache", "finch")()
+    getFromNamespace("reset_dwc_terms_cache", "saira")()
 }
 
 terms_cache_state <- function() {
-    getFromNamespace("dwc_terms_cache_state", "finch")()
+    getFromNamespace("dwc_terms_cache_state", "saira")()
 }
 
 testthat::test_that("validate_coords handles decimal comma bounds and returns issue types", {
@@ -128,9 +128,9 @@ testthat::test_that("load_dwc_terms_rds validates force flag", {
 })
 
 testthat::test_that("basisOfRecord vocabulary is complete and ordered", {
-    get_vocab <- getFromNamespace("get_basis_of_record_vocab", "finch")
-    get_terms <- getFromNamespace("get_basis_of_record_terms", "finch")
-    is_valid <- getFromNamespace("is_valid_basis_of_record_term", "finch")
+    get_vocab <- getFromNamespace("get_basis_of_record_vocab", "saira")
+    get_terms <- getFromNamespace("get_basis_of_record_terms", "saira")
+    is_valid <- getFromNamespace("is_valid_basis_of_record_term", "saira")
 
     expected_terms <- c(
         "PreservedSpecimen",
@@ -166,7 +166,7 @@ testthat::test_that("basisOfRecord vocabulary is complete and ordered", {
 })
 
 testthat::test_that("basisOfRecord choices include skip option and descriptions", {
-    get_choices <- getFromNamespace("get_basis_of_record_term_choices", "finch")
+    get_choices <- getFromNamespace("get_basis_of_record_term_choices", "saira")
 
     pt_choices <- get_choices(lang = "pt", include_skip = TRUE, with_description = TRUE, skip_label = "-- Nao mapear --")
     en_choices <- get_choices(lang = "en", include_skip = TRUE, with_description = TRUE, skip_label = "-- Skip --")
