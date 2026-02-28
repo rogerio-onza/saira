@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(for func in \"extract_basis_of_record_unique_entries\" \"get_basis_of_record_terms\" \"map_basis_of_record_values\" \"normalize_basis_of_record_keys\" \"sanitize_basis_of_record_map\")",
+      "Bash(do echo \"=== $func ===\")",
+      "Bash(grep -l \"$func\\\\s*<-\\\\s*function\" R/*.R)",
+      "Bash(done)",
+      "Bash(wc -l tests/testthat/test-mod-*.R)",
+      "Bash(Rscript data-raw/build_css.R)",
+      "Bash(Rscript data-raw/export_i18n.R)"
+    ]
+  }
+}
