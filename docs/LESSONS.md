@@ -44,6 +44,8 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Dropzone custom sobre `fileInput` deve preservar o input real**: se for remover a caixa nativa (`.input-group`), reanexar o `input[type=file]` no container custom e manter `dispatchEvent("change")` garante compatibilidade com o binding do Shiny.
 - **`dataTransfer.types` varia entre navegadores**: para detectar arquivos no drag-and-drop, usar fallback em cadeia (`contains`, `indexOf`, `item`) evita regressao silenciosa quando `includes` nao esta disponivel.
 - **Contratos de atributos reativos compartilhados devem ser validados por capacidade**: antes de consumir `attr(reactive, "validation_gate")`, checar se os campos esperados existem; em ausencia, aplicar fallback seguro no dado canonico.
+- **Quando uma aba precisa expor metadados para outra sem quebrar contrato de retorno**, anexar um atributo reativo opcional (ex.: `review_export_payload`) e manter fallback nulo no consumidor evita breaking change.
+- **Modal multi-etapa em Shiny deve ser centralizado em helper unico**: alternar modos por estado (`rv$mode`) reduz duplicacao de observers e evita drift de comportamento entre caminhos de confirmacao/edicao.
 - **Web components com nome de tag customizado (ex.: `<lottie-player>`) nao devem ser criados com `shiny::tags$`**: em cenarios com hifen no nome da tag, isso pode disparar `attempt to apply non-function`. Preferir HTML explicito (`shiny::HTML(...)`) ou construcao de tag custom segura.
 - **Falha visual nao pode bloquear fluxo funcional**: em eventos de arranque (`start_requested -> run_requested`), envolver `showModal()` em `tryCatch` e manter o disparo do processamento mesmo quando a UI de loading falhar.
 - **Em rework de modulo para shell tri-coluna, consolidar outputs por intencao (config/stream/report)** reduz acoplamento entre cards e evita cascata de re-render em layouts com muitos `uiOutput`s fragmentados.
@@ -84,12 +86,18 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Acordeao renderizado por `renderUI` precisa de binding resiliente**: usar event delegation em `document` (`closest('[data-*]')`) evita perder eventos quando o DOM da aba e recriado por busca/idioma.
 - **Para acessibilidade em acordeao custom, sincronizar estado visual e ARIA no mesmo ponto**: sempre atualizar `is-open`, `aria-expanded` e `aria-hidden` juntos evita discrepancia entre leitor de tela e animacao.
 - **Layout tri-coluna com paineis laterais fixos fica mais estavel com token de offset de header no `:root`** (`calc(100vh - var(--offset))`) em vez de hardcode espalhado por seletor.
+- **Quando paineis laterais fixos (240/340) precisarem de mais respiro, priorize full-width do shell antes de mexer nas larguras fixas**: remover `max-width` local e zerar padding lateral do `tab-pane` melhora espaco util sem quebrar contrato visual.
+- **Em tabela estreita com 3 colunas no painel fixo, definir largura explicita por coluna e tipografia/celula por intencao reduz o efeito de espremido**: `scientificName` priorizada, `status` compacta e `taxonomicStatus` com quebra controlada.
 - **Badges semanticos reutilizaveis (`badge-success/warning/error/info/muted`) simplificam consistencia visual** entre stream e tabela quando ambos representam o mesmo status de dominio.
 - **Icone de busca em `textInput` custom so fica estavel com contrato completo de geometria**: use wrapper imediato com `position: relative`, icone absoluto com caixa fixa (`14x14`) e centralizacao real (`top: 50%` + `translateY(-50%)`), e reserve espaco no input com `padding-left` dedicado.
 - **No card de busca do Shiny, zere o espacamento herdado antes de ajustar pixel**: definir `margin-bottom: 0` para `.shiny-input-container` e `.control-label` evita deslocamento vertical do icone e elimina o efeito de lupa "fora da caixa".
 - **Troca de tipografia global exige tokens, nao hardcodes por modulo**: manter `font-family` literal (ex.: IBM Plex) em blocos locais cria regressao silenciosa; prefira `var(--font-*)` em todo componente reutilizavel.
 - **Carregamento de Google Fonts deve ficar no shell da app (`app_ui`)**: evitar `@import` em `custom.css` reduz duplicacao de request e facilita governanca de versao/weights.
 - **Mono em tamanhos muito pequenos (< 0.85rem) precisa de ajuste fino**: em badges/tabelas compactas, `letter-spacing` leve e `tabular nums` melhoram legibilidade sem alterar layout.
+- **Animacao de remocao em listas reativas deve ter fallback de acessibilidade**: sempre adicionar `@media (prefers-reduced-motion: reduce)` para desativar transicoes de `fade/collapse`.
+- **Backdrop de modal custom deve usar token de overlay do design system**: centralizar em `var(--overlay)` + blur leve evita divergencia de contraste entre modais.
+- **`hidden.bs.modal` dispara no elemento `.modal`, nao em filhos**: ao registrar listener de cleanup em script dentro do modal body, usar `el.closest('.modal')` para subir ao ancestor correto; sem isso, eventos DOM que borbulham para cima nunca alcancam o listener e o cleanup nunca executa.
+- **Quando `resolve_review_target()` retorna NULL, feedback ao usuario e obrigatorio**: retorno silencioso sem notificacao viola LESSONS de UX (evitar `req()` silencioso em handlers de acao) e impede diagnostico pelo usuario.
 
 ## i18n / Internacionalizacao
 
@@ -122,6 +130,8 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **`basisOfRecord` nao deve usar concatenacao**: tratar como vocabulario controlado de valor unico por linha, com assistente dedicado e saida vazia para valores nao mapeados.
 - **Auto-sugestao segura para vocabulario controlado**: limitar a match exato case-insensitive dos termos canonicos reduz falso positivo e acelera mapeamento manual.
 - **Home e Preview devem compartilhar a mesma definicao de obrigatorios DwC** para evitar sinais contraditorios ao usuario (onboarding vs prontidao real de export).
+- **Quando revisao manual altera `scientificName` no export, o match deve usar normalizacao canonica por `query_name`** (mesmas opcoes da validacao) para propagar correcao em todas as ocorrencias equivalentes.
+- **Colunas de auditoria no export devem existir sempre**: mesmo sem payload de revisao, incluir defaults (`validacao_manual = FALSE`, `motivo_revisao = ""`) simplifica consumo downstream.
 
 ## Performance
 
@@ -190,3 +200,11 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Espacamento com chips precisa de valor explicito**: definir `margin-bottom` da progress evita variacao herdada do Bootstrap e permite ajuste fino (neste caso, `0px`).
 - **Guardrail CSS dedicado reduz regressao visual**: esconder progresso dentro da dropzone (`display: none !important` no escopo `.upload-dropzone`) evita retorno acidental do problema em refactors futuros.
 - **Mudancas de UX sensiveis exigem validacao visual por screenshot a cada iteracao**: em upload, pequenos detalhes de margem/borda alteram percepcao de qualidade e precisam de confirmacao rapida com imagem.
+
+### CoordinateCleaner / Mapa
+
+- **Convencao Natural Earth: numero menor = maior detalhe**: `scale = 10` (1:10M, ~1km) > `scale = 50` (1:50M, ~2km) > `scale = 110` (1:110M, ~10km). A documentacao do `cc_sea` diz o contrario ("Higher numbers equal higher detail") — esta errada.
+- **`cc_sea(scale = 10)` requer `rnaturalearthhires`**: pacote de ~37MB disponivel no R-universe do ropensci, nao no CRAN. Usar `requireNamespace` com fallback para `scale = 50` garante robustez.
+- **Clustering do Leaflet (`markerClusterOptions`) esconde a posicao real dos pontos**: para diagnostico visual de coordenadas, pontos individuais sao essenciais. Usar raio adaptativo (menor para muitos pontos) + `preferCanvas = TRUE` para performance.
+- **Nota de precisao visivel reduz confusao do usuario**: quando o motor de validacao usa dados simplificados, um chip de alerta (`alert-warning`) na legenda evita que o usuario descarte pontos costeiros legitimos.
+

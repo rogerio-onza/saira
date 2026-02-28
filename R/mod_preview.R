@@ -37,9 +37,10 @@ mod_preview_ui <- function(id) {
 #' @param mapped_data_r Reactive data frame with mapped data
 #' @param lang_r Reactive language value
 #' @param download_data_r Reactive data frame with full mapped data for download
+#' @param name_review_payload_r Optional reactive payload from name manual review
 #' @return Reactive preview data frame
 #' @export
-mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapped_data_r) {
+mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapped_data_r, name_review_payload_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         required_fields <- c(
@@ -184,6 +185,13 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
         download_data <- shiny::reactive({
             shiny::req(download_data_r())
             download_data_r()
+        })
+
+        export_name_review_payload <- shiny::reactive({
+            if (is.null(name_review_payload_r) || !shiny::is.reactive(name_review_payload_r)) {
+                return(NULL)
+            }
+            name_review_payload_r()
         })
 
         preview_readiness <- shiny::reactive({
@@ -400,11 +408,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
                     class = "automap-loading-modal preview-export-loading-modal",
                     shiny::div(
                         class = "automap-loading-brand-row",
-                        shiny::img(
-                            src = "www/images/saira_alone.svg",
-                            class = "automap-loading-logo",
-                            alt = "Saira"
-                        )
+                        shiny::icon("dove", class = "fa-solid automap-loading-brand-icon")
                     ),
                     shiny::div(
                         class = "automap-loading-title",
@@ -506,7 +510,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
                 icon_class <- if (is_present) {
                     "fa-solid fa-circle-check preview-readiness-icon"
                 } else {
-                    "fa-regular fa-circle-xmark preview-readiness-icon"
+                    "fa-solid fa-circle-xmark preview-readiness-icon"
                 }
 
                 shiny::div(
@@ -662,7 +666,11 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
 
                 tryCatch(
                     {
-                        full_data <- process_for_export(download_data())
+                        review_ready <- apply_name_review_payload(
+                            download_data(),
+                            payload = export_name_review_payload()
+                        )
+                        full_data <- process_for_export(review_ready)
                         readr::write_csv(full_data, file, na = "")
                         session$sendCustomMessage(download_finish_channel, finish_payload)
                         shiny::showNotification(

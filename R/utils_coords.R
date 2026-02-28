@@ -225,24 +225,27 @@ coords_country_to_iso3 <- function(country_values) {
         }
         idx_pending <- which(pending)
         source_vals <- uniq_vals[idx_pending]
-        resolved <- tryCatch({
-            if (is.null(custom_dict)) {
-                countrycode::countrycode(
-                    sourcevar = source_vals,
-                    origin = origin,
-                    destination = "iso3c",
-                    warn = FALSE
-                )
-            } else {
-                countrycode::countrycode(
-                    sourcevar = source_vals,
-                    origin = origin,
-                    destination = "iso3c",
-                    warn = FALSE,
-                    custom_dict = custom_dict
-                )
-            }
-        }, error = function(e) rep(NA_character_, length(source_vals)))
+        resolved <- tryCatch(
+            {
+                if (is.null(custom_dict)) {
+                    countrycode::countrycode(
+                        sourcevar = source_vals,
+                        origin = origin,
+                        destination = "iso3c",
+                        warn = FALSE
+                    )
+                } else {
+                    countrycode::countrycode(
+                        sourcevar = source_vals,
+                        origin = origin,
+                        destination = "iso3c",
+                        warn = FALSE,
+                        custom_dict = custom_dict
+                    )
+                }
+            },
+            error = function(e) rep(NA_character_, length(source_vals))
+        )
         resolved <- toupper(as.character(resolved))
         hit <- !is.na(resolved) & nzchar(resolved)
         if (any(hit)) {
@@ -403,22 +406,27 @@ coords_empty_cc_result <- function() {
 #' @param lon_col Longitude column name
 #' @param country_col Country column name
 #' @param profile Validation profile (`"complete"` or `"fast"`)
-#' @param seas_scale Landmass resolution for sea test (fixed at `110`)
+#' @param seas_scale Landmass resolution for sea test (10 = highest detail, 50 = medium, 110 = coarse). Default `10` requires `rnaturalearthhires`; falls back to `50` if not installed.
 #' @return Data frame preserving input cardinality with flags and final diagnosis
 #' @export
 validate_coords_cc_df <- function(
-    df,
-    lat_col,
-    lon_col,
-    country_col,
-    profile = c("complete", "fast"),
-    seas_scale = 110L
+  df,
+  lat_col,
+  lon_col,
+  country_col,
+  profile = c("complete", "fast"),
+  seas_scale = 10L
 ) {
     if (!is.data.frame(df)) {
         stop("df must be a data.frame.", call. = FALSE)
     }
     profile <- match.arg(profile)
-    seas_scale <- 110L
+    seas_scale <- as.integer(seas_scale)
+    if (!seas_scale %in% c(10L, 50L, 110L)) seas_scale <- 10L
+    if (seas_scale == 10L && !requireNamespace("rnaturalearthhires", quietly = TRUE)) {
+        warning("rnaturalearthhires not installed; falling back to seas_scale = 50.", call. = FALSE)
+        seas_scale <- 50L
+    }
     for (col_name in c(lat_col, lon_col, country_col)) {
         if (!is.character(col_name) || length(col_name) != 1L || !nzchar(col_name)) {
             stop("lat_col, lon_col and country_col must be non-empty strings.", call. = FALSE)
@@ -742,7 +750,9 @@ detect_coord_columns <- function(df) {
     pick_col <- function(candidates) {
         idx <- match(candidates, normalized)
         idx <- idx[!is.na(idx)]
-        if (length(idx) == 0L) return("")
+        if (length(idx) == 0L) {
+            return("")
+        }
         col_names[[idx[[1]]]]
     }
 

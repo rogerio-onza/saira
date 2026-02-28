@@ -5,6 +5,96 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ---
 
+---
+
+## [0.1.30] - 2026-02-27
+
+### Alterado
+- Resolucao do teste de mar (`cc_sea`) migrada de `scale = 110` (1:110M, ~10km) para `scale = 10` (1:10M, ~1km), usando dados de alta resolucao do pacote `rnaturalearthhires`.
+- Fallback automatico para `scale = 50` quando `rnaturalearthhires` nao esta instalado.
+- Clustering de marcadores do Leaflet (`markerClusterOptions`) removido na aba `validate_coords` — pontos agora renderizam individualmente nas posicoes reais.
+- Raio dos marcadores adaptado ao tamanho do dataset: 6px (<=2000 pontos) ou 4px (>2000 pontos) para performance.
+- Chip de alerta (`alert-warning`) adicionado na legenda do mapa informando que pontos costeiros podem ser flagados incorretamente pelo teste de mar.
+- Nota de cluster removida (clustering eliminado).
+
+### Adicionado
+- `rnaturalearthhires` adicionado em `Suggests` no `DESCRIPTION` com `Additional_repositories: https://ropensci.r-universe.dev`.
+- Nova chave i18n `validate_coords_sea_precision_note` (PT/EN) para o chip de alerta de precisao do mar.
+
+### Documentacao
+- `docs/DECISIONS.md`: novo ADR-052 formalizando migracao de `seas_scale` e remocao de clustering.
+- `docs/LESSONS.md`: novas licoes sobre convencao Natural Earth, `rnaturalearthhires` e clustering vs pontos individuais.
+
+## [0.1.29] - 2026-02-27
+
+### Corrigido
+- Modal de revisao manual na aba `validate_names` nao abria e bloqueava a tela:
+  - `hidden.bs.modal` no `lifecycle_script` estava registrado em elemento filho (`div#review_modal_root`) em vez do ancestor `.modal`; eventos DOM borbulham para cima e nunca alcancavam o listener, impedindo a limpeza de `body.vn-review-open` e deixando o backdrop ativo permanentemente.
+  - `resolve_review_target()` retornava `NULL` silenciosamente quando `rv$stream_df` ficava stale entre render e clique, sem feedback ao usuario.
+
+### Alterado
+- `resolve_review_target()` agora tenta `rv$stream_df` primeiro e faz fallback para `validation_result()` quando o stream nao contem o nome clicado.
+- `observeEvent(input$open_review_target)` agora exibe notificacao de aviso e executa limpeza defensiva do backdrop (`vnCleanupBackdrop`) quando o alvo nao pode ser resolvido.
+- Handler JS `vnCleanupBackdrop` registrado na UI do modulo para remover `body.vn-review-open`, backdrops e estado `modal-open` residuais.
+- Nova chave i18n `validate_names_review_target_not_found` adicionada em `data_dictionary.R`.
+
+## [0.1.28] - 2026-02-27
+
+### Adicionado
+- Fluxo de revisao manual inline na aba `validate_names` para nomes problematicos (`Nao encontrado`, `Ambiguo`, `Sinonimo`):
+  - botao `✎ Revisar` por card problematico;
+  - modal unico reutilizavel com dois modos (`confirmacao rapida` e `edicao`);
+  - estado vazio comemorativo com CTA `Exportar` (navega para aba Preview).
+- Novo payload reativo de revisao manual anexado ao retorno de `mod_validate_names_server` via atributo `review_export_payload`.
+- Nova camada pura de export em `R/utils_export.R`:
+  - `apply_name_review_payload()` adiciona colunas `validacao_manual` e `motivo_revisao` para todas as linhas;
+  - aplica confirmacoes/correcoes manuais por `query_name` normalizado, incluindo substituicao de `scientificName` em todas as ocorrencias.
+
+### Alterado
+- `mod_preview_server()` recebeu parametro opcional `name_review_payload_r = NULL` e passou a aplicar revisoes manuais antes de `process_for_export()`.
+- `app_server()` agora conecta `mod_validate_names_server()` ao `mod_preview_server()` via payload de revisao manual.
+- `build_validation_report()` em `R/utils_taxadb.R` passou a manter `query_name` e `input_name` no relatorio final para suportar rastreabilidade das revisoes.
+- Tabela de relatorio em `validate_names` passou a:
+  - ordenar revisoes no topo por `reviewed_at` desc;
+  - exibir badge `Rev. Manual` para correcoes;
+  - mostrar linha secundaria em italico com o nome substituido.
+
+### Corrigido
+- Contadores/filtros de problematicos em `validate_names` agora consideram apenas os status canonicos (`not_found`, `ambiguous`, `synonym`) e descontam nomes ja revisados.
+- Estado e contagem de `Nao resolvidos` atualizam de forma reativa apos cada decisao de revisao.
+
+### Testes
+- `test-mod-validate-names-server.R` ampliado para cobrir fluxo de revisao manual (confirm/correct), ordenacao efetiva e empty state final.
+- `test-utils-export.R` ampliado para cobrir defaults, confirmacao sem edicao, correcoes com/fallback de motivo e propagacao para ocorrencias repetidas.
+- `test-mod-preview-server.R` ampliado para validar compatibilidade com o novo parametro opcional de payload.
+- `test-utils-i18n.R` atualizado com novas chaves `validate_names_review_*`.
+- `test-css-guardrails.R` atualizado com guardrail de `prefers-reduced-motion` e seletor/token do namespace `.vn-review-*`.
+
+## [0.1.27] - 2026-02-26
+
+### Alterado
+- Aba `validate_names` ajustada para full-width local, no mesmo padrao espacial da aba `validate_coords`, sem alterar o contrato tri-coluna:
+  - removido limite de largura hardcoded do shell em `mod_validate_names_ui()`;
+  - adicionados contratos CSS locais para `.validate-names-page` (`width: 100%`, `max-width: none`) e para o `tab-pane` contextual (`padding-left/right: 0`).
+- Layout tri-coluna preservado sem mudanca de contrato:
+  - painel de configuracao continua fixo em `240px`;
+  - painel de relatorio continua fixo em `340px`;
+  - token de altura por viewport (`--validate-names-header-offset`) mantido.
+- Tabela de relatorio da validacao de nomes refinada para reduzir compressao visual das 3 colunas:
+  - distribuicao explicita por coluna no `DT::datatable` (`scientificName` priorizada, `status` compacta, `taxonomicStatus` intermediaria);
+  - nova renderizacao de `taxonomicStatus` com quebra controlada;
+  - ajustes de celula e largura para reduzir truncamento agressivo de `scientificName`.
+
+### Testes
+- `tests/testthat/test-css-guardrails.R` ampliado para validar o novo contrato full-width de `validate_names`:
+  - presenca de `.validate-names-page` com `max-width: none`;
+  - presenca de `.tab-content > .tab-pane:has(.validate-names-page)` com `padding-left/right: 0`.
+- Guardrails existentes de tri-coluna (`240px`/`340px` + altura por viewport) mantidos.
+
+### Documentacao
+- `docs/DECISIONS.md`: novo ADR-050 formalizando o ajuste seguro de largura para `validate_names` com tri-coluna preservada.
+- `docs/LESSONS.md`: novas licoes sobre estrategia de descompressao com shell full-width e distribuicao explicita de colunas em painel fixo.
+
 ## [0.1.26] - 2026-02-24
 
 ### Alterado

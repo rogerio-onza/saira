@@ -988,6 +988,8 @@ build_validation_report <- function(input_df, cascade_results) {
     merged <- ensure_taxadb_columns(merged)
 
     report_cols <- c(
+        "query_name",
+        "input_name",
         "scientificName",
         "taxonomicStatus",
         "acceptedNameUsageID",

@@ -54,21 +54,21 @@ mod_upload_ui <- function(id) {
                             # Upload info chips
                             shiny::div(
                                 class = "upload-info-chips",
-                                shiny::div(
-                                    class = "upload-info-chip upload-info-chip--neutral",
-                                    shiny::HTML('<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>'),
-                                    shiny::uiOutput(ns("encoding_text"), inline = TRUE)
-                                ),
-                                shiny::div(
-                                    class = "upload-info-chip upload-info-chip--privacy",
-                                    shiny::HTML('<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'),
-                                    shiny::uiOutput(ns("privacy_text"), inline = TRUE)
-                                ),
-                                shiny::div(
-                                    class = "upload-info-chip upload-info-chip--tip",
-                                    shiny::HTML('<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>'),
-                                    shiny::uiOutput(ns("recommendation_text"), inline = TRUE)
-                                )
+                            shiny::div(
+                                class = "upload-info-chip upload-info-chip--neutral",
+                                shiny::icon("code", class = "fa-solid upload-info-chip-icon"),
+                                shiny::uiOutput(ns("encoding_text"), inline = TRUE)
+                            ),
+                            shiny::div(
+                                class = "upload-info-chip upload-info-chip--privacy",
+                                shiny::icon("lock", class = "fa-solid upload-info-chip-icon"),
+                                shiny::uiOutput(ns("privacy_text"), inline = TRUE)
+                            ),
+                            shiny::div(
+                                class = "upload-info-chip upload-info-chip--tip",
+                                shiny::icon("lightbulb", class = "fa-solid upload-info-chip-icon"),
+                                shiny::uiOutput(ns("recommendation_text"), inline = TRUE)
+                            )
                             ),
 
                             # Stats after upload
@@ -196,7 +196,7 @@ mod_upload_server <- function(id, lang_r) {
                     class = "welcome-main-title",
                     tr("welcome_title_prefix", lang_r()),
                     " ",
-                    shiny::tags$span("Saira", class = "welcome-main-title-brand")
+                    shiny::tags$span("Saíra", class = "welcome-main-title-brand")
                 )
             )
         })
@@ -258,7 +258,7 @@ mod_upload_server <- function(id, lang_r) {
         required_terms_all <- tryCatch(
             get_dwc_terms(),
             error = function(e) {
-                message("[Saira] Failed to load DwC terms: ", e$message)
+                message("[Saíra] Failed to load DwC terms: ", e$message)
                 data.frame(
                     term = character(0),
                     class = character(0),

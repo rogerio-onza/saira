@@ -168,12 +168,12 @@ testthat::test_that("basisOfRecord vocabulary is complete and ordered", {
 testthat::test_that("basisOfRecord choices include skip option and descriptions", {
     get_choices <- getFromNamespace("get_basis_of_record_term_choices", "saira")
 
-    pt_choices <- get_choices(lang = "pt", include_skip = TRUE, with_description = TRUE, skip_label = "-- Nao mapear --")
+    pt_choices <- get_choices(lang = "pt", include_skip = TRUE, with_description = TRUE, skip_label = "-- Não mapear --")
     en_choices <- get_choices(lang = "en", include_skip = TRUE, with_description = TRUE, skip_label = "-- Skip --")
 
-    testthat::expect_true("-- Nao mapear --" %in% names(pt_choices))
+    testthat::expect_true("-- Não mapear --" %in% names(pt_choices))
     testthat::expect_true("-- Skip --" %in% names(en_choices))
-    testthat::expect_identical(unname(pt_choices[["-- Nao mapear --"]]), "")
+    testthat::expect_identical(unname(pt_choices[["-- Não mapear --"]]), "")
     testthat::expect_identical(unname(en_choices[["-- Skip --"]]), "")
 
     testthat::expect_true(any(grepl("HumanObservation", names(en_choices), fixed = TRUE)))

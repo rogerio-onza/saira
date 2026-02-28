@@ -1,7 +1,7 @@
 # Title: Validate Names Module
 # Author: Rogerio Nunes Oliveira
-# Date: 2026-02-19
-# Version: 2.2
+# Date: 2026-02-26
+# Version: 2.3
 
 #' Validate Names Module UI
 #'
@@ -14,7 +14,6 @@ mod_validate_names_ui <- function(id) {
     shiny::tagList(
         shiny::div(
             class = "container-fluid validate-names-page",
-            style = "max-width: 1320px;",
             shiny::uiOutput(ns("title")),
             shiny::uiOutput(ns("subtitle")),
             shiny::div(
@@ -22,7 +21,23 @@ mod_validate_names_ui <- function(id) {
                 shiny::uiOutput(ns("config_panel")),
                 shiny::uiOutput(ns("stream_panel")),
                 shiny::uiOutput(ns("report_panel"))
-            )
+            ),
+            shiny::tags$script(shiny::HTML(
+                "$(function() {
+                    if (window.__vnCleanupRegistered) { return; }
+                    window.__vnCleanupRegistered = true;
+                    Shiny.addCustomMessageHandler('vnCleanupBackdrop', function(msg) {
+                        if (document.body) {
+                            document.body.classList.remove('vn-review-open');
+                        }
+                        var backdrops = document.querySelectorAll('.modal-backdrop');
+                        backdrops.forEach(function(el) { el.remove(); });
+                        document.body.style.removeProperty('overflow');
+                        document.body.style.removeProperty('padding-right');
+                        document.body.classList.remove('modal-open');
+                    });
+                });"
+            ))
         )
     )
 }
@@ -49,6 +64,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         provider_labels <- stats::setNames(vapply(provider_catalog, function(item) item$short, FUN.VALUE = character(1)), provider_ids)
         stream_window_limit <- 100L
         stream_filter_values <- c("all", "problems", "not_found", "ambiguous", "synonym", "ignored")
+        problem_status_values <- c("not_found", "ambiguous", "synonym")
+        review_exit_ms <- 320L
 
         validation_result <- shiny::reactiveVal(NULL)
         validation_meta <- shiny::reactiveVal(NULL)
@@ -63,7 +80,23 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             stream_df = empty_validation_stream(),
             stream_filter = "all",
             last_run_status = "idle",
-            last_error = NA_character_
+            last_error = NA_character_,
+            manual_reviews = data.frame(
+                query_name = character(0),
+                review_type = character(0),
+                original_name = character(0),
+                corrected_name = character(0),
+                reason = character(0),
+                reviewed_at = as.POSIXct(character(0), tz = "UTC"),
+                stringsAsFactors = FALSE
+            ),
+            review_target = NULL,
+            review_mode = "confirm",
+            exiting_reviews = data.frame(
+                query_name = character(0),
+                expires_at = as.POSIXct(character(0), tz = "UTC"),
+                stringsAsFactors = FALSE
+            )
         )
 
         provider_button_id <- function(provider_id) paste0("provider_card_", provider_id)
@@ -71,7 +104,9 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         format_provider_labels <- function(provider_values) {
             values_chr <- as.character(provider_values)
             values_chr <- values_chr[!is.na(values_chr) & nzchar(values_chr)]
-            if (length(values_chr) == 0L) return(character(0))
+            if (length(values_chr) == 0L) {
+                return(character(0))
+            }
             labels <- unname(provider_labels[values_chr])
             missing_idx <- is.na(labels) | !nzchar(labels)
             labels[missing_idx] <- toupper(values_chr[missing_idx])
@@ -94,7 +129,9 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         }
 
         stream_window <- function(stream_df, limit = stream_window_limit) {
-            if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) return(empty_validation_stream())
+            if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
+                return(empty_validation_stream())
+            }
             out <- stream_df
             if (!"display_order" %in% names(out)) out$display_order <- seq_len(nrow(out))
             out <- out[order(out$display_order, decreasing = TRUE), , drop = FALSE]
@@ -106,15 +143,20 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         }
 
         provider_failure_lines <- function(failure_df, resolved_unique = 0L) {
-            if (!is.data.frame(failure_df) || nrow(failure_df) == 0L) return(character(0))
+            if (!is.data.frame(failure_df) || nrow(failure_df) == 0L) {
+                return(character(0))
+            }
 
             resolved_int <- suppressWarnings(as.integer(resolved_unique))
             if (is.na(resolved_int) || resolved_int < 0L) resolved_int <- 0L
 
             vapply(seq_len(nrow(failure_df)), function(i) {
                 provider_label <- format_provider_labels(failure_df$provider[[i]])
-                if (length(provider_label) == 0L) provider_label <- toupper(as.character(failure_df$provider[[i]]))
-                else provider_label <- provider_label[[1]]
+                if (length(provider_label) == 0L) {
+                    provider_label <- toupper(as.character(failure_df$provider[[i]]))
+                } else {
+                    provider_label <- provider_label[[1]]
+                }
                 error_text <- as.character(failure_df$error[[i]])
                 if (is.na(error_text) || !nzchar(error_text)) error_text <- tr("validate_names_error_unknown", lang_r())
                 sprintf(tr("validate_names_provider_failed_stream_item", lang_r()), provider_label, resolved_int, error_text)
@@ -139,38 +181,46 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             status_key <- as.character(status_value)
             status_key <- ifelse(is.na(status_key) | !nzchar(status_key), "not_found", tolower(status_key))
 
-            if (identical(status_key, "accepted")) return(list(
-                key = "accepted",
-                icon_symbol = "\u2713",
-                label_key = "validate_names_stream_status_accepted",
-                item_class = "vn-stream-item-accepted",
-                badge_class = "badge-success",
-                row_class = "vn-row-accepted"
-            ))
-            if (identical(status_key, "synonym")) return(list(
-                key = "synonym",
-                icon_symbol = "\u21C4",
-                label_key = "validate_names_stream_status_synonym",
-                item_class = "vn-stream-item-synonym",
-                badge_class = "badge-info",
-                row_class = "vn-row-synonym"
-            ))
-            if (status_key %in% c("ambiguous", "unresolved")) return(list(
-                key = "ambiguous",
-                icon_symbol = "?",
-                label_key = "validate_names_stream_status_ambiguous",
-                item_class = "vn-stream-item-ambiguous",
-                badge_class = "badge-warning",
-                row_class = "vn-row-ambiguous"
-            ))
-            if (status_key %in% c("invalid", "ignored")) return(list(
-                key = "ignored",
-                icon_symbol = "\u2014",
-                label_key = "validate_names_stream_status_ignored",
-                item_class = "vn-stream-item-ignored",
-                badge_class = "badge-muted",
-                row_class = "vn-row-ignored"
-            ))
+            if (identical(status_key, "accepted")) {
+                return(list(
+                    key = "accepted",
+                    icon_symbol = "\u2713",
+                    label_key = "validate_names_stream_status_accepted",
+                    item_class = "vn-stream-item-accepted",
+                    badge_class = "badge-success",
+                    row_class = "vn-row-accepted"
+                ))
+            }
+            if (identical(status_key, "synonym")) {
+                return(list(
+                    key = "synonym",
+                    icon_symbol = "\u21C4",
+                    label_key = "validate_names_stream_status_synonym",
+                    item_class = "vn-stream-item-synonym",
+                    badge_class = "badge-info",
+                    row_class = "vn-row-synonym"
+                ))
+            }
+            if (status_key %in% c("ambiguous", "unresolved")) {
+                return(list(
+                    key = "ambiguous",
+                    icon_symbol = "?",
+                    label_key = "validate_names_stream_status_ambiguous",
+                    item_class = "vn-stream-item-ambiguous",
+                    badge_class = "badge-warning",
+                    row_class = "vn-row-ambiguous"
+                ))
+            }
+            if (status_key %in% c("invalid", "ignored")) {
+                return(list(
+                    key = "ignored",
+                    icon_symbol = "\u2014",
+                    label_key = "validate_names_stream_status_ignored",
+                    item_class = "vn-stream-item-ignored",
+                    badge_class = "badge-muted",
+                    row_class = "vn-row-ignored"
+                ))
+            }
             list(
                 key = "not_found",
                 icon_symbol = "\u2715",
@@ -183,14 +233,149 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
 
         normalize_status_for_filter <- function(status_value) {
             status_key <- tolower(as.character(status_value %||% ""))
-            if (!nzchar(status_key) || is.na(status_key)) return("not_found")
-            if (identical(status_key, "unresolved")) return("ambiguous")
-            if (identical(status_key, "invalid")) return("ignored")
-            if (status_key %in% c("accepted", "synonym", "not_found", "ambiguous", "ignored")) return(status_key)
+            if (!nzchar(status_key) || is.na(status_key)) {
+                return("not_found")
+            }
+            if (identical(status_key, "unresolved")) {
+                return("ambiguous")
+            }
+            if (identical(status_key, "invalid")) {
+                return("ignored")
+            }
+            if (status_key %in% c("accepted", "synonym", "not_found", "ambiguous", "ignored")) {
+                return(status_key)
+            }
             "not_found"
         }
 
-        stream_filter_counts <- function(stream_df) {
+        is_problem_status_key <- function(status_key) {
+            key <- normalize_status_for_filter(status_key)
+            key %in% problem_status_values
+        }
+
+        review_entries_df <- function() {
+            out <- rv$manual_reviews
+            if (!is.data.frame(out) || nrow(out) == 0L) {
+                return(data.frame(
+                    query_name = character(0),
+                    review_type = character(0),
+                    original_name = character(0),
+                    corrected_name = character(0),
+                    reason = character(0),
+                    reviewed_at = as.POSIXct(character(0), tz = "UTC"),
+                    stringsAsFactors = FALSE
+                ))
+            }
+
+            required_cols <- c("query_name", "review_type", "original_name", "corrected_name", "reason", "reviewed_at")
+            for (col_name in setdiff(required_cols, names(out))) {
+                if (identical(col_name, "reviewed_at")) {
+                    out[[col_name]] <- as.POSIXct(character(nrow(out)), tz = "UTC")
+                } else {
+                    out[[col_name]] <- rep("", nrow(out))
+                }
+            }
+            out <- out[, required_cols, drop = FALSE]
+            out$query_name <- as.character(out$query_name)
+            out$review_type <- as.character(out$review_type)
+            out$original_name <- as.character(out$original_name)
+            out$corrected_name <- as.character(out$corrected_name)
+            out$reason <- as.character(out$reason)
+            out$reviewed_at <- as.POSIXct(out$reviewed_at, tz = "UTC")
+            out <- out[!is.na(out$query_name) & nzchar(out$query_name), , drop = FALSE]
+            rownames(out) <- NULL
+            out
+        }
+
+        reviewed_query_keys <- function() {
+            entries <- review_entries_df()
+            if (!is.data.frame(entries) || nrow(entries) == 0L) {
+                return(character(0))
+            }
+            unique(as.character(entries$query_name))
+        }
+
+        exiting_query_keys <- function() {
+            out <- rv$exiting_reviews
+            if (!is.data.frame(out) || nrow(out) == 0L) {
+                return(character(0))
+            }
+            expires <- as.POSIXct(out$expires_at, tz = "UTC")
+            keep <- !is.na(expires) & expires > Sys.time()
+            if (!all(keep)) {
+                rv$exiting_reviews <- out[keep, , drop = FALSE]
+                out <- rv$exiting_reviews
+            }
+            if (!is.data.frame(out) || nrow(out) == 0L) {
+                return(character(0))
+            }
+            unique(as.character(out$query_name))
+        }
+
+        register_review_exit <- function(query_name) {
+            key <- as.character(query_name %||% "")
+            if (!nzchar(key)) {
+                return(invisible(NULL))
+            }
+
+            out <- rv$exiting_reviews
+            if (!is.data.frame(out)) {
+                out <- data.frame(
+                    query_name = character(0),
+                    expires_at = as.POSIXct(character(0), tz = "UTC"),
+                    stringsAsFactors = FALSE
+                )
+            }
+            out <- out[as.character(out$query_name) != key, , drop = FALSE]
+            out <- rbind(
+                out,
+                data.frame(
+                    query_name = key,
+                    expires_at = Sys.time() + (review_exit_ms / 1000),
+                    stringsAsFactors = FALSE
+                )
+            )
+            rownames(out) <- NULL
+            rv$exiting_reviews <- out
+            invisible(NULL)
+        }
+
+        register_manual_review <- function(query_name, review_type, original_name, corrected_name, reason = "") {
+            key <- as.character(query_name %||% "")
+            if (!nzchar(key)) {
+                return(invisible(NULL))
+            }
+
+            type_key <- tolower(as.character(review_type %||% ""))
+            if (!(type_key %in% c("confirm", "correct"))) {
+                return(invisible(NULL))
+            }
+
+            original_chr <- as.character(original_name %||% key)
+            if (!nzchar(original_chr)) original_chr <- key
+            corrected_chr <- as.character(corrected_name %||% original_chr)
+            if (!nzchar(corrected_chr)) corrected_chr <- original_chr
+            reason_chr <- as.character(reason %||% "")
+
+            out <- review_entries_df()
+            idx <- match(key, out$query_name)
+            row <- data.frame(
+                query_name = key,
+                review_type = type_key,
+                original_name = original_chr,
+                corrected_name = corrected_chr,
+                reason = reason_chr,
+                reviewed_at = Sys.time(),
+                stringsAsFactors = FALSE
+            )
+            if (is.na(idx)) out <- rbind(out, row) else out[idx, ] <- row
+            rownames(out) <- NULL
+            rv$manual_reviews <- out
+            register_review_exit(key)
+            invisible(NULL)
+        }
+
+        stream_filter_counts <- function(stream_df, reviewed_keys = character(0)) {
             out <- c(
                 all = 0L,
                 problems = 0L,
@@ -199,29 +384,44 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 synonym = 0L,
                 ignored = 0L
             )
-            if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) return(out)
+            if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
+                return(out)
+            }
             status_vec <- vapply(stream_df$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
+            query_vec <- if ("query_name" %in% names(stream_df)) as.character(stream_df$query_name) else rep("", nrow(stream_df))
+            reviewed_vec <- query_vec %in% reviewed_keys
+            reviewed_vec[is.na(reviewed_vec)] <- FALSE
+            unresolved_problem <- status_vec %in% problem_status_values & !reviewed_vec
             out[["all"]] <- as.integer(length(status_vec))
-            out[["not_found"]] <- as.integer(sum(status_vec == "not_found", na.rm = TRUE))
-            out[["ambiguous"]] <- as.integer(sum(status_vec == "ambiguous", na.rm = TRUE))
-            out[["synonym"]] <- as.integer(sum(status_vec == "synonym", na.rm = TRUE))
+            out[["not_found"]] <- as.integer(sum(status_vec == "not_found" & !reviewed_vec, na.rm = TRUE))
+            out[["ambiguous"]] <- as.integer(sum(status_vec == "ambiguous" & !reviewed_vec, na.rm = TRUE))
+            out[["synonym"]] <- as.integer(sum(status_vec == "synonym" & !reviewed_vec, na.rm = TRUE))
             out[["ignored"]] <- as.integer(sum(status_vec == "ignored", na.rm = TRUE))
-            out[["problems"]] <- as.integer(sum(status_vec != "accepted", na.rm = TRUE))
+            out[["problems"]] <- as.integer(sum(unresolved_problem, na.rm = TRUE))
             out
         }
 
-        filter_stream_df <- function(stream_df, filter_key = "all") {
-            if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) return(stream_df)
+        filter_stream_df <- function(stream_df, filter_key = "all", reviewed_keys = character(0), exiting_keys = character(0)) {
+            if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
+                return(stream_df)
+            }
             key <- as.character(filter_key %||% "all")
             if (!(key %in% stream_filter_values)) key <- "all"
-            if (identical(key, "all")) return(stream_df)
+            if (identical(key, "all")) {
+                return(stream_df)
+            }
 
             status_vec <- vapply(stream_df$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
+            query_vec <- if ("query_name" %in% names(stream_df)) as.character(stream_df$query_name) else rep("", nrow(stream_df))
+            reviewed_vec <- query_vec %in% reviewed_keys
+            reviewed_vec[is.na(reviewed_vec)] <- FALSE
+            exiting_vec <- query_vec %in% exiting_keys
+            exiting_vec[is.na(exiting_vec)] <- FALSE
             keep_idx <- switch(key,
-                problems = status_vec != "accepted",
-                not_found = status_vec == "not_found",
-                ambiguous = status_vec == "ambiguous",
-                synonym = status_vec == "synonym",
+                problems = (status_vec %in% problem_status_values & !reviewed_vec) | exiting_vec,
+                not_found = ((status_vec == "not_found") & !reviewed_vec) | exiting_vec,
+                ambiguous = ((status_vec == "ambiguous") & !reviewed_vec) | exiting_vec,
+                synonym = ((status_vec == "synonym") & !reviewed_vec) | exiting_vec,
                 ignored = status_vec == "ignored",
                 rep(TRUE, length(status_vec))
             )
@@ -231,7 +431,9 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         }
 
         stream_filter_after_completion <- function(report_df) {
-            if (!is.data.frame(report_df) || nrow(report_df) == 0L) return("all")
+            if (!is.data.frame(report_df) || nrow(report_df) == 0L) {
+                return("all")
+            }
             "problems"
         }
 
@@ -245,10 +447,15 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         for (provider_id in provider_ids) {
             local({
                 id_local <- provider_id
-                shiny::observeEvent(input[[provider_button_id(id_local)]], {
-                    if (isTRUE(rv$running)) return(invisible(NULL))
-                    toggle_provider_selection(id_local)
-                }, ignoreInit = TRUE)
+                shiny::observeEvent(input[[provider_button_id(id_local)]],
+                    {
+                        if (isTRUE(rv$running)) {
+                            return(invisible(NULL))
+                        }
+                        toggle_provider_selection(id_local)
+                    },
+                    ignoreInit = TRUE
+                )
             })
         }
 
@@ -279,8 +486,12 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             if (!is.null(validation_gate_r) && shiny::is.reactive(validation_gate_r)) {
                 gate <- validation_gate_r()
                 gate_status <- as.character(gate$status %||% "")
-                if (identical(gate_status, "ok")) return(list(status = "ok"))
-                if (identical(gate_status, "no_data")) return(list(status = "no_data"))
+                if (identical(gate_status, "ok")) {
+                    return(list(status = "ok"))
+                }
+                if (identical(gate_status, "no_data")) {
+                    return(list(status = "no_data"))
+                }
                 return(list(status = "missing_scientific"))
             }
 
@@ -325,21 +536,101 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         for (filter_key in stream_filter_values) {
             local({
                 key_local <- filter_key
-                shiny::observeEvent(input[[paste0("stream_filter_", key_local)]], {
-                    rv$stream_filter <- key_local
-                }, ignoreInit = TRUE)
+                shiny::observeEvent(input[[paste0("stream_filter_", key_local)]],
+                    {
+                        rv$stream_filter <- key_local
+                    },
+                    ignoreInit = TRUE
+                )
             })
         }
 
+        effective_report <- shiny::reactive({
+            report_df <- validation_result()
+            if (!is.data.frame(report_df) || nrow(report_df) == 0L) {
+                return(data.frame())
+            }
+
+            out <- report_df
+            if (!"validation_status" %in% names(out)) {
+                out$validation_status <- rep("not_found", nrow(out))
+            }
+            out$validation_status <- vapply(out$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
+
+            if (!"query_name" %in% names(out)) {
+                scientific_name <- if ("scientificName" %in% names(out)) as.character(out$scientificName) else rep("", nrow(out))
+                remove_authors_opt <- isTRUE(input$remove_authors %||% TRUE)
+                ignore_qualifiers_opt <- isTRUE(input$ignore_qualifiers %||% TRUE)
+                query_name <- vapply(scientific_name, function(value) {
+                    normalized <- normalize_scientific_name(
+                        value,
+                        remove_authors = remove_authors_opt,
+                        ignore_qualifiers = ignore_qualifiers_opt
+                    )
+                    if (is.na(normalized) || !nzchar(normalized)) as.character(value %||% "") else normalized
+                }, FUN.VALUE = character(1))
+                out$query_name <- query_name
+            } else {
+                out$query_name <- as.character(out$query_name)
+            }
+
+            scientific_name <- if ("scientificName" %in% names(out)) as.character(out$scientificName) else rep("", nrow(out))
+            scientific_name[is.na(scientific_name)] <- ""
+            out$scientificName <- scientific_name
+            out$manual_review <- FALSE
+            out$review_type <- ""
+            out$review_reason <- ""
+            out$reviewed_at <- as.POSIXct(rep(NA_character_, nrow(out)), tz = "UTC")
+            out$review_original_name <- ""
+            out$scientificName_display <- scientific_name
+            out$display_status <- out$validation_status
+            out$.row_order <- seq_len(nrow(out))
+
+            entries <- review_entries_df()
+            if (is.data.frame(entries) && nrow(entries) > 0L) {
+                idx <- match(out$query_name, entries$query_name)
+                has_review <- !is.na(idx)
+                if (any(has_review)) {
+                    out$manual_review[has_review] <- TRUE
+                    out$review_type[has_review] <- as.character(entries$review_type[idx[has_review]])
+                    out$review_reason[has_review] <- as.character(entries$reason[idx[has_review]])
+                    out$reviewed_at[has_review] <- as.POSIXct(entries$reviewed_at[idx[has_review]], tz = "UTC")
+                    out$review_original_name[has_review] <- as.character(entries$original_name[idx[has_review]])
+
+                    corrected_idx <- has_review & out$review_type == "correct"
+                    corrected_values <- rep("", nrow(out))
+                    corrected_values[has_review] <- as.character(entries$corrected_name[idx[has_review]])
+                    has_corrected <- corrected_idx & !is.na(corrected_values) & nzchar(trimws(corrected_values))
+                    out$scientificName_display[has_corrected] <- corrected_values[has_corrected]
+                    out$display_status[has_review & out$review_type == "confirm"] <- "accepted_manual"
+                    out$display_status[has_review & out$review_type == "correct"] <- "manual_revision"
+                }
+            }
+
+            if (any(out$manual_review)) {
+                reviewed_num <- as.numeric(out$reviewed_at)
+                reviewed_num[is.na(reviewed_num)] <- -Inf
+                ord <- order(!out$manual_review, -reviewed_num, out$.row_order)
+                out <- out[ord, , drop = FALSE]
+                rownames(out) <- NULL
+            }
+
+            out
+        })
+
         report_status_counts <- function(report_df) {
             out <- c(valid = 0L, invalid = 0L, unresolved = 0L, total = 0L)
-            if (!is.data.frame(report_df) || nrow(report_df) == 0L) return(out)
+            if (!is.data.frame(report_df) || nrow(report_df) == 0L) {
+                return(out)
+            }
 
             status_vec <- vapply(report_df$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
+            reviewed_vec <- if ("manual_review" %in% names(report_df)) as.logical(report_df$manual_review) else rep(FALSE, length(status_vec))
+            reviewed_vec[is.na(reviewed_vec)] <- FALSE
             out[["total"]] <- as.integer(length(status_vec))
-            out[["valid"]] <- as.integer(sum(status_vec %in% c("accepted", "synonym"), na.rm = TRUE))
+            out[["valid"]] <- as.integer(sum(status_vec == "accepted" | reviewed_vec, na.rm = TRUE))
             out[["invalid"]] <- as.integer(sum(status_vec == "ignored", na.rm = TRUE))
-            out[["unresolved"]] <- as.integer(sum(status_vec %in% c("not_found", "ambiguous"), na.rm = TRUE))
+            out[["unresolved"]] <- as.integer(sum(status_vec %in% problem_status_values & !reviewed_vec, na.rm = TRUE))
             out
         }
 
@@ -385,6 +676,414 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             )
         }
 
+        shiny::observe({
+            exiting <- rv$exiting_reviews
+            if (!is.data.frame(exiting) || nrow(exiting) == 0L) {
+                return(invisible(NULL))
+            }
+            shiny::invalidateLater(120, session)
+            exiting_query_keys()
+            invisible(NULL)
+        })
+
+        resolve_review_target <- function(payload) {
+            if (is.null(payload)) {
+                return(NULL)
+            }
+
+            payload_obj <- payload
+            if (is.character(payload) && length(payload) == 1L && grepl("^\\s*\\{", payload)) {
+                parsed <- tryCatch(
+                    jsonlite::fromJSON(payload),
+                    error = function(e) NULL
+                )
+                if (is.list(parsed)) payload_obj <- parsed
+            }
+
+            query_name <- ""
+            if (is.list(payload_obj) && !is.null(payload_obj$query_name)) {
+                query_name <- as.character(payload_obj$query_name[[1]] %||% "")
+            } else {
+                query_name <- as.character(payload_obj[[1]] %||% "")
+            }
+            query_name <- trimws(query_name)
+            if (!nzchar(query_name)) {
+                return(NULL)
+            }
+
+            # Try stream first, fall back to validation report if stream is stale
+            source_df <- NULL
+            stream_df <- rv$stream_df
+            if (is.data.frame(stream_df) && nrow(stream_df) > 0L) {
+                idx <- match(query_name, as.character(stream_df$query_name))
+                if (!is.na(idx)) source_df <- stream_df
+            }
+            if (is.null(source_df)) {
+                report_df <- validation_result()
+                if (is.data.frame(report_df) && nrow(report_df) > 0L && "query_name" %in% names(report_df)) {
+                    idx <- match(query_name, as.character(report_df$query_name))
+                    if (!is.na(idx)) source_df <- report_df
+                }
+            }
+            if (is.null(source_df)) {
+                return(NULL)
+            }
+
+            status_key <- normalize_status_for_filter(source_df$validation_status[[idx]])
+            if (!(status_key %in% problem_status_values)) {
+                return(NULL)
+            }
+
+            list(
+                query_name = query_name,
+                status_key = status_key,
+                scientific_name = query_name
+            )
+        }
+
+        review_status_context <- function(status_key) {
+            key <- normalize_status_for_filter(status_key)
+            if (identical(key, "ambiguous")) {
+                return(list(
+                    header_class = "vn-review-header-warning",
+                    icon = "circle-question",
+                    problem_label = tr("validate_names_review_problem_ambiguous", lang_r()),
+                    status_label = tr("validate_names_stream_status_ambiguous", lang_r()),
+                    question = tr("validate_names_review_question_ambiguous", lang_r()),
+                    helper = tr("validate_names_review_helper_ambiguous", lang_r())
+                ))
+            }
+            if (identical(key, "synonym")) {
+                return(list(
+                    header_class = "vn-review-header-info",
+                    icon = "code-compare",
+                    problem_label = tr("validate_names_review_problem_synonym", lang_r()),
+                    status_label = tr("validate_names_stream_status_synonym", lang_r()),
+                    question = tr("validate_names_review_question_synonym", lang_r()),
+                    helper = tr("validate_names_review_helper_synonym", lang_r())
+                ))
+            }
+            list(
+                header_class = "vn-review-header-error",
+                icon = "circle-xmark",
+                problem_label = tr("validate_names_review_problem_not_found", lang_r()),
+                status_label = tr("validate_names_stream_status_not_found", lang_r()),
+                question = tr("validate_names_review_question_not_found", lang_r()),
+                helper = tr("validate_names_review_helper_not_found", lang_r())
+            )
+        }
+
+        render_review_name_em <- function(value) {
+            shiny::HTML(sprintf("<em>%s</em>", htmltools::htmlEscape(as.character(value %||% ""))))
+        }
+
+        show_review_modal <- function(mode = "confirm") {
+            target <- rv$review_target
+            if (is.null(target) || !is.list(target) || !nzchar(as.character(target$query_name %||% ""))) {
+                return(invisible(NULL))
+            }
+            rv$review_mode <- as.character(mode %||% "confirm")
+            ctx <- review_status_context(target$status_key %||% "not_found")
+
+            lifecycle_script <- sprintf(
+                "(function() {
+                    var modalEl = document.getElementById('%s');
+                    if (!modalEl) { return; }
+                    if (document.body) { document.body.classList.add('vn-review-open'); }
+                    var cleanup = function () {
+                        if (document.body) { document.body.classList.remove('vn-review-open'); }
+                    };
+                    var modalHost = modalEl.closest('.modal');
+                    if (modalHost) {
+                        modalHost.addEventListener('hidden.bs.modal', cleanup, { once: true });
+                    } else {
+                        modalEl.addEventListener('hidden.bs.modal', cleanup, { once: true });
+                    }
+                })();",
+                ns("review_modal_root")
+            )
+
+            if (identical(rv$review_mode, "edit")) {
+                input_id <- ns("review_corrected_name")
+                save_id <- ns("review_save_correction")
+                original_json <- jsonlite::toJSON(as.character(target$scientific_name %||% ""), auto_unbox = TRUE)
+                edit_script <- sprintf(
+                    "(function() {
+                        var inputEl = document.getElementById('%s');
+                        var btnEl = document.getElementById('%s');
+                        var original = %s;
+                        if (!inputEl || !btnEl) { return; }
+                        var sync = function () {
+                            var changed = String(inputEl.value || '').trim() !== String(original || '').trim();
+                            btnEl.disabled = !changed;
+                        };
+                        inputEl.addEventListener('input', sync);
+                        sync();
+                        window.setTimeout(function () {
+                            inputEl.focus();
+                            inputEl.select();
+                        }, 50);
+                    })();",
+                    input_id,
+                    save_id,
+                    original_json
+                )
+
+                shiny::showModal(shiny::modalDialog(
+                    shiny::div(
+                        id = ns("review_modal_root"),
+                        class = "vn-review-modal",
+                        shiny::div(
+                            class = "vn-review-back-row",
+                            shiny::actionButton(
+                                ns("review_back_to_confirm"),
+                                label = tr("validate_names_review_back", lang_r()),
+                                class = "btn btn-secondary vn-review-back-btn"
+                            )
+                        ),
+                        shiny::div(class = "vn-review-edit-label", tr("validate_names_review_edit_label", lang_r())),
+                        shiny::tags$input(
+                            id = ns("review_corrected_name"),
+                            type = "text",
+                            class = "vn-review-edit-input form-control",
+                            value = as.character(target$scientific_name %||% ""),
+                            spellcheck = "false",
+                            autocomplete = "off"
+                        ),
+                        shiny::div(
+                            class = "vn-review-edit-hint",
+                            render_review_name_em(target$scientific_name)
+                        ),
+                        shiny::tags$textarea(
+                            id = ns("review_correction_reason"),
+                            class = "vn-review-edit-textarea form-control",
+                            placeholder = tr("validate_names_review_reason_placeholder", lang_r())
+                        ),
+                        shiny::div(
+                            class = "vn-review-footer",
+                            shiny::tags$button(
+                                type = "button",
+                                class = "btn vn-review-cancel-btn",
+                                `data-bs-dismiss` = "modal",
+                                tr("btn_cancel", lang_r())
+                            ),
+                            shiny::actionButton(
+                                ns("review_save_correction"),
+                                label = tr("validate_names_review_save_correction", lang_r()),
+                                class = "btn btn-success vn-review-save-btn",
+                                disabled = "disabled"
+                            )
+                        ),
+                        shiny::tags$script(shiny::HTML(edit_script)),
+                        shiny::tags$script(shiny::HTML(lifecycle_script))
+                    ),
+                    easyClose = TRUE,
+                    footer = NULL,
+                    fade = TRUE
+                ))
+                return(invisible(NULL))
+            }
+
+            confirm_script <- sprintf(
+                "(function() {
+                    var block = document.getElementById('%s');
+                    var checkbox = document.getElementById('%s');
+                    var confirmBtn = document.getElementById('%s');
+                    if (!block || !checkbox || !confirmBtn) { return; }
+                    var sync = function () {
+                        var checked = !!checkbox.checked;
+                        confirmBtn.disabled = !checked;
+                    };
+                    block.addEventListener('click', function (e) {
+                        if (e.target && e.target.id === checkbox.id) { return; }
+                        checkbox.checked = !checkbox.checked;
+                        sync();
+                    });
+                    checkbox.addEventListener('change', sync);
+                    sync();
+                })();",
+                ns("review_confirm_block"),
+                ns("review_confirm_checkbox"),
+                ns("review_confirm_keep")
+            )
+
+            shiny::showModal(shiny::modalDialog(
+                shiny::div(
+                    id = ns("review_modal_root"),
+                    class = "vn-review-modal",
+                    shiny::div(
+                        class = trimws(paste("vn-review-header", ctx$header_class)),
+                        shiny::div(
+                            class = "vn-review-header-icon",
+                            status_style_map(target$status_key)$icon_symbol
+                        ),
+                        shiny::div(
+                            class = "vn-review-header-text",
+                            shiny::div(
+                                class = "vn-review-header-name",
+                                render_review_name_em(target$scientific_name)
+                            ),
+                            shiny::div(
+                                class = "vn-review-header-problem",
+                                ctx$problem_label
+                            )
+                        )
+                    ),
+                    shiny::div(
+                        class = "vn-review-body",
+                        shiny::div(class = "vn-review-question", ctx$question),
+                        shiny::div(class = "vn-review-helper", ctx$helper),
+                        shiny::div(
+                            id = ns("review_confirm_block"),
+                            class = "vn-review-confirm-block",
+                            shiny::tags$input(
+                                id = ns("review_confirm_checkbox"),
+                                type = "checkbox",
+                                class = "vn-review-confirm-checkbox"
+                            ),
+                            shiny::div(
+                                class = "vn-review-confirm-text",
+                                shiny::div(class = "vn-review-confirm-title", tr("validate_names_review_confirm_title", lang_r())),
+                                shiny::div(class = "vn-review-confirm-subtitle", tr("validate_names_review_confirm_subtitle", lang_r()))
+                            )
+                        ),
+                        shiny::actionButton(
+                            ns("review_switch_to_edit"),
+                            label = tr("validate_names_review_switch_to_edit", lang_r()),
+                            class = "btn btn-secondary vn-review-edit-btn"
+                        )
+                    ),
+                    shiny::div(
+                        class = "vn-review-footer",
+                        shiny::tags$button(
+                            type = "button",
+                            class = "btn vn-review-cancel-btn",
+                            `data-bs-dismiss` = "modal",
+                            tr("btn_cancel", lang_r())
+                        ),
+                        shiny::actionButton(
+                            ns("review_confirm_keep"),
+                            label = tr("validate_names_review_confirm_btn", lang_r()),
+                            class = "btn btn-success vn-review-confirm-btn",
+                            disabled = "disabled"
+                        )
+                    ),
+                    shiny::tags$script(shiny::HTML(confirm_script)),
+                    shiny::tags$script(shiny::HTML(lifecycle_script))
+                ),
+                easyClose = TRUE,
+                footer = NULL,
+                fade = TRUE
+            ))
+            invisible(NULL)
+        }
+
+        shiny::observeEvent(input$open_review_target, {
+            target <- resolve_review_target(input$open_review_target)
+            if (is.null(target)) {
+                # Defensive cleanup: remove stale backdrop from previous modal
+                session$sendCustomMessage("vnCleanupBackdrop", list())
+                shiny::showNotification(
+                    tr("validate_names_review_target_not_found", lang_r()),
+                    type = "warning",
+                    duration = 4
+                )
+                return(invisible(NULL))
+            }
+            rv$review_target <- target
+            rv$review_mode <- "confirm"
+            tryCatch(
+                show_review_modal("confirm"),
+                error = function(e) {
+                    session$sendCustomMessage("vnCleanupBackdrop", list())
+                    shiny::showNotification(
+                        sprintf(tr("validate_names_review_open_error", lang_r()), as.character(e$message)),
+                        type = "error",
+                        duration = 7
+                    )
+                }
+            )
+        })
+
+        shiny::observeEvent(input$review_switch_to_edit,
+            {
+                if (is.null(rv$review_target)) {
+                    return(invisible(NULL))
+                }
+                show_review_modal("edit")
+            },
+            ignoreInit = TRUE
+        )
+
+        shiny::observeEvent(input$review_back_to_confirm,
+            {
+                if (is.null(rv$review_target)) {
+                    return(invisible(NULL))
+                }
+                show_review_modal("confirm")
+            },
+            ignoreInit = TRUE
+        )
+
+        shiny::observeEvent(input$review_confirm_keep,
+            {
+                target <- rv$review_target
+                if (is.null(target)) {
+                    return(invisible(NULL))
+                }
+                if (!isTRUE(input$review_confirm_checkbox %||% FALSE)) {
+                    return(invisible(NULL))
+                }
+
+                register_manual_review(
+                    query_name = target$query_name,
+                    review_type = "confirm",
+                    original_name = target$scientific_name,
+                    corrected_name = target$scientific_name,
+                    reason = tr("validate_names_review_reason_confirmed_by_user", lang_r())
+                )
+                shiny::removeModal()
+                rv$review_target <- NULL
+                shiny::showNotification(tr("validate_names_review_toast_confirm", lang_r()), type = "message", duration = 3)
+            },
+            ignoreInit = TRUE
+        )
+
+        shiny::observeEvent(input$review_save_correction,
+            {
+                target <- rv$review_target
+                if (is.null(target)) {
+                    return(invisible(NULL))
+                }
+
+                original_name <- as.character(target$scientific_name %||% "")
+                corrected_name <- trimws(as.character(input$review_corrected_name %||% ""))
+                if (!nzchar(corrected_name) || identical(corrected_name, original_name)) {
+                    return(invisible(NULL))
+                }
+
+                reason_text <- trimws(as.character(input$review_correction_reason %||% ""))
+                register_manual_review(
+                    query_name = target$query_name,
+                    review_type = "correct",
+                    original_name = original_name,
+                    corrected_name = corrected_name,
+                    reason = reason_text
+                )
+                shiny::removeModal()
+                rv$review_target <- NULL
+                shiny::showNotification(tr("validate_names_review_toast_correct", lang_r()), type = "message", duration = 3)
+            },
+            ignoreInit = TRUE
+        )
+
+        shiny::observeEvent(input$go_preview_export,
+            {
+                bslib::nav_select("main_nav", selected = "preview")
+            },
+            ignoreInit = TRUE
+        )
+
         output$title <- shiny::renderUI({
             shiny::h3(
                 shiny::icon("microscope", class = "me-2"),
@@ -403,6 +1102,9 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             is_busy <- isTRUE(rv$running) || isTRUE(rv$starting)
             quick <- quick_inputs()
             snapshot <- progress_snapshot()
+            report_df <- validation_result()
+            has_report <- is.data.frame(report_df) && nrow(report_df) > 0L
+            show_progress_meta <- is_busy || !is.null(rv$run_state) || has_report
             run_label <- if (is_busy) tr("validate_names_run_running", lang_r()) else tr("validate_names_run_cta", lang_r())
             can_run <- isTRUE(can_run_validation())
 
@@ -416,7 +1118,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 if (identical(quick$status, "missing_scientific")) {
                     tr("validate_names_missing_scientific_name", lang_r())
                 } else {
-                    tr("validate_names_no_data", lang_r())
+                    ""
                 }
             } else {
                 tr("validate_names_action_ready", lang_r())
@@ -552,22 +1254,24 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                             class = "vn-progress-track",
                             shiny::div(class = "vn-progress-fill", style = paste0("width: ", snapshot$progress_pct, "%;"))
                         ),
-                        shiny::div(
-                            class = "vn-progress-meta",
+                        if (isTRUE(show_progress_meta)) {
                             shiny::div(
-                                class = "vn-progress-meta-line",
-                                sprintf(tr("validate_names_progress_meta_line1", lang_r()), snapshot$phase_text, snapshot$batch_text)
-                            ),
-                            shiny::div(
-                                class = "vn-progress-meta-line",
-                                sprintf(
-                                    tr("validate_names_progress_meta_line2", lang_r()),
-                                    snapshot$provider_text,
-                                    snapshot$resolved_unique,
-                                    snapshot$total_unique
+                                class = "vn-progress-meta",
+                                shiny::div(
+                                    class = "vn-progress-meta-line",
+                                    sprintf(tr("validate_names_progress_meta_line1", lang_r()), snapshot$phase_text, snapshot$batch_text)
+                                ),
+                                shiny::div(
+                                    class = "vn-progress-meta-line",
+                                    sprintf(
+                                        tr("validate_names_progress_meta_line2", lang_r()),
+                                        snapshot$provider_text,
+                                        snapshot$resolved_unique,
+                                        snapshot$total_unique
+                                    )
                                 )
                             )
-                        )
+                        }
                     ),
                     shiny::div(class = "vn-action-helper", helper_text)
                 )
@@ -576,9 +1280,16 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
 
         output$stream_panel <- shiny::renderUI({
             stream_df <- stream_window(rv$stream_df, limit = stream_window_limit)
-            counts <- stream_filter_counts(stream_df)
+            review_keys <- reviewed_query_keys()
+            exiting_keys <- exiting_query_keys()
+            counts <- stream_filter_counts(stream_df, reviewed_keys = review_keys)
             active_filter <- active_stream_filter()
-            filtered_df <- filter_stream_df(stream_df, active_filter)
+            filtered_df <- filter_stream_df(
+                stream_df,
+                active_filter,
+                reviewed_keys = review_keys,
+                exiting_keys = exiting_keys
+            )
 
             pill_defs <- list(
                 list(key = "all", class = "pill-all", label_key = "validate_names_stream_filter_all"),
@@ -605,10 +1316,26 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 })
             )
 
+            unresolved_count <- suppressWarnings(as.integer(counts[["problems"]]))
+            if (is.na(unresolved_count) || unresolved_count < 0L) unresolved_count <- 0L
+            all_resolved <- isTRUE(unresolved_count == 0L) && is.data.frame(stream_df) && nrow(stream_df) > 0L
+
             stream_body <- if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
                 shiny::div(
                     class = "vn-stream-empty",
                     if (isTRUE(rv$running)) tr("validate_names_stream_waiting", lang_r()) else tr("validate_names_stream_empty", lang_r())
+                )
+            } else if (isTRUE(all_resolved)) {
+                shiny::div(
+                    class = "vn-review-empty-state",
+                    shiny::div(class = "vn-review-empty-icon", shiny::icon("party-horn", class = "fa-solid")),
+                    shiny::div(class = "vn-review-empty-title", tr("validate_names_review_empty_title", lang_r())),
+                    shiny::div(class = "vn-review-empty-message", tr("validate_names_review_empty_message", lang_r())),
+                    shiny::actionButton(
+                        ns("go_preview_export"),
+                        label = tr("validate_names_review_empty_export", lang_r()),
+                        class = "btn btn-primary vn-review-empty-export"
+                    )
                 )
             } else if (!is.data.frame(filtered_df) || nrow(filtered_df) == 0L) {
                 shiny::div(class = "vn-stream-empty", tr("validate_names_stream_empty_filter", lang_r()))
@@ -623,9 +1350,12 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         updated_value <- row$updated_at[[1]]
                         updated_text <- if (inherits(updated_value, "POSIXct")) format(updated_value, "%H:%M:%S") else "--:--:--"
                         status_text <- tr(style$label_key, lang_r())
-
+                        query_name <- as.character(row$query_name[[1]] %||% "")
+                        status_key <- normalize_status_for_filter(row$validation_status[[1]])
+                        is_problem_unreviewed <- status_key %in% problem_status_values && !(query_name %in% review_keys)
+                        is_exiting <- query_name %in% exiting_keys
                         shiny::div(
-                            class = trimws(paste("vn-stream-item", style$item_class)),
+                            class = trimws(paste("vn-stream-item", style$item_class, if (isTRUE(is_exiting)) "vn-review-item-exit" else "")),
                             shiny::span(class = trimws(paste("vn-stream-status-icon", paste0("vn-stream-status-icon-", style$key))), style$icon_symbol),
                             shiny::div(
                                 class = "vn-stream-item-main",
@@ -639,7 +1369,22 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                                     shiny::span(updated_text)
                                 )
                             ),
-                            shiny::span(class = trimws(paste("vn-status-badge", style$badge_class)), status_text)
+                            shiny::div(
+                                class = "vn-stream-item-actions",
+                                if (isTRUE(is_problem_unreviewed) && !isTRUE(is_exiting)) {
+                                    shiny::tags$button(
+                                        type = "button",
+                                        class = "btn btn-secondary vn-review-trigger",
+                                        onclick = sprintf(
+                                            "Shiny.setInputValue('%s', %s, {priority: 'event'});",
+                                            ns("open_review_target"),
+                                            jsonlite::toJSON(query_name, auto_unbox = TRUE)
+                                        ),
+                                        tr("validate_names_review_action", lang_r())
+                                    )
+                                },
+                                shiny::span(class = trimws(paste("vn-status-badge", style$badge_class)), status_text)
+                            )
                         )
                     })
                 )
@@ -660,7 +1405,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         })
 
         output$report_panel <- shiny::renderUI({
-            report <- validation_result()
+            report <- effective_report()
             has_report <- is.data.frame(report) && nrow(report) > 0L
             counts <- report_status_counts(report)
 
@@ -722,33 +1467,44 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         })
 
         output$report_table <- DT::renderDataTable({
-            report <- validation_result()
+            report <- effective_report()
             shiny::req(is.data.frame(report), nrow(report) > 0L)
 
-            status_vec <- vapply(report$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
-            scientific_name <- if ("scientificName" %in% names(report)) as.character(report$scientificName) else rep("", nrow(report))
+            status_vec <- if ("display_status" %in% names(report)) {
+                as.character(report$display_status)
+            } else {
+                vapply(report$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
+            }
+            scientific_name <- if ("scientificName_display" %in% names(report)) as.character(report$scientificName_display) else if ("scientificName" %in% names(report)) as.character(report$scientificName) else rep("", nrow(report))
             taxonomic_status <- if ("taxonomicStatus" %in% names(report)) as.character(report$taxonomicStatus) else rep("", nrow(report))
+            review_original_name <- if ("review_original_name" %in% names(report)) as.character(report$review_original_name) else rep("", nrow(report))
 
             table_df <- data.frame(
                 scientificName = scientific_name,
                 validation_status = status_vec,
                 taxonomicStatus = taxonomic_status,
+                review_original_name = review_original_name,
                 stringsAsFactors = FALSE
             )
 
             colnames(table_df) <- c(
                 tr("validate_names_table_col_scientific_name", lang_r()),
                 tr("validate_names_table_col_status", lang_r()),
-                tr("validate_names_table_col_taxonomic_status", lang_r())
+                tr("validate_names_table_col_taxonomic_status", lang_r()),
+                ".review_original_name"
             )
 
             status_labels <- list(
                 accepted = tr("validate_names_status_badge_accepted", lang_r()),
+                accepted_manual = tr("validate_names_status_badge_accepted", lang_r()),
+                manual_revision = tr("validate_names_status_badge_manual_revision", lang_r()),
                 synonym = tr("validate_names_status_badge_synonym", lang_r()),
                 not_found = tr("validate_names_status_badge_not_found", lang_r()),
                 ambiguous = tr("validate_names_status_badge_ambiguous", lang_r()),
                 ignored = tr("validate_names_status_badge_ignored", lang_r())
             )
+
+            replaced_prefix_json <- jsonlite::toJSON(tr("validate_names_review_replaced_prefix", lang_r()), auto_unbox = TRUE)
 
             status_badge_js <- DT::JS(
                 sprintf(
@@ -757,7 +1513,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         "  var status = String(data === null || data === undefined ? '' : data).toLowerCase();",
                         "  if (type !== 'display') return status;",
                         "  var labels = %s;",
-                        "  var clsMap = {accepted:'badge-success', synonym:'badge-info', not_found:'badge-error', ambiguous:'badge-warning', ignored:'badge-muted'};",
+                        "  var clsMap = {accepted:'badge-success', accepted_manual:'badge-success', manual_revision:'badge-warning', synonym:'badge-info', not_found:'badge-error', ambiguous:'badge-warning', ignored:'badge-muted'};",
                         "  var cls = clsMap[status] || 'badge-muted';",
                         "  var label = labels[status] || String(data || '');",
                         "  var escaped = $('<div/>').text(label).html();",
@@ -769,20 +1525,42 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             )
 
             scientific_name_js <- DT::JS(
+                sprintf(
+                    paste0(
+                        "function(data, type, row) {",
+                        "  if (type !== 'display') return data;",
+                        "  if (data === null || data === undefined) return '';",
+                        "  var escaped = $('<div/>').text(String(data)).html();",
+                        "  var content = '<span class=\"vn-cell-scientific\" title=\"' + escaped + '\">' + escaped + '</span>';",
+                        "  var status = String(row[1] === null || row[1] === undefined ? '' : row[1]).toLowerCase();",
+                        "  var original = String(row[3] === null || row[3] === undefined ? '' : row[3]);",
+                        "  if (status === 'manual_revision' && original.trim().length > 0) {",
+                        "    var prefix = %s;",
+                        "    var originalEscaped = $('<div/>').text(original).html();",
+                        "    content += '<div class=\"vn-cell-review-original\"><em>' + $('<div/>').text(String(prefix)).html() + ' ' + originalEscaped + '</em></div>';",
+                        "  }",
+                        "  return content;",
+                        "}"
+                    ),
+                    replaced_prefix_json
+                )
+            )
+
+            taxonomic_status_js <- DT::JS(
                 "function(data, type, row) {",
                 "  if (type !== 'display') return data;",
                 "  if (data === null || data === undefined) return '';",
                 "  var escaped = $('<div/>').text(String(data)).html();",
-                "  return '<span class=\"vn-cell-scientific\" title=\"' + escaped + '\">' + escaped + '</span>';",
+                "  return '<span class=\"vn-cell-taxonomic\" title=\"' + escaped + '\">' + escaped + '</span>';",
                 "}"
             )
 
             row_callback_js <- DT::JS(
                 "function(row, data) {",
                 "  var status = String(data[1] === null || data[1] === undefined ? '' : data[1]).toLowerCase();",
-                "  var classes = ['vn-row-accepted','vn-row-synonym','vn-row-not-found','vn-row-ambiguous','vn-row-ignored'];",
+                "  var classes = ['vn-row-accepted','vn-row-synonym','vn-row-not-found','vn-row-ambiguous','vn-row-ignored','vn-row-manual'];",
                 "  for (var i = 0; i < classes.length; i++) { $(row).removeClass(classes[i]); }",
-                "  var classMap = {accepted:'vn-row-accepted', synonym:'vn-row-synonym', not_found:'vn-row-not-found', ambiguous:'vn-row-ambiguous', ignored:'vn-row-ignored'};",
+                "  var classMap = {accepted:'vn-row-accepted', accepted_manual:'vn-row-accepted', manual_revision:'vn-row-manual', synonym:'vn-row-synonym', not_found:'vn-row-not-found', ambiguous:'vn-row-ambiguous', ignored:'vn-row-ignored'};",
                 "  var cls = classMap[status];",
                 "  if (cls) { $(row).addClass(cls); }",
                 "}"
@@ -859,8 +1637,10 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     scrollX = TRUE,
                     dom = "t<'vn-report-pagination'ip>",
                     columnDefs = list(
-                        list(targets = 0, render = scientific_name_js),
-                        list(targets = 1, render = status_badge_js)
+                        list(targets = 0, render = scientific_name_js, className = "vn-col-scientific", width = "56%"),
+                        list(targets = 1, render = status_badge_js, className = "vn-col-status", width = "16%"),
+                        list(targets = 2, render = taxonomic_status_js, className = "vn-col-taxonomic", width = "28%"),
+                        list(targets = 3, visible = FALSE, searchable = FALSE)
                     ),
                     rowCallback = row_callback_js,
                     headerCallback = header_callback_js,
@@ -885,75 +1665,108 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             )
         })
 
-        shiny::observeEvent(input$validate, {
-            if (isTRUE(rv$running) || isTRUE(rv$starting)) return(invisible(NULL))
-
-            quick <- quick_inputs()
-            if (!identical(quick$status, "ok")) {
-                msg <- if (identical(quick$status, "missing_scientific")) tr("validate_names_missing_scientific_name", lang_r()) else tr("validate_names_no_data", lang_r())
-                shiny::showNotification(msg, type = "warning")
-                return(invisible(NULL))
-            }
-            if (length(rv$selected_providers) == 0L) {
-                shiny::showNotification(tr("validate_names_providers_required", lang_r()), type = "warning")
-                return(invisible(NULL))
-            }
-            # Enter "starting" phase first so the UI can show immediate feedback.
-            rv$starting <- TRUE
-            rv$last_run_status <- "starting"
-            rv$last_error <- NA_character_
-            validation_result(NULL)
-            validation_meta(NULL)
-            rv$stream_filter <- "all"
-            shiny::showNotification(tr("validate_names_progress_status_running", lang_r()), type = "message", duration = 2)
-
-            session$onFlushed(function() {
-                rv$start_requested <- TRUE
-            }, once = TRUE)
-        }, ignoreInit = TRUE)
-
-        shiny::observeEvent(rv$start_requested, {
-            if (!isTRUE(rv$start_requested)) return(invisible(NULL))
-            rv$start_requested <- FALSE
-
-            # Heavy normalization stays deferred until explicit validate click.
-            prep <- prepared_inputs()
-            if (prep$valid_count == 0L) {
-                rv$starting <- FALSE
-                rv$last_run_status <- "idle"
-                shiny::showNotification(tr("validate_names_no_valid_queries", lang_r()), type = "warning")
-                return(invisible(NULL))
-            }
-
-            run_state <- tryCatch(
-                init_taxadb_run_state(input_df = prep$unique_df, providers = rv$selected_providers, batch_size = 200L),
-                error = function(e) {
-                    shiny::showNotification(sprintf(tr("validate_names_failed", lang_r()), as.character(e$message)), type = "error")
-                    NULL
+        shiny::observeEvent(input$validate,
+            {
+                if (isTRUE(rv$running) || isTRUE(rv$starting)) {
+                    return(invisible(NULL))
                 }
-            )
-            if (is.null(run_state)) {
+
+                quick <- quick_inputs()
+                if (!identical(quick$status, "ok")) {
+                    msg <- if (identical(quick$status, "missing_scientific")) tr("validate_names_missing_scientific_name", lang_r()) else tr("validate_names_no_data", lang_r())
+                    shiny::showNotification(msg, type = "warning")
+                    return(invisible(NULL))
+                }
+                if (length(rv$selected_providers) == 0L) {
+                    shiny::showNotification(tr("validate_names_providers_required", lang_r()), type = "warning")
+                    return(invisible(NULL))
+                }
+                # Enter "starting" phase first so the UI can show immediate feedback.
+                rv$starting <- TRUE
+                rv$last_run_status <- "starting"
+                rv$last_error <- NA_character_
+                validation_result(NULL)
+                validation_meta(NULL)
+                rv$manual_reviews <- data.frame(
+                    query_name = character(0),
+                    review_type = character(0),
+                    original_name = character(0),
+                    corrected_name = character(0),
+                    reason = character(0),
+                    reviewed_at = as.POSIXct(character(0), tz = "UTC"),
+                    stringsAsFactors = FALSE
+                )
+                rv$review_target <- NULL
+                rv$review_mode <- "confirm"
+                rv$exiting_reviews <- data.frame(
+                    query_name = character(0),
+                    expires_at = as.POSIXct(character(0), tz = "UTC"),
+                    stringsAsFactors = FALSE
+                )
+                rv$stream_filter <- "all"
+                shiny::showNotification(tr("validate_names_progress_status_running", lang_r()), type = "message", duration = 2)
+
+                session$onFlushed(function() {
+                    rv$start_requested <- TRUE
+                }, once = TRUE)
+            },
+            ignoreInit = TRUE
+        )
+
+        shiny::observeEvent(rv$start_requested,
+            {
+                if (!isTRUE(rv$start_requested)) {
+                    return(invisible(NULL))
+                }
+                rv$start_requested <- FALSE
+
+                # Heavy normalization stays deferred until explicit validate click.
+                prep <- prepared_inputs()
+                if (prep$valid_count == 0L) {
+                    rv$starting <- FALSE
+                    rv$last_run_status <- "idle"
+                    shiny::showNotification(tr("validate_names_no_valid_queries", lang_r()), type = "warning")
+                    return(invisible(NULL))
+                }
+
+                run_state <- tryCatch(
+                    init_taxadb_run_state(input_df = prep$unique_df, providers = rv$selected_providers, batch_size = 200L),
+                    error = function(e) {
+                        shiny::showNotification(sprintf(tr("validate_names_failed", lang_r()), as.character(e$message)), type = "error")
+                        NULL
+                    }
+                )
+                if (is.null(run_state)) {
+                    rv$starting <- FALSE
+                    rv$last_run_status <- "failed"
+                    return(invisible(NULL))
+                }
+
+                rv$running <- TRUE
                 rv$starting <- FALSE
-                rv$last_run_status <- "failed"
-                return(invisible(NULL))
-            }
+                rv$abort_requested <- FALSE
+                rv$run_state <- run_state
+                rv$stream_df <- empty_validation_stream()
+                rv$last_run_status <- "running"
+                rv$last_error <- NA_character_
+            },
+            ignoreInit = TRUE
+        )
 
-            rv$running <- TRUE
-            rv$starting <- FALSE
-            rv$abort_requested <- FALSE
-            rv$run_state <- run_state
-            rv$stream_df <- empty_validation_stream()
-            rv$last_run_status <- "running"
-            rv$last_error <- NA_character_
-        }, ignoreInit = TRUE)
-
-        shiny::observeEvent(input$cancel_validation, {
-            if (!isTRUE(rv$running)) return(invisible(NULL))
-            rv$abort_requested <- TRUE
-        }, ignoreInit = TRUE)
+        shiny::observeEvent(input$cancel_validation,
+            {
+                if (!isTRUE(rv$running)) {
+                    return(invisible(NULL))
+                }
+                rv$abort_requested <- TRUE
+            },
+            ignoreInit = TRUE
+        )
 
         shiny::observe({
-            if (!isTRUE(rv$running) || is.null(rv$run_state)) return(invisible(NULL))
+            if (!isTRUE(rv$running) || is.null(rv$run_state)) {
+                return(invisible(NULL))
+            }
             shiny::invalidateLater(60, session)
 
             state <- rv$run_state
@@ -968,7 +1781,9 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
 
             rv$run_state <- state
             rv$stream_df <- state$stream_df
-            if (!is_taxadb_run_done(state)) return(invisible(NULL))
+            if (!is_taxadb_run_done(state)) {
+                return(invisible(NULL))
+            }
 
             rv$running <- FALSE
             rv$starting <- FALSE
@@ -995,6 +1810,18 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             }
         })
 
-        shiny::reactive(validation_result())
+        review_export_payload <- shiny::reactive({
+            list(
+                entries = review_entries_df(),
+                normalize_opts = list(
+                    remove_authors = isTRUE(input$remove_authors %||% TRUE),
+                    ignore_qualifiers = isTRUE(input$ignore_qualifiers %||% TRUE)
+                )
+            )
+        })
+
+        result_r <- shiny::reactive(validation_result())
+        attr(result_r, "review_export_payload") <- review_export_payload
+        result_r
     })
 }

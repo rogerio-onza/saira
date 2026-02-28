@@ -48,6 +48,9 @@ help_get_author_meta <- function() {
     }
 
     author_name <- help_or_default(desc$Author, default_name)
+    if (grepl("^person\\(", author_name, perl = TRUE)) {
+        author_name <- default_name
+    }
     author_name <- gsub("\\s*\\[[^\\]]*\\]", "", author_name, perl = TRUE)
     author_name <- trimws(author_name)
     if (grepl("\u00C3", author_name, fixed = TRUE)) {

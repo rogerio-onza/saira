@@ -506,7 +506,7 @@ mod_wiki_server <- function(id, lang_r) {
                     )
                 ),
                 callback = filter_callback_js,
-                class = "display compact",
+                class = "display",
                 rownames = FALSE,
                 escape = FALSE
             )

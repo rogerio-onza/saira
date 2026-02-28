@@ -67,13 +67,38 @@ testthat::test_that("custom.css removes hardcoded IBM font-family declarations",
     }
 
     testthat::expect_true(
-        grepl("--font-serif:\\s*'Cormorant Garamond',\\s*Georgia,\\s*serif;", css_text, perl = TRUE),
-        info = "Missing --font-serif token for Cormorant Garamond"
+        grepl("--font-serif:\\s*'Source Serif 4',\\s*Georgia,\\s*serif;", css_text, perl = TRUE),
+        info = "Missing --font-serif token for Source Serif 4"
     )
     testthat::expect_true(
         grepl("--font-mono:\\s*'Space Mono',\\s*'IBM Plex Mono',\\s*monospace;", css_text, perl = TRUE),
         info = "Missing --font-mono v5 token with Space Mono primary fallback stack"
     )
+})
+
+testthat::test_that("custom.css enforces design-v7 typography scale and optical sizing", {
+    css_path <- resolve_css_path()
+    css_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+
+    testthat::expect_true(grepl("--text-xs:\\s*0\\.75rem;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("--text-sm:\\s*0\\.8rem;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("--text-base:\\s*1\\.05rem;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("--text-md:\\s*1\\.1rem;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("--text-lg:\\s*1\\.25rem;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("--text-xl:\\s*1\\.5rem;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("--text-2xl:\\s*1\\.75rem;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("--weight-regular:\\s*400;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("--weight-medium:\\s*500;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("--weight-semibold:\\s*600;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("--leading-tight:\\s*1\\.25;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("--leading-normal:\\s*1\\.6;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("--leading-relaxed:\\s*1\\.75;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("(?s)body,\\s*p,\\s*\\.body-text\\s*\\{[^}]*font-optical-sizing:\\s*auto;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("(?s)h1,\\s*h2,\\s*h3,\\s*h4,\\s*h5,\\s*h6\\s*\\{[^}]*font-optical-sizing:\\s*auto;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("(?s)h1\\s*\\{[^}]*font-size:\\s*2rem;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("(?s)h2\\s*\\{[^}]*font-size:\\s*1\\.6rem;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("(?s)h3\\s*\\{[^}]*font-size:\\s*1\\.3rem;", css_text, perl = TRUE))
+    testthat::expect_true(grepl("(?s)h4\\s*\\{[^}]*font-size:\\s*1\\.15rem;", css_text, perl = TRUE))
 })
 
 testthat::test_that("custom.css does not use opacity 0.45 in DataTables pagination disabled controls", {
@@ -163,14 +188,74 @@ testthat::test_that("custom.css keeps validate-names tri-column workspace contra
 
     testthat::expect_true(
         grepl("\\.vn-config-panel\\s*\\{", css_text, perl = TRUE) &&
-            grepl("width:\\s*240px;", css_text, perl = TRUE),
-        info = "Config panel must keep fixed width 240px"
+            grepl("width:\\s*clamp\\(340px,\\s*22vw,\\s*420px\\);", css_text, perl = TRUE),
+        info = "Config panel must keep responsive clamp width (340px, 22vw, 420px)"
     )
 
     testthat::expect_true(
         grepl("\\.vn-report-panel\\s*\\{", css_text, perl = TRUE) &&
-            grepl("width:\\s*340px;", css_text, perl = TRUE),
-        info = "Report panel must keep fixed width 340px"
+            grepl("width:\\s*clamp\\(520px,\\s*31vw,\\s*640px\\);", css_text, perl = TRUE),
+        info = "Report panel must keep responsive clamp width (520px, 31vw, 640px)"
+    )
+
+    testthat::expect_true(
+        grepl("\\.validate-names-page\\s*\\{", css_text, perl = TRUE) &&
+            grepl("max-width:\\s*none;", css_text, perl = TRUE),
+        info = "Validate-names page should use full-width shell"
+    )
+
+    testthat::expect_true(
+        grepl("\\.tab-content\\s*>\\s*\\.tab-pane:has\\(\\.validate-names-page\\)\\s*\\{", css_text, perl = TRUE) &&
+            grepl("padding-left:\\s*0;", css_text, perl = TRUE) &&
+            grepl("padding-right:\\s*0;", css_text, perl = TRUE),
+        info = "Validate-names tab pane must remove lateral padding for full-width layout"
+    )
+})
+
+testthat::test_that("custom.css includes review modal tokens and reduced-motion guardrail", {
+    css_path <- resolve_css_path()
+    css_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+
+    required_selectors <- c(
+        "\\.vn-review-modal",
+        "\\.vn-review-trigger\\.btn",
+        "\\.vn-review-confirm-block",
+        "\\.vn-review-empty-state",
+        "\\.vn-review-item-exit"
+    )
+
+    for (selector in required_selectors) {
+        testthat::expect_true(
+            grepl(selector, css_text, perl = TRUE),
+            info = paste("Missing review selector:", selector)
+        )
+    }
+
+    token_checks <- c(
+        "var\\(--space-",
+        "var\\(--radius-",
+        "var\\(--shadow-",
+        "var\\(--error-",
+        "var\\(--warning-",
+        "var\\(--info-",
+        "var\\(--success-",
+        "var\\(--overlay\\)"
+    )
+
+    for (token_pattern in token_checks) {
+        testthat::expect_true(
+            grepl(token_pattern, css_text, perl = TRUE),
+            info = paste("Expected token usage missing for pattern:", token_pattern)
+        )
+    }
+
+    testthat::expect_true(
+        grepl("@media\\s*\\(prefers-reduced-motion:\\s*reduce\\)", css_text, perl = TRUE),
+        info = "Missing prefers-reduced-motion media query"
+    )
+    testthat::expect_true(
+        grepl("(?s)@media\\s*\\(prefers-reduced-motion:\\s*reduce\\)\\s*\\{[^}]*\\.vn-review-item-exit\\s*\\{[^}]*animation:\\s*none;", css_text, perl = TRUE),
+        info = "Review exit animation is not disabled under prefers-reduced-motion"
     )
 })
 

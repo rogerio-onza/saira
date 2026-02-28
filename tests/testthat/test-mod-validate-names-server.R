@@ -81,7 +81,7 @@ testthat::test_that("stream filter counts and problem-only filter are computed s
             counts <- stream_filter_counts(stream_df)
 
             testthat::expect_identical(as.integer(counts[["all"]]), 6L)
-            testthat::expect_identical(as.integer(counts[["problems"]]), 5L)
+            testthat::expect_identical(as.integer(counts[["problems"]]), 3L)
             testthat::expect_identical(as.integer(counts[["not_found"]]), 1L)
             testthat::expect_identical(as.integer(counts[["ambiguous"]]), 1L)
             testthat::expect_identical(as.integer(counts[["synonym"]]), 1L)
@@ -89,7 +89,7 @@ testthat::test_that("stream filter counts and problem-only filter are computed s
 
             filtered <- filter_stream_df(stream_df, "problems")
             filtered_status <- vapply(filtered$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
-            testthat::expect_true(all(filtered_status != "accepted"))
+            testthat::expect_true(all(filtered_status %in% c("not_found", "ambiguous", "synonym")))
         }
     )
 })
@@ -130,10 +130,258 @@ testthat::test_that("report status counts classify valid, invalid and unresolved
             )
 
             counts <- report_status_counts(mock_report)
-            testthat::expect_identical(as.integer(counts[["valid"]]), 2L)
+            testthat::expect_identical(as.integer(counts[["valid"]]), 1L)
             testthat::expect_identical(as.integer(counts[["invalid"]]), 1L)
-            testthat::expect_identical(as.integer(counts[["unresolved"]]), 2L)
+            testthat::expect_identical(as.integer(counts[["unresolved"]]), 3L)
             testthat::expect_identical(as.integer(counts[["total"]]), 5L)
+        }
+    )
+})
+
+testthat::test_that("manual confirm review decrements unresolved and problem filter counts", {
+    mapped_df <- data.frame(scientificName = c("A", "B"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            rv$stream_df <- data.frame(
+                query_name = c("A", "B"),
+                validation_status = c("accepted", "not_found"),
+                provider = c("gbif", "gbif"),
+                updated_at = rep(as.POSIXct("2026-02-27 10:00:00", tz = "UTC"), 2),
+                display_order = c(1L, 2L),
+                stringsAsFactors = FALSE
+            )
+
+            before_counts <- stream_filter_counts(rv$stream_df, reviewed_keys = reviewed_query_keys())
+            testthat::expect_identical(as.integer(before_counts[["problems"]]), 1L)
+
+            register_manual_review(
+                query_name = "B",
+                review_type = "confirm",
+                original_name = "B",
+                corrected_name = "B",
+                reason = "Confirmed by user"
+            )
+
+            after_counts <- stream_filter_counts(rv$stream_df, reviewed_keys = reviewed_query_keys())
+            testthat::expect_identical(as.integer(after_counts[["problems"]]), 0L)
+
+            report_df <- data.frame(
+                scientificName = c("A", "B"),
+                query_name = c("A", "B"),
+                validation_status = c("accepted", "not_found"),
+                stringsAsFactors = FALSE
+            )
+            counts <- report_status_counts(within(report_df, {
+                manual_review <- c(FALSE, TRUE)
+            }))
+            testthat::expect_identical(as.integer(counts[["unresolved"]]), 0L)
+        }
+    )
+})
+
+testthat::test_that("manual correction saves only when name actually changes", {
+    mapped_df <- data.frame(scientificName = c("Abies alba"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            rv$review_target <- list(
+                query_name = "Abies alba",
+                status_key = "not_found",
+                scientific_name = "Abies alba"
+            )
+            session$setInputs(review_corrected_name = "Abies alba")
+            session$setInputs(review_save_correction = 1)
+            testthat::expect_identical(nrow(rv$manual_reviews), 0L)
+
+            session$setInputs(review_corrected_name = "Abies alba var. minor")
+            session$setInputs(review_correction_reason = "")
+            session$setInputs(review_save_correction = 2)
+            testthat::expect_identical(nrow(rv$manual_reviews), 1L)
+            testthat::expect_identical(rv$manual_reviews$review_type[[1]], "correct")
+            testthat::expect_identical(rv$manual_reviews$corrected_name[[1]], "Abies alba var. minor")
+        }
+    )
+})
+
+testthat::test_that("review modal render works for confirm and edit modes", {
+    mapped_df <- data.frame(scientificName = c("Abies alba"), stringsAsFactors = FALSE)
+
+    testthat::with_mocked_bindings(
+        showModal = function(...) NULL,
+        .package = "shiny",
+        {
+            shiny::testServer(
+                mod_validate_names_server,
+                args = list(
+                    mapped_data_r = shiny::reactive(mapped_df),
+                    lang_r = shiny::reactive("en")
+                ),
+                {
+                    rv$review_target <- list(
+                        query_name = "O'Hara \"Alpha\" <beta>",
+                        status_key = "not_found",
+                        scientific_name = "O'Hara \"Alpha\" <beta>"
+                    )
+
+                    testthat::expect_no_error(show_review_modal("confirm"))
+                    testthat::expect_no_error(show_review_modal("edit"))
+                }
+            )
+        }
+    )
+})
+
+testthat::test_that("open_review_target first valid event resolves and stores target", {
+    mapped_df <- data.frame(scientificName = c("Abies alba"), stringsAsFactors = FALSE)
+
+    testthat::with_mocked_bindings(
+        showModal = function(...) NULL,
+        .package = "shiny",
+        {
+            shiny::testServer(
+                mod_validate_names_server,
+                args = list(
+                    mapped_data_r = shiny::reactive(mapped_df),
+                    lang_r = shiny::reactive("en")
+                ),
+                {
+                    rv$stream_df <- data.frame(
+                        query_name = "Abies alba",
+                        validation_status = "not_found",
+                        provider = "gbif",
+                        updated_at = as.POSIXct("2026-02-27 12:00:00", tz = "UTC"),
+                        display_order = 1L,
+                        stringsAsFactors = FALSE
+                    )
+
+                    session$setInputs(open_review_target = "Abies alba")
+                    session$flushReact()
+
+                    testthat::expect_true(is.list(rv$review_target))
+                    testthat::expect_identical(as.character(rv$review_target$query_name), "Abies alba")
+                    testthat::expect_identical(as.character(rv$review_target$status_key), "not_found")
+                    testthat::expect_identical(as.character(rv$review_target$scientific_name), "Abies alba")
+                }
+            )
+        }
+    )
+})
+
+testthat::test_that("open review handles modal open errors with notification", {
+    mapped_df <- data.frame(scientificName = c("Abies alba"), stringsAsFactors = FALSE)
+    notifications <- character(0)
+
+    testthat::with_mocked_bindings(
+        showModal = function(...) stop("modal failure"),
+        showNotification = function(ui, type = "default", ...) {
+            notifications <<- c(notifications, as.character(ui))
+            NULL
+        },
+        .package = "shiny",
+        {
+            shiny::testServer(
+                mod_validate_names_server,
+                args = list(
+                    mapped_data_r = shiny::reactive(mapped_df),
+                    lang_r = shiny::reactive("en")
+                ),
+                {
+                    rv$stream_df <- data.frame(
+                        query_name = "Abies alba",
+                        validation_status = "not_found",
+                        provider = "gbif",
+                        updated_at = as.POSIXct("2026-02-27 12:00:00", tz = "UTC"),
+                        display_order = 1L,
+                        stringsAsFactors = FALSE
+                    )
+
+                    session$setInputs(open_review_target = "Abies alba")
+                    session$flushReact()
+                }
+            )
+        }
+    )
+
+    testthat::expect_true(any(grepl("Failed to open manual review:", notifications, fixed = TRUE)))
+    testthat::expect_true(any(grepl("modal failure", notifications, fixed = TRUE)))
+})
+
+testthat::test_that("effective report puts reviewed rows first with manual status badges", {
+    mapped_df <- data.frame(scientificName = c("A", "B"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            validation_result(data.frame(
+                scientificName = c("A", "B"),
+                query_name = c("A", "B"),
+                validation_status = c("not_found", "accepted"),
+                taxonomicStatus = c(NA_character_, "accepted"),
+                stringsAsFactors = FALSE
+            ))
+
+            register_manual_review(
+                query_name = "A",
+                review_type = "correct",
+                original_name = "A",
+                corrected_name = "A corrected",
+                reason = "Typo"
+            )
+
+            eff <- effective_report()
+            testthat::expect_identical(as.character(eff$query_name[[1]]), "A")
+            testthat::expect_identical(as.character(eff$display_status[[1]]), "manual_revision")
+            testthat::expect_identical(as.character(eff$scientificName_display[[1]]), "A corrected")
+        }
+    )
+})
+
+testthat::test_that("stream panel shows celebratory empty state when all problematic names are reviewed", {
+    mapped_df <- data.frame(scientificName = c("A"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            rv$stream_df <- data.frame(
+                query_name = "A",
+                validation_status = "not_found",
+                provider = "gbif",
+                updated_at = as.POSIXct("2026-02-27 11:00:00", tz = "UTC"),
+                display_order = 1L,
+                stringsAsFactors = FALSE
+            )
+            register_manual_review(
+                query_name = "A",
+                review_type = "confirm",
+                original_name = "A",
+                corrected_name = "A",
+                reason = "Confirmed by user"
+            )
+            rv$stream_filter <- "problems"
+            session$flushReact()
+
+            ui_obj <- output$stream_panel
+            html <- paste(ui_obj$html, collapse = " ")
+            testthat::expect_true(grepl("vn-review-empty-state", html, fixed = TRUE))
         }
     )
 })

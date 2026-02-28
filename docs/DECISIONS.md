@@ -983,3 +983,74 @@ Formato: ADR leve (Architecture Decision Record).
   - Menor risco de regressao por encoding e BOM em CSV.
   - Startup mais robusto quando artefatos estaticos falham.
   - Melhor observabilidade operacional via logs explicitos.
+
+---
+
+## ADR-050: Ajuste seguro de largura para `validate_names` com tri-coluna preservada
+
+- **Data**: 2026-02-26
+- **Contexto**: A aba `validate_names` manteve o contrato tri-coluna do ADR-047, mas o shell com limite de largura fixo e a distribuicao automatica da tabela no painel direito deixavam as 3 colunas do relatorio visualmente espremidas em desktop.
+- **Decisao**:
+  - Remover limite de largura hardcoded do shell UI de `mod_validate_names_ui()`.
+  - Adotar contrato full-width local para `validate_names` no mesmo padrao espacial da aba `validate_coords`:
+    - `.validate-names-page { width: 100%; max-width: none; ... }`
+    - `.tab-content > .tab-pane:has(.validate-names-page) { padding-left/right: 0; }`
+  - Preservar guardrails do ADR-047 sem alteracoes:
+    - `--validate-names-header-offset`
+    - `.vn-config-panel` com `width: 240px`
+    - `.vn-report-panel` com `width: 340px`
+  - Tornar a tabela do relatorio mais legivel sem redesign estrutural:
+    - largura explicita por coluna (`scientificName` priorizada, `status` compacta, `taxonomicStatus` intermediaria);
+    - ajuste de celula para reduzir truncamento agressivo em nome cientifico e permitir quebra controlada em `taxonomicStatus`.
+- **Alternativas**:
+  - Aumentar largura fixa do painel direito (>340px) - rejeitado por quebrar guardrails visuais vigentes.
+  - Migrar para redesign amplo no padrao de coordenadas (left + right) - rejeitado por extrapolar escopo do ajuste seguro.
+  - Manter distribuicao automatica de colunas da DataTable - rejeitado por manter baixa legibilidade no painel de 340px.
+- **Consequencias**:
+  - A aba de nomes passa a aproveitar melhor a largura util da pagina, alinhando comportamento espacial com `validate_coords`.
+  - O contrato tri-coluna permanece estavel para CSS/tests e para o restante do app.
+- Nao ha mudanca de API publica em R; alteracao restrita a UI/CSS e guardrails.
+
+---
+
+## ADR-051: Revisao manual de nomes problematicos integrada ao export
+
+- **Data**: 2026-02-27
+- **Contexto**: A validacao automatica de nomes pode retornar casos nao resolvidos (`not_found`, `ambiguous`, `synonym`) que exigem decisao humana. Reprocessar planilha inteira para cada ajuste manual gera atrito de UX e aumenta risco de inconsistencia entre a aba de validacao e o CSV final.
+- **Decisao**:
+  - Introduzir revisao manual inline em `validate_names` via modal unico de dois modos (confirmar/editar), sempre iniciado em confirmacao rapida.
+  - Tratar revisao como estado reativo central por `query_name`, valendo para todas as ocorrencias do mesmo nome consultado.
+  - Considerar "problematicos nao resolvidos" apenas para os tres status canonicos: `not_found`, `ambiguous`, `synonym`.
+  - Propagar decisoes para export por payload reativo anexado ao retorno do modulo (`review_export_payload`) sem quebrar o contrato existente de retorno principal (`reactive(data.frame)`).
+  - Aplicar payload no fluxo de download da Preview antes do pipeline de export, adicionando sempre as colunas `validacao_manual` e `motivo_revisao`.
+- **Alternativas**:
+  - Exigir correcao na planilha original + novo upload - rejeitado por UX fraca e ciclo operacional lento.
+  - Persistir revisoes em storage externo - rejeitado neste ciclo por custo de infraestrutura e escopo.
+  - Implementar modais separados para cada tipo de problema - rejeitado por duplicacao de logica e maior risco de drift visual/funcional.
+- **Consequencias**:
+  - Fluxo de resolucao de nomes passa a ser end-to-end dentro da UI, sem reload.
+  - Export final fica auditavel com metadados explicitos de intervencao manual.
+  - Acoplamento entre `validate_names` e `preview` passa a ocorrer por atributo reativo opcional (compativel com fallback nulo).
+
+---
+
+## ADR-052: Alta resolucao de costa para cc_sea e remocao de clustering do Leaflet
+
+- **Data**: 2026-02-27
+- **Contexto**: `validate_coords_cc_df` usava `seas_scale = 110` (1:110M, ~10km de imprecisao costeira), causando falsos positivos de "mar" para pontos terrestres proximos da costa. O `markerClusterOptions()` do Leaflet agrupava pontos em circulos numerados quando >=500 pontos, impedindo verificacao visual da posicao real dos pontos flagados.
+- **Decisao**:
+  - Migrar `seas_scale` default de `110` para `10` (1:10M, ~1km de precisao), usando dados de alta resolucao do pacote `rnaturalearthhires`.
+  - Implementar fallback automatico para `scale = 50` quando `rnaturalearthhires` nao esta instalado, via `requireNamespace(..., quietly = TRUE)`.
+  - Adicionar `rnaturalearthhires` em `Suggests` no `DESCRIPTION` com `Additional_repositories` apontando para `https://ropensci.r-universe.dev`.
+  - Remover `markerClusterOptions()` do Leaflet, renderizando todos os pontos individualmente com raio adaptativo (4px para >2000 pontos, 6px caso contrario).
+  - Adicionar chip de alerta visivel (`alert alert-warning`) na legenda do mapa informando que pontos costeiros podem ser flagados incorretamente.
+- **Alternativas**:
+  - Manter `scale = 110` com disclaimer textual - rejeitado por nao resolver a causa raiz dos falsos positivos.
+  - Usar `buffland` (costa com buffer de 1 grau/~111km) - rejeitado por ser excessivamente permissivo, escondendo flags legitimas de mar.
+  - Usar `scale = 50` como default fixo - descartado em favor de `scale = 10` com fallback para `50`, aproveitando a maior precisao quando o pacote esta disponivel.
+- **Consequencias**:
+  - Diagnostico de "mar" fica significativamente mais preciso para pontos costeiros.
+  - Pontos no mapa aparecem sempre nas posicoes reais, permitindo verificacao visual direta.
+  - `rnaturalearthhires` precisa ser instalado separadamente pois nao esta no CRAN.
+  - Performance do mapa pode ser ligeiramente menor para datasets muito grandes (>5000 pontos) sem clustering, mitigado por `preferCanvas` e raio reduzido.
+

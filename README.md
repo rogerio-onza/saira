@@ -37,6 +37,27 @@ install.packages(c("shiny", "bslib", "readr", "stringr", "DT", "ids", "here", "j
     shiny::runApp()
     ```
 
+### Running Tests (Vanilla R)
+
+This project activates `renv` via `.Rprofile`. To run tests using your global library
+(avoiding `renv` session differences), use:
+
+```bash
+Rscript --vanilla scripts/run_tests_vanilla.R
+```
+
+Run by filter:
+
+```bash
+Rscript --vanilla scripts/run_tests_vanilla.R "app-ui-fonts|css-guardrails"
+```
+
+Run one file:
+
+```bash
+Rscript --vanilla scripts/run_tests_vanilla.R --file tests/testthat/test-css-guardrails.R
+```
+
 ---
 
 ## 📖 Documentation

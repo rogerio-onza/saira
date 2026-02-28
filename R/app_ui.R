@@ -17,13 +17,7 @@ app_ui <- function() {
         lang = "pt-BR",
         title = shiny::tags$div(
             class = "navbar-brand-wrapper",
-            shiny::tags$img(
-                src = "www/images/hexagon_logo.png",
-                height = "72px",
-                class = "navbar-logo",
-                alt = "Saira Logo"
-            ),
-            shiny::tags$span("Saira", class = "navbar-title")
+            shiny::tags$span("Saíra", class = "navbar-title navbar-brand-name")
         ),
         theme = bslib::bs_theme(
             version = 5,
@@ -36,8 +30,8 @@ app_ui <- function() {
             info = "#252659",
             warning = "#FFA204",
             danger = "#C0392B",
-            base_font = bslib::font_collection("Cormorant Garamond", "Georgia", "serif"),
-            heading_font = bslib::font_collection("Cormorant Garamond", "Georgia", "serif"),
+            base_font = bslib::font_collection("Source Serif 4", "Georgia", "serif"),
+            heading_font = bslib::font_collection("Source Serif 4", "Georgia", "serif"),
             code_font = bslib::font_collection("Space Mono", "monospace")
         ),
 
@@ -45,7 +39,7 @@ app_ui <- function() {
         shiny::tags$head(
             shiny::tags$link(
                 rel = "stylesheet",
-                href = "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Space+Mono:ital@0;1&display=swap"
+                href = "https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500;1,8..60,600&family=Space+Mono:ital@0;1&display=swap"
             ),
             shiny::tags$link(
                 rel = "stylesheet",
@@ -66,11 +60,6 @@ app_ui <- function() {
             ),
             shiny::tags$script(
                 src = "https://unpkg.com/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js"
-            ),
-            shiny::tags$link(
-                rel = "icon",
-                type = "image/png",
-                href = "www/images/hexagon_logo.png"
             )
         ),
 
@@ -89,7 +78,7 @@ app_ui <- function() {
         bslib::nav_panel(
             title = shiny::uiOutput("nav_mapping_title"),
             value = "mapping",
-            icon = shiny::icon("arrows-alt"),
+            icon = shiny::icon("arrows-alt", class = "fa-solid"),
             mod_mapping_ui("mapping")
         ),
 
@@ -97,14 +86,14 @@ app_ui <- function() {
         bslib::nav_panel(
             title = shiny::uiOutput("nav_preview_title"),
             value = "preview",
-            icon = shiny::icon("table"),
+            icon = shiny::icon("table", class = "fa-solid"),
             mod_preview_ui("preview")
         ),
 
         # Dropdown: Validation
         bslib::nav_menu(
             title = shiny::tags$span(
-                shiny::icon("check-circle"),
+                shiny::icon("check-circle", class = "fa-solid"),
                 shiny::uiOutput("nav_validate_title", inline = TRUE)
             ),
 
@@ -112,7 +101,7 @@ app_ui <- function() {
             bslib::nav_panel(
                 title = shiny::uiOutput("nav_validate_names_title"),
                 value = "validate_names",
-                icon = shiny::icon("dna"),
+                icon = shiny::icon("dna", class = "fa-solid"),
                 mod_validate_names_ui("validate_names")
             ),
 
@@ -120,7 +109,7 @@ app_ui <- function() {
             bslib::nav_panel(
                 title = shiny::uiOutput("nav_validate_coords_title"),
                 value = "validate_coords",
-                icon = shiny::icon("map-marker-alt"),
+                icon = shiny::icon("map-marker-alt", class = "fa-solid"),
                 mod_validate_coords_ui("validate_coords")
             )
         ),
@@ -129,7 +118,7 @@ app_ui <- function() {
         bslib::nav_panel(
             title = shiny::uiOutput("nav_wiki_title"),
             value = "wiki",
-            icon = shiny::icon("book"),
+            icon = shiny::icon("book", class = "fa-solid"),
             mod_wiki_ui("wiki")
         ),
 
@@ -137,7 +126,7 @@ app_ui <- function() {
         bslib::nav_panel(
             title = shiny::uiOutput("nav_help_title"),
             value = "help",
-            icon = shiny::icon("question-circle"),
+            icon = shiny::icon("question-circle", class = "fa-solid"),
             mod_help_ui("help")
         ),
 
@@ -149,7 +138,7 @@ app_ui <- function() {
             shiny::selectInput(
                 inputId = "lang_switch",
                 label = shiny::tags$span(tr("a11y_lang_switch_label", "pt"), class = "visually-hidden"),
-                choices = c("Portuguese" = "pt", "English" = "en"),
+                choices = c("Português" = "pt", "English" = "en"),
                 selected = "pt",
                 width = "150px",
                 selectize = FALSE

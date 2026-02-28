@@ -12,6 +12,7 @@ LazyData: true
 RoxygenNote: 7.3.3
 Imports:
     shiny (>= 1.7.0),
+    htmltools,
     bslib (>= 0.5.0),
     readr (>= 2.1.0),
     stringr (>= 1.5.0),
@@ -26,8 +27,10 @@ Imports:
     ids (>= 1.0.0),
     here (>= 1.0.0),
     jsonlite (>= 1.8.0)
+Additional_repositories: https://ropensci.r-universe.dev
 Suggests:
     testthat (>= 3.0.0),
+    rnaturalearthhires (>= 1.0.0),
     devtools,
     roxygen2,
     pkgload

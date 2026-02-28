@@ -11,8 +11,8 @@
 i18n_dict <- list(
     # App Title
     app_title = list(
-        pt = "Saira - Padroniza\u00E7\u00E3o DwC",
-        en = "Saira - DwC Standardization"
+        pt = "Sa\u00EDra - Padroniza\u00E7\u00E3o DwC",
+        en = "Sa\u00EDra - DwC Standardization"
     ),
 
     # Navigation
@@ -567,7 +567,7 @@ i18n_dict <- list(
         en = "Global Biodiversity Information Facility"
     ),
     validate_names_provider_gbif_desc = list(
-        pt = "Cobertura global para nomes taxonomicos e sinonimos.",
+        pt = "Cobertura global para nomes taxon\u00F4micos e sin\u00F4nimos.",
         en = "Global coverage for taxonomic names and synonyms."
     ),
     validate_names_provider_itis_full = list(
@@ -575,7 +575,7 @@ i18n_dict <- list(
         en = "Integrated Taxonomic Information System"
     ),
     validate_names_provider_itis_desc = list(
-        pt = "Fonte consolidada para taxa da America do Norte.",
+        pt = "Fonte consolidada para taxa da Am\u00E9rica do Norte.",
         en = "Consolidated source for North American taxa."
     ),
     validate_names_provider_col_full = list(
@@ -583,7 +583,7 @@ i18n_dict <- list(
         en = "Catalogue of Life"
     ),
     validate_names_provider_col_desc = list(
-        pt = "Catalogo taxonomico de referencia com curadoria global.",
+        pt = "Cat\u00E1logo taxon\u00F4mico de refer\u00EAncia com curadoria global.",
         en = "Reference taxonomic catalog with global curation."
     ),
     validate_names_provider_ncbi_full = list(
@@ -611,7 +611,7 @@ i18n_dict <- list(
         en = "Click a selected card to remove it, then click again to append it at the end of the priority queue."
     ),
     validate_names_options_card_title = list(
-        pt = "Opcoes de Validacao",
+        pt = "Op\u00E7\u00F5es de Valida\u00E7\u00E3o",
         en = "Validation Options"
     ),
     validate_names_remove_authors = list(
@@ -619,7 +619,7 @@ i18n_dict <- list(
         en = "Remove authors"
     ),
     validate_names_remove_authors_desc = list(
-        pt = "Remove autoria e ano para melhorar comparacao entre provedores.",
+        pt = "Remove autoria e ano para melhorar compara\u00E7\u00E3o entre provedores.",
         en = "Removes authorship and year to improve cross-provider matching."
     ),
     validate_names_ignore_qualifiers = list(
@@ -627,15 +627,15 @@ i18n_dict <- list(
         en = "Ignore sp., cf., aff., nr."
     ),
     validate_names_ignore_qualifiers_desc = list(
-        pt = "Ignora qualificadores nao taxonomicos durante a normalizacao.",
+        pt = "Ignora qualificadores n\u00E3o taxon\u00F4micos durante a normaliza\u00E7\u00E3o.",
         en = "Ignores non-taxonomic qualifiers during normalization."
     ),
     validate_names_download_notice = list(
-        pt = "O banco do provedor sera baixado automaticamente no primeiro uso.",
+        pt = "O banco do provedor ser\u00E1 baixado automaticamente no primeiro uso.",
         en = "Provider databases are downloaded automatically on first use."
     ),
     validate_names_priority_notice = list(
-        pt = "O primeiro provedor que retornar resultado sera usado como veredito.",
+        pt = "O primeiro provedor que retornar resultado ser\u00E1 usado como veredito.",
         en = "The first provider with a match defines the verdict."
     ),
     validate_names_run = list(pt = "Validar Nomes", en = "Validate Names"),
@@ -652,15 +652,15 @@ i18n_dict <- list(
         en = "Cancel"
     ),
     validate_names_cancel_requested = list(
-        pt = "Cancelamento solicitado. Encerrando no proximo passo seguro.",
+        pt = "Cancelamento solicitado. Encerrando no pr\u00F3ximo passo seguro.",
         en = "Cancellation requested. Stopping at the next safe step."
     ),
     validate_names_cancelled_notice = list(
-        pt = "Validacao cancelada. Os nomes restantes foram marcados como nao encontrados.",
+        pt = "Valida\u00E7\u00E3o cancelada. Os nomes restantes foram marcados como n\u00E3o encontrados.",
         en = "Validation cancelled. Remaining names were marked as not found."
     ),
     validate_names_action_card_title = list(
-        pt = "Acao",
+        pt = "A\u00E7\u00E3o",
         en = "Action"
     ),
     validate_names_action_metric_providers = list(
@@ -668,15 +668,15 @@ i18n_dict <- list(
         en = "Selected providers"
     ),
     validate_names_action_metric_unique = list(
-        pt = "Nomes unicos",
+        pt = "Nomes \u00FAnicos",
         en = "Unique names"
     ),
     validate_names_action_metric_options = list(
-        pt = "Opcoes ativas",
+        pt = "Op\u00E7\u00F5es ativas",
         en = "Active options"
     ),
     validate_names_action_ready = list(
-        pt = "Pronto para iniciar validacao incremental por lotes.",
+        pt = "Pronto para iniciar valida\u00E7\u00E3o incremental por lotes.",
         en = "Ready to start incremental batch validation."
     ),
     validate_names_ready_hint_title = list(
@@ -684,15 +684,15 @@ i18n_dict <- list(
         en = "Ready to validate"
     ),
     validate_names_ready_hint_body = list(
-        pt = "Selecione os provedores, configure as opcoes e clique em Validar Nomes. Os resultados aparecerao aqui em tempo real.",
+        pt = "Selecione os provedores, configure as op\u00E7\u00F5es e clique em Validar Nomes. Os resultados aparecer\u00E3o aqui em tempo real.",
         en = "Select providers, configure options, and click Validate Names. Results will appear here in real time."
     ),
     validate_names_no_data = list(
-        pt = "Nenhum dado mapeado disponivel para validar.",
+        pt = "Carregue e mapeie dados antes de validar.",
         en = "No mapped data available for validation."
     ),
     validate_names_no_valid_queries = list(
-        pt = "Nenhum nome cientifico valido para consultar nos provedores.",
+        pt = "Nenhum nome cient\u00EDfico v\u00E1lido para consultar nos provedores.",
         en = "No valid scientific names to query in providers."
     ),
     validate_names_error_unknown = list(
@@ -700,7 +700,7 @@ i18n_dict <- list(
         en = "unknown error"
     ),
     validate_names_progress_title = list(
-        pt = "Progresso da Validacao",
+        pt = "Progresso da Valida\u00E7\u00E3o",
         en = "Validation Progress"
     ),
     validate_names_progress_label = list(
@@ -708,7 +708,7 @@ i18n_dict <- list(
         en = "Progress"
     ),
     validate_names_progress_idle = list(
-        pt = "Inicie a validacao para acompanhar o progresso em tempo real.",
+        pt = "Aguardando valida\u00E7\u00E3o.",
         en = "Start validation to follow real-time progress."
     ),
     validate_names_progress_status_running = list(
@@ -724,11 +724,11 @@ i18n_dict <- list(
         en = "Failed"
     ),
     validate_names_progress_status_done = list(
-        pt = "Concluido",
+        pt = "Conclu\u00EDdo",
         en = "Done"
     ),
     validate_names_progress_counter = list(
-        pt = "%d de %d nomes unicos resolvidos",
+        pt = "%d de %d nomes \u00FAnicos resolvidos",
         en = "%d of %d unique names resolved"
     ),
     validate_names_progress_phase_label = list(
@@ -772,11 +772,11 @@ i18n_dict <- list(
         en = "Consolidating results"
     ),
     validate_names_progress_phase_done = list(
-        pt = "Validacao concluida",
+        pt = "Valida\u00E7\u00E3o conclu\u00EDda",
         en = "Validation finished"
     ),
     validate_names_progress_phase_failed = list(
-        pt = "Falha na validacao",
+        pt = "Falha na valida\u00E7\u00E3o",
         en = "Validation failed"
     ),
     validate_names_provider_failed_stream_title = list(
@@ -784,16 +784,16 @@ i18n_dict <- list(
         en = "Provider failures"
     ),
     validate_names_provider_failed_stream_item = list(
-        pt = "%s falhou apos %d nomes (%s).",
+        pt = "%s falhou ap\u00F3s %d nomes (%s).",
         en = "%s failed after %d names (%s)."
     ),
     validate_names_stream_title = list(
-        pt = "Stream de Nomes Processados",
+        pt = "Nomes Processados",
         en = "Processed Names Stream"
     ),
     validate_names_stream_panel_title = list(
-        pt = "\u2261 Stream de Nomes Processados",
-        en = "\u2261 Processed Names Stream"
+        pt = "Nomes Processados",
+        en = "Processed Names"
     ),
     validate_names_stream_waiting = list(
         pt = "Aguardando primeiros resultados...",
@@ -812,7 +812,7 @@ i18n_dict <- list(
         en = "All"
     ),
     validate_names_stream_filter_problems = list(
-        pt = "So problem\u00E1ticos",
+        pt = "S\u00F3 problem\u00E1ticos",
         en = "Problems only"
     ),
     validate_names_stream_filter_not_found = list(
@@ -832,7 +832,7 @@ i18n_dict <- list(
         en = "Ignored"
     ),
     validate_names_stream_window_note = list(
-        pt = "Mostrando %d itens recentes (janela maxima de %d).",
+        pt = "Mostrando %d itens recentes (janela m\u00E1xima de %d).",
         en = "Showing %d recent items (window capped at %d)."
     ),
     validate_names_stream_status_accepted = list(
@@ -840,23 +840,23 @@ i18n_dict <- list(
         en = "Accepted"
     ),
     validate_names_stream_status_synonym = list(
-        pt = "Sinonimo",
+        pt = "Sinônimo",
         en = "Synonym"
     ),
     validate_names_stream_status_ambiguous = list(
-        pt = "Ambiguo",
+        pt = "Ambíguo",
         en = "Ambiguous"
     ),
     validate_names_stream_status_ignored = list(
-        pt = "Ignorado/Invalido",
+        pt = "Ignorado/Inválido",
         en = "Ignored/Invalid"
     ),
     validate_names_stream_status_not_found = list(
-        pt = "Nao encontrado",
+        pt = "Não encontrado",
         en = "Not found"
     ),
     validate_names_loading_title = list(
-        pt = "Validacao taxonomica em andamento",
+        pt = "Validação taxonômica em andamento",
         en = "Taxonomic validation in progress"
     ),
     validate_names_loading_status = list(
@@ -872,19 +872,19 @@ i18n_dict <- list(
         en = "Querying provider: %s"
     ),
     validate_names_loading_phase_consolidate = list(
-        pt = "Consolidando resultados taxonomicos.",
+        pt = "Consolidando resultados taxonômicos.",
         en = "Consolidating taxonomic results."
     ),
     validate_names_loading_phase_finalize = list(
-        pt = "Finalizando validacao.",
+        pt = "Finalizando validação.",
         en = "Finalizing validation."
     ),
     validate_names_loading_phase_done = list(
-        pt = "Validacao concluida.",
+        pt = "Validação concluída.",
         en = "Validation completed."
     ),
     validate_names_loading_phase_failed = list(
-        pt = "Falha durante validacao.",
+        pt = "Falha durante validação.",
         en = "Validation failed."
     ),
     validate_names_loading_provider_unknown = list(
@@ -895,12 +895,12 @@ i18n_dict <- list(
     validate_names_invalid = list(pt = "Inv\u00E1lidos", en = "Invalid"),
     validate_names_unresolved = list(pt = "N\u00E3o resolvidos", en = "Unresolved"),
     validate_names_accepted = list(pt = "Aceitos", en = "Accepted"),
-    validate_names_synonym = list(pt = "Sinonimos", en = "Synonyms"),
-    validate_names_not_found = list(pt = "Nao encontrados", en = "Not found"),
-    validate_names_ambiguous = list(pt = "Ambiguos / Nao resolvidos", en = "Ambiguous / Unresolved"),
-    validate_names_invalid_ignored = list(pt = "Invalidos / Ignorados", en = "Invalid / Ignored"),
-    validate_names_total = list(pt = "Total: %d nomes unicos", en = "Total: %d unique names"),
-    validate_names_download_report = list(pt = "Baixar relatorio", en = "Download report"),
+    validate_names_synonym = list(pt = "Sinônimos", en = "Synonyms"),
+    validate_names_not_found = list(pt = "Não encontrados", en = "Not found"),
+    validate_names_ambiguous = list(pt = "Ambíguos / Não resolvidos", en = "Ambiguous / Unresolved"),
+    validate_names_invalid_ignored = list(pt = "Inválidos / Ignorados", en = "Invalid / Ignored"),
+    validate_names_total = list(pt = "Total: %d nomes únicos", en = "Total: %d unique names"),
+    validate_names_download_report = list(pt = "Baixar relatório", en = "Download report"),
     validate_names_missing_scientific_name = list(
         pt = "Coluna 'scientificName' n\u00E3o encontrada. Mapeie primeiro.",
         en = "'scientificName' column not found. Map it first."
@@ -914,7 +914,7 @@ i18n_dict <- list(
         en = "Failed to validate names: %s"
     ),
     validate_names_unique_notice = list(
-        pt = "Relatorio consolidado por nomes cientificos unicos.",
+        pt = "Relatório consolidado por nomes científicos únicos.",
         en = "Report consolidated by unique scientific names."
     ),
     validate_names_provider_used_summary = list(
@@ -922,7 +922,7 @@ i18n_dict <- list(
         en = "Providers queried: %s"
     ),
     validate_names_provider_none_summary = list(
-        pt = "Nenhum provedor foi consultado (sem nomes validos apos limpeza).",
+        pt = "Nenhum provedor foi consultado (sem nomes válidos após limpeza).",
         en = "No provider was queried (no valid names after cleanup)."
     ),
     validate_names_provider_failed_warning = list(
@@ -931,7 +931,7 @@ i18n_dict <- list(
     ),
     validate_names_all_valid = list(pt = "Todos os nomes s\u00E3o v\u00E1lidos!", en = "All names are valid!"),
     validate_names_report_title = list(
-        pt = "\u229E Relatorio de Nomes",
+        pt = "\u229E Relatório de Nomes",
         en = "\u229E Names Report"
     ),
     validate_names_report_search_placeholder = list(
@@ -943,7 +943,7 @@ i18n_dict <- list(
         en = "Show %d"
     ),
     validate_names_report_empty = list(
-        pt = "Nenhum resultado de validacao disponivel ainda.",
+        pt = "Nenhum resultado de validação disponível ainda.",
         en = "No validation results available yet."
     ),
     validate_names_table_col_scientific_name = list(
@@ -989,6 +989,118 @@ i18n_dict <- list(
     validate_names_status_badge_ignored = list(
         pt = "Ignorado",
         en = "Ignored"
+    ),
+    validate_names_status_badge_manual_revision = list(
+        pt = "Rev. Manual",
+        en = "Manual Rev."
+    ),
+    validate_names_review_action = list(
+        pt = "✎ Revisar",
+        en = "✎ Review"
+    ),
+    validate_names_review_problem_not_found = list(
+        pt = "Não encontrado",
+        en = "Not found"
+    ),
+    validate_names_review_problem_ambiguous = list(
+        pt = "Ambíguo",
+        en = "Ambiguous"
+    ),
+    validate_names_review_problem_synonym = list(
+        pt = "Sinônimo",
+        en = "Synonym"
+    ),
+    validate_names_review_question_not_found = list(
+        pt = "O nome está correto mesmo não sendo encontrado na base?",
+        en = "Is this name correct even though it was not found in the provider?"
+    ),
+    validate_names_review_question_ambiguous = list(
+        pt = "Este é realmente o nome que você quer registrar?",
+        en = "Is this really the name you want to register?"
+    ),
+    validate_names_review_question_synonym = list(
+        pt = "Deseja manter este nome mesmo sendo apontado como sinônimo?",
+        en = "Do you want to keep this name even though it is flagged as a synonym?"
+    ),
+    validate_names_review_helper_not_found = list(
+        pt = "Não houve correspondência nos provedores selecionados para este nome consultado.",
+        en = "No match was found for this queried name in the selected providers."
+    ),
+    validate_names_review_helper_ambiguous = list(
+        pt = "Foram encontradas múltiplas correspondências e o nome não pôde ser decidido automaticamente.",
+        en = "Multiple matches were found and the name could not be resolved automatically."
+    ),
+    validate_names_review_helper_synonym = list(
+        pt = "O provedor indicou que o nome consultado possui status taxonômico de sinônimo.",
+        en = "The provider flagged this queried name with synonym taxonomic status."
+    ),
+    validate_names_review_confirm_title = list(
+        pt = "Sim, este nome está correto",
+        en = "Yes, this name is correct"
+    ),
+    validate_names_review_confirm_subtitle = list(
+        pt = "O nome será exportado exatamente como está",
+        en = "This name will be exported exactly as entered"
+    ),
+    validate_names_review_switch_to_edit = list(
+        pt = "✎ Não, quero corrigir o nome",
+        en = "✎ No, I want to correct the name"
+    ),
+    validate_names_review_confirm_btn = list(
+        pt = "Confirmar",
+        en = "Confirm"
+    ),
+    validate_names_review_back = list(
+        pt = "← Voltar",
+        en = "← Back"
+    ),
+    validate_names_review_edit_label = list(
+        pt = "Correção do nome",
+        en = "Name correction"
+    ),
+    validate_names_review_reason_placeholder = list(
+        pt = "Ex: erro de digitação na planilha original, nome atualizado conforme publicação...",
+        en = "Ex: typo in the original sheet, updated name according to publication..."
+    ),
+    validate_names_review_save_correction = list(
+        pt = "Salvar correção",
+        en = "Save correction"
+    ),
+    validate_names_review_open_error = list(
+        pt = "Falha ao abrir revisao manual: %s",
+        en = "Failed to open manual review: %s"
+    ),
+    validate_names_review_toast_confirm = list(
+        pt = "Nome confirmado com sucesso.",
+        en = "Name confirmed successfully."
+    ),
+    validate_names_review_toast_correct = list(
+        pt = "Correção manual salva com sucesso.",
+        en = "Manual correction saved successfully."
+    ),
+    validate_names_review_empty_title = list(
+        pt = "Tudo resolvido!",
+        en = "All resolved!"
+    ),
+    validate_names_review_empty_message = list(
+        pt = "Não há mais nomes problemáticos pendentes de revisão.",
+        en = "There are no unresolved problematic names left."
+    ),
+    validate_names_review_empty_export = list(
+        pt = "Exportar",
+        en = "Export"
+    ),
+    validate_names_review_reason_confirmed_by_user = list(
+        pt = "Confirmado pelo usuário",
+        en = "Confirmed by user"
+    ),
+    validate_names_review_replaced_prefix = list(
+        pt = "Substituiu:",
+        en = "Replaced:"
+    ),
+    validate_names_review_target_not_found = list(
+        pt = "Esse nome n\u00E3o est\u00E1 mais dispon\u00EDvel para revis\u00E3o. Tente novamente.",
+        en = "This name is no longer available for review. Please try again."
     ),
     validate_names_datatable_search = list(
         pt = "Buscar:",
@@ -1057,8 +1169,6 @@ i18n_dict <- list(
     validate_coords_datatable_last = list(pt = "\u00DAltima", en = "Last"),
     validate_coords_datatable_next = list(pt = "Pr\u00F3xima", en = "Next"),
     validate_coords_datatable_prev = list(pt = "Anterior", en = "Previous"),
-
-
     validate_coords_action_card_title = list(
         pt = "Configurar Validação",
         en = "Configure Validation"
@@ -1205,6 +1315,10 @@ i18n_dict <- list(
         pt = "Refer\u00EAncia sens\u00EDvel = ponto pr\u00F3ximo de capital, centr\u00F3ide, sede GBIF ou institui\u00E7\u00E3o biol\u00F3gica.",
         en = "Reference hotspot = point near a capital, centroid, GBIF HQ, or biodiversity institution."
     ),
+    validate_coords_sea_precision_note = list(
+        pt = "O teste de mar usa dados de costa simplificados. Pontos muito pr\u00F3ximos da costa podem ser flagados incorretamente. Verifique visualmente no mapa antes de descartar.",
+        en = "The sea test uses simplified coastline data. Points very close to the coast may be incorrectly flagged. Verify visually on the map before discarding."
+    ),
 
     # Wiki Module
     wiki_title = list(
@@ -1276,8 +1390,8 @@ i18n_dict <- list(
         en = "Center"
     ),
     help_header_subtitle = list(
-        pt = "Tudo o que voc\u00EA precisa para usar o Saira com confian\u00E7a.",
-        en = "Everything you need to use Saira with confidence."
+        pt = "Tudo o que voc\u00EA precisa para usar o Sa\u00EDra com confian\u00E7a.",
+        en = "Everything you need to use Sa\u00EDra with confidence."
     ),
     a11y_help_search_label = list(
         pt = "Buscar na ajuda",
@@ -1372,8 +1486,8 @@ i18n_dict <- list(
         en = "The default limit is 500 MB per file."
     ),
     help_faq_q3 = list(
-        pt = "Como o Saira interpreta datas?",
-        en = "How does Saira interpret dates?"
+        pt = "Como o Sa\u00EDra interpreta datas?",
+        en = "How does Sa\u00EDra interpret dates?"
     ),
     help_faq_a3_prefix = list(
         pt = "No export, o campo",
@@ -1392,8 +1506,8 @@ i18n_dict <- list(
         en = "No. Processing runs locally in the application session."
     ),
     help_formats_p1 = list(
-        pt = "O Saira aceita arquivos CSV e foi otimizado para planilhas com delimitador ponto e v\u00EDrgula (;).",
-        en = "Saira accepts CSV files and is optimized for spreadsheets that use semicolon (;) as delimiter."
+        pt = "O Sa\u00EDra aceita arquivos CSV e foi otimizado para planilhas com delimitador ponto e v\u00EDrgula (;).",
+        en = "Sa\u00EDra accepts CSV files and is optimized for spreadsheets that use semicolon (;) as delimiter."
     ),
     help_formats_p2 = list(
         pt = "Para reduzir erros de importa\u00E7\u00E3o, revise encoding e colunas antes do mapeamento.",
@@ -1436,8 +1550,8 @@ i18n_dict <- list(
         en = "Avoid comma as token separator because it can appear in decimal coordinates."
     ),
     help_separator_bullet_3 = list(
-        pt = "Na exporta\u00E7\u00E3o, o Saira converte automaticamente para o formato com pipe.",
-        en = "During export, Saira automatically converts values to the pipe-based format."
+        pt = "Na exporta\u00E7\u00E3o, o Sa\u00EDra converte automaticamente para o formato com pipe.",
+        en = "During export, Sa\u00EDra automatically converts values to the pipe-based format."
     ),
     help_author_role = list(
         pt = "Maintainer",
@@ -1468,8 +1582,8 @@ i18n_dict <- list(
         en = "Open GitHub Issues"
     ),
     a11y_help_bug_link = list(
-        pt = "Abrir p\u00E1gina de issues do Saira no GitHub",
-        en = "Open Saira issues page on GitHub"
+        pt = "Abrir p\u00E1gina de issues do Sa\u00EDra no GitHub",
+        en = "Open Sa\u00EDra issues page on GitHub"
     ),
     help_links_title = list(
         pt = "Links \u00FAteis",
@@ -1649,12 +1763,12 @@ i18n_dict <- list(
         en = "Welcome to"
     ),
     welcome_title = list(
-        pt = "Bem-vindo ao Saira!",
-        en = "Welcome to Saira!"
+        pt = "Bem-vindo ao Sa\u00EDra!",
+        en = "Welcome to Sa\u00EDra!"
     ),
     welcome_description = list(
-        pt = "O Saira \u00E9 uma ferramenta para padroniza\u00E7\u00E3o de dados de biodiversidade segundo o padr\u00E3o Darwin Core (DwC). Carregue seus dados, mapeie as colunas, valide e exporte em formato DwC.",
-        en = "Saira is a tool for standardizing biodiversity data according to the Darwin Core (DwC) standard. Upload your data, map columns, validate and export in DwC format."
+        pt = "O Sa\u00EDra \u00E9 uma ferramenta para padroniza\u00E7\u00E3o de dados de biodiversidade segundo o padr\u00E3o Darwin Core (DwC). Carregue seus dados, mapeie as colunas, valide e exporte em formato DwC.",
+        en = "Sa\u00EDra is a tool for standardizing biodiversity data according to the Darwin Core (DwC) standard. Upload your data, map columns, validate and export in DwC format."
     ),
 
     # Homepage - Workflow

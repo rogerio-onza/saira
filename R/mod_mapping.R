@@ -528,11 +528,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                     class = "automap-loading-modal",
                     shiny::div(
                         class = "automap-loading-brand-row",
-                        shiny::img(
-                            src = "www/images/saira_alone.svg",
-                            class = "automap-loading-logo",
-                            alt = "Saira"
-                        )
+                        shiny::icon("dove", class = "fa-solid automap-loading-brand-icon")
                     ),
                     shiny::div(
                         class = "automap-loading-title",

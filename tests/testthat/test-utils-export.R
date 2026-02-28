@@ -3,6 +3,10 @@
 # Date: 2026-02-14
 # Version: 1.0
 
+apply_name_review_payload <- function(...) {
+    getFromNamespace("apply_name_review_payload", "saira")(...)
+}
+
 testthat::test_that("abbreviate_license normalizes known values and preserves unknowns", {
     licenses <- c(
         "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
@@ -149,4 +153,110 @@ testthat::test_that("process_for_export keeps date semantics and runs full pipel
     testthat::expect_false(any(is.na(out$occurrenceID) | out$occurrenceID == ""))
     testthat::expect_identical(out$occurrenceID[3], "existing-id")
     testthat::expect_identical(out$license, c("CC0", "CC-BY", "custom-license"))
+})
+
+testthat::test_that("apply_name_review_payload keeps default review columns without payload", {
+    df <- data.frame(
+        scientificName = c("A", "B"),
+        stringsAsFactors = FALSE
+    )
+
+    out <- apply_name_review_payload(df, payload = NULL)
+    testthat::expect_true("validacao_manual" %in% names(out))
+    testthat::expect_true("motivo_revisao" %in% names(out))
+    testthat::expect_identical(out$validacao_manual, c(FALSE, FALSE))
+    testthat::expect_identical(out$motivo_revisao, c("", ""))
+})
+
+testthat::test_that("apply_name_review_payload marks confirmed names as manual review", {
+    df <- data.frame(
+        scientificName = c("Puma concolor", "Abies alba"),
+        stringsAsFactors = FALSE
+    )
+    payload <- list(
+        entries = data.frame(
+            query_name = "Puma concolor",
+            review_type = "confirm",
+            original_name = "Puma concolor",
+            corrected_name = "Puma concolor",
+            reason = "",
+            reviewed_at = as.POSIXct("2026-02-27 10:00:00", tz = "UTC"),
+            stringsAsFactors = FALSE
+        ),
+        normalize_opts = list(remove_authors = TRUE, ignore_qualifiers = TRUE)
+    )
+
+    out <- apply_name_review_payload(df, payload = payload)
+    testthat::expect_identical(out$validacao_manual, c(TRUE, FALSE))
+    testthat::expect_identical(out$motivo_revisao[[1]], "Confirmado pelo usuário")
+    testthat::expect_identical(out$scientificName[[1]], "Puma concolor")
+})
+
+testthat::test_that("apply_name_review_payload uses fallback reason when correction reason is blank", {
+    df <- data.frame(
+        scientificName = c("Abies alba"),
+        stringsAsFactors = FALSE
+    )
+    payload <- list(
+        entries = data.frame(
+            query_name = "Abies alba",
+            review_type = "correct",
+            original_name = "Abies alba",
+            corrected_name = "Abies alba var. minor",
+            reason = "",
+            reviewed_at = as.POSIXct("2026-02-27 10:00:00", tz = "UTC"),
+            stringsAsFactors = FALSE
+        ),
+        normalize_opts = list(remove_authors = TRUE, ignore_qualifiers = TRUE)
+    )
+
+    out <- apply_name_review_payload(df, payload = payload)
+    testthat::expect_identical(out$validacao_manual[[1]], TRUE)
+    testthat::expect_identical(out$motivo_revisao[[1]], "Corrigido pelo usuário")
+    testthat::expect_identical(out$scientificName[[1]], "Abies alba var. minor")
+})
+
+testthat::test_that("apply_name_review_payload keeps typed correction reason when provided", {
+    df <- data.frame(
+        scientificName = c("Abies alba"),
+        stringsAsFactors = FALSE
+    )
+    payload <- list(
+        entries = data.frame(
+            query_name = "Abies alba",
+            review_type = "correct",
+            original_name = "Abies alba",
+            corrected_name = "Abies alba var. minor",
+            reason = "Erro de digitação",
+            reviewed_at = as.POSIXct("2026-02-27 10:00:00", tz = "UTC"),
+            stringsAsFactors = FALSE
+        ),
+        normalize_opts = list(remove_authors = TRUE, ignore_qualifiers = TRUE)
+    )
+
+    out <- apply_name_review_payload(df, payload = payload)
+    testthat::expect_identical(out$motivo_revisao[[1]], "Erro de digitação")
+})
+
+testthat::test_that("apply_name_review_payload applies correction to all matching occurrences", {
+    df <- data.frame(
+        scientificName = c("Puma concolor", "Puma concolor", "Abies alba"),
+        stringsAsFactors = FALSE
+    )
+    payload <- list(
+        entries = data.frame(
+            query_name = "Puma concolor",
+            review_type = "correct",
+            original_name = "Puma concolor",
+            corrected_name = "Puma concolor corrected",
+            reason = "",
+            reviewed_at = as.POSIXct("2026-02-27 10:00:00", tz = "UTC"),
+            stringsAsFactors = FALSE
+        ),
+        normalize_opts = list(remove_authors = TRUE, ignore_qualifiers = TRUE)
+    )
+
+    out <- apply_name_review_payload(df, payload = payload)
+    testthat::expect_identical(out$scientificName[1:2], c("Puma concolor corrected", "Puma concolor corrected"))
+    testthat::expect_identical(out$validacao_manual, c(TRUE, TRUE, FALSE))
 })

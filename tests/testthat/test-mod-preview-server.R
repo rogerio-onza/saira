@@ -93,3 +93,43 @@ testthat::test_that("mod_preview_server supports a dedicated full-data download 
         }
     )
 })
+
+testthat::test_that("mod_preview_server accepts name review payload reactive without breaking contracts", {
+    preview_df <- data.frame(
+        scientificName = c("Puma concolor", "Abies alba"),
+        stringsAsFactors = FALSE
+    )
+    payload_r <- shiny::reactive({
+        list(
+            entries = data.frame(
+                query_name = "Puma concolor",
+                review_type = "confirm",
+                original_name = "Puma concolor",
+                corrected_name = "Puma concolor",
+                reason = "Confirmado pelo usuário",
+                reviewed_at = as.POSIXct("2026-02-27 10:00:00", tz = "UTC"),
+                stringsAsFactors = FALSE
+            ),
+            normalize_opts = list(remove_authors = TRUE, ignore_qualifiers = TRUE)
+        )
+    })
+
+    shiny::testServer(
+        mod_preview_server,
+        args = list(
+            mapped_data_r = shiny::reactive(preview_df),
+            lang_r = shiny::reactive("en"),
+            download_data_r = shiny::reactive(preview_df),
+            name_review_payload_r = payload_r
+        ),
+        {
+            returned <- session$getReturned()
+            testthat::expect_true(shiny::is.reactive(returned))
+            testthat::expect_equal(nrow(returned()), 2L)
+
+            download_source_r <- attr(returned, "download_data")
+            testthat::expect_true(shiny::is.reactive(download_source_r))
+            testthat::expect_equal(nrow(download_source_r()), 2L)
+        }
+    )
+})

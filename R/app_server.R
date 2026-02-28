@@ -57,26 +57,29 @@ app_server <- function(input, output, session) {
     validation_gate <- attr(mapped_data, "validation_gate")
     coord_validation_gate <- attr(mapped_data, "validation_gate_coords")
     if (is.null(preview_data) || !shiny::is.reactive(preview_data)) {
-        message("[Saira] preview_data attr missing from mapping module, using mapped_data fallback")
+        message("[Saíra] preview_data attr missing from mapping module, using mapped_data fallback")
         preview_data <- mapped_data
     }
     if (is.null(validation_gate) || !shiny::is.reactive(validation_gate)) {
-        message("[Saira] validation_gate attr missing, gate disabled")
+        message("[Saíra] validation_gate attr missing, gate disabled")
         validation_gate <- NULL
     }
     if (is.null(coord_validation_gate) || !shiny::is.reactive(coord_validation_gate)) {
-        message("[Saira] coord_validation_gate attr missing, gate disabled")
+        message("[Saíra] coord_validation_gate attr missing, gate disabled")
         coord_validation_gate <- NULL
     }
+
+    validate_names_r <- mod_validate_names_server("validate_names", mapped_data, lang_r, validation_gate_r = validation_gate)
+    name_review_payload_r <- attr(validate_names_r, "review_export_payload")
 
     # Consumers of mapped_data
     mod_preview_server(
         "preview",
         preview_data,
         lang_r,
-        download_data_r = mapped_data
+        download_data_r = mapped_data,
+        name_review_payload_r = name_review_payload_r
     )
-    mod_validate_names_server("validate_names", mapped_data, lang_r, validation_gate_r = validation_gate)
     coord_validation_r <- mod_validate_coords_server(
         "validate_coords",
         mapped_data,
@@ -101,6 +104,6 @@ app_server <- function(input, output, session) {
 
     # Cleanup on session end
     session$onSessionEnded(function() {
-        message("[Saira] Session ended, cleanup complete")
+        message("[Saíra] Session ended, cleanup complete")
     })
 }

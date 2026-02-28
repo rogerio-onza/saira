@@ -536,13 +536,11 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                         shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-reference coords-reference-note-dot"),
                         tr("validate_coords_map_legend_reference_note", lang_r())
                     ),
-                    if (nrow(res) >= 500L) {
-                        shiny::div(
-                            class = "coords-cluster-note",
-                            shiny::icon("circle-info", class = "me-1"),
-                            tr("validate_coords_map_legend_cluster_note", lang_r())
-                        )
-                    }
+                    shiny::div(
+                        class = "alert alert-warning coords-sea-precision-note mb-0 mt-2",
+                        shiny::icon("triangle-exclamation", class = "me-1"),
+                        tr("validate_coords_sea_precision_note", lang_r())
+                    )
                 )
             )
         })
@@ -613,20 +611,19 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     return(invisible(NULL))
                 }
 
-                cluster_options <- if (nrow(map_df) >= 500L) leaflet::markerClusterOptions() else NULL
+                marker_radius <- if (nrow(map_df) > 2000L) 4 else 6
                 leaflet::addCircleMarkers(
                     map = proxy,
                     data = map_df,
                     lat = ~lat_num,
                     lng = ~lon_num,
-                    radius = 6,
+                    radius = marker_radius,
                     stroke = TRUE,
                     weight = 1,
                     color = ~color,
                     fillColor = ~color,
                     fillOpacity = 0.85,
-                    popup = ~popup_html,
-                    clusterOptions = cluster_options
+                    popup = ~popup_html
                 )
 
                 lon_values <- suppressWarnings(as.numeric(map_df$lon_num))
@@ -851,7 +848,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                             lon_col = "decimalLongitude",
                             country_col = "country",
                             profile = profile_value,
-                            seas_scale = 110L
+                            seas_scale = 10L
                         )
                     },
                     error = function(e) {

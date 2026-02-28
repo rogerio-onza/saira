@@ -3,6 +3,126 @@
 # Date: 2026-02-08
 # Version: 1.0
 
+#' Apply manual name-review payload to export data
+#'
+#' @param df Data frame to export
+#' @param payload Optional list with `entries` and `normalize_opts`
+#' @return Data frame with review columns and optional scientificName replacements
+#' @export
+apply_name_review_payload <- function(df, payload = NULL) {
+    if (!is.data.frame(df)) {
+        return(df)
+    }
+
+    out <- df
+    n_rows <- nrow(out)
+    out$validacao_manual <- rep(FALSE, n_rows)
+    out$motivo_revisao <- rep("", n_rows)
+
+    if (n_rows == 0L) {
+        return(out)
+    }
+    if (!("scientificName" %in% names(out))) {
+        return(out)
+    }
+    if (is.null(payload) || !is.list(payload) || is.null(payload$entries) || !is.data.frame(payload$entries)) {
+        return(out)
+    }
+
+    entries <- payload$entries
+    required_cols <- c("query_name", "review_type", "original_name", "corrected_name", "reason", "reviewed_at")
+    for (col_name in required_cols) {
+        if (!(col_name %in% names(entries))) {
+            if (identical(col_name, "reviewed_at")) {
+                entries[[col_name]] <- as.POSIXct(character(nrow(entries)), tz = "UTC")
+            } else {
+                entries[[col_name]] <- rep("", nrow(entries))
+            }
+        }
+    }
+
+    entries <- entries[, required_cols, drop = FALSE]
+    entries$query_name <- as.character(entries$query_name)
+    entries$review_type <- tolower(as.character(entries$review_type))
+    entries$original_name <- as.character(entries$original_name)
+    entries$corrected_name <- as.character(entries$corrected_name)
+    entries$reason <- as.character(entries$reason)
+    entries$reviewed_at <- as.POSIXct(entries$reviewed_at, tz = "UTC")
+
+    keep <- !is.na(entries$query_name) &
+        nzchar(entries$query_name) &
+        entries$review_type %in% c("confirm", "correct")
+    entries <- entries[keep, , drop = FALSE]
+    if (nrow(entries) == 0L) {
+        return(out)
+    }
+
+    ord <- order(entries$query_name, entries$reviewed_at, seq_len(nrow(entries)), na.last = TRUE)
+    entries <- entries[ord, , drop = FALSE]
+    entries <- entries[!duplicated(entries$query_name, fromLast = TRUE), , drop = FALSE]
+
+    normalize_opts <- payload$normalize_opts
+    remove_authors_opt <- TRUE
+    ignore_qualifiers_opt <- TRUE
+    if (is.list(normalize_opts)) {
+        if (is.logical(normalize_opts$remove_authors) && length(normalize_opts$remove_authors) == 1L && !is.na(normalize_opts$remove_authors)) {
+            remove_authors_opt <- isTRUE(normalize_opts$remove_authors)
+        }
+        if (is.logical(normalize_opts$ignore_qualifiers) && length(normalize_opts$ignore_qualifiers) == 1L && !is.na(normalize_opts$ignore_qualifiers)) {
+            ignore_qualifiers_opt <- isTRUE(normalize_opts$ignore_qualifiers)
+        }
+    }
+
+    scientific_name <- as.character(out$scientificName)
+    scientific_name[is.na(scientific_name)] <- ""
+    query_name <- vapply(scientific_name, function(value) {
+        normalized <- normalize_scientific_name(
+            value,
+            remove_authors = remove_authors_opt,
+            ignore_qualifiers = ignore_qualifiers_opt
+        )
+        if (is.na(normalized) || !nzchar(normalized)) {
+            trimws(as.character(value))
+        } else {
+            normalized
+        }
+    }, FUN.VALUE = character(1))
+
+    match_idx <- match(query_name, entries$query_name)
+    has_review <- !is.na(match_idx)
+    if (!any(has_review)) {
+        return(out)
+    }
+
+    out$validacao_manual[has_review] <- TRUE
+
+    review_type_vec <- rep("", n_rows)
+    review_type_vec[has_review] <- entries$review_type[match_idx[has_review]]
+
+    confirm_mask <- has_review & review_type_vec == "confirm"
+    if (any(confirm_mask)) {
+        out$motivo_revisao[confirm_mask] <- "Confirmado pelo usuário"
+    }
+
+    correct_mask <- has_review & review_type_vec == "correct"
+    if (any(correct_mask)) {
+        correct_idx <- match_idx[correct_mask]
+        correction_reason <- trimws(as.character(entries$reason[correct_idx]))
+        correction_reason[is.na(correction_reason) | !nzchar(correction_reason)] <- "Corrigido pelo usuário"
+        out$motivo_revisao[correct_mask] <- correction_reason
+
+        corrected_name <- trimws(as.character(entries$corrected_name[correct_idx]))
+        original_name <- trimws(as.character(entries$original_name[correct_idx]))
+        current_name <- as.character(out$scientificName[correct_mask])
+        replacement <- corrected_name
+        replacement[is.na(replacement) | !nzchar(replacement)] <- original_name[is.na(replacement) | !nzchar(replacement)]
+        replacement[is.na(replacement) | !nzchar(replacement)] <- current_name[is.na(replacement) | !nzchar(replacement)]
+        out$scientificName[correct_mask] <- replacement
+    }
+
+    out
+}
+
 #' Process data for DwC-compliant export
 #'
 #' @param df Data frame with mapped columns
