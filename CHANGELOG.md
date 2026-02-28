@@ -7,6 +7,38 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ---
 
+## [0.2.0] - 2026-02-28
+
+### Adicionado
+- **CSS modular**: `custom.css` quebrado em 17 modulos por dominio (`inst/app/www/css/`), com script de build deterministico (`data-raw/build_css.R`) e guardrails de header e completude.
+- **i18n externalizado**: dicionario migrado de lista inline R (1810 linhas) para `inst/extdata/i18n.json` (601 chaves), com loader+cache em `data_dictionary.R` e BOM removal inline.
+- **Testes de cobertura**: `test-mod-wiki-server.R` (5 testes), `test-mod-help-server.R` (8 testes), `test-mod-upload-server.R` expandido de 1 para 7 testes.
+- **E2E com shinytest2**: suite `test-e2e-flows.R` com 4 fluxos (upload+mapeamento, wiki, help+busca, troca de idioma).
+- **Release gate**: `scripts/release_gate.R` com 5 etapas (unit, CSS, i18n, E2E, R CMD check).
+- **CI**: `.github/workflows/test.yml` com GitHub Actions.
+- `R/utils_common.R` com `is_blank_value()` extraido de `utils_mapping.R` (DRY).
+
+### Alterado
+- **Contrato `mod_mapping_server`**: retorno migrado de `reactive` com `attr()` para `list()` explicita com 4 slots (`processed_data_r`, `preview_data_r`, `validation_gate_r`, `validation_gate_coords_r`).
+- `app_server.R` atualizado para consumir `list()` com fallback defensivo.
+- `mod_mapping.R` refatorado: assistente `basisOfRecord` extraido para `mod_mapping_basis_assistant.R`, blocos de UI/automap para `mod_mapping_cards.R` e `mod_mapping_loading.R`. Contagem de linhas de 1834 para ~1150.
+- `data_dictionary.R` reescrito de 1810 para 61 linhas (JSON loader).
+- Closure `custom_language_choices` removida; logica inlined em `mod_mapping_cards.R`.
+
+### Corrigido
+- `custom_language_choices` nao encontrada em runtime apos extracao para `mod_mapping_cards.R`.
+- `strip_bom()` nao disponivel em tempo de source por ordem alfabetica de carregamento; BOM removal inlined em `data_dictionary.R`.
+
+### Documentacao
+- `docs/DECISIONS.md`: ADR-054 (contrato list), ADR-055 (CSS modular), ADR-056 (i18n JSON).
+- `docs/LESSONS.md`: licoes sobre load order, CSS build, i18n cache.
+- `docs/ENCODING_RULES.md`: regra 9 para `i18n.json`.
+
+### Testes
+- Suite total: **2659 PASS, 0 FAIL** (baseline era 2604, +55 testes novos).
+
+---
+
 ## [0.1.31] - 2026-02-28
 
 ### Alterado

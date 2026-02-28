@@ -208,3 +208,27 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Clustering do Leaflet (`markerClusterOptions`) esconde a posicao real dos pontos**: para diagnostico visual de coordenadas, pontos individuais sao essenciais. Usar raio adaptativo (menor para muitos pontos) + `preferCanvas = TRUE` para performance.
 - **Nota de precisao visivel reduz confusao do usuario**: quando o motor de validacao usa dados simplificados, um chip de alerta (`alert-warning`) na legenda evita que o usuario descarte pontos costeiros legitimos.
 
+## CSS Build / Modularizacao (Onda 5)
+
+- **CSS monolitico deve ser fatorado por dominio com build deterministico**: ordenar modulos por numero (`00-tokens` a `16-help`) preserva cascata; script de build (`data-raw/build_css.R`) gera artefato final com header `GENERATED FILE`.
+- **Guardrails de CSS bundle devem validar header e completude**: testar que `custom.css` comeca com header gerado e que todos os modulos em `css/` estao incluidos no bundle previne drift silencioso.
+- **Contagem de linhas e smoke test minimo valido para CSS split**: `sum(modulos) + 1 header == bundle` confirma integridade sem render visual.
+
+## i18n / Externalizar Dicionario (Onda 5)
+
+- **Migrar dicionario i18n de R inline para JSON facilita manutencao e tooling externo**: `jsonlite::fromJSON` com `simplifyVector = FALSE` preserva estrutura de lista nomeada identica ao formato original.
+- **BOM removal deve ser inline quando dependencia de load order nao e garantida**: em pacotes R, `data_dictionary.R` (d) carrega antes de `utils_io.R` (u); usar `sub("^\uFEFF", "", raw)` em vez de `strip_bom()` evita `could not find function` em tempo de source.
+- **Cache in-process com `new.env(parent = emptyenv())` e padrao seguro para dados estaticos**: evita releitura do disco e isolamento via `emptyenv()` previne poluicao de namespace.
+- **Script one-shot de export (`data-raw/export_i18n.R`) nao deve fazer parte do build regular**: existe para migracao; alteracoes futuras devem ser feitas diretamente no JSON.
+
+## Refatoracao de Modulos Shiny (Onda 5)
+
+- **Ao extrair funcoes de `moduleServer` para arquivo separado, closures locais perdem escopo**: `custom_language_choices()` definida dentro de `mod_mapping_server()` nao e visivel em `mod_mapping_cards.R`. Inlinar a logica ou mover para utils.
+- **Retorno de modulo como `list()` nomeada e superior a `attr()` em reactive**: auto-documentado, verificavel com `expect_named()`, e extensivel sem breaking change.
+- **Ao refatorar modulo grande, limpar dead code no mesmo ciclo**: closures que deixam de ser chamadas apos extracao devem ser removidas imediatamente para evitar confusao.
+
+## E2E / shinytest2 (Onda 5)
+
+- **Testes E2E com `shinytest2` devem usar `skip_if_not_installed("shinytest2")`**: permite que a suite unitaria rode sem dependencia de chromote/browser.
+- **Release gate com etapas numeradas explicita a ordem de verificacao**: unit -> guardrails -> integridade i18n -> E2E -> R CMD check cobre progressivamente do mais rapido ao mais lento.
+

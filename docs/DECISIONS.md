@@ -1079,3 +1079,71 @@ Formato: ADR leve (Architecture Decision Record).
   - Performance de UI melhora em troca de idioma.
   - Throughput de fuzzy matching melhora em datasets com muitos paises nao-reconhecidos.
   - Resiliencia a encoding corrompido em fuzzy batch.
+
+---
+
+## ADR-054: Contrato de retorno `list()` para `mod_mapping_server` (Onda 5)
+
+- **Data**: 2026-02-28
+- **Status**: Aceito
+- **Contexto**: `mod_mapping_server()` retornava `reactive(data.frame)` com canais auxiliares injetados via `attr()` (`preview_data`, `validation_gate`, `validation_gate_coords`). Esse padrao dificultava a descoberta de API, nao era auto-documentado e dependia de convencao implicita entre produtor e consumidor.
+- **Decisao**:
+  - Substituir `attr()` por retorno explicito como `list()` nomeada com 4 slots:
+    - `processed_data_r`: reactive com data.frame DwC completo
+    - `preview_data_r`: reactive com data.frame das primeiras 100 linhas (IDs dummy)
+    - `validation_gate_r`: reactive com status de mapeamento para `scientificName`
+    - `validation_gate_coords_r`: reactive com status de mapeamento para `decimalLatitude`/`decimalLongitude`/`country`
+  - `app_server.R` consome via `$` (ex: `mapping_result$processed_data_r`) com fallback defensivo para cada slot.
+  - `attr()` em `mod_validate_names_server` (`review_export_payload`) permanece inalterado nesta onda como divida tecnica explicita.
+  - Futuros canais adicionais: basta adicionar novo slot na lista sem breaking change.
+- **Alternativas**:
+  - Manter `attr()` e documentar convencao - rejeitado por baixa visibilidade e risco de regressao silenciosa.
+  - Retornar `R6` ou `environment` tipado - rejeitado por complexidade desnecessaria neste estagio.
+- **Consequencias**:
+  - API de `mod_mapping_server` passa a ser auto-documentada e verificavel com `expect_named()`.
+  - Consumidores sao atualizados no mesmo ciclo: `app_server.R`, `test-mod-mapping-server.R`.
+  - Testes aumentaram de 2604 para 2605 (+1 assertion de estrutura).
+  - Divida tecnica: `attr("review_export_payload")` em `validate_names` sera migrado em onda futura.
+
+---
+
+## ADR-055: CSS Modular com Build Deterministico (Onda 5)
+
+- **Data**: 2026-02-28
+- **Status**: Aceito
+- **Contexto**: `custom.css` monolitico com 6243 linhas dificultava manutencao, code review e isolamento de estilos por modulo. Alteracoes em um dominio (ex.: upload) arriscavam regressao em outro (ex.: wiki).
+- **Decisao**:
+  - Dividir `custom.css` em 17 modulos ordenados por dominio (`inst/app/www/css/00-tokens.css` a `16-help.css`).
+  - Manter `custom.css` como artefato gerado por `data-raw/build_css.R` com header `/* GENERATED FILE */`.
+  - Guardrails automatizados: teste verifica header de artefato gerado e completude (todo modulo em `css/` deve estar no bundle).
+  - Ordem dos modulos respeita cascata CSS original (tokens -> base -> componentes -> modulos -> overrides).
+- **Alternativas**:
+  - CSS-in-JS ou sass/less — rejeitado por complexidade desnecessaria em app Shiny.
+  - Multiplos `<link>` tags sem bundle — rejeitado por aumento de requests HTTP e risco de ordem incorreta.
+- **Consequencias**:
+  - Editar estilo de um modulo nao afeta outros arquivos.
+  - `data-raw/build_css.R` deve ser executado apos editar qualquer modulo CSS.
+  - Visual identico ao monolitico original (verificado por contagem de linhas: 6234 modulos + 1 header = 6235 bundle).
+
+---
+
+## ADR-056: Dicionario i18n Externalizado em JSON (Onda 5)
+
+- **Data**: 2026-02-28
+- **Status**: Aceito
+- **Contexto**: `data_dictionary.R` continha 1810 linhas de lista R inline com todas as traducoes. Dificil de editar, propenso a erros de encoding, e impossivel de consumir por ferramentas externas.
+- **Decisao**:
+  - Externalizar dicionario para `inst/extdata/i18n.json` (601 chaves, formato `{ "key": { "pt": "...", "en": "..." } }`).
+  - `data_dictionary.R` reescrito como loader com cache in-process (padrao ADR-014).
+  - BOM removal inline (`sub("^\uFEFF", "", raw)`) em vez de `strip_bom()` para evitar dependencia de load order.
+  - JSON gerado por `data-raw/export_i18n.R` (one-shot, nao parte do build regular).
+  - Contrato preservado: `i18n_dict` disponivel no namespace do pacote, consumido por `tr()` via `resolve_i18n_dict()`.
+- **Alternativas**:
+  - YAML — rejeitado por dependencia adicional e parsing mais lento.
+  - CSV/TSV — rejeitado por dificuldade com caracteres especiais e multiline.
+  - Manter inline R — rejeitado por todos os problemas listados no contexto.
+- **Consequencias**:
+  - `data_dictionary.R` reduzido de 1810 para 61 linhas.
+  - Traducoes editaveis em qualquer editor JSON.
+  - Requer `jsonlite` em Imports (ja era dependencia do pacote).
+  - Cache in-process evita releitura do disco a cada chamada a `tr()`.

@@ -1,0 +1,29 @@
+/* =============================================================================
+   DATATABLES
+   ============================================================================= */
+
+.dataTables_wrapper {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 400;
+}
+
+.dataTable thead th {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-md);
+  border-bottom: 2px solid var(--border-strong);
+  padding: var(--space-3);
+}
+
+.dataTable tbody td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.dataTable tbody tr:hover {
+  background-color: var(--hover-bg);
+}
+

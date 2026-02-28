@@ -1,0 +1,91 @@
+/* =============================================================================
+   BUTTONS
+   ============================================================================= */
+
+.btn {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: var(--text-base);
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+  transform: var(--lift-sm);
+  box-shadow: var(--shadow-primary-hover);
+}
+
+.btn-primary:focus {
+  outline: none;
+  box-shadow: var(--shadow-primary), var(--focus-ring-primary);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary,
+.btn-outline-primary {
+  background-color: transparent;
+  border: 2px solid var(--accent);
+  color: var(--accent);
+}
+
+.btn-secondary:hover,
+.btn-outline-primary:hover {
+  background-color: var(--accent);
+  color: var(--bg-card);
+}
+
+.btn-success {
+  background-color: var(--success);
+  color: var(--bg-card);
+  box-shadow: var(--shadow-success);
+}
+
+.btn-success:hover {
+  background-color: #009960;
+  color: var(--bg-card);
+}
+
+.btn-warning {
+  background-color: var(--warning);
+  color: var(--text-primary);
+}
+
+.btn-warning:hover {
+  background-color: #e09000;
+  color: var(--text-primary);
+}
+
+.btn-danger,
+.btn-error {
+  background-color: var(--error);
+  color: var(--bg-card);
+  box-shadow: var(--shadow-error);
+}
+
+.btn-danger:hover,
+.btn-error:hover {
+  background-color: #a93226;
+  color: var(--bg-card);
+}
+
+.btn:disabled {
+  background-color: var(--input-bg-disabled);
+  color: var(--input-text-disabled);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+

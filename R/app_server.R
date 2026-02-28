@@ -62,20 +62,22 @@ app_server <- function(input, output, session) {
 
     # Chain of Reactivity: Data Flow
     raw_data <- mod_upload_server("upload", lang_r)
-    mapped_data <- mod_mapping_server("mapping", raw_data, lang_r)
-    preview_data <- attr(mapped_data, "preview_data")
-    validation_gate <- attr(mapped_data, "validation_gate")
-    coord_validation_gate <- attr(mapped_data, "validation_gate_coords")
+    mapping_result <- mod_mapping_server("mapping", raw_data, lang_r)
+    # ADR-054: mod_mapping_server returns named list of reactives
+    mapped_data <- mapping_result$processed_data_r
+    preview_data <- mapping_result$preview_data_r
+    validation_gate <- mapping_result$validation_gate_r
+    coord_validation_gate <- mapping_result$validation_gate_coords_r
     if (is.null(preview_data) || !shiny::is.reactive(preview_data)) {
-        message("[Saíra] preview_data attr missing from mapping module, using mapped_data fallback")
+        message("[Saíra] preview_data slot missing from mapping module, using mapped_data fallback")
         preview_data <- mapped_data
     }
     if (is.null(validation_gate) || !shiny::is.reactive(validation_gate)) {
-        message("[Saíra] validation_gate attr missing, gate disabled")
+        message("[Saíra] validation_gate slot missing, gate disabled")
         validation_gate <- NULL
     }
     if (is.null(coord_validation_gate) || !shiny::is.reactive(coord_validation_gate)) {
-        message("[Saíra] coord_validation_gate attr missing, gate disabled")
+        message("[Saíra] coord_validation_gate slot missing, gate disabled")
         coord_validation_gate <- NULL
     }
 

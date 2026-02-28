@@ -1,0 +1,705 @@
+/* =============================================================================
+   HOMEPAGE: UPLOAD SECTION
+   ============================================================================= */
+
+/* Homepage container - full width */
+.homepage-container {
+  padding: var(--space-6);
+  margin: 0 auto;
+}
+
+.homepage-container .row {
+  display: flex;
+  align-items: stretch;
+  margin: 0 calc(-1 * var(--space-3));
+}
+
+.homepage-container .row>[class*='col-'] {
+  display: flex;
+  padding: 0 var(--space-3);
+}
+
+.homepage-container .row>[class*='col-']>.card {
+  width: 100%;
+  height: 100%;
+}
+
+.homepage-container .row>[class*='col-']>.card>.card-body {
+  height: 100%;
+}
+
+/* Upload section container */
+.upload-section {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: none;
+}
+
+.upload-dropzone {
+  position: relative;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  min-height: 190px;
+  padding: var(--space-4);
+  border: 2px dashed var(--border-default);
+  background: linear-gradient(140deg, rgba(40, 51, 172, 0.02), rgba(56, 207, 246, 0.08));
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-base);
+}
+
+.upload-dropzone::before {
+  content: "\f6dd";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  font-size: 8.2rem;
+  line-height: 1;
+  color: var(--accent);
+  opacity: 0.09;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* File input wrapper - kept outside dropzone */
+.upload-native-input {
+  width: 100%;
+  max-width: none;
+}
+
+.upload-native-input .shiny-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 0;
+  width: 100%;
+  max-width: none;
+}
+
+/* Hide default file input label (if any) */
+.upload-native-input .shiny-input-container>label {
+  display: none;
+}
+
+/* Hide Shiny native upload button/filename shell */
+.upload-native-input .input-group {
+  display: none;
+}
+
+/* Upload button - icon-only, connected to input */
+.upload-native-input .btn-file,
+.upload-native-input .input-group .btn {
+  background-color: var(--primary);
+  border: 2px solid var(--primary);
+  color: var(--text-primary);
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  padding: 0;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-lg);
+  border-radius: var(--radius) 0 0 var(--radius);
+  border-right: none;
+  margin-right: -1px;
+}
+
+.upload-native-input .btn-file:hover,
+.upload-native-input .input-group .btn:hover {
+  background-color: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+
+/* Filename display box - connected to button */
+.upload-native-input .form-control,
+.upload-native-input input.form-control {
+  flex: 1 1 auto;
+  height: 40px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 0 1rem;
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  margin-left: 0;
+  transition: var(--transition-base);
+}
+
+.upload-dropzone.is-dragover {
+  border-color: var(--primary);
+  background: linear-gradient(140deg, rgba(56, 207, 246, 0.14), rgba(40, 51, 172, 0.07));
+  box-shadow: var(--focus-ring-primary);
+}
+
+.upload-dropzone.has-file {
+  border-color: var(--success-border);
+  background: linear-gradient(140deg, rgba(0, 168, 107, 0.08), rgba(56, 207, 246, 0.08));
+}
+
+.upload-dropzone-copy {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  text-align: center;
+  pointer-events: none;
+  width: 100%;
+  margin: 0;
+  padding: var(--space-4);
+}
+
+.upload-dropzone-hint {
+  margin-top: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--font-serif);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: rgba(40, 51, 172, 0.72);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0;
+  pointer-events: none;
+}
+
+.upload-dropzone-max-size {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  color: rgba(40, 51, 172, 0.56);
+  text-transform: none;
+  pointer-events: none;
+}
+
+/* Progress bar - Row 2: GREEN color for success */
+.upload-native-input .progress,
+.upload-native-input .shiny-file-input-progress,
+.upload-native-input .shiny-input-container [id$="_progress"] {
+  margin-top: 0;
+  margin-bottom: 0;
+  width: 100%;
+  min-width: 100%;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  height: 40px;
+  border-radius: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  display: block !important;
+  box-sizing: border-box;
+  padding: 0;
+}
+
+/* Guardrail: never render native upload progress inside dropzone */
+.upload-dropzone .progress,
+.upload-dropzone .shiny-file-input-progress,
+.upload-dropzone .shiny-input-container [id$="_progress"] {
+  display: none !important;
+}
+
+.upload-native-input .progress .progress-bar,
+.upload-native-input .shiny-file-input-progress .progress-bar {
+  background-color: var(--success);
+  color: var(--bg-card);
+  font-size: var(--text-sm);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  min-height: 40px;
+}
+
+/* Animate while uploader marks progress as active (Shiny default lifecycle) */
+.upload-native-input .shiny-file-input-progress.active .progress-bar,
+.upload-native-input .progress.active .progress-bar {
+  background-image: linear-gradient(45deg,
+      rgba(255, 255, 255, 0.18) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.18) 50%,
+      rgba(255, 255, 255, 0.18) 75%,
+      transparent 75%,
+      transparent);
+  background-size: 1rem 1rem;
+  animation: upload-native-progress-stripes 1s linear infinite;
+}
+
+/* Set placeholder text */
+.upload-native-input .form-control::placeholder {
+  color: var(--accent);
+  opacity: 0.7;
+}
+
+@media (max-width: 576px) {
+  .upload-dropzone {
+    min-height: 162px;
+  }
+
+  .upload-dropzone::before {
+    font-size: 6.2rem;
+  }
+
+  .upload-native-input .shiny-input-container {
+    width: 100%;
+  }
+}
+
+/* File placeholder text (custom) */
+.file-placeholder {
+  font-size: var(--text-sm);
+  color: var(--accent);
+  opacity: 0.7;
+  margin-left: var(--space-2);
+  background-color: var(--bg-main);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  flex: 1;
+}
+
+/* Upload info chips */
+.upload-info-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 0;
+}
+
+@keyframes upload-native-progress-stripes {
+  from {
+    background-position: 1rem 0;
+  }
+
+  to {
+    background-position: 0 0;
+  }
+}
+
+.upload-info-chip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  border: 1px solid transparent;
+}
+
+.upload-info-chip-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 0.82rem;
+}
+
+.upload-info-chip svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.upload-info-chip--neutral {
+  background: rgba(40, 51, 172, 0.04);
+  border-color: rgba(40, 51, 172, 0.08);
+  color: #6c757d;
+}
+
+.upload-info-chip--privacy {
+  background: rgba(0, 168, 107, 0.06);
+  border-color: rgba(0, 168, 107, 0.25);
+  color: #005A3A;
+}
+
+.upload-info-chip--tip {
+  background: rgba(255, 162, 4, 0.07);
+  border-color: rgba(255, 162, 4, 0.2);
+  color: #7A4E00;
+}
+
+/* Homepage stats */
+.homepage-container .stats-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.homepage-container .stats-container .stat-box {
+  background: #f4f3ee;
+  border: 1.5px solid rgba(40, 51, 172, 0.08);
+  border-radius: 12px;
+  padding: 16px 12px;
+  text-align: center;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.homepage-container .stats-container .stat-box:hover {
+  border-color: rgba(40, 51, 172, 0.18);
+  background: rgba(40, 51, 172, 0.07);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(28, 28, 38, 0.13);
+}
+
+.homepage-container .stats-container .stat-box .stat-value {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-xl);
+  color: #1C1C26;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 0;
+}
+
+.homepage-container .stats-container .stat-box .stat-label {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: #6c757d;
+  margin-top: 5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-family: var(--font-serif);
+}
+
+/* Welcome header */
+.welcome-header {
+  border-bottom: 1px solid rgba(40, 51, 172, 0.08);
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+}
+
+.welcome-eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #0E8A95;
+  margin-bottom: 6px;
+}
+
+.welcome-main-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  color: #1C1C26;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 0;
+}
+
+.welcome-main-title-brand {
+  color: var(--navbar-link-color);
+  font-style: italic;
+  font-weight: var(--weight-semibold);
+  font-optical-sizing: auto;
+}
+
+/* =============================================================================
+   HOMEPAGE: WORKFLOW STEPS
+   ============================================================================= */
+
+.workflow-steps {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  position: relative;
+  max-width: 100%;
+}
+
+.workflow-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  position: relative;
+  padding: 0 8px;
+}
+
+.workflow-step:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.workflow-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: calc(50% + 20px);
+  right: calc(-50% + 20px);
+  height: 2px;
+  background: linear-gradient(90deg, #38CFF6 0%, rgba(56, 207, 246, 0.2) 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.step-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(40, 51, 172, 0.13);
+  border: 2px solid rgba(40, 51, 172, 0.18);
+  border-radius: 50%;
+  color: #2833AC;
+  font-size: var(--text-base);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.workflow-step.is-active .step-icon {
+  background: #38CFF6;
+  border-color: #38CFF6;
+  color: #1C1C26;
+  box-shadow: 0 2px 6px rgba(56, 207, 246, 0.35);
+}
+
+.step-label {
+  font-family: var(--font-serif);
+  font-size: var(--text-base);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.015em;
+  color: #1C1C26;
+  margin-top: 8px;
+  line-height: var(--leading-tight);
+}
+
+.step-sublabel {
+  font-size: var(--text-xs);
+  color: #6c757d;
+  margin-top: 3px;
+  line-height: var(--leading-normal);
+  max-width: 80px;
+}
+
+/* =============================================================================
+   HOMEPAGE: REQUIRED DWC FIELDS
+   ============================================================================= */
+
+.dwc-required {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border-light);
+}
+
+.dwc-required h5 {
+  font-size: var(--text-base);
+  margin-bottom: var(--space-1);
+}
+
+.dwc-required-hint {
+  font-size: var(--text-xs);
+  color: var(--accent);
+  margin-bottom: var(--space-2);
+}
+
+.dwc-inline-groups {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dwc-inline-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f4f3ee;
+  border: 1px solid rgba(40, 51, 172, 0.08);
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: all 0.2s ease;
+}
+
+.dwc-inline-group:hover {
+  border-color: rgba(40, 51, 172, 0.18);
+  background: rgba(40, 51, 172, 0.07);
+}
+
+.dwc-inline-group-label {
+  display: inline-flex;
+  align-self: flex-start;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  line-height: 1.2;
+  letter-spacing: 0.02em;
+  padding: 3px 8px;
+  border: 1px solid transparent;
+}
+
+.dwc-term-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.dwc-term-chip {
+  background: #ffffff;
+  border: 1px solid rgba(40, 51, 172, 0.08);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: #6c757d;
+  cursor: help;
+  transition: all 0.2s ease;
+  align-items: center;
+  line-height: var(--leading-normal);
+}
+
+.dwc-term-chip:hover {
+  border-color: rgba(40, 51, 172, 0.18);
+  background: #ffffff;
+}
+
+.dwc-group-badge--record-level {
+  background: #38CFF6;
+  color: #12141B;
+}
+
+.dwc-group-badge--occurrence {
+  background: rgba(40, 51, 172, 0.13);
+  color: #2833AC;
+  border-color: rgba(40, 51, 172, 0.2);
+}
+
+.dwc-group-badge--taxon {
+  background: rgba(40, 51, 172, 0.13);
+  color: #2833AC;
+  border-color: rgba(40, 51, 172, 0.2);
+}
+
+.dwc-group-badge--location {
+  background: rgba(0, 168, 107, 0.12);
+  color: #005A3A;
+  border-color: rgba(0, 168, 107, 0.25);
+}
+
+/* =============================================================================
+   HOMEPAGE: FINANCING LOGOS
+   ============================================================================= */
+
+.financing-logos {
+  padding: var(--space-4);
+  background-color: var(--bg-main);
+  border-radius: var(--radius);
+}
+
+.logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.logo-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-base);
+}
+
+.logo-item:hover {
+  transform: scale(1.05);
+}
+
+.logo-item img {
+  max-height: 50px;
+  width: auto;
+  object-fit: contain;
+  filter: grayscale(20%);
+  transition: var(--transition-base);
+}
+
+.logo-item:hover img {
+  filter: grayscale(0%);
+}
+
+/* Round logo (Observatorio) - larger to balance */
+.logo-round img {
+  max-height: 60px;
+  border-radius: var(--radius-full);
+}
+
+/* Rectangular logos */
+.logo-rect img {
+  max-height: 40px;
+}
+
+/* =============================================================================
+   RESPONSIVE: HOMEPAGE
+   ============================================================================= */
+
+@media (max-width: 992px) {
+  .homepage-container .stats-container {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .workflow-step {
+    align-items: flex-start;
+    text-align: left;
+    padding: 0;
+  }
+
+  .workflow-step .step-sublabel {
+    max-width: none;
+  }
+
+  .workflow-step::after {
+    display: none;
+  }
+
+  .dwc-inline-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .logo-row {
+    gap: var(--space-4);
+  }
+
+  .logo-item img {
+    max-height: 40px;
+  }
+
+  .logo-round img {
+    max-height: 50px;
+  }
+}
+

@@ -1,0 +1,133 @@
+/* =============================================================================
+   UTILITY CLASSES
+   ============================================================================= */
+
+.text-mono {
+  font-family: var(--font-mono);
+}
+
+.text-sans {
+  font-family: var(--font-serif);
+}
+
+.text-primary-color {
+  color: var(--text-primary);
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.bg-main {
+  background-color: var(--bg-main);
+}
+
+.bg-card {
+  background-color: var(--bg-card);
+}
+
+/* Stats container - full width with equal distribution */
+.stats-container {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: stretch;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  width: 100%;
+}
+
+/* Stats boxes - flex-grow to fill available space */
+.stat-box {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: var(--space-5) var(--space-6);
+  text-align: center;
+  transition: var(--transition-base);
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+  /* Remove margins that could cause misalignment */
+  margin: 0;
+}
+
+.stat-box:hover {
+  transform: var(--lift-base);
+  box-shadow: var(--shadow-hover);
+}
+
+.mapping-empty-state {
+  text-align: center;
+  padding: 60px;
+  color: var(--text-muted);
+}
+
+.mapping-empty-icon {
+  font-size: 4em;
+  opacity: 0.3;
+}
+
+.stat-box .stat-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.stat-box .stat-label {
+  font-family: var(--font-serif);
+  font-size: var(--text-sm);
+  color: var(--accent);
+  margin-top: var(--space-2);
+}
+
+.stat-box-ok .stat-value {
+  color: var(--coord-ok);
+}
+
+.stat-box-error .stat-value {
+  color: var(--error);
+}
+
+.stat-box-warn .stat-value {
+  color: var(--warning);
+}
+
+.stat-box-muted .stat-value {
+  color: var(--input-text-disabled);
+}
+
+/* Validation table row states */
+table.dataTable tbody tr.validate-accepted td {
+  background-color: var(--success-bg);
+}
+
+table.dataTable tbody tr.validate-synonym td {
+  background-color: var(--info-bg);
+}
+
+table.dataTable tbody tr.validate-not-found td {
+  background-color: var(--error-bg);
+}
+
+table.dataTable tbody tr.validate-ambiguous td {
+  background-color: var(--warning-bg);
+}
+
+table.dataTable tbody tr.validate-invalid td {
+  background-color: rgba(40, 51, 172, 0.06);
+}
+
+/* Progress bar */
+.progress {
+  height: 8px;
+  border-radius: var(--radius-full);
+  background-color: var(--border-light);
+}
+
+.progress-bar {
+  background-color: var(--primary);
+  border-radius: var(--radius-full);
+}
+

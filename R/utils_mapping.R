@@ -3,15 +3,8 @@
 # Date: 2026-02-11
 # Version: 1.0
 
-is_blank_value <- function(x) {
-    if (is.null(x) || length(x) == 0) {
-        return(TRUE)
-    }
-    if (is.na(x)) {
-        return(TRUE)
-    }
-    nchar(trimws(as.character(x))) == 0
-}
+# is_blank_value() moved to utils_common.R (Onda 5, Item 5.4)
+
 
 split_semicolon_tokens <- function(value) {
     if (is_blank_value(value)) {

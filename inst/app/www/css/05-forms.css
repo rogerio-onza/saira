@@ -1,0 +1,51 @@
+/* =============================================================================
+   FORMS
+   ============================================================================= */
+
+.form-control,
+.form-select {
+  font-family: var(--font-serif);
+  font-size: var(--text-base);
+  padding: 0.6rem 0.875rem;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius);
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  transition: var(--transition-base), var(--transition-colors);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--input-border-focus);
+  outline: none;
+  box-shadow: var(--input-focus-ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  background-color: var(--input-bg-disabled);
+  color: var(--input-text-disabled);
+}
+
+.form-label {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-sm);
+  color: var(--accent);
+  margin-bottom: var(--space-2);
+}
+
+/* File Input */
+.shiny-input-container .btn-file {
+  background-color: var(--primary);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-weight: 400;
+  border: none;
+  border-radius: var(--radius);
+}
+
+.shiny-input-container .btn-file:hover {
+  background-color: var(--primary-hover);
+}
+

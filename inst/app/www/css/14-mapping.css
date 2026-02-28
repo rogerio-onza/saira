@@ -1,0 +1,671 @@
+/* =============================================================================
+   MAPPING MODULE STYLES
+   ============================================================================= */
+
+/* Scrollable container for mapping cards */
+.mapping-scroll-container {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+  padding-right: 15px;
+  scrollbar-gutter: stable;
+}
+
+/* Category headers */
+.category-header {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--text-primary) 100%);
+  color: #ffffff;
+  padding: var(--space-3) var(--space-5);
+  margin: var(--space-6) 0 var(--space-3) 0;
+  border-radius: var(--radius);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-lg);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: var(--shadow);
+}
+
+.category-header:first-child {
+  margin-top: 0;
+}
+
+/* Two-column layout for field cards */
+.two-column-layout {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+@media (max-width: 992px) {
+  .two-column-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Field cards */
+.field-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  transition: var(--transition-base);
+}
+
+.field-card:hover {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+.field-card.field-unmapped {
+  background-color: var(--bg-card);
+  border-color: var(--border);
+  opacity: 0.7;
+}
+
+.field-card.field-unmapped:hover {
+  opacity: 1;
+}
+
+.field-card.field-mapped {
+  background-color: var(--bg-card);
+  border-color: var(--success);
+  box-shadow: none;
+}
+
+.field-card.field-mapped:hover {
+  border-color: var(--success);
+  box-shadow: none;
+}
+
+/* Field header (term name) */
+.field-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.field-header {
+  font-weight: var(--weight-semibold);
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  margin-bottom: 0;
+}
+
+.field-status-badge {
+  flex-shrink: 0;
+  cursor: help;
+  white-space: nowrap;
+}
+
+/* Field description */
+.field-desc {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+  line-height: var(--leading-normal);
+}
+
+/* Prevent page break in cards */
+.no-break {
+  break-inside: avoid;
+}
+
+/* Stats box in sidebar */
+.stats-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  text-align: center;
+  margin-bottom: var(--space-3);
+}
+
+.stats-number {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+
+.stats-label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+/* Select input styling in mapping cards */
+.field-card .selectize-input {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.field-card .selectize-input.focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+/* Keep mapped selectize neutral (no yellow highlight) */
+.field-card.field-mapped .selectize-input.has-items {
+  background-color: var(--bg-main);
+  border-color: var(--border);
+}
+
+.field-card.field-mapped .selectize-input .item {
+  background-color: #ffffff;
+  border: 1px solid var(--border-default);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+}
+
+/* Separator input styling */
+.field-card input[type="text"] {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.field-card input[type="text"]:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+/* Alert inside field card */
+.field-card .alert {
+  margin-bottom: 0;
+}
+
+/* Dropdown arrow for all selectize inputs */
+.field-card .selectize-control.multi .selectize-input::after {
+  content: '\25BE';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: var(--text-base);
+  color: var(--text-muted);
+  pointer-events: none;
+  transition: transform 0.25s ease;
+}
+
+/* Rotate arrow when dropdown is open */
+.field-card .selectize-control.multi .selectize-input.dropdown-active::after {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.field-card .selectize-control.multi .selectize-input {
+  position: relative;
+  padding-right: 28px;
+}
+
+/* Mapping sidebar filter labels */
+.mapping-sidebar .form-label {
+  font-weight: var(--weight-semibold);
+  margin-bottom: var(--space-2);
+}
+
+.mapping-beta-help {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 0;
+  margin-bottom: var(--space-2);
+  margin-left: 0;
+  line-height: var(--leading-normal);
+  opacity: 0.82;
+}
+
+.mapping-beta-help p {
+  margin: 0;
+}
+
+.mapping-beta-help .shiny-html-output {
+  margin: 0;
+}
+
+.mapping-sidebar .rostrum-switch-block {
+  margin-bottom: 0;
+}
+
+.mapping-sidebar .rostrum-switch-block>.shiny-input-container {
+  margin-bottom: 0;
+}
+
+.mapping-sidebar .rostrum-switch-block .form-check.form-switch {
+  margin: 0;
+  padding-left: 0;
+  display: inline-flex;
+  align-items: center;
+  column-gap: var(--space-2);
+  min-height: 1.5rem;
+}
+
+.mapping-sidebar .rostrum-switch-block .form-check-input {
+  cursor: pointer;
+  float: none;
+  margin: 0;
+}
+
+.mapping-sidebar .rostrum-switch-block .form-check-label {
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+/* Category filter block layout and alignment */
+.mapping-sidebar .category-filter-block {
+  margin-top: var(--space-2);
+}
+
+.mapping-sidebar .category-filter-block .form-group {
+  margin-bottom: 0;
+}
+
+.mapping-sidebar .category-filter-select-all {
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.mapping-sidebar .category-filter-options .shiny-options-group {
+  margin-top: 0;
+}
+
+.mapping-sidebar .category-filter-select-all .checkbox,
+.mapping-sidebar .category-filter-options .checkbox {
+  margin-top: 0;
+  margin-bottom: var(--space-2);
+}
+
+.mapping-sidebar .category-filter-options .checkbox:last-child {
+  margin-bottom: 0;
+}
+
+.mapping-sidebar .category-filter-select-all .checkbox label,
+.mapping-sidebar .category-filter-options .checkbox label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: 0;
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+  font-weight: var(--weight-medium);
+}
+
+.mapping-sidebar .category-filter-select-all .checkbox label input[type="checkbox"],
+.mapping-sidebar .category-filter-options .checkbox label input[type="checkbox"] {
+  margin: 0;
+}
+
+/* Auto-map blocking modal */
+.automap-loading-open .modal-backdrop.show {
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+.modal.automap-loading-host .modal-content {
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-light);
+}
+
+.modal .automap-loading-modal {
+  text-align: center;
+  padding: var(--space-2) var(--space-1);
+}
+
+.modal .automap-loading-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.modal .automap-loading-brand-icon {
+  font-size: 2.35rem;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.modal .automap-loading-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.modal .automap-loading-status {
+  color: var(--accent);
+  font-size: var(--text-sm);
+  margin-bottom: 0;
+}
+
+.modal .automap-loading-progress {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto var(--space-2);
+  height: 12px;
+  border-radius: var(--radius-full);
+  background: var(--border-light);
+  border: 1px solid var(--border-default);
+  overflow: hidden;
+}
+
+.modal .automap-loading-progress-bar {
+  height: 100%;
+  width: 0;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+  transition: width 0.24s ease;
+}
+
+.modal .automap-loading-phrase {
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  min-height: 2.6em;
+}
+
+.modal .automap-loading-phrase-row {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 280ms ease, transform 280ms ease;
+}
+
+.modal .automap-loading-phrase-row.is-fading {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.modal .automap-loading-phrase-icon {
+  color: var(--accent);
+  margin-top: 2px;
+  transform-origin: center;
+  animation: automap-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes automap-pulse {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 576px) {
+  .modal .automap-loading-brand-row {
+    gap: var(--space-3);
+  }
+
+  .modal .automap-loading-brand-icon {
+    font-size: 2.1rem;
+  }
+
+  .modal .automap-loading-title {
+    font-size: var(--text-lg);
+  }
+}
+
+/* basisOfRecord assistant modal */
+.modal-dialog:has(.bor-assistant-modal) .modal-content {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-light);
+}
+
+.modal-dialog:has(.bor-assistant-modal) .modal-header,
+.modal-dialog:has(.bor-assistant-modal) .modal-body {
+  background-color: var(--bg-card);
+}
+
+.modal-dialog:has(.bor-assistant-modal) .modal-footer {
+  background-color: var(--bg-card);
+}
+
+.modal-dialog:has(.bor-assistant-modal) .modal-body {
+  max-height: calc(100vh - 210px);
+  overflow-y: auto;
+}
+
+.bor-assistant-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.bor-assistant-subtitle {
+  margin-bottom: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.bor-assistant-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.bor-assistant-progress-text {
+  font-size: var(--text-sm);
+  color: var(--accent);
+  font-weight: var(--weight-medium);
+}
+
+.bor-assistant-progress {
+  width: 100%;
+  height: 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-default);
+  background: var(--border-light);
+  overflow: hidden;
+}
+
+.bor-assistant-progress-bar {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+  transition: width 0.2s ease;
+}
+
+.bor-assistant-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.bor-assistant-table-wrap {
+  max-height: 280px;
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0;
+  background: var(--bg-card);
+}
+
+.bor-assistant-table {
+  width: 100%;
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.bor-assistant-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--accent);
+  background-clip: padding-box;
+  box-shadow: 0 1px 0 var(--border-strong);
+  border-bottom: 1px solid var(--border-strong);
+  color: #ffffff;
+}
+
+.bor-assistant-table> :not(caption)>*>* {
+  border-color: var(--border);
+}
+
+.bor-assistant-table tbody td {
+  background-color: var(--bg-card);
+}
+
+.bor-assistant-table .shiny-input-container {
+  margin-bottom: 0;
+}
+
+.bor-assistant-table select.form-control {
+  background-color: var(--bg-main);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.bor-assistant-table select.form-control:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: var(--focus-ring-primary);
+}
+
+.bor-assistant-raw-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bor-assistant-preview-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  font-weight: var(--weight-semibold);
+}
+
+.bor-assistant-preview-table {
+  margin-bottom: var(--space-2);
+}
+
+.bor-assistant-preview-table thead th {
+  background: var(--accent);
+  color: #ffffff;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.bor-assistant-preview-table td,
+.bor-assistant-preview-table th {
+  font-size: var(--text-sm);
+  border-color: var(--border);
+}
+
+.bor-assistant-preview-table tbody td {
+  background-color: var(--bg-card);
+}
+
+.bor-assistant-unmapped-count {
+  font-size: var(--text-sm);
+  color: var(--warning);
+  font-weight: var(--weight-medium);
+}
+
+@media (max-width: 768px) {
+  .bor-assistant-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .bor-assistant-table-wrap {
+    max-height: 240px;
+  }
+}
+
+/* =============================================================================
+   CUSTOM FIELD INPUTS (Record-level special fields)
+   ============================================================================= */
+
+/* Labels for custom field sections */
+.custom-field-label {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--accent);
+  margin-bottom: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+/* Date section with checkbox + calendar */
+.custom-date-section {
+  margin-top: var(--space-1);
+}
+
+.custom-date-section .checkbox {
+  margin-bottom: var(--space-2);
+}
+
+.custom-date-section .checkbox label {
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+}
+
+/* Radio buttons inside field cards */
+.field-card .radio label,
+.field-card .radio-inline label {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: var(--transition-fast);
+}
+
+.field-card .radio label:hover,
+.field-card .radio-inline label:hover {
+  background-color: var(--hover-bg);
+}
+
+/* Inline radio group spacing */
+.field-card .shiny-options-group {
+  margin-top: var(--space-1);
+}
+
+/* Text input for datasetName */
+.field-card .form-group .form-control[type="text"] {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  font-family: var(--font-serif);
+  transition: var(--transition-base);
+}
+
+.field-card .form-group .form-control[type="text"]:focus {
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring-primary);
+  outline: none;
+}
+

@@ -42,13 +42,14 @@ testthat::test_that("mod_mapping_server exposes lightweight preview_data alongsi
         ),
         {
             returned <- session$getReturned()
-            testthat::expect_true(shiny::is.reactive(returned))
+            testthat::expect_true(is.list(returned))
+            testthat::expect_named(returned, c("processed_data_r", "preview_data_r", "validation_gate_r", "validation_gate_coords_r"))
 
-            full_df <- returned()
+            full_df <- returned$processed_data_r()
             testthat::expect_true(is.data.frame(full_df))
             testthat::expect_equal(nrow(full_df), 150L)
 
-            preview_r <- attr(returned, "preview_data")
+            preview_r <- returned$preview_data_r
             testthat::expect_true(shiny::is.reactive(preview_r))
 
             preview_df <- preview_r()
@@ -71,7 +72,7 @@ testthat::test_that("mod_mapping_server exposes validation_gate reactive with ex
         ),
         {
             returned <- session$getReturned()
-            validation_gate <- attr(returned, "validation_gate")
+            validation_gate <- returned$validation_gate_r
 
             testthat::expect_true(shiny::is.reactive(validation_gate))
 
@@ -110,7 +111,7 @@ testthat::test_that("mod_mapping_server exposes coordinate validation gate with 
         ),
         {
             returned <- session$getReturned()
-            coord_gate <- attr(returned, "validation_gate_coords")
+            coord_gate <- returned$validation_gate_coords_r
 
             testthat::expect_true(shiny::is.reactive(coord_gate))
 
@@ -172,8 +173,8 @@ testthat::test_that("validation gates stay in no_data when upstream raw_data_r i
         ),
         {
             returned <- session$getReturned()
-            validation_gate <- attr(returned, "validation_gate")
-            coord_gate <- attr(returned, "validation_gate_coords")
+            validation_gate <- returned$validation_gate_r
+            coord_gate <- returned$validation_gate_coords_r
 
             gate <- validation_gate()
             testthat::expect_identical(gate$status, "no_data")

@@ -1,6 +1,7 @@
 # Title: CSS guardrail tests
 # Author: Codex
 # Date: 2026-02-20
+# Updated: 2026-02-28 (Onda 5, Item 5.1 — modular CSS guardrails)
 
 extract_all_matches <- function(text, pattern) {
     match_list <- gregexpr(pattern, text, perl = TRUE)
@@ -257,5 +258,49 @@ testthat::test_that("custom.css includes review modal tokens and reduced-motion 
         grepl("(?s)@media\\s*\\(prefers-reduced-motion:\\s*reduce\\)\\s*\\{[^}]*\\.vn-review-item-exit\\s*\\{[^}]*animation:\\s*none;", css_text, perl = TRUE),
         info = "Review exit animation is not disabled under prefers-reduced-motion"
     )
+})
+
+# --- Onda 5 / Item 5.1: Modular CSS bundle guardrails ---
+
+resolve_css_dir <- function() {
+    installed_dir <- system.file("app", "www", "css", package = "saira")
+    if (nzchar(installed_dir) && dir.exists(installed_dir)) {
+        return(installed_dir)
+    }
+    file.path(pkg_root, "inst", "app", "www", "css")
+}
+
+testthat::test_that("custom.css starts with GENERATED FILE header", {
+    css_path <- resolve_css_path()
+    first_line <- readLines(css_path, n = 1L, warn = FALSE, encoding = "UTF-8")
+    testthat::expect_true(
+        grepl("GENERATED FILE", first_line, fixed = TRUE),
+        info = "custom.css should start with GENERATED FILE header (run data-raw/build_css.R)"
+    )
+})
+
+testthat::test_that("all CSS modules in css/ are included in the bundle", {
+    css_dir <- resolve_css_dir()
+    testthat::skip_if_not(dir.exists(css_dir), "CSS modules directory not found")
+
+    module_files <- sort(list.files(css_dir, pattern = "\\.css$"))
+    testthat::expect_true(
+        length(module_files) > 0L,
+        info = "No CSS module files found in css/ directory"
+    )
+
+    css_path <- resolve_css_path()
+    bundle_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+
+    for (mod_file in module_files) {
+        mod_path <- file.path(css_dir, mod_file)
+        mod_lines <- readLines(mod_path, warn = FALSE, encoding = "UTF-8")
+        # Check that at least the first non-empty line of each module appears in the bundle
+        first_content <- trimws(mod_lines[nzchar(trimws(mod_lines))][[1]])
+        testthat::expect_true(
+            grepl(first_content, bundle_text, fixed = TRUE),
+            info = paste("CSS module not found in bundle:", mod_file)
+        )
+    }
 })
 

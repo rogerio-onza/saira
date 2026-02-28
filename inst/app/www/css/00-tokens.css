@@ -1,0 +1,138 @@
+/* =============================================================================
+   CSS CUSTOM PROPERTIES (Design Tokens)
+   ============================================================================= */
+
+:root {
+  /* Base */
+  --bg-main: #f4f3ee;
+  --bg-card: #ffffff;
+  --text-primary: #1c1c26;
+  --text-muted: #6c757d;
+
+  /* Bird Palette */
+  --primary: #38cff6;
+  --primary-hover: #16b3bd;
+  --primary-dark: #0e8a95;
+  --accent: #2833ac;
+  --info: #252659;
+  --warning: #ffa204;
+  --warning-alt: #ffe005;
+  --saira-preto: #12141b;
+
+  /* Semantic States */
+  --success: #00a86b;
+  --success-bg: rgba(0, 168, 107, 0.1);
+  --success-border: rgba(0, 168, 107, 0.25);
+  --warning-bg: rgba(255, 162, 4, 0.1);
+  --warning-border: rgba(255, 162, 4, 0.25);
+  --error: #c0392b;
+  --error-bg: rgba(192, 57, 43, 0.1);
+  --error-border: rgba(192, 57, 43, 0.25);
+  --info-bg: rgba(37, 38, 89, 0.1);
+  --info-border: rgba(37, 38, 89, 0.2);
+
+  /* Coordinate Validation */
+  --coord-ok: #00a86b;
+  --coord-missing: rgba(28, 28, 38, 0.35);
+  --coord-swapped: #8b5cf6;
+
+  /* Borders */
+  --border-light: rgba(40, 51, 172, 0.08);
+  --border-default: rgba(40, 51, 172, 0.18);
+  --border-strong: rgba(40, 51, 172, 0.35);
+  --border: rgba(40, 51, 172, 0.18);
+
+  /* Backgrounds */
+  --overlay: rgba(28, 28, 38, 0.5);
+  --hover-bg: rgba(40, 51, 172, 0.07);
+  --active-bg: rgba(40, 51, 172, 0.13);
+
+  /* Typography */
+  --font-serif: 'Source Serif 4', Georgia, serif;
+  --font-mono: 'Space Mono', 'IBM Plex Mono', monospace;
+
+  /* Type Scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.8rem;
+  --text-base: 1.05rem;
+  --text-md: 1.1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 1.75rem;
+
+  /* Font Weights */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* Line Heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.75;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 4px rgba(28, 28, 38, 0.05);
+  --shadow: 0 2px 8px rgba(28, 28, 38, 0.08);
+  --shadow-md: 0 4px 12px rgba(28, 28, 38, 0.1);
+  --shadow-hover: 0 4px 16px rgba(28, 28, 38, 0.12);
+  --shadow-lg: 0 8px 24px rgba(28, 28, 38, 0.15);
+  --shadow-primary: 0 2px 6px rgba(56, 207, 246, 0.35);
+  --shadow-primary-hover: 0 4px 12px rgba(56, 207, 246, 0.45);
+  --shadow-success: 0 2px 6px rgba(0, 168, 107, 0.3);
+  --shadow-error: 0 2px 6px rgba(192, 57, 43, 0.3);
+  --shadow-accent: 0 2px 4px rgba(40, 51, 172, 0.3);
+  --shadow-accent-hover: 0 4px 8px rgba(40, 51, 172, 0.4);
+
+  /* Focus Rings */
+  --focus-ring-primary: 0 0 0 3px rgba(56, 207, 246, 0.25);
+  --focus-ring-accent: 0 0 0 3px rgba(40, 51, 172, 0.22);
+  --focus-ring-success: 0 0 0 3px rgba(0, 168, 107, 0.22);
+  --focus-ring-error: 0 0 0 3px rgba(192, 57, 43, 0.22);
+
+  /* Forms */
+  --input-bg: var(--bg-card);
+  --input-border: var(--border-default);
+  --input-border-focus: var(--primary);
+  --input-text: var(--text-primary);
+  --input-focus-ring: var(--focus-ring-primary);
+  --input-border-error: var(--error);
+  --input-focus-ring-error: var(--focus-ring-error);
+  --input-bg-disabled: rgba(40, 51, 172, 0.05);
+  --input-text-disabled: rgba(28, 28, 38, 0.35);
+
+  /* Navbar */
+  --navbar-link-color: #2833ac;
+  --navbar-link-hover-bg: var(--hover-bg);
+  --navbar-link-active-bg: #38cff6;
+  --navbar-link-active-text: #1c1c26;
+
+  /* Transitions and Motion */
+  --transition-fast: all 0.15s ease;
+  --transition-base: all 0.2s ease;
+  --transition-slow: all 0.3s ease;
+  --transition-colors: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+  --transition-transform: transform 0.2s ease;
+  --transition-shadow: box-shadow 0.2s ease;
+  --lift-sm: translateY(-1px);
+  --lift-base: translateY(-2px);
+  --lift-lg: translateY(-4px);
+  --validate-names-header-offset: 166px;
+}
+

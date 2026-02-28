@@ -1,0 +1,106 @@
+/* =============================================================================
+   BASE STYLES
+   ============================================================================= */
+
+body {
+  background-color: var(--bg-main);
+}
+
+body,
+p,
+.body-text {
+  font-family: var(--font-serif);
+  font-weight: var(--weight-regular);
+  font-optical-sizing: auto;
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  color: var(--text-primary);
+}
+
+.card p,
+.panel p,
+.description,
+.welcome-text {
+  font-size: var(--text-md);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-normal);
+}
+
+/* =============================================================================
+   TYPOGRAPHY
+   ============================================================================= */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-serif);
+  font-weight: var(--weight-semibold);
+  font-optical-sizing: auto;
+  line-height: var(--leading-tight);
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin-bottom: var(--space-3);
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 1.6rem;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.02em;
+}
+
+h3 {
+  font-size: 1.3rem;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+}
+
+h4 {
+  font-size: 1.15rem;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+}
+
+h5,
+h6 {
+  font-size: var(--text-md);
+}
+
+p {
+  margin-bottom: var(--space-4);
+}
+
+.subtitle,
+.section-label,
+.step-label {
+  font-family: var(--font-serif);
+  font-weight: var(--weight-medium);
+  font-size: var(--text-base);
+  letter-spacing: 0;
+}
+
+code,
+pre,
+.code {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+/* Inputs and compact UI metadata are always mono in v6. */
+label,
+.ui-label,
+.input-label,
+.data-cell,
+.coord-value {
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+

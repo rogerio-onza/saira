@@ -31,6 +31,7 @@ Additional_repositories: https://ropensci.r-universe.dev
 Suggests:
     testthat (>= 3.0.0),
     rnaturalearthhires (>= 1.0.0),
+    shinytest2 (>= 0.3.0),
     devtools,
     roxygen2,
     pkgload

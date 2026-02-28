@@ -9,3 +9,6 @@
 6. Never use `options(encoding = "UTF-8")` in startup code.
 7. Use LF line endings only (`.editorconfig` + `.gitattributes`).
 8. I/O tests should write bytes explicitly when BOM behavior is under test.
+9. `inst/extdata/i18n.json` uses literal UTF-8 (valid per JSON spec). The loader
+   reads with `encoding = "UTF-8"` and applies `strip_bom()` for resilience.
+   When editing the JSON manually, keep UTF-8 encoding and avoid raw BOM bytes.
