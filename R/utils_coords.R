@@ -71,7 +71,7 @@ normalize_country_token <- function(x) {
     out <- as.character(x)
     out[is.na(out)] <- ""
     out <- trimws(out)
-    out <- iconv(out, from = "", to = "ASCII//TRANSLIT")
+    out <- iconv(out, from = "UTF-8", to = "ASCII//TRANSLIT")
     out[is.na(out)] <- ""
     out <- tolower(out)
     out <- gsub("[^a-z0-9]+", " ", out)
@@ -303,44 +303,64 @@ coords_country_to_iso3 <- function(country_values) {
         }
     }
 
-    # Layer 5: conservative fuzzy matching (Levenshtein).
+    # Layer 5: conservative fuzzy matching (Levenshtein) — batch matrix.
     if (any(pending)) {
         idx_pending <- which(pending)
         ref <- coords_build_fuzzy_reference()
         if (nrow(ref) > 0L) {
-            for (idx in idx_pending) {
-                token <- normalize_country_token(uniq_vals[[idx]])
-                if (!nzchar(token) || nchar(token) < 4L) {
-                    next
-                }
+            # Batch: pre-normalize all pending tokens once
+            pending_tokens <- normalize_country_token(uniq_vals[idx_pending])
+            valid_mask <- nzchar(pending_tokens) & nchar(pending_tokens) >= 4L
 
-                dist_vec <- as.integer(utils::adist(token, ref$alias, ignore.case = TRUE))
-                if (length(dist_vec) == 0L || all(is.na(dist_vec))) {
-                    next
-                }
+            if (any(valid_mask)) {
+                valid_indices <- idx_pending[valid_mask]
+                valid_tokens <- pending_tokens[valid_mask]
 
-                best_dist <- min(dist_vec, na.rm = TRUE)
-                if (!is.finite(best_dist)) {
-                    next
-                }
-                max_dist <- max(1L, floor(nchar(token) / 4L))
-                if (best_dist > max_dist) {
-                    next
-                }
+                tryCatch(
+                    {
+                        dist_matrix <- utils::adist(
+                            valid_tokens, ref$alias,
+                            ignore.case = TRUE
+                        )
+                        storage.mode(dist_matrix) <- "integer"
 
-                best_idx <- which(dist_vec == best_dist)
-                if (length(best_idx) != 1L) {
-                    next
-                }
+                        for (i in seq_along(valid_tokens)) {
+                            dist_row <- dist_matrix[i, ]
+                            if (all(is.na(dist_row))) next
 
-                higher <- dist_vec[dist_vec > best_dist]
-                second_best <- if (length(higher) == 0L) Inf else min(higher, na.rm = TRUE)
-                if (is.finite(second_best) && (second_best - best_dist) < 1L) {
-                    next
-                }
+                            best_dist <- min(dist_row, na.rm = TRUE)
+                            if (!is.finite(best_dist)) next
 
-                out_uniq[[idx]] <- ref$iso3c[[best_idx]]
-                pending[[idx]] <- FALSE
+                            token_len <- nchar(valid_tokens[[i]])
+                            max_dist <- max(1L, floor(token_len / 4L))
+                            if (best_dist > max_dist) next
+
+                            best_idx <- which(dist_row == best_dist)
+                            if (length(best_idx) != 1L) next
+
+                            higher <- dist_row[dist_row > best_dist]
+                            second_best <- if (length(higher) == 0L) {
+                                Inf
+                            } else {
+                                min(higher, na.rm = TRUE)
+                            }
+                            if (is.finite(second_best) &&
+                                (second_best - best_dist) < 1L) {
+                                next
+                            }
+
+                            idx <- valid_indices[[i]]
+                            out_uniq[[idx]] <- ref$iso3c[[best_idx]]
+                            pending[[idx]] <- FALSE
+                        }
+                    },
+                    error = function(e) {
+                        message(
+                            "[Saira] Fuzzy batch failed, skipping: ",
+                            e$message
+                        )
+                    }
+                )
             }
         }
     }

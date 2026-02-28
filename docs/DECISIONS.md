@@ -1054,3 +1054,28 @@ Formato: ADR leve (Architecture Decision Record).
   - `rnaturalearthhires` precisa ser instalado separadamente pois nao esta no CRAN.
   - Performance do mapa pode ser ligeiramente menor para datasets muito grandes (>5000 pontos) sem clustering, mitigado por `preferCanvas` e raio reduzido.
 
+---
+
+## ADR-053: Debounce de idioma e fuzzy matching vetorizado (Onda 4 — Performance Reativa)
+
+- **Data**: 2026-02-28
+- **Status**: Aceito
+- **Contexto**: A troca de idioma disparava ~385 re-renderizacoes simultaneas sem amortizacao. O fuzzy matching de paises na Layer 5 de `coords_country_to_iso3()` usava loop por item com `adist()` individual, O(n x m) com overhead de chamada de funcao por token.
+- **Decisao**:
+  - Debounce de 150ms em `lang_r` com bypass na primeira renderizacao via `reactiveVal` flag (`lang_initialized`). Primeira renderizacao imediata para evitar atraso de startup.
+  - Substituir loop individual por batch matricial com `adist(all_tokens, ref$alias)`. Sem chunking (memoria trivial para matrizes observadas no uso real).
+  - Envolver bloco batch em `tryCatch` para resiliencia a encoding corrompido — se `adist` falhar, loga e pula em vez de crashar todo o batch.
+  - `normalize_country_token`: `iconv(from = "UTF-8")` explicito em vez de `from = ""` (dependente de locale do OS).
+  - Todas as regras de desambiguacao preservadas: `best_dist`, `max_dist = max(1, floor(nchar/4))`, melhor unico, margem para segundo melhor.
+- **Alternativas**:
+  - Debounce cego sem bypass de startup — rejeitado por causar delay visivel na primeira renderizacao.
+  - Chunking com `chunk_size = 2000` — omitido por complexidade desnecessaria; pode ser adicionado se benchmark futuro justificar.
+  - `vapply` para normalizar tokens — rejeitado por `normalize_country_token` ja ser vetorizado internamente.
+- **Criterios de aceite**:
+  - Todos os testes existentes + novos passam.
+  - Saida de `coords_country_to_iso3` identica para dataset de referencia (teste de snapshot).
+  - Ganho minimo de 30% no cenario "nao-reconhecidos em massa" vs baseline.
+- **Consequencias**:
+  - Performance de UI melhora em troca de idioma.
+  - Throughput de fuzzy matching melhora em datasets com muitos paises nao-reconhecidos.
+  - Resiliencia a encoding corrompido em fuzzy batch.

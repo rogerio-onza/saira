@@ -7,6 +7,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ---
 
+## [0.1.31] - 2026-02-28
+
+### Alterado
+- `R/app_server.R`: reatividade de idioma com debounce de 150ms e bypass de startup via `reactiveVal` flag.
+- `R/utils_coords.R`: fuzzy matching de paises vetorizado (batch `adist`) com `tryCatch` de resiliencia. `normalize_country_token` com `iconv(from = "UTF-8")` explicito.
+
+### Testes
+- `test-coords-country-to-iso3.R`: 5 novos testes — snapshot de regressao, adversarial, ambiguidade, batch heterogeneo 50+, e budget com tokens diversos nao-reconhecidos.
+
+### Documentacao
+- `docs/DECISIONS.md`: novo ADR-053 sobre debounce 150ms e fuzzy batch.
+
+---
+
 ## [0.1.30] - 2026-02-27
 
 ### Alterado

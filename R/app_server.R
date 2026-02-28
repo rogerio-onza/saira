@@ -1,7 +1,7 @@
 # Title: Main Application Server
 # Author: Rogerio Nunes Oliveira
 # Date: 2026-02-13
-# Version: 1.1
+# Version: 1.2
 
 #' Main Application Server
 #'
@@ -12,9 +12,19 @@
 #' @param session Shiny session
 #' @export
 app_server <- function(input, output, session) {
-    # Reactive: Selected language
-    lang_r <- shiny::reactive({
+    # Reactive: Selected language (debounced after first render)
+    lang_initialized <- shiny::reactiveVal(FALSE)
+    lang_raw_r <- shiny::reactive({
         input$lang_switch %||% "pt"
+    })
+    lang_debounced_r <- lang_raw_r |> shiny::debounce(150)
+    lang_r <- shiny::reactive({
+        if (!lang_initialized()) {
+            lang_initialized(TRUE)
+            lang_raw_r()
+        } else {
+            lang_debounced_r()
+        }
     })
 
     # Dynamic navigation titles based on language
