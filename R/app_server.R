@@ -69,15 +69,15 @@ app_server <- function(input, output, session) {
     validation_gate <- mapping_result$validation_gate_r
     coord_validation_gate <- mapping_result$validation_gate_coords_r
     if (is.null(preview_data) || !shiny::is.reactive(preview_data)) {
-        message("[Saíra] preview_data slot missing from mapping module, using mapped_data fallback")
+        message("[Sa\u00EDra] preview_data slot missing from mapping module, using mapped_data fallback")
         preview_data <- mapped_data
     }
     if (is.null(validation_gate) || !shiny::is.reactive(validation_gate)) {
-        message("[Saíra] validation_gate slot missing, gate disabled")
+        message("[Sa\u00EDra] validation_gate slot missing, gate disabled")
         validation_gate <- NULL
     }
     if (is.null(coord_validation_gate) || !shiny::is.reactive(coord_validation_gate)) {
-        message("[Saíra] coord_validation_gate slot missing, gate disabled")
+        message("[Sa\u00EDra] coord_validation_gate slot missing, gate disabled")
         coord_validation_gate <- NULL
     }
 
@@ -116,6 +116,6 @@ app_server <- function(input, output, session) {
 
     # Cleanup on session end
     session$onSessionEnded(function() {
-        message("[Saíra] Session ended, cleanup complete")
+        message("[Sa\u00EDra] Session ended, cleanup complete")
     })
 }

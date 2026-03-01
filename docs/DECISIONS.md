@@ -1147,3 +1147,21 @@ Formato: ADR leve (Architecture Decision Record).
   - Traducoes editaveis em qualquer editor JSON.
   - Requer `jsonlite` em Imports (ja era dependencia do pacote).
   - Cache in-process evita releitura do disco a cada chamada a `tr()`.
+
+---
+
+## ADR-057: E2E isolado por env var `RUN_E2E=true`
+
+- **Data**: 2026-03-01
+- **Contexto**: E2E com `shinytest2` e custoso (Chromium + startup do app) e instavel em R CMD check por dependencia de `app_dir`. Tambem rodava durante `devtools::test()` quando `shinytest2` estava instalado.
+- **Decisao**:
+  - Adicionar gate `RUN_E2E=true` em `tests/testthat/test-e2e-flows.R`.
+  - Trocar `AppDriver$new(app_dir = ...)` por `AppDriver$new(app = shiny::shinyApp(app_ui(), app_server))`.
+  - Ativar o gate em `scripts/release_gate.R` via `Sys.setenv("RUN_E2E" = "true")` antes da etapa E2E e `Sys.unsetenv("RUN_E2E")` em seguida.
+- **Alternativas rejeitadas**:
+  - `withr::with_envvar` (exige pacote nao declarado).
+  - Mover E2E para diretorio separado (piora ergonomia de filtro com `devtools::test()`).
+- **Consequencias**:
+  - E2E roda uma unica vez via `Rscript scripts/release_gate.R`.
+  - `devtools::test()` passa a pular E2E com mensagem informativa por padrao.
+  - Menor variabilidade de caminho de app em ambientes de check e CI.

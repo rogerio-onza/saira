@@ -231,4 +231,6 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 
 - **Testes E2E com `shinytest2` devem usar `skip_if_not_installed("shinytest2")`**: permite que a suite unitaria rode sem dependencia de chromote/browser.
 - **Release gate com etapas numeradas explicita a ordem de verificacao**: unit -> guardrails -> integridade i18n -> E2E -> R CMD check cobre progressivamente do mais rapido ao mais lento.
-
+- **Gate por env var e mais explicito que `skip_if_not_installed` para suites custosas**: `if (!identical(Sys.getenv("RUN_E2E"), "true")) skip(...)` garante que E2E nunca roda acidentalmente em `devtools::test()` mesmo com `shinytest2` instalado.
+- **`AppDriver$new(app = shinyApp(ui, server))` e mais robusto que `app_dir`**: elimina dependencia de `app.R`/`server.R` existirem no diretorio raiz, instavel em ambientes de check.
+- **Evitar `withr` em scripts de release gate**: `Sys.setenv()`/`Sys.unsetenv()` sao base R e nao exigem declaracao em DESCRIPTION; `withr::with_envvar()` quebraria o script em ambientes sem o pacote instalado.

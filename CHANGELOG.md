@@ -7,6 +7,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Corrigido
+- `app_ui()`: `tags$head(...)` movido para fora de `bslib::page_navbar()` via `tagList`, eliminando warning de itens de navegacao invalidos em R CMD check.
+- Non-ASCII em `R/app_ui.R`, `R/app_server.R`, `R/mod_upload.R` e `R/utils_export.R` substituidos por escapes `\uXXXX` (portabilidade).
+- `man/mod_preview_server.Rd` e `man/validate_coords_cc_df.Rd` regenerados via `devtools::document()` para eliminar codoc mismatch.
+- E2E (`test-e2e-flows.R`): `app_dir` substituido por `shiny::shinyApp()`; gate `RUN_E2E=true` adicionado para isolar suite em etapa dedicada.
+
+---
+
 ## [0.2.0] - 2026-02-28
 
 ### Adicionado

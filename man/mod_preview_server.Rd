@@ -4,7 +4,13 @@
 \alias{mod_preview_server}
 \title{Preview Module Server}
 \usage{
-mod_preview_server(id, mapped_data_r, lang_r, download_data_r = mapped_data_r)
+mod_preview_server(
+  id,
+  mapped_data_r,
+  lang_r,
+  download_data_r = mapped_data_r,
+  name_review_payload_r = NULL
+)
 }
 \arguments{
 \item{id}{Module ID}
@@ -14,6 +20,8 @@ mod_preview_server(id, mapped_data_r, lang_r, download_data_r = mapped_data_r)
 \item{lang_r}{Reactive language value}
 
 \item{download_data_r}{Reactive data frame with full mapped data for download}
+
+\item{name_review_payload_r}{Optional reactive payload from name manual review}
 }
 \value{
 Reactive preview data frame

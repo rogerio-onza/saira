@@ -7,6 +7,14 @@
 # Set CHROMOTE_CHROME in .Renviron to point to your browser executable.
 
 testthat::skip_if_not_installed("shinytest2")
+if (!identical(Sys.getenv("RUN_E2E"), "true")) {
+    testthat::skip("E2E suite ignorada em check rotineiro. Use RUN_E2E=true para rodar.")
+}
+app_root <- normalizePath(testthat::test_path("../../"), winslash = "/", mustWork = TRUE)
+build_e2e_app <- function() {
+    pkgload::load_all(app_root, export_all = FALSE, quiet = TRUE)
+    shiny::shinyApp(app_ui(), app_server)
+}
 
 # --- Flow 1: Upload -> Mapping -> Preview -> Download ---
 
@@ -15,7 +23,7 @@ testthat::test_that("E2E: Upload CSV, map fields, navigate to Preview", {
     testthat::skip_if_not_installed("shinytest2")
 
     app <- shinytest2::AppDriver$new(
-        app_dir = testthat::test_path("../../"),
+        app = build_e2e_app,
         timeout = 30000,
         load_timeout = 30000
     )
@@ -50,7 +58,7 @@ testthat::test_that("E2E: Wiki tab loads and displays DwC terms table", {
     testthat::skip_if_not_installed("shinytest2")
 
     app <- shinytest2::AppDriver$new(
-        app_dir = testthat::test_path("../../"),
+        app = build_e2e_app,
         timeout = 30000,
         load_timeout = 30000
     )
@@ -74,7 +82,7 @@ testthat::test_that("E2E: Help tab loads and search works", {
     testthat::skip_if_not_installed("shinytest2")
 
     app <- shinytest2::AppDriver$new(
-        app_dir = testthat::test_path("../../"),
+        app = build_e2e_app,
         timeout = 30000,
         load_timeout = 30000
     )
@@ -98,7 +106,7 @@ testthat::test_that("E2E: Language switch PT -> EN -> PT without error", {
     testthat::skip_if_not_installed("shinytest2")
 
     app <- shinytest2::AppDriver$new(
-        app_dir = testthat::test_path("../../"),
+        app = build_e2e_app,
         timeout = 30000,
         load_timeout = 30000
     )
@@ -106,21 +114,25 @@ testthat::test_that("E2E: Language switch PT -> EN -> PT without error", {
 
     app$wait_for_idle(timeout = 10000)
 
+    strip_html <- function(x) {
+        trimws(gsub("<[^>]+>", "", as.character(x)))
+    }
+
+    nav_pt_initial <- strip_html(app$get_html("#nav_upload_title"))
+
     # Switch to EN
     app$set_inputs(lang_switch = "en")
-    app$wait_for_idle(timeout = 3000)
+    app$wait_for_idle(timeout = 5000)
+    nav_en <- strip_html(app$get_html("#nav_upload_title"))
 
     # Switch to PT
     app$set_inputs(lang_switch = "pt")
-    app$wait_for_idle(timeout = 3000)
+    app$wait_for_idle(timeout = 5000)
+    nav_pt_final <- strip_html(app$get_html("#nav_upload_title"))
 
-    # Switch back to EN
-    app$set_inputs(lang_switch = "en")
-    app$wait_for_idle(timeout = 3000)
-
-    # App should still be alive
-    logs <- app$get_logs()
-    error_logs <- logs[logs$level == "error", ]
-    testthat::expect_equal(nrow(error_logs), 0L,
-        info = paste("Errors after language switch:", paste(error_logs$message, collapse = "; ")))
+    testthat::expect_true(nzchar(nav_pt_initial))
+    testthat::expect_true(nzchar(nav_en))
+    testthat::expect_true(nzchar(nav_pt_final))
+    testthat::expect_false(identical(nav_pt_initial, nav_en))
+    testthat::expect_equal(nav_pt_initial, nav_pt_final)
 })

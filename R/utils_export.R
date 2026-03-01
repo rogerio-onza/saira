@@ -101,14 +101,14 @@ apply_name_review_payload <- function(df, payload = NULL) {
 
     confirm_mask <- has_review & review_type_vec == "confirm"
     if (any(confirm_mask)) {
-        out$motivo_revisao[confirm_mask] <- "Confirmado pelo usuário"
+        out$motivo_revisao[confirm_mask] <- "Confirmado pelo usu\u00E1rio"
     }
 
     correct_mask <- has_review & review_type_vec == "correct"
     if (any(correct_mask)) {
         correct_idx <- match_idx[correct_mask]
         correction_reason <- trimws(as.character(entries$reason[correct_idx]))
-        correction_reason[is.na(correction_reason) | !nzchar(correction_reason)] <- "Corrigido pelo usuário"
+        correction_reason[is.na(correction_reason) | !nzchar(correction_reason)] <- "Corrigido pelo usu\u00E1rio"
         out$motivo_revisao[correct_mask] <- correction_reason
 
         corrected_name <- trimws(as.character(entries$corrected_name[correct_idx]))

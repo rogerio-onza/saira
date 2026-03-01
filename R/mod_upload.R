@@ -196,7 +196,7 @@ mod_upload_server <- function(id, lang_r) {
                     class = "welcome-main-title",
                     tr("welcome_title_prefix", lang_r()),
                     " ",
-                    shiny::tags$span("Saíra", class = "welcome-main-title-brand")
+                    shiny::tags$span("Sa\u00EDra", class = "welcome-main-title-brand")
                 )
             )
         })
@@ -258,7 +258,7 @@ mod_upload_server <- function(id, lang_r) {
         required_terms_all <- tryCatch(
             get_dwc_terms(),
             error = function(e) {
-                message("[Saíra] Failed to load DwC terms: ", e$message)
+                message("[Sa\u00EDra] Failed to load DwC terms: ", e$message)
                 data.frame(
                     term = character(0),
                     class = character(0),

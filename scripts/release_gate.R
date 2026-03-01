@@ -19,7 +19,9 @@ testthat::test_file("tests/testthat/test-utils-i18n.R")
 testthat::test_file("tests/testthat/test-i18n-a11y-keys.R")
 
 message("\n[4/5] E2E")
+Sys.setenv(RUN_E2E = "true", NOT_CRAN = "true")
 testthat::test_file("tests/testthat/test-e2e-flows.R")
+Sys.unsetenv(c("RUN_E2E", "NOT_CRAN"))
 
 message("\n[5/5] R CMD check")
 devtools::check(document = FALSE, manual = FALSE)

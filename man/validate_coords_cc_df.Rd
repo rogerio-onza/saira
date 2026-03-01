@@ -10,7 +10,7 @@ validate_coords_cc_df(
   lon_col,
   country_col,
   profile = c("complete", "fast"),
-  seas_scale = 110L
+  seas_scale = 10L
 )
 }
 \arguments{
@@ -24,7 +24,7 @@ validate_coords_cc_df(
 
 \item{profile}{Validation profile (`"complete"` or `"fast"`)}
 
-\item{seas_scale}{Landmass resolution for sea test (fixed at `110`)}
+\item{seas_scale}{Landmass resolution for sea test (10 = highest detail, 50 = medium, 110 = coarse). Default `10` requires `rnaturalearthhires`; falls back to `50` if not installed.}
 }
 \value{
 Data frame preserving input cardinality with flags and final diagnosis
