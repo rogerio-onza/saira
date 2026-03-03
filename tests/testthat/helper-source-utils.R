@@ -52,7 +52,8 @@ needed_functions <- c(
     "is_valid_basis_of_record_term",
     "compute_name_score",
     "compute_value_score",
-    "run_automap_v1",
+    "run_rostrum_stage1",
+    "rostrum_options",
     "mod_mapping_server"
 )
 

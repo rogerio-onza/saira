@@ -16,3 +16,23 @@ is_blank_value <- function(x) {
     }
     nchar(trimws(as.character(x))) == 0
 }
+
+normalize_for_matching <- function(x) {
+    x_chr <- as.character(x)
+    normalized <- tolower(x_chr)
+    translit <- iconv(normalized, to = "ASCII//TRANSLIT")
+    normalized[!is.na(translit)] <- translit[!is.na(translit)]
+    normalized <- gsub("[^a-z0-9]+", " ", normalized)
+    trimws(normalized)
+}
+
+tokenize_for_matching <- function(x) {
+    normalized <- normalize_for_matching(x)
+    if (is_blank_value(normalized) || !nzchar(normalized)) {
+        return(character(0))
+    }
+
+    parts <- strsplit(normalized, " ", fixed = TRUE)[[1]]
+    parts <- trimws(parts)
+    parts[nzchar(parts)]
+}

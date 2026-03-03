@@ -9,11 +9,67 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ## [Unreleased]
 
+### Adicionado
+- Onda 3 do motor Rostrum (Stage 2 + Stage 3.5):
+  - composicao de `scientificName` a partir de `genus + specificEpithet` (com suporte opcional a `infraspecificEpithet` e `scientificNameAuthorship`);
+  - guard de circularidade por lineage `composed_from` para impedir retroalimentacao entre regras;
+  - composicao de `eventDate` em ISO estrito (`YYYY`, `YYYY-MM`, `YYYY-MM-DD`) com validacao de calendario/leap year;
+  - fallback pos-conflito para `verbatim*` (`decimalLatitude`, `decimalLongitude`, `eventDate`) sem sobrescrever alvo ja mapeado.
+- Nova suite `tests/testthat/test-utils-rostrum-stage2.R` cobrindo:
+  - composicao/scientificName (presenca, skip por mapeamento existente, skip por override manual, guard de circularidade);
+  - composicao/eventDate (completo, parcial, invalido e leap year);
+  - fallback Stage 3.5 para `verbatim*`.
+- Onda 4 do motor Rostrum (Stage 3 completo):
+  - resolvedor multicriterio deterministico por candidato (score, validacao, tipo, completude, especificidade e tokenizacao), com desempate final alfabetico;
+  - ambiguidade legitima com comparacao float-safe (`gap < ambiguity_gap - sqrt(eps)`);
+  - mapeamento de perdedor para termo relacionado `verbatim*` com guard de score minimo e alvo livre.
+- Nova suite `tests/testthat/test-utils-rostrum-stage3.R` cobrindo conflitos, ambiguidade, determinismo e fallback de perdedores.
+- Onda 5 do motor Rostrum (aprendizado local em SQLite):
+  - API de aliases com upsert transacional (`BEGIN IMMEDIATE`), eventos auditaveis e lookup por precedencia (`personal > institution > public`);
+  - funcoes de captura de aprendizado (`rostrum_record_alias_confirmation`, `rostrum_record_alias_override`);
+  - rollback em lote por sessao com `undo_session_aliases(conn, run_id)`.
+- Nova suite `tests/testthat/test-utils-rostrum-aliases.R` cobrindo persistencia, deprecacao, precedencia e update sem duplicacao.
+- Onda 6 do motor Rostrum (Templates V3 — JSON + SQLite):
+  - validador de payload JSON com checagem de campos obrigatorios, tipos, itens duplicados e janela de versao (`utils::compareVersion()`);
+  - `app_min_version` futura rejeita o template; `app_max_version` passada emite warning mas carrega;
+  - export (`rostrum_export_template_json`) e import (`rostrum_import_template_json`) com persistencia SQLite transacional;
+  - aplicacao de template com override de score para 1.0 e status `TEMPLATE`, inserida no pipeline APOS Stage 1 e ANTES de Stage 2;
+  - deteccao e log de conflitos entre template e sugestao heuristica;
+  - catalogo local com filtros por `institution_id` e `use_case` (`rostrum_list_template_catalog`);
+  - badge `.badge-template` em roxo `#8e44ad` no CSS; chave i18n `rostrum_badge_template` e `rostrum_reason_template_override` (PT/EN);
+  - migracao de schema v1 -> v2 adicionando coluna `use_case` com backward compatibility.
+- Nova suite `tests/testthat/test-utils-rostrum-templates.R` cobrindo validacao, versao, export/import, prioridade e catalogo.
+- Onda 7 do motor Rostrum (V4+ hardening, performance e rollout):
+  - modo debug via `options(saira.rostrum.debug = TRUE)` com logging por `message()` em pontos criticos do pipeline;
+  - campos de timing `stage1_ms`, `stage2_ms`, `stage3_ms` no retorno de `run_rostrum_engine()` e na tabela `rostrum_runs`;
+  - paralelizacao opcional de Stage 1 com `future`/`furrr` via feature flag `stage1_parallel = FALSE` (desligado por padrao); determinismo validado entre modos `sequential` e `multisession`;
+  - remocao do legado: `run_automap_v1()` e toggle `enable_automap_v1` removidos; testes atualizados;
+  - `adapt_synonyms_v1_to_v2()` mantida por mais uma release como safety net.
+- Nova suite `tests/testthat/test-performance-regression.R` com thresholds: Stage 1 < 7.5s, Stage 2 < 2s, Stage 3 < 0.5s, pipeline completo < 8s (gateada por `RUN_PERF=true`).
+- Completacao da PR-1.2 (migracao de sinonimos para SQLite):
+  - `rostrum_seed_synonyms_if_empty(conn, v1_path)`: popula `rostrum_synonyms` no SQLite a partir do RDS legado na primeira execucao (idempotente, transacional);
+  - `rostrum_load_synonyms_from_db(conn)`: le sinonimos ativos do SQLite retornando formato V1-compativel (`name_score`, `lang`) para uso direto em `sanitize_synonyms_table()`;
+  - `run_rostrum_engine()` agora tenta SQLite primeiro quando `conn` disponivel, com fallback para V1 RDS se tabela vazia;
+  - 4 novos testes em `test-utils-rostrum-db.R`: seed com 2 linhas, idempotencia, formato V1-compativel de saida, retorno NULL em tabela vazia.
+
+### Corrigido
+- `R/mod_mapping.R`: conexao SQLite (`rostrum_connect()`) nao era criada no modulo — aliases e templates do banco nunca eram aplicados; `conn` agora e inicializado no `mod_mapping_server()` e repassado ao `run_rostrum_engine()`.
+- `R/mod_mapping.R`: overrides manuais de mapeamento nao eram registrados como aliases; observer de mudanca manual agora chama `rostrum_record_alias_override()`.
+- `R/mod_mapping.R`: confirmacao de escolha AMBIGUO nao gravava alias de aprendizado; observer `confirm_ambiguity_choice` agora chama `rostrum_record_alias_confirmation()` ou `rostrum_record_alias_override()` conforme a escolha.
+
+### Alterado
+- `R/utils_rostrum_engine.R`: Stage 2 deixou de ser passthrough e passou a gerar saida composta com `explain_json`/`composed_from_json`.
+- `R/utils_rostrum_engine.R`: degradacao do orquestrador ajustada para fallback correto (`Stage 2` falha -> resultado final preserva `Stage 1`).
+- `R/utils_mapping.R`: `build_eventdate_interval()` vetorizada (remocao de loop row-by-row), mantendo contrato funcional do parser legado de intervalo.
+- `R/utils_rostrum_engine.R`: `run_rostrum_engine(..., conn=...)` passou a aplicar overrides de alias antes dos stages 2/3, preservando comportamento legado sem conexao SQLite.
+- `R/mod_mapping.R`: mapeamento de `reason_code` atualizado para novos codigos de fallback `verbatim*` em badges/tooltip.
+
 ### Corrigido
 - `app_ui()`: `tags$head(...)` movido para fora de `bslib::page_navbar()` via `tagList`, eliminando warning de itens de navegacao invalidos em R CMD check.
 - Non-ASCII em `R/app_ui.R`, `R/app_server.R`, `R/mod_upload.R` e `R/utils_export.R` substituidos por escapes `\uXXXX` (portabilidade).
 - `man/mod_preview_server.Rd` e `man/validate_coords_cc_df.Rd` regenerados via `devtools::document()` para eliminar codoc mismatch.
 - E2E (`test-e2e-flows.R`): `app_dir` substituido por `shiny::shinyApp()`; gate `RUN_E2E=true` adicionado para isolar suite em etapa dedicada.
+- `R/utils_rostrum_engine.R`: correcoes em tie-break e fallback de Stage 3 para evitar race de ambiguidade e garantir comportamento deterministico em repeticoes.
 
 ---
 

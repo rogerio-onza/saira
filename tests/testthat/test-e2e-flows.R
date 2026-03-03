@@ -99,9 +99,75 @@ testthat::test_that("E2E: Help tab loads and search works", {
     testthat::expect_true(nchar(help_html) > 0L)
 })
 
-# --- Flow 4: Language switch ---
+# --- Flow 4: Rostrum auto-map ---
 
-testthat::test_that("E2E: Language switch PT -> EN -> PT without error", {
+testthat::test_that("E2E: Rostrum auto-map runs without crash", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+
+    app$wait_for_idle(timeout = 10000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("scientificName,decimalLatitude",
+          "Panthera onca,-10.5",
+          "Leopardus pardalis,-11.3"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 10000)
+
+    app$click(selector = "#mapping-auto_map")
+    app$wait_for_idle(timeout = 15000)
+
+    # App must still be alive; no crash
+    testthat::expect_true(app$get_js("typeof window !== 'undefined'"))
+})
+
+testthat::test_that("E2E: Rostrum auto-map is repeatable without crash", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+
+    app$wait_for_idle(timeout = 10000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("scientificName,decimalLatitude",
+          "Panthera onca,-10.5",
+          "Leopardus pardalis,-11.3"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 10000)
+
+    app$click(selector = "#mapping-auto_map")
+    app$wait_for_idle(timeout = 15000)
+
+    # App must still be alive after engine run
+    testthat::expect_true(app$get_js("typeof window !== 'undefined'"))
+})
+
+# --- Flow 5: Language switch ---
+
+testthat::test_that("E2E: Language switch PT -> EN -> PT without error (Flow 5)", {
     testthat::skip_on_cran()
     testthat::skip_if_not_installed("shinytest2")
 

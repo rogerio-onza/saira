@@ -27,12 +27,18 @@ Imports:
     leaflet (>= 2.1.0),
     ids (>= 1.0.0),
     here (>= 1.0.0),
-    jsonlite (>= 1.8.0)
+    jsonlite (>= 1.8.0),
+    DBI (>= 1.0.0),
+    RSQLite (>= 2.2.0),
+    digest (>= 0.6.0),
+    withr (>= 2.5.0)
 Additional_repositories: https://ropensci.r-universe.dev
 Remotes: ropensci/rnaturalearthhires
 Suggests:
     testthat (>= 3.0.0),
     shinytest2 (>= 0.3.0),
     devtools,
+    future,
+    furrr,
     roxygen2,
     pkgload

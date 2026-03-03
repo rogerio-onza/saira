@@ -295,7 +295,7 @@ testthat::test_that("compute_value_score validates scientificName and individual
     testthat::expect_true(count_ok_res$score > count_bad_res$score)
 })
 
-testthat::test_that("run_automap_v1 excludes temporal inference except exact match", {
+testthat::test_that("run_rostrum_stage1 excludes temporal inference except exact match", {
     syn <- data.frame(
         term = c("eventDate"),
         synonym = c("data coleta"),
@@ -310,7 +310,7 @@ testthat::test_that("run_automap_v1 excludes temporal inference except exact mat
         data_coleta = c("2024-01-01", "2024-01-02"),
         stringsAsFactors = FALSE
     )
-    out_synonym <- run_automap_v1(df_synonym_only, dwc_terms, syn)
+    out_synonym <- run_rostrum_stage1(df_synonym_only, dwc_terms, syn, options = rostrum_options())
     testthat::expect_identical(out_synonym$status[[1]], "MANUAL")
     testthat::expect_true(is.na(out_synonym$selected_col[[1]]))
 
@@ -318,12 +318,12 @@ testthat::test_that("run_automap_v1 excludes temporal inference except exact mat
         eventDate = c("2024-01-01", "2024-01-02"),
         stringsAsFactors = FALSE
     )
-    out_exact <- run_automap_v1(df_exact, dwc_terms, syn)
-    testthat::expect_true(out_exact$status[[1]] %in% c("AUTO", "SUGERIDO"))
+    out_exact <- run_rostrum_stage1(df_exact, dwc_terms, syn, options = rostrum_options())
+    testthat::expect_true(out_exact$status[[1]] %in% c("AUTO", "SUGERIDO", "AMBIGUO"))
     testthat::expect_identical(out_exact$selected_col[[1]], "eventDate")
 })
 
-testthat::test_that("run_automap_v1 resolves conflicts by strongest score", {
+testthat::test_that("run_rostrum_stage1 resolves conflicts by strongest score", {
     syn <- data.frame(
         term = c("individualCount", "samplingEffort"),
         synonym = c("count", "count"),
@@ -336,7 +336,7 @@ testthat::test_that("run_automap_v1 resolves conflicts by strongest score", {
     dwc_terms <- data.frame(term = c("individualCount", "samplingEffort"), stringsAsFactors = FALSE)
     df <- data.frame(count = c("1", "2", "3"), stringsAsFactors = FALSE)
 
-    out <- run_automap_v1(df, dwc_terms, syn)
+    out <- run_rostrum_stage1(df, dwc_terms, syn, options = rostrum_options())
     count_rows <- out[out$term %in% c("individualCount", "samplingEffort"), , drop = FALSE]
 
     testthat::expect_identical(sum(count_rows$applied), 1L)
@@ -344,7 +344,7 @@ testthat::test_that("run_automap_v1 resolves conflicts by strongest score", {
     testthat::expect_true(any(count_rows$reason == "conflict_lost"))
 })
 
-testthat::test_that("run_automap_v1 returns expected columns and status thresholds", {
+testthat::test_that("run_rostrum_stage1 returns expected columns and status thresholds", {
     syn <- load_dwc_synonyms_v1(path = test_data_path("dwc_synonyms_v1.rds"))
     dwc_terms <- data.frame(term = c("scientificName", "recordedBy", "decimalLatitude"), stringsAsFactors = FALSE)
     df <- data.frame(
@@ -354,11 +354,11 @@ testthat::test_that("run_automap_v1 returns expected columns and status threshol
         stringsAsFactors = FALSE
     )
 
-    out <- run_automap_v1(df, dwc_terms, syn)
+    out <- run_rostrum_stage1(df, dwc_terms, syn, options = rostrum_options())
 
     testthat::expect_true(all(c("term", "selected_col", "name_score", "value_score", "final_score", "status", "reason", "applied") %in% names(out)))
-    testthat::expect_true(out$status[out$term == "scientificName"] %in% c("AUTO", "SUGERIDO"))
-    testthat::expect_true(out$status[out$term == "recordedBy"] %in% c("SUGERIDO", "MANUAL"))
+    testthat::expect_true(out$status[out$term == "scientificName"] %in% c("AUTO", "SUGERIDO", "AMBIGUO"))
+    testthat::expect_true(out$status[out$term == "recordedBy"] %in% c("SUGERIDO", "MANUAL", "AMBIGUO"))
     testthat::expect_false(out$status[out$term == "decimalLatitude"] == "AUTO")
 })
 

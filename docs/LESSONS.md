@@ -234,3 +234,33 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Gate por env var e mais explicito que `skip_if_not_installed` para suites custosas**: `if (!identical(Sys.getenv("RUN_E2E"), "true")) skip(...)` garante que E2E nunca roda acidentalmente em `devtools::test()` mesmo com `shinytest2` instalado.
 - **`AppDriver$new(app = shinyApp(ui, server))` e mais robusto que `app_dir`**: elimina dependencia de `app.R`/`server.R` existirem no diretorio raiz, instavel em ambientes de check.
 - **Evitar `withr` em scripts de release gate**: `Sys.setenv()`/`Sys.unsetenv()` sao base R e nao exigem declaracao em DESCRIPTION; `withr::with_envvar()` quebraria o script em ambientes sem o pacote instalado.
+
+## Rostrum / Ondas 0-1
+
+- **Sampling de scoring precisa ser deterministico por coluna**: seed derivada do conteudo (`digest::digest2int`) + `withr::with_seed` elimina flutuacao entre execucoes.
+- **Golden fixture de scoring e necessario para proteger regressao de formula**: sem baseline versionado, alteracao pequena em score passa despercebida.
+- **Migracao SQLite deve rodar em `BEGIN IMMEDIATE` com rollback garantido**: `busy_timeout` sozinho nao impede estado parcial em mid-failure.
+- **`schema_version` deve ser idempotente e monotono**: migracao repetida para a mesma versao nao pode inserir duplicado.
+- **Evolucao de sinonimos V1->V2 precisa de adaptador explicito**: mapear `lang=any` para `language=mul` e preservar `name_score` como `confidence` evita perda de compatibilidade.
+- **Com `renv`, novas dependencias no `DESCRIPTION` exigem sincronizacao imediata do lockfile**: sem isso, `load_all` e CI podem divergir entre ambientes.
+
+## Rostrum / Onda 3
+
+- **Composicao de Stage 2 precisa respeitar override manual antes de qualquer heuristica**: se `manual_overrides[[term]]` estiver preenchido, a composicao deve ser abortada para o termo.
+- **Guard de circularidade deve ser baseado em lineage de termos, nao em coluna**: rastrear `composed_from` por termo evita loops indiretos (`A <- B` e depois `B <- A`).
+- **Composicao de `scientificName` deve ser conservadora**: promover apenas para `SUGERIDO`, com explain detalhado e sem auto-aplicar composicao multi-coluna.
+- **Composicao de `eventDate` precisa validar calendario real**: aceitar `2024-02-29` e rejeitar `2023-02-29` evita falso positivo silencioso.
+- **Fallback para `verbatim*` funciona melhor como etapa pos-conflito (Stage 3.5)**: aplicado antes disso, pode influenciar indevidamente a escolha principal.
+- **Fallback `verbatim*` nunca deve sobrescrever mapeamento existente do alvo**: usar condicao "target livre" reduz regressao em datasets com coluna verbatim ja mapeada.
+- **Vetorizacao de parser row-wise traz ganho direto**: substituir loop por operacoes vetorizadas em `build_eventdate_interval()` reduz custo em cenarios 20k+ linhas.
+
+## Rostrum / Ondas 4-5
+
+- **Stage 3 so fica confiavel com criterio deterministico explicito**: ordenar por score sem desempate alfabetico final pode gerar variacao silenciosa entre execucoes.
+- **Regra de ambiguidade precisa ser float-safe e centralizada**: usar `gap < ambiguity_gap - sqrt(eps)` em helper unico evita drift entre branchs de conflito.
+- **Conflito de candidatos e fallback de perdedor devem ser desacoplados**: primeiro resolver vencedor/perdedor, depois aplicar `verbatim*` com guard (`score` minimo + alvo livre) reduz sobrescrita indevida.
+- **Fallback pos-conflito pode mascarar teste de perdedor se nao houver bloqueio por termo**: quando um termo teve alternativas, bloquear fallback "primario" evita resultado enganoso no target `verbatim*`.
+- **Aliases locais precisam de transacao em toda write (`BEGIN IMMEDIATE`)**: sem lock explicito, upsert e undo por sessao ficam sujeitos a corrida em uso multiusuario.
+- **Precedencia por escopo deve ser aplicada no lookup, nao na escrita**: manter `personal > institution > public` no read path simplifica manutencao e permite coexistencia de regras.
+- **`deprecated` deve filtrar no lookup, nao apagar historico**: preservar linha + evento auditavel viabiliza investigacao de regressao e rollback.
+- **Batch undo por `run_id` fica pratico quando eventos e aliases compartilham chave operacional**: sem `run_id` indexado em eventos, rollback em lote vira scan custoso.

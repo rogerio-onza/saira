@@ -7,7 +7,17 @@
       "Bash(done)",
       "Bash(wc -l tests/testthat/test-mod-*.R)",
       "Bash(Rscript data-raw/build_css.R)",
-      "Bash(Rscript data-raw/export_i18n.R)"
+      "Bash(Rscript data-raw/export_i18n.R)",
+      "Bash(wc -l \"c:\\\\Users\\\\Admin\\\\OneDrive\\\\Saira\\\\saira\\\\tests\\\\testthat\"/*.R)",
+      "Bash(Rscript -e \":*)",
+      "Bash(Rscript --vanilla -e \"pkgload::load_all\\(''.'', quiet=TRUE\\); testthat::test_file\\(''tests/testthat/test-utils-rostrum-stage1.R''\\)\")",
+      "Bash(Rscript --vanilla -e \"install.packages\\(''RSQLite'', repos=''https://cloud.r-project.org'', quiet=TRUE\\); pkgload::load_all\\(''.'', quiet=TRUE\\); cat\\(''OK\\\\n''\\)\")",
+      "Bash(Rscript --vanilla -e \"install.packages\\(''rnaturalearthhires'', repos=c\\(''https://ropensci.r-universe.dev'',''https://cloud.r-project.org''\\), quiet=TRUE\\)\")",
+      "Bash(Rscript --vanilla -e \"pkgload::load_all\\(''.'', quiet=TRUE\\); testthat::test_file\\(''tests/testthat/test-utils-scoring-boundaries.R''\\)\")",
+      "Bash(Rscript --vanilla -e \"pkgload::load_all\\(''.'', quiet=TRUE\\); testthat::test_file\\(''tests/testthat/test-utils-rostrum-contracts.R''\\)\")",
+      "Bash(Rscript --vanilla -e \"pkgload::load_all\\(''.'', quiet=TRUE\\); testthat::test_file\\(''tests/testthat/test-utils-rostrum-db.R''\\)\")",
+      "Bash(Rscript --vanilla -e \"pkgload::load_all\\(''.'', quiet=TRUE\\); testthat::test_file\\(''tests/testthat/test-mod-mapping-server.R''\\)\")",
+      "Bash(Rscript -e \"pkgload::load_all\\(quiet=TRUE\\); validate_composition_df\\(data.frame\\(term=''x'', selected_col=NA_character_, status=''SUGERIDO'', reason=''composed_scientific_name'', applied=FALSE, composed_from_json=NA_character_, stringsAsFactors=FALSE\\)\\)\")"
     ]
   }
 }

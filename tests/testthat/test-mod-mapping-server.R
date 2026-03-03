@@ -3,7 +3,7 @@
 # Date: 2026-02-12
 # Version: 1.0
 
-testthat::test_that("legacy auto-map works with toggle off and keeps badges hidden", {
+testthat::test_that("rostrum auto-map runs by default and fills badge metadata", {
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis"),
         decimalLatitude = c("-10.1", "-11.2"),
@@ -17,13 +17,12 @@ testthat::test_that("legacy auto-map works with toggle off and keeps badges hidd
             lang_r = shiny::reactive("en")
         ),
         {
-            session$setInputs(enable_automap_v1 = FALSE)
             session$setInputs(auto_map = 1)
             session$flushReact()
 
             testthat::expect_identical(rv$map_values$scientificName, "scientificName")
             testthat::expect_identical(rv$map_values$decimalLatitude, "decimalLatitude")
-            testthat::expect_true(all(vapply(rv$map_meta, function(x) is.na(x$status), FUN.VALUE = logical(1))))
+            testthat::expect_false(is.na(rv$map_meta$scientificName$status))
         }
     )
 })
@@ -43,7 +42,14 @@ testthat::test_that("mod_mapping_server exposes lightweight preview_data alongsi
         {
             returned <- session$getReturned()
             testthat::expect_true(is.list(returned))
-            testthat::expect_named(returned, c("processed_data_r", "preview_data_r", "validation_gate_r", "validation_gate_coords_r"))
+            testthat::expect_named(
+                returned,
+                c(
+                    "processed_data_r", "preview_data_r",
+                    "validation_gate_r", "validation_gate_coords_r",
+                    "rostrum_decisions_r", "rostrum_explain_r", "rostrum_run_stats_r"
+                )
+            )
 
             full_df <- returned$processed_data_r()
             testthat::expect_true(is.data.frame(full_df))
@@ -206,11 +212,10 @@ testthat::test_that("v1 auto-map applies metadata and manual override becomes ED
             lang_r = shiny::reactive("en")
         ),
         {
-            session$setInputs(enable_automap_v1 = TRUE)
             session$setInputs(auto_map = 1)
             session$flushReact()
 
-            testthat::expect_true(rv$map_meta$scientificName$status %in% c("AUTO", "SUGERIDO", "MANUAL"))
+            testthat::expect_true(rv$map_meta$scientificName$status %in% c("AUTO", "SUGERIDO", "AMBIGUO", "MANUAL"))
 
             session$setInputs(map_scientificName = "taxon_name")
             session$flushReact()
@@ -235,7 +240,6 @@ testthat::test_that("reset clears mapping state and keeps processed_data contrac
             lang_r = shiny::reactive("en")
         ),
         {
-            session$setInputs(enable_automap_v1 = TRUE)
             session$setInputs(auto_map = 1)
             session$flushReact()
 
@@ -297,7 +301,6 @@ testthat::test_that("badge metadata survives select-all category toggling after 
             lang_r = shiny::reactive("en")
         ),
         {
-            session$setInputs(enable_automap_v1 = TRUE)
             session$setInputs(auto_map = 1)
             session$flushReact()
 
@@ -366,7 +369,6 @@ testthat::test_that("reactive mapping state remains consistent after filter togg
             lang_r = shiny::reactive("en")
         ),
         {
-            session$setInputs(enable_automap_v1 = TRUE)
             session$setInputs(auto_map = 1)
             session$flushReact()
 

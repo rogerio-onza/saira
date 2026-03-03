@@ -3,7 +3,8 @@
 # Date: 2026-02-11
 # Version: 1.0
 
-# is_blank_value() moved to utils_common.R (Onda 5, Item 5.4)
+# is_blank_value(), normalize_for_matching(), tokenize_for_matching() moved to
+# utils_common.R (Onda 0, PR-0.1 / M8).
 
 
 split_semicolon_tokens <- function(value) {
@@ -217,15 +218,6 @@ build_manual_meta <- function(previous_meta, has_value) {
     )
 }
 
-normalize_for_matching <- function(x) {
-    x_chr <- as.character(x)
-    normalized <- tolower(x_chr)
-    translit <- iconv(normalized, to = "ASCII//TRANSLIT")
-    normalized[!is.na(translit)] <- translit[!is.na(translit)]
-    normalized <- gsub("[^a-z0-9]+", " ", normalized)
-    trimws(normalized)
-}
-
 sanitize_synonyms_table <- function(synonyms_tbl) {
     required_cols <- c("term", "synonym", "name_score", "lang", "active")
 
@@ -345,33 +337,150 @@ load_dwc_synonyms_v1 <- function(path = NULL, force = FALSE) {
     synonyms_tbl
 }
 
-tokenize_for_matching <- function(x) {
-    normalized <- normalize_for_matching(x)
-    if (is_blank_value(normalized) || !nzchar(normalized)) {
+tokenize_for_overlap <- function(x) {
+    if (is_blank_value(x)) {
         return(character(0))
     }
 
-    parts <- strsplit(normalized, " ", fixed = TRUE)[[1]]
-    parts <- trimws(parts)
-    parts[nzchar(parts)]
+    expanded <- as.character(x)
+    expanded <- gsub("([a-z])([A-Z])", "\\1 \\2", expanded, perl = TRUE)
+    expanded <- gsub("([A-Z]+)([A-Z][a-z])", "\\1 \\2", expanded, perl = TRUE)
+    unique(tokenize_for_matching(expanded))
 }
 
-score_token_overlap <- function(col_name, term) {
-    col_tokens <- unique(tokenize_for_matching(col_name))
-    term_tokens <- unique(tokenize_for_matching(term))
-
-    if (length(col_tokens) == 0 || length(term_tokens) == 0) {
-        return(0)
+prepare_synonyms_for_scoring <- function(synonyms_tbl) {
+    if (is.null(synonyms_tbl)) {
+        return(list(
+            by_term = list(),
+            table = data.frame(stringsAsFactors = FALSE),
+            prepared = TRUE
+        ))
     }
 
-    overlap <- length(intersect(col_tokens, term_tokens))
-    if (overlap == 0) {
-        return(0)
+    clean_tbl <- sanitize_synonyms_table(synonyms_tbl)
+    active_tbl <- clean_tbl[clean_tbl$active, , drop = FALSE]
+    if (nrow(active_tbl) == 0) {
+        return(list(
+            by_term = list(),
+            table = active_tbl,
+            prepared = TRUE
+        ))
+    }
+
+    active_tbl$term_norm <- normalize_for_matching(active_tbl$term)
+    active_tbl$synonym_norm <- normalize_for_matching(active_tbl$synonym)
+    by_term <- split(active_tbl, active_tbl$term_norm, drop = TRUE)
+
+    list(
+        by_term = by_term,
+        table = active_tbl,
+        prepared = TRUE
+    )
+}
+
+is_substring_token_match <- function(lhs, rhs, min_substring_n = 3L) {
+    if (is_blank_value(lhs) || is_blank_value(rhs)) {
+        return(FALSE)
+    }
+
+    lhs_chr <- as.character(lhs)
+    rhs_chr <- as.character(rhs)
+    if (identical(lhs_chr, rhs_chr)) {
+        return(FALSE)
+    }
+
+    if (nchar(lhs_chr) < min_substring_n || nchar(rhs_chr) < min_substring_n) {
+        return(FALSE)
+    }
+
+    grepl(lhs_chr, rhs_chr, fixed = TRUE) || grepl(rhs_chr, lhs_chr, fixed = TRUE)
+}
+
+score_token_overlap <- function(
+    col_name,
+    term,
+    col_tokens = NULL,
+    term_tokens = NULL,
+    min_substring_n = 3L,
+    with_details = FALSE
+) {
+    if (is.null(col_tokens)) {
+        col_tokens <- tokenize_for_overlap(col_name)
+    }
+    if (is.null(term_tokens)) {
+        term_tokens <- tokenize_for_overlap(term)
+    }
+
+    col_tokens <- unique(col_tokens)
+    term_tokens <- unique(term_tokens)
+
+    if (length(col_tokens) == 0 || length(term_tokens) == 0) {
+        out <- list(
+            score = 0,
+            exact_hits = 0L,
+            substring_hits = 0L,
+            overlap_ratio = 0
+        )
+        if (isTRUE(with_details)) {
+            return(out)
+        }
+        return(out$score)
+    }
+
+    exact_hits <- 0L
+    substring_hits <- 0L
+
+    for (token in col_tokens) {
+        if (any(term_tokens == token)) {
+            exact_hits <- exact_hits + 1L
+            next
+        }
+
+        has_substring <- any(vapply(
+            term_tokens,
+            FUN = function(term_token) {
+                is_substring_token_match(token, term_token, min_substring_n = min_substring_n)
+            },
+            FUN.VALUE = logical(1)
+        ))
+
+        if (has_substring) {
+            substring_hits <- substring_hits + 1L
+        }
+    }
+
+    matched_hits <- exact_hits + substring_hits
+    if (matched_hits == 0L) {
+        out <- list(
+            score = 0,
+            exact_hits = 0L,
+            substring_hits = 0L,
+            overlap_ratio = 0
+        )
+        if (isTRUE(with_details)) {
+            return(out)
+        }
+        return(out$score)
     }
 
     union_size <- length(unique(c(col_tokens, term_tokens)))
-    overlap_ratio <- overlap / union_size
-    pmin(0.80, pmax(0.55, 0.55 + 0.25 * overlap_ratio))
+    overlap_ratio <- matched_hits / union_size
+    base_score <- 0.55 + (0.25 * overlap_ratio)
+    adjusted <- base_score + (0.10 * exact_hits) - (0.10 * substring_hits)
+    final_score <- pmin(0.80, pmax(0, adjusted))
+
+    out <- list(
+        score = final_score,
+        exact_hits = exact_hits,
+        substring_hits = substring_hits,
+        overlap_ratio = overlap_ratio
+    )
+
+    if (isTRUE(with_details)) {
+        return(out)
+    }
+
+    out$score
 }
 
 score_text_similarity <- function(col_name, term) {
@@ -391,44 +500,106 @@ score_text_similarity <- function(col_name, term) {
     pmin(0.60, pmax(0.30, 0.30 + 0.30 * similarity))
 }
 
-compute_name_score <- function(col_name, term, synonyms_tbl = NULL) {
-    col_norm <- normalize_for_matching(col_name)
-    term_norm <- normalize_for_matching(term)
+compute_name_score <- function(
+    col_name,
+    term,
+    synonyms_tbl = NULL,
+    col_profile = NULL,
+    term_profile = NULL,
+    synonyms_index = NULL
+) {
+    col_norm <- if (!is.null(col_profile) && !is.null(col_profile$norm)) {
+        as.character(col_profile$norm)
+    } else {
+        normalize_for_matching(col_name)
+    }
+    term_norm <- if (!is.null(term_profile) && !is.null(term_profile$norm)) {
+        as.character(term_profile$norm)
+    } else {
+        normalize_for_matching(term)
+    }
+    col_tokens <- if (!is.null(col_profile) && !is.null(col_profile$tokens)) {
+        unique(as.character(col_profile$tokens))
+    } else {
+        tokenize_for_overlap(col_name)
+    }
+    term_tokens <- if (!is.null(term_profile) && !is.null(term_profile$tokens)) {
+        unique(as.character(term_profile$tokens))
+    } else {
+        tokenize_for_overlap(term)
+    }
 
     if (is_blank_value(col_norm) || is_blank_value(term_norm)) {
-        return(list(score = 0, reason = "no_match", is_exact = FALSE))
+        return(list(
+            score = 0,
+            reason = "no_match",
+            is_exact = FALSE,
+            exact_hits = 0L,
+            substring_hits = 0L
+        ))
     }
 
     if (identical(col_norm, term_norm)) {
-        return(list(score = 1.00, reason = "exact_match", is_exact = TRUE))
+        return(list(
+            score = 1.00,
+            reason = "exact_match",
+            is_exact = TRUE,
+            exact_hits = length(col_tokens),
+            substring_hits = 0L
+        ))
     }
 
-    if (!is.null(synonyms_tbl) && nrow(synonyms_tbl) > 0) {
-        clean_synonyms <- sanitize_synonyms_table(synonyms_tbl)
-        term_mask <- normalize_for_matching(clean_synonyms$term) == term_norm & clean_synonyms$active
-        term_syn <- clean_synonyms[term_mask, , drop = FALSE]
+    synonym_lookup <- synonyms_index
+    if (is.null(synonym_lookup) && !is.null(synonyms_tbl)) {
+        synonym_lookup <- prepare_synonyms_for_scoring(synonyms_tbl)
+    }
 
-        if (nrow(term_syn) > 0) {
-            synonym_norm <- normalize_for_matching(term_syn$synonym)
-            hit_idx <- which(synonym_norm == col_norm)
+    if (!is.null(synonym_lookup$by_term) && length(synonym_lookup$by_term) > 0) {
+        term_syn <- synonym_lookup$by_term[[term_norm]]
+        if (!is.null(term_syn) && nrow(term_syn) > 0) {
+            hit_idx <- which(term_syn$synonym_norm == col_norm)
             if (length(hit_idx) > 0) {
                 score <- max(term_syn$name_score[hit_idx], na.rm = TRUE)
                 score <- pmin(0.98, pmax(0.90, score))
-                return(list(score = score, reason = "known_synonym", is_exact = FALSE))
+                return(list(
+                    score = score,
+                    reason = "known_synonym",
+                    is_exact = FALSE,
+                    exact_hits = 0L,
+                    substring_hits = 0L
+                ))
             }
         }
     }
 
-    overlap_score <- score_token_overlap(col_name, term)
-    if (overlap_score >= 0.55) {
-        return(list(score = overlap_score, reason = "token_overlap", is_exact = FALSE))
+    overlap_details <- score_token_overlap(
+        col_name = col_name,
+        term = term,
+        col_tokens = col_tokens,
+        term_tokens = term_tokens,
+        with_details = TRUE
+    )
+    if (overlap_details$score >= 0.40) {
+        return(list(
+            score = overlap_details$score,
+            reason = "token_overlap",
+            is_exact = FALSE,
+            exact_hits = overlap_details$exact_hits,
+            substring_hits = overlap_details$substring_hits
+        ))
     }
 
     similarity_score <- score_text_similarity(col_name, term)
-    list(score = similarity_score, reason = "text_similarity", is_exact = FALSE)
+    list(
+        score = similarity_score,
+        reason = "text_similarity",
+        is_exact = FALSE,
+        exact_hits = 0L,
+        substring_hits = 0L
+    )
 }
 
-sample_values_for_scoring <- function(values, name_score) {
+sample_values_for_scoring <- function(values, name_score, max_sample_n = 1000L) {
     values_chr <- as.character(values)
     values_chr[is.na(values)] <- NA_character_
     values_chr <- trimws(values_chr)
@@ -438,44 +609,59 @@ sample_values_for_scoring <- function(values, name_score) {
         return(character(0))
     }
 
-    if (name_score >= 0.98) {
-        target_n <- 30L
-        head_n <- 30L
-        random_n <- 0L
-    } else if (name_score >= 0.85) {
-        target_n <- 100L
-        head_n <- 50L
-        random_n <- 50L
-    } else if (name_score >= 0.70) {
-        target_n <- 200L
-        head_n <- 100L
-        random_n <- 100L
+    if (name_score >= 0.90) {
+        target_n <- 1000L
+    } else if (name_score >= 0.75) {
+        target_n <- 500L
     } else {
-        return(character(0))
+        target_n <- 200L
     }
 
+    target_n <- as.integer(max(1L, min(as.integer(max_sample_n), target_n)))
     total_n <- length(non_blank_values)
     if (total_n <= target_n) {
         return(non_blank_values)
     }
 
-    head_idx <- seq_len(min(head_n, total_n))
-    remaining_idx <- setdiff(seq_len(total_n), head_idx)
-    random_take <- min(random_n, length(remaining_idx))
-    random_idx <- if (random_take > 0) sample(remaining_idx, size = random_take, replace = FALSE) else integer(0)
+    # Uniform stratified sampling across the full column to avoid head bias.
+    base_idx <- as.integer(round(seq(1, total_n, length.out = target_n)))
+    base_idx <- sort(unique(base_idx))
 
-    selected_idx <- sort(unique(c(head_idx, random_idx)))
+    if (length(base_idx) >= target_n) {
+        return(non_blank_values[base_idx[seq_len(target_n)]])
+    }
+
+    remaining_idx <- setdiff(seq_len(total_n), base_idx)
+    random_take <- min(target_n - length(base_idx), length(remaining_idx))
+    seed_probe <- non_blank_values[seq_len(min(10L, total_n))]
+    seed <- digest::digest2int(paste0(seed_probe, collapse = "|"))
+
+    extra_idx <- if (random_take > 0L) {
+        withr::with_seed(
+            seed,
+            sample(remaining_idx, size = random_take, replace = FALSE)
+        )
+    } else {
+        integer(0)
+    }
+
+    selected_idx <- sort(unique(c(base_idx, extra_idx)))
+    selected_idx <- selected_idx[seq_len(min(length(selected_idx), target_n))]
     non_blank_values[selected_idx]
 }
 
 score_ratio_to_confidence <- function(valid_ratio) {
-    valid_ratio <- pmin(1, pmax(0, valid_ratio))
-    pmin(1, pmax(0.5, 0.5 + 0.5 * valid_ratio))
+    valid_ratio <- suppressWarnings(as.numeric(valid_ratio))
+    if (length(valid_ratio) != 1L || is.na(valid_ratio) || is.nan(valid_ratio)) {
+        return(0)
+    }
+
+    pmin(1, pmax(0, valid_ratio))
 }
 
 validate_numeric_range <- function(values, min_value, max_value) {
     numeric_values <- suppressWarnings(as.numeric(gsub(",", ".", values)))
-    numeric_ratio <- mean(!is.na(numeric_values))
+    numeric_ratio <- if (length(numeric_values) == 0) 0 else mean(!is.na(numeric_values))
     in_range <- !is.na(numeric_values) & numeric_values >= min_value & numeric_values <= max_value
     valid_ratio <- if (length(in_range) == 0) 0 else mean(in_range)
 
@@ -514,7 +700,7 @@ validate_individual_count <- function(values) {
         numeric_values >= 0 &
         abs(numeric_values - round(numeric_values)) < 1e-09
 
-    numeric_ratio <- mean(!is.na(numeric_values))
+    numeric_ratio <- if (length(numeric_values) == 0) 0 else mean(!is.na(numeric_values))
     valid_ratio <- if (length(is_integer_non_negative) == 0) 0 else mean(is_integer_non_negative)
 
     list(
@@ -525,7 +711,32 @@ validate_individual_count <- function(values) {
     )
 }
 
-compute_value_score <- function(values, term, name_score) {
+finalize_value_result <- function(result, sampled_n) {
+    valid_ratio <- suppressWarnings(as.numeric(result$valid_ratio))
+    if (length(valid_ratio) != 1L || is.na(valid_ratio)) {
+        valid_ratio <- 0
+    }
+
+    if (valid_ratio < 0.30) {
+        return(list(
+            score = 0,
+            reason = "veto_low_validation",
+            compatible_type = isTRUE(result$compatible_type),
+            sampled_n = as.integer(sampled_n),
+            valid_ratio = valid_ratio
+        ))
+    }
+
+    list(
+        score = result$score,
+        reason = if (valid_ratio >= 0.80) "content_validated" else "weak_content_validation",
+        compatible_type = isTRUE(result$compatible_type),
+        sampled_n = as.integer(sampled_n),
+        valid_ratio = valid_ratio
+    )
+}
+
+compute_value_score <- function(values, term, name_score, max_sample_n = 1000L) {
     values_chr <- as.character(values)
     values_chr[is.na(values)] <- NA_character_
     non_blank <- values_chr[!is.na(values_chr) & nzchar(trimws(values_chr))]
@@ -535,26 +746,33 @@ compute_value_score <- function(values, term, name_score) {
             score = 0,
             reason = "empty_column",
             compatible_type = FALSE,
-            sampled_n = 0L
+            sampled_n = 0L,
+            valid_ratio = 0
         ))
     }
 
-    if (name_score < 0.70) {
+    if (name_score < 0.45) {
         return(list(
             score = 0,
             reason = "low_name_confidence",
             compatible_type = TRUE,
-            sampled_n = 0L
+            sampled_n = 0L,
+            valid_ratio = 0
         ))
     }
 
-    sampled_values <- sample_values_for_scoring(values_chr, name_score)
+    sampled_values <- sample_values_for_scoring(
+        values = values_chr,
+        name_score = name_score,
+        max_sample_n = max_sample_n
+    )
     if (length(sampled_values) == 0) {
         return(list(
             score = 0,
             reason = "empty_column",
             compatible_type = FALSE,
-            sampled_n = 0L
+            sampled_n = 0L,
+            valid_ratio = 0
         ))
     }
 
@@ -562,49 +780,30 @@ compute_value_score <- function(values, term, name_score) {
 
     if (identical(term_name, "decimalLatitude")) {
         lat_result <- validate_numeric_range(sampled_values, -90, 90)
-        return(list(
-            score = lat_result$score,
-            reason = if (lat_result$valid_ratio >= 0.80) "content_validated" else "weak_content_validation",
-            compatible_type = lat_result$compatible_type,
-            sampled_n = length(sampled_values)
-        ))
+        return(finalize_value_result(lat_result, sampled_n = length(sampled_values)))
     }
 
     if (identical(term_name, "decimalLongitude")) {
         lon_result <- validate_numeric_range(sampled_values, -180, 180)
-        return(list(
-            score = lon_result$score,
-            reason = if (lon_result$valid_ratio >= 0.80) "content_validated" else "weak_content_validation",
-            compatible_type = lon_result$compatible_type,
-            sampled_n = length(sampled_values)
-        ))
+        return(finalize_value_result(lon_result, sampled_n = length(sampled_values)))
     }
 
     if (identical(term_name, "scientificName")) {
         sn_result <- validate_scientific_name_pattern(sampled_values)
-        return(list(
-            score = sn_result$score,
-            reason = if (sn_result$valid_ratio >= 0.80) "content_validated" else "weak_content_validation",
-            compatible_type = sn_result$compatible_type,
-            sampled_n = length(sampled_values)
-        ))
+        return(finalize_value_result(sn_result, sampled_n = length(sampled_values)))
     }
 
     if (identical(term_name, "individualCount")) {
         count_result <- validate_individual_count(sampled_values)
-        return(list(
-            score = count_result$score,
-            reason = if (count_result$valid_ratio >= 0.80) "content_validated" else "weak_content_validation",
-            compatible_type = count_result$compatible_type,
-            sampled_n = length(sampled_values)
-        ))
+        return(finalize_value_result(count_result, sampled_n = length(sampled_values)))
     }
 
     list(
         score = 0.80,
         reason = "neutral_no_validator",
         compatible_type = TRUE,
-        sampled_n = length(sampled_values)
+        sampled_n = length(sampled_values),
+        valid_ratio = 0.80
     )
 }
 
@@ -625,12 +824,90 @@ classify_automap_status <- function(final_score, compatible_type = TRUE) {
 }
 
 count_relevant_tokens <- function(x) {
-    length(tokenize_for_matching(x))
+    length(tokenize_for_overlap(x))
 }
 
-resolve_reason_code <- function(name_reason, value_reason, status, compatible_type, is_temporal_limited = FALSE) {
+apply_semantic_penalties <- function(col_name, term) {
+    col_norm <- normalize_for_matching(col_name)
+    term_name <- as.character(term)
+
+    penalties <- numeric(0)
+    reason_codes <- character(0)
+
+    is_coordinate_term <- term_name %in% c("decimalLatitude", "decimalLongitude")
+    is_temporal_term <- term_name %in% c("eventDate", "year", "month", "day", "modified", "dateIdentified")
+
+    if (is_coordinate_term && grepl("\\b(temp|temperatura)\\b", col_norm, perl = TRUE)) {
+        penalties <- c(penalties, -0.30)
+        reason_codes <- c(reason_codes, "temp_context")
+    }
+
+    if (is_coordinate_term && grepl("\\b(depth|profund|altura)\\b", col_norm, perl = TRUE)) {
+        penalties <- c(penalties, -0.30)
+        reason_codes <- c(reason_codes, "depth_context")
+    }
+
+    if (is_temporal_term && grepl("\\b(count|numero|qtd|quantidade)\\b", col_norm, perl = TRUE)) {
+        penalties <- c(penalties, -0.20)
+        reason_codes <- c(reason_codes, "count_context")
+    }
+
+    if (grepl("^((campo|col|column|field|var)[ _-]*[0-9]+|col_[a-z0-9]+)$", col_norm, perl = TRUE)) {
+        penalties <- c(penalties, -0.10)
+        reason_codes <- c(reason_codes, "generic_name")
+    }
+
+    total_penalty <- if (length(penalties) > 0L) sum(penalties) else 0
+    total_penalty <- pmax(-0.50, pmin(0, total_penalty))
+
+    list(
+        score = as.numeric(total_penalty),
+        reasons = unique(reason_codes)
+    )
+}
+
+resolve_candidate_veto_code <- function(term, value_res) {
+    if (identical(value_res$reason, "empty_column")) {
+        return("empty_column")
+    }
+
+    if (identical(value_res$reason, "veto_low_validation")) {
+        return("low_validation")
+    }
+
+    if (!isTRUE(value_res$compatible_type) &&
+        term %in% c("decimalLatitude", "decimalLongitude", "individualCount", "year", "month", "day")) {
+        return("type_incompatible")
+    }
+
+    if (!is.null(value_res$valid_ratio) &&
+        !is.na(value_res$valid_ratio) &&
+        value_res$valid_ratio < 0.30) {
+        return("low_validation")
+    }
+
+    ""
+}
+
+resolve_reason_code <- function(
+    name_reason,
+    value_reason,
+    status,
+    compatible_type,
+    is_temporal_limited = FALSE,
+    penalty_score = 0,
+    veto_code = ""
+) {
+    if (!is_blank_value(veto_code)) {
+        return("veto_hard")
+    }
+
     if (identical(status, "EDITADO")) {
         return("manual_adjust")
+    }
+
+    if (identical(status, "AMBIGUO")) {
+        return("ambiguity_detected")
     }
 
     if (!isTRUE(compatible_type) && identical(status, "SUGERIDO")) {
@@ -649,6 +926,18 @@ resolve_reason_code <- function(name_reason, value_reason, status, compatible_ty
         return("known_synonym")
     }
 
+    if (identical(name_reason, "token_overlap")) {
+        return("token_overlap")
+    }
+
+    if (identical(name_reason, "text_similarity")) {
+        return("text_similarity")
+    }
+
+    if (penalty_score < 0) {
+        return("semantic_penalty")
+    }
+
     if (identical(value_reason, "content_validated")) {
         return("content_validated")
     }
@@ -664,71 +953,365 @@ resolve_reason_code <- function(name_reason, value_reason, status, compatible_ty
     "low_confidence"
 }
 
-run_automap_v1 <- function(df, dwc_terms_df, synonyms_tbl) {
+build_matching_profile <- function(x) {
+    list(
+        norm = normalize_for_matching(x),
+        tokens = tokenize_for_overlap(x)
+    )
+}
+
+rostrum_debug_enabled <- function(options = NULL) {
+    opt_debug <- isTRUE(getOption("saira.rostrum.debug", FALSE))
+    if (is.list(options) && !is.null(options$debug)) {
+        opt_debug <- opt_debug || isTRUE(options$debug)
+    }
+    opt_debug
+}
+
+rostrum_debug_log <- function(..., options = NULL) {
+    if (!rostrum_debug_enabled(options)) {
+        return(invisible(NULL))
+    }
+    message("[rostrum] ", paste0(..., collapse = ""))
+    invisible(NULL)
+}
+
+rostrum_stage1_sample_tier <- function(name_score) {
+    score <- suppressWarnings(as.numeric(name_score))
+    if (!is.finite(score)) {
+        return("low")
+    }
+    if (score >= 0.90) {
+        return("high")
+    }
+    if (score >= 0.75) {
+        return("mid")
+    }
+    "low"
+}
+
+rostrum_build_tier_value_cache <- function(sampled_values) {
+    sampled_n <- length(sampled_values)
+    if (sampled_n == 0L) {
+        empty <- list(
+            score = 0,
+            reason = "empty_column",
+            compatible_type = FALSE,
+            sampled_n = 0L,
+            valid_ratio = 0
+        )
+        return(list(
+            decimalLatitude = empty,
+            decimalLongitude = empty,
+            scientificName = empty,
+            individualCount = empty,
+            neutral = empty
+        ))
+    }
+
+    list(
+        decimalLatitude = finalize_value_result(
+            validate_numeric_range(sampled_values, -90, 90),
+            sampled_n = sampled_n
+        ),
+        decimalLongitude = finalize_value_result(
+            validate_numeric_range(sampled_values, -180, 180),
+            sampled_n = sampled_n
+        ),
+        scientificName = finalize_value_result(
+            validate_scientific_name_pattern(sampled_values),
+            sampled_n = sampled_n
+        ),
+        individualCount = finalize_value_result(
+            validate_individual_count(sampled_values),
+            sampled_n = sampled_n
+        ),
+        neutral = list(
+            score = 0.80,
+            reason = "neutral_no_validator",
+            compatible_type = TRUE,
+            sampled_n = sampled_n,
+            valid_ratio = 0.80
+        )
+    )
+}
+
+rostrum_build_column_value_profile <- function(values, max_sample_n = 1000L) {
+    values_chr <- as.character(values)
+    values_chr[is.na(values)] <- NA_character_
+    values_chr <- trimws(values_chr)
+    non_blank <- values_chr[!is.na(values_chr) & nzchar(values_chr)]
+
+    if (length(non_blank) == 0L) {
+        empty <- rostrum_build_tier_value_cache(character(0))
+        return(list(
+            has_non_blank = FALSE,
+            tier_cache = list(high = empty, mid = empty, low = empty)
+        ))
+    }
+
+    high_values <- sample_values_for_scoring(values_chr, name_score = 0.95, max_sample_n = max_sample_n)
+    mid_values <- sample_values_for_scoring(values_chr, name_score = 0.80, max_sample_n = max_sample_n)
+    low_values <- sample_values_for_scoring(values_chr, name_score = 0.50, max_sample_n = max_sample_n)
+
+    list(
+        has_non_blank = TRUE,
+        tier_cache = list(
+            high = rostrum_build_tier_value_cache(high_values),
+            mid = rostrum_build_tier_value_cache(mid_values),
+            low = rostrum_build_tier_value_cache(low_values)
+        )
+    )
+}
+
+compute_value_score_from_profile <- function(value_profile, term, name_score) {
+    if (!isTRUE(value_profile$has_non_blank)) {
+        return(list(
+            score = 0,
+            reason = "empty_column",
+            compatible_type = FALSE,
+            sampled_n = 0L,
+            valid_ratio = 0
+        ))
+    }
+
+    if (name_score < 0.45) {
+        return(list(
+            score = 0,
+            reason = "low_name_confidence",
+            compatible_type = TRUE,
+            sampled_n = 0L,
+            valid_ratio = 0
+        ))
+    }
+
+    tier <- rostrum_stage1_sample_tier(name_score)
+    tier_cache <- value_profile$tier_cache[[tier]]
+    term_name <- as.character(term)
+
+    if (term_name %in% c("decimalLatitude", "decimalLongitude", "scientificName", "individualCount")) {
+        return(tier_cache[[term_name]])
+    }
+
+    tier_cache$neutral
+}
+
+rostrum_stage1_run_term_map <- function(terms, worker_fn, options) {
+    can_parallel <- isTRUE(options$stage1_parallel) &&
+        length(terms) > 1L &&
+        !identical(options$stage1_parallel_strategy, "sequential")
+
+    if (!can_parallel) {
+        return(lapply(terms, worker_fn))
+    }
+
+    if (!requireNamespace("future", quietly = TRUE) || !requireNamespace("furrr", quietly = TRUE)) {
+        warning(
+            "stage1_parallel=TRUE, but future/furrr are unavailable. Falling back to sequential mode.",
+            call. = FALSE
+        )
+        return(lapply(terms, worker_fn))
+    }
+
+    workers <- max(1L, min(as.integer(options$stage1_parallel_workers), length(terms)))
+    rostrum_debug_log(
+        "Stage 1 parallel mode enabled (strategy=",
+        options$stage1_parallel_strategy,
+        ", workers=",
+        workers,
+        ").",
+        options = options
+    )
+
+    old_plan <- future::plan()
+    on.exit(
+        {
+            future::plan(old_plan)
+        },
+        add = TRUE
+    )
+
+    future::plan(future::multisession, workers = workers)
+    furrr::future_map(
+        terms,
+        worker_fn,
+        .options = furrr::furrr_options(seed = TRUE, scheduling = 1)
+    )
+}
+
+run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum_options()) {
     if (!is.data.frame(df)) {
         stop("df must be a data.frame.")
     }
     if (!is.data.frame(dwc_terms_df) || !"term" %in% names(dwc_terms_df)) {
         stop("dwc_terms_df must be a data.frame with a 'term' column.")
     }
+    if (!is.list(options) || is.null(options$max_sample_n)) {
+        stop("options must be produced by rostrum_options().")
+    }
 
-    clean_synonyms <- sanitize_synonyms_table(synonyms_tbl)
+    synonyms_index <- prepare_synonyms_for_scoring(synonyms_tbl)
     terms <- unique(as.character(dwc_terms_df$term))
     columns <- names(df)
     temporal_terms <- c("eventDate", "year", "month", "day", "modified", "dateIdentified")
     manual_only_terms <- c("occurrenceID", "modified", "license", "language")
+    prune_threshold <- suppressWarnings(as.numeric(options$stage1_name_prune_threshold))
+    if (!is.finite(prune_threshold)) {
+        prune_threshold <- 0.45
+    }
 
-    term_results <- lapply(terms, function(term) {
+    column_profiles <- stats::setNames(
+        lapply(columns, build_matching_profile),
+        columns
+    )
+    term_profiles <- stats::setNames(
+        lapply(terms, build_matching_profile),
+        terms
+    )
+    value_profiles <- stats::setNames(
+        lapply(columns, function(col_name) {
+            rostrum_build_column_value_profile(
+                values = df[[col_name]],
+                max_sample_n = options$max_sample_n
+            )
+        }),
+        columns
+    )
+
+    rostrum_debug_log(
+        "Stage 1 prepared ",
+        length(terms),
+        " terms and ",
+        length(columns),
+        " columns (prune threshold=",
+        format(prune_threshold, digits = 3),
+        ").",
+        options = options
+    )
+
+    empty_row <- function(term, reason = "no_confident_match", is_temporal_limited = FALSE) {
+        data.frame(
+            term = term,
+            selected_col = NA_character_,
+            name_score = 0,
+            value_score = 0,
+            penalty_score = 0,
+            veto_code = "",
+            final_score = 0,
+            status = "MANUAL",
+            reason = if (is_temporal_limited) "temporal_manual_only" else reason,
+            applied = FALSE,
+            compatible_type = TRUE,
+            specificity = 0,
+            alternatives_json = "[]",
+            explain_json = "{}",
+            stringsAsFactors = FALSE
+        )
+    }
+
+    term_worker <- function(term) {
         if (term %in% manual_only_terms) {
             return(data.frame(
                 term = term,
                 selected_col = NA_character_,
                 name_score = NA_real_,
                 value_score = NA_real_,
+                penalty_score = 0,
+                veto_code = "",
                 final_score = NA_real_,
                 status = "MANUAL",
                 reason = "manual_only_term",
                 applied = FALSE,
                 compatible_type = TRUE,
                 specificity = 0,
+                alternatives_json = "[]",
+                explain_json = "{}",
                 stringsAsFactors = FALSE
             ))
         }
 
         if (length(columns) == 0) {
-            return(data.frame(
-                term = term,
-                selected_col = NA_character_,
-                name_score = 0,
-                value_score = 0,
-                final_score = 0,
-                status = "MANUAL",
-                reason = "no_columns_available",
-                applied = FALSE,
-                compatible_type = TRUE,
-                specificity = 0,
-                stringsAsFactors = FALSE
-            ))
+            return(empty_row(term, reason = "no_columns_available", is_temporal_limited = FALSE))
         }
 
         is_temporal_limited <- term %in% temporal_terms
+        term_profile <- term_profiles[[term]]
+
+        pruned_pairs <- 0L
         candidate_rows <- lapply(columns, function(col_name) {
-            name_res <- compute_name_score(col_name, term, clean_synonyms)
+            col_profile <- column_profiles[[col_name]]
+            name_res <- compute_name_score(
+                col_name = col_name,
+                term = term,
+                synonyms_tbl = NULL,
+                col_profile = col_profile,
+                term_profile = term_profile,
+                synonyms_index = synonyms_index
+            )
 
             if (is_temporal_limited && !isTRUE(name_res$is_exact)) {
                 return(NULL)
             }
 
-            value_res <- compute_value_score(df[[col_name]], term, name_res$score)
-            final_score <- 0.5 * name_res$score + 0.5 * value_res$score
+            if (!isTRUE(name_res$is_exact) &&
+                !identical(name_res$reason, "known_synonym") &&
+                name_res$score < prune_threshold) {
+                pruned_pairs <<- pruned_pairs + 1L
+                return(NULL)
+            }
+
+            value_res <- compute_value_score_from_profile(
+                value_profile = value_profiles[[col_name]],
+                term = term,
+                name_score = name_res$score
+            )
+            if (identical(name_res$reason, "token_overlap") &&
+                name_res$score <= 0.70 &&
+                value_res$score < options$token_overlap_min_value_score) {
+                return(NULL)
+            }
+
+            penalty_res <- apply_semantic_penalties(col_name, term)
+            veto_code <- resolve_candidate_veto_code(term = term, value_res = value_res)
+
+            base_score <- (0.5 * name_res$score) + (0.5 * value_res$score)
+            final_score <- base_score + penalty_res$score
+            final_score <- pmin(1, pmax(0, final_score))
+
+            if (!is_blank_value(veto_code)) {
+                final_score <- 0
+            }
+
             status <- classify_automap_status(final_score, compatible_type = value_res$compatible_type)
             applied <- status %in% c("AUTO", "SUGERIDO")
+
+            if (!is_blank_value(veto_code)) {
+                status <- "MANUAL"
+                applied <- FALSE
+            }
+
             reason <- resolve_reason_code(
                 name_reason = name_res$reason,
                 value_reason = value_res$reason,
                 status = status,
                 compatible_type = value_res$compatible_type,
-                is_temporal_limited = is_temporal_limited
+                is_temporal_limited = is_temporal_limited,
+                penalty_score = penalty_res$score,
+                veto_code = veto_code
+            )
+
+            explain_json <- jsonlite::toJSON(
+                list(
+                    name_reason = name_res$reason,
+                    value_reason = value_res$reason,
+                    exact_hits = as.integer(name_res$exact_hits),
+                    substring_hits = as.integer(name_res$substring_hits),
+                    valid_ratio = suppressWarnings(as.numeric(value_res$valid_ratio)),
+                    penalty_reasons = penalty_res$reasons,
+                    veto_code = veto_code
+                ),
+                auto_unbox = TRUE,
+                null = "null"
             )
 
             data.frame(
@@ -736,32 +1319,31 @@ run_automap_v1 <- function(df, dwc_terms_df, synonyms_tbl) {
                 selected_col = as.character(col_name),
                 name_score = as.numeric(name_res$score),
                 value_score = as.numeric(value_res$score),
+                penalty_score = as.numeric(penalty_res$score),
+                veto_code = as.character(veto_code),
                 final_score = as.numeric(final_score),
                 status = status,
                 reason = reason,
                 applied = applied,
                 compatible_type = isTRUE(value_res$compatible_type),
                 specificity = count_relevant_tokens(col_name),
+                alternatives_json = "[]",
+                explain_json = explain_json,
                 stringsAsFactors = FALSE
             )
         })
 
         candidate_rows <- Filter(Negate(is.null), candidate_rows)
+        rostrum_debug_log(
+            "Stage 1 term '", term,
+            "': candidates=", length(candidate_rows),
+            ", pruned=", pruned_pairs,
+            ".",
+            options = options
+        )
 
         if (length(candidate_rows) == 0) {
-            return(data.frame(
-                term = term,
-                selected_col = NA_character_,
-                name_score = 0,
-                value_score = 0,
-                final_score = 0,
-                status = "MANUAL",
-                reason = if (is_temporal_limited) "temporal_manual_only" else "no_confident_match",
-                applied = FALSE,
-                compatible_type = TRUE,
-                specificity = 0,
-                stringsAsFactors = FALSE
-            ))
+            return(empty_row(term, is_temporal_limited = is_temporal_limited))
         }
 
         candidates_df <- do.call(rbind, candidate_rows)
@@ -770,7 +1352,29 @@ run_automap_v1 <- function(df, dwc_terms_df, synonyms_tbl) {
             -candidates_df$value_score,
             -candidates_df$specificity
         )
-        best <- candidates_df[ordering[1], , drop = FALSE]
+        ordered_df <- candidates_df[ordering, , drop = FALSE]
+        best <- ordered_df[1, , drop = FALSE]
+
+        top_n <- min(3L, nrow(ordered_df))
+        alternatives_payload <- lapply(seq_len(top_n), function(i) {
+            list(
+                column_name = as.character(ordered_df$selected_col[[i]]),
+                final_score = as.numeric(ordered_df$final_score[[i]]),
+                name_score = as.numeric(ordered_df$name_score[[i]]),
+                value_score = as.numeric(ordered_df$value_score[[i]])
+            )
+        })
+        best$alternatives_json <- jsonlite::toJSON(alternatives_payload, auto_unbox = TRUE)
+
+        if (nrow(ordered_df) >= 2L) {
+            score_gap <- abs(ordered_df$final_score[[1]] - ordered_df$final_score[[2]])
+            if (is.finite(score_gap) && score_gap < 0.10 && ordered_df$final_score[[1]] >= 0.75) {
+                best$status <- "AMBIGUO"
+                best$applied <- FALSE
+                best$selected_col <- NA_character_
+                best$reason <- "ambiguity_detected"
+            }
+        }
 
         if (!isTRUE(best$compatible_type) && identical(best$status, "AUTO")) {
             best$status <- "SUGERIDO"
@@ -778,7 +1382,7 @@ run_automap_v1 <- function(df, dwc_terms_df, synonyms_tbl) {
             best$reason <- "type_incompatible"
         }
 
-        if (best$final_score < 0.75) {
+        if (best$final_score < 0.75 && !identical(best$status, "AMBIGUO")) {
             best$status <- "MANUAL"
             best$applied <- FALSE
             best$selected_col <- NA_character_
@@ -788,7 +1392,13 @@ run_automap_v1 <- function(df, dwc_terms_df, synonyms_tbl) {
         }
 
         best
-    })
+    }
+
+    term_results <- rostrum_stage1_run_term_map(
+        terms = terms,
+        worker_fn = term_worker,
+        options = options
+    )
 
     results_df <- do.call(rbind, term_results)
 
@@ -816,7 +1426,20 @@ run_automap_v1 <- function(df, dwc_terms_df, synonyms_tbl) {
         }
     }
 
-    keep_cols <- c("term", "selected_col", "name_score", "value_score", "final_score", "status", "reason", "applied")
+    keep_cols <- c(
+        "term",
+        "selected_col",
+        "name_score",
+        "value_score",
+        "penalty_score",
+        "veto_code",
+        "final_score",
+        "status",
+        "reason",
+        "applied",
+        "alternatives_json",
+        "explain_json"
+    )
     results_df[, keep_cols, drop = FALSE]
 }
 
@@ -1143,32 +1766,53 @@ build_eventdate_interval <- function(df, cols, fallback_raw = TRUE) {
     }
 
     raw_values <- collapse_mapped_values(df, cols, out_sep = " | ")
+    row_values <- lapply(cols, function(col_name) {
+        values <- as.character(df[[col_name]])
+        values[is.na(df[[col_name]])] <- NA_character_
+        values
+    })
+
+    blank_matrix <- do.call(cbind, lapply(row_values, function(values) {
+        is.na(values) | !nzchar(trimws(values))
+    }))
+    all_blank <- rowSums(blank_matrix) == ncol(blank_matrix)
+
+    start_month <- vapply(
+        row_values[[role_indices[[1]]]],
+        FUN = parse_month_to_number,
+        FUN.VALUE = character(1)
+    )
+    start_year <- vapply(
+        row_values[[role_indices[[2]]]],
+        FUN = parse_year_to_number,
+        FUN.VALUE = integer(1)
+    )
+    end_month <- vapply(
+        row_values[[role_indices[[3]]]],
+        FUN = parse_month_to_number,
+        FUN.VALUE = character(1)
+    )
+    end_year <- vapply(
+        row_values[[role_indices[[4]]]],
+        FUN = parse_year_to_number,
+        FUN.VALUE = integer(1)
+    )
+
+    has_all_parts <- !is.na(start_month) & !is.na(start_year) & !is.na(end_month) & !is.na(end_year)
+    failed_rows <- !all_blank & !has_all_parts
+
     result <- rep(NA_character_, nrow(df))
-    failed_rows <- rep(FALSE, nrow(df))
-
-    for (i in seq_len(nrow(df))) {
-        row_values <- vapply(
-            cols,
-            FUN = function(col_name) as.character(df[[col_name]][[i]]),
-            FUN.VALUE = character(1)
+    if (any(has_all_parts)) {
+        result[has_all_parts] <- sprintf(
+            "%04d-%s/%04d-%s",
+            start_year[has_all_parts],
+            start_month[has_all_parts],
+            end_year[has_all_parts],
+            end_month[has_all_parts]
         )
-
-        if (all(vapply(row_values, is_blank_value, FUN.VALUE = logical(1)))) {
-            result[[i]] <- NA_character_
-            next
-        }
-
-        start_month <- parse_month_to_number(row_values[[role_indices[[1]]]])
-        start_year <- parse_year_to_number(row_values[[role_indices[[2]]]])
-        end_month <- parse_month_to_number(row_values[[role_indices[[3]]]])
-        end_year <- parse_year_to_number(row_values[[role_indices[[4]]]])
-
-        if (all(!is.na(c(start_month, start_year, end_month, end_year)))) {
-            result[[i]] <- sprintf("%04d-%s/%04d-%s", start_year, start_month, end_year, end_month)
-        } else {
-            failed_rows[[i]] <- TRUE
-            result[[i]] <- if (isTRUE(fallback_raw)) raw_values[[i]] else NA_character_
-        }
+    }
+    if (isTRUE(fallback_raw) && any(failed_rows)) {
+        result[failed_rows] <- raw_values[failed_rows]
     }
 
     list(

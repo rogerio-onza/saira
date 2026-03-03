@@ -100,6 +100,16 @@
   white-space: nowrap;
 }
 
+.badge-ambiguous {
+  background-color: #e67e22;
+  color: #ffffff;
+}
+
+.badge-template {
+  background-color: #8e44ad;
+  color: #ffffff;
+}
+
 /* Field description */
 .field-desc {
   font-size: var(--text-sm);
@@ -668,4 +678,3 @@
   box-shadow: var(--focus-ring-primary);
   outline: none;
 }
-

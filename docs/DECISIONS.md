@@ -1165,3 +1165,193 @@ Formato: ADR leve (Architecture Decision Record).
   - E2E roda uma unica vez via `Rscript scripts/release_gate.R`.
   - `devtools::test()` passa a pular E2E com mensagem informativa por padrao.
   - Menor variabilidade de caminho de app em ambientes de check e CI.
+
+---
+
+## ADR-058: Error boundary por stage no pipeline Rostrum
+
+- **Data**: 2026-03-01
+- **Status**: Aceito
+- **Contexto**: O pipeline Rostrum evolui para 3 stages. Falha em um stage nao pode descartar resultados validos dos anteriores.
+- **Decisao**:
+  - Adotar contrato de retorno por stage:
+    - `list(success, data, warnings, errors, timing_ms)`.
+  - O orquestrador deve degradar com recuperacao parcial:
+    - Stage 1 falha -> retorna vazio.
+    - Stage 2 falha -> preserva Stage 1.
+    - Stage 3 falha -> preserva Stage 1 + Stage 2.
+- **Alternativas**:
+  - `tryCatch` unico no pipeline inteiro - rejeitado por perder granularidade e observabilidade.
+- **Consequencias**:
+  - Falhas deixam de causar perda total de resultado.
+  - Contrato do motor fica testavel por stage.
+
+---
+
+## ADR-059: Sampling deterministico no scoring
+
+- **Data**: 2026-03-01
+- **Status**: Aceito
+- **Contexto**: `sample()` sem seed fixo gera flutuacao de score entre execucoes com a mesma entrada.
+- **Decisao**:
+  - Derivar seed por conteudo da coluna com `digest::digest2int(...)`.
+  - Executar amostragem dentro de `withr::with_seed(seed, ...)`.
+- **Alternativas**:
+  - Seed global fixa por sessao - rejeitado por acoplamento entre colunas e risco de efeito colateral.
+  - Remover aleatoriedade sem amostragem - rejeitado por custo em colunas muito grandes.
+- **Consequencias**:
+  - Mesma entrada gera mesma amostragem e mesmo score.
+  - Golden tests de scoring ficam estaveis.
+
+---
+
+## ADR-060: Migracoes SQLite transacionais com `BEGIN IMMEDIATE`
+
+- **Data**: 2026-03-01
+- **Status**: Aceito
+- **Contexto**: Em ambiente multi-usuario (ex.: Shiny Server), migracoes sem lock de escrita podem sofrer race condition e estado parcial.
+- **Decisao**:
+  - Toda migracao roda em transacao explicita com `BEGIN IMMEDIATE`.
+  - Em falha, `ROLLBACK` obrigatorio.
+  - `schema_version` controla versoes aplicadas de forma idempotente.
+- **Alternativas**:
+  - Migracao sem transacao - rejeitado por risco de schema parcial.
+  - `busy_timeout` isolado sem lock explicito - rejeitado por nao resolver corrida logica.
+- **Consequencias**:
+  - Mid-failure nao deixa rastros de schema incompleto.
+  - Evolucao de schema fica auditavel e reproduzivel.
+
+---
+
+## ADR-061: Evolucao controlada de sinonimos V1 para V2
+
+- **Data**: 2026-03-01
+- **Status**: Aceito
+- **Contexto**: V1 usa schema `term/synonym/name_score/lang/active`; V2 SQLite usa `confidence/language/context/...` e nao aceita `lang = any`.
+- **Decisao**:
+  - Introduzir adaptador explicito `adapt_synonyms_v1_to_v2()`.
+  - Mapeamentos obrigatorios:
+    - `lang = any` -> `language = mul`.
+    - `name_score` -> `confidence` (preserva range original).
+    - Defaults:
+      - `context = "unknown"`,
+      - `validation_regex = NA`,
+      - `notes = "Migrated from v1 RDS"`.
+- **Alternativas**:
+  - Migracao implicita inline no loader - rejeitado por baixa rastreabilidade.
+  - Rejeitar payload V1 - rejeitado por quebrar retrocompatibilidade na transicao.
+- **Consequencias**:
+  - Caminho de migracao fica explicito e testavel.
+  - V1 e V2 coexistem durante a janela de transicao.
+
+---
+
+## ADR-062: Onda 3 do Rostrum com composicao segura e fallback pos-conflito
+
+- **Data**: 2026-03-02
+- **Status**: Aceito
+- **Contexto**: O Stage 2 do Rostrum estava como no-op e nao entregava composicao de termos. O plano exigia composicao de `scientificName` e `eventDate` com guard de circularidade e preservacao de override manual. Tambem era necessario aplicar fallback `verbatim*` apenas apos resolucao de conflito.
+- **Decisao**:
+  - Implementar composicao de `scientificName` no Stage 2 usando `genus + specificEpithet` (com suporte opcional a `infraspecificEpithet` e `scientificNameAuthorship`) apenas quando:
+    - `scientificName` nao estiver mapeado no Stage 1;
+    - nao houver override manual para `scientificName`.
+  - Implementar guard explicito de circularidade com trilha `composed_from`: um termo composto nao pode virar insumo de composicao que dependa dele direta ou indiretamente.
+  - Implementar composicao de `eventDate` no Stage 2 com ISO estrito e validacao de calendario:
+    - formatos suportados: `YYYY`, `YYYY-MM`, `YYYY-MM-DD`;
+    - datas invalidas (mes/dia fora de faixa, combinacoes invalidas, leap year invalido) sao rejeitadas no caminho automatico.
+  - Mover fallback para `verbatim*` para depois do Stage 3 (Stage 3.5), com regra conservadora:
+    - `decimalLatitude -> verbatimLatitude`;
+    - `decimalLongitude -> verbatimLongitude`;
+    - `eventDate -> verbatimEventDate`;
+    - apenas com score elegivel e sem sobrescrever alvo ja ocupado.
+  - Vetorizar `build_eventdate_interval()` em `utils_mapping` para reduzir custo de loop row-by-row em bases grandes.
+- **Alternativas**:
+  - Manter Stage 2 como passthrough - rejeitado por nao cumprir contrato da Onda 3.
+  - Permitir composicao mesmo com override manual - rejeitado por risco de sobrescrever decisao humana.
+  - Aplicar fallback `verbatim*` durante Stage 3 - rejeitado por interferir na resolucao principal de conflitos.
+- **Consequencias**:
+  - Stage 2 passa a contribuir com sugestoes compositas explicaveis, mantendo politica conservadora.
+  - Circularidade entre regras de composicao deixa de ser possivel por contrato.
+  - `eventDate` composto fica mais previsivel e aderente a ISO, incluindo leap year.
+  - Fallback `verbatim*` preserva informacao sem roubar mapeamento principal.
+
+---
+
+## ADR-063: Schema canonico de composition_df como augmentacao do stage data
+
+- **Data**: 2026-03-02
+- **Status**: Aceito
+- **Contexto**: O plano original definia `composition_df` como contrato separado com colunas `term, inputs_json, output_preview, status, reason_code`. A implementacao da Onda 3 optou por augmentar o stage data existente com a coluna `composed_from_json` (JSON array dos termos fonte), armazenando o preview dentro de `explain_json` ja existente. Essa abordagem divergiu do plano e precisava de decisao explicita.
+- **Decisao**:
+  - O schema canonico de composicao e o stage data augmentado, com as colunas obrigatorias: `term`, `selected_col`, `status`, `reason`, `applied`, `composed_from_json`.
+  - Nao ha `composition_df` como artefato separado; a composicao e inline com os resultados de Stage 1/2.
+  - `validate_composition_df()` valida esse schema augmentado (nao o schema do plano original).
+  - `composed_from_json` eh `NA_character_` para termos nao-compostos (retrocompativel com Stage 1).
+  - Composicao parcial (`composed_eventdate_partial`) com `applied = TRUE` e design intencional: quando apenas o `year` esta disponivel, o mapeamento eh direto (relabeling da coluna), sem valor sintetico, portanto auto-aplicavel.
+  - Composicao total (`composed_scientific_name`, `composed_eventdate_ymd`) produz valor sintetico sem coluna fonte direta, portanto `applied = FALSE` (requer confirmacao do usuario).
+- **Alternativas**:
+  - `composition_df` separado conforme plano original -- rejeitado porque duplicaria dados ja no stage data e criaria sincronizacao de estado entre duas estruturas.
+- **Consequencias**:
+  - `validate_composition_df()` em `R/utils_rostrum_contracts.R` valida o schema real.
+  - Testes de contrato cobrem tipos, status enum e colunas obrigatorias.
+  - O plano original e atualizado nesta nota como decisao consciente.
+
+---
+
+## ADR-064: Stage 3 com resolvedor multicriterio deterministico
+
+- **Data**: 2026-03-02
+- **Status**: Aceito
+- **Contexto**: O Stage 3 estava como placeholder (apenas fallback para `verbatim*`), sem resolver conflitos reais entre candidatos e sem garantia de determinismo em empates tecnicos.
+- **Decisao**:
+  - Implementar rank multicriterio por candidato no Stage 3 com a ordem:
+    - `final_score` desc,
+    - `value_score` desc,
+    - aderencia de tipo (`numeric` vs `text`) desc,
+    - completude desc,
+    - especificidade desc,
+    - `exact_hits` desc,
+    - `substring_hits` asc,
+    - desempate alfabetico final.
+  - Aplicar ambiguidade legitima com comparacao float-safe:
+    - `abs(top1 - top2) < (ambiguity_gap - sqrt(eps))`.
+  - Resolver conflitos cross-term com o mesmo criterio e desempate final por nome do termo para reproduzibilidade.
+  - Introduzir fallback de perdedor para termo relacionado `verbatim*` apenas com guard:
+    - `score >= suggest_threshold`,
+    - alvo ainda livre.
+- **Alternativas**:
+  - Manter `run_automap_v1()` como unico resolvedor de conflito - rejeitado por limitar o Stage 3 a passthrough.
+  - Resolver conflitos por ordem de iteracao do data.frame - rejeitado por nao-determinismo.
+- **Consequencias**:
+  - Stage 3 passa a ser funcional e testavel de ponta a ponta.
+  - Conflitos passam a ter rastreabilidade explicita (`conflict_won`, `conflict_lost`, `ambiguity_detected`).
+  - Fallback de perdedores preserva informacao sem sobrescrever mapeamento existente.
+
+---
+
+## ADR-065: Aprendizado local de aliases com precedencia por escopo e auditoria
+
+- **Data**: 2026-03-02
+- **Status**: Aceito
+- **Contexto**: O schema SQLite de aliases existia, mas faltava camada funcional para escrita transacional, lookup com precedencia e trilha auditavel de eventos por sessao.
+- **Decisao**:
+  - Implementar API de aliases em `R/utils_rostrum_db.R`:
+    - `rostrum_upsert_alias()`,
+    - `rostrum_record_alias_confirmation()`,
+    - `rostrum_record_alias_override()`,
+    - `rostrum_lookup_alias()`/`rostrum_lookup_alias_for_term()`,
+    - `rostrum_deprecate_alias()`,
+    - `undo_session_aliases()`.
+  - Todas as writes de aliases usam transacao explicita com `BEGIN IMMEDIATE`.
+  - Lookup aplica precedencia de escopo:
+    - `personal > institution > public`,
+    - sempre ignorando `deprecated = 1`.
+  - Cada mudanca escreve evento em `rostrum_alias_events` com `run_id` para auditoria e batch undo.
+  - `run_rostrum_engine(..., conn=...)` aplica overrides de alias no Stage 1 antes de Stage 2/3.
+- **Alternativas**:
+  - Persistir aliases fora do SQLite (CSV local) - rejeitado por perder transacao e indice de consulta.
+  - Aplicar alias apenas na UI (`mod_mapping`) - rejeitado por acoplamento e baixa testabilidade.
+- **Consequencias**:
+  - Aprendizado local passa a ser persistente entre sessoes.
+  - Alias deprecado deixa de afetar novas execucoes sem perda de historico.
+  - Rollback por sessao fica operacional via `undo_session_aliases(conn, run_id)`.

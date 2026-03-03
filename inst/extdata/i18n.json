@@ -471,6 +471,134 @@
     "pt": "Confiança insuficiente",
     "en": "Insufficient confidence"
   },
+  "rostrum_reason_exact_match": {
+    "pt": "Match exato",
+    "en": "Exact match"
+  },
+  "rostrum_reason_known_synonym": {
+    "pt": "Sin\u00f4nimo conhecido",
+    "en": "Known synonym"
+  },
+  "rostrum_reason_token_overlap": {
+    "pt": "Sobreposi\u00e7\u00e3o de tokens",
+    "en": "Token overlap"
+  },
+  "rostrum_reason_text_similarity": {
+    "pt": "Similaridade textual",
+    "en": "Text similarity"
+  },
+  "rostrum_reason_veto_hard": {
+    "pt": "Veto hard aplicado",
+    "en": "Hard veto applied"
+  },
+  "rostrum_reason_veto_soft": {
+    "pt": "Veto soft aplicado",
+    "en": "Soft veto applied"
+  },
+  "rostrum_reason_semantic_penalty": {
+    "pt": "Penalidade sem\u00e2ntica aplicada",
+    "en": "Semantic penalty applied"
+  },
+  "rostrum_reason_ambiguity_detected": {
+    "pt": "Ambiguidade detectada",
+    "en": "Ambiguity detected"
+  },
+  "rostrum_reason_conflict_won": {
+    "pt": "Conflito resolvido a favor",
+    "en": "Conflict won"
+  },
+  "rostrum_reason_conflict_lost": {
+    "pt": "Conflito perdido para candidato mais forte",
+    "en": "Conflict lost to stronger candidate"
+  },
+  "rostrum_reason_template_override": {
+    "pt": "Template aplicado com prioridade",
+    "en": "Template applied with priority"
+  },
+  "rostrum_badge_auto": {
+    "pt": "AUTO",
+    "en": "AUTO"
+  },
+  "rostrum_badge_suggested": {
+    "pt": "SUGERIDO",
+    "en": "SUGGESTED"
+  },
+  "rostrum_badge_ambiguous": {
+    "pt": "AMB\u00cdGUO",
+    "en": "AMBIGUOUS"
+  },
+  "rostrum_badge_manual": {
+    "pt": "MANUAL",
+    "en": "MANUAL"
+  },
+  "rostrum_badge_alias": {
+    "pt": "ALIAS",
+    "en": "ALIAS"
+  },
+  "rostrum_badge_template": {
+    "pt": "TEMPLATE",
+    "en": "TEMPLATE"
+  },
+  "rostrum_explain_name_score": {
+    "pt": "Score de nome",
+    "en": "Name score"
+  },
+  "rostrum_explain_value_score": {
+    "pt": "Score de conte\u00fado",
+    "en": "Value score"
+  },
+  "rostrum_explain_penalty": {
+    "pt": "Penalidade",
+    "en": "Penalty"
+  },
+  "rostrum_explain_alternatives": {
+    "pt": "Alternativas",
+    "en": "Alternatives"
+  },
+  "rostrum_ambiguity_title": {
+    "pt": "Resolver ambiguidade: %s",
+    "en": "Resolve ambiguity: %s"
+  },
+  "rostrum_ambiguity_question": {
+    "pt": "Escolha o melhor mapeamento entre os candidatos:",
+    "en": "Choose the best mapping among candidates:"
+  },
+  "rostrum_ambiguity_samples": {
+    "pt": "Amostra de valores por coluna candidata",
+    "en": "Sample values by candidate column"
+  },
+  "rostrum_ambiguity_confirm": {
+    "pt": "Confirmar",
+    "en": "Confirm"
+  },
+  "rostrum_ambiguity_no_sample": {
+    "pt": "Sem amostras n\u00e3o vazias para exibir.",
+    "en": "No non-empty sample values available."
+  },
+  "rostrum_warning_stage2_fallback": {
+    "pt": "Stage 2 falhou. Resultados do Stage 1 foram preservados.",
+    "en": "Stage 2 failed. Stage 1 results were preserved."
+  },
+  "rostrum_warning_stage3_fallback": {
+    "pt": "Stage 3 falhou. Resultados anteriores foram preservados.",
+    "en": "Stage 3 failed. Previous stage results were preserved."
+  },
+  "rostrum_reason_composed_scientific_name": {
+    "pt": "Composto de G\u00eanero e Ep\u00edteto",
+    "en": "Composed from Genus and Specific Epithet"
+  },
+  "rostrum_reason_composed_eventdate_ymd": {
+    "pt": "Data composta (Ano-M\u00eas-Dia)",
+    "en": "Composed date (Year-Month-Day)"
+  },
+  "rostrum_reason_composed_eventdate_partial": {
+    "pt": "Data parcial composta",
+    "en": "Partial composed date"
+  },
+  "rostrum_reason_fallback_verbatim_from_primary": {
+    "pt": "Fallback verbatim do termo principal",
+    "en": "Verbatim fallback from primary term"
+  },
   "field_or_type_value": {
     "pt": "Ou digite/cole um valor fixo:",
     "en": "Or type/paste a fixed value:"
