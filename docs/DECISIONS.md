@@ -1355,3 +1355,85 @@ Formato: ADR leve (Architecture Decision Record).
   - Aprendizado local passa a ser persistente entre sessoes.
   - Alias deprecado deixa de afetar novas execucoes sem perda de historico.
   - Rollback por sessao fica operacional via `undo_session_aliases(conn, run_id)`.
+
+---
+
+## ADR-066: Templates V3 com schema JSON versionado e prioridade sobre heuristica
+
+- **Data**: 2026-03-02
+- **Status**: Aceito
+- **Contexto**: Templates de mapeamento precisavam de um contrato serializado que suportasse versionamento, escopo de instituicao, validacao offline e override de heuristica de Stage 1-3.
+- **Decisao**:
+  - Templates armazenados como JSON com `schema_version`, `app_min_version` e `app_max_version`.
+  - Validacao via `rostrum_validate_template_payload()` rejeita payloads com `app_min_version` acima da versao do app atual.
+  - `app_max_version` abaixo da versao atual gera `warning` sem bloquear importacao.
+  - Importacao via `rostrum_import_template_json()` persiste em `rostrum_templates` + `rostrum_template_items` no SQLite.
+  - Catalogo consultavel via `rostrum_list_template_catalog()` com filtro por `scope`, `institution_id` e `use_case`.
+  - Engine aplica template como override de mais alta prioridade (antes de Stage 2/3) quando `context$template_id` estiver preenchido.
+  - Status resultante de itens aplicados via template: `"TEMPLATE"` com reason `"template_priority_override"`.
+  - Conflito detectado (heuristica sugeria coluna diferente) e logado como `"conflict override"` em `res$warnings`.
+- **Alternativas**:
+  - Templates como RDS binario - rejeitado por portabilidade e falta de versionamento semantico.
+  - Templates apenas na UI sem persistencia - rejeitado por perda de conhecimento entre sessoes.
+- **Consequencias**:
+  - Templates reutilizaveis entre usuarios de mesma instituicao via import/export de JSON.
+  - Versionamento explicito previne aplicacao de template obsoleto (> `app_max_version`).
+  - Catalogo filtrado permite UI de selecao de template sem carregar todos os itens.
+
+---
+
+## ADR-067: Hardening do Rostrum Engine com debug mode, timing e paralelizacao opcional
+
+- **Data**: 2026-03-02
+- **Status**: Aceito
+- **Contexto**: O motor Rostrum precisava de instrumentacao para diagnostico em producao, paralelizacao segura para datasets grandes e remocao do legacy `run_automap_v1`.
+- **Decisao**:
+  - `rostrum_options(debug = TRUE)` emite logs de timing por stage em `message()`.
+  - Timing por stage registrado em `$timing_ms` de cada resultado de stage.
+  - Paralelizacao de Stage 1 via `future`/`furrr` quando `options$stage1_parallel = TRUE`, com fallback gracioso se pacotes nao estiverem instalados.
+  - `run_automap_v1()` e o toggle `enable_automap_v1` foram removidos definitivamente.
+  - `adapt_synonyms_v1_to_v2()` mantido como adaptador de compatibilidade para migracao de RDS legados.
+  - Suite de performance regressiva com limiares explicitos: Stage 1 < 7.5s, Stage 2 < 2s, Stage 3 < 0.5s, pipeline completo < 8s para 20k x 50 colunas.
+- **Alternativas**:
+  - Manter `run_automap_v1` com flag de deprecacao - rejeitado por risco de uso acidental e custo de manutencao dupla.
+  - Paralelizacao obrigatoria - rejeitado por dependencia de `future`/`furrr` em `Imports`.
+- **Consequencias**:
+  - Diagnostico de performance em producao via `debug = TRUE` sem overhead em modo normal.
+  - Paralelizacao disponivel como opt-in sem aumentar grafo de dependencias obrigatorias.
+  - Breaking change documentada: `run_automap_v1` nao existe mais.
+
+---
+
+## ADR-068: Remocao do `lang_es` e chaves `.1` do i18n.json
+
+- **Data**: 2026-03-03
+- **Status**: Aceito
+- **Contexto**: O `i18n.json` continha 10 chaves com sufixo `.1` (duplicatas exatas) e a chave `lang_es` para espanhol, idioma que nao esta implementado no app.
+- **Decisao**:
+  - Remover as 10 chaves `validate_coords_*.1` — copias identicas das versoes sem sufixo.
+  - Remover `lang_es` — espanhol nao tem suporte ativo e a chave nao e usada no codigo.
+  - Idiomas suportados sao exatamente `["pt", "en"]`.
+  - Espanhol pode ser reintroduzido futuramente como onda separada com todas as traducoes completas e validacao de cobertura.
+- **Consequencias**:
+  - JSON limpo, sem duplicatas.
+  - Testes de regressao podem validar exatamente 2 idiomas por chave.
+  - Adicao futura de espanhol requer ADR explicito e cobertura completa de traducoes.
+
+---
+
+## ADR-069: Auditoria CRAN — remocao de `Remotes:`, `<<-` e `getFromNamespace`
+
+- **Data**: 2026-03-03
+- **Status**: Aceito
+- **Contexto**: Antes de submissao ao CRAN, auditoria identificou bloqueadores: `Remotes:` no DESCRIPTION, `<<-` em handlers de error, acesso privado a namespace externo e `getFromNamespace` em testes.
+- **Decisao**:
+  - Remover `Remotes: ropensci/rnaturalearthhires`. Pacote mantido em `Imports` por necessidade funcional; `Additional_repositories` preservado.
+  - Substituir `<<-` em tryCatch handlers pelo padrao `tryCatch(fn(), error = function(e) e)` + `inherits(result, "error")`.
+  - Substituir `get(fn, envir = asNamespace("CoordinateCleaner"))` por `switch()` explicito com `CoordinateCleaner::cc_*`.
+  - Substituir `getFromNamespace("fn", "saira")` em testes por `saira:::fn` (internos) ou chamada direta (exportados).
+  - `pkgload::load_all()` em `app.R` tornado condicional com `requireNamespace` + `!isNamespaceLoaded`.
+  - Centralizar `@importFrom` em `R/saira-package.R` e adicionar `@export` + roxygen completo as funcoes publicas do Rostrum.
+- **Consequencias**:
+  - `devtools::check(cran = TRUE)` passa sem ERRORs nos bloqueadores identificados.
+  - API publica do Rostrum documentada e acessivel via `saira::fn`.
+  - Testes mais claros: acesso intencional a internos via `:::` e acesso a publicos diretamente.

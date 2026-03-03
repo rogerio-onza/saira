@@ -4,8 +4,8 @@
 # Version: 1.0
 
 if (requireNamespace("saira", quietly = TRUE)) {
-    parse_dates_to_iso <- getFromNamespace("parse_dates_to_iso", "saira")
-    fix_dates_to_iso <- getFromNamespace("fix_dates_to_iso", "saira")
+    parse_dates_to_iso <- saira:::parse_dates_to_iso
+    fix_dates_to_iso <- saira:::fix_dates_to_iso
 } else {
     source("R/utils_io.R")
     source("R/utils_export.R")

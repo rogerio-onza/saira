@@ -1,8 +1,4 @@
-adapt_synonyms_v1_to_v2 <- getFromNamespace("adapt_synonyms_v1_to_v2", "saira")
-rostrum_options <- getFromNamespace("rostrum_options", "saira")
-validate_candidate_df <- getFromNamespace("validate_candidate_df", "saira")
-validate_decision_df <- getFromNamespace("validate_decision_df", "saira")
-validate_composition_df <- getFromNamespace("validate_composition_df", "saira")
+validate_composition_df <- saira:::validate_composition_df
 
 testthat::test_that("adapt_synonyms_v1_to_v2 preserves rows and maps any to mul", {
     v1 <- data.frame(

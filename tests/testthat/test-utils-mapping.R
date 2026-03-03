@@ -3,13 +3,8 @@
 # Date: 2026-02-11
 # Version: 1.0
 
-reset_synonyms_cache <- function() {
-    getFromNamespace("reset_dwc_synonyms_cache", "saira")()
-}
-
-synonyms_cache_state <- function() {
-    getFromNamespace("dwc_synonyms_cache_state", "saira")()
-}
+reset_synonyms_cache <- function() saira:::reset_dwc_synonyms_cache()
+synonyms_cache_state <- function() saira:::dwc_synonyms_cache_state()
 
 testthat::test_that("normalize_semicolon_tokens converts semicolon lists to pipe", {
     x <- c(

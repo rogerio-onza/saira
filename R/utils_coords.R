@@ -55,13 +55,12 @@ coords_validate_force_flag <- function(force) {
 resolve_country_aliases_path <- function() {
     candidates <- c(
         system.file("extdata", "country_aliases.rds", package = "saira"),
-        here::here("inst", "extdata", "country_aliases.rds"),
         file.path("inst", "extdata", "country_aliases.rds"),
         file.path("..", "..", "inst", "extdata", "country_aliases.rds")
     )
     candidates <- unique(candidates[nzchar(candidates)])
     path <- candidates[file.exists(candidates)][1]
-    if (is.null(path) || !file.exists(path)) {
+    if (is.null(path) || is.na(path) || !file.exists(path)) {
         stop("country_aliases.rds not found in expected locations.", call. = FALSE)
     }
     path
@@ -219,9 +218,9 @@ coords_country_to_iso3 <- function(country_values) {
     out_uniq <- rep(NA_character_, length(uniq_vals))
     pending <- !is.na(uniq_vals)
 
-    apply_layer <- function(origin, custom_dict = NULL) {
+    apply_layer <- function(out_uniq, pending, origin, custom_dict = NULL) {
         if (!any(pending)) {
-            return(invisible(NULL))
+            return(list(out_uniq = out_uniq, pending = pending))
         }
         idx_pending <- which(pending)
         source_vals <- uniq_vals[idx_pending]
@@ -249,16 +248,16 @@ coords_country_to_iso3 <- function(country_values) {
         resolved <- toupper(as.character(resolved))
         hit <- !is.na(resolved) & nzchar(resolved)
         if (any(hit)) {
-            out_uniq[idx_pending[hit]] <<- resolved[hit]
-            pending[idx_pending[hit]] <<- FALSE
+            out_uniq[idx_pending[hit]] <- resolved[hit]
+            pending[idx_pending[hit]] <- FALSE
         }
-        invisible(NULL)
+        list(out_uniq = out_uniq, pending = pending)
     }
 
-    # Layer 1: strict ISO3.
-    apply_layer("iso3c")
-    # Layer 1b: strict ISO2.
-    apply_layer("iso2c")
+    apply_result <- apply_layer(out_uniq, pending, "iso3c")
+    out_uniq <- apply_result$out_uniq; pending <- apply_result$pending
+    apply_result <- apply_layer(out_uniq, pending, "iso2c")
+    out_uniq <- apply_result$out_uniq; pending <- apply_result$pending
 
     # Layer 2: multilingual CLDR names via custom_dict.
     codelist <- countrycode::codelist
@@ -275,7 +274,8 @@ coords_country_to_iso3 <- function(country_values) {
             next
         }
         custom_dict <- codelist[, c("iso3c", origin), drop = FALSE]
-        apply_layer(origin, custom_dict = custom_dict)
+        apply_result <- apply_layer(out_uniq, pending, origin, custom_dict = custom_dict)
+        out_uniq <- apply_result$out_uniq; pending <- apply_result$pending
     }
 
     # Layer 3: country.name plus regex origins.
@@ -287,7 +287,8 @@ coords_country_to_iso3 <- function(country_values) {
         "country.name.it.regex"
     )
     for (origin in name_origins) {
-        apply_layer(origin)
+        apply_result <- apply_layer(out_uniq, pending, origin)
+        out_uniq <- apply_result$out_uniq; pending <- apply_result$pending
     }
 
     # Layer 4: custom aliases from country_aliases.rds.
@@ -372,7 +373,17 @@ coords_country_to_iso3 <- function(country_values) {
 }
 
 coords_cc_flagged <- function(fun_name, x, ...) {
-    fn <- get(fun_name, envir = asNamespace("CoordinateCleaner"), inherits = FALSE)
+    fun_name <- match.arg(fun_name, c("cc_val", "cc_sea", "cc_zero", "cc_equ", "cc_cap", "cc_cen", "cc_gbif", "cc_inst"))
+    fn <- switch(fun_name,
+        cc_val  = CoordinateCleaner::cc_val,
+        cc_sea  = CoordinateCleaner::cc_sea,
+        cc_zero = CoordinateCleaner::cc_zero,
+        cc_equ  = CoordinateCleaner::cc_equ,
+        cc_cap  = CoordinateCleaner::cc_cap,
+        cc_cen  = CoordinateCleaner::cc_cen,
+        cc_gbif = CoordinateCleaner::cc_gbif,
+        cc_inst = CoordinateCleaner::cc_inst
+    )
     flagged <- fn(x = x, value = "flagged", verbose = FALSE, ...)
     flagged <- as.logical(flagged)
     if (length(flagged) != nrow(x)) {

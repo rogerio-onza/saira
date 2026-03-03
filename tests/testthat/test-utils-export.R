@@ -4,7 +4,7 @@
 # Version: 1.0
 
 apply_name_review_payload <- function(...) {
-    getFromNamespace("apply_name_review_payload", "saira")(...)
+    saira:::apply_name_review_payload(...)
 }
 
 testthat::test_that("abbreviate_license normalizes known values and preserves unknowns", {

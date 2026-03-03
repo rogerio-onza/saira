@@ -40,7 +40,7 @@ testthat::test_that("a11y/ui keys for this cycle exist in pt/en", {
 })
 
 testthat::test_that("a11y/ui keys resolve with tr in pt/en", {
-    tr_fn <- getFromNamespace("tr", "saira")
+    tr_fn <- saira:::tr
 
     keys <- c(
         "a11y_lang_switch_label",

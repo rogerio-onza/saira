@@ -13,3 +13,9 @@
 ^\.Rprofile$
 ^renv$
 ^renv\.lock$
+^\.claude$
+^PLAN_.*\.md$
+
+^pkg_docs$
+^scripts$
+^task_onda_.*\.md\.resolved$

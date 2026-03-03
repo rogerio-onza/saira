@@ -1,8 +1,5 @@
-rostrum_connect <- getFromNamespace("rostrum_connect", "saira")
-rostrum_migrate <- getFromNamespace("rostrum_migrate", "saira")
-rostrum_migrate_v1 <- getFromNamespace("rostrum_migrate_v1", "saira")
-rostrum_seed_synonyms_if_empty <- getFromNamespace("rostrum_seed_synonyms_if_empty", "saira")
-rostrum_load_synonyms_from_db <- getFromNamespace("rostrum_load_synonyms_from_db", "saira")
+rostrum_migrate <- saira:::rostrum_migrate
+rostrum_migrate_v1 <- saira:::rostrum_migrate_v1
 
 # Minimal V1-format synonyms fixture
 .make_v1_synonyms_rds <- function() {
@@ -191,7 +188,7 @@ testthat::test_that("default migrations include template catalog use_case suppor
     cols <- DBI::dbGetQuery(conn, "PRAGMA table_info(rostrum_templates)")
     idx <- DBI::dbGetQuery(conn, "SELECT name FROM sqlite_master WHERE type='index'")$name
 
-    testthat::expect_identical(as.integer(version), 2L)
+    testthat::expect_identical(as.integer(version), 3L)
     testthat::expect_true("use_case" %in% as.character(cols$name))
     testthat::expect_true("idx_templates_catalog" %in% idx)
 })

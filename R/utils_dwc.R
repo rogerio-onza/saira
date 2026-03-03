@@ -70,7 +70,6 @@ basis_of_record_vocab_catalog <- list(
 resolve_dwc_terms_path <- function() {
     candidates <- c(
         system.file("extdata", "dwc_terms.rds", package = "saira"),
-        here::here("inst", "extdata", "dwc_terms.rds"),
         file.path("inst", "extdata", "dwc_terms.rds"),
         file.path("..", "..", "inst", "extdata", "dwc_terms.rds")
     )

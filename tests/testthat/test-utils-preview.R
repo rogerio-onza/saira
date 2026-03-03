@@ -4,7 +4,7 @@
 # Version: 1.0
 
 testthat::test_that("prepare_preview_data limits rows and abbreviates license", {
-    prepare <- getFromNamespace("prepare_preview_data", "saira")
+    prepare <- saira:::prepare_preview_data
 
     df <- data.frame(
         scientificName = sprintf("name_%03d", seq_len(120)),
@@ -20,7 +20,7 @@ testthat::test_that("prepare_preview_data limits rows and abbreviates license", 
 })
 
 testthat::test_that("prepare_preview_data validates dataframe and max_rows", {
-    prepare <- getFromNamespace("prepare_preview_data", "saira")
+    prepare <- saira:::prepare_preview_data
 
     testthat::expect_error(
         prepare("not-a-dataframe", max_rows = 100L),
@@ -34,7 +34,7 @@ testthat::test_that("prepare_preview_data validates dataframe and max_rows", {
 })
 
 testthat::test_that("compute_preview_readiness calculates metrics and required checklist", {
-    compute <- getFromNamespace("compute_preview_readiness", "saira")
+    compute <- saira:::compute_preview_readiness
 
     df <- data.frame(
         scientificName = c("Panthera onca", "", NA_character_),
@@ -79,7 +79,7 @@ testthat::test_that("compute_preview_readiness calculates metrics and required c
 })
 
 testthat::test_that("compute_preview_readiness treats missing occurrenceID as auto-generated OK", {
-    compute <- getFromNamespace("compute_preview_readiness", "saira")
+    compute <- saira:::compute_preview_readiness
 
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis"),
@@ -99,7 +99,7 @@ testthat::test_that("compute_preview_readiness treats missing occurrenceID as au
 })
 
 testthat::test_that("validate_preview_download_requirements blocks missing mandatory fields", {
-    validate_download <- getFromNamespace("validate_preview_download_requirements", "saira")
+    validate_download <- saira:::validate_preview_download_requirements
 
     df <- data.frame(
         scientificName = c("Panthera onca", ""),
@@ -118,7 +118,7 @@ testthat::test_that("validate_preview_download_requirements blocks missing manda
 })
 
 testthat::test_that("validate_preview_download_requirements allows export when mandatory fields are present", {
-    validate_download <- getFromNamespace("validate_preview_download_requirements", "saira")
+    validate_download <- saira:::validate_preview_download_requirements
 
     df <- data.frame(
         scientificName = c("Panthera onca"),

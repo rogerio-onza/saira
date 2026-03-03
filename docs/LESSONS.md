@@ -264,3 +264,30 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Precedencia por escopo deve ser aplicada no lookup, nao na escrita**: manter `personal > institution > public` no read path simplifica manutencao e permite coexistencia de regras.
 - **`deprecated` deve filtrar no lookup, nao apagar historico**: preservar linha + evento auditavel viabiliza investigacao de regressao e rollback.
 - **Batch undo por `run_id` fica pratico quando eventos e aliases compartilham chave operacional**: sem `run_id` indexado em eventos, rollback em lote vira scan custoso.
+
+## CRAN Submission
+
+- **`Remotes:` proibido no CRAN**: mover dependencia nao-CRAN para `Suggests` +
+  fallback gracioso (ou usar `Additional_repositories`). Nunca submeter com
+  `Remotes:` no DESCRIPTION.
+- **`LazyData: true` esta deprecated**: remover se nao houver artefatos em `data/`
+  que precisem de lazy loading; `inst/extdata/` nao precisa de lazy.
+- **`<<-` em handlers de `tryCatch`**: padrao correto e
+  `result <- tryCatch(fn(), error = function(e) e)` seguido de
+  `inherits(result, "error")`. Nao usar super-assignment para capturar erro.
+- **`get(fn, envir = asNamespace("pkg"))` em producao**: acessar API publica
+  explicitamente via `pkg::fn`. Reservar `:::` e `asNamespace` apenas para
+  testes internos.
+- **`@importFrom` obrigatorio para todas as dependencias**: centralizar em arquivo
+  `R/saira-package.R` com bloco `## usethis namespace: start/end` e regenerar
+  NAMESPACE com `devtools::document()`.
+- **Funcoes exportadas exigem roxygen completo**: toda funcao com `@export` precisa
+  de `@title`, `@description`, `@param`, `@return` e pelo menos um `@examples`.
+- **`getFromNamespace()` nos testes**: substituir por `saira:::fn` para funcoes
+  internas ou chamar diretamente para funcoes exportadas. Em loops dinamicos,
+  usar `get(fn, envir = asNamespace("saira"), inherits = FALSE)`.
+- **`launch.browser = TRUE` hardcoded**: substituir por
+  `getOption("shiny.launch.browser", interactive())` para compatibilidade com
+  ambientes headless (Docker, CI).
+- **`.Rbuildignore` deve excluir artefatos de dev**: incluir `^\.claude$` e
+  `^PLAN_.*\.md` para evitar incluir configs e planos de dev no tarball.

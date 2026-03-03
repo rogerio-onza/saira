@@ -9,7 +9,6 @@ testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
     required_keys <- c(
         "nav_home",
         "nav_validate",
-        "lang_es",
         "mapping_dataset_placeholder",
         "mapping_separator_placeholder",
         "preview_datatable_search",
@@ -253,7 +252,7 @@ testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
 })
 
 testthat::test_that("tr resolves onda 2 keys in pt and en", {
-    tr_fn <- getFromNamespace("tr", "saira")
+    tr_fn <- saira:::tr
 
     keys <- c(
         "nav_home",
@@ -324,7 +323,7 @@ testthat::test_that("tr resolves onda 2 keys in pt and en", {
 })
 
 testthat::test_that("pt-en alternation yields distinct navigation labels", {
-    tr_fn <- getFromNamespace("tr", "saira")
+    tr_fn <- saira:::tr
 
     testthat::expect_false(identical(tr_fn("nav_home", "pt"), tr_fn("nav_home", "en")))
     testthat::expect_false(identical(tr_fn("nav_validate", "pt"), tr_fn("nav_validate", "en")))
@@ -333,7 +332,7 @@ testthat::test_that("pt-en alternation yields distinct navigation labels", {
 })
 
 testthat::test_that("tr returns key placeholder and warning for missing key", {
-    tr_fn <- getFromNamespace("tr", "saira")
+    tr_fn <- saira:::tr
 
     testthat::expect_warning(
         value <- tr_fn("nonexistent_wave6_key", "en"),
@@ -343,7 +342,7 @@ testthat::test_that("tr returns key placeholder and warning for missing key", {
 })
 
 testthat::test_that("tr falls back to english and warns for missing language entry", {
-    tr_fn <- getFromNamespace("tr", "saira")
+    tr_fn <- saira:::tr
 
     expected_en <- tr_fn("nav_home", "en")
     testthat::expect_warning(

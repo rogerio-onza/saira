@@ -1561,6 +1561,24 @@ rostrum_stage3_resolve <- function(stage2_data, df = NULL, options = rostrum_opt
     )
 }
 
+#' Run the Rostrum Auto-Mapping Engine
+#'
+#' Executes the three-stage Rostrum pipeline (Stage 1: scoring, Stage 2:
+#' composition, Stage 3: conflict resolution) to automatically map source
+#' columns in \code{df} to Darwin Core terms.
+#'
+#' @param df A data frame containing the source data to be mapped.
+#' @param dwc_terms_df A data frame of Darwin Core terms (from
+#'   \code{get_dwc_terms()}).
+#' @param options A \code{rostrum_options} list from \code{rostrum_options()}.
+#' @param context A named list of additional context (e.g. \code{run_id}).
+#' @param conn Optional DBI connection for alias learning (from
+#'   \code{rostrum_connect()}). Pass \code{NULL} to disable SQLite features.
+#' @param synonyms_tbl Optional synonym data frame. When \code{NULL} and
+#'   \code{conn} is provided, synonyms are loaded from the database.
+#' @return A named list with elements \code{decisions} (data frame),
+#'   \code{run_id} (character), \code{timing} (list), and \code{options}.
+#' @export
 run_rostrum_engine <- function(df, dwc_terms_df, options = rostrum_options(), context = list(), conn = NULL, synonyms_tbl = NULL) {
     start_time <- Sys.time()
 

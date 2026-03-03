@@ -3,6 +3,24 @@
 # Date: 2026-03-01
 # Version: 1.0
 
+#' Configure Rostrum Engine Options
+#'
+#' Returns a validated options list controlling the Rostrum auto-mapping engine's
+#' scoring thresholds, parallelization, and debug behaviour.
+#'
+#' @param ... Named option overrides. See Details.
+#' @details
+#' Available options:
+#' \describe{
+#'   \item{auto_apply_threshold}{Numeric [0,1]. Score above which a mapping is applied automatically (default 0.90).}
+#'   \item{suggest_threshold}{Numeric [0,1]. Score above which a mapping is suggested but not auto-applied (default 0.75).}
+#'   \item{hard_veto_threshold}{Numeric [0,1]. Score below which a mapping is vetoed (default 0.30).}
+#'   \item{max_sample_n}{Positive integer. Maximum rows sampled for value scoring (default 1000L).}
+#'   \item{stage1_parallel}{Logical. Enable parallel Stage 1 evaluation (default FALSE).}
+#'   \item{debug}{Logical. Enable verbose debug logging (default FALSE).}
+#' }
+#' @return A named list of class \code{rostrum_options}.
+#' @export
 rostrum_options <- function(...) {
     defaults <- list(
         auto_apply_threshold = 0.90,
@@ -91,6 +109,15 @@ rostrum_options <- function(...) {
     defaults
 }
 
+#' Validate a Rostrum Candidate Data Frame
+#'
+#' Checks that \code{candidate_df} conforms to the Stage 1 output contract.
+#' Stops with an informative error if any required column is missing or has an
+#' unexpected type or out-of-range value.
+#'
+#' @param candidate_df A data frame produced by \code{run_rostrum_stage1}.
+#' @return Invisibly \code{TRUE} on success; stops on failure.
+#' @export
 validate_candidate_df <- function(candidate_df) {
     if (!is.data.frame(candidate_df)) {
         stop("candidate_df must be a data.frame.")
@@ -162,6 +189,15 @@ validate_candidate_df <- function(candidate_df) {
     invisible(TRUE)
 }
 
+#' Validate a Rostrum Decision Data Frame
+#'
+#' Checks that \code{decision_df} conforms to the Stage 3 output contract.
+#' Stops with an informative error if any required column is missing or has an
+#' unexpected type or out-of-range value.
+#'
+#' @param decision_df A data frame produced by \code{rostrum_stage3_resolve}.
+#' @return Invisibly \code{TRUE} on success; stops on failure.
+#' @export
 validate_decision_df <- function(decision_df) {
     if (!is.data.frame(decision_df)) {
         stop("decision_df must be a data.frame.")
@@ -270,6 +306,16 @@ validate_composition_df <- function(composition_df) {
     invisible(TRUE)
 }
 
+#' Adapt V1 Synonym Table to V2 Schema
+#'
+#' Converts a synonym data frame in the legacy V1 format (columns
+#' \code{term}, \code{synonym}, \code{name_score}, \code{lang}, \code{active})
+#' to the V2 schema expected by \code{rostrum_seed_synonyms_if_empty}.
+#'
+#' @param synonyms_v1_df A data frame with V1 synonym columns.
+#' @param updated_at ISO-8601 timestamp string used for \code{updated_at} (defaults to current UTC time).
+#' @return A data frame conforming to the V2 synonym schema.
+#' @export
 adapt_synonyms_v1_to_v2 <- function(synonyms_v1_df, updated_at = rostrum_now_utc()) {
     if (!is.data.frame(synonyms_v1_df)) {
         stop("synonyms_v1_df must be a data.frame.")

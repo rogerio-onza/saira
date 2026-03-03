@@ -17,45 +17,63 @@
 
 ## 🚀 Getting Started
 
-### Prerequisites
-
-You will need **R** and the following R packages installed:
+### Installation
 
 ```r
-install.packages(c("shiny", "bslib", "readr", "stringr", "DT", "ids", "here", "jsonlite"))
+# Install from GitHub (development version)
+# install.packages("remotes")
+remotes::install_github("sibbr/saira")
+```
+
+For full coastal-detail coordinate validation, install the optional high-resolution
+Natural Earth data (hosted on R-universe, not CRAN):
+
+```r
+install.packages("rnaturalearthhires", repos = "https://ropensci.r-universe.dev")
 ```
 
 ### Running the Application
 
+```r
+library(saira)
+run_app()
+```
+
+### Development Setup
+
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/rogerio-onza/saira.git
+    git clone https://github.com/sibbr/saira.git
     cd saira
     ```
-2.  Run the app in R/RStudio:
+2.  Load the package and launch the app in R/RStudio:
     ```r
-    shiny::runApp()
+    pkgload::load_all()
+    run_app()
     ```
 
-### Running Tests (Vanilla R)
+### Running Tests
 
-This project activates `renv` via `.Rprofile`. To run tests using your global library
-(avoiding `renv` session differences), use:
-
-```bash
-Rscript --vanilla scripts/run_tests_vanilla.R
+```r
+devtools::test()
 ```
 
-Run by filter:
+Run a specific test file:
 
-```bash
-Rscript --vanilla scripts/run_tests_vanilla.R "app-ui-fonts|css-guardrails"
+```r
+devtools::test(filter = "rostrum-stage1")
 ```
 
-Run one file:
+Performance regression suite (disabled by default):
 
 ```bash
-Rscript --vanilla scripts/run_tests_vanilla.R --file tests/testthat/test-css-guardrails.R
+RUN_PERF=true Rscript -e "devtools::test(filter = 'performance')"
+```
+
+End-to-end tests (requires `shinytest2` and a browser):
+
+```bash
+RUN_E2E=true Rscript -e "devtools::test(filter = 'e2e')"
 ```
 
 ---

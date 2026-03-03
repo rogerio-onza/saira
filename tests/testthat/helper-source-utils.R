@@ -53,12 +53,11 @@ needed_functions <- c(
     "compute_name_score",
     "compute_value_score",
     "run_rostrum_stage1",
-    "rostrum_options",
     "mod_mapping_server"
 )
 
 for (fn_name in needed_functions) {
     if (!exists(fn_name, envir = helper_env, mode = "function", inherits = FALSE)) {
-        assign(fn_name, getFromNamespace(fn_name, "saira"), envir = helper_env)
+        assign(fn_name, get(fn_name, envir = asNamespace("saira"), inherits = FALSE), envir = helper_env)
     }
 }

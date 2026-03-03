@@ -48,7 +48,7 @@ testthat::test_that("E2E: Upload CSV, map fields, navigate to Preview", {
 
     # Verify upload stats appeared
     upload_html <- app$get_html("#upload-stats")
-    testthat::expect_true(nchar(upload_html) > 0L || TRUE) # Soft check
+    testthat::expect_true(nchar(upload_html) > 0L)
 })
 
 # --- Flow 2: Wiki search and filter ---

@@ -43,7 +43,7 @@ testthat::test_that("detect_encoding returns UTF-8 when BOM is present", {
 })
 
 testthat::test_that("strip_bom removes UTF-8 BOM prefix", {
-    strip_bom <- getFromNamespace("strip_bom", "saira")
+    strip_bom <- saira:::strip_bom
     with_bom <- paste0("\ufeff", "scientificName;eventDate")
     without_bom <- "scientificName;eventDate"
 

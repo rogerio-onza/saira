@@ -1,14 +1,16 @@
 Package: saira
 Title: Biodiversity Data Standardization to Darwin Core
 Version: 0.1.0
-Authors@R: person("Rog\u00E9rio", "Nunes Oliveira", email = "rogerio@example.com", role = c("aut", "cre"))
-Description: Shiny application for standardizing biodiversity datasets to the 
-    Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools 
-    for data validation, column mapping, and taxonomic verification. Designed 
-    for use with SiBBr (Sistema de Informa\u00E7\u00E3o sobre a Biodiversidade Brasileira).
+Authors@R: person("Rog\u00E9rio", "Nunes Oliveira", email = "rogerio@sibbr.gov.br", role = c("aut", "cre"))
+Description: Shiny application for standardizing biodiversity datasets to the
+    Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools
+    for data validation, column mapping, and taxonomic verification. Designed
+    for use with SiBBr (Sistema de Informação sobre a Biodiversidade Brasileira).
 License: MIT + file LICENSE
+URL: https://github.com/sibbr/saira
+BugReports: https://github.com/sibbr/saira/issues
 Encoding: UTF-8
-LazyData: true
+Depends: R (>= 4.1.0)
 RoxygenNote: 7.3.3
 Imports:
     shiny (>= 1.7.0),
@@ -26,14 +28,12 @@ Imports:
     DT (>= 0.28),
     leaflet (>= 2.1.0),
     ids (>= 1.0.0),
-    here (>= 1.0.0),
     jsonlite (>= 1.8.0),
     DBI (>= 1.0.0),
     RSQLite (>= 2.2.0),
     digest (>= 0.6.0),
     withr (>= 2.5.0)
 Additional_repositories: https://ropensci.r-universe.dev
-Remotes: ropensci/rnaturalearthhires
 Suggests:
     testthat (>= 3.0.0),
     shinytest2 (>= 0.3.0),

@@ -1,8 +1,6 @@
-run_rostrum_stage1 <- getFromNamespace("run_rostrum_stage1", "saira")
-run_rostrum_engine <- getFromNamespace("run_rostrum_engine", "saira")
-rostrum_stage2_compositions <- getFromNamespace("rostrum_stage2_compositions", "saira")
-rostrum_stage3_resolve <- getFromNamespace("rostrum_stage3_resolve", "saira")
-rostrum_options <- getFromNamespace("rostrum_options", "saira")
+run_rostrum_stage1 <- saira:::run_rostrum_stage1
+rostrum_stage2_compositions <- saira:::rostrum_stage2_compositions
+rostrum_stage3_resolve <- saira:::rostrum_stage3_resolve
 
 if (!identical(Sys.getenv("RUN_PERF"), "true")) {
     testthat::skip("Performance suite disabled by default. Use RUN_PERF=true to execute.")

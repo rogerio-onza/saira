@@ -1,12 +1,6 @@
-rostrum_connect <- getFromNamespace("rostrum_connect", "saira")
-rostrum_upsert_alias <- getFromNamespace("rostrum_upsert_alias", "saira")
-rostrum_lookup_alias <- getFromNamespace("rostrum_lookup_alias", "saira")
-rostrum_record_alias_confirmation <- getFromNamespace("rostrum_record_alias_confirmation", "saira")
-rostrum_record_alias_override <- getFromNamespace("rostrum_record_alias_override", "saira")
-rostrum_deprecate_alias <- getFromNamespace("rostrum_deprecate_alias", "saira")
-undo_session_aliases <- getFromNamespace("undo_session_aliases", "saira")
-run_rostrum_engine <- getFromNamespace("run_rostrum_engine", "saira")
-rostrum_options <- getFromNamespace("rostrum_options", "saira")
+rostrum_upsert_alias <- saira:::rostrum_upsert_alias
+rostrum_lookup_alias <- saira:::rostrum_lookup_alias
+rostrum_deprecate_alias <- saira:::rostrum_deprecate_alias
 
 empty_synonyms <- function() {
     data.frame(

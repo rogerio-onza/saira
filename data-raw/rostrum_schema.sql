@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS rostrum_synonyms (
     synonym TEXT NOT NULL,
     language TEXT NOT NULL,
     context TEXT NOT NULL,
-    confidence REAL NOT NULL,
+    confidence REAL NOT NULL CHECK (confidence >= 0.0 AND confidence <= 1.0),
     validation_regex TEXT,
     notes TEXT,
     active INTEGER NOT NULL DEFAULT 1,
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS rostrum_aliases (
     institution_id TEXT,
     col_name_norm TEXT NOT NULL,
     dwc_term TEXT NOT NULL,
-    confidence REAL NOT NULL,
+    confidence REAL NOT NULL CHECK (confidence >= 0.0 AND confidence <= 1.0),
     reviewed INTEGER NOT NULL DEFAULT 0,
     deprecated INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
@@ -117,6 +117,15 @@ ON rostrum_runs (created_at);
 
 CREATE INDEX IF NOT EXISTS idx_alias_events_run_id
 ON rostrum_alias_events (run_id);
+
+CREATE INDEX IF NOT EXISTS idx_alias_events_created_at
+ON rostrum_alias_events (created_at);
+
+CREATE INDEX IF NOT EXISTS idx_synonyms_value
+ON rostrum_synonyms (synonym);
+
+CREATE INDEX IF NOT EXISTS idx_alias_active
+ON rostrum_aliases (deprecated, reviewed);
 
 CREATE INDEX IF NOT EXISTS idx_templates_catalog
 ON rostrum_templates (institution_id, use_case, is_active, updated_at);

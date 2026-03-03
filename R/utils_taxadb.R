@@ -399,18 +399,19 @@ run_taxadb_cascade <- function(
 
         matches <- tryCatch(
             fetch_fun(remaining, provider),
-            error = function(e) {
-                provider_failures <<- rbind(
-                    provider_failures,
-                    data.frame(
-                        provider = as.character(provider),
-                        error = as.character(e$message),
-                        stringsAsFactors = FALSE
-                    )
-                )
-                NULL
-            }
+            error = function(e) e
         )
+        if (inherits(matches, "error")) {
+            provider_failures <- rbind(
+                provider_failures,
+                data.frame(
+                    provider = as.character(provider),
+                    error = as.character(matches$message),
+                    stringsAsFactors = FALSE
+                )
+            )
+            next
+        }
         if (is.null(matches) || nrow(matches) == 0L) {
             next
         }
@@ -744,29 +745,20 @@ next_taxadb_run_step <- function(state) {
         )
         state$provider_batch_total <- length(state$current_batches)
 
-        db <- NULL
-        provider_error <- NULL
-        tryCatch(
-            {
-                db <- init_taxadb_provider(provider)
-            },
-            error = function(e) {
-                provider_error <<- as.character(e$message)
-            }
+        db <- tryCatch(
+            init_taxadb_provider(provider),
+            error = function(e) e
         )
 
-        if (!is.null(provider_error)) {
+        if (inherits(db, "error")) {
             state$provider_failures <- rbind(
                 state$provider_failures,
                 data.frame(
                     provider = provider,
-                    error = provider_error,
+                    error = as.character(db$message),
                     stringsAsFactors = FALSE
                 )
             )
-        }
-
-        if (is.null(db)) {
             state$current_provider_db <- NULL
             state$phase <- "provider_finalize"
             return(state)
@@ -796,33 +788,24 @@ next_taxadb_run_step <- function(state) {
         state$provider_batch_idx <- next_batch
         batch_queries <- state$current_batches[[next_batch]]
 
-        matches <- NULL
-        batch_error <- NULL
-        tryCatch(
-            {
-                matches <- query_taxadb_batch(
-                    query_names = batch_queries,
-                    provider = state$current_provider,
-                    db = state$current_provider_db
-                )
-            },
-            error = function(e) {
-                batch_error <<- as.character(e$message)
-            }
+        matches <- tryCatch(
+            query_taxadb_batch(
+                query_names = batch_queries,
+                provider = state$current_provider,
+                db = state$current_provider_db
+            ),
+            error = function(e) e
         )
 
-        if (!is.null(batch_error)) {
+        if (inherits(matches, "error")) {
             state$provider_failures <- rbind(
                 state$provider_failures,
                 data.frame(
                     provider = state$current_provider,
-                    error = batch_error,
+                    error = as.character(matches$message),
                     stringsAsFactors = FALSE
                 )
             )
-        }
-
-        if (is.null(matches)) {
             state$phase <- "provider_finalize"
             return(state)
         }

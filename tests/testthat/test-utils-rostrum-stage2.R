@@ -1,7 +1,6 @@
-rostrum_compose_eventdate_values <- getFromNamespace("rostrum_compose_eventdate_values", "saira")
-rostrum_options <- getFromNamespace("rostrum_options", "saira")
-rostrum_stage2_compositions <- getFromNamespace("rostrum_stage2_compositions", "saira")
-rostrum_stage3_resolve <- getFromNamespace("rostrum_stage3_resolve", "saira")
+rostrum_compose_eventdate_values <- saira:::rostrum_compose_eventdate_values
+rostrum_stage2_compositions <- saira:::rostrum_stage2_compositions
+rostrum_stage3_resolve <- saira:::rostrum_stage3_resolve
 
 make_stage_row <- function(
     term,

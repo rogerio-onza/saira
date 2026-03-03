@@ -553,6 +553,18 @@ rostrum_get_template <- function(
     rostrum_validate_template_payload(payload, current_version = current_version)
 }
 
+#' List the Rostrum Template Catalog
+#'
+#' Returns a data frame of template metadata from the SQLite database,
+#' optionally filtered by scope, institution, use-case, or active status.
+#'
+#' @param conn A DBI connection from \code{rostrum_connect()}.
+#' @param scope Optional character. Filter by scope level.
+#' @param institution_id Optional character. Filter by institution.
+#' @param use_case Optional character. Filter by use-case tag.
+#' @param include_inactive Logical. Include inactive templates (default FALSE).
+#' @return A data frame of template metadata rows.
+#' @export
 rostrum_list_template_catalog <- function(
     conn,
     scope = NULL,
@@ -610,6 +622,17 @@ rostrum_list_template_catalog <- function(
     DBI::dbGetQuery(conn, query, params = params)
 }
 
+#' Import a Template from JSON
+#'
+#' Parses and validates a JSON template payload, then persists it to the
+#' SQLite template catalog.
+#'
+#' @param conn A DBI connection from \code{rostrum_connect()}.
+#' @param json_payload Character. JSON string produced by \code{rostrum_export_template_json()}.
+#' @param replace Logical. Replace existing template with same ID (default TRUE).
+#' @param current_version Character. App version for compatibility check.
+#' @return Invisibly, the template ID string.
+#' @export
 rostrum_import_template_json <- function(
     conn,
     json_payload,
@@ -623,6 +646,27 @@ rostrum_import_template_json <- function(
     rostrum_save_template(conn = conn, payload = payload, replace = replace, current_version = current_version)
 }
 
+#' Export a Mapping Template to JSON
+#'
+#' Serialises a column mapping (map_values + map_meta) as a versioned JSON
+#' template suitable for storage, sharing, or import via
+#' \code{rostrum_import_template_json()}.
+#'
+#' @param map_values Named list or character vector of column mappings.
+#' @param map_meta List of mapping metadata (status, scores, etc.).
+#' @param template_id Character. Unique template identifier.
+#' @param name Character. Human-readable template name.
+#' @param scope Character. Scope: \code{"personal"}, \code{"institution"}, or \code{"public"}.
+#' @param schema_version Character. Schema version string (default \code{"1.0.0"}).
+#' @param owner_id Character. Owner user ID.
+#' @param institution_id Character. Institution identifier.
+#' @param app_min_version Character. Minimum compatible app version.
+#' @param app_max_version Character. Maximum compatible app version (NA = no upper bound).
+#' @param description Character. Optional free-text description.
+#' @param use_case Character. Optional use-case tag.
+#' @param pretty Logical. Pretty-print JSON output (default TRUE).
+#' @return A JSON character string.
+#' @export
 rostrum_export_template_json <- function(
     map_values,
     map_meta = list(),

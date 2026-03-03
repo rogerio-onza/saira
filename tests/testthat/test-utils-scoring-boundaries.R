@@ -1,6 +1,6 @@
-score_ratio_to_confidence <- getFromNamespace("score_ratio_to_confidence", "saira")
-validate_numeric_range <- getFromNamespace("validate_numeric_range", "saira")
-sample_values_for_scoring <- getFromNamespace("sample_values_for_scoring", "saira")
+score_ratio_to_confidence <- saira:::score_ratio_to_confidence
+validate_numeric_range <- saira:::validate_numeric_range
+sample_values_for_scoring <- saira:::sample_values_for_scoring
 
 testthat::test_that("score_ratio_to_confidence maps ratio directly to [0,1]", {
     testthat::expect_identical(score_ratio_to_confidence(0), 0)
@@ -47,7 +47,7 @@ testthat::test_that("golden scoring fixture stays stable", {
     testthat::expect_length(cases, 30L)
 
     for (case in cases) {
-        fn <- getFromNamespace(case$fn, "saira")
+        fn <- get(case$fn, envir = asNamespace("saira"), inherits = FALSE)
         observed <- do.call(fn, case$args)
         testthat::expect_equal(observed, case$expected, tolerance = 1e-8, info = case$id)
     }

@@ -12,3 +12,12 @@
 9. `inst/extdata/i18n.json` uses literal UTF-8 (valid per JSON spec). The loader
    reads with `encoding = "UTF-8"` and applies `strip_bom()` for resilience.
    When editing the JSON manually, keep UTF-8 encoding and avoid raw BOM bytes.
+10. Avoid `<<-` in package code. Use explicit environment management or
+    structured return values instead:
+    - In `tryCatch` handlers: `result <- tryCatch(expr, error = function(e) e)`
+      followed by `if (inherits(result, "error")) { ... }`.
+    - For mutable closure state: `env <- new.env(parent = emptyenv())` and
+      access via `env$field`.
+    - For multi-step helpers: pass state as explicit arguments and return a
+      named list (`list(out_a = ..., out_b = ...)`) instead of mutating parent
+      scope.

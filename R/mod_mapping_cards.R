@@ -120,11 +120,10 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                     ns("custom_language"),
                     NULL,
                     choices = stats::setNames(
-                        c("pt", "en", "es"),
+                        c("pt", "en"),
                         c(
                             sprintf("%s (pt)", tr("lang_pt", lang_r)),
-                            sprintf("%s (en)", tr("lang_en", lang_r)),
-                            sprintf("%s (es)", tr("lang_es", lang_r))
+                            sprintf("%s (en)", tr("lang_en", lang_r))
                         )
                     ),
                     selected = if (!is.null(saved_lang)) saved_lang else character(0),

@@ -51,10 +51,6 @@
     "pt": "English",
     "en": "English"
   },
-  "lang_es": {
-    "pt": "Espanhol",
-    "en": "Spanish"
-  },
   "a11y_lang_switch_label": {
     "pt": "Selecionar idioma da interface",
     "en": "Select interface language"
@@ -1607,10 +1603,6 @@
     "pt": "Avisos",
     "en": "Warnings"
   },
-  "validate_coords_all_valid.1": {
-    "pt": "Todas as coordenadas são válidas!",
-    "en": "All coordinates are valid!"
-  },
   "validate_coords_filter_all": {
     "pt": "Todos",
     "en": "All"
@@ -1734,42 +1726,6 @@
   "validate_coords_popup_issue": {
     "pt": "Issue",
     "en": "Issue"
-  },
-  "validate_coords_datatable_search.1": {
-    "pt": "Buscar:",
-    "en": "Search:"
-  },
-  "validate_coords_datatable_length_menu.1": {
-    "pt": "Mostrar _MENU_ registros",
-    "en": "Show _MENU_ entries"
-  },
-  "validate_coords_datatable_info.1": {
-    "pt": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-    "en": "Showing _START_ to _END_ of _TOTAL_ entries"
-  },
-  "validate_coords_datatable_empty.1": {
-    "pt": "Nenhum registro na tabela",
-    "en": "No records available"
-  },
-  "validate_coords_datatable_zero_records.1": {
-    "pt": "Nenhum registro encontrado",
-    "en": "No matching records found"
-  },
-  "validate_coords_datatable_first.1": {
-    "pt": "Primeira",
-    "en": "First"
-  },
-  "validate_coords_datatable_last.1": {
-    "pt": "Última",
-    "en": "Last"
-  },
-  "validate_coords_datatable_next.1": {
-    "pt": "Próxima",
-    "en": "Next"
-  },
-  "validate_coords_datatable_prev.1": {
-    "pt": "Anterior",
-    "en": "Previous"
   },
   "validate_coords_status_country": {
     "pt": "Country",

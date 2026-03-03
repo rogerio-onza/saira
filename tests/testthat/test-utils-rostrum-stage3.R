@@ -1,5 +1,4 @@
-rostrum_options <- getFromNamespace("rostrum_options", "saira")
-rostrum_stage3_resolve <- getFromNamespace("rostrum_stage3_resolve", "saira")
+rostrum_stage3_resolve <- saira:::rostrum_stage3_resolve
 
 make_stage3_row <- function(
     term,

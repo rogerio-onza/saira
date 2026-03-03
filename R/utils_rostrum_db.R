@@ -4,7 +4,7 @@
 # Version: 1.0
 
 rostrum_schema_target_version <- function() {
-    2L
+    3L
 }
 
 rostrum_scope_levels <- function() {
@@ -106,6 +106,19 @@ rostrum_normalize_db_path <- function(path = NULL, create_dir = TRUE) {
     resolved_path
 }
 
+#' Open a Rostrum SQLite Connection
+#'
+#' Opens (or creates) the Rostrum learning database and optionally runs
+#' any pending schema migrations.
+#'
+#' @param path Character. Path to the SQLite file. Defaults to a
+#'   platform-appropriate user data directory.
+#' @param create_dir Logical. Create parent directories if missing (default TRUE).
+#' @param migrate Logical. Run pending migrations on connect (default TRUE).
+#' @param target_version Integer. Target schema version (default current).
+#' @return A \code{DBIConnection} object. Caller must disconnect with
+#'   \code{DBI::dbDisconnect()}.
+#' @export
 rostrum_connect <- function(path = NULL, create_dir = TRUE, migrate = TRUE, target_version = rostrum_schema_target_version()) {
     db_path <- rostrum_normalize_db_path(path = path, create_dir = create_dir)
     conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = db_path)
@@ -138,6 +151,9 @@ rostrum_current_schema_version <- function(conn) {
     }
 
     query <- DBI::dbGetQuery(conn, "SELECT MAX(version) AS version FROM schema_version")
+    if (nrow(query) == 0L) {
+        return(0L)
+    }
     version <- query$version[[1]]
 
     if (is.na(version)) {
@@ -150,7 +166,8 @@ rostrum_current_schema_version <- function(conn) {
 rostrum_migration_registry <- function() {
     list(
         `1` = rostrum_migrate_v1,
-        `2` = rostrum_migrate_v2
+        `2` = rostrum_migrate_v2,
+        `3` = rostrum_migrate_v3
     )
 }
 
@@ -349,6 +366,18 @@ rostrum_migrate_v2 <- function(conn) {
         "CREATE INDEX IF NOT EXISTS idx_templates_catalog ON rostrum_templates (institution_id, use_case, is_active, updated_at)"
     )
 
+    invisible(TRUE)
+}
+
+rostrum_migrate_v3 <- function(conn) {
+    ddl <- c(
+        "CREATE INDEX IF NOT EXISTS idx_synonyms_value ON rostrum_synonyms (synonym)",
+        "CREATE INDEX IF NOT EXISTS idx_alias_active ON rostrum_aliases (deprecated, reviewed)",
+        "CREATE INDEX IF NOT EXISTS idx_alias_events_created_at ON rostrum_alias_events (created_at)"
+    )
+    for (statement in ddl) {
+        DBI::dbExecute(conn, statement)
+    }
     invisible(TRUE)
 }
 
@@ -565,6 +594,21 @@ rostrum_upsert_alias <- function(
     )
 }
 
+#' Record a User Alias Confirmation
+#'
+#' Persists a confirmed auto-mapping suggestion to the Rostrum alias store.
+#'
+#' @param conn A DBI connection from \code{rostrum_connect()}.
+#' @param col_name Character. Source column name.
+#' @param dwc_term Character. Darwin Core term confirmed by the user.
+#' @param score_original Numeric [0,1]. Engine confidence score.
+#' @param scope Character. One of \code{"personal"}, \code{"institution"}, \code{"public"}.
+#' @param run_id Optional run identifier string.
+#' @param created_by Character. User identifier.
+#' @param user_id Character. User identifier for scope resolution.
+#' @param institution_id Character. Institution identifier.
+#' @return Invisibly, the alias ID.
+#' @export
 rostrum_record_alias_confirmation <- function(
     conn,
     col_name,
@@ -591,6 +635,21 @@ rostrum_record_alias_confirmation <- function(
     )
 }
 
+#' Record a Manual Alias Override
+#'
+#' Persists a manual column-to-term mapping to the Rostrum alias store with
+#' confidence 1.0 and \code{reviewed = TRUE}.
+#'
+#' @param conn A DBI connection from \code{rostrum_connect()}.
+#' @param col_name Character. Source column name.
+#' @param dwc_term Character. Darwin Core term chosen by the user.
+#' @param scope Character. One of \code{"personal"}, \code{"institution"}, \code{"public"}.
+#' @param run_id Optional run identifier string.
+#' @param created_by Character. User identifier.
+#' @param user_id Character. User identifier for scope resolution.
+#' @param institution_id Character. Institution identifier.
+#' @return Invisibly, the alias ID.
+#' @export
 rostrum_record_alias_override <- function(
     conn,
     col_name,
@@ -791,6 +850,15 @@ rostrum_lookup_alias_for_term <- function(
     alias_df[1, , drop = FALSE]
 }
 
+#' Undo All Alias Decisions From a Session
+#'
+#' Deprecates all non-public alias records created during \code{run_id}.
+#'
+#' @param conn A DBI connection from \code{rostrum_connect()}.
+#' @param run_id Character. Run identifier whose aliases should be undone.
+#' @param created_by Character. User identifier (default \code{SAIRA_USER} env var).
+#' @return Invisibly, the integer count of aliases deprecated.
+#' @export
 undo_session_aliases <- function(
     conn,
     run_id,
@@ -882,12 +950,14 @@ undo_session_aliases <- function(
 #' Seed rostrum_synonyms from V1 RDS if the table is empty.
 #'
 #' Idempotent: does nothing if any rows already exist. Uses BEGIN IMMEDIATE
-#' to prevent concurrent seeds. Converts V1 format via adapt_synonyms_v1_to_v2().
+#' to prevent concurrent seeds. Converts V1 format via
+#' \code{adapt_synonyms_v1_to_v2()}.
 #'
-#' @param conn Valid DBI connection (WAL + FK enabled via rostrum_connect).
-#' @param v1_path Optional explicit path to dwc_synonyms_v1.rds. Resolved
+#' @param conn Valid DBI connection (WAL + FK enabled via \code{rostrum_connect()}).
+#' @param v1_path Optional explicit path to \code{dwc_synonyms_v1.rds}. Resolved
 #'   automatically when NULL.
 #' @return Invisible integer: number of rows inserted (0 if already seeded).
+#' @export
 rostrum_seed_synonyms_if_empty <- function(conn, v1_path = NULL) {
     if (!DBI::dbIsValid(conn)) {
         stop("conn must be a valid DBI connection.", call. = FALSE)
@@ -960,6 +1030,7 @@ rostrum_seed_synonyms_if_empty <- function(conn, v1_path = NULL) {
 #'
 #' @param conn Valid DBI connection.
 #' @return data.frame with V1-compatible columns, or NULL if table is empty.
+#' @export
 rostrum_load_synonyms_from_db <- function(conn) {
     if (!DBI::dbIsValid(conn)) {
         stop("conn must be a valid DBI connection.", call. = FALSE)

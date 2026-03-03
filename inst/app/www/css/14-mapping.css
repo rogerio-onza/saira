@@ -101,12 +101,12 @@
 }
 
 .badge-ambiguous {
-  background-color: #e67e22;
+  background-color: var(--color-badge-ambiguous);
   color: #ffffff;
 }
 
 .badge-template {
-  background-color: #8e44ad;
+  background-color: var(--color-badge-template);
   color: #ffffff;
 }
 

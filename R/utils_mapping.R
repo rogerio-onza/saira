@@ -276,7 +276,6 @@ validate_synonyms_force_flag <- function(force) {
 resolve_dwc_synonyms_path <- function() {
     candidates <- c(
         system.file("extdata", "dwc_synonyms_v1.rds", package = "saira"),
-        here::here("inst", "extdata", "dwc_synonyms_v1.rds"),
         file.path("inst", "extdata", "dwc_synonyms_v1.rds"),
         file.path("..", "..", "inst", "extdata", "dwc_synonyms_v1.rds")
     )
@@ -1237,7 +1236,6 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
         is_temporal_limited <- term %in% temporal_terms
         term_profile <- term_profiles[[term]]
 
-        pruned_pairs <- 0L
         candidate_rows <- lapply(columns, function(col_name) {
             col_profile <- column_profiles[[col_name]]
             name_res <- compute_name_score(
@@ -1256,7 +1254,6 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
             if (!isTRUE(name_res$is_exact) &&
                 !identical(name_res$reason, "known_synonym") &&
                 name_res$score < prune_threshold) {
-                pruned_pairs <<- pruned_pairs + 1L
                 return(NULL)
             }
 
@@ -1333,6 +1330,7 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
             )
         })
 
+        pruned_pairs <- sum(vapply(candidate_rows, is.null, FUN.VALUE = logical(1)))
         candidate_rows <- Filter(Negate(is.null), candidate_rows)
         rostrum_debug_log(
             "Stage 1 term '", term,
@@ -1666,7 +1664,8 @@ collapse_mapped_values <- function(df, cols, out_sep = " | ") {
 
 detect_eventdate_roles <- function(col_names) {
     normalized_names <- normalize_for_matching(col_names)
-    used <- rep(FALSE, length(normalized_names))
+    used_env <- new.env(parent = emptyenv())
+    used_env$used <- rep(FALSE, length(normalized_names))
 
     start_mask <- grepl("\\b(start|begin|initial|inicio|from)\\b", normalized_names)
     end_mask <- grepl("\\b(end|final|fim|to)\\b", normalized_names)
@@ -1674,11 +1673,11 @@ detect_eventdate_roles <- function(col_names) {
     year_mask <- grepl("\\b(year|yr|ano)\\b", normalized_names)
 
     pick_first <- function(mask) {
-        idx <- which(mask & !used)
+        idx <- which(mask & !used_env$used)
         if (length(idx) == 0) {
             return(NA_integer_)
         }
-        used[idx[1]] <<- TRUE
+        used_env$used[[idx[1]]] <- TRUE
         idx[1]
     }
 

@@ -30,7 +30,7 @@ testthat::test_that("homepage welcome keys exist in pt/en", {
 })
 
 testthat::test_that("homepage welcome keys resolve with tr in pt/en", {
-    tr_fn <- getFromNamespace("tr", "saira")
+    tr_fn <- saira:::tr
     keys <- c("welcome_eyebrow", "welcome_title_prefix")
 
     for (key in keys) {

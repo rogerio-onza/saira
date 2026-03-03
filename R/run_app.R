@@ -27,7 +27,7 @@ run_app <- function(...) {
     shiny::shinyApp(
         ui = app_ui(),
         server = app_server,
-        options = list(launch.browser = TRUE),
+        options = list(launch.browser = getOption("shiny.launch.browser", interactive())),
         ...
     )
 }

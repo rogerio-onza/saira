@@ -36,6 +36,10 @@
   --coord-missing: rgba(28, 28, 38, 0.35);
   --coord-swapped: #8b5cf6;
 
+  /* Mapping Badges */
+  --color-badge-ambiguous: #e67e22;
+  --color-badge-template: #8e44ad;
+
   /* Borders */
   --border-light: rgba(40, 51, 172, 0.08);
   --border-default: rgba(40, 51, 172, 0.18);

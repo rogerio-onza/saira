@@ -3,45 +3,16 @@
 # Date: 2026-02-15
 # Version: 1.0
 
-normalize_scientific_name <- function(...) {
-    getFromNamespace("normalize_scientific_name", "saira")(...)
-}
-
-prepare_taxadb_inputs <- function(...) {
-    getFromNamespace("prepare_taxadb_inputs", "saira")(...)
-}
-
-resolve_taxadb_matches <- function(...) {
-    getFromNamespace("resolve_taxadb_matches", "saira")(...)
-}
-
-run_taxadb_cascade <- function(...) {
-    getFromNamespace("run_taxadb_cascade", "saira")(...)
-}
-
-build_validation_report <- function(...) {
-    getFromNamespace("build_validation_report", "saira")(...)
-}
-
-init_taxadb_run_state <- function(...) {
-    getFromNamespace("init_taxadb_run_state", "saira")(...)
-}
-
-next_taxadb_run_step <- function(...) {
-    getFromNamespace("next_taxadb_run_step", "saira")(...)
-}
-
-is_taxadb_run_done <- function(...) {
-    getFromNamespace("is_taxadb_run_done", "saira")(...)
-}
-
-finalize_taxadb_run <- function(...) {
-    getFromNamespace("finalize_taxadb_run", "saira")(...)
-}
-
-append_stream_items <- function(...) {
-    getFromNamespace("append_stream_items", "saira")(...)
-}
+normalize_scientific_name <- function(...) saira:::normalize_scientific_name(...)
+prepare_taxadb_inputs <- function(...) saira:::prepare_taxadb_inputs(...)
+resolve_taxadb_matches <- function(...) saira:::resolve_taxadb_matches(...)
+run_taxadb_cascade <- function(...) saira:::run_taxadb_cascade(...)
+build_validation_report <- function(...) saira:::build_validation_report(...)
+init_taxadb_run_state <- function(...) saira:::init_taxadb_run_state(...)
+next_taxadb_run_step <- function(...) saira:::next_taxadb_run_step(...)
+is_taxadb_run_done <- function(...) saira:::is_taxadb_run_done(...)
+finalize_taxadb_run <- function(...) saira:::finalize_taxadb_run(...)
+append_stream_items <- function(...) saira:::append_stream_items(...)
 
 testthat::test_that("normalize_scientific_name removes authors and qualifiers", {
     out <- normalize_scientific_name("Puma concolor (Linnaeus, 1771)")

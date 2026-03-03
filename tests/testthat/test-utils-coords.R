@@ -3,7 +3,7 @@
 # Date: 2026-02-21
 
 testthat::test_that("coords_load_aliases validates force flag via canonical validator", {
-    coords_load_aliases <- getFromNamespace("coords_load_aliases", "saira")
+    coords_load_aliases <- saira:::coords_load_aliases
 
     testthat::expect_error(coords_load_aliases(force = NA), "force must be a single TRUE or FALSE value")
     testthat::expect_error(coords_load_aliases(force = c(TRUE, FALSE)), "force must be a single TRUE or FALSE value")

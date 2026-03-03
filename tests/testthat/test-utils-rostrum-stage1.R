@@ -1,9 +1,7 @@
-score_token_overlap <- getFromNamespace("score_token_overlap", "saira")
-apply_semantic_penalties <- getFromNamespace("apply_semantic_penalties", "saira")
-compute_value_score <- getFromNamespace("compute_value_score", "saira")
-run_rostrum_stage1 <- getFromNamespace("run_rostrum_stage1", "saira")
-run_rostrum_engine <- getFromNamespace("run_rostrum_engine", "saira")
-rostrum_options <- getFromNamespace("rostrum_options", "saira")
+score_token_overlap <- saira:::score_token_overlap
+apply_semantic_penalties <- saira:::apply_semantic_penalties
+compute_value_score <- saira:::compute_value_score
+run_rostrum_stage1 <- saira:::run_rostrum_stage1
 
 empty_synonyms <- function() {
     data.frame(

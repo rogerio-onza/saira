@@ -1,11 +1,5 @@
-rostrum_validate_template_payload <- getFromNamespace("rostrum_validate_template_payload", "saira")
-rostrum_export_template_payload <- getFromNamespace("rostrum_export_template_payload", "saira")
-rostrum_export_template_json <- getFromNamespace("rostrum_export_template_json", "saira")
-rostrum_import_template_json <- getFromNamespace("rostrum_import_template_json", "saira")
-rostrum_list_template_catalog <- getFromNamespace("rostrum_list_template_catalog", "saira")
-rostrum_connect <- getFromNamespace("rostrum_connect", "saira")
-run_rostrum_engine <- getFromNamespace("run_rostrum_engine", "saira")
-rostrum_options <- getFromNamespace("rostrum_options", "saira")
+rostrum_validate_template_payload <- saira:::rostrum_validate_template_payload
+rostrum_export_template_payload <- saira:::rostrum_export_template_payload
 
 empty_synonyms <- function() {
     data.frame(
