@@ -14,6 +14,9 @@ app_ui <- function() {
 
     shiny::tagList(
         shiny::tags$head(
+            shiny::tags$link(rel = "preconnect", href = "https://fonts.googleapis.com"),
+            shiny::tags$link(rel = "preconnect", href = "https://fonts.gstatic.com", crossorigin = NA),
+            shiny::tags$link(rel = "preconnect", href = "https://cdnjs.cloudflare.com"),
             shiny::tags$link(
                 rel = "stylesheet",
                 href = "https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500;1,8..60,600&family=Space+Mono:ital@0;1&display=swap"
@@ -67,7 +70,11 @@ app_ui <- function() {
                 title = shiny::tags$span(
                     shiny::icon("home", class = "fa-solid"),
                     " ",
-                    shiny::uiOutput("nav_upload_title", inline = TRUE)
+                    shiny::tags$span(
+                        class = "nav-title-container",
+                        shiny::tags$span(tr("nav_home", "pt"), class = "nav-title-static"),
+                        shiny::uiOutput("nav_upload_title", class = "nav-title-dynamic", inline = TRUE)
+                    )
                 ),
                 value = "upload",
                 mod_upload_ui("upload")
@@ -75,7 +82,11 @@ app_ui <- function() {
 
             # Tab: Mapping
             bslib::nav_panel(
-                title = shiny::uiOutput("nav_mapping_title"),
+                title = shiny::tags$span(
+                    class = "nav-title-container",
+                    shiny::tags$span(tr("nav_mapping", "pt"), class = "nav-title-static"),
+                    shiny::uiOutput("nav_mapping_title", class = "nav-title-dynamic", inline = TRUE)
+                ),
                 value = "mapping",
                 icon = shiny::icon("arrows-alt", class = "fa-solid"),
                 mod_mapping_ui("mapping")
@@ -83,7 +94,11 @@ app_ui <- function() {
 
             # Tab: Preview
             bslib::nav_panel(
-                title = shiny::uiOutput("nav_preview_title"),
+                title = shiny::tags$span(
+                    class = "nav-title-container",
+                    shiny::tags$span(tr("nav_preview", "pt"), class = "nav-title-static"),
+                    shiny::uiOutput("nav_preview_title", class = "nav-title-dynamic", inline = TRUE)
+                ),
                 value = "preview",
                 icon = shiny::icon("table", class = "fa-solid"),
                 mod_preview_ui("preview")
@@ -93,12 +108,20 @@ app_ui <- function() {
             bslib::nav_menu(
                 title = shiny::tags$span(
                     shiny::icon("check-circle", class = "fa-solid"),
-                    shiny::uiOutput("nav_validate_title", inline = TRUE)
+                    shiny::tags$span(
+                        class = "nav-title-container",
+                        shiny::tags$span(tr("nav_validate", "pt"), class = "nav-title-static"),
+                        shiny::uiOutput("nav_validate_title", class = "nav-title-dynamic", inline = TRUE)
+                    )
                 ),
 
                 # Tab: Validate Names
                 bslib::nav_panel(
-                    title = shiny::uiOutput("nav_validate_names_title"),
+                    title = shiny::tags$span(
+                        class = "nav-title-container",
+                        shiny::tags$span(tr("nav_validate_names", "pt"), class = "nav-title-static"),
+                        shiny::uiOutput("nav_validate_names_title", class = "nav-title-dynamic", inline = TRUE)
+                    ),
                     value = "validate_names",
                     icon = shiny::icon("dna", class = "fa-solid"),
                     mod_validate_names_ui("validate_names")
@@ -106,7 +129,11 @@ app_ui <- function() {
 
                 # Tab: Validate Coords
                 bslib::nav_panel(
-                    title = shiny::uiOutput("nav_validate_coords_title"),
+                    title = shiny::tags$span(
+                        class = "nav-title-container",
+                        shiny::tags$span(tr("nav_validate_coords", "pt"), class = "nav-title-static"),
+                        shiny::uiOutput("nav_validate_coords_title", class = "nav-title-dynamic", inline = TRUE)
+                    ),
                     value = "validate_coords",
                     icon = shiny::icon("map-marker-alt", class = "fa-solid"),
                     mod_validate_coords_ui("validate_coords")
@@ -115,7 +142,11 @@ app_ui <- function() {
 
             # Tab: Wiki
             bslib::nav_panel(
-                title = shiny::uiOutput("nav_wiki_title"),
+                title = shiny::tags$span(
+                    class = "nav-title-container",
+                    shiny::tags$span(tr("nav_wiki", "pt"), class = "nav-title-static"),
+                    shiny::uiOutput("nav_wiki_title", class = "nav-title-dynamic", inline = TRUE)
+                ),
                 value = "wiki",
                 icon = shiny::icon("book", class = "fa-solid"),
                 mod_wiki_ui("wiki")
@@ -123,7 +154,11 @@ app_ui <- function() {
 
             # Tab: Help
             bslib::nav_panel(
-                title = shiny::uiOutput("nav_help_title"),
+                title = shiny::tags$span(
+                    class = "nav-title-container",
+                    shiny::tags$span(tr("nav_help", "pt"), class = "nav-title-static"),
+                    shiny::uiOutput("nav_help_title", class = "nav-title-dynamic", inline = TRUE)
+                ),
                 value = "help",
                 icon = shiny::icon("question-circle", class = "fa-solid"),
                 mod_help_ui("help")

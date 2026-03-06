@@ -15,6 +15,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 
 ## Shiny / Reactive Patterns
 
+- **`uiOutput` fica vazio no carregamento inicial**: o container HTML existe no DOM desde o primeiro render, mas o conteudo so chega apos o servidor processar o `renderUI` e enviar via WebSocket. Para titulos de nav e outros elementos proeminentes, incluir texto estatico como fallback visual e esconde-lo via CSS (`:has(:not(:empty))`) elimina o flash de branco sem remover a reatividade de idioma.
 - **`renderUI` recria inputs** a cada invalidacao. Usar `isolate(input$...)` para preservar valores do usuario entre re-renders.
 - **Controles externos de DataTable renderizados via `renderUI`** devem usar eventos delegados (`$(document).on(...)`) com namespace por instancia; binding direto no elemento tende a quebrar busca/filtros quando o DOM e recriado.
 - **Checkboxes de selecao unica**: `checkboxGroupInput` + `observeEvent` no server para forcar single-select. Mantem a estetica de checkbox quadrado.
@@ -93,6 +94,8 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **No card de busca do Shiny, zere o espacamento herdado antes de ajustar pixel**: definir `margin-bottom: 0` para `.shiny-input-container` e `.control-label` evita deslocamento vertical do icone e elimina o efeito de lupa "fora da caixa".
 - **Troca de tipografia global exige tokens, nao hardcodes por modulo**: manter `font-family` literal (ex.: IBM Plex) em blocos locais cria regressao silenciosa; prefira `var(--font-*)` em todo componente reutilizavel.
 - **Carregamento de Google Fonts deve ficar no shell da app (`app_ui`)**: evitar `@import` em `custom.css` reduz duplicacao de request e facilita governanca de versao/weights.
+- **Adicionar `rel="preconnect"` antes dos `<link>` de CDN reduz latencia de fontes**: inserir preconnect para `fonts.googleapis.com`, `fonts.gstatic.com` (com `crossorigin`) e `cdnjs.cloudflare.com` antes dos stylesheets permite ao browser pre-estabelecer DNS + TCP + TLS antes de precisar dos arquivos, economizando 100-300ms em conexoes lentas.
+- **CSS `:has()` e ferramenta valida para substituicao progressiva de conteudo reativo**: `.container:has(.dynamic:not(:empty)) .static { display: none }` esconde o fallback estatico assim que o servidor popula o elemento dinamico, sem JS adicional. Suporte amplo em browsers modernos (Chrome 105+, Firefox 121+, Safari 15.4+).
 - **Mono em tamanhos muito pequenos (< 0.85rem) precisa de ajuste fino**: em badges/tabelas compactas, `letter-spacing` leve e `tabular nums` melhoram legibilidade sem alterar layout.
 - **Animacao de remocao em listas reativas deve ter fallback de acessibilidade**: sempre adicionar `@media (prefers-reduced-motion: reduce)` para desativar transicoes de `fade/collapse`.
 - **Backdrop de modal custom deve usar token de overlay do design system**: centralizar em `var(--overlay)` + blur leve evita divergencia de contraste entre modais.
@@ -219,6 +222,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Migrar dicionario i18n de R inline para JSON facilita manutencao e tooling externo**: `jsonlite::fromJSON` com `simplifyVector = FALSE` preserva estrutura de lista nomeada identica ao formato original.
 - **BOM removal deve ser inline quando dependencia de load order nao e garantida**: em pacotes R, `data_dictionary.R` (d) carrega antes de `utils_io.R` (u); usar `sub("^\uFEFF", "", raw)` em vez de `strip_bom()` evita `could not find function` em tempo de source.
 - **Cache in-process com `new.env(parent = emptyenv())` e padrao seguro para dados estaticos**: evita releitura do disco e isolamento via `emptyenv()` previne poluicao de namespace.
+- **`.onLoad()` e o lugar correto para aquecer caches de dados estaticos do pacote**: chamar `load_i18n_dict()` em `.onLoad()` com `tryCatch` silencioso garante que o cache esteja pronto antes do primeiro `tr()` no build da UI; falha silenciosa preserva compatibilidade com ambientes sem o artefato (testes parciais, dev sem `inst/`).
 - **Script one-shot de export (`data-raw/export_i18n.R`) nao deve fazer parte do build regular**: existe para migracao; alteracoes futuras devem ser feitas diretamente no JSON.
 
 ## Refatoracao de Modulos Shiny (Onda 5)

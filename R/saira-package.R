@@ -12,3 +12,7 @@
 #' @importFrom withr with_tempdir defer
 ## usethis namespace: end
 NULL
+
+.onLoad <- function(libname, pkgname) {
+    tryCatch(load_i18n_dict(), error = function(e) NULL)
+}

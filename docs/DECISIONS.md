@@ -1532,3 +1532,43 @@ Formato: ADR leve (Architecture Decision Record).
   - O fluxo fica alinhado a regra de negocio "BR primeiro, `GBIF` como confirmacao quando o BR nao aceita o nome".
   - A UI continua mostrando o melhor achado disponivel por nome, sem regressao para `not_found` apos o fallback.
   - A ADR-024 passa a valer com esta excecao explicita para a camada BR + fallback `GBIF`.
+
+---
+
+## ADR-075: Texto estatico de fallback em titulos de nav para eliminar flash de branco no carregamento
+
+- **Data**: 2026-03-06
+- **Status**: Aceito
+- **Contexto**: Os 8 titulos das abas de navegacao usavam exclusivamente `uiOutput()` + `renderUI()` no servidor. O elemento HTML existia no carregamento inicial, mas ficava vazio ate o servidor Shiny processar os blocos reativos e enviar o conteudo via WebSocket. O usuario via abas sem texto por ~200-500ms antes de qualquer interacao.
+- **Decisao**:
+  - Cada titulo de aba passa a incluir dois spans filhos dentro de um `.nav-title-container`:
+    - `.nav-title-static`: texto traduzido estaticamente via `tr(key, "pt")` no momento do build da UI -- visivel imediatamente, sem round-trip.
+    - `.nav-title-dynamic`: o `uiOutput` original, agora com `class = "nav-title-dynamic"`.
+  - CSS com `:has(.nav-title-dynamic:not(:empty))` esconde o `.nav-title-static` assim que o servidor popula o span dinamico.
+  - O switch de idioma continua funcionando normalmente: o servidor ainda envia atualizacoes via `renderUI`, que sobrescreve o conteudo do span dinamico e aciona a regra CSS.
+- **Alternativas rejeitadas**:
+  - Remover o ingles e usar texto 100% estatico: resolveria o problema na raiz, mas eliminaria o suporte a idioma sem aprovacao de produto.
+  - `session$sendCustomMessage` para atualizar texto via JS: funcional, mas adiciona acoplamento JS desnecessario para um problema resolvel em CSS.
+  - `outputOptions(session, ..., suspendWhenHidden = FALSE)`: nao resolve o estado inicial vazio; apenas controla quando o calculo e suspenso.
+- **Consequencias**:
+  - Titulos de nav aparecem imediatamente no carregamento inicial, sem flash de branco.
+  - CSS `:has()` e suportado em todos os browsers modernos (Chrome 105+, Firefox 121+, Safari 15.4+).
+  - Sem breaking change no comportamento de switch de idioma.
+  - Cada titulo agora chama `tr()` adicionalmente no momento do build da UI (custo minimo, dicionario ja em cache).
+
+---
+
+## ADR-076: Preconnect para CDNs de fontes e preload do dicionario i18n no `.onLoad()`
+
+- **Data**: 2026-03-06
+- **Status**: Aceito
+- **Contexto**: Tres recursos externos bloqueavam o carregamento de fontes (Google Fonts, Font Awesome via CloudFlare, Lottie via unpkg) sem preconnect. Alem disso, o dicionario i18n (74 KB JSON) so era lido do disco na primeira chamada a `tr()` durante o build da UI, adicionando latencia desnecessaria nesse momento critico.
+- **Decisao**:
+  - Adicionar `<link rel="preconnect">` para `fonts.googleapis.com`, `fonts.gstatic.com` (com `crossorigin`) e `cdnjs.cloudflare.com` antes dos links de stylesheet no `<head>` de `app_ui()`.
+  - Adicionar `.onLoad()` em `saira-package.R` que chama `load_i18n_dict()` com `tryCatch` silencioso, aquecendo o cache antes do primeiro `tr()`.
+- **Alternativas rejeitadas**:
+  - Self-host das fontes: eliminaria a latencia de CDN, mas adiciona complexidade de build e versionamento de assets.
+  - `rel="preload"` em vez de `rel="preconnect"`: preload eh mais agressivo e exige `as=` correto por tipo; preconnect eh mais seguro e suficiente para reduzir latencia de negociacao TCP/TLS.
+- **Consequencias**:
+  - Preconnect reduz latencia de DNS + TCP + TLS para os CDNs em ~100-300ms em conexoes lentas.
+  - `.onLoad()` elimina a leitura de disco no caminho critico do build da UI; falha silenciosa preserva compatibilidade com ambientes sem `inst/extdata/i18n.json` (ex.: testes parciais).

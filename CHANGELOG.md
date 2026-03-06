@@ -10,6 +10,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [Unreleased]
 
 ### Adicionado
+- Texto estatico de fallback para os 8 titulos de abas de navegacao (`nav_home`, `nav_mapping`, `nav_preview`, `nav_validate`, `nav_validate_names`, `nav_validate_coords`, `nav_wiki`, `nav_help`): titulos agora aparecem imediatamente no carregamento inicial sem flash de branco, mantendo o switch de idioma pt/en via CSS `:has(.nav-title-dynamic:not(:empty)) .nav-title-static { display: none }` (ADR-075).
+- `<link rel="preconnect">` para `fonts.googleapis.com`, `fonts.gstatic.com` e `cdnjs.cloudflare.com` no `<head>` do `app_ui()`, reduzindo latencia de DNS+TCP+TLS para recursos de fonte CDN (ADR-076).
+- `.onLoad()` em `R/saira-package.R` que pre-aquece o cache do dicionario i18n ao carregar o pacote, eliminando a leitura de disco de 74 KB no caminho critico do build da UI (ADR-076).
+
+### Corrigido
+- Titulos das abas de navegacao ficavam em branco por ~200-500ms no primeiro carregamento, pois dependiam exclusivamente de `uiOutput` + `renderUI` sem conteudo inicial.
+
 - Validacao taxonomica BR com fallback de confirmacao no `GBIF`:
   - `florabr`/`faunabr` agora encerram automaticamente apenas nomes `accepted`;
   - resultados BR `synonym`, `ambiguous` e `not_found` seguem para tentativa de confirmacao no `GBIF`;

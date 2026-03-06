@@ -288,6 +288,11 @@ label,
   font-style: italic;
 }
 
+/* Nav title: show static default immediately, hide once server populates dynamic */
+.nav-title-container:has(.nav-title-dynamic:not(:empty)) .nav-title-static {
+  display: none;
+}
+
 .navbar-brand {
   font-family: var(--font-mono);
   font-weight: var(--weight-semibold);
