@@ -500,7 +500,12 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             }
 
             out
-        })
+        }) |> shiny::bindCache(
+            validation_result(),
+            rv$manual_reviews,
+            input$remove_authors,
+            input$ignore_qualifiers
+        )
 
         report_status_counts <- function(report_df) {
             out <- c(valid = 0L, invalid = 0L, unresolved = 0L, total = 0L)

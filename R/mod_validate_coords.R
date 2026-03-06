@@ -221,7 +221,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             out <- res[keep, , drop = FALSE]
             rownames(out) <- NULL
             out
-        })
+        }) |> shiny::bindCache(coord_validation_r(), active_filter())
 
         family_counts <- shiny::reactive({
             res <- coord_validation_r()

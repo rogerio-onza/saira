@@ -703,7 +703,7 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
         retry_after_at = .brprovider_time_to_string(now + .brprovider_retry_backoff_secs_default)
     ))
 
-    message(sprintf(
+    warning(sprintf(
         "brprovider_download_data failed [provider=%s version=%s tempdir=%s]: %s",
         provider_id,
         as.character(data_version),
@@ -1121,7 +1121,7 @@ brprovider_load_data <- function(provider_id, force_reload = FALSE) {
         }
         readRDS(rds_path)
     }, error = function(e) {
-        message(sprintf("brprovider_load_data failed for '%s': %s", provider_id, e$message))
+        warning(sprintf("brprovider_load_data failed for '%s': %s", provider_id, e$message))
         NULL
     })
 

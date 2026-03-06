@@ -14,6 +14,11 @@ run_app <- function(...) {
     # Set max upload file size to 500 MB
     options(shiny.maxRequestSize = 500 * 1024^2)
 
+    # Surface unhandled Shiny errors as R warnings (visible in server logs)
+    options(shiny.error = function() {
+        warning("[Sa\u00EDra] Unhandled error in Shiny reactive context", call. = FALSE)
+    })
+
     # Get path to www directory
     www_path <- system.file("app/www", package = "saira")
 

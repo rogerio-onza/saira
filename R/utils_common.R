@@ -56,6 +56,14 @@ is_blank_value <- function(x) {
     nchar(trimws(as.character(x))) == 0
 }
 
+#' Normalize a string for fuzzy column matching
+#'
+#' Lowercases, transliterates accented characters to ASCII, and replaces all
+#' non-alphanumeric characters with spaces. NA inputs propagate as NA.
+#'
+#' @param x Character scalar or vector to normalize
+#' @return Character scalar/vector of the same length with normalized values
+#' @noRd
 normalize_for_matching <- function(x) {
     x_chr <- as.character(x)
     normalized <- tolower(x_chr)
@@ -65,6 +73,14 @@ normalize_for_matching <- function(x) {
     trimws(normalized)
 }
 
+#' Tokenize a string for fuzzy column matching
+#'
+#' Normalizes via \code{normalize_for_matching()} then splits on whitespace.
+#' Returns \code{character(0)} for blank, NA, or empty inputs.
+#'
+#' @param x Character scalar to tokenize (length-1)
+#' @return Character vector of lowercase alphanumeric tokens, possibly empty
+#' @noRd
 tokenize_for_matching <- function(x) {
     normalized <- normalize_for_matching(x)
     if (is_blank_value(normalized) || !nzchar(normalized)) {

@@ -352,7 +352,7 @@ coords_country_to_iso3 <- function(country_values) {
                         }
                     },
                     error = function(e) {
-                        message(
+                        warning(
                             "[Saira] Fuzzy batch failed, skipping: ",
                             e$message
                         )

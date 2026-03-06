@@ -222,6 +222,39 @@ ensure_taxadb_columns <- function(df) {
     df
 }
 
+resolve_query_name_col <- function(matches_df, names_chr) {
+    if ("query_name" %in% names(matches_df)) {
+        return(matches_df)
+    }
+
+    candidate_cols <- c(
+        "input",
+        "input_name",
+        "inputName",
+        "query",
+        "query_name",
+        "search_term",
+        "searched_name",
+        "matched_name",
+        "name"
+    )
+    matched_col <- candidate_cols[candidate_cols %in% names(matches_df)][1]
+
+    if (!is.na(matched_col) && nzchar(matched_col)) {
+        matches_df$query_name <- as.character(matches_df[[matched_col]])
+    } else if ("scientificName" %in% names(matches_df)) {
+        name_lookup <- stats::setNames(names_chr, tolower(names_chr))
+        lower_sn <- tolower(as.character(matches_df$scientificName))
+        mapped <- unname(name_lookup[lower_sn])
+        mapped[is.na(mapped)] <- as.character(matches_df$scientificName)[is.na(mapped)]
+        matches_df$query_name <- mapped
+    } else {
+        matches_df$query_name <- NA_character_
+    }
+
+    matches_df
+}
+
 fetch_taxadb_matches <- function(query_names, provider) {
     if (length(query_names) == 0L) {
         return(data.frame())
@@ -260,34 +293,7 @@ fetch_taxadb_matches <- function(query_names, provider) {
     }
 
     matches_df$provider <- provider
-
-    if (!"query_name" %in% names(matches_df)) {
-        candidate_cols <- c(
-            "input",
-            "input_name",
-            "inputName",
-            "query",
-            "query_name",
-            "search_term",
-            "searched_name",
-            "matched_name",
-            "name"
-        )
-        matched_col <- candidate_cols[candidate_cols %in% names(matches_df)][1]
-
-        if (!is.na(matched_col) && nzchar(matched_col)) {
-            matches_df$query_name <- as.character(matches_df[[matched_col]])
-        } else if ("scientificName" %in% names(matches_df)) {
-            name_lookup <- stats::setNames(names_chr, tolower(names_chr))
-            lower_sn <- tolower(as.character(matches_df$scientificName))
-            mapped <- unname(name_lookup[lower_sn])
-            mapped[is.na(mapped)] <- as.character(matches_df$scientificName)[is.na(mapped)]
-            matches_df$query_name <- mapped
-        } else {
-            matches_df$query_name <- NA_character_
-        }
-    }
-
+    matches_df <- resolve_query_name_col(matches_df, names_chr)
     matches_df
 }
 
@@ -467,11 +473,11 @@ run_taxadb_cascade <- function(
   providers,
   fetch_fun = fetch_taxadb_matches
 ) {
-    provider_failures <- data.frame(
-        provider = character(0),
-        error = character(0),
-        stringsAsFactors = FALSE
-    )
+    empty_failures_df <- function() {
+        data.frame(provider = character(0), error = character(0), stringsAsFactors = FALSE)
+    }
+
+    failure_list <- list()
 
     attach_metadata <- function(df, attempted, failures) {
         attr(df, "provider_attempted") <- attempted
@@ -479,8 +485,13 @@ run_taxadb_cascade <- function(
         df
     }
 
+    build_failures_df <- function() {
+        if (length(failure_list) == 0L) return(empty_failures_df())
+        do.call(rbind, failure_list)
+    }
+
     if (length(query_names) == 0L) {
-        return(attach_metadata(data.frame(), character(0), provider_failures))
+        return(attach_metadata(data.frame(), character(0), empty_failures_df()))
     }
 
     providers <- providers[!is.na(providers) & nzchar(providers)]
@@ -503,13 +514,10 @@ run_taxadb_cascade <- function(
             error = function(e) e
         )
         if (inherits(matches, "error")) {
-            provider_failures <- rbind(
-                provider_failures,
-                data.frame(
-                    provider = as.character(provider),
-                    error = as.character(matches$message),
-                    stringsAsFactors = FALSE
-                )
+            failure_list[[length(failure_list) + 1L]] <- data.frame(
+                provider = as.character(provider),
+                error    = as.character(matches$message),
+                stringsAsFactors = FALSE
             )
             next
         }
@@ -535,7 +543,7 @@ run_taxadb_cascade <- function(
     }
 
     if (length(resolved_list) == 0L) {
-        return(attach_metadata(data.frame(), providers, provider_failures))
+        return(attach_metadata(data.frame(), providers, build_failures_df()))
     }
 
     all_cols <- unique(unlist(lapply(resolved_list, names), use.names = FALSE))
@@ -552,7 +560,7 @@ run_taxadb_cascade <- function(
     })
 
     combined <- do.call(rbind, resolved_list)
-    attach_metadata(combined, providers, provider_failures)
+    attach_metadata(combined, providers, build_failures_df())
 }
 
 clean_provider_ids <- function(providers) {
@@ -613,34 +621,7 @@ query_taxadb_batch <- function(query_names, provider, db) {
     }
 
     matches_df$provider <- provider
-
-    if (!"query_name" %in% names(matches_df)) {
-        candidate_cols <- c(
-            "input",
-            "input_name",
-            "inputName",
-            "query",
-            "query_name",
-            "search_term",
-            "searched_name",
-            "matched_name",
-            "name"
-        )
-        matched_col <- candidate_cols[candidate_cols %in% names(matches_df)][1]
-
-        if (!is.na(matched_col) && nzchar(matched_col)) {
-            matches_df$query_name <- as.character(matches_df[[matched_col]])
-        } else if ("scientificName" %in% names(matches_df)) {
-            lookup <- stats::setNames(names_chr, tolower(names_chr))
-            lower_sn <- tolower(as.character(matches_df$scientificName))
-            mapped <- unname(lookup[lower_sn])
-            mapped[is.na(mapped)] <- as.character(matches_df$scientificName)[is.na(mapped)]
-            matches_df$query_name <- mapped
-        } else {
-            matches_df$query_name <- NA_character_
-        }
-    }
-
+    matches_df <- resolve_query_name_col(matches_df, names_chr)
     matches_df
 }
 

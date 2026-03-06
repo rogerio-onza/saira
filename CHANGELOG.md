@@ -7,9 +7,39 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ---
 
-## [Unreleased]
+## [0.2.1] - 2026-03-06
 
 ### Adicionado
+- `tests/testthat/test-utils-rostrum-engine.R`: 10 testes de integracao do orquestrador `run_rostrum_engine()`, cobrindo contrato de retorno, mapeamento por sinonimos, degradacao gracosa com colunas nao reconhecidas, overrides manuais, e tratamento de erros (BP-02).
+- `tests/testthat/test-utils-common.R`: 38 novos testes unitarios cobrindo `create_rds_cache()`, `is_blank_value()`, `normalize_for_matching()` e `tokenize_for_matching()` — funcoes core usadas por todo o codebase que estavam sem cobertura de teste (BP-01).
+- `.onLoad()` em `R/saira-package.R`: pre-aquecimento de `load_dwc_terms_rds()` e `coords_load_aliases()` no startup do pacote, eliminando spikes de latencia no primeiro uso do engine de mapeamento e validacao de coordenadas (P-05).
+- `shiny.error` handler global em `run_app.R` que sobe erros nao tratados como `warning()` para o sistema de log do servidor, tornando falhas silenciosas visiveis (B-03).
+
+### Alterado
+- `R/app_server.R`: diagnosticos de slot ausente do `mod_mapping` convertidos de `message()` para `warning()` para respeitar `skill.md` ("strictly necessary" para console output) e garantir visibilidade em logs de producao sem poluir stdout (C-01).
+- `R/utils_rostrum_db.R`, `R/utils_coords.R`, `R/mod_mapping.R`, `R/utils_brproviders.R`: 8 chamadas `message()` de diagnostico de erro convertidas para `warning()` pelos mesmos motivos (C-03 a C-06).
+- `R/utils_taxadb.R`: acumulacao de falhas de provider em `run_taxadb_cascade()` refatorada de `rbind()` em loop para list accumulation + `do.call(rbind, ...)` ao final — elimina copias desnecessarias do data.frame em cada iteracao (P-01).
+- `DESCRIPTION`: `rnaturalearthhires` movido de `Imports` para `Suggests`, pois e dependencia opcional com fallback explicito em `utils_coords.R:453-454`; `sf`, `rnaturalearth` e `rnaturalearthdata` permanecem em `Imports` por serem validados como requeridos em runtime (A-01).
+
+### Alterado (Prioridade C)
+- `R/utils_taxadb.R`: logica duplicada de resolucao de `query_name` extraida de `fetch_taxadb_matches()` e `query_taxadb_batch()` para o helper privado `resolve_query_name_col()`, eliminando ~25 linhas copiadas e centralizando o ponto de manutencao (4.4).
+- `R/mod_validate_coords.R`: `filtered_result_r` recebeu `|> shiny::bindCache(coord_validation_r(), active_filter())` para cachear resultados de filtragem entre ciclos reativos — evita re-processar o data.frame quando o usuario alterna entre filtros ja visitados (2.2).
+- `R/mod_validate_names.R`: `effective_report` recebeu `|> shiny::bindCache(validation_result(), rv$manual_reviews, input$remove_authors, input$ignore_qualifiers)` para cachear o report enriquecido enquanto nenhuma das dependencias mudar (2.2).
+- `R/utils_common.R`: `normalize_for_matching()` e `tokenize_for_matching()` receberam blocos `@param`/`@return` roxygen2 completos (4.5).
+- `data-raw/build_css.R`: cabecalho expandido com instrucoes de quando executar o script e como usa-lo, prevenindo estilos desatualizados no bundle `custom.css` (3.5).
+- `inst/app/www/css/02-navbar.css`: todos os 5 `!important` do navbar receberam comentarios inline explicando qual regra Bootstrap/bslib/Flatly estao sobrescrevendo (D-03).
+- `inst/app/www/css/13-upload.css`: todos os 5 `!important` da barra de progresso receberam comentarios inline explicando o comportamento Shiny que forcam (D-03).
+- `DESCRIPTION`: versao bumped de `0.1.0` para `0.2.1`, sincronizando com o historico real do CHANGELOG (0.2.0 = rework Rostrum, 0.2.1 = auditoria de qualidade).
+
+### Nao implementado (bloqueio tecnico documentado)
+- `2.3 DT proxy`: padrao `dataTableProxy + replaceData()` e inviavel em `mod_validate_names` e `mod_validate_coords` porque os badges HTML das celulas sao gerados via `tr(diag_label_key(x), lang_r())` inline — qualquer troca de idioma invalida o conteudo das celulas, nao apenas os cabecalhos. Isso exigiria re-render completo de qualquer forma, eliminando o beneficio do proxy. Mantido como item de arquitetura futura caso as traducoes migrem para CSS/JavaScript.
+
+### Corrigido
+- `inst/app/www/css/03-buttons.css`: `.btn-success` alterado de `color: var(--bg-card)` (branco, contraste 3.08:1 — falha WCAG AA) para `color: var(--text-primary)` (contraste 4.43:1 — passa WCAG AA). `design.md` documentava o valor como 4.7:1, o que estava incorreto; o documento sera atualizado (D-01).
+- `inst/app/www/css/00-tokens.css`: `--coord-swapped` alterado de `#8b5cf6` (contraste 3.81:1, falha WCAG AA) para `#6d28d9` (contraste 6.4:1, passa WCAG AA com folga). Cor nao pertence a paleta do passaro, ajuste sem impacto na identidade visual (D-02).
+- `R/utils_export.R`: `apply_name_review_payload()` adicionou `warning()` ao retorno silencioso quando `df` nao e um data.frame, prevenindo que bugs do caller passem despercebidos (B-01).
+
+
 - `data-raw/generate_rostrum_synonyms.R`: gerador reproduzivel do bundle de sinonimos DwC com tabela curada PT+EN inline. Cobre 27 novos termos sem cobertura (`type`, `disposition`, `preparations`, `occurrenceRemarks`, `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `specificEpithet`, `infraspecificEpithet`, `taxonRank`, `scientificNameAuthorship`, `verbatimIdentification`, `identificationQualifier`, `vernacularName`, `identifiedBy`, `country`, `stateProvince`, `county`, `locality`, `locationRemarks`, `verbatimLatitude`, `verbatimLongitude`, `fieldNotes`, `habitat`) e reforca 6 termos rasos (`eventDate`, `recordedBy`, `basisOfRecord`, `catalogNumber`, `collectionCode`, `institutionCode`). Bundle regenerado: 29 → 147 entradas, 19 → 46 termos unicos. Correcao: `"species"` (en, 0.93) e `"especie"` (pt, 0.93) movidos para `scientificName` (estavam ausentes/equivocados); `specificEpithet` perde o alias `"especie"` (semanticamente errado para dados brasileiros) (ADR-073).
 - `rostrum_sync_synonyms()` (interno) em `utils_rostrum_db.R`: sincronizacao continua do bundle `source = "v1_rds"` para `rostrum_synonyms` com hash-gate por processo. INSERT novos, UPDATE confidence alterada, SET `active = 0` para removidos. Nunca toca em `rostrum_aliases` nem em outras fontes (ADR-073).
 - 7 novos casos de teste em `tests/testthat/test-utils-rostrum-db.R` cobrindo todos os cenarios de sincronizacao: banco vazio, idempotencia via hash-gate, novos sinonimos, deativacao de removidos, isolamento de outras fontes, preservacao de `rostrum_aliases`, e integracao com o engine.

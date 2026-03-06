@@ -202,15 +202,15 @@
   margin-bottom: 0;
   width: 100%;
   min-width: 100%;
-  max-width: none !important;
-  margin-left: 0 !important;
+  max-width: none !important; /* Shiny sets max-width on .shiny-file-input-progress via inline style */
+  margin-left: 0 !important; /* Bootstrap .progress sets auto margins that break full-width layout */
   margin-right: 0 !important;
   height: 40px;
   border-radius: 0;
   border: 0;
   background: transparent;
   overflow: visible;
-  display: block !important;
+  display: block !important; /* Shiny hides progress bars by default until upload starts */
   box-sizing: border-box;
   padding: 0;
 }
@@ -219,7 +219,7 @@
 .upload-dropzone .progress,
 .upload-dropzone .shiny-file-input-progress,
 .upload-dropzone .shiny-input-container [id$="_progress"] {
-  display: none !important;
+  display: none !important; /* Shiny may restore display:block via JS; must always hide inside dropzone */
 }
 
 .upload-native-input .progress .progress-bar,

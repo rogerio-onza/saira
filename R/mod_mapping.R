@@ -165,7 +165,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         conn <- tryCatch(
             rostrum_connect(),
             error = function(e) {
-                message("[rostrum] Failed to open SQLite connection: ", e$message)
+                warning("[rostrum] Failed to open SQLite connection: ", e$message)
                 NULL
             }
         )
@@ -668,7 +668,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                     run_id = run_id
                                 ),
                                 error = function(e) {
-                                    message("[rostrum] Could not record alias override: ", e$message)
+                                    warning("[rostrum] Could not record alias override: ", e$message)
                                 }
                             )
                         }
@@ -784,7 +784,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                             )
                         },
                         error = function(e) {
-                            message("[rostrum] Could not record alias from ambiguity: ", e$message)
+                            warning("[rostrum] Could not record alias from ambiguity: ", e$message)
                         }
                     )
                 }

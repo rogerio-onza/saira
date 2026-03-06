@@ -34,7 +34,7 @@
   /* Coordinate Validation */
   --coord-ok: #00a86b;
   --coord-missing: rgba(28, 28, 38, 0.35);
-  --coord-swapped: #8b5cf6;
+  --coord-swapped: #6d28d9;
 
   /* Mapping Badges */
   --color-badge-ambiguous: #e67e22;

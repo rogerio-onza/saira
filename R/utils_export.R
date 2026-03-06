@@ -11,6 +11,7 @@
 #' @export
 apply_name_review_payload <- function(df, payload = NULL) {
     if (!is.data.frame(df)) {
+        warning("apply_name_review_payload: 'df' must be a data.frame, got ", class(df)[1L])
         return(df)
     }
 

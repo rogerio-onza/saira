@@ -66,7 +66,7 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--space-5) !important;
+  gap: var(--space-5) !important; /* bslib injects gap:0 on .navbar-nav in some builds */
   flex: 1 1 auto;
 }
 
@@ -81,10 +81,10 @@
 /* Bootstrap navbar fallback markup: <ul class="navbar-nav"><li><a>... */
 .bslib-page-navbar .navbar .navbar-nav>li,
 .navbar .navbar-nav>li {
-  float: none !important;
+  float: none !important; /* Flatly/bslib theme may apply float via <ul><li> legacy rule */
   display: flex;
   align-items: center;
-  margin: 0 !important;
+  margin: 0 !important; /* Bootstrap sets margin on <li> elements inside .navbar-nav */
   padding: 0;
 }
 
@@ -144,7 +144,7 @@
   font-weight: var(--weight-medium);
   font-size: var(--text-sm);
   color: var(--navbar-link-color);
-  padding: 0.64rem 1.3rem !important;
+  padding: 0.64rem 1.3rem !important; /* Bootstrap .nav-link sets padding: 0.5rem 1rem; must override */
   border-radius: var(--radius);
   border: 1px solid transparent;
   transition: var(--transition-base);
@@ -180,7 +180,7 @@
   font-weight: var(--weight-medium);
   font-size: var(--text-sm);
   color: var(--navbar-link-color);
-  padding: 0.64rem 1.3rem !important;
+  padding: 0.64rem 1.3rem !important; /* Bootstrap .dropdown-toggle sets padding: 0.375rem 0.75rem; must override */
   border-radius: var(--radius);
   border: 1px solid transparent;
   transition: var(--transition-base);

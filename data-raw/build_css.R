@@ -3,6 +3,14 @@
 # Date: 2026-02-28
 # Version: 1.0
 # Onda 5, Item 5.1 — Concatenates modular CSS files into custom.css
+#
+# When to run:
+#   Run this script after editing ANY file in inst/app/www/css/*.css.
+#   The app loads inst/app/www/custom.css (the bundle), not the individual files.
+#   Forgetting to rebuild will cause the app to run with stale styles.
+#
+# Usage:
+#   setwd(here::here()); source("data-raw/build_css.R")
 
 css_dir <- file.path("inst", "app", "www", "css")
 output  <- file.path("inst", "app", "www", "custom.css")

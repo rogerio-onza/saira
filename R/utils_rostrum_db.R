@@ -988,7 +988,7 @@ rostrum_seed_synonyms_if_empty <- function(conn, v1_path = NULL) {
             }
         },
         error = function(e) {
-            message("[rostrum] Synonym seed skipped (V1 file unavailable): ", e$message)
+            warning("[rostrum] Synonym seed skipped (V1 file unavailable): ", e$message)
             NULL
         }
     )
@@ -1073,7 +1073,7 @@ rostrum_sync_synonyms <- function(conn, path = NULL) {
             }
         },
         error = function(e) {
-            message("[rostrum] Synonym sync skipped (V1 file unavailable): ", e$message)
+            warning("[rostrum] Synonym sync skipped (V1 file unavailable): ", e$message)
             NULL
         }
     )
