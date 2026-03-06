@@ -17,3 +17,11 @@ Data frame
 \description{
 Read biodiversity CSV file with encoding detection
 }
+\examples{
+\dontrun{
+  # Reads CSV with automatic encoding and delimiter detection
+  df <- read_biodiversity_csv("data/biodiversity.csv")
+  # Or with explicit encoding:
+  df <- read_biodiversity_csv("data/biodiversity.csv", encoding = "UTF-8")
+}
+}

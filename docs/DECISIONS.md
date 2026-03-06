@@ -1421,6 +1421,19 @@ Formato: ADR leve (Architecture Decision Record).
 
 ---
 
+## ADR-070: verbose = TRUE hardcoded nas chamadas a get_faunabr / get_florabr
+
+- **Data**: 2026-03-05
+- **Status**: Aceito
+- **Contexto**: `brprovider_download_data()` repassa seu parametro `verbose` diretamente para `faunabr::get_faunabr()` e `florabr::get_florabr()`. Ambos os pacotes condicionam o bloco de download (`httr::GET`) a `if (verbose)`, deixando o `utils::unzip()` executar incondicionalmente logo apos. Com `verbose = FALSE` (padrao na chamada de `utils_taxadb.R`), o zip nunca e baixado, o unzip falha com "error 1 in extracting from zip file" e o pipeline aborta com "cannot open the connection". O servidor remoto e o arquivo zip estavam integros (validado em 05/03/2026, v=1.48).
+- **Decisao**: Forcar `verbose = TRUE` nas chamadas internas a `get_faunabr()` e `get_florabr()` dentro de `brprovider_download_data()`. O `verbose` do wrapper continua controlando mensagens do proprio saira; o `verbose` interno dos pacotes controla se o download acontece — sao responsabilidades distintas.
+- **Alternativas rejeitadas**:
+  - Passar `verbose = verbose` (comportamento original): falha silenciosa quando chamado com `verbose = FALSE`.
+  - Reportar apenas upstream e aguardar fix no pacote: risco de regressao indefinido, pois o bug esta no faunabr/florabr e nao ha prazo para correcao.
+- **Consequencias**: Download sempre ocorre independentemente da verbosidade do saira. A saida de progress do pacote externo fica visivel no console durante o download unico (comportamento aceitavel, pois e operacao one-shot que salva RDS).
+
+---
+
 ## ADR-069: Auditoria CRAN — remocao de `Remotes:`, `<<-` e `getFromNamespace`
 
 - **Data**: 2026-03-03
@@ -1437,3 +1450,85 @@ Formato: ADR leve (Architecture Decision Record).
   - `devtools::check(cran = TRUE)` passa sem ERRORs nos bloqueadores identificados.
   - API publica do Rostrum documentada e acessivel via `saira::fn`.
   - Testes mais claros: acesso intencional a internos via `:::` e acesso a publicos diretamente.
+
+---
+
+## ADR-071: Cache persistente `.rds` por provider BR com update automatico em background
+
+- **Data**: 2026-03-06
+- **Status**: Aceito
+- **Contexto**: O fluxo antigo de provedores BR era sensivel a falhas temporarias de rede/servidor e nao separava claramente bootstrap inicial de refresh de versao. Para o usuario final, isso gerava latencia desnecessaria e risco de interrupcao de validacao em cenarios onde um cache local valido ja existia.
+- **Decisao**:
+  - Consolidar o contrato de cache em disco por provider com:
+    - artefato principal `<provider>.rds`;
+    - metadata `<provider>.meta.json` (`local_version`, `remote_version_last_seen`, `last_checked_at`, `last_updated_at`, `status`, `last_error`, `retry_after_at`);
+    - lock `<provider>.update.lock` para evitar download concorrente.
+  - Introduzir `brprovider_ensure_data(provider_id)`:
+    - sem cache: bootstrap sincrono obrigatorio;
+    - com cache: retorno imediato e disparo opcional de update em background quando TTL expirar.
+  - Executar atualizacao em worker assincrono (`future`) e finalizar por polling (`brprovider_poll_updates()`), sem bloquear o ciclo de validacao.
+  - Garantir escrita atomica de cache (`.tmp` + validacao + rename) com backup (`.rds.bak`) e preservacao do cache anterior em falhas.
+  - Integrar status de runtime ao UI (`up_to_date`, `update_in_progress`, `update_failed`, `never_downloaded`) com badges/notificacoes nao bloqueantes.
+- **Alternativas rejeitadas**:
+  - Download sincrono sempre no inicio de cada validacao: rejeitado por piorar UX e aumentar dependencia de rede.
+  - Atualizacao apenas manual por versao pinada: rejeitado por elevar custo operacional e risco de desatualizacao prolongada.
+  - Cache sem metadata de status/versao: rejeitado por baixa observabilidade e dificuldade de diagnostico.
+- **Consequencias**:
+  - Validacao prioriza continuidade com cache local mesmo em cenarios offline/intermitentes.
+  - Atualizacoes de versao passam a ser oportunistas e desacopladas da acao principal do usuario.
+  - A superficie de estado aumenta (metadata/lock/jobs), exigindo testes especificos de concorrencia, rollback e retry/backoff.
+
+---
+
+## ADR-073: `update_failed` com cache disponivel deve ser revertido para `up_to_date`
+
+- **Data**: 2026-03-06
+- **Status**: Aceito
+- **Contexto**: `brprovider_cache_status()` ja possuia logica para reverter `never_downloaded → up_to_date` quando `has_data = TRUE`. Porem nao havia bloco equivalente para `update_failed → up_to_date`. Como resultado, uma falha de atualização em background (rede/timeout) deixava o badge de status do provider travado em "Update failed" indefinidamente, mesmo com o cache local integro e a validacao retornando resultados corretamente.
+- **Decisao**:
+  - Adicionar em `brprovider_cache_status()` o bloco `if (has_data && status == "update_failed") { status <- "up_to_date" }` logo apos a regra existente para `never_downloaded`.
+  - Manter `last_error` intacto para diagnostico; apenas o campo `status` operacional e revertido.
+  - O status `update_failed` continua valido e persistente quando `!has_data` (falha de bootstrap sem cache).
+- **Alternativas rejeitadas**:
+  - Manter o `update_failed` e adicionar uma quarta variante visual ("cache ok, update falhou"): rejeitada por adicionar estado que o usuario nao consegue diferenciar operacionalmente de "up_to_date" na pratica.
+  - Limpar tambem `last_error` ao reverter: rejeitada para preservar rastreabilidade de falhas intermediarias.
+- **Consequencias**:
+  - Badge exibe "Atualizado" (ou equivalente no idioma) apos qualquer validacao bem-sucedida, independente de falhas anteriores de refresh.
+  - Comportamento simetrico com a regra `never_downloaded → up_to_date` ja existente.
+  - Teste "poll_updates marks update_failed and preserves cache" atualizado para refletir nova semantica.
+
+## ADR-074: Textos de badge de provider e notificacoes de background devem usar tr()
+
+- **Data**: 2026-03-06
+- **Status**: Aceito
+- **Contexto**: `provider_runtime_badge()` em `mod_validate_names.R` e as notificacoes `showNotification` de conclusao de update em background usavam strings hardcoded em ingles ("Up to date", "Updating...", "Update failed", "Not downloaded", "data updated", "background update failed"), violando o contrato i18n do sistema (`LESSONS.md`: "Todo texto visivel deve passar por tr()").
+- **Decisao**:
+  - Migrar os quatro labels de badge para chaves `validate_names_provider_status_{up_to_date|updating|update_failed|not_downloaded}` no `i18n.json`.
+  - Migrar as duas frases de notificacao para chaves `validate_names_provider_notify_{updated|update_failed}` com formato `sprintf` para interpolar `label_chr` e `suffix`.
+  - `provider_runtime_badge()` acessa `lang_r()` via closure do escopo de `mod_validate_names_server`.
+- **Alternativas rejeitadas**:
+  - Manter ingles com comentario de TODO: rejeitada porque viola regra existente ja codificada em LESSONS e em testes de cobertura de i18n.
+- **Consequencias**:
+  - 6 novas chaves adicionadas ao `i18n.json` com versoes PT/EN.
+  - Suite `test-utils-i18n.R` atualizada para exigir e resolver as novas chaves.
+  - Notificacoes de background tambem localizadas.
+
+## ADR-072: Provedores BR so encerram nomes `accepted`; demais casos seguem para confirmacao no GBIF
+
+- **Data**: 2026-03-06
+- **Status**: Aceito
+- **Contexto**: A cascata taxonomica original (ADR-024) parava no primeiro provedor que retornava qualquer veredito (`accepted`, `synonym` ou `ambiguous`). Com a introducao de `florabr`/`faunabr` como camada prioritaria para taxa brasileiros, isso passou a interromper cedo demais a automacao: nomes `synonym` ou `ambiguous` no BR apareciam como problematicos na UI, mas nao eram mais enviados ao `GBIF` para tentativa de confirmacao.
+- **Decisao**:
+  - Manter `florabr`/`faunabr` como primeira camada da cascata.
+  - Tratar apenas `accepted` vindo de provedor BR como short-circuit final.
+  - Fazer `synonym`, `ambiguous` e `not_found` vindos do BR seguirem para o `GBIF`.
+  - Na consolidacao final, preservar por `query_name` o resultado mais informativo disponivel:
+    - um veredito posterior do `GBIF` pode substituir um resultado BR menos conclusivo;
+    - um `not_found` tardio do fallback nao deve apagar um `synonym`/`ambiguous` anterior do BR.
+- **Alternativas rejeitadas**:
+  - Manter a regra antiga do "primeiro veredito vence" tambem para provedores BR: rejeitada por desperdiçar a etapa de confirmacao no `GBIF` exatamente nos casos mais problematicos.
+  - Fazer o `GBIF` sempre sobrescrever o BR, inclusive com `not_found`: rejeitada por perder informacao util ja encontrada nas bases BR.
+- **Consequencias**:
+  - O fluxo fica alinhado a regra de negocio "BR primeiro, `GBIF` como confirmacao quando o BR nao aceita o nome".
+  - A UI continua mostrando o melhor achado disponivel por nome, sem regressao para `not_found` apos o fallback.
+  - A ADR-024 passa a valer com esta excecao explicita para a camada BR + fallback `GBIF`.

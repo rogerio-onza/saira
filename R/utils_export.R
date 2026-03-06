@@ -75,7 +75,10 @@ apply_name_review_payload <- function(df, payload = NULL) {
 
     scientific_name <- as.character(out$scientificName)
     scientific_name[is.na(scientific_name)] <- ""
-    query_name <- vapply(scientific_name, function(value) {
+
+    # Optimize: normalize only unique names to avoid redundant work on repeated values
+    unique_names <- unique(scientific_name)
+    unique_normalized <- vapply(unique_names, function(value) {
         normalized <- normalize_scientific_name(
             value,
             remove_authors = remove_authors_opt,
@@ -87,6 +90,7 @@ apply_name_review_payload <- function(df, payload = NULL) {
             normalized
         }
     }, FUN.VALUE = character(1))
+    query_name <- unique_normalized[match(scientific_name, unique_names)]
 
     match_idx <- match(query_name, entries$query_name)
     has_review <- !is.na(match_idx)
@@ -127,6 +131,16 @@ apply_name_review_payload <- function(df, payload = NULL) {
 #'
 #' @param df Data frame with mapped columns
 #' @return Data frame with ISO dates, cleaned separators, UUIDs
+#' @examples
+#' \dontrun{
+#'   # Processes mapped data for export (uses taxadb, spatial packages)
+#'   processed <- process_for_export(my_mapped_data)
+#'   # Returns data with:
+#'   # - eventDate in ISO format (YYYY-MM-DD)
+#'   # - Coordinate separators normalized (comma -> dot)
+#'   # - occurrenceID added if missing
+#'   # - License URLs abbreviated
+#' }
 #' @export
 process_for_export <- function(df) {
     # Fix dates to ISO format

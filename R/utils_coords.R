@@ -3,6 +3,8 @@
 # Date: 2026-02-21
 # Version: 2.0
 
+#' @include utils_common.R
+NULL
 coord_issue_levels <- c("ok", "missing", "lat_range", "lon_range", "zero_zero", "swapped", "identical_all")
 coord_diag_levels <- c(
     "ok",
@@ -39,18 +41,11 @@ empty_coords_result <- function() {
     )
 }
 
-coords_aliases_cache_env <- new.env(parent = emptyenv())
-coords_aliases_cache_env$value <- NULL
-coords_aliases_cache_env$path <- NULL
-coords_aliases_cache_env$load_count <- 0L
+coords_aliases_cache <- create_rds_cache("coords_aliases")
 
-coords_fuzzy_cache_env <- new.env(parent = emptyenv())
-coords_fuzzy_cache_env$value <- NULL
-coords_fuzzy_cache_env$load_count <- 0L
+coords_fuzzy_cache <- create_rds_cache("coords_fuzzy")
 
-coords_validate_force_flag <- function(force) {
-    validate_force_flag(force)
-}
+
 
 resolve_country_aliases_path <- function() {
     candidates <- c(
@@ -110,19 +105,17 @@ coords_sanitize_aliases_table <- function(alias_df) {
 }
 
 coords_load_aliases <- function(force = FALSE) {
-    coords_validate_force_flag(force)
+    validate_force_flag(force)
 
-    if (!isTRUE(force) && !is.null(coords_aliases_cache_env$value)) {
-        return(coords_aliases_cache_env$value)
+    if (!isTRUE(force) && !is.null(coords_aliases_cache$get())) {
+        return(coords_aliases_cache$get())
     }
 
     path <- resolve_country_aliases_path()
     alias_df <- readRDS(path)
     alias_df <- coords_sanitize_aliases_table(alias_df)
 
-    coords_aliases_cache_env$value <- alias_df
-    coords_aliases_cache_env$path <- path
-    coords_aliases_cache_env$load_count <- as.integer(coords_aliases_cache_env$load_count) + 1L
+    coords_aliases_cache$set(alias_df, path = path)
     alias_df
 }
 
@@ -132,10 +125,10 @@ coords_alias_map <- function() {
 }
 
 coords_build_fuzzy_reference <- function(force = FALSE) {
-    coords_validate_force_flag(force)
+    validate_force_flag(force)
 
-    if (!isTRUE(force) && !is.null(coords_fuzzy_cache_env$value)) {
-        return(coords_fuzzy_cache_env$value)
+    if (!isTRUE(force) && !is.null(coords_fuzzy_cache$get())) {
+        return(coords_fuzzy_cache$get())
     }
     if (!requireNamespace("countrycode", quietly = TRUE)) {
         stop("Package 'countrycode' is required for country conversion.", call. = FALSE)
@@ -184,8 +177,7 @@ coords_build_fuzzy_reference <- function(force = FALSE) {
     out <- out[order(out$alias), , drop = FALSE]
     rownames(out) <- NULL
 
-    coords_fuzzy_cache_env$value <- out
-    coords_fuzzy_cache_env$load_count <- as.integer(coords_fuzzy_cache_env$load_count) + 1L
+    coords_fuzzy_cache$set(out)
     out
 }
 
@@ -255,9 +247,11 @@ coords_country_to_iso3 <- function(country_values) {
     }
 
     apply_result <- apply_layer(out_uniq, pending, "iso3c")
-    out_uniq <- apply_result$out_uniq; pending <- apply_result$pending
+    out_uniq <- apply_result$out_uniq
+    pending <- apply_result$pending
     apply_result <- apply_layer(out_uniq, pending, "iso2c")
-    out_uniq <- apply_result$out_uniq; pending <- apply_result$pending
+    out_uniq <- apply_result$out_uniq
+    pending <- apply_result$pending
 
     # Layer 2: multilingual CLDR names via custom_dict.
     codelist <- countrycode::codelist
@@ -275,7 +269,8 @@ coords_country_to_iso3 <- function(country_values) {
         }
         custom_dict <- codelist[, c("iso3c", origin), drop = FALSE]
         apply_result <- apply_layer(out_uniq, pending, origin, custom_dict = custom_dict)
-        out_uniq <- apply_result$out_uniq; pending <- apply_result$pending
+        out_uniq <- apply_result$out_uniq
+        pending <- apply_result$pending
     }
 
     # Layer 3: country.name plus regex origins.
@@ -288,7 +283,8 @@ coords_country_to_iso3 <- function(country_values) {
     )
     for (origin in name_origins) {
         apply_result <- apply_layer(out_uniq, pending, origin)
-        out_uniq <- apply_result$out_uniq; pending <- apply_result$pending
+        out_uniq <- apply_result$out_uniq
+        pending <- apply_result$pending
     }
 
     # Layer 4: custom aliases from country_aliases.rds.

@@ -29,56 +29,55 @@ Ferramenta para padronização de dados de biodiversidade segundo o padrão **Da
 saira/
 ├── DESCRIPTION             # Metadados + Dependências (Imports/Suggests)
 ├── NAMESPACE               # Auto-gerado via roxygen2
-├── LICENSE                 # Licença do projeto
+├── LICENSE
 │
-├── app.R                   # Entry point: library(saira); run_app()
+├── app.R                   # Entry point: pkgload::load_all(); run_app()
 ├── R/
 │   ├── run_app.R           # Função exportada: run_app() -> shinyApp()
 │   ├── app_ui.R            # UI principal (page_navbar)
 │   ├── app_server.R        # Server orquestrador (apenas chamadas de módulos)
+│   ├── saira-package.R     # @importFrom declarations (roxygen2-managed)
 │   │
 │   ├── mod_upload.R        # Módulo: Upload de arquivos CSV
 │   ├── mod_mapping.R       # Módulo: Mapeamento de colunas DwC
+│   ├── mod_mapping_cards.R       # Sub-módulo: Card UI builder
+│   ├── mod_mapping_loading.R     # Sub-módulo: Auto-map loading modal
+│   ├── mod_mapping_basis_assistant.R  # Sub-módulo: BasisOfRecord assistant
 │   ├── mod_preview.R       # Módulo: Pré-visualização (leve, vetorizada)
-│   ├── mod_validate_names.R# Módulo: Validação taxonômica
-│   ├── mod_validate_coords.R# Módulo: Validação geográfica
+│   ├── mod_validate_names.R  # Módulo: Validação taxonômica
+│   ├── mod_validate_coords.R # Módulo: Validação geográfica
 │   ├── mod_wiki.R          # Módulo: Documentação de termos DwC
 │   ├── mod_help.R          # Módulo: Tutorial e ajuda
 │   │
 │   ├── utils_io.R          # 🔧 Puras: Leitura de arquivos (encoding, dates)
-│   ├── utils_dwc.R         # 🔧 Puras: Validação de regras DwC
+│   ├── utils_dwc.R         # 🔧 Puras: Definições DwC, basisOfRecord vocab
+│   ├── utils_mapping.R     # 🔧 Puras: Scoring, sinônimos, sanitização, composição
 │   ├── utils_export.R      # 🔧 Puras: Processamento para exportação
+│   ├── utils_preview.R     # 🔧 Puras: Preview readiness, download validation
+│   ├── utils_common.R      # 🔧 Puras: Helpers compartilhados (is_blank_value)
+│   ├── utils_coords.R      # 🔧 Puras: Validação de coordenadas (CoordinateCleaner)
 │   ├── utils_taxadb.R      # 🔧 Puras: Validação taxonômica via taxadb
 │   ├── utils_i18n.R        # 🔧 Puras: Sistema de tradução (tr())
+│   ├── utils_rostrum_engine.R    # 🔧 Puras: Motor auto-mapping (multi-stage)
+│   ├── utils_rostrum_db.R        # 🔧 Puras: Persistência SQLite do Rostrum
+│   ├── utils_rostrum_templates.R # 🔧 Puras: Import/export de templates
+│   ├── utils_rostrum_contracts.R # 🔧 Puras: Validação de contratos (data frames)
 │   │
-│   ├── data_dictionary.R   # 📚 Lista: Dicionário de traduções (i18n_dict)
-│   └── data_dwc.R          # 📚 Lista: Metadados de termos DwC
-│
-├── data/
-│   └── dwc_terms.rds       # 💾 Dataset: Vocabulário DwC (carregado em sysdata.rda)
+│   └── data_dictionary.R   # 📚 Loader do dicionário i18n (inst/extdata/i18n.json)
 │
 ├── tests/
 │   ├── testthat.R          # Test runner
-│   └── testthat/
-│       ├── test-utils-io.R      # Testes: Leitura de CSV com encoding
-│       ├── test-utils-dwc.R     # Testes: Validação de coordenadas/datas
-│       ├── test-utils-export.R  # Testes: Processamento para export
-│       ├── test-utils-taxadb.R  # Testes: Validação taxonômica
-│       └── test-utils-i18n.R    # Testes: Sistema de tradução
+│   └── testthat/           # 31 arquivos de teste (utils, modules, e2e, perf)
 │
 ├── inst/
-│   └── app/
-│       └── www/            # 🎨 Assets estáticos (servidos via system.file)
-│           ├── custom.css
-│           ├── mapping_filters.js
-│           └── images/
-│               ├── saira_alone.png
-│               └── hexagon_logo.png
+│   ├── extdata/            # Dados estáticos
+│   │   ├── i18n.json       # Dicionário de traduções (PT/EN)
+│   │   ├── dwc_terms.rds   # Vocabulário DwC
+│   │   ├── dwc_synonyms_v1.rds  # Tabela de sinônimos
+│   │   └── country_aliases.rds  # Aliases de nomes de países
+│   └── app/www/            # 🎨 Assets estáticos (CSS, JS, images)
 │
 └── man/                    # Documentação (gerada via roxygen2)
-    ├── run_app.Rd
-    ├── validate_coords.Rd
-    └── ...
 ```
 
 ---
@@ -178,20 +177,26 @@ test_that("Export converts Brazilian dates to ISO", {
 
 | Tipo de Dado | Localização | Formato | Quando Usar |
 |--------------|-------------|---------|-------------|
-| **Vocabulário DwC** (grande) | `data/dwc_terms.rds` | RDS | Dataset complexo usado internamente |
-| **Definições de Termos** (código) | `R/data_dwc.R` | Lista nomeada | Metadados de cada termo (tipo, obrigatório, etc.) |
-| **Dicionário i18n** (texto) | `R/data_dictionary.R` | Lista aninhada | Traduções PT/EN |
+| **Vocabulário DwC** | `inst/extdata/dwc_terms.rds` | RDS | Definições de termos DwC, cached em memória |
+| **Sinônimos** | `inst/extdata/dwc_synonyms_v1.rds` | RDS | Tabela de sinônimos para auto-mapping |
+| **Aliases de Países** | `inst/extdata/country_aliases.rds` | RDS | Nomes alternativos para conversão ISO3 |
+| **Dicionário i18n** | `inst/extdata/i18n.json` | JSON | Traduções PT/EN (carregado por `data_dictionary.R`) |
 
-**Carregamento de `dwc_terms.rds`**:
+**Carregamento com cache em memória**:
 ```r
-# Opção 1: Carregado sob demanda (para usuário final)
-load_dwc_terms <- function() {
-  path <- system.file("extdata", "dwc_terms.rds", package = "saira")
-  readRDS(path)
-}
+# Padrão ADR-014 (create_rds_cache factory): load_dwc_terms_rds(), coords_load_aliases(), etc.
+# Cache na primeira chamada, retorna da memória nas subsequentes.
+dwc_terms_cache <- create_rds_cache("dwc_terms")  # Factory da utils_common.R
 
-# Opção 2: Incluir em sysdata.rda (para uso interno, não exportado)
-# tools::usethis::use_data(dwc_terms, internal = TRUE)
+load_dwc_terms_rds <- function(force = FALSE) {
+  if (!force && !is.null(dwc_terms_cache$get())) {
+    return(dwc_terms_cache$get())
+  }
+  path <- system.file("extdata", "dwc_terms.rds", package = "saira")
+  dict <- readRDS(path)
+  dwc_terms_cache$set(dict, path = path)
+  dict
+}
 ```
 
 ---
@@ -233,28 +238,27 @@ graph LR
 # R/app_server.R (APENAS orquestração, zero lógica de negócios)
 app_server <- function(input, output, session) {
   
-  # Reactive: Idioma selecionado
+  # Reactive: Idioma selecionado (com debounce inteligente)
   lang_r <- reactive(input$lang_switch)
   
   # Data Flow: Chain of Reactivity
-  raw_data    <- mod_upload_server("upload", lang_r)
-  mapped_data <- mod_mapping_server("mapping", raw_data, lang_r)
+  raw_data       <- mod_upload_server("upload", lang_r)
+  mapping_result <- mod_mapping_server("mapping", raw_data, lang_r)
   
-  # Validações e preview consomem o mesmo mapped_data
-  mod_preview_server("preview", mapped_data, lang_r)
-  mod_validate_names_server("validate_names", mapped_data, lang_r)
-  mod_validate_coords_server("validate_coords", mapped_data, lang_r)
+  # mapping_result é uma named list de reactives (ADR-054):
+  #   processed_data_r, preview_data_r, validation_gate_r,
+  #   validation_gate_coords_r, rostrum_decisions_r, etc.
+  
+  mod_preview_server("preview", mapping_result$preview_data_r, lang_r,
+    download_data_r = mapping_result$processed_data_r)
+  mod_validate_names_server("validate_names", mapping_result$processed_data_r, lang_r,
+    validation_gate_r = mapping_result$validation_gate_r)
+  mod_validate_coords_server("validate_coords", mapping_result$processed_data_r, lang_r,
+    validation_gate_r = mapping_result$validation_gate_coords_r)
   
   # Wiki e Help não dependem de dados
   mod_wiki_server("wiki", lang_r)
   mod_help_server("help", lang_r)
-  
-  # Navegação automática (opcional)
-  observeEvent(raw_data(), {
-    if (!is.null(raw_data())) {
-      updateNavbarPage(session, "main_nav", selected = "mapping")
-    }
-  })
 }
 ```
 
@@ -262,7 +266,7 @@ app_server <- function(input, output, session) {
 1. ✅ Sem `library()` (pacote carregado via `DESCRIPTION`)
 2. ✅ Sem lógica de negócios (apenas chamadas de módulos)
 3. ✅ Reactives passados como **expressões** (`raw_data`), não valores (`raw_data()`)
-4. ✅ Cada módulo retorna um reactive explicitamente
+4. ✅ `mod_mapping` retorna **named list** de reactives (ADR-054)
 
 ---
 
@@ -273,39 +277,45 @@ app_server <- function(input, output, session) {
 Package: saira
 Title: Biodiversity Data Standardization to Darwin Core
 Version: 0.1.0
-Authors@R: person("Seu", "Nome", email = "email@example.com", role = c("aut", "cre"))
-Description: Shiny application for standardizing biodiversity datasets to the 
-    Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools 
+Authors@R: person("Rogério", "Nunes Oliveira", email = "rogerio@sibbr.gov.br", role = c("aut", "cre"))
+Description: Shiny application for standardizing biodiversity datasets to the
+    Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools
     for data validation, column mapping, and taxonomic verification.
 License: MIT + file LICENSE
 Encoding: UTF-8
-LazyData: true
-RoxygenNote: 7.3.0
+Depends: R (>= 4.1.0)
+RoxygenNote: 7.3.3
 
 Imports:
     shiny (>= 1.7.0),
+    htmltools,
     bslib (>= 0.5.0),
-    dplyr (>= 1.1.0),
     readr (>= 2.1.0),
     stringr (>= 1.5.0),
-    lubridate (>= 1.9.0),
     taxadb (>= 0.2.0),
-    CoordinateCleaner (>= 2.0.0),
-    countrycode (>= 1.5.0),
+    CoordinateCleaner (>= 3.0.0),
+    countrycode (>= 1.6.0),
+    sf (>= 1.0.0),
+    rnaturalearth (>= 1.0.0),
+    rnaturalearthdata (>= 1.0.0),
+    rnaturalearthhires (>= 1.0.0),
     DT (>= 0.28),
     leaflet (>= 2.1.0),
-    here (>= 1.0.0),
     ids (>= 1.0.0),
-    shinyFeedback (>= 0.4.0)
+    jsonlite (>= 1.8.0),
+    DBI (>= 1.0.0),
+    RSQLite (>= 2.2.0),
+    digest (>= 0.6.0),
+    withr (>= 2.5.0)
 
 Suggests:
     testthat (>= 3.0.0),
     shinytest2 (>= 0.3.0),
-    knitr,
-    rmarkdown,
-    devtools
-
-VignetteBuilder: knitr
+    devtools,
+    future,
+    furrr,
+    roxygen2,
+    pkgload
 ```
 
 ### 5.2 Uso Correto no Código

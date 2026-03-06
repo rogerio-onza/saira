@@ -831,37 +831,45 @@
     "pt": "Provedores de Dados",
     "en": "Data Providers"
   },
+  "validate_names_provider_florabr_full": {
+    "pt": "Flora e Funga do Brasil",
+    "en": "Flora and Funga of Brazil"
+  },
+  "validate_names_provider_florabr_desc": {
+    "pt": "Base oficial de plantas e fungos do Brasil (JBRJ). Requer download local dos dados.",
+    "en": "Official Brazilian plants and fungi database (JBRJ). Requires local data download."
+  },
+  "validate_names_provider_faunabr_full": {
+    "pt": "Cat\u00e1logo Taxon\u00f4mico da Fauna do Brasil",
+    "en": "Taxonomic Catalog of the Fauna of Brazil"
+  },
+  "validate_names_provider_faunabr_desc": {
+    "pt": "Cat\u00e1logo oficial de animais do Brasil (JBRJ). Requer download local dos dados.",
+    "en": "Official Brazilian fauna catalog (JBRJ). Requires local data download."
+  },
   "validate_names_provider_gbif_full": {
     "pt": "Global Biodiversity Information Facility",
     "en": "Global Biodiversity Information Facility"
   },
   "validate_names_provider_gbif_desc": {
-    "pt": "Cobertura global para nomes taxonômicos e sinônimos.",
+    "pt": "Cobertura global para nomes taxon\u00f4micos e sin\u00f4nimos.",
     "en": "Global coverage for taxonomic names and synonyms."
   },
-  "validate_names_provider_itis_full": {
-    "pt": "Integrated Taxonomic Information System",
-    "en": "Integrated Taxonomic Information System"
+  "validate_names_br_downloading": {
+    "pt": "Baixando dados de %s...",
+    "en": "Downloading %s data..."
   },
-  "validate_names_provider_itis_desc": {
-    "pt": "Fonte consolidada para taxa da América do Norte.",
-    "en": "Consolidated source for North American taxa."
+  "validate_names_br_download_failed": {
+    "pt": "Falha ao baixar dados de %s.",
+    "en": "Failed to download %s data."
   },
-  "validate_names_provider_col_full": {
-    "pt": "Catalogue of Life",
-    "en": "Catalogue of Life"
+  "validate_names_br_not_installed": {
+    "pt": "Pacote '%s' n\u00e3o est\u00e1 instalado.",
+    "en": "Package '%s' is not installed."
   },
-  "validate_names_provider_col_desc": {
-    "pt": "Catálogo taxonômico de referência com curadoria global.",
-    "en": "Reference taxonomic catalog with global curation."
-  },
-  "validate_names_provider_ncbi_full": {
-    "pt": "NCBI Taxonomy",
-    "en": "NCBI Taxonomy"
-  },
-  "validate_names_provider_ncbi_desc": {
-    "pt": "Taxonomia focada em organismos com suporte molecular.",
-    "en": "Taxonomy focused on organisms with molecular support."
+  "validate_names_cascade_br_notice": {
+    "pt": "Provedores brasileiros consultados primeiro. Nomes n\u00e3o encontrados v\u00e3o automaticamente para GBIF.",
+    "en": "Brazilian providers queried first. Names not found go automatically to GBIF."
   },
   "validate_names_provider_recommended": {
     "pt": "Recomendado",
@@ -870,6 +878,30 @@
   "validate_names_provider_priority_badge": {
     "pt": "Prioridade %d",
     "en": "Priority %d"
+  },
+  "validate_names_provider_status_up_to_date": {
+    "pt": "Atualizado",
+    "en": "Up to date"
+  },
+  "validate_names_provider_status_updating": {
+    "pt": "Atualizando...",
+    "en": "Updating..."
+  },
+  "validate_names_provider_status_update_failed": {
+    "pt": "Falha na atualiza\u00e7\u00e3o",
+    "en": "Update failed"
+  },
+  "validate_names_provider_status_not_downloaded": {
+    "pt": "N\u00e3o baixado",
+    "en": "Not downloaded"
+  },
+  "validate_names_provider_notify_updated": {
+    "pt": "%s dados atualizados%s.",
+    "en": "%s data updated%s."
+  },
+  "validate_names_provider_notify_update_failed": {
+    "pt": "Falha ao atualizar %s em background.",
+    "en": "%s background update failed."
   },
   "validate_names_providers_placeholder": {
     "pt": "Selecione um ou mais provedores",
@@ -904,7 +936,7 @@
     "en": "Provider databases are downloaded automatically on first use."
   },
   "validate_names_priority_notice": {
-    "pt": "O primeiro provedor que retornar resultado será usado como veredito.",
+    "pt": "O primeiro provedor que retornar resultado ser\u00e1 usado como veredito.",
     "en": "The first provider with a match defines the verdict."
   },
   "validate_names_run": {

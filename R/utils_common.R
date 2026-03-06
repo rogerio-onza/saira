@@ -1,7 +1,46 @@
 # Title: Common Utility Functions
 # Author: Rogerio Nunes Oliveira
 # Date: 2026-02-28
-# Version: 1.0
+# Version: 1.1
+
+#' Create an in-process cache for RDS data
+#'
+#' Factory function that returns a list with $get(), $set(), $reset(), $state().
+#' Eliminates boilerplate across utils_dwc, utils_mapping, utils_coords,
+#' and data_dictionary cache implementations (ADR-014 pattern).
+#'
+#' @param name Character label for debug/logging purposes only
+#' @return Named list with cache operations
+#' @noRd
+create_rds_cache <- function(name = "unnamed") {
+    env <- new.env(parent = emptyenv())
+    env$value <- NULL
+    env$path <- NULL
+    env$load_count <- 0L
+
+    list(
+        get = function() env$value,
+        set = function(value, path = NULL) {
+            env$value <- value
+            if (!is.null(path)) env$path <- path
+            env$load_count <- env$load_count + 1L
+            invisible(value)
+        },
+        reset = function() {
+            env$value <- NULL
+            env$path <- NULL
+            env$load_count <- 0L
+            invisible(TRUE)
+        },
+        state = function() {
+            list(
+                has_value = !is.null(env$value),
+                path = env$path,
+                load_count = as.integer(env$load_count)
+            )
+        }
+    )
+}
 
 #' Check if a value is blank (NULL, NA, empty, or whitespace-only)
 #'

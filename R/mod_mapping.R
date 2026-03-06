@@ -101,6 +101,25 @@ mod_mapping_ui <- function(id) {
         )
     )
 }
+#' @noRd
+reset_basis_of_record_state <- function(rv, reset_source_col = TRUE) {
+    # Helper: reset basisOfRecord state to empty (consolidates 3 duplicated blocks)
+    # If reset_source_col=FALSE, preserves the current source_col (used when changing column)
+    rv$basis_of_record_map <- stats::setNames(character(0), character(0))
+    rv$basis_of_record_auto_map <- stats::setNames(character(0), character(0))
+    if (reset_source_col) {
+        rv$basis_of_record_source_col <- ""
+    }
+    rv$basis_of_record_draft_map <- stats::setNames(character(0), character(0))
+    rv$basis_of_record_entries <- data.frame(
+        idx = integer(0),
+        key = character(0),
+        raw = character(0),
+        stringsAsFactors = FALSE
+    )
+    rv$basis_of_record_page <- 1L
+}
+
 #' Mapping Module Server
 #'
 #' @param id Module namespace ID
@@ -579,17 +598,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 rv$ambiguity_queue <- list()
                 rv$rostrum_decisions <- NULL
                 rv$rostrum_run_stats <- list()
-                rv$basis_of_record_map <- stats::setNames(character(0), character(0))
-                rv$basis_of_record_auto_map <- stats::setNames(character(0), character(0))
-                rv$basis_of_record_source_col <- ""
-                rv$basis_of_record_draft_map <- stats::setNames(character(0), character(0))
-                rv$basis_of_record_entries <- data.frame(
-                    idx = integer(0),
-                    key = character(0),
-                    raw = character(0),
-                    stringsAsFactors = FALSE
-                )
-                rv$basis_of_record_page <- 1L
+                reset_basis_of_record_state(rv)
             },
             ignoreNULL = TRUE
         )
@@ -631,16 +640,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
                         if (!identical(previous_source_col, next_source_col)) {
                             rv$basis_of_record_source_col <- next_source_col
-                            rv$basis_of_record_map <- stats::setNames(character(0), character(0))
-                            rv$basis_of_record_auto_map <- stats::setNames(character(0), character(0))
-                            rv$basis_of_record_draft_map <- stats::setNames(character(0), character(0))
-                            rv$basis_of_record_entries <- data.frame(
-                                idx = integer(0),
-                                key = character(0),
-                                raw = character(0),
-                                stringsAsFactors = FALSE
-                            )
-                            rv$basis_of_record_page <- 1L
+                            reset_basis_of_record_state(rv, reset_source_col = FALSE)
                         }
                     }
 
@@ -1107,17 +1107,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             shiny::updateDateInput(session, "custom_modified_date", value = Sys.Date())
             shiny::updateCheckboxGroupInput(session, "custom_license", selected = character(0))
             shiny::updateCheckboxGroupInput(session, "custom_language", selected = character(0))
-            rv$basis_of_record_map <- stats::setNames(character(0), character(0))
-            rv$basis_of_record_auto_map <- stats::setNames(character(0), character(0))
-            rv$basis_of_record_source_col <- ""
-            rv$basis_of_record_draft_map <- stats::setNames(character(0), character(0))
-            rv$basis_of_record_entries <- data.frame(
-                idx = integer(0),
-                key = character(0),
-                raw = character(0),
-                stringsAsFactors = FALSE
-            )
-            rv$basis_of_record_page <- 1L
+            reset_basis_of_record_state(rv)
             rv$is_programmatic_update <- FALSE
             rv$programmatic_terms <- character(0)
             shiny::removeModal()

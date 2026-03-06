@@ -4,7 +4,7 @@
 # Version: 1.0
 
 testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
-    dict <- get("i18n_dict", envir = asNamespace("saira"))
+    dict <- saira:::load_i18n_dict()
 
     required_keys <- c(
         "nav_home",
@@ -47,6 +47,12 @@ testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
         "validate_names_provider_gbif_full",
         "validate_names_provider_gbif_desc",
         "validate_names_provider_priority_badge",
+        "validate_names_provider_status_up_to_date",
+        "validate_names_provider_status_updating",
+        "validate_names_provider_status_update_failed",
+        "validate_names_provider_status_not_downloaded",
+        "validate_names_provider_notify_updated",
+        "validate_names_provider_notify_update_failed",
         "validate_names_priority_reset_notice",
         "validate_names_options_card_title",
         "validate_names_action_card_title",
@@ -363,7 +369,7 @@ testthat::test_that("get_language_name resolves known and unknown language codes
 })
 
 testthat::test_that("all dictionary keys contain non-empty pt and en translations", {
-    dict <- get("i18n_dict", envir = asNamespace("saira"))
+    dict <- saira:::load_i18n_dict()
 
     for (key in names(dict)) {
         testthat::expect_true(

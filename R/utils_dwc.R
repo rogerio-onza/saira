@@ -3,10 +3,9 @@
 # Date: 2026-02-14
 # Version: 1.1
 
-dwc_terms_cache_env <- new.env(parent = emptyenv())
-dwc_terms_cache_env$value <- NULL
-dwc_terms_cache_env$path <- NULL
-dwc_terms_cache_env$load_count <- 0L
+#' @include utils_common.R
+NULL
+dwc_terms_cache <- create_rds_cache("dwc_terms")
 
 basis_of_record_vocab_catalog <- list(
     list(
@@ -67,6 +66,7 @@ basis_of_record_vocab_catalog <- list(
     )
 )
 
+#' @noRd
 resolve_dwc_terms_path <- function() {
     candidates <- c(
         system.file("extdata", "dwc_terms.rds", package = "saira"),
@@ -83,25 +83,21 @@ resolve_dwc_terms_path <- function() {
     path
 }
 
+#' @noRd
 validate_force_flag <- function(force) {
     if (!is.logical(force) || length(force) != 1L || is.na(force)) {
         stop("force must be a single TRUE or FALSE value.")
     }
 }
 
+#' @noRd
 reset_dwc_terms_cache <- function() {
-    dwc_terms_cache_env$value <- NULL
-    dwc_terms_cache_env$path <- NULL
-    dwc_terms_cache_env$load_count <- 0L
-    invisible(TRUE)
+    dwc_terms_cache$reset()
 }
 
+#' @noRd
 dwc_terms_cache_state <- function() {
-    list(
-        has_value = !is.null(dwc_terms_cache_env$value),
-        path = dwc_terms_cache_env$path,
-        load_count = as.integer(dwc_terms_cache_env$load_count)
-    )
+    dwc_terms_cache$state()
 }
 
 #' Validate coordinates (legacy wrapper)
@@ -112,6 +108,14 @@ dwc_terms_cache_state <- function() {
 #' @param lat Numeric vector of latitudes
 #' @param lon Numeric vector of longitudes
 #' @return Data frame with validation results
+#' @examples
+#' \dontrun{
+#'   # Validates coordinate pairs using CoordinateCleaner (can be slow)
+#'   lat_vec <- c(-23.5505, -22.9068, 91)  # Note: 91 is invalid
+#'   lon_vec <- c(-46.6333, -43.1729, 0)
+#'   result <- validate_coords(lat_vec, lon_vec)
+#'   # $valid: c(TRUE, TRUE, FALSE)
+#' }
 #' @export
 validate_coords <- function(lat, lon) {
     input_df <- data.frame(
@@ -168,16 +172,14 @@ validate_occurrence_id <- function(ids) {
 load_dwc_terms_rds <- function(force = FALSE) {
     validate_force_flag(force)
 
-    if (!isTRUE(force) && !is.null(dwc_terms_cache_env$value)) {
-        return(dwc_terms_cache_env$value)
+    if (!isTRUE(force) && !is.null(dwc_terms_cache$get())) {
+        return(dwc_terms_cache$get())
     }
 
     path <- resolve_dwc_terms_path()
     terms <- readRDS(path)
 
-    dwc_terms_cache_env$value <- terms
-    dwc_terms_cache_env$path <- path
-    dwc_terms_cache_env$load_count <- as.integer(dwc_terms_cache_env$load_count) + 1L
+    dwc_terms_cache$set(terms, path = path)
 
     terms
 }

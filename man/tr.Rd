@@ -17,3 +17,10 @@ Character. Translated string
 \description{
 Translate a key to current language
 }
+\examples{
+\dontrun{
+  # Requires i18n_dict to be loaded (done by data_dictionary.R)
+  tr("app_title", lang = "pt")  # Returns Portuguese translation
+  tr("app_title", lang = "en")  # Returns English translation
+}
+}

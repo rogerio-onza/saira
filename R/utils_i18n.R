@@ -22,7 +22,7 @@ resolve_i18n_dict <- function() {
         }
     }
 
-    stop("i18n_dict is not available. Ensure data_dictionary.R is loaded.")
+    load_i18n_dict()
 }
 
 #' Translate a key to current language
@@ -30,6 +30,12 @@ resolve_i18n_dict <- function() {
 #' @param key Character. Key from i18n_dict
 #' @param lang Character. "pt" or "en"
 #' @return Character. Translated string
+#' @examples
+#' \dontrun{
+#'   # Requires i18n_dict to be loaded (done by data_dictionary.R)
+#'   tr("app_title", lang = "pt")  # Returns Portuguese translation
+#'   tr("app_title", lang = "en")  # Returns English translation
+#' }
 #' @export
 tr <- function(key, lang = "en") {
     dict <- resolve_i18n_dict()

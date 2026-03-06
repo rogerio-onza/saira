@@ -18,3 +18,12 @@ Data frame with validation results
 Legacy API wrapper around `validate_coords_df()`. Kept for backward
 compatibility with existing callers that pass latitude/longitude vectors.
 }
+\examples{
+\dontrun{
+  # Validates coordinate pairs using CoordinateCleaner (can be slow)
+  lat_vec <- c(-23.5505, -22.9068, 91)  # Note: 91 is invalid
+  lon_vec <- c(-46.6333, -43.1729, 0)
+  result <- validate_coords(lat_vec, lon_vec)
+  # $valid: c(TRUE, TRUE, FALSE)
+}
+}

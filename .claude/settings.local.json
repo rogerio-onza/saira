@@ -17,7 +17,30 @@
       "Bash(Rscript --vanilla -e \"pkgload::load_all\\(''.'', quiet=TRUE\\); testthat::test_file\\(''tests/testthat/test-utils-rostrum-contracts.R''\\)\")",
       "Bash(Rscript --vanilla -e \"pkgload::load_all\\(''.'', quiet=TRUE\\); testthat::test_file\\(''tests/testthat/test-utils-rostrum-db.R''\\)\")",
       "Bash(Rscript --vanilla -e \"pkgload::load_all\\(''.'', quiet=TRUE\\); testthat::test_file\\(''tests/testthat/test-mod-mapping-server.R''\\)\")",
-      "Bash(Rscript -e \"pkgload::load_all\\(quiet=TRUE\\); validate_composition_df\\(data.frame\\(term=''x'', selected_col=NA_character_, status=''SUGERIDO'', reason=''composed_scientific_name'', applied=FALSE, composed_from_json=NA_character_, stringsAsFactors=FALSE\\)\\)\")"
+      "Bash(Rscript -e \"pkgload::load_all\\(quiet=TRUE\\); validate_composition_df\\(data.frame\\(term=''x'', selected_col=NA_character_, status=''SUGERIDO'', reason=''composed_scientific_name'', applied=FALSE, composed_from_json=NA_character_, stringsAsFactors=FALSE\\)\\)\")",
+      "Read(//tmp/**)",
+      "Read(//c/tmp/**)",
+      "Bash(Rscript -e \"devtools::document\\(\\)\")",
+      "Bash(Rscript -e \"pkgload::load_all\\(quiet=TRUE\\); cat\\(''LOAD OK\\\\n''\\)\")",
+      "Bash(Rscript -e \"devtools::test\\(filter=''mod-validate-names-helpers''\\)\")",
+      "Read(//c/Users/Admin/AppData/Local/Temp/RtmpYbv0bn/file2f544dd45063/saira.Rcheck/**)",
+      "Read(//c/Users/Admin/AppData/Local/Temp/Rtmp69IYUI/file50ad86f6860e5/saira.Rcheck/**)",
+      "Bash(R CMD INSTALL --no-multiarch --with-keep.source .)",
+      "Bash(R CMD INSTALL --no-multiarch --with-keep.source --no-staged-install .)",
+      "Read(//c/Users/Admin/AppData/Local/Temp/RtmpU3mpsD/file5c9f85b722b70/**)",
+      "Read(//c/Users/Admin/AppData/Local/Temp/RtmpyEvu1p/file5f54055ce498c/**)",
+      "Read(//c/Users/Admin/AppData/Local/Temp/**)",
+      "Bash(R CMD build --no-manual .)",
+      "Bash(R CMD check --no-manual --no-staged-install saira_0.1.0.tar.gz)",
+      "Bash(Rscript -e \"devtools::test\\(filter=''mod-validate-names|mod-mapping-server''\\)\")",
+      "Bash(Rscript -e \"pkgload::load_all\\(quiet=TRUE\\); cat\\(''OK\\\\n''\\)\")",
+      "Bash(Rscript -e \"pkgload::load_all\\(quiet=TRUE\\); cat\\(''load_all: OK\\\\n''\\)\")",
+      "Bash(Rscript -e \"devtools::test\\(filter=''utils-i18n|i18n-a11y''\\)\")",
+      "Bash(R CMD check --no-manual saira_0.1.0.tar.gz)",
+      "Bash(Rscript -e \"jsonlite::fromJSON\\(''inst/extdata/i18n.json''\\); cat\\(''JSON OK\\\\n''\\)\")",
+      "Bash(Rscript -e \"j <- jsonlite::fromJSON\\(''inst/extdata/i18n.json''\\); cat\\(''Keys:'', length\\(j\\), ''\\\\nJSON OK\\\\n''\\)\")",
+      "WebFetch(domain:github.com)",
+      "Bash(chmod 644 /tmp/utils_brproviders_v2.R)"
     ]
   }
 }

@@ -15,14 +15,14 @@ testthat::test_that("provider priority follows toggle order", {
         {
             testthat::expect_identical(rv$selected_providers, "gbif")
 
-            toggle_provider_selection("itis")
-            testthat::expect_identical(rv$selected_providers, c("gbif", "itis"))
+            toggle_provider_selection("florabr")
+            testthat::expect_identical(rv$selected_providers, c("gbif", "florabr"))
 
             toggle_provider_selection("gbif")
-            testthat::expect_identical(rv$selected_providers, "itis")
+            testthat::expect_identical(rv$selected_providers, "florabr")
 
             toggle_provider_selection("gbif")
-            testthat::expect_identical(rv$selected_providers, c("itis", "gbif"))
+            testthat::expect_identical(rv$selected_providers, c("florabr", "gbif"))
         }
     )
 })
@@ -490,6 +490,35 @@ testthat::test_that("cancel path marks unresolved names after abort flag", {
                     finalized <- finalize_taxadb_run(state)
                     testthat::expect_true(isTRUE(finalized$meta$aborted))
                     testthat::expect_true(any(finalized$report$validation_status == "not_found"))
+                }
+            )
+        }
+    )
+})
+
+testthat::test_that("config panel shows BR provider runtime status badges", {
+    mapped_df <- data.frame(scientificName = c("Panthera onca"), stringsAsFactors = FALSE)
+
+    testthat::with_mocked_bindings(
+        brprovider_cache_statuses = function(provider_ids = c("florabr", "faunabr"), poll = TRUE) {
+            list(
+                florabr = list(provider_id = "florabr", status = "update_in_progress", local_version = "393.319"),
+                faunabr = list(provider_id = "faunabr", status = "up_to_date", local_version = "1.48")
+            )
+        },
+        .package = "saira",
+        {
+            shiny::testServer(
+                mod_validate_names_server,
+                args = list(
+                    mapped_data_r = shiny::reactive(mapped_df),
+                    lang_r = shiny::reactive("en")
+                ),
+                {
+                    ui_obj <- output$config_panel
+                    html <- paste(ui_obj$html, collapse = " ")
+                    testthat::expect_true(grepl("Updating...", html, fixed = TRUE))
+                    testthat::expect_true(grepl("Up to date", html, fixed = TRUE))
                 }
             )
         }

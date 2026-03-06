@@ -3,6 +3,9 @@
 # Date: 2026-02-26
 # Version: 2.3
 
+#' @include mod_validate_names_helpers.R
+NULL
+
 #' Validate Names Module UI
 #'
 #' @param id Module ID
@@ -55,17 +58,25 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         ns <- session$ns
 
         provider_catalog <- list(
-            list(id = "gbif", short = "GBIF", full_key = "validate_names_provider_gbif_full", desc_key = "validate_names_provider_gbif_desc", icon = "earth-americas", recommended = TRUE),
-            list(id = "itis", short = "ITIS", full_key = "validate_names_provider_itis_full", desc_key = "validate_names_provider_itis_desc", icon = "leaf", recommended = FALSE),
-            list(id = "col", short = "COL", full_key = "validate_names_provider_col_full", desc_key = "validate_names_provider_col_desc", icon = "book-atlas", recommended = FALSE),
-            list(id = "ncbi", short = "NCBI", full_key = "validate_names_provider_ncbi_full", desc_key = "validate_names_provider_ncbi_desc", icon = "dna", recommended = FALSE)
+            list(id = "florabr", short = "Flora BR", full_key = "validate_names_provider_florabr_full", desc_key = "validate_names_provider_florabr_desc", icon = "seedling",      recommended = FALSE, type = "br"),
+            list(id = "faunabr", short = "Fauna BR", full_key = "validate_names_provider_faunabr_full", desc_key = "validate_names_provider_faunabr_desc", icon = "paw",           recommended = FALSE, type = "br"),
+            list(id = "gbif",    short = "GBIF",     full_key = "validate_names_provider_gbif_full",    desc_key = "validate_names_provider_gbif_desc",    icon = "earth-americas", recommended = TRUE,  type = "taxadb")
         )
         provider_ids <- vapply(provider_catalog, function(item) item$id, FUN.VALUE = character(1))
-        provider_labels <- stats::setNames(vapply(provider_catalog, function(item) item$short, FUN.VALUE = character(1)), provider_ids)
-        stream_window_limit <- 100L
-        stream_filter_values <- c("all", "problems", "not_found", "ambiguous", "synonym", "ignored")
-        problem_status_values <- c("not_found", "ambiguous", "synonym")
-        review_exit_ms <- 320L
+        br_provider_ids <- c("florabr", "faunabr")
+        initial_provider_runtime_status <- tryCatch(
+            brprovider_cache_statuses(br_provider_ids, poll = FALSE),
+            error = function(e) {
+                stats::setNames(
+                    lapply(br_provider_ids, function(id) list(provider_id = id, status = "never_downloaded", local_version = NA_character_)),
+                    br_provider_ids
+                )
+            }
+        )
+        stream_window_limit <- .vn_stream_window_limit
+        stream_filter_values <- .vn_stream_filter_values
+        problem_status_values <- .vn_problem_status_values
+        review_exit_ms <- .vn_review_exit_ms
 
         validation_result <- shiny::reactiveVal(NULL)
         validation_meta <- shiny::reactiveVal(NULL)
@@ -96,162 +107,97 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 query_name = character(0),
                 expires_at = as.POSIXct(character(0), tz = "UTC"),
                 stringsAsFactors = FALSE
-            )
+            ),
+            provider_runtime_status = initial_provider_runtime_status
         )
 
         provider_button_id <- function(provider_id) paste0("provider_card_", provider_id)
 
-        format_provider_labels <- function(provider_values) {
-            values_chr <- as.character(provider_values)
-            values_chr <- values_chr[!is.na(values_chr) & nzchar(values_chr)]
-            if (length(values_chr) == 0L) {
-                return(character(0))
+        provider_runtime_status_for <- function(provider_id) {
+            status_map <- rv$provider_runtime_status
+            if (!is.list(status_map) || is.null(status_map[[provider_id]])) {
+                return(list(provider_id = provider_id, status = "never_downloaded", local_version = NA_character_))
             }
-            labels <- unname(provider_labels[values_chr])
-            missing_idx <- is.na(labels) | !nzchar(labels)
-            labels[missing_idx] <- toupper(values_chr[missing_idx])
-            unique(labels)
+            status_map[[provider_id]]
         }
 
-        normalize_provider_failures <- function(raw_failures) {
-            if (!is.data.frame(raw_failures) || nrow(raw_failures) == 0L) {
-                return(data.frame(provider = character(0), error = character(0), stringsAsFactors = FALSE))
-            }
-
-            out <- raw_failures
-            if (!"provider" %in% names(out)) out$provider <- NA_character_
-            if (!"error" %in% names(out)) out$error <- NA_character_
-            out$provider <- as.character(out$provider)
-            out$error <- as.character(out$error)
-            out <- out[!is.na(out$provider) & nzchar(out$provider), c("provider", "error"), drop = FALSE]
-            rownames(out) <- NULL
-            out
-        }
-
-        stream_window <- function(stream_df, limit = stream_window_limit) {
-            if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
-                return(empty_validation_stream())
-            }
-            out <- stream_df
-            if (!"display_order" %in% names(out)) out$display_order <- seq_len(nrow(out))
-            out <- out[order(out$display_order, decreasing = TRUE), , drop = FALSE]
-            limit_int <- suppressWarnings(as.integer(limit))
-            if (is.na(limit_int) || limit_int <= 0L) limit_int <- 100L
-            if (nrow(out) > limit_int) out <- out[seq_len(limit_int), , drop = FALSE]
-            rownames(out) <- NULL
-            out
-        }
-
-        provider_failure_lines <- function(failure_df, resolved_unique = 0L) {
-            if (!is.data.frame(failure_df) || nrow(failure_df) == 0L) {
-                return(character(0))
-            }
-
-            resolved_int <- suppressWarnings(as.integer(resolved_unique))
-            if (is.na(resolved_int) || resolved_int < 0L) resolved_int <- 0L
-
-            vapply(seq_len(nrow(failure_df)), function(i) {
-                provider_label <- format_provider_labels(failure_df$provider[[i]])
-                if (length(provider_label) == 0L) {
-                    provider_label <- toupper(as.character(failure_df$provider[[i]]))
-                } else {
-                    provider_label <- provider_label[[1]]
+        refresh_provider_runtime_status <- function(poll = TRUE) {
+            fresh <- tryCatch(
+                brprovider_cache_statuses(br_provider_ids, poll = poll),
+                error = function(e) {
+                    status_map <- rv$provider_runtime_status
+                    if (!is.list(status_map)) status_map <- list()
+                    status_map
                 }
-                error_text <- as.character(failure_df$error[[i]])
-                if (is.na(error_text) || !nzchar(error_text)) error_text <- tr("validate_names_error_unknown", lang_r())
-                sprintf(tr("validate_names_provider_failed_stream_item", lang_r()), provider_label, resolved_int, error_text)
-            }, FUN.VALUE = character(1))
-        }
-
-        phase_label <- function(state) {
-            phase_value <- as.character(state$phase %||% "")
-            switch(phase_value,
-                prepare = tr("validate_names_progress_phase_prepare", lang_r()),
-                provider_init = tr("validate_names_progress_phase_provider_init", lang_r()),
-                provider_query_batch = tr("validate_names_progress_phase_provider_query_batch", lang_r()),
-                provider_finalize = tr("validate_names_progress_phase_provider_finalize", lang_r()),
-                consolidate = tr("validate_names_progress_phase_consolidate", lang_r()),
-                done = tr("validate_names_progress_phase_done", lang_r()),
-                failed = tr("validate_names_progress_phase_failed", lang_r()),
-                tr("validate_names_progress_phase_prepare", lang_r())
             )
+            rv$provider_runtime_status <- fresh
+            fresh
         }
 
-        status_style_map <- function(status_value) {
-            status_key <- as.character(status_value)
-            status_key <- ifelse(is.na(status_key) | !nzchar(status_key), "not_found", tolower(status_key))
-
-            if (identical(status_key, "accepted")) {
-                return(list(
-                    key = "accepted",
-                    icon_symbol = "\u2713",
-                    label_key = "validate_names_stream_status_accepted",
-                    item_class = "vn-stream-item-accepted",
-                    badge_class = "badge-success",
-                    row_class = "vn-row-accepted"
-                ))
+        provider_runtime_badge <- function(status_obj) {
+            key <- tolower(as.character(status_obj$status %||% "never_downloaded"))
+            if (identical(key, "up_to_date")) {
+                return(shiny::tags$span(class = "vn-status-badge badge-success", tr("validate_names_provider_status_up_to_date", lang_r())))
             }
-            if (identical(status_key, "synonym")) {
-                return(list(
-                    key = "synonym",
-                    icon_symbol = "\u21C4",
-                    label_key = "validate_names_stream_status_synonym",
-                    item_class = "vn-stream-item-synonym",
-                    badge_class = "badge-info",
-                    row_class = "vn-row-synonym"
-                ))
+            if (identical(key, "update_in_progress")) {
+                return(shiny::tags$span(class = "vn-status-badge badge-info", tr("validate_names_provider_status_updating", lang_r())))
             }
-            if (status_key %in% c("ambiguous", "unresolved")) {
-                return(list(
-                    key = "ambiguous",
-                    icon_symbol = "?",
-                    label_key = "validate_names_stream_status_ambiguous",
-                    item_class = "vn-stream-item-ambiguous",
-                    badge_class = "badge-warning",
-                    row_class = "vn-row-ambiguous"
-                ))
+            if (identical(key, "update_failed")) {
+                return(shiny::tags$span(class = "vn-status-badge badge-warning", tr("validate_names_provider_status_update_failed", lang_r())))
             }
-            if (status_key %in% c("invalid", "ignored")) {
-                return(list(
-                    key = "ignored",
-                    icon_symbol = "\u2014",
-                    label_key = "validate_names_stream_status_ignored",
-                    item_class = "vn-stream-item-ignored",
-                    badge_class = "badge-muted",
-                    row_class = "vn-row-ignored"
-                ))
-            }
-            list(
-                key = "not_found",
-                icon_symbol = "\u2715",
-                label_key = "validate_names_stream_status_not_found",
-                item_class = "vn-stream-item-not-found",
-                badge_class = "badge-error",
-                row_class = "vn-row-not-found"
-            )
+            shiny::tags$span(class = "vn-status-badge badge-muted", tr("validate_names_provider_status_not_downloaded", lang_r()))
         }
 
-        normalize_status_for_filter <- function(status_value) {
-            status_key <- tolower(as.character(status_value %||% ""))
-            if (!nzchar(status_key) || is.na(status_key)) {
-                return("not_found")
-            }
-            if (identical(status_key, "unresolved")) {
-                return("ambiguous")
-            }
-            if (identical(status_key, "invalid")) {
-                return("ignored")
-            }
-            if (status_key %in% c("accepted", "synonym", "not_found", "ambiguous", "ignored")) {
-                return(status_key)
-            }
-            "not_found"
-        }
+        shiny::observe({
+            selected <- as.character(rv$selected_providers)
+            selected_br <- intersect(selected, br_provider_ids)
+            current_map <- rv$provider_runtime_status
+            has_running_update <- is.list(current_map) && any(vapply(
+                br_provider_ids,
+                function(id) identical(as.character((current_map[[id]] %||% list())$status %||% ""), "update_in_progress"),
+                FUN.VALUE = logical(1)
+            ))
 
-        is_problem_status_key <- function(status_key) {
-            key <- normalize_status_for_filter(status_key)
-            key %in% problem_status_values
-        }
+            if (length(selected_br) == 0L && !isTRUE(rv$running) && !isTRUE(rv$starting) && !isTRUE(has_running_update)) {
+                return(invisible(NULL))
+            }
+
+            shiny::invalidateLater(1200, session)
+            previous <- rv$provider_runtime_status
+            updated <- refresh_provider_runtime_status(poll = TRUE)
+
+            for (provider_id in br_provider_ids) {
+                prev_obj <- if (is.list(previous)) previous[[provider_id]] else NULL
+                curr_obj <- if (is.list(updated)) updated[[provider_id]] else NULL
+                prev_status <- tolower(as.character((prev_obj %||% list())$status %||% ""))
+                curr_status <- tolower(as.character((curr_obj %||% list())$status %||% ""))
+                prev_version <- as.character((prev_obj %||% list())$local_version %||% "")
+                curr_version <- as.character((curr_obj %||% list())$local_version %||% "")
+
+                if (identical(prev_status, "update_in_progress") && identical(curr_status, "up_to_date")) {
+                    label <- format_provider_labels(provider_id)
+                    label_chr <- if (length(label) > 0L) label[[1L]] else provider_id
+                    suffix <- if (!is.na(curr_version) && nzchar(curr_version)) paste0(" (v", curr_version, ")") else ""
+                    shiny::showNotification(
+                        sprintf(tr("validate_names_provider_notify_updated", lang_r()), label_chr, suffix),
+                        type = "message",
+                        duration = 3
+                    )
+                }
+
+                if (identical(prev_status, "update_in_progress") && identical(curr_status, "update_failed")) {
+                    if (!identical(prev_version, curr_version) || !identical(prev_status, curr_status)) {
+                        label <- format_provider_labels(provider_id)
+                        label_chr <- if (length(label) > 0L) label[[1L]] else provider_id
+                        shiny::showNotification(
+                            sprintf(tr("validate_names_provider_notify_update_failed", lang_r()), label_chr),
+                            type = "warning",
+                            duration = 4
+                        )
+                    }
+                }
+            }
+        })
 
         review_entries_df <- function() {
             out <- rv$manual_reviews
@@ -373,68 +319,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             rv$manual_reviews <- out
             register_review_exit(key)
             invisible(NULL)
-        }
-
-        stream_filter_counts <- function(stream_df, reviewed_keys = character(0)) {
-            out <- c(
-                all = 0L,
-                problems = 0L,
-                not_found = 0L,
-                ambiguous = 0L,
-                synonym = 0L,
-                ignored = 0L
-            )
-            if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
-                return(out)
-            }
-            status_vec <- vapply(stream_df$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
-            query_vec <- if ("query_name" %in% names(stream_df)) as.character(stream_df$query_name) else rep("", nrow(stream_df))
-            reviewed_vec <- query_vec %in% reviewed_keys
-            reviewed_vec[is.na(reviewed_vec)] <- FALSE
-            unresolved_problem <- status_vec %in% problem_status_values & !reviewed_vec
-            out[["all"]] <- as.integer(length(status_vec))
-            out[["not_found"]] <- as.integer(sum(status_vec == "not_found" & !reviewed_vec, na.rm = TRUE))
-            out[["ambiguous"]] <- as.integer(sum(status_vec == "ambiguous" & !reviewed_vec, na.rm = TRUE))
-            out[["synonym"]] <- as.integer(sum(status_vec == "synonym" & !reviewed_vec, na.rm = TRUE))
-            out[["ignored"]] <- as.integer(sum(status_vec == "ignored", na.rm = TRUE))
-            out[["problems"]] <- as.integer(sum(unresolved_problem, na.rm = TRUE))
-            out
-        }
-
-        filter_stream_df <- function(stream_df, filter_key = "all", reviewed_keys = character(0), exiting_keys = character(0)) {
-            if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
-                return(stream_df)
-            }
-            key <- as.character(filter_key %||% "all")
-            if (!(key %in% stream_filter_values)) key <- "all"
-            if (identical(key, "all")) {
-                return(stream_df)
-            }
-
-            status_vec <- vapply(stream_df$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
-            query_vec <- if ("query_name" %in% names(stream_df)) as.character(stream_df$query_name) else rep("", nrow(stream_df))
-            reviewed_vec <- query_vec %in% reviewed_keys
-            reviewed_vec[is.na(reviewed_vec)] <- FALSE
-            exiting_vec <- query_vec %in% exiting_keys
-            exiting_vec[is.na(exiting_vec)] <- FALSE
-            keep_idx <- switch(key,
-                problems = (status_vec %in% problem_status_values & !reviewed_vec) | exiting_vec,
-                not_found = ((status_vec == "not_found") & !reviewed_vec) | exiting_vec,
-                ambiguous = ((status_vec == "ambiguous") & !reviewed_vec) | exiting_vec,
-                synonym = ((status_vec == "synonym") & !reviewed_vec) | exiting_vec,
-                ignored = status_vec == "ignored",
-                rep(TRUE, length(status_vec))
-            )
-            out <- stream_df[keep_idx, , drop = FALSE]
-            rownames(out) <- NULL
-            out
-        }
-
-        stream_filter_after_completion <- function(report_df) {
-            if (!is.data.frame(report_df) || nrow(report_df) == 0L) {
-                return("all")
-            }
-            "problems"
         }
 
         toggle_provider_selection <- function(provider_id) {
@@ -655,7 +539,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 if (is.na(batch_total) || batch_total < 0L) batch_total <- 0L
                 provider_label <- format_provider_labels(state$current_provider %||% "")
                 if (length(provider_label) > 0L) provider_text <- provider_label[[1]]
-                phase_text <- phase_label(state)
+                phase_text <- phase_label(state, lang_r())
             } else if (is.data.frame(report) && nrow(report) > 0L) {
                 total_unique <- nrow(report)
                 resolved_unique <- total_unique
@@ -741,49 +625,13 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             )
         }
 
-        review_status_context <- function(status_key) {
-            key <- normalize_status_for_filter(status_key)
-            if (identical(key, "ambiguous")) {
-                return(list(
-                    header_class = "vn-review-header-warning",
-                    icon = "circle-question",
-                    problem_label = tr("validate_names_review_problem_ambiguous", lang_r()),
-                    status_label = tr("validate_names_stream_status_ambiguous", lang_r()),
-                    question = tr("validate_names_review_question_ambiguous", lang_r()),
-                    helper = tr("validate_names_review_helper_ambiguous", lang_r())
-                ))
-            }
-            if (identical(key, "synonym")) {
-                return(list(
-                    header_class = "vn-review-header-info",
-                    icon = "code-compare",
-                    problem_label = tr("validate_names_review_problem_synonym", lang_r()),
-                    status_label = tr("validate_names_stream_status_synonym", lang_r()),
-                    question = tr("validate_names_review_question_synonym", lang_r()),
-                    helper = tr("validate_names_review_helper_synonym", lang_r())
-                ))
-            }
-            list(
-                header_class = "vn-review-header-error",
-                icon = "circle-xmark",
-                problem_label = tr("validate_names_review_problem_not_found", lang_r()),
-                status_label = tr("validate_names_stream_status_not_found", lang_r()),
-                question = tr("validate_names_review_question_not_found", lang_r()),
-                helper = tr("validate_names_review_helper_not_found", lang_r())
-            )
-        }
-
-        render_review_name_em <- function(value) {
-            shiny::HTML(sprintf("<em>%s</em>", htmltools::htmlEscape(as.character(value %||% ""))))
-        }
-
         show_review_modal <- function(mode = "confirm") {
             target <- rv$review_target
             if (is.null(target) || !is.list(target) || !nzchar(as.character(target$query_name %||% ""))) {
                 return(invisible(NULL))
             }
             rv$review_mode <- as.character(mode %||% "confirm")
-            ctx <- review_status_context(target$status_key %||% "not_found")
+            ctx <- review_status_context(target$status_key %||% "not_found", lang_r())
 
             lifecycle_script <- sprintf(
                 "(function() {
@@ -1155,6 +1003,11 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                                     sprintf(tr("validate_names_provider_priority_badge", lang_r()), 1L)
                                 )
                             }
+                            if (identical(item$type, "br")) {
+                                badges[[length(badges) + 1L]] <- provider_runtime_badge(
+                                    provider_runtime_status_for(item$id)
+                                )
+                            }
 
                             shiny::actionButton(
                                 inputId = ns(provider_button_id(item$id)),
@@ -1180,8 +1033,31 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     shiny::div(
                         class = "vn-provider-note",
                         shiny::span(class = "vn-note-icon", shiny::HTML("&#8505;")),
-                        tr("validate_names_priority_notice", lang_r())
-                    )
+                        if (any(c("florabr", "faunabr") %in% selected)) {
+                            tr("validate_names_cascade_br_notice", lang_r())
+                        } else {
+                            tr("validate_names_priority_notice", lang_r())
+                        }
+                    ),
+                    {
+                        in_progress <- br_provider_ids[vapply(
+                            br_provider_ids,
+                            function(id) {
+                                status_obj <- provider_runtime_status_for(id)
+                                identical(as.character(status_obj$status %||% ""), "update_in_progress")
+                            },
+                            FUN.VALUE = logical(1)
+                        )]
+                        if (length(in_progress) > 0L) {
+                            label <- format_provider_labels(in_progress)
+                            label <- label[!is.na(label) & nzchar(label)]
+                            shiny::div(
+                                class = "vn-provider-note",
+                                shiny::span(class = "vn-note-icon", shiny::HTML("&#8635;")),
+                                paste0("Background update in progress: ", paste(label, collapse = ", "))
+                            )
+                        }
+                    }
                 ),
                 shiny::div(
                     class = "vn-config-section vn-config-section-options",
@@ -1680,6 +1556,17 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 if (length(rv$selected_providers) == 0L) {
                     shiny::showNotification(tr("validate_names_providers_required", lang_r()), type = "warning")
                     return(invisible(NULL))
+                }
+                # Guard: verify BR packages are installed before starting.
+                br_pkg_ids <- intersect(rv$selected_providers, c("florabr", "faunabr"))
+                for (br_pkg in br_pkg_ids) {
+                    if (!requireNamespace(br_pkg, quietly = TRUE)) {
+                        shiny::showNotification(
+                            sprintf(tr("validate_names_br_not_installed", lang_r()), br_pkg),
+                            type = "error"
+                        )
+                        return(invisible(NULL))
+                    }
                 }
                 # Enter "starting" phase first so the UI can show immediate feedback.
                 rv$starting <- TRUE

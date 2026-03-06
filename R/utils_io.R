@@ -8,6 +8,13 @@
 #' @param file_path Path to CSV file
 #' @param encoding Optional encoding override
 #' @return Data frame
+#' @examples
+#' \dontrun{
+#'   # Reads CSV with automatic encoding and delimiter detection
+#'   df <- read_biodiversity_csv("data/biodiversity.csv")
+#'   # Or with explicit encoding:
+#'   df <- read_biodiversity_csv("data/biodiversity.csv", encoding = "UTF-8")
+#' }
 #' @export
 read_biodiversity_csv <- function(file_path, encoding = NULL) {
     # Try to detect encoding if not specified

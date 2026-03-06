@@ -6,6 +6,9 @@
 # is_blank_value(), normalize_for_matching(), tokenize_for_matching() moved to
 # utils_common.R (Onda 0, PR-0.1 / M8).
 
+#' @include utils_common.R
+NULL
+
 
 split_semicolon_tokens <- function(value) {
     if (is_blank_value(value)) {
@@ -264,14 +267,9 @@ sanitize_synonyms_table <- function(synonyms_tbl) {
     clean_tbl
 }
 
-dwc_synonyms_cache_env <- new.env(parent = emptyenv())
-dwc_synonyms_cache_env$value <- NULL
-dwc_synonyms_cache_env$path <- NULL
-dwc_synonyms_cache_env$load_count <- 0L
+dwc_synonyms_cache <- create_rds_cache("dwc_synonyms")
 
-validate_synonyms_force_flag <- function(force) {
-    validate_force_flag(force)
-}
+
 
 resolve_dwc_synonyms_path <- function() {
     candidates <- c(
@@ -300,38 +298,29 @@ resolve_explicit_synonyms_path <- function(path) {
 }
 
 reset_dwc_synonyms_cache <- function() {
-    dwc_synonyms_cache_env$value <- NULL
-    dwc_synonyms_cache_env$path <- NULL
-    dwc_synonyms_cache_env$load_count <- 0L
-    invisible(TRUE)
+    dwc_synonyms_cache$reset()
 }
 
 dwc_synonyms_cache_state <- function() {
-    list(
-        has_value = !is.null(dwc_synonyms_cache_env$value),
-        path = dwc_synonyms_cache_env$path,
-        load_count = as.integer(dwc_synonyms_cache_env$load_count)
-    )
+    dwc_synonyms_cache$state()
 }
 
 load_dwc_synonyms_v1 <- function(path = NULL, force = FALSE) {
-    validate_synonyms_force_flag(force)
+    validate_force_flag(force)
 
     if (!is.null(path)) {
         explicit_path <- resolve_explicit_synonyms_path(path)
         return(sanitize_synonyms_table(readRDS(explicit_path)))
     }
 
-    if (!isTRUE(force) && !is.null(dwc_synonyms_cache_env$value)) {
-        return(dwc_synonyms_cache_env$value)
+    if (!isTRUE(force) && !is.null(dwc_synonyms_cache$get())) {
+        return(dwc_synonyms_cache$get())
     }
 
     resolved_path <- resolve_dwc_synonyms_path()
     synonyms_tbl <- sanitize_synonyms_table(readRDS(resolved_path))
 
-    dwc_synonyms_cache_env$value <- synonyms_tbl
-    dwc_synonyms_cache_env$path <- resolved_path
-    dwc_synonyms_cache_env$load_count <- as.integer(dwc_synonyms_cache_env$load_count) + 1L
+    dwc_synonyms_cache$set(synonyms_tbl, path = resolved_path)
 
     synonyms_tbl
 }
@@ -396,12 +385,12 @@ is_substring_token_match <- function(lhs, rhs, min_substring_n = 3L) {
 }
 
 score_token_overlap <- function(
-    col_name,
-    term,
-    col_tokens = NULL,
-    term_tokens = NULL,
-    min_substring_n = 3L,
-    with_details = FALSE
+  col_name,
+  term,
+  col_tokens = NULL,
+  term_tokens = NULL,
+  min_substring_n = 3L,
+  with_details = FALSE
 ) {
     if (is.null(col_tokens)) {
         col_tokens <- tokenize_for_overlap(col_name)
@@ -500,12 +489,12 @@ score_text_similarity <- function(col_name, term) {
 }
 
 compute_name_score <- function(
-    col_name,
-    term,
-    synonyms_tbl = NULL,
-    col_profile = NULL,
-    term_profile = NULL,
-    synonyms_index = NULL
+  col_name,
+  term,
+  synonyms_tbl = NULL,
+  col_profile = NULL,
+  term_profile = NULL,
+  synonyms_index = NULL
 ) {
     col_norm <- if (!is.null(col_profile) && !is.null(col_profile$norm)) {
         as.character(col_profile$norm)
@@ -889,13 +878,13 @@ resolve_candidate_veto_code <- function(term, value_res) {
 }
 
 resolve_reason_code <- function(
-    name_reason,
-    value_reason,
-    status,
-    compatible_type,
-    is_temporal_limited = FALSE,
-    penalty_score = 0,
-    veto_code = ""
+  name_reason,
+  value_reason,
+  status,
+  compatible_type,
+  is_temporal_limited = FALSE,
+  penalty_score = 0,
+  veto_code = ""
 ) {
     if (!is_blank_value(veto_code)) {
         return("veto_hard")

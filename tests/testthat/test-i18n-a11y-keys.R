@@ -3,7 +3,7 @@
 # Date: 2026-02-20
 
 testthat::test_that("a11y/ui keys for this cycle exist in pt/en", {
-    dict <- get("i18n_dict", envir = asNamespace("saira"))
+    dict <- saira:::load_i18n_dict()
 
     required_keys <- c(
         "a11y_lang_switch_label",

@@ -10,6 +10,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [Unreleased]
 
 ### Adicionado
+- Validacao taxonomica BR com fallback de confirmacao no `GBIF`:
+  - `florabr`/`faunabr` agora encerram automaticamente apenas nomes `accepted`;
+  - resultados BR `synonym`, `ambiguous` e `not_found` seguem para tentativa de confirmacao no `GBIF`;
+  - consolidacao final preserva o resultado mais informativo por `query_name`, evitando downgrade para `not_found` quando o BR ja trouxe um achado melhor;
+  - testes de `utils_taxadb` ampliados para cobrir a nova regra de cascata e consolidacao.
 - Onda 3 do motor Rostrum (Stage 2 + Stage 3.5):
   - composicao de `scientificName` a partir de `genus + specificEpithet` (com suporte opcional a `infraspecificEpithet` e `scientificNameAuthorship`);
   - guard de circularidade por lineage `composed_from` para impedir retroalimentacao entre regras;
@@ -51,11 +56,33 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   - `rostrum_load_synonyms_from_db(conn)`: le sinonimos ativos do SQLite retornando formato V1-compativel (`name_score`, `lang`) para uso direto em `sanitize_synonyms_table()`;
   - `run_rostrum_engine()` agora tenta SQLite primeiro quando `conn` disponivel, com fallback para V1 RDS se tabela vazia;
   - 4 novos testes em `test-utils-rostrum-db.R`: seed com 2 linhas, idempotencia, formato V1-compativel de saida, retorno NULL em tabela vazia.
+- Cache persistente dos provedores BR com governanca de versao:
+  - `brprovider_ensure_data()` com bootstrap sincrono no primeiro download e update assincrono em background quando cache local ja existe;
+  - metadata por provider em `<provider>.meta.json` com `local_version`, `remote_version_last_seen`, `last_checked_at`, `last_updated_at`, `status`, `last_error` e `retry_after_at`;
+  - lock por provider (`<provider>.update.lock`) para evitar concorrencia em multiplos cliques/sessoes;
+  - escrita atomica de cache com `<provider>.rds.tmp` + swap para `<provider>.rds` + backup `<provider>.rds.bak`.
+- Descoberta de versao remota via pagina oficial do IPT (`ipt.jbrj.gov.br`) com comparacao segmentada de versoes numericas.
+- Observabilidade de status para UI:
+  - funcoes `brprovider_cache_status()`/`brprovider_cache_statuses()`;
+  - badges por provider (`up_to_date`, `update_in_progress`, `update_failed`, `never_downloaded`);
+  - notificacao quando update em background conclui.
+- Novas suites/casos de teste:
+  - `tests/testthat/test-utils-brproviders.R` (versao, lock, bootstrap, fallback, rollback e polling de update);
+  - `tests/testthat/test-utils-taxadb.R` (integracao de `brprovider_ensure_data()` no state machine);
+  - `tests/testthat/test-mod-validate-names-server.R` (badges de status no painel de configuracao).
 
 ### Corrigido
+- `R/utils_brproviders.R`: badge "Update failed" persistia no painel de provedores mesmo apos validacao bem-sucedida com cache local disponivel — `brprovider_cache_status()` ja revertia `never_downloaded → up_to_date` quando `has_data = TRUE`, mas faltava o bloco equivalente para `update_failed → up_to_date`; adicionado bloco simetrico apos a regra existente.
+- `R/mod_validate_names.R`: textos dos badges de status de provedor (`Up to date`, `Updating...`, `Update failed`, `Not downloaded`) e notificacoes de conclusao de update em background estavam hardcoded em ingles, ignorando o idioma selecionado; migrados para `tr()` com 6 novas chaves i18n (`validate_names_provider_status_*` e `validate_names_provider_notify_*`).
+- `R/utils_brproviders.R`: download do faunabr/florabr nao ocorria quando `verbose = FALSE` — `get_faunabr()` e `get_florabr()` condicionam o bloco de `httr::GET` a `verbose = TRUE` internamente; `brprovider_download_data()` agora sempre passa `verbose = TRUE` para os dois pacotes, desacoplando verbosidade do saira da verbosidade do provider.
+- `R/utils_brproviders.R`: artifact check do faunabr verificava `taxon.txt` (arquivo intermediario extraido do zip) em vez de `CompleteBrazilianFauna.gz` (saida final de `get_faunabr()` lida por `load_faunabr()`); corrigido para refletir o artefato real.
+- `R/utils_brproviders.R`: chamada a `faunabr::get_faunabr()` envolvida em `withCallingHandlers()` que converte warnings de extracao de zip (`error 1 in extracting from zip`, `cannot open`) em `stop()` com mensagem descritiva e instrucao de rede.
+- `R/utils_taxadb.R`: warning de deprecacao do dbplyr (`check_from argument of tbl_sql() is deprecated as of dbplyr 2.5.0`) suprimido com `withCallingHandlers()` nas duas chamadas a `taxadb::filter_name()` — issue upstream no taxadb/dbplyr, nao bloqueante, mas ruidoso no console.
 - `R/mod_mapping.R`: conexao SQLite (`rostrum_connect()`) nao era criada no modulo — aliases e templates do banco nunca eram aplicados; `conn` agora e inicializado no `mod_mapping_server()` e repassado ao `run_rostrum_engine()`.
 - `R/mod_mapping.R`: overrides manuais de mapeamento nao eram registrados como aliases; observer de mudanca manual agora chama `rostrum_record_alias_override()`.
 - `R/mod_mapping.R`: confirmacao de escolha AMBIGUO nao gravava alias de aprendizado; observer `confirm_ambiguity_choice` agora chama `rostrum_record_alias_confirmation()` ou `rostrum_record_alias_override()` conforme a escolha.
+- `R/utils_taxadb.R`: gate de inicializacao de provedor BR foi trocado para `brprovider_ensure_data()`; quando update remoto falha mas cache local existe, a validacao segue com o melhor cache disponivel sem interromper o usuario.
+- `R/utils_brproviders.R`: status de metadata passa a preservar `update_failed` mesmo sem cache local, permitindo feedback correto no UI apos falha de bootstrap.
 
 ### Alterado
 - `R/utils_rostrum_engine.R`: Stage 2 deixou de ser passthrough e passou a gerar saida composta com `explain_json`/`composed_from_json`.

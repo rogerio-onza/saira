@@ -8,8 +8,9 @@
 # To regenerate the JSON from legacy R source, run: Rscript data-raw/export_i18n.R
 
 # Cache environment for i18n dictionary
-i18n_cache_env <- new.env(parent = emptyenv())
-i18n_cache_env$dict <- NULL
+#' @include utils_common.R
+NULL
+i18n_cache <- create_rds_cache("i18n")
 
 #' Load i18n dictionary from JSON
 #'
@@ -20,8 +21,8 @@ i18n_cache_env$dict <- NULL
 #' @return Named list of named lists (key -> list(pt = ..., en = ...))
 #' @noRd
 load_i18n_dict <- function(force = FALSE) {
-    if (!force && !is.null(i18n_cache_env$dict)) {
-        return(i18n_cache_env$dict)
+    if (!force && !is.null(i18n_cache$get())) {
+        return(i18n_cache$get())
     }
 
     path <- system.file("extdata", "i18n.json", package = "saira")
@@ -51,9 +52,6 @@ load_i18n_dict <- function(force = FALSE) {
         }
     }
 
-    i18n_cache_env$dict <- dict
+    i18n_cache$set(dict, path = path)
     dict
 }
-
-# Contract: i18n_dict available in package namespace (same as before)
-i18n_dict <- load_i18n_dict()

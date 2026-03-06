@@ -399,6 +399,31 @@
       "Maintainer": "Hadley Wickham <hadley@posit.co>",
       "Repository": "CRAN"
     },
+    "XML": {
+      "Package": "XML",
+      "Version": "3.99-0.22",
+      "Source": "Repository",
+      "Authors@R": "c(person(\"CRAN Team\", role = \"ctb\", email = \"CRAN@r-project.org\", comment = \"de facto maintainer in 2013-2026\"), person(\"Duncan\", \"Temple Lang\", role = \"aut\", email = \"duncan@r-project.org\", comment = c(ORCID = \"0000-0003-0159-1546\")), person(\"Tomas\", \"Kalibera\", role = \"ctb\"), person(\"Ivan\", \"Krylov\", email = \"ikrylov@disroot.org\", role = \"cre\"))",
+      "Title": "Tools for Parsing and Generating XML Within R and S-Plus",
+      "Depends": [
+        "R (>= 4.0.0)",
+        "methods",
+        "utils"
+      ],
+      "Suggests": [
+        "bitops",
+        "RCurl"
+      ],
+      "SystemRequirements": "libxml2 (>= 2.6.3)",
+      "Description": "Many approaches for both reading and creating XML (and HTML) documents (including DTDs), both local and accessible via HTTP or FTP.  Also offers access to an 'XPath' \"interpreter\".",
+      "BugReports": "https://codeberg.org/aitap/XML/issues",
+      "License": "BSD_3_clause + file LICENSE",
+      "Collate": "AAA.R DTD.R DTDClasses.R DTDRef.R SAXMethods.R XMLClasses.R applyDOM.R assignChild.R catalog.R createNode.R dynSupports.R error.R flatTree.R nodeAccessors.R parseDTD.R schema.R summary.R tangle.R toString.R tree.R version.R xmlErrorEnums.R xmlEventHandler.R xmlEventParse.R xmlHandler.R xmlInternalSource.R xmlOutputDOM.R xmlNodes.R xmlOutputBuffer.R xmlTree.R xmlTreeParse.R htmlParse.R hashTree.R zzz.R supports.R parser.R libxmlFeatures.R xmlString.R saveXML.R namespaces.R readHTMLTable.R reflection.R xmlToDataFrame.R bitList.R compare.R encoding.R fixNS.R xmlRoot.R serialize.R xmlMemoryMgmt.R keyValueDB.R solrDocs.R XMLRErrorInfo.R xincludes.R namespaceHandlers.R tangle1.R htmlLinks.R htmlLists.R getDependencies.R getRelativeURL.R xmlIncludes.R simplifyPath.R",
+      "NeedsCompilation": "yes",
+      "Author": "CRAN Team [ctb] (de facto maintainer in 2013-2026), Duncan Temple Lang [aut] (ORCID: <https://orcid.org/0000-0003-0159-1546>), Tomas Kalibera [ctb], Ivan Krylov [cre]",
+      "Maintainer": "Ivan Krylov <ikrylov@disroot.org>",
+      "Repository": "CRAN"
+    },
     "askpass": {
       "Package": "askpass",
       "Version": "1.2.1",
@@ -1050,7 +1075,7 @@
     },
     "countrycode": {
       "Package": "countrycode",
-      "Version": "1.6.1",
+      "Version": "1.7.0",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Convert Country Names and Country Codes",
@@ -1073,9 +1098,9 @@
       "Encoding": "UTF-8",
       "LazyData": "yes",
       "LazyLoad": "yes",
-      "RoxygenNote": "7.3.2",
+      "RoxygenNote": "7.3.3",
       "NeedsCompilation": "no",
-      "Author": "Vincent Arel-Bundock [aut, cre] (<https://orcid.org/0000-0003-2042-7063>), CJ Yetman [ctb] (<https://orcid.org/0000-0001-5099-9500>), Nils Enevoldsen [ctb] (<https://orcid.org/0000-0001-7195-4117>), Etienne Bacher [ctb] (<https://orcid.org/0000-0002-9271-5075>), Samuel Meichtry [ctb] (<https://orcid.org/0000-0003-2165-791X>)",
+      "Author": "Vincent Arel-Bundock [aut, cre] (ORCID: <https://orcid.org/0000-0003-2042-7063>), CJ Yetman [ctb] (ORCID: <https://orcid.org/0000-0001-5099-9500>), Nils Enevoldsen [ctb] (ORCID: <https://orcid.org/0000-0001-7195-4117>), Etienne Bacher [ctb] (ORCID: <https://orcid.org/0000-0002-9271-5075>), Samuel Meichtry [ctb] (ORCID: <https://orcid.org/0000-0003-2165-791X>)",
       "Maintainer": "Vincent Arel-Bundock <vincent.arel-bundock@umontreal.ca>",
       "Repository": "CRAN"
     },
@@ -1223,7 +1248,7 @@
     },
     "crul": {
       "Package": "crul",
-      "Version": "1.6.0",
+      "Version": "1.6.0.9000",
       "Source": "Repository",
       "Title": "HTTP Client",
       "Description": "A simple HTTP client, with tools for making HTTP requests, and mocking HTTP requests. The package is built on R6, and takes inspiration from Ruby's 'faraday' gem (<https://rubygems.org/gems/faraday>). The package name is a play on curl, the widely used command line tool for HTTP, and this package is built on top of the R package 'curl', an interface to 'libcurl' (<https://curl.se/libcurl/>).",
@@ -1231,6 +1256,7 @@
       "Authors@R": "c( person(\"Scott\", \"Chamberlain\", role = c(\"aut\", \"cre\"), email = \"myrmecocystus@gmail.com\", comment = c(ORCID = \"0000-0003-1444-9135\")) )",
       "URL": "https://docs.ropensci.org/crul/, https://github.com/ropensci/crul, https://books.ropensci.org/http-testing/",
       "BugReports": "https://github.com/ropensci/crul/issues",
+      "Roxygen": "list(markdown = TRUE)",
       "Encoding": "UTF-8",
       "Language": "en-US",
       "Imports": [
@@ -1259,10 +1285,14 @@
       "X-schema.org-applicationCategory": "Web",
       "X-schema.org-keywords": "http, https, API, web-services, curl, download, libcurl, async, mocking, caching",
       "X-schema.org-isPartOf": "https://ropensci.org",
+      "Config/pak/sysreqs": "libssl-dev",
+      "Repository": "https://ropensci.r-universe.dev",
+      "RemoteUrl": "https://github.com/ropensci/crul",
+      "RemoteRef": "main",
+      "RemoteSha": "6e4ee16daaff28d842044bff979cf3dcd26263ae",
       "NeedsCompilation": "no",
       "Author": "Scott Chamberlain [aut, cre] (ORCID: <https://orcid.org/0000-0003-1444-9135>)",
-      "Maintainer": "Scott Chamberlain <myrmecocystus@gmail.com>",
-      "Repository": "CRAN"
+      "Maintainer": "Scott Chamberlain <myrmecocystus@gmail.com>"
     },
     "curl": {
       "Package": "curl",
@@ -1563,6 +1593,35 @@
       "NeedsCompilation": "yes",
       "Author": "Dirk Eddelbuettel [aut, cre] (ORCID: <https://orcid.org/0000-0001-6419-907X>), Antoine Lucas [ctb] (ORCID: <https://orcid.org/0000-0002-8059-9767>), Jarek Tuszynski [ctb], Henrik Bengtsson [ctb] (ORCID: <https://orcid.org/0000-0002-7579-5165>), Simon Urbanek [ctb] (ORCID: <https://orcid.org/0000-0003-2297-1732>), Mario Frasca [ctb], Bryan Lewis [ctb], Murray Stokely [ctb], Hannes Muehleisen [ctb] (ORCID: <https://orcid.org/0000-0001-8552-0029>), Duncan Murdoch [ctb], Jim Hester [ctb] (ORCID: <https://orcid.org/0000-0002-2739-7082>), Wush Wu [ctb] (ORCID: <https://orcid.org/0000-0001-5180-0567>), Qiang Kou [ctb] (ORCID: <https://orcid.org/0000-0001-6786-5453>), Thierry Onkelinx [ctb] (ORCID: <https://orcid.org/0000-0001-8804-4216>), Michel Lang [ctb] (ORCID: <https://orcid.org/0000-0001-9754-0393>), Viliam Simko [ctb], Kurt Hornik [ctb] (ORCID: <https://orcid.org/0000-0003-4198-9911>), Radford Neal [ctb] (ORCID: <https://orcid.org/0000-0002-2473-3407>), Kendon Bell [ctb] (ORCID: <https://orcid.org/0000-0002-9093-8312>), Matthew de Queljoe [ctb], Dmitry Selivanov [ctb] (ORCID: <https://orcid.org/0000-0003-0492-6647>), Ion Suruceanu [ctb] (ORCID: <https://orcid.org/0009-0005-6446-4909>), Bill Denney [ctb] (ORCID: <https://orcid.org/0000-0002-5759-428X>), Dirk Schumacher [ctb], András Svraka [ctb] (ORCID: <https://orcid.org/0009-0008-8480-1329>), Sergey Fedorov [ctb] (ORCID: <https://orcid.org/0000-0002-5970-7233>), Will Landau [ctb] (ORCID: <https://orcid.org/0000-0003-1878-3253>), Floris Vanderhaeghe [ctb] (ORCID: <https://orcid.org/0000-0002-6378-6229>), Kevin Tappe [ctb], Harris McGehee [ctb], Tim Mastny [ctb], Aaron Peikert [ctb] (ORCID: <https://orcid.org/0000-0001-7813-818X>), Mark van der Loo [ctb] (ORCID: <https://orcid.org/0000-0002-9807-4686>), Chris Muir [ctb] (ORCID: <https://orcid.org/0000-0003-2555-3878>), Moritz Beller [ctb] (ORCID: <https://orcid.org/0000-0003-4852-0526>), Sebastian Campbell [ctb] (ORCID: <https://orcid.org/0009-0000-5948-4503>), Winston Chang [ctb] (ORCID: <https://orcid.org/0000-0002-1576-2126>), Dean Attali [ctb] (ORCID: <https://orcid.org/0000-0002-5645-3493>), Michael Chirico [ctb] (ORCID: <https://orcid.org/0000-0003-0787-087X>), Kevin Ushey [ctb] (ORCID: <https://orcid.org/0000-0003-2880-7407>), Carl Pearson [ctb] (ORCID: <https://orcid.org/0000-0003-0701-7860>)",
       "Maintainer": "Dirk Eddelbuettel <edd@debian.org>",
+      "Repository": "CRAN"
+    },
+    "doSNOW": {
+      "Package": "doSNOW",
+      "Version": "1.0.20",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Foreach Parallel Adaptor for the 'snow' Package",
+      "Authors@R": "c(person(\"Folashade\", \"Daniel\", role=\"cre\", email = \"fdaniel@microsoft.com\"),  person(\"Microsoft\", \"Corporation\", role=c(\"aut\",\"cph\")), person(\"Stephen\", \"Weston\", role=\"aut\"))",
+      "Description": "Provides a parallel backend for the %dopar% function using the snow package of Tierney, Rossini, Li, and Sevcikova.",
+      "Depends": [
+        "R (>= 2.5.0)",
+        "foreach(>= 1.2.0)",
+        "iterators(>= 1.0.0)",
+        "snow(>= 0.3.0)",
+        "utils"
+      ],
+      "Suggests": [
+        "compiler",
+        "RUnit",
+        "caret",
+        "mlbench",
+        "rpart",
+        "parallel"
+      ],
+      "License": "GPL-2",
+      "NeedsCompilation": "no",
+      "Author": "Folashade Daniel [cre], Microsoft Corporation [aut, cph], Stephen Weston [aut]",
+      "Maintainer": "Folashade Daniel <fdaniel@microsoft.com>",
       "Repository": "CRAN"
     },
     "downlit": {
@@ -1889,6 +1948,81 @@
       "Maintainer": "Winston Chang <winston@posit.co>",
       "Repository": "CRAN"
     },
+    "faunabr": {
+      "Package": "faunabr",
+      "Version": "1.0.0",
+      "Source": "Repository",
+      "Title": "Explore Catálogo Taxônomico da Fauna do Brasil Database",
+      "Authors@R": "person(\"Weverton\", \"Trindade\", , \"wevertonf1993@gmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0003-2045-4555\"))",
+      "Description": "A collection of functions designed to retrieve, filter and spatialize data from the Catálogo Taxônomico da Fauna do Brasil. For more information about the dataset, please visit <http://fauna.jbrj.gov.br/fauna/listaBrasil/>.",
+      "Imports": [
+        "XML (>= 3.99.0.14)",
+        "data.table (>= 1.14.8)",
+        "httr (>= 1.4.6)",
+        "terra (>= 1.7.39)",
+        "stats (>= 4.2.3)",
+        "utils(>= 4.2.3)"
+      ],
+      "License": "GPL (>= 3)",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.3",
+      "Depends": [
+        "R (>= 2.10)"
+      ],
+      "LazyData": "true",
+      "Suggests": [
+        "knitr",
+        "rmarkdown",
+        "testthat (>= 3.0.0)"
+      ],
+      "VignetteBuilder": "knitr",
+      "BugReports": "https://github.com/wevertonbio/faunabr/issues",
+      "URL": "https://wevertonbio.github.io/faunabr/",
+      "NeedsCompilation": "no",
+      "Author": "Weverton Trindade [aut, cre] (ORCID: <https://orcid.org/0000-0003-2045-4555>)",
+      "Maintainer": "Weverton Trindade <wevertonf1993@gmail.com>",
+      "Repository": "CRAN"
+    },
+    "florabr": {
+      "Package": "florabr",
+      "Version": "1.3.1",
+      "Source": "Repository",
+      "Title": "Explore Flora e Funga do Brasil Database",
+      "Authors@R": "person(\"Weverton\", \"Trindade\", , \"wevertonf1993@gmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0003-2045-4555\"))",
+      "Description": "A collection of functions designed to retrieve, filter and spatialize data from the Flora e Funga do Brasil dataset. For more information about the dataset, please visit <https://floradobrasil.jbrj.gov.br/consulta/>.",
+      "Imports": [
+        "XML (>= 3.99.0.14)",
+        "data.table (>= 1.14.8)",
+        "httr (>= 1.4.6)",
+        "terra (>= 1.7.39)",
+        "stats (>= 4.2.3)",
+        "utils(>= 4.2.3)",
+        "grDevices (>= 4.2.3)",
+        "doSNOW (>= 1.0.20)",
+        "parallel (>= 4.3.1)",
+        "foreach (>= 1.5.2)"
+      ],
+      "License": "GPL (>= 3)",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.3",
+      "Depends": [
+        "R (>= 2.10)"
+      ],
+      "LazyData": "true",
+      "Suggests": [
+        "knitr",
+        "rmarkdown",
+        "testthat (>= 3.0.0)"
+      ],
+      "VignetteBuilder": "knitr",
+      "URL": "https://wevertonbio.github.io/florabr/",
+      "BugReports": "https://github.com/wevertonbio/florabr/issues",
+      "Config/testthat/edition": "3",
+      "NeedsCompilation": "no",
+      "Author": "Weverton Trindade [aut, cre] (ORCID: <https://orcid.org/0000-0003-2045-4555>)",
+      "Maintainer": "Weverton Trindade <wevertonf1993@gmail.com>",
+      "Repository": "CRAN"
+    },
     "fontawesome": {
       "Package": "fontawesome",
       "Version": "0.5.3",
@@ -1922,6 +2056,41 @@
       "NeedsCompilation": "no",
       "Author": "Richard Iannone [aut, cre] (<https://orcid.org/0000-0003-3925-190X>), Christophe Dervieux [ctb] (<https://orcid.org/0000-0003-4474-2498>), Winston Chang [ctb], Dave Gandy [ctb, cph] (Font-Awesome font), Posit Software, PBC [cph, fnd]",
       "Maintainer": "Richard Iannone <rich@posit.co>",
+      "Repository": "CRAN"
+    },
+    "foreach": {
+      "Package": "foreach",
+      "Version": "1.5.2",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Provides Foreach Looping Construct",
+      "Authors@R": "c(person(\"Folashade\", \"Daniel\", role=\"cre\", email=\"fdaniel@microsoft.com\"), person(\"Hong\", \"Ooi\", role=\"ctb\"), person(\"Rich\", \"Calaway\", role=\"ctb\"), person(\"Microsoft\", role=c(\"aut\", \"cph\")), person(\"Steve\", \"Weston\", role=\"aut\"))",
+      "Description": "Support for the foreach looping construct.  Foreach is an idiom that allows for iterating over elements in a collection, without the use of an explicit loop counter.  This package in particular is intended to be used for its return value, rather than for its side effects.  In that sense, it is similar to the standard lapply function, but doesn't require the evaluation of a function.  Using foreach without side effects also facilitates executing the loop in parallel.",
+      "License": "Apache License (== 2.0)",
+      "URL": "https://github.com/RevolutionAnalytics/foreach",
+      "BugReports": "https://github.com/RevolutionAnalytics/foreach/issues",
+      "Depends": [
+        "R (>= 2.5.0)"
+      ],
+      "Imports": [
+        "codetools",
+        "utils",
+        "iterators"
+      ],
+      "Suggests": [
+        "randomForest",
+        "doMC",
+        "doParallel",
+        "testthat",
+        "knitr",
+        "rmarkdown"
+      ],
+      "VignetteBuilder": "knitr",
+      "RoxygenNote": "7.1.1",
+      "Collate": "'callCombine.R' 'foreach.R' 'do.R' 'foreach-ext.R' 'foreach-pkg.R' 'getDoPar.R' 'getDoSeq.R' 'getsyms.R' 'iter.R' 'nextElem.R' 'onLoad.R' 'setDoPar.R' 'setDoSeq.R' 'times.R' 'utils.R'",
+      "NeedsCompilation": "no",
+      "Author": "Folashade Daniel [cre], Hong Ooi [ctb], Rich Calaway [ctb], Microsoft [aut, cph], Steve Weston [aut]",
+      "Maintainer": "Folashade Daniel <fdaniel@microsoft.com>",
       "Repository": "CRAN"
     },
     "fs": {
@@ -2081,11 +2250,11 @@
     },
     "geosphere": {
       "Package": "geosphere",
-      "Version": "1.5-20",
+      "Version": "1.6-5",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Spherical Trigonometry",
-      "Date": "2024-10-02",
+      "Date": "2026-03-01",
       "LinkingTo": [
         "Rcpp"
       ],
@@ -2098,8 +2267,8 @@
       ],
       "Suggests": [
         "methods",
-        "raster",
-        "terra"
+        "terra",
+        "sf"
       ],
       "Authors@R": "c( person(\"Robert J.\", \"Hijmans\", role = c(\"cre\", \"aut\"),  email = \"r.hijmans@gmail.com\"), person(\"Charles\", \"Karney\", role = \"ctb\", comment=\"GeographicLib\"),\t person(\"Ed\", \"Williams\", role = \"ctb\"), person(\"Chris\", \"Vennes\", role = \"ctb\"))",
       "Description": "Spherical trigonometry for geographic applications. That is, compute distances and related measures for angular (longitude/latitude) locations.",
@@ -2403,44 +2572,6 @@
       "NeedsCompilation": "no",
       "Author": "Hadley Wickham [aut], Thomas Lin Pedersen [aut, cre], Posit Software, PBC [cph, fnd]",
       "Maintainer": "Thomas Lin Pedersen <thomas.pedersen@posit.co>",
-      "Repository": "CRAN"
-    },
-    "here": {
-      "Package": "here",
-      "Version": "1.0.2",
-      "Source": "Repository",
-      "Title": "A Simpler Way to Find Your Files",
-      "Date": "2025-09-06",
-      "Authors@R": "c(person(given = \"Kirill\", family = \"M\\u00fcller\", role = c(\"aut\", \"cre\"), email = \"kirill@cynkra.com\", comment = c(ORCID = \"0000-0002-1416-3412\")), person(given = \"Jennifer\", family = \"Bryan\", role = \"ctb\", email = \"jenny@rstudio.com\", comment = c(ORCID = \"0000-0002-6983-2759\")))",
-      "Description": "Constructs paths to your project's files. Declare the relative path of a file within your project with 'i_am()'. Use the 'here()' function as a drop-in replacement for 'file.path()', it will always locate the files relative to your project root.",
-      "License": "MIT + file LICENSE",
-      "URL": "https://here.r-lib.org/, https://github.com/r-lib/here",
-      "BugReports": "https://github.com/r-lib/here/issues",
-      "Imports": [
-        "rprojroot (>= 2.1.0)"
-      ],
-      "Suggests": [
-        "conflicted",
-        "covr",
-        "fs",
-        "knitr",
-        "palmerpenguins",
-        "plyr",
-        "readr",
-        "rlang",
-        "rmarkdown",
-        "testthat",
-        "uuid",
-        "withr"
-      ],
-      "VignetteBuilder": "knitr",
-      "Encoding": "UTF-8",
-      "RoxygenNote": "7.3.3.9000",
-      "Config/testthat/edition": "3",
-      "Config/Needs/website": "tidyverse/tidytemplate",
-      "NeedsCompilation": "no",
-      "Author": "Kirill Müller [aut, cre] (ORCID: <https://orcid.org/0000-0002-1416-3412>), Jennifer Bryan [ctb] (ORCID: <https://orcid.org/0000-0002-6983-2759>)",
-      "Maintainer": "Kirill Müller <kirill@cynkra.com>",
       "Repository": "CRAN"
     },
     "highr": {
@@ -2833,6 +2964,29 @@
       "NeedsCompilation": "yes",
       "Author": "Hadley Wickham [aut] (ORCID: <https://orcid.org/0000-0003-4757-117X>), Claus O. Wilke [aut] (Original author, ORCID: <https://orcid.org/0000-0002-7470-9261>), Thomas Lin Pedersen [aut, cre] (ORCID: <https://orcid.org/0000-0002-5147-4711>), Posit, PBC [cph, fnd] (ROR: <https://ror.org/03wc8by49>)",
       "Maintainer": "Thomas Lin Pedersen <thomas.pedersen@posit.co>",
+      "Repository": "CRAN"
+    },
+    "iterators": {
+      "Package": "iterators",
+      "Version": "1.0.14",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Provides Iterator Construct",
+      "Authors@R": "c(person(\"Folashade\", \"Daniel\", role=\"cre\", email=\"fdaniel@microsoft.com\"), person(\"Revolution\", \"Analytics\", role=c(\"aut\", \"cph\")), person(\"Steve\", \"Weston\", role=\"aut\"))",
+      "Description": "Support for iterators, which allow a programmer to traverse through all the elements of a vector, list, or other collection of data.",
+      "URL": "https://github.com/RevolutionAnalytics/iterators",
+      "Depends": [
+        "R (>= 2.5.0)",
+        "utils"
+      ],
+      "Suggests": [
+        "RUnit",
+        "foreach"
+      ],
+      "License": "Apache License (== 2.0)",
+      "NeedsCompilation": "no",
+      "Author": "Folashade Daniel [cre], Revolution Analytics [aut, cph], Steve Weston [aut]",
+      "Maintainer": "Folashade Daniel <fdaniel@microsoft.com>",
       "Repository": "CRAN"
     },
     "jquerylib": {
@@ -3336,7 +3490,7 @@
     },
     "oai": {
       "Package": "oai",
-      "Version": "0.4.0",
+      "Version": "0.4.1",
       "Source": "Repository",
       "Type": "Package",
       "Title": "General Purpose 'Oai-PMH' Services Client",
@@ -3346,6 +3500,7 @@
       "URL": "https://docs.ropensci.org/oai/, https://github.com/ropensci/oai",
       "BugReports": "https://github.com/ropensci/oai/issues",
       "VignetteBuilder": "knitr",
+      "Roxygen": "list(markdown = TRUE)",
       "LazyData": "true",
       "Encoding": "UTF-8",
       "Imports": [
@@ -3364,14 +3519,18 @@
         "covr"
       ],
       "RoxygenNote": "7.2.1",
+      "Config/pak/sysreqs": "libicu-dev libxml2-dev libssl-dev",
+      "Repository": "https://ropensci.r-universe.dev",
+      "RemoteUrl": "https://github.com/ropensci/oai",
+      "RemoteRef": "master",
+      "RemoteSha": "866af429d8cd4a97735c0efa1285fdde6cccf950",
       "NeedsCompilation": "no",
-      "Author": "Scott Chamberlain [aut], Michal Bojanowski [aut, cre] (<https://orcid.org/0000-0001-7503-852X>), National Science Centre [fnd] (Supported MB through grant 2012/07/D/HS6/01971, <https://ncn.gov.pl>)",
-      "Maintainer": "Michal Bojanowski <michal2992@gmail.com>",
-      "Repository": "CRAN"
+      "Author": "Scott Chamberlain [aut], Michal Bojanowski [aut, cre] (ORCID: <https://orcid.org/0000-0001-7503-852X>), National Science Centre [fnd] (Supported MB through grant 2012/07/D/HS6/01971, <https://ncn.gov.pl>)",
+      "Maintainer": "Michal Bojanowski <michal2992@gmail.com>"
     },
     "openssl": {
       "Package": "openssl",
-      "Version": "2.3.4",
+      "Version": "2.3.5",
       "Source": "Repository",
       "Type": "Package",
       "Title": "Toolkit for Encryption, Signatures and Certificates Based on OpenSSL",
@@ -4421,7 +4580,7 @@
     },
     "rgbif": {
       "Package": "rgbif",
-      "Version": "3.8.4",
+      "Version": "3.8.4.5",
       "Source": "Repository",
       "Title": "Interface to the Global Biodiversity Information Facility API",
       "Description": "A programmatic interface to the Web Service methods provided by the Global Biodiversity Information Facility (GBIF; <https://www.gbif.org/developer/summary>). GBIF is a database of species occurrence records from sources all over the globe. rgbif includes functions for searching for taxonomic names, retrieving information on data providers, getting species occurrence records, getting counts of occurrence records, and using the GBIF tile map service to make rasters summarizing huge amounts of data.",
@@ -4430,6 +4589,7 @@
       "URL": "https://github.com/ropensci/rgbif (devel), https://docs.ropensci.org/rgbif/ (documentation)",
       "BugReports": "https://github.com/ropensci/rgbif/issues",
       "LazyLoad": "true",
+      "Roxygen": "list(markdown = TRUE)",
       "Encoding": "UTF-8",
       "Language": "en-US",
       "Imports": [
@@ -4444,8 +4604,7 @@
         "tibble",
         "lazyeval",
         "R6",
-        "stats",
-        "wk"
+        "stats"
       ],
       "Suggests": [
         "testthat",
@@ -4463,10 +4622,14 @@
       "X-schema.org-applicationCategory": "Biodiversity",
       "X-schema.org-keywords": "GBIF, specimens, API, web-services, occurrences, species, taxonomy",
       "X-schema.org-isPartOf": "https://ropensci.org",
+      "Config/pak/sysreqs": "libicu-dev libxml2-dev libssl-dev",
+      "Repository": "https://ropensci.r-universe.dev",
+      "RemoteUrl": "https://github.com/ropensci/rgbif",
+      "RemoteRef": "master",
+      "RemoteSha": "0485c20b4261b5b3160377cb8909fecd658445b2",
       "NeedsCompilation": "no",
       "Author": "Scott Chamberlain [aut] (0000-0003-1444-9135), Damiano Oldoni [aut] (0000-0003-3445-7562), Vijay Barve [ctb] (0000-0002-4852-2567), Peter Desmet [ctb] (0000-0002-8442-8025), Laurens Geffert [ctb], Dan Mcglinn [ctb] (0000-0003-2359-3526), Karthik Ram [ctb] (0000-0002-0233-1757), rOpenSci [fnd] (019jywm96), John Waller [aut, cre] (0000-0002-7302-5976)",
-      "Maintainer": "John Waller <jwaller@gbif.org>",
-      "Repository": "CRAN"
+      "Maintainer": "John Waller <jwaller@gbif.org>"
     },
     "rlang": {
       "Package": "rlang",
@@ -4577,7 +4740,7 @@
     },
     "rnaturalearth": {
       "Package": "rnaturalearth",
-      "Version": "1.2.0",
+      "Version": "1.2.0.9000",
       "Source": "Repository",
       "Title": "World Map Data from Natural Earth",
       "Authors@R": "c( person( family = \"Massicotte\", given = \"Philippe\", email = \"pmassicotte@hotmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-5919-4116\") ), person( family = \"South\", given = \"Andy\", email = \"southandy@gmail.com\", role = c(\"aut\") ), person( family = \"Hufkens\", given = \"Koen\", email = \"koen.hufkens@gmail.com\", role = c(\"ctb\"), comment = c(ORCID = \"0000-0002-5070-8109\") ))",
@@ -4619,14 +4782,18 @@
       "Config/Needs/website": "ropensci/rnaturalearthhires",
       "VignetteBuilder": "knitr",
       "RoxygenNote": "7.3.3",
+      "Config/pak/sysreqs": "libabsl-dev cmake libgdal-dev gdal-bin libgeos-dev libssl-dev libproj-dev libsqlite3-dev libudunits2-dev",
+      "Repository": "https://ropensci.r-universe.dev",
+      "RemoteUrl": "https://github.com/ropensci/rnaturalearth",
+      "RemoteRef": "main",
+      "RemoteSha": "70d46b67a4027739ad1a3b3adf534174379488e7",
       "NeedsCompilation": "no",
       "Author": "Philippe Massicotte [aut, cre] (ORCID: <https://orcid.org/0000-0002-5919-4116>), Andy South [aut], Koen Hufkens [ctb] (ORCID: <https://orcid.org/0000-0002-5070-8109>)",
-      "Maintainer": "Philippe Massicotte <pmassicotte@hotmail.com>",
-      "Repository": "CRAN"
+      "Maintainer": "Philippe Massicotte <pmassicotte@hotmail.com>"
     },
     "rnaturalearthdata": {
       "Package": "rnaturalearthdata",
-      "Version": "1.0.0",
+      "Version": "1.0.0.9000",
       "Source": "Repository",
       "Title": "World Vector Map Data from Natural Earth Used in 'rnaturalearth'",
       "Authors@R": "c( person( family = \"South\", given = \"Andy\", email = \"southandy@gmail.com\", role = c(\"aut\"), comment = c(ORCID = \"0000-0003-4051-6135\") ), person( family = \"Michael\", given = \"Schramm\", email = \"mpschramm@gmail.com\", role = c(\"aut\") ), person( family = \"Massicotte\", given = \"Philippe\", email = \"pmassicotte@hotmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-5919-4116\") ))",
@@ -4646,10 +4813,13 @@
         "testthat (>= 0.9.1)"
       ],
       "RoxygenNote": "7.3.1",
+      "Repository": "https://ropensci.r-universe.dev",
+      "RemoteUrl": "https://github.com/ropensci/rnaturalearthdata",
+      "RemoteRef": "main",
+      "RemoteSha": "ff4d891f74265473ae2c936dcfeb0c9afeac6631",
       "NeedsCompilation": "no",
-      "Author": "Andy South [aut] (<https://orcid.org/0000-0003-4051-6135>), Schramm Michael [aut], Philippe Massicotte [aut, cre] (<https://orcid.org/0000-0002-5919-4116>)",
-      "Maintainer": "Philippe Massicotte <pmassicotte@hotmail.com>",
-      "Repository": "CRAN"
+      "Author": "Andy South [aut] (ORCID: <https://orcid.org/0000-0003-4051-6135>), Schramm Michael [aut], Philippe Massicotte [aut, cre] (ORCID: <https://orcid.org/0000-0002-5919-4116>)",
+      "Maintainer": "Philippe Massicotte <pmassicotte@hotmail.com>"
     },
     "rnaturalearthhires": {
       "Package": "rnaturalearthhires",
@@ -5194,6 +5364,28 @@
       "Maintainer": "Barret Schloerke <barret@posit.co>",
       "Repository": "CRAN"
     },
+    "snow": {
+      "Package": "snow",
+      "Version": "0.4-4",
+      "Source": "Repository",
+      "Title": "Simple Network of Workstations",
+      "Author": "Luke Tierney, A. J. Rossini, Na Li, H. Sevcikova",
+      "Description": "Support for simple parallel computing in R.",
+      "Maintainer": "Luke Tierney <luke-tierney@uiowa.edu>",
+      "Suggests": [
+        "rlecuyer"
+      ],
+      "Enhances": [
+        "Rmpi"
+      ],
+      "License": "GPL",
+      "Depends": [
+        "R (>= 2.13.1)",
+        "utils"
+      ],
+      "NeedsCompilation": "no",
+      "Repository": "CRAN"
+    },
     "sourcetools": {
       "Package": "sourcetools",
       "Version": "0.1.7-1",
@@ -5406,16 +5598,16 @@
     },
     "taxadb": {
       "Package": "taxadb",
-      "Version": "0.2.1",
+      "Version": "0.2.1.99",
       "Source": "Repository",
       "Title": "A High-Performance Local Taxonomic Database Interface",
       "Description": "Creates a local database of many commonly used taxonomic authorities and provides functions that can quickly query this data.",
-      "Authors@R": "c( person(\"Carl\", \"Boettiger\", , \"cboettig@gmail.com\", c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-1642-628X\")), person(\"Kari\", \"Norman\", role= \"aut\", comment = c(ORCID = \"0000-0002-2029-2325\")),        person(\"Jorrit\", \"Poelen\", role =\"aut\",  comment = c(ORCID=\"0000-0003-3138-4118\")), person(\"Scott\", \"Chamberlain\", role =\"aut\",  comment = c(ORCID=\"0000-0003-1444-9135\")), person(\"Noam\", \"Ross\", , \"ross@ecohealthalliance.org\", role =\"ctb\", comment = c(ORCID = \"0000-0002-2136-0000\")) )",
+      "Authors@R": "c( person(\"Carl\", \"Boettiger\", , \"cboettig@gmail.com\", c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-1642-628X\")), person(\"Kari\", \"Norman\", role= \"aut\", comment = c(ORCID = \"0000-0002-2029-2325\")),        person(\"Jorrit\", \"Poelen\", role =\"aut\",  comment = c(ORCID=\"0000-0003-3138-4118\")), person(\"Scott\", \"Chamberlain\", role =\"aut\",  comment = c(ORCID=\"0000-0003-1444-9135\")), person(\"Noam\", \"Ross\", , \"ross@ecohealthalliance.org\", role =\"ctb\", comment = c(ORCID = \"0000-0002-2136-0000\")), person(\"Mattia\", \"Ghilardi\", role =\"ctb\", comment = c(ORCID = \"0000-0001-9592-7252\")) )",
       "License": "MIT + file LICENSE",
       "Encoding": "UTF-8",
       "ByteCompile": "true",
       "Depends": [
-        "R (>= 4.0)"
+        "R (>= 4.1.0)"
       ],
       "Imports": [
         "DBI",
@@ -5429,6 +5621,7 @@
         "contentid",
         "memoise"
       ],
+      "Roxygen": "list(markdown = TRUE)",
       "RoxygenNote": "7.2.3",
       "Suggests": [
         "spelling",
@@ -5444,10 +5637,14 @@
       "VignetteBuilder": "knitr",
       "URL": "<https://docs.ropensci.org/taxadb/>, <https://github.com/ropensci/taxadb>",
       "BugReports": "https://github.com/ropensci/taxadb/issues",
+      "Config/pak/sysreqs": "make libicu-dev libssl-dev xz-utils",
+      "Repository": "https://ropensci.r-universe.dev",
+      "RemoteUrl": "https://github.com/ropensci/taxadb",
+      "RemoteRef": "master",
+      "RemoteSha": "6c2023d7e11d9a189603bd98d4514d0f85891816",
       "NeedsCompilation": "no",
-      "Author": "Carl Boettiger [aut, cre] (<https://orcid.org/0000-0002-1642-628X>), Kari Norman [aut] (<https://orcid.org/0000-0002-2029-2325>), Jorrit Poelen [aut] (<https://orcid.org/0000-0003-3138-4118>), Scott Chamberlain [aut] (<https://orcid.org/0000-0003-1444-9135>), Noam Ross [ctb] (<https://orcid.org/0000-0002-2136-0000>)",
-      "Maintainer": "Carl Boettiger <cboettig@gmail.com>",
-      "Repository": "CRAN"
+      "Author": "Carl Boettiger [aut, cre] (ORCID: <https://orcid.org/0000-0002-1642-628X>), Kari Norman [aut] (ORCID: <https://orcid.org/0000-0002-2029-2325>), Jorrit Poelen [aut] (ORCID: <https://orcid.org/0000-0003-3138-4118>), Scott Chamberlain [aut] (ORCID: <https://orcid.org/0000-0003-1444-9135>), Noam Ross [ctb] (ORCID: <https://orcid.org/0000-0002-2136-0000>), Mattia Ghilardi [ctb] (ORCID: <https://orcid.org/0000-0001-9592-7252>)",
+      "Maintainer": "Carl Boettiger <cboettig@gmail.com>"
     },
     "terra": {
       "Package": "terra",

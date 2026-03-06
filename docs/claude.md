@@ -19,26 +19,41 @@ saira/
 │   ├── app_ui.R            # Main UI definition (calls modules)
 │   ├── app_server.R        # Main Server (orchestrates modules, zero logic)
 │   ├── run_app.R           # Shiny app launcher
+│   ├── saira-package.R     # @importFrom declarations (roxygen2-managed)
 │   ├── mod_upload.R        # Module: Import & encoding check
 │   ├── mod_mapping.R       # Module: Column mapping to DwC
+│   ├── mod_mapping_cards.R       # Sub-module: Mapping card UI builder
+│   ├── mod_mapping_loading.R     # Sub-module: Auto-map loading modal
+│   ├── mod_mapping_basis_assistant.R  # Sub-module: BasisOfRecord assistant
 │   ├── mod_preview.R       # Module: Data preview & export
 │   ├── mod_validate_names.R  # Module: Scientific name validation
 │   ├── mod_validate_coords.R # Module: Coordinate validation
 │   ├── mod_wiki.R          # Module: DwC terms reference
 │   ├── mod_help.R          # Module: Help & FAQ
 │   ├── utils_io.R          # Pure: File reading, encoding, delimiter detection
-│   ├── utils_dwc.R         # Pure: DwC definitions, coordinate validation
-│   ├── utils_mapping.R     # Pure: Auto-mapping scoring, concatenation, eventDate
+│   ├── utils_dwc.R         # Pure: DwC term loading, basisOfRecord vocab
+│   ├── utils_mapping.R     # Pure: Scoring, synonyms, sanitization, composition
 │   ├── utils_export.R      # Pure: Date conversion, license abbreviation, UUIDs
+│   ├── utils_preview.R     # Pure: Preview readiness, download validation
+│   ├── utils_common.R      # Pure: Shared helpers (is_blank_value, normalization)
+│   ├── utils_coords.R      # Pure: Coordinate validation (CoordinateCleaner)
+│   ├── utils_taxadb.R      # Pure: Taxonomic validation (taxadb cascade)
 │   ├── utils_i18n.R        # Pure: Translation helpers
-│   └── data_dictionary.R   # Translation strings (i18n_dict list)
+│   ├── utils_rostrum_engine.R    # Pure: Auto-mapping engine (multi-stage)
+│   ├── utils_rostrum_db.R        # Pure: Rostrum SQLite persistence
+│   ├── utils_rostrum_templates.R # Pure: Template import/export
+│   ├── utils_rostrum_contracts.R # Pure: Data frame contract validation
+│   └── data_dictionary.R   # i18n dictionary loader (from inst/extdata/i18n.json)
 ├── tests/
-│   ├── testthat/           # Unit tests for R/utils_*.R
+│   ├── testthat/           # 31 test files covering utils, modules, e2e
 │   └── testthat.R          # Test runner
-├── data/
-│   ├── dwc_terms.rds       # Reference vocabulary (static)
-│   └── dwc_synonyms_v1.rds # Synonym table for auto-mapping
-├── inst/app/www/           # Static assets (CSS, images)
+├── inst/
+│   ├── extdata/            # Static data files
+│   │   ├── i18n.json       # Translation dictionary (PT/EN)
+│   │   ├── dwc_terms.rds   # Darwin Core term definitions
+│   │   ├── dwc_synonyms_v1.rds  # Synonym table for auto-mapping
+│   │   └── country_aliases.rds  # Country name aliases for coords
+│   └── app/www/            # Static assets (CSS, JS, images)
 └── docs/                   # Project documentation
     ├── architecture.md     # Architecture reference
     ├── claude.md           # THIS FILE — AI guidelines
@@ -56,12 +71,12 @@ Dynamic switching (PT <-> EN) without page reload.
 
 ### Implementation Rules
 
-1. **Dictionary**: `R/data_dictionary.R` contains a named list:
-```r
-i18n_dict <- list(
-  upload_title = list(pt = "Carregar Dados", en = "Upload Data"),
-  error_fmt = list(pt = "Formato inválido", en = "Invalid format")
-)
+1. **Dictionary**: `inst/extdata/i18n.json` contains all translations. `R/data_dictionary.R` loads and caches this JSON at startup:
+```json
+{
+  "upload_title": { "pt": "Carregar Dados", "en": "Upload Data" },
+  "error_fmt": { "pt": "Formato inválido", "en": "Invalid format" }
+}
 ```
 
 2. **Helper**: `tr(id, lang)` in `R/utils_i18n.R` retrieves the string.
@@ -168,13 +183,15 @@ The app enforces data quality for biodiversity repositories.
 
 ## 7. Testing Strategy (Priority)
 
-We test logic, not Shiny interactivity (unless using shinytest2).
+We test logic, not Shiny interactivity (unless using shinytest2). The suite has **31 test files** covering:
 
-- `test-utils-io.R`: Can we read a Latin1 CSV correctly?
-
-- `test-utils-dwc.R`: Does `validate_coords(-91, 0)` return FALSE?
-
-- `test-i18n.R`: Do all dictionary keys exist for both PT and EN?
+- `test-utils-*.R`: Pure function tests (io, dwc, mapping, export, coords, taxadb, preview)
+- `test-utils-rostrum-*.R`: Rostrum engine stages (stage1, stage2, stage3, aliases, templates, db, contracts)
+- `test-mod-*-server.R`: Module server tests (upload, mapping, preview, validate names/coords, wiki, help)
+- `test-performance-regression.R`: Performance benchmarks
+- `test-css-guardrails.R`: CSS class/structure consistency
+- `test-i18n-*.R`: Translation key coverage and accessibility
+- `test-e2e-flows.R`: End-to-end data flow integration
 
 ---
 
@@ -186,9 +203,11 @@ Avoid global variables (`<<-`) or `reactiveValues` passed everywhere.
 
 - `mod_upload` returns `reactive(raw_data)`.
 
-- `mod_mapping` takes `raw_data`, returns `reactive(mapped_data)`.
+- `mod_mapping` takes `raw_data`, returns a **named list** of reactives (ADR-054):
+  - `processed_data_r`, `preview_data_r`, `validation_gate_r`, `validation_gate_coords_r`
+  - `rostrum_decisions_r`, `rostrum_explain_r`, `rostrum_run_stats_r`
 
-- `mod_validate` takes `mapped_data`, returns `reactive(report)`.
+- `mod_validate_*` takes the relevant slots from the mapping result.
 
 ### Orchestrator: app_server
 ```r
@@ -196,13 +215,17 @@ Avoid global variables (`<<-`) or `reactiveValues` passed everywhere.
 server <- function(input, output, session) {
   lang <- reactive(input$lang_switch)
   
-  # Data Flow
   raw_d <- mod_upload_server("upload", lang)
   
   # Note: Pass the reactive EXPRESSION (raw_d), not the value (raw_d())
-  map_d <- mod_mapping_server("map", data = raw_d, lang = lang)
+  mapping_result <- mod_mapping_server("map", data = raw_d, lang = lang)
   
-  mod_validate_server("valid", data = map_d, lang = lang)
+  # mapping_result is a named list of reactives (ADR-054)
+  mod_preview_server("preview", mapping_result$preview_data_r, lang)
+  mod_validate_names_server("names", mapping_result$processed_data_r, lang,
+    validation_gate_r = mapping_result$validation_gate_r)
+  mod_validate_coords_server("coords", mapping_result$processed_data_r, lang,
+    validation_gate_r = mapping_result$validation_gate_coords_r)
 }
 ```
 
@@ -212,7 +235,7 @@ server <- function(input, output, session) {
 
 1. **No setwd()**: Never use `setwd()` in the code. Use `here::here()` or relative paths.
 
-2. **Heavy Data in Server**: Do NOT load large static datasets (like a 50MB taxonomy backbone) inside server or modules. Load them in `global.R` so they are loaded once into RAM and shared across user sessions.
+2. **Heavy Data in Server**: Do NOT load large static datasets repeatedly inside modules. Use `sysdata.rda` or the ADR-014 cache factory `create_rds_cache()` for lazy loading (see `utils_common.R`) so data is loaded once per process.
 
 3. **No library() calls in modules**: Use `::` (e.g., `dplyr::mutate`) or define in `global.R`/`DESCRIPTION`.
 

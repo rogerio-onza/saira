@@ -32,7 +32,9 @@ Imports:
     DBI (>= 1.0.0),
     RSQLite (>= 2.2.0),
     digest (>= 0.6.0),
-    withr (>= 2.5.0)
+    withr (>= 2.5.0),
+    florabr (>= 1.3.0),
+    faunabr (>= 1.0.0)
 Additional_repositories: https://ropensci.r-universe.dev
 Suggests:
     testthat (>= 3.0.0),
@@ -42,3 +44,34 @@ Suggests:
     furrr,
     roxygen2,
     pkgload
+Collate: 
+    'app_server.R'
+    'app_ui.R'
+    'utils_common.R'
+    'data_dictionary.R'
+    'mod_help.R'
+    'mod_mapping.R'
+    'mod_mapping_basis_assistant.R'
+    'mod_mapping_cards.R'
+    'mod_mapping_loading.R'
+    'mod_preview.R'
+    'mod_upload.R'
+    'mod_validate_coords.R'
+    'mod_validate_names_helpers.R'
+    'mod_validate_names.R'
+    'mod_wiki.R'
+    'run_app.R'
+    'saira-package.R'
+    'utils_coords.R'
+    'utils_dwc.R'
+    'utils_export.R'
+    'utils_i18n.R'
+    'utils_io.R'
+    'utils_mapping.R'
+    'utils_preview.R'
+    'utils_rostrum_contracts.R'
+    'utils_rostrum_db.R'
+    'utils_rostrum_engine.R'
+    'utils_rostrum_templates.R'
+    'utils_brproviders.R'
+    'utils_taxadb.R'

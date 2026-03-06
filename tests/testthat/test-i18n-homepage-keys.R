@@ -3,7 +3,7 @@
 # Date: 2026-02-23
 
 testthat::test_that("homepage welcome keys exist in pt/en", {
-    dict <- get("i18n_dict", envir = asNamespace("saira"))
+    dict <- saira:::load_i18n_dict()
 
     required_keys <- c(
         "welcome_eyebrow",

@@ -43,8 +43,8 @@ Every script must start exactly with this block:
 - **Objects**: Nouns (`population_data`, `mapped_data`)
 
 ### 2.3 The Pipe
-- **Preference**: `%>%` (magrittr/dplyr) for consistency with Tidyverse
-- **Native pipe** `|>`: Only when zero dependencies are required or explicitly requested
+- **Preference**: `|>` (native pipe, R >= 4.1.0) — the Saira codebase uses this exclusively
+- **`%>%` (magrittr)**: Only in legacy code or when `.` placeholder is needed
 
 ### 2.4 Visual Separators
 - **PROHIBITED**: `======`, `######`, `-----` in code
@@ -175,16 +175,20 @@ mod_validate_server <- function(id, data_r, lang_r) {
 }
 ```
 
-#### 5.2.3 Chain of Reactivity (from architecture.md)
 ```r
 # R/app_server.R (Orchestrator ONLY)
 app_server <- function(input, output, session) {
   lang_r <- reactive(input$lang_switch)
   
   # Data flows through modules
-  raw_data    <- mod_upload_server("upload", lang_r)
-  mapped_data <- mod_mapping_server("mapping", raw_data, lang_r)
-  mod_preview_server("preview", mapped_data, lang_r)
+  raw_data       <- mod_upload_server("upload", lang_r)
+  mapping_result <- mod_mapping_server("mapping", raw_data, lang_r)
+  
+  # mapping_result is a named list of reactives (ADR-054)
+  mod_preview_server("preview", mapping_result$preview_data_r, lang_r,
+    download_data_r = mapping_result$processed_data_r)
+  mod_validate_names_server("validate_names", mapping_result$processed_data_r, lang_r,
+    validation_gate_r = mapping_result$validation_gate_r)
   
   # Pass reactive EXPRESSION (raw_data), not VALUE (raw_data())
 }
@@ -359,14 +363,22 @@ saira/
 ```r
 Imports:
     shiny (>= 1.7.0),
+    htmltools,
     bslib (>= 0.5.0),
-    dplyr (>= 1.1.0),
-    taxadb (>= 0.2.0)  # All runtime dependencies here
+    readr (>= 2.1.0),
+    stringr (>= 1.5.0),
+    taxadb (>= 0.2.0),
+    CoordinateCleaner (>= 3.0.0),
+    countrycode (>= 1.6.0),
+    sf, rnaturalearth, rnaturalearthdata, rnaturalearthhires,
+    DT (>= 0.28),
+    leaflet (>= 2.1.0),
+    ids, jsonlite, DBI, RSQLite, digest, withr
 
 Suggests:
-    testthat (>= 3.0.0),  # Only for developers
-    knitr,
-    rmarkdown
+    testthat (>= 3.0.0),
+    shinytest2,
+    devtools, future, furrr, roxygen2, pkgload
 ```
 
 #### In Code: Use `::` Exclusively
@@ -447,20 +459,23 @@ covr::package_coverage()
 ## 12. Internationalization (i18n) for Shiny
 
 ### 12.1 Structure (from claude.md)
+```json
+// inst/extdata/i18n.json
+{
+  "upload_title": { "pt": "Carregar Dados", "en": "Upload Data" },
+  "err_invalid": { "pt": "Dados inválidos", "en": "Invalid data" }
+}
+```
 ```r
-# R/data_dictionary.R
-i18n_dict <- list(
-  upload_title = list(pt = "Carregar Dados", en = "Upload Data"),
-  err_invalid = list(pt = "Dados inválidos", en = "Invalid data")
-)
+# R/data_dictionary.R — loads and caches the JSON dictionary
+load_i18n_dict <- function() { ... }  # Reads inst/extdata/i18n.json
 
 # R/utils_i18n.R
 tr <- function(key, lang = "en") {
-  if (!key %in% names(i18n_dict)) {
-    warning("Translation key not found: ", key)
-    return(paste0("[", key, "]"))
-  }
-  i18n_dict[[key]][[lang]] %||% i18n_dict[[key]][["en"]]
+  dict <- load_i18n_dict()
+  entry <- dict[[key]]
+  if (is.null(entry)) return(paste0("[", key, "]"))
+  entry[[lang]] %||% entry[["en"]]
 }
 ```
 

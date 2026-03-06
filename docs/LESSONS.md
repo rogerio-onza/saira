@@ -265,6 +265,21 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **`deprecated` deve filtrar no lookup, nao apagar historico**: preservar linha + evento auditavel viabiliza investigacao de regressao e rollback.
 - **Batch undo por `run_id` fica pratico quando eventos e aliases compartilham chave operacional**: sem `run_id` indexado em eventos, rollback em lote vira scan custoso.
 
+## Provedores BR (faunabr / florabr)
+
+- **`verbose = FALSE` em `get_faunabr()` / `get_florabr()` impede o download**: ambos os pacotes condicionam o bloco de `httr::GET` a `if (verbose)`; o `utils::unzip()` roda incondicionalmente logo apos. Sempre passar `verbose = TRUE` internamente na camada wrapper do saira, desacoplando a verbosidade propria do saira da verbosidade dos pacotes externos.
+- **Artifact check deve verificar o artefato final, nao intermediario**: `get_faunabr()` extrai `taxon.txt` do zip como passo intermediario e gera `CompleteBrazilianFauna.gz` como saida persistida; `load_faunabr()` le apenas o `.gz`. Verificar `taxon.txt` pode gerar falso negativo se o pacote limpar temporarios apos merge; verificar `CompleteBrazilianFauna.gz` e o contrato correto.
+- **Warnings de extracao de zip devem ser escalados a erros no wrapper**: `utils::unzip()` emite `warning()` (nao `stop()`) em falha de extracao; o `tryCatch(error=...)` do wrapper nao captura warnings. Usar `withCallingHandlers(warning=...)` para interceptar e converter em `stop()` com mensagem descritiva antes que o warning seja engolido.
+- **O warning do dbplyr (`check_from argument of tbl_sql()`) e upstream e nao bloqueante**: emitido internamente pelo dbplyr >= 2.5.0 quando `taxadb` constroi queries SQL; nao e acionavel no codigo do saira. Suprimir com `withCallingHandlers` escopado nas chamadas a `taxadb::filter_name()` para manter console limpo sem mascarar outros warnings.
+- **Diagnostico de download deve separar causa de sintoma**: "cannot open the connection" (sintoma) esconde "zip nao foi baixado porque verbose=FALSE" (causa). Ao investigar falha de provider, verificar primeiro se o arquivo `.zip` existe no tempdir antes de suspeitar do servidor remoto.
+- **Bootstrap e refresh precisam de contratos diferentes**: primeiro download sem cache deve ser sincrono e falhar com erro claro; refresh de versao com cache existente deve ser assincrono para nao bloquear validacao.
+- **Metadata por provider reduz regressao operacional**: persistir `status`, `local_version`, `last_checked_at`, `last_updated_at`, `last_error` e `retry_after_at` evita comportamento "caixa preta" em falhas intermitentes.
+- **Lock em arquivo por provider evita corrida entre cliques/sessoes**: sem lock (`<provider>.update.lock`), dois disparos simultaneos podem sobrescrever cache e produzir estado inconsistente.
+- **Escrita atomica e obrigatoria para cache grande**: salvar em `.tmp`, validar leitura, renomear para `.rds` e manter `.rds.bak` protege contra corrupcao parcial quando download/processamento falha no meio.
+- **Falha de update nao deve invalidar cache local valido**: quando o refresh remoto falha, manter `.rds` anterior e marcar `update_failed` preserva continuidade para o usuario final.
+- **`update_failed` com cache disponivel deve ser revertido para `up_to_date` na proxima leitura de status**: manter o badge de erro mesmo com dados usaveis confunde o usuario. A regra de reset deve ser simetrica a regra `never_downloaded → up_to_date`: se `has_data && status == "update_failed"`, reverter o status operacional (mantendo `last_error` para diagnostico).
+- **Toda string visivel em funcoes de badge e notificacao deve usar `tr()`**: hardcodes de texto em ingles dentro de closures de modulo passam despercebidos em revisao de codigo por nao aparecerem no dicionario. Padrao: adicionar chave no `i18n.json`, chamar `tr("chave", lang_r())`, e incluir a chave na suite `test-utils-i18n.R` no mesmo ciclo.
+
 ## CRAN Submission
 
 - **`Remotes:` proibido no CRAN**: mover dependencia nao-CRAN para `Suggests` +
