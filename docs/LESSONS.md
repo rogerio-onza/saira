@@ -268,6 +268,8 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Precedencia por escopo deve ser aplicada no lookup, nao na escrita**: manter `personal > institution > public` no read path simplifica manutencao e permite coexistencia de regras.
 - **`deprecated` deve filtrar no lookup, nao apagar historico**: preservar linha + evento auditavel viabiliza investigacao de regressao e rollback.
 - **Batch undo por `run_id` fica pratico quando eventos e aliases compartilham chave operacional**: sem `run_id` indexado em eventos, rollback em lote vira scan custoso.
+- **Alias que denota o conceito do taxon completo nunca deve apontar para o epiteto isolado**: "especie"/"species" mapeados para `specificEpithet` pareciam intuitivos, mas em datasets brasileiros a coluna "especie" quase sempre contem o binomial completo; o alias correto e `scientificName`. Aplicar o mesmo raciocinio a futuros aliases de nivel taxonomico: verificar se o nome da coluna denota o conceito completo (binomial, trinomial) ou apenas o componente (epiteto, autoria).
+- **Alias ausente no bundle causa fallback ruim quando os tokens do nome da coluna nao coincidem com os tokens do termo DwC**: `"species"` nao aparecia no bundle; sem hit exato, o fallback e token-overlap entre `["species"]` e os tokens de `"scientificName"` = `["scientific", "name"]` -- zero tokens em comum, score 0.55. Qualquer alias de uso comum em cabecalhos de planilha deve aparecer explicitamente no bundle, mesmo que semanticamente obvio.
 
 ## Provedores BR (faunabr / florabr)
 

@@ -10,11 +10,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ## [Unreleased]
 
 ### Adicionado
+- `data-raw/generate_rostrum_synonyms.R`: gerador reproduzivel do bundle de sinonimos DwC com tabela curada PT+EN inline. Cobre 27 novos termos sem cobertura (`type`, `disposition`, `preparations`, `occurrenceRemarks`, `kingdom`, `phylum`, `class`, `order`, `family`, `genus`, `specificEpithet`, `infraspecificEpithet`, `taxonRank`, `scientificNameAuthorship`, `verbatimIdentification`, `identificationQualifier`, `vernacularName`, `identifiedBy`, `country`, `stateProvince`, `county`, `locality`, `locationRemarks`, `verbatimLatitude`, `verbatimLongitude`, `fieldNotes`, `habitat`) e reforca 6 termos rasos (`eventDate`, `recordedBy`, `basisOfRecord`, `catalogNumber`, `collectionCode`, `institutionCode`). Bundle regenerado: 29 → 147 entradas, 19 → 46 termos unicos. Correcao: `"species"` (en, 0.93) e `"especie"` (pt, 0.93) movidos para `scientificName` (estavam ausentes/equivocados); `specificEpithet` perde o alias `"especie"` (semanticamente errado para dados brasileiros) (ADR-073).
+- `rostrum_sync_synonyms()` (interno) em `utils_rostrum_db.R`: sincronizacao continua do bundle `source = "v1_rds"` para `rostrum_synonyms` com hash-gate por processo. INSERT novos, UPDATE confidence alterada, SET `active = 0` para removidos. Nunca toca em `rostrum_aliases` nem em outras fontes (ADR-073).
+- 7 novos casos de teste em `tests/testthat/test-utils-rostrum-db.R` cobrindo todos os cenarios de sincronizacao: banco vazio, idempotencia via hash-gate, novos sinonimos, deativacao de removidos, isolamento de outras fontes, preservacao de `rostrum_aliases`, e integracao com o engine.
 - Texto estatico de fallback para os 8 titulos de abas de navegacao (`nav_home`, `nav_mapping`, `nav_preview`, `nav_validate`, `nav_validate_names`, `nav_validate_coords`, `nav_wiki`, `nav_help`): titulos agora aparecem imediatamente no carregamento inicial sem flash de branco, mantendo o switch de idioma pt/en via CSS `:has(.nav-title-dynamic:not(:empty)) .nav-title-static { display: none }` (ADR-075).
 - `<link rel="preconnect">` para `fonts.googleapis.com`, `fonts.gstatic.com` e `cdnjs.cloudflare.com` no `<head>` do `app_ui()`, reduzindo latencia de DNS+TCP+TLS para recursos de fonte CDN (ADR-076).
 - `.onLoad()` em `R/saira-package.R` que pre-aquece o cache do dicionario i18n ao carregar o pacote, eliminando a leitura de disco de 74 KB no caminho critico do build da UI (ADR-076).
 
+### Alterado
+- `run_rostrum_engine()`: substitui chamada `rostrum_seed_synonyms_if_empty(conn)` por `rostrum_sync_synonyms(conn)` no fluxo de carregamento de sinonimos. O banco converge automaticamente com o bundle atual em toda sessao nova; `rostrum_seed_synonyms_if_empty` permanece disponivel como API publica (ADR-073).
+
 ### Corrigido
+- `data-raw/generate_rostrum_synonyms.R` / `inst/extdata/dwc_synonyms_v1.rds`: dois aliases semanticamente errados no bundle de sinonimos corrigidos (ADR-077):
+  - `"especie"` (pt) estava em `specificEpithet` (0.90); em dados brasileiros, colunas "especie" contem o binomial completo, nao apenas o epiteto; movido para `scientificName` (0.93).
+  - `"species"` (en) estava ausente do bundle; sem hit de sinonimo, o lookup caia em token-overlap com score 0.55 (zero tokens em comum entre `["species"]` e `["scientific", "name"]`); adicionado a `scientificName` (0.93).
 - Titulos das abas de navegacao ficavam em branco por ~200-500ms no primeiro carregamento, pois dependiam exclusivamente de `uiOutput` + `renderUI` sem conteudo inicial.
 
 - Validacao taxonomica BR com fallback de confirmacao no `GBIF`:

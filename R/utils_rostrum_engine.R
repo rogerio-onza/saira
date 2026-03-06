@@ -1590,7 +1590,7 @@ run_rostrum_engine <- function(df, dwc_terms_df, options = rostrum_options(), co
     }
     if (is.null(synonyms_tbl)) {
         if (!is.null(conn) && DBI::dbIsValid(conn)) {
-            rostrum_seed_synonyms_if_empty(conn)
+            rostrum_sync_synonyms(conn)
             synonyms_tbl <- rostrum_load_synonyms_from_db(conn)
         }
         if (is.null(synonyms_tbl)) {

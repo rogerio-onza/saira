@@ -177,6 +177,206 @@ testthat::test_that("rostrum_load_synonyms_from_db returns NULL when table is em
     testthat::expect_null(result)
 })
 
+# ---- rostrum_sync_synonyms tests ----------------------------------------
+
+# Helper: two-row V1 fixture with explicit source for sync tests
+.make_sync_v1_rds <- function(terms = c("decimalLatitude", "decimalLongitude"),
+                               synonyms = c("latitude decimal", "longitude decimal"),
+                               scores = c(0.92, 0.91)) {
+    path <- tempfile(fileext = ".rds")
+    df <- data.frame(
+        term       = terms,
+        synonym    = synonyms,
+        name_score = scores,
+        lang       = rep("pt", length(terms)),
+        active     = TRUE,
+        stringsAsFactors = FALSE
+    )
+    saveRDS(df, path)
+    path
+}
+
+testthat::test_that("rostrum_sync_synonyms inserts all bundle rows into an empty DB", {
+    v1_path <- .make_sync_v1_rds()
+    on.exit(unlink(v1_path), add = TRUE)
+
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit(if (DBI::dbIsValid(conn)) DBI::dbDisconnect(conn), add = TRUE)
+
+    saira:::rostrum_reset_sync_cache()
+
+    n <- saira:::rostrum_sync_synonyms(conn, path = v1_path)
+    rows <- DBI::dbGetQuery(conn, "SELECT * FROM rostrum_synonyms WHERE source = 'v1_rds'")
+
+    testthat::expect_identical(as.integer(n), 2L)
+    testthat::expect_identical(nrow(rows), 2L)
+    testthat::expect_true("decimalLatitude" %in% rows$term)
+})
+
+testthat::test_that("rostrum_sync_synonyms is hash-gated: second call returns 0 without DB writes", {
+    v1_path <- .make_sync_v1_rds()
+    on.exit(unlink(v1_path), add = TRUE)
+
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit(if (DBI::dbIsValid(conn)) DBI::dbDisconnect(conn), add = TRUE)
+
+    saira:::rostrum_reset_sync_cache()
+
+    saira:::rostrum_sync_synonyms(conn, path = v1_path)
+    n2 <- saira:::rostrum_sync_synonyms(conn, path = v1_path)
+
+    testthat::expect_identical(as.integer(n2), 0L)
+})
+
+testthat::test_that("rostrum_sync_synonyms inserts new synonyms added to the bundle", {
+    # Start with a 1-row bundle, sync, then expand and sync again
+    v1_path_small <- .make_sync_v1_rds(
+        terms = "decimalLatitude", synonyms = "latitude decimal", scores = 0.92
+    )
+    v1_path_big <- .make_sync_v1_rds(
+        terms   = c("decimalLatitude", "decimalLongitude"),
+        synonyms = c("latitude decimal", "longitude decimal"),
+        scores  = c(0.92, 0.91)
+    )
+    on.exit({ unlink(v1_path_small); unlink(v1_path_big) }, add = TRUE)
+
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit(if (DBI::dbIsValid(conn)) DBI::dbDisconnect(conn), add = TRUE)
+
+    saira:::rostrum_reset_sync_cache()
+    saira:::rostrum_sync_synonyms(conn, path = v1_path_small)
+    saira:::rostrum_reset_sync_cache()
+    n <- saira:::rostrum_sync_synonyms(conn, path = v1_path_big)
+
+    rows <- DBI::dbGetQuery(conn, "SELECT * FROM rostrum_synonyms WHERE source = 'v1_rds' AND active = 1")
+    testthat::expect_identical(as.integer(n), 1L)
+    testthat::expect_identical(nrow(rows), 2L)
+    testthat::expect_true("decimalLongitude" %in% rows$term)
+})
+
+testthat::test_that("rostrum_sync_synonyms deactivates bundled rows removed from the RDS", {
+    v1_path_big <- .make_sync_v1_rds(
+        terms   = c("decimalLatitude", "decimalLongitude"),
+        synonyms = c("latitude decimal", "longitude decimal"),
+        scores  = c(0.92, 0.91)
+    )
+    v1_path_small <- .make_sync_v1_rds(
+        terms = "decimalLatitude", synonyms = "latitude decimal", scores = 0.92
+    )
+    on.exit({ unlink(v1_path_big); unlink(v1_path_small) }, add = TRUE)
+
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit(if (DBI::dbIsValid(conn)) DBI::dbDisconnect(conn), add = TRUE)
+
+    saira:::rostrum_reset_sync_cache()
+    saira:::rostrum_sync_synonyms(conn, path = v1_path_big)
+    saira:::rostrum_reset_sync_cache()
+    saira:::rostrum_sync_synonyms(conn, path = v1_path_small)
+
+    all_rows    <- DBI::dbGetQuery(conn, "SELECT * FROM rostrum_synonyms WHERE source = 'v1_rds'")
+    active_rows <- all_rows[as.integer(all_rows$active) == 1L, ]
+    inactive    <- all_rows[as.integer(all_rows$active) == 0L, ]
+
+    testthat::expect_identical(nrow(active_rows), 1L)
+    testthat::expect_identical(nrow(inactive), 1L)
+    testthat::expect_true("decimalLongitude" %in% inactive$term)
+})
+
+testthat::test_that("rostrum_sync_synonyms does not touch rows with source != 'v1_rds'", {
+    v1_path <- .make_sync_v1_rds()
+    on.exit(unlink(v1_path), add = TRUE)
+
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit(if (DBI::dbIsValid(conn)) DBI::dbDisconnect(conn), add = TRUE)
+
+    # Insert a row with a different source before sync
+    other_row <- data.frame(
+        term = "scientificName", synonym = "taxon name", language = "en",
+        context = "unknown", confidence = 0.95, validation_regex = NA_character_,
+        notes = "manual test entry", active = 1L, source = "manual",
+        updated_at = "2026-01-01T00:00:00Z",
+        stringsAsFactors = FALSE
+    )
+    DBI::dbAppendTable(conn, "rostrum_synonyms", other_row)
+
+    saira:::rostrum_reset_sync_cache()
+    saira:::rostrum_sync_synonyms(conn, path = v1_path)
+
+    other_after <- DBI::dbGetQuery(
+        conn, "SELECT * FROM rostrum_synonyms WHERE source = 'manual'"
+    )
+    testthat::expect_identical(nrow(other_after), 1L)
+    testthat::expect_identical(as.integer(other_after$active[[1]]), 1L)
+})
+
+testthat::test_that("rostrum_sync_synonyms never modifies rostrum_aliases", {
+    v1_path <- .make_sync_v1_rds()
+    on.exit(unlink(v1_path), add = TRUE)
+
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit(if (DBI::dbIsValid(conn)) DBI::dbDisconnect(conn), add = TRUE)
+
+    # Insert a manual alias
+    now <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+    DBI::dbExecute(
+        conn,
+        paste(
+            "INSERT INTO rostrum_aliases",
+            "(scope, col_name_norm, dwc_term, confidence, reviewed, deprecated, created_at, updated_at)",
+            "VALUES ('personal', 'lat', 'decimalLatitude', 0.95, 0, 0, ?, ?)"
+        ),
+        params = list(now, now)
+    )
+
+    saira:::rostrum_reset_sync_cache()
+    saira:::rostrum_sync_synonyms(conn, path = v1_path)
+
+    aliases <- DBI::dbGetQuery(conn, "SELECT * FROM rostrum_aliases")
+    testthat::expect_identical(nrow(aliases), 1L)
+    testthat::expect_identical(aliases$col_name_norm[[1]], "lat")
+})
+
+testthat::test_that("run_rostrum_engine maps new alias after sync replaces old bundle", {
+    # Seed DB with a 1-row bundle, then expand bundle and re-run engine
+    v1_old <- .make_sync_v1_rds(
+        terms = "decimalLatitude", synonyms = "latitude decimal", scores = 0.92
+    )
+    v1_new <- .make_sync_v1_rds(
+        terms   = c("decimalLatitude", "kingdom"),
+        synonyms = c("latitude decimal", "reino"),
+        scores  = c(0.92, 0.95)
+    )
+    on.exit({ unlink(v1_old); unlink(v1_new) }, add = TRUE)
+
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit(if (DBI::dbIsValid(conn)) DBI::dbDisconnect(conn), add = TRUE)
+
+    # First sync with old bundle (no "reino" alias)
+    saira:::rostrum_reset_sync_cache()
+    saira:::rostrum_sync_synonyms(conn, path = v1_old)
+
+    # Verify "reino" is not yet in DB
+    before <- DBI::dbGetQuery(conn, "SELECT * FROM rostrum_synonyms WHERE synonym = 'reino'")
+    testthat::expect_identical(nrow(before), 0L)
+
+    # Second sync with new bundle adds "reino"
+    saira:::rostrum_reset_sync_cache()
+    saira:::rostrum_sync_synonyms(conn, path = v1_new)
+
+    after <- DBI::dbGetQuery(
+        conn, "SELECT * FROM rostrum_synonyms WHERE synonym = 'reino' AND active = 1"
+    )
+    testthat::expect_identical(nrow(after), 1L)
+    testthat::expect_identical(after$term[[1]], "kingdom")
+})
+
 testthat::test_that("default migrations include template catalog use_case support", {
     db_path <- tempfile(fileext = ".sqlite")
     conn <- rostrum_connect(path = db_path)

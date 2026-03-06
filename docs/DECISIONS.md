@@ -1558,6 +1558,28 @@ Formato: ADR leve (Architecture Decision Record).
 
 ---
 
+## ADR-073: Substituicao de seed-if-empty por sync continua de bundle de sinonimos
+
+- **Data**: 2026-03-06
+- **Status**: Aceito
+- **Contexto**: `rostrum_seed_synonyms_if_empty` era idempotente — apos o primeiro seed, nunca mais atualizava o banco com novos sinonimos bundlados. Isso impedia que evolucoes do `dwc_synonyms_v1.rds` chegassem a instancias ja inicializadas sem resetar o SQLite. Com o enriquecimento do bundle (29 → 146 entradas), era necessario um mecanismo que reconciliasse o estado do banco sem afetar aliases aprendidos manualmente.
+- **Decisao**:
+  - Introduzir `rostrum_sync_synonyms(conn, path = NULL)` (interno, nao exportado) em `utils_rostrum_db.R`.
+  - A funcao reconcilia apenas `source = "v1_rds"` dentro de `BEGIN IMMEDIATE`: INSERT novos, UPDATE confidence alterada, SET `active = 0` para removidos. Nunca toca em `rostrum_aliases` nem em outras fontes.
+  - Hash-gating por processo: calcula `digest::digest(raw)` do RDS e compara com o ultimo hash sincronizado para o mesmo caminho de DB (cache em `.rostrum_bundle_sync_cache`). Se identico, retorna sem write.
+  - `run_rostrum_engine()` substitui a chamada `rostrum_seed_synonyms_if_empty(conn)` por `rostrum_sync_synonyms(conn)`. `rostrum_seed_synonyms_if_empty` permanece disponivel como API publica para uso externo.
+- **Alternativas rejeitadas**:
+  - Versionar o bundle e rebuild apenas em bump de versao: exigiria campo de versao no RDS e logica de comparacao extra; complexidade nao justificada para um bundle pequeno.
+  - Seed manual pelo usuario via UI: quebra UX e exige fluxo de admin desnecessario.
+  - Schema change (tabela `rostrum_kv`) para persistir o hash no DB: adicionaria complexidade de migracao desnecessaria; cache em processo (por sessao) e suficiente dado que o bundle e pequeno e o sync e rapido.
+- **Consequencias**:
+  - Banco converge automaticamente com o bundle atual em toda sessao nova com `conn` valido.
+  - Aliases manuais em `rostrum_aliases` nao sao afetados.
+  - Hash-gate garante que o overhead por chamada seja negligivel (zero writes quando RDS nao muda).
+  - `rostrum_seed_synonyms_if_empty` continua existindo e testada; apenas o engine deixa de chama-la.
+
+---
+
 ## ADR-076: Preconnect para CDNs de fontes e preload do dicionario i18n no `.onLoad()`
 
 - **Data**: 2026-03-06
@@ -1572,3 +1594,27 @@ Formato: ADR leve (Architecture Decision Record).
 - **Consequencias**:
   - Preconnect reduz latencia de DNS + TCP + TLS para os CDNs em ~100-300ms em conexoes lentas.
   - `.onLoad()` elimina a leitura de disco no caminho critico do build da UI; falha silenciosa preserva compatibilidade com ambientes sem `inst/extdata/i18n.json` (ex.: testes parciais).
+
+---
+
+## ADR-077: Correcao de aliases semanticamente errados no bundle de sinonimos do Rostrum
+
+- **Data**: 2026-03-06
+- **Status**: Aceito
+- **Contexto**: O lookup de sinonimos do Stage 1 usa correspondencia exata entre `normalize_for_matching(col_name)` e `normalize_for_matching(synonym)`. Se o nome da coluna nao tem hit de sinonimo, o fallback e token-overlap comparando com o nome do termo DwC (nao com os sinonimos). Dois problemas foram identificados no bundle v1:
+  1. `"especie"` (pt, specificEpithet, 0.90): em datasets brasileiros, colunas nomeadas "especie" contem o binomial completo (ex: *Panthera onca*), nao apenas o epiteto especifico (*onca*). O mapeamento para `specificEpithet` estava semanticamente errado.
+  2. `"species"` (en): ausente do bundle. `normalize_for_matching("SPECIES")` = `"species"` nao casa com nenhum sinonimo existente (o mais proximo era `"species name"` para `scientificName`). O fallback token-overlap produzia score 0.55 (zero tokens em comum entre `["species"]` e `["scientific", "name"]`), abaixo do threshold AUTO.
+- **Decisao**:
+  - Adicionar `"species"` (en, 0.93) e `"especie"` (pt, 0.93) como sinonimos de `scientificName` em `generate_rostrum_synonyms.R` e regenerar `dwc_synonyms_v1.rds`.
+  - Remover `"especie"` de `specificEpithet`.
+  - Regra geral documentada: alias que denota o conceito do taxon completo (binomial) nunca deve apontar para o termo do epiteto isolado.
+- **Varredura de casos similares**:
+  - `"subespecie"` (pt) -> `infraspecificEpithet` (0.91): borderline aceitavel -- datasets de museu tipicamente usam "subespecie" para o epiteto infraespecifico, nao para o binomial completo; monitorar.
+  - `"cidade"` (pt) -> `county` (0.90): `county` = municipio no padrao DwC brasileiro; "cidade" e semanticamente mais restrito, mas Brasileiros usam ambos como sinonimos no cotidiano; score minimo (0.90) e value_score filtram falsos positivos; monitorar.
+- **Alternativas rejeitadas**:
+  - Manter `"especie"` em `specificEpithet` com score baixo (0.70): nao resolve o problema; Stage 3 ainda favoreceria o termo errado quando `specificEpithet` e `scientificName` competem.
+  - Bloquear `"especie"`/`"species"` completamente (sem sinonimo em nenhum termo): pior UX; usuarios perdem o hint de mapeamento automatico.
+- **Consequencias**:
+  - Colunas nomeadas "especie", "ESPECIE", "Especie", "species", "SPECIES" agora recebem score 0.93 para `scientificName` via hit de sinonimo exato.
+  - `specificEpithet` perde o alias "especie"; colunas "epiteto especifico", "specific epithet" e "species epithet" continuam mapeando corretamente.
+  - `rostrum_sync_synonyms()` propaga a mudanca automaticamente para instancias SQLite existentes na proxima sessao.

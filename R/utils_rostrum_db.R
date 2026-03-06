@@ -1021,6 +1021,194 @@ rostrum_seed_synonyms_if_empty <- function(conn, v1_path = NULL) {
     )
 }
 
+# Process-level cache for sync: key = db path, value = last synced bundle hash.
+# Cleared on R session restart. Prevents redundant diff + write on repeated calls.
+.rostrum_bundle_sync_cache <- new.env(parent = emptyenv())
+
+# Internal helper: reset the sync cache (used in tests).
+rostrum_reset_sync_cache <- function() {
+    rm(list = ls(envir = .rostrum_bundle_sync_cache), envir = .rostrum_bundle_sync_cache)
+}
+
+# Synchronise bundled synonyms (source = "v1_rds") with the SQLite DB.
+#
+# Reconciles the V1 RDS bundle against the existing DB rows with
+# source = "v1_rds". The sync is hash-gated per DB path to avoid redundant
+# reads when called repeatedly within the same R process.
+#
+# Actions taken within a single BEGIN IMMEDIATE transaction:
+#   - INSERT new pairs absent from the DB
+#   - UPDATE rows whose confidence changed in the bundle
+#   - SET active = 0 for bundled rows that were removed from the RDS
+#
+# Rows with source != "v1_rds" and all rows in rostrum_aliases are never
+# touched.
+#
+# @param conn Valid DBI connection (WAL + FK enabled via rostrum_connect()).
+# @param path Optional explicit path to dwc_synonyms_v1.rds.
+# @return Invisible integer: total number of rows changed (0 if nothing changed).
+rostrum_sync_synonyms <- function(conn, path = NULL) {
+    if (!DBI::dbIsValid(conn)) {
+        stop("conn must be a valid DBI connection.", call. = FALSE)
+    }
+
+    # Resolve and load RDS bundle
+    raw <- tryCatch(
+        {
+            if (!is.null(path)) {
+                if (!file.exists(path)) stop("path does not exist: ", path)
+                readRDS(path)
+            } else {
+                candidates <- c(
+                    system.file("extdata", "dwc_synonyms_v1.rds", package = "saira"),
+                    file.path("inst", "extdata", "dwc_synonyms_v1.rds"),
+                    file.path("..", "..", "inst", "extdata", "dwc_synonyms_v1.rds")
+                )
+                candidates <- unique(candidates[nzchar(candidates)])
+                rds_path <- candidates[file.exists(candidates)][1L]
+                if (length(rds_path) == 0L || is.na(rds_path)) {
+                    stop("dwc_synonyms_v1.rds not found in expected locations.")
+                }
+                readRDS(rds_path)
+            }
+        },
+        error = function(e) {
+            message("[rostrum] Synonym sync skipped (V1 file unavailable): ", e$message)
+            NULL
+        }
+    )
+
+    if (is.null(raw)) {
+        return(invisible(0L))
+    }
+
+    # Hash gate: skip if same bundle was already synced for this DB in this process
+    rds_hash <- tryCatch(
+        digest::digest(raw),
+        error = function(e) NA_character_
+    )
+    if (is.na(rds_hash)) {
+        return(invisible(0L))
+    }
+
+    conn_key <- tryCatch(
+        {
+            info <- DBI::dbGetInfo(conn)
+            k <- info$dbname
+            if (is.null(k) || !nzchar(k)) "unknown" else k
+        },
+        error = function(e) "unknown"
+    )
+
+    if (identical(.rostrum_bundle_sync_cache[[conn_key]], rds_hash)) {
+        return(invisible(0L))
+    }
+
+    v2 <- adapt_synonyms_v1_to_v2(raw)
+
+    # Fetch existing bundled rows from DB (active and inactive)
+    existing <- DBI::dbGetQuery(
+        conn,
+        "SELECT term, synonym, language, context, confidence, active
+         FROM rostrum_synonyms WHERE source = 'v1_rds'"
+    )
+
+    pk_cols <- c("term", "synonym", "language", "context")
+    make_pk <- function(df) do.call(paste, c(df[pk_cols], list(sep = "\x01")))
+
+    v2_pks   <- make_pk(v2)
+    ex_pks   <- if (nrow(existing) > 0L) make_pk(existing) else character(0L)
+    now_utc  <- rostrum_now_utc()
+    n_changes <- 0L
+
+    DBI::dbExecute(conn, "BEGIN IMMEDIATE")
+    committed <- FALSE
+    on.exit(
+        {
+            if (!committed) try(DBI::dbExecute(conn, "ROLLBACK"), silent = TRUE)
+        },
+        add = TRUE
+    )
+
+    tryCatch(
+        {
+            # INSERT new rows (in v2 but not in existing DB)
+            new_mask <- !v2_pks %in% ex_pks
+            if (any(new_mask)) {
+                DBI::dbAppendTable(conn, "rostrum_synonyms", v2[new_mask, , drop = FALSE])
+                n_changes <- n_changes + sum(new_mask)
+            }
+
+            # UPDATE rows with changed confidence
+            if (nrow(existing) > 0L) {
+                both_mask <- v2_pks %in% ex_pks
+                if (any(both_mask)) {
+                    v2_both  <- v2[both_mask, , drop = FALSE]
+                    ex_idx   <- match(v2_pks[both_mask], ex_pks)
+                    ex_both  <- existing[ex_idx, , drop = FALSE]
+
+                    conf_changed <- abs(v2_both$confidence - ex_both$confidence) > 1e-9
+                    for (i in which(conf_changed)) {
+                        DBI::dbExecute(
+                            conn,
+                            paste(
+                                "UPDATE rostrum_synonyms",
+                                "SET confidence = ?, updated_at = ?",
+                                "WHERE term = ? AND synonym = ? AND language = ?",
+                                "  AND context = ? AND source = 'v1_rds'"
+                            ),
+                            params = list(
+                                v2_both$confidence[[i]], now_utc,
+                                v2_both$term[[i]], v2_both$synonym[[i]],
+                                v2_both$language[[i]], v2_both$context[[i]]
+                            )
+                        )
+                        n_changes <- n_changes + 1L
+                    }
+                }
+
+                # DEACTIVATE rows removed from the bundle (were active, no longer in v2)
+                active_mask     <- as.integer(existing$active) == 1L
+                active_ex       <- existing[active_mask, , drop = FALSE]
+                active_ex_pks   <- ex_pks[active_mask]
+                removed_pks     <- active_ex_pks[!active_ex_pks %in% v2_pks]
+
+                if (length(removed_pks) > 0L) {
+                    removed_ex <- active_ex[make_pk(active_ex) %in% removed_pks, , drop = FALSE]
+                    for (i in seq_len(nrow(removed_ex))) {
+                        DBI::dbExecute(
+                            conn,
+                            paste(
+                                "UPDATE rostrum_synonyms",
+                                "SET active = 0, updated_at = ?",
+                                "WHERE term = ? AND synonym = ? AND language = ?",
+                                "  AND context = ? AND source = 'v1_rds'"
+                            ),
+                            params = list(
+                                now_utc,
+                                removed_ex$term[[i]], removed_ex$synonym[[i]],
+                                removed_ex$language[[i]], removed_ex$context[[i]]
+                            )
+                        )
+                        n_changes <- n_changes + 1L
+                    }
+                }
+            }
+
+            DBI::dbExecute(conn, "COMMIT")
+            committed <- TRUE
+        },
+        error = function(e) {
+            stop("Failed to sync synonyms from V1 RDS: ", e$message, call. = FALSE)
+        }
+    )
+
+    # Update process-level cache: this bundle is now in sync for this DB path
+    .rostrum_bundle_sync_cache[[conn_key]] <- rds_hash
+
+    invisible(n_changes)
+}
+
 #' Load active synonyms from SQLite in V1-compatible format.
 #'
 #' Returns a data.frame with columns term, synonym, name_score, lang, active —
