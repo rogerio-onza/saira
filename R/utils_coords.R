@@ -45,6 +45,322 @@ coords_aliases_cache <- create_rds_cache("coords_aliases")
 
 coords_fuzzy_cache <- create_rds_cache("coords_fuzzy")
 
+ne_land_env <- new.env(parent = emptyenv())
+
+coords_embedded_land_10m_asset <- "ne_land_10m_americas.rds"
+
+coords_embedded_land_margin_deg <- 2
+
+coords_resolve_embedded_ne_land_path <- function() {
+    candidates <- c(
+        system.file("extdata", coords_embedded_land_10m_asset, package = "saira"),
+        file.path("inst", "extdata", coords_embedded_land_10m_asset),
+        file.path("..", "..", "inst", "extdata", coords_embedded_land_10m_asset)
+    )
+    candidates <- unique(candidates[nzchar(candidates)])
+    path <- candidates[file.exists(candidates)][1]
+    if (is.null(path) || is.na(path) || !file.exists(path)) {
+        return("")
+    }
+    path
+}
+
+coords_read_embedded_ne_land <- function(path = coords_resolve_embedded_ne_land_path()) {
+    if (!nzchar(path) || !file.exists(path)) {
+        return(NULL)
+    }
+
+    raw <- tryCatch(readRDS(path), error = function(e) e)
+    if (inherits(raw, "error")) {
+        warning(
+            sprintf("[Saira] Failed to read embedded Natural Earth land reference: %s", conditionMessage(raw)),
+            call. = FALSE
+        )
+        return(NULL)
+    }
+
+    ref_obj <- if (is.list(raw) && !is.null(raw$ref)) raw$ref else raw
+    ref <- tryCatch(
+        {
+            if (inherits(ref_obj, "SpatVector")) {
+                ref_obj
+            } else {
+                terra::vect(ref_obj)
+            }
+        },
+        error = function(e) e
+    )
+    if (inherits(ref, "error") ||
+        !inherits(ref, "SpatVector") ||
+        !identical(terra::geomtype(ref), "polygons")) {
+        warning(
+            "[Saira] Embedded Natural Earth land reference is invalid; expected polygon data.",
+            call. = FALSE
+        )
+        return(NULL)
+    }
+
+    coverage_ref_obj <- if (is.list(raw)) raw$coverage_ref else NULL
+    coverage_ref <- NULL
+    if (!is.null(coverage_ref_obj)) {
+        coverage_ref <- tryCatch(
+            {
+                if (inherits(coverage_ref_obj, "SpatVector")) {
+                    coverage_ref_obj
+                } else {
+                    terra::vect(coverage_ref_obj)
+                }
+            },
+            error = function(e) e
+        )
+        if (inherits(coverage_ref, "error") ||
+            !inherits(coverage_ref, "SpatVector") ||
+            !identical(terra::geomtype(coverage_ref), "polygons")) {
+            warning(
+                "[Saira] Embedded Natural Earth land coverage geometry is invalid; ignoring it.",
+                call. = FALSE
+            )
+            coverage_ref <- NULL
+        }
+    }
+
+    coverage_boxes <- if (is.list(raw)) raw$coverage_boxes else NULL
+    if (!is.null(coverage_boxes)) {
+        required_cols <- c("xmin", "xmax", "ymin", "ymax")
+        if (!is.data.frame(coverage_boxes) || !all(required_cols %in% names(coverage_boxes))) {
+            warning(
+                "[Saira] Embedded Natural Earth land coverage boxes are invalid; ignoring embedded scale=10 reference.",
+                call. = FALSE
+            )
+            return(NULL)
+        }
+        coverage_boxes <- coverage_boxes[, required_cols, drop = FALSE]
+        coverage_boxes[] <- lapply(coverage_boxes, function(col) suppressWarnings(as.numeric(col)))
+        coverage_boxes <- coverage_boxes[stats::complete.cases(coverage_boxes), , drop = FALSE]
+        if (nrow(coverage_boxes) == 0L) {
+            warning(
+                "[Saira] Embedded Natural Earth land coverage boxes are empty; ignoring embedded scale=10 reference.",
+                call. = FALSE
+            )
+            return(NULL)
+        }
+    }
+
+    list(
+        ref = ref,
+        coverage_ref = coverage_ref,
+        coverage_boxes = coverage_boxes,
+        source = "embedded_americas_10m",
+        path = path
+    )
+}
+
+coords_get_ne_land_entry <- function(scale = 50L, download = TRUE) {
+    scale <- as.integer(scale)
+    key <- paste0("land_", scale)
+
+    cached <- ne_land_env[[key]]
+    if (!is.null(cached)) return(cached)
+
+    entry <- NULL
+    if (identical(scale, 10L)) {
+        path <- coords_resolve_embedded_ne_land_path()
+        if (!nzchar(path)) {
+            if (isTRUE(download)) {
+                warning(
+                    "[Saira] Embedded Natural Earth land reference for scale=10 (Americas) not found; falling back to scale=50 where needed.",
+                    call. = FALSE
+                )
+            }
+            return(NULL)
+        }
+        entry <- coords_read_embedded_ne_land(path = path)
+    } else if (scale %in% c(50L, 110L)) {
+        land_sf <- tryCatch(
+            rnaturalearth::ne_countries(
+                scale = scale,
+                type = "map_units",
+                returnclass = "sf"
+            ),
+            error = function(e) e
+        )
+        if (inherits(land_sf, "error")) {
+            if (isTRUE(download)) {
+                warning(
+                    sprintf("[Saira] Failed to load Natural Earth land reference (scale=%s): %s", scale, conditionMessage(land_sf)),
+                    call. = FALSE
+                )
+            }
+            return(NULL)
+        }
+        entry <- list(
+            ref = terra::vect(land_sf),
+            coverage_boxes = NULL,
+            source = sprintf("map_units_%s", scale),
+            path = NA_character_
+        )
+    }
+
+    if (is.null(entry)) {
+        return(NULL)
+    }
+
+    ne_land_env[[key]] <- entry
+    entry
+}
+
+coords_load_ne_land <- function(scale = 50L, download = TRUE) {
+    entry <- coords_get_ne_land_entry(scale = scale, download = download)
+    if (is.null(entry)) {
+        return(NULL)
+    }
+    entry$ref
+}
+
+coords_ne_land_coverage_boxes <- function(scale = 10L, download = TRUE) {
+    entry <- coords_get_ne_land_entry(scale = scale, download = download)
+    if (is.null(entry)) {
+        return(NULL)
+    }
+    entry$coverage_boxes
+}
+
+coords_ne_land_coverage_ref <- function(scale = 10L, download = TRUE) {
+    entry <- coords_get_ne_land_entry(scale = scale, download = download)
+    if (is.null(entry)) {
+        return(NULL)
+    }
+    entry$coverage_ref
+}
+
+coords_points_in_boxes <- function(x, boxes, margin = 0) {
+    n <- nrow(x)
+    if (n == 0L || is.null(boxes) || nrow(boxes) == 0L) {
+        return(rep(FALSE, n))
+    }
+
+    lon <- suppressWarnings(as.numeric(x$decimalLongitude))
+    lat <- suppressWarnings(as.numeric(x$decimalLatitude))
+    inside <- rep(FALSE, n)
+
+    for (idx in seq_len(nrow(boxes))) {
+        box <- boxes[idx, , drop = FALSE]
+        inside <- inside |
+            (lon >= (box$xmin - margin) &
+            lon <= (box$xmax + margin) &
+            lat >= (box$ymin - margin) &
+            lat <= (box$ymax + margin))
+    }
+
+    inside[is.na(lon) | is.na(lat)] <- FALSE
+    inside
+}
+
+coords_points_in_coverage <- function(x, coverage_ref = NULL, coverage_boxes = NULL, margin = 0) {
+    n <- nrow(x)
+    if (n == 0L) {
+        return(logical(0))
+    }
+
+    if (!is.null(coverage_ref) && inherits(coverage_ref, "SpatVector")) {
+        pts <- terra::vect(
+            x[, c("decimalLongitude", "decimalLatitude"), drop = FALSE],
+            geom = c("decimalLongitude", "decimalLatitude"),
+            crs = "+proj=longlat +datum=WGS84 +no_defs"
+        )
+        extracted <- tryCatch(terra::extract(coverage_ref, pts), error = function(e) NULL)
+        if (!is.null(extracted) && ncol(extracted) >= 2L) {
+            return(!is.na(extracted[!duplicated(extracted[, 1]), 2]))
+        }
+    }
+
+    coords_points_in_boxes(x, coverage_boxes, margin = margin)
+}
+
+coords_crop_land_ref <- function(ref, x, margin = coords_embedded_land_margin_deg) {
+    if (is.null(ref) || !inherits(ref, "SpatVector") || nrow(x) == 0L) {
+        return(ref)
+    }
+
+    lon <- suppressWarnings(as.numeric(x$decimalLongitude))
+    lat <- suppressWarnings(as.numeric(x$decimalLatitude))
+    valid <- is.finite(lon) & is.finite(lat)
+    if (!any(valid)) {
+        return(ref)
+    }
+
+    ref_ext <- terra::ext(ref)
+    crop_ext <- terra::ext(
+        max(min(lon[valid]) - margin, ref_ext$xmin),
+        min(max(lon[valid]) + margin, ref_ext$xmax),
+        max(min(lat[valid]) - margin, ref_ext$ymin),
+        min(max(lat[valid]) + margin, ref_ext$ymax)
+    )
+    cropped <- tryCatch(terra::crop(ref, crop_ext), error = function(e) NULL)
+    if (is.null(cropped) || nrow(cropped) == 0L) {
+        return(ref)
+    }
+    cropped
+}
+
+coords_normalize_cc_sea_timeout <- function(timeout = NULL) {
+    raw_timeout <- timeout
+    if (is.null(raw_timeout)) {
+        env_timeout <- Sys.getenv("SAIRA_CC_SEA_TIMEOUT", "")
+        if (!nzchar(env_timeout)) {
+            return(NULL)
+        }
+        raw_timeout <- env_timeout
+    }
+
+    timeout_num <- suppressWarnings(as.numeric(raw_timeout))
+    if (!is.finite(timeout_num) || timeout_num <= 0) {
+        return(NULL)
+    }
+    timeout_num
+}
+
+coords_with_optional_time_limit <- function(fn, timeout = NULL) {
+    if (is.null(timeout)) {
+        return(fn())
+    }
+
+    base::setTimeLimit(cpu = Inf, elapsed = timeout, transient = TRUE)
+    on.exit(base::setTimeLimit(cpu = Inf, elapsed = Inf, transient = TRUE), add = TRUE)
+    fn()
+}
+
+coords_cc_sea_run <- function(x, ref = NULL, scale = NULL, timeout = NULL, crop_ref = FALSE) {
+    if (nrow(x) == 0L) {
+        return(logical(0))
+    }
+
+    run <- function() {
+        ref_to_use <- ref
+        if (!is.null(ref_to_use) && isTRUE(crop_ref)) {
+            ref_to_use <- coords_crop_land_ref(ref_to_use, x)
+        }
+
+        dots <- list(
+            "cc_sea",
+            x,
+            lon = "decimalLongitude",
+            lat = "decimalLatitude"
+        )
+        if (is.null(ref_to_use)) {
+            dots$scale <- scale
+        } else {
+            dots$ref <- ref_to_use
+        }
+        do.call(coords_cc_flagged, dots)
+    }
+
+    tryCatch(
+        coords_with_optional_time_limit(run, timeout = timeout),
+        error = function(e) e
+    )
+}
+
 
 
 resolve_country_aliases_path <- function() {
@@ -391,6 +707,113 @@ coords_cc_flagged <- function(fun_name, x, ...) {
     flagged
 }
 
+coords_cc_sea_flagged <- function(x, scale, timeout = NULL) {
+    scale <- as.integer(scale)
+    timeout <- coords_normalize_cc_sea_timeout(timeout)
+
+    run_scale <- function(x_subset, scale_value, ref = NULL, crop_ref = FALSE) {
+        coords_cc_sea_run(
+            x = x_subset,
+            ref = ref,
+            scale = scale_value,
+            timeout = timeout,
+            crop_ref = crop_ref
+        )
+    }
+
+    if (identical(scale, 10L)) {
+        land_ref_10 <- coords_load_ne_land(10L)
+        coverage_ref_10 <- coords_ne_land_coverage_ref(10L, download = FALSE)
+        coverage_boxes <- coords_ne_land_coverage_boxes(10L, download = FALSE)
+
+        if (is.null(land_ref_10) ||
+            (is.null(coverage_ref_10) &&
+            (is.null(coverage_boxes) || nrow(coverage_boxes) == 0L))) {
+            land_ref_50 <- coords_load_ne_land(50L)
+            flagged_50 <- run_scale(x, 50L, ref = land_ref_50, crop_ref = FALSE)
+            if (!inherits(flagged_50, "error")) {
+                return(flagged_50)
+            }
+
+            warning(
+                sprintf(
+                    "[Saira] cc_sea(scale=10) could not use the embedded Americas reference and scale=50 fallback failed: %s; skipping sea check for this run.",
+                    conditionMessage(flagged_50)
+                ),
+                call. = FALSE
+            )
+            return(rep(TRUE, nrow(x)))
+        }
+
+        inside_americas <- coords_points_in_coverage(
+            x,
+            coverage_ref = coverage_ref_10,
+            coverage_boxes = coverage_boxes,
+            margin = coords_embedded_land_margin_deg
+        )
+        flagged <- rep(TRUE, nrow(x))
+
+        if (any(inside_americas)) {
+            flagged_10 <- run_scale(
+                x[inside_americas, , drop = FALSE],
+                10L,
+                ref = land_ref_10,
+                crop_ref = TRUE
+            )
+            if (inherits(flagged_10, "error")) {
+                warning(
+                    sprintf(
+                        "[Saira] cc_sea(scale=10, embedded Americas) failed: %s; skipping sea check for affected rows.",
+                        conditionMessage(flagged_10)
+                    ),
+                    call. = FALSE
+                )
+            } else {
+                flagged[inside_americas] <- flagged_10
+            }
+        }
+
+        if (any(!inside_americas)) {
+            land_ref_50 <- coords_load_ne_land(50L)
+            flagged_50 <- run_scale(
+                x[!inside_americas, , drop = FALSE],
+                50L,
+                ref = land_ref_50,
+                crop_ref = FALSE
+            )
+            if (inherits(flagged_50, "error")) {
+                warning(
+                    sprintf(
+                        "[Saira] cc_sea(scale=50 fallback outside embedded Americas coverage) failed: %s; skipping sea check for affected rows.",
+                        conditionMessage(flagged_50)
+                    ),
+                    call. = FALSE
+                )
+            } else {
+                flagged[!inside_americas] <- flagged_50
+            }
+        }
+
+        return(flagged)
+    }
+
+    land_ref <- coords_load_ne_land(scale)
+    flagged <- run_scale(x, scale, ref = land_ref, crop_ref = FALSE)
+    if (!inherits(flagged, "error")) {
+        return(flagged)
+    }
+
+    warning(
+        sprintf(
+            "[Saira] cc_sea(scale=%s) failed: %s; skipping sea check for this run.",
+            scale,
+            conditionMessage(flagged)
+        ),
+        call. = FALSE
+    )
+    rep(TRUE, nrow(x))
+}
+
 coords_family_from_diag <- function(diagnostic) {
     family_map <- c(
         ok = "ok",
@@ -433,7 +856,7 @@ coords_empty_cc_result <- function() {
 #' @param lon_col Longitude column name
 #' @param country_col Country column name
 #' @param profile Validation profile (`"complete"` or `"fast"`)
-#' @param seas_scale Landmass resolution for sea test (10 = highest detail, 50 = medium, 110 = coarse). Default `10` requires `rnaturalearthhires`; falls back to `50` if not installed.
+#' @param seas_scale Landmass resolution for sea test (10 = embedded Americas detail, 50 = medium global fallback, 110 = coarse global). Default `10` uses the embedded Americas reference and falls back to `50` only for points outside that coverage.
 #' @return Data frame preserving input cardinality with flags and final diagnosis
 #' @export
 validate_coords_cc_df <- function(
@@ -450,10 +873,6 @@ validate_coords_cc_df <- function(
     profile <- match.arg(profile)
     seas_scale <- as.integer(seas_scale)
     if (!seas_scale %in% c(10L, 50L, 110L)) seas_scale <- 10L
-    if (seas_scale == 10L && !requireNamespace("rnaturalearthhires", quietly = TRUE)) {
-        warning("rnaturalearthhires not installed; falling back to seas_scale = 50.", call. = FALSE)
-        seas_scale <- 50L
-    }
     for (col_name in c(lat_col, lon_col, country_col)) {
         if (!is.character(col_name) || length(col_name) != 1L || !nzchar(col_name)) {
             stop("lat_col, lon_col and country_col must be non-empty strings.", call. = FALSE)
@@ -525,11 +944,8 @@ validate_coords_cc_df <- function(
                 stringsAsFactors = FALSE
             )
 
-            flag_sea <- coords_cc_flagged(
-                "cc_sea",
+            flag_sea <- coords_cc_sea_flagged(
                 cc_clean,
-                lon = "decimalLongitude",
-                lat = "decimalLatitude",
                 scale = seas_scale
             )
             sea_flag[rows_clean] <- !flag_sea

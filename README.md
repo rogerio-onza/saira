@@ -25,12 +25,10 @@
 remotes::install_github("sibbr/saira")
 ```
 
-For full coastal-detail coordinate validation, install the optional high-resolution
-Natural Earth data (hosted on R-universe, not CRAN):
-
-```r
-install.packages("rnaturalearthhires", repos = "https://ropensci.r-universe.dev")
-```
+Coordinate validation ships with an embedded `10m` Natural Earth land mask for
+the Americas. Datasets outside that coverage automatically fall back to the
+global `50m` reference for the sea check; no extra installation is required for
+end users.
 
 ### Running the Application
 
@@ -46,13 +44,17 @@ run_app()
     git clone https://github.com/sibbr/saira.git
     cd saira
     ```
-2.  Load the package and launch the app in R/RStudio:
+2.  Restore the project library, then load the package and launch the app in R/RStudio:
     ```r
+    if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
+    renv::restore()
     pkgload::load_all()
     run_app()
     ```
 
 ### Running Tests
+
+The commands below assume the project library has already been restored with `renv::restore()`.
 
 ```r
 devtools::test()

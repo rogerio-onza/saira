@@ -1618,3 +1618,31 @@ Formato: ADR leve (Architecture Decision Record).
   - Colunas nomeadas "especie", "ESPECIE", "Especie", "species", "SPECIES" agora recebem score 0.93 para `scientificName` via hit de sinonimo exato.
   - `specificEpithet` perde o alias "especie"; colunas "epiteto especifico", "specific epithet" e "species epithet" continuam mapeando corretamente.
   - `rostrum_sync_synonyms()` propaga a mudanca automaticamente para instancias SQLite existentes na proxima sessao.
+
+---
+
+## ADR-078: Empacotar uma mascara `land 10m` das Americas para `cc_sea(scale = 10)` e degradar apenas fora da cobertura
+
+- **Data**: 2026-03-07
+- **Status**: Aceito
+- **Contexto**: A ADR-052 elevou `seas_scale` de `110` para `10` para melhorar a deteccao de pontos costeiros. Na pratica, a implementacao inicial ficou fragil em Linux/WSL: `coords_cc_sea_flagged()` aplicava `setTimeLimit(elapsed = 120)`, tentava processar a referencia mais detalhada em toda a rodada e fazia downgrade global para `scale = 50` em qualquer timeout/erro. Alem disso, o caminho principal ainda dependia de `rnaturalearth::ne_download()` ou da instalacao opcional de `rnaturalearthhires`, o que reintroduzia dependencia de rede/GDAL em runtime. Como `rnaturalearthhires` nao pode ir para `Imports` sem inviabilizar uma futura submissao ao CRAN, o pacote precisava de um caminho "out of the box" para usuarios que instalam o app via GitHub e trabalham majoritariamente nas Americas. Durante a primeira tentativa de empacotar a referencia, surgiu uma regressao real: a Guiana Francesa foi classificada como mar porque o recorte do artefato usava cobertura politica (`countries10` / `CONTINENT`) em vez de recorte geografico sobre a camada fisica.
+- **Decisao**:
+  - Gerar uma vez em `data-raw/generate_ne_land_10m_americas.R` um artefato embutido `inst/extdata/ne_land_10m_americas.rds` derivado do layer fisico `land` `10m` do Natural Earth.
+  - O artefato passa a armazenar quatro componentes: `ref` (mascara terrestre dissolvida), `coverage_ref` (geometria de cobertura buffered para roteamento), `coverage_boxes` (bboxes auxiliares) e `meta` (proveniencia).
+  - `coords_load_ne_land(scale = 10)` passa a ler exclusivamente esse artefato local; `scale = 50/110` continua usando referencia global local carregada via `rnaturalearth::ne_countries(type = "map_units")`.
+  - `coords_cc_sea_flagged()` passa a particionar os pontos: linhas dentro da cobertura embutida usam `10m` local; linhas fora da cobertura usam fallback global `50m`; o downgrade deixa de ser "por rodada" e passa a ser "por ponto fora da cobertura".
+  - A referencia `10m` e recortada em runtime ao bbox dos pontos com margem fixa de `2` graus antes da chamada a `cc_sea()`.
+  - O timeout deixa de ser implicito; `SAIRA_CC_SEA_TIMEOUT` vira opt-in operacional.
+  - A derivacao espacial do artefato deve usar recorte geografico diretamente sobre o layer fisico `land`, nunca recorte politico por `countries`/`continent`.
+- **Alternativas rejeitadas**:
+  - Mover `rnaturalearthhires` para `Imports`: rejeitada porque criaria dependencia forte fora do CRAN/Bioconductor.
+  - Manter `ne_download()` e cache em runtime: rejeitada por fragilidade operacional, dependencia de rede e comportamento instavel entre Windows e WSL.
+  - Fazer fallback `10 -> 50` para a rodada inteira ao primeiro timeout: rejeitada porque sacrifica precisao exatamente nas linhas costeiras que motivaram a mudanca para `10m`.
+  - Embutir o mundo inteiro em `10m`: rejeitada por aumentar desnecessariamente o tamanho do pacote para o publico atual do app.
+  - Recortar a referencia das Americas usando `countries10` / `CONTINENT`: rejeitada apos a regressao da Guiana Francesa, que ficou fora da mascara por estar politicamente associada a Franca.
+- **Consequencias**:
+  - `cc_sea(scale = 10)` passa a funcionar offline e sem dependencia extra para usuarios do app nas Americas.
+  - Datasets mistos agora podem usar dois niveis de resolucao na mesma execucao: `10m` onde o pacote tem cobertura e `50m` fora dela.
+  - O artefato embutido vira parte do contrato do pacote e precisa de script de geracao versionado, nota de proveniencia e testes territoriais de regressao.
+  - Lentidao normal deixa de ser tratada como falha funcional; timeout so existe quando o operador explicitamente pedir.
+  - Territorios ultramarinos e zonas costeiras passam a exigir fixtures especificas de teste; a Guiana Francesa entrou como caso de regressao permanente.

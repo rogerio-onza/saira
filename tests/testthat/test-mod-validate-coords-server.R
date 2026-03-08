@@ -2,6 +2,17 @@
 # Author: Codex
 # Date: 2026-02-21
 
+flush_validation_cycle <- function(session, n = 4L) {
+    for (idx in seq_len(n)) {
+        session$flushReact()
+    }
+}
+
+prime_validate_button <- function(session) {
+    session$setInputs(validate = 0)
+    session$flushReact()
+}
+
 testthat::test_that("validate coords blocks execution when country is missing in gate", {
     mapped_df <- data.frame(
         decimalLatitude = c(-10),
@@ -34,10 +45,70 @@ testthat::test_that("validate coords blocks execution when country is missing in
             returned <- session$getReturned()
             testthat::expect_true(shiny::is.reactive(returned))
 
+            prime_validate_button(session)
             session$setInputs(validate = 1)
-            session$flushReact()
-            session$flushReact()
+            flush_validation_cycle(session, 3L)
             testthat::expect_null(returned())
+        }
+    )
+})
+
+testthat::test_that("validate coords does not auto-run on initialization", {
+    mapped_df <- data.frame(
+        decimalLatitude = c(-10, -11),
+        decimalLongitude = c(-50, -51),
+        country = c("Brasil", "Brasil"),
+        stringsAsFactors = FALSE
+    )
+    runs <- 0L
+
+    testthat::local_mocked_bindings(
+        validate_coords_cc_df = function(df, lat_col, lon_col, country_col, profile, seas_scale) {
+            runs <<- runs + 1L
+            data.frame(
+                .row_index = seq_len(nrow(df)),
+                lat_num = as.numeric(df[[lat_col]]),
+                lon_num = as.numeric(df[[lon_col]]),
+                country = as.character(df[[country_col]]),
+                country_iso3 = rep("BRA", nrow(df)),
+                diagnostic = rep("ok", nrow(df)),
+                diagnostic_family = rep("ok", nrow(df)),
+                valid = rep(TRUE, nrow(df)),
+                stringsAsFactors = FALSE
+            )
+        },
+        .package = "saira"
+    )
+
+    gate_r <- shiny::reactive({
+        list(
+            coords_status = "ok",
+            has_data = TRUE,
+            lat_col = "decimalLatitude",
+            lon_col = "decimalLongitude",
+            country_col = "country",
+            has_lat = TRUE,
+            has_lon = TRUE,
+            has_country = TRUE
+        )
+    })
+
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en"),
+            validation_gate_r = gate_r
+        ),
+        {
+            returned <- session$getReturned()
+            testthat::expect_true(shiny::is.reactive(returned))
+
+            prime_validate_button(session)
+            flush_validation_cycle(session, 3L)
+
+            testthat::expect_null(returned())
+            testthat::expect_equal(runs, 0L)
         }
     )
 })
@@ -93,10 +164,9 @@ testthat::test_that("validate coords runs with lat/lon/country and respects prof
             returned <- session$getReturned()
             testthat::expect_true(shiny::is.reactive(returned))
 
+            prime_validate_button(session)
             session$setInputs(validate = 1)
-            session$flushReact()
-            session$flushReact()
-            session$flushReact()
+            flush_validation_cycle(session)
             out <- returned()
             testthat::expect_true(is.data.frame(out))
             testthat::expect_equal(nrow(out), nrow(mapped_df))
@@ -104,9 +174,7 @@ testthat::test_that("validate coords runs with lat/lon/country and respects prof
 
             session$setInputs(coord_profile = "fast")
             session$setInputs(validate = 2)
-            session$flushReact()
-            session$flushReact()
-            session$flushReact()
+            flush_validation_cycle(session)
             testthat::expect_identical(captured_profile, "fast")
         }
     )
@@ -162,10 +230,9 @@ testthat::test_that("family filter changes filtered output for map and table", {
             filtered_r <- attr(returned, "filtered_data")
             testthat::expect_true(shiny::is.reactive(filtered_r))
 
+            prime_validate_button(session)
             session$setInputs(validate = 1)
-            session$flushReact()
-            session$flushReact()
-            session$flushReact()
+            flush_validation_cycle(session)
 
             problems_filtered <- filtered_r()
             testthat::expect_equal(nrow(problems_filtered), 2L)
@@ -243,10 +310,9 @@ testthat::test_that("validate coords keeps running when loading modal fails", {
             returned <- session$getReturned()
             testthat::expect_true(shiny::is.reactive(returned))
 
+            prime_validate_button(session)
             session$setInputs(validate = 1)
-            session$flushReact()
-            session$flushReact()
-            session$flushReact()
+            flush_validation_cycle(session)
 
             out <- returned()
             testthat::expect_true(is.data.frame(out))

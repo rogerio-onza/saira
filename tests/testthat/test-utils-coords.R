@@ -293,3 +293,263 @@ testthat::test_that("performance budget for profile fast and complete (mocked CC
     testthat::expect_lte(as.numeric(elapsed_fast), 10)
     testthat::expect_lte(as.numeric(elapsed_complete), 20)
 })
+
+# --- coords_load_ne_land ---
+
+clear_land_cache_key <- function(key) {
+    old_val <- ne_land_env[[key]]
+    list(
+        old = old_val,
+        restore = function() {
+            if (is.null(old_val)) {
+                if (exists(key, envir = ne_land_env, inherits = FALSE)) {
+                    rm(list = key, envir = ne_land_env)
+                }
+            } else {
+                ne_land_env[[key]] <<- old_val
+            }
+        }
+    )
+}
+
+testthat::test_that("coords_load_ne_land loads embedded Americas reference for scale 10", {
+    state <- clear_land_cache_key("land_10")
+    on.exit(state$restore(), add = TRUE)
+
+    entry <- coords_get_ne_land_entry(10L, download = FALSE)
+    testthat::expect_type(entry, "list")
+    testthat::expect_identical(entry$source, "embedded_americas_10m")
+    testthat::expect_true(inherits(entry$ref, "SpatVector"))
+    testthat::expect_true(inherits(entry$coverage_ref, "SpatVector"))
+    testthat::expect_true(is.data.frame(entry$coverage_boxes))
+    testthat::expect_true(nrow(entry$coverage_boxes) >= 1L)
+    testthat::expect_true(file.exists(entry$path))
+})
+
+testthat::test_that("coords_load_ne_land uses in-memory cache on second call", {
+    fake_entry <- list(
+        ref = "sentinel_ref",
+        coverage_ref = "sentinel_coverage",
+        coverage_boxes = data.frame(xmin = 0, xmax = 1, ymin = 0, ymax = 1),
+        source = "mock",
+        path = NA_character_
+    )
+    key <- "land_50"
+    state <- clear_land_cache_key(key)
+    on.exit(state$restore(), add = TRUE)
+
+    ne_land_env[[key]] <- fake_entry
+    result <- coords_load_ne_land(50L)
+    testthat::expect_identical(result, "sentinel_ref")
+})
+
+testthat::test_that("coords_points_in_coverage uses polygon coverage before bbox fallback", {
+    coverage_ref <- terra::vect(sf::st_as_sf(
+        data.frame(
+            id = 1L,
+            wkt = "POLYGON ((-60 -10, -40 -10, -40 10, -60 10, -60 -10))",
+            stringsAsFactors = FALSE
+        ),
+        wkt = "wkt",
+        crs = 4326
+    ))
+
+    x <- data.frame(
+        decimalLatitude = c(0, 0, 50),
+        decimalLongitude = c(-50, -20, 50),
+        stringsAsFactors = FALSE
+    )
+    inside <- coords_points_in_coverage(
+        x,
+        coverage_ref = coverage_ref,
+        coverage_boxes = data.frame(xmin = -5, xmax = 5, ymin = -5, ymax = 5)
+    )
+    testthat::expect_identical(inside, c(TRUE, FALSE, FALSE))
+})
+
+testthat::test_that("coords_cc_sea_flagged splits embedded Americas and global fallback rows", {
+    calls <- list()
+
+    testthat::local_mocked_bindings(
+        coords_load_ne_land = function(scale, download = TRUE) {
+            if (identical(as.integer(scale), 10L)) "ref10" else "ref50"
+        },
+        coords_ne_land_coverage_ref = function(scale = 10L, download = TRUE) "coverage10",
+        coords_ne_land_coverage_boxes = function(scale = 10L, download = TRUE) NULL,
+        coords_points_in_coverage = function(x, coverage_ref = NULL, coverage_boxes = NULL, margin = 0) {
+            c(TRUE, FALSE, TRUE)
+        },
+        coords_cc_sea_run = function(x, ref = NULL, scale = NULL, timeout = NULL, crop_ref = FALSE) {
+            calls[[length(calls) + 1L]] <<- list(ref = ref, scale = scale, n = nrow(x), crop_ref = crop_ref, timeout = timeout)
+            if (identical(ref, "ref10")) {
+                return(c(FALSE, TRUE))
+            }
+            rep(TRUE, nrow(x))
+        },
+        .package = "saira"
+    )
+
+    x <- data.frame(
+        decimalLatitude = c(-10, 40, -11),
+        decimalLongitude = c(-50, 20, -51),
+        stringsAsFactors = FALSE
+    )
+
+    flagged <- coords_cc_sea_flagged(x, scale = 10L)
+    testthat::expect_identical(flagged, c(FALSE, TRUE, TRUE))
+    testthat::expect_length(calls, 2L)
+    testthat::expect_identical(calls[[1]]$ref, "ref10")
+    testthat::expect_true(isTRUE(calls[[1]]$crop_ref))
+    testthat::expect_identical(calls[[2]]$ref, "ref50")
+    testthat::expect_false(isTRUE(calls[[2]]$crop_ref))
+})
+
+testthat::test_that("coords_cc_sea_flagged falls back to scale 50 globally when embedded reference is missing", {
+    calls <- list()
+
+    testthat::local_mocked_bindings(
+        coords_load_ne_land = function(scale, download = TRUE) {
+            if (identical(as.integer(scale), 10L)) NULL else "ref50"
+        },
+        coords_ne_land_coverage_ref = function(scale = 10L, download = TRUE) NULL,
+        coords_ne_land_coverage_boxes = function(scale = 10L, download = TRUE) NULL,
+        coords_cc_sea_run = function(x, ref = NULL, scale = NULL, timeout = NULL, crop_ref = FALSE) {
+            calls[[length(calls) + 1L]] <<- list(ref = ref, scale = scale, n = nrow(x))
+            rep(FALSE, nrow(x))
+        },
+        .package = "saira"
+    )
+
+    x <- data.frame(
+        decimalLatitude = c(-10, 10),
+        decimalLongitude = c(-50, -51),
+        stringsAsFactors = FALSE
+    )
+
+    flagged <- coords_cc_sea_flagged(x, scale = 10L)
+    testthat::expect_identical(flagged, c(FALSE, FALSE))
+    testthat::expect_length(calls, 1L)
+    testthat::expect_identical(calls[[1]]$ref, "ref50")
+    testthat::expect_identical(calls[[1]]$scale, 50L)
+})
+
+testthat::test_that("coords_crop_land_ref reduces geometry without changing cc_sea result", {
+    testthat::skip_if_not_installed("CoordinateCleaner")
+    ref <- coords_load_ne_land(10L, download = FALSE)
+    testthat::expect_true(inherits(ref, "SpatVector"))
+
+    pts <- data.frame(
+        decimalLongitude = c(-48.5, -43.2, -60.1, -38.7, -34.9, -46.0),
+        decimalLatitude = c(-26.2, -23.0, -3.1, -12.5, -7.9, -15.8),
+        stringsAsFactors = FALSE
+    )
+    cropped <- coords_crop_land_ref(ref, pts)
+
+    testthat::expect_lt(nrow(terra::geom(cropped)), nrow(terra::geom(ref)))
+    full_flag <- coords_cc_flagged(
+        "cc_sea",
+        pts,
+        lon = "decimalLongitude",
+        lat = "decimalLatitude",
+        ref = ref
+    )
+    cropped_flag <- coords_cc_flagged(
+        "cc_sea",
+        pts,
+        lon = "decimalLongitude",
+        lat = "decimalLatitude",
+        ref = cropped
+    )
+    testthat::expect_identical(full_flag, cropped_flag)
+})
+
+testthat::test_that("embedded Americas reference keeps French Guiana sample points on land", {
+    testthat::skip_if_not_installed("CoordinateCleaner")
+    ref <- coords_load_ne_land(10L, download = FALSE)
+    testthat::expect_true(inherits(ref, "SpatVector"))
+
+    pts <- data.frame(
+        decimalLongitude = c(-54.5, -53.5, -52.5, -53.0),
+        decimalLatitude = c(4.0, 4.5, 4.0, 3.0),
+        stringsAsFactors = FALSE
+    )
+
+    flagged <- coords_cc_flagged(
+        "cc_sea",
+        pts,
+        lon = "decimalLongitude",
+        lat = "decimalLatitude",
+        ref = ref
+    )
+    testthat::expect_true(all(flagged))
+})
+
+testthat::test_that("coords_normalize_cc_sea_timeout is opt-in and reads env var", {
+    testthat::expect_null(coords_normalize_cc_sea_timeout())
+
+    withr::with_envvar(list(SAIRA_CC_SEA_TIMEOUT = "999"), {
+        testthat::expect_equal(coords_normalize_cc_sea_timeout(), 999)
+    })
+})
+
+testthat::test_that("coords_cc_sea_flagged passes explicit timeout when env var is set", {
+    timeout_used <- NULL
+    testthat::local_mocked_bindings(
+        coords_load_ne_land = function(scale, download = TRUE) "ref50",
+        coords_cc_sea_run = function(x, ref = NULL, scale = NULL, timeout = NULL, crop_ref = FALSE) {
+            timeout_used <<- timeout
+            rep(TRUE, nrow(x))
+        },
+        .package = "saira"
+    )
+
+    x <- data.frame(
+        decimalLatitude = -10,
+        decimalLongitude = -50,
+        stringsAsFactors = FALSE
+    )
+
+    withr::with_envvar(list(SAIRA_CC_SEA_TIMEOUT = "999"), {
+        result <- coords_cc_sea_flagged(x, scale = 50L)
+        testthat::expect_true(all(result))
+        testthat::expect_equal(timeout_used, 999)
+    })
+})
+
+testthat::test_that("validate_coords_cc_df keeps seas_scale=10 without requiring rnaturalearthhires", {
+    testthat::local_mocked_bindings(
+        requireNamespace = function(package, quietly = FALSE) {
+            if (identical(package, "rnaturalearthhires")) return(FALSE)
+            TRUE
+        },
+        .package = "base"
+    )
+    testthat::local_mocked_bindings(
+        coords_assert_cc_dependencies = function() NULL,
+        coords_country_to_iso3 = function(country_values) rep("BRA", length(country_values)),
+        coords_cc_sea_flagged = function(x, scale, timeout = NULL) {
+            testthat::expect_identical(scale, 10L)
+            rep(TRUE, nrow(x))
+        },
+        coords_cc_flagged = function(fun_name, x, ...) rep(TRUE, nrow(x)),
+        .package = "saira"
+    )
+
+    df <- data.frame(
+        decimalLatitude = c(-10, -11),
+        decimalLongitude = c(-50, -51),
+        country = c("Brasil", "Brasil"),
+        stringsAsFactors = FALSE
+    )
+
+    out <- validate_coords_cc_df(
+        df = df,
+        lat_col = "decimalLatitude",
+        lon_col = "decimalLongitude",
+        country_col = "country",
+        seas_scale = 10L
+    )
+
+    testthat::expect_identical(attr(out, "seas_scale"), 10L)
+    testthat::expect_true(all(out$diagnostic == "ok"))
+})

@@ -5,6 +5,33 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Adicionado
+- `data-raw/generate_ne_land_10m_americas.R`: script one-shot para gerar `inst/extdata/ne_land_10m_americas.rds` a partir do layer fisico `land` `10m` do Natural Earth. O gerador aceita `NE_LAND_10M_ZIP` para reaproveitar um zip ja baixado, dissolve a massa terrestre, cria uma geometria de cobertura buffered e salva `ref`, `coverage_ref`, `coverage_boxes` e `meta` em `.rds` compactado (ADR-078).
+- `inst/extdata/ne_land_10m_americas.rds`: referencia embutida `10m` das Americas distribuida junto com o pacote, permitindo que instalacoes via GitHub executem `cc_sea(scale = 10)` sem download em runtime e sem dependencia obrigatoria de `rnaturalearthhires` (ADR-078).
+- `inst/extdata/ne_land_10m_americas_source.md`: registro curto de proveniencia, geracao e licenca do artefato espacial embutido.
+
+### Alterado
+- `R/utils_coords.R`: `coords_load_ne_land(scale = 10)` deixou de depender de `rnaturalearth::ne_download()` no caminho principal e passou a ler o artefato embutido via `system.file("extdata", "ne_land_10m_americas.rds", package = "saira")`. Para `scale = 50/110`, o carregamento local passou a usar `rnaturalearth::ne_countries(type = "map_units")`, eliminando download em runtime no teste de mar (ADR-078).
+- `R/utils_coords.R`: `coords_cc_sea_flagged()` foi reescrita para particionar o dataset em duas faixas de execucao: pontos dentro da cobertura das Americas usam `10m` local com crop geografico; pontos fora da cobertura usam fallback global `50m` apenas nesses indices. O pipeline preserva cardinalidade e deixa de rebaixar a rodada inteira por lentidao localizada (ADR-078).
+- `R/utils_coords.R`: o timeout implicito de `120s` foi removido. `SAIRA_CC_SEA_TIMEOUT` agora e opt-in; sem a variavel de ambiente definida, o fluxo nao instala `setTimeLimit()` e nao trata duracao normal de execucao como erro funcional (ADR-078).
+- `R/utils_coords.R`: `coords_crop_land_ref()` passou a recortar a referencia `10m` para o bbox dos pontos com margem de `2` graus antes do `cc_sea()`, reduzindo o custo de point-in-polygon em datasets regionais sem mudar o resultado final do diagnostico.
+- `R/saira-package.R`: `.onLoad()` continua pre-aquecendo `coords_load_ne_land(10L)`, mas agora aquecendo uma referencia local embutida no pacote em vez de um caminho dependente de download.
+
+### Corrigido
+- Regressao de WSL em que `cc_sea(scale = 10)` batia no limite de tempo (`Error: reached elapsed time limit`) e derrubava a analise inteira para `scale = 50`. A causa real era a combinacao de `timeout` fixo + referencia `10m` pesada + carregamento inadequado da geometria; o novo fluxo mantem `10m` local dentro das Americas e so usa `50m` fora da cobertura embutida.
+- Falso positivo sistematico de mar na Guiana Francesa: a primeira geracao do artefato embutido recortava a camada fisica com cobertura politica (`countries10` / `CONTINENT`), excluindo um territorio ultramarino ligado a Franca. O gerador foi corrigido para recortar diretamente o `land 10m` fisico por mascara geografica das Americas, restaurando a cobertura terrestre correta nessa regiao (ADR-078).
+
+### Testes
+- `tests/testthat/test-utils-coords.R`: nova bateria de regressao cobrindo carregamento da referencia embutida, cache em memoria, roteamento `10m Americas` vs `50m global`, fallback quando o artefato nao existe, invariancia do crop, timeout opt-in por `SAIRA_CC_SEA_TIMEOUT` e amostras da Guiana Francesa.
+- `tests/testthat/test-mod-validate-coords-server.R`: fluxo do modulo mantido verde com `seas_scale = 10L`, garantindo que a mudanca ficou confinada ao engine de coordenadas e nao exigiu alteracao na UI atual.
+
+### Documentacao
+- `README.md`: documentacao de validacao de coordenadas atualizada para explicar que `scale = 10` nas Americas agora vem embutido no pacote e que pontos fora dessa cobertura usam fallback automatico para `50m`, sem instalacao extra de `rnaturalearthhires`.
+- `docs/DECISIONS.md`: novo ADR-078 documentando o empacotamento da mascara `land 10m` das Americas, o fallback parcial por cobertura e a remocao do timeout implicito.
+- `docs/LESSONS.md`: novas licoes registradas sobre artefatos espaciais embutidos, timeout opt-in e o erro de recortar `land` fisico por fronteira politica.
+
 ---
 
 ## [0.2.1] - 2026-03-06

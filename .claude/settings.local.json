@@ -40,7 +40,12 @@
       "Bash(Rscript -e \"jsonlite::fromJSON\\(''inst/extdata/i18n.json''\\); cat\\(''JSON OK\\\\n''\\)\")",
       "Bash(Rscript -e \"j <- jsonlite::fromJSON\\(''inst/extdata/i18n.json''\\); cat\\(''Keys:'', length\\(j\\), ''\\\\nJSON OK\\\\n''\\)\")",
       "WebFetch(domain:github.com)",
-      "Bash(chmod 644 /tmp/utils_brproviders_v2.R)"
+      "Bash(chmod 644 /tmp/utils_brproviders_v2.R)",
+      "Bash(Rscript -e 'cat\\(deparse\\(body\\(CoordinateCleaner::cc_sea\\)\\), sep=\"\"\\\\n\"\"\\)')",
+      "Bash(Rscript -e 'args\\(CoordinateCleaner::cc_sea\\)')",
+      "Bash(Rscript -e 'args\\(rnaturalearth::ne_download\\)')",
+      "Bash(Rscript -e 'body\\(CoordinateCleaner::cc_sea\\)')",
+      "Bash(Rscript -e 'devtools::test\\(filter = \"\"utils-coords\"\"\\)')"
     ]
   }
 }

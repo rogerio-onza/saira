@@ -80,8 +80,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     )
                 ),
                 class = "automap-loading-host",
-                easyClose = FALSE,
-                footer = NULL
+                easyClose = TRUE,
+                footer = shiny::modalButton(tr("btn_cancel", lang_r()))
             ))
         }
 
@@ -775,7 +775,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
 
                 rv$start_requested <- TRUE
             },
-            ignoreInit = FALSE
+            ignoreInit = TRUE
         )
 
         shiny::observeEvent(rv$start_requested,
@@ -801,7 +801,9 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     }
                 )
 
-                rv$run_requested <- TRUE
+                session$onFlushed(function() {
+                    rv$run_requested <- TRUE
+                }, once = TRUE)
             },
             ignoreInit = FALSE
         )
