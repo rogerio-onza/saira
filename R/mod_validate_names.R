@@ -1135,22 +1135,11 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                             class = "vn-progress-track",
                             shiny::div(class = "vn-progress-fill", style = paste0("width: ", snapshot$progress_pct, "%;"))
                         ),
-                        if (isTRUE(show_progress_meta)) {
+                        if (isTRUE(rv$running) && !is.null(rv$run_state)) {
                             shiny::div(
-                                class = "vn-progress-meta",
-                                shiny::div(
-                                    class = "vn-progress-meta-line",
-                                    sprintf(tr("validate_names_progress_meta_line1", lang_r()), snapshot$phase_text, snapshot$batch_text)
-                                ),
-                                shiny::div(
-                                    class = "vn-progress-meta-line",
-                                    sprintf(
-                                        tr("validate_names_progress_meta_line2", lang_r()),
-                                        snapshot$provider_text,
-                                        snapshot$resolved_unique,
-                                        snapshot$total_unique
-                                    )
-                                )
+                                class = "vn-progress-phrase-row",
+                                shiny::icon(vn_phase_icon(rv$run_state), class = "fa-solid vn-progress-phrase-icon"),
+                                shiny::span(class = "vn-progress-phrase-text", vn_phase_text(rv$run_state, lang_r()))
                             )
                         }
                     ),

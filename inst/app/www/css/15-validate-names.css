@@ -712,14 +712,21 @@
   font-size: var(--text-sm);
 }
 
-.validate-coords-loading-modal .automap-loading-title {
-  margin-bottom: var(--space-2);
+.vn-progress-phrase-row {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: 0.4rem;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
 }
 
-.coords-loading-lottie {
-  width: 90px;
-  height: 70px;
-  margin: 0 auto;
+.vn-progress-phrase-icon {
+  color: var(--accent);
+  margin-top: 2px;
+  flex-shrink: 0;
+  animation: automap-pulse 1.2s ease-in-out infinite; /* keyframe defined in 14-mapping.css */
 }
 
 .validate-summary-box {

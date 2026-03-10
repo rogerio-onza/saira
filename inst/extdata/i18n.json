@@ -1195,6 +1195,10 @@
     "pt": "Provedor",
     "en": "Provider"
   },
+  "validate_names_loading_phase_provider_download": {
+    "pt": "Baixando base de dados %s (pode demorar alguns minutos)...",
+    "en": "Downloading %s database (may take a few minutes)..."
+  },
   "validate_names_valid": {
     "pt": "Válidos",
     "en": "Valid"
@@ -1622,6 +1626,22 @@
   "validate_coords_loading_phase_finalize": {
     "pt": "Finalizando",
     "en": "Finalizing"
+  },
+  "loading_coords_phrase_1": {
+    "pt": "Interrogando coordenadas com latitude zero e suspeitas de falsidade.",
+    "en": "Interrogating zero-latitude coordinates suspected of falsification."
+  },
+  "loading_coords_phrase_2": {
+    "pt": "Nenhum ponto no mar passa pelo CoordinateCleaner impune.",
+    "en": "No sea point escapes CoordinateCleaner unchallenged."
+  },
+  "loading_coords_phrase_3": {
+    "pt": "A terra firme sendo consultada como testemunha de defesa.",
+    "en": "Solid ground being consulted as a witness for the defense."
+  },
+  "loading_coords_phrase_4": {
+    "pt": "Georeferenciamento: onde 0.00001\u00b0 de desvio \u00e9 registrado.",
+    "en": "Georeferencing: where a 0.00001\u00b0 deviation is on the record."
   },
   "validate_coords_failed": {
     "pt": "Falha na validação de coordenadas: %s",

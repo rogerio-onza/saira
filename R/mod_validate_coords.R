@@ -70,21 +70,6 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             shiny::showNotification(ui = message, type = type, duration = duration, id = notification_id)
         }
 
-        show_validation_modal <- function() {
-            shiny::showModal(shiny::modalDialog(
-                shiny::div(
-                    class = "automap-loading-modal validate-coords-loading-modal",
-                    shiny::div(class = "automap-loading-title", tr("validate_coords_loading_title", lang_r())),
-                    shiny::HTML(
-                        '<lottie-player src="www/lottie/lottieflow-loading-07-saira.json" background="transparent" speed="1" loop autoplay class="coords-loading-lottie"></lottie-player>'
-                    )
-                ),
-                class = "automap-loading-host",
-                easyClose = TRUE,
-                footer = shiny::modalButton(tr("btn_cancel", lang_r()))
-            ))
-        }
-
         coord_filter_values <- c("all", "problems", "validity", "sea", "zero_equal", "reference")
         coord_validation_r <- shiny::reactiveVal(NULL)
 
@@ -788,10 +773,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rv$starting <- FALSE
                 rv$last_run_status <- "running"
                 tryCatch(
-                    {
-                        shiny::removeModal()
-                        show_validation_modal()
-                    },
+                    show_validate_coords_loading_modal(ns, lang_r),
                     error = function(e) {
                         notify_saira(
                             message = tr("validate_coords_modal_fallback", lang_r()),
@@ -820,7 +802,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
 
                 on.exit(
                     {
-                        shiny::removeModal()
+                        hide_validate_coords_loading_modal()
                         rv$running <- FALSE
                     },
                     add = TRUE

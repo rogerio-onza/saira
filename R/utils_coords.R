@@ -751,47 +751,78 @@ coords_cc_sea_flagged <- function(x, scale, timeout = NULL) {
             coverage_boxes = coverage_boxes,
             margin = coords_embedded_land_margin_deg
         )
-        flagged <- rep(TRUE, nrow(x))
 
-        if (any(inside_americas)) {
-            flagged_10 <- run_scale(
-                x[inside_americas, , drop = FALSE],
-                10L,
-                ref = land_ref_10,
-                crop_ref = TRUE
-            )
+        # Short-circuit: dataset 100% nas Americas -> um unico cc_sea(10m)
+        if (all(inside_americas)) {
+            flagged_10 <- run_scale(x, 10L, ref = land_ref_10, crop_ref = TRUE)
             if (inherits(flagged_10, "error")) {
                 warning(
                     sprintf(
-                        "[Saira] cc_sea(scale=10, embedded Americas) failed: %s; skipping sea check for affected rows.",
+                        "[Saira] cc_sea(scale=10, embedded Americas) failed: %s; skipping sea check for all rows.",
                         conditionMessage(flagged_10)
                     ),
                     call. = FALSE
                 )
-            } else {
-                flagged[inside_americas] <- flagged_10
+                return(rep(TRUE, nrow(x)))
             }
+            return(flagged_10)
         }
 
-        if (any(!inside_americas)) {
+        # Short-circuit: dataset 100% fora das Americas -> um unico cc_sea(50m)
+        if (!any(inside_americas)) {
             land_ref_50 <- coords_load_ne_land(50L)
-            flagged_50 <- run_scale(
-                x[!inside_americas, , drop = FALSE],
-                50L,
-                ref = land_ref_50,
-                crop_ref = FALSE
-            )
+            flagged_50 <- run_scale(x, 50L, ref = land_ref_50, crop_ref = FALSE)
             if (inherits(flagged_50, "error")) {
                 warning(
                     sprintf(
-                        "[Saira] cc_sea(scale=50 fallback outside embedded Americas coverage) failed: %s; skipping sea check for affected rows.",
+                        "[Saira] cc_sea(scale=50 fallback outside embedded Americas coverage) failed: %s; skipping sea check for all rows.",
                         conditionMessage(flagged_50)
                     ),
                     call. = FALSE
                 )
-            } else {
-                flagged[!inside_americas] <- flagged_50
+                return(rep(TRUE, nrow(x)))
             }
+            return(flagged_50)
+        }
+
+        # Caso misto: dois cc_sea para grupos distintos
+        flagged <- rep(TRUE, nrow(x))
+
+        flagged_10 <- run_scale(
+            x[inside_americas, , drop = FALSE],
+            10L,
+            ref = land_ref_10,
+            crop_ref = TRUE
+        )
+        if (inherits(flagged_10, "error")) {
+            warning(
+                sprintf(
+                    "[Saira] cc_sea(scale=10, embedded Americas) failed: %s; skipping sea check for affected rows.",
+                    conditionMessage(flagged_10)
+                ),
+                call. = FALSE
+            )
+        } else {
+            flagged[inside_americas] <- flagged_10
+        }
+
+        land_ref_50 <- coords_load_ne_land(50L)
+        flagged_50 <- run_scale(
+            x[!inside_americas, , drop = FALSE],
+            50L,
+            ref = land_ref_50,
+            crop_ref = FALSE
+        )
+        if (inherits(flagged_50, "error")) {
+            warning(
+                sprintf(
+                    "[Saira] cc_sea(scale=50 fallback outside embedded Americas coverage) failed: %s; skipping sea check for affected rows.",
+                    conditionMessage(flagged_50)
+                ),
+                call. = FALSE
+            )
+        } else {
+            flagged[!inside_americas] <- flagged_50
         }
 
         return(flagged)
@@ -884,6 +915,27 @@ validate_coords_cc_df <- function(
 
     coords_assert_cc_dependencies()
 
+    # Performance logging controlado por SAIRA_COORDS_PROFILE=true
+    # Zero custo quando env var nao definida: .plog() no-op imediato
+    .perf <- if (identical(Sys.getenv("SAIRA_COORDS_PROFILE"), "true")) {
+        e <- new.env(parent = emptyenv())
+        e$t_phase <- proc.time()
+        e$t_total <- proc.time()
+        e$log <- function(phase) {
+            elapsed_phase <- (proc.time() - e$t_phase)[["elapsed"]]
+            elapsed_total <- (proc.time() - e$t_total)[["elapsed"]]
+            message(sprintf(
+                "[saira/coords] %-32s %5.2fs  (total acum: %5.2fs)",
+                phase, elapsed_phase, elapsed_total
+            ))
+            e$t_phase <- proc.time()
+        }
+        e
+    } else {
+        NULL
+    }
+    .plog <- function(phase) if (!is.null(.perf)) .perf$log(phase)
+
     n <- nrow(df)
     if (n == 0L) {
         out <- coords_empty_cc_result()
@@ -898,11 +950,13 @@ validate_coords_cc_df <- function(
     lon_parsed <- as_coord_numeric(df[[lon_col]])
     lat_num <- lat_parsed$num
     lon_num <- lon_parsed$num
+    .plog("parse lat/lon")
 
     country_raw <- as.character(df[[country_col]])
     country_raw[is.na(country_raw)] <- ""
     country_raw <- trimws(country_raw)
     country_iso3 <- coords_country_to_iso3(country_raw)
+    .plog("country_to_iso3")
 
     validity_missing <- is.na(lat_num) | is.na(lon_num)
     swapped <- !validity_missing &
@@ -931,6 +985,7 @@ validate_coords_cc_df <- function(
             lon = "decimalLongitude",
             lat = "decimalLatitude"
         )
+        .plog("cc_val")
         rows_val_fail <- rows_candidate[!flag_val]
         if (length(rows_val_fail) > 0L) {
             validity_bounds[rows_val_fail] <- TRUE
@@ -949,6 +1004,7 @@ validate_coords_cc_df <- function(
                 scale = seas_scale
             )
             sea_flag[rows_clean] <- !flag_sea
+            .plog("cc_sea")
 
             flag_zero <- coords_cc_flagged(
                 "cc_zero",
@@ -965,6 +1021,7 @@ validate_coords_cc_df <- function(
                 test = "absolute"
             )
             zero_equal[rows_clean] <- (!flag_zero | !flag_equal)
+            .plog("cc_zero + cc_equ")
 
             if (identical(profile, "complete")) {
                 flag_cap <- coords_cc_flagged(
@@ -993,7 +1050,10 @@ validate_coords_cc_df <- function(
                     lat = "decimalLatitude",
                     geod = FALSE
                 )
-                reference_flag[rows_clean] <- !(flag_cap & flag_cen & flag_gbif & flag_inst)
+                reference_flag[rows_clean] <- !(
+                    flag_cap & flag_cen & flag_gbif & flag_inst
+                )
+                .plog("cc_cap + cc_cen + cc_gbif + cc_inst")
             }
         }
     }
@@ -1067,6 +1127,7 @@ validate_coords_cc_df <- function(
     attr(out, "engine") <- "CoordinateCleaner"
     attr(out, "profile") <- profile
     attr(out, "seas_scale") <- seas_scale
+    .plog("TOTAL")
     out
 }
 

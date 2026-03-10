@@ -45,7 +45,8 @@
       "Bash(Rscript -e 'args\\(CoordinateCleaner::cc_sea\\)')",
       "Bash(Rscript -e 'args\\(rnaturalearth::ne_download\\)')",
       "Bash(Rscript -e 'body\\(CoordinateCleaner::cc_sea\\)')",
-      "Bash(Rscript -e 'devtools::test\\(filter = \"\"utils-coords\"\"\\)')"
+      "Bash(Rscript -e 'devtools::test\\(filter = \"\"utils-coords\"\"\\)')",
+      "Bash(ls -lh /home/rogerio-onza/Repos/saira/inst/extdata/*.rds)"
     ]
   }
 }

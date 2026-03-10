@@ -121,6 +121,46 @@ phase_label <- function(state, lang = "pt") {
     )
 }
 
+#' Get FA icon name for current validation phase
+#' @param state Run state object with $phase and $current_provider fields
+#' @return Character string with FA icon name
+#' @noRd
+vn_phase_icon <- function(state) {
+    phase <- as.character(state$phase %||% "")
+    provider <- as.character(state$current_provider %||% "")
+    is_br <- provider %in% c("florabr", "faunabr")
+
+    if (identical(phase, "provider_init") && is_br && !brprovider_data_available(provider)) {
+        return("download")
+    }
+    switch(phase,
+        prepare              = "gears",
+        provider_init        = "plug",
+        provider_query_batch = "microscope",
+        provider_finalize    = "circle-notch",
+        consolidate          = "layer-group",
+        done                 = "flag-checkered",
+        failed               = "triangle-exclamation",
+        "spinner"
+    )
+}
+
+#' Get phase text with BR download detection
+#' @param state Run state object
+#' @param lang Language code ("pt" or "en")
+#' @return Character string with phase description
+#' @noRd
+vn_phase_text <- function(state, lang = "pt") {
+    phase <- as.character(state$phase %||% "")
+    provider <- as.character(state$current_provider %||% "")
+    is_br <- provider %in% c("florabr", "faunabr")
+
+    if (identical(phase, "provider_init") && is_br && !brprovider_data_available(provider)) {
+        return(sprintf(tr("validate_names_loading_phase_provider_download", lang), provider))
+    }
+    phase_label(state, lang)
+}
+
 #' Recommend stream filter after validation completes
 #' @param report_df Finalized validation report data frame
 #' @return Character: "all" or "problems"
