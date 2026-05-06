@@ -3,7 +3,13 @@
     "allow": [
       "Read(//c/Users/Admin/.claude/projects/c--Users-Admin-OneDrive-Saira-saira/cedd7f75-9896-4638-869b-024a6a7c1600/tool-results/**)",
       "Read(//c/Users/Admin/.claude/projects/c--Users-Admin-OneDrive-Saira-saira/memory/**)",
-      "Bash(Rscript -e \"renv::status\\(\\)\")"
+      "Bash(Rscript -e \"renv::status\\(\\)\")",
+      "Bash(Rscript /tmp/test_automap.R)",
+      "Bash(Rscript -e \"pkgload::load_all\\(quiet=TRUE\\); devtools::test\\(filter='utils-io', reporter='progress'\\)\")",
+      "Bash(Rscript -e \"pkgload::load_all\\(quiet=TRUE\\); devtools::test\\(filter='mod-mapping-server', reporter='progress'\\)\")"
+    ],
+    "additionalDirectories": [
+      "/tmp"
     ]
   }
 }

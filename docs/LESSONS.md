@@ -317,3 +317,9 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
   ambientes headless (Docker, CI).
 - **`.Rbuildignore` deve excluir artefatos de dev**: incluir `^\.claude$` e
   `^PLAN_.*\.md` para evitar incluir configs e planos de dev no tarball.
+
+## Encoding / I/O
+
+- **Amostragem parcial de encoding nao detecta bytes invalidos em linhas tardias**: `detect_encoding()` que amostra apenas as primeiras N linhas identifica incorretamente como UTF-8 arquivos com bytes Latin-1 depois da linha N. O padrao correto e validar o DataFrame pos-leitura com `iconv(col, "UTF-8", "UTF-8")` — NA inesperado indica byte invalido. Re-ler com encoding alternativo (`Latin1`, depois `Windows-1252`) resolve o caso; `readr` converte para UTF-8 ao ler com locale nao-UTF-8, entao nenhuma normalizacao adicional e necessaria.
+
+- **Motor retornando `success = FALSE` nao deve sobrescrever estado de UI**: quando `run_rostrum_engine()` ou funcao analoga retorna falha interna, sempre verificar `engine_result$success` antes de propagar `engine_result$data` para `reactiveValues`. Propagar dado vazio de falha e equivalente a silenciar o erro para o usuario e apagar trabalho manual anterior. Padrao correto: checar `!isTRUE(success)`, emitir notificacao de erro e retornar cedo sem tocar em `rv`.

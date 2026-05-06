@@ -544,3 +544,23 @@ testthat::test_that("basisOfRecord assistant opens using input fallback when rv 
         }
     )
 })
+
+testthat::test_that("engine stage-1 failure does not overwrite rv$rostrum_decisions with empty result", {
+    bad_string <- rawToChar(c(charToRaw("Pacaj"), as.raw(0xe1L)))
+    df <- data.frame(MUNICIPALITY = bad_string, stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            original_decisions <- rv$rostrum_decisions
+            session$setInputs(auto_map = 1)
+            session$flushReact()
+
+            testthat::expect_identical(rv$rostrum_decisions, original_decisions)
+        }
+    )
+})

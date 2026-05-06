@@ -116,6 +116,43 @@ testthat::test_that("parse_dates_to_iso parses supported formats and keeps inval
     testthat::expect_identical(out, expected)
 })
 
+testthat::test_that("read_biodiversity_csv retries Latin-1 when UTF-8 detection misses late encoding", {
+    header <- "MUNICIPALITY,COUNT"
+    ascii_rows <- paste0("CityASCII_", seq_len(100), ",", seq_len(100))
+    ascii_payload <- charToRaw(paste(c(header, ascii_rows), collapse = "\n"))
+    # "Pacaj\xe1,1\n" — 0xe1 is the Latin-1 byte for á (a-acute)
+    latin1_row <- c(charToRaw("Pacaj"), as.raw(0xe1L), charToRaw(",1\n"))
+
+    tmp <- tempfile(fileext = ".csv")
+    on.exit(unlink(tmp), add = TRUE)
+    writeBin(c(ascii_payload, charToRaw("\n"), latin1_row), tmp)
+
+    out <- read_biodiversity_csv(tmp)
+
+    testthat::expect_s3_class(out, "data.frame")
+    testthat::expect_equal(nrow(out), 101L)
+    converted <- iconv(out$MUNICIPALITY, from = "UTF-8", to = "UTF-8")
+    testthat::expect_false(any(is.na(converted) & !is.na(out$MUNICIPALITY)))
+    testthat::expect_equal(out$MUNICIPALITY[101L], "Pacajá")
+})
+
+testthat::test_that("find_first_invalid_utf8_cell locates first invalid cell and returns NULL for clean df", {
+    find_cell <- saira:::find_first_invalid_utf8_cell
+
+    bad_string <- rawToChar(c(charToRaw("Pacaj"), as.raw(0xe1L)))
+    df_bad <- data.frame(A = c("valid", bad_string), B = c("x", "y"), stringsAsFactors = FALSE)
+
+    result <- find_cell(df_bad)
+    testthat::expect_identical(result$column, "A")
+    testthat::expect_identical(result$row, 2L)
+
+    df_clean <- data.frame(A = c("Pacajá", "normal"), stringsAsFactors = FALSE)
+    testthat::expect_null(find_cell(df_clean))
+
+    df_numeric <- data.frame(x = 1:3)
+    testthat::expect_null(find_cell(df_numeric))
+})
+
 testthat::test_that("parse_dates_to_iso applies dynamic cutoff for DD/MM/YY", {
     current_yy <- as.integer(format(Sys.Date(), "%y"))
     next_yy <- as.integer((current_yy + 1L) %% 100L)

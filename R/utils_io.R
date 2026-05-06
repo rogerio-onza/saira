@@ -17,37 +17,60 @@
 #' }
 #' @export
 read_biodiversity_csv <- function(file_path, encoding = NULL) {
-    # Try to detect encoding if not specified
-    if (is.null(encoding)) {
-        encoding <- detect_encoding(file_path)
-    }
+    forced_encoding <- !is.null(encoding)
+    if (!forced_encoding) encoding <- detect_encoding(file_path)
 
-    # Try to detect delimiter
     delimiter <- detect_delimiter(file_path)
 
-    # Read file
-    df <- tryCatch(
-        {
+    read_with_enc <- function(enc) {
+        as.data.frame(tryCatch(
             readr::read_delim(
                 file_path,
                 delim = delimiter,
-                locale = readr::locale(encoding = encoding),
+                locale = readr::locale(encoding = enc),
                 show_col_types = FALSE,
                 name_repair = "unique"
-            )
-        },
-        error = function(e) {
-            # Fallback to base R
-            utils::read.csv(
-                file_path,
-                fileEncoding = encoding,
-                sep = delimiter,
-                stringsAsFactors = FALSE
-            )
-        }
-    )
+            ),
+            error = function(e) {
+                utils::read.csv(
+                    file_path,
+                    fileEncoding = enc,
+                    sep = delimiter,
+                    stringsAsFactors = FALSE
+                )
+            }
+        ))
+    }
 
-    return(as.data.frame(df))
+    df <- read_with_enc(encoding)
+
+    if (!forced_encoding) {
+        candidates <- c("Latin1", "Windows-1252")
+        candidates <- candidates[candidates != encoding]
+
+        invalid <- find_first_invalid_utf8_cell(df)
+        if (!is.null(invalid)) {
+            warning(sprintf(
+                "Invalid UTF-8 in column %s row %d; retrying with alternative encoding",
+                invalid$column, invalid$row
+            ))
+            for (retry_enc in candidates) {
+                df <- read_with_enc(retry_enc)
+                encoding <- retry_enc
+                if (is.null(find_first_invalid_utf8_cell(df))) break
+            }
+        }
+
+        remaining <- find_first_invalid_utf8_cell(df)
+        if (!is.null(remaining)) {
+            warning(sprintf(
+                "Invalid UTF-8 bytes remain in column %s row %d after encoding retry",
+                remaining$column, remaining$row
+            ))
+        }
+    }
+
+    df
 }
 
 #' Detect file encoding
@@ -102,6 +125,18 @@ detect_encoding <- function(file_path) {
 #' @return Character vector without BOM prefix
 strip_bom <- function(text) {
     sub("^\ufeff", "", text)
+}
+
+# Returns list(column, row) for the first character cell with invalid UTF-8 bytes,
+# or NULL if all columns are clean.
+find_first_invalid_utf8_cell <- function(df) {
+    for (col in names(df)) {
+        if (!is.character(df[[col]])) next
+        converted <- iconv(df[[col]], from = "UTF-8", to = "UTF-8")
+        bad <- which(is.na(converted) & !is.na(df[[col]]))
+        if (length(bad) > 0L) return(list(column = col, row = bad[[1L]]))
+    }
+    NULL
 }
 
 #' Detect CSV delimiter

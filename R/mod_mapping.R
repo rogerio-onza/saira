@@ -971,6 +971,21 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                         context = list(),
                         conn = conn
                     )
+
+                    if (!isTRUE(engine_result$success)) {
+                        err_msg <- if (length(engine_result$errors) > 0L) {
+                            engine_result$errors[[1L]]
+                        } else {
+                            "unknown engine error"
+                        }
+                        shiny::showNotification(
+                            sprintf(tr("notif_auto_mapping_v1_error", lang_r()), err_msg),
+                            type = "error",
+                            duration = 7
+                        )
+                        return(NULL)
+                    }
+
                     auto_results <- engine_result$data
                     rv$rostrum_decisions <- engine_result$data
                     rv$rostrum_run_stats <- engine_result$run_stats

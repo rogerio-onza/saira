@@ -46,7 +46,17 @@
       "Bash(Rscript -e 'args\\(rnaturalearth::ne_download\\)')",
       "Bash(Rscript -e 'body\\(CoordinateCleaner::cc_sea\\)')",
       "Bash(Rscript -e 'devtools::test\\(filter = \"\"utils-coords\"\"\\)')",
-      "Bash(ls -lh /home/rogerio-onza/Repos/saira/inst/extdata/*.rds)"
+      "Bash(ls -lh /home/rogerio-onza/Repos/saira/inst/extdata/*.rds)",
+      "Bash(Rscript -e 'x <- \"S\\\\xe3o Paulo\"; tryCatch\\(trimws\\(x\\), error = function\\(e\\) cat\\(\"ERRO:\", conditionMessage\\(e\\), \"\\\\n\"\\)\\)')",
+      "Bash(git -C /home/rogerio-onza/Repos/saira remote get-url origin)",
+      "Bash(gh issue create --repo rogerio-onza/saira --title 'bug: \"input string 1 is invalid UTF-8\" ao validar coordenadas com stateProvince/county mapeados' --body ' *)",
+      "Bash(which gh *)",
+      "Read(//home/**)",
+      "Bash(grep -E \"\\\\.\\(R|Rmd\\)$\")",
+      "Bash(Rscript -e 'syn <- readRDS\\(\"inst/extdata/dwc_synonyms_v1.rds\"\\); cat\\(\"class:\", class\\(syn\\), \"\\\\n\"\\); cat\\(\"nrow:\", nrow\\(syn\\), \"\\\\n\"\\); print\\(head\\(syn, 20\\)\\); cat\\(\"\\\\nunique terms:\\\\n\"\\); print\\(unique\\(syn$term\\)\\)')",
+      "Bash(Rscript -e 'd <- readRDS\\(\"inst/extdata/dwc_terms.rds\"\\); cat\\(\"class:\", class\\(d\\), \"\\\\nnrow:\", nrow\\(d\\), \"\\\\ncols:\", paste\\(names\\(d\\), collapse=\", \"\\), \"\\\\n\\\\n\"\\); print\\(head\\(d, 5\\)\\); cat\\(\"\\\\nAll terms:\\\\n\"\\); print\\(d$term\\)')",
+      "Bash(cat)",
+      "Bash(cp AMZ_CAMTRAP_AREA.csv /tmp/)"
     ]
   }
 }

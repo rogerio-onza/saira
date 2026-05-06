@@ -1646,3 +1646,31 @@ Formato: ADR leve (Architecture Decision Record).
   - O artefato embutido vira parte do contrato do pacote e precisa de script de geracao versionado, nota de proveniencia e testes territoriais de regressao.
   - Lentidao normal deixa de ser tratada como falha funcional; timeout so existe quando o operador explicitamente pedir.
   - Territorios ultramarinos e zonas costeiras passam a exigir fixtures especificas de teste; a Guiana Francesa entrou como caso de regressao permanente.
+
+---
+
+## ADR-079: Validacao pos-leitura de UTF-8 com retry de encoding em `read_biodiversity_csv()`
+
+- **Data**: 2026-05-06
+- **Status**: Aceito
+- **Contexto**: `detect_encoding()` amostra apenas as primeiras 100 linhas do arquivo. Planilhas com conteudo ASCII nas primeiras linhas e bytes Latin-1 em linhas posteriores (ex.: `AMZ_CAMTRAP_AREA.csv` linha 594 — "Pacajá" com byte `0xe1`) sao identificadas como UTF-8. `readr::read_delim()` armazena o byte bruto, produzindo uma string com UTF-8 invalido na coluna MUNICIPALITY. O Stage 1 do motor Rostrum chama operacoes de string nessa coluna, recebe o erro "input string N is invalid UTF-8" e retorna `success = FALSE` com resultado vazio. O usuario ve "0 AUTO, 0 SUGERIDO" sem nenhuma indicacao do problema real.
+- **Decisao**: Apos a leitura inicial, validar todas as colunas de caracter via `iconv(col, "UTF-8", "UTF-8")` — a funcao retorna NA para qualquer string com bytes invalidos. Ao detectar NA inesperado, emitir `warning()` com coluna e linha afetadas e re-ler o arquivo com Latin1; em seguida, tentar Windows-1252 se ainda houver invalidos. `readr` converte para UTF-8 ao ler com locale nao-UTF-8, entao nenhum passo de normalizacao adicional e necessario apos retry bem-sucedido. O parametro `encoding` do usuario (quando informado explicitamente) suprime o retry para preservar a intencao original.
+- **Alternativa rejeitada**: Aumentar a amostra de `detect_encoding()` para o arquivo inteiro — custo de I/O proibitivo em arquivos grandes; o retry pos-leitura e mais eficiente pois so ocorre quando necessario.
+- **Consequencias**:
+  - Usuarios que subirem CSVs com encoding misto passam a receber dados corretos em vez de 0 matches.
+  - `find_first_invalid_utf8_cell(df)` vira helper interno reutilizavel para diagnostico de encoding.
+  - Warning explicito informa coluna e linha afetadas para rastreabilidade.
+
+---
+
+## ADR-080: Guard de falha de Stage 1 no automap antes de sobrescrever `rv$rostrum_decisions`
+
+- **Data**: 2026-05-06
+- **Status**: Aceito
+- **Contexto**: `run_rostrum_engine()` captura falha de Stage 1 internamente e retorna `success = FALSE` com `data = empty_automap_result_df()` (zero linhas). O handler `auto_map` em `mod_mapping.R` nao verificava `engine_result$success`: sobrescrevia `rv$rostrum_decisions` com o resultado vazio, percorria o loop de zero iteracoes e exibia "0 AUTO, 0 SUGERIDO" como notificacao de sucesso — falso positivo silencioso que apagava qualquer mapeamento manual anterior.
+- **Decisao**: Imediatamente apos `run_rostrum_engine()` retornar, verificar `!isTRUE(engine_result$success)`. Se verdadeiro, exibir notificacao de erro com `engine_result$errors[[1]]` (reaproveitando a chave i18n `notif_auto_mapping_v1_error` ja existente) e retornar cedo com `return(NULL)`, preservando `rv$rostrum_decisions` intacto. O guard de Stage 2/3 que ja existia (linhas de `rostrum_warning_stage2_fallback`) nao eh afetado — aqueles sao degrades parciais, nao falha total.
+- **Alternativa rejeitada**: Tratar engine_result$data vazio como caso normal e exibir "0 matches" — manteria o comportamento silencioso e nao informaria o usuario sobre a causa real do problema.
+- **Consequencias**:
+  - Falha de encoding (ou qualquer outra causa de Stage 1) resulta em mensagem de erro clara ao usuario.
+  - Estado de mapeamento anterior e preservado; usuario pode corrigir o problema e tentar novamente sem perder trabalho.
+  - Padrao extensivel: qualquer futura causa de falha de Stage 1 beneficia automaticamente do mesmo guard.
