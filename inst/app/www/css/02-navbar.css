@@ -43,6 +43,13 @@
   font-style: italic;
 }
 
+/* Nav title: show static fallback immediately, hide once server populates dynamic.
+   Without this, both .nav-title-static and .nav-title-dynamic render together,
+   producing "Mapeamento Mapeamento" / "Coordenadas Coordenadas" in the navbar. */
+.nav-title-container:has(.nav-title-dynamic:not(:empty)) .nav-title-static {
+  display: none;
+}
+
 .navbar-brand {
   font-family: var(--font-mono);
   font-weight: var(--weight-semibold);

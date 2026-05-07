@@ -35,7 +35,11 @@
   /* Coordinate Validation */
   --coord-ok: #00a86b;
   --coord-missing: rgba(28, 28, 38, 0.35);
-  --coord-swapped: #8b5cf6;
+  --coord-swapped: #6d28d9;
+
+  /* Mapping Badges */
+  --color-badge-ambiguous: #e67e22;
+  --color-badge-template: #8e44ad;
 
   /* Borders */
   --border-light: rgba(40, 51, 172, 0.08);
@@ -288,7 +292,9 @@ label,
   font-style: italic;
 }
 
-/* Nav title: show static default immediately, hide once server populates dynamic */
+/* Nav title: show static fallback immediately, hide once server populates dynamic.
+   Without this, both .nav-title-static and .nav-title-dynamic render together,
+   producing "Mapeamento Mapeamento" / "Coordenadas Coordenadas" in the navbar. */
 .nav-title-container:has(.nav-title-dynamic:not(:empty)) .nav-title-static {
   display: none;
 }
@@ -316,7 +322,7 @@ label,
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: var(--space-5) !important;
+  gap: var(--space-5) !important; /* bslib injects gap:0 on .navbar-nav in some builds */
   flex: 1 1 auto;
 }
 
@@ -331,10 +337,10 @@ label,
 /* Bootstrap navbar fallback markup: <ul class="navbar-nav"><li><a>... */
 .bslib-page-navbar .navbar .navbar-nav>li,
 .navbar .navbar-nav>li {
-  float: none !important;
+  float: none !important; /* Flatly/bslib theme may apply float via <ul><li> legacy rule */
   display: flex;
   align-items: center;
-  margin: 0 !important;
+  margin: 0 !important; /* Bootstrap sets margin on <li> elements inside .navbar-nav */
   padding: 0;
 }
 
@@ -394,7 +400,7 @@ label,
   font-weight: var(--weight-medium);
   font-size: var(--text-sm);
   color: var(--navbar-link-color);
-  padding: 0.64rem 1.3rem !important;
+  padding: 0.64rem 1.3rem !important; /* Bootstrap .nav-link sets padding: 0.5rem 1rem; must override */
   border-radius: var(--radius);
   border: 1px solid transparent;
   transition: var(--transition-base);
@@ -430,7 +436,7 @@ label,
   font-weight: var(--weight-medium);
   font-size: var(--text-sm);
   color: var(--navbar-link-color);
-  padding: 0.64rem 1.3rem !important;
+  padding: 0.64rem 1.3rem !important; /* Bootstrap .dropdown-toggle sets padding: 0.375rem 0.75rem; must override */
   border-radius: var(--radius);
   border: 1px solid transparent;
   transition: var(--transition-base);
@@ -575,13 +581,13 @@ label,
 
 .btn-success {
   background-color: var(--success);
-  color: var(--bg-card);
+  color: var(--text-primary);
   box-shadow: var(--shadow-success);
 }
 
 .btn-success:hover {
   background-color: #009960;
-  color: var(--bg-card);
+  color: var(--text-primary);
 }
 
 .btn-warning {
@@ -1103,6 +1109,31 @@ label,
   background: #c0392b;
 }
 
+/* On-demand catalog classes (ADR-081/082) */
+.wiki-filter-pill[data-filter="GeologicalContext"] .wiki-filter-pill-dot {
+  background: #16b3bd;
+}
+
+.wiki-filter-pill[data-filter="MaterialEntity"] .wiki-filter-pill-dot {
+  background: #6d28d9;
+}
+
+.wiki-filter-pill[data-filter="MaterialSample"] .wiki-filter-pill-dot {
+  background: #0e8a95;
+}
+
+.wiki-filter-pill[data-filter="MeasurementOrFact"] .wiki-filter-pill-dot {
+  background: #ffe005;
+}
+
+.wiki-filter-pill[data-filter="Organism"] .wiki-filter-pill-dot {
+  background: #e67e22;
+}
+
+.wiki-filter-pill[data-filter="ResourceRelationship"] .wiki-filter-pill-dot {
+  background: #8e44ad;
+}
+
 .wiki-filter-pill[data-filter=""].active {
   background: #2833ac;
   border-color: #2833ac;
@@ -1145,6 +1176,43 @@ label,
   color: #ffffff;
 }
 
+/* On-demand catalog classes — active state (ADR-081/082) */
+.wiki-filter-pill[data-filter="GeologicalContext"].active {
+  background: #16b3bd;
+  border-color: #16b3bd;
+  color: #ffffff;
+}
+
+.wiki-filter-pill[data-filter="MaterialEntity"].active {
+  background: #6d28d9;
+  border-color: #6d28d9;
+  color: #ffffff;
+}
+
+.wiki-filter-pill[data-filter="MaterialSample"].active {
+  background: #0e8a95;
+  border-color: #0e8a95;
+  color: #ffffff;
+}
+
+.wiki-filter-pill[data-filter="MeasurementOrFact"].active {
+  background: #ffe005;
+  border-color: #ffe005;
+  color: #12141b;
+}
+
+.wiki-filter-pill[data-filter="Organism"].active {
+  background: #e67e22;
+  border-color: #e67e22;
+  color: #ffffff;
+}
+
+.wiki-filter-pill[data-filter="ResourceRelationship"].active {
+  background: #8e44ad;
+  border-color: #8e44ad;
+  color: #ffffff;
+}
+
 .wiki-table.saira-table-shell table.dataTable thead th {
   background: #2833ac;
   padding: 13px 18px;
@@ -1172,7 +1240,7 @@ label,
   border-top-right-radius: 16px;
 }
 
-.wiki-table.saira-table-shell table.dataTable thead th:nth-child(5) {
+.wiki-table.saira-table-shell table.dataTable thead th:nth-child(4) {
   text-align: center;
 }
 
@@ -1291,6 +1359,43 @@ label,
   border: 1px solid rgba(192, 57, 43, 0.2);
 }
 
+/* On-demand catalog classes — DT badges (ADR-081/082) */
+.wiki-class-badge--geologicalcontext {
+  background: rgba(22, 179, 189, 0.10);
+  color: #0e6e76;
+  border: 1px solid rgba(22, 179, 189, 0.25);
+}
+
+.wiki-class-badge--materialentity {
+  background: rgba(109, 40, 217, 0.10);
+  color: #5b21b6;
+  border: 1px solid rgba(109, 40, 217, 0.25);
+}
+
+.wiki-class-badge--materialsample {
+  background: rgba(14, 138, 149, 0.10);
+  color: #0e8a95;
+  border: 1px solid rgba(14, 138, 149, 0.25);
+}
+
+.wiki-class-badge--measurementorfact {
+  background: rgba(255, 224, 5, 0.18);
+  color: #6b5800;
+  border: 1px solid rgba(255, 224, 5, 0.4);
+}
+
+.wiki-class-badge--organism {
+  background: rgba(230, 126, 34, 0.10);
+  color: #a35b18;
+  border: 1px solid rgba(230, 126, 34, 0.25);
+}
+
+.wiki-class-badge--resourcerelationship {
+  background: rgba(142, 68, 173, 0.10);
+  color: #6c3487;
+  border: 1px solid rgba(142, 68, 173, 0.25);
+}
+
 .wiki-table.saira-table-shell table.dataTable tbody td:nth-child(3) {
   color: #1c1c26;
   font-weight: 400;
@@ -1304,23 +1409,9 @@ label,
   font-weight: var(--weight-medium);
 }
 
-.wiki-example-code {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  background: #f4f3ee;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid rgba(40, 51, 172, 0.08);
-  color: #252659;
-  display: inline-block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .wiki-required-cell,
-.wiki-table.saira-table-shell table.dataTable tbody td:nth-child(5) {
+.wiki-table.saira-table-shell table.dataTable tbody td:nth-child(4) {
   text-align: center;
 }
 
@@ -2222,15 +2313,15 @@ table.dataTable tbody tr.validate-invalid td {
   margin-bottom: 0;
   width: 100%;
   min-width: 100%;
-  max-width: none !important;
-  margin-left: 0 !important;
+  max-width: none !important; /* Shiny sets max-width on .shiny-file-input-progress via inline style */
+  margin-left: 0 !important; /* Bootstrap .progress sets auto margins that break full-width layout */
   margin-right: 0 !important;
   height: 40px;
   border-radius: 0;
   border: 0;
   background: transparent;
   overflow: visible;
-  display: block !important;
+  display: block !important; /* Shiny hides progress bars by default until upload starts */
   box-sizing: border-box;
   padding: 0;
 }
@@ -2239,7 +2330,7 @@ table.dataTable tbody tr.validate-invalid td {
 .upload-dropzone .progress,
 .upload-dropzone .shiny-file-input-progress,
 .upload-dropzone .shiny-input-container [id$="_progress"] {
-  display: none !important;
+  display: none !important; /* Shiny may restore display:block via JS; must always hide inside dropzone */
 }
 
 .upload-native-input .progress .progress-bar,
@@ -2825,6 +2916,16 @@ table.dataTable tbody tr.validate-invalid td {
   white-space: nowrap;
 }
 
+.badge-ambiguous {
+  background-color: var(--color-badge-ambiguous);
+  color: #ffffff;
+}
+
+.badge-template {
+  background-color: var(--color-badge-template);
+  color: #ffffff;
+}
+
 /* Field description */
 .field-desc {
   font-size: var(--text-sm);
@@ -3393,7 +3494,6 @@ table.dataTable tbody tr.validate-invalid td {
   box-shadow: var(--focus-ring-primary);
   outline: none;
 }
-
 /* =============================================================================
    VALIDATE NAMES: TWO COLUMN UX + INCREMENTAL STREAM
    ============================================================================= */
@@ -4108,14 +4208,21 @@ table.dataTable tbody tr.validate-invalid td {
   font-size: var(--text-sm);
 }
 
-.validate-coords-loading-modal .automap-loading-title {
-  margin-bottom: var(--space-2);
+.vn-progress-phrase-row {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: 0.4rem;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
 }
 
-.coords-loading-lottie {
-  width: 90px;
-  height: 70px;
-  margin: 0 auto;
+.vn-progress-phrase-icon {
+  color: var(--accent);
+  margin-top: 2px;
+  flex-shrink: 0;
+  animation: automap-pulse 1.2s ease-in-out infinite; /* keyframe defined in 14-mapping.css */
 }
 
 .validate-summary-box {

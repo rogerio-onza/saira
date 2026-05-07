@@ -127,6 +127,23 @@ testthat::test_that("custom.css does not use opacity 0.45 in DataTables paginati
     )
 })
 
+testthat::test_that("custom.css keeps nav-title fallback hide rule", {
+    # Without this rule the static PT fallback (.nav-title-static) renders
+    # alongside the dynamic uiOutput (.nav-title-dynamic), producing
+    # "Mapeamento Mapeamento" / "Coordenadas Coordenadas" in the navbar.
+    css_path <- resolve_css_path()
+    css_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+
+    testthat::expect_true(
+        grepl(
+            "\\.nav-title-container:has\\(\\.nav-title-dynamic:not\\(:empty\\)\\)\\s+\\.nav-title-static",
+            css_text,
+            perl = TRUE
+        ),
+        info = "Missing nav-title-static hide rule (see 02-navbar.css)"
+    )
+})
+
 testthat::test_that("custom.css enforces navbar spacing and language dropdown guardrails", {
     css_path <- resolve_css_path()
     css_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")

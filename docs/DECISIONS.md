@@ -1673,4 +1673,92 @@ Formato: ADR leve (Architecture Decision Record).
 - **Consequencias**:
   - Falha de encoding (ou qualquer outra causa de Stage 1) resulta em mensagem de erro clara ao usuario.
   - Estado de mapeamento anterior e preservado; usuario pode corrigir o problema e tentar novamente sem perder trabalho.
+
+---
+
+## ADR-081: Catalogo DwC completo separado do conjunto-base de mapeamento
+
+- **Data**: 2026-05-06
+- **Status**: Aceito
+- **Contexto**: O app usava 50 termos DwC como conjunto-base fixo tanto no mapeamento quanto na wiki. O padrao TDWG define ~217 termos recomendados nos namespaces `dwc:` e `dcterms:`. Expor todos os 217 no mapeamento de inicio polui a UI; esconder na wiki priva o usuario de descoberta. Era preciso separar "termos que aparecem por padrao no mapeamento" de "catalogo completo disponivel para busca e adicao sob demanda".
+- **Decisao**:
+  - Manter `inst/extdata/dwc_terms.rds` (50 termos) como conjunto-base do mapeamento — nao alterado.
+  - Adicionar `inst/extdata/dwc_full_catalog.rds` (217 termos) gerado por `data-raw/build_dwc_full_catalog.R` via scraping do TDWG (`vocabulary/term_versions.csv` no GitHub).
+  - Schema identico (7 colunas: `term`, `class`, `definition_en`, `definition_pt`, `examples`, `required`, `data_type`), zero refatoracao dos consumidores existentes.
+  - Deduplicacao por namespace: `dwc:` > `dcterms:` > `dc:` (o par `language` era duplicado).
+  - Termos-base aparecem primeiro no catalogo, extras ordenados alfabeticamente.
+  - `definition_pt` vazia para os ~167 termos fora dos 50 — wiki exibe fallback para EN.
+- **Alternativas rejeitadas**:
+  - Adicionar todos os 217 ao `dwc_terms.rds` — quebraria testes existentes e poluiria o mapeamento.
+  - Curar manualmente +30 termos — escopo insuficiente; nao cobriria GeologicalContext, MeasurementOrFact etc.
+  - GBIF completo com extensoes — ~300 termos, traducao PT inviavel manualmente para V1.
+- **Consequencias**:
+  - Wiki passa a mostrar 217 termos com filtros de classe derivados dinamicamente.
+  - Mapeamento mantém 50 termos por padrao; extras adicionaveis sob demanda (ADR-082).
+  - Script regeneravel a cada release do padrao TDWG.
+
+---
+
+## ADR-082: Mapeamento DwC sob demanda via `rv$extra_terms`
+
+- **Data**: 2026-05-06
+- **Status**: Aceito
+- **Contexto**: Usuarios com datasets nao-convencionais precisam mapear termos fora dos 50 do conjunto-base (ex.: `GeologicalContext`, `MeasurementOrFact`). Adicionar todos os 217 ao mapeamento por padrao seria ruido. O app precisava de um fluxo de "adicionar termo" que fosse aditivo, reversivel por reset e preservasse todos os contratos existentes.
+- **Decisao**:
+  - `rv$extra_terms <- character(0)` no bloco de `reactiveValues` de `mod_mapping_server`.
+  - `dwc_all` reactive passa a chamar `get_active_dwc_terms_list(extra = rv$extra_terms, lang = lang_r())` em vez de `get_dwc_terms_list()` — a lista ativa inclui base + extras.
+  - O observer de `all_term_names` e o bloco de inicializacao aditiva de `rv$map_values`/`rv$map_meta` ja existentes cobrem os novos termos sem codigo adicional no init.
+  - Botao "Adicionar termo" na sidebar abre modal com `selectizeInput` populado por `get_dwc_full_catalog()` minus termos ativos.
+  - `confirm_add_term` insere em `rv$extra_terms`; o re-render reativo de `mapping_ui` e `filter_categories_ui` reflete o novo estado automaticamente.
+  - `all_filter_categories` migra de variavel hardcoded (`c("Record-level", ...)`) para reactive derivado de `unique(dwc_all()$category)`.
+  - `confirm_reset` inclui `rv$extra_terms <- character(0)` para retornar ao conjunto-base.
+  - `auto_map`: passa `get_active_dwc_terms(rv$extra_terms)` para o engine; termos extras recebem status maximo `SUGERIDO` (nunca `AUTO`) por nao estarem no conjunto de calibracao do Rostrum.
+  - `rostrum_extra_terms_from_template()` em `utils_rostrum_templates.R` identifica quais termos de um payload precisam ser pre-ativados antes da aplicacao — infra para fluxo futuro de template apply via UI.
+- **Alternativas rejeitadas**:
+  - `insertUI` para injetar card sem re-render — complexidade de seletor e sincronizacao de estado supera o beneficio; re-render reativo e suficiente em V1.
+  - Botao de remocao individual de termo extra — adiado para V2; V1 usa reset como mecanismo de limpeza (tooltip explicativo no card).
+  - Persistencia de extras entre sessoes — requer banco de dados de preferencias por usuario, fora do escopo V1.
+- **Consequencias**:
+  - Usuarios avancados podem adicionar qualquer termo do padrao TDWG sem reiniciar o app.
+  - Todos os contratos existentes (`get_dwc_terms()`, `get_dwc_terms_list()`, `processed_data`) permanecem identicos.
+  - Auto-map com extras funciona mas com sinalizacao de confianca reduzida (badge SUGERIDO).
+  - Template export/import e agnóstico ao conjunto ativo — extras sao serializados naturalmente.
   - Padrao extensivel: qualquer futura causa de falha de Stage 1 beneficia automaticamente do mesmo guard.
+
+---
+
+## ADR-083: Remover coluna de exemplos da wiki e corrigir seletor de pageLength
+
+- **Data**: 2026-05-06
+- **Status**: Aceito
+- **Contexto**: Apos adicionar o catalogo DwC completo (217 termos via TDWG, ADR-081), a aba Wiki apresentou tres regressoes: (1) coluna de exemplos gigante — os exemplos literais do TDWG chegam a 768 chars com multiplos valores separados por `;` e markup de backtick, tornando a tabela inutilizavel; (2) barra de rolagem da pagina sumiu — o conteudo da coluna transbordava o container `.wiki-table.saira-table-shell` (que tem `overflow: hidden`); (3) seletor de pageLength nao funcionava — `applyPageLength` usava `draw('page')`, um partial redraw que nao recalcula o estado de paginacao apos mudanca de tamanho de pagina.
+- **Decisao**:
+  - Remover a coluna `examples` do `terms_table_data()` em `mod_wiki.R` — a wiki exibe 4 colunas (Termo, Classe, Definicao, Obrigatorio). Os dados de exemplos permanecem no `dwc_full_catalog.rds` para uso futuro.
+  - Corrigir `applyPageLength`: substituir `table.page('first').draw('page')` por `table.page.len(len).draw(false)`. `draw(false)` faz um full redraw que recalcula o resultado paginado sem resetar a pagina atual; `draw('page')` era um partial redraw que nao atualizava o estado de paginacao apos mudanca de tamanho.
+  - Ajustar seletores CSS `nth-child(5)` para `nth-child(4)` (coluna Required, agora na posicao 4) e remover `.wiki-example-code` (dead code).
+- **Alternativas rejeitadas**:
+  - Truncar exemplos no script de build (primeiro exemplo, sem backticks, max 120 chars) — o usuario preferiu ausencia completa a exemplos parciais que podem confundir.
+  - Manter coluna com `max-width` CSS fixo e ellipsis — resolveria o layout mas nao eliminaria o ruido de informacao parcial.
+- **Consequencias**:
+  - Wiki exibe tabela limpa de 4 colunas; scroll da pagina funciona; seletor de pageLength funciona corretamente.
+  - Exemplos ficam acessiveis pelo link do termo (TDWG) em cada linha.
+  - Dados de exemplos preservados no RDS — reintroducao futura (com truncagem adequada) nao requer novo download.
+
+---
+
+## ADR-084: Regras CSS one-off vivem no modulo de origem, nunca no bundle
+
+- **Data**: 2026-05-06
+- **Status**: Aceito
+- **Contexto**: Apos a regeneracao do bundle CSS por `data-raw/build_css.R` (necessaria para o trabalho de ADR-081/082/083), o header e os submenus de validacao passaram a exibir titulos duplicados ("Saira Saira", "Mapeamento Mapeamento", "Coordenadas Coordenadas"). A causa: a regra `.nav-title-container:has(.nav-title-dynamic:not(:empty)) .nav-title-static { display: none }` — adicionada em `97b7cf7` ("Enhance navigation titles with static fallback") — vivia diretamente em `inst/app/www/custom.css`, sem contraparte em nenhum modulo de `inst/app/www/css/`. Como o `build_css.R` reconstroi o bundle a partir dos modulos numerados, qualquer regra adicionada apenas ao bundle final e silenciosamente descartada na proxima regeneracao.
+- **Decisao**:
+  - Mover a regra para `inst/app/www/css/02-navbar.css` (dominio correto, ao lado da brand) e regenerar o bundle.
+  - Adicionar guardrail em `tests/testthat/test-css-guardrails.R` que falha se o seletor `.nav-title-container:has(.nav-title-dynamic:not(:empty)) .nav-title-static` desaparecer do `custom.css`. Protege contra a mesma regressao em futuros rebuilds e contra remocoes acidentais do modulo.
+  - Estabelecer regra geral: **toda alteracao em CSS vai no modulo de origem (`inst/app/www/css/NN-*.css`)**; `custom.css` e artefato gerado e nunca deve ser editado a mao. Esta regra ja constava nas LESSONS de Onda 5 ("custom.css comeca com header GENERATED FILE"); o ADR formaliza para casos pos-Onda-5 que ainda escapavam.
+- **Alternativas rejeitadas**:
+  - Usar JavaScript no client para esconder o fallback quando o uiOutput popular — adiciona dependencia funcional ao JS para corrigir um problema de render order que o CSS resolve em uma linha.
+  - Remover o fallback estatico e aceitar o flash de branco no carregamento inicial — viola LESSON i18n "incluir texto estatico como fallback visual" e degrada a UX inicial.
+- **Consequencias**:
+  - Regra agora sobrevive a rebuilds; mesma garantia se aplica a qualquer regra futura adicionada ao modulo correto.
+  - Guardrail captura tanto regressao por rebuild quanto remocao manual da regra do modulo.
+  - Padrao reforcado: editar `custom.css` diretamente vira anti-pattern explicito (ja era implicitamente, mas agora com ADR + teste de regressao).

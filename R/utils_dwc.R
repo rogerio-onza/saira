@@ -5,7 +5,8 @@
 
 #' @include utils_common.R
 NULL
-dwc_terms_cache <- create_rds_cache("dwc_terms")
+dwc_terms_cache      <- create_rds_cache("dwc_terms")
+dwc_full_cat_cache   <- create_rds_cache("dwc_full_catalog")
 
 basis_of_record_vocab_catalog <- list(
     list(
@@ -65,6 +66,21 @@ basis_of_record_vocab_catalog <- list(
         desc_pt = "Registro de exist\u00EAncia de organismo em lugar e tempo."
     )
 )
+
+#' @noRd
+resolve_dwc_full_catalog_path <- function() {
+    candidates <- c(
+        system.file("extdata", "dwc_full_catalog.rds", package = "saira"),
+        file.path("inst", "extdata", "dwc_full_catalog.rds"),
+        file.path("..", "..", "inst", "extdata", "dwc_full_catalog.rds")
+    )
+    candidates <- unique(candidates[nzchar(candidates)])
+    path <- candidates[file.exists(candidates)][1]
+    if (is.null(path) || !file.exists(path)) {
+        stop("dwc_full_catalog.rds not found in expected locations.")
+    }
+    path
+}
 
 #' @noRd
 resolve_dwc_terms_path <- function() {
@@ -201,6 +217,42 @@ get_required_dwc_terms <- function() {
     terms[terms$required, , drop = FALSE]
 }
 
+#' Get complete Darwin Core term catalog (TDWG dwc: + dcterms:)
+#'
+#' Returns all ~218 recommended DwC properties including terms beyond the
+#' 50-term mapping base set. Used by the wiki and the "add term" search modal.
+#' Base terms appear first; extras are sorted alphabetically.
+#'
+#' @return Data frame with columns: term, class, definition_en, definition_pt,
+#'   examples, required, data_type
+#' @export
+get_dwc_full_catalog <- function() {
+    cached <- dwc_full_cat_cache$get()
+    if (!is.null(cached)) return(cached)
+    path <- resolve_dwc_full_catalog_path()
+    cat_df <- readRDS(path)
+    dwc_full_cat_cache$set(cat_df, path = path)
+    cat_df
+}
+
+#' Get active DwC term list for the current mapping session
+#'
+#' Combines the 50 base terms with any extra terms added by the user in the
+#' current session. Returns a data frame in the same schema as
+#' \code{get_dwc_terms()} so all existing consumers work without change.
+#'
+#' @param extra Character vector of extra term names to append (default: none)
+#' @return Data frame with the same 7-column schema as \code{get_dwc_terms()}
+#' @export
+get_active_dwc_terms <- function(extra = character(0)) {
+    base <- get_dwc_terms()
+    if (length(extra) == 0L) return(base)
+    full <- get_dwc_full_catalog()
+    extra_df <- full[full$term %in% extra & !full$term %in% base$term, ,
+                     drop = FALSE]
+    rbind(base, extra_df)
+}
+
 #' Get Darwin Core terms as list
 #'
 #' Returns DwC terms in list format for the mapping module UI.
@@ -235,6 +287,50 @@ get_dwc_terms_list <- function(lang = "en") {
             category = class_val,
             desc = desc,
             sep = "",
+            required = required_val
+        )
+    })
+
+    names(terms_list) <- terms_df$term
+    terms_list
+}
+
+#' Get active DwC terms as list (mapping module format)
+#'
+#' Combines base terms with session-extra terms and returns the named list
+#' format expected by \code{build_field_card()} and \code{build_processed_mapping_df()}.
+#'
+#' @param extra Character vector of extra term names added in the session
+#' @param lang Language code ("pt" or "en")
+#' @return Named list of DwC term definitions (same format as get_dwc_terms_list)
+#' @export
+get_active_dwc_terms_list <- function(extra = character(0), lang = "en") {
+    terms_df <- get_active_dwc_terms(extra = extra)
+
+    terms_list <- lapply(seq_len(nrow(terms_df)), function(i) {
+        term_val  <- as.character(terms_df$term[i])
+        class_val <- as.character(terms_df$class[i])
+
+        desc <- if (lang == "pt" && "definition_pt" %in% names(terms_df)) {
+            pt <- as.character(terms_df$definition_pt[i])
+            if (nzchar(pt)) pt else as.character(terms_df$definition_en[i])
+        } else if ("definition_en" %in% names(terms_df)) {
+            as.character(terms_df$definition_en[i])
+        } else {
+            ""
+        }
+
+        required_val <- if ("required" %in% names(terms_df)) {
+            isTRUE(terms_df$required[i])
+        } else {
+            FALSE
+        }
+
+        list(
+            term     = term_val,
+            category = class_val,
+            desc     = desc,
+            sep      = "",
             required = required_val
         )
     })

@@ -39,6 +39,12 @@ mod_mapping_ui <- function(id) {
                 class = "btn-warning w-100 mb-2",
                 icon = shiny::icon("rotate-left", class = "fa-solid")
             ),
+            shiny::actionButton(
+                ns("add_term"),
+                shiny::uiOutput(ns("btn_add_term_label"), inline = TRUE),
+                class = "btn-outline-secondary w-100 mb-2",
+                icon = shiny::icon("plus")
+            ),
             shiny::hr(),
             shiny::uiOutput(ns("sidebar_filters_label")),
             shiny::checkboxInput(
@@ -59,19 +65,7 @@ mod_mapping_ui <- function(id) {
                 ),
                 shiny::div(
                     class = "category-filter-options",
-                    shiny::checkboxGroupInput(
-                        ns("filter_categories"),
-                        NULL,
-                        choices = c(
-                            "Record-level" = "Record-level",
-                            "Occurrence" = "Occurrence",
-                            "Event" = "Event",
-                            "Location" = "Location",
-                            "Taxon" = "Taxon",
-                            "Identification" = "Identification"
-                        ),
-                        selected = c("Record-level", "Occurrence", "Event", "Location", "Taxon", "Identification")
-                    )
+                    shiny::uiOutput(ns("filter_categories_ui"))
                 )
             )
         ),
@@ -140,6 +134,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             last_eventdate_warn_count = NA_integer_,
             map_values = list(),
             map_meta = list(),
+            extra_terms = character(0),
             rostrum_decisions = NULL,
             rostrum_run_stats = list(),
             basis_of_record_map = stats::setNames(character(0), character(0)),
@@ -175,38 +170,49 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             }
         })
 
-        # Category filter options
-        all_filter_categories <- c("Record-level", "Occurrence", "Event", "Location", "Taxon", "Identification")
         syncing_select_all <- shiny::reactiveVal(FALSE)
 
+        # i18n keys for all 12 catalog classes (base + on-demand extras).
+        # Falls back to raw class name if a future class isn't covered.
+        class_tr_keys_map <- c(
+            "Record-level"         = "class_record",
+            "Occurrence"           = "class_occurrence",
+            "Event"                = "class_event",
+            "Location"             = "class_location",
+            "Taxon"                = "class_taxon",
+            "Identification"       = "class_identification",
+            "GeologicalContext"    = "class_geologicalcontext",
+            "MaterialEntity"       = "class_materialentity",
+            "MaterialSample"       = "class_materialsample",
+            "MeasurementOrFact"    = "class_measurementorfact",
+            "Organism"             = "class_organism",
+            "ResourceRelationship" = "class_resourcerelationship"
+        )
+
+        # Derives the sorted class list from current active terms (reactive)
+        all_filter_categories <- shiny::reactive({
+            cats <- vapply(dwc_all(), function(x) x$category, FUN.VALUE = character(1))
+            sort(unique(cats))
+        })
+
+        category_label <- function(category_value) {
+            key <- unname(class_tr_keys_map[category_value])
+            if (is.na(key)) category_value else tr(key, lang_r())
+        }
+
         category_labels <- function() {
-            c(
-                tr("class_record", lang_r()),
-                tr("class_occurrence", lang_r()),
-                tr("class_event", lang_r()),
-                tr("class_location", lang_r()),
-                tr("class_taxon", lang_r()),
-                tr("class_identification", lang_r())
-            )
+            vapply(all_filter_categories(), category_label, FUN.VALUE = character(1))
         }
 
         category_choices <- function() {
-            stats::setNames(all_filter_categories, category_labels())
-        }
-
-        category_label <- function(category_value) {
-            idx <- match(category_value, all_filter_categories)
-            if (is.na(idx)) {
-                return(category_value)
-            }
-
-            category_labels()[[idx]]
+            cats <- all_filter_categories()
+            stats::setNames(cats, vapply(cats, category_label, FUN.VALUE = character(1)))
         }
 
 
-        # Load DwC terms as list (reactive to language)
+        # Active DwC terms list: base 50 + any extras added in this session
         dwc_all <- shiny::reactive({
-            get_dwc_terms_list(lang_r())
+            get_active_dwc_terms_list(extra = rv$extra_terms, lang = lang_r())
         })
 
         all_term_names <- shiny::reactive({
@@ -827,17 +833,30 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             ignoreInit = TRUE
         )
 
+        # Dynamic category filter checkboxes (updates when extra terms add new classes)
+        output$filter_categories_ui <- shiny::renderUI({
+            cats <- all_filter_categories()
+            shiny::checkboxGroupInput(
+                ns("filter_categories"),
+                NULL,
+                choices  = stats::setNames(
+                    cats,
+                    vapply(cats, category_label, FUN.VALUE = character(1))
+                ),
+                selected = cats
+            )
+        })
+
         shiny::observeEvent(lang_r(),
             {
                 current <- shiny::isolate(input$filter_categories)
                 if (is.null(current)) {
-                    current <- all_filter_categories
+                    current <- all_filter_categories()
                 }
-
                 shiny::updateCheckboxGroupInput(
                     session,
                     "filter_categories",
-                    choices = category_choices(),
+                    choices  = category_choices(),
                     selected = current
                 )
             },
@@ -851,13 +870,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                     syncing_select_all(FALSE)
                     return()
                 }
-
-                target <- if (isTRUE(input$select_all_categories)) all_filter_categories else character(0)
+                target  <- if (isTRUE(input$select_all_categories)) all_filter_categories() else character(0)
                 current <- input$filter_categories
-                if (is.null(current)) {
-                    current <- character(0)
-                }
-
+                if (is.null(current)) current <- character(0)
                 same_selection <- length(current) == length(target) && all(sort(current) == sort(target))
                 if (!same_selection) {
                     shiny::updateCheckboxGroupInput(session, "filter_categories", selected = target)
@@ -869,12 +884,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         shiny::observeEvent(input$filter_categories,
             {
                 current <- input$filter_categories
-                if (is.null(current)) {
-                    current <- character(0)
-                }
-
-                is_all_selected <- length(current) == length(all_filter_categories) && all(all_filter_categories %in% current)
-
+                if (is.null(current)) current <- character(0)
+                cats <- all_filter_categories()
+                is_all_selected <- length(current) == length(cats) && all(cats %in% current)
                 if (!identical(isTRUE(input$select_all_categories), is_all_selected)) {
                     syncing_select_all(TRUE)
                     shiny::updateCheckboxInput(session, "select_all_categories", value = is_all_selected)
@@ -882,6 +894,61 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             },
             ignoreInit = TRUE
         )
+
+        # Add Term button label
+        output$btn_add_term_label <- shiny::renderUI({
+            tr("btn_add_term", lang_r())
+        })
+
+        # "Add term" modal
+        shiny::observeEvent(input$add_term, {
+            full_catalog <- get_dwc_full_catalog()
+            active       <- all_term_names()
+            available    <- full_catalog[!full_catalog$term %in% active, , drop = FALSE]
+
+            choices <- stats::setNames(
+                available$term,
+                paste0(available$term, " [", available$class, "]")
+            )
+
+            shiny::showModal(shiny::modalDialog(
+                title  = tr("modal_add_term_title", lang_r()),
+                shiny::selectizeInput(
+                    ns("add_term_select"),
+                    tr("modal_add_term_label", lang_r()),
+                    choices  = choices,
+                    selected = NULL,
+                    multiple = FALSE,
+                    options  = list(
+                        placeholder = tr("modal_add_term_placeholder", lang_r()),
+                        allowEmptyOption = FALSE
+                    )
+                ),
+                footer = shiny::tagList(
+                    shiny::modalButton(tr("btn_cancel", lang_r())),
+                    shiny::actionButton(
+                        ns("confirm_add_term"),
+                        tr("btn_confirm_add_term", lang_r()),
+                        class = "btn-primary"
+                    )
+                ),
+                easyClose = TRUE
+            ))
+        })
+
+        shiny::observeEvent(input$confirm_add_term, {
+            new_term <- input$add_term_select
+            if (is.null(new_term) || !nzchar(new_term)) return()
+            if (new_term %in% all_term_names()) return()
+
+            rv$extra_terms <- c(rv$extra_terms, new_term)
+            shiny::removeModal()
+            shiny::showNotification(
+                paste(tr("notif_term_added", lang_r()), new_term),
+                type     = "message",
+                duration = 3
+            )
+        })
 
         # Mapping UI generation (card builder delegated to mod_mapping_cards.R)
         output$mapping_ui <- shiny::renderUI({
@@ -963,7 +1030,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
             tryCatch(
                 {
-                    dwc_terms_df <- load_dwc_terms_rds()
+                    dwc_terms_df <- get_active_dwc_terms(extra = rv$extra_terms)
                     engine_result <- run_rostrum_engine(
                         df = raw_data_r(),
                         dwc_terms_df = dwc_terms_df,
@@ -1015,11 +1082,16 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                             "[]"
                         }
 
+                        # Extra terms can't earn AUTO — engine wasn't calibrated on them
+                        effective_status <- if (
+                            identical(status, "AUTO") && term %in% rv$extra_terms
+                        ) "SUGERIDO" else status
+
                         next_meta[[term]] <- list(
-                            status = status,
+                            status = effective_status,
                             score = score_value,
                             reason = reason,
-                            source = if (identical(status, "TEMPLATE")) "template" else if (identical(status, "ALIAS")) "alias" else "auto",
+                            source = if (identical(effective_status, "TEMPLATE")) "template" else if (identical(effective_status, "ALIAS")) "alias" else "auto",
                             alternatives_json = alternatives_json
                         )
 
@@ -1035,9 +1107,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
                         if (!(term %in% special_fields) && is_applied && !is.na(selected_col) && nzchar(selected_col)) {
                             set_map_value(term, selected_col, update_input = TRUE)
-                            if (identical(status, "AUTO")) {
+                            if (identical(effective_status, "AUTO")) {
                                 auto_count <- auto_count + 1L
-                            } else if (identical(status, "SUGERIDO")) {
+                            } else if (identical(effective_status, "SUGERIDO")) {
                                 suggested_count <- suggested_count + 1L
                             }
                         }
@@ -1112,6 +1184,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             for (term in intersect(all_term_names(), special_no_dropdown)) {
                 rv$map_values[[term]] <- ""
             }
+            rv$extra_terms <- character(0)
             rv$map_meta <- empty_map_meta(all_term_names())
             rv$ambiguity_queue <- list()
             rv$rostrum_decisions <- NULL

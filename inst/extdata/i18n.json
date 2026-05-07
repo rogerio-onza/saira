@@ -391,6 +391,30 @@
     "pt": "Cancelar",
     "en": "Cancel"
   },
+  "btn_add_term": {
+    "pt": "Adicionar termo",
+    "en": "Add term"
+  },
+  "modal_add_term_title": {
+    "pt": "Adicionar termo DwC",
+    "en": "Add DwC term"
+  },
+  "modal_add_term_label": {
+    "pt": "Escolha um termo",
+    "en": "Choose a term"
+  },
+  "modal_add_term_placeholder": {
+    "pt": "Buscar por nome ou classe...",
+    "en": "Search by name or class..."
+  },
+  "btn_confirm_add_term": {
+    "pt": "Adicionar",
+    "en": "Add"
+  },
+  "notif_term_added": {
+    "pt": "Termo adicionado:",
+    "en": "Term added:"
+  },
   "btn_confirm_reset": {
     "pt": "Sim, resetar",
     "en": "Yes, reset"
@@ -2390,6 +2414,30 @@
   "class_taxon": {
     "pt": "Taxon",
     "en": "Taxon"
+  },
+  "class_geologicalcontext": {
+    "pt": "GeologicalContext",
+    "en": "GeologicalContext"
+  },
+  "class_materialentity": {
+    "pt": "MaterialEntity",
+    "en": "MaterialEntity"
+  },
+  "class_materialsample": {
+    "pt": "MaterialSample",
+    "en": "MaterialSample"
+  },
+  "class_measurementorfact": {
+    "pt": "MeasurementOrFact",
+    "en": "MeasurementOrFact"
+  },
+  "class_organism": {
+    "pt": "Organism",
+    "en": "Organism"
+  },
+  "class_resourcerelationship": {
+    "pt": "ResourceRelationship",
+    "en": "ResourceRelationship"
   },
   "upload_data_title": {
     "pt": "Dados",

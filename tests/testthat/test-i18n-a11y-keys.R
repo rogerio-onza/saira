@@ -17,7 +17,21 @@ testthat::test_that("a11y/ui keys for this cycle exist in pt/en", {
         "a11y_wiki_page_length_label",
         "a11y_bor_target_label",
         "mapping_sidebar_actions",
-        "mapping_sidebar_filters"
+        "mapping_sidebar_filters",
+        # Add Term modal (ADR-082)
+        "btn_add_term",
+        "modal_add_term_title",
+        "modal_add_term_label",
+        "modal_add_term_placeholder",
+        "btn_confirm_add_term",
+        "notif_term_added",
+        # On-demand catalog DwC classes (ADR-081)
+        "class_geologicalcontext",
+        "class_materialentity",
+        "class_materialsample",
+        "class_measurementorfact",
+        "class_organism",
+        "class_resourcerelationship"
     )
 
     missing_keys <- setdiff(required_keys, names(dict))
@@ -54,7 +68,19 @@ testthat::test_that("a11y/ui keys resolve with tr in pt/en", {
         "a11y_wiki_page_length_label",
         "a11y_bor_target_label",
         "mapping_sidebar_actions",
-        "mapping_sidebar_filters"
+        "mapping_sidebar_filters",
+        "btn_add_term",
+        "modal_add_term_title",
+        "modal_add_term_label",
+        "modal_add_term_placeholder",
+        "btn_confirm_add_term",
+        "notif_term_added",
+        "class_geologicalcontext",
+        "class_materialentity",
+        "class_materialsample",
+        "class_measurementorfact",
+        "class_organism",
+        "class_resourcerelationship"
     )
 
     for (key in keys) {

@@ -6,7 +6,22 @@
       "Bash(Rscript -e \"renv::status\\(\\)\")",
       "Bash(Rscript /tmp/test_automap.R)",
       "Bash(Rscript -e \"pkgload::load_all\\(quiet=TRUE\\); devtools::test\\(filter='utils-io', reporter='progress'\\)\")",
-      "Bash(Rscript -e \"pkgload::load_all\\(quiet=TRUE\\); devtools::test\\(filter='mod-mapping-server', reporter='progress'\\)\")"
+      "Bash(Rscript -e \"pkgload::load_all\\(quiet=TRUE\\); devtools::test\\(filter='mod-mapping-server', reporter='progress'\\)\")",
+      "Bash(R --slave --no-save)",
+      "Bash(Rscript -e ' *)",
+      "Bash(Rscript data-raw/build_dwc_full_catalog.R)",
+      "Bash(Rscript -e \"devtools::test\\(filter = 'utils-dwc'\\)\")",
+      "Bash(Rscript -e \"devtools::test\\(filter = 'mod-wiki'\\)\")",
+      "Bash(Rscript -e \"jsonlite::fromJSON\\('/home/rogerio-onza/Repos/saira/inst/extdata/i18n.json'\\); cat\\('JSON OK\\\\n'\\)\")",
+      "Bash(Rscript -e \"devtools::test\\(filter = 'mod-mapping'\\)\")",
+      "Bash(grep -rn \"import_template\\\\|load_template\\\\|apply.*template\\\\|template.*apply\\\\|input\\\\$.*template\\\\|observeEvent.*template\" /home/rogerio-onza/Repos/saira/R/mod_mapping.R)",
+      "Bash(Rscript -e \"devtools::test\\(filter = 'utils-rostrum-templates'\\)\")",
+      "Bash(Rscript -e \"pkgload::load_all\\(quiet=TRUE\\); cat\\('load_all OK\\\\n'\\); cat\\('full_catalog terms:', nrow\\(get_dwc_full_catalog\\(\\)\\), '\\\\n'\\); cat\\('base terms:', nrow\\(get_dwc_terms\\(\\)\\), '\\\\n'\\); active <- get_active_dwc_terms\\(extra='verbatimCoordinates'\\); cat\\('active with extra:', nrow\\(active\\), '\\\\n'\\)\")",
+      "Bash(Rscript -e \"devtools::test\\(filter = 'utils-dwc|mod-wiki|mod-mapping|utils-rostrum-templates'\\)\")",
+      "Bash(Rscript -e 'cat <- readRDS\\('\\\\''inst/extdata/dwc_full_catalog.rds'\\\\''\\); cat\\('\\\\''rows:'\\\\'', nrow\\(cat\\), '\\\\''\\\\n'\\\\''\\); cat\\('\\\\''cols:'\\\\'', paste\\(names\\(cat\\), collapse='\\\\'', '\\\\''\\), '\\\\''\\\\n'\\\\''\\); cat\\('\\\\''max example nchar:'\\\\'', max\\(nchar\\(cat$examples\\), na.rm=TRUE\\), '\\\\''\\\\n'\\\\''\\); cat\\('\\\\''examples > 200 chars:'\\\\'', sum\\(nchar\\(cat$examples\\) > 200, na.rm=TRUE\\), '\\\\''\\\\n'\\\\''\\); cat\\('\\\\''examples > 100 chars:'\\\\'', sum\\(nchar\\(cat$examples\\) > 100, na.rm=TRUE\\), '\\\\''\\\\n'\\\\''\\); cat\\('\\\\''non-empty examples:'\\\\'', sum\\(nzchar\\(trimws\\(cat$examples\\)\\)\\), '\\\\''\\\\n'\\\\''\\)')",
+      "Bash(Rscript -e \"source\\('data-raw/build_css.R'\\)\")",
+      "Bash(Rscript -e \"devtools::test\\(filter='utils-dwc'\\)\")",
+      "Bash(Rscript -e 'df <- readRDS\\('\\\\''/home/rogerio-onza/Repos/saira/inst/extdata/dwc_full_catalog.rds'\\\\''\\); cat\\('\\\\''Dims:'\\\\'', nrow\\(df\\), '\\\\''rows x'\\\\'', ncol\\(df\\), '\\\\''cols\\\\n'\\\\''\\); cat\\('\\\\''Classes:'\\\\'', table\\(df$class\\), '\\\\''\\\\n'\\\\''\\); cat\\('\\\\''Duplicated rows:'\\\\'', sum\\(duplicated\\(df\\)\\), '\\\\''\\\\n'\\\\''\\); print\\(head\\(df[, c\\('\\\\''term'\\\\'', '\\\\''class'\\\\''\\)], 20\\)\\)')"
     ],
     "additionalDirectories": [
       "/tmp"

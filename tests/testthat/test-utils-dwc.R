@@ -160,6 +160,113 @@ testthat::test_that("basisOfRecord vocabulary is complete and ordered", {
     testthat::expect_false(is_valid(""))
 })
 
+testthat::test_that("get_dwc_full_catalog returns superset of base terms with correct schema", {
+    base    <- get_dwc_terms()
+    catalog <- get_dwc_full_catalog()
+
+    testthat::expect_s3_class(catalog, "data.frame")
+    testthat::expect_gte(nrow(catalog), nrow(base))
+    testthat::expect_true(all(base$term %in% catalog$term))
+    testthat::expect_identical(
+        sort(names(catalog)),
+        sort(c("term", "class", "definition_en", "definition_pt",
+               "examples", "required", "data_type"))
+    )
+    testthat::expect_identical(
+        sum(catalog$required),
+        sum(base$required)
+    )
+    base_idx <- match(base$term, catalog$term)
+    testthat::expect_false(anyNA(base_idx))
+    # Base terms appear before extra terms (first nrow(base) rows)
+    testthat::expect_identical(catalog$term[seq_len(nrow(base))], base$term)
+})
+
+testthat::test_that("get_dwc_full_catalog PT translations preserved from base", {
+    base    <- get_dwc_terms()
+    catalog <- get_dwc_full_catalog()
+
+    for (trm in base$term) {
+        pt_base    <- base$definition_pt[base$term == trm]
+        pt_catalog <- catalog$definition_pt[catalog$term == trm]
+        testthat::expect_identical(pt_catalog, pt_base,
+            info = paste("definition_pt mismatch for term:", trm))
+    }
+})
+
+testthat::test_that("get_active_dwc_terms returns base set when no extras supplied", {
+    base   <- get_dwc_terms()
+    active <- get_active_dwc_terms()
+
+    testthat::expect_identical(active, base)
+})
+
+testthat::test_that("get_active_dwc_terms appends valid extra terms from catalog", {
+    base    <- get_dwc_terms()
+    catalog <- get_dwc_full_catalog()
+    extras  <- setdiff(catalog$term, base$term)
+
+    testthat::expect_gte(length(extras), 1L)
+    extra_term <- extras[[1]]
+    active     <- get_active_dwc_terms(extra = extra_term)
+
+    testthat::expect_equal(nrow(active), nrow(base) + 1L)
+    testthat::expect_true(extra_term %in% active$term)
+    testthat::expect_identical(active$term[seq_len(nrow(base))], base$term)
+})
+
+testthat::test_that("get_active_dwc_terms ignores duplicates of base terms", {
+    base       <- get_dwc_terms()
+    base_term  <- base$term[[1]]
+    active     <- get_active_dwc_terms(extra = base_term)
+
+    testthat::expect_equal(nrow(active), nrow(base))
+})
+
+testthat::test_that("get_active_dwc_terms ignores extra terms not in catalog", {
+    base   <- get_dwc_terms()
+    active <- get_active_dwc_terms(extra = "notARealDwCTerm_xyz")
+
+    testthat::expect_equal(nrow(active), nrow(base))
+})
+
+testthat::test_that("get_active_dwc_terms_list returns base list when no extras", {
+    base_list <- get_dwc_terms_list(lang = "en")
+    active    <- get_active_dwc_terms_list(extra = character(0), lang = "en")
+
+    testthat::expect_equal(length(active), length(base_list))
+    testthat::expect_setequal(
+        vapply(active, function(x) x$term, FUN.VALUE = character(1)),
+        vapply(base_list, function(x) x$term, FUN.VALUE = character(1))
+    )
+})
+
+testthat::test_that("get_active_dwc_terms_list appends a valid extra and keeps schema", {
+    catalog    <- get_dwc_full_catalog()
+    base_terms <- get_dwc_terms()$term
+    extra_term <- catalog$term[!catalog$term %in% base_terms][[1]]
+
+    active <- get_active_dwc_terms_list(extra = extra_term, lang = "en")
+    terms  <- vapply(active, function(x) x$term, FUN.VALUE = character(1))
+
+    testthat::expect_true(extra_term %in% terms)
+    testthat::expect_equal(length(active), length(base_terms) + 1L)
+
+    appended <- active[[which(terms == extra_term)]]
+    testthat::expect_named(appended, c("term", "category", "desc", "sep", "required"))
+    testthat::expect_type(appended$desc, "character")
+    testthat::expect_type(appended$required, "logical")
+})
+
+testthat::test_that("get_active_dwc_terms_list deduplicates extras already in base", {
+    base_terms <- get_dwc_terms()$term
+    base_term  <- base_terms[[1]]
+
+    active <- get_active_dwc_terms_list(extra = base_term, lang = "en")
+
+    testthat::expect_equal(length(active), length(base_terms))
+})
+
 testthat::test_that("basisOfRecord choices include skip option and descriptions", {
     get_choices <- saira:::get_basis_of_record_term_choices
 

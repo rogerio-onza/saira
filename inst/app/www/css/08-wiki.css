@@ -330,6 +330,31 @@
   background: #c0392b;
 }
 
+/* On-demand catalog classes (ADR-081/082) */
+.wiki-filter-pill[data-filter="GeologicalContext"] .wiki-filter-pill-dot {
+  background: #16b3bd;
+}
+
+.wiki-filter-pill[data-filter="MaterialEntity"] .wiki-filter-pill-dot {
+  background: #6d28d9;
+}
+
+.wiki-filter-pill[data-filter="MaterialSample"] .wiki-filter-pill-dot {
+  background: #0e8a95;
+}
+
+.wiki-filter-pill[data-filter="MeasurementOrFact"] .wiki-filter-pill-dot {
+  background: #ffe005;
+}
+
+.wiki-filter-pill[data-filter="Organism"] .wiki-filter-pill-dot {
+  background: #e67e22;
+}
+
+.wiki-filter-pill[data-filter="ResourceRelationship"] .wiki-filter-pill-dot {
+  background: #8e44ad;
+}
+
 .wiki-filter-pill[data-filter=""].active {
   background: #2833ac;
   border-color: #2833ac;
@@ -372,6 +397,43 @@
   color: #ffffff;
 }
 
+/* On-demand catalog classes — active state (ADR-081/082) */
+.wiki-filter-pill[data-filter="GeologicalContext"].active {
+  background: #16b3bd;
+  border-color: #16b3bd;
+  color: #ffffff;
+}
+
+.wiki-filter-pill[data-filter="MaterialEntity"].active {
+  background: #6d28d9;
+  border-color: #6d28d9;
+  color: #ffffff;
+}
+
+.wiki-filter-pill[data-filter="MaterialSample"].active {
+  background: #0e8a95;
+  border-color: #0e8a95;
+  color: #ffffff;
+}
+
+.wiki-filter-pill[data-filter="MeasurementOrFact"].active {
+  background: #ffe005;
+  border-color: #ffe005;
+  color: #12141b;
+}
+
+.wiki-filter-pill[data-filter="Organism"].active {
+  background: #e67e22;
+  border-color: #e67e22;
+  color: #ffffff;
+}
+
+.wiki-filter-pill[data-filter="ResourceRelationship"].active {
+  background: #8e44ad;
+  border-color: #8e44ad;
+  color: #ffffff;
+}
+
 .wiki-table.saira-table-shell table.dataTable thead th {
   background: #2833ac;
   padding: 13px 18px;
@@ -399,7 +461,7 @@
   border-top-right-radius: 16px;
 }
 
-.wiki-table.saira-table-shell table.dataTable thead th:nth-child(5) {
+.wiki-table.saira-table-shell table.dataTable thead th:nth-child(4) {
   text-align: center;
 }
 
@@ -518,6 +580,43 @@
   border: 1px solid rgba(192, 57, 43, 0.2);
 }
 
+/* On-demand catalog classes — DT badges (ADR-081/082) */
+.wiki-class-badge--geologicalcontext {
+  background: rgba(22, 179, 189, 0.10);
+  color: #0e6e76;
+  border: 1px solid rgba(22, 179, 189, 0.25);
+}
+
+.wiki-class-badge--materialentity {
+  background: rgba(109, 40, 217, 0.10);
+  color: #5b21b6;
+  border: 1px solid rgba(109, 40, 217, 0.25);
+}
+
+.wiki-class-badge--materialsample {
+  background: rgba(14, 138, 149, 0.10);
+  color: #0e8a95;
+  border: 1px solid rgba(14, 138, 149, 0.25);
+}
+
+.wiki-class-badge--measurementorfact {
+  background: rgba(255, 224, 5, 0.18);
+  color: #6b5800;
+  border: 1px solid rgba(255, 224, 5, 0.4);
+}
+
+.wiki-class-badge--organism {
+  background: rgba(230, 126, 34, 0.10);
+  color: #a35b18;
+  border: 1px solid rgba(230, 126, 34, 0.25);
+}
+
+.wiki-class-badge--resourcerelationship {
+  background: rgba(142, 68, 173, 0.10);
+  color: #6c3487;
+  border: 1px solid rgba(142, 68, 173, 0.25);
+}
+
 .wiki-table.saira-table-shell table.dataTable tbody td:nth-child(3) {
   color: #1c1c26;
   font-weight: 400;
@@ -531,23 +630,9 @@
   font-weight: var(--weight-medium);
 }
 
-.wiki-example-code {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  background: #f4f3ee;
-  padding: 2px 6px;
-  border-radius: 4px;
-  border: 1px solid rgba(40, 51, 172, 0.08);
-  color: #252659;
-  display: inline-block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .wiki-required-cell,
-.wiki-table.saira-table-shell table.dataTable tbody td:nth-child(5) {
+.wiki-table.saira-table-shell table.dataTable tbody td:nth-child(4) {
   text-align: center;
 }
 

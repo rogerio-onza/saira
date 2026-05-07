@@ -33,18 +33,36 @@ mod_wiki_server <- function(id, lang_r) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
-        dwc_terms <- get_dwc_terms()
-        class_values <- c("", "Record-level", "Occurrence", "Event", "Location", "Identification", "Taxon")
-        class_slug_map <- c(
-            "all",
-            "record-level",
-            "occurrence",
-            "event",
-            "location",
-            "identification",
-            "taxon"
+        dwc_terms <- get_dwc_full_catalog()
+
+        # i18n keys for all 12 catalog classes. Falls back to raw class name
+        # if a future class isn't covered.
+        class_tr_keys <- c(
+            "Record-level"         = "class_record",
+            "Occurrence"           = "class_occurrence",
+            "Event"                = "class_event",
+            "Location"             = "class_location",
+            "Identification"       = "class_identification",
+            "Taxon"                = "class_taxon",
+            "GeologicalContext"    = "class_geologicalcontext",
+            "MaterialEntity"       = "class_materialentity",
+            "MaterialSample"       = "class_materialsample",
+            "MeasurementOrFact"    = "class_measurementorfact",
+            "Organism"             = "class_organism",
+            "ResourceRelationship" = "class_resourcerelationship"
         )
-        names(class_slug_map) <- class_values
+
+        get_class_label <- function(cls, lang) {
+            key <- unname(class_tr_keys[cls])
+            if (is.na(key)) cls else tr(key, lang)
+        }
+
+        catalog_classes <- sort(unique(dwc_terms$class))
+        class_values    <- c("", catalog_classes)
+        class_slug_map  <- stats::setNames(
+            c("all", tolower(gsub("[^a-zA-Z0-9]+", "-", catalog_classes))),
+            class_values
+        )
 
         info_icon_svg <- paste0(
             "<svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'>",
@@ -81,14 +99,14 @@ mod_wiki_server <- function(id, lang_r) {
         )
 
         class_labels <- shiny::reactive({
+            lang <- lang_r()
             c(
-                tr("wiki_class_all", lang_r()),
-                tr("class_record", lang_r()),
-                tr("class_occurrence", lang_r()),
-                tr("class_event", lang_r()),
-                tr("class_location", lang_r()),
-                tr("class_identification", lang_r()),
-                tr("class_taxon", lang_r())
+                tr("wiki_class_all", lang),
+                vapply(
+                    catalog_classes,
+                    function(cls) get_class_label(cls, lang),
+                    FUN.VALUE = character(1)
+                )
             )
         })
 
@@ -259,17 +277,24 @@ mod_wiki_server <- function(id, lang_r) {
                 "definition_en"
             )
 
-            df <- df[, c("term", "class", definition_col, "examples", "required")]
+            df <- df[, c("term", "class", definition_col, "required")]
             names(df) <- c(
                 tr("wiki_term", lang_r()),
                 tr("wiki_class", lang_r()),
                 tr("wiki_definition", lang_r()),
-                tr("wiki_example", lang_r()),
                 tr("wiki_required", lang_r())
             )
 
             df
         })
+
+        # JS lookup map: lowercase class name -> CSS slug (covers all 12 catalog
+        # classes; built from R so new TDWG classes pick up the right badge slug
+        # without editing JS literals).
+        class_slug_js_map <- as.list(stats::setNames(
+            unname(class_slug_map[catalog_classes]),
+            tolower(catalog_classes)
+        ))
 
         output$terms_table <- DT::renderDataTable({
             required_badge_labels <- list(
@@ -283,6 +308,7 @@ mod_wiki_server <- function(id, lang_r) {
                         "function(row, data) {",
                         "  var labels = %s;",
                         "  var termUrl = %s;",
+                        "  var classSlugMap = %s;",
                         "  var normalizeBoolean = function(value) {",
                         "    var normalized = String(value === null || value === undefined ? '' : value).trim().toLowerCase();",
                         "    return value === true || value === 1 || normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'sim';",
@@ -295,41 +321,28 @@ mod_wiki_server <- function(id, lang_r) {
                         "      .replace(/\\\"/g, '&quot;')",
                         "      .replace(/'/g, '&#39;');",
                         "  };",
-                        "  var classSlugMap = {",
-                        "    'record-level': 'record-level',",
-                        "    'occurrence': 'occurrence',",
-                        "    'event': 'event',",
-                        "    'location': 'location',",
-                        "    'identification': 'identification',",
-                        "    'taxon': 'taxon'",
-                        "  };",
                         "  var requiredIcon = \"<svg width='9' height='9' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3'><polyline points='20 6 9 17 4 12'/></svg>\";",
                         "  var termText = String(data[0] === null || data[0] === undefined ? '' : data[0]);",
                         "  var classText = String(data[1] === null || data[1] === undefined ? '' : data[1]);",
                         "  var definitionText = String(data[2] === null || data[2] === undefined ? '' : data[2]);",
-                        "  var exampleText = String(data[3] === null || data[3] === undefined ? '' : data[3]);",
-                        "  var isRequired = normalizeBoolean(data[4]);",
+                        "  var isRequired = normalizeBoolean(data[3]);",
                         "  var classSlug = classSlugMap[classText.trim().toLowerCase()] || 'record-level';",
                         "  $('td:eq(0)', row).html(\"<a class='wiki-term-link' href='\" + termUrl + \"' target='_blank' rel='noopener noreferrer'>\" + escapeHtml(termText) + \"</a>\");",
                         "  $('td:eq(1)', row).html(\"<span class='wiki-class-badge wiki-class-badge--\" + classSlug + \"'>\" + escapeHtml(classText) + \"</span>\");",
                         "  var $definitionCell = $('td:eq(2)', row);",
                         "  $definitionCell.text(definitionText);",
                         "  $definitionCell.toggleClass('is-required', isRequired);",
-                        "  if (exampleText.trim().length > 0) {",
-                        "    $('td:eq(3)', row).html(\"<code class='wiki-example-code' title='\" + escapeHtml(exampleText) + \"'>\" + escapeHtml(exampleText) + \"</code>\");",
-                        "  } else {",
-                        "    $('td:eq(3)', row).empty();",
-                        "  }",
                         "  if (isRequired) {",
-                        "    $('td:eq(4)', row).html(\"<span class='wiki-required-badge wiki-required-badge--true'>\" + requiredIcon + escapeHtml(labels.required) + \"</span>\");",
+                        "    $('td:eq(3)', row).html(\"<span class='wiki-required-badge wiki-required-badge--true'>\" + requiredIcon + escapeHtml(labels.required) + \"</span>\");",
                         "  } else {",
-                        "    $('td:eq(4)', row).html(\"<span class='wiki-required-badge wiki-required-badge--false'>\" + escapeHtml(labels.optional) + \"</span>\");",
+                        "    $('td:eq(3)', row).html(\"<span class='wiki-required-badge wiki-required-badge--false'>\" + escapeHtml(labels.optional) + \"</span>\");",
                         "  }",
-                        "  $('td:eq(4)', row).addClass('wiki-required-cell');",
+                        "  $('td:eq(3)', row).addClass('wiki-required-cell');",
                         "}"
                     ),
                     jsonlite::toJSON(required_badge_labels, auto_unbox = TRUE),
-                    jsonlite::toJSON("https://sibbr.gov.br", auto_unbox = TRUE)
+                    jsonlite::toJSON("https://sibbr.gov.br", auto_unbox = TRUE),
+                    jsonlite::toJSON(class_slug_js_map, auto_unbox = TRUE)
                 )
             )
 
@@ -340,7 +353,7 @@ mod_wiki_server <- function(id, lang_r) {
                     "  $(thead).find('th').each(function(index) {",
                     "    var $th = $(this);",
                     "    var label = $th.text();",
-                    "    var centerClass = index === 4 ? ' wiki-th-content--center' : '';",
+                    "    var centerClass = index === 3 ? ' wiki-th-content--center' : '';",
                     "    if ($th.find('.wiki-th-content').length === 0) {",
                     "      $th.html(\"<div class='wiki-th-content\" + centerClass + \"'><span class='wiki-th-label'>\" + label + \"</span>\" + sortIcon + \"</div>\");",
                     "    }",
@@ -415,10 +428,7 @@ mod_wiki_server <- function(id, lang_r) {
                         "var applyPageLength = function(value) {",
                         "  var len = parseInt(value, 10);",
                         "  if (!isNaN(len) && len > 0) {",
-                        "    if (table.page.len() !== len) {",
-                        "      table.page.len(len);",
-                        "    }",
-                        "    table.page('first').draw('page');",
+                        "    table.page.len(len).draw(false);",
                         "  }",
                         "};",
                         "$doc.off('input' + eventNs, searchSelector);",

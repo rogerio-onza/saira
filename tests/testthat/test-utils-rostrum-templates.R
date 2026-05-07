@@ -226,3 +226,61 @@ testthat::test_that("Local template catalog filters by institution and use_case"
     testthat::expect_identical(nrow(out), 1L)
     testthat::expect_identical(as.character(out$template_id[[1]]), "tpl-cat-a")
 })
+
+testthat::test_that("rostrum_extra_terms_from_template returns empty for all-base templates", {
+    base_terms <- get_dwc_terms()$term
+    payload <- list(
+        items = list(
+            list(dwc_term = base_terms[[1]], source_columns = list("col_a")),
+            list(dwc_term = base_terms[[2]], source_columns = list("col_b"))
+        )
+    )
+    result <- saira:::rostrum_extra_terms_from_template(payload, active_terms = base_terms)
+
+    testthat::expect_length(result$to_activate, 0L)
+    testthat::expect_length(result$unknown, 0L)
+})
+
+testthat::test_that("rostrum_extra_terms_from_template identifies catalog extra terms", {
+    base_terms   <- get_dwc_terms()$term
+    full_catalog <- get_dwc_full_catalog()
+    extra_term   <- setdiff(full_catalog$term, base_terms)[[1]]
+
+    payload <- list(
+        items = list(
+            list(dwc_term = base_terms[[1]], source_columns = list("col_a")),
+            list(dwc_term = extra_term,      source_columns = list("col_b"))
+        )
+    )
+    result <- saira:::rostrum_extra_terms_from_template(payload, active_terms = base_terms)
+
+    testthat::expect_identical(result$to_activate, extra_term)
+    testthat::expect_length(result$unknown, 0L)
+})
+
+testthat::test_that("rostrum_extra_terms_from_template identifies unknown terms", {
+    base_terms <- get_dwc_terms()$term
+    payload <- list(
+        items = list(
+            list(dwc_term = "notARealDwCTerm_xyz", source_columns = list("col_a"))
+        )
+    )
+    result <- saira:::rostrum_extra_terms_from_template(payload, active_terms = base_terms)
+
+    testthat::expect_length(result$to_activate, 0L)
+    testthat::expect_identical(result$unknown, "notARealDwCTerm_xyz")
+})
+
+testthat::test_that("rostrum_extra_terms_from_template already-active extras are excluded", {
+    base_terms   <- get_dwc_terms()$term
+    full_catalog <- get_dwc_full_catalog()
+    extra_term   <- setdiff(full_catalog$term, base_terms)[[1]]
+    active       <- c(base_terms, extra_term)
+
+    payload <- list(
+        items = list(list(dwc_term = extra_term, source_columns = list("col_a")))
+    )
+    result <- saira:::rostrum_extra_terms_from_template(payload, active_terms = active)
+
+    testthat::expect_length(result$to_activate, 0L)
+})

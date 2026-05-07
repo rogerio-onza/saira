@@ -16,6 +16,7 @@ NULL
 .onLoad <- function(libname, pkgname) {
     tryCatch(load_i18n_dict(), error = function(e) NULL)
     tryCatch(load_dwc_terms_rds(), error = function(e) NULL)
+    tryCatch(get_dwc_full_catalog(), error = function(e) NULL)
     tryCatch(coords_load_aliases(), error = function(e) NULL)
     tryCatch(coords_build_fuzzy_reference(), error = function(e) NULL)
     tryCatch(coords_load_ne_land(10L, download = FALSE), error = function(e) NULL)

@@ -866,3 +866,37 @@ rostrum_apply_template_overrides <- function(
         df = df
     )
 }
+
+#' Find extra DwC terms a template needs that are not yet active
+#'
+#' Used before running the engine or applying a template to pre-activate
+#' any terms that exist in the full catalog but not in the current active set.
+#' Terms not in the full catalog at all are returned in \code{$unknown}.
+#'
+#' @param template_payload Validated template payload list (from
+#'   \code{rostrum_validate_template_payload()})
+#' @param active_terms Character vector of currently active term names
+#' @return Named list with \code{$to_activate} (character, safe to add to
+#'   \code{rv$extra_terms}) and \code{$unknown} (character, terms not in
+#'   the full catalog)
+#' @export
+rostrum_extra_terms_from_template <- function(template_payload, active_terms) {
+    if (!is.list(template_payload) || is.null(template_payload$items)) {
+        return(list(to_activate = character(0), unknown = character(0)))
+    }
+
+    template_terms <- vapply(
+        template_payload$items,
+        function(x) as.character(x$dwc_term),
+        FUN.VALUE = character(1)
+    )
+
+    full_catalog   <- get_dwc_full_catalog()
+    catalog_terms  <- full_catalog$term
+    needs_activate <- setdiff(template_terms, active_terms)
+
+    list(
+        to_activate = needs_activate[needs_activate %in% catalog_terms],
+        unknown     = needs_activate[!needs_activate %in% catalog_terms]
+    )
+}
