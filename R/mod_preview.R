@@ -13,7 +13,7 @@ mod_preview_ui <- function(id) {
 
     shiny::tagList(
         shiny::div(
-            class = "container-fluid",
+            class = "container-fluid preview-page",
             shiny::uiOutput(ns("title")),
             shiny::uiOutput(ns("subtitle")),
             shiny::uiOutput(ns("readiness_checklist")),

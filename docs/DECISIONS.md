@@ -1730,7 +1730,7 @@ Formato: ADR leve (Architecture Decision Record).
 ## ADR-083: Remover coluna de exemplos da wiki e corrigir seletor de pageLength
 
 - **Data**: 2026-05-06
-- **Status**: Aceito
+- **Status**: Aceito (com correcao parcial em ADR-085 — vide nota abaixo)
 - **Contexto**: Apos adicionar o catalogo DwC completo (217 termos via TDWG, ADR-081), a aba Wiki apresentou tres regressoes: (1) coluna de exemplos gigante — os exemplos literais do TDWG chegam a 768 chars com multiplos valores separados por `;` e markup de backtick, tornando a tabela inutilizavel; (2) barra de rolagem da pagina sumiu — o conteudo da coluna transbordava o container `.wiki-table.saira-table-shell` (que tem `overflow: hidden`); (3) seletor de pageLength nao funcionava — `applyPageLength` usava `draw('page')`, um partial redraw que nao recalcula o estado de paginacao apos mudanca de tamanho de pagina.
 - **Decisao**:
   - Remover a coluna `examples` do `terms_table_data()` em `mod_wiki.R` — a wiki exibe 4 colunas (Termo, Classe, Definicao, Obrigatorio). Os dados de exemplos permanecem no `dwc_full_catalog.rds` para uso futuro.
@@ -1743,6 +1743,7 @@ Formato: ADR leve (Architecture Decision Record).
   - Wiki exibe tabela limpa de 4 colunas; scroll da pagina funciona; seletor de pageLength funciona corretamente.
   - Exemplos ficam acessiveis pelo link do termo (TDWG) em cada linha.
   - Dados de exemplos preservados no RDS — reintroducao futura (com truncagem adequada) nao requer novo download.
+- **Correcao (2026-05-07)**: O diagnostico do item (2) — "barra de rolagem da pagina sumiu porque o conteudo transbordava `overflow: hidden`" — estava **errado**. O `overflow: hidden` no shell **clipa** conteudo mas nao **bloqueia** scroll de pagina. A causa-raiz real era `bslib::page_navbar(fillable = TRUE)` confinando o body a `100vh; overflow: hidden` no nivel do layout, e isso afetava qualquer conteudo que extrapolasse a viewport — nao apenas a coluna de exemplos. A remocao da coluna **aliviou o sintoma temporariamente** (com pageLength=10 padrao + 4 colunas, o conteudo voltou a caber em 100vh), mas o problema retornou assim que o usuario aumentou pageLength (25/50/100) ou alternou para a aba Preview com muitas colunas. **Os itens (1) e (3) permanecem corretos**: remover a coluna de exemplos foi a decisao certa por motivos de UX (768 chars eram inuteis), e a correcao de `applyPageLength` para `draw(false)` esta validada. ADR-085 documenta o fix arquitetural correto para o sintoma (2).
 
 ---
 
@@ -1762,3 +1763,44 @@ Formato: ADR leve (Architecture Decision Record).
   - Regra agora sobrevive a rebuilds; mesma garantia se aplica a qualquer regra futura adicionada ao modulo correto.
   - Guardrail captura tanto regressao por rebuild quanto remocao manual da regra do modulo.
   - Padrao reforcado: editar `custom.css` diretamente vira anti-pattern explicito (ja era implicitamente, mas agora com ADR + teste de regressao).
+
+---
+
+## ADR-085: Page-scroll opt-in por aba via `:has()` em vez de `bslib::page_navbar(fillable = TRUE)` global
+
+- **Data**: 2026-05-07
+- **Status**: Aceito (substitui parcialmente o item (2) de ADR-083)
+- **Contexto**: A v0.2.0 (`b188f4b`) deixou Wiki e Preview com CSS minimo (3-7 linhas em `.wiki-table.saira-table-shell` / `.saira-table-shell`) e DT options apenas com `scrollX = TRUE` — funcionou perfeitamente porque com 50 termos / 6 pills / pageLength=10 todo o conteudo da aba cabia em `100vh`. Apos `fac0f7b` (ADR-081/082/083) expandir o catalogo para 217 termos / 12 pills (toolbar maior + paginacao maior), a tabela e seu footer (info + pagination) passaram a extrapolar a viewport em pageLength=25/50/100, e na aba Preview o sintoma aparece com qualquer dataset que tenha pageLength alto ou muitas colunas. **A causa-raiz e arquitetural, nao de overflow CSS**: `bslib::page_navbar(fillable = TRUE)` (default) coloca `body { height: 100vh; overflow: hidden }` no shell da app — isso e necessario para os layouts viewport-bound de Validate Names/Coords (`calc(100vh - 166px)` no workspace tri-coluna), mas para abas de conteudo que cresce com a interacao do usuario (Wiki paginada, Preview com pageLength variavel), bloqueia o scroll natural do browser e o footer fica inacessivel.
+
+  **Historico de tentativas (over-engineering documentado para nao repetir)**:
+  - **Iteracao 1 (errada)**: adicionei `overflow: hidden` no `.saira-table-shell`, regras dedicadas para `.dataTables_wrapper`, `.dataTables_scroll`, `.dataTables_scrollHead`, `.dataTables_scrollBody` (com `overflow-x/y: auto !important` em ambos os shells — 4 `!important` novos), `isolation: isolate` no Wiki shell. Hipotese: a scrollbar interna do DT estava sendo clipada pelo `overflow: hidden` do shell. **Errado**: DT inlina `overflow: auto` no `.dataTables_scrollBody` que, mesmo dentro de um pai com `overflow: hidden`, gera sua propria scrollbar interna (o pai so clipa o que extrapola visualmente, nao bloqueia overflow filho). O fix nao resolveu o sintoma e introduziu 4 novos `!important` (limite do guardrail subiu de 13 para 15 sem necessidade real — violou LESSONS:60 "evitar `!important` como estrategia padrao" e MEMORY guardrail).
+  - **Iteracao 2 (errada)**: adicionei `scrollY = "calc(100vh - 540px)"` + `scrollCollapse = TRUE` ao DT options do Preview, `max-height/min-height` em `.preview-table-shell .dataTables_scrollBody`, classe marker `preview-page` + duas regras `:has(.preview-page)` para destravar page-scroll **so** no Preview, e ajustei o offset 380px → 540px tentando reservar espaco ao DT footer. **Errado em parte**: a regra `:has()` era a unica parte certa; tudo o resto era ruido. `scrollY` muda o contrato da tabela para "scroll vertical interno com altura fixa" — quando o usuario seleciona pageLength=10 em uma tela pequena, scrollY ainda recorta as linhas e ele tem que rolar **dentro** da tabela para ver os 10 selecionados. O Preview nunca quis isso; a expectativa do usuario sempre foi "tabela cresce com a pageLength escolhida, pagina rola se o conteudo extrapola".
+  - **Iteracao 3 (correta — esta ADR)**: reverter tudo de Iteracoes 1+2 ao baseline v0.2.0. Manter apenas a tecnica `:has()` da Iteracao 2, generalizada para Wiki + Preview em uma unica regra no modulo de overrides centralizado. Zero novos `!important`. Zero alteracoes no DT options.
+
+- **Decisao**:
+  - **CSS shells voltam ao baseline v0.2.0**: `.wiki-table.saira-table-shell { padding: 0; border-radius: 16px; overflow: hidden; }` mais o `padding: 0` do wrapper e nada alem disso. `.saira-table-shell { border + radius + bg + shadow + padding }` sem regras de overflow.
+  - **DT options do Preview voltam ao baseline v0.2.0**: `pageLength=10, lengthMenu=c(10,25,50,100), scrollX=TRUE, autoWidth=FALSE` — sem `scrollY`, sem `scrollCollapse`. A tabela cresce com a pageLength selecionada (10 → mostra 10 inteiros, 100 → cresce e a pagina rola).
+  - **Uma unica regra CSS** em `inst/app/www/css/12-overrides.css` (modulo de overrides centralizado, ja contem `.tab-content { padding }` e `.bslib-page-fill { background }`):
+    ```css
+    .tab-content > .tab-pane:has(.wiki-module),
+    .tab-content > .tab-pane:has(.preview-page) {
+      overflow-y: auto;
+      height: auto;
+      max-height: none;
+    }
+    ```
+    Sem `!important`. A especificidade do seletor `.tab-content > .tab-pane:has(...)` ja vence as regras herdadas de `.bslib-page-fill`. Aplica-se **apenas** as duas abas marcadas, preservando o contrato `100vh - offset` de Validate Names/Coords (LESSONS:90).
+  - **Classe marker `preview-page`** adicionada ao container de `mod_preview_ui` ([R/mod_preview.R:16](R/mod_preview.R#L16)). `wiki-module` ja existia em `mod_wiki_ui` desde Onda 5.
+  - **Guardrail de `!important` restaurado** de 15 para 13 em `tests/testthat/test-css-guardrails.R`. Bundle volta a 11 `!important` (mesma contagem do baseline).
+
+- **Alternativas rejeitadas**:
+  - Passar `fillable = c("upload", "mapping", "validate_names", "validate_coords", "help")` em `bslib::page_navbar` (excluindo Wiki e Preview da lista) — funciona, mas e API R que depende da versao do bslib e introduz acoplamento entre a configuracao do shell de UI e o comportamento de scroll. CSS escopado e mais robusto a futuras versoes do bslib.
+  - Adicionar `position: sticky` ao thead da tabela para manter o cabecalho fixo durante page-scroll — usuario pediu o comportamento default ("cabecalho no topo dos registros visiveis"), nao header pinado durante scroll de pagina. Sticky tambem briga com `overflow: hidden` em ancestrais e exige mudanca em multiplos pontos.
+  - Manter `scrollY` no Preview e adicionar mais offset para reservar espaco — qualquer valor fixo em `calc(100vh - Xpx)` quebra em telas pequenas (laptop 768p reserva so 228px com offset 540px, nao cabe nem 10 rows). Solucao baseada em pageLength dinamica nao existe nativamente no DT.
+
+- **Consequencias**:
+  - Wiki: tabela cresce com pageLength selecionada; pagina rola quando o conteudo extrapola; footer (info + paginacao) sempre acessivel; cabecalho azul no topo dos registros visiveis; scroll horizontal interno do `scrollX = TRUE` intacto.
+  - Preview: comportamento identico — tabela cresce com pageLength, pagina rola quando necessario, scroll horizontal interno funciona; usuario seleciona 10 e ve os 10 inteiros sem scroll interno parcial.
+  - Validate Names / Validate Coords: layout viewport-bound preservado (regra `:has()` so dispara para `.wiki-module` e `.preview-page`).
+  - Bundle: 11 `!important` (zero novos); 14 linhas adicionadas em `12-overrides.css`; 1 caractere alterado em `R/mod_preview.R` (a classe marker).
+  - **Anti-pattern documentado**: nao adicionar `!important` para "destravar" scrollbar quando a especificidade de seletor ja resolve. Nao adicionar `scrollY` ao DT como "fix" para falta de page-scroll — sao mecanismos ortogonais e mistura-los muda o contrato visivel da tabela.
