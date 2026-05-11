@@ -1287,12 +1287,13 @@
       "X-schema.org-isPartOf": "https://ropensci.org",
       "Config/pak/sysreqs": "libssl-dev",
       "Repository": "https://ropensci.r-universe.dev",
-      "RemoteUrl": "https://github.com/ropensci/crul",
-      "RemoteRef": "main",
-      "RemoteSha": "6e4ee16daaff28d842044bff979cf3dcd26263ae",
       "NeedsCompilation": "no",
       "Author": "Scott Chamberlain [aut, cre] (ORCID: <https://orcid.org/0000-0003-1444-9135>)",
-      "Maintainer": "Scott Chamberlain <myrmecocystus@gmail.com>"
+      "Maintainer": "Scott Chamberlain <myrmecocystus@gmail.com>",
+      "RemoteType": "repository",
+      "RemoteUrl": "https://github.com/ropensci/crul",
+      "RemoteRef": "main",
+      "RemoteSha": "6e4ee16daaff28d842044bff979cf3dcd26263ae"
     },
     "curl": {
       "Package": "curl",
@@ -3521,12 +3522,13 @@
       "RoxygenNote": "7.2.1",
       "Config/pak/sysreqs": "libicu-dev libxml2-dev libssl-dev",
       "Repository": "https://ropensci.r-universe.dev",
-      "RemoteUrl": "https://github.com/ropensci/oai",
-      "RemoteRef": "master",
-      "RemoteSha": "866af429d8cd4a97735c0efa1285fdde6cccf950",
       "NeedsCompilation": "no",
       "Author": "Scott Chamberlain [aut], Michal Bojanowski [aut, cre] (ORCID: <https://orcid.org/0000-0001-7503-852X>), National Science Centre [fnd] (Supported MB through grant 2012/07/D/HS6/01971, <https://ncn.gov.pl>)",
-      "Maintainer": "Michal Bojanowski <michal2992@gmail.com>"
+      "Maintainer": "Michal Bojanowski <michal2992@gmail.com>",
+      "RemoteType": "repository",
+      "RemoteUrl": "https://github.com/ropensci/oai",
+      "RemoteRef": "master",
+      "RemoteSha": "866af429d8cd4a97735c0efa1285fdde6cccf950"
     },
     "openssl": {
       "Package": "openssl",
@@ -4624,12 +4626,13 @@
       "X-schema.org-isPartOf": "https://ropensci.org",
       "Config/pak/sysreqs": "libicu-dev libxml2-dev libssl-dev",
       "Repository": "https://ropensci.r-universe.dev",
-      "RemoteUrl": "https://github.com/ropensci/rgbif",
-      "RemoteRef": "master",
-      "RemoteSha": "0485c20b4261b5b3160377cb8909fecd658445b2",
       "NeedsCompilation": "no",
       "Author": "Scott Chamberlain [aut] (0000-0003-1444-9135), Damiano Oldoni [aut] (0000-0003-3445-7562), Vijay Barve [ctb] (0000-0002-4852-2567), Peter Desmet [ctb] (0000-0002-8442-8025), Laurens Geffert [ctb], Dan Mcglinn [ctb] (0000-0003-2359-3526), Karthik Ram [ctb] (0000-0002-0233-1757), rOpenSci [fnd] (019jywm96), John Waller [aut, cre] (0000-0002-7302-5976)",
-      "Maintainer": "John Waller <jwaller@gbif.org>"
+      "Maintainer": "John Waller <jwaller@gbif.org>",
+      "RemoteType": "repository",
+      "RemoteUrl": "https://github.com/ropensci/rgbif",
+      "RemoteRef": "master",
+      "RemoteSha": "0485c20b4261b5b3160377cb8909fecd658445b2"
     },
     "rlang": {
       "Package": "rlang",
@@ -4784,12 +4787,13 @@
       "RoxygenNote": "7.3.3",
       "Config/pak/sysreqs": "libabsl-dev cmake libgdal-dev gdal-bin libgeos-dev libssl-dev libproj-dev libsqlite3-dev libudunits2-dev",
       "Repository": "https://ropensci.r-universe.dev",
-      "RemoteUrl": "https://github.com/ropensci/rnaturalearth",
-      "RemoteRef": "main",
-      "RemoteSha": "70d46b67a4027739ad1a3b3adf534174379488e7",
       "NeedsCompilation": "no",
       "Author": "Philippe Massicotte [aut, cre] (ORCID: <https://orcid.org/0000-0002-5919-4116>), Andy South [aut], Koen Hufkens [ctb] (ORCID: <https://orcid.org/0000-0002-5070-8109>)",
-      "Maintainer": "Philippe Massicotte <pmassicotte@hotmail.com>"
+      "Maintainer": "Philippe Massicotte <pmassicotte@hotmail.com>",
+      "RemoteType": "repository",
+      "RemoteUrl": "https://github.com/ropensci/rnaturalearth",
+      "RemoteRef": "main",
+      "RemoteSha": "70d46b67a4027739ad1a3b3adf534174379488e7"
     },
     "rnaturalearthdata": {
       "Package": "rnaturalearthdata",
@@ -4814,12 +4818,13 @@
       ],
       "RoxygenNote": "7.3.1",
       "Repository": "https://ropensci.r-universe.dev",
-      "RemoteUrl": "https://github.com/ropensci/rnaturalearthdata",
-      "RemoteRef": "main",
-      "RemoteSha": "ff4d891f74265473ae2c936dcfeb0c9afeac6631",
       "NeedsCompilation": "no",
       "Author": "Andy South [aut] (ORCID: <https://orcid.org/0000-0003-4051-6135>), Schramm Michael [aut], Philippe Massicotte [aut, cre] (ORCID: <https://orcid.org/0000-0002-5919-4116>)",
-      "Maintainer": "Philippe Massicotte <pmassicotte@hotmail.com>"
+      "Maintainer": "Philippe Massicotte <pmassicotte@hotmail.com>",
+      "RemoteType": "repository",
+      "RemoteUrl": "https://github.com/ropensci/rnaturalearthdata",
+      "RemoteRef": "main",
+      "RemoteSha": "ff4d891f74265473ae2c936dcfeb0c9afeac6631"
     },
     "rnaturalearthhires": {
       "Package": "rnaturalearthhires",
@@ -4842,12 +4847,13 @@
       "RoxygenNote": "7.3.1",
       "Encoding": "UTF-8",
       "Repository": "https://ropensci.r-universe.dev",
-      "RemoteUrl": "https://github.com/ropensci/rnaturalearthhires",
-      "RemoteRef": "main",
-      "RemoteSha": "e4736f636baa1c013d77d2ba028dd5bc334defee",
       "NeedsCompilation": "no",
       "Author": "Andy South [aut, cre] (ORCID: <https://orcid.org/0000-0003-4051-6135>), Schramm Michael [aut], Philippe Massicotte [aut] (ORCID: <https://orcid.org/0000-0002-5919-4116>)",
-      "Maintainer": "Andy South <southandy@gmail.com>"
+      "Maintainer": "Andy South <southandy@gmail.com>",
+      "RemoteType": "repository",
+      "RemoteUrl": "https://github.com/ropensci/rnaturalearthhires",
+      "RemoteRef": "main",
+      "RemoteSha": "e4736f636baa1c013d77d2ba028dd5bc334defee"
     },
     "roxygen2": {
       "Package": "roxygen2",
@@ -5639,12 +5645,13 @@
       "BugReports": "https://github.com/ropensci/taxadb/issues",
       "Config/pak/sysreqs": "make libicu-dev libssl-dev xz-utils",
       "Repository": "https://ropensci.r-universe.dev",
-      "RemoteUrl": "https://github.com/ropensci/taxadb",
-      "RemoteRef": "master",
-      "RemoteSha": "6c2023d7e11d9a189603bd98d4514d0f85891816",
       "NeedsCompilation": "no",
       "Author": "Carl Boettiger [aut, cre] (ORCID: <https://orcid.org/0000-0002-1642-628X>), Kari Norman [aut] (ORCID: <https://orcid.org/0000-0002-2029-2325>), Jorrit Poelen [aut] (ORCID: <https://orcid.org/0000-0003-3138-4118>), Scott Chamberlain [aut] (ORCID: <https://orcid.org/0000-0003-1444-9135>), Noam Ross [ctb] (ORCID: <https://orcid.org/0000-0002-2136-0000>), Mattia Ghilardi [ctb] (ORCID: <https://orcid.org/0000-0001-9592-7252>)",
-      "Maintainer": "Carl Boettiger <cboettig@gmail.com>"
+      "Maintainer": "Carl Boettiger <cboettig@gmail.com>",
+      "RemoteType": "repository",
+      "RemoteUrl": "https://github.com/ropensci/taxadb",
+      "RemoteRef": "master",
+      "RemoteSha": "6c2023d7e11d9a189603bd98d4514d0f85891816"
     },
     "terra": {
       "Package": "terra",
@@ -6560,6 +6567,33 @@
       "LazyData": "true",
       "NeedsCompilation": "yes",
       "Author": "Dewey Dunnington [aut, cre] (ORCID: <https://orcid.org/0000-0002-9415-4582>), Edzer Pebesma [aut] (ORCID: <https://orcid.org/0000-0001-8049-7069>), Anthony North [ctb]",
+      "Repository": "CRAN"
+    },
+    "writexl": {
+      "Package": "writexl",
+      "Version": "1.5.4",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Export Data Frames to Excel 'xlsx' Format",
+      "Authors@R": "c( person(\"Jeroen\", \"Ooms\", ,\"jeroenooms@gmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-4035-0289\")), person(\"John McNamara\", role = \"cph\", comment = \"Author of libxlsxwriter (see AUTHORS and COPYRIGHT files for details)\"))",
+      "Description": "Zero-dependency data frame to xlsx exporter based on 'libxlsxwriter' <https://libxlsxwriter.github.io>. Fast and no Java or Excel required.",
+      "License": "BSD_2_clause + file LICENSE",
+      "Encoding": "UTF-8",
+      "URL": "https://ropensci.r-universe.dev/writexl https://docs.ropensci.org/writexl/",
+      "BugReports": "https://github.com/ropensci/writexl/issues",
+      "RoxygenNote": "7.0.2",
+      "Suggests": [
+        "spelling",
+        "readxl",
+        "nycflights13",
+        "testthat",
+        "bit64"
+      ],
+      "Language": "en-US",
+      "SystemRequirements": "zlib",
+      "NeedsCompilation": "yes",
+      "Author": "Jeroen Ooms [aut, cre] (<https://orcid.org/0000-0002-4035-0289>), John McNamara [cph] (Author of libxlsxwriter (see AUTHORS and COPYRIGHT files for details))",
+      "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
       "Repository": "CRAN"
     },
     "xfun": {

@@ -47,7 +47,8 @@ testthat::test_that("mod_mapping_server exposes lightweight preview_data alongsi
                 c(
                     "processed_data_r", "preview_data_r",
                     "validation_gate_r", "validation_gate_coords_r",
-                    "rostrum_decisions_r", "rostrum_explain_r", "rostrum_run_stats_r"
+                    "rostrum_decisions_r", "rostrum_explain_r", "rostrum_run_stats_r",
+                    "map_values_r"
                 )
             )
 
@@ -198,6 +199,13 @@ testthat::test_that("validation gates stay in no_data when upstream raw_data_r i
 })
 
 testthat::test_that("v1 auto-map applies metadata and manual override becomes EDITADO", {
+    # Isolate from the user's real ~/.local/share/saira/rostrum.sqlite. Without
+    # this, aliases the developer accumulated during interactive testing leak
+    # into the test (the engine's alias-lookup hits them under user_id =
+    # "anonymous"), which can flip auto-map status to ALIAS and break the
+    # EDITADO assertion below.
+    withr::local_envvar(c(SAIRA_USER = paste0("test_isolation_", as.integer(Sys.time()))))
+
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis"),
         taxon_name = c("Leopardus geoffroyi", "Leopardus wiedii"),
@@ -561,6 +569,132 @@ testthat::test_that("engine stage-1 failure does not overwrite rv$rostrum_decisi
             session$flushReact()
 
             testthat::expect_identical(rv$rostrum_decisions, original_decisions)
+        }
+    )
+})
+
+testthat::test_that("dynamicProperties observer captures per-column key overrides and propagates to processed_data", {
+    df <- data.frame(
+        scientificName = c("Puma concolor", "Panthera onca"),
+        protectarea = c("yes", "no"),
+        protect_area_type = c("IV", "II"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+
+            # Map two columns to dynamicProperties
+            session$setInputs(map_dynamicProperties = c("protectarea", "protect_area_type"))
+            session$flushReact()
+
+            # Default: no overrides; processed_data uses auto-derived keys
+            full_df <- session$getReturned()$processed_data_r()
+            testthat::expect_true("dynamicProperties" %in% names(full_df))
+            testthat::expect_identical(
+                full_df$dynamicProperties[[1]],
+                "{\"protectarea\":\"yes\",\"protect_area_type\":\"IV\"}"
+            )
+
+            # User overrides the second column's key
+            session$setInputs(dynprops_key_protect_area_type = "type")
+            session$flushReact()
+
+            testthat::expect_identical(rv$dyn_props_keys[["protect_area_type"]], "type")
+
+            full_df2 <- session$getReturned()$processed_data_r()
+            testthat::expect_identical(
+                full_df2$dynamicProperties[[1]],
+                "{\"protectarea\":\"yes\",\"type\":\"IV\"}"
+            )
+
+            # Blanking the override returns to auto-derived
+            session$setInputs(dynprops_key_protect_area_type = "")
+            session$flushReact()
+
+            testthat::expect_null(rv$dyn_props_keys[["protect_area_type"]])
+
+            full_df3 <- session$getReturned()$processed_data_r()
+            testthat::expect_identical(
+                full_df3$dynamicProperties[[1]],
+                "{\"protectarea\":\"yes\",\"protect_area_type\":\"IV\"}"
+            )
+        }
+    )
+})
+
+testthat::test_that("dynamicProperties keys reset when raw_data_r changes", {
+    raw_data_state <- shiny::reactiveVal(data.frame(
+        protectarea = "yes",
+        stringsAsFactors = FALSE
+    ))
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(raw_data_state()),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(map_dynamicProperties = "protectarea")
+            session$setInputs(dynprops_key_protectarea = "custom_key")
+            session$flushReact()
+
+            testthat::expect_identical(rv$dyn_props_keys[["protectarea"]], "custom_key")
+
+            # Replace raw data + clear stale inputs (production: UI re-renders).
+            # The reset observer must clear rv$dyn_props_keys; the sync observer
+            # then sees no dyn props selected and leaves the empty list intact.
+            session$setInputs(
+                map_dynamicProperties = "",
+                dynprops_key_protectarea = ""
+            )
+            raw_data_state(data.frame(other = "x", stringsAsFactors = FALSE))
+            session$flushReact()
+
+            testthat::expect_identical(rv$dyn_props_keys, list())
+        }
+    )
+})
+
+# Bug A do hotfix (clear de mapping persistia no export). Observer agora
+# distingue `input = NULL` na carga inicial (rv$map_values era ""; no-op) de
+# `input = NULL` apos clear pelo usuario (rv$map_values tinha valor; vira "").
+testthat::test_that("clearing a previously-mapped field (selectInput devolve NULL) zera rv$map_values", {
+    withr::local_envvar(c(SAIRA_USER = paste0("test_isolation_", as.integer(Sys.time()))))
+
+    df <- data.frame(
+        Tipo = c("Espécime preservado", "Observação"),
+        Lat  = c("-15.5", "-16.2"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            # Setup: usuario seleciona "Tipo" para o termo `type`.
+            session$setInputs(map_type = "Tipo")
+            session$flushReact()
+            testthat::expect_identical(as.character(rv$map_values$type), "Tipo")
+
+            # Bug A repro: cliente limpa o select e devolve NULL ao servidor.
+            session$setInputs(map_type = NULL)
+            session$flushReact()
+
+            # Esperado pos-fix: rv$map_values$type virou "", meta = MANUAL.
+            testthat::expect_identical(as.character(rv$map_values$type), "")
+            testthat::expect_identical(rv$map_meta$type$status, "MANUAL")
         }
     )
 })

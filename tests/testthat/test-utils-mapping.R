@@ -46,6 +46,155 @@ testthat::test_that("collapse_mapped_values preserves token order and ignores co
     testthat::expect_identical(out[[3]], "X | Y")
 })
 
+testthat::test_that("derive_dynprops_key normalizes accents and special chars", {
+    testthat::expect_identical(saira:::derive_dynprops_key("Localidade"), "localidade")
+    testthat::expect_identical(saira:::derive_dynprops_key("ÁreaProtegida"), "areaprotegida")
+    testthat::expect_identical(saira:::derive_dynprops_key("tipo da área"), "tipo_da_area")
+    testthat::expect_identical(saira:::derive_dynprops_key("a__b___c"), "a_b_c")
+    testthat::expect_identical(saira:::derive_dynprops_key("--  --"), "field")
+    testthat::expect_identical(saira:::derive_dynprops_key(""), "field")
+    # Vectorized
+    testthat::expect_identical(
+        saira:::derive_dynprops_key(c("Foo", "Bar Baz")),
+        c("foo", "bar_baz")
+    )
+})
+
+testthat::test_that("json_escape_string handles all JSON escape categories", {
+    testthat::expect_identical(saira:::json_escape_string("hello"), "hello")
+    testthat::expect_identical(saira:::json_escape_string("a\"b"), "a\\\"b")
+    testthat::expect_identical(saira:::json_escape_string("a\\b"), "a\\\\b")
+    testthat::expect_identical(saira:::json_escape_string("a\nb"), "a\\nb")
+    testthat::expect_identical(saira:::json_escape_string("a\rb"), "a\\rb")
+    testthat::expect_identical(saira:::json_escape_string("a\tb"), "a\\tb")
+    testthat::expect_identical(saira:::json_escape_string("a\bb"), "a\\bb")
+    testthat::expect_identical(saira:::json_escape_string("a\fb"), "a\\fb")
+    # Other control char (BEL = 0x07) -> 
+    testthat::expect_identical(saira:::json_escape_string("a\007b"), "a\\u0007b")
+    testthat::expect_true(is.na(saira:::json_escape_string(NA_character_)))
+    # UTF-8 multi-byte preserved
+    testthat::expect_identical(saira:::json_escape_string("área"), "área")
+})
+
+testthat::test_that("build_dynamic_properties_json builds strict TDWG JSON", {
+    df <- data.frame(
+        protectarea = c("yes", "yes", "", NA),
+        protect_area_type = c("IV", "", NA, NA),
+        stringsAsFactors = FALSE
+    )
+
+    out <- build_dynamic_properties_json(df, c("protectarea", "protect_area_type"))
+
+    testthat::expect_identical(
+        out[[1]], "{\"protectarea\":\"yes\",\"protect_area_type\":\"IV\"}"
+    )
+    testthat::expect_identical(out[[2]], "{\"protectarea\":\"yes\"}")
+    # Both blank in row 3 and 4 -> empty string, NOT "{}"
+    testthat::expect_identical(out[[3]], "")
+    testthat::expect_identical(out[[4]], "")
+})
+
+testthat::test_that("build_dynamic_properties_json applies custom keys via override", {
+    df <- data.frame(
+        col_a = c("yes", "no"),
+        col_b = c("IV", "II"),
+        stringsAsFactors = FALSE
+    )
+    out <- build_dynamic_properties_json(
+        df, c("col_a", "col_b"),
+        keys = list(col_a = "protect_area", col_b = "protect_area_type")
+    )
+    testthat::expect_identical(
+        out[[1]],
+        "{\"protect_area\":\"yes\",\"protect_area_type\":\"IV\"}"
+    )
+})
+
+testthat::test_that("build_dynamic_properties_json single column also emits JSON, not raw", {
+    df <- data.frame(x = c("foo", "", NA), stringsAsFactors = FALSE)
+    out <- build_dynamic_properties_json(df, "x")
+    testthat::expect_identical(out[[1]], "{\"x\":\"foo\"}")
+    testthat::expect_identical(out[[2]], "")
+    testthat::expect_identical(out[[3]], "")
+})
+
+testthat::test_that("build_dynamic_properties_json escapes special characters in values", {
+    df <- data.frame(
+        note = c("she said \"hi\"", "line1\nline2", "back\\slash"),
+        stringsAsFactors = FALSE
+    )
+    out <- build_dynamic_properties_json(df, "note")
+    testthat::expect_identical(out[[1]], "{\"note\":\"she said \\\"hi\\\"\"}")
+    testthat::expect_identical(out[[2]], "{\"note\":\"line1\\nline2\"}")
+    testthat::expect_identical(out[[3]], "{\"note\":\"back\\\\slash\"}")
+})
+
+testthat::test_that("build_dynamic_properties_json warns on key collision and first wins", {
+    df <- data.frame(
+        `area-protegida` = "yes",
+        `area_protegida` = "no",
+        check.names = FALSE,
+        stringsAsFactors = FALSE
+    )
+    out <- testthat::expect_warning(
+        build_dynamic_properties_json(df, c("area-protegida", "area_protegida")),
+        regexp = "key collision"
+    )
+    # First column wins; second is dropped from row's JSON
+    testthat::expect_identical(out[[1]], "{\"area_protegida\":\"yes\"}")
+})
+
+testthat::test_that("build_dynamic_properties_json key override falls back to auto when invalid", {
+    df <- data.frame(x = "v", stringsAsFactors = FALSE)
+    # Override with double quote -> auto fallback
+    out <- build_dynamic_properties_json(
+        df, "x", keys = list(x = "bad\"key")
+    )
+    testthat::expect_identical(out[[1]], "{\"x\":\"v\"}")
+    # Override blank -> auto fallback
+    out2 <- build_dynamic_properties_json(df, "x", keys = list(x = "  "))
+    testthat::expect_identical(out2[[1]], "{\"x\":\"v\"}")
+})
+
+testthat::test_that("build_dynamic_properties_json errors on missing column", {
+    df <- data.frame(a = "x", stringsAsFactors = FALSE)
+    testthat::expect_error(
+        build_dynamic_properties_json(df, c("a", "missing")),
+        regexp = "Columns not found"
+    )
+})
+
+testthat::test_that("build_processed_mapping_df dispatches dynamicProperties before single-column branch", {
+    df <- data.frame(
+        a = c("yes", "yes", ""),
+        b = c("IV", "", NA),
+        stringsAsFactors = FALSE
+    )
+    dwc <- list(
+        list(term = "dynamicProperties", category = "Record-level",
+             desc = "", sep = "", required = FALSE)
+    )
+    # Single column should still emit JSON, not the raw value
+    res <- build_processed_mapping_df(
+        df = df, dwc_terms = dwc,
+        map_values = list(dynamicProperties = "a"),
+        occurrence_ids = c("u1", "u2", "u3")
+    )
+    testthat::expect_identical(res$data$dynamicProperties[[1]], "{\"a\":\"yes\"}")
+    # Multi-column with override propagates through dispatch
+    res2 <- build_processed_mapping_df(
+        df = df, dwc_terms = dwc,
+        map_values = list(dynamicProperties = c("a", "b")),
+        occurrence_ids = c("u1", "u2", "u3"),
+        dyn_props_keys = list(a = "protect", b = "type")
+    )
+    testthat::expect_identical(
+        res2$data$dynamicProperties[[1]],
+        "{\"protect\":\"yes\",\"type\":\"IV\"}"
+    )
+    testthat::expect_identical(res2$data$dynamicProperties[[3]], "")
+})
+
 testthat::test_that("detect_eventdate_roles uses heuristics and falls back to selected order", {
     by_name <- detect_eventdate_roles(c("COL_START_MO", "COL_START_YR", "COL_END_MO", "COL_END_YR"))
     testthat::expect_identical(by_name$start_month, 1L)
@@ -571,4 +720,63 @@ testthat::test_that("build_processed_mapping_df enforces single mapped value for
         c("HumanObservation", "HumanObservation", "", "")
     )
     testthat::expect_false(any(grepl("\\|", out$basisOfRecord)))
+})
+
+testthat::test_that("map_occurrence_status_values converts 0/1 and common variants to DwC literals", {
+    inputs <- c("0", "1", "Sim", "Nao", "Não", "yes", "NO", "TRUE", "false",
+                "presente", "ausente", "other", "", NA_character_)
+
+    expected <- c("absent", "present", "present", "absent", "absent",
+                  "present", "absent", "present", "absent",
+                  "present", "absent", "other",
+                  NA_character_, NA_character_)
+
+    testthat::expect_identical(
+        map_occurrence_status_values(inputs),
+        expected
+    )
+})
+
+testthat::test_that("map_occurrence_status_values handles numeric and logical input types", {
+    testthat::expect_identical(
+        map_occurrence_status_values(c(1, 0, 1, NA_real_)),
+        c("present", "absent", "present", NA_character_)
+    )
+    testthat::expect_identical(
+        map_occurrence_status_values(c(TRUE, FALSE, NA, TRUE)),
+        c("present", "absent", NA_character_, "present")
+    )
+    testthat::expect_identical(
+        map_occurrence_status_values(NULL),
+        character(0)
+    )
+})
+
+testthat::test_that("build_processed_mapping_df transforms occurrenceStatus values to present/absent", {
+    df <- data.frame(
+        flag_col = c("1", "0", "Sim", "presente", "other", NA_character_),
+        stringsAsFactors = FALSE
+    )
+
+    dwc_terms <- list(
+        list(term = "occurrenceID"),
+        list(term = "occurrenceStatus")
+    )
+
+    map_values <- empty_map_values(vapply(dwc_terms, function(item) item$term, FUN.VALUE = character(1)))
+    map_values$occurrenceStatus <- "flag_col"
+
+    result <- build_processed_mapping_df(
+        df = df,
+        dwc_terms = dwc_terms,
+        map_values = map_values,
+        occurrence_ids = c("id-1", "id-2", "id-3", "id-4", "id-5", "id-6")
+    )
+
+    out <- result$data
+    testthat::expect_true("occurrenceStatus" %in% names(out))
+    testthat::expect_identical(
+        out$occurrenceStatus,
+        c("present", "absent", "present", "present", "other", "")
+    )
 })

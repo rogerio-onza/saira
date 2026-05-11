@@ -45,6 +45,12 @@ mod_mapping_ui <- function(id) {
                 class = "btn-outline-secondary w-100 mb-2",
                 icon = shiny::icon("plus")
             ),
+            shiny::actionButton(
+                ns("import_template"),
+                shiny::uiOutput(ns("btn_import_template_label"), inline = TRUE),
+                class = "btn-outline-secondary w-100 mb-2",
+                icon = shiny::icon("file-import")
+            ),
             shiny::hr(),
             shiny::uiOutput(ns("sidebar_filters_label")),
             shiny::checkboxInput(
@@ -153,7 +159,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             automap_progress = 0L,
             automap_phrase_idx = 1L,
             automap_phrase_order = integer(0),
-            ambiguity_queue = list()
+            ambiguity_queue = list(),
+            dyn_props_keys = list()
         )
 
         # SQLite connection for alias and template persistence
@@ -604,6 +611,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 rv$ambiguity_queue <- list()
                 rv$rostrum_decisions <- NULL
                 rv$rostrum_run_stats <- list()
+                rv$dyn_props_keys <- list()
                 reset_basis_of_record_state(rv)
             },
             ignoreNULL = TRUE
@@ -617,7 +625,18 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 input_id <- paste0("map_", term)
                 input_value <- input[[input_id]]
                 if (is.null(input_value)) {
-                    next
+                    # NULL pode significar: (a) input ainda nao renderizado
+                    # (carga inicial — nao devemos sobrescrever map_values com
+                    # ""), ou (b) usuario limpou um selectInput que estava
+                    # setado (input devolve NULL, nao ""). Distinguimos pelo
+                    # valor atual em rv$map_values: se ja era vazio, no-op;
+                    # se tinha valor, o usuario limpou — escrevemos "".
+                    old_value_isolated <- shiny::isolate(rv$map_values[[term]])
+                    if (is.null(old_value_isolated) ||
+                        !nzchar(trimws(as.character(old_value_isolated)[[1]]))) {
+                        next
+                    }
+                    input_value <- ""
                 }
 
                 sanitized <- sanitize_map_selection(term, input_value)
@@ -680,6 +699,41 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                         }
                     }
                 }
+            }
+        })
+
+        # Sync dynamicProperties per-column JSON key overrides.
+        # Depends reactively on (a) selected columns and (b) each per-column
+        # textInput. Pruning of stale entries happens automatically because
+        # only currently-selected columns contribute to new_keys.
+        shiny::observe({
+            if (isTRUE(rv$is_programmatic_update)) {
+                return(invisible(NULL))
+            }
+            selected_cols <- rv$map_values[["dynamicProperties"]]
+            if (is.null(selected_cols)) {
+                selected_cols <- character(0)
+            }
+            selected_cols <- as.character(selected_cols)
+            selected_cols <- selected_cols[nzchar(selected_cols)]
+
+            new_keys <- list()
+            for (col_name in selected_cols) {
+                input_id <- paste0("dynprops_key_", make.names(col_name))
+                raw_value <- input[[input_id]]
+                if (is.null(raw_value)) {
+                    next
+                }
+                trimmed <- trimws(as.character(raw_value))
+                if (!nzchar(trimmed)) {
+                    next
+                }
+                new_keys[[col_name]] <- trimmed
+            }
+
+            current_keys <- shiny::isolate(rv$dyn_props_keys)
+            if (!identical(current_keys, new_keys)) {
+                rv$dyn_props_keys <- new_keys
             }
         })
 
@@ -900,19 +954,129 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             tr("btn_add_term", lang_r())
         })
 
+        # Import mapping template button label (ADR-087: round-trip via aliases)
+        output$btn_import_template_label <- shiny::renderUI({
+            tr("btn_import_template", lang_r())
+        })
+
+        # "Import mapping template" modal — ADR-087.
+        # Opens a modal with a fileInput for the .txt mapping_guide produced
+        # by the export bundle. On confirm, parses + populates rostrum_aliases
+        # via import_mapping_guide_to_aliases().
+        shiny::observeEvent(input$import_template, {
+            shiny::showModal(shiny::modalDialog(
+                title = tr("modal_import_template_title", lang_r()),
+                shiny::p(
+                    class = "mb-3",
+                    tr("modal_import_template_help", lang_r())
+                ),
+                shiny::fileInput(
+                    inputId = ns("import_template_file"),
+                    label = tr("modal_import_template_label", lang_r()),
+                    accept = c(".txt", "text/plain"),
+                    buttonLabel = shiny::icon("upload", class = "fa-solid"),
+                    placeholder = ""
+                ),
+                footer = shiny::tagList(
+                    shiny::modalButton(tr("btn_cancel", lang_r())),
+                    shiny::actionButton(
+                        ns("confirm_import_template"),
+                        tr("modal_import_template_confirm", lang_r()),
+                        class = "btn-primary"
+                    )
+                ),
+                easyClose = TRUE
+            ))
+        })
+
+        shiny::observeEvent(input$confirm_import_template, {
+            f <- input$import_template_file
+            if (is.null(f) || !nzchar(f$datapath)) {
+                shiny::showNotification(
+                    tr("modal_import_template_no_file", lang_r()),
+                    type = "warning",
+                    duration = 5
+                )
+                return(invisible(NULL))
+            }
+
+            if (!is_saira_mapping_guide(f$datapath)) {
+                shiny::showNotification(
+                    tr("modal_import_template_invalid_magic", lang_r()),
+                    type = "error",
+                    duration = 8
+                )
+                return(invisible(NULL))
+            }
+
+            payload <- tryCatch(
+                parse_mapping_guide_txt(f$datapath),
+                error = function(e) e
+            )
+            if (inherits(payload, "error")) {
+                shiny::showNotification(
+                    sprintf(tr("upload_guide_invalid", lang_r()), conditionMessage(payload)),
+                    type = "error",
+                    duration = 8
+                )
+                return(invisible(NULL))
+            }
+
+            n_imported <- tryCatch(
+                import_mapping_guide_to_aliases(payload),
+                error = function(e) e
+            )
+            if (inherits(n_imported, "error")) {
+                shiny::showNotification(
+                    sprintf(tr("upload_guide_failed", lang_r()), conditionMessage(n_imported)),
+                    type = "error",
+                    duration = 10
+                )
+                return(invisible(NULL))
+            }
+
+            shiny::removeModal()
+            shiny::showNotification(
+                sprintf(tr("modal_import_template_success", lang_r()), as.integer(n_imported)),
+                type = "message",
+                duration = 8
+            )
+        }, ignoreInit = TRUE)
+
         # "Add term" modal
         shiny::observeEvent(input$add_term, {
             full_catalog <- get_dwc_full_catalog()
             active       <- all_term_names()
             available    <- full_catalog[!full_catalog$term %in% active, , drop = FALSE]
 
-            choices <- stats::setNames(
-                available$term,
-                paste0(available$term, " [", available$class, "]")
+            # Group choices by DwC class for selectize <optgroup> rendering.
+            # Shiny converts a named list of named character vectors into
+            # <optgroup label="..."> blocks natively (>= 1.7).
+            class_order <- c(
+                "Record-level", "Occurrence", "Organism", "MaterialEntity",
+                "MaterialSample", "Event", "Location", "GeologicalContext",
+                "Identification", "Taxon", "MeasurementOrFact",
+                "ResourceRelationship"
+            )
+            classes_present <- unique(available$class)
+            classes_ordered <- c(
+                intersect(class_order, classes_present),
+                setdiff(classes_present, class_order)
+            )
+
+            choices <- lapply(classes_ordered, function(cls) {
+                rows <- available[available$class == cls, , drop = FALSE]
+                rows <- rows[order(rows$term), , drop = FALSE]
+                stats::setNames(rows$term, rows$term)
+            })
+            names(choices) <- vapply(
+                classes_ordered, category_label,
+                FUN.VALUE = character(1), USE.NAMES = FALSE
             )
 
             shiny::showModal(shiny::modalDialog(
                 title  = tr("modal_add_term_title", lang_r()),
+                size   = "l",
                 shiny::selectizeInput(
                     ns("add_term_select"),
                     tr("modal_add_term_label", lang_r()),
@@ -1290,7 +1454,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 custom_language = input$custom_language,
                 basis_of_record_map = rv$basis_of_record_map,
                 now_utc = Sys.time(),
-                out_sep = " | "
+                out_sep = " | ",
+                dyn_props_keys = rv$dyn_props_keys
             )
         }
 
@@ -1445,7 +1610,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             validation_gate_coords_r = coord_validation_gate_r,
             rostrum_decisions_r      = shiny::reactive(rv$rostrum_decisions),
             rostrum_explain_r        = shiny::reactive(rv$map_meta),
-            rostrum_run_stats_r      = shiny::reactive(rv$rostrum_run_stats)
+            rostrum_run_stats_r      = shiny::reactive(rv$rostrum_run_stats),
+            map_values_r             = shiny::reactive(rv$map_values)
         ))
     })
 }

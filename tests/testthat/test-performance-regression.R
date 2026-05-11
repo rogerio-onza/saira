@@ -136,3 +136,25 @@ testthat::test_that("Performance regression: full pipeline stays under 8s", {
 
     testthat::expect_lt(elapsed, 8)
 })
+
+testthat::test_that("Performance regression: dynamicProperties JSON over 100k x 4 cols < 0.5s", {
+    set.seed(20260508L)
+    n <- 100000L
+    df <- data.frame(
+        protectarea = sample(c("yes", "no", "", NA), n, replace = TRUE),
+        protect_area_type = sample(c("I", "II", "III", "IV", "V", "", NA), n, replace = TRUE),
+        managing_authority = sample(c("Federal", "State", "Municipal", "", NA), n, replace = TRUE),
+        habitat = sample(c("forest", "grassland", "wetland", "", NA), n, replace = TRUE),
+        stringsAsFactors = FALSE
+    )
+
+    elapsed <- unname(system.time({
+        out <- saira:::build_dynamic_properties_json(
+            df,
+            cols = c("protectarea", "protect_area_type", "managing_authority", "habitat")
+        )
+    })[["elapsed"]])
+
+    testthat::expect_length(out, n)
+    testthat::expect_lt(elapsed, 0.5)
+})

@@ -45,7 +45,7 @@ mod_upload_ui <- function(id) {
                                     shiny::fileInput(
                                         inputId = ns("file"),
                                         label = shiny::tags$span(tr("a11y_upload_file_label", "pt"), class = "visually-hidden"),
-                                        accept = c(".csv", "text/csv"),
+                                        accept = c(".csv", "text/csv", ".txt", "text/plain"),
                                         buttonLabel = shiny::icon("upload", class = "fa-solid"),
                                         placeholder = ""
                                     )
@@ -350,31 +350,44 @@ mod_upload_server <- function(id, lang_r) {
             )
         })
 
-        # File Upload Logic
+        # ADR-087: classify the upload as data CSV or Saira mapping guide.
+        # Reactive depends only on input$file; called at most once per upload.
+        file_kind <- shiny::reactive({
+            shiny::req(input$file)
+            ext <- tolower(tools::file_ext(input$file$name))
+            if (!ext %in% c("csv", "txt")) return("invalid")
+            if (is_saira_mapping_guide(input$file$datapath)) return("guide")
+            if (ext == "txt") return("invalid")  # .txt without magic = bogus
+            "data"
+        })
+
+        # File Upload Logic — only loads data for CSVs. Guides are handled
+        # by the observers below (modal + alias import), and produce NULL
+        # so downstream req(raw_data()) keeps the app in "no data" state
+        # until the user uploads a real planilha.
         raw_data <- shiny::reactive({
             shiny::req(input$file)
 
-            # Validate file extension
-            ext <- tools::file_ext(input$file$name)
-            shiny::validate(
-                shiny::need(
-                    tolower(ext) == "csv",
-                    tr("err_invalid_format", lang_r())
+            kind <- file_kind()
+            if (identical(kind, "invalid")) {
+                shiny::validate(
+                    shiny::need(FALSE, tr("err_invalid_format", lang_r()))
                 )
-            )
+            }
+            if (identical(kind, "guide")) {
+                # The guide flow handles its own UI (modal + import).
+                # Return NULL so raw_data behaves as "nothing uploaded yet".
+                return(NULL)
+            }
 
-            # Read file using utility function
             tryCatch(
                 {
                     df <- read_biodiversity_csv(input$file$datapath)
-
-                    # Show success notification
                     shiny::showNotification(
                         tr("success_upload", lang_r()),
                         type = "message",
                         duration = 3
                     )
-
                     return(df)
                 },
                 error = function(e) {
@@ -387,6 +400,78 @@ mod_upload_server <- function(id, lang_r) {
                 }
             )
         })
+
+        # ADR-087: when a Saira mapping guide is uploaded, parse it and ask
+        # the user whether to import its (col -> term) pairs as personal
+        # aliases in the local rostrum.sqlite. The actual import runs on
+        # the confirmation observer below.
+        guide_payload_rv <- shiny::reactiveVal(NULL)
+
+        shiny::observeEvent(file_kind(), {
+            if (!identical(file_kind(), "guide")) {
+                guide_payload_rv(NULL)
+                return(invisible(NULL))
+            }
+
+            payload <- tryCatch(
+                parse_mapping_guide_txt(input$file$datapath),
+                error = function(e) e
+            )
+            if (inherits(payload, "error")) {
+                guide_payload_rv(NULL)
+                shiny::showNotification(
+                    sprintf(tr("upload_guide_invalid", lang_r()), conditionMessage(payload)),
+                    type = "error",
+                    duration = 8
+                )
+                return(invisible(NULL))
+            }
+
+            n_pairs <- if (is.data.frame(payload$pairs)) nrow(payload$pairs) else 0L
+            guide_payload_rv(payload)
+
+            shiny::showModal(shiny::modalDialog(
+                title = tr("upload_guide_detected_title", lang_r()),
+                shiny::p(
+                    sprintf(tr("upload_guide_detected_message", lang_r()), n_pairs)
+                ),
+                easyClose = TRUE,
+                footer = shiny::tagList(
+                    shiny::modalButton(tr("upload_guide_cancel_btn", lang_r())),
+                    shiny::actionButton(
+                        ns("confirm_guide_import"),
+                        tr("upload_guide_import_btn", lang_r()),
+                        class = "btn-primary"
+                    )
+                )
+            ))
+        }, ignoreInit = TRUE)
+
+        shiny::observeEvent(input$confirm_guide_import, {
+            payload <- guide_payload_rv()
+            shiny::removeModal()
+            if (is.null(payload)) return(invisible(NULL))
+
+            n_imported <- tryCatch(
+                import_mapping_guide_to_aliases(payload),
+                error = function(e) e
+            )
+            if (inherits(n_imported, "error")) {
+                shiny::showNotification(
+                    sprintf(tr("upload_guide_failed", lang_r()), conditionMessage(n_imported)),
+                    type = "error",
+                    duration = 10
+                )
+                return(invisible(NULL))
+            }
+
+            guide_payload_rv(NULL)
+            shiny::showNotification(
+                sprintf(tr("upload_guide_success", lang_r()), as.integer(n_imported)),
+                type = "message",
+                duration = 8
+            )
+        }, ignoreInit = TRUE)
 
         # Display stats after upload
         output$stats <- shiny::renderUI({

@@ -1651,6 +1651,157 @@ collapse_mapped_values <- function(df, cols, out_sep = " | ") {
     )
 }
 
+#' Escape a character vector for embedding inside JSON double-quoted strings
+#'
+#' Implements the strict JSON string escape table (RFC 8259). UTF-8 multi-byte
+#' sequences are preserved as-is (legal in JSON). NA values are passed through.
+#'
+#' @param x Character vector.
+#' @return Character vector of the same length with JSON-safe contents.
+#' @keywords internal
+#' @noRd
+json_escape_string <- function(x) {
+    x <- as.character(x)
+    out <- x
+    # Fast path: skip per-class gsub when no character in any element needs
+    # escaping. Cheap single grepl is faster than running every gsub blindly.
+    if (any(grepl("[\\\\\"\x01-\x1f]", out, perl = TRUE), na.rm = TRUE)) {
+        out <- gsub("\\\\", "\\\\\\\\", out, perl = TRUE)
+        out <- gsub("\"", "\\\\\"", out, perl = TRUE)
+        out <- gsub("\b", "\\b", out, fixed = TRUE)
+        out <- gsub("\f", "\\f", out, fixed = TRUE)
+        out <- gsub("\n", "\\n", out, fixed = TRUE)
+        out <- gsub("\r", "\\r", out, fixed = TRUE)
+        out <- gsub("\t", "\\t", out, fixed = TRUE)
+        has_other_ctrl <- grepl("[\x01-\x07\x0b\x0e-\x1f]", out, perl = TRUE)
+        if (any(has_other_ctrl, na.rm = TRUE)) {
+            idx <- which(has_other_ctrl)
+            out[idx] <- vapply(out[idx], function(s) {
+                chars <- strsplit(s, "", fixed = TRUE)[[1]]
+                codes <- utf8ToInt(s)
+                ctrl <- which(codes < 32 & !(codes %in% c(8, 9, 10, 12, 13)))
+                chars[ctrl] <- sprintf("\\u%04x", codes[ctrl])
+                paste(chars, collapse = "")
+            }, character(1), USE.NAMES = FALSE)
+        }
+    }
+    out[is.na(x)] <- NA_character_
+    out
+}
+
+#' Derive a JSON-safe key from a source column name
+#'
+#' Lowercases, transliterates accents to ASCII via iconv, replaces any run of
+#' non-alphanumeric characters with a single underscore, trims leading/trailing
+#' underscores, and falls back to "field" if the result is empty.
+#'
+#' @param column_name Character vector of column names.
+#' @return Character vector of normalized JSON keys, same length as input.
+#' @keywords internal
+#' @noRd
+derive_dynprops_key <- function(column_name) {
+    x <- tolower(as.character(column_name))
+    translit <- iconv(x, to = "ASCII//TRANSLIT")
+    has_translit <- !is.na(translit)
+    x[has_translit] <- translit[has_translit]
+    x <- gsub("[^a-z0-9]+", "_", x, perl = TRUE)
+    x <- gsub("_+", "_", x, perl = TRUE)
+    x <- gsub("^_|_$", "", x, perl = TRUE)
+    x[!nzchar(x)] <- "field"
+    x
+}
+
+#' Compose dynamicProperties JSON from one or more source columns
+#'
+#' Builds a strict TDWG-compatible JSON object per row of the form
+#' `{"key1":"value1","key2":"value2"}` (no whitespace). Blank cells are
+#' omitted from that row's JSON. A row in which every selected column is
+#' blank produces an empty string `""` (not `"{}"`).
+#'
+#' @param df Data frame containing the source columns.
+#' @param cols Character vector of source column names (length >= 1).
+#' @param keys Optional named character vector (or list) mapping
+#'   `cols[i]` to a user-overridden JSON key. Entries that are NULL,
+#'   NA, blank, or contain a literal double-quote are ignored and the
+#'   key is auto-derived via [derive_dynprops_key()].
+#' @return Character vector of length `nrow(df)`.
+#' @keywords internal
+#' @noRd
+build_dynamic_properties_json <- function(df, cols, keys = NULL) {
+    if (length(cols) == 0) {
+        return(rep("", nrow(df)))
+    }
+
+    missing_cols <- setdiff(cols, names(df))
+    if (length(missing_cols) > 0) {
+        stop("Columns not found in data frame: ", paste(missing_cols, collapse = ", "))
+    }
+
+    key_overrides <- if (is.null(keys)) list() else as.list(keys)
+
+    resolved_keys <- vapply(cols, function(col_name) {
+        override <- key_overrides[[col_name]]
+        if (!is.null(override) && length(override) == 1L) {
+            override_str <- as.character(override)
+            if (!is.na(override_str) && nzchar(trimws(override_str)) &&
+                !grepl("\"", override_str, fixed = TRUE)) {
+                return(trimws(override_str))
+            }
+        }
+        derive_dynprops_key(col_name)
+    }, character(1), USE.NAMES = FALSE)
+
+    dup_mask <- duplicated(resolved_keys)
+    if (any(dup_mask)) {
+        collisions <- unique(resolved_keys[dup_mask])
+        details <- vapply(collisions, function(k) {
+            paste0("'", k, "' <- ", paste(cols[resolved_keys == k], collapse = ", "))
+        }, character(1), USE.NAMES = FALSE)
+        warning(
+            "build_dynamic_properties_json: key collision after normalization. ",
+            "First column wins; later duplicates dropped. Conflicts: ",
+            paste(details, collapse = "; ")
+        )
+        keep_idx <- which(!dup_mask)
+        cols <- cols[keep_idx]
+        resolved_keys <- resolved_keys[keep_idx]
+    }
+
+    n <- nrow(df)
+    if (n == 0L) {
+        return(character(0))
+    }
+
+    n_cols <- length(cols)
+
+    # Vectorized row build: per column, pre-format `"key":"value"` strings,
+    # mark blank cells with "" (sentinel). Join columns with a control-char
+    # sentinel \x01, then strip empty pieces and surrounding sentinels via
+    # regex, swap the sentinel for ',', and wrap non-empty rows in {...}.
+    sentinel <- "\x01"
+    parts_per_col <- vector("list", n_cols)
+    for (j in seq_len(n_cols)) {
+        v <- df[[cols[[j]]]]
+        blank <- is.na(v) | !nzchar(trimws(as.character(v)))
+        escaped <- json_escape_string(v)
+        piece <- paste0("\"", resolved_keys[[j]], "\":\"", escaped, "\"")
+        piece[blank] <- ""
+        parts_per_col[[j]] <- piece
+    }
+
+    joined <- do.call(paste, c(parts_per_col, list(sep = sentinel)))
+    joined <- gsub(paste0(sentinel, "+"), sentinel, joined, perl = TRUE)
+    joined <- gsub(
+        paste0("^", sentinel, "|", sentinel, "$"), "", joined, perl = TRUE
+    )
+    joined <- gsub(sentinel, ",", joined, fixed = TRUE)
+
+    out <- character(n)
+    keep <- nzchar(joined)
+    out[keep] <- paste0("{", joined[keep], "}")
+    out
+}
+
 detect_eventdate_roles <- function(col_names) {
     normalized_names <- normalize_for_matching(col_names)
     used_env <- new.env(parent = emptyenv())
@@ -1811,6 +1962,33 @@ build_eventdate_interval <- function(df, cols, fallback_raw = TRUE) {
     )
 }
 
+#' Map raw values to DwC occurrenceStatus literals
+#'
+#' Coerces common presence/absence representations (0/1, sim/nao, yes/no,
+#' presente/ausente, present/absent, TRUE/FALSE) to canonical DwC values
+#' "present" or "absent" for export. Convention: 0 = absent, 1 = present.
+#' Unrecognized non-empty values pass through after trim. NA / empty stay NA.
+#'
+#' @param raw_values Character/numeric/logical vector from the source column.
+#' @return Character vector of the same length.
+#' @export
+map_occurrence_status_values <- function(raw_values) {
+    if (is.null(raw_values)) return(character(0))
+    x <- trimws(as.character(raw_values))
+    out <- x
+    norm <- tolower(x)
+
+    present_set <- c("1", "present", "presente", "yes", "y", "sim", "s", "true", "t")
+    absent_set  <- c("0", "absent", "ausente", "no", "n", "nao", "não", "false", "f")
+
+    out[norm %in% present_set] <- "present"
+    out[norm %in% absent_set]  <- "absent"
+
+    na_mask <- is.na(raw_values) | !nzchar(x)
+    out[na_mask] <- NA_character_
+    out
+}
+
 build_processed_mapping_df <- function(
   df,
   dwc_terms,
@@ -1823,7 +2001,8 @@ build_processed_mapping_df <- function(
   custom_language = NULL,
   basis_of_record_map = NULL,
   now_utc = Sys.time(),
-  out_sep = " | "
+  out_sep = " | ",
+  dyn_props_keys = list()
 ) {
     if (length(occurrence_ids) != nrow(df)) {
         stop("occurrence_ids must have the same length as nrow(df).")
@@ -1894,6 +2073,16 @@ build_processed_mapping_df <- function(
             df_final[[term]] <- map_basis_of_record_values(
                 raw_values = df[[user_cols[[1]]]],
                 basis_of_record_map = basis_of_record_map
+            )
+        } else if (term == "occurrenceStatus") {
+            df_final[[term]] <- map_occurrence_status_values(
+                df[[user_cols[[1]]]]
+            )
+        } else if (term == "dynamicProperties") {
+            df_final[[term]] <- build_dynamic_properties_json(
+                df = df,
+                cols = user_cols,
+                keys = dyn_props_keys
             )
         } else if (term == "eventDate" && length(user_cols) == 4) {
             event_result <- build_eventdate_interval(

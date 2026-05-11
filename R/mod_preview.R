@@ -38,9 +38,17 @@ mod_preview_ui <- function(id) {
 #' @param lang_r Reactive language value
 #' @param download_data_r Reactive data frame with full mapped data for download
 #' @param name_review_payload_r Optional reactive payload from name manual review
+#' @param raw_data_r Optional reactive with the original uploaded data.frame
+#'   (for ZIP bundle: appending non-mapped raw cols and the mapping_guide.txt).
+#' @param map_values_r Optional reactive with the current mapping list
+#'   (DwC term -> source column(s)). Required for the mapping_guide.txt.
 #' @return Reactive preview data frame
 #' @export
-mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapped_data_r, name_review_payload_r = NULL) {
+mod_preview_server <- function(id, mapped_data_r, lang_r,
+                               download_data_r = mapped_data_r,
+                               name_review_payload_r = NULL,
+                               raw_data_r = NULL,
+                               map_values_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         required_fields <- c(
@@ -458,7 +466,11 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
                     )
                 ),
                 easyClose = FALSE,
-                footer = NULL,
+                footer = shiny::actionButton(
+                    ns("export_modal_cancel"),
+                    tr("preview_export_cancel", lang_r()),
+                    class = "btn btn-outline-secondary"
+                ),
                 fade = TRUE
             ))
         }
@@ -488,6 +500,22 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
             session$sendCustomMessage(
                 download_click_channel,
                 list(id = ns("download_real"))
+            )
+        }, ignoreInit = TRUE)
+
+        # Manual escape from the loading modal. ADR-009 requires
+        # easyClose = FALSE on the loading modal (no accidental dismiss).
+        # This explicit Cancel button restores user control without
+        # weakening that guarantee. The R-side download callback (if
+        # already running) will still complete eventually; resetting
+        # is_exporting here is safe because the finally block in
+        # downloadHandler also sets it to FALSE (idempotent).
+        shiny::observeEvent(input$export_modal_cancel, {
+            shiny::removeModal()
+            is_exporting(FALSE)
+            shiny::showNotification(
+                tr("preview_export_cancelled", lang_r()),
+                type = "warning"
             )
         }, ignoreInit = TRUE)
 
@@ -646,7 +674,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
 
         output$download_real <- shiny::downloadHandler(
             filename = function() {
-                paste0("dwc_export_", Sys.Date(), ".csv")
+                paste0("dwc_export_", Sys.Date(), ".zip")
             },
             content = function(file) {
                 shiny::req(download_data())
@@ -670,8 +698,46 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
                             download_data(),
                             payload = export_name_review_payload()
                         )
-                        full_data <- process_for_export(review_ready)
-                        readr::write_csv(full_data, file, na = "")
+
+                        raw_df <- if (!is.null(raw_data_r) && shiny::is.reactive(raw_data_r)) {
+                            tryCatch(raw_data_r(), error = function(e) data.frame())
+                        } else {
+                            data.frame()
+                        }
+                        mv <- if (!is.null(map_values_r) && shiny::is.reactive(map_values_r)) {
+                            tryCatch(map_values_r(), error = function(e) list())
+                        } else {
+                            list()
+                        }
+
+                        full_data <- process_for_export_with_unmapped(
+                            review_ready,
+                            raw_data = raw_df,
+                            map_values = mv
+                        )
+
+                        ts <- format(Sys.Date(), "%Y-%m-%d")
+                        tmpdir <- tempfile("saira_export_")
+                        dir.create(tmpdir, showWarnings = FALSE, recursive = TRUE)
+                        on.exit(unlink(tmpdir, recursive = TRUE), add = TRUE)
+
+                        csv_path   <- file.path(tmpdir, paste0("dwc_export_", ts, ".csv"))
+                        xlsx_path  <- file.path(tmpdir, paste0("dwc_export_", ts, ".xlsx"))
+                        guide_path <- file.path(tmpdir, paste0("mapping_guide_", ts, ".txt"))
+
+                        readr::write_csv(full_data, csv_path, na = "")
+                        write_xlsx_text_only(full_data, xlsx_path)
+                        writeLines(
+                            build_mapping_guide_txt(mv, raw_df, lang = lang_r()),
+                            guide_path,
+                            useBytes = TRUE
+                        )
+
+                        zip::zipr(
+                            zipfile = file,
+                            files = c(csv_path, xlsx_path, guide_path)
+                        )
+
                         session$sendCustomMessage(download_finish_channel, finish_payload)
                         shiny::showNotification(
                             tr("success_download", lang_r()),
@@ -684,10 +750,31 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
                         fail_payload$final_phrase <- tr("preview_export_failed_phrase", lang_r())
                         session$sendCustomMessage(download_finish_channel, fail_payload)
                         shiny::showNotification(
-                            sprintf(tr("preview_download_failed", lang_r()), e$message),
-                            type = "error"
+                            sprintf(tr("preview_download_failed", lang_r()), conditionMessage(e)),
+                            type = "error",
+                            duration = 15
                         )
-                        stop(e)
+                        # Do not call stop(e): Shiny would serve its 500
+                        # HTML page as the body while keeping the .zip name
+                        # already sent in Content-Disposition, so the user
+                        # would get HTML disguised as .zip. Wrap a tiny
+                        # CSV-of-error inside a valid zip so the file name
+                        # stays consistent.
+                        err_df <- data.frame(
+                            export_status = "ERROR",
+                            message       = conditionMessage(e),
+                            timestamp     = format(Sys.time(), "%Y-%m-%dT%H:%M:%S%z"),
+                            stringsAsFactors = FALSE
+                        )
+                        err_dir <- tempfile("saira_export_err_")
+                        dir.create(err_dir, showWarnings = FALSE, recursive = TRUE)
+                        on.exit(unlink(err_dir, recursive = TRUE), add = TRUE)
+                        err_csv <- file.path(err_dir, "export_error.csv")
+                        readr::write_csv(err_df, err_csv, na = "")
+                        tryCatch(
+                            zip::zipr(zipfile = file, files = err_csv),
+                            error = function(.) readr::write_csv(err_df, file, na = "")
+                        )
                     },
                     finally = {
                         is_exporting(FALSE)
@@ -695,6 +782,12 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, download_data_r = mapp
                 )
             }
         )
+
+        # Hidden downloadButton (wrapped in display:none div) needs the URL
+        # bound even when not visible. Without this, Shiny suspends the
+        # output, the <a href> stays empty, and clicking it downloads the
+        # current page (the app's own HTML) as the .csv filename.
+        shiny::outputOptions(output, "download_real", suspendWhenHidden = FALSE)
 
         attr(preview_data, "download_data") <- download_data
         return(preview_data)

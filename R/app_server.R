@@ -90,7 +90,9 @@ app_server <- function(input, output, session) {
         preview_data,
         lang_r,
         download_data_r = mapped_data,
-        name_review_payload_r = name_review_payload_r
+        name_review_payload_r = name_review_payload_r,
+        raw_data_r = raw_data,
+        map_values_r = mapping_result$map_values_r
     )
     coord_validation_r <- mod_validate_coords_server(
         "validate_coords",

@@ -17,9 +17,12 @@ apply_name_review_payload <- function(df, payload = NULL) {
 
     out <- df
     n_rows <- nrow(out)
-    out$validacao_manual <- rep(FALSE, n_rows)
-    out$motivo_revisao <- rep("", n_rows)
 
+    # ADR-088 (reverte ADR-051): audit columns `validacao_manual` e
+    # `motivo_revisao` NAO sao mais emitidas no export. Correcoes feitas via
+    # revisao manual de nomes ainda sao aplicadas silenciosamente ao
+    # `scientificName` (replacement abaixo); a rastreabilidade vai pelo
+    # `mapping_guide.txt` do bundle.
     if (n_rows == 0L) {
         return(out)
     }
@@ -99,23 +102,12 @@ apply_name_review_payload <- function(df, payload = NULL) {
         return(out)
     }
 
-    out$validacao_manual[has_review] <- TRUE
-
     review_type_vec <- rep("", n_rows)
     review_type_vec[has_review] <- entries$review_type[match_idx[has_review]]
-
-    confirm_mask <- has_review & review_type_vec == "confirm"
-    if (any(confirm_mask)) {
-        out$motivo_revisao[confirm_mask] <- "Confirmado pelo usu\u00E1rio"
-    }
 
     correct_mask <- has_review & review_type_vec == "correct"
     if (any(correct_mask)) {
         correct_idx <- match_idx[correct_mask]
-        correction_reason <- trimws(as.character(entries$reason[correct_idx]))
-        correction_reason[is.na(correction_reason) | !nzchar(correction_reason)] <- "Corrigido pelo usu\u00E1rio"
-        out$motivo_revisao[correct_mask] <- correction_reason
-
         corrected_name <- trimws(as.character(entries$corrected_name[correct_idx]))
         original_name <- trimws(as.character(entries$original_name[correct_idx]))
         current_name <- as.character(out$scientificName[correct_mask])
@@ -131,7 +123,7 @@ apply_name_review_payload <- function(df, payload = NULL) {
 #' Process data for DwC-compliant export
 #'
 #' @param df Data frame with mapped columns
-#' @return Data frame with ISO dates, cleaned separators, UUIDs
+#' @return Data frame with ISO dates, cleaned separators, UUIDs, canonical column order
 #' @examples
 #' \dontrun{
 #'   # Processes mapped data for export (uses taxadb, spatial packages)
@@ -141,6 +133,7 @@ apply_name_review_payload <- function(df, payload = NULL) {
 #'   # - Coordinate separators normalized (comma -> dot)
 #'   # - occurrenceID added if missing
 #'   # - License URLs abbreviated
+#'   # - Columns reordered to canonical DwC sequence
 #' }
 #' @export
 process_for_export <- function(df) {
@@ -156,7 +149,360 @@ process_for_export <- function(df) {
     # Normalize known Creative Commons license URLs to short labels
     df <- abbreviate_license_column(df)
 
+    # Reorder columns to canonical DwC sequence (occurrenceID first,
+    # scientificName leading the Taxon block, etc.)
+    df <- order_columns_dwc_canonical(df)
+
     return(df)
+}
+
+#' Append non-mapped raw columns to processed export
+#'
+#' Wraps process_for_export(): runs the existing pipeline, then appends to
+#' the right side any column from `raw_data` that the user did not select
+#' as a source for any DwC mapping. Preserves original names and order so
+#' the user can hand-edit dropped fields after IPT upload.
+#'
+#' @param df_processed Data frame already produced by build_processed_mapping_df()
+#'   (the DwC-shaped intermediate, BEFORE process_for_export()).
+#' @param raw_data Data frame with original uploaded columns.
+#' @param map_values Named list keyed by DwC term, values are char vectors of
+#'   source column names.
+#' @return Data frame: process_for_export(df_processed) + tail of unused raw cols.
+#' @export
+process_for_export_with_unmapped <- function(df_processed, raw_data, map_values) {
+    out <- process_for_export(df_processed)
+
+    if (!is.data.frame(raw_data) || ncol(raw_data) == 0L || !is.list(map_values)) {
+        return(out)
+    }
+
+    used_sources <- unique(unlist(
+        lapply(map_values, function(v) {
+            chr <- as.character(unlist(v, recursive = TRUE, use.names = FALSE))
+            chr <- chr[!is.na(chr)]
+            chr <- trimws(chr)
+            chr[nzchar(chr)]
+        }),
+        use.names = FALSE
+    ))
+
+    extra_cols <- setdiff(names(raw_data), used_sources)
+    extra_cols <- setdiff(extra_cols, names(out))
+    if (length(extra_cols) == 0L) return(out)
+
+    extras <- raw_data[, extra_cols, drop = FALSE]
+    cbind(out, extras)
+}
+
+#' Write a data frame to .xlsx with every cell forced to text
+#'
+#' Excel's auto-detection corrupts ISO dates ("2024-01-15" -> "15/01/2024" in
+#' PT-BR locale), large numbers (-> scientific notation), and leading zeros
+#' (stripped). To survive double-click open and a re-save, every column is
+#' coerced to character before writing via writexl.
+#'
+#' @param df Data frame to write.
+#' @param path Destination .xlsx path.
+#' @return Invisibly returns `path`.
+#' @export
+write_xlsx_text_only <- function(df, path) {
+    if (!is.data.frame(df)) {
+        stop("write_xlsx_text_only: 'df' must be a data.frame.")
+    }
+
+    df_text <- as.data.frame(
+        lapply(df, function(col) {
+            x <- as.character(col)
+            x[is.na(x)] <- ""
+            x
+        }),
+        stringsAsFactors = FALSE,
+        check.names = FALSE
+    )
+    names(df_text) <- names(df)
+
+    writexl::write_xlsx(df_text, path = path, format_headers = TRUE)
+    invisible(path)
+}
+
+#' Build dual-purpose mapping guide TXT (humano + maquina)
+#'
+#' Texto plano que serve simultaneamente como (a) relatorio legivel para o
+#' usuario e (b) entrada importavel pelo upload do Saira. NAO contem dados,
+#' apenas o vocabulario "Coluna -> Termo". Cada linha de mapping vira uma
+#' row em rostrum_aliases ao re-importar via parse_mapping_guide_txt().
+#'
+#' Header magico fixo: `# saira:mapping:v1` na primeira linha.
+#'
+#' @param map_values Named list: nome = termo DwC, valor = char vec de colunas
+#'   fonte (multi-coluna serializa como "colA + colB").
+#' @param raw_data data.frame original (para listar colunas nao usadas).
+#' @param lang Character scalar "pt" ou "en" (ou reactive — extraido com `()` se for).
+#' @param required_terms Character vector de termos DwC obrigatorios (default = required do preview).
+#' @param source_file Optional character: nome do arquivo de origem para metadados.
+#' @return character vector (uma entrada por linha), encoding UTF-8.
+#' @export
+build_mapping_guide_txt <- function(map_values,
+                                    raw_data,
+                                    lang = "pt",
+                                    required_terms = c("scientificName", "eventDate",
+                                                       "decimalLatitude", "decimalLongitude",
+                                                       "basisOfRecord"),
+                                    source_file = NA_character_) {
+    if (is.function(lang)) lang <- lang()
+    lang <- as.character(lang)[1L]
+    if (!lang %in% c("pt", "en")) lang <- "pt"
+
+    if (!is.list(map_values)) map_values <- list()
+    if (!is.data.frame(raw_data)) raw_data <- data.frame()
+
+    pairs <- list()
+    used_sources <- character(0)
+    for (term in names(map_values)) {
+        cols <- as.character(unlist(map_values[[term]], recursive = TRUE, use.names = FALSE))
+        cols <- cols[!is.na(cols)]
+        cols <- trimws(cols)
+        cols <- cols[nzchar(cols)]
+        if (length(cols) == 0L) next
+        used_sources <- c(used_sources, cols)
+        source_repr <- if (length(cols) == 1L) cols[[1]] else paste(cols, collapse = " + ")
+        pairs[[length(pairs) + 1L]] <- list(source = source_repr, term = term)
+    }
+    used_sources <- unique(used_sources)
+
+    raw_cols <- names(raw_data)
+    unmapped_cols <- setdiff(raw_cols, used_sources)
+    mapped_terms <- vapply(pairs, function(p) p$term, character(1))
+    missing_required <- setdiff(required_terms, mapped_terms)
+
+    n_total <- length(raw_cols)
+    n_mapped <- length(used_sources)
+    n_unmapped <- length(unmapped_cols)
+    n_rows <- if (is.data.frame(raw_data)) nrow(raw_data) else 0L
+
+    L <- if (lang == "pt") {
+        list(
+            how_to_use   = "# Como usar este arquivo:",
+            step_1       = "#   1. Abra o app Saira (aba Inicio) e suba este .txt no mesmo",
+            step_1b      = "#      dropzone que voce usa para CSV de dados.",
+            step_2       = "#   2. Saira detecta o cabecalho magico e abre um modal de confirmacao.",
+            step_3       = "#   3. Ao confirmar, cada linha vira um alias salvo no seu",
+            step_3b      = "#      rostrum.sqlite local (scope=personal, confidence=1.0, reviewed=1).",
+            step_4       = "#   4. Suba a planilha de dados (CSV) e clique Auto-Mapear:",
+            step_4b      = "#      colunas de mesmo nome ganham badge ALIAS automaticamente.",
+            section_map  = "# Mapeamentos (Coluna_origem -> Termo_DwC):",
+            section_miss = "# Termos DwC obrigatorios nao mapeados:",
+            section_unmp = "# Colunas brutas nao usadas no mapeamento (preservadas no fim do CSV):",
+            none         = "(nenhum)"
+        )
+    } else {
+        list(
+            how_to_use   = "# How to use this file:",
+            step_1       = "#   1. Open the Saira app (Home tab) and upload this .txt in the",
+            step_1b      = "#      same dropzone you use for data CSVs.",
+            step_2       = "#   2. Saira detects the magic header and opens a confirmation modal.",
+            step_3       = "#   3. On confirm, each line becomes an alias stored in your local",
+            step_3b      = "#      rostrum.sqlite (scope=personal, confidence=1.0, reviewed=1).",
+            step_4       = "#   4. Upload your data spreadsheet (CSV) and click Auto-Map:",
+            step_4b      = "#      columns with the same name get the ALIAS badge automatically.",
+            section_map  = "# Mappings (source_column -> DwC_term):",
+            section_miss = "# Required DwC terms not mapped:",
+            section_unmp = "# Raw columns not used (preserved at the end of the CSV):",
+            none         = "(none)"
+        )
+    }
+
+    out <- c(
+        "# saira:mapping:v1",
+        sprintf("# created_at: %s", format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")),
+        sprintf("# source_file: %s", if (is.na(source_file)) "" else source_file),
+        sprintf("# n_cols_total: %d  n_cols_mapped: %d  n_cols_unmapped: %d  n_rows: %d",
+                n_total, n_mapped, n_unmapped, n_rows),
+        "#",
+        L$how_to_use,
+        L$step_1,
+        L$step_1b,
+        L$step_2,
+        L$step_3,
+        L$step_3b,
+        L$step_4,
+        L$step_4b,
+        "#",
+        L$section_map
+    )
+
+    if (length(pairs) == 0L) {
+        out <- c(out, paste0("#   ", L$none))
+    } else {
+        col_width <- max(nchar(vapply(pairs, function(p) p$source, character(1))))
+        col_width <- max(col_width, 16L)
+        for (p in pairs) {
+            out <- c(out, sprintf("%-*s -> %s", col_width, p$source, p$term))
+        }
+    }
+
+    out <- c(out, "#", L$section_miss)
+    if (length(missing_required) == 0L) {
+        out <- c(out, paste0("#   ", L$none))
+    } else {
+        for (term in missing_required) {
+            out <- c(out, paste0("#   - ", term))
+        }
+    }
+
+    out <- c(out, "#", L$section_unmp)
+    if (length(unmapped_cols) == 0L) {
+        out <- c(out, paste0("#   ", L$none))
+    } else {
+        out <- c(out, unmapped_cols)
+    }
+
+    out
+}
+
+#' Canonical class (group) order for DwC export
+#'
+#' Sequence used to order columns in the exported spreadsheet. Identifier-bearing
+#' Occurrence terms come first, then record metadata, event/temporal, location,
+#' organism/taxon, identification, and auxiliary classes. Matches GBIF DwC
+#' archive conventions for occurrence datasets.
+#'
+#' @return Character vector of DwC class names.
+#' @export
+dwc_canonical_class_order <- function() {
+    c(
+        "Occurrence",
+        "Record-level",
+        "Event",
+        "Location",
+        "GeologicalContext",
+        "Organism",
+        "Taxon",
+        "Identification",
+        "MaterialEntity",
+        "MaterialSample",
+        "MeasurementOrFact",
+        "ResourceRelationship"
+    )
+}
+
+#' Preferred-first DwC terms within each class
+#'
+#' Within a class block, terms listed here lead the order. Remaining terms of
+#' that class follow in dwc_full_catalog row order. Lets the export show
+#' high-signal columns first (occurrenceID in Occurrence, scientificName in
+#' Taxon, decimalLatitude/decimalLongitude in Location, etc.).
+#'
+#' @return Named list keyed by class -> character vector of term names.
+#' @export
+dwc_canonical_preferred_terms <- function() {
+    list(
+        Occurrence = c(
+            "occurrenceID", "catalogNumber", "recordNumber",
+            "recordedBy", "individualCount", "occurrenceStatus",
+            "preparations", "disposition", "occurrenceRemarks"
+        ),
+        `Record-level` = c(
+            "type", "basisOfRecord",
+            "institutionCode", "collectionCode", "datasetName",
+            "license", "rightsHolder", "modified", "language",
+            "dynamicProperties"
+        ),
+        Event = c(
+            "eventDate", "year", "month", "day",
+            "samplingProtocol", "samplingEffort",
+            "fieldNotes", "habitat"
+        ),
+        Location = c(
+            "country", "countryCode", "stateProvince", "county",
+            "municipality", "locality", "locationRemarks",
+            "decimalLatitude", "decimalLongitude",
+            "verbatimLatitude", "verbatimLongitude",
+            "geodeticDatum", "coordinateUncertaintyInMeters"
+        ),
+        Taxon = c(
+            "scientificName", "scientificNameAuthorship",
+            "kingdom", "phylum", "class", "order", "family", "genus",
+            "subgenus", "specificEpithet", "infraspecificEpithet", "taxonRank",
+            "verbatimIdentification", "identificationQualifier", "vernacularName"
+        ),
+        Identification = c(
+            "identifiedBy", "dateIdentified", "identificationRemarks", "typeStatus"
+        )
+    )
+}
+
+#' Reorder a data frame's columns into the canonical DwC sequence
+#'
+#' Looks up each column's class via the cached DwC full catalog
+#' (\code{get_dwc_full_catalog()}), then orders by class priority
+#' (\code{dwc_canonical_class_order}), preferred-term position within class
+#' (\code{dwc_canonical_preferred_terms}), catalog row position, and original
+#' column position as final tie-breakers. Columns whose name is not a known
+#' DwC term are appended at the end, preserving their original relative order.
+#'
+#' @param df A data frame of mapped DwC columns.
+#' @return The same data frame with columns reordered (rows untouched).
+#' @export
+order_columns_dwc_canonical <- function(df) {
+    if (!is.data.frame(df) || ncol(df) == 0L) return(df)
+
+    cols <- names(df)
+    catalog <- tryCatch(get_dwc_full_catalog(), error = function(e) NULL)
+
+    if (is.null(catalog) || !is.data.frame(catalog) || nrow(catalog) == 0L) {
+        cls_lookup <- character(0)
+        cat_pos <- integer(0)
+    } else {
+        cls_lookup <- stats::setNames(as.character(catalog$class), catalog$term)
+        cat_pos <- stats::setNames(seq_len(nrow(catalog)), catalog$term)
+    }
+
+    class_order <- dwc_canonical_class_order()
+    preferred <- dwc_canonical_preferred_terms()
+    unknown_class_idx <- length(class_order) + 1L
+
+    lookup_class <- function(col) {
+        if (length(cls_lookup) == 0L || !(col %in% names(cls_lookup))) {
+            return(NA_character_)
+        }
+        cls_lookup[[col]]
+    }
+    lookup_cat_pos <- function(col) {
+        if (length(cat_pos) == 0L || !(col %in% names(cat_pos))) {
+            return(NA_integer_)
+        }
+        as.integer(cat_pos[[col]])
+    }
+
+    cls_idx <- vapply(cols, function(col) {
+        cls <- lookup_class(col)
+        if (is.na(cls) || !nzchar(cls)) return(unknown_class_idx)
+        m <- match(cls, class_order, nomatch = unknown_class_idx)
+        as.integer(m)
+    }, integer(1))
+
+    pref_idx <- vapply(seq_along(cols), function(i) {
+        col <- cols[i]
+        cls <- lookup_class(col)
+        if (!is.na(cls) && nzchar(cls)) {
+            pref <- preferred[[cls]]
+            if (!is.null(pref)) {
+                p <- match(col, pref)
+                if (!is.na(p)) return(as.integer(p))
+            }
+        }
+        cp <- lookup_cat_pos(col)
+        if (is.na(cp)) {
+            1000L + i
+        } else {
+            1000L + cp
+        }
+    }, integer(1))
+
+    ord <- order(cls_idx, pref_idx, seq_along(cols))
+    df[, cols[ord], drop = FALSE]
 }
 
 #' Abbreviate Creative Commons license values

@@ -5,6 +5,11 @@
    - `Rog\u00E9rio` yes, raw accented literals no.
 3. Comments should use ASCII only. Use `Rogerio`, not accented forms.
 4. CSV output must use `readr::write_csv()` (UTF-8 without BOM by default).
+   - The export bundle (`dwc_export_*.zip`, ADR-087) MAY also include a
+     companion `.xlsx` produced by `writexl::write_xlsx()`. The CSV stays
+     canonical for IPT submission; the XLSX exists only as an Excel-safe
+     mirror (every cell coerced to `character` before write to prevent
+     Excel's date/number auto-conversion on double-click).
 5. CSV input must always handle optional BOM via `strip_bom()`.
 6. Never use `options(encoding = "UTF-8")` in startup code.
 7. Use LF line endings only (`.editorconfig` + `.gitattributes`).

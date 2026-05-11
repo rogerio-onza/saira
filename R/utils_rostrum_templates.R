@@ -7,6 +7,189 @@ rostrum_app_version <- function() {
     as.character(utils::packageVersion("saira"))
 }
 
+#' Magic header for the export bundle's mapping_guide.txt (ADR-087)
+#'
+#' Used to discriminate Saira mapping-guide uploads from regular data CSVs.
+#' Must match exactly (modulo trailing whitespace) on line 1 of the file.
+#' @keywords internal
+#' @noRd
+SAIRA_MAPPING_GUIDE_MAGIC_V1 <- "# saira:mapping:v1"
+
+#' Detect whether a file looks like a Saira mapping guide
+#'
+#' Reads only the first non-empty line; safe for large CSVs (no full read).
+#'
+#' @param path Character path to the candidate file.
+#' @return TRUE when line 1 matches the v1 magic header. FALSE otherwise
+#'   (including when the file is unreadable).
+#' @export
+is_saira_mapping_guide <- function(path) {
+    if (length(path) != 1L || is.na(path) || !nzchar(path) || !file.exists(path)) {
+        return(FALSE)
+    }
+    first <- tryCatch(
+        readLines(path, n = 1L, encoding = "UTF-8", warn = FALSE),
+        error = function(e) character(0)
+    )
+    if (length(first) == 0L) return(FALSE)
+    grepl(paste0("^\\s*", SAIRA_MAPPING_GUIDE_MAGIC_V1, "\\s*$"), first[[1]], perl = TRUE)
+}
+
+#' Parse a Saira mapping_guide.txt into metadata + (source -> term) pairs
+#'
+#' Companion to \code{build_mapping_guide_txt()}. Format expected:
+#' line 1 = magic header (\code{# saira:mapping:v1}); subsequent comment
+#' lines starting with \code{#} carry metadata (key: value); body lines
+#' matching the regex \code{^([^\\s][^\\->]*?)\\s*->\\s*(\\S.*)$} are
+#' (source_column, dwc_term) pairs. Lines that don't match are ignored
+#' with a warning.
+#'
+#' @param path Character path to the .txt file.
+#' @return Named list:
+#'   \itemize{
+#'     \item \code{meta}: named list of metadata strings (created_at, source_file, ...).
+#'     \item \code{pairs}: data.frame with columns source_column, dwc_term.
+#'   }
+#' @export
+parse_mapping_guide_txt <- function(path) {
+    if (!is_saira_mapping_guide(path)) {
+        stop(
+            "parse_mapping_guide_txt: file does not start with the magic ",
+            "header '", SAIRA_MAPPING_GUIDE_MAGIC_V1, "'."
+        )
+    }
+
+    lines <- readLines(path, encoding = "UTF-8", warn = FALSE)
+
+    meta <- list()
+    pairs_src <- character(0)
+    pairs_term <- character(0)
+    invalid_lines <- 0L
+
+    meta_re <- "^#\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*:\\s*(.*?)\\s*$"
+    body_re <- "^([^#\\s][^\\-]*?)\\s*->\\s*(\\S.*?)\\s*$"
+
+    # Skip line 1 (the magic header itself).
+    if (length(lines) >= 2L) {
+        for (line in lines[-1L]) {
+            if (!nzchar(trimws(line))) next
+
+            if (startsWith(trimws(line), "#")) {
+                m <- regmatches(line, regexec(meta_re, line, perl = TRUE))[[1]]
+                if (length(m) == 3L && nzchar(m[2L])) {
+                    meta[[m[2L]]] <- m[3L]
+                }
+                next
+            }
+
+            # Bare lines without '->' are informational (e.g., the unmapped
+            # columns list at the tail of build_mapping_guide_txt). Skip
+            # silently. Warn only on lines that LOOK like mappings (contain
+            # '->') but fail the strict regex.
+            if (!grepl("->", line, fixed = TRUE)) next
+
+            m <- regmatches(line, regexec(body_re, line, perl = TRUE))[[1]]
+            if (length(m) == 3L && nzchar(m[2L]) && nzchar(m[3L])) {
+                pairs_src  <- c(pairs_src,  trimws(m[2L]))
+                pairs_term <- c(pairs_term, trimws(m[3L]))
+            } else {
+                invalid_lines <- invalid_lines + 1L
+            }
+        }
+    }
+
+    if (invalid_lines > 0L) {
+        warning(
+            "parse_mapping_guide_txt: ignored ", invalid_lines,
+            " malformed mapping line(s) (contain '->' but don't match 'source -> term')."
+        )
+    }
+
+    list(
+        meta = meta,
+        pairs = data.frame(
+            source_column = pairs_src,
+            dwc_term      = pairs_term,
+            stringsAsFactors = FALSE
+        )
+    )
+}
+
+#' Import a parsed mapping guide into rostrum_aliases
+#'
+#' For each pair in \code{payload$pairs}, calls \code{rostrum_upsert_alias()}
+#' with \code{scope = "personal"}, \code{confidence = 1.0}, \code{reviewed = TRUE}.
+#' Re-importing the same guide updates rows in place (no duplicates) thanks
+#' to the SELECT-then-INSERT/UPDATE logic of \code{rostrum_upsert_alias()}.
+#'
+#' Multi-column source entries (e.g., produced by \code{build_mapping_guide_txt()}
+#' as \code{"colA + colB -> term"}) are split on \code{" + "} and inserted as
+#' independent aliases, one per source column.
+#'
+#' @param payload Output of \code{parse_mapping_guide_txt()}.
+#' @param conn Optional open DBI connection. When NULL (default), a new
+#'   connection is opened via \code{rostrum_connect()} and closed on exit.
+#' @param scope Character, default "personal".
+#' @param user_id Character, default \code{Sys.getenv("SAIRA_USER", unset = "anonymous")}.
+#' @return Invisibly: integer count of (source, term) pairs upserted.
+#' @export
+import_mapping_guide_to_aliases <- function(
+    payload,
+    conn = NULL,
+    scope = "personal",
+    user_id = NULL
+) {
+    if (!is.list(payload) || is.null(payload$pairs) || !is.data.frame(payload$pairs)) {
+        stop("import_mapping_guide_to_aliases: 'payload' must come from parse_mapping_guide_txt().")
+    }
+    pairs <- payload$pairs
+    if (nrow(pairs) == 0L) return(invisible(0L))
+
+    if (is.null(user_id) || !nzchar(user_id)) {
+        user_id <- Sys.getenv("SAIRA_USER", unset = "anonymous")
+        if (!nzchar(user_id)) user_id <- "anonymous"
+    }
+
+    own_conn <- is.null(conn)
+    if (own_conn) {
+        conn <- rostrum_connect()
+        on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+    }
+
+    n <- 0L
+    for (i in seq_len(nrow(pairs))) {
+        src_raw <- pairs$source_column[[i]]
+        term    <- pairs$dwc_term[[i]]
+        # Split multi-column composites ("colA + colB") into independent aliases.
+        sources <- trimws(strsplit(src_raw, "\\s*\\+\\s*", perl = TRUE)[[1]])
+        sources <- sources[nzchar(sources)]
+        for (src in sources) {
+            tryCatch(
+                {
+                    rostrum_upsert_alias(
+                        conn      = conn,
+                        col_name  = src,
+                        dwc_term  = term,
+                        confidence = 1.0,
+                        scope     = scope,
+                        reviewed  = TRUE,
+                        user_id   = user_id,
+                        action    = "alias_imported_from_guide"
+                    )
+                    n <- n + 1L
+                },
+                error = function(e) {
+                    warning(
+                        "import_mapping_guide_to_aliases: skipping ('",
+                        src, "' -> '", term, "') — ", conditionMessage(e)
+                    )
+                }
+            )
+        }
+    }
+    invisible(n)
+}
+
 rostrum_template_trim_scalar <- function(value, field_name, required = FALSE) {
     value_chr <- trimws(as.character(value))
     if (length(value_chr) == 0L || is.na(value_chr[[1]]) || !nzchar(value_chr[[1]])) {

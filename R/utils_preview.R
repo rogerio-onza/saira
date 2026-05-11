@@ -62,7 +62,8 @@ prepare_preview_data <- function(df, max_rows = 100L) {
     }
 
     preview_df <- utils::head(df, max_rows_int)
-    abbreviate_license_column(preview_df)
+    preview_df <- abbreviate_license_column(preview_df)
+    order_columns_dwc_canonical(preview_df)
 }
 
 compute_preview_readiness <- function(df, required_fields = character(0)) {

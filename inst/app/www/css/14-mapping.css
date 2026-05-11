@@ -678,3 +678,45 @@
   box-shadow: var(--focus-ring-primary);
   outline: none;
 }
+
+/* dynamicProperties — JSON keys per source column */
+.dynprops-keys-block {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border-left: 3px solid var(--accent);
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+}
+
+.dynprops-keys-block .custom-field-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: var(--space-1);
+}
+
+.dynprops-keys-block .dynprops-help {
+  margin-bottom: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}
+
+.dynprops-keys-block .dynprops-source-col {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  padding-top: var(--space-2);
+  color: var(--text-muted);
+  word-break: break-word;
+}
+
+.dynprops-keys-block .form-group {
+  margin-bottom: var(--space-2);
+}
+
+.dynprops-keys-block .form-control[type="text"] {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}

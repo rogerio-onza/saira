@@ -1345,6 +1345,13 @@ rostrum_apply_alias_overrides <- function(stage1_data, df, conn, options = rostr
 
     user_id <- if (!is.null(context$user_id)) context$user_id else Sys.getenv("SAIRA_USER", unset = "")
     institution_id <- if (!is.null(context$institution_id)) context$institution_id else Sys.getenv("SAIRA_INSTITUTION", unset = "")
+    # Promote empty user_id to "anonymous" so the lookup matches what
+    # rostrum_upsert_alias() stores when SAIRA_USER is unset (line 470-472
+    # of utils_rostrum_db.R). Without this, personal-scope aliases saved by
+    # the alias-override flow OR by import_mapping_guide_to_aliases() are
+    # invisible during automap because the visibility filter at
+    # rostrum_list_aliases_for_column:780 rejects NA user_id.
+    if (!nzchar(trimws(as.character(user_id)))) user_id <- "anonymous"
 
     data <- rostrum_ensure_engine_columns(stage1_data)
     warnings <- character(0)

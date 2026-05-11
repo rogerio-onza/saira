@@ -167,6 +167,33 @@ test_that("Export converts Brazilian dates to ISO", {
 })
 ```
 
+#### 3.2.1 Bundle ZIP do export (ADR-087)
+
+A partir da v0.2.2, o `downloadHandler` em `mod_preview.R` não emite mais
+um único `.csv`. Emite `dwc_export_<data>.zip` contendo TRÊS arquivos
+montados na pasta tmp e zipados via `zip::zipr()`:
+
+| Arquivo | Função geradora | Propósito |
+|---|---|---|
+| `dwc_export_<data>.csv` | `process_for_export_with_unmapped()` + `readr::write_csv(na = "")` | IPT-ready, UTF-8 sem BOM, com colunas brutas não-mapeadas preservadas no fim |
+| `dwc_export_<data>.xlsx` | `write_xlsx_text_only()` (via `writexl::write_xlsx`) | Excel-safe (todas células coercidas a `character` antes da escrita), sobrevive duplo-clique |
+| `mapping_guide_<data>.txt` | `build_mapping_guide_txt()` | Texto plano dual-purpose: legível por humano + parseável por Saíra (header mágico `# saira:mapping:v1`) |
+
+O `mapping_guide.txt` viabiliza um **round-trip de mapeamento via aliases**:
+quando subido na aba Início (mesmo dropzone do CSV de dados) ou via botão
+**Importar modelo** na sidebar do Mapeamento, o app detecta o magic header,
+parseia os pares `Coluna -> Termo` e popula `rostrum_aliases` (scope=personal,
+confidence=1.0) via `import_mapping_guide_to_aliases()`. Aliases ficam no
+`rostrum.sqlite` local do usuário e são consultados pelo motor em todo
+automap subsequente — próximas planilhas com colunas de mesmo nome ganham
+badge **ALIAS**.
+
+**Crítico**: o hidden `downloadButton` (wrapper `display: none;`) precisa
+de `shiny::outputOptions(output, "download_real", suspendWhenHidden = FALSE)`
+explícito após a registração do handler. Sem isso, o `<a href>` fica vazio
+e o navegador baixa a página atual do app como `.csv` (mesmo padrão usado
+em `mod_mapping.R:553` para `file_uploaded`). Veja LESSONS.md.
+
 ---
 
 ### 3.3 📊 **ORGANIZAÇÃO: Dados Estáticos**

@@ -1804,3 +1804,99 @@ Formato: ADR leve (Architecture Decision Record).
   - Validate Names / Validate Coords: layout viewport-bound preservado (regra `:has()` so dispara para `.wiki-module` e `.preview-page`).
   - Bundle: 11 `!important` (zero novos); 14 linhas adicionadas em `12-overrides.css`; 1 caractere alterado em `R/mod_preview.R` (a classe marker).
   - **Anti-pattern documentado**: nao adicionar `!important` para "destravar" scrollbar quando a especificidade de seletor ja resolve. Nao adicionar `scrollY` ao DT como "fix" para falta de page-scroll — sao mecanismos ortogonais e mistura-los muda o contrato visivel da tabela.
+
+## ADR-086: dynamicProperties como composicao JSON estrita TDWG, com chave auto-derivada e override por usuario
+
+- **Data**: 2026-05-08
+- **Status**: Aceito
+- **Contexto**: O termo DwC `dynamicProperties` recomenda valor JSON estrito por linha (`{"chave1":"valor1","chave2":"valor2"}` — sem espacos, aspas duplas, escape JSON). Antes desta decisao, mapear duas colunas para `dynamicProperties` no Saira caia no fallback generico `collapse_mapped_values()` que produzia `valor1 | valor2` (formato pipe usado para outros termos multi-valorados). O resultado era invalido para repositorios que consomem `dynamicProperties` esperando JSON. Alem disso, o usuario nao tinha como controlar qual nome de chave entrava no JSON — derivado ou customizado. Restrito a 99k+ linhas, qualquer abordagem precisava ser performatica (orcamento `< 0.5s` por 100k x 4 colunas).
+
+- **Decisao**:
+  - Tratamento dedicado em `R/utils_mapping.R`:
+    - `derive_dynprops_key(column_name)`: vetorizada, usa `iconv ASCII//TRANSLIT` (mesmo padrao de `normalize_for_matching` em [R/utils_common.R:67](R/utils_common.R#L67)) seguido de `gsub("[^a-z0-9]+", "_")` + colapso de underscores duplicados + trim. Fallback `"field"` quando o resultado e vazio. Sem `stringi` (zero novos imports).
+    - `json_escape_string(x)`: vetorizada com **fast path** que pula todos os `gsub` quando nenhum elemento contem caracter especial (`grepl("[\\\\\"\x01-\x1f]", ...)`). No caminho lento, escapa por classe (`\\` → `\\\\`, `"` → `\"`, controles BS/TAB/LF/CR/FF + `\\uXXXX` para outros `< 0x20`). UTF-8 multi-byte preservado.
+    - `build_dynamic_properties_json(df, cols, keys)`: composicao **vetorizada por coluna**, nao por linha. Pre-formata cada coluna como `paste0("\"", chave, "\":\"", escapado, "\"")` com `""` em celulas vazias, junta colunas com sentinela `\x01`, comprime sentinelas adjacentes, troca por `,`, e envolve em `{...}` somente quando ha conteudo. Linha 100% vazia → `""` (nao `"{}"`).
+  - Despacho em `build_processed_mapping_df()`: novo branch `else if (term == "dynamicProperties")` inserido **antes** do branch single-column generico em [R/utils_mapping.R:2048](R/utils_mapping.R#L2048). Garante que single-column dynamicProperties tambem produza JSON (correcao semantica, nao ha caso valido em que valor cru sirva).
+  - UX:
+    - Card de `dynamicProperties` em [R/mod_mapping_cards.R](R/mod_mapping_cards.R): branch dedicado com `selectInput(multiple = TRUE)` + bloco `.dynprops-keys-block` listando uma `textInput` por coluna selecionada. Placeholder de cada input mostra `auto: <chave_derivada>` (formato `sprintf` via i18n `dynprops_key_placeholder`). Override branco volta para auto.
+    - Modal "Adicionar termo" reescrito para usar `<optgroup>` nativo do Shiny (`choices = list(<classe traduzida> = c(<termos alfabeticos>))`) com modal `size = "l"`. Nao adiciona componente customizado — selectize.js renderiza optgroup nativamente em Shiny ≥ 1.7.
+
+- **Resolucao de colisao de chaves**: quando duas colunas normalizam para a mesma chave JSON (ex.: `area-protegida` e `area_protegida` ambos viram `area_protegida`), emitir `warning()` unico no inicio da chamada listando colunas em conflito; **dropar globalmente** as colunas duplicadas (nao por linha). Justificativa: dropar globalmente permite vetorizacao do build de linha (sem laco com `seen` por linha); o caso "primeira coluna vazia, segunda com valor" e raro e o usuario tem o caminho explicito para resolver via override de chave.
+
+- **Performance**: medido `0.21s` para 100k linhas x 4 colunas em maquina de dev (orcamento de teste e `< 0.5s`). Comparativo com abordagens rejeitadas:
+  - `vapply` por linha + `paste(c(...), collapse = ",")` skipping vazios: ~3.1s (over budget 6x).
+  - `jsonlite::toJSON(auto_unbox = TRUE)` por linha: nao medido — claramente over budget pelas calls per-row.
+  - Vetorizacao `do.call(paste, c(parts, sep = sentinel))` + 3 `gsub` no joined: ~0.21s (chosen).
+
+- **Persistencia em templates Rostrum**: `rv$dyn_props_keys` **NAO e persistido** em templates nesta entrega. Templates antigos com `dynamicProperties` continuam funcionando — chaves auto-derivam dos nomes das colunas. Override do usuario fica em sessao. Estensao futura (out of scope): adicionar `transform_kind = "dynamic_properties_json"` + `transform_params = list(keys = ...)` em `R/utils_rostrum_templates.R`.
+
+- **Alternativas rejeitadas**:
+  - **Adicionar `stringi` ao DESCRIPTION** para normalizacao Unicode mais robusta — recusado porque `iconv ASCII//TRANSLIT` ja e usado em `utils_common.R` e o pacote tem politica de minimizar deps. Risco de divergencia entre `glibc` e `musl` (Alpine/CI alternativos) mitigado por testes que pinam saidas esperadas em casos comuns PT-BR.
+  - **`jsonlite::toJSON` por linha** — mais robusto a edge cases mas ordens de magnitude mais lento por overhead de R-level call e alocacao de listas. Performance era requisito hard.
+  - **Manter compat single-column raw** — recusado: emitir valor cru em `dynamicProperties` ja era invalido por TDWG; e correcao nao regressao.
+  - **Resolucao row-wise de colisao de chave** (primeira coluna nao-vazia da chave vence em cada linha) — recusado por inviabilizar a vetorizacao. O caso de uso real e raro e tem caminho explicito (override).
+  - **Construcao via `lapply(rows, function(...))`** — mesma classe de problema do `vapply` por linha; rejeitado por performance.
+
+- **Consequencias**:
+  - Saida valida para repositorios DwC que consomem `dynamicProperties` em JSON estrito.
+  - Single-column dynamicProperties agora produz `{"col":"valor"}` em vez de raw — quebra de comportamento documentada em CHANGELOG.
+  - 0.21s para 100k linhas x 4 colunas — bem abaixo de qualquer threshold percebido pelo usuario.
+  - Modal "Adicionar termo" agora navegavel: termos agrupados por classe DwC com search nativo do selectize.
+  - Zero novas deps; zero novos `!important`; bundle CSS regenerado via `data-raw/build_css.R`.
+
+## ADR-087: Export como bundle ZIP (CSV IPT-ready + XLSX Excel-safe + mapping_guide.txt) com round-trip via aliases
+
+- **Data**: 2026-05-10
+- **Status**: Aprovado
+- **Contexto**: Tres problemas convergiram numa unica entrega:
+  1. **Bug critico de export**: usuario clicava em Baixar e recebia o HTML inteiro do app salvo como `dwc_export_<data>.csv`, com modal travado em 90% e app congelado. Causa: `downloadButton` estava dentro de `<div style="display: none;">` e Shiny suspende outputs ocultos por padrao (`suspendWhenHidden = TRUE`), entao o `<a href>` nunca recebia o URL do endpoint. Click num `<a href="" download="dwc_export_<data>.csv">` faz o navegador baixar a URL atual (a propria pagina do app) com o nome `.csv`. Endpoint nunca era chamado, logo `download_finish_channel` nunca chegava ao cliente, modal travava em 90%, e `is_exporting(FALSE)` (que mora no `finally` do callback nunca-chamado) nao disparava — botao Baixar ficava permanentemente desabilitado.
+  2. **Excel-corrupcao em duplo-clique**: usuarios sobem o `.csv` exportado no IPT, mas frequentemente abrem antes no Excel via duplo-clique para inspecao. Excel re-interpreta tipos: datas ISO viram locale (`2024-01-15` -> `15/01/2024` em pt-BR), numeros grandes viram notacao cientifica, zeros a esquerda somem. Re-salvar e mandar pro IPT corrompe o registro DwC.
+  3. **Conhecimento de mapping descartado a cada planilha**: todo o trabalho que o usuario investe mapeando colunas do dataset dele para termos DwC e jogado fora — nao ha canal para outro pesquisador da mesma instituicao receber esse mapeamento, nem para o proprio Rostrum aprender e auto-aplicar em planilhas semelhantes futuras.
+
+- **Decisao**:
+  1. **Fix imediato do bug de export**: `shiny::outputOptions(output, "download_real", suspendWhenHidden = FALSE)` apos o `downloadHandler` em `mod_preview.R` (alinha com padrao ja existente em `mod_mapping.R:553` para `file_uploaded`). Modal de loading ganha botao Cancelar explicito (mantendo `easyClose = FALSE` per ADR-009) que reseta `is_exporting(FALSE)` em caso de bug futuro.
+  2. **Export passa a ser `.zip`** contendo TRES arquivos:
+     - `dwc_export_<data>.csv` — UTF-8 sem BOM (per ENCODING_RULES.md), IPT-ready, **com colunas brutas nao-mapeadas preservadas no fim** (eram descartadas antes — `process_for_export_with_unmapped()` em `utils_export.R` envolve `process_for_export()` e faz `cbind` das colunas que nao foram source de nenhum mapping).
+     - `dwc_export_<data>.xlsx` — todas celulas forcadas a `character` antes da escrita via `writexl::write_xlsx()` (helper `write_xlsx_text_only()`). Sobrevive duplo-clique no Excel sem corromper datas/numeros.
+     - `mapping_guide_<data>.txt` — texto plano dual-purpose: legivel por humano (cabecalho com instrucoes bilingue PT/EN, lista pares `Coluna -> Termo`, lista termos obrigatorios faltantes, lista colunas brutas nao-usadas) E parseavel por Saira (header magico `# saira:mapping:v1` na linha 1). **Sem dados embutidos** — apenas vocabulario de mapping (PII-safe).
+  3. **Round-trip via aliases (NAO templates)**: ao subir o `.txt` na aba Inicio (mesmo dropzone do CSV de dados) OU clicando em Importar modelo na sidebar do Mapeamento, Saira detecta o magico, abre modal de confirmacao, e popula `rostrum_aliases` (scope=personal, confidence=1.0, reviewed=1) via `import_mapping_guide_to_aliases()`. Cada par vira UM alias persistente no `rostrum.sqlite` local do usuario. Aliases sao consultados pelo motor em todo automap subsequente via `rostrum_apply_alias_overrides()` ja existente — proximas planilhas com colunas de mesmo nome auto-mapeiam com badge ALIAS.
+  4. **Bug colateral corrigido**: `rostrum_apply_alias_overrides` lookva aliases com `user_id = ""` (env `SAIRA_USER` vazia), mas `rostrum_upsert_alias` promovia `""` -> `"anonymous"` ao salvar. Mismatch fazia o filtro de visibilidade em `rostrum_list_aliases_for_column:780` rejeitar aliases personal por NA `user_id_norm`. Fix: engine tambem promove `""` -> `"anonymous"` antes do lookup. Esse bug afetava tambem `rostrum_record_alias_override` (selecao manual de coluna), so nunca foi pego porque ninguem testou sem `SAIRA_USER` setado.
+
+- **Consequencias**:
+  - +2 deps (`writexl` >= 1.4.0, `zip` >= 2.3.0) — pequenas, sem JVM.
+  - ENCODING_RULES.md regra 4 estendida para permitir `.xlsx` no bundle (CSV continua canonico).
+  - Round-trip social funcional: usuario A exporta -> manda `.zip` para B -> B sobe so o `.txt` (no dropzone OU no botao Importar modelo da sidebar do Mapeamento) -> aliases ficam no `rostrum.sqlite` de B -> proximo upload de B com colunas de mesmo nome auto-mapeia com badge ALIAS. Sem expor dados de A para B.
+  - Colunas perdidas voltam: pessoa pode editar manualmente colunas nao-DwC no fim do CSV depois.
+  - Sistema de aliases passa a funcionar de fato em sessoes sem `SAIRA_USER` setado (correcao do bug colateral).
+  - Sidebar do Mapeamento ganha 4o botao Importar modelo (`btn-outline-secondary`, agrupado com Adicionar termo como acao auxiliar). Deteccao no upload da Inicio fica como fallback.
+  - Modal de loading do export agora cancelavel via botao Cancelar (sem violar `easyClose = FALSE` do ADR-009).
+  - Test isolation: `test-mod-mapping-server.R` agora usa `withr::local_envvar(SAIRA_USER = ...)` para nao depender do estado real do `rostrum.sqlite` local do dev (problema que so apareceu apos o fix do bug colateral, quando aliases ficaram visiveis).
+
+- **Alternativas rejeitadas**:
+  - `.csv` unico com truque de `="..."` em datas — quebra IPT (formula nao e valor literal por DwC).
+  - `.xlsx` unico como saida principal — viola ENCODING_RULES.md (CSV continua mandatorio para IPT).
+  - **Template Rostrum** como mecanismo de aprendizado em vez de aliases — usuario pediu aprendizado **por coluna** (alias-based, granular, acumulativo) e nao por configuracao inteira (template-based, all-or-nothing). Aliases compoem com aliases de outras planilhas; templates sobrescrevem.
+  - `saira_template.csv` como segundo arquivo no bundle (proposto na V3 do plano) — usuario rejeitou: nao via motivo de o vocabulario precisar ser CSV; `.txt` e mais natural e legivel para humano.
+  - Embutir dados parciais no guide para "ajudar" — usuario rejeitou: o guide e so vocabulario, sem PII / dados reais.
+  - Mudar `easyClose = TRUE` no modal de loading para destravar — viola ADR-009 explicitamente. Botao Cancelar preserva o spirit (sem fechamento acidental).
+  - Aceitar `.xlsx` ou `.zip` como input no upload — recusado por scope creep. Round-trip via `.txt` so ja resolve o caso de uso pretendido.
+
+## ADR-088: Remocao das colunas de auditoria `validacao_manual` e `motivo_revisao` do export (reverte ADR-051)
+
+- **Data**: 2026-05-11
+- **Status**: Aprovado (reverte parcialmente ADR-051)
+- **Contexto**: ADR-051 (2026-03-02) decidiu integrar a revisao manual de nomes ao export adicionando **sempre** as colunas `validacao_manual` (logico) e `motivo_revisao` (texto) ao `.csv` baixado, mesmo quando nao havia revisao alguma. Justificativa original: "simplifica consumo downstream" — codigo que le o export nao precisa fazer `if column exists` para todo registro. Em uso real, o usuario reportou que:
+  1. Toda planilha exportada carregava essas duas colunas com `FALSE` / `""` em todas as linhas, mesmo quando ele nunca tinha aberto a aba Validacao > Nomes (caso comum: usuario subiu, mapeou, exportou).
+  2. No upload pro IPT precisava explicar para cada dataset por que as colunas existiam e o que significavam — atrito desproporcional para algo que beneficiava apenas consumidores hipoteticos de pipeline.
+  3. A rastreabilidade da revisao manual, que era a razao das colunas, ja esta coberta pelo `mapping_guide.txt` do bundle ZIP (ADR-087) — outro canal mais explicito.
+- **Decisao**: `apply_name_review_payload()` nao escreve mais `validacao_manual` nem `motivo_revisao` no df de saida. As correcoes de `scientificName` (substituicao do nome quando o usuario marca "Corrigir" e digita um nome novo) continuam sendo aplicadas silenciosamente — esse e o trabalho util da revisao manual, separado da auditoria. A funcao fica com responsabilidade unica: aplicar correcoes ao `scientificName`.
+- **Consequencias**:
+  - Export `.csv` / `.xlsx` ganha 2 colunas a menos. CSV de qualquer planilha exportada fica mais limpo e compativel com IPT sem campos extras pra explicar.
+  - Codigo de `apply_name_review_payload()` em `R/utils_export.R` simplificado (linhas 18-21, 102-117 removidas; bloco `correct_mask` em 112-126 reduzido para so o replacement).
+  - Pipeline preserva a parte util: se usuario corrige "Panthera onza" -> "Panthera onca" via UI, o export reflete o nome corrigido. A diferenca e que ninguem sabe **a partir do export sozinho** quais linhas foram corrigidas. Quem precisar dessa info usa o `mapping_guide.txt` (que lista mappings) ou os logs server-side.
+  - `LESSONS.md:141` invertido: o bullet antigo defendia "audit cols sempre"; o novo defende "nunca, rastreabilidade no mapping_guide.txt".
+  - 5 testes em `test-utils-export.R` que assertavam presenca das audit cols reescritos para assertar **ausencia**; nome do nome corrigido permanece como invariante testado.
+- **Alternativas rejeitadas**:
+  - **Manter a politica antiga (audit cols sempre)** — usuario veto explicito; ruido visual e atrito IPT.
+  - **Tornar condicional (so emitir se houve revisao)** — proposta intermediaria do plano original; usuario rejeitou: "essas colunas nao e para aparecerem de maneira nenhuma, nem se eu validar os nomes". Decisao binaria final: extincao.
+  - **Mover audit cols para o `mapping_guide.txt`** — sub-considerado, recusado por scope. O `.txt` ja lista mappings de coluna -> termo; adicionar entries de revisao por linha o tornaria denso demais. Se houver demanda futura, vira ADR-089 separado.

@@ -157,6 +157,65 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                     )
                 }
             )
+        } else if (term == "dynamicProperties") {
+            selected_cols <- if (has_selected_value(current_val)) {
+                as.character(current_val)
+            } else {
+                character(0)
+            }
+
+            shiny::tagList(
+                shiny::selectInput(
+                    ns(paste0("map_", term)),
+                    NULL,
+                    choices = cols,
+                    selected = selected_cols,
+                    multiple = TRUE,
+                    selectize = TRUE,
+                    width = "100%"
+                ),
+                if (length(selected_cols) > 0) {
+                    shiny::div(
+                        class = "dynprops-keys-block",
+                        shiny::tags$label(
+                            class = "custom-field-label",
+                            tr("dynprops_keys_header", lang_r)
+                        ),
+                        shiny::tags$p(
+                            class = "dynprops-help",
+                            tr("dynprops_help", lang_r)
+                        ),
+                        lapply(selected_cols, function(col_name) {
+                            auto_key <- derive_dynprops_key(col_name)
+                            input_id <- paste0(
+                                "dynprops_key_", make.names(col_name)
+                            )
+                            saved <- shiny::isolate(input[[input_id]])
+                            bslib::layout_columns(
+                                col_widths = c(5, 7),
+                                shiny::tags$div(
+                                    class = "dynprops-source-col",
+                                    col_name
+                                ),
+                                shiny::textInput(
+                                    ns(input_id),
+                                    NULL,
+                                    value = if (!is.null(saved) && nzchar(saved)) {
+                                        saved
+                                    } else {
+                                        ""
+                                    },
+                                    placeholder = sprintf(
+                                        tr("dynprops_key_placeholder", lang_r),
+                                        auto_key
+                                    ),
+                                    width = "100%"
+                                )
+                            )
+                        })
+                    )
+                }
+            )
         } else {
             bslib::layout_columns(
                 col_widths = if (item$sep != "") c(8, 4) else c(12),
