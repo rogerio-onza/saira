@@ -5,6 +5,14 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Documentacao
+- Reorganizado o contexto Claude do projeto: `.claude/CLAUDE.md` virou um roteador enxuto, regras operacionais foram movidas para `.claude/rules/`, a skill `.claude/skills/saira-change/SKILL.md` foi criada para fluxos de implementacao/review/auditoria e o guia operacional antigo em `docs/` foi removido para evitar duplicacao.
+- Adicionada a rule canonica `.claude/rules/karpathy-guidelines.md` como guardrail mandatorio para escrever, revisar ou refatorar codigo, com referencia em `.claude/CLAUDE.md`, `saira-change` e `docs/claude.md`.
+
+---
+
 ## [0.2.3] - 2026-05-11
 
 ### Corrigido
