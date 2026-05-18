@@ -146,12 +146,9 @@ testthat::test_that("temperature context penalty reduces latitude mapping score 
     testthat::expect_false(isTRUE(out$status[[1]] == "AUTO"))
 })
 
-testthat::test_that("stage1 parallel multisession matches sequential decisions", {
-    testthat::skip_if_not_installed("future")
-    testthat::skip_if_not_installed("furrr")
-
+local({
     set.seed(99)
-    df <- data.frame(
+    parity_df <- data.frame(
         scientificName = sample(c("Panthera onca", "Leopardus pardalis", "foo"), 200, replace = TRUE),
         scientific_name = sample(c("Panthera onca", "Leopardus pardalis", "foo"), 200, replace = TRUE),
         decimalLatitude = as.character(runif(200, -89, 89)),
@@ -159,34 +156,69 @@ testthat::test_that("stage1 parallel multisession matches sequential decisions",
         recorded_by = sample(c("Ana", "Bruno", "Carlos"), 200, replace = TRUE),
         stringsAsFactors = FALSE
     )
-    dwc_terms <- data.frame(
+    parity_terms <- data.frame(
         term = c("scientificName", "decimalLatitude", "recordedBy"),
         stringsAsFactors = FALSE
     )
-
-    seq_out <- run_rostrum_stage1(
-        df = df,
-        dwc_terms_df = dwc_terms,
+    parity_seq_out <- run_rostrum_stage1(
+        df = parity_df,
+        dwc_terms_df = parity_terms,
         synonyms_tbl = empty_synonyms(),
         options = rostrum_options(stage1_parallel = FALSE)
     )
-    par_out <- run_rostrum_stage1(
-        df = df,
-        dwc_terms_df = dwc_terms,
-        synonyms_tbl = empty_synonyms(),
-        options = rostrum_options(
-            stage1_parallel = TRUE,
-            stage1_parallel_workers = 2L,
-            stage1_parallel_strategy = "multisession"
+
+    assert_parity <- function(par_out) {
+        seq_cmp <- parity_seq_out[order(parity_seq_out$term), , drop = FALSE]
+        par_cmp <- par_out[order(par_out$term), , drop = FALSE]
+        testthat::expect_identical(seq_cmp$term, par_cmp$term)
+        testthat::expect_identical(seq_cmp$selected_col, par_cmp$selected_col)
+        testthat::expect_equal(seq_cmp$final_score, par_cmp$final_score, tolerance = 1e-12)
+        testthat::expect_identical(seq_cmp$status, par_cmp$status)
+        testthat::expect_identical(seq_cmp$reason, par_cmp$reason)
+    }
+
+    # Multisession: fresh R processes cannot loadNamespace() a pkgload::load_all()'d package.
+    # Skips under devtools::test(); runs and must pass under R CMD check (installed pkg).
+    testthat::test_that("stage1 parallel multisession matches sequential decisions", {
+        testthat::skip_if_not_installed("future")
+        testthat::skip_if_not_installed("furrr")
+        testthat::skip_if(
+            requireNamespace("pkgload", quietly = TRUE) && pkgload::is_dev_package("saira"),
+            "future::multisession workers cannot load a pkgload::load_all()'d package; parity verified under R CMD check"
         )
-    )
+        par_out <- run_rostrum_stage1(
+            df = parity_df,
+            dwc_terms_df = parity_terms,
+            synonyms_tbl = empty_synonyms(),
+            options = rostrum_options(
+                stage1_parallel = TRUE,
+                stage1_parallel_workers = 2L,
+                stage1_parallel_strategy = "multisession"
+            )
+        )
+        assert_parity(par_out)
+    })
 
-    seq_cmp <- seq_out[order(seq_out$term), , drop = FALSE]
-    par_cmp <- par_out[order(par_out$term), , drop = FALSE]
-
-    testthat::expect_identical(seq_cmp$term, par_cmp$term)
-    testthat::expect_identical(seq_cmp$selected_col, par_cmp$selected_col)
-    testthat::expect_equal(seq_cmp$final_score, par_cmp$final_score, tolerance = 1e-12)
-    testthat::expect_identical(seq_cmp$status, par_cmp$status)
-    testthat::expect_identical(seq_cmp$reason, par_cmp$reason)
+    # Multicore: fork inherits the parent namespace, so this runs correctly under load_all.
+    # Skipped on Windows (fork unavailable) and when parallelly::supportsMulticore() is FALSE.
+    testthat::test_that("stage1 parallel multicore matches sequential decisions", {
+        testthat::skip_if_not_installed("future")
+        testthat::skip_if_not_installed("furrr")
+        testthat::skip_on_os("windows")
+        testthat::skip_if_not(
+            requireNamespace("parallelly", quietly = TRUE) && parallelly::supportsMulticore(),
+            "multicore not supported on this platform"
+        )
+        par_out <- run_rostrum_stage1(
+            df = parity_df,
+            dwc_terms_df = parity_terms,
+            synonyms_tbl = empty_synonyms(),
+            options = rostrum_options(
+                stage1_parallel = TRUE,
+                stage1_parallel_workers = 2L,
+                stage1_parallel_strategy = "multicore"
+            )
+        )
+        assert_parity(par_out)
+    })
 })

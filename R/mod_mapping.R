@@ -11,20 +11,12 @@
 mod_mapping_ui <- function(id) {
     ns <- shiny::NS(id)
 
+    shiny::tagList(
     bslib::layout_sidebar(
         sidebar = bslib::sidebar(
             width = 280,
             class = "mapping-sidebar",
-            shiny::div(
-                class = "stats-box",
-                shiny::div(class = "stats-number", shiny::textOutput(ns("mapped_count"), inline = TRUE)),
-                shiny::div(class = "stats-label", shiny::uiOutput(ns("label_mapped_fields"), inline = TRUE))
-            ),
-            shiny::div(
-                class = "stats-box",
-                shiny::div(class = "stats-number", shiny::textOutput(ns("total_fields"), inline = TRUE)),
-                shiny::div(class = "stats-label", shiny::uiOutput(ns("label_total_fields"), inline = TRUE))
-            ),
+            shiny::uiOutput(ns("required_fields_strip")),
             shiny::hr(),
             shiny::uiOutput(ns("sidebar_actions_label")),
             shiny::actionButton(
@@ -57,34 +49,21 @@ mod_mapping_ui <- function(id) {
                 ns("show_only_mapped"),
                 shiny::uiOutput(ns("filter_mapped_label"), inline = TRUE),
                 value = FALSE
-            ),
-            shiny::div(
-                class = "category-filter-block",
-                shiny::uiOutput(ns("filter_categories_label")),
-                shiny::div(
-                    class = "category-filter-select-all",
-                    shiny::checkboxInput(
-                        ns("select_all_categories"),
-                        shiny::uiOutput(ns("filter_select_all_label"), inline = TRUE),
-                        value = TRUE
-                    )
-                ),
-                shiny::div(
-                    class = "category-filter-options",
-                    shiny::uiOutput(ns("filter_categories_ui"))
-                )
             )
         ),
 
         # Main content
         bslib::card(
-            bslib::card_header(shiny::uiOutput(ns("card_title"))),
+            bslib::card_header(
+                shiny::uiOutput(ns("card_title"))
+            ),
             bslib::card_body(
                 min_height = "70vh",
                 shiny::conditionalPanel(
                     condition = paste0("output['", ns("file_uploaded"), "']"),
                     shiny::div(
                         class = "mapping-scroll-container",
+                        shiny::uiOutput(ns("class_pills")),
                         shiny::uiOutput(ns("mapping_ui"))
                     )
                 ),
@@ -99,6 +78,26 @@ mod_mapping_ui <- function(id) {
                 )
             )
         )
+    ),
+    shiny::tags$script(shiny::HTML(
+        "(function () {
+          if (window.__sairaMappingScrollRegistered) { return; }
+          window.__sairaMappingScrollRegistered = true;
+          Shiny.addCustomMessageHandler('saira-mapping-scroll-to-class', function (payload) {
+            var id = payload && payload.anchor_id;
+            if (!id) { return; }
+            var frames = 0;
+            (function tryScroll() {
+              var el = document.getElementById(id);
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+              }
+              if (frames++ < 40) { window.requestAnimationFrame(tryScroll); }
+            })();
+          });
+        })();"
+    ))
     )
 }
 #' @noRd
@@ -177,8 +176,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             }
         })
 
-        syncing_select_all <- shiny::reactiveVal(FALSE)
-
         # i18n keys for all 12 catalog classes (base + on-demand extras).
         # Falls back to raw class name if a future class isn't covered.
         class_tr_keys_map <- c(
@@ -196,11 +193,20 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             "ResourceRelationship" = "class_resourcerelationship"
         )
 
+        # Required DwC terms surfaced as a live status strip in the sidebar
+        required_fields_strip <- c(
+            "scientificName", "eventDate", "decimalLatitude",
+            "decimalLongitude", "basisOfRecord", "occurrenceID"
+        )
+
         # Derives the sorted class list from current active terms (reactive)
         all_filter_categories <- shiny::reactive({
             cats <- vapply(dwc_all(), function(x) x$category, FUN.VALUE = character(1))
             sort(unique(cats))
         })
+
+        # Stable token for a class, shared by pill ids and section anchors
+        slug <- function(x) tolower(gsub("[^a-z0-9]+", "", tolower(x)))
 
         category_label <- function(category_value) {
             key <- unname(class_tr_keys_map[category_value])
@@ -209,11 +215,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
         category_labels <- function() {
             vapply(all_filter_categories(), category_label, FUN.VALUE = character(1))
-        }
-
-        category_choices <- function() {
-            cats <- all_filter_categories()
-            stats::setNames(cats, vapply(cats, category_label, FUN.VALUE = character(1)))
         }
 
 
@@ -327,6 +328,32 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             vals <- vals[!is.na(vals)]
             vals <- trimws(vals)
             vals <- vals[nzchar(vals)]
+            utils::head(vals, as.integer(n))
+        }
+
+        # Returns n sample values as the *processed* output for a term — same
+        # logic as build_processed_mapping_df, run on a head-slice for cost.
+        processed_preview_for_term <- function(term, current_val, n = 3L) {
+            df <- raw_data_r()
+            if (!is.data.frame(df) || nrow(df) == 0) return(character(0))
+            user_cols <- sanitize_map_selection(term, current_val)
+            if (!has_selected_value(user_cols)) return(character(0))
+            missing <- setdiff(user_cols, names(df))
+            if (length(missing) > 0) return(character(0))
+            slice <- utils::head(df, 200L)
+            result <- tryCatch(
+                build_term_value(
+                    term = term,
+                    df = slice,
+                    user_cols = user_cols,
+                    basis_of_record_map = rv$basis_of_record_map,
+                    dyn_props_keys = rv$dyn_props_keys,
+                    out_sep = " | "
+                ),
+                error = function(e) list(values = character(0))
+            )
+            vals <- as.character(result$values)
+            vals <- vals[!is.na(vals) & nzchar(vals)]
             utils::head(vals, as.integer(n))
         }
 
@@ -504,14 +531,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
 
         # Translated labels
-        output$label_mapped_fields <- shiny::renderUI({
-            tr("stats_mapped_fields", lang_r())
-        })
-
-        output$label_total_fields <- shiny::renderUI({
-            tr("stats_total_dwc_fields", lang_r())
-        })
-
         output$btn_auto_map_label <- shiny::renderUI({
             tr("btn_auto_mapping", lang_r())
         })
@@ -532,16 +551,69 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             tr("filter_mapped_only", lang_r())
         })
 
-        output$filter_categories_label <- shiny::renderUI({
-            shiny::tags$label(tr("filter_categories", lang_r()), class = "form-label")
-        })
-
-        output$filter_select_all_label <- shiny::renderUI({
-            tr("filter_select_all", lang_r())
-        })
-
         output$card_title <- shiny::renderUI({
             tr("mapping_title", lang_r())
+        })
+
+        # Live required-fields status pills in the sidebar (mapped-based, reactive
+        # on every mapping change). occurrenceID is auto-UUID -> is_field_mapped()
+        # already returns TRUE for it.
+        output$required_fields_strip <- shiny::renderUI({
+            mapped_flags <- vapply(required_fields_strip, function(term) {
+                current_val <- rv$map_values[[term]]
+                if (is.null(current_val)) {
+                    current_val <- input[[paste0("map_", term)]]
+                }
+                current_val <- sanitize_map_selection(term, current_val)
+                is_field_mapped(term, current_val, input)
+            }, FUN.VALUE = logical(1))
+
+            chips <- lapply(required_fields_strip, function(term) {
+                mapped <- mapped_flags[[term]]
+                status_label <- if (mapped) {
+                    tr("preview_readiness_present", lang_r())
+                } else {
+                    tr("preview_readiness_missing", lang_r())
+                }
+                shiny::span(
+                    class = paste(
+                        "mapping-required-chip",
+                        if (mapped) "is-mapped" else "is-missing"
+                    ),
+                    title = status_label,
+                    `aria-label` = paste(term, status_label),
+                    shiny::tags$i(
+                        class = if (mapped) {
+                            "fa-solid fa-circle-check"
+                        } else {
+                            "fa-solid fa-circle-xmark"
+                        }
+                    ),
+                    term
+                )
+            })
+
+            n_total <- length(required_fields_strip)
+            n_mapped <- sum(mapped_flags)
+
+            shiny::div(
+                class = "mapping-required-sidebar",
+                shiny::div(
+                    class = "mapping-required-header",
+                    shiny::tags$span(
+                        class = "mapping-required-strip-label",
+                        tr("preview_readiness_title", lang_r())
+                    ),
+                    shiny::tags$span(
+                        class = paste(
+                            "mapping-required-count",
+                            if (n_mapped == n_total) "is-complete" else ""
+                        ),
+                        paste0(n_mapped, "/", n_total)
+                    )
+                ),
+                chips
+            )
         })
 
         output$no_file_msg <- shiny::renderUI({
@@ -887,64 +959,57 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             ignoreInit = TRUE
         )
 
-        # Dynamic category filter checkboxes (updates when extra terms add new classes)
-        output$filter_categories_ui <- shiny::renderUI({
+        # Class pill bar: pure scroll-navigation anchors. Clicking a pill scrolls
+        # to its category section. No filter toggle — all sections always render.
+        output$class_pills <- shiny::renderUI({
             cats <- all_filter_categories()
-            shiny::checkboxGroupInput(
-                ns("filter_categories"),
-                NULL,
-                choices  = stats::setNames(
-                    cats,
-                    vapply(cats, category_label, FUN.VALUE = character(1))
+
+            shiny::div(
+                class = "mapping-class-pillbar",
+                shiny::actionButton(
+                    ns("class_pill_all"),
+                    tr("mapping_pill_all", lang_r()),
+                    class = "stream-pill",
+                    icon = shiny::icon("arrows-up-to-line")
                 ),
-                selected = cats
+                lapply(cats, function(cat) {
+                    shiny::actionButton(
+                        ns(paste0("class_pill_", slug(cat))),
+                        category_label(cat),
+                        class = "stream-pill"
+                    )
+                })
             )
         })
 
-        shiny::observeEvent(lang_r(),
-            {
-                current <- shiny::isolate(input$filter_categories)
-                if (is.null(current)) {
-                    current <- all_filter_categories()
-                }
-                shiny::updateCheckboxGroupInput(
-                    session,
-                    "filter_categories",
-                    choices  = category_choices(),
-                    selected = current
+        # Static observer loop over the full 12-class catalog. Clicking a pill
+        # scrolls directly to that category's anchor. No filter toggle.
+        for (cls in names(class_tr_keys_map)) {
+            local({
+                cl <- cls
+                pill_id <- paste0("class_pill_", slug(cl))
+                shiny::observeEvent(input[[pill_id]],
+                    {
+                        session$sendCustomMessage(
+                            "saira-mapping-scroll-to-class",
+                            list(anchor_id = ns(paste0("cat_anchor_", slug(cl))))
+                        )
+                    },
+                    ignoreInit = TRUE
                 )
-            },
-            ignoreInit = FALSE
-        )
+            })
+        }
 
-        # Category filter: select all / unselect all
-        shiny::observeEvent(input$select_all_categories,
+        # "Todos" pill: scroll back to the first rendered category section.
+        shiny::observeEvent(input$class_pill_all,
             {
-                if (isTRUE(syncing_select_all())) {
-                    syncing_select_all(FALSE)
-                    return()
-                }
-                target  <- if (isTRUE(input$select_all_categories)) all_filter_categories() else character(0)
-                current <- input$filter_categories
-                if (is.null(current)) current <- character(0)
-                same_selection <- length(current) == length(target) && all(sort(current) == sort(target))
-                if (!same_selection) {
-                    shiny::updateCheckboxGroupInput(session, "filter_categories", selected = target)
-                }
-            },
-            ignoreInit = TRUE
-        )
-
-        shiny::observeEvent(input$filter_categories,
-            {
-                current <- input$filter_categories
-                if (is.null(current)) current <- character(0)
-                cats <- all_filter_categories()
-                is_all_selected <- length(current) == length(cats) && all(cats %in% current)
-                if (!identical(isTRUE(input$select_all_categories), is_all_selected)) {
-                    syncing_select_all(TRUE)
-                    shiny::updateCheckboxInput(session, "select_all_categories", value = is_all_selected)
-                }
+                first_cat <- unique(vapply(
+                    dwc_all(), function(x) x$category, FUN.VALUE = character(1)
+                ))[1]
+                session$sendCustomMessage(
+                    "saira-mapping-scroll-to-class",
+                    list(anchor_id = ns(paste0("cat_anchor_", slug(first_cat))))
+                )
             },
             ignoreInit = TRUE
         )
@@ -1114,24 +1179,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             )
         })
 
-        # Mapping UI generation (card builder delegated to mod_mapping_cards.R)
+        # Mapping UI generation (card builder delegated to mod_mapping_cards.R).
+        # All category sections always render so scroll-anchors are always in DOM.
         output$mapping_ui <- shiny::renderUI({
             shiny::req(raw_data_r())
 
             cols <- c("-- " = "", names(raw_data_r()))
             fields_to_show <- dwc_all()
-
-            # Apply category filter
-            selected_categories <- input$filter_categories
-            if (is.null(selected_categories)) {
-                selected_categories <- character(0)
-            }
-
-            if (length(selected_categories) == 0) {
-                fields_to_show <- list()
-            } else {
-                fields_to_show <- Filter(function(x) x$category %in% selected_categories, fields_to_show)
-            }
 
             all_categories <- vapply(fields_to_show, function(x) x$category, FUN.VALUE = character(1))
             categories <- unique(all_categories)
@@ -1143,7 +1197,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                     cat_class <- paste0("cat-", tolower(gsub("-", "", cat)))
 
                     shiny::tagList(
-                        shiny::div(class = "category-header", category_label(cat)),
+                        shiny::div(
+                            id = ns(paste0("cat_anchor_", slug(cat))),
+                            class = "category-header",
+                            category_label(cat)
+                        ),
                         shiny::div(
                             class = "two-column-layout",
                             lapply(cat_fields, function(item) {
@@ -1165,13 +1223,25 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                     return(NULL)
                                 }
 
+                                is_standard <- !(term %in% c(
+                                    "occurrenceID", "datasetName", "modified",
+                                    "license", "language", "basisOfRecord",
+                                    "dynamicProperties"
+                                ))
+                                sample_preview <- if (is_standard && has_selected_value(current_val)) {
+                                    processed_preview_for_term(term, current_val, 1L)
+                                } else {
+                                    NULL
+                                }
+
                                 build_field_card(
                                     item = item, cols = cols,
                                     current_val = current_val,
                                     is_mapped = is_mapped,
                                     badge_info = badge_info,
                                     ns = ns, lang_r = lang,
-                                    input = input, cat_class = cat_class
+                                    input = input, cat_class = cat_class,
+                                    sample_preview = sample_preview
                                 )
                             })
                         )
@@ -1398,48 +1468,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             },
             ignoreInit = TRUE
         )
-
-        # Statistics
-        output$mapped_count <- shiny::renderText({
-            shiny::req(raw_data_r())
-
-            mapped <- 1 # occurrenceID always counted
-            for (item in dwc_all()) {
-                term <- item$term
-                if (term == "occurrenceID") next
-                # Check custom fields
-                if (term == "datasetName") {
-                    custom_val <- input$custom_datasetName
-                    user_cols <- sanitize_map_selection(term, rv$map_values[[term]])
-                    if ((!is.null(custom_val) && nchar(trimws(custom_val)) > 0) ||
-                        has_selected_value(user_cols)) {
-                        mapped <- mapped + 1
-                    }
-                } else if (term == "modified") {
-                    if (isTRUE(input$modified_use_today) || !is.null(input$custom_modified_date)) {
-                        mapped <- mapped + 1
-                    }
-                } else if (term == "license") {
-                    if (!is.null(input$custom_license) && length(input$custom_license) > 0) {
-                        mapped <- mapped + 1
-                    }
-                } else if (term == "language") {
-                    if (!is.null(input$custom_language) && length(input$custom_language) > 0) {
-                        mapped <- mapped + 1
-                    }
-                } else {
-                    user_cols <- sanitize_map_selection(term, rv$map_values[[term]])
-                    if (has_selected_value(user_cols)) {
-                        mapped <- mapped + 1
-                    }
-                }
-            }
-            mapped
-        })
-
-        output$total_fields <- shiny::renderText({
-            length(dwc_all())
-        })
 
         build_mapped_result <- function(df_input, occurrence_ids_input) {
             build_processed_mapping_df(

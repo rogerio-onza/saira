@@ -15,8 +15,10 @@
 #' @param lang_r Reactive language code (already evaluated)
 #' @param input Shiny input from parent module
 #' @param cat_class CSS class for the category
+#' @param sample_preview Optional character vector of sample values from the
+#'   mapped source column (standard select terms only); NULL hides the preview
 #' @noRd
-build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class) {
+build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, sample_preview = NULL) {
     term <- item$term
 
     shiny::div(
@@ -217,32 +219,43 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 }
             )
         } else {
-            bslib::layout_columns(
-                col_widths = if (item$sep != "") c(8, 4) else c(12),
-                shiny::selectInput(
-                    ns(paste0("map_", term)),
-                    NULL,
-                    choices = cols,
-                    selected = if (has_selected_value(current_val)) {
-                        if (term %in% c("scientificName", "basisOfRecord")) {
-                            if (length(current_val) > 0) current_val[[1]] else ""
-                        } else {
-                            current_val
-                        }
-                    } else {
-                        ""
-                    },
-                    multiple = !(term %in% c("scientificName", "basisOfRecord")),
-                    selectize = TRUE,
-                    width = "100%"
-                ),
-                if (item$sep != "") {
-                    shiny::textInput(
-                        ns(paste0("sep_", term)),
+            shiny::tagList(
+                bslib::layout_columns(
+                    col_widths = if (item$sep != "") c(8, 4) else c(12),
+                    shiny::selectInput(
+                        ns(paste0("map_", term)),
                         NULL,
-                        value = item$sep,
-                        placeholder = tr("mapping_separator_placeholder", lang_r),
+                        choices = cols,
+                        selected = if (has_selected_value(current_val)) {
+                            if (term %in% c("scientificName", "basisOfRecord")) {
+                                if (length(current_val) > 0) current_val[[1]] else ""
+                            } else {
+                                current_val
+                            }
+                        } else {
+                            ""
+                        },
+                        multiple = !(term %in% c("scientificName", "basisOfRecord")),
+                        selectize = TRUE,
                         width = "100%"
+                    ),
+                    if (item$sep != "") {
+                        shiny::textInput(
+                            ns(paste0("sep_", term)),
+                            NULL,
+                            value = item$sep,
+                            placeholder = tr("mapping_separator_placeholder", lang_r),
+                            width = "100%"
+                        )
+                    }
+                ),
+                if (length(sample_preview) > 0) {
+                    shiny::div(
+                        class = "field-card-sample",
+                        paste0(
+                            tr("mapping_card_sample_prefix", lang_r), "  ",
+                            paste(sample_preview, collapse = "  ")
+                        )
                     )
                 }
             )

@@ -368,6 +368,13 @@ testthat::test_that("get_language_name resolves known and unknown language codes
     testthat::expect_identical(get_language_name("es"), "es")
 })
 
+testthat::test_that("format_count groups integers by locale without warning", {
+    testthat::expect_no_warning(testthat::expect_identical(format_count(1234567L, "pt"), "1.234.567"))
+    testthat::expect_no_warning(testthat::expect_identical(format_count(1234567L, "en"), "1,234,567"))
+    testthat::expect_no_warning(testthat::expect_identical(format_count(999L, "pt"), "999"))
+    testthat::expect_no_warning(testthat::expect_identical(format_count(999L, "en"), "999"))
+})
+
 testthat::test_that("all dictionary keys contain non-empty pt and en translations", {
     dict <- saira:::load_i18n_dict()
 

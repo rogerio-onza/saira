@@ -1,0 +1,17 @@
+# Development / agent tooling (not part of the public package)
+.claude/
+scripts/
+pkg_docs/
+
+# R / RStudio
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Windows Mark-of-the-Web NTFS alternate-data-stream junk
+*:Zone.Identifier

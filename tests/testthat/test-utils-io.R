@@ -127,7 +127,10 @@ testthat::test_that("read_biodiversity_csv retries Latin-1 when UTF-8 detection 
     on.exit(unlink(tmp), add = TRUE)
     writeBin(c(ascii_payload, charToRaw("\n"), latin1_row), tmp)
 
-    out <- read_biodiversity_csv(tmp)
+    testthat::expect_warning(
+        out <- read_biodiversity_csv(tmp),
+        "retrying with alternative encoding"
+    )
 
     testthat::expect_s3_class(out, "data.frame")
     testthat::expect_equal(nrow(out), 101L)

@@ -524,3 +524,53 @@ testthat::test_that("config panel shows BR provider runtime status badges", {
         }
     )
 })
+
+testthat::test_that("report table wires the sensitive-species pill column", {
+    mapped_df <- data.frame(
+        scientificName = c("Hippocampus reidi", "Homo sapiens"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            validation_result(data.frame(
+                scientificName = c("Hippocampus reidi", "Homo sapiens"),
+                query_name = c("Hippocampus reidi", "Homo sapiens"),
+                validation_status = c("accepted", "accepted"),
+                taxonomicStatus = c("accepted", "accepted"),
+                stringsAsFactors = FALSE
+            ))
+            session$flushReact()
+
+            widget <- jsonlite::fromJSON(
+                output$report_table,
+                simplifyVector = FALSE
+            )
+            col_defs <- widget$x$options$columnDefs
+
+            hidden_targets <- unlist(lapply(col_defs, function(cd) {
+                if (isFALSE(cd$visible)) unlist(cd$targets) else NULL
+            }))
+            # The hidden .is_sensitive column sits at index 4.
+            testthat::expect_true(4 %in% hidden_targets)
+
+            scientific_render <- NULL
+            for (cd in col_defs) {
+                if (!is.null(cd$render) && 0 %in% unlist(cd$targets)) {
+                    scientific_render <- paste(unlist(cd$render), collapse = " ")
+                }
+            }
+            testthat::expect_true(
+                grepl("vn-cell-sensitive", scientific_render, fixed = TRUE)
+            )
+            testthat::expect_true(
+                grepl("row[4]", scientific_render, fixed = TRUE)
+            )
+        }
+    )
+})

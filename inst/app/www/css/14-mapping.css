@@ -48,6 +48,10 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: var(--space-3);
+  /* Grid items default to min-width:auto and will not shrink below their
+     content's intrinsic width; without this the no-wrap .field-card-sample
+     blows the card past its 1fr track and the ellipsis never engages. */
+  min-width: 0;
   transition: var(--transition-base);
 }
 
@@ -123,27 +127,17 @@
   break-inside: avoid;
 }
 
-/* Stats box in sidebar */
-.stats-box {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: var(--space-3);
-  text-align: center;
+/* Required-fields status pills in the sidebar */
+.mapping-required-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
   margin-bottom: var(--space-3);
-}
-
-.stats-number {
-  font-size: var(--text-2xl);
-  font-weight: var(--weight-semibold);
-  color: var(--accent);
-  font-family: var(--font-mono);
-}
-
-.stats-label {
-  font-size: var(--text-sm);
-  color: var(--text-muted);
-  margin-top: var(--space-1);
+  padding: var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Select input styling in mapping cards */
@@ -270,50 +264,88 @@
   margin: 0;
 }
 
-/* Category filter block layout and alignment */
-.mapping-sidebar .category-filter-block {
-  margin-top: var(--space-2);
+/* Class pill bar: sticky visibility filter + scroll navigation */
+.mapping-class-pillbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  margin-bottom: var(--space-3);
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
 }
 
-.mapping-sidebar .category-filter-block .form-group {
-  margin-bottom: 0;
-}
-
-.mapping-sidebar .category-filter-select-all {
-  padding-bottom: var(--space-2);
+.mapping-required-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
   margin-bottom: var(--space-2);
-  border-bottom: 1px solid var(--border-light);
 }
 
-.mapping-sidebar .category-filter-options .shiny-options-group {
-  margin-top: 0;
+.mapping-required-strip-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.mapping-sidebar .category-filter-select-all .checkbox,
-.mapping-sidebar .category-filter-options .checkbox {
-  margin-top: 0;
-  margin-bottom: var(--space-2);
+.mapping-required-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 0 0.4rem;
+  border-radius: var(--radius-full);
+  background: var(--info-bg);
+  color: var(--text-primary);
 }
 
-.mapping-sidebar .category-filter-options .checkbox:last-child {
-  margin-bottom: 0;
+.mapping-required-count.is-complete {
+  background: var(--success-bg);
 }
 
-.mapping-sidebar .category-filter-select-all .checkbox label,
-.mapping-sidebar .category-filter-options .checkbox label {
-  display: inline-flex;
+.mapping-required-chip {
+  display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-bottom: 0;
-  font-size: var(--text-base);
-  line-height: var(--leading-normal);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 0.3rem 0.5rem;
+  border-radius: var(--radius);
   color: var(--text-primary);
-  font-weight: var(--weight-medium);
+  width: 100%;
 }
 
-.mapping-sidebar .category-filter-select-all .checkbox label input[type="checkbox"],
-.mapping-sidebar .category-filter-options .checkbox label input[type="checkbox"] {
-  margin: 0;
+.mapping-required-chip.is-mapped {
+  background: var(--success-bg);
+}
+
+.mapping-required-chip.is-mapped i {
+  color: var(--success);
+}
+
+.mapping-required-chip.is-missing {
+  background: var(--warning-bg);
+}
+
+.mapping-required-chip.is-missing i {
+  color: var(--warning);
+}
+
+/* One-line sample preview inside a mapped field card */
+.field-card-sample {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Auto-map blocking modal */

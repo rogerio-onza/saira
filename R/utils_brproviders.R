@@ -339,7 +339,7 @@ brprovider_latest_remote_version <- function(provider_id) {
     }
 
     page <- tryCatch(
-        paste(utils::readLines(resource_url, warn = FALSE, encoding = "UTF-8"), collapse = "\n"),
+        paste(readLines(resource_url, warn = FALSE, encoding = "UTF-8"), collapse = "\n"),
         error = function(e) {
             stop(sprintf("Failed to query remote version for '%s': %s", provider_id, e$message))
         }

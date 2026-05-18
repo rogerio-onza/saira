@@ -26,14 +26,6 @@ testthat::test_that("mod_preview_server returns preview, checklist chips and sin
 
             session$flushReact()
 
-            readiness_ui <- output$readiness_checklist
-            readiness_html <- paste(readiness_ui$html, collapse = " ")
-            testthat::expect_true(grepl("preview-readiness-card-ok", readiness_html, fixed = TRUE))
-            testthat::expect_true(grepl("preview-readiness-card-missing", readiness_html, fixed = TRUE))
-            testthat::expect_true(grepl("preview-readiness-state-ok", readiness_html, fixed = TRUE))
-            testthat::expect_true(grepl("preview-readiness-state-missing", readiness_html, fixed = TRUE))
-            testthat::expect_false(grepl("preview-readiness-chip", readiness_html, fixed = TRUE))
-
             download_ui <- output$download_btn_container
             download_html <- paste(download_ui$html, collapse = " ")
             icon_hits <- gregexpr("fa-download", download_html, fixed = TRUE)[[1]]
@@ -56,11 +48,9 @@ testthat::test_that("mod_preview_server renders enhanced empty state when no map
             session$flushReact()
             empty_ui <- output$table_or_message
             html <- paste(empty_ui$html, collapse = " ")
-            readiness_ui <- output$readiness_checklist
 
             testthat::expect_true(grepl("preview-empty-state", html, fixed = TRUE))
             testthat::expect_true(grepl("No mapped data", html, fixed = TRUE))
-            testthat::expect_null(readiness_ui)
         }
     )
 })

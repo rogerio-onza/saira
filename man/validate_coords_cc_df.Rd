@@ -24,7 +24,7 @@ validate_coords_cc_df(
 
 \item{profile}{Validation profile (`"complete"` or `"fast"`)}
 
-\item{seas_scale}{Landmass resolution for sea test (10 = highest detail, 50 = medium, 110 = coarse). Default `10` requires `rnaturalearthhires`; falls back to `50` if not installed.}
+\item{seas_scale}{Landmass resolution for sea test (10 = embedded Americas detail, 50 = medium global fallback, 110 = coarse global). Default `10` uses the embedded Americas reference and falls back to `50` only for points outside that coverage.}
 }
 \value{
 Data frame preserving input cardinality with flags and final diagnosis

@@ -465,6 +465,39 @@ testthat::test_that("build_mapping_guide_txt + parse_mapping_guide_txt round-tri
     )
 })
 
+testthat::test_that("redesigned guide: unmapped columns are comment-safe, no parser noise", {
+    tmp <- tempfile(fileext = ".txt")
+    on.exit(unlink(tmp), add = TRUE)
+
+    raw <- data.frame(
+        Lat = -15.5, Lon = -47.5, especie = "x",
+        notas_campo = "y", codigo_interno = "z",
+        stringsAsFactors = FALSE
+    )
+    map_values <- list(
+        decimalLatitude  = "Lat",
+        decimalLongitude = "Lon",
+        scientificName   = "especie"
+    )
+
+    txt <- build_mapping_guide_txt(map_values, raw, lang = "pt")
+    testthat::expect_identical(txt[[1]], "# saira:mapping:v1")
+    # unmapped columns are emitted as parser-safe comment lines, never bare:
+    testthat::expect_true(any(grepl("^#\\s+- notas_campo$", txt)))
+    testthat::expect_false("notas_campo" %in% txt)
+
+    writeLines(txt, tmp)
+    parsed <- testthat::expect_no_warning(parse_mapping_guide_txt(tmp))
+
+    # exactly the 3 real mappings; unmapped cols must NOT leak into pairs:
+    testthat::expect_identical(nrow(parsed$pairs), 3L)
+    testthat::expect_false(any(
+        c("notas_campo", "codigo_interno") %in% parsed$pairs$source_column
+    ))
+    # metadata still parses from the restyled header:
+    testthat::expect_true(nzchar(parsed$meta[["created_at"]]))
+})
+
 testthat::test_that("end-to-end: guide import populates aliases that rostrum_lookup_alias finds", {
     db_path <- tempfile(fileext = ".sqlite")
     conn <- rostrum_connect(path = db_path)

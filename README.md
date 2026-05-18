@@ -19,16 +19,42 @@
 
 ### Installation
 
+**Requirements:** R >= 4.1.0.
+
+Two of Saira's dependencies (`florabr`, `faunabr`) are published on the
+rOpenSci R-universe, **not** on CRAN. `remotes::install_github()` does not read
+the package's `Additional_repositories`, so add the R-universe to your `repos`
+**before** installing, otherwise the install fails resolving those two
+packages:
+
 ```r
-# Install from GitHub (development version)
+# 1. Make CRAN + rOpenSci R-universe both visible:
+options(repos = c(
+  ropensci = "https://ropensci.r-universe.dev",
+  CRAN     = "https://cloud.r-project.org"
+))
+
+# 2. Install Saira and all dependencies from GitHub:
 # install.packages("remotes")
 remotes::install_github("sibbr/saira")
 ```
 
+**Linux system libraries:** the `sf` dependency needs GDAL, GEOS and PROJ.
+Windows and macOS get prebuilt CRAN binaries (nothing to do); on
+Debian/Ubuntu install them first:
+
+```bash
+sudo apt-get install -y libgdal-dev libgeos-dev libproj-dev libudunits2-dev
+```
+
+**First taxonomic check:** `taxadb` downloads a local taxonomic database on
+first use (one-time, sizeable, needs network) — the first name-verification
+run will take noticeably longer while it caches.
+
 Coordinate validation ships with an embedded `10m` Natural Earth land mask for
-the Americas. Datasets outside that coverage automatically fall back to the
-global `50m` reference for the sea check; no extra installation is required for
-end users.
+the Americas, so `rnaturalearthhires` is optional (it is only in `Suggests`).
+Datasets outside that coverage automatically fall back to the global `50m`
+reference for the sea check; no extra installation is required for end users.
 
 ### Running the Application
 

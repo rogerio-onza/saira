@@ -283,38 +283,43 @@ build_mapping_guide_txt <- function(map_values,
 
     L <- if (lang == "pt") {
         list(
-            how_to_use   = "# Como usar este arquivo:",
-            step_1       = "#   1. Abra o app Saira (aba Inicio) e suba este .txt no mesmo",
-            step_1b      = "#      dropzone que voce usa para CSV de dados.",
-            step_2       = "#   2. Saira detecta o cabecalho magico e abre um modal de confirmacao.",
-            step_3       = "#   3. Ao confirmar, cada linha vira um alias salvo no seu",
-            step_3b      = "#      rostrum.sqlite local (scope=personal, confidence=1.0, reviewed=1).",
-            step_4       = "#   4. Suba a planilha de dados (CSV) e clique Auto-Mapear:",
-            step_4b      = "#      colunas de mesmo nome ganham badge ALIAS automaticamente.",
-            section_map  = "# Mapeamentos (Coluna_origem -> Termo_DwC):",
-            section_miss = "# Termos DwC obrigatorios nao mapeados:",
-            section_unmp = "# Colunas brutas nao usadas no mapeamento (preservadas no fim do CSV):",
+            title        = "#   SAIRA \u00b7 Guia de Mapeamento Darwin Core",
+            url          = "#   github.com/sibbr/saira",
+            tagline      = "#   Vocabulario de mapeamento compartilhavel - sem dados de registros",
+            how_to_use   = "#   como usar",
+            step_1       = "#     1. No Saira (aba Inicio), suba este .txt no dropzone de dados.",
+            step_2       = "#     2. Confirme o guia de mapeamento detectado.",
+            step_3       = "#     3. Cada linha vira um alias pessoal (scope=personal, reviewed).",
+            step_4       = "#     4. Suba seu CSV e clique em Auto-Mapear.",
+            section_map  = "#   mapeamentos   (coluna_origem -> termo_DwC)",
+            section_miss = "#   termos DwC obrigatorios ainda nao mapeados",
+            section_unmp = "#   colunas brutas nao usadas (mantidas no fim do CSV)",
             none         = "(nenhum)"
         )
     } else {
         list(
-            how_to_use   = "# How to use this file:",
-            step_1       = "#   1. Open the Saira app (Home tab) and upload this .txt in the",
-            step_1b      = "#      same dropzone you use for data CSVs.",
-            step_2       = "#   2. Saira detects the magic header and opens a confirmation modal.",
-            step_3       = "#   3. On confirm, each line becomes an alias stored in your local",
-            step_3b      = "#      rostrum.sqlite (scope=personal, confidence=1.0, reviewed=1).",
-            step_4       = "#   4. Upload your data spreadsheet (CSV) and click Auto-Map:",
-            step_4b      = "#      columns with the same name get the ALIAS badge automatically.",
-            section_map  = "# Mappings (source_column -> DwC_term):",
-            section_miss = "# Required DwC terms not mapped:",
-            section_unmp = "# Raw columns not used (preserved at the end of the CSV):",
+            title        = "#   SAIRA \u00b7 Darwin Core Mapping Guide",
+            url          = "#   github.com/sibbr/saira",
+            tagline      = "#   Shareable mapping vocabulary - contains no record data",
+            how_to_use   = "#   how to use",
+            step_1       = "#     1. In Saira (Home tab), upload this .txt in the data dropzone.",
+            step_2       = "#     2. Confirm the detected mapping guide.",
+            step_3       = "#     3. Each line becomes a personal alias (scope=personal, reviewed).",
+            step_4       = "#     4. Upload your CSV and click Auto-Map.",
+            section_map  = "#   mappings   (source_column -> DwC_term)",
+            section_miss = "#   required DwC terms not yet mapped",
+            section_unmp = "#   unused raw columns (kept at end of CSV)",
             none         = "(none)"
         )
     }
 
     out <- c(
         "# saira:mapping:v1",
+        "#",
+        L$title,
+        L$url,
+        L$tagline,
+        "#",
         sprintf("# created_at: %s", format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")),
         sprintf("# source_file: %s", if (is.na(source_file)) "" else source_file),
         sprintf("# n_cols_total: %d  n_cols_mapped: %d  n_cols_unmapped: %d  n_rows: %d",
@@ -322,18 +327,16 @@ build_mapping_guide_txt <- function(map_values,
         "#",
         L$how_to_use,
         L$step_1,
-        L$step_1b,
         L$step_2,
         L$step_3,
-        L$step_3b,
         L$step_4,
-        L$step_4b,
         "#",
-        L$section_map
+        L$section_map,
+        "#"
     )
 
     if (length(pairs) == 0L) {
-        out <- c(out, paste0("#   ", L$none))
+        out <- c(out, paste0("#     ", L$none))
     } else {
         col_width <- max(nchar(vapply(pairs, function(p) p$source, character(1))))
         col_width <- max(col_width, 16L)
@@ -344,18 +347,20 @@ build_mapping_guide_txt <- function(map_values,
 
     out <- c(out, "#", L$section_miss)
     if (length(missing_required) == 0L) {
-        out <- c(out, paste0("#   ", L$none))
+        out <- c(out, paste0("#     ", L$none))
     } else {
         for (term in missing_required) {
-            out <- c(out, paste0("#   - ", term))
+            out <- c(out, paste0("#     - ", term))
         }
     }
 
     out <- c(out, "#", L$section_unmp)
     if (length(unmapped_cols) == 0L) {
-        out <- c(out, paste0("#   ", L$none))
+        out <- c(out, paste0("#     ", L$none))
     } else {
-        out <- c(out, unmapped_cols)
+        for (col in unmapped_cols) {
+            out <- c(out, paste0("#     - ", col))
+        }
     }
 
     out

@@ -11,7 +11,11 @@
 #
 # Merge strategy:
 #   - Base terms (dwc_terms.rds) retain definition_pt, required, data_type
-#   - New terms: definition_pt = "", required = FALSE, data_type = "string"
+#   - New terms: required = FALSE, data_type = "string"; definition_pt is
+#     filled from data-raw/dwc_definitions_pt.csv (curated PT-BR translations
+#     of every non-base recommended term). Base PT always wins on conflict.
+#   - The build asserts 100% PT coverage and fails loudly if any term is
+#     left without a Portuguese definition.
 #
 # To regenerate (from the project root):
 #   source(here::here("data-raw/build_dwc_full_catalog.R"))
@@ -96,6 +100,19 @@ for (col in c("definition_pt", "required", "data_type")) {
   catalog[idx_catalog[valid], col] <- base[[col]][valid]
 }
 
+# Fill PT for non-base terms from the curated translation file. Only fills
+# rows still empty after the base merge, so base PT definitions always win.
+pt_path <- file.path("data-raw", "dwc_definitions_pt.csv")
+pt_csv  <- utils::read.csv(pt_path, stringsAsFactors = FALSE,
+                           encoding = "UTF-8")
+pt_csv$definition_pt <- trimws(pt_csv$definition_pt)
+empty_pt <- !nzchar(trimws(catalog$definition_pt))
+pt_idx   <- match(catalog$term[empty_pt], pt_csv$term)
+catalog$definition_pt[empty_pt] <- pt_csv$definition_pt[pt_idx]
+catalog$definition_pt[is.na(catalog$definition_pt)] <- ""
+message("  PT translations merged from ", pt_path, " (",
+        sum(!is.na(pt_idx)), " filled)")
+
 base_order   <- match(base$term, catalog$term)
 base_order   <- base_order[!is.na(base_order)]
 extra_idx    <- setdiff(seq_len(nrow(catalog)), base_order)
@@ -108,6 +125,14 @@ message(
   sum(catalog$required), " required, ",
   sum(nzchar(catalog$definition_pt)), " with PT translation)"
 )
+
+missing_pt <- catalog$term[!nzchar(trimws(catalog$definition_pt))]
+if (length(missing_pt) > 0L) {
+  stop("Terms without a PT definition (add them to ",
+       "data-raw/dwc_definitions_pt.csv): ",
+       paste(missing_pt, collapse = ", "))
+}
+stopifnot(sum(nzchar(trimws(catalog$definition_pt))) == nrow(catalog))
 
 out_path <- file.path("inst", "extdata", "dwc_full_catalog.rds")
 saveRDS(catalog, out_path)

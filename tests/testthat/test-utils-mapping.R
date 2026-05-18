@@ -752,6 +752,58 @@ testthat::test_that("map_occurrence_status_values handles numeric and logical in
     )
 })
 
+testthat::test_that("build_term_value: single-column term normalizes semicolons", {
+    df <- data.frame(recorded = c("Ana; Bruno", "Carlos"), stringsAsFactors = FALSE)
+    result <- build_term_value("recordedBy", df, "recorded")
+    testthat::expect_identical(unname(result$values), c("Ana | Bruno", "Carlos"))
+    testthat::expect_identical(result$eventdate_failure_count, 0L)
+})
+
+testthat::test_that("build_term_value: multi-column term collapses with pipe", {
+    df <- data.frame(a = c("X", "Y"), b = c("P", "Q"), stringsAsFactors = FALSE)
+    result <- build_term_value("locality", df, c("a", "b"))
+    testthat::expect_identical(result$values, c("X | P", "Y | Q"))
+})
+
+testthat::test_that("build_term_value: eventDate 4-col produces ISO interval", {
+    df <- data.frame(
+        smo = c("Aug", "foo"), syr = c("2017", "2017"),
+        emo = c("Jun", "Jun"), eyr = c("2018", "2018"),
+        stringsAsFactors = FALSE
+    )
+    result <- build_term_value("eventDate", df, c("smo", "syr", "emo", "eyr"))
+    testthat::expect_identical(result$values[[1]], "2017-08/2018-06")
+    testthat::expect_identical(result$eventdate_failure_count, 1L)
+})
+
+testthat::test_that("build_term_value: basisOfRecord applies mapping", {
+    df <- data.frame(bor = c("humanobservation", "Unknown"), stringsAsFactors = FALSE)
+    bmap <- c("humanobservation" = "HumanObservation")
+    result <- build_term_value("basisOfRecord", df, "bor", basis_of_record_map = bmap)
+    testthat::expect_identical(result$values[[1]], "HumanObservation")
+})
+
+testthat::test_that("build_term_value and build_processed_mapping_df agree on single-col output", {
+    df <- data.frame(
+        sp = c("Panthera onca"), rby = c("Ana; Bruno"),
+        stringsAsFactors = FALSE
+    )
+    dwc_terms <- list(
+        list(term = "occurrenceID"),
+        list(term = "scientificName"),
+        list(term = "recordedBy")
+    )
+    map_values <- empty_map_values(c("occurrenceID", "scientificName", "recordedBy"))
+    map_values$scientificName <- "sp"
+    map_values$recordedBy <- "rby"
+    full <- build_processed_mapping_df(
+        df = df, dwc_terms = dwc_terms, map_values = map_values,
+        occurrence_ids = "id-1"
+    )$data
+    direct <- build_term_value("recordedBy", df, "rby")
+    testthat::expect_identical(full$recordedBy, unname(direct$values))
+})
+
 testthat::test_that("build_processed_mapping_df transforms occurrenceStatus values to present/absent", {
     df <- data.frame(
         flag_col = c("1", "0", "Sim", "presente", "other", NA_character_),

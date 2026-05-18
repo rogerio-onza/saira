@@ -157,6 +157,16 @@ process_for_export <- function(df) {
 }
 ```
 
+**Mascaramento de espécies sensíveis (ADR-090)**: no handler de download, após
+`process_for_export_with_unmapped()`, `mask_sensitive_coordinates()`
+(`R/utils_sensitive.R`, função pura) generaliza lat/lon das espécies da Lista
+Nacional MMA (`inst/extdata/sensitive_species.rds`) para grade de 0.1° e
+preenche `dataGeneralizations` / `informationWithheld` /
+`coordinateUncertaintyInMeters`. As coordenadas reais saem num
+`sensitive_real_coords_<data>.csv` separado dentro do ZIP (chaveado por
+`occurrenceID`); sem espécie listada o ZIP é idêntico ao anterior. A mesma
+`flag_sensitive_species()` alimenta a pill "Sensível" na aba Validação > Nomes.
+
 **Benefício**: Toda lógica de export é testável fora do Shiny:
 ```r
 # tests/testthat/test-utils-export.R

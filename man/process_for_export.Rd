@@ -10,7 +10,7 @@ process_for_export(df)
 \item{df}{Data frame with mapped columns}
 }
 \value{
-Data frame with ISO dates, cleaned separators, UUIDs
+Data frame with ISO dates, cleaned separators, UUIDs, canonical column order
 }
 \description{
 Process data for DwC-compliant export
@@ -24,5 +24,6 @@ Process data for DwC-compliant export
   # - Coordinate separators normalized (comma -> dot)
   # - occurrenceID added if missing
   # - License URLs abbreviated
+  # - Columns reordered to canonical DwC sequence
 }
 }

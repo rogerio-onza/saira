@@ -284,9 +284,9 @@ testthat::test_that("mapping state survives filter changes in server state", {
             session$setInputs(map_scientificName = "scientificName")
             session$flushReact()
 
-            session$setInputs(filter_categories = character(0))
+            session$setInputs(class_pill_taxon = 1)
             session$flushReact()
-            session$setInputs(filter_categories = c("Taxon", "Occurrence"))
+            session$setInputs(class_pill_all = 1)
             session$flushReact()
 
             testthat::expect_identical(rv$map_values$scientificName, "scientificName")
@@ -299,8 +299,6 @@ testthat::test_that("badge metadata survives select-all category toggling after 
         scientificName = c("Panthera onca", "Leopardus pardalis"),
         stringsAsFactors = FALSE
     )
-
-    all_categories <- c("Record-level", "Occurrence", "Event", "Location", "Taxon", "Identification")
 
     shiny::testServer(
         mod_mapping_server,
@@ -315,9 +313,9 @@ testthat::test_that("badge metadata survives select-all category toggling after 
             status_before <- rv$map_meta$scientificName$status
             testthat::expect_false(is.na(status_before))
 
-            session$setInputs(select_all_categories = FALSE, filter_categories = character(0))
+            session$setInputs(class_pill_taxon = 1)
             session$flushReact()
-            session$setInputs(select_all_categories = TRUE, filter_categories = all_categories)
+            session$setInputs(class_pill_all = 1)
             session$flushReact()
 
             status_after <- rv$map_meta$scientificName$status
@@ -386,9 +384,9 @@ testthat::test_that("reactive mapping state remains consistent after filter togg
             testthat::expect_identical(rv$map_meta$datasetName$status, "EDITADO")
             testthat::expect_identical(rv$map_meta$datasetName$reason, "manual_adjust")
 
-            session$setInputs(filter_categories = character(0))
+            session$setInputs(class_pill_taxon = 1)
             session$flushReact()
-            session$setInputs(filter_categories = c("Record-level", "Taxon", "Occurrence"))
+            session$setInputs(class_pill_all = 1)
             session$flushReact()
 
             out_before_reset <- processed_data()
@@ -695,6 +693,89 @@ testthat::test_that("clearing a previously-mapped field (selectInput devolve NUL
             # Esperado pos-fix: rv$map_values$type virou "", meta = MANUAL.
             testthat::expect_identical(as.character(rv$map_values$type), "")
             testthat::expect_identical(rv$map_meta$type$status, "MANUAL")
+        }
+    )
+})
+
+testthat::test_that("class pills are pure navigation anchors — all sections always rendered", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+
+            # Pills render with stream-pill class and no active/filter state.
+            pills_html <- paste(output$class_pills$html, collapse = " ")
+            testthat::expect_true(grepl("stream-pill", pills_html, fixed = TRUE))
+
+            all_cats <- all_filter_categories()
+            testthat::expect_true("Taxon" %in% all_cats)
+
+            # All category anchors always present before any click.
+            mui_before <- paste(output$mapping_ui$html, collapse = " ")
+            testthat::expect_true(grepl("cat_anchor_taxon", mui_before, fixed = TRUE))
+
+            # Clicking a pill scrolls (sendCustomMessage) but never hides sections.
+            session$setInputs(class_pill_taxon = 1)
+            session$flushReact()
+            mui_after <- paste(output$mapping_ui$html, collapse = " ")
+            testthat::expect_true(grepl("cat_anchor_taxon", mui_after, fixed = TRUE))
+        }
+    )
+})
+
+testthat::test_that("required-fields strip reflects live mapped status", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+
+            strip_before <- paste(output$required_fields_strip$html, collapse = " ")
+            for (term in c(
+                "scientificName", "eventDate", "decimalLatitude",
+                "decimalLongitude", "basisOfRecord", "occurrenceID"
+            )) {
+                testthat::expect_true(grepl(term, strip_before, fixed = TRUE))
+            }
+            # occurrenceID is auto-UUID -> always mapped.
+            testthat::expect_true(grepl(
+                "mapping-required-chip is-mapped", strip_before,
+                fixed = TRUE
+            ))
+            # scientificName not mapped yet -> a missing chip exists.
+            testthat::expect_true(grepl(
+                "mapping-required-chip is-missing", strip_before,
+                fixed = TRUE
+            ))
+
+            session$setInputs(map_scientificName = "scientificName")
+            session$flushReact()
+
+            strip_after <- paste(output$required_fields_strip$html, collapse = " ")
+            sci_idx <- regexpr("scientificName", strip_after, fixed = TRUE)
+            chip_open <- regexpr(
+                "mapping-required-chip is-mapped",
+                substr(strip_after, 1, sci_idx[1]),
+                fixed = TRUE
+            )
+            testthat::expect_true(chip_open[1] > 0)
         }
     )
 })

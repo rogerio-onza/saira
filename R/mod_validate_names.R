@@ -1348,12 +1348,15 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             scientific_name <- if ("scientificName_display" %in% names(report)) as.character(report$scientificName_display) else if ("scientificName" %in% names(report)) as.character(report$scientificName) else rep("", nrow(report))
             taxonomic_status <- if ("taxonomicStatus" %in% names(report)) as.character(report$taxonomicStatus) else rep("", nrow(report))
             review_original_name <- if ("review_original_name" %in% names(report)) as.character(report$review_original_name) else rep("", nrow(report))
+            sensitive_source <- if ("scientificName" %in% names(report)) as.character(report$scientificName) else scientific_name
+            is_sensitive_vec <- ifelse(flag_sensitive_species(sensitive_source), "1", "")
 
             table_df <- data.frame(
                 scientificName = scientific_name,
                 validation_status = status_vec,
                 taxonomicStatus = taxonomic_status,
                 review_original_name = review_original_name,
+                is_sensitive = is_sensitive_vec,
                 stringsAsFactors = FALSE
             )
 
@@ -1361,7 +1364,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 tr("validate_names_table_col_scientific_name", lang_r()),
                 tr("validate_names_table_col_status", lang_r()),
                 tr("validate_names_table_col_taxonomic_status", lang_r()),
-                ".review_original_name"
+                ".review_original_name",
+                ".is_sensitive"
             )
 
             status_labels <- list(
@@ -1375,6 +1379,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             )
 
             replaced_prefix_json <- jsonlite::toJSON(tr("validate_names_review_replaced_prefix", lang_r()), auto_unbox = TRUE)
+            sensitive_label_json <- jsonlite::toJSON(tr("validate_names_status_badge_sensitive", lang_r()), auto_unbox = TRUE)
 
             status_badge_js <- DT::JS(
                 sprintf(
@@ -1409,10 +1414,16 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         "    var originalEscaped = $('<div/>').text(original).html();",
                         "    content += '<div class=\"vn-cell-review-original\"><em>' + $('<div/>').text(String(prefix)).html() + ' ' + originalEscaped + '</em></div>';",
                         "  }",
+                        "  var sensitive = String(row[4] === null || row[4] === undefined ? '' : row[4]);",
+                        "  if (sensitive.trim().length > 0) {",
+                        "    var sLabel = %s;",
+                        "    content += '<div class=\"vn-cell-sensitive\"><span class=\"vn-status-badge badge-warning\">' + $('<div/>').text(String(sLabel)).html() + '</span></div>';",
+                        "  }",
                         "  return content;",
                         "}"
                     ),
-                    replaced_prefix_json
+                    replaced_prefix_json,
+                    sensitive_label_json
                 )
             )
 
@@ -1510,7 +1521,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         list(targets = 0, render = scientific_name_js, className = "vn-col-scientific", width = "56%"),
                         list(targets = 1, render = status_badge_js, className = "vn-col-status", width = "16%"),
                         list(targets = 2, render = taxonomic_status_js, className = "vn-col-taxonomic", width = "28%"),
-                        list(targets = 3, visible = FALSE, searchable = FALSE)
+                        list(targets = 3, visible = FALSE, searchable = FALSE),
+                        list(targets = 4, visible = FALSE, searchable = FALSE)
                     ),
                     rowCallback = row_callback_js,
                     headerCallback = header_callback_js,

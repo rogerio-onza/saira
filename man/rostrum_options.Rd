@@ -24,6 +24,7 @@ Available options:
   \item{hard_veto_threshold}{Numeric [0,1]. Score below which a mapping is vetoed (default 0.30).}
   \item{max_sample_n}{Positive integer. Maximum rows sampled for value scoring (default 1000L).}
   \item{stage1_parallel}{Logical. Enable parallel Stage 1 evaluation (default FALSE).}
+  \item{stage1_parallel_strategy}{Character. Parallelisation backend: \code{"multisession"} (default, safe everywhere), \code{"multicore"} (fork-based on Unix/Linux; falls back to multisession on unsupported platforms), or \code{"sequential"} (disables parallelism).}
   \item{debug}{Logical. Enable verbose debug logging (default FALSE).}
 }
 }

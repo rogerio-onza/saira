@@ -485,8 +485,10 @@ testthat::test_that("build_mapping_guide_txt emits magic header, mapping pairs, 
     testthat::expect_true(any(grepl("^Lat\\s+-> decimalLatitude$", out)))
     testthat::expect_true(any(grepl("^Lon\\s+-> decimalLongitude$", out)))
     testthat::expect_true(any(grepl("^especie\\s+-> scientificName$", out)))
-    # listed at unmapped tail (raw column name is preserved):
-    testthat::expect_true("notas" %in% out)
+    # listed in the unmapped section as a comment line (raw column name
+    # preserved, but as a parser-safe comment, not a bare line):
+    testthat::expect_true(any(grepl("^#\\s+- notas$", out)))
+    testthat::expect_false("notas" %in% out)
     # CRITICAL: data values must NOT appear in the guide (no PII leak):
     testthat::expect_false(any(grepl("Panthera onca", out, fixed = TRUE)))
     testthat::expect_false(any(grepl("SECRET FIELD VALUE", out, fixed = TRUE)))
@@ -499,17 +501,59 @@ testthat::test_that("build_mapping_guide_txt switches PT/EN labels", {
     en <- build_mapping_guide_txt(list(scientificName = "especie"),
                                   data.frame(especie = "x"), lang = "en")
 
-    testthat::expect_true(any(grepl("Mapeamentos", pt)))
-    testthat::expect_true(any(grepl("Mappings", en)))
-    testthat::expect_false(any(grepl("Mapeamentos", en)))
+    testthat::expect_true(any(grepl("mapeamentos", pt, fixed = TRUE)))
+    testthat::expect_true(any(grepl("mappings", en, fixed = TRUE)))
+    testthat::expect_false(any(grepl("mapeamentos", en, fixed = TRUE)))
+    testthat::expect_false(any(grepl("mappings", pt, fixed = TRUE)))
 })
 
 testthat::test_that("build_mapping_guide_txt flags missing required terms", {
     out <- build_mapping_guide_txt(list(scientificName = "especie"),
                                    data.frame(especie = "x"), lang = "pt")
     # eventDate, decimalLatitude, decimalLongitude, basisOfRecord ausentes
-    miss_block <- out[seq(which(grepl("Termos DwC obrigatorios", out)) + 1L,
+    miss_block <- out[seq(which(grepl("termos DwC obrigatorios", out)) + 1L,
                           length(out))]
     testthat::expect_true(any(grepl("eventDate", miss_block)))
     testthat::expect_true(any(grepl("basisOfRecord", miss_block)))
+})
+
+testthat::test_that("export pipeline masks sensitive coords and emits a companion", {
+    df <- data.frame(
+        scientificName = c("Hippocampus reidi", "Felis catus"),
+        decimalLatitude = c("-23.5612", "10.0"),
+        decimalLongitude = c("-46.6543", "20.0"),
+        eventDate = c("2024-01-15", "2024-01-16"),
+        basisOfRecord = c("HumanObservation", "HumanObservation"),
+        stringsAsFactors = FALSE
+    )
+
+    # Exactly the two calls the download handler makes, in order.
+    full_data <- process_for_export_with_unmapped(
+        df,
+        raw_data = data.frame(),
+        map_values = list()
+    )
+    masked <- saira:::mask_sensitive_coordinates(full_data, lang = "en")
+
+    testthat::expect_equal(masked$n_masked, 1L)
+
+    sens_row <- which(masked$masked$scientificName == "Hippocampus reidi")
+    other_row <- which(masked$masked$scientificName == "Felis catus")
+
+    # process_for_export() numericizes the coordinate columns.
+    testthat::expect_equal(masked$masked$decimalLatitude[sens_row], -23.6)
+    testthat::expect_equal(masked$masked$decimalLongitude[sens_row], -46.7)
+    testthat::expect_equal(masked$masked$decimalLatitude[other_row], 10)
+    testthat::expect_true(nzchar(masked$masked$dataGeneralizations[sens_row]))
+    testthat::expect_true(nzchar(masked$masked$informationWithheld[sens_row]))
+    testthat::expect_equal(masked$masked$dataGeneralizations[other_row], "")
+    testthat::expect_true("occurrenceID" %in% names(masked$masked))
+
+    # Companion holds the ORIGINAL coords, joinable on occurrenceID.
+    testthat::expect_equal(nrow(masked$real), 1L)
+    testthat::expect_equal(masked$real$decimalLatitude, "-23.5612")
+    testthat::expect_equal(
+        masked$real$occurrenceID,
+        masked$masked$occurrenceID[sens_row]
+    )
 })

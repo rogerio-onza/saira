@@ -82,3 +82,16 @@ get_language_name <- function(lang_code) {
 
     value
 }
+
+#' Format an integer with locale-aware thousands grouping
+#'
+#' @param n Numeric or integer scalar.
+#' @param lang Character. \code{"pt"} or \code{"en"}.
+#' @return Character. Grouped integer string (\code{"1.234.567"} for pt,
+#'   \code{"1,234,567"} for en).
+#' @export
+format_count <- function(n, lang = "en") {
+    big <- if (identical(lang, "pt")) "." else ","
+    dec <- if (identical(lang, "pt")) "," else "."
+    format(n, big.mark = big, decimal.mark = dec, scientific = FALSE, trim = TRUE)
+}

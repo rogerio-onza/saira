@@ -489,7 +489,7 @@ mod_upload_server <- function(id, lang_r) {
                 class = "stats-container",
                 shiny::div(
                     class = "stat-box",
-                    shiny::div(class = "stat-value", format(nrow(df), big.mark = ".")),
+                    shiny::div(class = "stat-value", format_count(nrow(df), lang_r())),
                     shiny::div(class = "stat-label", tr("upload_stats_rows", lang_r()))
                 ),
                 shiny::div(

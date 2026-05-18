@@ -194,6 +194,35 @@ testthat::test_that("get_dwc_full_catalog PT translations preserved from base", 
     }
 })
 
+testthat::test_that("every full-catalog term has a non-empty PT definition", {
+    catalog <- get_dwc_full_catalog()
+    empty   <- catalog$term[!nzchar(trimws(catalog$definition_pt))]
+    testthat::expect_identical(
+        empty, character(0),
+        info = paste("terms missing definition_pt:",
+                      paste(empty, collapse = ", "))
+    )
+})
+
+testthat::test_that("extra (non-base) term renders PT, not the EN fallback", {
+    base_terms <- get_dwc_terms()$term
+    catalog    <- get_dwc_full_catalog()
+    extra_term <- catalog$term[!catalog$term %in% base_terms][[1]]
+
+    pt <- get_active_dwc_terms_list(extra = extra_term, lang = "pt")
+    en <- get_active_dwc_terms_list(extra = extra_term, lang = "en")
+
+    pt_desc <- pt[[extra_term]]$desc
+    en_desc <- en[[extra_term]]$desc
+
+    testthat::expect_true(nzchar(pt_desc))
+    testthat::expect_false(identical(pt_desc, en_desc))
+    testthat::expect_identical(
+        pt_desc,
+        catalog$definition_pt[catalog$term == extra_term]
+    )
+})
+
 testthat::test_that("get_active_dwc_terms returns base set when no extras supplied", {
     base   <- get_dwc_terms()
     active <- get_active_dwc_terms()
@@ -236,8 +265,8 @@ testthat::test_that("get_active_dwc_terms_list returns base list when no extras"
 
     testthat::expect_equal(length(active), length(base_list))
     testthat::expect_setequal(
-        vapply(active, function(x) x$term, FUN.VALUE = character(1)),
-        vapply(base_list, function(x) x$term, FUN.VALUE = character(1))
+        unname(vapply(active, function(x) x$term, FUN.VALUE = character(1))),
+        unname(vapply(base_list, function(x) x$term, FUN.VALUE = character(1)))
     )
 })
 

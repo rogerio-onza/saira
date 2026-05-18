@@ -1084,6 +1084,22 @@ compute_value_score_from_profile <- function(value_profile, term, name_score) {
     tier_cache$neutral
 }
 
+rostrum_stage1_apply_future_plan <- function(strategy, workers, options) {
+    if (identical(strategy, "multicore")) {
+        can_multicore <- requireNamespace("parallelly", quietly = TRUE) &&
+            parallelly::supportsMulticore()
+        if (can_multicore) {
+            future::plan(future::multicore, workers = workers)
+        } else {
+            rostrum_debug_log("multicore unavailable on this platform; falling back to multisession.", options = options)
+            future::plan(future::multisession, workers = workers)
+        }
+    } else {
+        future::plan(future::multisession, workers = workers)
+    }
+    invisible(NULL)
+}
+
 rostrum_stage1_run_term_map <- function(terms, worker_fn, options) {
     can_parallel <- isTRUE(options$stage1_parallel) &&
         length(terms) > 1L &&
@@ -1119,7 +1135,9 @@ rostrum_stage1_run_term_map <- function(terms, worker_fn, options) {
         add = TRUE
     )
 
-    future::plan(future::multisession, workers = workers)
+    rostrum_stage1_apply_future_plan(
+        options$stage1_parallel_strategy, workers, options
+    )
     furrr::future_map(
         terms,
         worker_fn,
@@ -1979,7 +1997,7 @@ map_occurrence_status_values <- function(raw_values) {
     norm <- tolower(x)
 
     present_set <- c("1", "present", "presente", "yes", "y", "sim", "s", "true", "t")
-    absent_set  <- c("0", "absent", "ausente", "no", "n", "nao", "não", "false", "f")
+    absent_set  <- c("0", "absent", "ausente", "no", "n", "nao", "n\u00e3o", "false", "f")
 
     out[norm %in% present_set] <- "present"
     out[norm %in% absent_set]  <- "absent"
@@ -1987,6 +2005,41 @@ map_occurrence_status_values <- function(raw_values) {
     na_mask <- is.na(raw_values) | !nzchar(x)
     out[na_mask] <- NA_character_
     out
+}
+
+# Pure per-term column builder. Called by build_processed_mapping_df and by the
+# card inline preview helper (processed_preview_for_term in mod_mapping).
+# Returns list(values = <character vector>, eventdate_failure_count = <int>).
+build_term_value <- function(
+    term,
+    df,
+    user_cols,
+    basis_of_record_map = NULL,
+    dyn_props_keys = list(),
+    out_sep = " | "
+) {
+    failure_count <- 0L
+
+    if (term == "basisOfRecord") {
+        values <- map_basis_of_record_values(
+            raw_values = df[[user_cols[[1]]]],
+            basis_of_record_map = basis_of_record_map
+        )
+    } else if (term == "occurrenceStatus") {
+        values <- map_occurrence_status_values(df[[user_cols[[1]]]])
+    } else if (term == "dynamicProperties") {
+        values <- build_dynamic_properties_json(df = df, cols = user_cols, keys = dyn_props_keys)
+    } else if (term == "eventDate" && length(user_cols) == 4) {
+        event_result <- build_eventdate_interval(df = df, cols = user_cols, fallback_raw = TRUE)
+        values <- event_result$values
+        failure_count <- event_result$failure_count
+    } else if (length(user_cols) == 1) {
+        values <- normalize_semicolon_tokens(df[[user_cols[[1]]]], out_sep = out_sep)
+    } else {
+        values <- collapse_mapped_values(df = df, cols = user_cols, out_sep = out_sep)
+    }
+
+    list(values = values, eventdate_failure_count = failure_count)
 }
 
 build_processed_mapping_df <- function(
@@ -2069,41 +2122,16 @@ build_processed_mapping_df <- function(
 
         selected_terms <- c(selected_terms, term)
 
-        if (term == "basisOfRecord") {
-            df_final[[term]] <- map_basis_of_record_values(
-                raw_values = df[[user_cols[[1]]]],
-                basis_of_record_map = basis_of_record_map
-            )
-        } else if (term == "occurrenceStatus") {
-            df_final[[term]] <- map_occurrence_status_values(
-                df[[user_cols[[1]]]]
-            )
-        } else if (term == "dynamicProperties") {
-            df_final[[term]] <- build_dynamic_properties_json(
-                df = df,
-                cols = user_cols,
-                keys = dyn_props_keys
-            )
-        } else if (term == "eventDate" && length(user_cols) == 4) {
-            event_result <- build_eventdate_interval(
-                df = df,
-                cols = user_cols,
-                fallback_raw = TRUE
-            )
-            df_final[[term]] <- event_result$values
-            eventdate_failure_count <- eventdate_failure_count + event_result$failure_count
-        } else if (length(user_cols) == 1) {
-            df_final[[term]] <- normalize_semicolon_tokens(
-                df[[user_cols[[1]]]],
-                out_sep = out_sep
-            )
-        } else {
-            df_final[[term]] <- collapse_mapped_values(
-                df = df,
-                cols = user_cols,
-                out_sep = out_sep
-            )
-        }
+        term_result <- build_term_value(
+            term = term,
+            df = df,
+            user_cols = user_cols,
+            basis_of_record_map = basis_of_record_map,
+            dyn_props_keys = dyn_props_keys,
+            out_sep = out_sep
+        )
+        df_final[[term]] <- term_result$values
+        eventdate_failure_count <- eventdate_failure_count + term_result$eventdate_failure_count
     }
 
     if ("scientificName" %in% names(df_final)) {

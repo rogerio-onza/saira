@@ -16,8 +16,6 @@ mod_preview_ui <- function(id) {
             class = "container-fluid preview-page",
             shiny::uiOutput(ns("title")),
             shiny::uiOutput(ns("subtitle")),
-            shiny::uiOutput(ns("readiness_checklist")),
-            shiny::br(),
 
             # Download button
             shiny::div(
@@ -51,14 +49,6 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                                map_values_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
-        required_fields <- c(
-            "scientificName",
-            "eventDate",
-            "decimalLatitude",
-            "decimalLongitude",
-            "basisOfRecord",
-            "occurrenceID"
-        )
         required_download_fields <- c(
             "scientificName",
             "eventDate",
@@ -200,14 +190,6 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                 return(NULL)
             }
             name_review_payload_r()
-        })
-
-        preview_readiness <- shiny::reactive({
-            shiny::req(preview_data())
-            compute_preview_readiness(
-                preview_data(),
-                required_fields = required_fields
-            )
         })
 
         download_validation <- shiny::reactive({
@@ -519,54 +501,6 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
             )
         }, ignoreInit = TRUE)
 
-        output$readiness_checklist <- shiny::renderUI({
-            df <- mapped_data_r()
-            if (is.null(df) || !is.data.frame(df) || ncol(df) == 0L || nrow(df) == 0L) {
-                return(NULL)
-            }
-
-            readiness <- preview_readiness()
-            cards <- lapply(required_fields, function(field) {
-                is_present <- isTRUE(readiness$required_status[[field]])
-                status_label <- if (is_present) {
-                    tr("preview_readiness_present", lang_r())
-                } else {
-                    tr("preview_readiness_missing", lang_r())
-                }
-                card_class <- if (is_present) "preview-readiness-card-ok" else "preview-readiness-card-missing"
-                status_class <- if (is_present) "preview-readiness-state-ok" else "preview-readiness-state-missing"
-                icon_class <- if (is_present) {
-                    "fa-solid fa-circle-check preview-readiness-icon"
-                } else {
-                    "fa-solid fa-circle-xmark preview-readiness-icon"
-                }
-
-                shiny::div(
-                    class = paste("preview-readiness-card", card_class),
-                    shiny::div(class = "preview-readiness-card-term", field),
-                    shiny::div(
-                        class = "preview-readiness-card-status",
-                        shiny::div(
-                            class = paste("preview-readiness-state", status_class),
-                            title = status_label,
-                            `aria-label` = status_label,
-                            shiny::tags$i(class = icon_class)
-                        )
-                    )
-                )
-            })
-
-            shiny::div(
-                class = "preview-readiness-panel mb-4",
-                shiny::h4(
-                    class = "preview-readiness-title",
-                    shiny::icon("clipboard-check"),
-                    tr("preview_readiness_title", lang_r()),
-                ),
-                shiny::div(class = "preview-readiness-grid", cards)
-            )
-        })
-
         output$table_or_message <- shiny::renderUI({
             df <- mapped_data_r()
             if (is.null(df) || !is.data.frame(df) || ncol(df) == 0L || nrow(df) == 0L) {
@@ -716,6 +650,15 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                             map_values = mv
                         )
 
+                        # Generalize coordinates of sensitive/threatened
+                        # species before they reach the IPT bundle; the real
+                        # coordinates go to a separate companion file.
+                        masked <- mask_sensitive_coordinates(
+                            full_data,
+                            lang = lang_r()
+                        )
+                        export_data <- masked$masked
+
                         ts <- format(Sys.Date(), "%Y-%m-%d")
                         tmpdir <- tempfile("saira_export_")
                         dir.create(tmpdir, showWarnings = FALSE, recursive = TRUE)
@@ -725,17 +668,38 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                         xlsx_path  <- file.path(tmpdir, paste0("dwc_export_", ts, ".xlsx"))
                         guide_path <- file.path(tmpdir, paste0("mapping_guide_", ts, ".txt"))
 
-                        readr::write_csv(full_data, csv_path, na = "")
-                        write_xlsx_text_only(full_data, xlsx_path)
+                        readr::write_csv(export_data, csv_path, na = "")
+                        write_xlsx_text_only(export_data, xlsx_path)
                         writeLines(
                             build_mapping_guide_txt(mv, raw_df, lang = lang_r()),
                             guide_path,
                             useBytes = TRUE
                         )
 
+                        zip_files <- c(csv_path, xlsx_path, guide_path)
+                        if (masked$n_masked > 0L) {
+                            real_path <- file.path(
+                                tmpdir,
+                                paste0("sensitive_real_coords_", ts, ".csv")
+                            )
+                            real_csv <- readr::format_csv(masked$real, na = "")
+                            writeLines(
+                                enc2utf8(c(
+                                    paste0(
+                                        "# ",
+                                        tr("sensitive_real_coords_notice", lang_r())
+                                    ),
+                                    real_csv
+                                )),
+                                real_path,
+                                useBytes = TRUE
+                            )
+                            zip_files <- c(zip_files, real_path)
+                        }
+
                         zip::zipr(
                             zipfile = file,
-                            files = c(csv_path, xlsx_path, guide_path)
+                            files = zip_files
                         )
 
                         session$sendCustomMessage(download_finish_channel, finish_payload)

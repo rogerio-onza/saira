@@ -131,14 +131,6 @@
     "pt": "Opcional",
     "en": "Optional"
   },
-  "stats_mapped_fields": {
-    "pt": "Campos Mapeados",
-    "en": "Mapped Fields"
-  },
-  "stats_total_dwc_fields": {
-    "pt": "Total de Campos DwC",
-    "en": "Total DwC Fields"
-  },
   "btn_auto_mapping": {
     "pt": "Auto-mapear",
     "en": "Auto-map"
@@ -158,6 +150,10 @@
   "filter_select_all": {
     "pt": "Selecionar todos",
     "en": "Select all"
+  },
+  "mapping_card_sample_prefix": {
+    "pt": "ex.:",
+    "en": "e.g.:"
   },
   "toggle_automap_v1_label": {
     "pt": "Rostrum (beta)",
@@ -1439,6 +1435,22 @@
     "pt": "Rev. Manual",
     "en": "Manual Rev."
   },
+  "validate_names_status_badge_sensitive": {
+    "pt": "Sensível",
+    "en": "Sensitive"
+  },
+  "sensitive_data_generalizations": {
+    "pt": "Coordenadas generalizadas para %s grau (~%s km) por se tratar de espécie sensível/ameaçada de extinção (lista nacional MMA).",
+    "en": "Coordinates generalized to %s degree (~%s km) for a sensitive/threatened species (MMA national red list)."
+  },
+  "sensitive_information_withheld": {
+    "pt": "Coordenadas precisas omitidas por se tratar de espécie sensível/ameaçada; disponíveis com o publicador dos dados mediante solicitação.",
+    "en": "Precise coordinates withheld for a sensitive/threatened species; available from the data publisher on request."
+  },
+  "sensitive_real_coords_notice": {
+    "pt": "Arquivo privado — coordenadas reais das espécies sensíveis. Não publicar no IPT/GBIF; uso exclusivo de controle do pesquisador.",
+    "en": "Private file — real coordinates of the sensitive species. Do not publish to IPT/GBIF; for the researcher's own control only."
+  },
   "validate_names_review_action": {
     "pt": "✎ Revisar",
     "en": "✎ Review"
@@ -2518,6 +2530,10 @@
   "class_resourcerelationship": {
     "pt": "ResourceRelationship",
     "en": "ResourceRelationship"
+  },
+  "mapping_pill_all": {
+    "pt": "Todos",
+    "en": "All"
   },
   "upload_data_title": {
     "pt": "Dados",

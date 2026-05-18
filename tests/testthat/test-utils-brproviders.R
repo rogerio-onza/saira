@@ -436,7 +436,10 @@ testthat::test_that("failed download keeps previous rds untouched", {
             dir.create(brprovider_data_dir(pid), recursive = TRUE, showWarnings = FALSE)
             saveRDS(old_df, file.path(brprovider_data_dir(pid), paste0(pid, ".rds")))
 
-            ok <- saira:::brprovider_download_data(pid, verbose = FALSE)
+            testthat::expect_warning(
+                ok <- saira:::brprovider_download_data(pid, verbose = FALSE),
+                "corrupted zip"
+            )
             testthat::expect_false(isTRUE(ok))
 
             persisted <- readRDS(file.path(brprovider_data_dir(pid), paste0(pid, ".rds")))

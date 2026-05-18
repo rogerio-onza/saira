@@ -253,6 +253,12 @@ testthat::test_that("validate_coords_cc_df keeps cardinality for mixed scenarios
 
 testthat::test_that("performance budget for profile fast and complete (mocked CC)", {
     testthat::skip_on_cran()
+    # Wall-clock budget assertions are machine-speed sensitive and would
+    # false-fail on slower end-user hardware running devtools::test()/check().
+    # Opt-in only, consistent with test-performance-regression.R.
+    if (!identical(Sys.getenv("RUN_PERF"), "true")) {
+        testthat::skip("Performance budget disabled by default. Use RUN_PERF=true to execute.")
+    }
     testthat::local_mocked_bindings(
         coords_assert_cc_dependencies = function() NULL,
         coords_country_to_iso3 = function(country_values) rep("BRA", length(country_values)),

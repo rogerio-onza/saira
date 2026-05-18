@@ -10,6 +10,8 @@
 ^\.agent$
 ^\.editorconfig$
 ^\.gitattributes$
+^\.gitignore$
+Zone\.Identifier$
 ^\.Rprofile$
 ^renv$
 ^renv\.lock$
