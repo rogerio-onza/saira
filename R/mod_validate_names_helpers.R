@@ -9,7 +9,7 @@
 
 .vn_provider_labels <- c(florabr = "Flora BR", faunabr = "Fauna BR", gbif = "GBIF")
 .vn_stream_window_limit <- 100L
-.vn_stream_filter_values <- c("all", "problems", "not_found", "ambiguous", "synonym", "ignored")
+.vn_stream_filter_values <- c("all", "problems", "not_found", "ambiguous", "synonym", "ignored", "accepted")
 .vn_problem_status_values <- c("not_found", "ambiguous", "synonym")
 .vn_review_exit_ms <- 320L
 
@@ -95,9 +95,12 @@ stream_window <- function(stream_df, limit = .vn_stream_window_limit) {
     out <- stream_df
     if (!"display_order" %in% names(out)) out$display_order <- seq_len(nrow(out))
     out <- out[order(out$display_order, decreasing = TRUE), , drop = FALSE]
-    limit_int <- suppressWarnings(as.integer(limit))
-    if (is.na(limit_int) || limit_int <= 0L) limit_int <- 100L
-    if (nrow(out) > limit_int) out <- out[seq_len(limit_int), , drop = FALSE]
+    if (!is.null(limit) && !is.infinite(limit)) {
+        limit_int <- suppressWarnings(as.integer(limit))
+        if (!is.na(limit_int) && limit_int > 0L && nrow(out) > limit_int) {
+            out <- out[seq_len(limit_int), , drop = FALSE]
+        }
+    }
     rownames(out) <- NULL
     out
 }
@@ -276,7 +279,8 @@ stream_filter_counts <- function(stream_df, reviewed_keys = character(0)) {
         not_found = 0L,
         ambiguous = 0L,
         synonym = 0L,
-        ignored = 0L
+        ignored = 0L,
+        accepted = 0L
     )
     if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
         return(out)
@@ -292,6 +296,7 @@ stream_filter_counts <- function(stream_df, reviewed_keys = character(0)) {
     out[["synonym"]] <- as.integer(sum(status_vec == "synonym" & !reviewed_vec, na.rm = TRUE))
     out[["ignored"]] <- as.integer(sum(status_vec == "ignored", na.rm = TRUE))
     out[["problems"]] <- as.integer(sum(unresolved_problem, na.rm = TRUE))
+    out[["accepted"]] <- as.integer(sum(status_vec == "accepted", na.rm = TRUE))
     out
 }
 
@@ -324,6 +329,7 @@ filter_stream_df <- function(stream_df, filter_key = "all", reviewed_keys = char
         ambiguous = ((status_vec == "ambiguous") & !reviewed_vec) | exiting_vec,
         synonym = ((status_vec == "synonym") & !reviewed_vec) | exiting_vec,
         ignored = status_vec == "ignored",
+        accepted = status_vec == "accepted",
         rep(TRUE, length(status_vec))
     )
     out <- stream_df[keep_idx, , drop = FALSE]

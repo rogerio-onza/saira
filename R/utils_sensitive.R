@@ -9,6 +9,19 @@
 
 sensitive_species_cache <- create_rds_cache("sensitive_species")
 
+# Rows whose upstream `coordinateUncertaintyInMeters` already reaches this
+# threshold are treated as pre-generalized by the publisher (e.g. a Camtrap
+# DP package downloaded from GBIF/Wildlife Insights/Agouti where coords were
+# fuzzed before export). We skip masking those rows so the publisher's
+# generalization is not overwritten or stacked on top of ours.
+#
+# 1000 m alone misses Chapman category 4 (round_coordinates(x, 3) -> ~150 m
+# uncertainty per Chapman & Wieczorek 2020 Table 3). The Camtrap DP package
+# closes that gap by populating `dwc:dataGeneralizations` whenever the
+# publisher set `coordinatePrecision` (PDF p.26), so we OR a non-empty
+# `dataGeneralizations` into the skip condition.
+SENSITIVE_ALREADY_MASKED_THRESHOLD_M <- 1000
+
 # Resolve the bundled RDS path. Returns NA_character_ (not an error) when
 # absent so the feature degrades gracefully instead of breaking export.
 resolve_sensitive_species_path <- function() {
@@ -29,9 +42,13 @@ sensitive_species_empty <- function() {
     data.frame(
         scientificName = character(0),
         match_key = character(0),
+        category = character(0),
         stringsAsFactors = FALSE
     )
 }
+
+# Threat categories ordered by restrictiveness (drives the export grid).
+sensitive_category_levels <- function() c("VU", "EN", "CR", "CR (PEX)")
 
 # Cached read of the sensitive-species lookup. Missing/invalid file -> a
 # warning plus a zero-row frame (masking simply does nothing). The not-found
@@ -53,6 +70,15 @@ load_sensitive_species <- function(force = FALSE) {
     }
     df$scientificName <- as.character(df$scientificName)
     df$match_key <- as.character(df$match_key)
+    # Backward compatible: a pre-ADR-092 RDS has no category column. Treat
+    # every taxon as CR (0.1 deg under the conservative scheme) so an old
+    # artifact still masks, just without graduated precision.
+    if (!"category" %in% names(df)) {
+        warning("sensitive_species.rds has no 'category'; defaulting to CR.")
+        df$category <- "CR"
+    }
+    df$category <- as.character(df$category)
+    df$category[is.na(df$category) | !nzchar(df$category)] <- "CR"
     df <- df[!is.na(df$match_key) & nzchar(df$match_key), , drop = FALSE]
     rownames(df) <- NULL
     sensitive_species_cache$set(df, path = path)
@@ -80,19 +106,29 @@ build_sensitive_match_keys <- function(names) {
     normalize_for_matching(canonical)
 }
 
-# Logical vector: which of `names` (resolved scientific names) are on the
-# sensitive list. Single source of truth for both display and export.
-flag_sensitive_species <- function(names) {
+# MMA threat category for each resolved name, or NA when not on the list.
+# Single source of truth for the pill default and the export grid.
+sensitive_category_for <- function(names) {
     n <- length(names)
     if (n == 0L) {
-        return(logical(0))
+        return(character(0))
     }
+    out <- rep(NA_character_, n)
     lookup <- load_sensitive_species()
-    if (!is.data.frame(lookup) || nrow(lookup) == 0L) {
-        return(rep(FALSE, n))
+    if (!is.data.frame(lookup) || nrow(lookup) == 0L ||
+        is.null(lookup$category)) {
+        return(out)
     }
     keys <- build_sensitive_match_keys(names)
-    !is.na(keys) & nzchar(keys) & keys %in% lookup$match_key
+    m <- match(keys, lookup$match_key)
+    ok <- !is.na(keys) & nzchar(keys) & !is.na(m)
+    out[ok] <- as.character(lookup$category)[m[ok]]
+    out
+}
+
+# Logical vector: which of `names` are on the MMA list (pill display).
+flag_sensitive_species <- function(names) {
+    !is.na(sensitive_category_for(names))
 }
 
 # Round coordinates to a coarser grid (default 0.1 deg ~ 11 km). NA -> NA.
@@ -111,30 +147,103 @@ sensitive_grid_uncertainty_m <- function(grid) {
     ceiling(grid * 111320)
 }
 
+# Chapman 2020 (GBIF "Best Practices for Generalizing Sensitive Species
+# Occurrence Data", Table 7) defines four global generalization tiers; the
+# Saira UI exposes those four plus an explicit "not_sensitive" no-op. The
+# user picks ONE tier that applies uniformly to every sensitive record. The
+# MMA list still triggers detection, but it no longer governs the grid.
+sensitive_generalization_levels <- function() {
+    c("extreme", "high", "medium", "low", "not_sensitive")
+}
+
+# Grid (in decimal degrees) for a Chapman tier. NA means "no masking".
+sensitive_generalization_grid <- function(level) {
+    if (length(level) != 1L) level <- level[1]
+    m <- c(extreme       = 1.0,
+           high          = 0.1,
+           medium        = 0.01,
+           low           = 0.001,
+           not_sensitive = NA_real_)
+    if (!is.character(level) || is.na(level) || !(level %in% names(m))) {
+        return(NA_real_)
+    }
+    unname(m[level])
+}
+
+# Per-row sensitivity decision. The Validation > Names payload (researcher's
+# marks) wins; rows it does not cover fall back to the MMA auto-match so an
+# unseen species is still protected by default. `$category` is carried for
+# display (the pill in Validation > Names) but is no longer consumed by
+# `mask_sensitive_coordinates` -- the grid is global (Chapman 2020 method).
+sensitive_resolve <- function(names, decisions = NULL) {
+    category <- sensitive_category_for(names)
+    sensitive <- !is.na(category)
+    if (is.data.frame(decisions) && nrow(decisions) > 0L &&
+        all(c("scientificName", "sensitive") %in% names(decisions))) {
+        dkey <- build_sensitive_match_keys(decisions$scientificName)
+        nkey <- build_sensitive_match_keys(names)
+        m <- match(nkey, dkey)
+        has <- !is.na(m)
+        as_bool <- function(x) {
+            tolower(trimws(as.character(x))) %in% c("true", "1", "yes", "t")
+        }
+        sensitive[has] <- as_bool(decisions$sensitive[m[has]])
+        # Backward-compat: a pre-Chapman payload may still carry `category`.
+        # Honour it for display, but the masking grid is global so this is
+        # purely cosmetic on the pill.
+        if ("category" %in% names(decisions)) {
+            ovr <- as.character(decisions$category[m[has]])
+            keep <- !is.na(ovr) & nzchar(ovr)
+            if (any(keep)) {
+                pos <- which(has)[keep]
+                category[pos] <- ovr[keep]
+            }
+        }
+    }
+    sensitive[is.na(sensitive)] <- FALSE
+    list(sensitive = sensitive, category = category)
+}
+
 # Mask sensitive records on the post-process_for_export frame (which already
 # carries occurrenceID, scientificName and the coordinate columns).
 #
+# Global single-tier generalization (Chapman 2020 method, Table 7): the user
+# picks one tier ("extreme"/"high"/"medium"/"low") that applies to every
+# sensitive row uniformly. "not_sensitive" or `enabled = FALSE` makes the
+# whole call a no-op (byte-identical to input).
+#
 # Returns:
-#   masked   : the frame with generalized coords + dataGeneralizations,
-#              informationWithheld and coordinateUncertaintyInMeters set on
-#              sensitive rows that have coordinates; every other row byte-
-#              identical to the input.
-#   real     : occurrenceID + scientificName + the ORIGINAL coordinates for
-#              the masked rows only (the researcher's private control file).
+#   masked   : generalized coords + dataGeneralizations / informationWithheld
+#              / coordinateUncertaintyInMeters / coordinatePrecision set, and
+#              the leak fields scrubbed on sensitive rows; every other row
+#              byte-identical to the input.
+#   real     : occurrenceID + scientificName + category + the ORIGINAL
+#              coordinates for the masked rows (researcher's private file).
+#              `category` here is the MMA tag (CR/EN/VU/CR PEX) when known,
+#              "\u2014" when the row was flagged by a researcher override outside
+#              the MMA list.
 #   n_masked : count of rows whose coordinates were generalized.
-mask_sensitive_coordinates <- function(df, grid = 0.1, lang = "en") {
+mask_sensitive_coordinates <- function(df, decisions = NULL,
+                                        generalization = "low",
+                                        enabled = TRUE, lang = "en") {
     result <- list(
         masked = df,
         real = data.frame(
             occurrenceID = character(0),
             scientificName = character(0),
+            category = character(0),
             decimalLatitude = character(0),
             decimalLongitude = character(0),
             stringsAsFactors = FALSE
         ),
-        n_masked = 0L
+        n_masked = 0L,
+        n_skipped_already_masked = 0L
     )
 
+    grid <- sensitive_generalization_grid(generalization)
+    if (!isTRUE(enabled) || is.na(grid) || grid <= 0) {
+        return(result)
+    }
     if (!is.data.frame(df) || nrow(df) == 0L) {
         return(result)
     }
@@ -143,14 +252,42 @@ mask_sensitive_coordinates <- function(df, grid = 0.1, lang = "en") {
         return(result)
     }
 
-    is_sensitive <- flag_sensitive_species(df$scientificName)
+    decided <- sensitive_resolve(df$scientificName, decisions)
     lat_num <- suppressWarnings(as.numeric(df$decimalLatitude))
     lon_num <- suppressWarnings(as.numeric(df$decimalLongitude))
-    target <- is_sensitive & !is.na(lat_num) & !is.na(lon_num)
+    target <- decided$sensitive & !is.na(lat_num) & !is.na(lon_num)
+
+    # Honour upstream generalization (ADR-095). Two signals:
+    #   1. `coordinateUncertaintyInMeters` >= 1000 m -- publisher who fuzzed
+    #      via grid >= 0.01 deg, or who explicitly set a wide uncertainty.
+    #   2. `dataGeneralizations` non-empty -- guaranteed by
+    #      `camtrapdp::write_dwc()` when the publisher set
+    #      `coordinatePrecision` (PDF p.26), covering Chapman category 4
+    #      generalization (3 digits -> ~150 m uncertainty, below 1000 m).
+    # Skip those rows so we neither overwrite their values nor leak them
+    # into the `real` companion file (we do not have the originals).
+    existing_unc <- if ("coordinateUncertaintyInMeters" %in% names(df)) {
+        suppressWarnings(as.numeric(df$coordinateUncertaintyInMeters))
+    } else {
+        rep(NA_real_, nrow(df))
+    }
+    existing_dg <- if ("dataGeneralizations" %in% names(df)) {
+        trimws(as.character(df$dataGeneralizations))
+    } else {
+        rep("", nrow(df))
+    }
+    existing_dg[is.na(existing_dg)] <- ""
+    already_masked <- (!is.na(existing_unc) &
+        existing_unc >= SENSITIVE_ALREADY_MASKED_THRESHOLD_M) |
+        nzchar(existing_dg)
+    result$n_skipped_already_masked <- sum(target & already_masked)
+    target <- target & !already_masked
     if (!any(target)) {
         return(result)
     }
     idx <- which(target)
+    row_cat <- decided$category[idx]
+    row_cat_display <- ifelse(is.na(row_cat) | !nzchar(row_cat), "\u2014", row_cat)
 
     occ <- if ("occurrenceID" %in% names(df)) {
         as.character(df$occurrenceID)
@@ -161,23 +298,17 @@ mask_sensitive_coordinates <- function(df, grid = 0.1, lang = "en") {
     result$real <- data.frame(
         occurrenceID = occ[idx],
         scientificName = as.character(df$scientificName)[idx],
+        category = row_cat_display,
         decimalLatitude = as.character(df$decimalLatitude)[idx],
         decimalLongitude = as.character(df$decimalLongitude)[idx],
         stringsAsFactors = FALSE
     )
 
-    had_cols <- all(
-        c(
-            "dataGeneralizations",
-            "informationWithheld",
-            "coordinateUncertaintyInMeters"
-        ) %in% names(df)
-    )
+    ensure_cols <- c("dataGeneralizations", "informationWithheld",
+                     "coordinateUncertaintyInMeters", "coordinatePrecision")
+    had_cols <- all(ensure_cols %in% names(df))
 
     masked <- df
-    masked$decimalLatitude[idx] <- generalize_coord(lat_num[idx], grid)
-    masked$decimalLongitude[idx] <- generalize_coord(lon_num[idx], grid)
-
     ensure_col <- function(d, name) {
         if (!name %in% names(d)) {
             d[[name]] <- rep("", nrow(d))
@@ -186,26 +317,37 @@ mask_sensitive_coordinates <- function(df, grid = 0.1, lang = "en") {
         d[[name]][is.na(d[[name]])] <- ""
         d
     }
-    masked <- ensure_col(masked, "dataGeneralizations")
-    masked <- ensure_col(masked, "informationWithheld")
-    masked <- ensure_col(masked, "coordinateUncertaintyInMeters")
-
-    grid_km <- round(grid * 111.32, 1)
-    unc_m <- sensitive_grid_uncertainty_m(grid)
-    dg_text <- sprintf(
-        tr("sensitive_data_generalizations", lang),
-        format(grid, trim = TRUE),
-        format(grid_km, trim = TRUE)
-    )
+    for (nm in ensure_cols) masked <- ensure_col(masked, nm)
     iw_text <- tr("sensitive_information_withheld", lang)
 
-    masked$dataGeneralizations[idx] <- dg_text
-    masked$informationWithheld[idx] <- iw_text
-    existing_unc <- suppressWarnings(
+    # Single uniform grid across all sensitive rows.
+    masked$decimalLatitude[idx]  <- generalize_coord(lat_num[idx], grid)
+    masked$decimalLongitude[idx] <- generalize_coord(lon_num[idx], grid)
+    masked$coordinatePrecision[idx] <- format(grid, trim = TRUE, scientific = FALSE)
+    existing <- suppressWarnings(
         as.numeric(masked$coordinateUncertaintyInMeters[idx])
     )
-    new_unc <- pmax(existing_unc, unc_m, na.rm = TRUE)
-    masked$coordinateUncertaintyInMeters[idx] <- as.character(new_unc)
+    masked$coordinateUncertaintyInMeters[idx] <- as.character(
+        pmax(existing, sensitive_grid_uncertainty_m(grid), na.rm = TRUE)
+    )
+    masked$dataGeneralizations[idx] <- sprintf(
+        tr("sensitive_data_generalizations", lang),
+        row_cat_display,
+        format(grid, trim = TRUE, scientific = FALSE),
+        format(round(grid * 111.32, 1), trim = TRUE)
+    )
+    masked$informationWithheld[idx] <- iw_text
+
+    # Replace text that could reverse the generalization (Chapman sec. 3:
+    # restricted fields carry replacement wording, not a blank/null).
+    leak_cols <- c("verbatimLatitude", "verbatimLongitude",
+                   "verbatimCoordinates", "footprintWKT", "locality",
+                   "verbatimLocality", "georeferenceRemarks",
+                   "locationRemarks")
+    for (col in intersect(leak_cols, names(masked))) {
+        masked[[col]] <- as.character(masked[[col]])
+        masked[[col]][idx] <- iw_text
+    }
 
     # Newly created columns land at the right side; re-sort into their DwC
     # blocks. Skipped when the columns already existed (positions unchanged).

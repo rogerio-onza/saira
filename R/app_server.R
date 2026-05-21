@@ -83,16 +83,19 @@ app_server <- function(input, output, session) {
 
     validate_names_r <- mod_validate_names_server("validate_names", mapped_data, lang_r, validation_gate_r = validation_gate)
     name_review_payload_r <- attr(validate_names_r, "review_export_payload")
+    sensitivity_payload_r <- attr(validate_names_r, "sensitivity_payload")
 
     # Consumers of mapped_data
     mod_preview_server(
         "preview",
         preview_data,
         lang_r,
-        download_data_r = mapped_data,
-        name_review_payload_r = name_review_payload_r,
-        raw_data_r = raw_data,
-        map_values_r = mapping_result$map_values_r
+        download_data_r            = mapped_data,
+        sensitive_overview_input_r = mapping_result$sensitive_overview_input_r,
+        name_review_payload_r      = name_review_payload_r,
+        sensitivity_payload_r      = sensitivity_payload_r,
+        raw_data_r                 = raw_data,
+        map_values_r               = mapping_result$map_values_r
     )
     coord_validation_r <- mod_validate_coords_server(
         "validate_coords",

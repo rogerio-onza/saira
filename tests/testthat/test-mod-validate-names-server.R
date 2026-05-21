@@ -571,6 +571,48 @@ testthat::test_that("report table wires the sensitive-species pill column", {
             testthat::expect_true(
                 grepl("row[4]", scientific_render, fixed = TRUE)
             )
+            # ADR-092: the resolved-name click target sits at hidden index 5.
+            testthat::expect_true(5 %in% hidden_targets)
+        }
+    )
+})
+
+testthat::test_that("sensitivity payload reflects per-species overrides", {
+    mapped_df <- data.frame(
+        scientificName = "Felis catus",
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            validation_result(data.frame(
+                scientificName = "Felis catus",
+                query_name = "Felis catus",
+                validation_status = "accepted",
+                taxonomicStatus = "accepted",
+                stringsAsFactors = FALSE
+            ))
+            session$flushReact()
+
+            payload <- attr(session$returned, "sensitivity_payload")
+            testthat::expect_true(shiny::is.reactive(payload))
+            testthat::expect_equal(nrow(payload()), 0L)
+
+            # Researcher marks a non-MMA species sensitive (ADR-092). The
+            # global Chapman tier is chosen on the Preview tab, so the
+            # payload only needs to carry the boolean decision.
+            register_sensitivity_override("Felis catus", TRUE)
+            session$flushReact()
+
+            df <- payload()
+            testthat::expect_equal(df$scientificName, "Felis catus")
+            testthat::expect_true(df$sensitive)
+            testthat::expect_false("category" %in% names(df))
         }
     )
 })

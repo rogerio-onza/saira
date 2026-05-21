@@ -1,7 +1,13 @@
 # Development / agent tooling (not part of the public package)
 .claude/
+.codex/
+.agents/
 scripts/
 pkg_docs/
+
+# Internal docs kept local, not published to the public repo
+docs/roadmap.md
+docs/archive/
 
 # R / RStudio
 .Rproj.user/

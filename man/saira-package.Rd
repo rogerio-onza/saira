@@ -11,8 +11,8 @@ Shiny application for standardizing biodiversity datasets to the Darwin Core sta
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/sibbr/saira}
-  \item Report bugs at \url{https://github.com/sibbr/saira/issues}
+  \item \url{https://github.com/rogerio-onza/saira}
+  \item Report bugs at \url{https://github.com/rogerio-onza/saira/issues}
 }
 
 }

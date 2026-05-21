@@ -23,6 +23,10 @@ mod_preview_ui <- function(id) {
                 shiny::uiOutput(ns("download_btn_container"))
             ),
 
+            # Sensitive-species masking control (ADR-092); shows only when
+            # the dataset has sensitive records.
+            shiny::uiOutput(ns("sensitive_panel")),
+
             # Data table
             shiny::uiOutput(ns("table_or_message"))
         )
@@ -36,6 +40,14 @@ mod_preview_ui <- function(id) {
 #' @param lang_r Reactive language value
 #' @param download_data_r Reactive data frame with full mapped data for download
 #' @param name_review_payload_r Optional reactive payload from name manual review
+#' @param sensitivity_payload_r Optional reactive data.frame of per-species
+#'   sensitivity overrides (scientificName, sensitive) from the Validation >
+#'   Names tab (ADR-092).
+#' @param sensitive_overview_input_r Optional reactive returning a lightweight
+#'   data.frame (`scientificName`, `decimalLatitude`, `decimalLongitude`)
+#'   projected directly from raw_data + map_values. Used by the masking
+#'   overview card so that the Preview tab does NOT pull the heavy
+#'   `processed_data_r` reactive (ADR-020, LESSONS.md:31).
 #' @param raw_data_r Optional reactive with the original uploaded data.frame
 #'   (for ZIP bundle: appending non-mapped raw cols and the mapping_guide.txt).
 #' @param map_values_r Optional reactive with the current mapping list
@@ -44,7 +56,9 @@ mod_preview_ui <- function(id) {
 #' @export
 mod_preview_server <- function(id, mapped_data_r, lang_r,
                                download_data_r = mapped_data_r,
+                               sensitive_overview_input_r = NULL,
                                name_review_payload_r = NULL,
+                               sensitivity_payload_r = NULL,
                                raw_data_r = NULL,
                                map_values_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
@@ -190,6 +204,204 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                 return(NULL)
             }
             name_review_payload_r()
+        })
+
+        export_sensitivity_payload <- shiny::reactive({
+            if (is.null(sensitivity_payload_r) ||
+                !shiny::is.reactive(sensitivity_payload_r)) {
+                return(NULL)
+            }
+            sensitivity_payload_r()
+        })
+
+        # Chapman 2020 generalization level (single global tier). Default
+        # "low" (0.001 deg) per the user-facing recommendation. "not_sensitive"
+        # is the explicit no-op (replaces the old "Disable masking" checkbox).
+        sensitive_generalization_rv <- shiny::reactiveVal("low")
+
+        shiny::observeEvent(input$sensitive_generalization, {
+            val <- as.character(input$sensitive_generalization)
+            if (length(val) == 1L && val %in% sensitive_generalization_levels()) {
+                sensitive_generalization_rv(val)
+            }
+        })
+
+        # How many records would be masked. Resolved over UNIQUE names and
+        # sourced from a lightweight (scientificName + coords) projection
+        # of the raw data, so the Preview tab does NOT materialise the heavy
+        # `processed_data_r` reactive (ADR-020, LESSONS.md:31).
+        sensitive_overview <- shiny::reactive({
+            df <- if (is.null(sensitive_overview_input_r) ||
+                      !shiny::is.reactive(sensitive_overview_input_r)) {
+                NULL
+            } else {
+                tryCatch(sensitive_overview_input_r(), error = function(e) NULL)
+            }
+            need <- c("scientificName", "decimalLatitude", "decimalLongitude")
+            if (!is.data.frame(df) || nrow(df) == 0L ||
+                !all(need %in% names(df))) {
+                return(0L)
+            }
+            sci <- as.character(df$scientificName)
+            keep <- !is.na(sci) & nzchar(sci)
+            u <- unique(sci[keep])
+            if (length(u) == 0L) {
+                return(0L)
+            }
+            dec <- sensitive_resolve(u, export_sensitivity_payload())
+            sens_names <- u[dec$sensitive]
+            if (length(sens_names) == 0L) {
+                return(0L)
+            }
+            lat <- suppressWarnings(as.numeric(df$decimalLatitude))
+            lon <- suppressWarnings(as.numeric(df$decimalLongitude))
+            sum(sci %in% sens_names & !is.na(lat) & !is.na(lon))
+        })
+
+        output$sensitive_panel <- shiny::renderUI({
+            n <- sensitive_overview()
+            if (is.null(n) || n == 0L) {
+                return(NULL)
+            }
+            lang <- lang_r()
+            current <- sensitive_generalization_rv()
+
+            # `sensitive_generalization_levels()` returns the Chapman tiers in
+            # order, with "not_sensitive" last. The CSS in 17-sensitive-panel.css
+            # uses `.form-check:last-child` to demote the opt-out card, so the
+            # order here must mirror that contract; do not reorder.
+            levels <- sensitive_generalization_levels()
+            active_levels <- setdiff(levels, "not_sensitive")
+
+            fmt_grid_cell <- function(level) {
+                g <- sensitive_generalization_grid(level)
+                if (is.na(g)) {
+                    return(tr("sensitive_grid_unmasked", lang))
+                }
+                km <- round(g * 111.32, 1)
+                sprintf(
+                    "%s\u00b0 (~%s km)",
+                    format(g, trim = TRUE, scientific = FALSE),
+                    format(km, trim = TRUE)
+                )
+            }
+
+            card_label <- function(level, recommended = FALSE) {
+                g <- sensitive_generalization_grid(level)
+                deg_txt <- sprintf(
+                    "%s\u00b0",
+                    format(g, trim = TRUE, scientific = FALSE)
+                )
+                km_txt <- sprintf(
+                    "~%s km",
+                    format(round(g * 111.32, 1), trim = TRUE)
+                )
+                top <- shiny::div(
+                    class = "sp-card-top",
+                    shiny::span(
+                        class = "sp-card-num",
+                        tr(paste0("sensitive_card_num_", level), lang)
+                    ),
+                    if (recommended) {
+                        shiny::span(
+                            class = "sp-badge sp-badge-recommended",
+                            tr("sensitive_card_recommended", lang)
+                        )
+                    }
+                )
+                shiny::HTML(as.character(shiny::tagList(
+                    top,
+                    shiny::div(
+                        class = "sp-card-name",
+                        tr(paste0("sensitive_card_name_", level), lang)
+                    ),
+                    shiny::div(
+                        class = "sp-card-precision",
+                        shiny::span(class = "sp-card-deg", deg_txt),
+                        shiny::span(class = "sp-card-km", km_txt)
+                    ),
+                    shiny::div(
+                        class = "sp-card-impact",
+                        tr(paste0("sensitive_card_impact_", level), lang)
+                    )
+                )))
+            }
+
+            optout_label <- shiny::HTML(as.character(shiny::tagList(
+                shiny::tags$i(
+                    class = "fa-solid fa-triangle-exclamation",
+                    `aria-hidden` = "true"
+                ),
+                shiny::span(
+                    class = "sp-optout-text",
+                    tr("sensitive_card_optout", lang)
+                )
+            )))
+
+            choice_names <- c(
+                lapply(active_levels, function(lv) {
+                    card_label(lv, recommended = identical(lv, "extreme"))
+                }),
+                list(optout_label)
+            )
+            choice_values <- c(active_levels, "not_sensitive")
+
+            table_rows <- lapply(levels, function(level) {
+                shiny::tags$tr(
+                    shiny::tags$td(tr(paste0("sensitive_gen_", level), lang)),
+                    shiny::tags$td(fmt_grid_cell(level))
+                )
+            })
+
+            shiny::div(
+                class = "sensitive-panel",
+                shiny::div(
+                    class = "sp-header",
+                    shiny::h5(
+                        class = "sp-title",
+                        tr("sensitive_panel_title", lang)
+                    ),
+                    shiny::span(
+                        class = "sp-count-chip",
+                        sprintf(tr("sensitive_panel_records_chip", lang), n)
+                    )
+                ),
+                shiny::p(
+                    class = "sp-lead",
+                    tr("sensitive_panel_lead", lang)
+                ),
+                shiny::div(
+                    class = "sp-radio-wrap",
+                    shiny::radioButtons(
+                        ns("sensitive_generalization"),
+                        label = NULL,
+                        choiceNames = choice_names,
+                        choiceValues = choice_values,
+                        selected = current
+                    )
+                ),
+                shiny::tags$details(
+                    class = "sp-disclosure",
+                    shiny::tags$summary(
+                        class = "sp-disclosure-summary",
+                        tr("sensitive_disclosure_title", lang)
+                    ),
+                    shiny::div(
+                        class = "sp-disclosure-body",
+                        shiny::tags$table(
+                            class = "table table-sm sensitive-grid-table",
+                            shiny::tags$caption(tr("sensitive_table_caption", lang)),
+                            shiny::tags$thead(
+                                shiny::tags$tr(
+                                    shiny::tags$th(tr("sensitive_table_col_category", lang)),
+                                    shiny::tags$th(tr("sensitive_table_col_grid", lang))
+                                )
+                            ),
+                            shiny::tags$tbody(table_rows)
+                        )
+                    )
+                )
+            )
         })
 
         download_validation <- shiny::reactive({
@@ -653,8 +865,12 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                         # Generalize coordinates of sensitive/threatened
                         # species before they reach the IPT bundle; the real
                         # coordinates go to a separate companion file.
+                        gen_level <- sensitive_generalization_rv()
                         masked <- mask_sensitive_coordinates(
                             full_data,
+                            decisions = export_sensitivity_payload(),
+                            generalization = gen_level,
+                            enabled = gen_level != "not_sensitive",
                             lang = lang_r()
                         )
                         export_data <- masked$masked

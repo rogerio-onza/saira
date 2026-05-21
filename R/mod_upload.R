@@ -23,6 +23,80 @@ mod_upload_ui <- function(id) {
                             shiny::uiOutput(ns("data_title"))
                         ),
                         bslib::card_body(
+                            # ADR-097: tab strip replaces ADR-095 input_switch.
+                            # Native radioButtons drive the state. Shiny does
+                            # NOT assign per-option ids on the radio inputs, so
+                            # `<label for>` cannot forward clicks; instead a
+                            # tiny click delegator (script below) syncs the
+                            # visible tab clicks to the matching radio input.
+                            shiny::div(
+                                class = "upload-mode-tabs",
+                                role  = "tablist",
+                                `aria-labelledby` = ns("mode_tabs_label"),
+                                shiny::tags$span(
+                                    id = ns("mode_tabs_label"),
+                                    class = "visually-hidden",
+                                    shiny::uiOutput(ns("mode_tabs_a11y_label"), inline = TRUE)
+                                ),
+                                shiny::div(
+                                    class = "upload-mode-tabs-input",
+                                    shiny::radioButtons(
+                                        inputId = ns("upload_mode"),
+                                        label = NULL,
+                                        choices = c("csv" = "csv", "camtrap" = "camtrap"),
+                                        selected = "csv",
+                                        inline = TRUE
+                                    )
+                                ),
+                                shiny::tags$button(
+                                    type = "button",
+                                    class = "upload-mode-tab",
+                                    `data-mode` = "csv",
+                                    `aria-controls` = ns("upload_mode"),
+                                    shiny::icon("file-csv", class = "fa-solid"),
+                                    shiny::tags$span(
+                                        class = "upload-mode-tab-title",
+                                        shiny::uiOutput(ns("mode_csv_title"), inline = TRUE)
+                                    )
+                                ),
+                                shiny::tags$button(
+                                    type = "button",
+                                    class = "upload-mode-tab",
+                                    `data-mode` = "camtrap",
+                                    `aria-controls` = ns("upload_mode"),
+                                    shiny::icon("box-archive", class = "fa-solid"),
+                                    shiny::tags$span(
+                                        class = "upload-mode-tab-title",
+                                        shiny::uiOutput(ns("mode_camtrap_title"), inline = TRUE)
+                                    )
+                                )
+                            ),
+                            shiny::tags$script(shiny::HTML(
+                                "(function(){\n",
+                                "  if (window.__sairaUploadModeTabsWired) return;\n",
+                                "  window.__sairaUploadModeTabsWired = true;\n",
+                                "  document.addEventListener('click', function(e){\n",
+                                "    var tab = e.target.closest && e.target.closest('.upload-mode-tab');\n",
+                                "    if (!tab) return;\n",
+                                "    e.preventDefault();\n",
+                                "    var wrap = tab.closest('.upload-mode-tabs');\n",
+                                "    if (!wrap) return;\n",
+                                "    var mode = tab.getAttribute('data-mode');\n",
+                                "    var radio = wrap.querySelector('input[type=\"radio\"][value=\"' + mode + '\"]');\n",
+                                "    if (!radio || radio.checked) return;\n",
+                                "    radio.checked = true;\n",
+                                "    radio.dispatchEvent(new Event('change', {bubbles: true}));\n",
+                                "    radio.focus({preventScroll: true});\n",
+                                "  });\n",
+                                "})();"
+                            )),
+                            shiny::div(
+                                id = ns("mode_change_announce"),
+                                class = "visually-hidden",
+                                role = "status",
+                                `aria-live` = "polite",
+                                shiny::uiOutput(ns("mode_change_text"), inline = TRUE)
+                            ),
                             # File input with dropzone and detached native progress row
                             shiny::div(
                                 class = "upload-section",
@@ -164,8 +238,39 @@ mod_upload_server <- function(id, lang_r) {
             shiny::tags$span(tr("upload_no_file", lang_r()))
         })
 
+        output$mode_csv_title <- shiny::renderUI({
+            shiny::tags$span(tr("upload_mode_csv_title", lang_r()))
+        })
+
+        output$mode_camtrap_title <- shiny::renderUI({
+            shiny::tags$span(tr("upload_mode_camtrap_title", lang_r()))
+        })
+
+        output$mode_tabs_a11y_label <- shiny::renderUI({
+            shiny::tags$span(tr("upload_mode_tabs_a11y_label", lang_r()))
+        })
+
+        output$mode_change_text <- shiny::renderUI({
+            mode <- input$upload_mode %||% "csv"
+            label_key <- if (identical(mode, "camtrap")) {
+                "upload_mode_camtrap_title"
+            } else {
+                "upload_mode_csv_title"
+            }
+            shiny::tags$span(sprintf(
+                tr("a11y_mode_changed", lang_r()),
+                tr(label_key, lang_r())
+            ))
+        })
+
         output$dropzone_hint_text <- shiny::renderUI({
-            shiny::tags$span(tr("upload_dropzone_cta", lang_r()))
+            mode <- input$upload_mode %||% "csv"
+            key <- if (identical(mode, "camtrap")) {
+                "upload_camtrap_dropzone_hint"
+            } else {
+                "upload_dropzone_cta"
+            }
+            shiny::tags$span(tr(key, lang_r()))
         })
 
         output$max_size_text <- shiny::renderUI({
@@ -273,88 +378,43 @@ mod_upload_server <- function(id, lang_r) {
         required_terms <- required_terms[match(required_fields, required_terms$term), , drop = FALSE]
         required_terms <- required_terms[!is.na(required_terms$term), , drop = FALSE]
 
+        # ADR-097: unified scaffold — persistent header plus body that
+        # crossfades between CSV (DwC term chips) and Camtrap (file rows).
         output$dwc_required <- shiny::renderUI({
             lang <- lang_r()
-
-            if (nrow(required_terms) == 0) {
-                return(shiny::div(
-                    class = "alert alert-warning",
-                    shiny::icon("exclamation-triangle"),
-                    " ",
-                    tr("dwc_required_empty", lang)
-                ))
+            mode <- input$upload_mode %||% "csv"
+            body <- if (identical(mode, "camtrap")) {
+                upload_camtrap_requirements_ui(lang)
+            } else {
+                upload_csv_requirements_ui(required_terms, lang)
             }
-
-            class_labels <- c(
-                "Record-level" = tr("class_record", lang),
-                "Occurrence" = tr("class_occurrence", lang),
-                "Location" = tr("class_location", lang),
-                "Taxon" = tr("class_taxon", lang)
-            )
-            required_terms_view <- required_terms
-            fallback_classes <- unname(class_fallback[required_terms_view$term])
-            invalid_class <- !required_terms_view$class %in% names(class_labels)
-            required_terms_view$class[invalid_class] <- fallback_classes[invalid_class]
-            required_terms_view$class[is.na(required_terms_view$class)] <- "Record-level"
-            categories_available <- category_order[category_order %in% unique(required_terms_view$class)]
-
-            groups_ui <- lapply(categories_available, function(category_name) {
-                category_label <- class_labels[[category_name]]
-                group_df <- required_terms_view[required_terms_view$class == category_name, , drop = FALSE]
-                category_slug <- switch(
-                    category_name,
-                    "Record-level" = "record-level",
-                    "Occurrence" = "occurrence",
-                    "Taxon" = "taxon",
-                    "Location" = "location",
-                    "record-level"
-                )
-
-                chips_ui <- lapply(seq_len(nrow(group_df)), function(i) {
-                    term <- group_df$term[i]
-                    definition <- if (lang == "pt") group_df$definition_pt[i] else group_df$definition_en[i]
-
-                    shiny::tags$span(
-                        class = "dwc-term-chip",
-                        title = if (is.na(definition)) "" else definition,
-                        term
-                    )
-                })
-
-                shiny::div(
-                    class = paste("dwc-inline-group", paste0("dwc-inline-group--", category_slug)),
-                    shiny::div(
-                        class = paste("dwc-inline-group-label", paste0("dwc-group-badge--", category_slug)),
-                        category_label
-                    ),
-                    shiny::div(class = "dwc-term-chip-list", chips_ui)
-                )
-            })
-
             shiny::div(
-                class = "dwc-required",
+                class = "format-requirements",
+                `data-mode` = mode,
                 shiny::tags$h5(
+                    class = "format-requirements-title text-mono",
                     shiny::icon("list-check", class = "fa-solid"),
                     " ",
-                    tr("dwc_required_title", lang),
-                    class = "text-mono mb-2"
+                    tr("upload_format_requirements_title", lang)
                 ),
-                shiny::tags$p(
-                    tr("dwc_required_hint", lang),
-                    class = "dwc-required-hint"
-                ),
-                shiny::div(
-                    class = "dwc-inline-groups",
-                    groups_ui
-                )
+                shiny::div(class = "format-requirements-body", body)
             )
         })
 
         # ADR-087: classify the upload as data CSV or Saira mapping guide.
+        # ADR-095: when the Camtrap DP mode is selected, classify as
+        # camtrap_dp if the zip is a valid Frictionless Data Package
+        # descriptor bundle.
+        # ADR-097: mode state lives in input$upload_mode ("csv" | "camtrap").
         # Reactive depends only on input$file; called at most once per upload.
         file_kind <- shiny::reactive({
             shiny::req(input$file)
             ext <- tolower(tools::file_ext(input$file$name))
+            if (identical(input$upload_mode %||% "csv", "camtrap")) {
+                if (ext != "zip") return("invalid")
+                if (!is_camtrap_dp_zip(input$file$datapath)) return("invalid")
+                return("camtrap_dp")
+            }
             if (!ext %in% c("csv", "txt")) return("invalid")
             if (is_saira_mapping_guide(input$file$datapath)) return("guide")
             if (ext == "txt") return("invalid")  # .txt without magic = bogus
@@ -370,14 +430,52 @@ mod_upload_server <- function(id, lang_r) {
 
             kind <- file_kind()
             if (identical(kind, "invalid")) {
+                msg_key <- if (identical(input$upload_mode %||% "csv", "camtrap")) {
+                    "err_camtrap_invalid_zip"
+                } else {
+                    "err_invalid_format"
+                }
                 shiny::validate(
-                    shiny::need(FALSE, tr("err_invalid_format", lang_r()))
+                    shiny::need(FALSE, tr(msg_key, lang_r()))
                 )
             }
             if (identical(kind, "guide")) {
                 # The guide flow handles its own UI (modal + import).
                 # Return NULL so raw_data behaves as "nothing uploaded yet".
                 return(NULL)
+            }
+
+            if (identical(kind, "camtrap_dp")) {
+                return(tryCatch(
+                    {
+                        pkg <- read_camtrap_dp_zip(input$file$datapath, lang = lang_r())
+                        df <- convert_camtrap_to_dwc_occurrence(pkg, lang = lang_r())
+                        src <- attr(df, "saira_camtrap_source")
+                        src_label <- switch(
+                            src %||% "",
+                            "wildlife_insights_zip" = tr("upload_camtrap_source_wi", lang_r()),
+                            "camtrap_csv_zip" = tr("upload_camtrap_source_camtrap", lang_r()),
+                            "datapackage_zip" = tr("upload_camtrap_source_camtrap", lang_r()),
+                            ""
+                        )
+                        msg <- sprintf(tr("upload_camtrap_success", lang_r()), nrow(df))
+                        if (nzchar(src_label)) {
+                            msg <- paste0(msg, " (", src_label, ")")
+                        }
+                        shiny::showNotification(
+                            msg, type = "message", duration = 4
+                        )
+                        df
+                    },
+                    error = function(e) {
+                        shiny::showNotification(
+                            paste(tr("err_camtrap_invalid_zip", lang_r()), ":", e$message),
+                            type = "error",
+                            duration = 8
+                        )
+                        NULL
+                    }
+                ))
             }
 
             tryCatch(

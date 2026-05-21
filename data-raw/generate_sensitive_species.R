@@ -10,10 +10,12 @@
 #   categories are VU, EN, CR and CR (PEX).
 #
 # Output: inst/extdata/sensitive_species.rds
-#   A table with columns scientificName and match_key, deduped by
-#   match_key. The match_key uses the SAME normalization the name
-#   validator applies, so the list and validated names compare
-#   identically.
+#   A table with columns scientificName, match_key and category
+#   (VU/EN/CR/CR (PEX)), deduped by match_key keeping the most
+#   restrictive category. The match_key uses the SAME normalization the
+#   name validator applies, so the list and validated names compare
+#   identically. The category drives the per-record generalization grid
+#   on export (ADR-092).
 #
 # To regenerate (from the project root):
 #   Rscript -e "source('data-raw/generate_sensitive_species.R')"
@@ -67,11 +69,14 @@ parse_row <- function(line) {
   if (length(tokens) < 2L || !grepl("^[A-Z]", tokens[1L])) {
     return(NULL)
   }
-  species
+  # Threat category drives the generalization grid on export (ADR-092).
+  c(species = trimws(species), category = trimws(category))
 }
 
-raw_names <- unlist(lapply(lines, parse_row), use.names = FALSE)
-raw_names <- unique(trimws(raw_names))
+parsed <- lapply(lines, parse_row)
+parsed <- parsed[!vapply(parsed, is.null, logical(1L))]
+raw_names <- vapply(parsed, function(x) unname(x[["species"]]), character(1L))
+raw_cats <- vapply(parsed, function(x) unname(x[["category"]]), character(1L))
 
 # Same normalization the validator uses, so list and validated names match.
 canonical <- vapply(
@@ -91,11 +96,21 @@ match_key <- normalize_for_matching(canonical)
 sensitive_species <- data.frame(
   scientificName = raw_names,
   match_key = match_key,
+  category = raw_cats,
   stringsAsFactors = FALSE
 )
 keep <- !is.na(sensitive_species$match_key) &
   nzchar(sensitive_species$match_key)
 sensitive_species <- sensitive_species[keep, , drop = FALSE]
+# On a match_key collision keep the most restrictive category so the same
+# normalized taxon never gets a weaker generalization than the list asks for.
+cat_rank <- c("VU" = 1L, "EN" = 2L, "CR" = 3L, "CR (PEX)" = 4L)
+rank <- cat_rank[sensitive_species$category]
+rank[is.na(rank)] <- 0L
+sensitive_species <- sensitive_species[
+  order(-rank, sensitive_species$scientificName), ,
+  drop = FALSE
+]
 sensitive_species <- sensitive_species[
   !duplicated(sensitive_species$match_key), ,
   drop = FALSE

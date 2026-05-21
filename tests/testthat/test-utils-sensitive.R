@@ -1,12 +1,16 @@
-# Title: Tests for Sensitive-species Coordinate Masking
+# Title: Tests for Sensitive-species Coordinate Masking (ADR-090, ADR-092)
 # Author: Rogerio Nunes Oliveira
 
 # Helper: install a synthetic sensitive list into the cache for the duration
-# of the calling test, then restore the real one.
-local_sensitive_fixture <- function(species, env = parent.frame()) {
+# of the calling test, then restore the real one. `category` is recycled to
+# the length of `species` (default CR -> 0.1 deg under the conservative
+# scheme, so the legacy assertions still hold).
+local_sensitive_fixture <- function(species, category = "CR",
+                                     env = parent.frame()) {
     fixture <- data.frame(
         scientificName = species,
         match_key = saira:::build_sensitive_match_keys(species),
+        category = rep_len(category, length(species)),
         stringsAsFactors = FALSE
     )
     saira:::sensitive_species_cache$set(fixture, path = "test-fixture")
@@ -45,7 +49,43 @@ testthat::test_that("generalize_coord rejects an invalid grid", {
     testthat::expect_error(saira:::generalize_coord(1, c(0.1, 0.2)))
 })
 
-# flag_sensitive_species --------------------------------------------------
+# sensitive_generalization_levels / _grid --------------------------------
+
+testthat::test_that("generalization levels follow Chapman 2020 Table 7", {
+    testthat::expect_equal(
+        saira:::sensitive_generalization_levels(),
+        c("extreme", "high", "medium", "low", "not_sensitive")
+    )
+})
+
+testthat::test_that("generalization grid maps each tier to the right degree", {
+    testthat::expect_equal(saira:::sensitive_generalization_grid("extreme"), 1.0)
+    testthat::expect_equal(saira:::sensitive_generalization_grid("high"), 0.1)
+    testthat::expect_equal(saira:::sensitive_generalization_grid("medium"), 0.01)
+    testthat::expect_equal(saira:::sensitive_generalization_grid("low"), 0.001)
+    testthat::expect_true(is.na(saira:::sensitive_generalization_grid("not_sensitive")))
+    # Unknown / malformed level -> NA (treated as no-op upstream).
+    testthat::expect_true(is.na(saira:::sensitive_generalization_grid("bogus")))
+    testthat::expect_true(is.na(saira:::sensitive_generalization_grid(NA_character_)))
+})
+
+# sensitive_category_for / flag ------------------------------------------
+
+testthat::test_that("sensitive_category_for returns the MMA category or NA", {
+    local_sensitive_fixture(
+        c("Panthera onca", "Araucaria angustifolia"),
+        category = c("CR", "CR (PEX)")
+    )
+    testthat::expect_equal(
+        saira:::sensitive_category_for(c(
+            "Panthera onca", "Araucaria angustifolia", "Felis catus"
+        )),
+        c("CR", "CR (PEX)", NA_character_)
+    )
+    testthat::expect_equal(
+        saira:::sensitive_category_for(character(0)), character(0)
+    )
+})
 
 testthat::test_that("flag_sensitive_species matches exact and author forms", {
     local_sensitive_fixture(c("Panthera onca", "Hippocampus reidi"))
@@ -87,25 +127,68 @@ testthat::test_that("flag_sensitive_species is all-FALSE on an empty list", {
     )
 })
 
-# load_sensitive_species --------------------------------------------------
+# sensitive_resolve ------------------------------------------------------
+
+testthat::test_that("sensitive_resolve: payload overrides the MMA default", {
+    local_sensitive_fixture("Panthera onca", category = "CR")
+    dec <- data.frame(
+        scientificName = c("Panthera onca", "Felis catus"),
+        sensitive = c(FALSE, TRUE),
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::sensitive_resolve(
+        c("Panthera onca", "Felis catus", "Canis lupus"), dec
+    )
+    # MMA species explicitly unmarked; non-MMA species manually marked;
+    # untouched species falls back to the MMA default (not listed -> FALSE).
+    testthat::expect_equal(res$sensitive, c(FALSE, TRUE, FALSE))
+    # The MMA category survives for display on the pill in Validation > Names;
+    # non-MMA overrides have no category (NA — pill falls back to "—").
+    testthat::expect_equal(res$category[1], "CR")
+    testthat::expect_true(is.na(res$category[2]))
+})
+
+testthat::test_that("sensitive_resolve tolerates a legacy payload carrying category", {
+    saira:::sensitive_species_cache$set(
+        saira:::sensitive_species_empty(), path = "test-empty"
+    )
+    withr::defer(saira:::sensitive_species_cache$reset())
+    dec <- data.frame(
+        scientificName = "Mystery sp", sensitive = TRUE, category = "VU",
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::sensitive_resolve("Mystery sp", dec)
+    testthat::expect_true(res$sensitive)
+    # Legacy `category` is honoured for display only.
+    testthat::expect_equal(res$category, "VU")
+})
+
+# load_sensitive_species -------------------------------------------------
 
 testthat::test_that("load_sensitive_species reads the bundled MMA list", {
     saira:::sensitive_species_cache$reset()
     withr::defer(saira:::sensitive_species_cache$reset())
     df <- saira:::load_sensitive_species(force = TRUE)
     testthat::expect_true(is.data.frame(df))
-    testthat::expect_setequal(names(df), c("scientificName", "match_key"))
+    testthat::expect_setequal(
+        names(df), c("scientificName", "match_key", "category")
+    )
     testthat::expect_gt(nrow(df), 0L)
     testthat::expect_equal(anyDuplicated(df$match_key), 0L)
+    testthat::expect_true(all(
+        df$category %in% c("VU", "EN", "CR", "CR (PEX)")
+    ))
 })
 
 testthat::test_that("sensitive_species_empty has the contract shape", {
     e <- saira:::sensitive_species_empty()
     testthat::expect_equal(nrow(e), 0L)
-    testthat::expect_setequal(names(e), c("scientificName", "match_key"))
+    testthat::expect_setequal(
+        names(e), c("scientificName", "match_key", "category")
+    )
 })
 
-# mask_sensitive_coordinates ----------------------------------------------
+# mask_sensitive_coordinates --------------------------------------------
 
 make_df <- function() {
     data.frame(
@@ -115,19 +198,24 @@ make_df <- function() {
         ),
         decimalLatitude = c("-23.5612", "10.0", "", "-5.1234"),
         decimalLongitude = c("-46.6543", "20.0", "-40.0", "-39.9876"),
-        coordinateUncertaintyInMeters = c("3000", "", "", NA),
+        # Row 1 uncertainty kept below SENSITIVE_ALREADY_MASKED_THRESHOLD_M
+        # (1000 m, ADR-095) so masking still applies and pmax(100, grid) raises.
+        coordinateUncertaintyInMeters = c("100", "", "", NA),
         stringsAsFactors = FALSE
     )
 }
 
 testthat::test_that("mask generalizes only sensitive rows that have coords", {
     local_sensitive_fixture(c("Panthera onca", "Hippocampus reidi"))
-    res <- saira:::mask_sensitive_coordinates(make_df(), grid = 0.1, lang = "en")
+    # Default generalization is "low" (0.001 deg).
+    res <- saira:::mask_sensitive_coordinates(
+        make_df(), generalization = "low", lang = "en"
+    )
 
     testthat::expect_equal(res$n_masked, 2L)
-    # Row 1 sensitive + coords -> generalized.
-    testthat::expect_equal(res$masked$decimalLatitude[1], "-23.6")
-    testthat::expect_equal(res$masked$decimalLongitude[1], "-46.7")
+    # Row 1 sensitive + coords -> generalized to 0.001 deg.
+    testthat::expect_equal(res$masked$decimalLatitude[1], "-23.561")
+    testthat::expect_equal(res$masked$decimalLongitude[1], "-46.654")
     # Row 2 not sensitive -> byte-identical.
     testthat::expect_equal(res$masked$decimalLatitude[2], "10.0")
     testthat::expect_equal(res$masked$decimalLongitude[2], "20.0")
@@ -135,16 +223,43 @@ testthat::test_that("mask generalizes only sensitive rows that have coords", {
     testthat::expect_equal(res$masked$decimalLatitude[3], "")
     testthat::expect_false("a3" %in% res$real$occurrenceID)
     # Row 4 sensitive + coords -> generalized.
-    testthat::expect_equal(res$masked$decimalLatitude[4], "-5.1")
+    testthat::expect_equal(res$masked$decimalLatitude[4], "-5.123")
 })
 
-testthat::test_that("mask sets DwC fields and raises uncertainty conservatively", {
+testthat::test_that("mask grid follows the chosen Chapman tier uniformly", {
+    local_sensitive_fixture("Xxxia exampla")
+    df <- data.frame(
+        occurrenceID = "x1", scientificName = "Xxxia exampla",
+        decimalLatitude = "-23.456789", decimalLongitude = "-46.123456",
+        stringsAsFactors = FALSE
+    )
+    expectations <- list(
+        list(level = "low",     lat = "-23.457"),
+        list(level = "medium",  lat = "-23.46"),
+        list(level = "high",    lat = "-23.5"),
+        list(level = "extreme", lat = "-23")
+    )
+    for (e in expectations) {
+        r <- saira:::mask_sensitive_coordinates(
+            df, generalization = e$level, lang = "en"
+        )
+        testthat::expect_equal(
+            r$masked$decimalLatitude[1], e$lat,
+            info = e$level
+        )
+    }
+})
+
+testthat::test_that("mask sets DwC fields incl. coordinatePrecision", {
     local_sensitive_fixture(c("Panthera onca", "Hippocampus reidi"))
-    res <- saira:::mask_sensitive_coordinates(make_df(), grid = 0.1, lang = "en")
+    res <- saira:::mask_sensitive_coordinates(
+        make_df(), generalization = "high", lang = "en"
+    )
 
     testthat::expect_true(nzchar(res$masked$dataGeneralizations[1]))
     testthat::expect_true(nzchar(res$masked$informationWithheld[1]))
     testthat::expect_equal(res$masked$dataGeneralizations[2], "")
+    testthat::expect_equal(res$masked$coordinatePrecision[1], "0.1")
     # Existing 3000 m < grid cell -> raised to the grid uncertainty.
     testthat::expect_equal(
         res$masked$coordinateUncertaintyInMeters[1],
@@ -165,27 +280,60 @@ testthat::test_that("mask never lowers a larger pre-existing uncertainty", {
         decimalLatitude = "-23.5",
         decimalLongitude = "-46.6",
         coordinateUncertaintyInMeters = "50000",
+        coordinatePrecision = "",
         dataGeneralizations = "",
         informationWithheld = "",
         stringsAsFactors = FALSE
     )
-    res <- saira:::mask_sensitive_coordinates(df, grid = 0.1, lang = "en")
+    res <- saira:::mask_sensitive_coordinates(
+        df, generalization = "high", lang = "en"
+    )
     testthat::expect_equal(res$masked$coordinateUncertaintyInMeters[1], "50000")
-    # Columns pre-existed -> no reordering.
+    # All four DwC columns pre-existed -> no reordering.
     testthat::expect_equal(names(res$masked), names(df))
 })
 
-testthat::test_that("mask companion holds original coords keyed on occurrenceID", {
+testthat::test_that("mask scrubs coordinate-leaking text on sensitive rows", {
     local_sensitive_fixture(c("Panthera onca", "Hippocampus reidi"))
-    res <- saira:::mask_sensitive_coordinates(make_df(), grid = 0.1, lang = "en")
+    df <- make_df()
+    df$locality <- c("exact spot", "town", "here", "river bend")
+    df$verbatimLatitude <- c("23 33 S", "", "", "5 07 S")
+    res <- saira:::mask_sensitive_coordinates(df, lang = "en")
+    iw <- res$masked$informationWithheld[1]
 
-    testthat::expect_equal(res$real$occurrenceID, c("a1", "a4"))
-    testthat::expect_equal(res$real$decimalLatitude, c("-23.5612", "-5.1234"))
-    testthat::expect_equal(res$real$decimalLongitude, c("-46.6543", "-39.9876"))
-    testthat::expect_setequal(
-        names(res$real),
-        c("occurrenceID", "scientificName", "decimalLatitude", "decimalLongitude")
+    testthat::expect_equal(res$masked$locality[1], iw)
+    testthat::expect_equal(res$masked$verbatimLatitude[4], iw)
+    # Non-sensitive row keeps its text.
+    testthat::expect_equal(res$masked$locality[2], "town")
+    # An absent leak column is not fabricated.
+    testthat::expect_false("footprintWKT" %in% names(res$masked))
+})
+
+testthat::test_that("decisions override: unmark MMA, mark non-MMA", {
+    local_sensitive_fixture("Panthera onca", category = "CR")
+    df <- data.frame(
+        occurrenceID = c("m", "n"),
+        scientificName = c("Panthera onca", "Felis catus"),
+        decimalLatitude = c("-23.5612", "-10.5612"),
+        decimalLongitude = c("-46.6543", "-40.6543"),
+        stringsAsFactors = FALSE
     )
+    dec <- data.frame(
+        scientificName = c("Panthera onca", "Felis catus"),
+        sensitive = c(FALSE, TRUE),
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(
+        df, decisions = dec, generalization = "low", lang = "en"
+    )
+    testthat::expect_equal(res$n_masked, 1L)
+    # Panthera onca unmarked -> untouched.
+    testthat::expect_equal(res$masked$decimalLatitude[1], "-23.5612")
+    # Felis catus marked sensitive -> "low" tier (0.001 deg).
+    testthat::expect_equal(res$masked$decimalLatitude[2], "-10.561")
+    testthat::expect_equal(res$real$scientificName, "Felis catus")
+    # Non-MMA override has no MMA category -> em-dash placeholder.
+    testthat::expect_equal(res$real$category, "—")
 })
 
 testthat::test_that("mask DwC text follows the requested language", {
@@ -200,6 +348,25 @@ testthat::test_that("mask DwC text follows the requested language", {
     )
     testthat::expect_true(grepl("generalized", en$masked$dataGeneralizations[1]))
     testthat::expect_true(grepl("generalizadas", pt$masked$dataGeneralizations[1]))
+    testthat::expect_true(grepl("CR", en$masked$dataGeneralizations[1]))
+})
+
+testthat::test_that("enabled = FALSE is a byte-identical no-op", {
+    local_sensitive_fixture("Panthera onca")
+    res <- saira:::mask_sensitive_coordinates(make_df(), enabled = FALSE)
+    testthat::expect_equal(res$n_masked, 0L)
+    testthat::expect_identical(res$masked, make_df())
+    testthat::expect_equal(nrow(res$real), 0L)
+})
+
+testthat::test_that("generalization = 'not_sensitive' is a byte-identical no-op", {
+    local_sensitive_fixture("Panthera onca")
+    res <- saira:::mask_sensitive_coordinates(
+        make_df(), generalization = "not_sensitive"
+    )
+    testthat::expect_equal(res$n_masked, 0L)
+    testthat::expect_identical(res$masked, make_df())
+    testthat::expect_equal(nrow(res$real), 0L)
 })
 
 testthat::test_that("mask is a no-op without the required columns or rows", {
@@ -221,4 +388,87 @@ testthat::test_that("mask is a no-op without the required columns or rows", {
     r3 <- saira:::mask_sensitive_coordinates(none)
     testthat::expect_equal(r3$n_masked, 0L)
     testthat::expect_identical(r3$masked, none)
+})
+
+testthat::test_that("mask skips rows already generalized upstream (ADR-095)", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = c("u1", "u2"),
+        scientificName = c("Panthera onca", "Panthera onca"),
+        decimalLatitude = c("-23.5612", "-10.1234"),
+        decimalLongitude = c("-46.6543", "-40.5678"),
+        coordinateUncertaintyInMeters = c(NA, "1500"),
+        dataGeneralizations = c("", "rounded to 0.1 deg upstream"),
+        informationWithheld = c("", "publisher generalization"),
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(
+        df, generalization = "high", lang = "en"
+    )
+    # Row 1: untouched upstream -> Saira masks it.
+    testthat::expect_equal(res$masked$decimalLatitude[1], "-23.6")
+    # Row 2: upstream uncertainty >= 1000 m -> Saira leaves it intact.
+    testthat::expect_equal(res$masked$decimalLatitude[2], "-10.1234")
+    testthat::expect_equal(res$masked$decimalLongitude[2], "-40.5678")
+    testthat::expect_equal(res$masked$coordinateUncertaintyInMeters[2], "1500")
+    testthat::expect_equal(
+        res$masked$dataGeneralizations[2], "rounded to 0.1 deg upstream"
+    )
+    testthat::expect_equal(
+        res$masked$informationWithheld[2], "publisher generalization"
+    )
+    testthat::expect_equal(res$n_masked, 1L)
+    testthat::expect_equal(res$n_skipped_already_masked, 1L)
+    # Upstream-masked row must NOT leak into the researcher's private file
+    # (we don't have the originals).
+    testthat::expect_false("u2" %in% res$real$occurrenceID)
+})
+
+testthat::test_that("mask skips rows with dataGeneralizations even when uncertainty is small (ADR-095)", {
+    # Camtrap DP scenario (PDF p.26): publisher ran round_coordinates(x, 3)
+    # -> coordinatePrecision = 0.001, uncertainty ~150 m (below the 1000 m
+    # numeric threshold), but `dataGeneralizations` populated by write_dwc().
+    # The OR-gate must catch this case.
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = c("c1", "c2"),
+        scientificName = c("Panthera onca", "Panthera onca"),
+        decimalLatitude = c("-23.561", "-10.123"),
+        decimalLongitude = c("-46.654", "-40.568"),
+        # c1: 150 m uncertainty (below threshold) but dataGeneralizations set
+        #     -> skip; c2: 50 m, no upstream signals -> mask normally.
+        coordinateUncertaintyInMeters = c("150", "50"),
+        dataGeneralizations = c("coordinates rounded to 0.001 deg", ""),
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(
+        df, generalization = "high", lang = "en"
+    )
+    # c1 untouched (preserves upstream metadata).
+    testthat::expect_equal(res$masked$decimalLatitude[1], "-23.561")
+    testthat::expect_equal(res$masked$coordinateUncertaintyInMeters[1], "150")
+    testthat::expect_equal(
+        res$masked$dataGeneralizations[1], "coordinates rounded to 0.001 deg"
+    )
+    # c2 masked (Saira applies the chosen tier).
+    testthat::expect_equal(res$masked$decimalLatitude[2], "-10.1")
+    testthat::expect_equal(res$n_masked, 1L)
+    testthat::expect_equal(res$n_skipped_already_masked, 1L)
+    testthat::expect_false("c1" %in% res$real$occurrenceID)
+    testthat::expect_true("c2" %in% res$real$occurrenceID)
+})
+
+testthat::test_that("mask companion holds original coords + MMA category", {
+    local_sensitive_fixture(c("Panthera onca", "Hippocampus reidi"))
+    res <- saira:::mask_sensitive_coordinates(make_df(), lang = "en")
+
+    testthat::expect_equal(res$real$occurrenceID, c("a1", "a4"))
+    testthat::expect_equal(res$real$decimalLatitude, c("-23.5612", "-5.1234"))
+    testthat::expect_equal(res$real$decimalLongitude, c("-46.6543", "-39.9876"))
+    testthat::expect_equal(res$real$category, c("CR", "CR"))
+    testthat::expect_setequal(
+        names(res$real),
+        c("occurrenceID", "scientificName", "category",
+          "decimalLatitude", "decimalLongitude")
+    )
 })

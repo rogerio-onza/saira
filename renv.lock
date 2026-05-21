@@ -168,6 +168,55 @@
       "Maintainer": "Garrick Aden-Buie <garrick@posit.co>",
       "Repository": "CRAN"
     },
+    "EML": {
+      "Package": "EML",
+      "Version": "2.0.7",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Read and Write Ecological Metadata Language Files",
+      "Description": "Work with Ecological Metadata Language ('EML') files.  'EML' is a widely used metadata standard in the ecological and environmental sciences, described in Jones et al. (2006), <doi:10.1146/annurev.ecolsys.37.091305.110031>.",
+      "Authors@R": "c( person(\"Carl\", \"Boettiger\",  email = \"cboettig@gmail.com\",  role = c(\"aut\", \"cre\", \"cph\"), comment=c(ORCID = \"0000-0002-1642-628X\")), person(\"Matthew B.\", \"Jones\", role=\"aut\",  comment = c(ORCID=\"0000-0003-0077-4738\")),       person(\"Mitchell\", \"Maier\",  role = c(\"ctb\"), comment= c(ORCID = \"0000-0001-6955-0535\")), person(\"Bryce\", \"Mecum\", role = \"ctb\",  email = \"brycemecum@gmail.com\", comment = c(ORCID = \"0000-0002-0381-3766\")), person(\"Maëlle\", \"Salmon\", role = \"ctb\",  email = \"maelle.salmon@yahoo.se\",  comment = c(ORCID = \"0000-0002-2815-0399\")), person(\"Jeanette\", \"Clark\", role = \"ctb\",  email = \"jclark@nceas.ucsb.edu\", comment = c(ORCID = \"0000-0003-4703-1974\")) )",
+      "License": "MIT + file LICENSE",
+      "URL": "https://docs.ropensci.org/EML/, https://github.com/ropensci/EML/",
+      "BugReports": "https://github.com/ropensci/EML/issues",
+      "Encoding": "UTF-8",
+      "LazyData": "true",
+      "Depends": [
+        "R (>= 2.10)"
+      ],
+      "Suggests": [
+        "knitr",
+        "taxadb",
+        "tibble",
+        "testthat",
+        "covr",
+        "EML",
+        "units",
+        "htmlwidgets",
+        "shiny",
+        "shinyjs",
+        "spelling"
+      ],
+      "Imports": [
+        "xml2",
+        "methods",
+        "digest",
+        "emld (>= 0.5.0)",
+        "jqr",
+        "jsonlite",
+        "uuid",
+        "rmarkdown",
+        "utils",
+        "dplyr"
+      ],
+      "VignetteBuilder": "knitr",
+      "RoxygenNote": "7.3.2",
+      "Language": "en-US",
+      "NeedsCompilation": "no",
+      "Author": "Carl Boettiger [aut, cre, cph] (ORCID: <https://orcid.org/0000-0002-1642-628X>), Matthew B. Jones [aut] (ORCID: <https://orcid.org/0000-0003-0077-4738>), Mitchell Maier [ctb] (ORCID: <https://orcid.org/0000-0001-6955-0535>), Bryce Mecum [ctb] (ORCID: <https://orcid.org/0000-0002-0381-3766>), Maëlle Salmon [ctb] (ORCID: <https://orcid.org/0000-0002-2815-0399>), Jeanette Clark [ctb] (ORCID: <https://orcid.org/0000-0003-4703-1974>)",
+      "Maintainer": "Carl Boettiger <cboettig@gmail.com>",
+      "Repository": "CRAN"
+    },
     "KernSmooth": {
       "Package": "KernSmooth",
       "Version": "2.23-26",
@@ -397,6 +446,42 @@
       "NeedsCompilation": "yes",
       "Author": "Object-Oriented Programming Working Group [cph], Davis Vaughan [aut], Jim Hester [aut] (ORCID: <https://orcid.org/0000-0002-2739-7082>), Tomasz Kalinowski [aut], Will Landau [aut], Michael Lawrence [aut], Martin Maechler [aut] (ORCID: <https://orcid.org/0000-0002-8685-9910>), Luke Tierney [aut], Hadley Wickham [aut, cre] (ORCID: <https://orcid.org/0000-0003-4757-117X>)",
       "Maintainer": "Hadley Wickham <hadley@posit.co>",
+      "Repository": "CRAN"
+    },
+    "V8": {
+      "Package": "V8",
+      "Version": "8.2.0",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Embedded JavaScript and WebAssembly Engine for R",
+      "Authors@R": "c( person(\"Jeroen\", \"Ooms\", role = c(\"aut\", \"cre\"), email = \"jeroenooms@gmail.com\", comment = c(ORCID = \"0000-0002-4035-0289\")), person(\"George\", \"Stagg\", role = \"ctb\", comment = c(ORCID = \"0009-0006-3173-9846\")), person(\"Jan Marvin\", \"Garbuszus\", role = \"ctb\"))",
+      "Description": "An R interface to V8 <https://v8.dev>: Google's open source JavaScript and WebAssembly engine. This package can be compiled either with V8 or NodeJS  when built as a shared library.",
+      "License": "MIT + file LICENSE",
+      "URL": "https://jeroen.r-universe.dev/V8",
+      "BugReports": "https://github.com/jeroen/v8/issues",
+      "SystemRequirements": "On Linux you can build against libv8-dev (Debian) or v8-devel (Fedora). We also provide static libv8 binaries for most platforms, see the README for details.",
+      "NeedsCompilation": "yes",
+      "VignetteBuilder": "knitr",
+      "Imports": [
+        "Rcpp (>= 0.12.12)",
+        "jsonlite (>= 1.0)",
+        "curl (>= 1.0)",
+        "utils"
+      ],
+      "LinkingTo": [
+        "Rcpp"
+      ],
+      "Suggests": [
+        "testthat",
+        "knitr",
+        "rmarkdown"
+      ],
+      "RoxygenNote": "7.3.1",
+      "Language": "en-US",
+      "Encoding": "UTF-8",
+      "Biarch": "true",
+      "Author": "Jeroen Ooms [aut, cre] (ORCID: <https://orcid.org/0000-0002-4035-0289>), George Stagg [ctb] (ORCID: <https://orcid.org/0009-0006-3173-9846>), Jan Marvin Garbuszus [ctb]",
+      "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
       "Repository": "CRAN"
     },
     "XML": {
@@ -761,6 +846,78 @@
       "NeedsCompilation": "no",
       "Author": "Gábor Csárdi [aut, cre, cph] (<https://orcid.org/0000-0001-7098-9676>), Winston Chang [aut], Posit Software, PBC [cph, fnd], Ascent Digital Services [cph, fnd]",
       "Maintainer": "Gábor Csárdi <csardi.gabor@gmail.com>",
+      "Repository": "CRAN"
+    },
+    "camtrapdp": {
+      "Package": "camtrapdp",
+      "Version": "0.5.0",
+      "Source": "Repository",
+      "Title": "Read and Manipulate Camera Trap Data Packages",
+      "Date": "2026-01-13",
+      "Authors@R": "c( person(\"Peter\", \"Desmet\", , \"peter.desmet@inbo.be\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-8442-8025\", affiliation = \"Research Institute for Nature and Forest (INBO)\")), person(\"Sanne\", \"Govaert\", , \"sanne.govaert@inbo.be\", role = \"aut\", comment = c(ORCID = \"0000-0002-8939-1305\", affiliation = \"Research Institute for Nature and Forest (INBO)\")), person(\"Pieter\", \"Huybrechts\", , \"pieter.huybrechts@inbo.be\", role = \"aut\", comment = c(ORCID = \"0000-0002-6658-6062\", affiliation = \"Research Institute for Nature and Forest (INBO)\")), person(\"Damiano\", \"Oldoni\", , \"damiano.oldoni@inbo.be\", role = \"aut\", comment = c(ORCID = \"0000-0003-3445-7562\", affiliation = \"Research Institute for Nature and Forest (INBO)\")), person(\"Research Institute for Nature and Forest (INBO)\", role = \"cph\", comment = c(ROR = \"00j54wy13\")), person(\"Research Foundation - Flanders\", role = \"fnd\", comment = \"https://lifewatch.be\") )",
+      "Description": "Read and manipulate Camera Trap Data Packages ('Camtrap DP'). 'Camtrap DP' (<https://camtrap-dp.tdwg.org>) is a data exchange format for camera trap data. With 'camtrapdp' you can read, filter and transform data (including to Darwin Core) before further analysis in e.g. 'camtraptor' or 'camtrapR'.",
+      "License": "MIT + file LICENSE",
+      "URL": "https://github.com/inbo/camtrapdp, https://inbo.github.io/camtrapdp/",
+      "BugReports": "https://github.com/inbo/camtrapdp/issues",
+      "Depends": [
+        "R (>= 3.6.0)"
+      ],
+      "Imports": [
+        "cli",
+        "dplyr",
+        "EML",
+        "frictionless (>= 1.2.1)",
+        "memoise",
+        "purrr",
+        "readr",
+        "rlang",
+        "stringr",
+        "uuid"
+      ],
+      "Suggests": [
+        "jsonlite",
+        "lubridate",
+        "testthat (>= 3.0.0)",
+        "tibble",
+        "xml2"
+      ],
+      "Config/testthat/edition": "3",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.3",
+      "NeedsCompilation": "no",
+      "Author": "Peter Desmet [aut, cre] (ORCID: <https://orcid.org/0000-0002-8442-8025>, affiliation: Research Institute for Nature and Forest (INBO)), Sanne Govaert [aut] (ORCID: <https://orcid.org/0000-0002-8939-1305>, affiliation: Research Institute for Nature and Forest (INBO)), Pieter Huybrechts [aut] (ORCID: <https://orcid.org/0000-0002-6658-6062>, affiliation: Research Institute for Nature and Forest (INBO)), Damiano Oldoni [aut] (ORCID: <https://orcid.org/0000-0003-3445-7562>, affiliation: Research Institute for Nature and Forest (INBO)), Research Institute for Nature and Forest (INBO) [cph] (ROR: <https://ror.org/00j54wy13>), Research Foundation - Flanders [fnd] (https://lifewatch.be)",
+      "Maintainer": "Peter Desmet <peter.desmet@inbo.be>",
+      "Repository": "CRAN"
+    },
+    "cellranger": {
+      "Package": "cellranger",
+      "Version": "1.1.0",
+      "Source": "Repository",
+      "Title": "Translate Spreadsheet Cell Ranges to Rows and Columns",
+      "Authors@R": "c( person(\"Jennifer\", \"Bryan\", , \"jenny@stat.ubc.ca\", c(\"cre\", \"aut\")), person(\"Hadley\", \"Wickham\", , \"hadley@rstudio.com\", \"ctb\") )",
+      "Description": "Helper functions to work with spreadsheets and the \"A1:D10\" style of cell range specification.",
+      "Depends": [
+        "R (>= 3.0.0)"
+      ],
+      "License": "MIT + file LICENSE",
+      "LazyData": "true",
+      "URL": "https://github.com/rsheets/cellranger",
+      "BugReports": "https://github.com/rsheets/cellranger/issues",
+      "Suggests": [
+        "covr",
+        "testthat (>= 1.0.0)",
+        "knitr",
+        "rmarkdown"
+      ],
+      "RoxygenNote": "5.0.1.9000",
+      "VignetteBuilder": "knitr",
+      "Imports": [
+        "rematch",
+        "tibble"
+      ],
+      "NeedsCompilation": "no",
+      "Author": "Jennifer Bryan [cre, aut], Hadley Wickham [ctb]",
+      "Maintainer": "Jennifer Bryan <jenny@stat.ubc.ca>",
       "Repository": "CRAN"
     },
     "checkmate": {
@@ -1839,6 +1996,45 @@
       "Maintainer": "Hadley Wickham <hadley@rstudio.com>",
       "Repository": "CRAN"
     },
+    "emld": {
+      "Package": "emld",
+      "Version": "0.5.3",
+      "Source": "Repository",
+      "Title": "Ecological Metadata as Linked Data",
+      "Authors@R": "c( person(\"Carl\", \"Boettiger\",  email = \"cboettig@gmail.com\",  role = c(\"aut\", \"cre\", \"cph\"), comment=c(ORCID = \"0000-0002-1642-628X\")), person(\"Matthew B.\", \"Jones\",  email = \"jones@nceas.ucsb.edu\",  role = c(\"aut\", \"cph\"), comment=c(ORCID = \"0000-0003-0077-4738\")), person(\"Bryce\", \"Mecum\",  email = \"mecum@nceas.ucsb.edu\",  role = c(\"aut\", \"cph\"), comment=c(ORCID = \"0000-0002-0381-3766\"))      )",
+      "Description": "This is a utility for transforming Ecological Metadata Language ('EML') files into 'JSON-LD' and back into 'EML.'  Doing so creates a list-based representation of 'EML' in R, so that 'EML' data can easily be manipulated using standard 'R' tools. This makes this package an effective backend for other 'R'-based tools  working with 'EML.' By abstracting away the complexity of 'XML' Schema, developers can build around native 'R' list objects and not have to worry about satisfying many of the additional constraints of set by the schema (such as element ordering, which is handled automatically). Additionally, the 'JSON-LD'  representation enables the use of developer-friendly 'JSON' parsing and serialization that may facilitate the use of 'EML' in contexts outside of 'R,' as well as the informatics-friendly serializations such as 'RDF' and 'SPARQL' queries.",
+      "URL": "https://docs.ropensci.org/emld/, https://github.com/ropensci/emld",
+      "BugReports": "https://github.com/ropensci/emld/issues",
+      "Depends": [
+        "R (>= 3.1.0)"
+      ],
+      "License": "MIT + file LICENSE",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.3",
+      "Suggests": [
+        "spelling",
+        "testthat",
+        "magrittr",
+        "rmarkdown",
+        "covr",
+        "knitr",
+        "rdflib",
+        "jqr"
+      ],
+      "Imports": [
+        "xml2",
+        "jsonlite",
+        "jsonld",
+        "methods",
+        "yaml"
+      ],
+      "VignetteBuilder": "knitr",
+      "Language": "en-US",
+      "NeedsCompilation": "no",
+      "Author": "Carl Boettiger [aut, cre, cph] (ORCID: <https://orcid.org/0000-0002-1642-628X>), Matthew B. Jones [aut, cph] (ORCID: <https://orcid.org/0000-0003-0077-4738>), Bryce Mecum [aut, cph] (ORCID: <https://orcid.org/0000-0002-0381-3766>)",
+      "Maintainer": "Carl Boettiger <cboettig@gmail.com>",
+      "Repository": "CRAN"
+    },
     "evaluate": {
       "Package": "evaluate",
       "Version": "1.0.5",
@@ -2092,6 +2288,49 @@
       "NeedsCompilation": "no",
       "Author": "Folashade Daniel [cre], Hong Ooi [ctb], Rich Calaway [ctb], Microsoft [aut, cph], Steve Weston [aut]",
       "Maintainer": "Folashade Daniel <fdaniel@microsoft.com>",
+      "Repository": "CRAN"
+    },
+    "frictionless": {
+      "Package": "frictionless",
+      "Version": "1.2.1",
+      "Source": "Repository",
+      "Title": "Read and Write Frictionless Data Packages",
+      "Date": "2025-05-23",
+      "Authors@R": "c( person(\"Peter\", \"Desmet\", , \"peter.desmet@inbo.be\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-8442-8025\", affiliation = \"Research Institute for Nature and Forest (INBO)\")), person(\"Damiano\", \"Oldoni\", , \"damiano.oldoni@inbo.be\", role = \"aut\", comment = c(ORCID = \"0000-0003-3445-7562\", affiliation = \"Research Institute for Nature and Forest (INBO)\")), person(\"Pieter\", \"Huybrechts\", , \"pieter.huybrechts@inbo.be\", role = \"aut\", comment = c(ORCID = \"0000-0002-6658-6062\", affiliation = \"Research Institute for Nature and Forest (INBO)\")), person(\"Sanne\", \"Govaert\", , \"sanne.govaert@inbo.be\", role = \"aut\", comment = c(ORCID = \"0000-0002-8939-1305\", affiliation = \"Research Institute for Nature and Forest (INBO)\")),        person(\"Kyle\", \"Husmann\", , \"kdh38@psu.edu\", role = \"ctb\", comment = c(ORCID = \"0000-0001-9875-8976\", affiliation = \"Pennsylvania State University\")), person(\"Research Institute for Nature and Forest (INBO)\", role = \"cph\", comment = c(ROR = \"00j54wy13\")), person(\"Research Foundation - Flanders\", role = \"fnd\", comment = \"https://lifewatch.be\"), person(\"Beatriz\", \"Milz\", , \"milz.bea@gmail.com\", role = \"rev\", comment = c(ORCID = \"0000-0002-3064-4486\")), person(\"João\", \"Martins\", , \"joao.martins@gmx.net\", role = \"rev\", comment = c(ORCID = \"0000-0001-7961-4280\")) )",
+      "Description": "Read and write Frictionless Data Packages. A 'Data Package' (<https://specs.frictionlessdata.io/data-package/>) is a simple container format and standard to describe and package a collection of (tabular) data. It is typically used to publish FAIR (<https://www.go-fair.org/fair-principles/>) and open datasets.",
+      "License": "MIT + file LICENSE",
+      "URL": "https://github.com/frictionlessdata/frictionless-r, https://docs.ropensci.org/frictionless/",
+      "BugReports": "https://github.com/frictionlessdata/frictionless-r/issues",
+      "Depends": [
+        "R (>= 3.6.0)"
+      ],
+      "Imports": [
+        "cli",
+        "dplyr",
+        "httr",
+        "jsonlite",
+        "purrr",
+        "readr (>= 2.1.0)",
+        "rlang",
+        "utils",
+        "yaml"
+      ],
+      "Suggests": [
+        "hms",
+        "knitr",
+        "lubridate",
+        "rmarkdown",
+        "stringi",
+        "testthat (>= 3.0.0)",
+        "tibble"
+      ],
+      "VignetteBuilder": "knitr",
+      "Config/testthat/edition": "3",
+      "Encoding": "UTF-8",
+      "RoxygenNote": "7.3.2",
+      "NeedsCompilation": "no",
+      "Author": "Peter Desmet [aut, cre] (ORCID: <https://orcid.org/0000-0002-8442-8025>, affiliation: Research Institute for Nature and Forest (INBO)), Damiano Oldoni [aut] (ORCID: <https://orcid.org/0000-0003-3445-7562>, affiliation: Research Institute for Nature and Forest (INBO)), Pieter Huybrechts [aut] (ORCID: <https://orcid.org/0000-0002-6658-6062>, affiliation: Research Institute for Nature and Forest (INBO)), Sanne Govaert [aut] (ORCID: <https://orcid.org/0000-0002-8939-1305>, affiliation: Research Institute for Nature and Forest (INBO)), Kyle Husmann [ctb] (ORCID: <https://orcid.org/0000-0001-9875-8976>, affiliation: Pennsylvania State University), Research Institute for Nature and Forest (INBO) [cph] (ROR: <https://ror.org/00j54wy13>), Research Foundation - Flanders [fnd] (https://lifewatch.be), Beatriz Milz [rev] (ORCID: <https://orcid.org/0000-0002-3064-4486>), João Martins [rev] (ORCID: <https://orcid.org/0000-0001-7961-4280>)",
+      "Maintainer": "Peter Desmet <peter.desmet@inbo.be>",
       "Repository": "CRAN"
     },
     "fs": {
@@ -2990,6 +3229,37 @@
       "Maintainer": "Folashade Daniel <fdaniel@microsoft.com>",
       "Repository": "CRAN"
     },
+    "jqr": {
+      "Package": "jqr",
+      "Version": "1.4.0",
+      "Source": "Repository",
+      "Title": "Client for 'jq', a 'JSON' Processor",
+      "Description": "Client for 'jq', a 'JSON' processor (<https://jqlang.github.io/jq/>),  written in C. 'jq' allows the following with 'JSON' data: index into, parse,  do calculations, cut up and filter, change key names and values, perform  conditionals and comparisons, and more.",
+      "Depends": [
+        "R (>= 3.1.2)"
+      ],
+      "License": "MIT + file LICENSE",
+      "Encoding": "UTF-8",
+      "Language": "en-US",
+      "LazyData": "true",
+      "Authors@R": "c(person(\"Rich\", \"FitzJohn\", role = \"aut\", email = \"rich.fitzjohn@gmail.com\"), person(\"Jeroen\", \"Ooms\", role = c(\"aut\", \"cre\"), email = \"jeroenooms@gmail.com\"), person(\"Scott\", \"Chamberlain\", role = \"aut\", email = \"myrmecocystus@gmail.com\"), person(\"Stefan Milton Bache\", role = \"aut\", email = \"stefan@stefanbache.dk\"))",
+      "URL": "https://docs.ropensci.org/jqr/ https://ropensci.r-universe.dev/jqr",
+      "BugReports": "https://github.com/ropensci/jqr/issues",
+      "SystemRequirements": "libjq: jq-devel (rpm) or libjq-dev (deb)",
+      "Imports": [
+        "magrittr",
+        "lazyeval"
+      ],
+      "Suggests": [
+        "jsonlite",
+        "testthat"
+      ],
+      "RoxygenNote": "7.3.2.9000",
+      "NeedsCompilation": "yes",
+      "Author": "Rich FitzJohn [aut], Jeroen Ooms [aut, cre], Scott Chamberlain [aut], Stefan Milton Bache [aut]",
+      "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
+      "Repository": "CRAN"
+    },
     "jquerylib": {
       "Package": "jquerylib",
       "Version": "0.1.4",
@@ -3010,6 +3280,32 @@
       "NeedsCompilation": "no",
       "Author": "Carson Sievert [aut, cre] (<https://orcid.org/0000-0002-4958-2844>), Joe Cheng [aut], RStudio [cph], jQuery Foundation [cph] (jQuery library and jQuery UI library), jQuery contributors [ctb, cph] (jQuery library; authors listed in inst/lib/jquery-AUTHORS.txt)",
       "Maintainer": "Carson Sievert <carson@rstudio.com>",
+      "Repository": "CRAN"
+    },
+    "jsonld": {
+      "Package": "jsonld",
+      "Version": "2.2.1",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "JSON for Linking Data",
+      "Authors@R": "person(\"Jeroen\", \"Ooms\", role = c(\"aut\", \"cre\"), email = \"jeroenooms@gmail.com\", comment = c(ORCID = \"0000-0002-4035-0289\"))",
+      "Description": "JSON-LD <https://www.w3.org/TR/json-ld/> is a light-weight syntax for  expressing linked data. It is primarily intended for web-based programming environments, interoperable web services and for storing linked data in  JSON-based databases. This package provides bindings to the JavaScript  library for converting, expanding and compacting JSON-LD documents.",
+      "License": "BSD_3_clause + file LICENSE",
+      "URL": "https://docs.ropensci.org/jsonld/, https://ropensci.r-universe.dev/jsonld",
+      "BugReports": "https://github.com/ropensci/jsonld/issues",
+      "Imports": [
+        "V8",
+        "jsonlite",
+        "curl (>= 2.7)"
+      ],
+      "RoxygenNote": "5.0.1.9000",
+      "Suggests": [
+        "spelling"
+      ],
+      "Language": "en-US",
+      "NeedsCompilation": "no",
+      "Author": "Jeroen Ooms [aut, cre] (<https://orcid.org/0000-0002-4035-0289>)",
+      "Maintainer": "Jeroen Ooms <jeroenooms@gmail.com>",
       "Repository": "CRAN"
     },
     "jsonlite": {
@@ -4476,6 +4772,66 @@
       "NeedsCompilation": "yes",
       "Author": "Hadley Wickham [aut], Jim Hester [aut], Romain Francois [ctb], Jennifer Bryan [aut, cre] (ORCID: <https://orcid.org/0000-0002-6983-2759>), Shelby Bearrows [ctb], Posit Software, PBC [cph, fnd] (ROR: <https://ror.org/03wc8by49>), https://github.com/mandreyel/ [cph] (mio library), Jukka Jylänki [ctb, cph] (grisu3 implementation), Mikkel Jørgensen [ctb, cph] (grisu3 implementation)",
       "Maintainer": "Jennifer Bryan <jenny@posit.co>",
+      "Repository": "CRAN"
+    },
+    "readxl": {
+      "Package": "readxl",
+      "Version": "1.4.5",
+      "Source": "Repository",
+      "Title": "Read Excel Files",
+      "Authors@R": "c( person(\"Hadley\", \"Wickham\", , \"hadley@posit.co\", role = \"aut\", comment = c(ORCID = \"0000-0003-4757-117X\")), person(\"Jennifer\", \"Bryan\", , \"jenny@posit.co\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0002-6983-2759\")), person(\"Posit, PBC\", role = c(\"cph\", \"fnd\"), comment = \"Copyright holder of all R code and all C/C++ code without explicit copyright attribution\"), person(\"Marcin\", \"Kalicinski\", role = c(\"ctb\", \"cph\"), comment = \"Author of included RapidXML code\"), person(\"Komarov Valery\", role = c(\"ctb\", \"cph\"), comment = \"Author of included libxls code\"), person(\"Christophe Leitienne\", role = c(\"ctb\", \"cph\"), comment = \"Author of included libxls code\"), person(\"Bob Colbert\", role = c(\"ctb\", \"cph\"), comment = \"Author of included libxls code\"), person(\"David Hoerl\", role = c(\"ctb\", \"cph\"), comment = \"Author of included libxls code\"), person(\"Evan Miller\", role = c(\"ctb\", \"cph\"), comment = \"Author of included libxls code\") )",
+      "Description": "Import excel files into R. Supports '.xls' via the embedded 'libxls' C library <https://github.com/libxls/libxls> and '.xlsx' via the embedded 'RapidXML' C++ library <https://rapidxml.sourceforge.net/>. Works on Windows, Mac and Linux without external dependencies.",
+      "License": "MIT + file LICENSE",
+      "URL": "https://readxl.tidyverse.org, https://github.com/tidyverse/readxl",
+      "BugReports": "https://github.com/tidyverse/readxl/issues",
+      "Depends": [
+        "R (>= 3.6)"
+      ],
+      "Imports": [
+        "cellranger",
+        "tibble (>= 2.0.1)",
+        "utils"
+      ],
+      "Suggests": [
+        "covr",
+        "knitr",
+        "rmarkdown",
+        "testthat (>= 3.1.6)",
+        "withr"
+      ],
+      "LinkingTo": [
+        "cpp11 (>= 0.4.0)",
+        "progress"
+      ],
+      "VignetteBuilder": "knitr",
+      "Config/Needs/website": "tidyverse/tidytemplate, tidyverse",
+      "Config/testthat/edition": "3",
+      "Encoding": "UTF-8",
+      "Note": "libxls v1.6.3 c199d13",
+      "RoxygenNote": "7.3.2",
+      "NeedsCompilation": "yes",
+      "Author": "Hadley Wickham [aut] (<https://orcid.org/0000-0003-4757-117X>), Jennifer Bryan [aut, cre] (<https://orcid.org/0000-0002-6983-2759>), Posit, PBC [cph, fnd] (Copyright holder of all R code and all C/C++ code without explicit copyright attribution), Marcin Kalicinski [ctb, cph] (Author of included RapidXML code), Komarov Valery [ctb, cph] (Author of included libxls code), Christophe Leitienne [ctb, cph] (Author of included libxls code), Bob Colbert [ctb, cph] (Author of included libxls code), David Hoerl [ctb, cph] (Author of included libxls code), Evan Miller [ctb, cph] (Author of included libxls code)",
+      "Maintainer": "Jennifer Bryan <jenny@posit.co>",
+      "Repository": "CRAN"
+    },
+    "rematch": {
+      "Package": "rematch",
+      "Version": "2.0.0",
+      "Source": "Repository",
+      "Title": "Match Regular Expressions with a Nicer 'API'",
+      "Author": "Gabor Csardi",
+      "Maintainer": "Gabor Csardi <csardi.gabor@gmail.com>",
+      "Description": "A small wrapper on 'regexpr' to extract the matches and captured groups from the match of a regular expression to a character vector.",
+      "License": "MIT + file LICENSE",
+      "URL": "https://github.com/gaborcsardi/rematch",
+      "BugReports": "https://github.com/gaborcsardi/rematch/issues",
+      "RoxygenNote": "5.0.1.9000",
+      "Suggests": [
+        "covr",
+        "testthat"
+      ],
+      "Encoding": "UTF-8",
+      "NeedsCompilation": "no",
       "Repository": "CRAN"
     },
     "remotes": {

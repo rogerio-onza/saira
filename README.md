@@ -8,6 +8,7 @@
 
 -   **Bilingual Interface**: Supporting both Portuguese (PT-BR) and English (EN-US).
 -   **CSV/Excel Support**: Flexible data ingestion for common biodiversity formats.
+-   **Camera-Trap Data**: Import Camtrap DP packages and Wildlife Insights exports, converted to Darwin Core.
 -   **Interactive Mapping**: Intuitive UI (Rostrum Engine) for mapping local columns to Darwin Core terms.
 -   **Taxonomic Verification**: Integration with taxonomic services for name validation.
 -   **Data Validation**: Real-time checks for data types, mandatory fields, and coordinate ranges.
@@ -36,7 +37,7 @@ options(repos = c(
 
 # 2. Install Saira and all dependencies from GitHub:
 # install.packages("remotes")
-remotes::install_github("sibbr/saira")
+remotes::install_github("rogerio-onza/saira")
 ```
 
 **Linux system libraries:** the `sf` dependency needs GDAL, GEOS and PROJ.
@@ -67,7 +68,7 @@ run_app()
 
 1.  Clone the repository:
     ```bash
-    git clone https://github.com/sibbr/saira.git
+    git clone https://github.com/rogerio-onza/saira.git
     cd saira
     ```
 2.  Restore the project library, then load the package and launch the app in R/RStudio:
@@ -103,25 +104,6 @@ End-to-end tests (requires `shinytest2` and a browser):
 ```bash
 RUN_E2E=true Rscript -e "devtools::test(filter = 'e2e')"
 ```
-
----
-
-## 📖 Documentation
-
-Detailed documentation can be found in the `docs/` directory:
-
--   [Architecture Overview](docs/architecture.md): Technical design and module structure.
--   [Design System](docs/design.md): UI/UX principles and component styles.
--   [Rostrum Engine](docs/rostrum_engine.md): Details on the data mapping core.
--   [Roadmap](docs/roadmap.md): Planned features and future vision.
-
----
-
-## 🗺️ Roadmap
-
--   **Short-term**: Checklist generator, EML metadata helper, and mapping templates.
--   **Mid-term**: DwC compliance scoring, dataset merger, and analysis dashboards.
--   **Long-term**: Institutional template hub and direct IPT integration.
 
 ---
 

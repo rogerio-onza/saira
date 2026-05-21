@@ -1235,6 +1235,10 @@
     "pt": "Ignorados",
     "en": "Ignored"
   },
+  "validate_names_stream_filter_accepted": {
+    "pt": "Aceitos",
+    "en": "Accepted"
+  },
   "validate_names_stream_window_note": {
     "pt": "Mostrando %d itens recentes (janela máxima de %d).",
     "en": "Showing %d recent items (window capped at %d)."
@@ -1440,8 +1444,8 @@
     "en": "Sensitive"
   },
   "sensitive_data_generalizations": {
-    "pt": "Coordenadas generalizadas para %s grau (~%s km) por se tratar de espécie sensível/ameaçada de extinção (lista nacional MMA).",
-    "en": "Coordinates generalized to %s degree (~%s km) for a sensitive/threatened species (MMA national red list)."
+    "pt": "Coordenadas de espécie %s (lista nacional MMA) generalizadas para %s grau (~%s km).",
+    "en": "Coordinates of a %s species (MMA national red list) generalized to %s degree (~%s km)."
   },
   "sensitive_information_withheld": {
     "pt": "Coordenadas precisas omitidas por se tratar de espécie sensível/ameaçada; disponíveis com o publicador dos dados mediante solicitação.",
@@ -1450,6 +1454,142 @@
   "sensitive_real_coords_notice": {
     "pt": "Arquivo privado — coordenadas reais das espécies sensíveis. Não publicar no IPT/GBIF; uso exclusivo de controle do pesquisador.",
     "en": "Private file — real coordinates of the sensitive species. Do not publish to IPT/GBIF; for the researcher's own control only."
+  },
+  "validate_names_table_col_sensitive": {
+    "pt": "Sensível",
+    "en": "Sensitive"
+  },
+  "sensitive_mark_label": {
+    "pt": "marcar",
+    "en": "mark"
+  },
+  "sensitive_unmark_mma_warning": {
+    "pt": "Esta espécie está na lista nacional MMA. Desmarcar é uma decisão de custodiante — as coordenadas serão publicadas sem generalização.",
+    "en": "This species is on the MMA national red list. Unmarking is a custodian decision — its coordinates will be published without generalization."
+  },
+  "sensitive_panel_title": {
+    "pt": "Mascaramento de coordenadas (espécies sensíveis)",
+    "en": "Coordinate masking (sensitive species)"
+  },
+  "sensitive_panel_records": {
+    "pt": "%s registro(s) de espécie sensível detectado(s).",
+    "en": "%s sensitive-species record(s) detected."
+  },
+  "sensitive_generalization_label": {
+    "pt": "Nível de generalização (Chapman 2020)",
+    "en": "Generalization level (Chapman 2020)"
+  },
+  "sensitive_gen_extreme": {
+    "pt": "Categoria 1 — Extrema (1°, recomendado)",
+    "en": "Category 1 — Extreme (1°, recommended)"
+  },
+  "sensitive_gen_high": {
+    "pt": "Categoria 2 — Alta (0.1°)",
+    "en": "Category 2 — High (0.1°)"
+  },
+  "sensitive_gen_medium": {
+    "pt": "Categoria 3 — Média (0.01°)",
+    "en": "Category 3 — Medium (0.01°)"
+  },
+  "sensitive_gen_low": {
+    "pt": "Categoria 4 — Baixa (0.001°)",
+    "en": "Category 4 — Low (0.001°)"
+  },
+  "sensitive_gen_not_sensitive": {
+    "pt": "Não sensível — publicar sem mascaramento",
+    "en": "Not sensitive — publish unmasked"
+  },
+  "sensitive_grid_unmasked": {
+    "pt": "sem mascaramento",
+    "en": "unmasked"
+  },
+  "sensitive_table_caption": {
+    "pt": "Níveis de generalização (Tabela 7, Chapman 2020 / GBIF)",
+    "en": "Generalization levels (Table 7, Chapman 2020 / GBIF)"
+  },
+  "sensitive_table_col_category": {
+    "pt": "Nível",
+    "en": "Level"
+  },
+  "sensitive_table_col_grid": {
+    "pt": "Grade aplicada",
+    "en": "Generalization grid"
+  },
+  "sensitive_panel_records_chip": {
+    "pt": "%s registro(s)",
+    "en": "%s record(s)"
+  },
+  "sensitive_panel_lead": {
+    "pt": "Defina a precisão das coordenadas publicadas para espécies ameaçadas (Chapman 2020, Tabela 7).",
+    "en": "Set the published-coordinate precision for threatened species (Chapman 2020, Table 7)."
+  },
+  "sensitive_card_num_extreme": {
+    "pt": "Categoria 1",
+    "en": "Category 1"
+  },
+  "sensitive_card_num_high": {
+    "pt": "Categoria 2",
+    "en": "Category 2"
+  },
+  "sensitive_card_num_medium": {
+    "pt": "Categoria 3",
+    "en": "Category 3"
+  },
+  "sensitive_card_num_low": {
+    "pt": "Categoria 4",
+    "en": "Category 4"
+  },
+  "sensitive_card_name_extreme": {
+    "pt": "Extrema",
+    "en": "Extreme"
+  },
+  "sensitive_card_name_high": {
+    "pt": "Alta",
+    "en": "High"
+  },
+  "sensitive_card_name_medium": {
+    "pt": "Média",
+    "en": "Medium"
+  },
+  "sensitive_card_name_low": {
+    "pt": "Baixa",
+    "en": "Low"
+  },
+  "sensitive_card_impact_extreme": {
+    "pt": "País ou região",
+    "en": "Country or region"
+  },
+  "sensitive_card_impact_high": {
+    "pt": "Estado ou província",
+    "en": "State or province"
+  },
+  "sensitive_card_impact_medium": {
+    "pt": "Cidade ou distrito",
+    "en": "City or district"
+  },
+  "sensitive_card_impact_low": {
+    "pt": "Área local",
+    "en": "Local area"
+  },
+  "sensitive_card_recommended": {
+    "pt": "Recomendada",
+    "en": "Recommended"
+  },
+  "sensitive_card_optout": {
+    "pt": "Não sensível — publicar sem mascaramento",
+    "en": "Not sensitive — publish unmasked"
+  },
+  "sensitive_disclosure_title": {
+    "pt": "Sobre a generalização (Chapman 2020 / GBIF)",
+    "en": "About generalization (Chapman 2020 / GBIF)"
+  },
+  "sensitive_saved_toast": {
+    "pt": "Sensibilidade atualizada para esta espécie.",
+    "en": "Sensitivity updated for this species."
+  },
+  "btn_save": {
+    "pt": "Salvar",
+    "en": "Save"
   },
   "validate_names_review_action": {
     "pt": "✎ Revisar",
@@ -2574,6 +2714,98 @@
   "upload_recommendation": {
     "pt": "Utilize ; como separador de itens (ex.: Autor X ; Autor Y). No DwC, a saída será padronizada como Autor X | Autor Y.",
     "en": "Use ; as item separator (e.g., Author X ; Author Y). In DwC output, it will be standardized as Author X | Author Y."
+  },
+  "upload_mode_csv_title": {
+    "pt": "CSV Darwin Core",
+    "en": "Darwin Core CSV"
+  },
+  "upload_mode_camtrap_title": {
+    "pt": "Camtrap DP (ZIP)",
+    "en": "Camtrap DP (ZIP)"
+  },
+  "upload_mode_tabs_a11y_label": {
+    "pt": "Selecione o formato de upload",
+    "en": "Select upload format"
+  },
+  "upload_format_requirements_title": {
+    "pt": "Requisitos do formato selecionado",
+    "en": "Selected format requirements"
+  },
+  "upload_camtrap_badge_required": {
+    "pt": "obrigatório",
+    "en": "required"
+  },
+  "upload_camtrap_badge_optional": {
+    "pt": "opcional",
+    "en": "optional"
+  },
+  "upload_camtrap_file_descriptor": {
+    "pt": "Descriptor Frictionless do pacote",
+    "en": "Frictionless package descriptor"
+  },
+  "upload_camtrap_file_deployments": {
+    "pt": "Estações de monitoramento",
+    "en": "Camera deployments"
+  },
+  "upload_camtrap_file_observations": {
+    "pt": "Observações por evento",
+    "en": "Per-event observations"
+  },
+  "upload_camtrap_file_media": {
+    "pt": "Metadados de imagens/vídeos",
+    "en": "Image/video metadata"
+  },
+  "upload_camtrap_file_wi_projects": {
+    "pt": "Metadados do projeto WI",
+    "en": "WI project metadata"
+  },
+  "upload_camtrap_file_wi_images": {
+    "pt": "Identificações por imagem (WI)",
+    "en": "Per-image identifications (WI)"
+  },
+  "upload_camtrap_file_wi_cameras": {
+    "pt": "Cadastro de câmeras",
+    "en": "Camera registry"
+  },
+  "a11y_mode_changed": {
+    "pt": "Formato alterado para %s",
+    "en": "Format changed to %s"
+  },
+  "upload_camtrap_dropzone_hint": {
+    "pt": "Arraste o ZIP com CSVs do Camtrap DP (deployments + observations, media opcional) ou um export do Wildlife Insights.",
+    "en": "Drag a ZIP with Camtrap DP CSVs (deployments + observations, media optional) or a Wildlife Insights export."
+  },
+  "upload_camtrap_source_camtrap": {
+    "pt": "Camtrap DP (CSVs)",
+    "en": "Camtrap DP (CSVs)"
+  },
+  "upload_camtrap_source_wi": {
+    "pt": "Wildlife Insights",
+    "en": "Wildlife Insights"
+  },
+  "upload_camtrap_success": {
+    "pt": "Convertido para Darwin Core: %d ocorrências de animais (observações de humanos, veículos, vazias e não-classificadas são excluídas conforme o padrão write_dwc()).",
+    "en": "Converted to Darwin Core: %d animal occurrences (human, vehicle, blank and unclassified observations are excluded per write_dwc() standard)."
+  },
+  "err_camtrap_invalid_zip": {
+    "pt": "ZIP não reconhecido: precisa de CSVs do Camtrap DP (deployments + observations) ou de um export do Wildlife Insights (deployments + projects + images_*).",
+    "en": "Unrecognized ZIP: expects Camtrap DP CSVs (deployments + observations) or a Wildlife Insights export (deployments + projects + images_*)."
+  },
+  "err_camtrap_wi_columns_missing": {
+    "pt": "Export do Wildlife Insights está faltando colunas obrigatórias (deployment_id, latitude, longitude, start_date, end_date, image_id ou timestamp).",
+    "en": "Wildlife Insights export is missing required columns (deployment_id, latitude, longitude, start_date, end_date, image_id or timestamp)."
+  },
+  "err_camtrap_pkg_missing": {
+    "pt": "Pacote R 'camtrapdp' não instalado. Rode install.packages('camtrapdp') para habilitar este modo.",
+    "en": "R package 'camtrapdp' is not installed. Run install.packages('camtrapdp') to enable this mode."
+  },
+  "err_camtrap_empty_occurrence": {
+    "pt": "O arquivo foi lido mas nenhuma ocorrência foi extraída. Verifique se contém imagens identificadas como animais (não-vazias, não-humanos).",
+    "en": "The file was read but no occurrences were extracted. Check that it contains images identified as animals (non-blank, non-human)."
+  },
+  "sensitive_skipped_already_masked": {
+    "pt": "%d linha(s) pularam o mascaramento (coordinateUncertaintyInMeters ≥ 1000 m, já generalizadas pelo publisher).",
+    "en": "%d row(s) skipped masking (coordinateUncertaintyInMeters ≥ 1000 m, already generalized by the publisher)."
   },
   "welcome_eyebrow": {
     "pt": "Padronizador Darwin Core",

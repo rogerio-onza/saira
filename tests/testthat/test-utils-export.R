@@ -533,16 +533,27 @@ testthat::test_that("export pipeline masks sensitive coords and emits a companio
         raw_data = data.frame(),
         map_values = list()
     )
-    masked <- saira:::mask_sensitive_coordinates(full_data, lang = "en")
+    # ADR-092 (Chapman flat-tier UI): per-species decisions only carry the
+    # boolean; the global tier is the function's `generalization` argument.
+    decisions <- data.frame(
+        scientificName = "Hippocampus reidi",
+        sensitive = TRUE,
+        stringsAsFactors = FALSE
+    )
+    masked <- saira:::mask_sensitive_coordinates(
+        full_data, decisions = decisions, generalization = "high", lang = "en"
+    )
 
     testthat::expect_equal(masked$n_masked, 1L)
 
     sens_row <- which(masked$masked$scientificName == "Hippocampus reidi")
     other_row <- which(masked$masked$scientificName == "Felis catus")
 
-    # process_for_export() numericizes the coordinate columns.
+    # process_for_export() numericizes the coordinate columns; "high" tier
+    # rounds to 0.1 deg uniformly across all sensitive rows.
     testthat::expect_equal(masked$masked$decimalLatitude[sens_row], -23.6)
     testthat::expect_equal(masked$masked$decimalLongitude[sens_row], -46.7)
+    testthat::expect_equal(masked$masked$coordinatePrecision[sens_row], "0.1")
     testthat::expect_equal(masked$masked$decimalLatitude[other_row], 10)
     testthat::expect_true(nzchar(masked$masked$dataGeneralizations[sens_row]))
     testthat::expect_true(nzchar(masked$masked$informationWithheld[sens_row]))

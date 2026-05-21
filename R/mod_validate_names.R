@@ -103,6 +103,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             ),
             review_target = NULL,
             review_mode = "confirm",
+            sensitivity_overrides = list(),
             exiting_reviews = data.frame(
                 query_name = character(0),
                 expires_at = as.POSIXct(character(0), tz = "UTC"),
@@ -231,6 +232,43 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             out <- out[!is.na(out$query_name) & nzchar(out$query_name), , drop = FALSE]
             rownames(out) <- NULL
             out
+        }
+
+        # Per-species sensitivity overrides (ADR-092, simplified by the
+        # Chapman 2020 flat-tier UI). The store keys on the resolved
+        # scientificName; entries here win over the MMA auto-match in
+        # `mask_sensitive_coordinates()`. Only the boolean "treat as
+        # sensitive" survives -- the masking grid is global (chosen on the
+        # Preview tab), so per-species category is no longer editable here.
+        sensitivity_entries_df <- function() {
+            store <- rv$sensitivity_overrides
+            empty <- data.frame(
+                scientificName = character(0),
+                sensitive = logical(0),
+                stringsAsFactors = FALSE
+            )
+            if (!is.list(store) || length(store) == 0L) {
+                return(empty)
+            }
+            data.frame(
+                scientificName = names(store),
+                sensitive = vapply(
+                    store, function(x) isTRUE(x$sensitive), logical(1)
+                ),
+                stringsAsFactors = FALSE
+            )
+        }
+
+        register_sensitivity_override <- function(name, sensitive) {
+            name <- trimws(as.character(name))
+            if (!nzchar(name)) {
+                return(invisible(NULL))
+            }
+            store <- rv$sensitivity_overrides
+            if (!is.list(store)) store <- list()
+            store[[name]] <- list(sensitive = isTRUE(sensitive))
+            rv$sensitivity_overrides <- store
+            invisible(NULL)
         }
 
         reviewed_query_keys <- function() {
@@ -937,6 +975,79 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             ignoreInit = TRUE
         )
 
+        # Per-species sensitivity editor (ADR-092). Opened from the pill /
+        # "+ mark" affordance in the report table; writes an override that
+        # wins over the MMA auto-match at export time.
+        sensitivity_target <- shiny::reactiveVal(NULL)
+
+        shiny::observeEvent(input$open_sensitivity_target, {
+            name <- trimws(as.character(input$open_sensitivity_target %||% ""))
+            if (!nzchar(name)) {
+                return(invisible(NULL))
+            }
+            sensitivity_target(name)
+            dec <- sensitive_resolve(name, sensitivity_entries_df())
+            is_sens <- isTRUE(dec$sensitive[1])
+            on_mma <- !is.na(sensitive_category_for(name)[1])
+
+            shiny::showModal(shiny::modalDialog(
+                title = tr("sensitive_panel_title", lang_r()),
+                shiny::div(
+                    class = "vn-sensitivity-modal",
+                    shiny::div(
+                        class = "vn-sensitivity-name",
+                        shiny::tags$em(name)
+                    ),
+                    shiny::checkboxInput(
+                        ns("sensitivity_is"),
+                        label = tr("validate_names_status_badge_sensitive", lang_r()),
+                        value = is_sens
+                    ),
+                    if (isTRUE(on_mma)) {
+                        shiny::div(
+                            class = "vn-sensitivity-warning",
+                            tr("sensitive_unmark_mma_warning", lang_r())
+                        )
+                    }
+                ),
+                easyClose = TRUE,
+                footer = shiny::tagList(
+                    shiny::tags$button(
+                        type = "button",
+                        class = "btn vn-review-cancel-btn",
+                        `data-bs-dismiss` = "modal",
+                        tr("btn_cancel", lang_r())
+                    ),
+                    shiny::actionButton(
+                        ns("sensitivity_save"),
+                        label = tr("btn_save", lang_r()),
+                        class = "btn btn-success"
+                    )
+                )
+            ))
+        })
+
+        shiny::observeEvent(input$sensitivity_save,
+            {
+                name <- sensitivity_target()
+                if (is.null(name) || !nzchar(name)) {
+                    return(invisible(NULL))
+                }
+                register_sensitivity_override(
+                    name = name,
+                    sensitive = isTRUE(input$sensitivity_is %||% FALSE)
+                )
+                shiny::removeModal()
+                sensitivity_target(NULL)
+                shiny::showNotification(
+                    tr("sensitive_saved_toast", lang_r()),
+                    type = "message",
+                    duration = 3
+                )
+            },
+            ignoreInit = TRUE
+        )
+
         output$title <- shiny::renderUI({
             shiny::h3(
                 shiny::icon("microscope", class = "me-2"),
@@ -1149,7 +1260,10 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         })
 
         output$stream_panel <- shiny::renderUI({
-            stream_df <- stream_window(rv$stream_df, limit = stream_window_limit)
+            stream_df <- stream_window(
+                rv$stream_df,
+                limit = if (isTRUE(rv$running)) stream_window_limit else NULL
+            )
             review_keys <- reviewed_query_keys()
             exiting_keys <- exiting_query_keys()
             counts <- stream_filter_counts(stream_df, reviewed_keys = review_keys)
@@ -1166,7 +1280,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 list(key = "problems", class = "pill-problems", label_key = "validate_names_stream_filter_problems"),
                 list(key = "not_found", class = "pill-error", label_key = "validate_names_stream_filter_not_found"),
                 list(key = "ambiguous", class = "pill-warning", label_key = "validate_names_stream_filter_ambiguous"),
-                list(key = "synonym", class = "pill-info", label_key = "validate_names_stream_filter_synonym")
+                list(key = "synonym", class = "pill-info", label_key = "validate_names_stream_filter_synonym"),
+                list(key = "accepted", class = "pill-success", label_key = "validate_names_stream_filter_accepted")
             )
 
             pills_ui <- shiny::div(
@@ -1349,7 +1464,18 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             taxonomic_status <- if ("taxonomicStatus" %in% names(report)) as.character(report$taxonomicStatus) else rep("", nrow(report))
             review_original_name <- if ("review_original_name" %in% names(report)) as.character(report$review_original_name) else rep("", nrow(report))
             sensitive_source <- if ("scientificName" %in% names(report)) as.character(report$scientificName) else scientific_name
-            is_sensitive_vec <- ifelse(flag_sensitive_species(sensitive_source), "1", "")
+            # Resolve over unique names only -- per-row normalisation is O(n)
+            # per render; mapping back by index keeps the same result in
+            # O(unique names).
+            u_sens <- unique(sensitive_source)
+            du <- sensitive_resolve(u_sens, sensitivity_entries_df())
+            sens_idx <- match(sensitive_source, u_sens)
+            # Pill shows MMA category as a visual hint when present; researcher
+            # overrides for non-MMA species fall back to an em-dash so the
+            # downstream JS template ("Sensible \u00b7 {cat}") stays clean.
+            cat_for_pill <- du$category[sens_idx]
+            cat_for_pill[is.na(cat_for_pill) | !nzchar(cat_for_pill)] <- "\u2014"
+            is_sensitive_vec <- ifelse(du$sensitive[sens_idx], cat_for_pill, "")
 
             table_df <- data.frame(
                 scientificName = scientific_name,
@@ -1357,6 +1483,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 taxonomicStatus = taxonomic_status,
                 review_original_name = review_original_name,
                 is_sensitive = is_sensitive_vec,
+                sensitive_name = sensitive_source,
                 stringsAsFactors = FALSE
             )
 
@@ -1365,7 +1492,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 tr("validate_names_table_col_status", lang_r()),
                 tr("validate_names_table_col_taxonomic_status", lang_r()),
                 ".review_original_name",
-                ".is_sensitive"
+                ".is_sensitive",
+                ".sensitive_name"
             )
 
             status_labels <- list(
@@ -1380,6 +1508,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
 
             replaced_prefix_json <- jsonlite::toJSON(tr("validate_names_review_replaced_prefix", lang_r()), auto_unbox = TRUE)
             sensitive_label_json <- jsonlite::toJSON(tr("validate_names_status_badge_sensitive", lang_r()), auto_unbox = TRUE)
+            sensitive_mark_json <- jsonlite::toJSON(tr("sensitive_mark_label", lang_r()), auto_unbox = TRUE)
 
             status_badge_js <- DT::JS(
                 sprintf(
@@ -1414,16 +1543,22 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         "    var originalEscaped = $('<div/>').text(original).html();",
                         "    content += '<div class=\"vn-cell-review-original\"><em>' + $('<div/>').text(String(prefix)).html() + ' ' + originalEscaped + '</em></div>';",
                         "  }",
-                        "  var sensitive = String(row[4] === null || row[4] === undefined ? '' : row[4]);",
-                        "  if (sensitive.trim().length > 0) {",
+                        "  var sensitive = String(row[4] === null || row[4] === undefined ? '' : row[4]).trim();",
+                        "  var sn = encodeURIComponent(String(row[5] === null || row[5] === undefined ? '' : row[5]));",
+                        "  if (sensitive.length > 0) {",
                         "    var sLabel = %s;",
-                        "    content += '<div class=\"vn-cell-sensitive\"><span class=\"vn-status-badge badge-warning\">' + $('<div/>').text(String(sLabel)).html() + '</span></div>';",
+                        "    var catEsc = $('<div/>').text(sensitive).html();",
+                        "    content += '<div class=\"vn-cell-sensitive\"><span class=\"vn-status-badge badge-warning vn-sensitive-trigger\" role=\"button\" tabindex=\"0\" data-sname=\"' + sn + '\">' + $('<div/>').text(String(sLabel)).html() + ' \\u00b7 ' + catEsc + '</span></div>';",
+                        "  } else {",
+                        "    var mLabel = %s;",
+                        "    content += '<div class=\"vn-cell-sensitive\"><span class=\"vn-sensitive-trigger vn-sensitive-add\" role=\"button\" tabindex=\"0\" data-sname=\"' + sn + '\">+ ' + $('<div/>').text(String(mLabel)).html() + '</span></div>';",
                         "  }",
                         "  return content;",
                         "}"
                     ),
                     replaced_prefix_json,
-                    sensitive_label_json
+                    sensitive_label_json,
+                    sensitive_mark_json
                 )
             )
 
@@ -1466,6 +1601,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     paste0(
                         "var searchId = %s;",
                         "var pageId = %s;",
+                        "var sensId = %s;",
                         "var searchSelector = '#' + searchId;",
                         "var pageSelector = '#' + pageId;",
                         "var nsSafe = searchId.replace(/[^a-zA-Z0-9_-]/g, '');",
@@ -1475,6 +1611,21 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         "$doc.off('keyup' + eventNs, searchSelector);",
                         "$doc.off('search' + eventNs, searchSelector);",
                         "$doc.off('change' + eventNs, pageSelector);",
+                        "$doc.off('click' + eventNs, '.vn-sensitive-trigger');",
+                        "$doc.off('keydown' + eventNs, '.vn-sensitive-trigger');",
+                        "var fireSensitive = function(el) {",
+                        "  var sn = decodeURIComponent($(el).attr('data-sname') || '');",
+                        "  if (sn.length > 0) { Shiny.setInputValue(sensId, sn, {priority: 'event'}); }",
+                        "};",
+                        "$doc.on('click' + eventNs, '.vn-sensitive-trigger', function() {",
+                        "  fireSensitive(this);",
+                        "});",
+                        "$doc.on('keydown' + eventNs, '.vn-sensitive-trigger', function(e) {",
+                        "  if (e.key === 'Enter' || e.key === ' ' || e.keyCode === 13 || e.keyCode === 32) {",
+                        "    e.preventDefault();",
+                        "    fireSensitive(this);",
+                        "  }",
+                        "});",
                         "$doc.on('input' + eventNs, searchSelector, function() {",
                         "  table.search(String(this.value || '')).draw(false);",
                         "});",
@@ -1505,7 +1656,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         "}"
                     ),
                     jsonlite::toJSON(ns("report_search"), auto_unbox = TRUE),
-                    jsonlite::toJSON(ns("report_page_length"), auto_unbox = TRUE)
+                    jsonlite::toJSON(ns("report_page_length"), auto_unbox = TRUE),
+                    jsonlite::toJSON(ns("open_sensitivity_target"), auto_unbox = TRUE)
                 )
             )
 
@@ -1522,7 +1674,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         list(targets = 1, render = status_badge_js, className = "vn-col-status", width = "16%"),
                         list(targets = 2, render = taxonomic_status_js, className = "vn-col-taxonomic", width = "28%"),
                         list(targets = 3, visible = FALSE, searchable = FALSE),
-                        list(targets = 4, visible = FALSE, searchable = FALSE)
+                        list(targets = 4, visible = FALSE, searchable = FALSE),
+                        list(targets = 5, visible = FALSE, searchable = FALSE)
                     ),
                     rowCallback = row_callback_js,
                     headerCallback = header_callback_js,
@@ -1713,8 +1866,13 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             )
         })
 
+        sensitivity_payload <- shiny::reactive({
+            sensitivity_entries_df()
+        })
+
         result_r <- shiny::reactive(validation_result())
         attr(result_r, "review_export_payload") <- review_export_payload
+        attr(result_r, "sensitivity_payload") <- sensitivity_payload
         result_r
     })
 }

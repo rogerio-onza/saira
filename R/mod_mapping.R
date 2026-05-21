@@ -1607,6 +1607,34 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             )
         })
 
+        # Lightweight projection (scientificName + coords) for the Preview
+        # masking overview. Avoids materialising processed_data just to count
+        # how many sensitive records exist — keeps the Preview tab off the
+        # heavy `build_mapped_result` pipeline (ADR-020, LESSONS.md:31).
+        sensitive_overview_input_r <- shiny::reactive({
+            raw <- safe_raw_data_for_gate()
+            if (is.null(raw) || !is.data.frame(raw) || nrow(raw) == 0L) {
+                return(NULL)
+            }
+            pick <- function(term) {
+                sel <- sanitize_map_selection(term, rv$map_values[[term]])
+                if (!has_selected_value(sel)) return(NULL)
+                col <- as.character(sel[[1]])
+                if (!col %in% names(raw)) return(NULL)
+                raw[[col]]
+            }
+            sci <- pick("scientificName")
+            if (is.null(sci)) return(NULL)
+            lat <- pick("decimalLatitude")
+            lon <- pick("decimalLongitude")
+            data.frame(
+                scientificName   = as.character(sci),
+                decimalLatitude  = if (is.null(lat)) NA_character_ else as.character(lat),
+                decimalLongitude = if (is.null(lon)) NA_character_ else as.character(lon),
+                stringsAsFactors = FALSE
+            )
+        })
+
         # Lightweight mapped preview (first 100 raw rows only)
         preview_processed_data <- shiny::reactive({
             shiny::req(raw_data_r())
@@ -1632,14 +1660,15 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         # New Rostrum slots (Onda 2): rostrum_decisions_r, rostrum_explain_r,
         #   rostrum_run_stats_r.
         return(list(
-            processed_data_r         = processed_data,
-            preview_data_r           = preview_processed_data,
-            validation_gate_r        = validation_gate_r,
-            validation_gate_coords_r = coord_validation_gate_r,
-            rostrum_decisions_r      = shiny::reactive(rv$rostrum_decisions),
-            rostrum_explain_r        = shiny::reactive(rv$map_meta),
-            rostrum_run_stats_r      = shiny::reactive(rv$rostrum_run_stats),
-            map_values_r             = shiny::reactive(rv$map_values)
+            processed_data_r            = processed_data,
+            preview_data_r              = preview_processed_data,
+            validation_gate_r           = validation_gate_r,
+            validation_gate_coords_r    = coord_validation_gate_r,
+            sensitive_overview_input_r  = sensitive_overview_input_r,
+            rostrum_decisions_r         = shiny::reactive(rv$rostrum_decisions),
+            rostrum_explain_r           = shiny::reactive(rv$map_meta),
+            rostrum_run_stats_r         = shiny::reactive(rv$rostrum_run_stats),
+            map_values_r                = shiny::reactive(rv$map_values)
         ))
     })
 }

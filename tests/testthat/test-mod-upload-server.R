@@ -52,6 +52,75 @@ testthat::test_that("mod_upload_server renders UI outputs in EN", {
             testthat::expect_true(!is.null(output$privacy_text))
             testthat::expect_true(!is.null(output$welcome_header))
             testthat::expect_true(!is.null(output$welcome_description))
+            # ADR-097: mode tab strip outputs
+            testthat::expect_true(!is.null(output$mode_csv_title))
+            testthat::expect_true(!is.null(output$mode_camtrap_title))
+            testthat::expect_true(!is.null(output$mode_change_text))
+        }
+    )
+})
+
+testthat::test_that("mod_upload_server renders DwC chips by default (CSV mode)", {
+    shiny::testServer(
+        mod_upload_server,
+        args = list(
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            html <- output$dwc_required$html
+            testthat::expect_true(grepl("dwc-inline-groups", html))
+            testthat::expect_false(grepl("upload-file-list", html))
+            testthat::expect_true(grepl("format-requirements", html))
+        }
+    )
+})
+
+testthat::test_that("mod_upload_server renders Camtrap file rows when mode is camtrap", {
+    shiny::testServer(
+        mod_upload_server,
+        args = list(
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(upload_mode = "camtrap")
+            session$flushReact()
+            html <- output$dwc_required$html
+            testthat::expect_true(grepl("upload-file-list", html))
+            testthat::expect_false(grepl("dwc-inline-groups", html))
+            testthat::expect_true(grepl("datapackage.json", html))
+        }
+    )
+})
+
+testthat::test_that("mod_upload_server rejects CSV upload while in camtrap mode", {
+    csv_path <- tempfile(fileext = ".csv")
+    on.exit(unlink(csv_path), add = TRUE)
+    writeLines(
+        c("scientificName,decimalLatitude,decimalLongitude",
+          "Panthera onca,-10.5,-55.2"),
+        csv_path
+    )
+
+    shiny::testServer(
+        mod_upload_server,
+        args = list(
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(
+                upload_mode = "camtrap",
+                file = list(
+                    name = "wrong.csv",
+                    size = file.info(csv_path)$size,
+                    type = "text/csv",
+                    datapath = csv_path
+                )
+            )
+            session$flushReact()
+
+            returned <- session$getReturned()
+            testthat::expect_error(returned(), regexp = "ZIP|invalid")
         }
     )
 })
