@@ -7,6 +7,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-25
+
+### Added
+- **Full Darwin Core Archive (DwC-A) export.** The ZIP bundle now lays out a GBIF/IPT-compatible archive with `occurrence.txt`, `meta.xml`, and `eml.xml` at the archive root. The hand-rolled EML 2.1.1 document includes title, creator/contact, pubDate, abstract, license-aware intellectualRights, methods step, and **auto-computed** geographic bounding box (from `decimalLatitude`/`decimalLongitude`) and temporal range (from `eventDate`). XML generation uses `xml2` directly to avoid the `EML` package's transitive `jqr` → system `jq` dependency. New pure helpers in `R/utils_export.R`: `build_meta_xml()`, `build_eml_xml()`, `compute_dataset_extents()`, `dwc_term_uri()`, `build_dwca_bundle()`.
+- **Deterministic occurrenceID via UUID v5.** New `generate_occurrence_ids()` dispatches strategy based on anchor presence: when the data has `institutionCode` AND one of (`catalogNumber`, `eventID`, `recordNumber`), missing IDs are filled with deterministic UUID v5 via `uuid::UUIDfromName()` using the RFC 4122 URL namespace plus `saira-occurrence:<institutionCode>|<anchor>` as the name. Same combination always produces the same UUID across machines and re-exports — republishing to GBIF appears as updates instead of new records. When the anchor is absent, falls back to random UUID v4 (current behavior). User-supplied IDs are always preserved verbatim. Strategy is recorded in an `id_strategy` attribute on the data frame and surfaced in the mapping guide. `add_occurrence_ids()` kept as a backward-compatible alias.
+- **New `Identifier Strategy` section in `mapping_guide.txt`** (PT/EN), explaining which strategy was used and the GBIF republication consequence of each.
+- New dependencies in `DESCRIPTION` Imports: `uuid (>= 1.1.0)` and `xml2 (>= 1.3.0)`. Both are pure-R / no system C libraries — chosen over the heavier `EML` package which would have forced `jqr`/`jq` on all users.
+- 16-test suite `tests/testthat/test-utils-export-dwca.R` (55 expect calls): deterministic-vs-random UUID dispatch, user-supplied preservation, partial-anchor mixing, eventID/recordNumber fallback, DwC/DC term URI mapping, meta.xml shape and id-index, bbox/date extent derivation, EML structure (defaults and overrides), DwC-A bundle layout including extras, strategy section emission, attribute preservation through the export pipeline.
+
+### Changed
+- **Export bundle layout changed.** The dated `dwc_export_<YYYY-MM-DD>.csv` is replaced by `occurrence.txt` at the archive root (DwC-A core file). The `.xlsx` mirror and `mapping_guide.txt` remain (dated). `sensitive_real_coords_*.csv` stays out of `meta.xml` so it is never advertised as part of the DwC-A core. **BREAKING** for scripts that grep for `dwc_export_<date>.csv` in the ZIP — they need to read `occurrence.txt` instead.
+- `process_for_export()` now preserves the `id_strategy` attribute through canonical column ordering; `process_for_export_with_unmapped()` likewise preserves it across `cbind` with extra raw columns.
+- README updated: the DwC-A capability is now real (no longer a roadmap item).
+
+### Notes
+- **UI metadata form deferred** to a follow-up PR. v0.4.0 ships with sensible defaults for the EML editable fields (title="Saira export YYYY-MM-DD", creator empty with "Unknown" surname placeholder, license="CC0-1.0", auto abstract). Users wanting to customize can either edit `eml.xml` post-download or wait for the form in a subsequent release.
+
 ## [0.3.2] - 2026-05-25
 
 ### Added

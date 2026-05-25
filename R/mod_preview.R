@@ -884,19 +884,44 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                         dir.create(tmpdir, showWarnings = FALSE, recursive = TRUE)
                         on.exit(unlink(tmpdir, recursive = TRUE), add = TRUE)
 
-                        csv_path   <- file.path(tmpdir, paste0("dwc_export_", ts, ".csv"))
+                        # DwC-A core layout: occurrence.txt + meta.xml + eml.xml
+                        # at archive root. The Excel mirror and mapping guide
+                        # are dated convenience siblings; the private
+                        # sensitive-coords CSV stays out of meta.xml so it is
+                        # never advertised as part of the archive.
+                        core_path  <- file.path(tmpdir, "occurrence.txt")
+                        meta_path  <- file.path(tmpdir, "meta.xml")
+                        eml_path   <- file.path(tmpdir, "eml.xml")
                         xlsx_path  <- file.path(tmpdir, paste0("dwc_export_", ts, ".xlsx"))
                         guide_path <- file.path(tmpdir, paste0("mapping_guide_", ts, ".txt"))
 
-                        readr::write_csv(export_data, csv_path, na = "")
+                        id_strategy <- attr(export_data, "id_strategy")
+                        if (is.null(id_strategy)) id_strategy <- NA_character_
+
+                        readr::write_csv(export_data, core_path, na = "")
+                        writeLines(
+                            build_meta_xml(export_data, core_filename = "occurrence.txt"),
+                            meta_path,
+                            useBytes = TRUE
+                        )
+                        writeLines(
+                            build_eml_xml(export_data, metadata = list()),
+                            eml_path,
+                            useBytes = TRUE
+                        )
                         write_xlsx_text_only(export_data, xlsx_path)
                         writeLines(
-                            build_mapping_guide_txt(mv, raw_df, lang = lang_r()),
+                            build_mapping_guide_txt(
+                                mv, raw_df,
+                                lang = lang_r(),
+                                id_strategy = id_strategy
+                            ),
                             guide_path,
                             useBytes = TRUE
                         )
 
-                        zip_files <- c(csv_path, xlsx_path, guide_path)
+                        zip_files <- c(core_path, meta_path, eml_path,
+                                       xlsx_path, guide_path)
                         if (masked$n_masked > 0L) {
                             real_path <- file.path(
                                 tmpdir,

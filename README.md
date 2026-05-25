@@ -12,7 +12,8 @@
 -   **Interactive Mapping**: Intuitive UI (Rostrum Engine) for mapping local columns to Darwin Core terms.
 -   **Taxonomic Verification**: Integration with taxonomic services for name validation.
 -   **Data Validation**: Real-time checks for data types, mandatory fields, and coordinate ranges.
--   **Darwin Core Export**: Generates compliant CSV/XLSX bundles + mapping guide ready for SiBBr/GBIF publication. Full Darwin Core Archive packaging (DwC-A with `meta.xml` + `eml.xml`) lands in v0.4.0.
+-   **Darwin Core Archive (DwC-A) Export**: Generates GBIF/IPT-ready archives with `occurrence.txt`, `meta.xml`, and `eml.xml` at the archive root, plus a convenience `.xlsx` mirror and the bilingual mapping guide. The EML descriptor includes auto-computed geographic bounding box and temporal range derived from the data.
+-   **Stable occurrenceIDs**: When `institutionCode` plus `catalogNumber` / `eventID` / `recordNumber` are mapped, missing IDs are filled with deterministic UUID v5 — same combination produces the same UUID across machines and re-exports, so GBIF republication appears as updates rather than new records.
 
 ---
 
