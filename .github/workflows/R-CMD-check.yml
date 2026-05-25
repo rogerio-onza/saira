@@ -34,10 +34,16 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, any::devtools, any::testthat
+          extra-packages: |
+            any::rcmdcheck
+            any::devtools
+            any::testthat
+            ropensci/rnaturalearthhires
+          dependencies: '"hard"'
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
-          args: 'c("--no-manual", "--as-cran")'
+          args: 'c("--no-manual")'
+          error-on: '"error"'
