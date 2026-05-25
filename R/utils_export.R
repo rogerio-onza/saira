@@ -143,8 +143,9 @@ process_for_export <- function(df) {
     # Clean coordinate separators (comma to dot)
     df <- clean_coordinate_separators(df)
 
-    # Add occurrence IDs if missing
+    # Add occurrence IDs if missing (sets attr "id_strategy")
     df <- add_occurrence_ids(df)
+    id_strategy <- attr(df, "id_strategy")
 
     # Normalize known Creative Commons license URLs to short labels
     df <- abbreviate_license_column(df)
@@ -158,8 +159,10 @@ process_for_export <- function(df) {
     df <- convert_country_code_to_alpha2(df)
 
     # Reorder columns to canonical DwC sequence (occurrenceID first,
-    # scientificName leading the Taxon block, etc.)
+    # scientificName leading the Taxon block, etc.). Subsetting strips
+    # custom attrs, so reattach the id_strategy after.
     df <- order_columns_dwc_canonical(df)
+    attr(df, "id_strategy") <- id_strategy
 
     return(df)
 }
@@ -180,6 +183,7 @@ process_for_export <- function(df) {
 #' @export
 process_for_export_with_unmapped <- function(df_processed, raw_data, map_values) {
     out <- process_for_export(df_processed)
+    id_strategy <- attr(out, "id_strategy")
 
     if (!is.data.frame(raw_data) || ncol(raw_data) == 0L || !is.list(map_values)) {
         return(out)
@@ -200,7 +204,9 @@ process_for_export_with_unmapped <- function(df_processed, raw_data, map_values)
     if (length(extra_cols) == 0L) return(out)
 
     extras <- raw_data[, extra_cols, drop = FALSE]
-    cbind(out, extras)
+    combined <- cbind(out, extras)
+    attr(combined, "id_strategy") <- id_strategy
+    combined
 }
 
 #' Write a data frame to .xlsx with every cell forced to text
@@ -249,6 +255,10 @@ write_xlsx_text_only <- function(df, path) {
 #' @param lang Character scalar "pt" ou "en" (ou reactive — extraido com `()` se for).
 #' @param required_terms Character vector de termos DwC obrigatorios (default = required do preview).
 #' @param source_file Optional character: nome do arquivo de origem para metadados.
+#' @param id_strategy Optional character: occurrenceID strategy used at export
+#'   (`"user_supplied"`, `"stable_v5"`, `"stable_v5_with_random_fallback"`,
+#'   `"random_v4"`). When supplied, an "Identifier Strategy" section is
+#'   appended explaining the consequence for GBIF republication.
 #' @return character vector (uma entrada por linha), encoding UTF-8.
 #' @export
 build_mapping_guide_txt <- function(map_values,
@@ -257,7 +267,8 @@ build_mapping_guide_txt <- function(map_values,
                                     required_terms = c("scientificName", "eventDate",
                                                        "decimalLatitude", "decimalLongitude",
                                                        "basisOfRecord"),
-                                    source_file = NA_character_) {
+                                    source_file = NA_character_,
+                                    id_strategy = NA_character_) {
     if (is.function(lang)) lang <- lang()
     lang <- as.character(lang)[1L]
     if (!lang %in% c("pt", "en")) lang <- "pt"
@@ -369,6 +380,34 @@ build_mapping_guide_txt <- function(map_values,
         for (col in unmapped_cols) {
             out <- c(out, paste0("#     - ", col))
         }
+    }
+
+    if (!is.na(id_strategy) && nzchar(id_strategy)) {
+        strategy_section <- if (lang == "pt") {
+            list(
+                header = "#   estrategia de occurrenceID",
+                explainers = list(
+                    user_supplied = "#     Estrategia: user_supplied. Todos os occurrenceID vieram dos seus dados; serao preservados literalmente no export.",
+                    stable_v5     = "#     Estrategia: stable_v5. UUIDs v5 deterministicos gerados a partir de institutionCode + (catalogNumber/eventID/recordNumber). Mesma combinacao = mesmo UUID em qualquer maquina e re-export. Republicacoes no GBIF aparecerao como atualizacoes do mesmo registro.",
+                    stable_v5_with_random_fallback = "#     Estrategia: stable_v5_with_random_fallback. A maioria das linhas tem UUID v5 estavel; algumas sem institutionCode/anchor cairam em UUID v4 aleatorio. Linhas v4 mudam a cada export.",
+                    random_v4     = "#     Estrategia: random_v4. UUIDs aleatorios (mudam a cada export). Republicacoes no GBIF serao registradas como novos registros, nao atualizacoes. Para estabilidade entre versoes, mapeie institutionCode + catalogNumber (ou eventID/recordNumber)."
+                )
+            )
+        } else {
+            list(
+                header = "#   identifier strategy (occurrenceID)",
+                explainers = list(
+                    user_supplied = "#     Strategy: user_supplied. All occurrenceIDs came from your data; they will be preserved verbatim in the export.",
+                    stable_v5     = "#     Strategy: stable_v5. Deterministic UUID v5 generated from institutionCode + (catalogNumber/eventID/recordNumber). Same combination = same UUID across machines and re-exports. Republishing to GBIF will appear as updates to the same record.",
+                    stable_v5_with_random_fallback = "#     Strategy: stable_v5_with_random_fallback. Most rows received stable v5 UUIDs; some lacking an institutionCode/anchor fell back to random v4 UUIDs. v4 rows change on every export.",
+                    random_v4     = "#     Strategy: random_v4. Random UUIDs (change on every export). Republishing to GBIF will create new records, not updates. For stability across versions, map institutionCode + catalogNumber (or eventID/recordNumber)."
+                )
+            )
+        }
+        out <- c(out, "#", strategy_section$header, "#")
+        explainer <- strategy_section$explainers[[id_strategy]]
+        if (is.null(explainer)) explainer <- sprintf("#     Strategy: %s.", id_strategy)
+        out <- c(out, explainer)
     }
 
     out
@@ -613,24 +652,109 @@ clean_coordinate_separators <- function(df) {
     return(df)
 }
 
-#' Add occurrence IDs if missing
+#' Generate occurrenceIDs with deterministic v5 or random v4 strategy
 #'
-#' @param df Data frame
-#' @return Data frame with occurrenceID column
+#' Strategy resolution:
+#' - Rows with a user-supplied `occurrenceID` are preserved verbatim.
+#' - For rows missing `occurrenceID`: if the data has `institutionCode` AND one
+#'   of `catalogNumber` / `eventID` / `recordNumber` (the "anchor"), a
+#'   deterministic UUID v5 is generated via `uuid::UUIDfromName()` using the
+#'   RFC 4122 URL namespace plus `saira-occurrence:<institutionCode>|<anchor>`
+#'   as the name. The same anchor combination always produces the same UUID
+#'   across machines and re-exports.
+#' - Otherwise, falls back to random UUID v4 via `ids::uuid()`.
+#'
+#' The returned data frame carries an `id_strategy` attribute documenting which
+#' path was used: `"user_supplied"`, `"stable_v5"`, `"stable_v5_with_random_fallback"`,
+#' or `"random_v4"`. Downstream consumers (mapping_guide.txt, export form
+#' banner) read this attribute.
+#'
+#' @param df Data frame.
+#' @return Data frame with `occurrenceID` populated. Carries `id_strategy`
+#'   attribute.
 #' @export
-add_occurrence_ids <- function(df) {
-    if (!"occurrenceID" %in% names(df)) {
-        # Generate UUIDs for each row
-        df$occurrenceID <- ids::uuid(n = nrow(df))
-    } else {
-        # Fill missing IDs
-        missing <- is.na(df$occurrenceID) | df$occurrenceID == ""
-        if (any(missing)) {
-            df$occurrenceID[missing] <- ids::uuid(n = sum(missing))
-        }
+generate_occurrence_ids <- function(df) {
+    n <- nrow(df)
+    if (n == 0L) {
+        if (!"occurrenceID" %in% names(df)) df$occurrenceID <- character(0)
+        attr(df, "id_strategy") <- "user_supplied"
+        return(df)
     }
 
-    return(df)
+    if ("occurrenceID" %in% names(df)) {
+        current <- as.character(df$occurrenceID)
+    } else {
+        current <- rep(NA_character_, n)
+    }
+    missing <- is.na(current) | !nzchar(trimws(current))
+
+    if (!any(missing)) {
+        df$occurrenceID <- current
+        attr(df, "id_strategy") <- "user_supplied"
+        return(df)
+    }
+
+    has_inst <- "institutionCode" %in% names(df)
+    anchor_col <- if ("catalogNumber" %in% names(df)) {
+        "catalogNumber"
+    } else if ("eventID" %in% names(df)) {
+        "eventID"
+    } else if ("recordNumber" %in% names(df)) {
+        "recordNumber"
+    } else {
+        NA_character_
+    }
+    has_anchor <- has_inst && !is.na(anchor_col) &&
+        requireNamespace("uuid", quietly = TRUE)
+
+    if (has_anchor) {
+        ic <- as.character(df$institutionCode)
+        sec <- as.character(df[[anchor_col]])
+        anchor_valid <- !is.na(ic) & nzchar(trimws(ic)) &
+            !is.na(sec) & nzchar(trimws(sec))
+        rows_v5 <- missing & anchor_valid
+        rows_v4 <- missing & !anchor_valid
+
+        # RFC 4122 URL namespace UUID. Stable across machines and Saira versions.
+        url_ns <- "6ba7b811-9dad-11d1-80b4-00c04fd430c8"
+
+        if (any(rows_v5)) {
+            names_v5 <- paste0("saira-occurrence:", ic[rows_v5], "|", sec[rows_v5])
+            current[rows_v5] <- paste0(
+                "urn:uuid:",
+                vapply(names_v5, function(nm) uuid::UUIDfromName(url_ns, nm), character(1))
+            )
+        }
+        if (any(rows_v4)) {
+            current[rows_v4] <- ids::uuid(n = sum(rows_v4))
+        }
+        strategy <- if (any(rows_v5) && any(rows_v4)) {
+            "stable_v5_with_random_fallback"
+        } else if (any(rows_v5)) {
+            "stable_v5"
+        } else {
+            "random_v4"
+        }
+    } else {
+        current[missing] <- ids::uuid(n = sum(missing))
+        strategy <- "random_v4"
+    }
+
+    df$occurrenceID <- current
+    attr(df, "id_strategy") <- strategy
+    df
+}
+
+#' Add occurrence IDs (legacy alias)
+#'
+#' Kept for backward compatibility. New code should call
+#' `generate_occurrence_ids()` directly.
+#'
+#' @param df Data frame.
+#' @return Data frame with `occurrenceID` populated.
+#' @export
+add_occurrence_ids <- function(df) {
+    generate_occurrence_ids(df)
 }
 
 #' Populate geodeticDatum for rows with valid coordinates
@@ -698,6 +822,314 @@ convert_country_code_to_alpha2 <- function(df) {
 
     df$countryCode <- trimmed
     df
+}
+
+# Dublin Core terms used in DwC (everything else lives under dwc:).
+.dc_terms <- c(
+    "type", "modified", "language", "license", "rights", "rightsHolder",
+    "accessRights", "bibliographicCitation", "references"
+)
+
+#' Map a DwC/DC column name to its full term URI
+#'
+#' @param column Character vector of column names.
+#' @return Character vector of term URIs, NA where the column is not a
+#'   recognized DwC or DC term.
+#' @export
+dwc_term_uri <- function(column) {
+    catalog <- tryCatch(get_dwc_full_catalog(), error = function(e) NULL)
+    known <- if (is.data.frame(catalog)) as.character(catalog$term) else character(0)
+
+    out <- ifelse(
+        column %in% .dc_terms,
+        paste0("http://purl.org/dc/terms/", column),
+        ifelse(
+            column %in% known,
+            paste0("http://rs.tdwg.org/dwc/terms/", column),
+            NA_character_
+        )
+    )
+    out
+}
+
+#' Build a Darwin Core Archive meta.xml descriptor
+#'
+#' Generates the DwC-A `meta.xml` document describing the `occurrence.txt`
+#' core file. Only columns recognized as DwC or Dublin Core terms get a
+#' `<field>` declaration; extras stay in the CSV but are not declared (GBIF
+#' will ignore them per spec).
+#'
+#' @param df Data frame whose columns describe the rows that will be written
+#'   to `occurrence.txt`.
+#' @param core_filename Name of the core CSV file referenced by `meta.xml`.
+#'   Default `"occurrence.txt"`.
+#' @return Character scalar containing the serialized XML document.
+#' @export
+build_meta_xml <- function(df, core_filename = "occurrence.txt") {
+    if (!is.data.frame(df)) stop("build_meta_xml: 'df' must be a data.frame.")
+
+    cols <- names(df)
+    uris <- dwc_term_uri(cols)
+
+    doc <- xml2::xml_new_root(
+        "archive",
+        xmlns = "http://rs.tdwg.org/dwc/text/",
+        metadata = "eml.xml"
+    )
+    core <- xml2::xml_add_child(
+        doc, "core",
+        encoding = "UTF-8",
+        fieldsTerminatedBy = ",",
+        linesTerminatedBy = "\\n",
+        fieldsEnclosedBy = "\"",
+        ignoreHeaderLines = "1",
+        rowType = "http://rs.tdwg.org/dwc/terms/Occurrence"
+    )
+    files <- xml2::xml_add_child(core, "files")
+    xml2::xml_add_child(files, "location", core_filename)
+
+    id_idx <- match("occurrenceID", cols)
+    if (!is.na(id_idx)) {
+        xml2::xml_add_child(core, "id", index = as.character(id_idx - 1L))
+    }
+
+    for (i in seq_along(cols)) {
+        if (is.na(uris[i])) next
+        xml2::xml_add_child(
+            core, "field",
+            index = as.character(i - 1L),
+            term = uris[i]
+        )
+    }
+
+    as.character(doc)
+}
+
+#' Compute geographic and temporal extents for EML coverage
+#'
+#' Reads `decimalLatitude`/`decimalLongitude` for the geographic bounding box
+#' and `eventDate` for the temporal range. Returns NA for any extent that
+#' cannot be derived from the data.
+#'
+#' @param df Data frame.
+#' @return Named list with `bbox` (named numeric vector: west/east/north/south)
+#'   and `dates` (named character vector: begin/end, ISO YYYY-MM-DD).
+#' @export
+compute_dataset_extents <- function(df) {
+    bbox <- c(west = NA_real_, east = NA_real_, north = NA_real_, south = NA_real_)
+    if (all(c("decimalLatitude", "decimalLongitude") %in% names(df))) {
+        lat <- suppressWarnings(as.numeric(df$decimalLatitude))
+        lon <- suppressWarnings(as.numeric(df$decimalLongitude))
+        valid <- is.finite(lat) & is.finite(lon) &
+            lat >= -90 & lat <= 90 & lon >= -180 & lon <= 180
+        if (any(valid)) {
+            bbox[["west"]]  <- min(lon[valid])
+            bbox[["east"]]  <- max(lon[valid])
+            bbox[["north"]] <- max(lat[valid])
+            bbox[["south"]] <- min(lat[valid])
+        }
+    }
+
+    dates <- c(begin = NA_character_, end = NA_character_)
+    if ("eventDate" %in% names(df)) {
+        raw <- as.character(df$eventDate)
+        iso <- substr(trimws(raw), 1L, 10L)
+        parsed <- suppressWarnings(as.Date(iso, format = "%Y-%m-%d"))
+        if (any(!is.na(parsed))) {
+            dates[["begin"]] <- format(min(parsed, na.rm = TRUE), "%Y-%m-%d")
+            dates[["end"]]   <- format(max(parsed, na.rm = TRUE), "%Y-%m-%d")
+        }
+    }
+
+    list(bbox = bbox, dates = dates)
+}
+
+#' Build an EML 2.1.1 dataset descriptor for a Saira export
+#'
+#' Produces a minimal-but-valid EML document with required GBIF/IPT fields:
+#' title, creator, contact, pubDate, abstract, intellectualRights, and
+#' coverage (geographic + temporal). Geographic and temporal coverage are
+#' computed automatically from the data via `compute_dataset_extents()`;
+#' callers supply the editable fields (title/creator/license/abstract) via
+#' `metadata`.
+#'
+#' @param df Data frame that will become `occurrence.txt`.
+#' @param metadata Named list with optional entries: `title` (string),
+#'   `creator` (named list with `name`, `email`, `organization`), `license`
+#'   (string, default `"CC0-1.0"`), `abstract` (string).
+#' @param package_id Optional UUID for the EML packageId; defaults to a
+#'   freshly generated UUID.
+#' @return Character scalar containing the serialized EML document.
+#' @export
+build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
+    ext <- compute_dataset_extents(df)
+
+    title <- metadata$title %||% paste0("Saira export ", format(Sys.Date(), "%Y-%m-%d"))
+    creator <- metadata$creator %||% list(name = "", email = "", organization = "")
+    creator$name         <- creator$name         %||% ""
+    creator$email        <- creator$email        %||% ""
+    creator$organization <- creator$organization %||% ""
+    license  <- metadata$license  %||% "CC0-1.0"
+    abstract <- metadata$abstract %||% sprintf(
+        "Biodiversity occurrence dataset standardized to Darwin Core via Saira v%s.",
+        utils::packageVersion("saira")
+    )
+    rights_text <- switch(
+        license,
+        "CC0-1.0"     = "To the extent possible under law, the publisher has waived all rights to these data under the Creative Commons CC0 1.0 Universal Public Domain Dedication (https://creativecommons.org/publicdomain/zero/1.0/legalcode).",
+        "CC-BY-4.0"   = "This work is licensed under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/legalcode).",
+        "CC-BY-NC-4.0" = "This work is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (https://creativecommons.org/licenses/by-nc/4.0/legalcode).",
+        license
+    )
+    pkg_id <- package_id %||% paste0("urn:uuid:", ids::uuid())
+
+    # Split creator name into given/sur for EML structure.
+    name_parts <- strsplit(trimws(creator$name), "\\s+")[[1]]
+    if (length(name_parts) == 0L) {
+        given <- ""
+        sur   <- ""
+    } else if (length(name_parts) == 1L) {
+        given <- name_parts[1L]
+        sur   <- ""
+    } else {
+        given <- paste(name_parts[-length(name_parts)], collapse = " ")
+        sur   <- name_parts[length(name_parts)]
+    }
+
+    doc <- xml2::xml_new_root(
+        "eml:eml",
+        "xmlns:eml" = "https://eml.ecoinformatics.org/eml-2.1.1",
+        "xmlns:dc"  = "http://purl.org/dc/terms/",
+        "xmlns:xsi" = "http://www.w3.org/2001/XMLSchema-instance",
+        "xsi:schemaLocation" = "https://eml.ecoinformatics.org/eml-2.1.1 https://eml.ecoinformatics.org/eml-2.1.1/eml.xsd",
+        packageId = pkg_id,
+        system = "saira",
+        scope = "system",
+        "xml:lang" = "eng"
+    )
+    ds <- xml2::xml_add_child(doc, "dataset")
+    title_el <- xml2::xml_add_child(ds, "title", title)
+    xml2::xml_set_attr(title_el, "xml:lang", "eng")
+
+    cr <- xml2::xml_add_child(ds, "creator")
+    ind <- xml2::xml_add_child(cr, "individualName")
+    if (nzchar(given)) xml2::xml_add_child(ind, "givenName", given)
+    if (nzchar(sur))   xml2::xml_add_child(ind, "surName", sur)
+    if (!nzchar(given) && !nzchar(sur)) xml2::xml_add_child(ind, "surName", "Unknown")
+    if (nzchar(creator$organization)) {
+        xml2::xml_add_child(cr, "organizationName", creator$organization)
+    }
+    if (nzchar(creator$email)) {
+        xml2::xml_add_child(cr, "electronicMailAddress", creator$email)
+    }
+
+    xml2::xml_add_child(ds, "pubDate", format(Sys.Date(), "%Y-%m-%d"))
+
+    abs_el <- xml2::xml_add_child(ds, "abstract")
+    xml2::xml_add_child(abs_el, "para", abstract)
+
+    rights_el <- xml2::xml_add_child(ds, "intellectualRights")
+    xml2::xml_add_child(rights_el, "para", rights_text)
+
+    cov <- xml2::xml_add_child(ds, "coverage")
+    if (all(is.finite(ext$bbox))) {
+        geo <- xml2::xml_add_child(cov, "geographicCoverage")
+        xml2::xml_add_child(geo, "geographicDescription",
+            "Bounding box computed from decimalLatitude/decimalLongitude.")
+        bc <- xml2::xml_add_child(geo, "boundingCoordinates")
+        xml2::xml_add_child(bc, "westBoundingCoordinate",
+            format(ext$bbox[["west"]], nsmall = 6))
+        xml2::xml_add_child(bc, "eastBoundingCoordinate",
+            format(ext$bbox[["east"]], nsmall = 6))
+        xml2::xml_add_child(bc, "northBoundingCoordinate",
+            format(ext$bbox[["north"]], nsmall = 6))
+        xml2::xml_add_child(bc, "southBoundingCoordinate",
+            format(ext$bbox[["south"]], nsmall = 6))
+    }
+    if (!is.na(ext$dates[["begin"]]) && !is.na(ext$dates[["end"]])) {
+        tmp <- xml2::xml_add_child(cov, "temporalCoverage")
+        if (ext$dates[["begin"]] == ext$dates[["end"]]) {
+            sd <- xml2::xml_add_child(tmp, "singleDateTime")
+            xml2::xml_add_child(sd, "calendarDate", ext$dates[["begin"]])
+        } else {
+            rd <- xml2::xml_add_child(tmp, "rangeOfDates")
+            bd <- xml2::xml_add_child(rd, "beginDate")
+            xml2::xml_add_child(bd, "calendarDate", ext$dates[["begin"]])
+            ed <- xml2::xml_add_child(rd, "endDate")
+            xml2::xml_add_child(ed, "calendarDate", ext$dates[["end"]])
+        }
+    }
+
+    methods <- xml2::xml_add_child(ds, "methods")
+    ms <- xml2::xml_add_child(methods, "methodStep")
+    desc <- xml2::xml_add_child(ms, "description")
+    xml2::xml_add_child(desc, "para", sprintf(
+        "Dataset prepared with Saira v%s (https://github.com/rogerio-onza/saira). Fields validated and mapped to Darwin Core; coordinates checked with CoordinateCleaner; taxonomy reconciled against taxadb.",
+        utils::packageVersion("saira")
+    ))
+
+    # Contact mirrors the creator block.
+    ct <- xml2::xml_add_child(ds, "contact")
+    ct_ind <- xml2::xml_add_child(ct, "individualName")
+    if (nzchar(given)) xml2::xml_add_child(ct_ind, "givenName", given)
+    xml2::xml_add_child(ct_ind, "surName", if (nzchar(sur)) sur else "Unknown")
+    if (nzchar(creator$organization)) {
+        xml2::xml_add_child(ct, "organizationName", creator$organization)
+    }
+    if (nzchar(creator$email)) {
+        xml2::xml_add_child(ct, "electronicMailAddress", creator$email)
+    }
+
+    as.character(doc)
+}
+
+# Local null-coalescing operator.
+`%||%` <- function(a, b) if (is.null(a) || (length(a) == 1L && (is.na(a) || identical(a, "")))) b else a
+
+#' Assemble a Darwin Core Archive (DwC-A) bundle as a ZIP
+#'
+#' Lays out the archive with `occurrence.txt`, `meta.xml`, `eml.xml` at the
+#' ZIP root, plus any provided sibling files (`mapping_guide.txt`, the
+#' Excel mirror, the private sensitive-coordinates CSV). The bundle is
+#' GBIF/IPT-compatible.
+#'
+#' @param df Data frame of DwC-ready records (output of
+#'   `process_for_export()` or `process_for_export_with_unmapped()`).
+#' @param zip_path Destination ZIP path.
+#' @param metadata Named list passed to `build_eml_xml()`.
+#' @param extras Optional named list mapping in-zip filenames to local file
+#'   paths to include as siblings.
+#' @return Invisibly returns `zip_path`.
+#' @export
+build_dwca_bundle <- function(df, zip_path, metadata = list(), extras = list()) {
+    if (!is.data.frame(df)) stop("build_dwca_bundle: 'df' must be a data.frame.")
+
+    tmpdir <- tempfile("saira_dwca_")
+    dir.create(tmpdir, showWarnings = FALSE, recursive = TRUE)
+    on.exit(unlink(tmpdir, recursive = TRUE), add = TRUE)
+
+    core_path <- file.path(tmpdir, "occurrence.txt")
+    meta_path <- file.path(tmpdir, "meta.xml")
+    eml_path  <- file.path(tmpdir, "eml.xml")
+
+    readr::write_csv(df, core_path, na = "")
+    writeLines(build_meta_xml(df, core_filename = "occurrence.txt"),
+               meta_path, useBytes = TRUE)
+    writeLines(build_eml_xml(df, metadata = metadata),
+               eml_path, useBytes = TRUE)
+
+    files <- c(core_path, meta_path, eml_path)
+    for (nm in names(extras)) {
+        src <- extras[[nm]]
+        if (length(src) == 1L && file.exists(src)) {
+            dst <- file.path(tmpdir, nm)
+            file.copy(src, dst, overwrite = TRUE)
+            files <- c(files, dst)
+        }
+    }
+
+    zip::zipr(zipfile = zip_path, files = files)
+    invisible(zip_path)
 }
 
 #' Validate and clean scientific names
