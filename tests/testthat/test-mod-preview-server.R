@@ -123,3 +123,18 @@ testthat::test_that("mod_preview_server accepts name review payload reactive wit
         }
     )
 })
+
+testthat::test_that("coordinate masking defaults to not_sensitive (deliberate opt-in)", {
+    shiny::testServer(
+        mod_preview_server,
+        args = list(
+            mapped_data_r = shiny::reactive(NULL),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            testthat::expect_identical(
+                sensitive_generalization_rv(), "not_sensitive"
+            )
+        }
+    )
+})

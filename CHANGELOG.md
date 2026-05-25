@@ -7,6 +7,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-05-21
+
+### Fixed
+- **Verbatim coordinate fields no longer carry prose on masked rows.** `mask_sensitive_coordinates()` was writing the `informationWithheld` sentence into `verbatimLatitude` / `verbatimLongitude` / `verbatimCoordinates` for sensitive species — invalid Darwin Core, since verbatim coordinate fields must hold coordinates or nothing. Those three fields are now blanked on masked rows; the locality/remarks leak fields (`footprintWKT`, `locality`, `verbatimLocality`, `georeferenceRemarks`, `locationRemarks`) still receive the replacement wording (Chapman sec. 3 anti-reversal). See ADR-098.
+- **`informationWithheld` uses the pipe multi-value separator.** The PT/EN strings joined two clauses with `/` and `;`; they now join with ` | `, matching Saira's multi-value separator convention. Key `sensitive_information_withheld` in `i18n.json`.
+- **Private real-coordinates CSV no longer mojibake.** The `sensitive_real_coords_*.csv` companion file had a corrupted comment header (`# Arquivo privado â€" ...`). `writeLines()` was wrapping the content in `enc2utf8()`, which double-encoded the `tr()` string; removed the wrapper so the UTF-8 bytes are written raw via `useBytes = TRUE`, matching the sibling mapping-guide file.
+- **Infinite re-render loop when typing the `datasetName`.** The mapping `renderUI` (`output$mapping_ui`) depended reactively on `rv$map_meta`, which the custom-value observers rewrite on every keystroke — re-creating every input widget and feeding a loop that froze the app. The `rv$map_meta` read in the card builder is now isolated, so typing a custom value no longer re-renders the field grid.
+
+### Changed
+- **Coordinate masking is now a deliberate opt-in, not the default** (ADR-098, supersedes the "masking on by default" stance of ADR-092/094). The Preview-tab masking panel defaults to "Not sensitive — publish unmasked". The "Recommended" badge on the Extreme tier was removed — no masking level is recommended by default — along with the `sensitive_card_recommended` key. The "Not sensitive" card lost its warning styling (alert icon + `--warning` palette) and now reads as the calm default; the High and Extreme cards instead show a soft-carmim policy-impact alert when selected. New i18n keys `sensitive_panel_guidance` (standing callout) and `sensitive_policy_warning` (in-card alert); `sensitive_panel_lead` reworded. Rationale: generalized coordinates can mislead future analyses and public conservation policy, so masking must be a conscious decision for threatened species. CSS in `17-sensitive-panel.css`; bundle regenerated (zero new `!important`, count holds at 11).
+
 ## [0.3.0] - 2026-05-21
 
 ### Added

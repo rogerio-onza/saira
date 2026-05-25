@@ -215,9 +215,10 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
         })
 
         # Chapman 2020 generalization level (single global tier). Default
-        # "low" (0.001 deg) per the user-facing recommendation. "not_sensitive"
-        # is the explicit no-op (replaces the old "Disable masking" checkbox).
-        sensitive_generalization_rv <- shiny::reactiveVal("low")
+        # "not_sensitive": masking is a deliberate opt-in exception, never the
+        # default, since generalized coordinates can mislead future analyses
+        # and conservation policy. The researcher must choose to mask.
+        sensitive_generalization_rv <- shiny::reactiveVal("not_sensitive")
 
         shiny::observeEvent(input$sensitive_generalization, {
             val <- as.character(input$sensitive_generalization)
@@ -286,7 +287,9 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                 )
             }
 
-            card_label <- function(level, recommended = FALSE) {
+            # `warn` adds an in-card policy-impact alert; set for the
+            # aggressive tiers (high/extreme) only while one is selected.
+            card_label <- function(level, warn = FALSE) {
                 g <- sensitive_generalization_grid(level)
                 deg_txt <- sprintf(
                     "%s\u00b0",
@@ -296,21 +299,11 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                     "~%s km",
                     format(round(g * 111.32, 1), trim = TRUE)
                 )
-                top <- shiny::div(
-                    class = "sp-card-top",
-                    shiny::span(
+                shiny::HTML(as.character(shiny::tagList(
+                    shiny::div(
                         class = "sp-card-num",
                         tr(paste0("sensitive_card_num_", level), lang)
                     ),
-                    if (recommended) {
-                        shiny::span(
-                            class = "sp-badge sp-badge-recommended",
-                            tr("sensitive_card_recommended", lang)
-                        )
-                    }
-                )
-                shiny::HTML(as.character(shiny::tagList(
-                    top,
                     shiny::div(
                         class = "sp-card-name",
                         tr(paste0("sensitive_card_name_", level), lang)
@@ -323,24 +316,31 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                     shiny::div(
                         class = "sp-card-impact",
                         tr(paste0("sensitive_card_impact_", level), lang)
-                    )
+                    ),
+                    if (warn) {
+                        shiny::div(
+                            class = "sp-card-warning",
+                            tr("sensitive_policy_warning", lang)
+                        )
+                    }
                 )))
             }
 
-            optout_label <- shiny::HTML(as.character(shiny::tagList(
-                shiny::tags$i(
-                    class = "fa-solid fa-triangle-exclamation",
-                    `aria-hidden` = "true"
-                ),
+            optout_label <- shiny::HTML(as.character(
                 shiny::span(
                     class = "sp-optout-text",
                     tr("sensitive_card_optout", lang)
                 )
-            )))
+            ))
 
+            aggressive_levels <- c("high", "extreme")
             choice_names <- c(
                 lapply(active_levels, function(lv) {
-                    card_label(lv, recommended = identical(lv, "extreme"))
+                    card_label(
+                        lv,
+                        warn = lv %in% aggressive_levels &&
+                            identical(lv, current)
+                    )
                 }),
                 list(optout_label)
             )
@@ -369,6 +369,10 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                 shiny::p(
                     class = "sp-lead",
                     tr("sensitive_panel_lead", lang)
+                ),
+                shiny::div(
+                    class = "alert alert-info",
+                    tr("sensitive_panel_guidance", lang)
                 ),
                 shiny::div(
                     class = "sp-radio-wrap",
@@ -900,13 +904,13 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                             )
                             real_csv <- readr::format_csv(masked$real, na = "")
                             writeLines(
-                                enc2utf8(c(
+                                c(
                                     paste0(
                                         "# ",
                                         tr("sensitive_real_coords_notice", lang_r())
                                     ),
                                     real_csv
-                                )),
+                                ),
                                 real_path,
                                 useBytes = TRUE
                             )

@@ -297,16 +297,34 @@ testthat::test_that("mask scrubs coordinate-leaking text on sensitive rows", {
     local_sensitive_fixture(c("Panthera onca", "Hippocampus reidi"))
     df <- make_df()
     df$locality <- c("exact spot", "town", "here", "river bend")
-    df$verbatimLatitude <- c("23 33 S", "", "", "5 07 S")
+    df$verbatimLatitude <- c("23 33 S", "10 00 N", "", "5 07 S")
+    df$verbatimLongitude <- c("46 39 W", "20 00 E", "", "39 59 W")
+    df$verbatimCoordinates <- c("23 33 S 46 39 W", "", "", "5 07 S 39 59 W")
     res <- saira:::mask_sensitive_coordinates(df, lang = "en")
     iw <- res$masked$informationWithheld[1]
 
+    # Locality-type leak fields carry the replacement wording.
     testthat::expect_equal(res$masked$locality[1], iw)
-    testthat::expect_equal(res$masked$verbatimLatitude[4], iw)
-    # Non-sensitive row keeps its text.
+    # Verbatim coordinate fields are blanked, never prose (Darwin Core).
+    testthat::expect_equal(res$masked$verbatimLatitude[4], "")
+    testthat::expect_equal(res$masked$verbatimLongitude[4], "")
+    testthat::expect_equal(res$masked$verbatimCoordinates[4], "")
+    # Non-sensitive row keeps its text untouched.
     testthat::expect_equal(res$masked$locality[2], "town")
+    testthat::expect_equal(res$masked$verbatimLatitude[2], "10 00 N")
     # An absent leak column is not fabricated.
     testthat::expect_false("footprintWKT" %in% names(res$masked))
+})
+
+testthat::test_that("informationWithheld uses the pipe multi-value separator", {
+    local_sensitive_fixture("Panthera onca")
+    res <- saira:::mask_sensitive_coordinates(
+        make_df(), generalization = "high", lang = "en"
+    )
+    iw <- res$masked$informationWithheld[1]
+
+    testthat::expect_true(grepl(" | ", iw, fixed = TRUE))
+    testthat::expect_false(grepl(";", iw, fixed = TRUE))
 })
 
 testthat::test_that("decisions override: unmark MMA, mark non-MMA", {

@@ -6600,6 +6600,12 @@ body.vn-review-open .modal-backdrop.show {
     font-size: var(--text-sm);
     color: var(--text-muted);
     line-height: var(--leading-normal);
+    margin: 0 0 var(--space-3) 0;
+}
+
+/* Standing guidance callout reuses the design-system .alert component
+   (06-alerts.css); only the spacing below it is panel-scoped. */
+.sensitive-panel .alert {
     margin: 0 0 var(--space-4) 0;
 }
 
@@ -6700,13 +6706,6 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 /* Card content ------------------------------------------------------ */
-.sensitive-panel .sp-card-top {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-2);
-    min-height: 1.25rem;
-}
-
 .sensitive-panel .sp-card-num {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
@@ -6750,26 +6749,23 @@ body.vn-review-open .modal-backdrop.show {
     margin-top: auto;
 }
 
-/* "Recomendada" badge — absolutely positioned in the card's top-right
-   corner so it never displaces sibling content. */
-.sensitive-panel .sp-badge-recommended {
-    position: absolute;
-    top: var(--space-3);
-    right: var(--space-3);
-    font-family: var(--font-mono);
+/* Policy-impact alert inside an aggressive (high/extreme) card while it is
+   the selected level. Soft carmim — a deliberate caution, never a vivid red. */
+.sensitive-panel .sp-card-warning {
+    margin-top: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--error-border);
+    background: var(--error-bg);
+    color: var(--error);
+    font-family: var(--font-serif);
     font-size: var(--text-xs);
-    padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
-    background: rgba(0, 168, 107, 0.14);
-    color: var(--success);
-    letter-spacing: 0.02em;
+    line-height: var(--leading-normal);
 }
 
-/* Opt-out (5th radio) — demoted, dashed, single line, muted color ---
-   Default state uses --text-muted to harmonize with the design system
-   (the dashed border + triangle icon already carry the "advanced"
-   meaning). The selected state escalates to --warning to flag the
-   gravity of the choice. */
+/* Opt-out (5th radio) — demoted below the grid, dashed border as a layout
+   cue. It is the default choice, so its selected state stays calm and
+   neutral; the gravity now lives on the aggressive masking cards. */
 .sensitive-panel .radio:last-child {
     grid-column: 1 / -1;
     margin-top: var(--space-2);
@@ -6805,21 +6801,12 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sensitive-panel .radio:last-child > label > input[type="radio"]:checked + span {
-    background: rgba(255, 162, 4, 0.10);
-    border-color: var(--warning);
+    background: var(--hover-bg);
+    border-color: var(--text-muted);
     border-style: solid;
-    color: var(--warning);
+    color: var(--text-primary);
     box-shadow: none;
     transform: none;
-}
-
-.sensitive-panel .radio:last-child .fa-triangle-exclamation {
-    color: var(--text-muted);
-    transition: color var(--transition-base);
-}
-
-.sensitive-panel .radio:last-child > label > input[type="radio"]:checked + span .fa-triangle-exclamation {
-    color: var(--warning);
 }
 
 .sensitive-panel .sp-optout-text {

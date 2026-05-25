@@ -1448,8 +1448,8 @@
     "en": "Coordinates of a %s species (MMA national red list) generalized to %s degree (~%s km)."
   },
   "sensitive_information_withheld": {
-    "pt": "Coordenadas precisas omitidas por se tratar de espécie sensível/ameaçada; disponíveis com o publicador dos dados mediante solicitação.",
-    "en": "Precise coordinates withheld for a sensitive/threatened species; available from the data publisher on request."
+    "pt": "Coordenadas precisas omitidas por se tratar de espécie ameaçada | Disponíveis com o publicador dos dados mediante solicitação.",
+    "en": "Precise coordinates withheld for a threatened species | Available from the data publisher on request."
   },
   "sensitive_real_coords_notice": {
     "pt": "Arquivo privado — coordenadas reais das espécies sensíveis. Não publicar no IPT/GBIF; uso exclusivo de controle do pesquisador.",
@@ -1480,8 +1480,8 @@
     "en": "Generalization level (Chapman 2020)"
   },
   "sensitive_gen_extreme": {
-    "pt": "Categoria 1 — Extrema (1°, recomendado)",
-    "en": "Category 1 — Extreme (1°, recommended)"
+    "pt": "Categoria 1 — Extrema (1°)",
+    "en": "Category 1 — Extreme (1°)"
   },
   "sensitive_gen_high": {
     "pt": "Categoria 2 — Alta (0.1°)",
@@ -1520,8 +1520,16 @@
     "en": "%s record(s)"
   },
   "sensitive_panel_lead": {
-    "pt": "Defina a precisão das coordenadas publicadas para espécies ameaçadas (Chapman 2020, Tabela 7).",
-    "en": "Set the published-coordinate precision for threatened species (Chapman 2020, Table 7)."
+    "pt": "O mascaramento aplica-se apenas a espécies ameaçadas. Por padrão, publique as coordenadas sem mascaramento.",
+    "en": "Masking applies only to threatened species. By default, publish coordinates without masking."
+  },
+  "sensitive_panel_guidance": {
+    "pt": "Mascarar coordenadas não deve ser a opção padrão — coordenadas generalizadas podem influenciar análises e políticas públicas de conservação futuras. Avalie caso a caso se a generalização é realmente necessária.",
+    "en": "Masking coordinates should not be the default choice — generalized coordinates can influence future analyses and public conservation policy. Evaluate case by case whether generalization is truly necessary."
+  },
+  "sensitive_policy_warning": {
+    "pt": "Atenção: a generalização forte de coordenadas pode comprometer análises e influenciar políticas públicas de conservação futuras. Use este nível apenas em situações específicas e justificadas.",
+    "en": "Caution: strong coordinate generalization can compromise analyses and influence future public conservation policy. Use this level only in specific, justified situations."
   },
   "sensitive_card_num_extreme": {
     "pt": "Categoria 1",
@@ -1570,10 +1578,6 @@
   "sensitive_card_impact_low": {
     "pt": "Área local",
     "en": "Local area"
-  },
-  "sensitive_card_recommended": {
-    "pt": "Recomendada",
-    "en": "Recommended"
   },
   "sensitive_card_optout": {
     "pt": "Não sensível — publicar sem mascaramento",

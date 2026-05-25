@@ -338,13 +338,18 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     )
     masked$informationWithheld[idx] <- iw_text
 
-    # Replace text that could reverse the generalization (Chapman sec. 3:
-    # restricted fields carry replacement wording, not a blank/null).
-    leak_cols <- c("verbatimLatitude", "verbatimLongitude",
-                   "verbatimCoordinates", "footprintWKT", "locality",
-                   "verbatimLocality", "georeferenceRemarks",
-                   "locationRemarks")
-    for (col in intersect(leak_cols, names(masked))) {
+    # Scrub fields that could reverse the generalization. Verbatim coordinate
+    # fields must be blank (Darwin Core forbids prose there); the remaining
+    # locality/remarks fields carry replacement wording (Chapman sec. 3).
+    blank_cols <- c("verbatimLatitude", "verbatimLongitude",
+                    "verbatimCoordinates")
+    scrub_cols <- c("footprintWKT", "locality", "verbatimLocality",
+                    "georeferenceRemarks", "locationRemarks")
+    for (col in intersect(blank_cols, names(masked))) {
+        masked[[col]] <- as.character(masked[[col]])
+        masked[[col]][idx] <- ""
+    }
+    for (col in intersect(scrub_cols, names(masked))) {
         masked[[col]] <- as.character(masked[[col]])
         masked[[col]][idx] <- iw_text
     }

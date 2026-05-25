@@ -1212,7 +1212,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                 }
                                 current_val <- sanitize_map_selection(term, current_val)
                                 is_mapped <- is_field_mapped(term, current_val, input)
-                                field_meta <- rv$map_meta[[term]]
+                                # Isolated: custom-value observers write
+                                # rv$map_meta on every keystroke; a reactive
+                                # read here would re-render and re-create the
+                                # inputs, feeding an infinite loop.
+                                field_meta <- shiny::isolate(rv$map_meta[[term]])
                                 if (is.null(field_meta)) {
                                     field_meta <- default_meta()
                                 }
