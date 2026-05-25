@@ -10,7 +10,7 @@
 #' @return A Shiny UI object
 #' @export
 app_ui <- function() {
-    css_version <- as.integer(Sys.time())
+    css_version <- as.character(utils::packageVersion("saira"))
 
     shiny::tagList(
         shiny::tags$head(
@@ -39,7 +39,7 @@ app_ui <- function() {
                 src = paste0("www/help-accordion.js?v=", css_version)
             ),
             shiny::tags$script(
-                src = "https://unpkg.com/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js"
+                src = paste0("www/vendor/lottie/lottie-player.js?v=", css_version)
             )
         ),
         bslib::page_navbar(
