@@ -7,6 +7,19 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-05-25
+
+### Added
+- **GitHub Actions CI workflow** at `.github/workflows/R-CMD-check.yml`. Runs on push and pull-request to `main`: sets up R release, installs system + R dependencies (handles `sf`'s GDAL/GEOS/PROJ and the rOpenSci R-universe for `florabr`/`faunabr`), runs `rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"))`, then runs the in-package test suite via `testthat::test_local()` (E2E gated off because no display server in CI).
+- **PR template** at `.github/pull_request_template.md` so `gh pr create` auto-populates the Summary / Why / How-to-test / Checklist sections (mirrors `CONTRIBUTING.md`).
+- **`release_gate.R` exposed for CI** via `.gitignore` exception. The rest of `scripts/` remains private; only the public release-gate script ships.
+- **Performance regression tests for DwC-A export bundle** in `tests/testthat/test-performance-regression.R`: 20k rows under 3s, 100k rows under 12s (both gated by `RUN_PERF=true`).
+- `profvis (>= 0.3.0)` in `DESCRIPTION` Suggests for ad-hoc profiling.
+
+### Notes
+- After merging, enable branch protection on `main` in GitHub Settings → Branches: require pull request before merging + require the `R-CMD-check` workflow to pass before merging.
+- Pre-existing perf budgets at lines 88 / 121 / 137 of `test-performance-regression.R` are over budget on the maintainer's WSL hardware; they remain gated by `RUN_PERF=true` and do not affect CI. Budget tuning is out of scope for this PR.
+
 ## [0.4.0] - 2026-05-25
 
 ### Added
