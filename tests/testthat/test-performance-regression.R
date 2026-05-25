@@ -158,3 +158,60 @@ testthat::test_that("Performance regression: dynamicProperties JSON over 100k x 
     testthat::expect_length(out, n)
     testthat::expect_lt(elapsed, 0.5)
 })
+
+# DwC-A bundle assembly. Targets:
+# - 20k rows: under 3 seconds (interactive feel for the median dataset).
+# - 100k rows: under 12 seconds (publishable cap for the largest dataset
+#   class Saira is intended to handle).
+
+build_dwca_perf_dataset <- function(rows_n) {
+    set.seed(20260525L)
+    data.frame(
+        occurrenceID = paste0("urn:uuid:", ids::uuid(n = rows_n)),
+        scientificName = sample(
+            c("Panthera onca", "Leopardus pardalis", "Tapirus terrestris"),
+            rows_n,
+            replace = TRUE
+        ),
+        eventDate = format(
+            as.Date("2000-01-01") + sample.int(9000, rows_n, replace = TRUE),
+            "%Y-%m-%d"
+        ),
+        decimalLatitude  = runif(rows_n, -33, 5),
+        decimalLongitude = runif(rows_n, -74, -34),
+        basisOfRecord = "HumanObservation",
+        countryCode = "BR",
+        geodeticDatum = "EPSG:4326",
+        institutionCode = "MZUSP",
+        catalogNumber = sprintf("%07d", seq_len(rows_n)),
+        stringsAsFactors = FALSE
+    )
+}
+
+testthat::test_that("Performance regression: DwC-A bundle for 20k rows under 3s", {
+    df <- build_dwca_perf_dataset(20000L)
+    zip_path <- tempfile(fileext = ".zip")
+    on.exit(unlink(zip_path), add = TRUE)
+
+    elapsed <- unname(system.time({
+        build_dwca_bundle(df, zip_path, metadata = list(title = "Perf 20k"))
+    })[["elapsed"]])
+
+    testthat::expect_lt(elapsed, 3)
+    testthat::expect_true(file.exists(zip_path))
+    files <- zip::zip_list(zip_path)$filename
+    testthat::expect_true(all(c("occurrence.txt", "meta.xml", "eml.xml") %in% files))
+})
+
+testthat::test_that("Performance regression: DwC-A bundle for 100k rows under 12s", {
+    df <- build_dwca_perf_dataset(100000L)
+    zip_path <- tempfile(fileext = ".zip")
+    on.exit(unlink(zip_path), add = TRUE)
+
+    elapsed <- unname(system.time({
+        build_dwca_bundle(df, zip_path, metadata = list(title = "Perf 100k"))
+    })[["elapsed"]])
+
+    testthat::expect_lt(elapsed, 12)
+    testthat::expect_true(file.exists(zip_path))
+})
