@@ -14,18 +14,13 @@ app_ui <- function() {
 
     shiny::tagList(
         shiny::tags$head(
-            shiny::tags$link(rel = "preconnect", href = "https://fonts.googleapis.com"),
-            shiny::tags$link(rel = "preconnect", href = "https://fonts.gstatic.com", crossorigin = NA),
-            shiny::tags$link(rel = "preconnect", href = "https://cdnjs.cloudflare.com"),
             shiny::tags$link(
                 rel = "stylesheet",
-                href = "https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500;1,8..60,600&family=Space+Mono:ital@0;1&display=swap"
+                href = paste0("www/vendor/fonts/source-fonts.css?v=", css_version)
             ),
             shiny::tags$link(
                 rel = "stylesheet",
-                href = "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css",
-                integrity = "sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==",
-                crossorigin = "anonymous"
+                href = paste0("www/vendor/fontawesome/css/all.min.css?v=", css_version)
             ),
             shiny::tags$link(
                 rel = "stylesheet",

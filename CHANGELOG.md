@@ -7,10 +7,25 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-25
+
+### Added
+- **Offline-first UI**: Source Serif 4 and Space Mono web fonts are now vendored at `inst/app/www/vendor/fonts/` (latin + latin-ext subsets only — 8 woff2 files, ~440KB). FontAwesome 6.5.1 is vendored at `inst/app/www/vendor/fontawesome/` (CSS + 4 woff2 files; TTF fallbacks dropped since every modern browser supports woff2 — ~310KB). Saira now renders with full typography and icons without any internet connection. Combined vendor footprint: ~976KB.
+- New test `test-app-ui-fonts.R` asserts the UI references local paths and contains zero CDN references (offline-first guardrail).
+
+### Changed
+- `R/app_ui.R`: removed all `<link>` references to `fonts.googleapis.com`, `cdnjs.cloudflare.com`, and the corresponding `<link rel="preconnect">` hints. Replaced with local stylesheet links to `www/vendor/fonts/source-fonts.css` and `www/vendor/fontawesome/css/all.min.css`.
+- `DESCRIPTION` Imports: `shiny (>= 1.7.0)` bumped to `shiny (>= 1.8.1)` so the package can adopt `shiny::ExtendedTask` in a follow-up PR. renv-pinned environments are unaffected.
+- Google Fonts CSS rewritten to use relative filenames (was `https://fonts.gstatic.com/...`); FontAwesome CSS stripped of `.ttf` fallback `url()` clauses to match the trimmed webfonts directory.
+
+### Notes
+- **ExtendedTask async migration deferred** to a follow-up PR. The offline-first asset bundling is the bigger user-facing benefit (the app works in air-gapped / low-bandwidth juror environments); wrapping the export and `validate_coords` handlers in `ExtendedTask` is a substantive module refactor that warrants its own focused PR. The Shiny version bump in this PR enables that work without forcing a dependency change later.
+- Saira loads ~976KB of vendor assets on the first visit, then 0KB on subsequent visits (browser cache + the v0.5.0 cache-buster from PR-1). The previous CDN approach was ~0KB to ship but ~1MB+ per first visit from third-party origins.
+
 ## [0.4.1] - 2026-05-25
 
 ### Added
-- **GitHub Actions CI workflow** at `.github/workflows/R-CMD-check.yml`. Runs on push and pull-request to `main`: sets up R release, installs system + R dependencies (handles `sf`'s GDAL/GEOS/PROJ and the rOpenSci R-universe for `florabr`/`faunabr`), runs `rcmdcheck::rcmdcheck(args = c("--no-manual", "--as-cran"))`, then runs the in-package test suite via `testthat::test_local()` (E2E gated off because no display server in CI).
+- **GitHub Actions CI workflow** at `.github/workflows/R-CMD-check.yml`. Runs on push and pull-request to `main`: sets up R release, installs Imports-only via pak (Suggests including `rnaturalearthhires` from rOpenSci R-universe are added explicitly through `extra-packages`), then runs `rcmdcheck::rcmdcheck(args = c("--no-manual"))`.
 - **PR template** at `.github/pull_request_template.md` so `gh pr create` auto-populates the Summary / Why / How-to-test / Checklist sections (mirrors `CONTRIBUTING.md`).
 - **`release_gate.R` exposed for CI** via `.gitignore` exception. The rest of `scripts/` remains private; only the public release-gate script ships.
 - **Performance regression tests for DwC-A export bundle** in `tests/testthat/test-performance-regression.R`: 20k rows under 3s, 100k rows under 12s (both gated by `RUN_PERF=true`).

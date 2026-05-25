@@ -2,20 +2,20 @@
 # Author: Codex
 # Date: 2026-02-24
 
-testthat::test_that("app_ui declares design-v7 Google Fonts and cache-busted custom.css", {
+testthat::test_that("app_ui references local vendored fonts and cache-busted custom.css", {
     body_text <- paste(deparse(body(app_ui)), collapse = "\n")
 
     testthat::expect_true(
-        grepl("family=Source\\+Serif\\+4", body_text, perl = TRUE),
-        info = "Missing Source Serif 4 Google Fonts link in app_ui output"
+        grepl("www/vendor/fonts/source-fonts\\.css", body_text, perl = TRUE),
+        info = "Missing local Source Serif 4 / Space Mono CSS link in app_ui output"
     )
     testthat::expect_true(
-        grepl("opsz,wght@", body_text, perl = TRUE),
-        info = "Source Serif 4 import should include optical size axis"
+        grepl("www/vendor/fontawesome/css/all\\.min\\.css", body_text, perl = TRUE),
+        info = "Missing local FontAwesome CSS link in app_ui output"
     )
-    testthat::expect_true(
-        grepl("family=Space\\+Mono", body_text, perl = TRUE),
-        info = "Missing Space Mono Google Fonts link in app_ui output"
+    testthat::expect_false(
+        grepl("fonts\\.googleapis\\.com|cdnjs\\.cloudflare\\.com|unpkg\\.com", body_text, perl = TRUE),
+        info = "app_ui should not reference any CDN (offline-first per ADR-100)"
     )
     testthat::expect_true(
         grepl("www/custom\\.css\\?v=", body_text, perl = TRUE),
