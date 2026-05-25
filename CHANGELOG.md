@@ -7,6 +7,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-05-25
+
+### Added
+- **`apply_geodetic_datum()`** in `R/utils_export.R` populates `geodeticDatum = "EPSG:4326"` on export for rows with finite, in-range `decimalLatitude`/`decimalLongitude` and no pre-existing datum. Rows with invalid coordinates or a user-supplied datum are untouched.
+- **`convert_country_code_to_alpha2()`** in `R/utils_export.R` performs the alpha-3 → alpha-2 conversion at the export boundary. Saira's internal pipeline keeps `countryCode` in ISO alpha-3 ("BRA") so `CoordinateCleaner::cc_coun()` continues to work; the DwC export now emits the alpha-2 form ("BR") that Darwin Core requires.
+- **Vendored Lottie player JS** at `inst/app/www/vendor/lottie/lottie-player.js`. The Home-tab splash animation no longer depends on the `unpkg.com` CDN.
+- **PR workflow documentation**: new `.claude/rules/pull-request-workflow.md` (standing rules for Claude) and `CONTRIBUTING.md` (public-facing PR guide). `.claude/CLAUDE.md` references the rule under "Always".
+
+### Changed
+- **CSS/JS cache-buster** in `R/app_ui.R` now uses `utils::packageVersion("saira")` instead of `as.integer(Sys.time())`. Cache invalidates on release rather than per-session — see ADR-027 for the historical rationale; the trade-off (no automatic bust on intra-version CSS rebuilds during dev) is acceptable since devs hard-refresh anyway and `data-raw/build_css.R` is an explicit step.
+- `process_for_export()` now calls `apply_geodetic_datum()` and `convert_country_code_to_alpha2()` between license abbreviation and canonical column ordering.
+- **README** wording: "Darwin Core Archive Export" softened to "Darwin Core export bundle" with a note that the formal DwC-A (meta.xml + eml.xml) packaging lands in v0.4.0. Camera-Trap line now marks `camtrapdp` as an explicit optional install.
+
+### Fixed
+- **Stale CI claim removed from CHANGELOG v0.2.0**: the entry `- **CI**: .github/workflows/test.yml with GitHub Actions.` (former line 350) was inaccurate — `.github/workflows/` was never delivered. Workflow lands in v0.4.1.
+
 ## [0.3.1] - 2026-05-21
 
 ### Fixed
@@ -347,7 +363,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Coverage tests**: `test-mod-wiki-server.R` (5 tests), `test-mod-help-server.R` (8 tests), `test-mod-upload-server.R` expanded from 1 to 7 tests.
 - **E2E with shinytest2**: the `test-e2e-flows.R` suite with 4 flows (upload+mapping, wiki, help+search, language switch).
 - **Release gate**: `scripts/release_gate.R` with 5 steps (unit, CSS, i18n, E2E, R CMD check).
-- **CI**: `.github/workflows/test.yml` with GitHub Actions.
 - `R/utils_common.R` with `is_blank_value()` extracted from `utils_mapping.R` (DRY).
 
 ### Changed

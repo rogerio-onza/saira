@@ -149,6 +149,14 @@ process_for_export <- function(df) {
     # Normalize known Creative Commons license URLs to short labels
     df <- abbreviate_license_column(df)
 
+    # Populate geodeticDatum for rows with valid lat/lon (DwC GBIF expectation).
+    df <- apply_geodetic_datum(df)
+
+    # Convert countryCode from internal ISO alpha-3 to DwC-required alpha-2.
+    # Internal pipeline keeps alpha-3 for CoordinateCleaner compatibility;
+    # this is the single export-time boundary that emits alpha-2.
+    df <- convert_country_code_to_alpha2(df)
+
     # Reorder columns to canonical DwC sequence (occurrenceID first,
     # scientificName leading the Taxon block, etc.)
     df <- order_columns_dwc_canonical(df)
@@ -623,6 +631,73 @@ add_occurrence_ids <- function(df) {
     }
 
     return(df)
+}
+
+#' Populate geodeticDatum for rows with valid coordinates
+#'
+#' Darwin Core records with `decimalLatitude`/`decimalLongitude` should declare
+#' the coordinate reference system in `geodeticDatum`. Saira's pipeline assumes
+#' WGS84 throughout, so any row with finite, in-range coordinates and no
+#' pre-existing `geodeticDatum` gets `"EPSG:4326"`. Rows without valid
+#' coordinates or with a user-supplied datum are left untouched (DwC convention
+#' is to omit rather than write "unknown").
+#'
+#' @param df Data frame.
+#' @return Data frame with `geodeticDatum` populated where appropriate.
+#' @export
+apply_geodetic_datum <- function(df) {
+    if (!"decimalLatitude" %in% names(df) || !"decimalLongitude" %in% names(df)) {
+        return(df)
+    }
+
+    lat <- suppressWarnings(as.numeric(df$decimalLatitude))
+    lon <- suppressWarnings(as.numeric(df$decimalLongitude))
+    valid <- is.finite(lat) & is.finite(lon) &
+        lat >= -90 & lat <= 90 & lon >= -180 & lon <= 180
+
+    if (!"geodeticDatum" %in% names(df)) {
+        df$geodeticDatum <- NA_character_
+    }
+    current <- as.character(df$geodeticDatum)
+    blank <- is.na(current) | !nzchar(trimws(current))
+
+    df$geodeticDatum[valid & blank] <- "EPSG:4326"
+    df
+}
+
+#' Convert countryCode to ISO 3166-1 alpha-2 for DwC export
+#'
+#' Saira's internal pipeline keeps `countryCode` in ISO alpha-3 ("BRA") for
+#' compatibility with `CoordinateCleaner::cc_coun()`. Darwin Core's
+#' `countryCode` term requires alpha-2 ("BR"). This helper converts alpha-3
+#' values to alpha-2 at the export boundary. Values that are already 2
+#' characters are treated as alpha-2 and preserved unchanged. Unconvertible
+#' values become `NA` (GBIF convention for unknown).
+#'
+#' @param df Data frame.
+#' @return Data frame with `countryCode` (if present) converted to alpha-2.
+#' @export
+convert_country_code_to_alpha2 <- function(df) {
+    if (!"countryCode" %in% names(df)) return(df)
+    if (!requireNamespace("countrycode", quietly = TRUE)) return(df)
+
+    raw <- as.character(df$countryCode)
+    trimmed <- trimws(raw)
+    trimmed[is.na(trimmed) | !nzchar(trimmed)] <- NA_character_
+
+    needs_conv <- !is.na(trimmed) & nchar(trimmed) == 3L
+    if (any(needs_conv)) {
+        converted <- countrycode::countrycode(
+            sourcevar = trimmed[needs_conv],
+            origin = "iso3c",
+            destination = "iso2c",
+            warn = FALSE
+        )
+        trimmed[needs_conv] <- converted
+    }
+
+    df$countryCode <- trimmed
+    df
 }
 
 #' Validate and clean scientific names

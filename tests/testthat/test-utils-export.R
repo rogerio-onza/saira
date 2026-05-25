@@ -82,6 +82,93 @@ testthat::test_that("add_occurrence_ids preserves existing values and fills miss
     testthat::expect_true(all(out$occurrenceID[2:3] != "keep-id"))
 })
 
+testthat::test_that("apply_geodetic_datum populates EPSG:4326 only for valid coordinates", {
+    df <- data.frame(
+        decimalLatitude = c(-23.55, NA_real_, 95, 0),
+        decimalLongitude = c(-46.63, -46.63, 100, 0),
+        stringsAsFactors = FALSE
+    )
+
+    out <- apply_geodetic_datum(df)
+
+    testthat::expect_true("geodeticDatum" %in% names(out))
+    testthat::expect_identical(
+        out$geodeticDatum,
+        c("EPSG:4326", NA_character_, NA_character_, "EPSG:4326")
+    )
+})
+
+testthat::test_that("apply_geodetic_datum preserves user-supplied datum", {
+    df <- data.frame(
+        decimalLatitude = c(-23.55, -10.0),
+        decimalLongitude = c(-46.63, -50.0),
+        geodeticDatum = c("EPSG:31983", ""),
+        stringsAsFactors = FALSE
+    )
+
+    out <- apply_geodetic_datum(df)
+
+    testthat::expect_identical(
+        out$geodeticDatum,
+        c("EPSG:31983", "EPSG:4326")
+    )
+})
+
+testthat::test_that("apply_geodetic_datum is no-op when coordinate columns absent", {
+    df <- data.frame(scientificName = c("A", "B"), stringsAsFactors = FALSE)
+    testthat::expect_identical(apply_geodetic_datum(df), df)
+})
+
+testthat::test_that("convert_country_code_to_alpha2 converts alpha-3 and preserves alpha-2", {
+    df <- data.frame(
+        countryCode = c("BRA", "BR", "USA", "AR"),
+        stringsAsFactors = FALSE
+    )
+
+    out <- convert_country_code_to_alpha2(df)
+
+    testthat::expect_identical(
+        out$countryCode,
+        c("BR", "BR", "US", "AR")
+    )
+})
+
+testthat::test_that("convert_country_code_to_alpha2 returns NA for unconvertible 3-char values", {
+    df <- data.frame(
+        countryCode = c("BRA", "XYZ", "", NA_character_, "  "),
+        stringsAsFactors = FALSE
+    )
+
+    out <- convert_country_code_to_alpha2(df)
+
+    testthat::expect_identical(
+        out$countryCode,
+        c("BR", NA_character_, NA_character_, NA_character_, NA_character_)
+    )
+})
+
+testthat::test_that("convert_country_code_to_alpha2 is no-op when countryCode column absent", {
+    df <- data.frame(scientificName = c("A", "B"), stringsAsFactors = FALSE)
+    testthat::expect_identical(convert_country_code_to_alpha2(df), df)
+})
+
+testthat::test_that("process_for_export emits alpha-2 countryCode and geodeticDatum on valid coords", {
+    df <- data.frame(
+        scientificName = c("Tangara fastuosa", "Panthera onca"),
+        eventDate = c("2024-01-15", "2024-02-20"),
+        decimalLatitude = c(-8.05, -3.10),
+        decimalLongitude = c(-34.88, -60.02),
+        countryCode = c("BRA", "BRA"),
+        basisOfRecord = c("HumanObservation", "HumanObservation"),
+        stringsAsFactors = FALSE
+    )
+
+    out <- process_for_export(df)
+
+    testthat::expect_identical(out$countryCode, c("BR", "BR"))
+    testthat::expect_identical(out$geodeticDatum, c("EPSG:4326", "EPSG:4326"))
+})
+
 testthat::test_that("fix_dates_to_iso delegates to parser and preserves raw invalid values", {
     input_dates <- c(
         "2023-12-25",

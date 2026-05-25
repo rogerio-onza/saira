@@ -8,11 +8,11 @@
 
 -   **Bilingual Interface**: Supporting both Portuguese (PT-BR) and English (EN-US).
 -   **CSV/Excel Support**: Flexible data ingestion for common biodiversity formats.
--   **Camera-Trap Data**: Import Camtrap DP packages and Wildlife Insights exports, converted to Darwin Core.
+-   **Camera-Trap Data (optional)**: Import Camtrap DP packages and Wildlife Insights exports, converted to Darwin Core. Requires `install.packages("camtrapdp")` — kept as an optional dependency since `camtrapdp` pulls heavy system libraries.
 -   **Interactive Mapping**: Intuitive UI (Rostrum Engine) for mapping local columns to Darwin Core terms.
 -   **Taxonomic Verification**: Integration with taxonomic services for name validation.
 -   **Data Validation**: Real-time checks for data types, mandatory fields, and coordinate ranges.
--   **Darwin Core Archive Export**: Generates compliant files ready for SiBBr/GBIF publication.
+-   **Darwin Core Export**: Generates compliant CSV/XLSX bundles + mapping guide ready for SiBBr/GBIF publication. Full Darwin Core Archive packaging (DwC-A with `meta.xml` + `eml.xml`) lands in v0.4.0.
 
 ---
 
