@@ -1211,6 +1211,12 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                     current_val <- input[[paste0("map_", term)]]
                                 }
                                 current_val <- sanitize_map_selection(term, current_val)
+                                # is_field_mapped() isolates only the free-text
+                                # datasetName read internally, so typing it does not
+                                # re-render (and blur) the whole mapping_ui. The
+                                # checkbox/date custom inputs (license, language,
+                                # modified) stay reactive here so their mapped
+                                # border updates live on toggle.
                                 is_mapped <- is_field_mapped(term, current_val, input)
                                 # Isolated: custom-value observers write
                                 # rv$map_meta on every keystroke; a reactive

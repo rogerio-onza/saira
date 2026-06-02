@@ -2949,6 +2949,10 @@ table.dataTable tbody tr.validate-invalid td {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   box-shadow: var(--shadow);
+  /* These headers are the scroll-to-class anchors. Leave room for the sticky
+     .mapping-class-pillbar (top: 0; z-index: 5) so scrollIntoView lands the
+     header below the pillbar instead of behind it. */
+  scroll-margin-top: 5rem;
 }
 
 .category-header:first-child {

@@ -274,7 +274,11 @@ is_field_mapped <- function(term, current_val, input) {
     is_mapped <- has_selected_value(current_val)
 
     if (term == "datasetName") {
-        custom_val <- input$custom_datasetName
+        # Isolated: this free-text value is edited live. A reactive read would
+        # re-render the mapping UI mid-typing and blur the field (see the
+        # mapping_ui renderUI). The mapped border refreshes on the next render.
+        # Checkbox/date custom inputs below stay reactive on purpose.
+        custom_val <- shiny::isolate(input$custom_datasetName)
         if (!is.null(custom_val) && nchar(trimws(custom_val)) > 0) {
             is_mapped <- TRUE
         }
