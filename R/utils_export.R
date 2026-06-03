@@ -268,14 +268,17 @@ build_mapping_guide_txt <- function(map_values,
                                                        "decimalLatitude", "decimalLongitude",
                                                        "basisOfRecord"),
                                     source_file = NA_character_,
-                                    id_strategy = NA_character_) {
+                                    id_strategy = NA_character_,
+                                    constants = NULL) {
     if (is.function(lang)) lang <- lang()
     lang <- as.character(lang)[1L]
     if (!lang %in% c("pt", "en")) lang <- "pt"
 
     if (!is.list(map_values)) map_values <- list()
     if (!is.data.frame(raw_data)) raw_data <- data.frame()
+    if (!is.list(constants)) constants <- list()
 
+    # Column mappings: one entry per mapped term (concatenations joined " + ").
     pairs <- list()
     used_sources <- character(0)
     for (term in names(map_values)) {
@@ -290,15 +293,40 @@ build_mapping_guide_txt <- function(map_values,
     }
     used_sources <- unique(used_sources)
 
+    # Constants: typed/selected literal values applied to every row.
+    const_pairs <- list()
+    for (term in names(constants)) {
+        val <- constants[[term]]
+        if (is.null(val) || length(val) == 0L) next
+        val <- trimws(as.character(val)[[1]])
+        if (is.na(val) || !nzchar(val)) next
+        const_pairs[[length(const_pairs) + 1L]] <- list(value = val, term = term)
+    }
+
     raw_cols <- names(raw_data)
     unmapped_cols <- setdiff(raw_cols, used_sources)
-    mapped_terms <- vapply(pairs, function(p) p$term, character(1))
+    mapped_terms <- c(
+        vapply(pairs, function(p) p$term, character(1)),
+        vapply(const_pairs, function(p) p$term, character(1))
+    )
     missing_required <- setdiff(required_terms, mapped_terms)
 
     n_total <- length(raw_cols)
     n_mapped <- length(used_sources)
     n_unmapped <- length(unmapped_cols)
     n_rows <- if (is.data.frame(raw_data)) nrow(raw_data) else 0L
+    n_terms <- length(unique(mapped_terms))
+    n_const <- length(const_pairs)
+
+    # Term -> DwC class lookup for grouping (falls back to "Other").
+    term_class <- tryCatch({
+        dt <- get_dwc_terms()
+        stats::setNames(as.character(dt$class), dt$term)
+    }, error = function(e) stats::setNames(character(0), character(0)))
+    class_of <- function(term) {
+        cl <- if (term %in% names(term_class)) term_class[[term]] else NA_character_
+        if (is.na(cl) || !nzchar(cl)) "Other" else cl
+    }
 
     L <- if (lang == "pt") {
         list(
@@ -306,13 +334,16 @@ build_mapping_guide_txt <- function(map_values,
             url          = "#   github.com/sibbr/saira",
             tagline      = "#   Vocabulario de mapeamento compartilhavel - sem dados de registros",
             how_to_use   = "#   como usar",
-            step_1       = "#     1. No Saira (aba Inicio), suba este .txt no dropzone de dados.",
-            step_2       = "#     2. Confirme o guia de mapeamento detectado.",
-            step_3       = "#     3. Cada linha vira um alias pessoal (scope=personal, reviewed).",
-            step_4       = "#     4. Suba seu CSV e clique em Auto-Mapear.",
-            section_map  = "#   mapeamentos   (coluna_origem -> termo_DwC)",
+            step_1       = "#     1. Suba seu CSV de dados no Saira e abra a aba Mapeamento.",
+            step_2       = "#     2. Na barra lateral, clique em Importar modelo e selecione este .txt.",
+            step_3       = "#     3. O mapeamento e reconstruido nos cards (concatenacoes e constantes).",
+            step_4       = "#     4. Revise e exporte. (Cada coluna tambem vira um alias pessoal reutilizavel.)",
+            section_map  = "#   mapeamentos por classe DwC   (coluna_origem -> termo_DwC)",
+            legend       = "#   concatenacoes de colunas sao unidas pelo separador \" | \"",
+            section_const= "#   constantes   (valor digitado/escolhido aplicado a todas as linhas)",
             section_miss = "#   termos DwC obrigatorios ainda nao mapeados",
             section_unmp = "#   colunas brutas nao usadas (mantidas no fim do CSV)",
+            coverage     = "# cobertura: %d termo(s) DwC mapeado(s), %d constante(s), %d obrigatorio(s) faltando",
             none         = "(nenhum)"
         )
     } else {
@@ -321,19 +352,22 @@ build_mapping_guide_txt <- function(map_values,
             url          = "#   github.com/sibbr/saira",
             tagline      = "#   Shareable mapping vocabulary - contains no record data",
             how_to_use   = "#   how to use",
-            step_1       = "#     1. In Saira (Home tab), upload this .txt in the data dropzone.",
-            step_2       = "#     2. Confirm the detected mapping guide.",
-            step_3       = "#     3. Each line becomes a personal alias (scope=personal, reviewed).",
-            step_4       = "#     4. Upload your CSV and click Auto-Map.",
-            section_map  = "#   mappings   (source_column -> DwC_term)",
+            step_1       = "#     1. Upload your data CSV in Saira and open the Mapping tab.",
+            step_2       = "#     2. In the sidebar, click Import template and pick this .txt.",
+            step_3       = "#     3. The mapping is rebuilt in the cards (concatenations and constants).",
+            step_4       = "#     4. Review and export. (Each column also becomes a reusable personal alias.)",
+            section_map  = "#   mappings by DwC class   (source_column -> DwC_term)",
+            legend       = "#   column concatenations are joined with the \" | \" separator",
+            section_const= "#   constants   (typed/selected value applied to every row)",
             section_miss = "#   required DwC terms not yet mapped",
             section_unmp = "#   unused raw columns (kept at end of CSV)",
+            coverage     = "# coverage: %d DwC term(s) mapped, %d constant(s), %d required missing",
             none         = "(none)"
         )
     }
 
     out <- c(
-        "# saira:mapping:v1",
+        "# saira:mapping:v2",
         "#",
         L$title,
         L$url,
@@ -341,8 +375,10 @@ build_mapping_guide_txt <- function(map_values,
         "#",
         sprintf("# created_at: %s", format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")),
         sprintf("# source_file: %s", if (is.na(source_file)) "" else source_file),
+        sprintf("# saira_version: %s", as.character(utils::packageVersion("saira"))),
         sprintf("# n_cols_total: %d  n_cols_mapped: %d  n_cols_unmapped: %d  n_rows: %d",
                 n_total, n_mapped, n_unmapped, n_rows),
+        sprintf(L$coverage, n_terms, n_const, length(missing_required)),
         "#",
         L$how_to_use,
         L$step_1,
@@ -351,6 +387,7 @@ build_mapping_guide_txt <- function(map_values,
         L$step_4,
         "#",
         L$section_map,
+        L$legend,
         "#"
     )
 
@@ -359,8 +396,32 @@ build_mapping_guide_txt <- function(map_values,
     } else {
         col_width <- max(nchar(vapply(pairs, function(p) p$source, character(1))))
         col_width <- max(col_width, 16L)
-        for (p in pairs) {
-            out <- c(out, sprintf("%-*s -> %s", col_width, p$source, p$term))
+        # Group mapping lines by DwC class in canonical order.
+        pair_classes <- vapply(pairs, function(p) class_of(p$term), character(1))
+        class_order <- dwc_canonical_class_order()
+        ordered_classes <- c(
+            intersect(class_order, unique(pair_classes)),
+            setdiff(unique(pair_classes), class_order)
+        )
+        for (cls in ordered_classes) {
+            out <- c(out, sprintf("#   -- %s --", cls))
+            for (i in which(pair_classes == cls)) {
+                p <- pairs[[i]]
+                out <- c(out, sprintf("%-*s -> %s", col_width, p$source, p$term))
+            }
+        }
+    }
+
+    # Constants section (= value -> term).
+    out <- c(out, "#", L$section_const, "#")
+    if (length(const_pairs) == 0L) {
+        out <- c(out, paste0("#     ", L$none))
+    } else {
+        cw <- max(nchar(vapply(const_pairs,
+                               function(p) sprintf("=\"%s\"", p$value), character(1))))
+        cw <- max(cw, 16L)
+        for (p in const_pairs) {
+            out <- c(out, sprintf("%-*s -> %s", cw, sprintf("=\"%s\"", p$value), p$term))
         }
     }
 

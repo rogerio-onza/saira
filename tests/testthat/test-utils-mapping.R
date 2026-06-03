@@ -832,3 +832,27 @@ testthat::test_that("build_processed_mapping_df transforms occurrenceStatus valu
         c("present", "absent", "present", "present", "other", "")
     )
 })
+
+testthat::test_that("plan_mapping_guide_restore rebuilds concatenations, constants, flags missing", {
+    pairs <- data.frame(
+        source_column  = c("year + month + day", "lat", "ghost", NA_character_),
+        dwc_term       = c("eventDate", "decimalLatitude", "recordedBy", "datasetName"),
+        kind           = c("column", "column", "column", "constant"),
+        constant_value = c(NA_character_, NA_character_, NA_character_, "Rede Felinos"),
+        stringsAsFactors = FALSE
+    )
+    plan <- plan_mapping_guide_restore(
+        list(meta = list(), pairs = pairs),
+        available_columns = c("year", "month", "day", "lat")
+    )
+
+    # Concatenation preserved as a multi-column selection.
+    testthat::expect_identical(plan$map_values$eventDate, c("year", "month", "day"))
+    testthat::expect_identical(plan$map_values$decimalLatitude, "lat")
+    # A term whose only source column is absent is skipped, not silently lost.
+    testthat::expect_null(plan$map_values$recordedBy)
+    testthat::expect_true("recordedBy" %in% plan$skipped_terms)
+    testthat::expect_true("ghost" %in% plan$missing_columns)
+    # Constants restored.
+    testthat::expect_identical(plan$constants$datasetName, "Rede Felinos")
+})

@@ -427,6 +427,14 @@
     "pt": "%d alias(es) salvo(s) no Rostrum local. Próximas planilhas com colunas de mesmo nome serão auto-mapeadas.",
     "en": "%d alias(es) saved to local Rostrum. Future spreadsheets with the same column names will auto-map."
   },
+  "modal_import_template_restored": {
+    "pt": "Mapeamento restaurado: %d termo(s) aplicado(s) a partir do modelo.",
+    "en": "Mapping restored: %d term(s) applied from the template."
+  },
+  "modal_import_template_missing_cols": {
+    "pt": "%d coluna(s) do modelo não existem nesta planilha: %s.",
+    "en": "%d column(s) from the template are not in this spreadsheet: %s."
+  },
   "modal_add_term_title": {
     "pt": "Adicionar termo DwC",
     "en": "Add DwC term"

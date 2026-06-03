@@ -15,12 +15,21 @@ rostrum_app_version <- function() {
 #' @noRd
 SAIRA_MAPPING_GUIDE_MAGIC_V1 <- "# saira:mapping:v1"
 
+#' Magic header for the v2 mapping guide (PR-A3)
+#'
+#' v2 groups mappings by DwC class, adds a dedicated constants section
+#' (\code{= value -> term}) and a coverage legend. The parser reads both v1
+#' and v2; v1 files remain importable.
+#' @keywords internal
+#' @noRd
+SAIRA_MAPPING_GUIDE_MAGIC_V2 <- "# saira:mapping:v2"
+
 #' Detect whether a file looks like a Saira mapping guide
 #'
 #' Reads only the first non-empty line; safe for large CSVs (no full read).
 #'
 #' @param path Character path to the candidate file.
-#' @return TRUE when line 1 matches the v1 magic header. FALSE otherwise
+#' @return TRUE when line 1 matches the v1 or v2 magic header. FALSE otherwise
 #'   (including when the file is unreadable).
 #' @export
 is_saira_mapping_guide <- function(path) {
@@ -32,7 +41,8 @@ is_saira_mapping_guide <- function(path) {
         error = function(e) character(0)
     )
     if (length(first) == 0L) return(FALSE)
-    grepl(paste0("^\\s*", SAIRA_MAPPING_GUIDE_MAGIC_V1, "\\s*$"), first[[1]], perl = TRUE)
+    magic_re <- "^\\s*# saira:mapping:v[12]\\s*$"
+    grepl(magic_re, first[[1]], perl = TRUE)
 }
 
 #' Parse a Saira mapping_guide.txt into metadata + (source -> term) pairs
@@ -48,14 +58,19 @@ is_saira_mapping_guide <- function(path) {
 #' @return Named list:
 #'   \itemize{
 #'     \item \code{meta}: named list of metadata strings (created_at, source_file, ...).
-#'     \item \code{pairs}: data.frame with columns source_column, dwc_term.
+#'     \item \code{pairs}: data.frame with columns \code{source_column},
+#'       \code{dwc_term}, \code{kind} ("column" or "constant"), and
+#'       \code{constant_value}. For column mappings \code{source_column} holds
+#'       the raw source (\code{"a + b"} for concatenations) and
+#'       \code{constant_value} is \code{NA}; for constants the reverse holds.
 #'   }
 #' @export
 parse_mapping_guide_txt <- function(path) {
     if (!is_saira_mapping_guide(path)) {
         stop(
             "parse_mapping_guide_txt: file does not start with the magic ",
-            "header '", SAIRA_MAPPING_GUIDE_MAGIC_V1, "'."
+            "header '", SAIRA_MAPPING_GUIDE_MAGIC_V1, "' or '",
+            SAIRA_MAPPING_GUIDE_MAGIC_V2, "'."
         )
     }
 
@@ -64,10 +79,14 @@ parse_mapping_guide_txt <- function(path) {
     meta <- list()
     pairs_src <- character(0)
     pairs_term <- character(0)
+    pairs_kind <- character(0)
+    pairs_const <- character(0)
     invalid_lines <- 0L
 
     meta_re <- "^#\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*:\\s*(.*?)\\s*$"
-    body_re <- "^([^#\\s][^\\-]*?)\\s*->\\s*(\\S.*?)\\s*$"
+    # Term is the trailing camelCase token; source is everything before the
+    # final '->' (so column names may contain '-', '+', or '=' constants).
+    body_re <- "^(.*?)\\s*->\\s*([A-Za-z][A-Za-z0-9_]*)\\s*$"
 
     # Skip line 1 (the magic header itself).
     if (length(lines) >= 2L) {
@@ -89,8 +108,22 @@ parse_mapping_guide_txt <- function(path) {
             if (!grepl("->", line, fixed = TRUE)) next
 
             m <- regmatches(line, regexec(body_re, line, perl = TRUE))[[1]]
-            if (length(m) == 3L && nzchar(m[2L]) && nzchar(m[3L])) {
-                pairs_src  <- c(pairs_src,  trimws(m[2L]))
+            if (length(m) == 3L && nzchar(trimws(m[2L])) && nzchar(m[3L])) {
+                src <- trimws(m[2L])
+                if (startsWith(src, "=")) {
+                    # Constant: `= value -> term` (value may be double-quoted).
+                    val <- trimws(sub("^=", "", src))
+                    if (startsWith(val, "\"") && endsWith(val, "\"") && nchar(val) >= 2L) {
+                        val <- substr(val, 2L, nchar(val) - 1L)
+                    }
+                    pairs_src   <- c(pairs_src, NA_character_)
+                    pairs_const <- c(pairs_const, val)
+                    pairs_kind  <- c(pairs_kind, "constant")
+                } else {
+                    pairs_src   <- c(pairs_src, src)
+                    pairs_const <- c(pairs_const, NA_character_)
+                    pairs_kind  <- c(pairs_kind, "column")
+                }
                 pairs_term <- c(pairs_term, trimws(m[3L]))
             } else {
                 invalid_lines <- invalid_lines + 1L
@@ -108,8 +141,10 @@ parse_mapping_guide_txt <- function(path) {
     list(
         meta = meta,
         pairs = data.frame(
-            source_column = pairs_src,
-            dwc_term      = pairs_term,
+            source_column  = pairs_src,
+            dwc_term       = pairs_term,
+            kind           = pairs_kind,
+            constant_value = pairs_const,
             stringsAsFactors = FALSE
         )
     )
@@ -158,7 +193,11 @@ import_mapping_guide_to_aliases <- function(
 
     n <- 0L
     for (i in seq_len(nrow(pairs))) {
+        # Constants (`= value -> term`) carry no source column; they are not
+        # aliases and are restored separately by the mapping module.
+        if (!is.null(pairs$kind) && identical(pairs$kind[[i]], "constant")) next
         src_raw <- pairs$source_column[[i]]
+        if (is.na(src_raw)) next
         term    <- pairs$dwc_term[[i]]
         # Split multi-column composites ("colA + colB") into independent aliases.
         sources <- trimws(strsplit(src_raw, "\\s*\\+\\s*", perl = TRUE)[[1]])

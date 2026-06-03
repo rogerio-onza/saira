@@ -95,7 +95,8 @@ app_server <- function(input, output, session) {
         name_review_payload_r      = name_review_payload_r,
         sensitivity_payload_r      = sensitivity_payload_r,
         raw_data_r                 = raw_data,
-        map_values_r               = mapping_result$map_values_r
+        map_values_r               = mapping_result$map_values_r,
+        custom_values_r            = mapping_result$custom_values_r
     )
     coord_validation_r <- mod_validate_coords_server(
         "validate_coords",

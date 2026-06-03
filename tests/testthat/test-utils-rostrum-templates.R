@@ -369,6 +369,69 @@ testthat::test_that("parse_mapping_guide_txt warns on malformed mapping lines (c
     testthat::expect_identical(out$pairs$source_column, c("Lat", "Lon"))
 })
 
+testthat::test_that("v2 round-trip preserves concatenations and constants", {
+    raw <- data.frame(
+        year = "2020", month = "01", day = "15",
+        sci = "x", lat = "-1", lon = "-2", bor = "obs",
+        stringsAsFactors = FALSE
+    )
+    mv <- list(
+        eventDate        = c("year", "month", "day"),
+        scientificName   = "sci",
+        decimalLatitude  = "lat",
+        decimalLongitude = "lon",
+        basisOfRecord    = "bor"
+    )
+    consts <- list(
+        datasetName = "Rede Felinos do Brasil",
+        license     = "https://creativecommons.org/licenses/by/4.0/legalcode"
+    )
+
+    txt <- build_mapping_guide_txt(mv, raw, lang = "en", constants = consts)
+    testthat::expect_identical(txt[[1]], "# saira:mapping:v2")
+
+    tmp <- tempfile(fileext = ".txt")
+    on.exit(unlink(tmp), add = TRUE)
+    writeLines(txt, tmp)
+    parsed <- parse_mapping_guide_txt(tmp)
+
+    # Concatenation survives as a single composite source (not split/lost).
+    ev <- parsed$pairs[parsed$pairs$dwc_term == "eventDate", ]
+    testthat::expect_identical(ev$kind, "column")
+    testthat::expect_identical(ev$source_column, "year + month + day")
+
+    # Constants parsed with kind/value and no source column.
+    consts_df <- parsed$pairs[parsed$pairs$kind == "constant", ]
+    testthat::expect_identical(nrow(consts_df), 2L)
+    testthat::expect_true(all(is.na(consts_df$source_column)))
+    testthat::expect_identical(
+        consts_df$constant_value[consts_df$dwc_term == "datasetName"],
+        "Rede Felinos do Brasil"
+    )
+})
+
+testthat::test_that("import_mapping_guide_to_aliases skips constants, splits composites", {
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit({
+        if (DBI::dbIsValid(conn)) DBI::dbDisconnect(conn)
+        unlink(db_path)
+    }, add = TRUE)
+
+    pairs <- data.frame(
+        source_column  = c("year + month + day", NA_character_),
+        dwc_term       = c("eventDate", "datasetName"),
+        kind           = c("column", "constant"),
+        constant_value = c(NA_character_, "My dataset"),
+        stringsAsFactors = FALSE
+    )
+    n <- import_mapping_guide_to_aliases(
+        list(meta = list(), pairs = pairs), conn = conn
+    )
+    # 3 column aliases (year/month/day); the constant row is skipped.
+    testthat::expect_identical(as.integer(n), 3L)
+})
+
 testthat::test_that("import_mapping_guide_to_aliases upserts and is idempotent", {
     db_path <- tempfile(fileext = ".sqlite")
     conn <- rostrum_connect(path = db_path)
@@ -481,7 +544,7 @@ testthat::test_that("redesigned guide: unmapped columns are comment-safe, no par
     )
 
     txt <- build_mapping_guide_txt(map_values, raw, lang = "pt")
-    testthat::expect_identical(txt[[1]], "# saira:mapping:v1")
+    testthat::expect_identical(txt[[1]], "# saira:mapping:v2")
     # unmapped columns are emitted as parser-safe comment lines, never bare:
     testthat::expect_true(any(grepl("^#\\s+- notas_campo$", txt)))
     testthat::expect_false("notas_campo" %in% txt)
