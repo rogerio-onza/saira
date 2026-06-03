@@ -160,6 +160,48 @@ testthat::test_that("basisOfRecord vocabulary is complete and ordered", {
     testthat::expect_false(is_valid(""))
 })
 
+testthat::test_that("default base term set matches the Rede Felinos template + kept extras", {
+    base <- get_dwc_terms()
+    terms <- base$term
+
+    testthat::expect_identical(nrow(base), 64L)
+
+    # Template terms newly added to the default.
+    template_added <- c(
+        "locationID", "coordinateUncertaintyInMeters", "eventID", "parentEventID",
+        "eventTime", "sampleSizeValue", "sampleSizeUnit", "taxonRemarks", "sex",
+        "lifeStage", "reproductiveCondition", "behavior", "identifiedByID",
+        "identificationRemarks", "informationWithheld", "associatedMedia",
+        "associatedReferences"
+    )
+    testthat::expect_true(all(template_added %in% terms))
+
+    # Curated extras kept in the default beyond the 51 template terms.
+    kept_extras <- c("year", "month", "day", "catalogNumber", "collectionCode",
+                     "taxonRank", "kingdom", "phylum", "scientificNameAuthorship",
+                     "rightsHolder", "verbatimLatitude", "verbatimLongitude",
+                     "fieldNotes")
+    testthat::expect_true(all(kept_extras %in% terms))
+
+    # Dropped from the default (still reachable via the full catalog).
+    dropped <- c("disposition", "preparations", "infraspecificEpithet",
+                 "verbatimIdentification")
+    testthat::expect_false(any(dropped %in% terms))
+    testthat::expect_true(all(dropped %in% get_dwc_full_catalog()$term))
+
+    # First card is the occurrence identifier; required gate terms preserved.
+    testthat::expect_identical(terms[[1]], "occurrenceID")
+    required_terms <- c("occurrenceID", "license", "institutionCode",
+                        "basisOfRecord", "recordedBy", "eventDate",
+                        "scientificName", "country", "stateProvince", "locality",
+                        "decimalLatitude", "decimalLongitude")
+    testthat::expect_true(all(base$required[match(required_terms, terms)]))
+
+    # Coherent class grouping: temporal/sampling terms live under Event.
+    testthat::expect_identical(base$class[base$term == "eventDate"], "Event")
+    testthat::expect_identical(base$class[base$term == "year"], "Event")
+})
+
 testthat::test_that("get_dwc_full_catalog returns superset of base terms with correct schema", {
     base    <- get_dwc_terms()
     catalog <- get_dwc_full_catalog()
