@@ -1191,6 +1191,16 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             categories <- unique(all_categories)
             lang <- lang_r()
 
+            # When scientificName is mapped, taxonRank and specificEpithet are
+            # derived from it (build_processed_mapping_df), so their cards lock.
+            sn_val <- rv$map_values[["scientificName"]]
+            if (is.null(sn_val)) {
+                sn_val <- input[["map_scientificName"]]
+            }
+            scientificname_mapped <- has_selected_value(
+                sanitize_map_selection("scientificName", sn_val)
+            )
+
             shiny::tagList(
                 lapply(categories, function(cat) {
                     cat_fields <- Filter(function(x) x$category == cat, fields_to_show)
@@ -1218,6 +1228,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                 # modified) stay reactive here so their mapped
                                 # border updates live on toggle.
                                 is_mapped <- is_field_mapped(term, current_val, input)
+                                # taxonRank/specificEpithet lock (and read as
+                                # mapped) once scientificName is set; they are
+                                # derived from it at export.
+                                locked_taxon <- isTRUE(scientificname_mapped) &&
+                                    term %in% c("taxonRank", "specificEpithet")
+                                if (locked_taxon) {
+                                    is_mapped <- TRUE
+                                }
                                 # Isolated: custom-value observers write
                                 # rv$map_meta on every keystroke; a reactive
                                 # read here would re-render and re-create the
@@ -1238,7 +1256,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                     "license", "language", "basisOfRecord",
                                     "dynamicProperties"
                                 ))
-                                sample_preview <- if (is_standard && has_selected_value(current_val)) {
+                                sample_preview <- if (is_standard && !locked_taxon &&
+                                                      has_selected_value(current_val)) {
                                     processed_preview_for_term(term, current_val, 1L)
                                 } else {
                                     NULL
@@ -1251,7 +1270,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                     badge_info = badge_info,
                                     ns = ns, lang_r = lang,
                                     input = input, cat_class = cat_class,
-                                    sample_preview = sample_preview
+                                    sample_preview = sample_preview,
+                                    scientificname_mapped = scientificname_mapped
                                 )
                             })
                         )

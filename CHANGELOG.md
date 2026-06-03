@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Mapping: `taxonRank` and `specificEpithet` lock when `scientificName` is mapped.** These two terms are inferred from `scientificName` at export (`build_processed_mapping_df`), so once `scientificName` is mapped (manually or by auto-mapping) their cards now show a locked notice (`fa-dna` icon + "auto-inferred from scientificName") instead of a column selector, mirroring the `occurrenceID` UUID lock. New i18n key `taxon_auto_derived` (PT/EN). `genus` is also inferred but remains mappable.
+
 ### Fixed
 - **Mapping: free-text `datasetName` no longer re-renders while typing.** `is_field_mapped()` read `input$custom_datasetName` reactively inside the `mapping_ui` renderUI, so the debounced text value arriving mid-typing invalidated the whole UI and blurred the field. That single free-text read is now isolated; the checkbox/date custom inputs (`license`, `language`, `modified`) stay reactive so their "mapped" border still updates live on toggle.
 - **Mapping: category headers no longer hide behind the sticky class pill bar.** Added `scroll-margin-top` to `.category-header` (the scroll-to-class anchors) so `scrollIntoView` (triggered by the "Todos"/category pills) lands the header below the sticky `.mapping-class-pillbar` instead of behind it.

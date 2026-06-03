@@ -17,16 +17,24 @@
 #' @param cat_class CSS class for the category
 #' @param sample_preview Optional character vector of sample values from the
 #'   mapped source column (standard select terms only); NULL hides the preview
+#' @param scientificname_mapped Logical; when TRUE, taxonRank and specificEpithet
+#'   are locked because they are derived from scientificName.
 #' @noRd
-build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, sample_preview = NULL) {
+build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, sample_preview = NULL, scientificname_mapped = FALSE) {
     term <- item$term
+
+    # taxonRank/specificEpithet are inferred from scientificName (see
+    # build_processed_mapping_df). When scientificName is mapped, lock these
+    # cards with a UUID-style notice instead of a column selector.
+    locked_taxon <- isTRUE(scientificname_mapped) &&
+        term %in% c("taxonRank", "specificEpithet")
 
     shiny::div(
         class = paste("field-card no-break", cat_class, if (is_mapped) "field-mapped" else "field-unmapped"),
         shiny::div(
             class = "field-header-row",
             shiny::div(class = "field-header", term),
-            if (!is.null(badge_info) && term != "occurrenceID") {
+            if (!is.null(badge_info) && term != "occurrenceID" && !locked_taxon) {
                 shiny::span(
                     class = badge_info$class,
                     title = badge_info$title,
@@ -35,7 +43,14 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
             }
         ),
         shiny::div(class = "field-desc", item$desc),
-        if (term == "occurrenceID") {
+        if (locked_taxon) {
+            shiny::div(
+                class = "alert alert-info",
+                style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
+                shiny::icon("dna"),
+                " ", tr("taxon_auto_derived", lang_r)
+            )
+        } else if (term == "occurrenceID") {
             shiny::div(
                 class = "alert alert-info",
                 style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
