@@ -55,6 +55,79 @@ sanitize_map_selection <- function(term, value) {
     value_chr
 }
 
+#' Plan a faithful mapping restore from a parsed mapping guide
+#'
+#' Given a parsed guide payload (\code{parse_mapping_guide_txt()}) and the
+#' columns available in the currently loaded dataset, returns the exact mapping
+#' to apply: per-term column selections with concatenations preserved (and
+#' restricted to columns that exist), constant values, and the matched/missing
+#' source columns for user reporting.
+#'
+#' @param payload Output of \code{parse_mapping_guide_txt()}.
+#' @param available_columns Character vector of column names in the loaded data.
+#' @return Named list: \code{map_values} (term -> column vector),
+#'   \code{constants} (term -> value), \code{matched_columns},
+#'   \code{missing_columns}, \code{applied_terms}, \code{skipped_terms}.
+#' @noRd
+plan_mapping_guide_restore <- function(payload, available_columns) {
+    available_columns <- as.character(available_columns)
+    map_values <- list()
+    constants <- list()
+    matched <- character(0)
+    missing <- character(0)
+    applied_terms <- character(0)
+    skipped_terms <- character(0)
+
+    pairs <- if (is.list(payload)) payload$pairs else NULL
+    if (!is.data.frame(pairs) || nrow(pairs) == 0L) {
+        return(list(
+            map_values = map_values, constants = constants,
+            matched_columns = matched, missing_columns = missing,
+            applied_terms = applied_terms, skipped_terms = skipped_terms
+        ))
+    }
+
+    has_kind <- "kind" %in% names(pairs)
+    for (i in seq_len(nrow(pairs))) {
+        term <- trimws(as.character(pairs$dwc_term[[i]]))
+        if (!nzchar(term)) next
+        kind <- if (has_kind) as.character(pairs$kind[[i]]) else "column"
+
+        if (identical(kind, "constant")) {
+            val <- as.character(pairs$constant_value[[i]])
+            if (!is.na(val) && nzchar(val)) {
+                constants[[term]] <- val
+                applied_terms <- c(applied_terms, term)
+            }
+            next
+        }
+
+        src <- as.character(pairs$source_column[[i]])
+        if (is.na(src) || !nzchar(trimws(src))) next
+        cols <- trimws(strsplit(src, "\\s*\\+\\s*", perl = TRUE)[[1]])
+        cols <- cols[nzchar(cols)]
+        present <- cols[cols %in% available_columns]
+        absent <- cols[!cols %in% available_columns]
+        matched <- c(matched, present)
+        missing <- c(missing, absent)
+        if (length(present) > 0L) {
+            map_values[[term]] <- present
+            applied_terms <- c(applied_terms, term)
+        } else {
+            skipped_terms <- c(skipped_terms, term)
+        }
+    }
+
+    list(
+        map_values = map_values,
+        constants = constants,
+        matched_columns = unique(matched),
+        missing_columns = unique(missing),
+        applied_terms = unique(applied_terms),
+        skipped_terms = unique(skipped_terms)
+    )
+}
+
 normalize_basis_of_record_key <- function(value) {
     if (is_blank_value(value)) {
         return("")

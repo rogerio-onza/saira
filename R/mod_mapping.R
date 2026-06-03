@@ -1024,10 +1024,12 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             tr("btn_import_template", lang_r())
         })
 
-        # "Import mapping template" modal — ADR-087.
+        # "Import mapping template" modal — ADR-087 + PR-A3.
         # Opens a modal with a fileInput for the .txt mapping_guide produced
-        # by the export bundle. On confirm, parses + populates rostrum_aliases
-        # via import_mapping_guide_to_aliases().
+        # by the export bundle. On confirm, parses it and (1) faithfully
+        # rebuilds the mapping in the cards — concatenations and typed
+        # constants — by matching the guide's source columns to the loaded
+        # dataset, and (2) seeds rostrum_aliases for cross-dataset auto-mapping.
         shiny::observeEvent(input$import_template, {
             shiny::showModal(shiny::modalDialog(
                 title = tr("modal_import_template_title", lang_r()),
@@ -1087,25 +1089,49 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 return(invisible(NULL))
             }
 
-            n_imported <- tryCatch(
-                import_mapping_guide_to_aliases(payload),
-                error = function(e) e
-            )
-            if (inherits(n_imported, "error")) {
-                shiny::showNotification(
-                    sprintf(tr("upload_guide_failed", lang_r()), conditionMessage(n_imported)),
-                    type = "error",
-                    duration = 10
-                )
-                return(invisible(NULL))
+            # Faithful restore: rebuild the exact mapping in the cards by
+            # matching the guide's source columns to the loaded dataset.
+            available_columns <- tryCatch(names(raw_data_r()), error = function(e) character(0))
+            plan <- plan_mapping_guide_restore(payload, available_columns)
+
+            rv$is_programmatic_update <- TRUE
+            on.exit({
+                rv$is_programmatic_update <- FALSE
+                rv$programmatic_terms <- character(0)
+            }, add = TRUE)
+
+            for (term in names(plan$map_values)) {
+                set_map_value(term, plan$map_values[[term]], update_input = TRUE)
+                rv$map_meta[[term]] <- build_manual_meta(previous_meta = NULL, has_value = TRUE)
             }
 
+            consts <- plan$constants
+            if (!is.null(consts$datasetName)) {
+                shiny::updateTextInput(session, "custom_datasetName", value = consts$datasetName)
+                rv$map_meta[["datasetName"]] <- build_manual_meta(previous_meta = NULL, has_value = TRUE)
+            }
+            if (!is.null(consts$license)) {
+                shiny::updateCheckboxGroupInput(session, "custom_license", selected = consts$license)
+            }
+            if (!is.null(consts$language)) {
+                shiny::updateCheckboxGroupInput(session, "custom_language", selected = consts$language)
+            }
+
+            # Seed personal aliases for cross-dataset auto-mapping (ADR-087);
+            # non-fatal if it fails (the faithful restore already happened).
+            tryCatch(import_mapping_guide_to_aliases(payload), error = function(e) NULL)
+
             shiny::removeModal()
-            shiny::showNotification(
-                sprintf(tr("modal_import_template_success", lang_r()), as.integer(n_imported)),
-                type = "message",
-                duration = 8
-            )
+            n_terms <- length(plan$applied_terms)
+            msg <- sprintf(tr("modal_import_template_restored", lang_r()), n_terms)
+            if (length(plan$missing_columns) > 0L) {
+                msg <- paste0(msg, " ", sprintf(
+                    tr("modal_import_template_missing_cols", lang_r()),
+                    length(plan$missing_columns),
+                    paste(utils::head(plan$missing_columns, 5L), collapse = ", ")
+                ))
+            }
+            shiny::showNotification(msg, type = "message", duration = 10)
         }, ignoreInit = TRUE)
 
         # "Add term" modal
@@ -1687,6 +1713,24 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         # Return named list of reactives (ADR-054: replaces attr()-based contract)
         # Slots kept for 1-release transition: processed_data_r, preview_data_r,
         #   validation_gate_r, validation_gate_coords_r.
+        # Typed/selected constant values (datasetName, license, language)
+        # applied to every row. Exposed so the export can serialize them in
+        # the mapping guide and restore them on re-import.
+        custom_values_r <- shiny::reactive({
+            vals <- list()
+            dn <- input$custom_datasetName
+            if (!is.null(dn) && nzchar(trimws(dn))) vals$datasetName <- trimws(dn)
+            lic <- input$custom_license
+            if (!is.null(lic) && length(lic) > 0 && nzchar(lic[[1]])) {
+                vals$license <- as.character(lic[[1]])
+            }
+            lng <- input$custom_language
+            if (!is.null(lng) && length(lng) > 0 && nzchar(lng[[1]])) {
+                vals$language <- as.character(lng[[1]])
+            }
+            vals
+        })
+
         # New Rostrum slots (Onda 2): rostrum_decisions_r, rostrum_explain_r,
         #   rostrum_run_stats_r.
         return(list(
@@ -1698,7 +1742,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             rostrum_decisions_r         = shiny::reactive(rv$rostrum_decisions),
             rostrum_explain_r           = shiny::reactive(rv$map_meta),
             rostrum_run_stats_r         = shiny::reactive(rv$rostrum_run_stats),
-            map_values_r                = shiny::reactive(rv$map_values)
+            map_values_r                = shiny::reactive(rv$map_values),
+            custom_values_r             = custom_values_r
         ))
     })
 }

@@ -60,7 +60,8 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                                name_review_payload_r = NULL,
                                sensitivity_payload_r = NULL,
                                raw_data_r = NULL,
-                               map_values_r = NULL) {
+                               map_values_r = NULL,
+                               custom_values_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         required_download_fields <- c(
@@ -859,6 +860,11 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                         } else {
                             list()
                         }
+                        cv <- if (!is.null(custom_values_r) && shiny::is.reactive(custom_values_r)) {
+                            tryCatch(custom_values_r(), error = function(e) list())
+                        } else {
+                            list()
+                        }
 
                         full_data <- process_for_export_with_unmapped(
                             review_ready,
@@ -914,7 +920,8 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                             build_mapping_guide_txt(
                                 mv, raw_df,
                                 lang = lang_r(),
-                                id_strategy = id_strategy
+                                id_strategy = id_strategy,
+                                constants = cv
                             ),
                             guide_path,
                             useBytes = TRUE

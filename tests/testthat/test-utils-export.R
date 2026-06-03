@@ -568,7 +568,7 @@ testthat::test_that("build_mapping_guide_txt emits magic header, mapping pairs, 
 
     out <- build_mapping_guide_txt(map_values, raw, lang = "pt")
 
-    testthat::expect_identical(out[1], "# saira:mapping:v1")
+    testthat::expect_identical(out[1], "# saira:mapping:v2")
     testthat::expect_true(any(grepl("^Lat\\s+-> decimalLatitude$", out)))
     testthat::expect_true(any(grepl("^Lon\\s+-> decimalLongitude$", out)))
     testthat::expect_true(any(grepl("^especie\\s+-> scientificName$", out)))
