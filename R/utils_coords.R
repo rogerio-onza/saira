@@ -1333,6 +1333,215 @@ apply_coords_correction_payload <- function(df, payload = NULL) {
     df
 }
 
+#' Derive country names from valid coordinates for records missing them
+#'
+#' Reimplements the core of \code{bdc::bdc_country_from_coordinates()} on Saira's
+#' bundled Natural Earth country layer (no \code{bdc} dependency). For records
+#' whose \code{country} is blank but whose coordinates are valid, looks up the
+#' country the point falls in (no name for points in the sea). Existing country
+#' values are never overwritten.
+#'
+#' @param df data.frame with coordinate + country columns.
+#' @param lat_col,lon_col,country_col Column names.
+#' @param ref Optional country SpatVector (else \code{coords_load_ne_land(50)}).
+#' @param name_col Country-name attribute column in \code{ref} (default "admin").
+#' @return Named list: \code{filled} (logical), \code{country_new} (character,
+#'   equal to the original where not filled), \code{n_filled}, \code{n_candidates},
+#'   \code{available} (FALSE when no country layer could be loaded).
+#' @export
+coords_country_from_coordinates <- function(df,
+                                            lat_col = "decimalLatitude",
+                                            lon_col = "decimalLongitude",
+                                            country_col = "country",
+                                            ref = NULL,
+                                            name_col = "admin") {
+    n <- if (is.data.frame(df)) nrow(df) else 0L
+    lat0 <- if (n > 0L) as_coord_numeric(df[[lat_col]])$num else numeric(0)
+    lon0 <- if (n > 0L) as_coord_numeric(df[[lon_col]])$num else numeric(0)
+    country0 <- if (n > 0L && country_col %in% names(df)) {
+        as.character(df[[country_col]])
+    } else {
+        rep(NA_character_, n)
+    }
+
+    base_out <- list(
+        filled = rep(FALSE, n), country_new = country0,
+        n_filled = 0L, n_candidates = 0L, available = TRUE
+    )
+    if (n == 0L) return(base_out)
+
+    if (is.null(ref)) ref <- coords_load_ne_land(scale = 50L)
+    if (is.null(ref) || !inherits(ref, "SpatVector") || !name_col %in% names(ref)) {
+        base_out$available <- FALSE
+        return(base_out)
+    }
+
+    ctry_trim <- trimws(country0)
+    ctry_trim[is.na(country0)] <- ""
+    blank_country <- !nzchar(ctry_trim)
+    valid_xy <- is.finite(lat0) & is.finite(lon0) & abs(lat0) <= 90 & abs(lon0) <= 180
+    candidate <- blank_country & valid_xy
+
+    country_new <- country0
+    filled <- rep(FALSE, n)
+    if (any(candidate)) {
+        rows <- which(candidate)
+        pts <- terra::vect(
+            data.frame(.lon = lon0[rows], .lat = lat0[rows]),
+            geom = c(".lon", ".lat"),
+            crs = "+proj=longlat +datum=WGS84 +no_defs"
+        )
+        ex <- tryCatch(terra::extract(ref[, name_col], pts), error = function(e) NULL)
+        if (!is.null(ex) && ncol(ex) >= 2L) {
+            ex <- ex[!duplicated(ex[[1]]), , drop = FALSE]
+            names_extracted <- as.character(ex[[2]])
+            got <- !is.na(names_extracted) & nzchar(names_extracted)
+            country_new[rows[got]] <- names_extracted[got]
+            filled[rows[got]] <- TRUE
+        }
+    }
+
+    list(
+        filled = filled,
+        country_new = country_new,
+        n_filled = sum(filled),
+        n_candidates = sum(candidate),
+        available = TRUE
+    )
+}
+
+#' Apply a country-from-coordinates fill payload at export time
+#'
+#' Companion to \code{coords_country_from_coordinates()}. Fills the \code{country}
+#' column for the rows named in the payload (matched by \code{occurrenceID}),
+#' only where the current value is still blank (never overwrites user input).
+#'
+#' @param df Export data frame (must contain occurrenceID + country columns).
+#' @param payload List with \code{country}: a data.frame of \code{occurrenceID}
+#'   and \code{country}.
+#' @return \code{df} with missing country values filled.
+#' @export
+apply_country_fill_payload <- function(df, payload = NULL) {
+    if (!is.data.frame(df) || nrow(df) == 0L) return(df)
+    if (is.null(payload) || !is.list(payload) ||
+        is.null(payload$country) || !is.data.frame(payload$country)) {
+        return(df)
+    }
+    cf <- payload$country
+    if (!all(c("occurrenceID", "country") %in% names(cf)) || nrow(cf) == 0L) return(df)
+    if (!all(c("occurrenceID", "country") %in% names(df))) return(df)
+
+    cf <- cf[!is.na(cf$occurrenceID) & nzchar(as.character(cf$occurrenceID)), , drop = FALSE]
+    cf <- cf[!duplicated(cf$occurrenceID, fromLast = TRUE), , drop = FALSE]
+    if (nrow(cf) == 0L) return(df)
+
+    idx <- match(as.character(cf$occurrenceID), as.character(df$occurrenceID))
+    keep <- !is.na(idx)
+    idx <- idx[keep]
+    cf <- cf[keep, , drop = FALSE]
+    if (length(idx) == 0L) return(df)
+
+    cur <- trimws(as.character(df$country[idx]))
+    cur[is.na(df$country[idx])] <- ""
+    blank <- !nzchar(cur)
+    df$country[idx[blank]] <- as.character(cf$country)[blank]
+    df
+}
+
+#' Combined latitude/longitude swap + country fill for country-less sea points
+#'
+#' Handles the case where \code{country} is blank AND the verbatim point falls in
+#' the sea (no country) — a strong signal of a lat/lon swap that cannot be fixed
+#' by the country-aware transposed check (no country to aim at) nor by the
+#' country-from-coordinates fill (the point is at sea). Only the lat/lon swap is
+#' tried (never sign flips), so the result is unambiguous: the swapped point is
+#' inside at most one country. When it lands in a country, both the coordinates
+#' (swapped) and the derived country are proposed together.
+#'
+#' @param df data.frame with coordinate + country columns.
+#' @param lat_col,lon_col,country_col Column names.
+#' @param ref Optional country SpatVector (else \code{coords_load_ne_land(50)}).
+#' @param name_col Country-name attribute column in \code{ref} (default "admin").
+#' @return Named list: \code{applies} (logical), \code{lat_new}/\code{lon_new}
+#'   (swapped where applied, else original), \code{country_new} (derived where
+#'   applied, else original), \code{n}, \code{available}.
+#' @export
+coords_swap_and_fill <- function(df,
+                                 lat_col = "decimalLatitude",
+                                 lon_col = "decimalLongitude",
+                                 country_col = "country",
+                                 ref = NULL,
+                                 name_col = "admin") {
+    n <- if (is.data.frame(df)) nrow(df) else 0L
+    lat0 <- if (n > 0L) as_coord_numeric(df[[lat_col]])$num else numeric(0)
+    lon0 <- if (n > 0L) as_coord_numeric(df[[lon_col]])$num else numeric(0)
+    country0 <- if (n > 0L && country_col %in% names(df)) {
+        as.character(df[[country_col]])
+    } else {
+        rep(NA_character_, n)
+    }
+
+    base_out <- list(
+        applies = rep(FALSE, n), lat_new = lat0, lon_new = lon0,
+        country_new = country0, n = 0L, available = TRUE
+    )
+    if (n == 0L) return(base_out)
+
+    if (is.null(ref)) ref <- coords_load_ne_land(scale = 50L)
+    if (is.null(ref) || !inherits(ref, "SpatVector") || !name_col %in% names(ref)) {
+        base_out$available <- FALSE
+        return(base_out)
+    }
+
+    country_at <- function(lon, lat) {
+        out <- rep(NA_character_, length(lon))
+        ok <- is.finite(lon) & is.finite(lat) & abs(lat) <= 90 & abs(lon) <= 180
+        if (!any(ok)) return(out)
+        pts <- terra::vect(
+            data.frame(.lon = lon[ok], .lat = lat[ok]),
+            geom = c(".lon", ".lat"), crs = "+proj=longlat +datum=WGS84 +no_defs"
+        )
+        ex <- tryCatch(terra::extract(ref[, name_col], pts), error = function(e) NULL)
+        if (is.null(ex) || ncol(ex) < 2L) return(out)
+        ex <- ex[!duplicated(ex[[1]]), , drop = FALSE]
+        out[ok] <- as.character(ex[[2]])
+        out
+    }
+
+    ctry <- trimws(country0)
+    ctry[is.na(country0)] <- ""
+    blank_country <- !nzchar(ctry)
+    valid_xy <- is.finite(lat0) & is.finite(lon0) & abs(lat0) <= 90 & abs(lon0) <= 180
+
+    # Only consider blank-country rows whose VERBATIM point is in the sea.
+    orig_country <- rep(NA_character_, n)
+    pre <- blank_country & valid_xy
+    if (any(pre)) orig_country[pre] <- country_at(lon0[pre], lat0[pre])
+    candidate <- pre & is.na(orig_country)
+
+    applies <- rep(FALSE, n)
+    lat_new <- lat0
+    lon_new <- lon0
+    country_new <- country0
+    if (any(candidate)) {
+        rows <- which(candidate)
+        sw_lat <- lon0[rows]  # swap: new lat = old lon
+        sw_lon <- lat0[rows]  # new lon = old lat
+        sw_name <- country_at(sw_lon, sw_lat)
+        got <- !is.na(sw_name) & nzchar(sw_name)
+        acc <- rows[got]
+        lat_new[acc] <- sw_lat[got]
+        lon_new[acc] <- sw_lon[got]
+        country_new[acc] <- sw_name[got]
+        applies[acc] <- TRUE
+    }
+
+    list(
+        applies = applies, lat_new = lat_new, lon_new = lon_new,
+        country_new = country_new, n = sum(applies), available = TRUE
+    )
+}
+
 #' Validate latitude/longitude columns with legacy issue typing
 #'
 #' @param df Data frame containing coordinate columns

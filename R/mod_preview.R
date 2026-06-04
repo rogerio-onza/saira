@@ -62,7 +62,8 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                                raw_data_r = NULL,
                                map_values_r = NULL,
                                custom_values_r = NULL,
-                               coords_correction_payload_r = NULL) {
+                               coords_correction_payload_r = NULL,
+                               country_fill_payload_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         required_download_fields <- c(
@@ -860,6 +861,15 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                             NULL
                         }
                         review_ready <- apply_coords_correction_payload(review_ready, coords_payload)
+
+                        # Fill country derived from coordinates (where missing).
+                        country_payload <- if (!is.null(country_fill_payload_r) &&
+                                               shiny::is.reactive(country_fill_payload_r)) {
+                            tryCatch(country_fill_payload_r(), error = function(e) NULL)
+                        } else {
+                            NULL
+                        }
+                        review_ready <- apply_country_fill_payload(review_ready, country_payload)
 
                         raw_df <- if (!is.null(raw_data_r) && shiny::is.reactive(raw_data_r)) {
                             tryCatch(raw_data_r(), error = function(e) data.frame())

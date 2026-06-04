@@ -21,7 +21,9 @@ mod_validate_coords_ui <- function(id) {
                 shiny::div(
                     class = "col-12 col-lg-2 validate-coords-left",
                     shiny::uiOutput(ns("action_card")),
-                    shiny::uiOutput(ns("transposed_panel"))
+                    shiny::uiOutput(ns("transposed_panel")),
+                    shiny::uiOutput(ns("swap_fill_panel")),
+                    shiny::uiOutput(ns("country_panel"))
                 ),
                 shiny::div(
                     class = "col-12 col-lg-10 validate-coords-right",
@@ -82,7 +84,12 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             last_run_status = "idle",
             transposed_table = NULL,     # data.frame of correctable rows (preview)
             transposed_applied = FALSE,
-            coords_corrections = NULL     # payload applied at export
+            coords_corrections = NULL,    # transposed payload applied at export
+            country_fill_table = NULL,    # data.frame of fillable rows (preview)
+            country_fill_applied = FALSE,
+            country_fills = NULL,         # country-fill payload applied at export
+            swap_fill_table = NULL,       # blank-country sea points fixable by swap
+            swap_fill_applied = FALSE
         )
 
         normalize_gate <- function(gate) {
@@ -858,6 +865,58 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     )
                 }
 
+                # Derive country for records missing it from valid coordinates.
+                rv$country_fill_applied <- FALSE
+                rv$country_fills <- NULL
+                rv$country_fill_table <- NULL
+                cf_res <- tryCatch(
+                    coords_country_from_coordinates(
+                        df,
+                        lat_col = "decimalLatitude",
+                        lon_col = "decimalLongitude",
+                        country_col = "country"
+                    ),
+                    error = function(e) NULL
+                )
+                if (!is.null(cf_res) && isTRUE(cf_res$available) &&
+                    cf_res$n_filled > 0L && "occurrenceID" %in% names(df)) {
+                    fi <- which(cf_res$filled)
+                    rv$country_fill_table <- data.frame(
+                        occurrenceID = as.character(df$occurrenceID)[fi],
+                        lat = as_coord_numeric(df$decimalLatitude)$num[fi],
+                        lon = as_coord_numeric(df$decimalLongitude)$num[fi],
+                        country = cf_res$country_new[fi],
+                        stringsAsFactors = FALSE
+                    )
+                }
+
+                # Combined case: blank country + sea point fixable by a lat/lon
+                # swap that lands unambiguously in one country.
+                rv$swap_fill_applied <- FALSE
+                rv$swap_fill_table <- NULL
+                sf_res <- tryCatch(
+                    coords_swap_and_fill(
+                        df,
+                        lat_col = "decimalLatitude",
+                        lon_col = "decimalLongitude",
+                        country_col = "country"
+                    ),
+                    error = function(e) NULL
+                )
+                if (!is.null(sf_res) && isTRUE(sf_res$available) &&
+                    sf_res$n > 0L && "occurrenceID" %in% names(df)) {
+                    si <- which(sf_res$applies)
+                    rv$swap_fill_table <- data.frame(
+                        occurrenceID = as.character(df$occurrenceID)[si],
+                        lat_old = as_coord_numeric(df$decimalLatitude)$num[si],
+                        lon_old = as_coord_numeric(df$decimalLongitude)$num[si],
+                        decimalLatitude = sf_res$lat_new[si],
+                        decimalLongitude = sf_res$lon_new[si],
+                        country = sf_res$country_new[si],
+                        stringsAsFactors = FALSE
+                    )
+                }
+
                 conversion <- attr(result, "conversion_failures")
                 total_conversion_failures <- suppressWarnings(as.integer(conversion$total))
                 if (length(total_conversion_failures) == 1L &&
@@ -919,11 +978,27 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             )
         })
 
+        # Payload merge helpers: the transposed, swap-fill and country cards act
+        # on disjoint rows but two of them write coordinate/country payloads, so
+        # we accumulate (dedupe by occurrenceID) instead of overwriting.
+        merge_coords_corrections <- function(new_df) {
+            cur <- rv$coords_corrections$corrections
+            merged <- if (is.null(cur)) new_df else rbind(cur, new_df)
+            merged <- merged[!duplicated(merged$occurrenceID, fromLast = TRUE), , drop = FALSE]
+            rv$coords_corrections <- list(corrections = merged)
+        }
+        merge_country_fills <- function(new_df) {
+            cur <- rv$country_fills$country
+            merged <- if (is.null(cur)) new_df else rbind(cur, new_df)
+            merged <- merged[!duplicated(merged$occurrenceID, fromLast = TRUE), , drop = FALSE]
+            rv$country_fills <- list(country = merged)
+        }
+
         shiny::observeEvent(input$apply_transposed, {
             tbl <- rv$transposed_table
             if (is.null(tbl) || nrow(tbl) == 0L) return(invisible(NULL))
-            rv$coords_corrections <- list(
-                corrections = tbl[, c("occurrenceID", "decimalLatitude", "decimalLongitude"), drop = FALSE]
+            merge_coords_corrections(
+                tbl[, c("occurrenceID", "decimalLatitude", "decimalLongitude"), drop = FALSE]
             )
             rv$transposed_applied <- TRUE
             notify_saira(
@@ -933,10 +1008,124 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             )
         }, ignoreInit = TRUE)
 
+        # Combined swap + country-fill panel (blank country, sea point).
+        output$swap_fill_panel <- shiny::renderUI({
+            tbl <- rv$swap_fill_table
+            if (is.null(tbl) || nrow(tbl) == 0L) return(NULL)
+            n <- nrow(tbl)
+            applied <- isTRUE(rv$swap_fill_applied)
+            ex <- tbl[1, ]
+
+            shiny::div(
+                class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
+                shiny::div(
+                    class = "coords-transposed-head",
+                    shiny::icon(if (applied) "circle-check" else "right-left"),
+                    shiny::span(
+                        class = "coords-transposed-title",
+                        if (applied) {
+                            sprintf(tr("validate_coords_swapfill_applied", lang_r()), n)
+                        } else {
+                            sprintf(tr("validate_coords_swapfill_found", lang_r()), n)
+                        }
+                    )
+                ),
+                shiny::div(
+                    class = "coords-transposed-example",
+                    shiny::div(sprintf("(%.2f, %.2f)", ex$lat_old, ex$lon_old)),
+                    shiny::div(class = "coords-transposed-ex-arrow",
+                               sprintf("→ (%.2f, %.2f) · %s",
+                                       ex$decimalLatitude, ex$decimalLongitude, ex$country))
+                ),
+                if (n > 1L) {
+                    shiny::p(class = "coords-transposed-more",
+                             sprintf(tr("validate_coords_transposed_more", lang_r()), n - 1L))
+                },
+                if (!applied) {
+                    shiny::actionButton(
+                        ns("apply_swap_fill"),
+                        tr("validate_coords_swapfill_apply", lang_r()),
+                        icon = shiny::icon("wand-magic-sparkles"),
+                        class = "btn btn-primary btn-sm w-100"
+                    )
+                }
+            )
+        })
+
+        shiny::observeEvent(input$apply_swap_fill, {
+            tbl <- rv$swap_fill_table
+            if (is.null(tbl) || nrow(tbl) == 0L) return(invisible(NULL))
+            merge_coords_corrections(
+                tbl[, c("occurrenceID", "decimalLatitude", "decimalLongitude"), drop = FALSE]
+            )
+            merge_country_fills(tbl[, c("occurrenceID", "country"), drop = FALSE])
+            rv$swap_fill_applied <- TRUE
+            notify_saira(
+                message = sprintf(tr("validate_coords_swapfill_applied", lang_r()), nrow(tbl)),
+                type = "message",
+                key = "coords_swapfill_applied"
+            )
+        }, ignoreInit = TRUE)
+
+        # Country-from-coordinates fill panel.
+        output$country_panel <- shiny::renderUI({
+            tbl <- rv$country_fill_table
+            if (is.null(tbl) || nrow(tbl) == 0L) return(NULL)
+            n <- nrow(tbl)
+            applied <- isTRUE(rv$country_fill_applied)
+            ex <- tbl[1, ]
+
+            shiny::div(
+                class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
+                shiny::div(
+                    class = "coords-transposed-head",
+                    shiny::icon(if (applied) "circle-check" else "earth-americas"),
+                    shiny::span(
+                        class = "coords-transposed-title",
+                        if (applied) {
+                            sprintf(tr("validate_coords_country_filled", lang_r()), n)
+                        } else {
+                            sprintf(tr("validate_coords_country_found", lang_r()), n)
+                        }
+                    )
+                ),
+                shiny::div(
+                    class = "coords-transposed-example",
+                    shiny::div(sprintf("(%.2f, %.2f)", ex$lat, ex$lon)),
+                    shiny::div(class = "coords-transposed-ex-arrow", sprintf("→ %s", ex$country))
+                ),
+                if (n > 1L) {
+                    shiny::p(class = "coords-transposed-more",
+                             sprintf(tr("validate_coords_transposed_more", lang_r()), n - 1L))
+                },
+                if (!applied) {
+                    shiny::actionButton(
+                        ns("apply_country_fill"),
+                        tr("validate_coords_country_apply", lang_r()),
+                        icon = shiny::icon("wand-magic-sparkles"),
+                        class = "btn btn-primary btn-sm w-100"
+                    )
+                }
+            )
+        })
+
+        shiny::observeEvent(input$apply_country_fill, {
+            tbl <- rv$country_fill_table
+            if (is.null(tbl) || nrow(tbl) == 0L) return(invisible(NULL))
+            merge_country_fills(tbl[, c("occurrenceID", "country"), drop = FALSE])
+            rv$country_fill_applied <- TRUE
+            notify_saira(
+                message = sprintf(tr("validate_coords_country_filled", lang_r()), nrow(tbl)),
+                type = "message",
+                key = "coords_country_filled"
+            )
+        }, ignoreInit = TRUE)
+
         result_r <- shiny::reactive(coord_validation_r())
         attr(result_r, "filtered_data") <- filtered_result_r
         attr(result_r, "active_filter") <- active_filter
         attr(result_r, "coords_correction_payload") <- shiny::reactive(rv$coords_corrections)
+        attr(result_r, "country_fill_payload") <- shiny::reactive(rv$country_fills)
         return(result_r)
     })
 }
