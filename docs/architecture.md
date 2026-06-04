@@ -328,7 +328,7 @@ Authors@R: person("Rogério", "Nunes Oliveira", email = "rogerio@sibbr.gov.br", 
 Description: Shiny application for standardizing biodiversity datasets to the
     Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools
     for data validation, column mapping, and taxonomic verification.
-License: MIT + file LICENSE
+License: GPL-3
 Encoding: UTF-8
 Depends: R (>= 4.1.0)
 RoxygenNote: 7.3.3
@@ -691,7 +691,7 @@ rsconnect::deployApp(
 
 **Mantenedor**: [Seu Nome]  
 **Repositório**: `https://github.com/seu_usuario/saira`  
-**Licença**: MIT
+**Licença**: GPL-3
 
 ### Como Contribuir
 1. Fork o repositório

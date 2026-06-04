@@ -7,6 +7,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **README rewritten for non-R users, bilingual.** The README now leads with a plain-language Portuguese (PT-BR) section explaining what Saíra does, a 4-step "how it works" table, and a beginner-oriented "Primeiros passos" that walks a non-programmer through installing R + RStudio, pasting the install block, and launching the app — followed by a full English (EN-US) mirror of every section. Developer/clone/test instructions moved to a secondary "For developers" section. No visual assets added.
+- **License changed from MIT to GPL-3.** `DESCRIPTION` now declares `License: GPL-3` (matching `bdc`); the MIT `LICENSE` stub is removed and `LICENSE.md` carries the full GNU GPL v3.0 text. `CONTRIBUTING.md`, `README.md`, and `docs/architecture.md` updated accordingly. The maintainer is the sole copyright holder, so the relicense is clean.
+
 ## [0.6.0] - 2026-06-04
 
 ### Added

@@ -6,7 +6,7 @@ Description: Shiny application for standardizing biodiversity datasets to the
     Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools
     for data validation, column mapping, and taxonomic verification. Designed
     for use with SiBBr (Sistema de Informação sobre a Biodiversidade Brasileira).
-License: MIT + file LICENSE
+License: GPL-3
 URL: https://github.com/rogerio-onza/saira
 BugReports: https://github.com/rogerio-onza/saira/issues
 Encoding: UTF-8
