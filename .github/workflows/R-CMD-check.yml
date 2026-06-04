@@ -21,6 +21,13 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
       _R_CHECK_FORCE_SUGGESTS_: false
+      # Disable the committed renv autoloader in CI. Without this, renv/activate.R
+      # redirects the package library to ~/.cache/R/renv/..., which (a) makes
+      # r-lib/actions/setup-r-dependencies fail to cache ("no cache is being
+      # saved") so every run reinstalls from scratch, and (b) forces ~160
+      # packages to compile from source each run (~54 min). Disabling it lets the
+      # action install into the standard library and cache it normally.
+      RENV_CONFIG_AUTOLOADER_ENABLED: false
     steps:
       - uses: actions/checkout@v4
 
