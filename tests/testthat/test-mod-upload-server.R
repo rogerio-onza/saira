@@ -9,8 +9,10 @@ testthat::test_that("mod_upload_server keeps startup stable when get_dwc_terms f
         .package = "saira"
     )
 
+    # The DwC-terms load failure now surfaces as a warning (graceful
+    # degradation); this test asserts startup stays error-free regardless.
     testthat::expect_no_error(
-        shiny::testServer(
+        suppressWarnings(shiny::testServer(
             mod_upload_server,
             args = list(
                 lang_r = shiny::reactive("en")
@@ -20,7 +22,7 @@ testthat::test_that("mod_upload_server keeps startup stable when get_dwc_terms f
                 testthat::expect_true(shiny::is.reactive(returned))
                 testthat::expect_no_error(session$flushReact())
             }
-        )
+        ))
     )
 })
 
