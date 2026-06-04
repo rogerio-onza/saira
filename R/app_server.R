@@ -94,6 +94,7 @@ app_server <- function(input, output, session) {
         validation_gate_r = coord_validation_gate
     )
     coords_correction_payload_r <- attr(coord_validation_r, "coords_correction_payload")
+    country_fill_payload_r <- attr(coord_validation_r, "country_fill_payload")
 
     # Consumers of mapped_data
     mod_preview_server(
@@ -107,7 +108,8 @@ app_server <- function(input, output, session) {
         raw_data_r                 = raw_data,
         map_values_r               = mapping_result$map_values_r,
         custom_values_r            = mapping_result$custom_values_r,
-        coords_correction_payload_r = coords_correction_payload_r
+        coords_correction_payload_r = coords_correction_payload_r,
+        country_fill_payload_r     = country_fill_payload_r
     )
 
     # Independent modules (no data dependency)

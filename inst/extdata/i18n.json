@@ -2127,6 +2127,30 @@
     "pt": "Corrigir coordenadas transpostas",
     "en": "Correct transposed coordinates"
   },
+  "validate_coords_country_found": {
+    "pt": "%d país(es) faltando — preenchível(eis) pelas coordenadas",
+    "en": "%d missing country value(s) — fillable from coordinates"
+  },
+  "validate_coords_country_filled": {
+    "pt": "%d país(es) preenchido(s) pelas coordenadas — aplicado na exportação",
+    "en": "%d country value(s) filled from coordinates — applied on export"
+  },
+  "validate_coords_country_apply": {
+    "pt": "Preencher país pelas coordenadas",
+    "en": "Fill country from coordinates"
+  },
+  "validate_coords_swapfill_found": {
+    "pt": "%d ponto(s) no mar + país vazio — corrigível(eis) por troca lat/lon",
+    "en": "%d point(s) at sea + blank country — fixable by lat/lon swap"
+  },
+  "validate_coords_swapfill_applied": {
+    "pt": "%d corrigido(s): lat/lon trocadas + país preenchido — aplicado na exportação",
+    "en": "%d fixed: lat/lon swapped + country filled — applied on export"
+  },
+  "validate_coords_swapfill_apply": {
+    "pt": "Trocar lat/lon e preencher país",
+    "en": "Swap lat/lon and fill country"
+  },
   "validate_coords_transposed_more": {
     "pt": "+%d outra(s)",
     "en": "+%d more"
