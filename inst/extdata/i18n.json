@@ -2115,6 +2115,22 @@
     "pt": "Possível inversão",
     "en": "Possible swap"
   },
+  "validate_coords_transposed_found": {
+    "pt": "%d coordenada(s) transposta(s) detectada(s) e corrigível(eis)",
+    "en": "%d transposed coordinate(s) detected and correctable"
+  },
+  "validate_coords_transposed_applied": {
+    "pt": "%d coordenada(s) transposta(s) corrigida(s) — aplicadas na exportação",
+    "en": "%d transposed coordinate(s) corrected — applied on export"
+  },
+  "validate_coords_transposed_apply": {
+    "pt": "Corrigir coordenadas transpostas",
+    "en": "Correct transposed coordinates"
+  },
+  "validate_coords_transposed_more": {
+    "pt": "+%d outra(s)",
+    "en": "+%d more"
+  },
   "validate_coords_diag_sea": {
     "pt": "Em mar aberto",
     "en": "At sea"

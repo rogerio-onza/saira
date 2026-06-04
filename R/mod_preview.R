@@ -61,7 +61,8 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                                sensitivity_payload_r = NULL,
                                raw_data_r = NULL,
                                map_values_r = NULL,
-                               custom_values_r = NULL) {
+                               custom_values_r = NULL,
+                               coords_correction_payload_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
         required_download_fields <- c(
@@ -849,6 +850,16 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                             download_data(),
                             payload = export_name_review_payload()
                         )
+
+                        # Apply transposed-coordinate corrections approved in the
+                        # coordinate validation tab (preserves verbatim coords).
+                        coords_payload <- if (!is.null(coords_correction_payload_r) &&
+                                              shiny::is.reactive(coords_correction_payload_r)) {
+                            tryCatch(coords_correction_payload_r(), error = function(e) NULL)
+                        } else {
+                            NULL
+                        }
+                        review_ready <- apply_coords_correction_payload(review_ready, coords_payload)
 
                         raw_df <- if (!is.null(raw_data_r) && shiny::is.reactive(raw_data_r)) {
                             tryCatch(raw_data_r(), error = function(e) data.frame())

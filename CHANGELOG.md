@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Transposed-coordinate correction in the coordinate validation tab.** After validation, Saira flags records whose latitude/longitude are swapped or sign-flipped and, when a transformation makes the point fall inside the informed country, offers a one-click "Correct transposed coordinates" action (preview of verbatim → corrected). Corrections are applied at export and the originals are preserved in `verbatimLatitude`/`verbatimLongitude`. Reimplements the core of `bdc::bdc_coordinates_transposed()` on Saira's bundled Natural Earth country layer (no `bdc` dependency); engine in `coords_transposed_corrections()` / `apply_coords_correction_payload()`.
+
 ### Changed
 - **Default column-mapping term set is now the "Rede Felinos do Brasil" occurrence template.** `inst/extdata/dwc_terms.rds` is rebuilt from the template's 51 terms (xlsx order; typos `decimaLatitude` and trailing-space `family ` corrected) plus 13 curated extras kept in the default — `year`/`month`/`day`, `catalogNumber`, `collectionCode`, `taxonRank`, `kingdom`, `phylum`, `scientificNameAuthorship`, `rightsHolder`, `verbatimLatitude`/`verbatimLongitude`, `fieldNotes` — 64 terms total. Four niche terms (`disposition`, `preparations`, `infraspecificEpithet`, `verbatimIdentification`) drop from the default but remain available via "Add term". Term classes now follow TDWG so the by-class UI groups coherently (e.g. `eventDate`, `year`/`month`/`day` and sampling terms under Event); `dwc_full_catalog.rds` is re-ordered to keep base terms first. Reproducible via `data-raw/build_dwc_terms.R`.
 

@@ -85,6 +85,16 @@ app_server <- function(input, output, session) {
     name_review_payload_r <- attr(validate_names_r, "review_export_payload")
     sensitivity_payload_r <- attr(validate_names_r, "sensitivity_payload")
 
+    # Coordinate validation runs before preview so its transposed-coordinate
+    # correction payload can be applied at export (mirrors name review).
+    coord_validation_r <- mod_validate_coords_server(
+        "validate_coords",
+        mapped_data,
+        lang_r,
+        validation_gate_r = coord_validation_gate
+    )
+    coords_correction_payload_r <- attr(coord_validation_r, "coords_correction_payload")
+
     # Consumers of mapped_data
     mod_preview_server(
         "preview",
@@ -96,13 +106,8 @@ app_server <- function(input, output, session) {
         sensitivity_payload_r      = sensitivity_payload_r,
         raw_data_r                 = raw_data,
         map_values_r               = mapping_result$map_values_r,
-        custom_values_r            = mapping_result$custom_values_r
-    )
-    coord_validation_r <- mod_validate_coords_server(
-        "validate_coords",
-        mapped_data,
-        lang_r,
-        validation_gate_r = coord_validation_gate
+        custom_values_r            = mapping_result$custom_values_r,
+        coords_correction_payload_r = coords_correction_payload_r
     )
 
     # Independent modules (no data dependency)

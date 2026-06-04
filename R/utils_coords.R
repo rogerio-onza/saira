@@ -1131,6 +1131,208 @@ validate_coords_cc_df <- function(
     out
 }
 
+# Coordinate transformations tried when correcting transposed / sign-flipped
+# coordinates, in priority order. Each maps original (lat, lon) to a candidate.
+coords_transpose_transforms <- function() {
+    list(
+        list(key = "swap",          fn = function(la, lo) list(lat = lo,  lon = la)),
+        list(key = "neg_lon",       fn = function(la, lo) list(lat = la,  lon = -lo)),
+        list(key = "neg_lat",       fn = function(la, lo) list(lat = -la, lon = lo)),
+        list(key = "neg_both",      fn = function(la, lo) list(lat = -la, lon = -lo)),
+        list(key = "swap_neg_lon",  fn = function(la, lo) list(lat = lo,  lon = -la)),
+        list(key = "swap_neg_lat",  fn = function(la, lo) list(lat = -lo, lon = la)),
+        list(key = "swap_neg_both", fn = function(la, lo) list(lat = -lo, lon = -la))
+    )
+}
+
+# Point-in-polygon test for a single (already-subset) country SpatVector.
+# Returns a logical vector aligned with lon/lat; FALSE for out-of-range/NA.
+coords_points_in_poly <- function(lon, lat, poly) {
+    n <- length(lon)
+    out <- rep(FALSE, n)
+    if (is.null(poly) || nrow(poly) == 0L) return(out)
+    ok <- is.finite(lon) & is.finite(lat) & abs(lat) <= 90 & abs(lon) <= 180
+    if (!any(ok)) return(out)
+    pts <- terra::vect(
+        data.frame(.lon = lon[ok], .lat = lat[ok]),
+        geom = c(".lon", ".lat"),
+        crs = "+proj=longlat +datum=WGS84 +no_defs"
+    )
+    ex <- tryCatch(terra::extract(poly[, 1], pts), error = function(e) NULL)
+    if (is.null(ex) || ncol(ex) < 2L) return(out)
+    ex <- ex[!duplicated(ex[[1]]), , drop = FALSE]
+    out[ok] <- !is.na(ex[[2]])
+    out
+}
+
+#' Detect and correct transposed / sign-flipped geographic coordinates
+#'
+#' Reimplements the core of \code{bdc::bdc_coordinates_transposed()} on Saira's
+#' bundled Natural Earth country layer (no \code{bdc} dependency). For records
+#' whose verbatim coordinates fall outside the informed country (plus an optional
+#' border buffer), tries latitude/longitude swap and sign-flip transformations
+#' and accepts the first that lands inside the country. Verbatim coordinates are
+#' never mutated here — corrections are returned alongside the originals so the
+#' caller (UI) can preview and apply them explicitly.
+#'
+#' @param df data.frame with coordinate and country columns.
+#' @param lat_col,lon_col,country_col Column names.
+#' @param country_iso3 Optional precomputed ISO3 vector (else resolved from
+#'   \code{country_col} via \code{coords_country_to_iso3()}).
+#' @param border_buffer Numeric degrees. Records within this distance of the
+#'   informed country border are left untouched. Default 0.2 (~22 km).
+#' @param ref Optional country SpatVector (else \code{coords_load_ne_land(50)}).
+#' @param iso_col ISO3 attribute column name in \code{ref}.
+#' @return Named list: \code{corrected} (logical), \code{lat_new}/\code{lon_new}
+#'   (numeric, equal to originals where not corrected), \code{transform}
+#'   (character key or NA), \code{informed_country} (ISO3), \code{n_corrected},
+#'   \code{n_candidates}, \code{available} (FALSE when no country layer could be
+#'   loaded, e.g. offline).
+#' @export
+coords_transposed_corrections <- function(df,
+                                          lat_col = "decimalLatitude",
+                                          lon_col = "decimalLongitude",
+                                          country_col = "country",
+                                          country_iso3 = NULL,
+                                          border_buffer = 0.2,
+                                          ref = NULL,
+                                          iso_col = "iso_a3_eh") {
+    n <- if (is.data.frame(df)) nrow(df) else 0L
+    lat0 <- if (n > 0L) as_coord_numeric(df[[lat_col]])$num else numeric(0)
+    lon0 <- if (n > 0L) as_coord_numeric(df[[lon_col]])$num else numeric(0)
+
+    base_out <- list(
+        corrected = rep(FALSE, n),
+        lat_new = lat0, lon_new = lon0,
+        transform = rep(NA_character_, n),
+        informed_country = rep(NA_character_, n),
+        n_corrected = 0L, n_candidates = 0L, available = TRUE
+    )
+    if (n == 0L) return(base_out)
+
+    if (is.null(country_iso3)) {
+        country_iso3 <- coords_country_to_iso3(df[[country_col]])
+    }
+    country_iso3 <- toupper(as.character(country_iso3))
+    base_out$informed_country <- country_iso3
+
+    if (is.null(ref)) ref <- coords_load_ne_land(scale = 50L)
+    if (is.null(ref) || !inherits(ref, "SpatVector") || !iso_col %in% names(ref)) {
+        base_out$available <- FALSE
+        return(base_out)
+    }
+
+    border_buffer <- suppressWarnings(as.numeric(border_buffer)[1L])
+    if (!is.finite(border_buffer) || border_buffer < 0) border_buffer <- 0
+    buf_m <- border_buffer * 111319.5  # ~ degrees -> metres at the equator
+
+    has_iso <- !is.na(country_iso3) & nzchar(country_iso3)
+    in_range <- is.finite(lat0) & is.finite(lon0) & abs(lat0) <= 180 & abs(lon0) <= 180
+
+    lat_new <- lat0
+    lon_new <- lon0
+    transform <- rep(NA_character_, n)
+    corrected <- rep(FALSE, n)
+    candidate <- rep(FALSE, n)
+    transforms <- coords_transpose_transforms()
+
+    iso_values <- toupper(as.character(ref[[iso_col]][[1]]))
+    for (iso in unique(country_iso3[has_iso & in_range])) {
+        rows <- which(has_iso & in_range & country_iso3 == iso)
+        if (length(rows) == 0L) next
+        poly <- ref[which(iso_values == iso), ]
+        if (nrow(poly) == 0L) next  # informed country not in the reference layer
+        poly_acc <- if (buf_m > 0) {
+            tryCatch(terra::buffer(poly, width = buf_m), error = function(e) poly)
+        } else {
+            poly
+        }
+
+        # Records already inside (buffered) country are not candidates.
+        orig_in <- coords_points_in_poly(lon0[rows], lat0[rows], poly_acc)
+        cand_rows <- rows[!orig_in]
+        candidate[cand_rows] <- TRUE
+        if (length(cand_rows) == 0L) next
+
+        remaining <- cand_rows
+        for (tf in transforms) {
+            if (length(remaining) == 0L) break
+            cand <- tf$fn(lat0[remaining], lon0[remaining])
+            inside <- coords_points_in_poly(cand$lon, cand$lat, poly_acc)
+            acc <- remaining[inside]
+            if (length(acc) > 0L) {
+                hit <- which(inside)
+                lat_new[acc] <- cand$lat[hit]
+                lon_new[acc] <- cand$lon[hit]
+                transform[acc] <- tf$key
+                corrected[acc] <- TRUE
+                remaining <- remaining[!inside]
+            }
+        }
+    }
+
+    list(
+        corrected = corrected,
+        lat_new = lat_new, lon_new = lon_new,
+        transform = transform,
+        informed_country = country_iso3,
+        n_corrected = sum(corrected),
+        n_candidates = sum(candidate),
+        available = TRUE
+    )
+}
+
+#' Apply a transposed-coordinate correction payload at export time
+#'
+#' Companion to \code{coords_transposed_corrections()} consumed by the preview /
+#' export module. Replaces \code{decimalLatitude}/\code{decimalLongitude} for the
+#' rows named in the payload (matched by \code{occurrenceID}), preserving the
+#' originals in \code{verbatimLatitude}/\code{verbatimLongitude} when those
+#' columns exist and are still empty.
+#'
+#' @param df Export data frame (must contain occurrenceID + coordinate columns).
+#' @param payload List with \code{corrections}: a data.frame of
+#'   \code{occurrenceID}, \code{decimalLatitude}, \code{decimalLongitude}.
+#' @return \code{df} with corrected coordinates applied.
+#' @export
+apply_coords_correction_payload <- function(df, payload = NULL) {
+    if (!is.data.frame(df) || nrow(df) == 0L) return(df)
+    if (is.null(payload) || !is.list(payload) ||
+        is.null(payload$corrections) || !is.data.frame(payload$corrections)) {
+        return(df)
+    }
+    corr <- payload$corrections
+    needed <- c("occurrenceID", "decimalLatitude", "decimalLongitude")
+    if (!all(needed %in% names(corr)) || nrow(corr) == 0L) return(df)
+    if (!all(c("occurrenceID", "decimalLatitude", "decimalLongitude") %in% names(df))) {
+        return(df)
+    }
+
+    corr <- corr[!is.na(corr$occurrenceID) & nzchar(as.character(corr$occurrenceID)), , drop = FALSE]
+    corr <- corr[!duplicated(corr$occurrenceID, fromLast = TRUE), , drop = FALSE]
+    if (nrow(corr) == 0L) return(df)
+
+    idx <- match(as.character(corr$occurrenceID), as.character(df$occurrenceID))
+    keep <- !is.na(idx)
+    idx <- idx[keep]
+    corr <- corr[keep, , drop = FALSE]
+    if (length(idx) == 0L) return(df)
+
+    # Preserve verbatim originals where the template provides the columns and
+    # they are not already populated.
+    for (vcol in c("verbatimLatitude", "verbatimLongitude")) {
+        if (vcol %in% names(df)) {
+            src <- if (vcol == "verbatimLatitude") "decimalLatitude" else "decimalLongitude"
+            blank <- is.na(df[[vcol]][idx]) | !nzchar(trimws(as.character(df[[vcol]][idx])))
+            df[[vcol]][idx[blank]] <- as.character(df[[src]][idx[blank]])
+        }
+    }
+
+    df$decimalLatitude[idx]  <- as.character(corr$decimalLatitude)
+    df$decimalLongitude[idx] <- as.character(corr$decimalLongitude)
+    df
+}
+
 #' Validate latitude/longitude columns with legacy issue typing
 #'
 #' @param df Data frame containing coordinate columns

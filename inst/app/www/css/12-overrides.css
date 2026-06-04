@@ -63,11 +63,13 @@
    bslib::page_navbar(fillable = TRUE) impoe height: 100vh; overflow: hidden
    no body. Abas com conteudo que naturalmente extrapola a viewport
    (Wiki com 217 termos + 12 pills, Preview com pageLength alto ou muitas
-   colunas) precisam liberar scroll de pagina sem afetar abas com layout
-   viewport-bound (Validate Names/Coords usam calc(100vh - 166px)).
-   :has() e tecnica validada no projeto (LESSONS:226). */
+   colunas, Validate Coords com mapa 560px + tabela + painel de correcao de
+   transpostas + legendas abaixo do mapa) precisam liberar scroll de pagina.
+   :has() e tecnica validada no projeto (LESSONS:226). A coluna esquerda do
+   Coords permanece sticky, entao so o conteudo da direita rola. */
 .tab-content > .tab-pane:has(.wiki-module),
-.tab-content > .tab-pane:has(.preview-page) {
+.tab-content > .tab-pane:has(.preview-page),
+.tab-content > .tab-pane:has(.validate-coords-page) {
   overflow-y: auto;
   height: auto;
   max-height: none;
