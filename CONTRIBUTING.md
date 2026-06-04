@@ -128,5 +128,5 @@ Open an issue at https://github.com/rogerio-onza/saira/issues with:
 
 ## License
 
-By contributing, you agree your contributions are licensed under the MIT
-License (see [LICENSE](LICENSE)).
+By contributing, you agree your contributions are licensed under the GNU
+General Public License v3.0 (see [LICENSE.md](LICENSE.md)).
