@@ -21,7 +21,7 @@ mod_validate_coords_ui <- function(id) {
                 shiny::div(
                     class = "col-12 col-lg-2 validate-coords-left",
                     shiny::uiOutput(ns("action_card")),
-                    shiny::uiOutput(ns("stats_panel"))
+                    shiny::uiOutput(ns("transposed_panel"))
                 ),
                 shiny::div(
                     class = "col-12 col-lg-10 validate-coords-right",
@@ -79,7 +79,10 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             start_requested = FALSE,
             run_requested = FALSE,
             stream_filter = "all",
-            last_run_status = "idle"
+            last_run_status = "idle",
+            transposed_table = NULL,     # data.frame of correctable rows (preview)
+            transposed_applied = FALSE,
+            coords_corrections = NULL     # payload applied at export
         )
 
         normalize_gate <- function(gate) {
@@ -413,37 +416,9 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             )
         })
 
-        output$stats_panel <- shiny::renderUI({
-            res <- coord_validation_r()
-            if (is.null(res) || !is.data.frame(res) || nrow(res) == 0L) {
-                return(NULL)
-            }
-
-            counts <- count_coords_diagnostics(res)
-            shiny::div(
-                class = "stats-container validate-coords-stats mb-3",
-                shiny::div(
-                    class = "stat-box stat-box-ok",
-                    shiny::div(class = "stat-value", as.integer(counts$ok %||% 0L)),
-                    shiny::div(class = "stat-label", tr("validate_coords_valid", lang_r()))
-                ),
-                shiny::div(
-                    class = "stat-box stat-box-error",
-                    shiny::div(class = "stat-value", as.integer(counts$problems %||% 0L)),
-                    shiny::div(class = "stat-label", tr("validate_coords_filter_problems", lang_r()))
-                ),
-                shiny::div(
-                    class = "stat-box stat-box-muted",
-                    shiny::div(class = "stat-value", as.integer(counts$missing %||% 0L)),
-                    shiny::div(class = "stat-label", tr("validate_coords_missing", lang_r()))
-                ),
-                shiny::div(
-                    class = "stat-box stat-box-warn",
-                    shiny::div(class = "stat-value", as.integer(counts$reference %||% 0L)),
-                    shiny::div(class = "stat-label", tr("validate_coords_filter_reference", lang_r()))
-                )
-            )
-        })
+        # stats_panel removed: the four count boxes duplicated the filter pill
+        # counts above the map. The left column now hosts the transposed-coords
+        # correction card instead.
 
         output$filter_pills <- shiny::renderUI({
             res <- coord_validation_r()
@@ -854,6 +829,35 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rv$stream_filter <- "problems"
                 rv$last_run_status <- "success"
 
+                # Detect transposed / sign-flipped coordinates correctable
+                # against the informed country (reuses the same data frame).
+                rv$transposed_applied <- FALSE
+                rv$coords_corrections <- NULL
+                rv$transposed_table <- NULL
+                tr_res <- tryCatch(
+                    coords_transposed_corrections(
+                        df,
+                        lat_col = "decimalLatitude",
+                        lon_col = "decimalLongitude",
+                        country_col = "country"
+                    ),
+                    error = function(e) NULL
+                )
+                if (!is.null(tr_res) && isTRUE(tr_res$available) &&
+                    tr_res$n_corrected > 0L && "occurrenceID" %in% names(df)) {
+                    ci <- which(tr_res$corrected)
+                    rv$transposed_table <- data.frame(
+                        occurrenceID = as.character(df$occurrenceID)[ci],
+                        country = as.character(df$country)[ci],
+                        lat_old = as_coord_numeric(df$decimalLatitude)$num[ci],
+                        lon_old = as_coord_numeric(df$decimalLongitude)$num[ci],
+                        decimalLatitude = tr_res$lat_new[ci],
+                        decimalLongitude = tr_res$lon_new[ci],
+                        transform = tr_res$transform[ci],
+                        stringsAsFactors = FALSE
+                    )
+                }
+
                 conversion <- attr(result, "conversion_failures")
                 total_conversion_failures <- suppressWarnings(as.integer(conversion$total))
                 if (length(total_conversion_failures) == 1L &&
@@ -869,9 +873,70 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             ignoreInit = FALSE
         )
 
+        # Transposed-coordinate correction panel (shown after validation when
+        # one or more records can be corrected against the informed country).
+        output$transposed_panel <- shiny::renderUI({
+            tbl <- rv$transposed_table
+            if (is.null(tbl) || nrow(tbl) == 0L) return(NULL)
+            n <- nrow(tbl)
+            applied <- isTRUE(rv$transposed_applied)
+            ex <- tbl[1, ]
+
+            shiny::div(
+                class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
+                shiny::div(
+                    class = "coords-transposed-head",
+                    shiny::icon(if (applied) "circle-check" else "right-left"),
+                    shiny::span(
+                        class = "coords-transposed-title",
+                        if (applied) {
+                            sprintf(tr("validate_coords_transposed_applied", lang_r()), n)
+                        } else {
+                            sprintf(tr("validate_coords_transposed_found", lang_r()), n)
+                        }
+                    )
+                ),
+                # One compact, stacked example (fits the narrow left column).
+                shiny::div(
+                    class = "coords-transposed-example",
+                    shiny::div(class = "coords-transposed-ex-country", ex$country),
+                    shiny::div(sprintf("(%.2f, %.2f)", ex$lat_old, ex$lon_old)),
+                    shiny::div(class = "coords-transposed-ex-arrow",
+                               sprintf("→ (%.2f, %.2f)", ex$decimalLatitude, ex$decimalLongitude))
+                ),
+                if (n > 1L) {
+                    shiny::p(class = "coords-transposed-more",
+                             sprintf(tr("validate_coords_transposed_more", lang_r()), n - 1L))
+                },
+                if (!applied) {
+                    shiny::actionButton(
+                        ns("apply_transposed"),
+                        tr("validate_coords_transposed_apply", lang_r()),
+                        icon = shiny::icon("wand-magic-sparkles"),
+                        class = "btn btn-primary btn-sm w-100"
+                    )
+                }
+            )
+        })
+
+        shiny::observeEvent(input$apply_transposed, {
+            tbl <- rv$transposed_table
+            if (is.null(tbl) || nrow(tbl) == 0L) return(invisible(NULL))
+            rv$coords_corrections <- list(
+                corrections = tbl[, c("occurrenceID", "decimalLatitude", "decimalLongitude"), drop = FALSE]
+            )
+            rv$transposed_applied <- TRUE
+            notify_saira(
+                message = sprintf(tr("validate_coords_transposed_applied", lang_r()), nrow(tbl)),
+                type = "message",
+                key = "coords_transposed_applied"
+            )
+        }, ignoreInit = TRUE)
+
         result_r <- shiny::reactive(coord_validation_r())
         attr(result_r, "filtered_data") <- filtered_result_r
         attr(result_r, "active_filter") <- active_filter
+        attr(result_r, "coords_correction_payload") <- shiny::reactive(rv$coords_corrections)
         return(result_r)
     })
 }

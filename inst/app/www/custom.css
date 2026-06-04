@@ -2029,11 +2029,13 @@ table.dataTable tbody tr.validate-invalid td {
    bslib::page_navbar(fillable = TRUE) impoe height: 100vh; overflow: hidden
    no body. Abas com conteudo que naturalmente extrapola a viewport
    (Wiki com 217 termos + 12 pills, Preview com pageLength alto ou muitas
-   colunas) precisam liberar scroll de pagina sem afetar abas com layout
-   viewport-bound (Validate Names/Coords usam calc(100vh - 166px)).
-   :has() e tecnica validada no projeto (LESSONS:226). */
+   colunas, Validate Coords com mapa 560px + tabela + painel de correcao de
+   transpostas + legendas abaixo do mapa) precisam liberar scroll de pagina.
+   :has() e tecnica validada no projeto (LESSONS:226). A coluna esquerda do
+   Coords permanece sticky, entao so o conteudo da direita rola. */
 .tab-content > .tab-pane:has(.wiki-module),
-.tab-content > .tab-pane:has(.preview-page) {
+.tab-content > .tab-pane:has(.preview-page),
+.tab-content > .tab-pane:has(.validate-coords-page) {
   overflow-y: auto;
   height: auto;
   max-height: none;
@@ -4108,6 +4110,58 @@ table.dataTable tbody tr.validate-invalid td {
   margin-bottom: var(--space-2);
   font-size: var(--text-sm);
   color: var(--accent);
+}
+
+/* Transposed-coordinate correction panel */
+.coords-transposed-card {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-3);
+  box-shadow: var(--shadow-sm);
+}
+
+.coords-transposed-card.is-applied {
+  border-color: var(--success);
+}
+
+.coords-transposed-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.coords-transposed-example {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  background: var(--bg-main);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+.coords-transposed-ex-country {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.coords-transposed-ex-arrow {
+  color: var(--success);
+}
+
+.coords-transposed-more {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
 }
 
 .coords-map-container {
