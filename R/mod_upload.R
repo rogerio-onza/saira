@@ -363,7 +363,7 @@ mod_upload_server <- function(id, lang_r) {
         required_terms_all <- tryCatch(
             get_dwc_terms(),
             error = function(e) {
-                message("[Sa\u00EDra] Failed to load DwC terms: ", e$message)
+                warning("[Sa\u00EDra] Failed to load DwC terms: ", e$message)
                 data.frame(
                     term = character(0),
                     class = character(0),
