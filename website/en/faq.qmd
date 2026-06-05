@@ -1,0 +1,70 @@
+---
+title: "Frequently asked questions"
+pagetitle: "FAQ — Saíra"
+---
+
+::: {.tut-standfirst}
+Common questions for people getting started with Saíra to prepare and publish biodiversity data in Darwin Core.
+:::
+
+## Installation and requirements
+
+### Do I need to know how to program to use Saíra?
+No. Once installed, all the work happens through a visual interface in your browser — menus, buttons and tables. The only line of code you need is the one that opens the application.
+
+### What do I need to have installed?
+**R** (version 4.1 or later). RStudio is recommended but not required. See the step-by-step in [Installation and first steps](tutorials/01-installation.qmd).
+
+### How do I install Saíra?
+We recommend `pak`, which resolves dependencies automatically:
+
+```r
+install.packages("pak")
+pak::pak("rogerio-onza/saira")
+```
+
+As an alternative, `remotes::install_github("rogerio-onza/saira")` also works.
+
+### The first installation is taking a long time. Is that normal?
+Yes. Saíra depends on several packages (Shiny, spreadsheet readers, taxonomic and geographic backbones). The first installation downloads and compiles those dependencies and may take a few minutes.
+
+## Using the application
+
+### Does Saíra send my data to the internet?
+No. The application runs **locally** on your computer (or on an institutional server). Your data never leave the environment where the app is running.
+
+### Which languages does the application work in?
+Saíra is bilingual: **Portuguese (PT-BR)** and **English (EN-US)**. You can switch the language at any time in the top corner of the interface. This help site is also available in both languages (see the language button at the top).
+
+### Can I go back to a previous step without losing my work?
+Yes. The workflow is flexible: you can remap a field, reload the spreadsheet or revalidate at any time.
+
+### Which spreadsheet formats does Saíra accept?
+CSV (`.csv`, `.tsv`, `.txt`) and Excel (`.xlsx`, `.xls`), with automatic encoding and separator detection. Details in [Importing your data](tutorials/02-upload.qmd).
+
+## Data and quality
+
+### The accents in my spreadsheet show up broken. What should I do?
+It's an encoding issue. Change the encoding on import (usually **UTF-8** or **Latin-1**) until the preview looks right. See [Importing your data](tutorials/02-upload.qmd).
+
+### Does Saíra automatically fix scientific names?
+It **suggests** corrections from taxonomic backbones, but the final decision is always the specialist's. See [Validating scientific names](tutorials/04-name-validation.qmd).
+
+### How does Saíra handle threatened species?
+Before export, it flags threatened taxa (national list — MMA) and lets you **generalize or omit the location**, protecting vulnerable populations. See [Preview and export](tutorials/06-preview-export.qmd).
+
+## Export and publication
+
+### What does Saíra produce in the end?
+A **Darwin Core Archive (DwC-A)**: a `.zip` package with `occurrence.txt`, `meta.xml` and `eml.xml`, ready for publication.
+
+### How do I publish the file on GBIF or SiBBr?
+Publication happens outside Saíra, usually via your institution's or SiBBr's **IPT** (Integrated Publishing Toolkit). The generated file is already in the expected format.
+
+## Project
+
+### What is Saíra's license?
+Saíra is free software, licensed under the **GPL-3.0**. The code is available on [GitHub](https://github.com/rogerio-onza/saira).
+
+### I found a problem or have a suggestion. Where do I report it?
+Open an *issue* on the [project repository on GitHub](https://github.com/rogerio-onza/saira).

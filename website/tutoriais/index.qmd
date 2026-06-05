@@ -1,0 +1,30 @@
+---
+title: "Tutoriais"
+pagetitle: "Tutoriais — Saíra"
+toc: false
+---
+
+::: {.tut-standfirst}
+Guias passo a passo para levar sua planilha de ocorrências do caderno de campo ao Darwin Core Archive — seguindo o mesmo fluxo do aplicativo, etapa por etapa.
+:::
+
+Os tutoriais acompanham o fluxo de trabalho do Saíra, etapa por etapa. Use a **barra lateral** à esquerda para navegar entre eles e os botões **anterior / próximo** no rodapé de cada página — a leitura segue de forma contínua, da instalação à exportação final. Cada etapa também pode ser lida de forma independente.
+
+## O fluxo, do dado bruto ao DwC-A
+
+1. **[Instalação e primeiros passos](01-instalacao.qmd)** — instale o Saíra a partir do GitHub e abra o aplicativo no navegador.
+2. **[Importando seus dados](02-upload.qmd)** — carregue planilhas em CSV ou Excel e faça a primeira inspeção das colunas.
+3. **[Mapeando campos para Darwin Core](03-mapeamento-dwc.qmd)** — associe cada coluna a um termo Darwin Core com sugestões automáticas.
+4. **[Validando nomes científicos](04-validacao-nomes.qmd)** — confira a nomenclatura, resolva sinônimos e padronize a grafia.
+5. **[Validando coordenadas](05-validacao-coordenadas.qmd)** — encontre coordenadas ausentes ou invertidas e revise no mapa.
+6. **[Pré-visualização e exportação](06-preview-exportacao.qmd)** — revise o resultado, trate espécies sensíveis e gere o Darwin Core Archive.
+
+::: {.callout-note}
+## O fluxo é flexível
+Você não precisa seguir todas as etapas em sequência rígida. O Saíra permite voltar a qualquer passo — remapear um campo, recarregar a planilha ou revalidar — sem perder o trabalho já feito.
+:::
+
+::: {.callout-tip}
+## Pratique com o arquivo de exemplo
+Baixe a planilha de exemplo [`ocorrencias-exemplo.csv`](../assets/exemplo/ocorrencias-exemplo.csv) e siga os tutoriais com ela. É um conjunto pequeno e propositalmente imperfeito (com um acento problemático e uma coordenada invertida), ideal para treinar a validação.
+:::

@@ -1,0 +1,73 @@
+---
+title: "Mapeando campos para Darwin Core"
+pagetitle: "Mapeamento Darwin Core — Tutoriais Saíra"
+---
+
+::: {.tut-standfirst}
+Como associar as colunas da sua planilha aos termos do padrão Darwin Core usando o mapeador visual do Saíra — a etapa que transforma dados locais em registros interoperáveis.
+:::
+
+## Visão geral
+
+Depois de importar seus dados (ver [Importando seus dados](02-upload.qmd)), cada coluna ainda carrega o nome que você usa no dia a dia: <span class="term">numero_tombo</span>, <span class="term">especie</span>, <span class="term">data_coleta</span>. O mapeamento é o passo em que dizemos ao Saíra qual termo Darwin Core corresponde a cada uma dessas colunas.
+
+O Saíra sugere correspondências automaticamente a partir do nome e do conteúdo de cada coluna, mas a decisão final é sempre sua. Um bom mapeamento é a base de tudo o que vem depois: validação, exportação e qualidade dos dados dependem dele.
+
+::: {.callout-tip}
+## Salve um modelo
+Salve seu mapeamento como um **modelo** (<span class="term">template</span>). Coleções costumam reimportar planilhas com a mesma estrutura — reaproveitar o modelo poupa horas a cada novo lote de registros.
+:::
+
+## Abrindo o mapeador
+
+Com os dados carregados, vá até a aba **Mapeamento**. Você verá duas colunas: à esquerda, os campos da sua planilha; à direita, os termos Darwin Core sugeridos.
+
+```{=html}
+<ol class="steps">
+  <li><strong>Revise as sugestões automáticas.</strong>
+    <p>Campos com alta confiança aparecem já preenchidos e marcados em verde. Confirme ou ajuste cada um.</p></li>
+  <li><strong>Resolva os campos não mapeados.</strong>
+    <p>Colunas sem correspondência clara ficam destacadas. Escolha o termo Darwin Core no seletor ou marque a coluna como <span class="term">ignorada</span>.</p></li>
+  <li><strong>Defina o tipo de registro.</strong>
+    <p>Informe o <span class="term">basisOfRecord</span> (por exemplo, <em>PreservedSpecimen</em> para material tombado) — ele se aplica a todos os registros do lote.</p></li>
+  <li><strong>Confira a pré-visualização.</strong>
+    <p>O painel inferior mostra as primeiras linhas já com os nomes Darwin Core, para você validar antes de seguir.</p></li>
+</ol>
+```
+
+### Exemplo de correspondência
+
+A tabela abaixo mostra um mapeamento típico de uma coleção ornitológica:
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Coluna na planilha</th><th></th><th>Termo Darwin Core</th></tr></thead>
+  <tbody>
+    <tr><td>numero_tombo</td><td><span class="arrow">→</span></td><td>catalogNumber</td></tr>
+    <tr><td>especie</td><td><span class="arrow">→</span></td><td>scientificName</td></tr>
+    <tr><td>data_coleta</td><td><span class="arrow">→</span></td><td>eventDate</td></tr>
+    <tr><td>municipio</td><td><span class="arrow">→</span></td><td>municipality</td></tr>
+    <tr><td>coletor</td><td><span class="arrow">→</span></td><td>recordedBy</td></tr>
+  </tbody>
+</table>
+```
+
+## O assistente de basisOfRecord
+
+O termo <span class="term">basisOfRecord</span> descreve a natureza do registro — espécime preservado, observação humana, material fóssil, registro de máquina (armadilha fotográfica), entre outros. O Saíra traz um **assistente** que explica cada opção em linguagem simples e sugere a mais adequada ao seu conjunto de dados.
+
+::: {.callout-warning}
+## Não mapeie duas colunas para o mesmo termo
+Se <span class="term">especie</span> e <span class="term">nome_cientifico</span> apontarem ambas para <span class="term">scientificName</span>, o Saíra sinaliza o conflito e pede que você escolha uma fonte única antes de prosseguir.
+:::
+
+```{=html}
+<figure class="shot">
+  <div class="frame"><span class="ph-label">screenshot · tela de mapeamento</span></div>
+  <figcaption><b>Figura 1.</b> Painel de mapeamento do Saíra, com sugestões automáticas à esquerda e pré-visualização Darwin Core à direita.</figcaption>
+</figure>
+```
+
+## Próximos passos
+
+Com os campos mapeados, seus dados já estão em vocabulário Darwin Core — mas ainda não foram verificados. Siga para **[Validando nomes científicos](04-validacao-nomes.qmd)**.

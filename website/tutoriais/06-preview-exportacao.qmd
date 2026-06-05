@@ -1,0 +1,65 @@
+---
+title: "Pré-visualização e exportação"
+pagetitle: "Exportação DwC-A — Tutoriais Saíra"
+---
+
+::: {.tut-standfirst}
+A reta final: revise o resultado completo, trate espécies sensíveis e gere o Darwin Core Archive pronto para publicar no GBIF e no SiBBr.
+:::
+
+## Pré-visualização
+
+Na aba **Pré-visualização**, o Saíra mostra a tabela final já em vocabulário Darwin Core, com todas as correções aplicadas. É o momento de uma última conferência geral:
+
+- as colunas estão com os nomes Darwin Core corretos;
+- campos obrigatórios estão preenchidos;
+- nomes e coordenadas foram validados nas etapas anteriores.
+
+```{=html}
+<figure class="shot">
+  <div class="frame"><span class="ph-label">screenshot · pré-visualização final</span></div>
+  <figcaption><b>Figura 1.</b> Pré-visualização do conjunto em Darwin Core, com indicadores de completude por campo.</figcaption>
+</figure>
+```
+
+## Espécies sensíveis
+
+Antes de publicar, o Saíra verifica se há **táxons ameaçados** (com base na Lista Nacional da Fauna/Flora — MMA). Para esses registros, você pode optar por **generalizar a localização** (reduzir a precisão das coordenadas) ou omiti-la, protegendo populações vulneráveis sem deixar de publicar o dado.
+
+::: {.callout-warning}
+## Dados sensíveis exigem decisão consciente
+Generalizar coordenadas de espécies ameaçadas é uma boa prática recomendada por GBIF e SiBBr. Avalie caso a caso: o objetivo é compartilhar o conhecimento sem expor a espécie a coleta ou perseguição.
+:::
+
+## Gerando o Darwin Core Archive
+
+```{=html}
+<ol class="steps">
+  <li><strong>Revise os metadados (EML).</strong>
+    <p>Preencha título do conjunto, instituição, licença e responsáveis — eles vão no <span class="term">eml.xml</span>.</p></li>
+  <li><strong>Gere o arquivo.</strong>
+    <p>O Saíra monta o pacote <span class="term">.zip</span> com <span class="term">occurrence.txt</span>, <span class="term">meta.xml</span> e <span class="term">eml.xml</span>.</p></li>
+  <li><strong>Baixe e publique.</strong>
+    <p>Faça o download do Darwin Core Archive e envie-o ao seu IPT (GBIF/SiBBr) para publicação.</p></li>
+</ol>
+```
+
+::: {.callout-tip}
+## O que é um Darwin Core Archive (DwC-A)
+É um pacote `.zip` padronizado: um arquivo de dados (<span class="term">occurrence.txt</span>), um descritor que diz o que cada coluna significa (<span class="term">meta.xml</span>) e os metadados do conjunto (<span class="term">eml.xml</span>). É exatamente o que os repositórios globais esperam receber.
+:::
+
+::: {.callout-warning}
+## A exportação falhou ou ficou indisponível?
+Quase sempre é um **campo obrigatório vazio** ou uma pendência de validação. Confira se há <span class="term">occurrenceID</span>, <span class="term">basisOfRecord</span>, <span class="term">scientificName</span> e <span class="term">eventDate</span> preenchidos, e se as etapas de nomes e coordenadas não deixaram itens não resolvidos. O Saíra indica o que falta antes de liberar o download.
+:::
+
+## Publicando no GBIF e no SiBBr
+
+Com o `.zip` em mãos, a publicação acontece fora do Saíra, normalmente via **IPT** (Integrated Publishing Toolkit) da sua instituição ou do SiBBr. O arquivo gerado pelo Saíra já está no formato esperado — basta carregá-lo e publicar.
+
+## Concluído
+
+Você levou uma planilha bruta até um Darwin Core Archive validado. A partir daqui, seus dados podem ser localizados, citados e combinados com coleções do mundo inteiro. 🐦
+
+Voltar à **[visão geral dos tutoriais](index.qmd)** ou ao **[início](../index.qmd)**.

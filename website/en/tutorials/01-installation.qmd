@@ -1,0 +1,62 @@
+---
+title: "Installation and first steps"
+pagetitle: "Installation — Saíra Tutorials"
+---
+
+::: {.tut-standfirst}
+Saíra is an R package that opens a visual interface in your browser. This page shows how to install it and start the application for the first time.
+:::
+
+## Requirements
+
+You need **R** installed (version 4.1 or later). RStudio is recommended but not required — any R console works. You don't need to know how to program: once installed, all the work happens through the graphical interface.
+
+## Installing from GitHub
+
+Saíra is not on CRAN yet; install the development version directly from the repository. Use `pak` (recommended) or `remotes`:
+
+```r
+# Option A — with pak (resolves dependencies automatically)
+install.packages("pak")
+pak::pak("rogerio-onza/saira")
+
+# Option B — with remotes / devtools
+install.packages("remotes")
+remotes::install_github("rogerio-onza/saira")
+```
+
+::: {.callout-tip}
+## The first installation takes a while
+Saíra depends on several packages (Shiny, spreadsheet readers, taxonomic and geographic backbones). The first installation may take a few minutes while those dependencies are downloaded and compiled.
+:::
+
+## Opening the application
+
+With the package installed, a single line opens the interface in your browser:
+
+```r
+library(saira)
+saira::run_app()
+```
+
+The app opens in a new tab. From there, everything is done through menus, buttons and tables.
+
+::: {.callout-warning}
+## The window didn't open?
+On servers or environments without a default browser, `run_app()` prints a local address (something like `http://127.0.0.1:xxxx`). Copy that address and open it manually in your browser.
+:::
+
+```{=html}
+<figure class="shot">
+  <div class="frame"><span class="ph-label">screenshot · app welcome screen</span></div>
+  <figcaption><b>Figure 1.</b> Saíra's welcome screen, with the language selector (PT-BR/EN) and the start of the import workflow.</figcaption>
+</figure>
+```
+
+## Language
+
+Saíra is bilingual. In the top corner of the interface you can switch between **Portuguese (PT-BR)** and **English (EN-US)** at any time — useful for mixed teams or for publishing metadata in English.
+
+## Next steps
+
+With the app open, go to **[Importing your data](02-upload.qmd)** and load your first spreadsheet.

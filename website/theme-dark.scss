@@ -1,0 +1,66 @@
+/*-- scss:defaults --*/
+// Fontes alinhadas ao app Saíra (Source Serif 4 + Space Mono)
+$font-family-base:       'Source Serif 4', Georgia, 'Times New Roman', serif;
+$font-family-sans-serif: 'Source Serif 4', Georgia, serif;
+$font-family-monospace:  'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+$headings-font-family:   'Source Serif 4', Georgia, serif;
+
+$body-bg:        #12141B;
+$body-color:     #ECEAE3;
+$link-color:     #38cff6;
+$navbar-bg:      transparent;
+$toc-color:      #9a9bb0;
+$toc-active-border: #38cff6;
+
+/*-- scss:rules --*/
+:root {
+  --bg: #12141B;
+  --bg-2: #0d0f15;
+  --surface: #1C1C26;
+  --surface-2: #21222e;
+  --text: #ECEAE3;
+  --text-soft: #9a9bb0;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  --primary: #38CFF6;
+  --primary-hover: #5bd9f8;
+  --primary-dark: #16B3BD;
+  --accent: #8a93f0;
+  --accent-soft: rgba(138, 147, 240, 0.12);
+  --info: #b9bbe8;
+  --warning: #FFB838;
+  --warn-title: #FFC766;
+  --success: #2fc488;
+  --error: #e0685c;
+
+  --on-primary: #06222b;
+  --dots: rgba(138, 147, 240, 0.55);
+  --dots-line: rgba(56, 207, 246, 0.26);
+  --code-bg: #0c0d13;
+  --code-text: #e3e1d8;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.30), 0 2px 8px rgba(0,0,0,0.30);
+  --shadow-md: 0 6px 18px rgba(0,0,0,0.40), 0 22px 50px rgba(0,0,0,0.45);
+
+  // CTA (superfície destacada sobre o escuro)
+  --cta-bg: #1C1C26;
+  --cta-fg: #ECEAE3;
+  --cta-fg-soft: #9a9bb0;
+  --cta-border: rgba(255,255,255,0.18);
+  --cta-hover: rgba(255,255,255,0.06);
+
+  --maxw: 1180px;
+  --gutter: clamp(20px, 5vw, 64px);
+  --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --mono: 'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --r: 14px;
+  --r-sm: 9px;
+}
+
+.cta { border-color: var(--border); }
+
+// No modo escuro o toggle mostra a lua (este arquivo só carrega no tema escuro)
+.theme-toggle-saira .sun { display: none; }
+.theme-toggle-saira .moon { display: block; }
+
+@import "saira-rules";

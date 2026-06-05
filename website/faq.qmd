@@ -1,0 +1,70 @@
+---
+title: "Perguntas frequentes"
+pagetitle: "FAQ — Saíra"
+---
+
+::: {.tut-standfirst}
+Dúvidas comuns de quem está começando a usar o Saíra para preparar e publicar dados de biodiversidade em Darwin Core.
+:::
+
+## Instalação e requisitos
+
+### Preciso saber programar para usar o Saíra?
+Não. Depois de instalado, todo o uso acontece por uma interface visual no navegador — menus, botões e tabelas. A única linha de código necessária é a que abre o aplicativo.
+
+### O que preciso ter instalado?
+O **R** (versão 4.1 ou superior). O RStudio é recomendado, mas não obrigatório. Veja o passo a passo em [Instalação e primeiros passos](tutoriais/01-instalacao.qmd).
+
+### Como instalo o Saíra?
+Recomendamos o `pak`, que resolve as dependências automaticamente:
+
+```r
+install.packages("pak")
+pak::pak("rogerio-onza/saira")
+```
+
+Como alternativa, `remotes::install_github("rogerio-onza/saira")` também funciona.
+
+### A primeira instalação está demorando muito. É normal?
+Sim. O Saíra depende de vários pacotes (Shiny, leitura de planilhas, bases taxonômicas e geográficas). A primeira instalação baixa e compila essas dependências e pode levar alguns minutos.
+
+## Usando o aplicativo
+
+### O Saíra envia meus dados para a internet?
+Não. O aplicativo roda **localmente** no seu computador (ou em um servidor da sua instituição). Seus dados não saem do ambiente onde o app está rodando.
+
+### Em quais idiomas o aplicativo funciona?
+O Saíra é bilíngue: **Português (PT-BR)** e **Inglês (EN-US)**. Você alterna o idioma a qualquer momento no canto superior da interface. Este site de ajuda também está disponível nos dois idiomas (veja o botão de idioma no topo).
+
+### Posso voltar a uma etapa anterior sem perder o trabalho?
+Sim. O fluxo é flexível: você pode remapear um campo, recarregar a planilha ou revalidar a qualquer momento.
+
+### Quais formatos de planilha o Saíra aceita?
+CSV (`.csv`, `.tsv`, `.txt`) e Excel (`.xlsx`, `.xls`), com detecção automática de codificação e separador. Detalhes em [Importando seus dados](tutoriais/02-upload.qmd).
+
+## Dados e qualidade
+
+### Os acentos da minha planilha aparecem quebrados. O que fazer?
+É um problema de codificação. Troque a codificação na importação (geralmente **UTF-8** ou **Latin-1**) até a prévia ficar correta. Veja [Importando seus dados](tutoriais/02-upload.qmd).
+
+### O Saíra corrige automaticamente os nomes científicos?
+Ele **sugere** correções a partir de bases taxonômicas, mas a decisão final é sempre do especialista. Veja [Validando nomes científicos](tutoriais/04-validacao-nomes.qmd).
+
+### Como o Saíra trata espécies ameaçadas?
+Antes da exportação, ele sinaliza táxons ameaçados (Lista Nacional — MMA) e permite **generalizar ou omitir a localização**, protegendo populações vulneráveis. Veja [Pré-visualização e exportação](tutoriais/06-preview-exportacao.qmd).
+
+## Exportação e publicação
+
+### O que o Saíra gera no final?
+Um **Darwin Core Archive (DwC-A)**: um pacote `.zip` com `occurrence.txt`, `meta.xml` e `eml.xml`, pronto para publicação.
+
+### Como publico o arquivo no GBIF ou no SiBBr?
+A publicação acontece fora do Saíra, normalmente via **IPT** (Integrated Publishing Toolkit) da sua instituição ou do SiBBr. O arquivo gerado já está no formato esperado.
+
+## Projeto
+
+### Qual é a licença do Saíra?
+O Saíra é software livre, licenciado sob a **GPL-3.0**. O código está disponível no [GitHub](https://github.com/rogerio-onza/saira).
+
+### Encontrei um problema ou tenho uma sugestão. Onde reporto?
+Abra uma *issue* no [repositório do projeto no GitHub](https://github.com/rogerio-onza/saira).

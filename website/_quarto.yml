@@ -1,0 +1,93 @@
+project:
+  type: website
+  output-dir: _site
+  resources:
+    - assets/
+
+website:
+  title: "Saíra"
+  description: "Aplicativo R/Shiny de código aberto para preparar, validar e exportar dados de biodiversidade no padrão Darwin Core."
+  favicon: assets/img/favicon.svg
+  open-graph: true
+  twitter-card: true
+  site-url: https://rogerio-onza.github.io/saira
+  repo-url: https://github.com/rogerio-onza/saira
+  page-navigation: true
+  search:
+    location: navbar
+    type: overlay
+  navbar:
+    pinned: true
+    title: "Saíra"
+    right:
+      - text: "Projeto"
+        href: index.qmd
+      - text: "Tutoriais"
+        href: tutoriais/index.qmd
+      - text: "FAQ"
+        href: faq.qmd
+      - text: "Glossário"
+        href: glossario.qmd
+      - icon: github
+        href: https://github.com/rogerio-onza/saira
+        aria-label: Repositório no GitHub
+  sidebar:
+    - id: tutoriais
+      title: "Tutoriais"
+      style: floating
+      collapse-level: 1
+      contents:
+        - text: "Visão geral"
+          href: tutoriais/index.qmd
+        - section: "Fluxo do dado bruto ao DwC-A"
+          contents:
+            - tutoriais/01-instalacao.qmd
+            - tutoriais/02-upload.qmd
+            - tutoriais/03-mapeamento-dwc.qmd
+            - tutoriais/04-validacao-nomes.qmd
+            - tutoriais/05-validacao-coordenadas.qmd
+            - tutoriais/06-preview-exportacao.qmd
+    - id: tutorials-en
+      title: "Tutorials"
+      style: floating
+      collapse-level: 1
+      contents:
+        - text: "Overview"
+          href: en/tutorials/index.qmd
+        - section: "From raw data to DwC-A"
+          contents:
+            - en/tutorials/01-installation.qmd
+            - en/tutorials/02-upload.qmd
+            - en/tutorials/03-dwc-mapping.qmd
+            - en/tutorials/04-name-validation.qmd
+            - en/tutorials/05-coordinate-validation.qmd
+            - en/tutorials/06-preview-export.qmd
+  page-footer:
+    border: true
+    left: "© 2026 Saíra · Licença GPL-3.0"
+    center: "*Tangara fastuosa* · Saíra-de-sete-cores"
+    right:
+      - text: "TDWG"
+        href: https://dwc.tdwg.org
+      - text: "GBIF"
+        href: https://www.gbif.org
+      - text: "SiBBr"
+        href: https://www.sibbr.gov.br
+      - text: "GitHub"
+        href: https://github.com/rogerio-onza/saira
+
+format:
+  html:
+    lang: pt-BR
+    theme:
+      light: theme-light.scss
+      dark: theme-dark.scss
+    toc: true
+    toc-title: "Nesta página"
+    toc-depth: 3
+    code-copy: true
+    code-overflow: scroll
+    anchor-sections: true
+    smooth-scroll: true
+    link-external-newwindow: true
+    include-in-header: assets/head.html

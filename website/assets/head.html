@@ -1,0 +1,108 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300..700;1,8..60,300..600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#f4f3ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12141b" media="(prefers-color-scheme: dark)">
+<script>
+(function () {
+  var SUN = '<svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
+  var MOON = '<svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>';
+
+  // pares PT <-> EN (caminhos relativos à raiz do site)
+  var PAIRS = [
+    ["index.html",                              "en/index.html"],
+    ["faq.html",                                "en/faq.html"],
+    ["glossario.html",                          "en/glossary.html"],
+    ["tutoriais/index.html",                    "en/tutorials/index.html"],
+    ["tutoriais/01-instalacao.html",            "en/tutorials/01-installation.html"],
+    ["tutoriais/02-upload.html",                "en/tutorials/02-upload.html"],
+    ["tutoriais/03-mapeamento-dwc.html",        "en/tutorials/03-dwc-mapping.html"],
+    ["tutoriais/04-validacao-nomes.html",       "en/tutorials/04-name-validation.html"],
+    ["tutoriais/05-validacao-coordenadas.html", "en/tutorials/05-coordinate-validation.html"],
+    ["tutoriais/06-preview-exportacao.html",    "en/tutorials/06-preview-export.html"]
+  ];
+  // rótulos EN dos itens da navbar (chaveados pelo sufixo PT)
+  var EN_LABELS = {
+    "index.html": "Project",
+    "tutoriais/index.html": "Tutorials",
+    "faq.html": "FAQ",
+    "glossario.html": "Glossary"
+  };
+  // do mais específico ao mais genérico: "index.html" é sufixo de "tutoriais/index.html"
+  PAIRS.sort(function (a, b) { return b[0].length - a[0].length; });
+  var PT2EN = {};
+  for (var p = 0; p < PAIRS.length; p++) PT2EN[PAIRS[p][0]] = PAIRS[p][1];
+
+  function norm(path) {
+    if (path.charAt(path.length - 1) === "/") path += "index.html";
+    return path;
+  }
+
+  // base = raiz do site (prefixo antes do caminho relativo ao idioma)
+  function pageInfo() {
+    var path = norm(location.pathname);
+    var isEN = /\/en\//.test(path);
+    for (var i = 0; i < PAIRS.length; i++) {
+      var pt = PAIRS[i][0], en = PAIRS[i][1];
+      if (isEN && path.slice(-en.length) === en) return { base: path.slice(0, -en.length), isEN: true, ptKey: pt };
+      if (!isEN && path.slice(-pt.length) === pt) return { base: path.slice(0, -pt.length), isEN: false, ptKey: pt };
+    }
+    var base = isEN ? path.slice(0, path.indexOf("/en/") + 1) : path.replace(/[^/]*$/, "");
+    return { base: base, isEN: isEN, ptKey: null };
+  }
+
+  function enhance() {
+    var info = pageInfo();
+
+    // 1) Toggle de tema nativo do Quarto -> estilo do design Claude (sol/lua)
+    var toggle = document.querySelector("a.quarto-color-scheme-toggle");
+    if (toggle && !toggle.classList.contains("theme-toggle-saira")) {
+      toggle.classList.add("theme-toggle-saira");
+      // mantém o <i> nativo do Quarto (escondido via CSS) e acrescenta os ícones sol/lua
+      toggle.insertAdjacentHTML("beforeend", SUN + MOON);
+      toggle.setAttribute("aria-label", info.isEN ? "Toggle light/dark theme" : "Alternar tema claro/escuro");
+      toggle.setAttribute("title", info.isEN ? "Toggle theme" : "Alternar tema");
+    }
+
+    // 2) Em páginas EN, traduzir os rótulos e apontar os links da navbar para a árvore /en/
+    if (info.isEN) {
+      var links = document.querySelectorAll(".navbar-nav .nav-link, a.navbar-brand");
+      for (var k = 0; k < links.length; k++) {
+        var lp = norm(links[k].pathname || "");
+        for (var j = 0; j < PAIRS.length; j++) {
+          var pts = PAIRS[j][0];
+          if (lp.slice(-pts.length) === pts) {
+            links[k].setAttribute("href", info.base + PAIRS[j][1]);
+            if (!links[k].classList.contains("navbar-brand") && EN_LABELS[pts]) links[k].textContent = EN_LABELS[pts];
+            break;
+          }
+        }
+      }
+    }
+
+    // 3) Seletor de idioma PT <-> EN
+    if (!document.querySelector(".lang-switch")) {
+      var href = info.isEN
+        ? info.base + (info.ptKey || "index.html")
+        : info.base + (PT2EN[info.ptKey] || "en/index.html");
+      var label = info.isEN ? "PT" : "EN";
+      var a = document.createElement("a");
+      a.className = "lang-switch";
+      a.href = href;
+      a.textContent = label;
+      a.setAttribute("aria-label", label === "EN" ? "Switch to English" : "Mudar para Português");
+      var tools = document.querySelector(".quarto-navbar-tools") ||
+                  (toggle && toggle.parentNode) ||
+                  document.querySelector(".navbar .navbar-nav.ms-auto") ||
+                  document.querySelector(".navbar .navbar-nav");
+      if (tools) tools.appendChild(a);
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", enhance);
+  } else {
+    enhance();
+  }
+})();
+</script>

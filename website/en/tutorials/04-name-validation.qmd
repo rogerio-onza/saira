@@ -1,0 +1,53 @@
+---
+title: "Validating scientific names"
+pagetitle: "Name validation — Saíra Tutorials"
+---
+
+::: {.tut-standfirst}
+Scientific names are the key that connects your records to the rest of known biodiversity. This step checks spelling, resolves synonyms and standardizes nomenclature.
+:::
+
+## Why validate names
+
+The same taxon can appear written in many ways: with typos, old synonyms, abbreviations or without the author. For your data to combine with those of other collections, the names need to be **resolved** against a stable taxonomic reference.
+
+## Checking the nomenclature
+
+On the **Name validation** tab, Saíra compares each <span class="term">scientificName</span> against taxonomic backbones and classifies the result:
+
+- **Exact** — the name matches the reference perfectly.
+- **Suggestion** — a very close name was found (a likely spelling error) and a correction is proposed.
+- **Synonym** — the name is valid, but there is a more current accepted name.
+- **Not found** — requires manual review.
+
+```{=html}
+<ol class="steps">
+  <li><strong>Run the check.</strong>
+    <p>Saíra processes the list of names and shows a summary by status.</p></li>
+  <li><strong>Review the suggestions.</strong>
+    <p>For each name with a suggestion or synonym, accept the proposed correction or keep the original.</p></li>
+  <li><strong>Handle the not-found ones.</strong>
+    <p>Correct them manually, confirm they are right (e.g. a recently described taxon) or flag them for later review.</p></li>
+</ol>
+```
+
+::: {.callout-tip}
+## Accept in bulk
+When many records share the same recurring error, accept the correction once and apply it to all identical cases — instead of reviewing row by row.
+:::
+
+```{=html}
+<figure class="shot">
+  <div class="frame"><span class="ph-label">screenshot · name validation</span></div>
+  <figcaption><b>Figure 1.</b> Name validation screen, with the status of each taxon and the suggested corrections.</figcaption>
+</figure>
+```
+
+::: {.callout-warning}
+## The taxonomic decision is yours
+Suggestions are automatic, but the authority belongs to the specialist. In groups with unstable taxonomy, check the proposals before accepting them en masse.
+:::
+
+## Next steps
+
+With the names resolved, let's move to space: go to **[Validating coordinates](05-coordinate-validation.qmd)**.
