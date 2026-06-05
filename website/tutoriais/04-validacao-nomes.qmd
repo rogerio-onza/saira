@@ -1,0 +1,53 @@
+---
+title: "Validando nomes científicos"
+pagetitle: "Validação de nomes — Tutoriais Saíra"
+---
+
+::: {.tut-standfirst}
+Nomes científicos são a chave que conecta seus registros ao resto da biodiversidade conhecida. Esta etapa confere a grafia, resolve sinônimos e padroniza a nomenclatura.
+:::
+
+## Por que validar nomes
+
+Um mesmo táxon pode aparecer escrito de muitas formas: com erros de digitação, sinônimos antigos, abreviações ou sem o autor. Para que seus dados se combinem com os de outras coleções, os nomes precisam ser **resolvidos** contra uma referência taxonômica estável.
+
+## Conferindo a nomenclatura
+
+Na aba **Validação de nomes**, o Saíra compara cada <span class="term">scientificName</span> com bases taxonômicas e classifica o resultado:
+
+- **Exato** — o nome bate perfeitamente com a referência.
+- **Sugestão** — encontrou um nome muito próximo (provável erro de grafia) e propõe a correção.
+- **Sinônimo** — o nome é válido, mas há um nome aceito mais atual.
+- **Não encontrado** — exige revisão manual.
+
+```{=html}
+<ol class="steps">
+  <li><strong>Rode a verificação.</strong>
+    <p>O Saíra processa a lista de nomes e mostra um resumo por situação.</p></li>
+  <li><strong>Revise as sugestões.</strong>
+    <p>Para cada nome com sugestão ou sinônimo, aceite a correção proposta ou mantenha o original.</p></li>
+  <li><strong>Trate os não encontrados.</strong>
+    <p>Corrija manualmente, confirme que está certo (ex.: táxon recém-descrito) ou marque para revisão posterior.</p></li>
+</ol>
+```
+
+::: {.callout-tip}
+## Aceitar em lote
+Quando há muitos registros com o mesmo erro recorrente, aceite a correção uma vez e aplique a todos os casos idênticos — em vez de revisar linha a linha.
+:::
+
+```{=html}
+<figure class="shot">
+  <div class="frame"><span class="ph-label">screenshot · validação de nomes</span></div>
+  <figcaption><b>Figura 1.</b> Tela de validação de nomes, com o status de cada táxon e as correções sugeridas.</figcaption>
+</figure>
+```
+
+::: {.callout-warning}
+## A decisão taxonômica é sua
+As sugestões são automáticas, mas a autoridade é do especialista. Em grupos com taxonomia instável, confira as propostas antes de aceitá-las em massa.
+:::
+
+## Próximos passos
+
+Com os nomes resolvidos, vamos ao espaço: siga para **[Validando coordenadas](05-validacao-coordenadas.qmd)**.

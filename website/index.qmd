@@ -1,0 +1,204 @@
+---
+pagetitle: "Saíra — Darwin Core para a Biodiversidade Brasileira"
+page-layout: custom
+toc: false
+anchor-sections: false
+---
+
+```{=html}
+<!-- ===================== HERO ===================== -->
+<header class="hero">
+  <canvas class="hero-canvas" id="hero-canvas"></canvas>
+  <div class="wrap">
+    <span class="eyebrow">Aplicativo R/Shiny · Código Aberto</span>
+    <h1>Sa<span class="on">í</span>ra</h1>
+    <p class="hero-sub">Darwin Core para a Biodiversidade Brasileira</p>
+    <div class="hero-actions">
+      <a class="btn-saira btn-primary-saira" href="tutoriais/index.html">Começar a usar</a>
+      <a class="btn-saira btn-ghost-saira" href="https://github.com/rogerio-onza/saira">
+        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Ver no GitHub
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== INSTALL ===================== -->
+<section class="band install-band">
+  <div class="install">
+    <div class="install-bar">
+      <div class="tl"><span></span><span></span><span></span></div>
+      <span class="label">Console · R</span>
+    </div>
+    <div class="install-body">
+      <div class="copy-row">
+        <div>
+          <div class="code-line"><span class="pr">&gt;</span><span><span class="fn">pak::pak</span>(<span class="str">"rogerio-onza/saira"</span>)</span></div>
+          <div class="code-line"><span class="pr">&gt;</span><span><span class="fn">saira::run_app</span>()</span></div>
+        </div>
+        <button class="copy-btn" data-copy='pak::pak("rogerio-onza/saira")&#10;saira::run_app()'>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+          <span class="ct">Copiar</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== O QUE É ===================== -->
+<section class="band" id="projeto">
+  <div class="wrap">
+    <div class="about-grid">
+      <div class="about-text">
+        <span class="eyebrow">O que é</span>
+        <p class="lead">O Saíra acompanha você do caderno de campo ao repositório global — transformando planilhas heterogêneas em registros <em>limpos, validados e interoperáveis</em>.</p>
+        <p>Coleções científicas guardam décadas de conhecimento sobre a biodiversidade, mas seus dados raramente falam a mesma língua. O Saíra oferece um fluxo guiado, em interface visual e bilíngue (PT-BR/EN), para mapear seus campos ao padrão Darwin Core, detectar inconsistências e exportar um pacote pronto para publicação.</p>
+        <p>Construído em R e Shiny, roda no seu computador ou em um servidor institucional. Sem linha de comando obrigatória, sem caixa-preta: cada decisão de transformação fica registrada e reproduzível.</p>
+      </div>
+      <div class="about-media">
+        <figure class="shot" style="margin:0">
+          <div class="frame"><span class="ph-label">ilustração · em breve</span></div>
+        </figure>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== FUNCIONALIDADES ===================== -->
+<section class="band" id="funcionalidades" style="padding-top:0">
+  <div class="wrap">
+    <div class="section-head center">
+      <span class="eyebrow">Funcionalidades</span>
+      <h2>Um fluxo, do dado bruto ao DwC-A</h2>
+      <p>Etapas pensadas para curadores e pesquisadores de campo — não para programadores.</p>
+    </div>
+    <ol class="feature-list">
+      <li class="feature">
+        <span class="num">01</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></div>
+        <div class="feature-body">
+          <h3>Importação</h3>
+          <p>Carregue planilhas em CSV ou Excel — incluindo dados de armadilhas fotográficas — com detecção de codificação e separador.</p>
+        </div>
+      </li>
+      <li class="feature">
+        <span class="num">02</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h7M14 6h7M3 12h4M11 12h10M3 18h7M14 18h7"/><circle cx="11" cy="6" r="1.5" fill="currentColor"/><circle cx="8" cy="12" r="1.5" fill="currentColor"/><circle cx="11" cy="18" r="1.5" fill="currentColor"/></svg></div>
+        <div class="feature-body">
+          <h3>Mapeamento de campos</h3>
+          <p>Associe as colunas da sua planilha aos termos Darwin Core com sugestões automáticas e modelos reutilizáveis.</p>
+        </div>
+      </li>
+      <li class="feature">
+        <span class="num">03</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M6 8.5v3a2 2 0 002 2h8a2 2 0 002-2v-3M12 13.5v2"/></svg></div>
+        <div class="feature-body">
+          <h3>Harmonização taxonômica</h3>
+          <p>Confira nomes científicos contra bases taxonômicas e resolva sinônimos e grafias divergentes.</p>
+        </div>
+      </li>
+      <li class="feature">
+        <span class="num">04</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-5.5-7-11a7 7 0 0114 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
+        <div class="feature-body">
+          <h3>Validação de coordenadas</h3>
+          <p>Detecte coordenadas ausentes, invertidas ou em terra/mar incompatível, com revisão visual no mapa.</p>
+        </div>
+      </li>
+      <li class="feature">
+        <span class="num">05</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/></svg></div>
+        <div class="feature-body">
+          <h3>Espécies sensíveis</h3>
+          <p>Sinalize táxons ameaçados (Lista MMA) para tratamento de dados sensíveis antes da publicação.</p>
+        </div>
+      </li>
+      <li class="feature">
+        <span class="num">06</span>
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div>
+        <div class="feature-body">
+          <h3>Exportação DwC-A</h3>
+          <p>Gere o Darwin Core Archive completo — <span class="term">occurrence.txt</span>, <span class="term">meta.xml</span> e <span class="term">eml.xml</span> — pronto para o GBIF e o SiBBr.</p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ===================== POR QUE DARWIN CORE ===================== -->
+<section class="band band-alt">
+  <div class="wrap">
+    <div class="dwc-grid">
+      <div class="dwc-text">
+        <span class="eyebrow">Por que Darwin Core?</span>
+        <h2>Uma língua comum para a vida</h2>
+        <p class="lead">Darwin Core é o padrão da TDWG que descreve ocorrências de organismos no tempo e no espaço.</p>
+        <p>Ao falar Darwin Core, sua coleção se torna localizável e combinável com milhões de registros do GBIF, SiBBr e SpeciesLink. Cada termo tem definição estável — o que torna os dados úteis muito além da sua instituição.</p>
+        <div class="dwc-chips">
+          <span class="chip">occurrenceID</span>
+          <span class="chip">scientificName</span>
+          <span class="chip">decimalLatitude</span>
+          <span class="chip">eventDate</span>
+          <span class="chip">basisOfRecord</span>
+        </div>
+      </div>
+      <div class="record">
+        <div class="install-bar">
+          <div class="tl"><span></span><span></span><span></span></div>
+          <span class="label">occurrence · registro</span>
+        </div>
+        <pre><span class="p">{</span>
+  <span class="k">"occurrenceID"</span>: <span class="s">"SAIRA:MN:0042817"</span>,
+  <span class="k">"basisOfRecord"</span>: <span class="s">"PreservedSpecimen"</span>,
+  <span class="k">"scientificName"</span>: <span class="s">"Tangara fastuosa"</span>,
+  <span class="k">"kingdom"</span>: <span class="s">"Animalia"</span>,
+  <span class="k">"family"</span>: <span class="s">"Thraupidae"</span>,
+  <span class="k">"decimalLatitude"</span>: <span class="n">-8.0476</span>,
+  <span class="k">"decimalLongitude"</span>: <span class="n">-34.8770</span>,
+  <span class="k">"geodeticDatum"</span>: <span class="s">"WGS84"</span>,
+  <span class="k">"eventDate"</span>: <span class="s">"2024-11-03"</span>,
+  <span class="k">"country"</span>: <span class="s">"Brasil"</span>,
+  <span class="k">"stateProvince"</span>: <span class="s">"Pernambuco"</span>,
+  <span class="k">"recordedBy"</span>: <span class="s">"M. Andrade"</span>
+<span class="p">}</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== CTA ===================== -->
+<section class="band" style="padding-bottom:clamp(48px,7vw,90px)">
+  <div class="wrap">
+    <div class="cta cta-bordered">
+      <span class="eyebrow">Comece agora</span>
+      <h2>Publique sua coleção com confiança</h2>
+      <p>Instale o Saíra, importe sua primeira planilha e tenha um Darwin Core Archive validado em poucos passos. Gratuito e de código aberto.</p>
+      <div class="hero-actions">
+        <a class="btn-saira btn-primary-saira" href="tutoriais/index.html">Ler os tutoriais</a>
+        <a class="btn-saira btn-ghost-saira" href="https://github.com/rogerio-onza/saira">
+          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          Ver no GitHub
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* botão copiar do bloco de instalação */
+document.querySelectorAll('[data-copy]').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var text = btn.getAttribute('data-copy');
+    var label = btn.querySelector('.ct');
+    function flash() {
+      btn.classList.add('copied');
+      if (label) label.textContent = 'Copiado!';
+      setTimeout(function () { btn.classList.remove('copied'); if (label) label.textContent = 'Copiar'; }, 1600);
+    }
+    if (navigator.clipboard) { navigator.clipboard.writeText(text).then(flash, flash); }
+    else { flash(); }
+  });
+});
+</script>
+<script src="assets/js/hero-network.js" defer></script>
+```

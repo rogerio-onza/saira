@@ -21,3 +21,5 @@ Zone\.Identifier$
 ^pkg_docs$
 ^scripts$
 ^task_onda_.*\.md\.resolved$
+
+^website$

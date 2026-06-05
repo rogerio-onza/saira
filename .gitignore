@@ -22,3 +22,7 @@ Thumbs.db
 
 # Windows Mark-of-the-Web NTFS alternate-data-stream junk
 *:Zone.Identifier
+
+# Quarto website (site de ajuda em website/) — artefatos de build
+website/_site/
+website/.quarto/

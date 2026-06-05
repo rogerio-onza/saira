@@ -1,0 +1,89 @@
+---
+title: "Glossário Darwin Core"
+pagetitle: "Glossário Darwin Core — Saíra"
+---
+
+::: {.tut-standfirst}
+Os termos Darwin Core mais usados ao preparar dados de ocorrência no Saíra, com uma explicação curta e um exemplo. A referência completa e oficial está em [dwc.tdwg.org](https://dwc.tdwg.org).
+:::
+
+## O que é Darwin Core
+
+**Darwin Core (DwC)** é o padrão da [TDWG](https://www.tdwg.org) para descrever ocorrências de organismos no tempo e no espaço. Ao usar os mesmos termos que o resto da comunidade, sua coleção se torna localizável e combinável com milhões de registros do GBIF, SiBBr e SpeciesLink.
+
+Uma **ocorrência** (`Occurrence`) é o registro de um organismo em um lugar e momento — uma linha na sua planilha.
+
+## Termos essenciais
+
+### Identificação do registro
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Termo</th><th></th><th>O que é · exemplo</th></tr></thead>
+  <tbody>
+    <tr><td>occurrenceID</td><td><span class="arrow">→</span></td><td>Identificador único e estável da ocorrência · <code>SAIRA:MN:0042817</code></td></tr>
+    <tr><td>basisOfRecord</td><td><span class="arrow">→</span></td><td>Natureza do registro · <code>PreservedSpecimen</code>, <code>HumanObservation</code>, <code>MachineObservation</code></td></tr>
+    <tr><td>catalogNumber</td><td><span class="arrow">→</span></td><td>Número de tombo/catálogo na coleção · <code>MN-0042817</code></td></tr>
+    <tr><td>recordedBy</td><td><span class="arrow">→</span></td><td>Quem coletou ou observou · <code>M. Andrade</code></td></tr>
+  </tbody>
+</table>
+```
+
+### Táxon
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Termo</th><th></th><th>O que é · exemplo</th></tr></thead>
+  <tbody>
+    <tr><td>scientificName</td><td><span class="arrow">→</span></td><td>Nome científico, idealmente com autor · <code>Tangara fastuosa</code></td></tr>
+    <tr><td>kingdom</td><td><span class="arrow">→</span></td><td>Reino · <code>Animalia</code></td></tr>
+    <tr><td>family</td><td><span class="arrow">→</span></td><td>Família · <code>Thraupidae</code></td></tr>
+    <tr><td>taxonRank</td><td><span class="arrow">→</span></td><td>Nível taxonômico do nome · <code>species</code></td></tr>
+  </tbody>
+</table>
+```
+
+### Local
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Termo</th><th></th><th>O que é · exemplo</th></tr></thead>
+  <tbody>
+    <tr><td>decimalLatitude</td><td><span class="arrow">→</span></td><td>Latitude em graus decimais (±90) · <code>-8.0476</code></td></tr>
+    <tr><td>decimalLongitude</td><td><span class="arrow">→</span></td><td>Longitude em graus decimais (±180) · <code>-34.8770</code></td></tr>
+    <tr><td>geodeticDatum</td><td><span class="arrow">→</span></td><td>Datum das coordenadas · <code>WGS84</code></td></tr>
+    <tr><td>coordinateUncertaintyInMeters</td><td><span class="arrow">→</span></td><td>Incerteza da coordenada, em metros · <code>30</code></td></tr>
+    <tr><td>country / stateProvince / municipality</td><td><span class="arrow">→</span></td><td>País, estado e município · <code>Brasil · Pernambuco · Tamandaré</code></td></tr>
+  </tbody>
+</table>
+```
+
+### Evento (quando)
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Termo</th><th></th><th>O que é · exemplo</th></tr></thead>
+  <tbody>
+    <tr><td>eventDate</td><td><span class="arrow">→</span></td><td>Data (ou intervalo) do registro, em formato ISO 8601 · <code>2024-11-03</code></td></tr>
+  </tbody>
+</table>
+```
+
+## O pacote final
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Arquivo</th><th></th><th>O que é</th></tr></thead>
+  <tbody>
+    <tr><td>Darwin Core Archive (DwC-A)</td><td><span class="arrow">→</span></td><td>Pacote <code>.zip</code> padronizado que reúne os três arquivos abaixo</td></tr>
+    <tr><td>occurrence.txt</td><td><span class="arrow">→</span></td><td>Os dados em si, uma ocorrência por linha</td></tr>
+    <tr><td>meta.xml</td><td><span class="arrow">→</span></td><td>Descritor que diz o que cada coluna significa</td></tr>
+    <tr><td>eml.xml</td><td><span class="arrow">→</span></td><td>Metadados do conjunto (título, instituição, licença, responsáveis)</td></tr>
+  </tbody>
+</table>
+```
+
+::: {.callout-note}
+## Quer ir além?
+A lista oficial e completa de termos, com definições estáveis e exemplos, está no *Darwin Core quick reference guide* da TDWG: [dwc.tdwg.org/terms](https://dwc.tdwg.org/terms/).
+:::

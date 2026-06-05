@@ -1,0 +1,57 @@
+---
+title: "Importando seus dados"
+pagetitle: "Importando dados — Tutoriais Saíra"
+---
+
+::: {.tut-standfirst}
+O primeiro passo dentro do aplicativo é carregar sua planilha de ocorrências. O Saíra aceita CSV e Excel e cuida da detecção de codificação e separador para você.
+:::
+
+## Formatos aceitos
+
+| Formato | Extensão | Observações |
+|---|---|---|
+| Texto separado | `.csv`, `.tsv`, `.txt` | Vírgula, ponto-e-vírgula ou tabulação — detectados automaticamente |
+| Excel | `.xlsx`, `.xls` | Você escolhe a planilha (aba) a importar |
+
+Cada **linha** deve ser uma ocorrência (um registro de um organismo em um lugar e momento) e cada **coluna**, um atributo — número de tombo, espécie, data, localidade, coletor, e assim por diante.
+
+## Carregando o arquivo
+
+Para praticar esta e as próximas etapas, baixe a planilha de exemplo [`ocorrencias-exemplo.csv`](../assets/exemplo/ocorrencias-exemplo.csv) — um conjunto pequeno e propositalmente imperfeito.
+
+Na aba **Upload**, arraste o arquivo para a área indicada ou clique para selecioná-lo.
+
+1. **Selecione o arquivo.** Solte o CSV/Excel na área de upload.
+2. **Confira a leitura.** O Saíra mostra uma prévia das primeiras linhas — verifique se as colunas estão separadas corretamente.
+3. **Ajuste se necessário.** Caso a codificação ou o separador tenham sido lidos errado (acentos quebrados, tudo numa coluna só), troque a opção e a prévia se atualiza.
+
+```{=html}
+<figure class="shot">
+  <div class="frame"><span class="ph-label">screenshot · área de upload e prévia</span></div>
+  <figcaption><b>Figura 1.</b> Área de upload com a prévia das primeiras linhas e os controles de codificação e separador.</figcaption>
+</figure>
+```
+
+::: {.callout-tip}
+## Acentos aparecendo errados?
+Isso quase sempre é codificação. Planilhas brasileiras costumam estar em **UTF-8** ou **Latin-1 (ISO-8859-1)**. Se "São Paulo" virou "S&atilde;o Paulo", troque a codificação na importação até a prévia ficar correta.
+:::
+
+::: {.callout-warning}
+## A planilha abriu tudo numa coluna só?
+É o separador errado. Arquivos brasileiros costumam usar **ponto-e-vírgula (`;`)** porque a vírgula já é o separador decimal. Se a prévia mostra tudo amontoado em uma única coluna, troque o separador (`;`, `,` ou tabulação) até as colunas se separarem corretamente.
+:::
+
+::: {.callout-warning}
+## Cabeçalho na primeira linha
+O Saíra assume que a **primeira linha** contém os nomes das colunas. Remova linhas de título, logotipos ou células mescladas antes de exportar do Excel — elas atrapalham a leitura.
+:::
+
+## Dados de armadilha fotográfica
+
+Se seus dados vêm de armadilhas fotográficas (camera trap), o Saíra reconhece estruturas comuns desse tipo de levantamento e ajuda a organizá-las antes do mapeamento.
+
+## Próximos passos
+
+Com os dados carregados e exibidos corretamente, avance para **[Mapeando campos para Darwin Core](03-mapeamento-dwc.qmd)**.

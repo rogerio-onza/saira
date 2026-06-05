@@ -1,0 +1,51 @@
+---
+title: "Validando coordenadas"
+pagetitle: "Validação de coordenadas — Tutoriais Saíra"
+---
+
+::: {.tut-standfirst}
+Coordenadas erradas são uma das maiores fontes de problema em dados de biodiversidade. O Saíra ajuda a encontrá-las e a revisá-las visualmente no mapa.
+:::
+
+## O que o Saíra verifica
+
+A partir de <span class="term">decimalLatitude</span> e <span class="term">decimalLongitude</span>, o app sinaliza os problemas mais comuns:
+
+- **Ausentes** — registros sem coordenada.
+- **Invertidas** — latitude e longitude trocadas (um clássico que joga o ponto para o outro lado do mundo).
+- **Fora de faixa** — valores impossíveis (latitude além de ±90, longitude além de ±180).
+- **Incompatíveis com o esperado** — pontos caindo no mar para registros terrestres, ou muito longe do país informado.
+
+```{=html}
+<figure class="shot">
+  <div class="frame"><span class="ph-label">screenshot · mapa de validação</span></div>
+  <figcaption><b>Figura 1.</b> Revisão de coordenadas no mapa: pontos coloridos por situação (válido, ausente, invertido) para inspeção visual.</figcaption>
+</figure>
+```
+
+## Revisando no mapa
+
+```{=html}
+<ol class="steps">
+  <li><strong>Veja a distribuição.</strong>
+    <p>Os pontos aparecem no mapa, coloridos por situação. Concentrações fora da área esperada saltam aos olhos.</p></li>
+  <li><strong>Corrija as inversões.</strong>
+    <p>Para coordenadas detectadas como invertidas, o Saíra oferece a troca lat/lon com um clique.</p></li>
+  <li><strong>Trate ausências.</strong>
+    <p>Registros sem coordenada podem ser preenchidos a partir da localidade ou marcados como sem georreferenciamento.</p></li>
+</ol>
+```
+
+::: {.callout-tip}
+## Datum e precisão
+Registre o <span class="term">geodeticDatum</span> (por exemplo, <em>WGS84</em>) e, quando souber, a incerteza em metros (<span class="term">coordinateUncertaintyInMeters</span>). Isso aumenta muito o valor científico do dado.
+:::
+
+::: {.callout-warning}
+## Sinal das coordenadas no Brasil
+A maior parte do Brasil tem **latitude e longitude negativas**. Coordenadas positivas onde se esperava o hemisfério sul/oeste são um forte indício de erro de sinal ou de inversão.
+:::
+
+## Próximos passos
+
+Dados mapeados, nomes resolvidos e coordenadas revisadas: hora de finalizar. Siga para **[Pré-visualização e exportação](06-preview-exportacao.qmd)**.

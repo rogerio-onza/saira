@@ -1,0 +1,62 @@
+---
+title: "Instalação e primeiros passos"
+pagetitle: "Instalação — Tutoriais Saíra"
+---
+
+::: {.tut-standfirst}
+O Saíra é um pacote R que abre uma interface visual no seu navegador. Esta página mostra como instalá-lo e iniciar o aplicativo pela primeira vez.
+:::
+
+## Pré-requisitos
+
+Você precisa do **R** instalado (versão 4.1 ou superior). O RStudio é recomendado, mas não obrigatório — qualquer console R serve. Não é necessário saber programar: depois de instalado, todo o uso acontece pela interface gráfica.
+
+## Instalando do GitHub
+
+O Saíra ainda não está no CRAN; instale a versão de desenvolvimento direto do repositório. Use `pak` (recomendado) ou `remotes`:
+
+```r
+# Opção A — com pak (resolve dependências automaticamente)
+install.packages("pak")
+pak::pak("rogerio-onza/saira")
+
+# Opção B — com remotes / devtools
+install.packages("remotes")
+remotes::install_github("rogerio-onza/saira")
+```
+
+::: {.callout-tip}
+## Primeira instalação demora um pouco
+O Saíra depende de vários pacotes (Shiny, leitura de planilhas, bases taxonômicas e geográficas). A primeira instalação pode levar alguns minutos enquanto essas dependências são baixadas e compiladas.
+:::
+
+## Abrindo o aplicativo
+
+Com o pacote instalado, uma única linha abre a interface no navegador:
+
+```r
+library(saira)
+saira::run_app()
+```
+
+O app abre em uma nova aba. A partir daí, tudo é feito por menus, botões e tabelas.
+
+::: {.callout-warning}
+## A janela não abriu?
+Em servidores ou ambientes sem navegador padrão, o `run_app()` imprime um endereço local (algo como `http://127.0.0.1:xxxx`). Copie esse endereço e abra manualmente no navegador.
+:::
+
+```{=html}
+<figure class="shot">
+  <div class="frame"><span class="ph-label">screenshot · tela inicial do app</span></div>
+  <figcaption><b>Figura 1.</b> Tela de boas-vindas do Saíra, com o seletor de idioma (PT-BR/EN) e o início do fluxo de importação.</figcaption>
+</figure>
+```
+
+## Idioma
+
+O Saíra é bilíngue. No canto superior da interface você alterna entre **Português (PT-BR)** e **Inglês (EN-US)** a qualquer momento — útil para equipes mistas ou para publicar metadados em inglês.
+
+## Próximos passos
+
+Com o app aberto, siga para **[Importando seus dados](02-upload.qmd)** e carregue sua primeira planilha.
