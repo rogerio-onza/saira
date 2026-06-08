@@ -20,7 +20,7 @@ Cada **linha** deve ser uma ocorrência (um registro de um organismo em um lugar
 
 ::: {.callout-tip}
 ## Baixe a planilha de exemplo
-Para praticar esta e as próximas etapas, baixe [`ocorrencias-exemplo.csv`](../assets/exemplo/ocorrencias-exemplo.csv) — um conjunto pequeno e propositalmente imperfeito (com um acento problemático e uma coordenada invertida), ideal para treinar a validação.
+Para praticar esta e as próximas etapas, baixe [`ocorrencias-exemplo.csv`](../assets/exemplo/ocorrencias-exemplo.csv) — um conjunto de exemplo propositalmente imperfeito (várias colunas para mapear, uma coordenada invertida e um país em branco para corrigir na validação).
 :::
 
 Na aba **Upload**, arraste o arquivo para a área indicada ou clique para selecioná-lo.

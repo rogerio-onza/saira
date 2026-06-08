@@ -26,5 +26,5 @@ Você não precisa seguir todas as etapas em sequência rígida. O Saíra permit
 
 ::: {.callout-tip}
 ## Pratique com o arquivo de exemplo
-Baixe a planilha de exemplo [`ocorrencias-exemplo.csv`](../assets/exemplo/ocorrencias-exemplo.csv) e siga os tutoriais com ela. É um conjunto pequeno e propositalmente imperfeito (com um acento problemático e uma coordenada invertida), ideal para treinar a validação.
+Baixe a planilha de exemplo [`ocorrencias-exemplo.csv`](../assets/exemplo/ocorrencias-exemplo.csv) e siga os tutoriais com ela. É um conjunto de exemplo propositalmente imperfeito (várias colunas para mapear, uma coordenada invertida e um país em branco para corrigir na validação).
 :::

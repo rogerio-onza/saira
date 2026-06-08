@@ -11,14 +11,26 @@ Como associar as colunas da sua planilha aos termos do padrão Darwin Core usand
 
 Depois de importar seus dados (ver [Importando seus dados](02-upload.qmd)), cada coluna ainda carrega o nome que você usa no dia a dia: <span class="term">numero_tombo</span>, <span class="term">especie</span>, <span class="term">data_coleta</span>. O mapeamento é o passo em que dizemos ao Saíra qual termo Darwin Core corresponde a cada uma dessas colunas.
 
-O Saíra sugere correspondências automaticamente a partir do nome e do conteúdo de cada coluna, mas a decisão final é sempre sua. Um bom mapeamento é a base de tudo o que vem depois: validação, exportação e qualidade dos dados dependem dele.
+O Saíra sugere correspondências automaticamente a partir do nome e do conteúdo de cada coluna. Um bom mapeamento é a base de tudo o que vem depois: validação, exportação e qualidade dos dados dependem dele.
+
+::: {.callout-note}
+## A decisão final é sempre sua
+O Saíra **sugere**, mas quem decide é você. Toda sugestão pode ser confirmada, trocada ou descartada — nada é aplicado sem a sua revisão.
+:::
 
 ## Auto-mapeamento
 
-O botão **Auto-mapear** percorre todas as colunas de uma vez e propõe um termo para cada uma, atribuindo um **status** que indica a confiança da sugestão:
+O botão **Auto-mapear**, na barra de ações, percorre todas as colunas de uma vez e propõe um termo para cada uma, atribuindo um **status** que indica a confiança da sugestão:
 
-- **AUTO**: alta confiança, já preenchido. Bate com um termo conhecido ou com um apelido (alias) que o Saíra reconhece.
-- **SUGERIDO**: correspondência provável, mas que pede sua confirmação.
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/3-auto-mapear-botão.png" alt="Barra de ações do mapeador com o botão Auto-mapear destacado">
+  <figcaption><b>Figura 1.</b> O botão <b>Auto-mapear</b> na barra de ações, ao lado de Resetar, Adicionar termo e Importar modelo.</figcaption>
+</figure>
+```
+
+- **AUTO**: alta confiança (score alto e tipo de dado compatível); já vem preenchido.
+- **SUGERIDO**: correspondência provável; confirme ou ajuste antes de seguir.
 - **EDITADO**: você ajustou manualmente; a sua escolha prevalece sobre as sugestões.
 
 Ao fim, o Saíra mostra um resumo (por exemplo, "12 AUTO, 5 SUGERIDO"). Revise os SUGERIDO com atenção e confirme ou corrija cada um.
@@ -30,17 +42,35 @@ Ao fim, o Saíra mostra um resumo (por exemplo, "12 AUTO, 5 SUGERIDO"). Revise o
   <li><strong>Revise os sugeridos.</strong>
     <p>Para cada coluna marcada como SUGERIDO, confirme o termo ou troque-o no seletor.</p></li>
   <li><strong>Resolva os campos não mapeados.</strong>
-    <p>Colunas sem correspondência clara ficam destacadas. Escolha o termo Darwin Core ou marque a coluna como <span class="term">ignorada</span>.</p></li>
-  <li><strong>Defina o tipo de registro.</strong>
-    <p>Informe o <span class="term">basisOfRecord</span> usando o assistente (ver abaixo); ele se aplica a todos os registros do lote.</p></li>
+    <p>Colunas sem correspondência clara ficam destacadas. Escolha o termo Darwin Core correspondente ou <strong>deixe a coluna sem mapear</strong> — ela é preservada na exportação (ver abaixo).</p></li>
+  <li><strong>Defina o basisOfRecord.</strong>
+    <p>Use o assistente (ver abaixo) para mapear o tipo de registro a partir de uma coluna (ex.: <span class="term">tipo_de_registro</span>), associando cada valor — Espécime, Observação, Armadilha — ao termo Darwin Core.</p></li>
   <li><strong>Confira a pré-visualização.</strong>
     <p>O painel inferior mostra as primeiras linhas já com os nomes Darwin Core, para você validar antes de seguir.</p></li>
 </ol>
 ```
 
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/4.2-exemplo-sugerido.png" alt="Dois cards de mapeamento (catalogNumber e recordedBy) com o selo SUGERIDO">
+  <figcaption><b>Figura 2.</b> Cards de mapeamento após o Auto-mapear: <span class="term">numero_tombo</span> → <span class="term">catalogNumber</span> e <span class="term">coletor</span> → <span class="term">recordedBy</span>, ambos marcados como SUGERIDO para você confirmar.</figcaption>
+</figure>
+```
+
 ## Catálogo de termos e busca
 
-O mapeador trabalha com um conjunto-base dos termos Darwin Core mais usados, mas o catálogo completo tem cerca de **218 termos** (propriedades `dwc:` e `dcterms:`). Se a coluna que você precisa não estiver na lista, use a **busca de termos** ("adicionar termo") para encontrar e incluir qualquer propriedade do padrão, como <span class="term">coordinateUncertaintyInMeters</span>, <span class="term">samplingProtocol</span> ou <span class="term">organismQuantity</span>.
+O mapeador trabalha com um conjunto-base dos termos Darwin Core mais usados, mas o catálogo completo tem cerca de **218 termos** (propriedades `dwc:` e `dcterms:`). Se a coluna que você precisa não estiver na lista, use **Adicionar termo** para encontrar e incluir qualquer propriedade do padrão, como <span class="term">coordinateUncertaintyInMeters</span>, <span class="term">samplingProtocol</span> ou <span class="term">organismQuantity</span>.
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/4-adicionar-termo.png" alt="Barra de ações com o botão Adicionar termo destacado">
+  <figcaption><b>Figura 3.</b> O botão <b>Adicionar termo</b> na barra de ações.</figcaption>
+</figure>
+<figure class="shot">
+  <img src="../assets/img/4.1-adicionar-termo-pop-up.png" alt="Janela 'Adicionar termo DwC' com o seletor de termo">
+  <figcaption><b>Figura 4.</b> A janela <b>Adicionar termo DwC</b>: escolha o termo no seletor e confirme para incluí-lo como um novo card.</figcaption>
+</figure>
+```
 
 ### Exemplo de correspondência
 
@@ -53,8 +83,9 @@ A tabela abaixo mostra um mapeamento típico de uma coleção ornitológica:
     <tr><td>numero_tombo</td><td><span class="arrow">→</span></td><td>catalogNumber</td></tr>
     <tr><td>especie</td><td><span class="arrow">→</span></td><td>scientificName</td></tr>
     <tr><td>data_coleta</td><td><span class="arrow">→</span></td><td>eventDate</td></tr>
-    <tr><td>municipio</td><td><span class="arrow">→</span></td><td>municipality</td></tr>
     <tr><td>coletor</td><td><span class="arrow">→</span></td><td>recordedBy</td></tr>
+    <tr><td>latitude</td><td><span class="arrow">→</span></td><td>decimalLatitude</td></tr>
+    <tr><td>longitude</td><td><span class="arrow">→</span></td><td>decimalLongitude</td></tr>
   </tbody>
 </table>
 ```
@@ -68,18 +99,32 @@ Salve seu mapeamento como um **modelo** (<span class="term">template</span>). Co
 
 ## O assistente de basisOfRecord
 
-O termo <span class="term">basisOfRecord</span> descreve a natureza do registro: espécime preservado, observação humana, material fóssil, registro de máquina (armadilha fotográfica), entre outros. O Saíra traz um **assistente** que explica cada opção em linguagem simples e sugere a mais adequada ao seu conjunto de dados, evitando que você precise decorar os valores controlados do padrão.
+O termo <span class="term">basisOfRecord</span> descreve a natureza do registro: espécime preservado, observação humana, material fóssil, registro de máquina (armadilha fotográfica), entre outros. Em vez de um valor único para o lote, o Saíra traz um **assistente** que parte de uma coluna da sua planilha (por exemplo, <span class="term">tipo_de_registro</span>) e deixa você associar **cada valor distinto** ao termo Darwin Core correspondente, explicando cada opção em linguagem simples — assim você não precisa decorar os valores controlados do padrão.
 
-| Seu caso | Valor sugerido |
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/5-basisOfRecord-selection.png" alt="Card basisOfRecord com a coluna tipo_de_registro selecionada e o botão Assistente basisOfRecord destacado">
+  <figcaption><b>Figura 5.</b> No card <span class="term">basisOfRecord</span>, escolha a coluna-fonte (aqui, <span class="term">tipo_de_registro</span>) e abra o <b>Assistente basisOfRecord</b>.</figcaption>
+</figure>
+```
+
+| Seu valor na planilha | Termo Darwin Core |
 |---|---|
 | Material tombado em coleção | `PreservedSpecimen` |
 | Observação em campo (sem coleta) | `HumanObservation` |
 | Foto de armadilha fotográfica | `MachineObservation` |
 | Material fóssil | `FossilSpecimen` |
 
-## Colunas ignoradas e não mapeadas
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/5.1-assistente-basisOfRecord.png" alt="Janela do assistente de basisOfRecord mapeando cada valor bruto para um termo DwC, com prévia ao vivo">
+  <figcaption><b>Figura 6.</b> O assistente mapeia <b>cada valor</b> para um termo DwC — Espécime preservado → PreservedSpecimen, Observação → HumanObservation, Armadilha fotográfica → MachineObservation — com prévia ao vivo antes de salvar.</figcaption>
+</figure>
+```
 
-Nem toda coluna precisa virar um termo Darwin Core. Você pode marcar colunas como **ignoradas**. Mesmo assim, na exportação o Saíra **anexa à direita** as colunas que você não usou como fonte de nenhum termo, preservando o nome e a ordem originais, para que nenhum dado se perca: você pode editá-las à mão depois, já no IPT.
+## Colunas não mapeadas
+
+Nem toda coluna precisa virar um termo Darwin Core — basta deixá-la sem mapear. Na exportação, o Saíra **anexa à direita** as colunas que você não usou como fonte de nenhum termo, preservando o nome e a ordem originais, para que nenhum dado se perca: você pode editá-las à mão depois, já no IPT.
 
 ::: {.callout-warning}
 ## Não mapeie duas colunas para o mesmo termo
@@ -89,7 +134,7 @@ Se <span class="term">especie</span> e <span class="term">nome_cientifico</span>
 ```{=html}
 <figure class="shot">
   <div class="frame"><span class="ph-label">screenshot · tela de mapeamento</span></div>
-  <figcaption><b>Figura 1.</b> Painel de mapeamento do Saíra, com sugestões automáticas à esquerda e pré-visualização Darwin Core à direita.</figcaption>
+  <figcaption><b>Figura 7.</b> Painel de mapeamento do Saíra, com sugestões automáticas à esquerda e pré-visualização Darwin Core à direita.</figcaption>
 </figure>
 ```
 
