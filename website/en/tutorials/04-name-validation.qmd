@@ -4,50 +4,66 @@ pagetitle: "Name validation — Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-Scientific names are the key that connects your records to the rest of known biodiversity. This step checks spelling, resolves synonyms and standardizes nomenclature.
+Scientific names are the key that connects your records to the rest of known biodiversity. This step checks spelling, resolves synonyms and standardizes nomenclature against a database of your choice.
 :::
 
 ## Why validate names
 
-The same taxon can appear written in many ways: with typos, old synonyms, abbreviations or without the author. For your data to combine with those of other collections, the names need to be **resolved** against a stable taxonomic reference.
+The same taxon can appear written in many ways: with typos, old synonyms, abbreviations or without the author. For your data to combine with other collections, names need to be **resolved** against a stable taxonomic reference.
+
+## Choosing the reference database
+
+In the **Name validation** tab, Saíra offers three sources. Pick the one best suited to your group:
+
+| Database | Coverage | When to use |
+|---|---|---|
+| **Flora do Brasil** | Plants, algae and fungi of Brazil | National botanical and mycological collections |
+| **Fauna do Brasil** | Animals of Brazil | National zoological collections |
+| **GBIF** *(recommended)* | Global taxonomic backbone | Any group, or when the taxon is not Brazilian |
+
+::: {.callout-note}
+## Brazilian databases live on your computer
+Flora do Brasil and Fauna do Brasil are **downloaded and stored locally** the first time you use them. After that, validation runs even without internet and is faster. Saíra shows the status of each database (never downloaded, downloading, ready) and the local version. GBIF is queried as needed.
+:::
 
 ## Checking the nomenclature
 
-On the **Name validation** tab, Saíra compares each <span class="term">scientificName</span> against taxonomic backbones and classifies the result:
+Saíra compares each <span class="term">scientificName</span> with the chosen database, scores the similarity and assigns a **status** to each record:
 
-- **Exact** — the name matches the reference perfectly.
-- **Suggestion** — a very close name was found (a likely spelling error) and a correction is proposed.
-- **Synonym** — the name is valid, but there is a more current accepted name.
-- **Not found** — requires manual review.
+- **Exact (AUTO)**: the name matches the reference and is applied automatically.
+- **Suggestion (SUGGESTED)**: found a very close name (likely a typo) and proposes the correction.
+- **Synonym / Alias**: the name is valid, but there is a more current accepted name, or a known alias points to the right term.
+- **Ambiguous**: more than one strong candidate; you decide which to apply.
+- **Not found**: requires manual review.
 
 ```{=html}
 <ol class="steps">
   <li><strong>Run the check.</strong>
-    <p>Saíra processes the list of names and shows a summary by status.</p></li>
+    <p>Saíra processes the list of names and shows a summary by situation.</p></li>
   <li><strong>Review the suggestions.</strong>
-    <p>For each name with a suggestion or synonym, accept the proposed correction or keep the original.</p></li>
+    <p>For each name with a suggestion, synonym or ambiguity, accept the proposed correction or keep the original.</p></li>
   <li><strong>Handle the not-found ones.</strong>
-    <p>Correct them manually, confirm they are right (e.g. a recently described taxon) or flag them for later review.</p></li>
+    <p>Correct manually, confirm it is right (for example, a recently described taxon) or flag it for later review.</p></li>
 </ol>
 ```
 
 ::: {.callout-tip}
 ## Accept in bulk
-When many records share the same recurring error, accept the correction once and apply it to all identical cases — instead of reviewing row by row.
+When many records share the same recurring error, accept the correction once and apply it to all identical cases, instead of reviewing row by row. This is what saves the most time on large datasets.
 :::
 
 ```{=html}
 <figure class="shot">
   <div class="frame"><span class="ph-label">screenshot · name validation</span></div>
-  <figcaption><b>Figure 1.</b> Name validation screen, with the status of each taxon and the suggested corrections.</figcaption>
+  <figcaption><b>Figure 1.</b> Name validation screen, with each taxon's status, the selected reference database and the suggested corrections.</figcaption>
 </figure>
 ```
 
 ::: {.callout-warning}
 ## The taxonomic decision is yours
-Suggestions are automatic, but the authority belongs to the specialist. In groups with unstable taxonomy, check the proposals before accepting them en masse.
+Suggestions are automatic, but authority belongs to the specialist. In groups with unstable taxonomy, check the proposals before accepting them en masse. Accepting a synonym means replacing the name in the exported dataset: the original name can be preserved in <span class="term">verbatimIdentification</span> or <span class="term">originalNameUsage</span> if you mapped those fields.
 :::
 
 ## Next steps
 
-With the names resolved, let's move to space: go to **[Validating coordinates](05-coordinate-validation.qmd)**.
+With the names resolved, on to space: go to **[Validating coordinates](05-coordinate-validation.qmd)**.

@@ -4,44 +4,51 @@ pagetitle: "Darwin Core mapping — Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-How to match your spreadsheet columns to the terms of the Darwin Core standard using Saíra's visual mapper — the step that turns local data into interoperable records.
+How to match your spreadsheet columns to the terms of the Darwin Core standard using Saíra's visual mapper: the step that turns local data into interoperable records.
 :::
 
 ## Overview
 
-After importing your data (see [Importing your data](02-upload.qmd)), each column still carries the name you use day to day: <span class="term">numero_tombo</span>, <span class="term">especie</span>, <span class="term">data_coleta</span>. Mapping is the step where we tell Saíra which Darwin Core term corresponds to each of those columns.
+After importing your data (see [Importing your data](02-upload.qmd)), each column still carries the name you use day to day: <span class="term">numero_tombo</span>, <span class="term">especie</span>, <span class="term">data_coleta</span>. Mapping is the step where we tell Saíra which Darwin Core term matches each of those columns.
 
 Saíra suggests matches automatically from each column's name and content, but the final decision is always yours. A good mapping is the foundation of everything that follows: validation, export and data quality all depend on it.
 
-::: {.callout-tip}
-## Save a template
-Save your mapping as a **template**. Collections often re-import spreadsheets with the same structure — reusing the template saves hours with every new batch of records.
-:::
+## Auto-mapping
 
-## Opening the mapper
+The **Auto-map** button sweeps every column at once and proposes a term for each one, assigning a **status** that signals how confident the suggestion is:
 
-With the data loaded, go to the **Mapping** tab. You'll see two columns: on the left, your spreadsheet fields; on the right, the suggested Darwin Core terms.
+- **AUTO**: high confidence, already filled in. Matches a known term or an alias Saíra recognizes.
+- **SUGGESTED**: a likely match that still wants your confirmation.
+- **EDITED**: you adjusted it manually; your choice overrides the suggestions.
+
+At the end, Saíra shows a summary (for example, "12 AUTO, 5 SUGGESTED"). Review the SUGGESTED ones carefully and confirm or correct each.
 
 ```{=html}
 <ol class="steps">
-  <li><strong>Review the automatic suggestions.</strong>
-    <p>High-confidence fields appear pre-filled and marked in green. Confirm or adjust each one.</p></li>
-  <li><strong>Resolve the unmapped fields.</strong>
-    <p>Columns without a clear match are highlighted. Choose the Darwin Core term in the selector or mark the column as <span class="term">ignored</span>.</p></li>
+  <li><strong>Run auto-mapping.</strong>
+    <p>Click <span class="term">Auto-map</span>. High-confidence fields appear filled in and marked AUTO.</p></li>
+  <li><strong>Review the suggested ones.</strong>
+    <p>For each column marked SUGGESTED, confirm the term or change it in the selector.</p></li>
+  <li><strong>Resolve unmapped fields.</strong>
+    <p>Columns without a clear match are highlighted. Pick the Darwin Core term or mark the column as <span class="term">ignored</span>.</p></li>
   <li><strong>Set the record type.</strong>
-    <p>Specify <span class="term">basisOfRecord</span> (for example, <em>PreservedSpecimen</em> for catalogued material) — it applies to every record in the batch.</p></li>
+    <p>Provide <span class="term">basisOfRecord</span> using the assistant (see below); it applies to every record in the batch.</p></li>
   <li><strong>Check the preview.</strong>
     <p>The bottom panel shows the first rows already with Darwin Core names, so you can validate before moving on.</p></li>
 </ol>
 ```
 
-### Mapping example
+## Term catalog and search
+
+The mapper works with a base set of the most-used Darwin Core terms, but the full catalog has about **218 terms** (`dwc:` and `dcterms:` properties). If the column you need is not in the list, use the **term search** ("add term") to find and include any property in the standard, such as <span class="term">coordinateUncertaintyInMeters</span>, <span class="term">samplingProtocol</span> or <span class="term">organismQuantity</span>.
+
+### Example mapping
 
 The table below shows a typical mapping for an ornithological collection:
 
 ```{=html}
 <table class="maptable">
-  <thead><tr><th>Column in the spreadsheet</th><th></th><th>Darwin Core term</th></tr></thead>
+  <thead><tr><th>Spreadsheet column</th><th></th><th>Darwin Core term</th></tr></thead>
   <tbody>
     <tr><td>numero_tombo</td><td><span class="arrow">→</span></td><td>catalogNumber</td></tr>
     <tr><td>especie</td><td><span class="arrow">→</span></td><td>scientificName</td></tr>
@@ -52,22 +59,40 @@ The table below shows a typical mapping for an ornithological collection:
 </table>
 ```
 
+## Templates
+
+::: {.callout-tip}
+## Save a template and reuse it
+Save your mapping as a **template**. Collections often re-import spreadsheets with the same structure: reusing the template applies the whole mapping at once and saves hours on every new batch of records. On reapply, columns coming from the template show up with the matching status, and you only review what changed.
+:::
+
 ## The basisOfRecord assistant
 
-The term <span class="term">basisOfRecord</span> describes the nature of the record — preserved specimen, human observation, fossil material, machine record (camera trap), among others. Saíra includes an **assistant** that explains each option in plain language and suggests the most appropriate one for your dataset.
+The term <span class="term">basisOfRecord</span> describes the nature of the record: preserved specimen, human observation, fossil material, machine record (camera trap), among others. Saíra includes an **assistant** that explains each option in plain language and suggests the most suitable one for your dataset, so you do not have to memorize the standard's controlled values.
+
+| Your case | Suggested value |
+|---|---|
+| Material cataloged in a collection | `PreservedSpecimen` |
+| Field observation (no collection) | `HumanObservation` |
+| Camera-trap photo | `MachineObservation` |
+| Fossil material | `FossilSpecimen` |
+
+## Ignored and unmapped columns
+
+Not every column has to become a Darwin Core term. You can mark columns as **ignored**. Even so, at export Saíra **appends to the right** the columns you did not use as a source for any term, preserving their original names and order, so no data is lost: you can edit them by hand later, already in the IPT.
 
 ::: {.callout-warning}
-## Don't map two columns to the same term
+## Do not map two columns to the same term
 If <span class="term">especie</span> and <span class="term">nome_cientifico</span> both point to <span class="term">scientificName</span>, Saíra flags the conflict and asks you to choose a single source before proceeding.
 :::
 
 ```{=html}
 <figure class="shot">
   <div class="frame"><span class="ph-label">screenshot · mapping screen</span></div>
-  <figcaption><b>Figure 1.</b> Saíra's mapping panel, with automatic suggestions on the left and a Darwin Core preview on the right.</figcaption>
+  <figcaption><b>Figure 1.</b> Saíra's mapping panel, with automatic suggestions on the left and the Darwin Core preview on the right.</figcaption>
 </figure>
 ```
 
 ## Next steps
 
-With the fields mapped, your data are already in Darwin Core vocabulary — but they haven't been checked yet. Move on to **[Validating scientific names](04-name-validation.qmd)**.
+With the fields mapped, your data is already in Darwin Core vocabulary, but it has not been verified yet. Go to **[Validating scientific names](04-name-validation.qmd)**.

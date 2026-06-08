@@ -40,7 +40,7 @@
   function textColor() { return cssVar('--text') || '#1C1C26'; }
 
   function nodeCount() {
-    return Math.max(40, Math.min(120, Math.round(width * height / 13000)));
+    return Math.max(80, Math.min(220, Math.round(width * height / 7000)));
   }
 
   function OccurrenceNode(index, total) {

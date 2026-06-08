@@ -30,9 +30,16 @@ $toc-active-border: #38cff6;
   --accent-soft: rgba(138, 147, 240, 0.12);
   --info: #b9bbe8;
   --warning: #FFB838;
-  --warn-title: #FFC766;
   --success: #2fc488;
   --error: #e0685c;
+
+  // callout title/icon colors — bright semantic hues, legible on the dark
+  // color-mix(... 8%, surface) callout backgrounds in dark mode.
+  --note-title: #5fd6df;
+  --tip-title: #66e0a8;
+  --warn-title: #FFC766;
+  --important-title: #ef8a7e;
+  --caution-title: #aab1f5;
 
   --on-primary: #06222b;
   --dots: rgba(138, 147, 240, 0.55);
@@ -57,10 +64,11 @@ $toc-active-border: #38cff6;
   --r-sm: 9px;
 }
 
+@import "saira-rules";
+
 .cta { border-color: var(--border); }
 
-// No modo escuro o toggle mostra a lua (este arquivo só carrega no tema escuro)
+// No modo escuro o toggle mostra a lua (este arquivo só carrega no tema escuro).
+// Precisa vir DEPOIS do @import "saira-rules" para vencer o padrão (sol visível).
 .theme-toggle-saira .sun { display: none; }
 .theme-toggle-saira .moon { display: block; }
-
-@import "saira-rules";

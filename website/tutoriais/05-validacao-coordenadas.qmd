@@ -4,17 +4,19 @@ pagetitle: "Validação de coordenadas — Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-Coordenadas erradas são uma das maiores fontes de problema em dados de biodiversidade. O Saíra ajuda a encontrá-las e a revisá-las visualmente no mapa.
+Coordenadas erradas são uma das maiores fontes de problema em dados de biodiversidade. O Saíra ajuda a encontrá-las, corrigi-las com segurança e revisá-las visualmente no mapa.
 :::
 
 ## O que o Saíra verifica
 
 A partir de <span class="term">decimalLatitude</span> e <span class="term">decimalLongitude</span>, o app sinaliza os problemas mais comuns:
 
-- **Ausentes** — registros sem coordenada.
-- **Invertidas** — latitude e longitude trocadas (um clássico que joga o ponto para o outro lado do mundo).
-- **Fora de faixa** — valores impossíveis (latitude além de ±90, longitude além de ±180).
-- **Incompatíveis com o esperado** — pontos caindo no mar para registros terrestres, ou muito longe do país informado.
+- **Ausentes**: registros sem coordenada.
+- **Fora de faixa**: valores impossíveis (latitude além de ±90, longitude além de ±180).
+- **Invertidas / transpostas**: latitude e longitude trocadas, ou com o sinal errado, jogando o ponto para o outro lado do mundo.
+- **Incompatíveis com o país**: pontos caindo fora do país informado, ou no mar quando deveriam estar em terra.
+
+A verificação se apoia em diagnósticos determinísticos (no estilo do `CoordinateCleaner`) e na camada de países do Natural Earth que vem embutida no Saíra, então roda sem depender de serviços externos.
 
 ```{=html}
 <figure class="shot">
@@ -23,27 +25,33 @@ A partir de <span class="term">decimalLatitude</span> e <span class="term">decim
 </figure>
 ```
 
-## Revisando no mapa
+## Correções assistidas
+
+O Saíra não apenas aponta o erro: ele **propõe a correção** e deixa você aplicá-la explicitamente. As coordenadas originais nunca são sobrescritas em silêncio; quando você aceita uma correção, os valores antigos podem ser preservados em <span class="term">verbatimLatitude</span> e <span class="term">verbatimLongitude</span>.
 
 ```{=html}
 <ol class="steps">
   <li><strong>Veja a distribuição.</strong>
     <p>Os pontos aparecem no mapa, coloridos por situação. Concentrações fora da área esperada saltam aos olhos.</p></li>
-  <li><strong>Corrija as inversões.</strong>
-    <p>Para coordenadas detectadas como invertidas, o Saíra oferece a troca lat/lon com um clique.</p></li>
+  <li><strong>Corrija transposições e inversões.</strong>
+    <p>Para pontos que caem fora do país informado, o Saíra testa trocas de latitude/longitude e inversões de sinal e aceita a primeira que cai dentro do país (com uma margem de fronteira de cerca de 22 km). Você revê e aplica.</p></li>
+  <li><strong>Preencha o país a partir do ponto.</strong>
+    <p>Quando o <span class="term">country</span> está em branco mas a coordenada é válida, o Saíra deriva o país em que o ponto cai. Valores de país já informados nunca são substituídos.</p></li>
+  <li><strong>Trate pontos no mar sem país.</strong>
+    <p>Se o país está vazio e o ponto cai no mar, é um forte indício de troca lat/lon. O Saíra testa a troca e, quando o ponto corrigido cai em um país, propõe a coordenada e o país juntos.</p></li>
   <li><strong>Trate ausências.</strong>
-    <p>Registros sem coordenada podem ser preenchidos a partir da localidade ou marcados como sem georreferenciamento.</p></li>
+    <p>Registros sem coordenada podem ser revisados a partir da localidade ou mantidos sem georreferenciamento, de forma consciente.</p></li>
 </ol>
 ```
 
 ::: {.callout-tip}
 ## Datum e precisão
-Registre o <span class="term">geodeticDatum</span> (por exemplo, <em>WGS84</em>) e, quando souber, a incerteza em metros (<span class="term">coordinateUncertaintyInMeters</span>). Isso aumenta muito o valor científico do dado.
+Registre o <span class="term">geodeticDatum</span> (por exemplo, <em>WGS84</em>) e, quando souber, a incerteza em metros (<span class="term">coordinateUncertaintyInMeters</span>). Isso aumenta muito o valor científico do dado e ajuda quem for reutilizá-lo a julgar a precisão.
 :::
 
 ::: {.callout-warning}
 ## Sinal das coordenadas no Brasil
-A maior parte do Brasil tem **latitude e longitude negativas**. Coordenadas positivas onde se esperava o hemisfério sul/oeste são um forte indício de erro de sinal ou de inversão.
+A maior parte do Brasil tem **latitude e longitude negativas**. Coordenadas positivas onde se esperava o hemisfério sul/oeste são um forte indício de erro de sinal ou de inversão. O exemplo clássico: `-34.87, -8.04` (lat, lon) em vez de `-8.04, -34.87` joga um ponto de Pernambuco para o meio do Atlântico.
 :::
 
 ## Próximos passos

@@ -5,23 +5,23 @@ toc: false
 ---
 
 ::: {.tut-standfirst}
-Step-by-step guides to take your occurrence spreadsheet from the field notebook to a Darwin Core Archive — following the same workflow as the application, step by step.
+Step-by-step guides to take your occurrence spreadsheet from the field notebook to a Darwin Core Archive, following the same workflow as the application, step by step.
 :::
 
-The tutorials follow the Saíra workflow, step by step. Use the **sidebar** on the left to move between them and the **previous / next** buttons at the bottom of each page — the reading flows continuously, from installation to the final export. Each step can also be read on its own.
+The tutorials follow Saíra's workflow, step by step. Use the **sidebar** on the left to move between them and the **previous / next** buttons at the bottom of each page: the reading flows continuously, from installation to the final export. Each step can also be read on its own.
 
 ## The workflow, from raw data to DwC-A
 
-1. **[Installation and first steps](01-installation.qmd)** — install Saíra from GitHub and open the application in your browser.
-2. **[Importing your data](02-upload.qmd)** — load CSV or Excel spreadsheets and run a first inspection of the columns.
-3. **[Mapping fields to Darwin Core](03-dwc-mapping.qmd)** — match each column to a Darwin Core term with automatic suggestions.
-4. **[Validating scientific names](04-name-validation.qmd)** — check the nomenclature, resolve synonyms and standardize spelling.
-5. **[Validating coordinates](05-coordinate-validation.qmd)** — find missing or swapped coordinates and review them on the map.
-6. **[Preview and export](06-preview-export.qmd)** — review the result, handle sensitive species and generate the Darwin Core Archive.
+1. **[Installation and first steps](01-installation.qmd)**: install Saíra from GitHub and open the application in your browser.
+2. **[Importing your data](02-upload.qmd)**: load CSV or Excel spreadsheets (or a camera-trap package) and run a first inspection of the columns.
+3. **[Mapping fields to Darwin Core](03-dwc-mapping.qmd)**: match each column to a Darwin Core term with automatic suggestions, templates and the `basisOfRecord` assistant.
+4. **[Validating scientific names](04-name-validation.qmd)**: check nomenclature against Flora do Brasil, Fauna do Brasil or GBIF, resolve synonyms and standardize spelling.
+5. **[Validating coordinates](05-coordinate-validation.qmd)**: find missing, swapped or transposed coordinates, fill the country from the point and review on the map.
+6. **[Preview and export](06-preview-export.qmd)**: review the result, handle sensitive species and generate the Darwin Core Archive.
 
 ::: {.callout-note}
 ## The workflow is flexible
-You don't have to follow every step in a rigid sequence. Saíra lets you go back to any step — remap a field, reload the spreadsheet or revalidate — without losing the work you've already done.
+You do not have to follow every step in a rigid sequence. Saíra lets you go back to any step (remap a field, reload the spreadsheet or revalidate) without losing the work already done. You can move backward at any time.
 :::
 
 ::: {.callout-tip}

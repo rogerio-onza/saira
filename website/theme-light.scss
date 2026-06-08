@@ -30,9 +30,16 @@ $toc-active-border: #38cff6;
   --accent-soft: rgba(40, 51, 172, 0.08);
   --info: #252659;
   --warning: #FFA204;
-  --warn-title: #FFA204;
   --success: #00A86B;
   --error: #C0392B;
+
+  // callout title/icon colors — darkened semantic hues, AA-legible on the pale
+  // color-mix(... 8%, surface) callout backgrounds in light mode.
+  --note-title: #0a6a72;
+  --tip-title: #0a7a4f;
+  --warn-title: #9a6200;
+  --important-title: #a3271b;
+  --caution-title: #20276b;
 
   --on-primary: #06222b;
   --dots: rgba(40, 51, 172, 0.55);

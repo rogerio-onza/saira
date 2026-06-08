@@ -9,9 +9,9 @@ The home stretch: review the complete result, handle sensitive species and gener
 
 ## Preview
 
-On the **Preview** tab, Saíra shows the final table already in Darwin Core vocabulary, with all corrections applied. This is the moment for one last general check:
+In the **Preview** tab, Saíra shows the final table already in Darwin Core vocabulary, with all corrections applied. This is the moment for one last overall check:
 
-- the columns have the correct Darwin Core names;
+- columns carry the correct Darwin Core names;
 - required fields are filled in;
 - names and coordinates were validated in the previous steps.
 
@@ -22,13 +22,23 @@ On the **Preview** tab, Saíra shows the final table already in Darwin Core voca
 </figure>
 ```
 
+## What Saíra adjusts at export
+
+When generating the package, Saíra automatically standardizes the dataset so it meets the repositories' expectations:
+
+- **eventDate** converted to ISO format (`YYYY-MM-DD`).
+- **Coordinates** with the decimal separator normalized (comma becomes dot).
+- **occurrenceID** generated when missing, to guarantee a unique identifier per record.
+- **Licenses** abbreviated to the canonical URL (for example, the matching Creative Commons URL).
+- **Columns reordered** into the canonical Darwin Core sequence, with unmapped columns appended on the right, preserving their original names.
+
 ## Sensitive species
 
-Before publishing, Saíra checks whether there are **threatened taxa** (based on the National List of Fauna/Flora — MMA). For those records, you can choose to **generalize the location** (reduce coordinate precision) or omit it, protecting vulnerable populations without giving up on publishing the data.
+Before publishing, Saíra checks for **threatened taxa** (based on the national Fauna/Flora list from MMA, bundled with the app). For those records, you can choose to **generalize the location** (reduce the precision of the coordinates) or omit it, protecting vulnerable populations without giving up on publishing the data. The precise original coordinates of sensitive records go into a separate file, kept out of the public package.
 
 ::: {.callout-warning}
-## Sensitive data require a conscious decision
-Generalizing coordinates of threatened species is a good practice recommended by GBIF and SiBBr. Assess case by case: the goal is to share knowledge without exposing the species to collection or persecution.
+## Sensitive data calls for a conscious decision
+Generalizing the coordinates of threatened species is a best practice recommended by GBIF and SiBBr. Assess case by case: the goal is to share knowledge without exposing the species to collection or persecution.
 :::
 
 ## Generating the Darwin Core Archive
@@ -36,8 +46,8 @@ Generalizing coordinates of threatened species is a good practice recommended by
 ```{=html}
 <ol class="steps">
   <li><strong>Review the metadata (EML).</strong>
-    <p>Fill in the dataset title, institution, license and responsible parties — they go into the <span class="term">eml.xml</span>.</p></li>
-  <li><strong>Generate the file.</strong>
+    <p>Fill in the dataset title, institution, license and responsible parties; they go into <span class="term">eml.xml</span> and describe the dataset to whoever finds it.</p></li>
+  <li><strong>Generate the archive.</strong>
     <p>Saíra assembles the <span class="term">.zip</span> package with <span class="term">occurrence.txt</span>, <span class="term">meta.xml</span> and <span class="term">eml.xml</span>.</p></li>
   <li><strong>Download and publish.</strong>
     <p>Download the Darwin Core Archive and send it to your IPT (GBIF/SiBBr) for publication.</p></li>
@@ -46,20 +56,25 @@ Generalizing coordinates of threatened species is a good practice recommended by
 
 ::: {.callout-tip}
 ## What is a Darwin Core Archive (DwC-A)
-It's a standardized `.zip` package: a data file (<span class="term">occurrence.txt</span>), a descriptor that states what each column means (<span class="term">meta.xml</span>) and the dataset metadata (<span class="term">eml.xml</span>). It's exactly what global repositories expect to receive.
+It is a standardized `.zip` package: a data file (<span class="term">occurrence.txt</span>), a descriptor that says what each column means (<span class="term">meta.xml</span>) and the dataset metadata (<span class="term">eml.xml</span>). It is exactly what global repositories expect to receive.
+:::
+
+::: {.callout-note}
+## Need a spreadsheet instead of the package?
+Besides the DwC-A, Saíra also exports the dataset as `.xlsx` with **every cell forced to text**, preventing Excel from reinterpreting dates, catalog numbers or coordinates. Handy for manual review or for sending to collaborators.
 :::
 
 ::: {.callout-warning}
 ## Export failed or unavailable?
-It's almost always an **empty required field** or a pending validation. Check that <span class="term">occurrenceID</span>, <span class="term">basisOfRecord</span>, <span class="term">scientificName</span> and <span class="term">eventDate</span> are filled in, and that the name and coordinate steps left no unresolved items. Saíra points out what's missing before releasing the download.
+It is almost always an **empty required field** or a pending validation. Check that <span class="term">occurrenceID</span>, <span class="term">basisOfRecord</span>, <span class="term">scientificName</span> and <span class="term">eventDate</span> are filled in, and that the name and coordinate steps left no unresolved items. Saíra indicates what is missing before releasing the download.
 :::
 
 ## Publishing on GBIF and SiBBr
 
-With the `.zip` in hand, publication happens outside Saíra, usually via your institution's or SiBBr's **IPT** (Integrated Publishing Toolkit). The file generated by Saíra is already in the expected format — just upload it and publish.
+With the `.zip` in hand, publication happens outside Saíra, usually via your institution's or SiBBr's **IPT** (Integrated Publishing Toolkit). The archive Saíra generates is already in the expected format: just upload it, check the mapping in the IPT and publish.
 
 ## Done
 
-You took a raw spreadsheet all the way to a validated Darwin Core Archive. From here, your data can be discovered, cited and combined with collections worldwide. 🐦
+You took a raw spreadsheet all the way to a validated Darwin Core Archive. From here, your data can be found, cited and combined with collections around the world. 🐦
 
 Back to the **[tutorials overview](index.qmd)** or to the **[home page](../index.qmd)**.

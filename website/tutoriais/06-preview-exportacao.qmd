@@ -22,9 +22,19 @@ Na aba **Pré-visualização**, o Saíra mostra a tabela final já em vocabulár
 </figure>
 ```
 
+## O que o Saíra ajusta na exportação
+
+Ao gerar o pacote, o Saíra padroniza automaticamente o conjunto para que ele atenda às expectativas dos repositórios:
+
+- **eventDate** convertido para o formato ISO (`AAAA-MM-DD`).
+- **Coordenadas** com o separador decimal normalizado (vírgula vira ponto).
+- **occurrenceID** gerado quando ausente, para garantir um identificador único por registro.
+- **Licenças** abreviadas para a URL canônica (por exemplo, a URL da Creative Commons correspondente).
+- **Colunas reordenadas** na sequência canônica do Darwin Core, com as colunas não mapeadas anexadas à direita, preservando seus nomes originais.
+
 ## Espécies sensíveis
 
-Antes de publicar, o Saíra verifica se há **táxons ameaçados** (com base na Lista Nacional da Fauna/Flora — MMA). Para esses registros, você pode optar por **generalizar a localização** (reduzir a precisão das coordenadas) ou omiti-la, protegendo populações vulneráveis sem deixar de publicar o dado.
+Antes de publicar, o Saíra verifica se há **táxons ameaçados** (com base na Lista Nacional da Fauna/Flora, do MMA, que vem embutida no app). Para esses registros, você pode optar por **generalizar a localização** (reduzir a precisão das coordenadas) ou omiti-la, protegendo populações vulneráveis sem deixar de publicar o dado. As coordenadas originais e precisas dos registros sensíveis ficam num arquivo à parte, fora do pacote público.
 
 ::: {.callout-warning}
 ## Dados sensíveis exigem decisão consciente
@@ -36,7 +46,7 @@ Generalizar coordenadas de espécies ameaçadas é uma boa prática recomendada 
 ```{=html}
 <ol class="steps">
   <li><strong>Revise os metadados (EML).</strong>
-    <p>Preencha título do conjunto, instituição, licença e responsáveis — eles vão no <span class="term">eml.xml</span>.</p></li>
+    <p>Preencha título do conjunto, instituição, licença e responsáveis; eles vão no <span class="term">eml.xml</span> e descrevem o conjunto para quem o encontrar.</p></li>
   <li><strong>Gere o arquivo.</strong>
     <p>O Saíra monta o pacote <span class="term">.zip</span> com <span class="term">occurrence.txt</span>, <span class="term">meta.xml</span> e <span class="term">eml.xml</span>.</p></li>
   <li><strong>Baixe e publique.</strong>
@@ -49,6 +59,11 @@ Generalizar coordenadas de espécies ameaçadas é uma boa prática recomendada 
 É um pacote `.zip` padronizado: um arquivo de dados (<span class="term">occurrence.txt</span>), um descritor que diz o que cada coluna significa (<span class="term">meta.xml</span>) e os metadados do conjunto (<span class="term">eml.xml</span>). É exatamente o que os repositórios globais esperam receber.
 :::
 
+::: {.callout-note}
+## Precisa de uma planilha em vez do pacote?
+Além do DwC-A, o Saíra também exporta o conjunto como `.xlsx` com **todas as células forçadas a texto**, evitando que o Excel reinterprete datas, números de tombo ou coordenadas. Útil para conferência manual ou para enviar a colaboradores.
+:::
+
 ::: {.callout-warning}
 ## A exportação falhou ou ficou indisponível?
 Quase sempre é um **campo obrigatório vazio** ou uma pendência de validação. Confira se há <span class="term">occurrenceID</span>, <span class="term">basisOfRecord</span>, <span class="term">scientificName</span> e <span class="term">eventDate</span> preenchidos, e se as etapas de nomes e coordenadas não deixaram itens não resolvidos. O Saíra indica o que falta antes de liberar o download.
@@ -56,7 +71,7 @@ Quase sempre é um **campo obrigatório vazio** ou uma pendência de validação
 
 ## Publicando no GBIF e no SiBBr
 
-Com o `.zip` em mãos, a publicação acontece fora do Saíra, normalmente via **IPT** (Integrated Publishing Toolkit) da sua instituição ou do SiBBr. O arquivo gerado pelo Saíra já está no formato esperado — basta carregá-lo e publicar.
+Com o `.zip` em mãos, a publicação acontece fora do Saíra, normalmente via **IPT** (Integrated Publishing Toolkit) da sua instituição ou do SiBBr. O arquivo gerado pelo Saíra já está no formato esperado: basta carregá-lo, conferir o mapeamento no IPT e publicar.
 
 ## Concluído
 

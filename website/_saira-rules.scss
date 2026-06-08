@@ -94,7 +94,13 @@ a { color: inherit; }
   font-style: italic; font-weight: 400;
   font-size: clamp(1.35rem, 3.6vw, 2.1rem);
   color: var(--text);
-  max-width: 18ch; margin: 0 auto 1.8em; line-height: 1.25;
+  max-width: none; margin: 0 auto 1.8em; line-height: 1.25;
+  white-space: nowrap;
+}
+.hero-sub .nowrap { white-space: nowrap; }
+// On phones the full subtitle no longer fits one line; let it wrap.
+@media (max-width: 640px) {
+  .hero-sub { white-space: normal; max-width: 22ch; text-wrap: balance; }
 }
 .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
@@ -144,29 +150,81 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
 .about-text .lead em { color: var(--accent); font-style: italic; }
 .about-media img { width: 100%; height: auto; border-radius: var(--r); display: block; }
 
-// ---------- feature list (editorial, sem cards) ----------
-.feature-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--border); }
-.feature-list .feature {
+// ---------- feature flow (sticky title + pipeline timeline) ----------
+.feature-flow { padding-top: 0; }
+.flow-grid {
   display: grid;
-  grid-template-columns: auto 44px 1fr;
+  grid-template-columns: 1fr 1.6fr;
+  gap: clamp(40px, 6vw, 96px);
   align-items: start;
-  gap: 0 22px;
-  padding: 26px 4px;
-  border-bottom: 1px solid var(--border);
 }
-.feature .num {
-  font-family: var(--mono); font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em;
-  color: var(--accent); padding-top: 0.35em;
+.flow-intro { position: sticky; top: 96px; }
+.flow-intro .eyebrow { margin-bottom: 1.1em; }
+.flow-intro h2 {
+  font-size: clamp(2rem, 4.4vw, 3rem); font-weight: 600; line-height: 1.12;
+  margin: 0 0 0.6em;
 }
-.feature .ic { width: 44px; height: 44px; border-radius: 11px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
-.feature .ic svg { width: 22px; height: 22px; }
-.feature .feature-body { min-width: 0; }
-.feature h3 { font-size: 1.3rem; margin: 0.15em 0 0.35em; }
-.feature p { font-size: 1.04rem; color: var(--text-soft); margin: 0; line-height: 1.55; max-width: 60ch; }
+.flow-intro h2 em { font-style: italic; color: var(--accent); }
+.flow-intro p { color: var(--text-soft); font-size: 1.12rem; line-height: 1.6; margin: 0; max-width: 42ch; }
+.flow-intro p strong { color: var(--text); font-weight: 600; }
+
+.flow-steps { position: relative; list-style: none; margin: 0; padding: 0; }
+// pipeline connector line behind the markers (reinforces "fluxo")
+.flow-steps::before {
+  content: ""; position: absolute; top: 46px; bottom: 46px; left: 27px; width: 2px;
+  background: linear-gradient(to bottom,
+    color-mix(in srgb, var(--accent) 30%, transparent),
+    var(--border), transparent);
+}
+.flow-step {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: 64px 1fr; gap: 22px; align-items: start;
+  padding: 18px; margin: 0 -18px;
+  border: 1px solid transparent; border-radius: 18px;
+  transition: background-color .3s ease, box-shadow .3s ease, border-color .3s ease;
+}
+.flow-step:hover { background: var(--surface); box-shadow: var(--shadow-md); border-color: var(--border); }
+.flow-marker {
+  width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center;
+  color: var(--step, var(--accent));
+  background: color-mix(in srgb, var(--step, var(--accent)) 14%, var(--surface));
+  border: 4px solid var(--bg);
+  box-shadow: var(--shadow-sm);
+  transition: background-color .3s ease, transform .3s ease;
+}
+.flow-step:hover .flow-marker { background: color-mix(in srgb, var(--step, var(--accent)) 22%, var(--surface)); transform: translateY(-2px); }
+.flow-marker svg { width: 24px; height: 24px; }
+.flow-body { min-width: 0; padding-top: 4px; }
+.flow-num { font-family: var(--mono); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.1em; color: var(--step, var(--text-soft)); }
+.flow-body h3 { font-family: var(--serif); font-size: 1.5rem; font-weight: 600; margin: 0.15em 0 0.4em; }
+.flow-body p { font-size: 1.08rem; color: var(--text-soft); margin: 0; line-height: 1.6; max-width: 56ch; }
+// concrete before -> after proof chip (de-genericizes each highlight)
+.proof {
+  display: inline-flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 16px;
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.02em;
+}
+.proof-in, .proof-out { padding: 0.42em 0.72em; border-radius: 8px; border: 1px solid var(--border-strong); }
+.proof-in { color: var(--text-soft); background: var(--surface-2); }
+.proof-out {
+  color: var(--text); font-weight: 700;
+  background: color-mix(in srgb, var(--step, var(--accent)) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--step, var(--accent)) 42%, transparent);
+}
+.proof-arrow { color: var(--step, var(--accent)); font-weight: 700; }
+.flow-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.flow-tag {
+  font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.04em;
+  color: var(--text-soft); background: var(--surface-2);
+  border: 1px solid var(--border-strong); border-radius: 8px; padding: 0.32em 0.62em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow-step, .flow-marker { transition: none; }
+  .flow-step:hover .flow-marker { transform: none; }
+}
 
 // ---------- "Por que Darwin Core?" ----------
 .band-alt { background: var(--bg-2); }
-.dwc-grid { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: clamp(34px, 5vw, 64px); align-items: start; }
+.dwc-grid { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: clamp(34px, 5vw, 64px); align-items: center; }
 .dwc-text p { color: var(--text-soft); font-size: 1.1rem; }
 .dwc-text .lead { color: var(--text); font-size: 1.3rem; line-height: 1.45; margin-bottom: 0.8em; }
 .dwc-text h2 { font-size: clamp(1.9rem, 4.2vw, 2.7rem); margin: 0.5em 0 0.5em; }
@@ -238,11 +296,7 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
 .navbar .navbar-brand {
   font-family: var(--serif); font-style: italic; font-weight: 600;
   font-size: 1.5rem; letter-spacing: -0.02em; color: var(--text) !important;
-  display: flex; align-items: center; gap: 0.5em;
-}
-.navbar .navbar-brand::before {
-  content: ""; width: 9px; height: 9px; border-radius: 50%;
-  background: var(--primary); box-shadow: 0 0 0 4px var(--accent-soft);
+  display: flex; align-items: center;
 }
 .navbar .navbar-nav .nav-link {
   font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.10em; text-transform: uppercase;
@@ -253,6 +307,24 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
 .navbar .navbar-nav .nav-link.active { color: var(--text) !important; }
 .navbar .quarto-navbar-tools .quarto-navigation-tool { color: var(--text-soft) !important; }
 .navbar .quarto-navbar-tools .quarto-navigation-tool:hover { color: var(--text) !important; }
+// Single-row navbar: brand hard-left, then nav links + search + theme/language
+// toggles as ONE group on the right. Quarto ships competing rules with the child
+// combinator `.navbar .navbar-container > .navbar-brand-container { margin:0 }`
+// (specificity 0,3,0 !important) that zero out the brand's push-right margin, and
+// `.ms-auto` on the nav list that adds a second gap, scattering the items across
+// the bar. We match that 0,3,0 specificity (and later source order) to win, and
+// neutralise the stray auto margin so there is exactly one flexible gap, right
+// after the brand.
+.navbar .navbar-container { flex-wrap: nowrap !important; align-items: center !important; }
+.navbar .navbar-container > .navbar-brand-container { order: 0 !important; margin-left: 0 !important; margin-right: auto !important; }
+.navbar .navbar-container > .navbar-collapse { order: 1 !important; flex: 0 0 auto !important; }
+.navbar .navbar-nav.ms-auto { margin-left: 0 !important; }
+.navbar .navbar-container > #quarto-search { order: 2 !important; margin-left: 8px !important; }
+.navbar .navbar-container > .quarto-navbar-tools {
+  order: 3 !important; margin-left: 8px !important;
+  display: flex; flex-direction: row; align-items: center; gap: 8px;
+}
+.navbar .navbar-nav { flex-wrap: nowrap; align-items: center; }
 
 // ---------- left sidebar (tutoriais) ----------
 .sidebar-navigation {
@@ -289,7 +361,7 @@ nav[role="doc-toc"] ul > li > a {
 nav[role="doc-toc"] ul > li > a.active { color: var(--text); border-left-color: var(--primary); font-weight: 500; }
 
 // ---------- article content ----------
-main.content { max-width: 820px; }
+main.content { max-width: 960px; }
 .tut-standfirst { font-size: 1.3rem; font-style: italic; color: var(--text-soft); line-height: 1.5; margin: 0 0 2em; max-width: 62ch; }
 main.content h2 { font-size: 1.85rem; margin: 1.8em 0 0.6em; }
 main.content h3 { font-size: 1.3rem; margin: 1.6em 0 0.5em; }
@@ -314,16 +386,44 @@ main.content p { font-size: 1.1rem; }
 .callout.callout-style-default .callout-body { background: transparent !important; }
 .callout .callout-title-container {
   font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em;
-  text-transform: uppercase; font-weight: 700; color: var(--cc);
+  text-transform: uppercase; font-weight: 700; color: var(--cc-title, var(--cc));
 }
-.callout .callout-icon::before { color: var(--cc); }
+// Quarto bakes a fixed Bootstrap fill into each callout-icon SVG (note = blue,
+// warning = yellow, caution = orange …) that clashes with our Saira tints. Turn
+// each SVG into a CSS mask so the icon adopts the callout's own title color.
+.callout .callout-icon::before {
+  background-image: none !important;
+  background-color: var(--cc-title, var(--cc));
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+  -webkit-mask-size: contain; mask-size: contain;
+}
+.callout-note .callout-icon::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z'/%3E%3Cpath d='m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z'/%3E%3Cpath d='m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z'/%3E%3C/svg%3E");
+}
+.callout-tip .callout-icon::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6zm6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1z'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6zm6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1z'/%3E%3C/svg%3E");
+}
+.callout-warning .callout-icon::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.146.146 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.163.163 0 0 1-.054.06.116.116 0 0 1-.066.017H1.146a.115.115 0 0 1-.066-.017.163.163 0 0 1-.054-.06.176.176 0 0 1 .002-.183L7.884 2.073a.147.147 0 0 1 .054-.057zm1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566z'/%3E%3Cpath d='M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995z'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M7.938 2.016A.13.13 0 0 1 8.002 2a.13.13 0 0 1 .063.016.146.146 0 0 1 .054.057l6.857 11.667c.036.06.035.124.002.183a.163.163 0 0 1-.054.06.116.116 0 0 1-.066.017H1.146a.115.115 0 0 1-.066-.017.163.163 0 0 1-.054-.06.176.176 0 0 1 .002-.183L7.884 2.073a.147.147 0 0 1 .054-.057zm1.044-.45a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566z'/%3E%3Cpath d='M7.002 12a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 5.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995z'/%3E%3C/svg%3E");
+}
+.callout-important .callout-icon::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z'/%3E%3Cpath d='M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z'/%3E%3Cpath d='M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z'/%3E%3C/svg%3E");
+}
+.callout-caution .callout-icon::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M9.97 4.88l.953 3.811C10.158 8.878 9.14 9 8 9c-1.14 0-2.159-.122-2.923-.309L6.03 4.88C6.635 4.957 7.3 5 8 5s1.365-.043 1.97-.12zm-.245-.978L8.97.88C8.718-.13 7.282-.13 7.03.88L6.274 3.9C6.8 3.965 7.382 4 8 4c.618 0 1.2-.036 1.725-.098zm4.396 8.613a.5.5 0 0 1 .037.96l-6 2a.5.5 0 0 1-.316 0l-6-2a.5.5 0 0 1 .037-.96l2.391-.598.565-2.257c.862.212 1.964.339 3.165.339s2.303-.127 3.165-.339l.565 2.257 2.391.598z'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M9.97 4.88l.953 3.811C10.158 8.878 9.14 9 8 9c-1.14 0-2.159-.122-2.923-.309L6.03 4.88C6.635 4.957 7.3 5 8 5s1.365-.043 1.97-.12zm-.245-.978L8.97.88C8.718-.13 7.282-.13 7.03.88L6.274 3.9C6.8 3.965 7.382 4 8 4c.618 0 1.2-.036 1.725-.098zm4.396 8.613a.5.5 0 0 1 .037.96l-6 2a.5.5 0 0 1-.316 0l-6-2a.5.5 0 0 1 .037-.96l2.391-.598.565-2.257c.862.212 1.964.339 3.165.339s2.303-.127 3.165-.339l.565 2.257 2.391.598z'/%3E%3C/svg%3E");
+}
 
-.callout-note      { --cc: var(--primary-dark); }
-.callout-tip       { --cc: var(--success); }
-.callout-warning   { --cc: var(--warning); }
-.callout-important { --cc: var(--error); }
-.callout-caution   { --cc: var(--accent); }
-.callout-warning .callout-title-container { color: var(--warn-title); }
+.callout-note      { --cc: var(--primary-dark); --cc-title: var(--note-title); }
+.callout-tip       { --cc: var(--success);      --cc-title: var(--tip-title); }
+.callout-warning   { --cc: var(--warning);      --cc-title: var(--warn-title); }
+.callout-important { --cc: var(--error);        --cc-title: var(--important-title); }
+.callout-caution   { --cc: var(--accent);       --cc-title: var(--caution-title); }
 
 // ---------- theme toggle (estilo do design Claude) ----------
 .theme-toggle-saira {
@@ -332,7 +432,7 @@ main.content p { font-size: 1.1rem; }
   background: var(--surface);
   cursor: pointer; display: grid; place-items: center;
   color: var(--text) !important;
-  padding: 0; margin-left: 6px;
+  padding: 0;
   transition: border-color .2s ease, transform .35s ease, background-color .2s ease;
 }
 .theme-toggle-saira:hover { border-color: var(--text); background: var(--surface); }
@@ -347,7 +447,7 @@ main.content p { font-size: 1.1rem; }
   color: var(--text-soft) !important; text-decoration: none;
   padding: 0.5em 0.85em; border: 1px solid var(--border-strong); border-radius: 100px;
   transition: color .2s ease, border-color .2s ease, background-color .2s ease;
-  display: inline-flex; align-items: center; gap: 0.4em; margin-left: 6px;
+  display: inline-flex; align-items: center; gap: 0.4em;
 }
 .lang-switch:hover { color: var(--text) !important; border-color: var(--text); background: var(--surface); }
 
@@ -356,12 +456,27 @@ div.sourceCode { background: var(--code-bg); border-radius: var(--r); border: 1p
 pre.sourceCode, pre > code.sourceCode { background: transparent !important; color: var(--code-text) !important; }
 pre.sourceCode { padding: 16px 18px; font-size: 0.86rem; line-height: 1.85; }
 code:not(.sourceCode):not(pre code) { font-family: var(--mono); font-size: 0.86em; background: var(--accent-soft); color: var(--accent); padding: 0.1em 0.4em; border-radius: 6px; }
+// Base override: Quarto's light syntax palette colors EVERY span (incl. plain,
+// un-tokenized text and the line-wrapper spans) dark teal-blue (#003B4F) via a
+// catch-all `code span { color:#003B4F }`. On our dark --code-bg that is
+// invisible. Force the light code text as the floor; the colored-token rules
+// below are more specific and still win.
+code span { color: var(--code-text) !important; }
 // token colors (override Quarto highlight)
 code span.co { color: rgba(233,231,223,0.45) !important; font-style: italic; }
 code span.st, code span.ss, code span.vs { color: #6fe3ac !important; }
 code span.fu, code span.bu { color: #FFB838 !important; }
 code span.kw, code span.cf, code span.dv, code span.cn { color: #5bd9f8 !important; }
 code span.op, code span.sc { color: rgba(233,231,223,0.7) !important; }
+// Our code surface (--code-bg) is dark in BOTH site themes, but in light mode
+// Quarto applies its light syntax palette (dark token colors: va #111111,
+// dt/fl #AD0000, at #657422, im #00769E …) which vanishes on the dark block.
+// Keep every remaining token legible.
+code span.bn, code span.fl { color: #5bd9f8 !important; }
+code span.ch { color: #6fe3ac !important; }
+code span.va, code span.at, code span.dt, code span.ot, code span.im, code span.ex { color: var(--code-text) !important; }
+code span.er, code span.al, code span.wa, code span.pp { color: #ff8a7a !important; }
+code span.an, code span.cv, code span.in, code span.do { color: rgba(233,231,223,0.5) !important; font-style: italic; }
 .code-copy-button { color: rgba(233,231,223,0.6) !important; }
 .code-copy-button:hover { color: #fff !important; }
 
@@ -378,10 +493,13 @@ code span.op, code span.sc { color: rgba(233,231,223,0.7) !important; }
   .about-text { order: 2; }
   .about-media { order: 1; max-width: 360px; }
   .dwc-grid { grid-template-columns: 1fr; }
+  .flow-grid { grid-template-columns: 1fr; gap: clamp(28px, 6vw, 48px); }
+  .flow-intro { position: static; }
 }
 @media (max-width: 540px) {
-  .feature-list .feature { grid-template-columns: auto 1fr; gap: 4px 16px; }
-  .feature .ic { display: none; }
+  .flow-steps::before { left: 23px; }
+  .flow-step { grid-template-columns: 48px 1fr; gap: 16px; padding: 14px; margin: 0 -14px; }
+  .flow-marker { width: 48px; height: 48px; }
   .hero-actions .btn-saira { width: 100%; justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
