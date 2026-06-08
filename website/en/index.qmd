@@ -12,12 +12,12 @@ anchor-sections: false
   <div class="wrap">
     <span class="eyebrow">R/Shiny application · Open Source</span>
     <h1>Sa<span class="on">í</span>ra</h1>
-    <p class="hero-sub">Darwin Core for Brazilian Biodiversity</p>
+    <p class="hero-sub">Darwin Core for <span class="nowrap">Brazilian Biodiversity</span></p>
     <div class="hero-actions">
       <a class="btn-saira btn-primary-saira" href="tutorials/index.html">Get started</a>
-      <a class="btn-saira btn-ghost-saira" href="https://github.com/rogerio-onza/saira">
-        <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        View on GitHub
+      <a class="btn-saira btn-ghost-saira" href="tutorials/01-installation.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+        Download
       </a>
     </div>
   </div>
@@ -51,9 +51,8 @@ anchor-sections: false
     <div class="about-grid">
       <div class="about-text">
         <span class="eyebrow">What it is</span>
-        <p class="lead">Saíra takes you from the field notebook to the global repository — turning heterogeneous spreadsheets into <em>clean, validated and interoperable</em> records.</p>
-        <p>Scientific collections hold decades of knowledge about biodiversity, but their data rarely speak the same language. Saíra offers a guided, visual and bilingual workflow (PT-BR/EN) to map your fields to the Darwin Core standard, detect inconsistencies and export a publication-ready package.</p>
-        <p>Built in R and Shiny, it runs on your own computer or an institutional server. No mandatory command line, no black box: every transformation decision is recorded and reproducible.</p>
+        <p class="lead">Saíra takes your data from the field notebook to the global repository, turning heterogeneous spreadsheets into <em>clean, validated and interoperable</em> records.</p>
+        <p>It's a guided, bilingual workflow (PT-BR/EN) to map your fields to Darwin Core, detect inconsistencies and export a publication-ready package. Built in R and Shiny, it runs on your own computer or an institutional server, with no mandatory command line: every transformation is recorded and reproducible.</p>
       </div>
       <div class="about-media">
         <figure class="shot" style="margin:0">
@@ -65,60 +64,51 @@ anchor-sections: false
 </section>
 
 <!-- ===================== FEATURES ===================== -->
-<section class="band" id="features" style="padding-top:0">
-  <div class="wrap">
-    <div class="section-head center">
+<section class="band feature-flow" id="features">
+  <div class="wrap flow-grid">
+    <div class="flow-intro">
       <span class="eyebrow">Features</span>
-      <h2>One workflow, from raw data to DwC-A</h2>
-      <p>Steps designed for curators and field researchers — not for programmers.</p>
+      <h2>From raw spreadsheet<br>to a publishable <em>DwC-A</em></h2>
+      <p>Three moves, designed for curators and field researchers, <strong>not for programmers.</strong> Without touching a line of code.</p>
     </div>
-    <ol class="feature-list">
-      <li class="feature">
-        <span class="num">01</span>
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></div>
-        <div class="feature-body">
-          <h3>Import</h3>
-          <p>Load CSV or Excel spreadsheets — including camera-trap data — with encoding and separator detection.</p>
+    <ol class="flow-steps">
+      <li class="flow-step" style="--step:#38CFF6">
+        <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></div>
+        <div class="flow-body">
+          <span class="flow-num">01</span>
+          <h3>Import any spreadsheet</h3>
+          <p>CSV, TSV or Excel, including camera-trap data. Saíra detects the encoding and separator on its own, opening files that Excel would scramble, and maps your columns to Darwin Core terms with automatic suggestions and reusable templates.</p>
+          <div class="proof">
+            <span class="proof-in">broken accents · sep ";"</span>
+            <span class="proof-arrow">→</span>
+            <span class="proof-out">UTF-8 · columns mapped</span>
+          </div>
         </div>
       </li>
-      <li class="feature">
-        <span class="num">02</span>
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h7M14 6h7M3 12h4M11 12h10M3 18h7M14 18h7"/><circle cx="11" cy="6" r="1.5" fill="currentColor"/><circle cx="8" cy="12" r="1.5" fill="currentColor"/><circle cx="11" cy="18" r="1.5" fill="currentColor"/></svg></div>
-        <div class="feature-body">
-          <h3>Field mapping</h3>
-          <p>Match your spreadsheet columns to Darwin Core terms with automatic suggestions and reusable templates.</p>
+      <li class="flow-step" style="--step:#16B3BD">
+        <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/></svg></div>
+        <div class="flow-body">
+          <span class="flow-num">02</span>
+          <h3>Validate names and coordinates</h3>
+          <p>Harmonize scientific names against taxonomic backbones (synonyms and spelling variants) and flag missing, swapped or land/sea-incompatible coordinates, fixing each point with visual review on the map.</p>
+          <div class="proof">
+            <span class="proof-in">lat/lon swapped</span>
+            <span class="proof-arrow">→</span>
+            <span class="proof-out">-8.0476, -34.8770 ✓</span>
+          </div>
         </div>
       </li>
-      <li class="feature">
-        <span class="num">03</span>
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="18" r="2.5"/><path d="M6 8.5v3a2 2 0 002 2h8a2 2 0 002-2v-3M12 13.5v2"/></svg></div>
-        <div class="feature-body">
-          <h3>Taxonomic harmonization</h3>
-          <p>Check scientific names against taxonomic backbones and resolve synonyms and spelling variants.</p>
-        </div>
-      </li>
-      <li class="feature">
-        <span class="num">04</span>
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s-7-5.5-7-11a7 7 0 0114 0c0 5.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></div>
-        <div class="feature-body">
-          <h3>Coordinate validation</h3>
-          <p>Detect missing, swapped or land/sea-incompatible coordinates, with visual review on the map.</p>
-        </div>
-      </li>
-      <li class="feature">
-        <span class="num">05</span>
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/></svg></div>
-        <div class="feature-body">
-          <h3>Sensitive species</h3>
-          <p>Flag threatened taxa (national list) for sensitive-data handling before publication.</p>
-        </div>
-      </li>
-      <li class="feature">
-        <span class="num">06</span>
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div>
-        <div class="feature-body">
-          <h3>DwC-A export</h3>
-          <p>Generate the complete Darwin Core Archive — <span class="term">occurrence.txt</span>, <span class="term">meta.xml</span> and <span class="term">eml.xml</span> — ready for GBIF and SiBBr.</p>
+      <li class="flow-step" style="--step:#2fc488">
+        <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div>
+        <div class="flow-body">
+          <span class="flow-num">03</span>
+          <h3>Export a DwC-A ready for GBIF</h3>
+          <p>Generate the complete Darwin Core Archive and automatically generalize the coordinates of threatened species (national MMA list) before publishing to GBIF and SiBBr.</p>
+          <div class="flow-tags">
+            <span class="flow-tag">occurrence.txt</span>
+            <span class="flow-tag">meta.xml</span>
+            <span class="flow-tag">eml.xml</span>
+          </div>
         </div>
       </li>
     </ol>
@@ -133,7 +123,7 @@ anchor-sections: false
         <span class="eyebrow">Why Darwin Core?</span>
         <h2>A common language for life</h2>
         <p class="lead">Darwin Core is the TDWG standard that describes occurrences of organisms in time and space.</p>
-        <p>By speaking Darwin Core, your collection becomes discoverable and combinable with millions of records from GBIF, SiBBr and SpeciesLink. Each term has a stable definition — which makes the data useful far beyond your own institution.</p>
+        <p>By speaking Darwin Core, your collection becomes discoverable and combinable with millions of records from GBIF, SiBBr and SpeciesLink. Each term has a stable definition, which makes the data useful far beyond your own institution.</p>
         <div class="dwc-chips">
           <span class="chip">occurrenceID</span>
           <span class="chip">scientificName</span>
@@ -175,9 +165,9 @@ anchor-sections: false
       <p>Install Saíra, import your first spreadsheet and get a validated Darwin Core Archive in just a few steps. Free and open source.</p>
       <div class="hero-actions">
         <a class="btn-saira btn-primary-saira" href="tutorials/index.html">Read the tutorials</a>
-        <a class="btn-saira btn-ghost-saira" href="https://github.com/rogerio-onza/saira">
-          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-          View on GitHub
+        <a class="btn-saira btn-ghost-saira" href="tutorials/01-installation.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
+          Download
         </a>
       </div>
     </div>

@@ -4,7 +4,7 @@ pagetitle: "Mapeamento Darwin Core — Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-Como associar as colunas da sua planilha aos termos do padrão Darwin Core usando o mapeador visual do Saíra — a etapa que transforma dados locais em registros interoperáveis.
+Como associar as colunas da sua planilha aos termos do padrão Darwin Core usando o mapeador visual do Saíra: a etapa que transforma dados locais em registros interoperáveis.
 :::
 
 ## Visão geral
@@ -13,27 +13,34 @@ Depois de importar seus dados (ver [Importando seus dados](02-upload.qmd)), cada
 
 O Saíra sugere correspondências automaticamente a partir do nome e do conteúdo de cada coluna, mas a decisão final é sempre sua. Um bom mapeamento é a base de tudo o que vem depois: validação, exportação e qualidade dos dados dependem dele.
 
-::: {.callout-tip}
-## Salve um modelo
-Salve seu mapeamento como um **modelo** (<span class="term">template</span>). Coleções costumam reimportar planilhas com a mesma estrutura — reaproveitar o modelo poupa horas a cada novo lote de registros.
-:::
+## Auto-mapeamento
 
-## Abrindo o mapeador
+O botão **Auto-mapear** percorre todas as colunas de uma vez e propõe um termo para cada uma, atribuindo um **status** que indica a confiança da sugestão:
 
-Com os dados carregados, vá até a aba **Mapeamento**. Você verá duas colunas: à esquerda, os campos da sua planilha; à direita, os termos Darwin Core sugeridos.
+- **AUTO**: alta confiança, já preenchido. Bate com um termo conhecido ou com um apelido (alias) que o Saíra reconhece.
+- **SUGERIDO**: correspondência provável, mas que pede sua confirmação.
+- **EDITADO**: você ajustou manualmente; a sua escolha prevalece sobre as sugestões.
+
+Ao fim, o Saíra mostra um resumo (por exemplo, "12 AUTO, 5 SUGERIDO"). Revise os SUGERIDO com atenção e confirme ou corrija cada um.
 
 ```{=html}
 <ol class="steps">
-  <li><strong>Revise as sugestões automáticas.</strong>
-    <p>Campos com alta confiança aparecem já preenchidos e marcados em verde. Confirme ou ajuste cada um.</p></li>
+  <li><strong>Rode o auto-mapeamento.</strong>
+    <p>Clique em <span class="term">Auto-mapear</span>. Campos com alta confiança aparecem preenchidos e marcados como AUTO.</p></li>
+  <li><strong>Revise os sugeridos.</strong>
+    <p>Para cada coluna marcada como SUGERIDO, confirme o termo ou troque-o no seletor.</p></li>
   <li><strong>Resolva os campos não mapeados.</strong>
-    <p>Colunas sem correspondência clara ficam destacadas. Escolha o termo Darwin Core no seletor ou marque a coluna como <span class="term">ignorada</span>.</p></li>
+    <p>Colunas sem correspondência clara ficam destacadas. Escolha o termo Darwin Core ou marque a coluna como <span class="term">ignorada</span>.</p></li>
   <li><strong>Defina o tipo de registro.</strong>
-    <p>Informe o <span class="term">basisOfRecord</span> (por exemplo, <em>PreservedSpecimen</em> para material tombado) — ele se aplica a todos os registros do lote.</p></li>
+    <p>Informe o <span class="term">basisOfRecord</span> usando o assistente (ver abaixo); ele se aplica a todos os registros do lote.</p></li>
   <li><strong>Confira a pré-visualização.</strong>
     <p>O painel inferior mostra as primeiras linhas já com os nomes Darwin Core, para você validar antes de seguir.</p></li>
 </ol>
 ```
+
+## Catálogo de termos e busca
+
+O mapeador trabalha com um conjunto-base dos termos Darwin Core mais usados, mas o catálogo completo tem cerca de **218 termos** (propriedades `dwc:` e `dcterms:`). Se a coluna que você precisa não estiver na lista, use a **busca de termos** ("adicionar termo") para encontrar e incluir qualquer propriedade do padrão, como <span class="term">coordinateUncertaintyInMeters</span>, <span class="term">samplingProtocol</span> ou <span class="term">organismQuantity</span>.
 
 ### Exemplo de correspondência
 
@@ -52,9 +59,27 @@ A tabela abaixo mostra um mapeamento típico de uma coleção ornitológica:
 </table>
 ```
 
+## Modelos (templates)
+
+::: {.callout-tip}
+## Salve um modelo e reaproveite
+Salve seu mapeamento como um **modelo** (<span class="term">template</span>). Coleções costumam reimportar planilhas com a mesma estrutura: reaproveitar o modelo aplica todo o mapeamento de uma vez e poupa horas a cada novo lote de registros. Ao reaplicar, as colunas que vêm do modelo aparecem com o status correspondente, e você só revisa o que mudou.
+:::
+
 ## O assistente de basisOfRecord
 
-O termo <span class="term">basisOfRecord</span> descreve a natureza do registro — espécime preservado, observação humana, material fóssil, registro de máquina (armadilha fotográfica), entre outros. O Saíra traz um **assistente** que explica cada opção em linguagem simples e sugere a mais adequada ao seu conjunto de dados.
+O termo <span class="term">basisOfRecord</span> descreve a natureza do registro: espécime preservado, observação humana, material fóssil, registro de máquina (armadilha fotográfica), entre outros. O Saíra traz um **assistente** que explica cada opção em linguagem simples e sugere a mais adequada ao seu conjunto de dados, evitando que você precise decorar os valores controlados do padrão.
+
+| Seu caso | Valor sugerido |
+|---|---|
+| Material tombado em coleção | `PreservedSpecimen` |
+| Observação em campo (sem coleta) | `HumanObservation` |
+| Foto de armadilha fotográfica | `MachineObservation` |
+| Material fóssil | `FossilSpecimen` |
+
+## Colunas ignoradas e não mapeadas
+
+Nem toda coluna precisa virar um termo Darwin Core. Você pode marcar colunas como **ignoradas**. Mesmo assim, na exportação o Saíra **anexa à direita** as colunas que você não usou como fonte de nenhum termo, preservando o nome e a ordem originais, para que nenhum dado se perca: você pode editá-las à mão depois, já no IPT.
 
 ::: {.callout-warning}
 ## Não mapeie duas colunas para o mesmo termo
@@ -70,4 +95,4 @@ Se <span class="term">especie</span> e <span class="term">nome_cientifico</span>
 
 ## Próximos passos
 
-Com os campos mapeados, seus dados já estão em vocabulário Darwin Core — mas ainda não foram verificados. Siga para **[Validando nomes científicos](04-validacao-nomes.qmd)**.
+Com os campos mapeados, seus dados já estão em vocabulário Darwin Core, mas ainda não foram verificados. Siga para **[Validando nomes científicos](04-validacao-nomes.qmd)**.

@@ -4,30 +4,32 @@ pagetitle: "Installation — Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-Saíra is an R package that opens a visual interface in your browser. This page shows how to install it and start the application for the first time.
+Saíra is an R package that opens a visual interface in your browser. This page shows how to install it, start the application for the first time and what to expect from your first run.
 :::
 
-## Requirements
+## Prerequisites
 
-You need **R** installed (version 4.1 or later). RStudio is recommended but not required — any R console works. You don't need to know how to program: once installed, all the work happens through the graphical interface.
+You need **R** installed (version 4.1 or higher). RStudio is recommended but not required: any R console works. You do not need to know how to program. Once installed, all use happens through the graphical interface.
+
+Because Saíra queries taxonomic databases and draws maps, a few supporting packages (spatial and spreadsheet-reading) are installed alongside it. On Linux these may require system libraries such as `GDAL`, `GEOS` and `PROJ`; on Windows and macOS they ship in the binaries.
 
 ## Installing from GitHub
 
-Saíra is not on CRAN yet; install the development version directly from the repository. Use `pak` (recommended) or `remotes`:
+Saíra is not on CRAN yet; install the development version straight from the repository. Use `pak` (recommended) or `remotes`:
 
 ```r
-# Option A — with pak (resolves dependencies automatically)
+# Option A: with pak (resolves dependencies automatically)
 install.packages("pak")
 pak::pak("rogerio-onza/saira")
 
-# Option B — with remotes / devtools
+# Option B: with remotes / devtools
 install.packages("remotes")
 remotes::install_github("rogerio-onza/saira")
 ```
 
 ::: {.callout-tip}
-## The first installation takes a while
-Saíra depends on several packages (Shiny, spreadsheet readers, taxonomic and geographic backbones). The first installation may take a few minutes while those dependencies are downloaded and compiled.
+## The first install takes a while
+Saíra depends on several packages (Shiny, spreadsheet reading, taxonomic and geographic data). The first installation can take a few minutes while those dependencies are downloaded and compiled. Later installs are fast.
 :::
 
 ## Opening the application
@@ -39,11 +41,11 @@ library(saira)
 saira::run_app()
 ```
 
-The app opens in a new tab. From there, everything is done through menus, buttons and tables.
+The app opens in a new tab. From there, everything is done through menus, buttons and tables. To stop it, close the tab and interrupt the R session (`Esc` in the console or RStudio's stop button).
 
 ::: {.callout-warning}
-## The window didn't open?
-On servers or environments without a default browser, `run_app()` prints a local address (something like `http://127.0.0.1:xxxx`). Copy that address and open it manually in your browser.
+## The window did not open?
+On servers or environments without a default browser, `run_app()` prints a local address (something like `http://127.0.0.1:xxxx`). Copy that address and open it manually in your browser. To serve it to other computers on the network, run `saira::run_app(options = list(host = "0.0.0.0", port = 3838))`.
 :::
 
 ```{=html}
@@ -55,7 +57,15 @@ On servers or environments without a default browser, `run_app()` prints a local
 
 ## Language
 
-Saíra is bilingual. In the top corner of the interface you can switch between **Portuguese (PT-BR)** and **English (EN-US)** at any time — useful for mixed teams or for publishing metadata in English.
+Saíra is bilingual. In the top corner of the interface you switch between **Portuguese (PT-BR)** and **English (EN-US)** at any time, handy for mixed teams or for publishing metadata in English. The switch is instant and does not interrupt work in progress.
+
+## File size and performance
+
+The app accepts uploads of up to **500 MB**, enough for datasets with hundreds of thousands of occurrences. Very large datasets make name validation and the map slower, because each name is looked up in the databases and each point is drawn. If you are just practicing the workflow, start with the sample spreadsheet.
+
+## Updating
+
+To update Saíra later, run the install command again (`pak::pak("rogerio-onza/saira")`). It pulls the latest version from the repository.
 
 ## Next steps
 

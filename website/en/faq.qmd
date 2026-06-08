@@ -10,7 +10,7 @@ Common questions for people getting started with Saíra to prepare and publish b
 ## Installation and requirements
 
 ### Do I need to know how to program to use Saíra?
-No. Once installed, all the work happens through a visual interface in your browser — menus, buttons and tables. The only line of code you need is the one that opens the application.
+No. Once installed, all the work happens through a visual interface in your browser: menus, buttons and tables. The only line of code you need is the one that opens the application.
 
 ### What do I need to have installed?
 **R** (version 4.1 or later). RStudio is recommended but not required. See the step-by-step in [Installation and first steps](tutorials/01-installation.qmd).
@@ -51,7 +51,7 @@ It's an encoding issue. Change the encoding on import (usually **UTF-8** or **La
 It **suggests** corrections from taxonomic backbones, but the final decision is always the specialist's. See [Validating scientific names](tutorials/04-name-validation.qmd).
 
 ### How does Saíra handle threatened species?
-Before export, it flags threatened taxa (national list — MMA) and lets you **generalize or omit the location**, protecting vulnerable populations. See [Preview and export](tutorials/06-preview-export.qmd).
+Before export, it flags threatened taxa (national MMA list) and lets you **generalize or omit the location**, protecting vulnerable populations. See [Preview and export](tutorials/06-preview-export.qmd).
 
 ## Export and publication
 

@@ -4,46 +4,54 @@ pagetitle: "Coordinate validation — Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-Wrong coordinates are one of the biggest sources of problems in biodiversity data. Saíra helps you find them and review them visually on the map.
+Wrong coordinates are one of the biggest sources of problems in biodiversity data. Saíra helps you find them, correct them safely and review them visually on the map.
 :::
 
 ## What Saíra checks
 
 From <span class="term">decimalLatitude</span> and <span class="term">decimalLongitude</span>, the app flags the most common problems:
 
-- **Missing** — records with no coordinate.
-- **Swapped** — latitude and longitude exchanged (a classic that throws the point to the other side of the world).
-- **Out of range** — impossible values (latitude beyond ±90, longitude beyond ±180).
-- **Incompatible with expectation** — points falling in the sea for terrestrial records, or far from the stated country.
+- **Missing**: records with no coordinate.
+- **Out of range**: impossible values (latitude beyond ±90, longitude beyond ±180).
+- **Swapped / transposed**: latitude and longitude switched, or with the wrong sign, throwing the point to the other side of the world.
+- **Country-incompatible**: points falling outside the informed country, or in the sea when they should be on land.
+
+The check relies on deterministic diagnostics (in the style of `CoordinateCleaner`) and on the Natural Earth country layer bundled with Saíra, so it runs without depending on external services.
 
 ```{=html}
 <figure class="shot">
   <div class="frame"><span class="ph-label">screenshot · validation map</span></div>
-  <figcaption><b>Figure 1.</b> Coordinate review on the map: points colored by status (valid, missing, swapped) for visual inspection.</figcaption>
+  <figcaption><b>Figure 1.</b> Coordinate review on the map: points colored by situation (valid, missing, swapped) for visual inspection.</figcaption>
 </figure>
 ```
 
-## Reviewing on the map
+## Assisted corrections
+
+Saíra does not just point out the error: it **proposes the correction** and lets you apply it explicitly. The original coordinates are never silently overwritten; when you accept a correction, the old values can be preserved in <span class="term">verbatimLatitude</span> and <span class="term">verbatimLongitude</span>.
 
 ```{=html}
 <ol class="steps">
   <li><strong>See the distribution.</strong>
-    <p>Points appear on the map, colored by status. Clusters outside the expected area stand out.</p></li>
-  <li><strong>Fix the swaps.</strong>
-    <p>For coordinates detected as swapped, Saíra offers a one-click lat/lon swap.</p></li>
-  <li><strong>Handle the missing ones.</strong>
-    <p>Records without a coordinate can be filled in from the locality or marked as not georeferenced.</p></li>
+    <p>The points appear on the map, colored by situation. Clusters outside the expected area stand out.</p></li>
+  <li><strong>Fix transpositions and swaps.</strong>
+    <p>For points falling outside the informed country, Saíra tries latitude/longitude swaps and sign flips and accepts the first that lands inside the country (with a border margin of about 22 km). You review and apply.</p></li>
+  <li><strong>Fill the country from the point.</strong>
+    <p>When <span class="term">country</span> is blank but the coordinate is valid, Saíra derives the country the point falls in. Country values you already provided are never overwritten.</p></li>
+  <li><strong>Handle sea points with no country.</strong>
+    <p>If the country is empty and the point falls in the sea, that is a strong sign of a lat/lon swap. Saíra tries the swap and, when the corrected point lands in a country, proposes the coordinate and the country together.</p></li>
+  <li><strong>Handle missing ones.</strong>
+    <p>Records with no coordinate can be reviewed from the locality or kept ungeoreferenced, as a conscious choice.</p></li>
 </ol>
 ```
 
 ::: {.callout-tip}
 ## Datum and precision
-Record the <span class="term">geodeticDatum</span> (for example, <em>WGS84</em>) and, when you know it, the uncertainty in meters (<span class="term">coordinateUncertaintyInMeters</span>). This greatly increases the scientific value of the data.
+Record the <span class="term">geodeticDatum</span> (for example, <em>WGS84</em>) and, when known, the uncertainty in meters (<span class="term">coordinateUncertaintyInMeters</span>). This greatly increases the scientific value of the data and helps whoever reuses it judge the precision.
 :::
 
 ::: {.callout-warning}
-## Coordinate sign in Brazil
-Most of Brazil has **negative latitude and longitude**. Positive coordinates where the southern/western hemisphere was expected are a strong sign of a sign error or a swap.
+## Coordinate signs in Brazil
+Most of Brazil has **negative latitude and longitude**. Positive coordinates where the south/west hemisphere was expected are a strong sign of a sign error or a swap. The classic example: `-34.87, -8.04` (lat, lon) instead of `-8.04, -34.87` throws a point from Pernambuco into the middle of the Atlantic.
 :::
 
 ## Next steps

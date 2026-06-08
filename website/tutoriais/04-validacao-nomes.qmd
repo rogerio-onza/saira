@@ -4,48 +4,64 @@ pagetitle: "Validação de nomes — Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-Nomes científicos são a chave que conecta seus registros ao resto da biodiversidade conhecida. Esta etapa confere a grafia, resolve sinônimos e padroniza a nomenclatura.
+Nomes científicos são a chave que conecta seus registros ao resto da biodiversidade conhecida. Esta etapa confere a grafia, resolve sinônimos e padroniza a nomenclatura contra uma base à sua escolha.
 :::
 
 ## Por que validar nomes
 
 Um mesmo táxon pode aparecer escrito de muitas formas: com erros de digitação, sinônimos antigos, abreviações ou sem o autor. Para que seus dados se combinem com os de outras coleções, os nomes precisam ser **resolvidos** contra uma referência taxonômica estável.
 
+## Escolhendo a base de referência
+
+Na aba **Validação de nomes**, o Saíra oferece três fontes. Escolha a mais adequada ao seu grupo:
+
+| Base | Cobertura | Quando usar |
+|---|---|---|
+| **Flora do Brasil** | Plantas, algas e fungos do Brasil | Coleções botânicas e micológicas nacionais |
+| **Fauna do Brasil** | Animais do Brasil | Coleções zoológicas nacionais |
+| **GBIF** *(recomendada)* | Backbone taxonômico global | Qualquer grupo, ou quando o táxon não é brasileiro |
+
+::: {.callout-note}
+## Bases brasileiras ficam no seu computador
+Flora do Brasil e Fauna do Brasil são **baixadas e armazenadas localmente** na primeira vez que você as usa. Depois disso, a validação roda mesmo sem internet e fica mais rápida. O Saíra mostra o status de cada base (nunca baixada, baixando, pronta) e a versão local. O GBIF é consultado conforme a necessidade.
+:::
+
 ## Conferindo a nomenclatura
 
-Na aba **Validação de nomes**, o Saíra compara cada <span class="term">scientificName</span> com bases taxonômicas e classifica o resultado:
+O Saíra compara cada <span class="term">scientificName</span> com a base escolhida, pontua a semelhança e atribui um **status** a cada registro:
 
-- **Exato** — o nome bate perfeitamente com a referência.
-- **Sugestão** — encontrou um nome muito próximo (provável erro de grafia) e propõe a correção.
-- **Sinônimo** — o nome é válido, mas há um nome aceito mais atual.
-- **Não encontrado** — exige revisão manual.
+- **Exato (AUTO)**: o nome bate com a referência e é aplicado automaticamente.
+- **Sugestão (SUGERIDO)**: encontrou um nome muito próximo (provável erro de grafia) e propõe a correção.
+- **Sinônimo / Alias**: o nome é válido, mas existe um nome aceito mais atual, ou um apelido conhecido aponta para o termo certo.
+- **Ambíguo**: mais de um candidato forte; você decide qual aplicar.
+- **Não encontrado**: exige revisão manual.
 
 ```{=html}
 <ol class="steps">
   <li><strong>Rode a verificação.</strong>
     <p>O Saíra processa a lista de nomes e mostra um resumo por situação.</p></li>
   <li><strong>Revise as sugestões.</strong>
-    <p>Para cada nome com sugestão ou sinônimo, aceite a correção proposta ou mantenha o original.</p></li>
+    <p>Para cada nome com sugestão, sinônimo ou ambiguidade, aceite a correção proposta ou mantenha o original.</p></li>
   <li><strong>Trate os não encontrados.</strong>
-    <p>Corrija manualmente, confirme que está certo (ex.: táxon recém-descrito) ou marque para revisão posterior.</p></li>
+    <p>Corrija manualmente, confirme que está certo (por exemplo, um táxon recém-descrito) ou marque para revisão posterior.</p></li>
 </ol>
 ```
 
 ::: {.callout-tip}
 ## Aceitar em lote
-Quando há muitos registros com o mesmo erro recorrente, aceite a correção uma vez e aplique a todos os casos idênticos — em vez de revisar linha a linha.
+Quando há muitos registros com o mesmo erro recorrente, aceite a correção uma vez e aplique a todos os casos idênticos, em vez de revisar linha a linha. É o que mais economiza tempo em conjuntos grandes.
 :::
 
 ```{=html}
 <figure class="shot">
   <div class="frame"><span class="ph-label">screenshot · validação de nomes</span></div>
-  <figcaption><b>Figura 1.</b> Tela de validação de nomes, com o status de cada táxon e as correções sugeridas.</figcaption>
+  <figcaption><b>Figura 1.</b> Tela de validação de nomes, com o status de cada táxon, a base de referência selecionada e as correções sugeridas.</figcaption>
 </figure>
 ```
 
 ::: {.callout-warning}
 ## A decisão taxonômica é sua
-As sugestões são automáticas, mas a autoridade é do especialista. Em grupos com taxonomia instável, confira as propostas antes de aceitá-las em massa.
+As sugestões são automáticas, mas a autoridade é do especialista. Em grupos com taxonomia instável, confira as propostas antes de aceitá-las em massa. Aceitar um sinônimo significa substituir o nome no conjunto exportado: o nome original pode ser preservado em <span class="term">verbatimIdentification</span> ou <span class="term">originalNameUsage</span> se você mapeou esses campos.
 :::
 
 ## Próximos passos
