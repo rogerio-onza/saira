@@ -38,7 +38,7 @@ Na aba **Upload**, arraste o arquivo para a área indicada ou clique para seleci
 
 ```{=html}
 <figure class="shot">
-  <div class="frame"><span class="ph-label">screenshot · área de upload e prévia</span></div>
+  <img src="../assets/img/2-area-upload-resumo-arquivo.png" alt="Card de upload do Saíra com o resumo do arquivo: 6 registros, 7 colunas, 0 MB">
   <figcaption><b>Figura 1.</b> Área de upload com o resumo do arquivo (linhas, colunas e tamanho) após o carregamento.</figcaption>
 </figure>
 ```
