@@ -4,7 +4,7 @@ pagetitle: "Importando dados — Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-O primeiro passo dentro do aplicativo é carregar sua planilha de ocorrências. O Saíra aceita CSV, Excel e pacotes de armadilha fotográfica, e cuida da detecção de codificação e separador para você.
+O primeiro passo dentro do aplicativo é carregar sua planilha de ocorrências. O Saíra aceita CSV (e as variantes TSV/TXT) e pacotes de armadilha fotográfica, e cuida da detecção de codificação e separador para você.
 :::
 
 ## Formatos aceitos
@@ -12,52 +12,52 @@ O primeiro passo dentro do aplicativo é carregar sua planilha de ocorrências. 
 | Formato | Extensão | Observações |
 |---|---|---|
 | Texto separado | `.csv`, `.tsv`, `.txt` | Vírgula, ponto-e-vírgula ou tabulação, detectados automaticamente |
-| Excel | `.xlsx`, `.xls` | Você escolhe a planilha (aba) a importar |
-| Armadilha fotográfica | `.zip`, `.csv` | Pacotes Camtrap DP e exportações do Wildlife Insights (ver abaixo) |
+| Armadilha fotográfica | `.zip` | Pacotes Camtrap DP e exportações do Wildlife Insights (ver abaixo) |
 
 Cada **linha** deve ser uma ocorrência (um registro de um organismo em um lugar e momento) e cada **coluna**, um atributo: número de tombo, espécie, data, localidade, coletor, e assim por diante.
 
 ## Carregando o arquivo
 
-Para praticar esta e as próximas etapas, baixe a planilha de exemplo [`ocorrencias-exemplo.csv`](../assets/exemplo/ocorrencias-exemplo.csv), um conjunto pequeno e propositalmente imperfeito.
+::: {.callout-tip}
+## Baixe a planilha de exemplo
+Para praticar esta e as próximas etapas, baixe [`ocorrencias-exemplo.csv`](../assets/exemplo/ocorrencias-exemplo.csv) — um conjunto pequeno e propositalmente imperfeito (com um acento problemático e uma coordenada invertida), ideal para treinar a validação.
+:::
 
 Na aba **Upload**, arraste o arquivo para a área indicada ou clique para selecioná-lo.
 
 ```{=html}
 <ol class="steps">
   <li><strong>Selecione o arquivo.</strong>
-    <p>Solte o CSV, Excel ou pacote na área de upload.</p></li>
-  <li><strong>Confira a leitura.</strong>
-    <p>O Saíra mostra uma prévia das primeiras linhas. Verifique se as colunas estão separadas corretamente e se os acentos aparecem certos.</p></li>
-  <li><strong>Ajuste codificação e separador, se preciso.</strong>
-    <p>Caso a leitura tenha saído errada, troque a codificação ou o separador nos controles e a prévia se atualiza na hora.</p></li>
-  <li><strong>Escolha a aba (só Excel).</strong>
-    <p>Em arquivos `.xlsx`/`.xls` com várias planilhas, selecione qual aba importar.</p></li>
+    <p>Solte o CSV ou o pacote de armadilha fotográfica na área de upload (ou clique para escolher).</p></li>
+  <li><strong>Aguarde a leitura.</strong>
+    <p>O Saíra detecta a codificação e o separador automaticamente e exibe um resumo do arquivo: número de linhas, número de colunas e tamanho.</p></li>
+  <li><strong>Confira o resumo.</strong>
+    <p>Verifique se a contagem de linhas e colunas bate com o esperado. O conteúdo célula a célula você confere nas etapas de Mapeamento e na aba Pré-visualização.</p></li>
 </ol>
 ```
 
 ```{=html}
 <figure class="shot">
   <div class="frame"><span class="ph-label">screenshot · área de upload e prévia</span></div>
-  <figcaption><b>Figura 1.</b> Área de upload com a prévia das primeiras linhas e os controles de codificação e separador.</figcaption>
+  <figcaption><b>Figura 1.</b> Área de upload com o resumo do arquivo (linhas, colunas e tamanho) após o carregamento.</figcaption>
 </figure>
 ```
 
 ## Detecção automática de codificação e separador
 
-Ao receber um CSV, o Saíra tenta adivinhar a **codificação** (UTF-8, Latin-1/ISO-8859-1, Windows-1252) e o **separador** de colunas, e remove a marca de ordem de bytes (BOM) que alguns programas adicionam no começo do arquivo. Quase sempre acerta, mas a prévia existe justamente para você confirmar antes de seguir. Datas em formatos variados (`03/11/2024`, `2024-11-03`, `Nov 3 2024`) são reconhecidas e padronizadas depois, na exportação.
+Ao receber um CSV, o Saíra tenta adivinhar a **codificação** (UTF-8, Latin-1/ISO-8859-1, Windows-1252) e o **separador** de colunas, e remove a marca de ordem de bytes (BOM) que alguns programas adicionam no começo do arquivo. Quase sempre acerta; confira no resumo se a contagem de colunas faz sentido e veja o conteúdo nas etapas de Mapeamento e Pré-visualização. Datas em formatos variados (`03/11/2024`, `2024-11-03`, `Nov 3 2024`) são reconhecidas e padronizadas depois, na exportação.
 
 ::: {.callout-tip}
 ## Acentos aparecendo errados?
-Isso quase sempre é codificação. Planilhas brasileiras costumam estar em **UTF-8** ou **Latin-1 (ISO-8859-1)**. Se "São Paulo" virou "S&atilde;o Paulo" ou "S?o Paulo", troque a codificação na importação até a prévia ficar correta.
+Isso quase sempre é codificação. Planilhas brasileiras costumam estar em **UTF-8** ou **Latin-1 (ISO-8859-1)**. Se, em vez de `São Paulo`, aparece `SÃ£o Paulo` ou `S?o Paulo`, é a codificação. O Saíra tenta detectar sozinho; se ainda sair errado, re-salve o arquivo como **UTF-8** antes de subir (no Excel: *Salvar como → CSV UTF-8*).
 :::
 
 ::: {.callout-warning}
 ## A planilha abriu tudo numa coluna só?
-É o separador errado. Arquivos brasileiros costumam usar **ponto-e-vírgula (`;`)** porque a vírgula já é o separador decimal. Se a prévia mostra tudo amontoado em uma única coluna, troque o separador (`;`, `,` ou tabulação) até as colunas se separarem corretamente.
+É o separador errado. Arquivos brasileiros costumam usar **ponto-e-vírgula (`;`)** porque a vírgula já é o separador decimal. O Saíra detecta o separador sozinho; se o resumo mostrar só uma coluna, salve o arquivo com um separador consistente (`;` ou `,`) ou exporte como **CSV UTF-8** e suba de novo.
 :::
 
-::: {.callout-warning}
+::: {.callout-important}
 ## Cabeçalho na primeira linha
 O Saíra assume que a **primeira linha** contém os nomes das colunas. Remova linhas de título, logotipos ou células mescladas antes de exportar do Excel: elas atrapalham a leitura.
 :::
@@ -73,7 +73,7 @@ Em ambos os casos o Saíra monta um nome científico consistente e organiza os c
 
 ::: {.callout-note}
 ## Pacote camtrap incompleto?
-Se faltar o descritor do pacote, o Saíra tenta **sintetizar** um a partir dos CSVs encontrados. Ainda assim, confira na prévia se as colunas de espécie, data e coordenada vieram preenchidas antes de prosseguir.
+Se faltar o descritor do pacote, o Saíra tenta **sintetizar** um a partir dos CSVs encontrados. Ainda assim, confira no resumo e nas próximas etapas se as colunas de espécie, data e coordenada vieram preenchidas antes de prosseguir.
 :::
 
 ## Próximos passos

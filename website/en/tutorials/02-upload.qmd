@@ -4,7 +4,7 @@ pagetitle: "Importing data — Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-The first step inside the application is loading your occurrence spreadsheet. Saíra accepts CSV, Excel and camera-trap packages, and takes care of encoding and separator detection for you.
+The first step inside the application is loading your occurrence spreadsheet. Saíra accepts CSV (and the TSV/TXT variants) and camera-trap packages, and takes care of encoding and separator detection for you.
 :::
 
 ## Supported formats
@@ -12,52 +12,52 @@ The first step inside the application is loading your occurrence spreadsheet. Sa
 | Format | Extension | Notes |
 |---|---|---|
 | Delimited text | `.csv`, `.tsv`, `.txt` | Comma, semicolon or tab, detected automatically |
-| Excel | `.xlsx`, `.xls` | You choose which sheet (tab) to import |
-| Camera trap | `.zip`, `.csv` | Camtrap DP packages and Wildlife Insights exports (see below) |
+| Camera trap | `.zip` | Camtrap DP packages and Wildlife Insights exports (see below) |
 
 Each **row** should be one occurrence (a record of an organism in a place and time) and each **column** an attribute: catalog number, species, date, locality, collector, and so on.
 
 ## Loading the file
 
-To practice this and the next steps, download the sample spreadsheet [`ocorrencias-exemplo.csv`](../../assets/exemplo/ocorrencias-exemplo.csv), a small, deliberately imperfect dataset.
+::: {.callout-tip}
+## Download the sample spreadsheet
+To practice this and the next steps, download [`ocorrencias-exemplo.csv`](../../assets/exemplo/ocorrencias-exemplo.csv) — a small, deliberately imperfect dataset (with a problematic accent and a swapped coordinate), ideal for practicing validation.
+:::
 
 In the **Upload** tab, drag the file onto the indicated area or click to select it.
 
 ```{=html}
 <ol class="steps">
   <li><strong>Select the file.</strong>
-    <p>Drop the CSV, Excel or package onto the upload area.</p></li>
-  <li><strong>Check the reading.</strong>
-    <p>Saíra shows a preview of the first rows. Verify that the columns are split correctly and that accents look right.</p></li>
-  <li><strong>Adjust encoding and separator, if needed.</strong>
-    <p>If the reading came out wrong, switch the encoding or the separator in the controls and the preview updates instantly.</p></li>
-  <li><strong>Pick the sheet (Excel only).</strong>
-    <p>In `.xlsx`/`.xls` files with several sheets, select which tab to import.</p></li>
+    <p>Drop the CSV or the camera-trap package onto the upload area (or click to choose).</p></li>
+  <li><strong>Wait for the reading.</strong>
+    <p>Saíra detects the encoding and separator automatically and shows a file summary: number of rows, number of columns and size.</p></li>
+  <li><strong>Check the summary.</strong>
+    <p>Verify that the row and column counts match what you expect. You inspect the cell-by-cell content in the Mapping step and the Preview tab.</p></li>
 </ol>
 ```
 
 ```{=html}
 <figure class="shot">
   <div class="frame"><span class="ph-label">screenshot · upload area and preview</span></div>
-  <figcaption><b>Figure 1.</b> Upload area with the preview of the first rows and the encoding and separator controls.</figcaption>
+  <figcaption><b>Figure 1.</b> Upload area with the file summary (rows, columns and size) after loading.</figcaption>
 </figure>
 ```
 
 ## Automatic encoding and separator detection
 
-When it receives a CSV, Saíra tries to guess the **encoding** (UTF-8, Latin-1/ISO-8859-1, Windows-1252) and the column **separator**, and strips the byte-order mark (BOM) that some programs add at the start of the file. It is right almost every time, but the preview exists precisely so you can confirm before moving on. Dates in various formats (`03/11/2024`, `2024-11-03`, `Nov 3 2024`) are recognized and standardized later, at export.
+When it receives a CSV, Saíra tries to guess the **encoding** (UTF-8, Latin-1/ISO-8859-1, Windows-1252) and the column **separator**, and strips the byte-order mark (BOM) that some programs add at the start of the file. It is right almost every time; check in the summary that the column count makes sense, and review the content in the Mapping and Preview steps. Dates in various formats (`03/11/2024`, `2024-11-03`, `Nov 3 2024`) are recognized and standardized later, at export.
 
 ::: {.callout-tip}
 ## Accents showing up wrong?
-That is almost always encoding. Brazilian spreadsheets are usually in **UTF-8** or **Latin-1 (ISO-8859-1)**. If "São Paulo" became "S&atilde;o Paulo" or "S?o Paulo", switch the encoding at import until the preview looks correct.
+That is almost always encoding. Brazilian spreadsheets are usually in **UTF-8** or **Latin-1 (ISO-8859-1)**. If, instead of `São Paulo`, you see `SÃ£o Paulo` or `S?o Paulo`, it is the encoding. Saíra tries to detect it on its own; if it still comes out wrong, re-save the file as **UTF-8** before uploading (in Excel: *Save As → CSV UTF-8*).
 :::
 
 ::: {.callout-warning}
 ## The whole spreadsheet opened in a single column?
-That is the wrong separator. Brazilian files often use a **semicolon (`;`)** because the comma is already the decimal separator. If the preview shows everything crammed into one column, switch the separator (`;`, `,` or tab) until the columns split correctly.
+That is the wrong separator. Brazilian files often use a **semicolon (`;`)** because the comma is already the decimal separator. Saíra detects the separator on its own; if the summary shows a single column, save the file with a consistent separator (`;` or `,`) or export it as **CSV UTF-8** and upload again.
 :::
 
-::: {.callout-warning}
+::: {.callout-important}
 ## Header on the first row
 Saíra assumes the **first row** holds the column names. Remove title rows, logos or merged cells before exporting from Excel: they break the reading.
 :::
@@ -73,7 +73,7 @@ In both cases Saíra builds a consistent scientific name and organizes the time 
 
 ::: {.callout-note}
 ## Incomplete camtrap package?
-If the package descriptor is missing, Saíra tries to **synthesize** one from the CSVs it finds. Even so, check in the preview that the species, date and coordinate columns came through before proceeding.
+If the package descriptor is missing, Saíra tries to **synthesize** one from the CSVs it finds. Even so, check in the summary and the next steps that the species, date and coordinate columns came through before proceeding.
 :::
 
 ## Next steps
