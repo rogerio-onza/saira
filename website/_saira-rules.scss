@@ -278,6 +278,11 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
   display: grid; place-items: center;
 }
 .shot .frame .ph-label { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft); background: var(--surface); border: 1px solid var(--border); padding: 0.6em 1em; border-radius: 100px; box-shadow: var(--shadow-sm); }
+.shot img {
+  max-width: 100%; width: auto; height: auto; display: block; margin: 0 auto;
+  border: 1px solid var(--border); border-radius: var(--r);
+  box-shadow: var(--shadow-sm);
+}
 .shot figcaption { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.04em; color: var(--text-soft); margin-top: 12px; text-align: center; }
 .shot figcaption b { color: var(--text); font-weight: 700; }
 
@@ -372,15 +377,14 @@ main.content p { font-size: 1.1rem; }
 .callout.callout-style-default {
   --cc: var(--primary-dark);
   border-radius: var(--r) !important;
-  border: 1px solid color-mix(in srgb, var(--cc) 34%, transparent) !important;
-  border-left: 1px solid color-mix(in srgb, var(--cc) 34%, transparent) !important;
-  background: color-mix(in srgb, var(--cc) 8%, var(--surface)) !important;
+  border: 1px solid color-mix(in srgb, var(--cc) 40%, transparent) !important;
+  background: color-mix(in srgb, var(--cc) 20%, var(--surface)) !important;
   box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 .callout.callout-style-default .callout-header {
-  background: color-mix(in srgb, var(--cc) 6%, transparent) !important;
-  border-bottom: none;
+  background: color-mix(in srgb, var(--cc) 34%, var(--surface)) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--cc) 26%, transparent) !important;
   padding-bottom: 0.2rem;
 }
 .callout.callout-style-default .callout-body { background: transparent !important; }
@@ -419,11 +423,14 @@ main.content p { font-size: 1.1rem; }
           mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M9.97 4.88l.953 3.811C10.158 8.878 9.14 9 8 9c-1.14 0-2.159-.122-2.923-.309L6.03 4.88C6.635 4.957 7.3 5 8 5s1.365-.043 1.97-.12zm-.245-.978L8.97.88C8.718-.13 7.282-.13 7.03.88L6.274 3.9C6.8 3.965 7.382 4 8 4c.618 0 1.2-.036 1.725-.098zm4.396 8.613a.5.5 0 0 1 .037.96l-6 2a.5.5 0 0 1-.316 0l-6-2a.5.5 0 0 1 .037-.96l2.391-.598.565-2.257c.862.212 1.964.339 3.165.339s2.303-.127 3.165-.339l.565 2.257 2.391.598z'/%3E%3C/svg%3E");
 }
 
-.callout-note      { --cc: var(--primary-dark); --cc-title: var(--note-title); }
-.callout-tip       { --cc: var(--success);      --cc-title: var(--tip-title); }
-.callout-warning   { --cc: var(--warning);      --cc-title: var(--warn-title); }
-.callout-important { --cc: var(--error);        --cc-title: var(--important-title); }
-.callout-caution   { --cc: var(--accent);       --cc-title: var(--caution-title); }
+// Specificity must match .callout.callout-style-default (0,2,0) so the per-type
+// --cc wins; a bare .callout-tip (0,1,0) loses and every card falls back to the
+// default --primary-dark, making all backgrounds identical.
+.callout.callout-note      { --cc: var(--primary-dark); --cc-title: var(--note-title); }
+.callout.callout-tip       { --cc: var(--success);      --cc-title: var(--tip-title); }
+.callout.callout-warning   { --cc: var(--warning);      --cc-title: var(--warn-title); }
+.callout.callout-important { --cc: var(--error);        --cc-title: var(--important-title); }
+.callout.callout-caution   { --cc: var(--accent);       --cc-title: var(--caution-title); }
 
 // ---------- theme toggle (estilo do design Claude) ----------
 .theme-toggle-saira {
