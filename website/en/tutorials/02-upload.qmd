@@ -20,7 +20,7 @@ Each **row** should be one occurrence (a record of an organism in a place and ti
 
 ::: {.callout-tip}
 ## Download the sample spreadsheet
-To practice this and the next steps, download [`ocorrencias-exemplo.csv`](../../assets/exemplo/ocorrencias-exemplo.csv) — a small, deliberately imperfect dataset (with a problematic accent and a swapped coordinate), ideal for practicing validation.
+To practice this and the next steps, download [`ocorrencias-exemplo.csv`](../../assets/exemplo/ocorrencias-exemplo.csv) — a deliberately imperfect sample dataset (several columns to map, one swapped coordinate and a blank country to fix during validation).
 :::
 
 In the **Upload** tab, drag the file onto the indicated area or click to select it.

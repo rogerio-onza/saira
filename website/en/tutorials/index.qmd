@@ -26,5 +26,5 @@ You do not have to follow every step in a rigid sequence. Saíra lets you go bac
 
 ::: {.callout-tip}
 ## Practice with the sample file
-Download the sample spreadsheet [`ocorrencias-exemplo.csv`](../../assets/exemplo/ocorrencias-exemplo.csv) and follow the tutorials with it. It is a small, deliberately imperfect dataset (with a problematic accent and a swapped coordinate), ideal for practicing validation.
+Download the sample spreadsheet [`ocorrencias-exemplo.csv`](../../assets/exemplo/ocorrencias-exemplo.csv) and follow the tutorials with it. It is a deliberately imperfect sample dataset (several columns to map, one swapped coordinate and a blank country to fix during validation).
 :::
