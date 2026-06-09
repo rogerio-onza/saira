@@ -34,7 +34,7 @@ When generating the package, Saíra automatically standardizes the dataset so it
 
 ## Sensitive species
 
-Before publishing, Saíra checks for **threatened taxa** (based on the national Fauna/Flora list from MMA, bundled with the app). For those records, you can choose to **generalize the location** (reduce the precision of the coordinates) or omit it, protecting vulnerable populations without giving up on publishing the data. The precise original coordinates of sensitive records go into a separate file, kept out of the public package.
+Before publishing, Saíra checks for **threatened taxa** — the same ones flagged during [name validation](04-name-validation.qmd), based on the national MMA list bundled with the app. For those records, you can choose to **generalize the location** (reduce the precision of the coordinates) or omit it, protecting vulnerable populations without giving up on publishing the data. The precise original coordinates of sensitive records go into a separate file, kept out of the public package.
 
 ::: {.callout-warning}
 ## Sensitive data calls for a conscious decision

@@ -4,7 +4,7 @@ pagetitle: "Validação de nomes — Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-Nomes científicos são a chave que conecta seus registros ao resto da biodiversidade conhecida. Esta etapa confere a grafia, resolve sinônimos e padroniza a nomenclatura contra uma base à sua escolha.
+Nomes científicos são a chave que conecta seus registros ao resto da biodiversidade conhecida. Esta etapa confere cada nome contra uma base taxonômica à sua escolha, resolve sinônimos e ainda sinaliza espécies ameaçadas da lista nacional do MMA.
 :::
 
 ## Por que validar nomes
@@ -13,7 +13,7 @@ Um mesmo táxon pode aparecer escrito de muitas formas: com erros de digitação
 
 ## Escolhendo a base de referência
 
-Na aba **Validação de nomes**, o Saíra oferece três fontes. Escolha a mais adequada ao seu grupo:
+Na aba **Validação de nomes**, o Saíra oferece três bases taxonômicas. Marque uma ou mais — a mais adequada ao seu grupo:
 
 | Base | Cobertura | Quando usar |
 |---|---|---|
@@ -21,48 +21,124 @@ Na aba **Validação de nomes**, o Saíra oferece três fontes. Escolha a mais a
 | **Fauna do Brasil** | Animais do Brasil | Coleções zoológicas nacionais |
 | **GBIF** *(recomendada)* | Backbone taxonômico global | Qualquer grupo, ou quando o táxon não é brasileiro |
 
+Quando você marca mais de uma base, o Saíra consulta em **cascata** — Flora do Brasil → Fauna do Brasil → GBIF — e usa como veredito o primeiro provedor que retornar um resultado. Por baixo, todas as consultas passam pelo pacote `taxadb`.
+
 ::: {.callout-note}
 ## Bases brasileiras ficam no seu computador
-Flora do Brasil e Fauna do Brasil são **baixadas e armazenadas localmente** na primeira vez que você as usa. Depois disso, a validação roda mesmo sem internet e fica mais rápida. O Saíra mostra o status de cada base (nunca baixada, baixando, pronta) e a versão local. O GBIF é consultado conforme a necessidade.
+Flora do Brasil e Fauna do Brasil são **baixadas e armazenadas localmente** na primeira vez que você as usa. Depois disso, a validação roda mesmo sem internet e fica mais rápida. O Saíra mostra o status de cada base (não baixada, baixando, atualizada) e a versão local. O GBIF é consultado conforme a necessidade.
 :::
+
+## Antes de rodar: normalização
+
+Abaixo das bases, duas opções controlam como cada nome é preparado antes da consulta. As duas vêm **ligadas** por padrão:
+
+- **Remover autores** — descarta autoria e ano para melhorar a comparação entre provedores. Ex.: `Harpia harpyja (Daudin, 1800)` vira `Harpia harpyja`.
+- **Ignorar sp., cf., aff., nr.** — ignora qualificadores não taxonômicos durante a normalização.
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/8-validacao-nomes-provedores.png" alt="Coluna de configuração da validação de nomes: cartões de provedores Flora BR, Fauna BR e GBIF com status, as opções de normalização e o botão Validar Nomes">
+  <figcaption><b>Figura 1.</b> Coluna de configuração: os provedores com o status de cada base local, as opções de normalização e o botão <span class="term">Validar Nomes</span>.</figcaption>
+</figure>
+```
 
 ## Conferindo a nomenclatura
 
-O Saíra compara cada <span class="term">scientificName</span> com a base escolhida, pontua a semelhança e atribui um **status** a cada registro:
+Ao clicar em **Validar Nomes**, o Saíra compara cada <span class="term">scientificName</span> com a base escolhida e atribui um **status** a cada nome:
 
-- **Exato (AUTO)**: o nome bate com a referência e é aplicado automaticamente.
-- **Sugestão (SUGERIDO)**: encontrou um nome muito próximo (provável erro de grafia) e propõe a correção.
-- **Sinônimo / Alias**: o nome é válido, mas existe um nome aceito mais atual, ou um apelido conhecido aponta para o termo certo.
-- **Ambíguo**: mais de um candidato forte; você decide qual aplicar.
-- **Não encontrado**: exige revisão manual.
+- **Aceito** — o nome bate com a referência e já é o nome aceito.
+- **Sinônimo** — o nome é válido, mas a base aponta um nome aceito mais atual (também é o status para grafias inválidas ou inaplicadas que a base devolve).
+- **Ambíguo** — mais de um candidato forte; você decide qual aplicar.
+- **Não encontrado** — não está na base; exige revisão manual.
+
+O Saíra **não corrige grafia por conta própria** nem adivinha o nome "mais parecido": ele só reporta o que a base taxonômica devolve. Qualquer correção parte de você.
 
 ```{=html}
 <ol class="steps">
   <li><strong>Rode a verificação.</strong>
-    <p>O Saíra processa a lista de nomes e mostra um resumo por situação.</p></li>
-  <li><strong>Revise as sugestões.</strong>
-    <p>Para cada nome com sugestão, sinônimo ou ambiguidade, aceite a correção proposta ou mantenha o original.</p></li>
+    <p>O Saíra processa a lista de nomes (cada nome distinto é consultado uma vez) e mostra um resumo por status, com filtros para isolar os problemas.</p></li>
+  <li><strong>Revise os problemas.</strong>
+    <p>Para cada nome marcado como sinônimo, ambíguo ou não encontrado, abra a revisão manual e decida.</p></li>
   <li><strong>Trate os não encontrados.</strong>
-    <p>Corrija manualmente, confirme que está certo (por exemplo, um táxon recém-descrito) ou marque para revisão posterior.</p></li>
+    <p>Corrija a grafia, confirme que está certo (por exemplo, um táxon recém-descrito) ou ajuste conforme a publicação de referência.</p></li>
 </ol>
 ```
 
-::: {.callout-tip}
-## Aceitar em lote
-Quando há muitos registros com o mesmo erro recorrente, aceite a correção uma vez e aplique a todos os casos idênticos, em vez de revisar linha a linha. É o que mais economiza tempo em conjuntos grandes.
-:::
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/8.1-painel-nomes-processados.png" alt="Painel Nomes Processados com filtros por situação (Todos, Só problemáticos, Não encontrados, Ambíguos, Sinônimos, Aceitos) e entradas com botão Revisar">
+  <figcaption><b>Figura 2.</b> Painel <span class="term">Nomes Processados</span>: o resumo por situação, com filtros para isolar os problemas e o botão <span class="term">Revisar</span> em cada nome pendente.</figcaption>
+</figure>
+```
 
 ```{=html}
 <figure class="shot">
-  <div class="frame"><span class="ph-label">screenshot · validação de nomes</span></div>
-  <figcaption><b>Figura 1.</b> Tela de validação de nomes, com o status de cada táxon, a base de referência selecionada e as correções sugeridas.</figcaption>
+  <img src="../assets/img/8.2-painel-relatorio-nomes.png" alt="Relatório de Nomes em tabela, com colunas Nome científico, Status e Status taxonômico, e a contagem de válidos, inválidos e não resolvidos no topo">
+  <figcaption><b>Figura 3.</b> Relatório de Nomes: todos os táxons em tabela, com o status de cada um e a contagem de válidos, inválidos e não resolvidos no topo.</figcaption>
+</figure>
+```
+
+## Corrigindo nomes
+
+A correção é manual e acontece no **modal de revisão**. Clique em um nome problemático e escolha:
+
+- **Sim, este nome está correto** — confirma o nome como está; ele será exportado exatamente assim. Útil para táxons recém-descritos ou ausentes da base.
+- **Não, quero corrigir o nome** — abre o campo **Correção do nome** para você digitar a grafia certa, com um motivo opcional (ex.: erro de digitação na planilha original, nome atualizado conforme publicação).
+
+A decisão é **reaplicada automaticamente** a todas as linhas com aquele mesmo nome — como a validação agrupa nomes idênticos, você revisa cada um uma única vez e a correção vale para o conjunto inteiro. É o que mais economiza tempo em planilhas grandes com o mesmo erro repetido.
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/8.3-pop-up-revisao-nomes.png" alt="Modal de revisão manual perguntando se o nome está correto, com a opção de confirmar ou de corrigir o nome">
+  <figcaption><b>Figura 4.</b> Modal de revisão: confirme o nome como está ou escolha corrigi-lo.</figcaption>
+</figure>
+```
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/8.4-pop-up-revisao-nomes-edicao-de-nome.png" alt="Modal de revisão no modo de edição, com o campo Correção do nome e um campo de motivo">
+  <figcaption><b>Figura 5.</b> Modo de correção: digite a grafia certa e, se quiser, registre o motivo da mudança.</figcaption>
 </figure>
 ```
 
 ::: {.callout-warning}
 ## A decisão taxonômica é sua
-As sugestões são automáticas, mas a autoridade é do especialista. Em grupos com taxonomia instável, confira as propostas antes de aceitá-las em massa. Aceitar um sinônimo significa substituir o nome no conjunto exportado: o nome original pode ser preservado em <span class="term">verbatimIdentification</span> ou <span class="term">originalNameUsage</span> se você mapeou esses campos.
+O Saíra resolve os nomes contra a base, mas a autoridade é do especialista. Em grupos com taxonomia instável, confira cada caso antes de aceitar. Trocar um nome por seu sinônimo aceito significa substituir o nome no conjunto exportado: o nome original pode ser preservado em <span class="term">verbatimIdentification</span> ou <span class="term">originalNameUsage</span> se você mapeou esses campos.
 :::
+
+## Espécies ameaçadas (Lista MMA)
+
+Depois de resolver os nomes, o Saíra compara cada táxon com a **lista nacional de espécies ameaçadas de extinção**, que vem **embutida no app** — não é preciso baixar nada. Os táxons presentes na lista recebem uma sinalização **Sensível** no relatório, com a categoria de ameaça: **VU** (vulnerável), **EN** (em perigo), **CR** (criticamente em perigo) e **CR (PEX)** (criticamente em perigo, possivelmente extinta).
+
+::: {.callout-note}
+## De onde vem a lista
+A lista embutida corresponde à **Portaria MMA nº 148, de 7 de junho de 2022** (que atualiza a Portaria nº 443/2014), do Ministério do Meio Ambiente. Texto oficial: <https://in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733>.
+:::
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/8.6-relatorio-nomes-especie-sensivel.png" alt="Relatório com táxons sinalizados como Sensível e a categoria de ameaça, e a opção marcar para espécies fora da lista">
+  <figcaption><b>Figura 6.</b> No relatório, táxons da lista trazem a etiqueta <span class="term">Sensível</span> com a categoria; os demais trazem a opção <span class="term">+ marcar</span>.</figcaption>
+</figure>
+```
+
+### Ajustando a sensibilidade
+
+A lista do MMA é o ponto de partida, não a palavra final. Cada táxon traz no relatório um controle de sensibilidade que você pode ajustar conforme sua experiência e a realidade da sua região de trabalho:
+
+- **Desmarcar uma espécie da lista** — se, no seu contexto, aquele registro não for sensível, desmarque-o. O Saíra avisa que essa é uma **decisão de custódia**: sem a marca, as coordenadas daquele táxon serão publicadas sem generalização.
+- **Marcar uma espécie fora da lista** — use **+ marcar** para sinalizar como sensível um táxon que a lista nacional não cobre, mas que você sabe ser vulnerável na sua área.
+
+O ajuste é feito num pequeno diálogo de confirmação e vale para a exportação.
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/8.5-pop-up-especie-sensivel.png" alt="Diálogo de mascaramento de coordenadas com uma caixa Sensível marcada e o aviso de que desmarcar é uma decisão de custódia">
+  <figcaption><b>Figura 7.</b> Diálogo de sensibilidade: marque ou desmarque o táxon. Ao desmarcar uma espécie da lista do MMA, o Saíra lembra que a decisão é sua e que as coordenadas sairão sem generalização.</figcaption>
+</figure>
+```
+
+Aqui a etapa apenas **sinaliza** o que é sensível. A proteção efetiva das coordenadas — generalizar a localização ou omiti-la — acontece na **[exportação](06-preview-exportacao.qmd)**, onde a categoria de ameaça define o nível de generalização.
 
 ## Próximos passos
 

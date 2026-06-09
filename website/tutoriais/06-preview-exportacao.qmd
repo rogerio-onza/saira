@@ -34,7 +34,7 @@ Ao gerar o pacote, o Saíra padroniza automaticamente o conjunto para que ele at
 
 ## Espécies sensíveis
 
-Antes de publicar, o Saíra verifica se há **táxons ameaçados** (com base na Lista Nacional da Fauna/Flora, do MMA, que vem embutida no app). Para esses registros, você pode optar por **generalizar a localização** (reduzir a precisão das coordenadas) ou omiti-la, protegendo populações vulneráveis sem deixar de publicar o dado. As coordenadas originais e precisas dos registros sensíveis ficam num arquivo à parte, fora do pacote público.
+Antes de publicar, o Saíra verifica se há **táxons ameaçados** — os mesmos sinalizados na [validação de nomes](04-validacao-nomes.qmd), com base na lista nacional do MMA embutida no app. Para esses registros, você pode optar por **generalizar a localização** (reduzir a precisão das coordenadas) ou omiti-la, protegendo populações vulneráveis sem deixar de publicar o dado. As coordenadas originais e precisas dos registros sensíveis ficam num arquivo à parte, fora do pacote público.
 
 ::: {.callout-warning}
 ## Dados sensíveis exigem decisão consciente

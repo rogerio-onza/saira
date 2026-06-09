@@ -15,7 +15,7 @@ The tutorials follow Saíra's workflow, step by step. Use the **sidebar** on the
 1. **[Installation and first steps](01-installation.qmd)**: install Saíra from GitHub and open the application in your browser.
 2. **[Importing your data](02-upload.qmd)**: load CSV or Excel spreadsheets (or a camera-trap package) and run a first inspection of the columns.
 3. **[Mapping fields to Darwin Core](03-dwc-mapping.qmd)**: match each column to a Darwin Core term with automatic suggestions, templates and the `basisOfRecord` assistant.
-4. **[Validating scientific names](04-name-validation.qmd)**: check nomenclature against Flora do Brasil, Fauna do Brasil or GBIF, resolve synonyms and standardize spelling.
+4. **[Validating scientific names](04-name-validation.qmd)**: check nomenclature against Flora do Brasil, Fauna do Brasil or GBIF, resolve synonyms, correct names and see which taxa are threatened per the national MMA list.
 5. **[Validating coordinates](05-coordinate-validation.qmd)**: find missing, swapped or transposed coordinates, fill the country from the point and review on the map.
 6. **[Preview and export](06-preview-export.qmd)**: review the result, handle sensitive species and generate the Darwin Core Archive.
 

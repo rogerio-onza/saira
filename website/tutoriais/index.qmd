@@ -15,7 +15,7 @@ Os tutoriais acompanham o fluxo de trabalho do Saíra, etapa por etapa. Use a **
 1. **[Instalação e primeiros passos](01-instalacao.qmd)**: instale o Saíra a partir do GitHub e abra o aplicativo no navegador.
 2. **[Importando seus dados](02-upload.qmd)**: carregue planilhas em CSV ou Excel (ou um pacote de armadilha fotográfica) e faça a primeira inspeção das colunas.
 3. **[Mapeando campos para Darwin Core](03-mapeamento-dwc.qmd)**: associe cada coluna a um termo Darwin Core com sugestões automáticas, modelos e o assistente de `basisOfRecord`.
-4. **[Validando nomes científicos](04-validacao-nomes.qmd)**: confira a nomenclatura contra Flora do Brasil, Fauna do Brasil ou GBIF, resolva sinônimos e padronize a grafia.
+4. **[Validando nomes científicos](04-validacao-nomes.qmd)**: confira a nomenclatura contra Flora do Brasil, Fauna do Brasil ou GBIF, resolva sinônimos, corrija nomes e veja quais táxons são ameaçados pela lista nacional do MMA.
 5. **[Validando coordenadas](05-validacao-coordenadas.qmd)**: encontre coordenadas ausentes, invertidas ou transpostas, preencha o país a partir do ponto e revise no mapa.
 6. **[Pré-visualização e exportação](06-preview-exportacao.qmd)**: revise o resultado, trate espécies sensíveis e gere o Darwin Core Archive.
 
