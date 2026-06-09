@@ -32,6 +32,12 @@ $toc-active-border: #38cff6;
   --warning: #FFB838;
   --success: #2fc488;
   --error: #e0685c;
+  // coordinate diagnostics — brightened for legibility on the dark surface,
+  // following the same lift applied to the semantic tokens above.
+  --coord-swap: #a78bfa;
+  --coord-reference: #c4b5fd;
+  --coord-identical: #FFD24D;
+  --coord-missing: #8b8b92;
 
   // callout title/icon colors — bright semantic hues, legible on the dark
   // color-mix(... 8%, surface) callout backgrounds in dark mode.

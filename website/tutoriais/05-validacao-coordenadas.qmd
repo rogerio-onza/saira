@@ -4,45 +4,129 @@ pagetitle: "Validação de coordenadas — Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-Coordenadas erradas são uma das maiores fontes de problema em dados de biodiversidade. O Saíra ajuda a encontrá-las, corrigi-las com segurança e revisá-las visualmente no mapa.
+Coordenadas erradas são uma das maiores fontes de erro em dados de biodiversidade. O Saíra roda um diagnóstico determinístico, mostra cada registro no mapa e numa tabela, e **propõe correções seguras** — aplicadas só na exportação, nunca por cima dos seus dados.
 :::
 
-## O que o Saíra verifica
+## Antes de validar: o que precisa estar mapeado
 
-A partir de <span class="term">decimalLatitude</span> e <span class="term">decimalLongitude</span>, o app sinaliza os problemas mais comuns:
+A validação de coordenadas só roda quando três termos do Darwin Core estão mapeados (veja **[Mapeamento](03-mapeamento-dwc.qmd)**):
 
-- **Ausentes**: registros sem coordenada.
-- **Fora de faixa**: valores impossíveis (latitude além de ±90, longitude além de ±180).
-- **Invertidas / transpostas**: latitude e longitude trocadas, ou com o sinal errado, jogando o ponto para o outro lado do mundo.
-- **Incompatíveis com o país**: pontos caindo fora do país informado, ou no mar quando deveriam estar em terra.
+- <span class="term">decimalLatitude</span>
+- <span class="term">decimalLongitude</span>
+- <span class="term">country</span>
 
-A verificação se apoia em diagnósticos determinísticos (no estilo do `CoordinateCleaner`) e na camada de países do Natural Earth que vem embutida no Saíra, então roda sem depender de serviços externos.
+O painel da esquerda mostra a coluna associada a cada termo. Enquanto algum faltar, o botão **Validar Coordenadas** fica desabilitado.
+
+Antes de rodar, escolha o **Perfil**:
+
+- **Completo** — roda todos os testes, incluindo a detecção de *referências sensíveis* (pontos suspeitos sobre capitais, centróides de país, sede do GBIF e instituições de biodiversidade).
+- **Rápido** — pula os testes de referência; útil para uma primeira passada em bases grandes.
+
+Clique em **Validar Coordenadas**. A validação é disparada por você, não a cada mudança nos dados.
 
 ```{=html}
 <figure class="shot">
-  <div class="frame"><span class="ph-label">screenshot · mapa de validação</span></div>
-  <figcaption><b>Figura 1.</b> Revisão de coordenadas no mapa: pontos coloridos por situação (válido, ausente, invertido) para inspeção visual.</figcaption>
+  <img src="../assets/img/9-painel-validação.png" alt="Painel da esquerda da validação de coordenadas: status das colunas mapeadas (latitude, longitude, country), o seletor de Perfil Completo/Rápido e o botão Validar Coordenadas">
+  <figcaption><b>Figura 1.</b> Painel da esquerda: status das colunas mapeadas (latitude, longitude, country), o seletor de Perfil (Completo / Rápido) e o botão Validar Coordenadas.</figcaption>
+</figure>
+```
+
+## O que o Saíra verifica
+
+A partir de <span class="term">decimalLatitude</span>, <span class="term">decimalLongitude</span> e <span class="term">country</span>, cada registro recebe **um diagnóstico**, com a mesma cor que aparece no mapa e nos badges da tabela:
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Diagnóstico</th><th>O que significa</th></tr></thead>
+  <tbody>
+    <tr><td><span class="swatch" style="background:var(--success)"></span>OK</td><td>Passou em todos os testes.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--coord-missing)"></span>Coordenada ausente</td><td>Latitude ou longitude vazia ou não numérica.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--error)"></span>Fora dos limites</td><td>Valores impossíveis (latitude além de ±90, longitude além de ±180) ou coordenada zerada.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--coord-swap)"></span>Possível inversão</td><td>Latitude e longitude aparentam estar trocadas.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--info)"></span>Em mar aberto</td><td>O ponto cai na água segundo a camada de costa, quando deveria estar em terra.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--warning)"></span>Zero/Equal</td><td>Coordenada em (0, 0) ou com latitude e longitude idênticas.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--coord-identical)"></span>Todas idênticas</td><td>Todos os registros válidos compartilham o mesmo par de coordenadas — sinal de um valor padrão coletivo.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--coord-reference)"></span>Referência sensível</td><td>Ponto próximo de capital, centróide de país, sede do GBIF ou instituição biológica (só no perfil <b>Completo</b>).</td></tr>
+  </tbody>
+</table>
+```
+
+Os testes são determinísticos (no estilo do `CoordinateCleaner`) e usam a camada de países do Natural Earth embutida no Saíra — rodam sem depender de serviços externos.
+
+## Lendo os resultados
+
+Concluída a validação, os resultados aparecem à direita.
+
+**Filtros.** Acima do mapa, botões filtram a visão por categoria — **Todos**, **Problemas**, **Inválida**, **Mar**, **Zero/Equal** e **Referência**. Clicar em um filtra o mapa e a tabela ao mesmo tempo.
+
+**Mapa — Distribuição Geográfica.** Cada registro vira um ponto, colorido pela situação. Clique em um ponto para ver linha, diagnóstico e coordenadas; concentrações fora da área esperada saltam aos olhos.
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Cor no mapa</th><th>Situação</th></tr></thead>
+  <tbody>
+    <tr><td><span class="swatch" style="background:var(--success)"></span>Verde</td><td>Válida</td></tr>
+    <tr><td><span class="swatch" style="background:var(--error)"></span>Vermelho</td><td>Inválida</td></tr>
+    <tr><td><span class="swatch" style="background:var(--info)"></span>Azul-marinho</td><td>Mar</td></tr>
+    <tr><td><span class="swatch" style="background:var(--warning)"></span>Laranja</td><td>Zero/Equal</td></tr>
+    <tr><td><span class="swatch" style="background:var(--coord-reference)"></span>Violeta</td><td>Referência sensível</td></tr>
+  </tbody>
+</table>
+```
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/9.1-mapa-pontos-validados.png" alt="Mapa de Distribuição Geográfica com os registros como pontos coloridos pela situação (válida, inválida, mar, zero/equal, referência) e a legenda de cores abaixo do mapa">
+  <figcaption><b>Figura 2.</b> Distribuição Geográfica: pontos coloridos por situação, com a legenda de cores abaixo do mapa.</figcaption>
+</figure>
+```
+
+::: {.callout-warning}
+## O teste de mar é aproximado
+O teste de mar usa dados de costa simplificados. Pontos muito próximos da costa podem ser flagados incorretamente. **Verifique visualmente no mapa antes de descartar** um registro marcado como *Em mar aberto*.
+:::
+
+**Tabela — Diagnóstico de Coordenadas.** Abaixo do mapa, uma tabela lista cada registro com as colunas **Linha**, **Diagnóstico** (badge colorido), **Latitude**, **Longitude**, **Country** e **ISO3** (o código de país resolvido). É pesquisável, paginada e acompanha o filtro ativo.
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/9.2-diagnostico-coordenadas-pilulas.png" alt="Botões de filtro acima da tabela Diagnóstico de Coordenadas, com as colunas Linha, Diagnóstico, Latitude, Longitude, Country e ISO3">
+  <figcaption><b>Figura 3.</b> Os filtros e a tabela Diagnóstico de Coordenadas (Linha, Diagnóstico, Latitude, Longitude, Country, ISO3).</figcaption>
 </figure>
 ```
 
 ## Correções assistidas
 
-O Saíra não apenas aponta o erro: ele **propõe a correção** e deixa você aplicá-la explicitamente. As coordenadas originais nunca são sobrescritas em silêncio; quando você aceita uma correção, os valores antigos podem ser preservados em <span class="term">verbatimLatitude</span> e <span class="term">verbatimLongitude</span>.
+O Saíra não só aponta o erro: ele **propõe a correção** para você aplicar explicitamente. As coordenadas originais nunca são sobrescritas em silêncio, e as correções aceitas são **aplicadas na exportação**, não no preview. Quando o modelo de exportação tem as colunas <span class="term">verbatimLatitude</span> e <span class="term">verbatimLongitude</span> vazias, os valores originais são preservados ali.
+
+Havendo candidatos, painéis aparecem à esquerda. Cada um mostra a contagem e um exemplo, e fica verde com um ✓ depois de aplicado:
 
 ```{=html}
-<ol class="steps">
-  <li><strong>Veja a distribuição.</strong>
-    <p>Os pontos aparecem no mapa, coloridos por situação. Concentrações fora da área esperada saltam aos olhos.</p></li>
+<ol class="fix-steps">
   <li><strong>Corrija transposições e inversões.</strong>
-    <p>Para pontos que caem fora do país informado, o Saíra testa trocas de latitude/longitude e inversões de sinal e aceita a primeira que cai dentro do país (com uma margem de fronteira de cerca de 22 km). Você revê e aplica.</p></li>
-  <li><strong>Preencha o país a partir do ponto.</strong>
-    <p>Quando o <span class="term">country</span> está em branco mas a coordenada é válida, o Saíra deriva o país em que o ponto cai. Valores de país já informados nunca são substituídos.</p></li>
+    <p>Para pontos fora do país informado, o Saíra testa trocas de lat/lon e inversões de sinal e aceita a primeira que cai dentro do país (margem de ~22 km). Botão: <strong>Corrigir coordenadas transpostas</strong>.</p></li>
+  <li><strong>Preencha o país pelo ponto.</strong>
+    <p>Com <span class="term">country</span> em branco e coordenada válida, o Saíra deriva o país em que o ponto cai. Países já informados nunca são substituídos. Botão: <strong>Preencher país pelas coordenadas</strong>.</p></li>
   <li><strong>Trate pontos no mar sem país.</strong>
-    <p>Se o país está vazio e o ponto cai no mar, é um forte indício de troca lat/lon. O Saíra testa a troca e, quando o ponto corrigido cai em um país, propõe a coordenada e o país juntos.</p></li>
-  <li><strong>Trate ausências.</strong>
-    <p>Registros sem coordenada podem ser revisados a partir da localidade ou mantidos sem georreferenciamento, de forma consciente.</p></li>
+    <p>País vazio + ponto no mar é forte indício de troca lat/lon. O Saíra testa a troca e, se o ponto corrigido cai sem ambiguidade em um país, propõe coordenada e país juntos. Botão: <strong>Trocar lat/lon e preencher país</strong>.</p></li>
 </ol>
 ```
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/9.3-correcao-coordenadas-transpostas.png" alt="Painel de correção de coordenadas transpostas, com a contagem de registros, um exemplo antiga → nova e o botão Corrigir coordenadas transpostas">
+  <figcaption><b>Figura 4.</b> Painel de correção de coordenadas transpostas: contagem, exemplo (antiga → nova) e o botão Corrigir coordenadas transpostas.</figcaption>
+</figure>
+```
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/9.4-correcao-pais-faltando-coordenadas..png" alt="Painel de preenchimento de país a partir das coordenadas, com a contagem, um exemplo e o botão Preencher país pelas coordenadas">
+  <figcaption><b>Figura 5.</b> Painel de país preenchível pelas coordenadas (e a variante "mar + país vazio → corrigível por troca lat/lon").</figcaption>
+</figure>
+```
+
+**Registros sem coordenada** ficam marcados como *Coordenada ausente*. O Saíra não inventa um ponto a partir do texto da localidade — esses registros ficam a seu critério: mantenha-os sem georreferenciamento de forma consciente, ou preencha as coordenadas antes do upload.
 
 ::: {.callout-tip}
 ## Datum e precisão

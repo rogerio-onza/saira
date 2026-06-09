@@ -32,6 +32,13 @@ $toc-active-border: #38cff6;
   --warning: #FFA204;
   --success: #00A86B;
   --error: #C0392B;
+  // coordinate diagnostics — categories with no existing semantic token; match
+  // the app map/badge colors (R/utils_coords.R) so the help-site swatches read
+  // the same as the running app.
+  --coord-swap: #6d28d9;
+  --coord-reference: #8b5cf6;
+  --coord-identical: #d9a400;
+  --coord-missing: #9a9aa0;
 
   // callout title/icon colors — darkened semantic hues, AA-legible on the pale
   // color-mix(... 8%, surface) callout backgrounds in light mode.

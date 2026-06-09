@@ -260,6 +260,25 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
 .steps li strong { font-weight: 600; }
 .steps li p { margin: 0.2em 0 0; font-size: 1.04rem; }
 
+// numbered-card variant of .steps — stronger separation between items
+.fix-steps { list-style: none; counter-reset: step; margin: 1.4em 0; padding: 0; }
+.fix-steps li {
+  counter-increment: step; position: relative;
+  padding: 18px 20px 18px 64px; margin-bottom: 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+}
+.fix-steps li::before {
+  content: counter(step);
+  position: absolute; left: 18px; top: 16px; width: 34px; height: 34px; border-radius: 50%;
+  background: var(--accent-soft); border: 1px solid var(--accent);
+  display: grid; place-items: center; font-family: var(--mono); font-size: 0.9rem; font-weight: 700; color: var(--accent);
+}
+.fix-steps li strong { font-weight: 600; }
+.fix-steps li p { margin: 0.3em 0 0; font-size: 1.02rem; color: var(--text-soft); }
+
+// inline color dot for legend/category tables — fill set inline as a theme token
+.swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--border); vertical-align: middle; margin-right: 8px; }
+
 .term { font-family: var(--mono); font-size: 0.86em; background: var(--accent-soft); color: var(--accent); padding: 0.1em 0.45em; border-radius: 6px; }
 
 .maptable { width: 100%; border-collapse: collapse; margin: 1.4em 0; font-size: 0.95rem; }
