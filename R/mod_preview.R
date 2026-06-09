@@ -217,16 +217,35 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
             sensitivity_payload_r()
         })
 
-        # Chapman 2020 generalization level (single global tier). Default
-        # "not_sensitive": masking is a deliberate opt-in exception, never the
-        # default, since generalized coordinates can mislead future analyses
-        # and conservation policy. The researcher must choose to mask.
+        # Chapman 2020 generalization level (single global tier) consumed by the
+        # export handler. Default "not_sensitive": masking is a deliberate
+        # opt-in exception, never the default, since generalized coordinates can
+        # mislead future analyses and conservation policy.
+        #
+        # The Preview panel collects the choice in TWO steps (ADR-096):
+        #   `sensitive_mode`  in {"publish","generalize"}     -- the binary call
+        #   `sensitive_level` in {"low","medium","high","extreme"} -- revealed
+        #                     only when the mode is "generalize"
+        # Both inputs are reduced here to the single export value.
+        sensitive_active_levels <- c("low", "medium", "high", "extreme")
         sensitive_generalization_rv <- shiny::reactiveVal("not_sensitive")
 
-        shiny::observeEvent(input$sensitive_generalization, {
-            val <- as.character(input$sensitive_generalization)
-            if (length(val) == 1L && val %in% sensitive_generalization_levels()) {
-                sensitive_generalization_rv(val)
+        shiny::observeEvent(input$sensitive_mode, {
+            if (identical(input$sensitive_mode, "generalize")) {
+                lvl <- input$sensitive_level
+                if (is.null(lvl) || !lvl %in% sensitive_active_levels) {
+                    lvl <- "medium"
+                }
+                sensitive_generalization_rv(lvl)
+            } else {
+                sensitive_generalization_rv("not_sensitive")
+            }
+        })
+
+        shiny::observeEvent(input$sensitive_level, {
+            if (identical(input$sensitive_mode, "generalize") &&
+                input$sensitive_level %in% sensitive_active_levels) {
+                sensitive_generalization_rv(input$sensitive_level)
             }
         })
 
@@ -262,21 +281,62 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
             sum(sci %in% sens_names & !is.na(lat) & !is.na(lon))
         })
 
+        # Two-step masking panel (ADR-096). The panel renders a STATIC
+        # structure that depends only on the detection count and language --
+        # NOT on the current selection -- so clicking a level re-renders only
+        # the small warning block below the grid, never the whole panel.
         output$sensitive_panel <- shiny::renderUI({
             n <- sensitive_overview()
             if (is.null(n) || n == 0L) {
                 return(NULL)
             }
             lang <- lang_r()
-            current <- sensitive_generalization_rv()
 
-            # `sensitive_generalization_levels()` returns the Chapman tiers in
-            # order, with "not_sensitive" last. The CSS in 17-sensitive-panel.css
-            # uses `.form-check:last-child` to demote the opt-out card, so the
-            # order here must mirror that contract; do not reorder.
-            levels <- sensitive_generalization_levels()
-            active_levels <- setdiff(levels, "not_sensitive")
+            # Step-1 card: the binary publish/generalize decision. The publish
+            # card carries the "Recommended" badge.
+            mode_card <- function(title_key, desc_key, recommended = FALSE) {
+                shiny::HTML(as.character(shiny::tagList(
+                    shiny::div(
+                        class = "sp-mode-head",
+                        shiny::span(class = "sp-mode-title", tr(title_key, lang)),
+                        if (recommended) {
+                            shiny::span(
+                                class = "sp-mode-badge",
+                                tr("sensitive_mode_recommended_badge", lang)
+                            )
+                        }
+                    ),
+                    shiny::div(class = "sp-mode-desc", tr(desc_key, lang))
+                )))
+            }
 
+            # Step-2 card: headline is the SPATIAL RESULT (Local area / City /
+            # State / Country); the Chapman category is a small reference tag.
+            level_card <- function(level) {
+                g <- sensitive_generalization_grid(level)
+                km <- g * 111.32
+                scale_txt <- if (km < 1) {
+                    sprintf("~%s m", format(round(km * 1000, -2L), trim = TRUE))
+                } else {
+                    sprintf("~%s km", format(round(km), trim = TRUE))
+                }
+                shiny::HTML(as.character(shiny::tagList(
+                    shiny::div(
+                        class = "sp-card-name",
+                        tr(paste0("sensitive_card_impact_", level), lang)
+                    ),
+                    shiny::div(class = "sp-card-scale", scale_txt),
+                    shiny::div(
+                        class = "sp-card-ref",
+                        tr(paste0("sensitive_card_num_", level), lang)
+                    )
+                )))
+            }
+
+            # Reference table (Chapman 2020 / GBIF, Table 7) -- all five levels,
+            # mapping the Chapman category to its spatial result and grid. A
+            # cost swatch (green -> red) and a tinted "no masking" baseline row
+            # tie the table back to the cards above.
             fmt_grid_cell <- function(level) {
                 g <- sensitive_generalization_grid(level)
                 if (is.na(g)) {
@@ -289,70 +349,24 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                     format(km, trim = TRUE)
                 )
             }
-
-            # `warn` adds an in-card policy-impact alert; set for the
-            # aggressive tiers (high/extreme) only while one is selected.
-            card_label <- function(level, warn = FALSE) {
-                g <- sensitive_generalization_grid(level)
-                deg_txt <- sprintf(
-                    "%s\u00b0",
-                    format(g, trim = TRUE, scientific = FALSE)
-                )
-                km_txt <- sprintf(
-                    "~%s km",
-                    format(round(g * 111.32, 1), trim = TRUE)
-                )
-                shiny::HTML(as.character(shiny::tagList(
-                    shiny::div(
-                        class = "sp-card-num",
-                        tr(paste0("sensitive_card_num_", level), lang)
-                    ),
-                    shiny::div(
-                        class = "sp-card-name",
-                        tr(paste0("sensitive_card_name_", level), lang)
-                    ),
-                    shiny::div(
-                        class = "sp-card-precision",
-                        shiny::span(class = "sp-card-deg", deg_txt),
-                        shiny::span(class = "sp-card-km", km_txt)
-                    ),
-                    shiny::div(
-                        class = "sp-card-impact",
-                        tr(paste0("sensitive_card_impact_", level), lang)
-                    ),
-                    if (warn) {
-                        shiny::div(
-                            class = "sp-card-warning",
-                            tr("sensitive_policy_warning", lang)
-                        )
-                    }
-                )))
+            spatial_for <- function(level) {
+                if (identical(level, "not_sensitive")) {
+                    return("\u2014")
+                }
+                tr(paste0("sensitive_card_impact_", level), lang)
             }
-
-            optout_label <- shiny::HTML(as.character(
-                shiny::span(
-                    class = "sp-optout-text",
-                    tr("sensitive_card_optout", lang)
-                )
-            ))
-
-            aggressive_levels <- c("high", "extreme")
-            choice_names <- c(
-                lapply(active_levels, function(lv) {
-                    card_label(
-                        lv,
-                        warn = lv %in% aggressive_levels &&
-                            identical(lv, current)
-                    )
-                }),
-                list(optout_label)
-            )
-            choice_values <- c(active_levels, "not_sensitive")
-
-            table_rows <- lapply(levels, function(level) {
+            table_rows <- lapply(sensitive_generalization_levels(), function(level) {
+                baseline <- identical(level, "not_sensitive")
                 shiny::tags$tr(
-                    shiny::tags$td(tr(paste0("sensitive_gen_", level), lang)),
-                    shiny::tags$td(fmt_grid_cell(level))
+                    class = if (baseline) "sp-grid-row-baseline" else NULL,
+                    shiny::tags$td(
+                        shiny::span(
+                            class = paste0("sp-grid-swatch sp-grid-swatch--", level)
+                        ),
+                        tr(paste0("sensitive_gen_", level), lang)
+                    ),
+                    shiny::tags$td(class = "sp-grid-result", spatial_for(level)),
+                    shiny::tags$td(class = "sp-grid-value", fmt_grid_cell(level))
                 )
             })
 
@@ -362,6 +376,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                     class = "sp-header",
                     shiny::h5(
                         class = "sp-title",
+                        shiny::icon("shield-halved", class = "sp-title-icon"),
                         tr("sensitive_panel_title", lang)
                     ),
                     shiny::span(
@@ -371,22 +386,67 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                 ),
                 shiny::p(
                     class = "sp-lead",
-                    tr("sensitive_panel_lead", lang)
+                    shiny::HTML(sprintf(tr("sensitive_panel_intro", lang), n))
+                ),
+
+                # Step 1 -- binary decision.
+                shiny::div(
+                    class = "sp-step-question",
+                    tr("sensitive_step_question", lang)
                 ),
                 shiny::div(
-                    class = "alert alert-info",
-                    tr("sensitive_panel_guidance", lang)
-                ),
-                shiny::div(
-                    class = "sp-radio-wrap",
+                    class = "sp-mode-radio",
                     shiny::radioButtons(
-                        ns("sensitive_generalization"),
+                        ns("sensitive_mode"),
                         label = NULL,
-                        choiceNames = choice_names,
-                        choiceValues = choice_values,
-                        selected = current
+                        choiceNames = list(
+                            mode_card(
+                                "sensitive_mode_publish_title",
+                                "sensitive_mode_publish_desc",
+                                recommended = TRUE
+                            ),
+                            mode_card(
+                                "sensitive_mode_generalize_title",
+                                "sensitive_mode_generalize_desc"
+                            )
+                        ),
+                        choiceValues = c("publish", "generalize"),
+                        selected = "publish"
                     )
                 ),
+
+                # Step 2 -- level grid, revealed only when "generalize" is
+                # chosen. conditionalPanel keeps the radio mounted (its value
+                # stays registered) and toggles visibility client-side, so
+                # there is no server re-render flash on reveal.
+                shiny::conditionalPanel(
+                    condition = "input.sensitive_mode == 'generalize'",
+                    ns = ns,
+                    class = "sp-level-block",
+                    shiny::div(
+                        class = "sp-level-prompt",
+                        tr("sensitive_level_prompt", lang)
+                    ),
+                    shiny::div(
+                        class = "sp-level-axis",
+                        shiny::span(class = "sp-axis-low", tr("sensitive_axis_low", lang)),
+                        shiny::span(class = "sp-axis-track"),
+                        shiny::span(class = "sp-axis-high", tr("sensitive_axis_high", lang))
+                    ),
+                    shiny::div(
+                        class = "sp-level-radio",
+                        shiny::radioButtons(
+                            ns("sensitive_level"),
+                            label = NULL,
+                            choiceNames = lapply(sensitive_active_levels, level_card),
+                            choiceValues = sensitive_active_levels,
+                            selected = "medium"
+                        )
+                    ),
+                    shiny::uiOutput(ns("sensitive_level_warning"))
+                ),
+
+                # Reference disclosure (Chapman 2020 / GBIF, Table 7).
                 shiny::tags$details(
                     class = "sp-disclosure",
                     shiny::tags$summary(
@@ -401,13 +461,40 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                             shiny::tags$thead(
                                 shiny::tags$tr(
                                     shiny::tags$th(tr("sensitive_table_col_category", lang)),
-                                    shiny::tags$th(tr("sensitive_table_col_grid", lang))
+                                    shiny::tags$th(tr("sensitive_table_col_result", lang)),
+                                    shiny::tags$th(
+                                        class = "sp-grid-value",
+                                        tr("sensitive_table_col_grid", lang)
+                                    )
                                 )
                             ),
                             shiny::tags$tbody(table_rows)
                         )
                     )
                 )
+            )
+        })
+
+        # Escalated, decision-coupled warning for the aggressive tiers (State,
+        # Country). Its own output so selecting a level re-renders just this
+        # block, not the whole panel.
+        output$sensitive_level_warning <- shiny::renderUI({
+            if (!identical(input$sensitive_mode, "generalize")) {
+                return(NULL)
+            }
+            lvl <- input$sensitive_level
+            warn_key <- if (identical(lvl, "extreme")) {
+                "sensitive_warn_extreme"
+            } else if (identical(lvl, "high")) {
+                "sensitive_warn_high"
+            } else {
+                return(NULL)
+            }
+            shiny::div(
+                class = paste0("sp-level-warning sp-level-warning--", lvl),
+                shiny::icon("triangle-exclamation"),
+                " ",
+                tr(warn_key, lang_r())
             )
         })
 

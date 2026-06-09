@@ -1,33 +1,29 @@
-/* Sensitive-species masking panel (Preview tab).
-   Chapman 2020 generalization tiers presented as selectable cards.
+/* Sensitive-species masking panel (Preview tab) — two-step decision (ADR-096).
 
-   IMPORTANT — Shiny `radioButtons()` markup in this app renders as
-   Bootstrap 3 structure (the `bslib` Bootstrap 5 theme does NOT rewrite
-   Shiny's radioGroup HTML):
+   Step 1 (always visible when sensitive records exist): a binary choice
+   between "Publish original coordinates" (recommended, primary weight) and
+   "Generalize coordinates" (optional, neutral). Step 2 (the four spatial
+   generalization levels) is revealed only when "Generalize" is chosen.
+
+   IMPORTANT — Shiny `radioButtons()` renders Bootstrap-3 markup even under the
+   bslib Bootstrap-5 theme:
 
    <div class="form-group shiny-input-container shiny-input-radiogroup">
      <label class="control-label shiny-label-null"></label>
      <div class="shiny-options-group">
-       <div class="radio">
-         <label>
-           <input type="radio" name=".." value=".."/>
-           <span>{rich HTML from choiceNames}</span>
-         </label>
-       </div>
+       <div class="radio"><label><input type="radio"/><span>{card HTML}</span></label></div>
        ...
      </div>
    </div>
 
-   So every selector below targets `.radio`, `.radio > label`,
-   `.radio input[type=radio]`, and `.radio > label > span` (the
-   click-target span that wraps the rich card HTML).
+   So selectors target `.radio`, `.radio > label`, `.radio input[type=radio]`
+   and `.radio > label > span` (the click-target span wrapping the rich card).
+   Both steps use this structure, scoped under `.sp-mode-radio` (step 1) and
+   `.sp-level-radio` (step 2).
 
-   The 5th radio (`not_sensitive`) is demoted via `:last-child`, robust
-   only as long as `sensitive_generalization_levels()` keeps
-   "not_sensitive" last — see R/utils_sensitive.R + R/mod_preview.R.
-
-   Shiny's default `.shiny-input-container:not(.shiny-input-container-inline)`
-   caps width at 300 px. We override that inside `.sensitive-panel`. */
+   The level grid order is fixed low → medium → high → extreme (ascending
+   generalization) by `sensitive_active_levels` in R/mod_preview.R; the
+   `:nth-child(3|4)` cost cues below depend on that order — do not reorder. */
 
 /* Shell ------------------------------------------------------------- */
 .sensitive-panel {
@@ -47,11 +43,19 @@
 }
 
 .sensitive-panel .sp-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
     font-family: var(--font-serif);
     font-weight: var(--weight-semibold);
     font-size: var(--text-lg);
     color: var(--text-primary);
     margin: 0;
+}
+
+.sensitive-panel .sp-title-icon {
+    color: var(--accent);
+    font-size: var(--text-base);
 }
 
 .sensitive-panel .sp-count-chip {
@@ -69,17 +73,18 @@
     font-size: var(--text-sm);
     color: var(--text-muted);
     line-height: var(--leading-normal);
-    margin: 0 0 var(--space-3) 0;
-}
-
-/* Standing guidance callout reuses the design-system .alert component
-   (06-alerts.css); only the spacing below it is panel-scoped. */
-.sensitive-panel .alert {
     margin: 0 0 var(--space-4) 0;
 }
 
-/* Override Shiny's 300 px container cap so the grid below can fill the
-   panel. Scoped to .sensitive-panel only. */
+/* Inline emphasis inside the lead: the MMA trigger and the "precise data"
+   takeaway are bolded (and darkened) against the muted body. */
+.sensitive-panel .sp-lead .sp-hl-mma,
+.sensitive-panel .sp-lead .sp-hl-precise {
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+}
+
+/* Override Shiny's 300 px container cap so the grids fill the panel. */
 .sensitive-panel .shiny-input-container,
 .sensitive-panel .shiny-input-radiogroup,
 .sensitive-panel .form-group {
@@ -88,22 +93,11 @@
     margin-bottom: 0;
 }
 
-/* Hide the empty shiny-label-null label that Shiny inserts when
-   radioButtons(label = NULL) is used. */
 .sensitive-panel .shiny-label-null {
     display: none;
 }
 
-/* Card grid -------------------------------------------------------- */
-.sensitive-panel .sp-radio-wrap .shiny-options-group {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--space-4);
-    align-items: stretch;
-    margin: 0;
-}
-
-/* Each .radio is a grid item; reset Bootstrap 3 .radio defaults. */
+/* Shared radio-card primitives (both steps) ------------------------- */
 .sensitive-panel .radio {
     padding: 0;
     margin: 0;
@@ -111,7 +105,6 @@
     display: block;
 }
 
-/* The <label> wraps input+span and is the click/focus target. */
 .sensitive-panel .radio > label {
     display: block;
     position: relative;
@@ -122,8 +115,7 @@
     font-weight: var(--weight-regular);
 }
 
-/* Visually hide the native radio input but keep it keyboard-/SR-
-   accessible. */
+/* Visually hide the native input, keep it keyboard-/SR-accessible. */
 .sensitive-panel .radio > label > input[type="radio"] {
     position: absolute;
     opacity: 0;
@@ -133,14 +125,12 @@
     margin: 0;
 }
 
-/* The card surface is the <span> sibling of the input. */
 .sensitive-panel .radio > label > span {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
     position: relative;
     height: 100%;
-    min-height: 168px;
     border: 2px solid var(--border-default);
     border-radius: var(--radius-lg);
     background: var(--bg-card);
@@ -163,24 +153,135 @@
     outline-offset: 2px;
 }
 
-/* Selected: accent border, accent-tinted gradient + dual shadow + lift. */
-.sensitive-panel .radio > label > input[type="radio"]:checked + span {
-    border-color: var(--accent);
-    background: linear-gradient(180deg,
-                                rgba(56, 207, 246, 0.18) 0%,
-                                rgba(40, 51, 172, 0.06) 100%);
-    box-shadow: 0 4px 16px -4px rgba(40, 51, 172, 0.25),
-                inset 0 0 0 1px var(--accent);
-    transform: translateY(-1px);
+/* Step 1 — binary decision ------------------------------------------ */
+.sensitive-panel .sp-step-question {
+    font-family: var(--font-serif);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-base);
+    color: var(--text-primary);
+    margin-bottom: var(--space-3);
 }
 
-/* Card content ------------------------------------------------------ */
-.sensitive-panel .sp-card-num {
+.sensitive-panel .sp-mode-radio .shiny-options-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    align-items: stretch;
+    margin: 0;
+}
+
+.sensitive-panel .sp-mode-radio .sp-mode-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.sensitive-panel .sp-mode-radio .sp-mode-title {
+    font-family: var(--font-serif);
+    font-weight: var(--weight-semibold);
+    font-size: var(--text-md);
+    color: var(--text-primary);
+}
+
+.sensitive-panel .sp-mode-radio .sp-mode-badge {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
     text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid var(--success-border);
+    white-space: nowrap;
+}
+
+.sensitive-panel .sp-mode-radio .sp-mode-desc {
+    font-family: var(--font-serif);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+}
+
+/* Publish (first card) = recommended default. Calm, positive (green) so the
+   safe path carries the visual gravity. */
+.sensitive-panel .sp-mode-radio .radio:first-child > label > span {
+    border-color: var(--success-border);
+}
+
+.sensitive-panel .sp-mode-radio .radio:first-child > label:hover > span {
+    border-color: var(--success);
+}
+
+.sensitive-panel .sp-mode-radio .radio:first-child > label > input[type="radio"]:checked + span {
+    border-color: var(--success);
+    background: var(--success-bg);
+    box-shadow: 0 4px 16px -6px rgba(0, 168, 107, 0.35);
+}
+
+/* Generalize (second card) = neutral opt-in; selecting it uses the app's
+   accent selection language (entering a more careful path). */
+.sensitive-panel .sp-mode-radio .radio:nth-child(2) > label > input[type="radio"]:checked + span {
+    border-color: var(--accent);
+    background: linear-gradient(180deg,
+                                rgba(56, 207, 246, 0.16) 0%,
+                                rgba(40, 51, 172, 0.06) 100%);
+    box-shadow: 0 4px 16px -6px rgba(40, 51, 172, 0.25);
+}
+
+/* Step 2 — generalization level (revealed) -------------------------- */
+.sensitive-panel .sp-level-block {
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--border-light);
+}
+
+.sensitive-panel .sp-level-prompt {
+    font-family: var(--font-serif);
+    font-weight: var(--weight-medium);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    margin-bottom: var(--space-3);
+}
+
+/* Left-to-right cost axis: green (least loss) -> red (most loss). */
+.sensitive-panel .sp-level-axis {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.sensitive-panel .sp-axis-low,
+.sensitive-panel .sp-axis-high {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.sensitive-panel .sp-axis-track {
+    flex: 1 1 auto;
+    height: 3px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(90deg,
+                                var(--success) 0%,
+                                var(--warning) 55%,
+                                var(--error) 100%);
+    opacity: 0.7;
+}
+
+.sensitive-panel .sp-level-radio .shiny-options-group {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-3);
+    align-items: stretch;
+    margin: 0;
+}
+
+.sensitive-panel .sp-level-radio .radio > label > span {
+    min-height: 120px;
+    gap: var(--space-1);
 }
 
 .sensitive-panel .sp-card-name {
@@ -188,102 +289,68 @@
     font-weight: var(--weight-semibold);
     font-size: var(--text-base);
     color: var(--text-primary);
+    line-height: var(--leading-tight);
 }
 
-.sensitive-panel .sp-card-precision {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
-    margin-top: var(--space-1);
-}
-
-.sensitive-panel .sp-card-deg {
+.sensitive-panel .sp-card-scale {
     font-family: var(--font-mono);
-    font-size: var(--text-2xl);
+    font-size: var(--text-lg);
     font-weight: var(--weight-semibold);
     color: var(--accent);
-    line-height: 1.1;
 }
 
-.sensitive-panel .sp-card-km {
+.sensitive-panel .sp-card-ref {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
-    color: var(--text-muted);
-}
-
-.sensitive-panel .sp-card-impact {
-    font-family: var(--font-serif);
-    font-size: var(--text-sm);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--text-muted);
     margin-top: auto;
 }
 
-/* Policy-impact alert inside an aggressive (high/extreme) card while it is
-   the selected level. Soft carmim — a deliberate caution, never a vivid red. */
-.sensitive-panel .sp-card-warning {
-    margin-top: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--error-border);
-    background: var(--error-bg);
+/* Cost cue on the aggressive tiers (3rd = State, 4th = Country). */
+.sensitive-panel .sp-level-radio .radio:nth-child(3) .sp-card-scale {
+    color: var(--warning);
+}
+
+.sensitive-panel .sp-level-radio .radio:nth-child(4) .sp-card-scale {
     color: var(--error);
+}
+
+.sensitive-panel .sp-level-radio .radio > label > input[type="radio"]:checked + span {
+    border-color: var(--accent);
+    background: linear-gradient(180deg,
+                                rgba(56, 207, 246, 0.18) 0%,
+                                rgba(40, 51, 172, 0.06) 100%);
+    box-shadow: 0 4px 16px -4px rgba(40, 51, 172, 0.25),
+                inset 0 0 0 1px var(--accent);
+    transform: var(--lift-sm);
+}
+
+/* Escalated warning below the grid (high/extreme). Soft caution, never a
+   vivid alarm. */
+.sensitive-panel .sp-level-warning {
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
     font-family: var(--font-serif);
-    font-size: var(--text-xs);
+    font-size: var(--text-sm);
     line-height: var(--leading-normal);
 }
 
-/* Opt-out (5th radio) — demoted below the grid, dashed border as a layout
-   cue. It is the default choice, so its selected state stays calm and
-   neutral; the gravity now lives on the aggressive masking cards. */
-.sensitive-panel .radio:last-child {
-    grid-column: 1 / -1;
-    margin-top: var(--space-2);
-}
-
-.sensitive-panel .radio:last-child > label > span {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    min-height: 0;
-    background: transparent;
-    border: 2px dashed var(--border-strong);
-    color: var(--text-muted);
-    font-family: var(--font-mono);
-    font-size: var(--text-sm);
-    padding: var(--space-3) var(--space-4);
-    white-space: nowrap;
-    text-align: center;
-}
-
-.sensitive-panel .radio:last-child > label:hover > span {
-    border-color: var(--text-muted);
-    background: var(--hover-bg);
-    box-shadow: none;
-    transform: none;
-}
-
-.sensitive-panel .radio:last-child > label > input[type="radio"]:focus-visible + span {
-    outline: 2px solid var(--text-muted);
-    outline-offset: 2px;
-}
-
-.sensitive-panel .radio:last-child > label > input[type="radio"]:checked + span {
-    background: var(--hover-bg);
-    border-color: var(--text-muted);
-    border-style: solid;
+.sensitive-panel .sp-level-warning--high {
+    border: 1px solid var(--warning-border);
+    background: var(--warning-bg);
     color: var(--text-primary);
-    box-shadow: none;
-    transform: none;
 }
 
-.sensitive-panel .sp-optout-text {
-    font-family: var(--font-mono);
-    white-space: nowrap;
+.sensitive-panel .sp-level-warning--extreme {
+    border: 1px solid var(--error-border);
+    background: var(--error-bg);
+    color: var(--error);
 }
 
-/* Disclosure (reference table) ------------------------------------- */
+/* Disclosure (reference table) -------------------------------------- */
 .sensitive-panel .sp-disclosure {
     margin-top: var(--space-4);
     border-top: 1px solid var(--border-light);
@@ -335,6 +402,12 @@
 .sensitive-panel .sensitive-grid-table {
     margin: 0;
     max-width: none;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    overflow: hidden;
 }
 
 .sensitive-panel .sensitive-grid-table caption {
@@ -352,30 +425,97 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--text-muted);
+    background: var(--hover-bg);
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border-default);
 }
 
 .sensitive-panel .sensitive-grid-table td {
     font-family: var(--font-serif);
     font-size: var(--text-sm);
     color: var(--text-primary);
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+}
+
+.sensitive-panel .sensitive-grid-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.sensitive-panel .sensitive-grid-table tbody tr:nth-child(even) td {
+    background: rgba(40, 51, 172, 0.025);
+}
+
+/* Cost swatch (green -> red) prefixing each Chapman level. */
+.sensitive-panel .sp-grid-swatch {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: var(--radius-full);
+    margin-right: var(--space-2);
+    vertical-align: middle;
+}
+
+.sensitive-panel .sp-grid-swatch--extreme {
+    background: var(--error);
+}
+
+.sensitive-panel .sp-grid-swatch--high {
+    background: var(--warning);
+}
+
+.sensitive-panel .sp-grid-swatch--medium {
+    background: var(--primary);
+}
+
+.sensitive-panel .sp-grid-swatch--low {
+    background: var(--success);
+}
+
+.sensitive-panel .sp-grid-swatch--not_sensitive {
+    background: var(--border-strong);
+}
+
+.sensitive-panel .sensitive-grid-table .sp-grid-result {
+    font-weight: var(--weight-medium);
+}
+
+.sensitive-panel .sensitive-grid-table .sp-grid-value {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    text-align: right;
+    white-space: nowrap;
+    color: var(--text-muted);
+}
+
+/* "No masking" baseline row — the safe default, gently tinted green. */
+.sensitive-panel .sensitive-grid-table .sp-grid-row-baseline td {
+    background: var(--success-bg);
+}
+
+.sensitive-panel .sensitive-grid-table .sp-grid-row-baseline .sp-grid-value {
+    color: var(--success);
+    font-family: var(--font-serif);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
 }
 
 /* Responsive -------------------------------------------------------- */
 @media (max-width: 992px) {
-    .sensitive-panel .sp-radio-wrap .shiny-options-group {
+    .sensitive-panel .sp-level-radio .shiny-options-group {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 600px) {
-    .sensitive-panel .sp-radio-wrap .shiny-options-group {
+    .sensitive-panel .sp-mode-radio .shiny-options-group,
+    .sensitive-panel .sp-level-radio .shiny-options-group {
         grid-template-columns: minmax(0, 1fr);
     }
-    .sensitive-panel .radio > label > span {
-        min-height: 140px;
-    }
-    .sensitive-panel .radio:last-child > label > span {
-        white-space: normal;
+    .sensitive-panel .sp-mode-radio .sp-mode-head {
+        flex-direction: column;
+        align-items: flex-start;
     }
     .sensitive-panel {
         padding: var(--space-4);

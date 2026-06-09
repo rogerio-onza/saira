@@ -1527,21 +1527,13 @@
     "pt": "Grade aplicada",
     "en": "Generalization grid"
   },
+  "sensitive_table_col_result": {
+    "pt": "Resultado espacial",
+    "en": "Spatial result"
+  },
   "sensitive_panel_records_chip": {
     "pt": "%s registro(s)",
     "en": "%s record(s)"
-  },
-  "sensitive_panel_lead": {
-    "pt": "O mascaramento aplica-se apenas a espécies ameaçadas. Por padrão, publique as coordenadas sem mascaramento.",
-    "en": "Masking applies only to threatened species. By default, publish coordinates without masking."
-  },
-  "sensitive_panel_guidance": {
-    "pt": "Mascarar coordenadas não deve ser a opção padrão — coordenadas generalizadas podem influenciar análises e políticas públicas de conservação futuras. Avalie caso a caso se a generalização é realmente necessária.",
-    "en": "Masking coordinates should not be the default choice — generalized coordinates can influence future analyses and public conservation policy. Evaluate case by case whether generalization is truly necessary."
-  },
-  "sensitive_policy_warning": {
-    "pt": "Atenção: a generalização forte de coordenadas pode comprometer análises e influenciar políticas públicas de conservação futuras. Use este nível apenas em situações específicas e justificadas.",
-    "en": "Caution: strong coordinate generalization can compromise analyses and influence future public conservation policy. Use this level only in specific, justified situations."
   },
   "sensitive_card_num_extreme": {
     "pt": "Categoria 1",
@@ -1559,22 +1551,6 @@
     "pt": "Categoria 4",
     "en": "Category 4"
   },
-  "sensitive_card_name_extreme": {
-    "pt": "Extrema",
-    "en": "Extreme"
-  },
-  "sensitive_card_name_high": {
-    "pt": "Alta",
-    "en": "High"
-  },
-  "sensitive_card_name_medium": {
-    "pt": "Média",
-    "en": "Medium"
-  },
-  "sensitive_card_name_low": {
-    "pt": "Baixa",
-    "en": "Low"
-  },
   "sensitive_card_impact_extreme": {
     "pt": "País ou região",
     "en": "Country or region"
@@ -1591,13 +1567,57 @@
     "pt": "Área local",
     "en": "Local area"
   },
-  "sensitive_card_optout": {
-    "pt": "Não sensível — publicar sem mascaramento",
-    "en": "Not sensitive — publish unmasked"
-  },
   "sensitive_disclosure_title": {
     "pt": "Sobre a generalização (Chapman 2020 / GBIF)",
     "en": "About generalization (Chapman 2020 / GBIF)"
+  },
+  "sensitive_panel_intro": {
+    "pt": "Detectamos <strong>%s</strong> registro(s) de espécies na <span class=\"sp-hl-mma\">lista nacional de ameaçadas (MMA)</span>. Na maioria dos casos, as coordenadas originais devem ser publicadas sem alteração — <span class=\"sp-hl-precise\">dados precisos têm maior valor científico</span>.",
+    "en": "We detected <strong>%s</strong> record(s) of species on the <span class=\"sp-hl-mma\">national threatened list (MMA)</span>. In most cases the original coordinates should be published unchanged — <span class=\"sp-hl-precise\">precise data has greater scientific value</span>."
+  },
+  "sensitive_step_question": {
+    "pt": "Estes registros precisam ser generalizados?",
+    "en": "Do these records need to be generalized?"
+  },
+  "sensitive_mode_publish_title": {
+    "pt": "Publicar coordenadas originais",
+    "en": "Publish original coordinates"
+  },
+  "sensitive_mode_publish_desc": {
+    "pt": "Mantém a precisão total dos registros.",
+    "en": "Keeps the full precision of the records."
+  },
+  "sensitive_mode_recommended_badge": {
+    "pt": "Recomendado",
+    "en": "Recommended"
+  },
+  "sensitive_mode_generalize_title": {
+    "pt": "Generalizar coordenadas (opcional)",
+    "en": "Generalize coordinates (optional)"
+  },
+  "sensitive_mode_generalize_desc": {
+    "pt": "Apenas quando há risco real de coleta ou perseguição.",
+    "en": "Only when there is a real risk of collection or persecution."
+  },
+  "sensitive_level_prompt": {
+    "pt": "Escolha a menor generalização que protege a espécie:",
+    "en": "Choose the smallest generalization that protects the species:"
+  },
+  "sensitive_axis_low": {
+    "pt": "menor perda de precisão",
+    "en": "less precision lost"
+  },
+  "sensitive_axis_high": {
+    "pt": "maior perda de precisão",
+    "en": "more precision lost"
+  },
+  "sensitive_warn_high": {
+    "pt": "Você selecionou Estado / Província (~11 km). A localidade exata é perdida; o registro ainda situa a espécie na região. Confirme que esse nível de proteção é necessário.",
+    "en": "You selected State / Province (~11 km). The exact locality is lost; the record still places the species within the region. Confirm this level of protection is necessary."
+  },
+  "sensitive_warn_extreme": {
+    "pt": "Você selecionou País / Região (~111 km). Nesta escala o registro perde quase todo o valor para análise espacial e modelagem de distribuição. Use apenas em casos extremos e justificados.",
+    "en": "You selected Country / Region (~111 km). At this scale the record loses almost all value for spatial analysis and distribution modeling. Use only in extreme, justified cases."
   },
   "sensitive_saved_toast": {
     "pt": "Sensibilidade atualizada para esta espécie.",

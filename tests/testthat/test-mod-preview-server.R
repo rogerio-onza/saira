@@ -138,3 +138,28 @@ testthat::test_that("coordinate masking defaults to not_sensitive (deliberate op
         }
     )
 })
+
+testthat::test_that("two-step masking reduces mode + level to the export value", {
+    shiny::testServer(
+        mod_preview_server,
+        args = list(
+            mapped_data_r = shiny::reactive(NULL),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            # Entering "generalize" with the default level pre-selected.
+            session$setInputs(sensitive_mode = "generalize",
+                              sensitive_level = "medium")
+            testthat::expect_identical(sensitive_generalization_rv(), "medium")
+
+            # Picking a more aggressive level flows through.
+            session$setInputs(sensitive_level = "high")
+            testthat::expect_identical(sensitive_generalization_rv(), "high")
+
+            # Switching back to "publish" returns to the no-op default; the
+            # stale level value is ignored.
+            session$setInputs(sensitive_mode = "publish")
+            testthat::expect_identical(sensitive_generalization_rv(), "not_sensitive")
+        }
+    )
+})
