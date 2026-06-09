@@ -13,6 +13,13 @@ After importing your data (see [Importing your data](02-upload.qmd)), each colum
 
 Saíra suggests matches automatically from each column's name and content. A good mapping is the foundation of everything that follows: validation, export and data quality all depend on it.
 
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/6-aba-mapeamento.png" alt="Saíra's Mapping tab right after import, with the Darwin Core term cards still empty">
+  <figcaption><b>Figure 1.</b> The <b>Mapping</b> tab right after import, before any mapping: on the left, the required-fields panel and the actions bar (Auto-map, Reset, Add term, Import template); on the right, the Darwin Core term cards grouped by class (here, Occurrence).</figcaption>
+</figure>
+```
+
 ::: {.callout-note}
 ## The final decision is always yours
 Saíra **suggests**, but you decide. Every suggestion can be confirmed, changed or discarded — nothing is applied without your review.
@@ -25,7 +32,7 @@ The **Auto-map** button, in the actions bar, sweeps every column at once and pro
 ```{=html}
 <figure class="shot">
   <img src="../../assets/img/3-auto-mapear-botão.png" alt="Mapper actions bar with the Auto-map button highlighted">
-  <figcaption><b>Figure 1.</b> The <b>Auto-map</b> button in the actions bar, next to Reset, Add term and Import template.</figcaption>
+  <figcaption><b>Figure 2.</b> The <b>Auto-map</b> button in the actions bar, next to Reset, Add term and Import template.</figcaption>
 </figure>
 ```
 
@@ -53,9 +60,14 @@ At the end, Saíra shows a summary (for example, "12 AUTO, 5 SUGGESTED"). Review
 ```{=html}
 <figure class="shot">
   <img src="../../assets/img/4.2-exemplo-sugerido.png" alt="Two mapping cards (catalogNumber and recordedBy) with the SUGGESTED badge">
-  <figcaption><b>Figure 2.</b> Mapping cards after Auto-map: <span class="term">numero_tombo</span> → <span class="term">catalogNumber</span> and <span class="term">coletor</span> → <span class="term">recordedBy</span>, both marked SUGGESTED for you to confirm.</figcaption>
+  <figcaption><b>Figure 3.</b> Mapping cards after Auto-map: <span class="term">numero_tombo</span> → <span class="term">catalogNumber</span> and <span class="term">coletor</span> → <span class="term">recordedBy</span>, both marked SUGGESTED for you to confirm.</figcaption>
 </figure>
 ```
+
+::: {.callout-warning}
+## Do not map two columns to the same term
+If <span class="term">especie</span> and <span class="term">nome_cientifico</span> both point to <span class="term">scientificName</span>, Saíra flags the conflict and asks you to choose a single source before proceeding.
+:::
 
 ## Term catalog and search
 
@@ -64,11 +76,11 @@ The mapper works with a base set of the most-used Darwin Core terms, but the ful
 ```{=html}
 <figure class="shot">
   <img src="../../assets/img/4-adicionar-termo.png" alt="Actions bar with the Add term button highlighted">
-  <figcaption><b>Figure 3.</b> The <b>Add term</b> button in the actions bar.</figcaption>
+  <figcaption><b>Figure 4.</b> The <b>Add term</b> button in the actions bar.</figcaption>
 </figure>
 <figure class="shot">
   <img src="../../assets/img/4.1-adicionar-termo-pop-up.png" alt="'Add DwC term' dialog with the term selector">
-  <figcaption><b>Figure 4.</b> The <b>Add DwC term</b> dialog: pick the term in the selector and confirm to add it as a new card.</figcaption>
+  <figcaption><b>Figure 5.</b> The <b>Add DwC term</b> dialog: pick the term in the selector and confirm to add it as a new card.</figcaption>
 </figure>
 ```
 
@@ -92,9 +104,24 @@ The table below shows a typical mapping for an ornithological collection:
 
 ## Templates
 
+You don't need to save the mapping by hand. When you download the standardized spreadsheet (see [Preview and export](06-preview-export.qmd)), Saíra includes a **template** in the `.zip`: a text file (`mapping_guide_*.txt`) that records only the "your column → Darwin Core term" vocabulary, with no data. It is your mapping saved, ready to reuse later or hand to a colleague.
+
+To reuse it, open the mapping for a new spreadsheet and click **Import template** in the actions bar. Each line of the template is saved as an alias in your local Rostrum, so columns with the same name are mapped automatically — you only review what changed.
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/7-importar-modelo.png" alt="Actions bar with the Import template button highlighted">
+  <figcaption><b>Figure 6.</b> The <b>Import template</b> button, in the actions bar, brings back a template saved from an earlier export.</figcaption>
+</figure>
+<figure class="shot">
+  <img src="../../assets/img/7.1-importar-modelo-pop-up.png" alt="'Import mapping template' dialog with the .txt file selector">
+  <figcaption><b>Figure 7.</b> The <b>Import mapping template</b> dialog: pick the <code>mapping_guide_*.txt</code> file that came in the <code>.zip</code> and confirm. Each line becomes an alias to auto-map future spreadsheets.</figcaption>
+</figure>
+```
+
 ::: {.callout-tip}
-## Save a template and reuse it
-Save your mapping as a **template**. Collections often re-import spreadsheets with the same structure: reusing the template applies the whole mapping at once and saves hours on every new batch of records. On reapply, columns coming from the template show up with the matching status, and you only review what changed.
+## Reuse it and save hours
+Collections often re-import spreadsheets with the same structure. Reapplying the template applies the whole mapping at once and saves hours on every new batch of records.
 :::
 
 ## The basisOfRecord assistant
@@ -104,7 +131,7 @@ The term <span class="term">basisOfRecord</span> describes the nature of the rec
 ```{=html}
 <figure class="shot">
   <img src="../../assets/img/5-basisOfRecord-selection.png" alt="basisOfRecord card with the tipo_de_registro column selected and the basisOfRecord assistant button highlighted">
-  <figcaption><b>Figure 5.</b> In the <span class="term">basisOfRecord</span> card, pick the source column (here, <span class="term">tipo_de_registro</span>) and open the <b>basisOfRecord assistant</b>.</figcaption>
+  <figcaption><b>Figure 8.</b> In the <span class="term">basisOfRecord</span> card, pick the source column (here, <span class="term">tipo_de_registro</span>) and open the <b>basisOfRecord assistant</b>.</figcaption>
 </figure>
 ```
 
@@ -118,25 +145,13 @@ The term <span class="term">basisOfRecord</span> describes the nature of the rec
 ```{=html}
 <figure class="shot">
   <img src="../../assets/img/5.1-assistente-basisOfRecord.png" alt="basisOfRecord assistant dialog mapping each raw value to a DwC term, with a live preview">
-  <figcaption><b>Figure 6.</b> The assistant maps <b>each value</b> to a DwC term — Espécime preservado → PreservedSpecimen, Observação → HumanObservation, Armadilha fotográfica → MachineObservation — with a live preview before saving.</figcaption>
+  <figcaption><b>Figure 9.</b> The assistant maps <b>each value</b> to a DwC term — Espécime preservado → PreservedSpecimen, Observação → HumanObservation, Armadilha fotográfica → MachineObservation — with a live preview before saving.</figcaption>
 </figure>
 ```
 
 ## Unmapped columns
 
 Not every column has to become a Darwin Core term — just leave it unmapped. At export, Saíra **appends to the right** the columns you did not use as a source for any term, preserving their original names and order, so no data is lost: you can edit them by hand later, already in the IPT.
-
-::: {.callout-warning}
-## Do not map two columns to the same term
-If <span class="term">especie</span> and <span class="term">nome_cientifico</span> both point to <span class="term">scientificName</span>, Saíra flags the conflict and asks you to choose a single source before proceeding.
-:::
-
-```{=html}
-<figure class="shot">
-  <div class="frame"><span class="ph-label">screenshot · mapping screen</span></div>
-  <figcaption><b>Figure 7.</b> Saíra's mapping panel, with automatic suggestions on the left and the Darwin Core preview on the right.</figcaption>
-</figure>
-```
 
 ## Next steps
 

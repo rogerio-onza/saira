@@ -59,6 +59,11 @@ Generalizing the coordinates of threatened species is a best practice recommende
 It is a standardized `.zip` package: a data file (<span class="term">occurrence.txt</span>), a descriptor that says what each column means (<span class="term">meta.xml</span>) and the dataset metadata (<span class="term">eml.xml</span>). It is exactly what global repositories expect to receive.
 :::
 
+::: {.callout-tip}
+## A reusable template comes along
+The `.zip` also includes a **mapping template** (`mapping_guide_*.txt`): the "your column → Darwin Core term" record of the mapping you did, with no data. Keep it to auto-map future spreadsheets with the same structure, via **Import template** (see [Darwin Core mapping](03-dwc-mapping.qmd)).
+:::
+
 ::: {.callout-note}
 ## Need a spreadsheet instead of the package?
 Besides the DwC-A, Saíra also exports the dataset as `.xlsx` with **every cell forced to text**, preventing Excel from reinterpreting dates, catalog numbers or coordinates. Handy for manual review or for sending to collaborators.

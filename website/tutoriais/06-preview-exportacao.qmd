@@ -59,6 +59,11 @@ Generalizar coordenadas de espécies ameaçadas é uma boa prática recomendada 
 É um pacote `.zip` padronizado: um arquivo de dados (<span class="term">occurrence.txt</span>), um descritor que diz o que cada coluna significa (<span class="term">meta.xml</span>) e os metadados do conjunto (<span class="term">eml.xml</span>). É exatamente o que os repositórios globais esperam receber.
 :::
 
+::: {.callout-tip}
+## Um modelo reutilizável vem junto
+O `.zip` também inclui um **modelo de mapeamento** (`mapping_guide_*.txt`): o registro "sua coluna → termo Darwin Core" do mapeamento que você fez, sem nenhum dado. Guarde-o para auto-mapear planilhas futuras com a mesma estrutura, via **Importar modelo** (ver [Mapeando Darwin Core](03-mapeamento-dwc.qmd)).
+:::
+
 ::: {.callout-note}
 ## Precisa de uma planilha em vez do pacote?
 Além do DwC-A, o Saíra também exporta o conjunto como `.xlsx` com **todas as células forçadas a texto**, evitando que o Excel reinterprete datas, números de tombo ou coordenadas. Útil para conferência manual ou para enviar a colaboradores.
