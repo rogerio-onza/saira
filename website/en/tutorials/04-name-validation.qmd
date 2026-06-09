@@ -4,7 +4,7 @@ pagetitle: "Name validation — Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-Scientific names are the key that connects your records to the rest of known biodiversity. This step checks spelling, resolves synonyms and standardizes nomenclature against a database of your choice.
+Scientific names are the key that connects your records to the rest of known biodiversity. This step checks each name against a taxonomic database of your choice, resolves synonyms and also flags threatened species from Brazil's national MMA list.
 :::
 
 ## Why validate names
@@ -13,7 +13,7 @@ The same taxon can appear written in many ways: with typos, old synonyms, abbrev
 
 ## Choosing the reference database
 
-In the **Name validation** tab, Saíra offers three sources. Pick the one best suited to your group:
+In the **Name validation** tab, Saíra offers three taxonomic databases. Select one or more — whichever suits your group:
 
 | Database | Coverage | When to use |
 |---|---|---|
@@ -21,48 +21,124 @@ In the **Name validation** tab, Saíra offers three sources. Pick the one best s
 | **Fauna do Brasil** | Animals of Brazil | National zoological collections |
 | **GBIF** *(recommended)* | Global taxonomic backbone | Any group, or when the taxon is not Brazilian |
 
+When you select more than one database, Saíra queries them in a **cascade** — Flora do Brasil → Fauna do Brasil → GBIF — and uses the first provider that returns a result as the verdict. Under the hood, every lookup goes through the `taxadb` package.
+
 ::: {.callout-note}
 ## Brazilian databases live on your computer
-Flora do Brasil and Fauna do Brasil are **downloaded and stored locally** the first time you use them. After that, validation runs even without internet and is faster. Saíra shows the status of each database (never downloaded, downloading, ready) and the local version. GBIF is queried as needed.
+Flora do Brasil and Fauna do Brasil are **downloaded and stored locally** the first time you use them. After that, validation runs even without internet and is faster. Saíra shows the status of each database (not downloaded, downloading, up to date) and the local version. GBIF is queried as needed.
 :::
+
+## Before you run: normalization
+
+Below the databases, two options control how each name is prepared before the lookup. Both are **on** by default:
+
+- **Remove authors** — drops authorship and year to improve cross-provider matching. E.g. `Harpia harpyja (Daudin, 1800)` becomes `Harpia harpyja`.
+- **Ignore sp., cf., aff., nr.** — ignores non-taxonomic qualifiers during normalization.
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/8-validacao-nomes-provedores.png" alt="Name validation configuration column: Flora BR, Fauna BR and GBIF provider cards with status, the normalization options and the Validate Names button">
+  <figcaption><b>Figure 1.</b> The configuration column: providers with the status of each local database, the normalization options and the <span class="term">Validate Names</span> button.</figcaption>
+</figure>
+```
 
 ## Checking the nomenclature
 
-Saíra compares each <span class="term">scientificName</span> with the chosen database, scores the similarity and assigns a **status** to each record:
+When you click **Validate Names**, Saíra compares each <span class="term">scientificName</span> with the chosen database and assigns a **status** to each name:
 
-- **Exact (AUTO)**: the name matches the reference and is applied automatically.
-- **Suggestion (SUGGESTED)**: found a very close name (likely a typo) and proposes the correction.
-- **Synonym / Alias**: the name is valid, but there is a more current accepted name, or a known alias points to the right term.
-- **Ambiguous**: more than one strong candidate; you decide which to apply.
-- **Not found**: requires manual review.
+- **Accepted** — the name matches the reference and is already the accepted name.
+- **Synonym** — the name is valid, but the database points to a more current accepted name (this is also the status for invalid or misapplied spellings the database returns).
+- **Ambiguous** — more than one strong candidate; you decide which to apply.
+- **Not found** — not in the database; requires manual review.
+
+Saíra **does not fix spelling on its own** nor guess the "closest" name: it only reports what the taxonomic database returns. Any correction comes from you.
 
 ```{=html}
 <ol class="steps">
   <li><strong>Run the check.</strong>
-    <p>Saíra processes the list of names and shows a summary by situation.</p></li>
-  <li><strong>Review the suggestions.</strong>
-    <p>For each name with a suggestion, synonym or ambiguity, accept the proposed correction or keep the original.</p></li>
+    <p>Saíra processes the list of names (each distinct name is queried once) and shows a summary by status, with filters to isolate the problems.</p></li>
+  <li><strong>Review the problems.</strong>
+    <p>For each name flagged as synonym, ambiguous or not found, open the manual review and decide.</p></li>
   <li><strong>Handle the not-found ones.</strong>
-    <p>Correct manually, confirm it is right (for example, a recently described taxon) or flag it for later review.</p></li>
+    <p>Fix the spelling, confirm it is right (for example, a recently described taxon) or adjust it according to the reference publication.</p></li>
 </ol>
 ```
 
-::: {.callout-tip}
-## Accept in bulk
-When many records share the same recurring error, accept the correction once and apply it to all identical cases, instead of reviewing row by row. This is what saves the most time on large datasets.
-:::
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/8.1-painel-nomes-processados.png" alt="Processed Names panel with filters by situation (All, Problems only, Not found, Ambiguous, Synonyms, Accepted) and entries with a Review button">
+  <figcaption><b>Figure 2.</b> The <span class="term">Processed Names</span> panel: the summary by situation, with filters to isolate the problems and a <span class="term">Review</span> button on each pending name.</figcaption>
+</figure>
+```
 
 ```{=html}
 <figure class="shot">
-  <div class="frame"><span class="ph-label">screenshot · name validation</span></div>
-  <figcaption><b>Figure 1.</b> Name validation screen, with each taxon's status, the selected reference database and the suggested corrections.</figcaption>
+  <img src="../../assets/img/8.2-painel-relatorio-nomes.png" alt="Name Report table with Scientific name, Status and Taxonomic status columns, and the valid/invalid/unresolved counts at the top">
+  <figcaption><b>Figure 3.</b> The Name Report: every taxon in a table, with each one's status and the valid/invalid/unresolved counts at the top.</figcaption>
+</figure>
+```
+
+## Correcting names
+
+Correction is manual and happens in the **review modal**. Click a problem name and choose:
+
+- **Yes, this name is correct** — confirms the name as is; it will be exported exactly that way. Useful for recently described taxa or names missing from the database.
+- **No, I want to correct the name** — opens the **Name correction** field for you to type the right spelling, with an optional reason (e.g. typo in the original sheet, updated name according to publication).
+
+The decision is **reapplied automatically** to every row with that same name — since validation groups identical names, you review each one only once and the correction holds for the whole dataset. This is what saves the most time on large sheets with the same repeated error.
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/8.3-pop-up-revisao-nomes.png" alt="Manual review modal asking whether the name is correct, with the option to confirm or to correct the name">
+  <figcaption><b>Figure 4.</b> The review modal: confirm the name as is, or choose to correct it.</figcaption>
+</figure>
+```
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/8.4-pop-up-revisao-nomes-edicao-de-nome.png" alt="Review modal in edit mode, with the Name correction field and a reason field">
+  <figcaption><b>Figure 5.</b> Edit mode: type the right spelling and, if you wish, record the reason for the change.</figcaption>
 </figure>
 ```
 
 ::: {.callout-warning}
 ## The taxonomic decision is yours
-Suggestions are automatic, but authority belongs to the specialist. In groups with unstable taxonomy, check the proposals before accepting them en masse. Accepting a synonym means replacing the name in the exported dataset: the original name can be preserved in <span class="term">verbatimIdentification</span> or <span class="term">originalNameUsage</span> if you mapped those fields.
+Saíra resolves names against the database, but authority belongs to the specialist. In groups with unstable taxonomy, check each case before accepting. Replacing a name with its accepted synonym means replacing the name in the exported dataset: the original name can be preserved in <span class="term">verbatimIdentification</span> or <span class="term">originalNameUsage</span> if you mapped those fields.
 :::
+
+## Threatened species (MMA list)
+
+After resolving the names, Saíra compares each taxon against Brazil's **national list of species threatened with extinction**, which is **bundled with the app** — nothing to download. Taxa on the list get a **Sensitive** flag in the report, with the threat category: **VU** (vulnerable), **EN** (endangered), **CR** (critically endangered) and **CR (PEX)** (critically endangered, possibly extinct).
+
+::: {.callout-note}
+## Where the list comes from
+The bundled list corresponds to **Portaria MMA nº 148, of 7 June 2022** (which updates Portaria nº 443/2014), from Brazil's Ministry of the Environment. Official text: <https://in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733>.
+:::
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/8.6-relatorio-nomes-especie-sensivel.png" alt="Report with taxa flagged Sensitive and their threat category, and a mark option for species not on the list">
+  <figcaption><b>Figure 6.</b> In the report, taxa on the list carry the <span class="term">Sensitive</span> tag with the category; the others carry a <span class="term">+ mark</span> option.</figcaption>
+</figure>
+```
+
+### Adjusting sensitivity
+
+The MMA list is the starting point, not the final word. Each taxon carries a sensitivity control in the report that you can adjust according to your experience and the reality of your study region:
+
+- **Unmark a species from the list** — if, in your context, that record is not sensitive, unmark it. Saíra warns that this is a **custodian decision**: without the flag, that taxon's coordinates will be published without generalization.
+- **Mark a species that is not on the list** — use **+ mark** to flag as sensitive a taxon the national list does not cover but that you know to be vulnerable in your area.
+
+The adjustment is made in a small confirmation dialog and applies at export.
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/8.5-pop-up-especie-sensivel.png" alt="Coordinate masking dialog with a Sensitive checkbox ticked and the warning that unmarking is a custodian decision">
+  <figcaption><b>Figure 7.</b> The sensitivity dialog: mark or unmark the taxon. When you unmark a species from the MMA list, Saíra reminds you that the decision is yours and that the coordinates will be published without generalization.</figcaption>
+</figure>
+```
+
+Here the step only **flags** what is sensitive. The actual protection of the coordinates — generalizing the location or omitting it — happens at **[export](06-preview-export.qmd)**, where the threat category sets the generalization level.
 
 ## Next steps
 
