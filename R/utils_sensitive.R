@@ -434,8 +434,7 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
             sprintf(
                 tr("sensitive_data_generalizations", lang),
                 cat_disp,
-                format(g, trim = TRUE, scientific = FALSE),
-                format(round(g * 111.32, 1), trim = TRUE)
+                format(g, trim = TRUE, scientific = FALSE)
             ),
             sensitive_reason_statement(row_tier[rows], lang),
             just_text

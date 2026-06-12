@@ -1464,8 +1464,8 @@
     "en": "Sensitive"
   },
   "sensitive_data_generalizations": {
-    "pt": "Coordenadas de espécie %s (lista nacional MMA) generalizadas para %s grau (~%s km).",
-    "en": "Coordinates of a %s species (MMA national red list) generalized to %s degree (~%s km)."
+    "pt": "Coordenadas de espécie %s (lista nacional MMA) generalizadas para %s grau pois",
+    "en": "Coordinates of a %s species (MMA national red list) generalized to %s degree because"
   },
   "sensitive_information_withheld": {
     "pt": "Coordenadas precisas omitidas por se tratar de espécie ameaçada | Disponíveis com o publicador dos dados mediante solicitação.",
@@ -1684,20 +1684,20 @@
     "en": "%s species not yet assessed — they will be published without generalization."
   },
   "sensitive_reason_cat1": {
-    "pt": "A espécie é distintiva, de alta importância biológica e sob alta ameaça, em que mesmo a localidade geral pode ameaçá-la (Chapman 2020, Categoria 1).",
-    "en": "The species is distinctive, of high biological significance and under high threat, where even general locality information may threaten it (Chapman 2020, Category 1)."
+    "pt": "mesmo a localidade geral poderia ameaçar esta espécie distintiva, de alta importância biológica e sob alta ameaça (Chapman 2020, Categoria 1).",
+    "en": "even general locality information could threaten this distinctive species of high biological significance and under high threat (Chapman 2020, Category 1)."
   },
   "sensitive_reason_cat2": {
-    "pt": "A espécie é classificada como altamente sensível; o fornecimento de localizações precisas a sujeitaria a ameaças como perturbação e exploração (Chapman 2020, Categoria 2).",
-    "en": "The species is classed as highly sensitive; providing precise locations would subject it to threats such as disturbance and exploitation (Chapman 2020, Category 2)."
+    "pt": "o fornecimento de localizações precisas a sujeitaria a ameaças como perturbação e exploração (Chapman 2020, Categoria 2).",
+    "en": "providing precise locations would subject it to threats such as disturbance and exploitation (Chapman 2020, Category 2)."
   },
   "sensitive_reason_cat3": {
-    "pt": "A espécie é classificada como de sensibilidade média a alta; o fornecimento de localizações precisas poderia sujeitá-la a coleta ou dano deliberado (Chapman 2020, Categoria 3).",
-    "en": "The species is classed as of medium-to-high sensitivity; providing precise locations could subject it to collection or deliberate damage (Chapman 2020, Category 3)."
+    "pt": "o fornecimento de localizações precisas poderia sujeitá-la a coleta ou dano deliberado (Chapman 2020, Categoria 3).",
+    "en": "providing precise locations could subject it to collection or deliberate damage (Chapman 2020, Category 3)."
   },
   "sensitive_reason_cat4": {
-    "pt": "A espécie é classificada como de sensibilidade baixa a média; o fornecimento de localizações precisas poderia sujeitá-la a perturbação e exploração (Chapman 2020, Categoria 4).",
-    "en": "The species is classed as of low-to-medium sensitivity; providing precise locations could subject it to disturbance and exploitation (Chapman 2020, Category 4)."
+    "pt": "o fornecimento de localizações precisas poderia sujeitá-la a perturbação e exploração (Chapman 2020, Categoria 4).",
+    "en": "providing precise locations could subject it to disturbance and exploitation (Chapman 2020, Category 4)."
   },
   "sensitive_review_date_label": {
     "pt": "Data de revisão (Chapman: 2–5 anos)",
