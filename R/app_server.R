@@ -52,6 +52,10 @@ app_server <- function(input, output, session) {
         tr("nav_validate_coords", lang_r())
     })
 
+    output$nav_generalize_title <- shiny::renderUI({
+        tr("nav_generalize", lang_r())
+    })
+
     output$nav_wiki_title <- shiny::renderUI({
         tr("nav_wiki", lang_r())
     })
@@ -96,15 +100,27 @@ app_server <- function(input, output, session) {
     coords_correction_payload_r <- attr(coord_validation_r, "coords_correction_payload")
     country_fill_payload_r <- attr(coord_validation_r, "country_fill_payload")
 
+    # Dedicated sensitive-species generalization stage (Chapman 2020, Table 5).
+    # Consumes the Name-tab sensitivity marks plus the coordinate corrections so
+    # its map preview matches the published point; returns the export decision.
+    sensitive_generalization_payload_r <- mod_sensitive_coords_server(
+        "sensitive_coords",
+        mapped_data,
+        lang_r,
+        sensitivity_payload_r = sensitivity_payload_r,
+        coords_correction_payload_r = coords_correction_payload_r,
+        country_fill_payload_r = country_fill_payload_r
+    )
+
     # Consumers of mapped_data
     mod_preview_server(
         "preview",
         preview_data,
         lang_r,
         download_data_r            = mapped_data,
-        sensitive_overview_input_r = mapping_result$sensitive_overview_input_r,
         name_review_payload_r      = name_review_payload_r,
         sensitivity_payload_r      = sensitivity_payload_r,
+        sensitive_generalization_payload_r = sensitive_generalization_payload_r,
         raw_data_r                 = raw_data,
         map_values_r               = mapping_result$map_values_r,
         custom_values_r            = mapping_result$custom_values_r,

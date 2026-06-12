@@ -1,6 +1,6 @@
 Package: saira
 Title: Biodiversity Data Standardization to Darwin Core
-Version: 0.7.0
+Version: 0.8.0
 Authors@R: person("Rog\u00E9rio", "Nunes Oliveira", email = "rogerio@sibbr.gov.br", role = c("aut", "cre"))
 Description: Shiny application for standardizing biodiversity datasets to the
     Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools
@@ -64,6 +64,7 @@ Collate:
     'mod_mapping_cards.R'
     'mod_mapping_loading.R'
     'mod_preview.R'
+    'mod_sensitive_coords.R'
     'mod_upload.R'
     'mod_validate_coords.R'
     'mod_validate_coords_loading.R'

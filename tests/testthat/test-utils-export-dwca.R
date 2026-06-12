@@ -201,6 +201,37 @@ testthat::test_that("build_eml_xml respects user-supplied metadata", {
     )
 })
 
+testthat::test_that("build_eml_xml emits a sensitivity access block when masking ran", {
+    df <- data.frame(scientificName = "x", stringsAsFactors = FALSE)
+    xml_str <- build_eml_xml(df, metadata = list(
+        sensitivity = list(n_masked = 7L, review_date = "2028-06-10", lang = "en")
+    ))
+    doc <- xml2::read_xml(xml_str)
+
+    ai <- xml2::xml_find_all(doc, "//additionalInfo")
+    testthat::expect_length(ai, 1L)
+    note <- xml2::xml_text(ai)
+    testthat::expect_true(grepl("7", note))
+    testthat::expect_true(grepl("2028-06-10", note))
+    # additionalInfo must precede intellectualRights (EML 2.1.1 sequence).
+    kids <- xml2::xml_name(xml2::xml_children(
+        xml2::xml_find_first(doc, "//dataset")
+    ))
+    testthat::expect_lt(
+        which(kids == "additionalInfo"),
+        which(kids == "intellectualRights")
+    )
+})
+
+testthat::test_that("build_eml_xml omits the access block without sensitivity data", {
+    df <- data.frame(scientificName = "x", stringsAsFactors = FALSE)
+    # Absent, and present-but-zero, both yield no additionalInfo.
+    for (meta in list(list(), list(sensitivity = list(n_masked = 0L)))) {
+        doc <- xml2::read_xml(build_eml_xml(df, metadata = meta))
+        testthat::expect_length(xml2::xml_find_all(doc, "//additionalInfo"), 0L)
+    }
+})
+
 testthat::test_that("build_dwca_bundle produces ZIP with occurrence.txt + meta.xml + eml.xml", {
     df <- data.frame(
         occurrenceID = c("a", "b"),

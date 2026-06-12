@@ -260,16 +260,24 @@ testthat::test_that("mask sets DwC fields incl. coordinatePrecision", {
     testthat::expect_true(nzchar(res$masked$informationWithheld[1]))
     testthat::expect_equal(res$masked$dataGeneralizations[2], "")
     testthat::expect_equal(res$masked$coordinatePrecision[1], "0.1")
-    # Existing 3000 m < grid cell -> raised to the grid uncertainty.
+    # Uncertainty = geographic radial (cell centre -> furthest corner) combined
+    # additively with the original record uncertainty (100 m on row 1).
+    g1lon <- as.numeric(res$masked$decimalLongitude[1])
+    g1lat <- as.numeric(res$masked$decimalLatitude[1])
     testthat::expect_equal(
         res$masked$coordinateUncertaintyInMeters[1],
-        as.character(saira:::sensitive_grid_uncertainty_m(0.1))
+        as.character(ceiling(saira:::sensitive_grid_uncertainty_m(0.1, g1lon, g1lat) + 100))
     )
-    # Missing uncertainty -> set to the grid uncertainty.
+    # Missing original uncertainty -> just the cell radial.
+    g4lon <- as.numeric(res$masked$decimalLongitude[4])
+    g4lat <- as.numeric(res$masked$decimalLatitude[4])
     testthat::expect_equal(
         res$masked$coordinateUncertaintyInMeters[4],
-        as.character(saira:::sensitive_grid_uncertainty_m(0.1))
+        as.character(ceiling(saira:::sensitive_grid_uncertainty_m(0.1, g4lon, g4lat)))
     )
+    # The cell is also captured as a footprint polygon (Best Practices 2.3.4).
+    testthat::expect_match(res$masked$footprintWKT[1], "^POLYGON \\(\\(")
+    testthat::expect_equal(res$masked$footprintSRS[1], "EPSG:4326")
 })
 
 testthat::test_that("mask never lowers a larger pre-existing uncertainty", {
@@ -312,8 +320,11 @@ testthat::test_that("mask scrubs coordinate-leaking text on sensitive rows", {
     # Non-sensitive row keeps its text untouched.
     testthat::expect_equal(res$masked$locality[2], "town")
     testthat::expect_equal(res$masked$verbatimLatitude[2], "10 00 N")
-    # An absent leak column is not fabricated.
-    testthat::expect_false("footprintWKT" %in% names(res$masked))
+    # footprintWKT now carries the generalized cell polygon on masked rows
+    # (Best Practices 2.3.4), and stays empty on the non-sensitive row.
+    testthat::expect_match(res$masked$footprintWKT[1], "^POLYGON \\(\\(")
+    testthat::expect_equal(res$masked$footprintWKT[2], "")
+    testthat::expect_equal(res$masked$footprintSRS[1], "EPSG:4326")
 })
 
 testthat::test_that("informationWithheld uses the pipe multi-value separator", {
@@ -489,4 +500,136 @@ testthat::test_that("mask companion holds original coords + MMA category", {
         c("occurrenceID", "scientificName", "category",
           "decimalLatitude", "decimalLongitude")
     )
+})
+
+# Per-species assessment (ADR-100) ---------------------------------------
+
+testthat::test_that("resolve_row_tiers: string, map, and unassessed default", {
+    sp <- c("A", "B", "C")
+    # Single string applies to all (back-compat).
+    testthat::expect_equal(
+        saira:::resolve_row_tiers(sp, "high"),
+        c("high", "high", "high")
+    )
+    # Named map: species absent from the map -> not_sensitive.
+    testthat::expect_equal(
+        saira:::resolve_row_tiers(sp, c(A = "extreme", C = "low")),
+        c("extreme", "not_sensitive", "low")
+    )
+    # Empty / NULL -> all not_sensitive.
+    testthat::expect_equal(
+        saira:::resolve_row_tiers(sp, NULL),
+        rep("not_sensitive", 3)
+    )
+    testthat::expect_equal(
+        saira:::resolve_row_tiers(sp, list()),
+        rep("not_sensitive", 3)
+    )
+})
+
+testthat::test_that("sensitive_reason_statement maps each tier to its statement", {
+    testthat::expect_match(
+        saira:::sensitive_reason_statement("extreme", "en"), "Category 1"
+    )
+    testthat::expect_match(
+        saira:::sensitive_reason_statement("high", "en"), "Category 2"
+    )
+    testthat::expect_match(
+        saira:::sensitive_reason_statement("medium", "en"), "Category 3"
+    )
+    testthat::expect_match(
+        saira:::sensitive_reason_statement("low", "en"), "Category 4"
+    )
+    # Tiers without a statement (and unknown) yield "".
+    testthat::expect_equal(
+        saira:::sensitive_reason_statement(c("not_sensitive", "bogus"), "en"),
+        c("", "")
+    )
+    # Vectorized and language-aware.
+    testthat::expect_match(
+        saira:::sensitive_reason_statement("extreme", "pt"), "Categoria 1"
+    )
+})
+
+testthat::test_that("mask applies a per-species grid map", {
+    local_sensitive_fixture(c("Panthera onca", "Hippocampus reidi"))
+    # Panthera -> high (0.1 deg), Hippocampus -> low (0.001 deg).
+    res <- saira:::mask_sensitive_coordinates(
+        make_df(),
+        generalization = c("Panthera onca" = "high",
+                           "Hippocampus reidi" = "low"),
+        lang = "en"
+    )
+    testthat::expect_equal(res$n_masked, 2L)
+    # Row 1 (Panthera) at the high grid.
+    testthat::expect_equal(res$masked$decimalLatitude[1], "-23.6")
+    testthat::expect_equal(res$masked$coordinatePrecision[1], "0.1")
+    # Row 4 (Hippocampus) at the low grid.
+    testthat::expect_equal(res$masked$decimalLatitude[4], "-5.123")
+    testthat::expect_equal(res$masked$coordinatePrecision[4], "0.001")
+    # Each row's dataGeneralizations carries its Chapman reason statement.
+    testthat::expect_match(res$masked$dataGeneralizations[1], "Category 2")
+    testthat::expect_match(res$masked$dataGeneralizations[4], "Category 4")
+})
+
+testthat::test_that("mask leaves a species mapped to not_sensitive as-held", {
+    local_sensitive_fixture(c("Panthera onca", "Hippocampus reidi"))
+    res <- saira:::mask_sensitive_coordinates(
+        make_df(),
+        generalization = c("Panthera onca" = "high",
+                           "Hippocampus reidi" = "not_sensitive"),
+        lang = "en"
+    )
+    # Only Panthera (row 1) is masked; Hippocampus (row 4) untouched.
+    testthat::expect_equal(res$n_masked, 1L)
+    testthat::expect_equal(res$masked$decimalLatitude[4], "-5.1234")
+    testthat::expect_false("a4" %in% res$real$occurrenceID)
+})
+
+# generalization_map_preview + justification ----------------------------
+
+testthat::test_that("mask appends the custodian justification to dataGeneralizations", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = "j1", scientificName = "Panthera onca",
+        decimalLatitude = "-23.5", decimalLongitude = "-46.6",
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(
+        df, generalization = c("Panthera onca" = "high"), lang = "en",
+        justification = "Documented poaching risk."
+    )
+    testthat::expect_match(res$masked$dataGeneralizations[1], "Documented poaching risk\\.$")
+})
+
+testthat::test_that("generalization_map_preview returns generalized points (+ border flag)", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Felis catus"),
+        decimalLatitude = c("-27.1700", "10.0"),
+        decimalLongitude = c("-53.9000", "20.0"),
+        stringsAsFactors = FALSE
+    )
+    prev <- saira:::generalization_map_preview(df, c("Panthera onca" = "extreme"))
+    # Only the sensitive jaguar row is previewed.
+    testthat::expect_equal(nrow(prev), 1L)
+    testthat::expect_equal(prev$gen_lat, -27)
+    testthat::expect_equal(prev$gen_lon, -54)
+    # The Turvo jaguar crosses into Argentina at the extreme tier; the flag
+    # needs the Natural Earth reference, so only assert it when available.
+    if (!is.na(prev$crosses[1])) {
+        testthat::expect_true(prev$crosses[1])
+        testthat::expect_identical(prev$country_orig[1], "Brazil")
+    }
+})
+
+testthat::test_that("generalization_map_preview is empty when nothing is masked", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        scientificName = "Felis catus",
+        decimalLatitude = "-27.17", decimalLongitude = "-53.9",
+        stringsAsFactors = FALSE
+    )
+    prev <- saira:::generalization_map_preview(df, c("Panthera onca" = "extreme"))
+    testthat::expect_equal(nrow(prev), 0L)
 })

@@ -132,6 +132,18 @@ app_ui <- function() {
                     value = "validate_coords",
                     icon = shiny::icon("map-marker-alt", class = "fa-solid"),
                     mod_validate_coords_ui("validate_coords")
+                ),
+
+                # Tab: Generalization (sensitive species)
+                bslib::nav_panel(
+                    title = shiny::tags$span(
+                        class = "nav-title-container",
+                        shiny::tags$span(tr("nav_generalize", "pt"), class = "nav-title-static"),
+                        shiny::uiOutput("nav_generalize_title", class = "nav-title-dynamic", inline = TRUE)
+                    ),
+                    value = "sensitive_coords",
+                    icon = shiny::icon("shield-halved", class = "fa-solid"),
+                    mod_sensitive_coords_ui("sensitive_coords")
                 )
             ),
 

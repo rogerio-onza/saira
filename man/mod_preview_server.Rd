@@ -9,11 +9,14 @@ mod_preview_server(
   mapped_data_r,
   lang_r,
   download_data_r = mapped_data_r,
-  sensitive_overview_input_r = NULL,
   name_review_payload_r = NULL,
   sensitivity_payload_r = NULL,
+  sensitive_generalization_payload_r = NULL,
   raw_data_r = NULL,
-  map_values_r = NULL
+  map_values_r = NULL,
+  custom_values_r = NULL,
+  coords_correction_payload_r = NULL,
+  country_fill_payload_r = NULL
 )
 }
 \arguments{
@@ -25,17 +28,17 @@ mod_preview_server(
 
 \item{download_data_r}{Reactive data frame with full mapped data for download}
 
-\item{sensitive_overview_input_r}{Optional reactive returning a lightweight
-data.frame (`scientificName`, `decimalLatitude`, `decimalLongitude`)
-projected directly from raw_data + map_values. Used by the masking
-overview card so that the Preview tab does NOT pull the heavy
-`processed_data_r` reactive (ADR-020, LESSONS.md:31).}
-
 \item{name_review_payload_r}{Optional reactive payload from name manual review}
 
 \item{sensitivity_payload_r}{Optional reactive data.frame of per-species
 sensitivity overrides (scientificName, sensitive) from the Validation >
-Names tab (ADR-092).}
+Names tab (ADR-092). Still needed so the export masking honours the
+researcher's mark/unmark when resolving which rows are sensitive.}
+
+\item{sensitive_generalization_payload_r}{Optional reactive returning the
+Chapman generalization decision built in the Validation > Coordinates tab
+(ADR-100): a list with `levels` (named `scientificName -> tier` map),
+`review_date`, `justification` and `enabled`.}
 
 \item{raw_data_r}{Optional reactive with the original uploaded data.frame
 (for ZIP bundle: appending non-mapped raw cols and the mapping_guide.txt).}

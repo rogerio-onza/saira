@@ -23,10 +23,6 @@ mod_preview_ui <- function(id) {
                 shiny::uiOutput(ns("download_btn_container"))
             ),
 
-            # Sensitive-species masking control (ADR-092); shows only when
-            # the dataset has sensitive records.
-            shiny::uiOutput(ns("sensitive_panel")),
-
             # Data table
             shiny::uiOutput(ns("table_or_message"))
         )
@@ -42,12 +38,12 @@ mod_preview_ui <- function(id) {
 #' @param name_review_payload_r Optional reactive payload from name manual review
 #' @param sensitivity_payload_r Optional reactive data.frame of per-species
 #'   sensitivity overrides (scientificName, sensitive) from the Validation >
-#'   Names tab (ADR-092).
-#' @param sensitive_overview_input_r Optional reactive returning a lightweight
-#'   data.frame (`scientificName`, `decimalLatitude`, `decimalLongitude`)
-#'   projected directly from raw_data + map_values. Used by the masking
-#'   overview card so that the Preview tab does NOT pull the heavy
-#'   `processed_data_r` reactive (ADR-020, LESSONS.md:31).
+#'   Names tab (ADR-092). Still needed so the export masking honours the
+#'   researcher's mark/unmark when resolving which rows are sensitive.
+#' @param sensitive_generalization_payload_r Optional reactive returning the
+#'   Chapman generalization decision built in the Validation > Coordinates tab
+#'   (ADR-100): a list with `levels` (named `scientificName -> tier` map),
+#'   `review_date`, `justification` and `enabled`.
 #' @param raw_data_r Optional reactive with the original uploaded data.frame
 #'   (for ZIP bundle: appending non-mapped raw cols and the mapping_guide.txt).
 #' @param map_values_r Optional reactive with the current mapping list
@@ -56,9 +52,9 @@ mod_preview_ui <- function(id) {
 #' @export
 mod_preview_server <- function(id, mapped_data_r, lang_r,
                                download_data_r = mapped_data_r,
-                               sensitive_overview_input_r = NULL,
                                name_review_payload_r = NULL,
                                sensitivity_payload_r = NULL,
+                               sensitive_generalization_payload_r = NULL,
                                raw_data_r = NULL,
                                map_values_r = NULL,
                                custom_values_r = NULL,
@@ -215,287 +211,6 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                 return(NULL)
             }
             sensitivity_payload_r()
-        })
-
-        # Chapman 2020 generalization level (single global tier) consumed by the
-        # export handler. Default "not_sensitive": masking is a deliberate
-        # opt-in exception, never the default, since generalized coordinates can
-        # mislead future analyses and conservation policy.
-        #
-        # The Preview panel collects the choice in TWO steps (ADR-096):
-        #   `sensitive_mode`  in {"publish","generalize"}     -- the binary call
-        #   `sensitive_level` in {"low","medium","high","extreme"} -- revealed
-        #                     only when the mode is "generalize"
-        # Both inputs are reduced here to the single export value.
-        sensitive_active_levels <- c("low", "medium", "high", "extreme")
-        sensitive_generalization_rv <- shiny::reactiveVal("not_sensitive")
-
-        shiny::observeEvent(input$sensitive_mode, {
-            if (identical(input$sensitive_mode, "generalize")) {
-                lvl <- input$sensitive_level
-                if (is.null(lvl) || !lvl %in% sensitive_active_levels) {
-                    lvl <- "medium"
-                }
-                sensitive_generalization_rv(lvl)
-            } else {
-                sensitive_generalization_rv("not_sensitive")
-            }
-        })
-
-        shiny::observeEvent(input$sensitive_level, {
-            if (identical(input$sensitive_mode, "generalize") &&
-                input$sensitive_level %in% sensitive_active_levels) {
-                sensitive_generalization_rv(input$sensitive_level)
-            }
-        })
-
-        # How many records would be masked. Resolved over UNIQUE names and
-        # sourced from a lightweight (scientificName + coords) projection
-        # of the raw data, so the Preview tab does NOT materialise the heavy
-        # `processed_data_r` reactive (ADR-020, LESSONS.md:31).
-        sensitive_overview <- shiny::reactive({
-            df <- if (is.null(sensitive_overview_input_r) ||
-                      !shiny::is.reactive(sensitive_overview_input_r)) {
-                NULL
-            } else {
-                tryCatch(sensitive_overview_input_r(), error = function(e) NULL)
-            }
-            need <- c("scientificName", "decimalLatitude", "decimalLongitude")
-            if (!is.data.frame(df) || nrow(df) == 0L ||
-                !all(need %in% names(df))) {
-                return(0L)
-            }
-            sci <- as.character(df$scientificName)
-            keep <- !is.na(sci) & nzchar(sci)
-            u <- unique(sci[keep])
-            if (length(u) == 0L) {
-                return(0L)
-            }
-            dec <- sensitive_resolve(u, export_sensitivity_payload())
-            sens_names <- u[dec$sensitive]
-            if (length(sens_names) == 0L) {
-                return(0L)
-            }
-            lat <- suppressWarnings(as.numeric(df$decimalLatitude))
-            lon <- suppressWarnings(as.numeric(df$decimalLongitude))
-            sum(sci %in% sens_names & !is.na(lat) & !is.na(lon))
-        })
-
-        # Two-step masking panel (ADR-096). The panel renders a STATIC
-        # structure that depends only on the detection count and language --
-        # NOT on the current selection -- so clicking a level re-renders only
-        # the small warning block below the grid, never the whole panel.
-        output$sensitive_panel <- shiny::renderUI({
-            n <- sensitive_overview()
-            if (is.null(n) || n == 0L) {
-                return(NULL)
-            }
-            lang <- lang_r()
-
-            # Step-1 card: the binary publish/generalize decision. The publish
-            # card carries the "Recommended" badge.
-            mode_card <- function(title_key, desc_key, recommended = FALSE) {
-                shiny::HTML(as.character(shiny::tagList(
-                    shiny::div(
-                        class = "sp-mode-head",
-                        shiny::span(class = "sp-mode-title", tr(title_key, lang)),
-                        if (recommended) {
-                            shiny::span(
-                                class = "sp-mode-badge",
-                                tr("sensitive_mode_recommended_badge", lang)
-                            )
-                        }
-                    ),
-                    shiny::div(class = "sp-mode-desc", tr(desc_key, lang))
-                )))
-            }
-
-            # Step-2 card: headline is the SPATIAL RESULT (Local area / City /
-            # State / Country); the Chapman category is a small reference tag.
-            level_card <- function(level) {
-                g <- sensitive_generalization_grid(level)
-                km <- g * 111.32
-                scale_txt <- if (km < 1) {
-                    sprintf("~%s m", format(round(km * 1000, -2L), trim = TRUE))
-                } else {
-                    sprintf("~%s km", format(round(km), trim = TRUE))
-                }
-                shiny::HTML(as.character(shiny::tagList(
-                    shiny::div(
-                        class = "sp-card-name",
-                        tr(paste0("sensitive_card_impact_", level), lang)
-                    ),
-                    shiny::div(class = "sp-card-scale", scale_txt),
-                    shiny::div(
-                        class = "sp-card-ref",
-                        tr(paste0("sensitive_card_num_", level), lang)
-                    )
-                )))
-            }
-
-            # Reference table (Chapman 2020 / GBIF, Table 7) -- all five levels,
-            # mapping the Chapman category to its spatial result and grid. A
-            # cost swatch (green -> red) and a tinted "no masking" baseline row
-            # tie the table back to the cards above.
-            fmt_grid_cell <- function(level) {
-                g <- sensitive_generalization_grid(level)
-                if (is.na(g)) {
-                    return(tr("sensitive_grid_unmasked", lang))
-                }
-                km <- round(g * 111.32, 1)
-                sprintf(
-                    "%s\u00b0 (~%s km)",
-                    format(g, trim = TRUE, scientific = FALSE),
-                    format(km, trim = TRUE)
-                )
-            }
-            spatial_for <- function(level) {
-                if (identical(level, "not_sensitive")) {
-                    return("\u2014")
-                }
-                tr(paste0("sensitive_card_impact_", level), lang)
-            }
-            table_rows <- lapply(sensitive_generalization_levels(), function(level) {
-                baseline <- identical(level, "not_sensitive")
-                shiny::tags$tr(
-                    class = if (baseline) "sp-grid-row-baseline" else NULL,
-                    shiny::tags$td(
-                        shiny::span(
-                            class = paste0("sp-grid-swatch sp-grid-swatch--", level)
-                        ),
-                        tr(paste0("sensitive_gen_", level), lang)
-                    ),
-                    shiny::tags$td(class = "sp-grid-result", spatial_for(level)),
-                    shiny::tags$td(class = "sp-grid-value", fmt_grid_cell(level))
-                )
-            })
-
-            shiny::div(
-                class = "sensitive-panel",
-                shiny::div(
-                    class = "sp-header",
-                    shiny::h5(
-                        class = "sp-title",
-                        shiny::icon("shield-halved", class = "sp-title-icon"),
-                        tr("sensitive_panel_title", lang)
-                    ),
-                    shiny::span(
-                        class = "sp-count-chip",
-                        sprintf(tr("sensitive_panel_records_chip", lang), n)
-                    )
-                ),
-                shiny::p(
-                    class = "sp-lead",
-                    shiny::HTML(sprintf(tr("sensitive_panel_intro", lang), n))
-                ),
-
-                # Step 1 -- binary decision.
-                shiny::div(
-                    class = "sp-step-question",
-                    tr("sensitive_step_question", lang)
-                ),
-                shiny::div(
-                    class = "sp-mode-radio",
-                    shiny::radioButtons(
-                        ns("sensitive_mode"),
-                        label = NULL,
-                        choiceNames = list(
-                            mode_card(
-                                "sensitive_mode_publish_title",
-                                "sensitive_mode_publish_desc",
-                                recommended = TRUE
-                            ),
-                            mode_card(
-                                "sensitive_mode_generalize_title",
-                                "sensitive_mode_generalize_desc"
-                            )
-                        ),
-                        choiceValues = c("publish", "generalize"),
-                        selected = "publish"
-                    )
-                ),
-
-                # Step 2 -- level grid, revealed only when "generalize" is
-                # chosen. conditionalPanel keeps the radio mounted (its value
-                # stays registered) and toggles visibility client-side, so
-                # there is no server re-render flash on reveal.
-                shiny::conditionalPanel(
-                    condition = "input.sensitive_mode == 'generalize'",
-                    ns = ns,
-                    class = "sp-level-block",
-                    shiny::div(
-                        class = "sp-level-prompt",
-                        tr("sensitive_level_prompt", lang)
-                    ),
-                    shiny::div(
-                        class = "sp-level-axis",
-                        shiny::span(class = "sp-axis-low", tr("sensitive_axis_low", lang)),
-                        shiny::span(class = "sp-axis-track"),
-                        shiny::span(class = "sp-axis-high", tr("sensitive_axis_high", lang))
-                    ),
-                    shiny::div(
-                        class = "sp-level-radio",
-                        shiny::radioButtons(
-                            ns("sensitive_level"),
-                            label = NULL,
-                            choiceNames = lapply(sensitive_active_levels, level_card),
-                            choiceValues = sensitive_active_levels,
-                            selected = "medium"
-                        )
-                    ),
-                    shiny::uiOutput(ns("sensitive_level_warning"))
-                ),
-
-                # Reference disclosure (Chapman 2020 / GBIF, Table 7).
-                shiny::tags$details(
-                    class = "sp-disclosure",
-                    shiny::tags$summary(
-                        class = "sp-disclosure-summary",
-                        tr("sensitive_disclosure_title", lang)
-                    ),
-                    shiny::div(
-                        class = "sp-disclosure-body",
-                        shiny::tags$table(
-                            class = "table table-sm sensitive-grid-table",
-                            shiny::tags$caption(tr("sensitive_table_caption", lang)),
-                            shiny::tags$thead(
-                                shiny::tags$tr(
-                                    shiny::tags$th(tr("sensitive_table_col_category", lang)),
-                                    shiny::tags$th(tr("sensitive_table_col_result", lang)),
-                                    shiny::tags$th(
-                                        class = "sp-grid-value",
-                                        tr("sensitive_table_col_grid", lang)
-                                    )
-                                )
-                            ),
-                            shiny::tags$tbody(table_rows)
-                        )
-                    )
-                )
-            )
-        })
-
-        # Escalated, decision-coupled warning for the aggressive tiers (State,
-        # Country). Its own output so selecting a level re-renders just this
-        # block, not the whole panel.
-        output$sensitive_level_warning <- shiny::renderUI({
-            if (!identical(input$sensitive_mode, "generalize")) {
-                return(NULL)
-            }
-            lvl <- input$sensitive_level
-            warn_key <- if (identical(lvl, "extreme")) {
-                "sensitive_warn_extreme"
-            } else if (identical(lvl, "high")) {
-                "sensitive_warn_high"
-            } else {
-                return(NULL)
-            }
-            shiny::div(
-                class = paste0("sp-level-warning sp-level-warning--", lvl),
-                shiny::icon("triangle-exclamation"),
-                " ",
-                tr(warn_key, lang_r())
-            )
         })
 
         download_validation <- shiny::reactive({
@@ -980,16 +695,41 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                             map_values = mv
                         )
 
-                        # Generalize coordinates of sensitive/threatened
-                        # species before they reach the IPT bundle; the real
-                        # coordinates go to a separate companion file.
-                        gen_level <- sensitive_generalization_rv()
+                        # Generalize coordinates of sensitive/threatened species
+                        # before they reach the IPT bundle, each to the grid its
+                        # Chapman assessment derived (decided in the Validation >
+                        # Coordinates tab, ADR-100); the real coordinates go to a
+                        # separate companion file.
+                        gen <- if (is.null(sensitive_generalization_payload_r) ||
+                                   !shiny::is.reactive(sensitive_generalization_payload_r)) {
+                            NULL
+                        } else {
+                            sensitive_generalization_payload_r()
+                        }
+                        # Mandatory justification: block export when any record is
+                        # generalized to Category 1/2/3 without a written reason
+                        # (decided in the Generalization tab).
+                        if (is.list(gen) && isTRUE(gen$enabled) &&
+                            isTRUE(gen$needs_justification) &&
+                            !nzchar(trimws(gen$justification %||% ""))) {
+                            shiny::showNotification(
+                                tr("preview_export_needs_justification", lang_r()),
+                                type = "error", duration = 8
+                            )
+                            shiny::req(FALSE)
+                        }
+                        gen_levels <- if (is.list(gen) && !is.null(gen$levels)) {
+                            gen$levels
+                        } else {
+                            stats::setNames(character(0), character(0))
+                        }
                         masked <- mask_sensitive_coordinates(
                             full_data,
                             decisions = export_sensitivity_payload(),
-                            generalization = gen_level,
-                            enabled = gen_level != "not_sensitive",
-                            lang = lang_r()
+                            generalization = gen_levels,
+                            enabled = is.list(gen) && isTRUE(gen$enabled),
+                            lang = lang_r(),
+                            justification = if (is.list(gen)) gen$justification else NULL
                         )
                         export_data <- masked$masked
 
@@ -1018,8 +758,22 @@ mod_preview_server <- function(id, mapped_data_r, lang_r,
                             meta_path,
                             useBytes = TRUE
                         )
+                        # Record the dataset-level access constraint (Chapman
+                        # sec. 5.1) in the EML when any record was generalized.
+                        eml_metadata <- list()
+                        if (masked$n_masked > 0L) {
+                            review_date <- if (is.list(gen)) gen$review_date else NULL
+                            if (is.null(review_date) || length(review_date) == 0L) {
+                                review_date <- Sys.Date() + 730
+                            }
+                            eml_metadata$sensitivity <- list(
+                                n_masked = masked$n_masked,
+                                review_date = format(as.Date(review_date), "%Y-%m-%d"),
+                                lang = lang_r()
+                            )
+                        }
                         writeLines(
-                            build_eml_xml(export_data, metadata = list()),
+                            build_eml_xml(export_data, metadata = eml_metadata),
                             eml_path,
                             useBytes = TRUE
                         )

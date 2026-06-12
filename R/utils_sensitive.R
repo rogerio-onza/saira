@@ -141,10 +141,36 @@ generalize_coord <- function(x, grid = 0.1) {
     round(round(x / grid) * grid, 6L)
 }
 
-# Conservative coordinate uncertainty for a grid cell, in metres
-# (~ one cell side along latitude; 0.1 deg -> 11132 m).
-sensitive_grid_uncertainty_m <- function(grid) {
-    ceiling(grid * 111320)
+# Format a coordinate for WKT (fixed notation, no scientific). Vectorized.
+wkt_num <- function(x) formatC(x, format = "f", digits = 6)
+
+# Great-circle distance in metres between lon/lat points (haversine, WGS84
+# mean radius). Vectorized over either pair of coordinates.
+geo_distance_m <- function(lon1, lat1, lon2, lat2) {
+    R <- 6371008.8
+    rad <- pi / 180
+    dlat <- (lat2 - lat1) * rad
+    dlon <- (lon2 - lon1) * rad
+    a <- sin(dlat / 2)^2 +
+        cos(lat1 * rad) * cos(lat2 * rad) * sin(dlon / 2)^2
+    2 * R * asin(pmin(1, sqrt(a)))
+}
+
+# coordinateUncertaintyInMeters for a grid cell published at its CENTER: the
+# "geographic radial" = the distance from the centre to the FURTHEST corner
+# (Chapman & Wieczorek 2020, Georeferencing Best Practices sec. 2.3.4; Quick
+# Reference Guide sec. 2.3.3 -- "use the corrected centre of the grid cell ...
+# determine the geographic radial"). `grid` is the cell size in decimal
+# degrees; `gen_lon`/`gen_lat` are the published cell centre(s). Geodesic, so
+# the longitude convergence with latitude is handled exactly (the furthest
+# corner is the one nearest the equator). Vectorized over the centres.
+sensitive_grid_uncertainty_m <- function(grid, gen_lon, gen_lat) {
+    d <- grid / 2
+    d1 <- geo_distance_m(gen_lon, gen_lat, gen_lon - d, gen_lat - d)
+    d2 <- geo_distance_m(gen_lon, gen_lat, gen_lon + d, gen_lat - d)
+    d3 <- geo_distance_m(gen_lon, gen_lat, gen_lon + d, gen_lat + d)
+    d4 <- geo_distance_m(gen_lon, gen_lat, gen_lon - d, gen_lat + d)
+    pmax(d1, d2, d3, d4)
 }
 
 # Chapman 2020 (GBIF "Best Practices for Generalizing Sensitive Species
@@ -168,6 +194,39 @@ sensitive_generalization_grid <- function(level) {
         return(NA_real_)
     }
     unname(m[level])
+}
+
+# Condensed Chapman Table 5 "Decision on release" statement for a tier,
+# documented at the record level so a data user knows WHY the coordinates were
+# generalized (Chapman 2020 sec. 5, statements 4c-4f). Vectorized over `tier`;
+# tiers without a statement (e.g. "not_sensitive") yield "".
+sensitive_reason_statement <- function(tier, lang = "en") {
+    keys <- c(extreme = "sensitive_reason_cat1",
+              high    = "sensitive_reason_cat2",
+              medium  = "sensitive_reason_cat3",
+              low     = "sensitive_reason_cat4")
+    vapply(as.character(tier), function(t) {
+        k <- unname(keys[t])
+        if (is.na(k)) "" else tr(k, lang)
+    }, FUN.VALUE = character(1), USE.NAMES = FALSE)
+}
+
+# Resolve a per-row Chapman tier from the `generalization` argument of
+# `mask_sensitive_coordinates`. Accepts either a single tier string (applies
+# uniformly -- back-compat) or a named `scientificName -> tier` map (per-species
+# assessment). Species absent from the map fall back to "not_sensitive".
+resolve_row_tiers <- function(species, generalization) {
+    n <- length(species)
+    if (is.null(generalization) || length(generalization) == 0L) {
+        return(rep("not_sensitive", n))
+    }
+    if (length(generalization) == 1L && is.null(names(generalization))) {
+        return(rep(as.character(generalization), n))
+    }
+    map <- unlist(generalization)
+    tiers <- unname(map[as.character(species)])
+    tiers[is.na(tiers)] <- "not_sensitive"
+    tiers
 }
 
 # Per-row sensitivity decision. The Validation > Names payload (researcher's
@@ -207,10 +266,13 @@ sensitive_resolve <- function(names, decisions = NULL) {
 # Mask sensitive records on the post-process_for_export frame (which already
 # carries occurrenceID, scientificName and the coordinate columns).
 #
-# Global single-tier generalization (Chapman 2020 method, Table 7): the user
-# picks one tier ("extreme"/"high"/"medium"/"low") that applies to every
-# sensitive row uniformly. "not_sensitive" or `enabled = FALSE` makes the
-# whole call a no-op (byte-identical to input).
+# Per-species generalization (Chapman 2020 Table 5/7). `generalization` is
+# either a single tier string ("extreme"/"high"/"medium"/"low") applied to every
+# sensitive row (back-compat) OR a named `scientificName -> tier` map produced by
+# the Preview questionnaire, so each species is generalized to the grid its
+# Chapman assessment derived. Species mapped to "not_sensitive" (or unassessed)
+# and `enabled = FALSE` are left as-held; an all-no-op call returns the input
+# byte-identical.
 #
 # Returns:
 #   masked   : generalized coords + dataGeneralizations / informationWithheld
@@ -225,7 +287,8 @@ sensitive_resolve <- function(names, decisions = NULL) {
 #   n_masked : count of rows whose coordinates were generalized.
 mask_sensitive_coordinates <- function(df, decisions = NULL,
                                         generalization = "low",
-                                        enabled = TRUE, lang = "en") {
+                                        enabled = TRUE, lang = "en",
+                                        justification = NULL) {
     result <- list(
         masked = df,
         real = data.frame(
@@ -240,8 +303,7 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
         n_skipped_already_masked = 0L
     )
 
-    grid <- sensitive_generalization_grid(generalization)
-    if (!isTRUE(enabled) || is.na(grid) || grid <= 0) {
+    if (!isTRUE(enabled)) {
         return(result)
     }
     if (!is.data.frame(df) || nrow(df) == 0L) {
@@ -253,9 +315,15 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     }
 
     decided <- sensitive_resolve(df$scientificName, decisions)
+    # Per-row Chapman tier and its grid. Rows whose species resolve to
+    # "not_sensitive"/unassessed get NA grid and are left untouched below.
+    row_tier <- resolve_row_tiers(df$scientificName, generalization)
+    row_grid <- vapply(row_tier, sensitive_generalization_grid,
+                       FUN.VALUE = numeric(1), USE.NAMES = FALSE)
     lat_num <- suppressWarnings(as.numeric(df$decimalLatitude))
     lon_num <- suppressWarnings(as.numeric(df$decimalLongitude))
-    target <- decided$sensitive & !is.na(lat_num) & !is.na(lon_num)
+    target <- decided$sensitive & !is.na(lat_num) & !is.na(lon_num) &
+        !is.na(row_grid) & row_grid > 0
 
     # Honour upstream generalization (ADR-095). Two signals:
     #   1. `coordinateUncertaintyInMeters` >= 1000 m -- publisher who fuzzed
@@ -305,7 +373,8 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     )
 
     ensure_cols <- c("dataGeneralizations", "informationWithheld",
-                     "coordinateUncertaintyInMeters", "coordinatePrecision")
+                     "coordinateUncertaintyInMeters", "coordinatePrecision",
+                     "footprintWKT", "footprintSRS")
     had_cols <- all(ensure_cols %in% names(df))
 
     masked <- df
@@ -319,31 +388,68 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     }
     for (nm in ensure_cols) masked <- ensure_col(masked, nm)
     iw_text <- tr("sensitive_information_withheld", lang)
+    # Optional custodian justification, appended to dataGeneralizations after
+    # the auto Chapman reason on every masked row.
+    just_text <- if (is.null(justification)) "" else trimws(as.character(justification)[1])
+    if (is.na(just_text)) just_text <- ""
 
-    # Single uniform grid across all sensitive rows.
-    masked$decimalLatitude[idx]  <- generalize_coord(lat_num[idx], grid)
-    masked$decimalLongitude[idx] <- generalize_coord(lon_num[idx], grid)
-    masked$coordinatePrecision[idx] <- format(grid, trim = TRUE, scientific = FALSE)
-    existing <- suppressWarnings(
-        as.numeric(masked$coordinateUncertaintyInMeters[idx])
-    )
-    masked$coordinateUncertaintyInMeters[idx] <- as.character(
-        pmax(existing, sensitive_grid_uncertainty_m(grid), na.rm = TRUE)
-    )
-    masked$dataGeneralizations[idx] <- sprintf(
-        tr("sensitive_data_generalizations", lang),
-        row_cat_display,
-        format(grid, trim = TRUE, scientific = FALSE),
-        format(round(grid * 111.32, 1), trim = TRUE)
-    )
+    # Apply each species' own grid. Grouping by grid (one of four distinct
+    # values, bijective with the Chapman tier) keeps `generalize_coord` the
+    # single source of the rounding rule. `dataGeneralizations` carries the MMA
+    # category, the grid, and the Chapman Table 5 reason for the record.
+    for (g in unique(row_grid[idx])) {
+        rows <- idx[row_grid[idx] == g]
+        cat_disp <- row_cat_display[row_grid[idx] == g]
+        masked$decimalLatitude[rows]  <- generalize_coord(lat_num[rows], g)
+        masked$decimalLongitude[rows] <- generalize_coord(lon_num[rows], g)
+        masked$coordinatePrecision[rows] <- format(g, trim = TRUE, scientific = FALSE)
+        gen_lon <- suppressWarnings(as.numeric(masked$decimalLongitude[rows]))
+        gen_lat <- suppressWarnings(as.numeric(masked$decimalLatitude[rows]))
+        # coordinateUncertaintyInMeters = geographic radial of the cell (centre
+        # -> furthest corner) COMBINED with any original record uncertainty
+        # (Best Practices sec. 3.4.7: combine sources, not take the max). The
+        # original point lies within its own radius of the published cell
+        # centre, so the guaranteed maximum distance is additive.
+        existing <- suppressWarnings(
+            as.numeric(masked$coordinateUncertaintyInMeters[rows])
+        )
+        existing[is.na(existing)] <- 0
+        masked$coordinateUncertaintyInMeters[rows] <- as.character(ceiling(
+            sensitive_grid_uncertainty_m(g, gen_lon, gen_lat) + existing
+        ))
+        # Capture the cell as a polygon (Best Practices sec. 2.3.4: "the ideal
+        # way to record [a grid cell] ... is the polygon consisting of the
+        # corners"). Safe to publish -- it is the coarse cell, not the point.
+        half <- g / 2
+        masked$footprintWKT[rows] <- sprintf(
+            "POLYGON ((%s %s, %s %s, %s %s, %s %s, %s %s))",
+            wkt_num(gen_lon - half), wkt_num(gen_lat - half),
+            wkt_num(gen_lon + half), wkt_num(gen_lat - half),
+            wkt_num(gen_lon + half), wkt_num(gen_lat + half),
+            wkt_num(gen_lon - half), wkt_num(gen_lat + half),
+            wkt_num(gen_lon - half), wkt_num(gen_lat - half)
+        )
+        masked$footprintSRS[rows] <- "EPSG:4326"
+        masked$dataGeneralizations[rows] <- trimws(paste(
+            sprintf(
+                tr("sensitive_data_generalizations", lang),
+                cat_disp,
+                format(g, trim = TRUE, scientific = FALSE)
+            ),
+            sensitive_reason_statement(row_tier[rows], lang),
+            just_text
+        ))
+    }
     masked$informationWithheld[idx] <- iw_text
 
     # Scrub fields that could reverse the generalization. Verbatim coordinate
     # fields must be blank (Darwin Core forbids prose there); the remaining
     # locality/remarks fields carry replacement wording (Chapman sec. 3).
+    # footprintWKT is NOT scrubbed here: the loop above already replaced it with
+    # the generalized cell polygon (safe, coarse) on every masked row.
     blank_cols <- c("verbatimLatitude", "verbatimLongitude",
                     "verbatimCoordinates")
-    scrub_cols <- c("footprintWKT", "locality", "verbatimLocality",
+    scrub_cols <- c("locality", "verbatimLocality",
                     "georeferenceRemarks", "locationRemarks")
     for (col in intersect(blank_cols, names(masked))) {
         masked[[col]] <- as.character(masked[[col]])
@@ -363,4 +469,77 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     result$masked <- masked
     result$n_masked <- length(idx)
     result
+}
+
+# Map-preview rows for the generalization guardrail (ADR-100). For every point
+# that WOULD be masked at the current assessment, returns where it moves and a
+# `crosses` flag set when the generalized point lands in a different country than
+# the original -- the border-crossing red signal (e.g. a Turvo jaguar generalized
+# to `extreme` defecting into Argentina). Pure; the country lookup reuses the
+# Natural Earth reference behind `coords_country_from_coordinates()` and degrades
+# to `crosses = NA` when sf/terra/reference are unavailable.
+generalization_map_preview <- function(df, generalization, decisions = NULL) {
+    empty <- data.frame(
+        scientificName = character(0), tier = character(0),
+        lat = numeric(0), lon = numeric(0),
+        gen_lat = numeric(0), gen_lon = numeric(0), unc_m = numeric(0),
+        country_orig = character(0), country_gen = character(0),
+        crosses = logical(0), stringsAsFactors = FALSE
+    )
+    needed <- c("scientificName", "decimalLatitude", "decimalLongitude")
+    if (!is.data.frame(df) || nrow(df) == 0L || !all(needed %in% names(df))) {
+        return(empty)
+    }
+    decided <- sensitive_resolve(df$scientificName, decisions)
+    row_tier <- resolve_row_tiers(df$scientificName, generalization)
+    row_grid <- vapply(row_tier, sensitive_generalization_grid,
+                       FUN.VALUE = numeric(1), USE.NAMES = FALSE)
+    lat <- suppressWarnings(as.numeric(df$decimalLatitude))
+    lon <- suppressWarnings(as.numeric(df$decimalLongitude))
+    target <- decided$sensitive & !is.na(lat) & !is.na(lon) &
+        !is.na(row_grid) & row_grid > 0
+    if (!any(target)) return(empty)
+    idx <- which(target)
+    g <- row_grid[idx]
+    gen_lat <- round(round(lat[idx] / g) * g, 6L)
+    gen_lon <- round(round(lon[idx] / g) * g, 6L)
+    # Same point-radius uncertainty the export writes (centre -> furthest
+    # corner, combined additively with any original record uncertainty).
+    unc0 <- if ("coordinateUncertaintyInMeters" %in% names(df)) {
+        suppressWarnings(as.numeric(df$coordinateUncertaintyInMeters))[idx]
+    } else {
+        rep(0, length(idx))
+    }
+    unc0[is.na(unc0)] <- 0
+
+    out <- data.frame(
+        scientificName = as.character(df$scientificName)[idx],
+        tier = row_tier[idx],
+        lat = lat[idx], lon = lon[idx],
+        gen_lat = gen_lat, gen_lon = gen_lon,
+        unc_m = ceiling(sensitive_grid_uncertainty_m(g, gen_lon, gen_lat) + unc0),
+        country_orig = NA_character_, country_gen = NA_character_,
+        crosses = NA, stringsAsFactors = FALSE
+    )
+
+    # Best-effort country (admin) lookup for original vs generalized points.
+    ref <- tryCatch(coords_load_ne_land(scale = 50L), error = function(e) NULL)
+    if (!is.null(ref) && inherits(ref, "SpatVector") && "admin" %in% names(ref)) {
+        admin_at <- function(lo, la) {
+            pts <- terra::vect(
+                data.frame(.lon = lo, .lat = la),
+                geom = c(".lon", ".lat"),
+                crs = "+proj=longlat +datum=WGS84 +no_defs"
+            )
+            ex <- tryCatch(terra::extract(ref[, "admin"], pts), error = function(e) NULL)
+            if (is.null(ex) || ncol(ex) < 2L) return(rep(NA_character_, length(lo)))
+            ex <- ex[!duplicated(ex[[1]]), , drop = FALSE]
+            as.character(ex[[2]])
+        }
+        out$country_orig <- admin_at(out$lon, out$lat)
+        out$country_gen  <- admin_at(out$gen_lon, out$gen_lat)
+        out$crosses <- !is.na(out$country_orig) &
+            (is.na(out$country_gen) | out$country_orig != out$country_gen)
+    }
+    out
 }
