@@ -1089,6 +1089,20 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
     abs_el <- xml2::xml_add_child(ds, "abstract")
     xml2::xml_add_child(abs_el, "para", abstract)
 
+    # Access constraints for generalized sensitive records (Chapman 2020 sec.
+    # 5.1). Emitted only when the export actually masked rows. Placed before
+    # intellectualRights to honour the EML 2.1.1 resource sequence.
+    sens <- metadata$sensitivity
+    if (is.list(sens) && !is.null(sens$n_masked) && sens$n_masked > 0L) {
+        review <- sens$review_date %||% format(Sys.Date() + 730, "%Y-%m-%d")
+        note <- sprintf(
+            tr("sensitive_eml_access_note", sens$lang %||% "en"),
+            sens$n_masked, review
+        )
+        ai_el <- xml2::xml_add_child(ds, "additionalInfo")
+        xml2::xml_add_child(ai_el, "para", note)
+    }
+
     rights_el <- xml2::xml_add_child(ds, "intellectualRights")
     xml2::xml_add_child(rights_el, "para", rights_text)
 

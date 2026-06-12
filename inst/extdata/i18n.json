@@ -31,6 +31,10 @@
     "pt": "Coordenadas",
     "en": "Coordinates"
   },
+  "nav_generalize": {
+    "pt": "Generalização",
+    "en": "Generalization"
+  },
   "nav_wiki": {
     "pt": "Wiki DwC",
     "en": "DwC Wiki"
@@ -839,6 +843,10 @@
     "pt": "Finalizando download.",
     "en": "Finalizing download."
   },
+  "preview_export_needs_justification": {
+    "pt": "Generalização Categoria 1/2/3 exige justificativa — preencha na aba Generalização antes de exportar.",
+    "en": "Category 1/2/3 generalization requires a justification — fill it in the Generalization tab before exporting."
+  },
   "preview_export_failed_phrase": {
     "pt": "Falha ao preparar arquivo para download.",
     "en": "Failed to prepare file for download."
@@ -1623,6 +1631,290 @@
     "pt": "Sensibilidade atualizada para esta espécie.",
     "en": "Sensitivity updated for this species."
   },
+  "sensitive_assess_mode_title": {
+    "pt": "Avaliar sensibilidade",
+    "en": "Assess sensitivity"
+  },
+  "sensitive_assess_mode_desc": {
+    "pt": "Responda a tabela de decisão do Chapman para determinar o nível de cada grupo — sem escolher no chute.",
+    "en": "Answer Chapman's decision table to determine each group's level — no guessing."
+  },
+  "sensitive_q_yes": {
+    "pt": "Sim",
+    "en": "Yes"
+  },
+  "sensitive_q_no": {
+    "pt": "Não",
+    "en": "No"
+  },
+  "sensitive_q_4_2": {
+    "pt": "A espécie é distintiva e de alta importância biológica, sob alta ameaça, em que mesmo a localidade geral já a coloca em risco?",
+    "en": "Is the species distinctive and of high biological significance, under high threat, such that even general locality information may threaten it?"
+  },
+  "sensitive_q_4_3": {
+    "pt": "Fornecer localizações mais precisas que ~11 km (0,1°) sujeitaria a espécie a perturbação ou exploração?",
+    "en": "Would providing locations finer than ~11 km (0.1°) subject the species to disturbance or exploitation?"
+  },
+  "sensitive_q_4_4": {
+    "pt": "Fornecer localizações mais precisas que ~1 km (0,01°) sujeitaria a espécie a coleta ou dano deliberado?",
+    "en": "Would providing locations finer than ~1 km (0.01°) subject the species to collection or deliberate damage?"
+  },
+  "sensitive_q_4_5": {
+    "pt": "Há ameaça baixa a média se localizações mais precisas que ~100 m (0,001°) ficarem públicas?",
+    "en": "Is there low-to-medium threat if locations finer than ~100 m (0.001°) become publicly available?"
+  },
+  "sensitive_group_species_count": {
+    "pt": "%s espécie(s)",
+    "en": "%s species"
+  },
+  "sensitive_group_exceptions": {
+    "pt": "Exceções por espécie",
+    "en": "Per-species exceptions"
+  },
+  "sensitive_species_assessed_count": {
+    "pt": "%s de %s espécies avaliadas",
+    "en": "%s of %s species assessed"
+  },
+  "sensitive_not_assessed": {
+    "pt": "não avaliado",
+    "en": "not assessed"
+  },
+  "sensitive_unassessed_warning": {
+    "pt": "%s espécie(s) ainda não avaliada(s) — serão publicadas sem generalização.",
+    "en": "%s species not yet assessed — they will be published without generalization."
+  },
+  "sensitive_reason_cat1": {
+    "pt": "A espécie é distintiva, de alta importância biológica e sob alta ameaça, em que mesmo a localidade geral pode ameaçá-la (Chapman 2020, Categoria 1).",
+    "en": "The species is distinctive, of high biological significance and under high threat, where even general locality information may threaten it (Chapman 2020, Category 1)."
+  },
+  "sensitive_reason_cat2": {
+    "pt": "A espécie é classificada como altamente sensível; o fornecimento de localizações precisas a sujeitaria a ameaças como perturbação e exploração (Chapman 2020, Categoria 2).",
+    "en": "The species is classed as highly sensitive; providing precise locations would subject it to threats such as disturbance and exploitation (Chapman 2020, Category 2)."
+  },
+  "sensitive_reason_cat3": {
+    "pt": "A espécie é classificada como de sensibilidade média a alta; o fornecimento de localizações precisas poderia sujeitá-la a coleta ou dano deliberado (Chapman 2020, Categoria 3).",
+    "en": "The species is classed as of medium-to-high sensitivity; providing precise locations could subject it to collection or deliberate damage (Chapman 2020, Category 3)."
+  },
+  "sensitive_reason_cat4": {
+    "pt": "A espécie é classificada como de sensibilidade baixa a média; o fornecimento de localizações precisas poderia sujeitá-la a perturbação e exploração (Chapman 2020, Categoria 4).",
+    "en": "The species is classed as of low-to-medium sensitivity; providing precise locations could subject it to disturbance and exploitation (Chapman 2020, Category 4)."
+  },
+  "sensitive_review_date_label": {
+    "pt": "Data de revisão (Chapman: 2–5 anos)",
+    "en": "Review date (Chapman: 2–5 years)"
+  },
+  "sensitive_assess_prompt": {
+    "pt": "Avalie cada grupo de ameaça respondendo à tabela de decisão do Chapman. As espécies do grupo herdam o nível determinado.",
+    "en": "Assess each threat group by answering Chapman's decision table. The group's species inherit the level it determines."
+  },
+  "sensitive_group_other": {
+    "pt": "Outras (marcadas pelo pesquisador)",
+    "en": "Other (researcher-flagged)"
+  },
+  "sensitive_exc_prompt": {
+    "pt": "Selecione uma espécie para avaliar individualmente…",
+    "en": "Select a species to assess individually…"
+  },
+  "sensitive_exc_apply": {
+    "pt": "Aplicar exceção",
+    "en": "Apply exception"
+  },
+  "sensitive_clear_overrides": {
+    "pt": "Limpar exceções",
+    "en": "Clear exceptions"
+  },
+  "sensitive_cat1_alert": {
+    "pt": "Os dados só podem ser fornecidos sob condições estritas de licença ou como presença em uma região ampla, como uma bacia hidrográfica, município ou região biogeográfica.",
+    "en": "Data may only be supplied under strict Licence conditions or as presence in a large region such as a watershed, county, or biogeographic region."
+  },
+  "sensitive_cat1_alert_note": {
+    "pt": "* Esta categoria leva os pontos à resolução de ecorregião ou país (~111 km). Não a use se o objetivo é apenas mascarar localidades que a comunidade local ou regional já conhece — reserve-a para casos extremos de ameaça à espécie em âmbito local ou regional.",
+    "en": "* This category coarsens points to ecoregion or country resolution (~111 km). Do not use it merely to mask localities the local or regional community already knows — reserve it for extreme cases of threat to the species at local or regional scale."
+  },
+  "sensitive_justification_label": {
+    "pt": "Justificativa — vai para o campo dataGeneralizations",
+    "en": "Justification — written into dataGeneralizations"
+  },
+  "sensitive_justification_placeholder": {
+    "pt": "Ex.: risco de coleta documentado na região; recomendação do plano de manejo…",
+    "en": "e.g. documented collection risk in the region; management-plan recommendation…"
+  },
+  "sensitive_just_prompt_extreme": {
+    "pt": "Categoria 1 (~111 km): justifique por que esta espécie de baixa mobilidade ou endêmica exige resolução de ecorregião ou país.",
+    "en": "Category 1 (~111 km): justify why this low-mobility or endemic species requires ecoregion or country resolution."
+  },
+  "sensitive_just_prompt_high": {
+    "pt": "Categoria 2 (~11 km): descreva o risco de coleta ou perseguição que justifica generalizar ao nível de estado.",
+    "en": "Category 2 (~11 km): describe the collection or persecution risk that justifies generalizing to state level."
+  },
+  "sensitive_just_prompt_medium": {
+    "pt": "Categoria 3 (~1 km): descreva o risco que justifica generalizar ao nível de cidade ou distrito.",
+    "en": "Category 3 (~1 km): describe the risk that justifies generalizing to city or district level."
+  },
+  "sensitive_map_crosses": {
+    "pt": "Saiu do país de origem",
+    "en": "Left the country of origin"
+  },
+  "sensitive_coords_title": {
+    "pt": "Generalização de espécies sensíveis",
+    "en": "Sensitive Species Generalization"
+  },
+  "sensitive_coords_subtitle": {
+    "pt": "Avalie a sensibilidade pela Tabela 5 de Chapman (2020) e veja no mapa onde cada ponto será publicado.",
+    "en": "Assess sensitivity with Chapman (2020) Table 5 and see on the map where each point will be published."
+  },
+  "sensitive_group_species_list": {
+    "pt": "Espécies",
+    "en": "Species"
+  },
+  "sc_empty_title": {
+    "pt": "Nenhuma espécie sensível detectada",
+    "en": "No sensitive species detected"
+  },
+  "sc_empty_desc": {
+    "pt": "Marque espécies sensíveis na aba Validação de Nomes para avaliá-las aqui. Nada a generalizar no momento.",
+    "en": "Mark sensitive species in the Name Validation tab to assess them here. Nothing to generalize right now."
+  },
+  "sc_result_title": {
+    "pt": "Resultado",
+    "en": "Result"
+  },
+  "sc_result_publish_state": {
+    "pt": "Publicando coordenadas originais",
+    "en": "Publishing original coordinates"
+  },
+  "sc_result_records": {
+    "pt": "%d registros sensíveis",
+    "en": "%d sensitive records"
+  },
+  "sc_result_crossing": {
+    "pt": "%d cruzam a fronteira",
+    "en": "%d cross the border"
+  },
+  "sc_result_no_crossing": {
+    "pt": "Nenhum ponto sai do país de origem",
+    "en": "No point leaves its country"
+  },
+  "sc_confirm_title": {
+    "pt": "Confirmar decisão",
+    "en": "Confirm decision"
+  },
+  "sc_ladder_title": {
+    "pt": "Pré-visualizar categoria no mapa",
+    "en": "Preview a category on the map"
+  },
+  "sc_ladder_actual": {
+    "pt": "Mostrar decisão real",
+    "en": "Show actual decision"
+  },
+  "sc_popup_original": {
+    "pt": "Origem",
+    "en": "Origin"
+  },
+  "sc_popup_generalized": {
+    "pt": "Generalizada",
+    "en": "Generalized"
+  },
+  "sc_legend_original": {
+    "pt": "Original",
+    "en": "Original"
+  },
+  "sc_legend_generalized": {
+    "pt": "Coordenada generalizada",
+    "en": "Generalized coordinate"
+  },
+  "sc_legend_shift": {
+    "pt": "Deslocamento",
+    "en": "Displacement"
+  },
+  "sc_legend_crosses": {
+    "pt": "Saiu do país",
+    "en": "Left country"
+  },
+  "sc_legend_real": {
+    "pt": "Origem",
+    "en": "Origin"
+  },
+  "sc_legend_area": {
+    "pt": "Área de generalização",
+    "en": "Generalization area"
+  },
+  "sc_legend_uncertainty": {
+    "pt": "Incerteza (raio)",
+    "en": "Uncertainty (radius)"
+  },
+  "sc_result_publish_row": {
+    "pt": "publicar original",
+    "en": "publish original"
+  },
+  "sc_result_unassessed_row": {
+    "pt": "não avaliado",
+    "en": "not assessed"
+  },
+  "sc_result_needs_justification": {
+    "pt": "Justificativa obrigatória para Categoria 1, 2 e 3",
+    "en": "Justification required for Categories 1, 2 and 3"
+  },
+  "sc_scale_title": {
+    "pt": "Escala de generalização (Chapman)",
+    "en": "Generalization scale (Chapman)"
+  },
+  "sc_scale_table_link": {
+    "pt": "Tabela completa",
+    "en": "Full table"
+  },
+  "sc_groups_progress": {
+    "pt": "%s de %s grupos avaliados",
+    "en": "%s of %s groups assessed"
+  },
+  "sc_cascade_help_link": {
+    "pt": "Como funciona a cascata",
+    "en": "How the cascade works"
+  },
+  "sc_cascade_help_title": {
+    "pt": "Cascata de decisão (Chapman)",
+    "en": "Decision cascade (Chapman)"
+  },
+  "sc_cascade_help_body": {
+    "pt": "<p>Responda à tabela do Chapman para cada grupo. A primeira resposta <strong>Sim</strong> define a categoria:</p><ul><li>4.3 &rarr; Categoria 2 (~11 km)</li><li>4.4 &rarr; Categoria 3 (~1 km)</li><li>4.5 &rarr; Categoria 4 (~100 m)</li></ul><p>Tudo <strong>Não</strong> &rarr; publicar sem mascaramento. A Categoria 1 (~111 km) é só por exceção, em casos extremos.</p>",
+    "en": "<p>Answer Chapman's table for each group. The first <strong>Yes</strong> sets the category:</p><ul><li>4.3 &rarr; Category 2 (~11 km)</li><li>4.4 &rarr; Category 3 (~1 km)</li><li>4.5 &rarr; Category 4 (~100 m)</li></ul><p>All <strong>No</strong> &rarr; publish unmasked. Category 1 (~111 km) is exception-only, for extreme cases.</p>"
+  },
+  "sensitive_cat1_lead": {
+    "pt": "A avaliação vai até a Categoria 2. A Categoria 1 (~111 km) existe só para casos extremos — veja a tabela ao lado.",
+    "en": "The assessment goes up to Category 2. Category 1 (~111 km) exists only for extreme cases — see the table."
+  },
+  "sensitive_exc_cat1_btn": {
+    "pt": "Aplicar Categoria 1 (extremo)",
+    "en": "Apply Category 1 (extreme)"
+  },
+  "sensitive_exc_cat1_note": {
+    "pt": "Só para espécies de baixa mobilidade / endêmicas. Exige justificativa.",
+    "en": "Only for low-mobility / endemic species. Requires a justification."
+  },
+  "sensitive_reference_title": {
+    "pt": "Categorias de generalização (Chapman 2020)",
+    "en": "Generalization categories (Chapman 2020)"
+  },
+  "sensitive_table_cat1_note": {
+    "pt": "Resolução de ecorregião ou país (~111 km). Use só em casos extremos de ameaça em âmbito local ou regional — não para mascarar localidades já conhecidas pela comunidade.",
+    "en": "Ecoregion or country resolution (~111 km). Use only for extreme cases of local or regional threat — not to mask localities the community already knows."
+  },
+  "sc_border_alert_title": {
+    "pt": "Atenção: a generalização cruza fronteira",
+    "en": "Warning: generalization crosses a border"
+  },
+  "sc_border_alert_desc": {
+    "pt": "%d registros saem do país de origem.",
+    "en": "%d records leave their country of origin."
+  },
+  "sc_border_alert_recommend": {
+    "pt": "Considere uma categoria menos agressiva (ex.: Categoria 2) para manter o ponto dentro do país.",
+    "en": "Consider a less aggressive category (e.g. Category 2) to keep the point inside the country."
+  },
+  "sensitive_eml_access_note": {
+    "pt": "Este conjunto de dados contém %s registro(s) de espécies sensíveis cujas coordenadas foram generalizadas seguindo as melhores práticas do Chapman (2020). Os dados precisos podem ser disponibilizados sob solicitação ao publicador. Revisão da sensibilidade prevista para %s.",
+    "en": "This dataset contains %s sensitive-species record(s) whose coordinates were generalized following Chapman (2020) best practices. Precise data may be made available on request to the publisher. Sensitivity review due %s."
+  },
   "btn_save": {
     "pt": "Salvar",
     "en": "Save"
@@ -1782,6 +2074,18 @@
   "validate_coords_run": {
     "pt": "Validar Coordenadas",
     "en": "Validate Coordinates"
+  },
+  "validate_coords_profile_label": {
+    "pt": "Perfil",
+    "en": "Profile"
+  },
+  "validate_coords_profile_complete": {
+    "pt": "Completo",
+    "en": "Complete"
+  },
+  "validate_coords_profile_fast": {
+    "pt": "Rápido",
+    "en": "Fast"
   },
   "validate_coords_valid": {
     "pt": "Válidas",
@@ -2082,18 +2386,6 @@
   "validate_coords_missing_multiple": {
     "pt": "Mapeie latitude, longitude e country antes de validar.",
     "en": "Map latitude, longitude and country before validating."
-  },
-  "validate_coords_profile_label": {
-    "pt": "Perfil",
-    "en": "Profile"
-  },
-  "validate_coords_profile_complete": {
-    "pt": "Completo",
-    "en": "Complete"
-  },
-  "validate_coords_profile_fast": {
-    "pt": "Rápido",
-    "en": "Fast"
   },
   "validate_coords_filter_validity": {
     "pt": "Inválida",

@@ -216,7 +216,6 @@
 .sensitive-panel .sp-mode-radio .radio:first-child > label > input[type="radio"]:checked + span {
     border-color: var(--success);
     background: var(--success-bg);
-    box-shadow: 0 4px 16px -6px rgba(0, 168, 107, 0.35);
 }
 
 /* Generalize (second card) = neutral opt-in; selecting it uses the app's
@@ -226,7 +225,6 @@
     background: linear-gradient(180deg,
                                 rgba(56, 207, 246, 0.16) 0%,
                                 rgba(40, 51, 172, 0.06) 100%);
-    box-shadow: 0 4px 16px -6px rgba(40, 51, 172, 0.25);
 }
 
 /* Step 2 — generalization level (revealed) -------------------------- */
@@ -350,6 +348,274 @@
     color: var(--error);
 }
 
+/* Step 2 — per-group Chapman cascade (ADR-100) ---------------------- */
+.sensitive-panel .sp-groups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.sensitive-panel .sp-group {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    padding: var(--space-4);
+}
+
+.sensitive-panel .sp-group-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+/* Threat-status pill (CR / EN / VU / researcher-flagged). */
+/* MMA threat pill -- global (used in the assessment panel AND result rows),
+   one distinct, WCAG-AA, severity-ascending colour per category. */
+.sp-cat-pill {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-default);
+    white-space: nowrap;
+}
+
+/* VU -- gold (least severe) */
+.sp-cat-pill--vu {
+    background: #fbf1d0;
+    color: #7a5c00;
+    border-color: #e6c84d;
+}
+
+/* EN -- orange */
+.sp-cat-pill--en {
+    background: #fbe2cc;
+    color: #8a3d00;
+    border-color: #e6873c;
+}
+
+/* CR -- red */
+.sp-cat-pill--cr {
+    background: var(--error-bg);
+    color: var(--error);
+    border-color: var(--error-border);
+}
+
+/* CR (PEX) -- deep maroon (most severe) */
+.sp-cat-pill--crpex {
+    background: #f0d6de;
+    color: #6b132a;
+    border-color: #a33b57;
+}
+
+.sp-cat-pill--other {
+    background: var(--bg-main);
+    color: var(--text-muted);
+}
+
+.sensitive-panel .sp-group-count {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+/* Determination badge: result of the group's cascade. */
+.sensitive-panel .sp-group-badge {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-default);
+    background: var(--bg-main);
+    color: var(--text-muted);
+}
+
+.sensitive-panel .sp-group-badge--low {
+    background: var(--success-bg);
+    color: var(--success);
+    border-color: var(--success-border);
+}
+
+.sensitive-panel .sp-group-badge--medium {
+    background: rgba(56, 207, 246, 0.12);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.sensitive-panel .sp-group-badge--high {
+    background: var(--warning-bg);
+    color: var(--text-primary);
+    border-color: var(--warning-border);
+}
+
+.sensitive-panel .sp-group-badge--extreme {
+    background: var(--error-bg);
+    color: var(--error);
+    border-color: var(--error-border);
+}
+
+/* Cascade: yes/no questions, each revealed when the previous was "no". */
+.sensitive-panel .sp-cascade {
+    margin: var(--space-2) 0;
+}
+
+.sensitive-panel .sp-cascade .control-label {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+.sensitive-panel .sp-cascade .shiny-input-container {
+    margin-bottom: var(--space-3);
+}
+
+.sensitive-panel .sp-cascade .radio-inline {
+    margin-right: var(--space-4);
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+}
+
+/* Nested conditionalPanels draw a cascade rail. */
+.sensitive-panel .sp-cascade [data-display-if] {
+    margin-left: var(--space-3);
+    padding-left: var(--space-3);
+    border-left: 2px solid var(--border-light);
+}
+
+/* Read-only species list and the exceptions editor. */
+.sensitive-panel .sp-group-species > summary,
+.sensitive-panel .sp-exceptions > summary {
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin-top: var(--space-2);
+}
+
+.sensitive-panel .sp-override-list {
+    margin: var(--space-2) 0 0 0;
+    padding-left: var(--space-4);
+    font-family: var(--font-serif);
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    columns: 1;
+}
+
+/* Species disclosure inside each threat group: caret summary + name chips. */
+.sensitive-panel .sp-group-species > summary {
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition-fast);
+}
+
+.sensitive-panel .sp-group-species > summary:hover {
+    color: var(--accent);
+}
+
+.sensitive-panel .sp-group-species > summary::-webkit-details-marker {
+    display: none;
+}
+
+.sensitive-panel .sp-group-species > summary::before {
+    content: "\25B8";
+    font-family: var(--font-mono);
+    transition: transform var(--transition-fast);
+}
+
+.sensitive-panel .sp-group-species[open] > summary::before {
+    content: "\25BE";
+}
+
+.sensitive-panel .sp-species-list {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: var(--space-2) 0 0 0;
+    padding-left: 0;
+}
+
+.sensitive-panel .sp-species-list li {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: var(--text-xs);
+    color: var(--text-primary);
+    background: var(--bg-main);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-full);
+    padding: 1px var(--space-2);
+}
+
+.sensitive-panel .sp-exc-body {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px dashed var(--border-light);
+}
+
+.sensitive-panel .sp-assess-count {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    margin: var(--space-2) 0;
+}
+
+.sensitive-panel .sp-review-date {
+    margin-top: var(--space-4);
+}
+
+.sensitive-panel .sp-review-date .control-label {
+    font-family: var(--font-serif);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.sensitive-panel .sp-review-date .shiny-input-container,
+.sensitive-panel .sp-review-date .form-group {
+    max-width: 220px;
+}
+
+/* Custodian justification (-> dataGeneralizations). */
+.sensitive-panel .sp-justification {
+    margin-top: var(--space-4);
+}
+
+.sensitive-panel .sp-justification-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin-bottom: var(--space-1);
+}
+
+/* Asterisk note under the Category 1 red alert. */
+.sensitive-panel .sp-cat1-note {
+    margin-top: var(--space-1);
+    font-style: italic;
+    font-size: var(--text-xs);
+    color: var(--text-primary);
+    opacity: 0.85;
+}
+
+/* Generalization column in the Coordinate Validation tab (ADR-100): the panel
+   sits flush against the top of its column, beside the map. */
+.validate-coords-generalization-col .sensitive-panel {
+    margin-bottom: 0;
+}
+
 /* Disclosure (reference table) -------------------------------------- */
 .sensitive-panel .sp-disclosure {
     margin-top: var(--space-4);
@@ -399,7 +665,7 @@
     margin-top: var(--space-3);
 }
 
-.sensitive-panel .sensitive-grid-table {
+.sensitive-grid-table {
     margin: 0;
     max-width: none;
     width: 100%;
@@ -410,7 +676,7 @@
     overflow: hidden;
 }
 
-.sensitive-panel .sensitive-grid-table caption {
+.sensitive-grid-table caption {
     caption-side: top;
     font-family: var(--font-serif);
     font-size: var(--text-xs);
@@ -418,7 +684,7 @@
     padding: 0 0 var(--space-2) 0;
 }
 
-.sensitive-panel .sensitive-grid-table th {
+.sensitive-grid-table th {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     font-weight: var(--weight-semibold);
@@ -430,7 +696,7 @@
     border-bottom: 1px solid var(--border-default);
 }
 
-.sensitive-panel .sensitive-grid-table td {
+.sensitive-grid-table td {
     font-family: var(--font-serif);
     font-size: var(--text-sm);
     color: var(--text-primary);
@@ -439,16 +705,16 @@
     vertical-align: middle;
 }
 
-.sensitive-panel .sensitive-grid-table tbody tr:last-child td {
+.sensitive-grid-table tbody tr:last-child td {
     border-bottom: none;
 }
 
-.sensitive-panel .sensitive-grid-table tbody tr:nth-child(even) td {
+.sensitive-grid-table tbody tr:nth-child(even) td {
     background: rgba(40, 51, 172, 0.025);
 }
 
 /* Cost swatch (green -> red) prefixing each Chapman level. */
-.sensitive-panel .sp-grid-swatch {
+.sp-grid-swatch {
     display: inline-block;
     width: 9px;
     height: 9px;
@@ -457,31 +723,31 @@
     vertical-align: middle;
 }
 
-.sensitive-panel .sp-grid-swatch--extreme {
+.sp-grid-swatch--extreme {
     background: var(--error);
 }
 
-.sensitive-panel .sp-grid-swatch--high {
+.sp-grid-swatch--high {
     background: var(--warning);
 }
 
-.sensitive-panel .sp-grid-swatch--medium {
+.sp-grid-swatch--medium {
     background: var(--primary);
 }
 
-.sensitive-panel .sp-grid-swatch--low {
+.sp-grid-swatch--low {
     background: var(--success);
 }
 
-.sensitive-panel .sp-grid-swatch--not_sensitive {
+.sp-grid-swatch--not_sensitive {
     background: var(--border-strong);
 }
 
-.sensitive-panel .sensitive-grid-table .sp-grid-result {
+.sensitive-grid-table .sp-grid-result {
     font-weight: var(--weight-medium);
 }
 
-.sensitive-panel .sensitive-grid-table .sp-grid-value {
+.sensitive-grid-table .sp-grid-value {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     text-align: right;
@@ -490,11 +756,11 @@
 }
 
 /* "No masking" baseline row — the safe default, gently tinted green. */
-.sensitive-panel .sensitive-grid-table .sp-grid-row-baseline td {
+.sensitive-grid-table .sp-grid-row-baseline td {
     background: var(--success-bg);
 }
 
-.sensitive-panel .sensitive-grid-table .sp-grid-row-baseline .sp-grid-value {
+.sensitive-grid-table .sp-grid-row-baseline .sp-grid-value {
     color: var(--success);
     font-family: var(--font-serif);
     font-size: var(--text-sm);
@@ -520,4 +786,521 @@
     .sensitive-panel {
         padding: var(--space-4);
     }
+}
+
+/* ====================================================================== */
+/* Dedicated "Generalization" stage (mod_sensitive_coords)                */
+/* The map is the hero; assessment + result sit above it. Base .sp-*      */
+/* assessment styling is inherited via the kept .sensitive-panel wrapper. */
+/* ====================================================================== */
+
+.sensitive-coords-page {
+    padding-top: var(--space-3);
+    padding-bottom: var(--space-5);
+}
+
+.sensitive-coords-title {
+    font-family: var(--font-serif);
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-1);
+}
+
+.sensitive-coords-subtitle {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin-bottom: var(--space-4);
+    max-width: 70ch;
+}
+
+/* Two-column shell: DECIDE on the left, the consequence (result + map +
+   scale) on the right, so answer -> category -> map reads as one object. */
+.sc-decide-col {
+    display: flex;
+    flex-direction: column;
+}
+
+.sc-consequence-col {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Empty state ---------------------------------------------------------- */
+.sc-empty {
+    text-align: center;
+    padding: var(--space-5) var(--space-4);
+}
+
+.sc-empty-icon {
+    font-size: 1.8rem;
+    color: var(--border-strong);
+    margin-bottom: var(--space-2);
+}
+
+.sc-empty-title {
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-1);
+}
+
+.sc-empty-desc {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin: 0 auto;
+    max-width: 48ch;
+}
+
+/* Result card ---------------------------------------------------------- */
+.sc-result {
+    background: var(--bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-sm);
+}
+
+.sc-result-head {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: var(--weight-semibold);
+    color: var(--text-muted);
+    margin-bottom: var(--space-3);
+}
+
+.sc-result-state {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-md);
+    font-weight: var(--weight-medium);
+}
+
+.sc-result-state--publish {
+    color: var(--success);
+}
+
+.sc-result-line {
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    margin-top: var(--space-2);
+}
+
+/* Per-species result rows: threat pill + name -> outcome */
+.sc-sp-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: var(--space-2) 0;
+}
+
+.sc-sp-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+}
+
+.sc-sp-name {
+    color: var(--text-primary);
+    font-family: var(--font-serif);
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.sc-sp-arrow {
+    color: var(--text-muted);
+}
+
+.sc-sp-outcome {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+}
+
+.sc-sp-outcome--extreme { color: var(--error); }
+.sc-sp-outcome--high    { color: #8a3d00; }
+.sc-sp-outcome--medium  { color: var(--primary); }
+.sc-sp-outcome--low     { color: var(--success); }
+.sc-sp-outcome--publish { color: var(--success); }
+.sc-sp-outcome--pending { color: var(--text-muted); font-weight: var(--weight-regular); }
+
+.sc-result-foot {
+    margin-top: var(--space-3);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.sc-result-cross {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--success);
+}
+
+.sc-result-cross--danger {
+    color: var(--error);
+}
+
+.sc-result-assessed {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+/* Per-category justification guidance above the textarea. */
+.sc-just-prompt {
+    list-style: none;
+    margin: var(--space-1) 0 var(--space-2) 0;
+    padding-left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.sc-just-prompt li {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: var(--text-xs);
+    line-height: var(--leading-tight);
+    color: var(--text-muted);
+}
+
+.sc-just-dot {
+    margin-right: 0;
+    transform: translateY(1px);
+}
+
+/* Mandatory-justification warning (result foot + under the field) */
+.sc-just-warn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    color: var(--error);
+    margin-top: var(--space-1);
+}
+
+/* Confirm-decision section -------------------------------------------- */
+.sc-confirm {
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px dashed var(--border-default);
+}
+
+.sc-confirm-title {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+/* Loud border-crossing alert ------------------------------------------ */
+.sc-border-alert {
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    border-left: 4px solid var(--error);
+    border-radius: var(--radius);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.sc-border-alert-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    color: var(--error);
+    font-weight: var(--weight-semibold);
+}
+
+.sc-border-alert-title {
+    font-size: var(--text-md);
+}
+
+.sc-border-alert-desc {
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    margin-top: var(--space-1);
+}
+
+.sc-border-alert-list {
+    margin: var(--space-2) 0;
+    padding-left: var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+}
+
+.sc-border-alert-list em {
+    font-family: var(--font-serif);
+}
+
+.sc-border-alert-rec {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+/* Cat-1 alert (within the assessment column) -------------------------- */
+.sc-cat1-alert {
+    margin: var(--space-2) 0;
+}
+
+.sc-cat1-title {
+    font-weight: var(--weight-semibold);
+}
+
+/* Hero map: sits below the result strip in the consequence column ----- */
+.sc-map-container {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    margin: var(--space-2) 0;
+}
+
+/* Legend marks (reused by the scale strip) ---------------------------- */
+.sc-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sc-legend-mark {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    flex: 0 0 auto;
+}
+
+.sc-legend-mark--real {
+    border: 3px solid #1c1c26;
+    border-radius: var(--radius-full);
+    background: #ffffff;
+}
+
+.sc-legend-mark--area {
+    border: 1px solid #ffa204;
+    background: rgba(255, 162, 4, 0.22);
+}
+
+.sc-legend-mark--cross {
+    border: 1px solid #c0392b;
+    background: rgba(192, 57, 43, 0.22);
+}
+
+.sc-legend-mark--uncertainty {
+    border: 1.5px dashed #6d28d9;
+    border-radius: var(--radius-full);
+    background: transparent;
+}
+
+/* The connector is a line, so its legend swatch is a dashed line, not a box. */
+.sc-legend-mark--generalized {
+    height: 0;
+    border: none;
+    border-top: 2px dashed #0e7c86;
+    align-self: center;
+}
+
+/* Scale strip: Chapman in evidence + what-if preview + map legend ------ */
+.sc-scale {
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    background: var(--bg-card);
+    padding: var(--space-2) var(--space-3);
+}
+
+.sc-scale-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.sc-scale-label {
+    font-size: var(--text-xs);
+    font-weight: var(--weight-medium);
+    color: var(--text-muted);
+}
+
+.sc-scale-chips {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+/* Each category chip: ascending generalization, mono so the km align. The
+   leading dot (sp-grid-swatch colours) carries the category identity; the
+   active what-if chip FILLS with its category colour so the selected filter
+   reads at a glance and stays coupled to the map. */
+.sc-scale-chip {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-default);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    transition: var(--transition-fast);
+}
+
+.sc-scale-dot {
+    margin-right: 5px;
+}
+
+button.sc-scale-chip:hover {
+    background: var(--hover-bg);
+    border-color: var(--border-strong);
+}
+
+.sc-scale-chip--low:hover     { border-color: var(--success); }
+.sc-scale-chip--medium:hover  { border-color: var(--primary); }
+.sc-scale-chip--high:hover    { border-color: var(--warning); }
+.sc-scale-chip--extreme:hover { border-color: var(--error); }
+.sc-scale-chip--extreme { border-color: var(--error-border); }
+
+/* Active (selected what-if) chip: background colourised per category. */
+.sc-scale-chip--active { font-weight: var(--weight-semibold); }
+
+.sc-scale-chip--low.sc-scale-chip--active {
+    background: var(--success-bg);
+    border-color: var(--success);
+    color: var(--success);
+}
+
+.sc-scale-chip--medium.sc-scale-chip--active {
+    background: rgba(56, 207, 246, 0.16);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.sc-scale-chip--high.sc-scale-chip--active {
+    background: var(--warning-bg);
+    border-color: var(--warning);
+    color: var(--text-primary);
+}
+
+.sc-scale-chip--extreme.sc-scale-chip--active {
+    background: var(--error-bg);
+    border-color: var(--error);
+    color: var(--error);
+}
+
+.sc-scale-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-top: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.sc-ladder-actual {
+    font-size: var(--text-xs);
+    color: var(--primary);
+}
+
+/* ---- Redesign pass: assess meta, exceptions, reference ---- */
+
+/* Progress + cascade-help row above the group accordion */
+.sc-assess-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-2) 0;
+}
+
+.sc-groups-progress {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.sc-cascade-help {
+    padding: 0;
+    font-size: var(--text-xs);
+    color: var(--accent);
+    text-decoration: none;
+}
+
+/* The open group is highlighted so the active assessment is obvious. */
+.sensitive-panel .sp-group[open] {
+    border-color: var(--accent);
+}
+
+/* Exception editor: explicit Category-1 escape hatch */
+.sc-exc-cat1 {
+    margin-top: var(--space-2);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.sc-exc-cat1-btn {
+    border: 1px solid var(--error-border);
+    background: var(--error-bg);
+    color: var(--error);
+}
+
+.sc-exc-cat1-btn:hover {
+    background: var(--error);
+    color: #ffffff;
+}
+
+.sc-exc-cat1-note {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+/* Chapman reference: a fixed, elegant panel below the map (not a popover). */
+.sc-reference {
+    background: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    box-shadow: var(--shadow-sm);
+    margin-top: var(--space-2);
+}
+
+.sc-reference-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+.sc-reference-caption {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin: var(--space-1) 0 0 0;
+}
+
+/* Cat-1 row highlighted in the reference table */
+.sensitive-grid-table .sp-grid-row-cat1 > td {
+    background: var(--error-bg);
+}
+
+.sp-grid-cat1-note {
+    font-size: var(--text-xs);
+    color: var(--error);
+    margin-top: 2px;
 }
