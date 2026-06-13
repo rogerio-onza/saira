@@ -5,6 +5,12 @@
 
 testthat::test_that("provider priority follows toggle order", {
     mapped_df <- data.frame(scientificName = c("Puma concolor"), stringsAsFactors = FALSE)
+    # Pin the on-disk cache to "nothing downloaded" so the default is
+    # deterministically GBIF-only regardless of the test machine's cache.
+    testthat::local_mocked_bindings(
+        brprovider_data_available = function(provider_id) FALSE,
+        .package = "saira"
+    )
 
     shiny::testServer(
         mod_validate_names_server,
@@ -23,6 +29,27 @@ testthat::test_that("provider priority follows toggle order", {
 
             toggle_provider_selection("gbif")
             testthat::expect_identical(rv$selected_providers, c("florabr", "gbif"))
+        }
+    )
+})
+
+testthat::test_that("already-downloaded BR providers are pre-selected with GBIF on open", {
+    mapped_df <- data.frame(scientificName = c("Puma concolor"), stringsAsFactors = FALSE)
+    # Simulate Flora BR already downloaded to the on-disk cache, Fauna BR not.
+    testthat::local_mocked_bindings(
+        brprovider_data_available = function(provider_id) identical(provider_id, "florabr"),
+        .package = "saira"
+    )
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            # GBIF stays first (priority 1); the downloaded provider is appended.
+            testthat::expect_identical(rv$selected_providers, c("gbif", "florabr"))
         }
     )
 })
@@ -449,6 +476,13 @@ testthat::test_that("cancel path marks unresolved names after abort flag", {
     mapped_df <- data.frame(
         scientificName = paste("Species", seq_len(240)),
         stringsAsFactors = FALSE
+    )
+    # Pin the default provider set to GBIF-only (no BR cache) so the single-
+    # provider batch counts below are deterministic regardless of the test
+    # machine's downloaded providers.
+    testthat::local_mocked_bindings(
+        brprovider_data_available = function(provider_id) FALSE,
+        .package = "saira"
     )
 
     testthat::with_mocked_bindings(
