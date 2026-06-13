@@ -82,7 +82,13 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         validation_meta <- shiny::reactiveVal(NULL)
 
         rv <- shiny::reactiveValues(
-            selected_providers = c("gbif"),
+            # GBIF is always on (priority 1); any BR provider already downloaded
+            # to the on-disk cache is pre-selected so the user's last download
+            # persists across app restarts (the RDS cache is the persistence).
+            selected_providers = c(
+                "gbif",
+                br_provider_ids[vapply(br_provider_ids, brprovider_data_available, logical(1))]
+            ),
             starting = FALSE,
             start_requested = FALSE,
             running = FALSE,
