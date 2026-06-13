@@ -1,0 +1,284 @@
+/* =============================================================================
+   EXPORT: review-before-publish summary
+   ============================================================================= */
+
+.export-page {
+  width: 100%;
+  padding: var(--space-2) var(--space-1) var(--space-4);
+}
+
+/* Header: title + download CTA on one row; subtitle spans full width below it
+   (so the long subtitle does not get squeezed into an awkward 3-line wrap). */
+.export-header {
+  margin-bottom: var(--space-4);
+}
+
+.export-header-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.export-header-actions {
+  flex: 0 0 auto;
+}
+
+.export-title {
+  color: var(--text-primary);
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  margin-bottom: 0;
+}
+
+.export-subtitle {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin: var(--space-1) 0 0;
+  max-width: none;
+}
+
+/* Big, evident "Baixar Pacote .ZIP" CTA. */
+.export-download-btn {
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  padding: var(--space-3) var(--space-5);
+  white-space: nowrap;
+}
+
+/* Inert (blocked) state: clearly grey and unclickable, never green — the
+   actionable CTA lives in the red banner instead. */
+.export-download-btn.is-inert {
+  background: var(--border-default);
+  border-color: var(--border-default);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* Severity banner above the summary grid. */
+.export-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+/* The primary "fix it" action: pushed to the right, the green/actionable
+   element in the otherwise-red blocked banner. */
+.export-banner-action {
+  margin-left: auto;
+  white-space: nowrap;
+  font-weight: var(--weight-semibold);
+}
+
+.export-banner > .fa,
+.export-banner > svg {
+  margin-top: 0.15rem;
+  flex: 0 0 auto;
+}
+
+.export-banner-body {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.export-banner-list {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-4);
+}
+
+.export-banner--danger {
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error);
+}
+
+.export-banner--warning {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+}
+
+.export-banner--ok {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--coord-ok);
+}
+
+/* Report layout: a two-column grid so the cards line up in aligned rows
+   (Readiness | Corrections, then Generalization | Files) with equal heights
+   per row. Collapses to one column on narrower screens. */
+.export-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 991.98px) {
+  .export-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Flat cards: 1px border only, no drop shadow. */
+.export-card {
+  border: 1px solid var(--border-light);
+  box-shadow: none;
+}
+
+.export-card:hover {
+  box-shadow: none;
+}
+
+.export-card-title {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-primary);
+  font-family: var(--font-serif);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+}
+
+.export-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.export-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+}
+
+.export-metric-value {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-semibold);
+  font-size: var(--text-lg);
+  color: var(--text-primary);
+}
+
+.export-metric-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.export-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.export-term-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  border-radius: var(--radius-full);
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--border-default);
+}
+
+/* Present terms read as quiet confirmations: neutral chip, green check only.
+   This keeps the visual noise down so the orange "missing" chip stands out. */
+.export-term-chip.is-present {
+  background: var(--bg-main);
+  color: var(--text-muted);
+  border-color: var(--border-default);
+}
+
+.export-term-chip.is-present i {
+  color: var(--coord-ok);
+}
+
+.export-term-chip.is-missing {
+  background: var(--warning-bg);
+  color: var(--warning);
+  border-color: var(--warning-border);
+  font-weight: var(--weight-semibold);
+}
+
+/* Dim correction metrics whose value is zero (nothing happened there). */
+.export-metric.is-zero {
+  opacity: 0.45;
+}
+
+/* Record/term counts as quiet supporting text above the per-term chips. */
+.export-readiness-counts {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
+
+.export-info-tip {
+  color: var(--text-muted);
+  cursor: help;
+}
+
+.export-gen-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.export-gen-table th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-default);
+  padding: var(--space-1) var(--space-2);
+}
+
+.export-gen-table td {
+  padding: var(--space-1) var(--space-2);
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-primary);
+}
+
+/* Grouped file list: DwC-A core trio vs renamed auxiliary siblings. */
+.export-file-group-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-top: var(--space-2);
+}
+
+.export-file-list {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-5);
+}
+
+.export-file-list li {
+  margin-bottom: 0.2rem;
+}
+
+.export-file-list code {
+  font-size: var(--text-xs);
+}
+
+.export-muted {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-2);
+}

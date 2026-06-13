@@ -756,3 +756,24 @@
   font-family: var(--font-mono);
   font-size: var(--text-sm);
 }
+
+/* Transient highlight when the Export tab's "fix missing terms" CTA scrolls the
+   user to a field card (outline pulse — no layout shift, no shadow). */
+.field-card-flash {
+  animation: field-card-flash 2.2s ease;
+}
+
+@keyframes field-card-flash {
+  0% {
+    outline: 2px solid var(--warning);
+    outline-offset: 3px;
+  }
+  70% {
+    outline: 2px solid var(--warning);
+    outline-offset: 3px;
+  }
+  100% {
+    outline: 2px solid transparent;
+    outline-offset: 3px;
+  }
+}

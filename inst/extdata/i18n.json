@@ -35,6 +35,146 @@
     "pt": "Generalização",
     "en": "Generalization"
   },
+  "nav_export": {
+    "pt": "Exportação",
+    "en": "Export"
+  },
+  "export_title": {
+    "pt": "Revisão para publicação",
+    "en": "Review before publishing"
+  },
+  "export_subtitle": {
+    "pt": "Confira o que foi corrigido, quais espécies serão generalizadas e quais arquivos serão exportados antes de baixar o pacote.",
+    "en": "Check what was corrected, which species will be generalized and which files the bundle will contain before you download it."
+  },
+  "export_empty": {
+    "pt": "Mapeie seus dados primeiro — o resumo de exportação aparece quando houver dados mapeados.",
+    "en": "Map your data first — the export summary appears once there is mapped data."
+  },
+  "export_section_readiness": {
+    "pt": "Prontidão para exportar",
+    "en": "Export readiness"
+  },
+  "export_section_corrections": {
+    "pt": "Correções aplicadas",
+    "en": "Applied corrections"
+  },
+  "export_names_corrected": {
+    "pt": "Nomes corrigidos",
+    "en": "Names corrected"
+  },
+  "export_names_confirmed": {
+    "pt": "Nomes confirmados",
+    "en": "Names confirmed"
+  },
+  "export_coord_fixes": {
+    "pt": "Coordenadas corrigidas",
+    "en": "Coordinates fixed"
+  },
+  "export_country_fills": {
+    "pt": "Países preenchidos",
+    "en": "Countries filled"
+  },
+  "export_section_generalization": {
+    "pt": "Espécies generalizadas",
+    "en": "Generalized species"
+  },
+  "export_gen_species": {
+    "pt": "Espécie",
+    "en": "Species"
+  },
+  "export_gen_category": {
+    "pt": "Ameaça (MMA)",
+    "en": "Threat (MMA)"
+  },
+  "export_gen_tier": {
+    "pt": "Generalização",
+    "en": "Generalization"
+  },
+  "export_gen_none": {
+    "pt": "Nenhuma espécie será generalizada — as coordenadas serão publicadas como estão.",
+    "en": "No species will be generalized — coordinates will be published as held."
+  },
+  "export_tier_extreme": {
+    "pt": "País (~111 km)",
+    "en": "Country (~111 km)"
+  },
+  "export_tier_high": {
+    "pt": "Estado (~11 km)",
+    "en": "State (~11 km)"
+  },
+  "export_tier_medium": {
+    "pt": "Cidade (~1 km)",
+    "en": "City (~1 km)"
+  },
+  "export_tier_low": {
+    "pt": "Local (~100 m)",
+    "en": "Local (~100 m)"
+  },
+  "export_section_files": {
+    "pt": "Arquivos do pacote",
+    "en": "Bundle files"
+  },
+  "export_files_hint": {
+    "pt": "O download gera um .zip com estes arquivos:",
+    "en": "The download produces a .zip with these files:"
+  },
+  "export_section_files_dwca": {
+    "pt": "Darwin Core Archive (IPT)",
+    "en": "Darwin Core Archive (IPT)"
+  },
+  "export_section_files_aux": {
+    "pt": "Arquivos auxiliares",
+    "en": "Auxiliary files"
+  },
+  "export_download_zip": {
+    "pt": "Baixar Pacote .ZIP",
+    "en": "Download .ZIP Bundle"
+  },
+  "export_counts": {
+    "pt": "%d registros · %d termos DwC",
+    "en": "%d records · %d DwC terms"
+  },
+  "export_fix_terms_cta": {
+    "pt": "Corrigir termos faltantes",
+    "en": "Fix missing terms"
+  },
+  "export_fix_justification_cta": {
+    "pt": "Adicionar justificativa",
+    "en": "Add justification"
+  },
+  "export_ready_title": {
+    "pt": "Pronto para publicar.",
+    "en": "Ready to publish."
+  },
+  "export_blocked_title": {
+    "pt": "Exportação bloqueada",
+    "en": "Export blocked"
+  },
+  "export_blocked_missing": {
+    "pt": "Termos obrigatórios faltando:",
+    "en": "Required terms missing:"
+  },
+  "export_blocked_justification": {
+    "pt": "Há espécies generalizadas sem a justificativa escrita exigida para as categorias 1–3.",
+    "en": "Some generalized species lack the written justification required for categories 1–3."
+  },
+  "export_warn_title": {
+    "pt": "Atenção",
+    "en": "Heads up"
+  },
+  "export_warn_occid": {
+    "pt": "Sem occurrenceID mapeado: o IPT/GBIF gera identificadores instáveis a cada publicação. Recomenda-se mapear um occurrenceID estável.",
+    "en": "No occurrenceID mapped: IPT/GBIF generate unstable identifiers on each publish. Mapping a stable occurrenceID is recommended."
+  },
+  "export_cat_tooltip": {
+    "pt": "Categoria de ameaça (MMA/IUCN). Espécies CR, EN e VU têm coordenadas generalizadas conforme Chapman (2020).",
+    "en": "Threat category (MMA/IUCN). CR, EN and VU species have their coordinates generalized following Chapman (2020)."
+  },
+  "export_gen_tooltip": {
+    "pt": "Grade de generalização aplicada às coordenadas publicadas; as coordenadas reais vão em arquivo separado.",
+    "en": "Generalization grid applied to the published coordinates; the real coordinates ship in a separate file."
+  },
   "nav_wiki": {
     "pt": "Wiki DwC",
     "en": "DwC Wiki"
