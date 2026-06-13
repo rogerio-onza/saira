@@ -2075,18 +2075,6 @@
     "pt": "Validar Coordenadas",
     "en": "Validate Coordinates"
   },
-  "validate_coords_profile_label": {
-    "pt": "Perfil",
-    "en": "Profile"
-  },
-  "validate_coords_profile_complete": {
-    "pt": "Completo",
-    "en": "Complete"
-  },
-  "validate_coords_profile_fast": {
-    "pt": "Rápido",
-    "en": "Fast"
-  },
   "validate_coords_valid": {
     "pt": "Válidas",
     "en": "Valid"
@@ -2432,8 +2420,8 @@
     "en": "%d transposed coordinate(s) detected and correctable"
   },
   "validate_coords_transposed_applied": {
-    "pt": "%d coordenada(s) transposta(s) corrigida(s) — aplicadas na exportação",
-    "en": "%d transposed coordinate(s) corrected — applied on export"
+    "pt": "%d coordenada(s) transposta(s) corrigida(s) — já vale na generalização e exportação",
+    "en": "%d transposed coordinate(s) corrected — effective now in generalization & export"
   },
   "validate_coords_transposed_apply": {
     "pt": "Corrigir coordenadas transpostas",
@@ -2444,8 +2432,8 @@
     "en": "%d missing country value(s) — fillable from coordinates"
   },
   "validate_coords_country_filled": {
-    "pt": "%d país(es) preenchido(s) pelas coordenadas — aplicado na exportação",
-    "en": "%d country value(s) filled from coordinates — applied on export"
+    "pt": "%d país(es) preenchido(s) pelas coordenadas — já vale na generalização e exportação",
+    "en": "%d country value(s) filled from coordinates — effective now in generalization & export"
   },
   "validate_coords_country_apply": {
     "pt": "Preencher país pelas coordenadas",
@@ -2456,8 +2444,8 @@
     "en": "%d point(s) at sea + blank country — fixable by lat/lon swap"
   },
   "validate_coords_swapfill_applied": {
-    "pt": "%d corrigido(s): lat/lon trocadas + país preenchido — aplicado na exportação",
-    "en": "%d fixed: lat/lon swapped + country filled — applied on export"
+    "pt": "%d corrigido(s): lat/lon trocadas + país preenchido — já vale na generalização e exportação",
+    "en": "%d fixed: lat/lon swapped + country filled — effective now in generalization & export"
   },
   "validate_coords_swapfill_apply": {
     "pt": "Trocar lat/lon e preencher país",
@@ -2483,6 +2471,10 @@
     "pt": "Referência sensível",
     "en": "Reference hotspot"
   },
+  "validate_coords_diag_corrected": {
+    "pt": "Corrigida",
+    "en": "Corrected"
+  },
   "validate_coords_map_legend_validity": {
     "pt": "Inválida",
     "en": "Invalid"
@@ -2498,6 +2490,10 @@
   "validate_coords_map_legend_reference": {
     "pt": "Referência sensível",
     "en": "Reference hotspot"
+  },
+  "validate_coords_map_legend_corrected": {
+    "pt": "Corrigida",
+    "en": "Corrected"
   },
   "validate_coords_map_legend_reference_note": {
     "pt": "Referência sensível = ponto próximo de capital, centróide, sede GBIF ou instituição biológica.",

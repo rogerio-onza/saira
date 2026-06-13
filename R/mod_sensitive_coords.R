@@ -830,6 +830,10 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             map_obj <- leaflet::hideGroup(map_obj, "Esri.WorldImagery")
             leaflet::setView(map_obj, lng = -52, lat = -15, zoom = 3)
         })
+        # Keep the map live while its tab is hidden so leafletProxy repaints
+        # (e.g. an origin marker corrected on the Coords tab) are applied instead
+        # of dropped, otherwise the stale point lingers until a full re-render.
+        shiny::outputOptions(output, "gen_map", suspendWhenHidden = FALSE)
 
         # Single map painter so layer order is deterministic: published cells +
         # connectors are drawn FIRST, then the high-contrast "origin" markers

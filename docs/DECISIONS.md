@@ -2237,3 +2237,17 @@ Formato: ADR leve (Architecture Decision Record).
 
 **Consequencias.** Valores DwC exportados mudam (incerteza menor e mais honesta; novas colunas footprint). Mais usabilidade (nao superestima). `quarter-degree`/grids continuam validos. Snap inalterado.
 
+## ADR-102: Correcoes de coordenada refletidas em toda a aba Coordenadas (mapa/tabela/contagens) via familia "corrected"; perfil rapido removido; mapas leaflet estabilizados
+
+**Contexto.** As correcoes aceitas (transposta / preencher-pais / troca+pais) eram um payload aplicado so na exportacao e na Generalizacao; a propria aba Coordenadas continuava mostrando o ponto cru sinalizado (ex.: ponto no mar) ate o export, o que confundia o usuario ("corrigi e nada mudou aqui"). Alem disso: (a) o seletor de perfil `complete/fast` era uma decisao sem valor real (todo dataset deveria rodar as checagens de referencia); (b) os pills de filtro colidiam em cor (referencia = mar = `--info` navy; todas = problemas = accent); (c) dois bugs de render leaflet so-no-browser (ver LESSONS) deixavam marcador desatualizado/sumido.
+
+**Decisao.**
+1. **Reflexo em toda a aba.** Nova pura `apply_coord_corrections_to_result(res, coords_corrections, country_fills, occ_ids)` sobrepoe as correcoes ao resultado de `validate_coords_cc_df()`; uma reativa `effective_validation_r()` alimenta **mapa, tabela e contagens** (antes liam `coord_validation_r()` direto). Match por `occurrenceID` capturado no momento da validacao (`rv$validation_occ_ids`, alinhado a `.row_index`) — robusto a reordenacao posterior.
+2. **Familia `corrected` (resolvida, nao-problema).** Linhas cuja coordenada mudou viram `diagnostic = diagnostic_family = "corrected"`: cor teal propria (`--coord-corrected #0e7c86`), badge e item de legenda dedicados; **excluidas da contagem de "problems"** (`count_coords_diagnostics`) mas **ainda visiveis** sob o filtro "problemas" (para o usuario ver o ponto migrar do mar para a terra). Preenchimentos de pais atualizam so o valor `country`.
+3. **Perfil unico.** Removido o `radioButtons("coord_profile")` (UI/i18n/CSS); a validacao roda sempre `profile = "complete"` (as quatro checagens CoordinateCleaner de referencia). `validate_coords_cc_df()` mantem o parametro `profile` (default complete) por compatibilidade de testes.
+4. **Pills alinhados a legenda do mapa.** `reference` -> `--coord-swapped` (roxo, como o dot da legenda; antes navy = mar); `all` -> `pill-muted` (neutro), `problems` -> accent. Seis pills distintos.
+5. **Estabilidade leaflet (ver LESSONS).** `gen_map` ganha `suspendWhenHidden = FALSE` (repaint via proxy nao e descartado com a aba oculta). O `renderUI` do container do mapa de Coordenadas (`output$map_panel`) depende SO de `coord_validation_r()` — nunca de `effective_validation_r()`/correcoes — senao recria o widget leaflet a cada correcao e quebra o proxy (sintoma: filtro "Todas" esvaziava o mapa). Item de legenda "Corrigida" passa a ser sempre exibido (fora da dependencia de dados).
+6. **Mensagens.** Os tres toasts "aplicada na exportacao" passam a "ja vale na generalizacao e exportacao".
+
+**Consequencias.** A aba Coordenadas vira a fonte unica de verdade visual das correcoes (mapa/tabela/contagens consistentes com o que sera publicado). `coord_family_levels` ganha `"corrected"`. Sem mudanca no payload de export nem no contrato downstream (Generalizacao/Preview seguem aplicando os mesmos payloads). Refina o fluxo de QA das ADR-090/100; nao altera o motor de mascaramento. Zero `!important` novo.
+

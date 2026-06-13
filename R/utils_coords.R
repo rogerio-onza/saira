@@ -16,7 +16,7 @@ coord_diag_levels <- c(
     "identical_all",
     "reference"
 )
-coord_family_levels <- c("ok", "validity", "sea", "zero_equal", "reference")
+coord_family_levels <- c("ok", "validity", "sea", "zero_equal", "reference", "corrected")
 
 as_coord_numeric <- function(x) {
     raw_chr <- as.character(x)
@@ -1448,6 +1448,65 @@ apply_country_fill_payload <- function(df, payload = NULL) {
     df
 }
 
+#' Reflect accepted coordinate corrections in a validation result
+#'
+#' Overlays the accepted transposed/swap coordinate corrections and country
+#' fills onto a \code{validate_coords_cc_df()} result so the Coords tab map,
+#' table and counts show the published point instead of the flagged original
+#' (matching what Generalization and export publish). Rows whose coordinate
+#' moved are re-tagged \code{diagnostic = diagnostic_family = "corrected"} (a
+#' resolved overlay, not an outstanding problem); country fills update only the
+#' \code{country} value. Rows are matched by \code{occurrenceID} via
+#' \code{occ_ids}, the per-row occurrenceID vector captured at validation time
+#' and aligned to \code{.row_index}.
+#'
+#' @param res \code{validate_coords_cc_df()} result data.frame.
+#' @param coords_corrections List with \code{corrections} (occurrenceID +
+#'   decimalLatitude/Longitude), or NULL.
+#' @param country_fills List with \code{country} (occurrenceID + country), or NULL.
+#' @param occ_ids Character vector of occurrenceIDs indexed by \code{.row_index}.
+#' @return \code{res} with the corrections applied.
+#' @noRd
+apply_coord_corrections_to_result <- function(res, coords_corrections = NULL,
+                                              country_fills = NULL, occ_ids = NULL) {
+    if (!is.data.frame(res) || nrow(res) == 0L || !".row_index" %in% names(res)) {
+        return(res)
+    }
+    if (!is.character(occ_ids) || length(occ_ids) == 0L) {
+        return(res)
+    }
+
+    # occurrenceID -> .row_index value -> row position in res.
+    res_pos_for <- function(occ) {
+        match(match(as.character(occ), occ_ids), res$.row_index)
+    }
+
+    cc <- if (is.list(coords_corrections)) coords_corrections$corrections else NULL
+    if (is.data.frame(cc) && nrow(cc) > 0L &&
+        all(c("occurrenceID", "decimalLatitude", "decimalLongitude") %in% names(cc))) {
+        pos <- res_pos_for(cc$occurrenceID)
+        ok <- !is.na(pos)
+        if (any(ok)) {
+            p <- pos[ok]
+            res$lat_num[p] <- suppressWarnings(as.numeric(cc$decimalLatitude[ok]))
+            res$lon_num[p] <- suppressWarnings(as.numeric(cc$decimalLongitude[ok]))
+            if ("diagnostic" %in% names(res)) res$diagnostic[p] <- "corrected"
+            if ("diagnostic_family" %in% names(res)) res$diagnostic_family[p] <- "corrected"
+            if ("valid" %in% names(res)) res$valid[p] <- TRUE
+        }
+    }
+
+    cf <- if (is.list(country_fills)) country_fills$country else NULL
+    if (is.data.frame(cf) && nrow(cf) > 0L &&
+        all(c("occurrenceID", "country") %in% names(cf)) && "country" %in% names(res)) {
+        pos <- res_pos_for(cf$occurrenceID)
+        ok <- !is.na(pos)
+        if (any(ok)) res$country[pos[ok]] <- as.character(cf$country[ok])
+    }
+
+    res
+}
+
 #' Combined latitude/longitude swap + country fill for country-less sea points
 #'
 #' Handles the case where \code{country} is blank AND the verbatim point falls in
@@ -1705,7 +1764,8 @@ count_coords_diagnostics <- function(result_df) {
     as.list(c(
         total = as.integer(nrow(result_df)),
         ok = as.integer(fam_counts[["ok"]]),
-        problems = as.integer(sum(fam_counts[names(fam_counts) != "ok"])),
+        # "corrected" rows are resolved overlays, not outstanding problems.
+        problems = as.integer(sum(fam_counts[!(names(fam_counts) %in% c("ok", "corrected"))])),
         missing = as.integer(sum(diag_vec == "validity_missing", na.rm = TRUE)),
         fam_counts
     ))
@@ -1808,7 +1868,8 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             validity = "#C0392B",
             sea = "#252659",
             zero_equal = "#FFA204",
-            reference = "#8b5cf6"
+            reference = "#8b5cf6",
+            corrected = "#0e7c86"
         )
         color_vec <- unname(color_map[out$diagnostic_family])
         color_vec[is.na(color_vec)] <- "#C0392B"
@@ -1821,7 +1882,8 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             sea = "Sea",
             zero_equal = "Zero/Equal",
             identical_all = "Identical coordinates",
-            reference = "Reference hotspot"
+            reference = "Reference hotspot",
+            corrected = "Corrected"
         )
         if (!is.null(issue_labels) && length(issue_labels) > 0L) {
             label_names <- names(issue_labels)
@@ -1837,9 +1899,13 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             out$diagnostic_family == "ok",
             "coord-issue-badge-ok",
             ifelse(
-                out$diagnostic_family == "validity",
-                "coord-issue-badge-error",
-                "coord-issue-badge-warning"
+                out$diagnostic_family == "corrected",
+                "coord-issue-badge-corrected",
+                ifelse(
+                    out$diagnostic_family == "validity",
+                    "coord-issue-badge-error",
+                    "coord-issue-badge-warning"
+                )
             )
         )
 

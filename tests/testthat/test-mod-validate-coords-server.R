@@ -113,7 +113,7 @@ testthat::test_that("validate coords does not auto-run on initialization", {
     )
 })
 
-testthat::test_that("validate coords runs with lat/lon/country and respects profile toggle", {
+testthat::test_that("validate coords runs with lat/lon/country and always uses the complete profile", {
     mapped_df <- data.frame(
         decimalLatitude = c(-10, -11),
         decimalLongitude = c(-50, -51),
@@ -170,12 +170,8 @@ testthat::test_that("validate coords runs with lat/lon/country and respects prof
             out <- returned()
             testthat::expect_true(is.data.frame(out))
             testthat::expect_equal(nrow(out), nrow(mapped_df))
+            # The quick/fast profile was removed; validation is always complete.
             testthat::expect_identical(captured_profile, "complete")
-
-            session$setInputs(coord_profile = "fast")
-            session$setInputs(validate = 2)
-            flush_validation_cycle(session)
-            testthat::expect_identical(captured_profile, "fast")
         }
     )
 })
