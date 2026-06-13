@@ -149,3 +149,48 @@ testthat::test_that("no sensitive species yields an empty overview and no levels
         }
     )
 })
+
+# Regression: a transposed-coordinate correction applied on the Coords tab must
+# flow into the generalization's effective data (the origin-marker source) the
+# moment the payload changes -- the data layer that the gen map paints from. The
+# stale-marker bug was a Leaflet render artefact, not this data path; this guards
+# the path itself. Uses the website example's transposed row (MN-0042821).
+testthat::test_that("coords correction payload moves the origin coordinate reactively", {
+    df <- data.frame(
+        occurrenceID = "MN-0042821",
+        scientificName = "Tangara fastuosa",
+        decimalLatitude = "-35.5500",
+        decimalLongitude = "-8.7300",
+        country = "Brasil",
+        stringsAsFactors = FALSE
+    )
+    payload_rv <- shiny::reactiveVal(NULL)
+    shiny::testServer(
+        saira:::mod_sensitive_coords_server,
+        args = list(
+            data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en"),
+            coords_correction_payload_r = payload_rv
+        ),
+        {
+            session$flushReact()
+            # Before correction: origin sits at the swapped (sea) coordinate.
+            before <- effective_data_r()
+            testthat::expect_equal(before$decimalLatitude[1], "-35.5500")
+            testthat::expect_equal(before$decimalLongitude[1], "-8.7300")
+
+            # Apply the transposed correction exactly as the Coords tab does.
+            payload_rv(list(corrections = data.frame(
+                occurrenceID = "MN-0042821",
+                decimalLatitude = -8.73,
+                decimalLongitude = -35.55,
+                stringsAsFactors = FALSE
+            )))
+            session$flushReact()
+
+            after <- effective_data_r()
+            testthat::expect_equal(after$decimalLatitude[1], "-8.73")
+            testthat::expect_equal(after$decimalLongitude[1], "-35.55")
+        }
+    )
+})

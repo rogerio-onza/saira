@@ -88,3 +88,54 @@ testthat::test_that("apply_coords_correction_payload is a no-op on empty/invalid
     empty_payload <- list(corrections = df[0, c("occurrenceID"), drop = FALSE])
     testthat::expect_identical(apply_coords_correction_payload(df, empty_payload), df)
 })
+
+testthat::test_that("apply_coord_corrections_to_result overlays corrections and country fills", {
+    res <- data.frame(
+        .row_index = 1:3,
+        lat_num = c(-35.55, -8.80, -9.32),
+        lon_num = c(-8.73, -35.85, -36.47),
+        diagnostic = c("sea", "ok", "validity_bounds"),
+        diagnostic_family = c("sea", "ok", "validity"),
+        valid = c(FALSE, TRUE, FALSE),
+        country = c("Brasil", "Brasil", ""),
+        stringsAsFactors = FALSE
+    )
+    occ_ids <- c("A", "B", "C") # aligned to .row_index 1, 2, 3
+
+    cc <- list(corrections = data.frame(
+        occurrenceID = "A", decimalLatitude = -8.73, decimalLongitude = -35.55,
+        stringsAsFactors = FALSE
+    ))
+    cf <- list(country = data.frame(
+        occurrenceID = "C", country = "Brazil", stringsAsFactors = FALSE
+    ))
+
+    out <- apply_coord_corrections_to_result(res, cc, cf, occ_ids)
+    # Corrected row moved + re-tagged as a resolved overlay.
+    testthat::expect_equal(out$lat_num[1], -8.73)
+    testthat::expect_equal(out$lon_num[1], -35.55)
+    testthat::expect_equal(out$diagnostic_family[1], "corrected")
+    testthat::expect_equal(out$diagnostic[1], "corrected")
+    testthat::expect_true(out$valid[1])
+    # Country fill updates only the value.
+    testthat::expect_equal(out$country[3], "Brazil")
+    testthat::expect_equal(out$diagnostic_family[3], "validity")
+    # Untouched row unchanged.
+    testthat::expect_equal(out$diagnostic_family[2], "ok")
+    testthat::expect_equal(out$lat_num[2], -8.80)
+})
+
+testthat::test_that("apply_coord_corrections_to_result is a safe no-op without occ_ids/payloads", {
+    res <- data.frame(
+        .row_index = 1:2, lat_num = c(-4.33, -7.23), lon_num = c(-38.88, -39.41),
+        diagnostic = c("ok", "ok"), diagnostic_family = c("ok", "ok"),
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_identical(apply_coord_corrections_to_result(res, NULL, NULL, NULL), res)
+    testthat::expect_identical(apply_coord_corrections_to_result(res, NULL, NULL, character(0)), res)
+    cc <- list(corrections = data.frame(
+        occurrenceID = "Z", decimalLatitude = 1, decimalLongitude = 2, stringsAsFactors = FALSE
+    ))
+    # occurrenceID not present in occ_ids -> no change.
+    testthat::expect_identical(apply_coord_corrections_to_result(res, cc, NULL, c("A", "B")), res)
+})

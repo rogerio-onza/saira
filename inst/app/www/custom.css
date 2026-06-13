@@ -36,6 +36,7 @@
   --coord-ok: #00a86b;
   --coord-missing: rgba(28, 28, 38, 0.35);
   --coord-swapped: #6d28d9;
+  --coord-corrected: #0e7c86;
 
   /* Mapping Badges */
   --color-badge-ambiguous: #e67e22;
@@ -4080,27 +4081,6 @@ table.dataTable tbody tr.validate-invalid td {
   color: var(--warning);
 }
 
-.coords-profile-group {
-  margin-bottom: var(--space-3);
-}
-
-.coords-profile-label {
-  display: block;
-  font-size: var(--text-xs);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  margin-bottom: var(--space-1);
-}
-
-.coords-profile-group .radio {
-  margin: 0;
-}
-
-.coords-profile-group .radio-inline {
-  margin-right: var(--space-3);
-}
-
 .validate-action-help {
   font-size: var(--text-xs);
   color: var(--text-muted);
@@ -4220,6 +4200,10 @@ table.dataTable tbody tr.validate-invalid td {
   background: var(--coord-swapped);
 }
 
+.coords-map-legend-dot-corrected {
+  background: var(--coord-corrected);
+}
+
 .coords-reference-note {
   display: inline-flex;
   align-items: center;
@@ -4267,6 +4251,12 @@ table.dataTable tbody tr.validate-invalid td {
   background: var(--warning-bg);
   color: var(--warning);
   border: 1px solid var(--warning-border);
+}
+
+.coord-issue-badge-corrected {
+  background: rgba(14, 124, 134, 0.12);
+  color: var(--coord-corrected);
+  border: 1px solid rgba(14, 124, 134, 0.35);
 }
 
 .coord-issue-badge-missing {
@@ -4362,6 +4352,14 @@ table.dataTable tbody tr.validate-invalid td {
 .pill-muted.active {
   background: var(--text-muted);
   border-color: var(--text-muted);
+}
+
+/* Reference pill: match the map legend's "reference" dot (--coord-swapped),
+   distinct from the sea pill which shares --info with the legend's sea dot. */
+.pill-reference.active {
+  background: var(--coord-swapped);
+  border-color: var(--coord-swapped);
+  color: #ffffff;
 }
 
 .validation-stream-window-note {

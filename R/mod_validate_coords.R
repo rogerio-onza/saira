@@ -192,8 +192,24 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             key
         })
 
-        filtered_result_r <- shiny::reactive({
+        # Overlay accepted corrections onto the raw validation result so the
+        # map, table and pill counts all show the published point (mirrors what
+        # Generalization and export apply). Single source feeding all three.
+        effective_validation_r <- shiny::reactive({
             res <- coord_validation_r()
+            if (is.null(res)) {
+                return(res)
+            }
+            apply_coord_corrections_to_result(
+                res,
+                coords_corrections = rv$coords_corrections,
+                country_fills = rv$country_fills,
+                occ_ids = rv$validation_occ_ids
+            )
+        })
+
+        filtered_result_r <- shiny::reactive({
+            res <- effective_validation_r()
             shiny::req(res)
             key <- active_filter()
 
@@ -216,10 +232,10 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             out <- res[keep, , drop = FALSE]
             rownames(out) <- NULL
             out
-        }) |> shiny::bindCache(coord_validation_r(), active_filter())
+        }) |> shiny::bindCache(effective_validation_r(), active_filter())
 
         family_counts <- shiny::reactive({
-            res <- coord_validation_r()
+            res <- effective_validation_r()
             if (is.null(res) || !is.data.frame(res) || nrow(res) == 0L) {
                 return(c(
                     all = 0L,
@@ -243,7 +259,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
         })
 
         map_data_r <- shiny::reactive({
-            res <- coord_validation_r()
+            res <- effective_validation_r()
             shiny::req(res)
 
             label_keys <- c(
@@ -351,23 +367,6 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                             shiny::span(class = paste("coords-gate-value", if (country_ok) "coords-gate-ok" else "coords-gate-missing"), country_desc)
                         )
                     ),
-                    shiny::div(
-                        class = "coords-profile-group mt-3",
-                        shiny::span(class = "coords-profile-label", tr("validate_coords_profile_label", lang_r())),
-                        shiny::radioButtons(
-                            inputId = ns("coord_profile"),
-                            label = NULL,
-                            choices = stats::setNames(
-                                c("complete", "fast"),
-                                c(
-                                    tr("validate_coords_profile_complete", lang_r()),
-                                    tr("validate_coords_profile_fast", lang_r())
-                                )
-                            ),
-                            selected = "complete",
-                            inline = TRUE
-                        )
-                    ),
                     shiny::actionButton(
                         inputId = ns("validate"),
                         label = run_label,
@@ -435,13 +434,17 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
 
             counts <- family_counts()
             active_key <- active_filter()
+            # Active-state colours mirror the map legend dots so each pill reads
+            # as its category: validity = error, sea = info, zero_equal =
+            # warning, reference = swapped/purple. "all" is the neutral reset
+            # (muted) and "problems" the primary accent, so the six are distinct.
             pill_defs <- list(
-                list(key = "all", class = "", label_key = "validate_coords_filter_all"),
+                list(key = "all", class = "pill-muted", label_key = "validate_coords_filter_all"),
                 list(key = "problems", class = "", label_key = "validate_coords_filter_problems"),
                 list(key = "validity", class = "pill-error", label_key = "validate_coords_filter_validity"),
                 list(key = "sea", class = "pill-info", label_key = "validate_coords_filter_sea"),
                 list(key = "zero_equal", class = "pill-warning", label_key = "validate_coords_filter_zero_equal"),
-                list(key = "reference", class = "pill-info", label_key = "validate_coords_filter_reference")
+                list(key = "reference", class = "pill-reference", label_key = "validate_coords_filter_reference")
             )
 
             shiny::div(
@@ -475,6 +478,9 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             )
         })
 
+        # NOTE: depend only on coord_validation_r() here. This renderUI hosts the
+        # leafletOutput, so any extra reactive dependency (e.g. on corrections)
+        # would recreate the map widget mid-session and break proxy repaints.
         output$map_panel <- shiny::renderUI({
             res <- coord_validation_r()
             if (is.null(res) || !is.data.frame(res) || nrow(res) == 0L) {
@@ -496,7 +502,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                         shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-validity"), shiny::span(tr("validate_coords_map_legend_validity", lang_r()))),
                         shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-sea"), shiny::span(tr("validate_coords_map_legend_sea", lang_r()))),
                         shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-zero-equal"), shiny::span(tr("validate_coords_map_legend_zero_equal", lang_r()))),
-                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-reference"), shiny::span(tr("validate_coords_map_legend_reference", lang_r())))
+                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-reference"), shiny::span(tr("validate_coords_map_legend_reference", lang_r()))),
+                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-corrected"), shiny::span(tr("validate_coords_map_legend_corrected", lang_r())))
                     ),
                     shiny::div(
                         class = "coords-reference-note",
@@ -625,7 +632,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     lat2 = lat_max
                 )
             }),
-            coord_validation_r(),
+            effective_validation_r(),
             active_filter()
         )
 
@@ -639,6 +646,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 zero_equal = "validate_coords_diag_zero_equal",
                 identical_all = "validate_coords_diag_identical_all",
                 reference = "validate_coords_diag_reference",
+                corrected = "validate_coords_diag_corrected",
                 "validate_coords_diag_validity_bounds"
             )
         }
@@ -647,6 +655,9 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             fam <- as.character(fam)
             if (identical(fam, "ok")) {
                 return("coord-issue-badge-ok")
+            }
+            if (identical(fam, "corrected")) {
+                return("coord-issue-badge-corrected")
             }
             if (identical(fam, "validity")) {
                 return("coord-issue-badge-error")
@@ -800,13 +811,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                             stop(tr("validate_coords_missing_multiple", lang_r()))
                         }
 
-                        profile_value <- as.character(input$coord_profile)
-                        profile_value <- profile_value[!is.na(profile_value) & nzchar(profile_value)]
-                        if (length(profile_value) == 0L) {
-                            profile_value <- "complete"
-                        } else {
-                            profile_value <- profile_value[[1]]
-                        }
+                        profile_value <- "complete"
 
                         validate_coords_cc_df(
                             df = df,
@@ -835,6 +840,13 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 coord_validation_r(result)
                 rv$stream_filter <- "problems"
                 rv$last_run_status <- "success"
+                # occurrenceID per row (aligned to .row_index) so accepted
+                # corrections can be overlaid back onto this result for display.
+                rv$validation_occ_ids <- if ("occurrenceID" %in% names(df)) {
+                    as.character(df$occurrenceID)
+                } else {
+                    character(0)
+                }
 
                 # Detect transposed / sign-flipped coordinates correctable
                 # against the informed country (reuses the same data frame).
