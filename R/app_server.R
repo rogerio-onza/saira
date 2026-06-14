@@ -56,6 +56,10 @@ app_server <- function(input, output, session) {
         tr("nav_generalize", lang_r())
     })
 
+    output$nav_export_title <- shiny::renderUI({
+        tr("nav_export", lang_r())
+    })
+
     output$nav_wiki_title <- shiny::renderUI({
         tr("nav_wiki", lang_r())
     })
@@ -112,20 +116,37 @@ app_server <- function(input, output, session) {
         country_fill_payload_r = country_fill_payload_r
     )
 
-    # Consumers of mapped_data
-    mod_preview_server(
-        "preview",
-        preview_data,
+    # Preview is read-only (the download/export flow lives in the Export tab).
+    mod_preview_server("preview", preview_data, lang_r)
+
+    # Export review + publish hub: the same validation/generalization payloads
+    # feed the summary, and the DwC-A download flow lives here (ADR-103).
+    mod_export_server(
+        "export",
+        mapped_data,
         lang_r,
-        download_data_r            = mapped_data,
-        name_review_payload_r      = name_review_payload_r,
-        sensitivity_payload_r      = sensitivity_payload_r,
+        download_data_r                    = mapped_data,
+        name_review_payload_r              = name_review_payload_r,
+        coords_correction_payload_r        = coords_correction_payload_r,
+        country_fill_payload_r             = country_fill_payload_r,
+        sensitivity_payload_r              = sensitivity_payload_r,
         sensitive_generalization_payload_r = sensitive_generalization_payload_r,
-        raw_data_r                 = raw_data,
-        map_values_r               = mapping_result$map_values_r,
-        custom_values_r            = mapping_result$custom_values_r,
-        coords_correction_payload_r = coords_correction_payload_r,
-        country_fill_payload_r     = country_fill_payload_r
+        raw_data_r                         = raw_data,
+        map_values_r                       = mapping_result$map_values_r,
+        custom_values_r                    = mapping_result$custom_values_r,
+        # Bind the root session: this callback fires inside the export module's
+        # reactive context, so without an explicit session nav_select would
+        # namespace "main_nav" and silently no-op. When a term is given, also
+        # scroll the Mapping tab to that field card and flash it.
+        on_navigate                        = function(tab, term = NULL) {
+            bslib::nav_select("main_nav", selected = tab, session = session)
+            if (!is.null(term) && length(term) == 1L && nzchar(term)) {
+                session$sendCustomMessage(
+                    "saira_focus_field",
+                    list(id = paste0("mapping-fieldcard_", term))
+                )
+            }
+        }
     )
 
     # Independent modules (no data dependency)

@@ -1224,3 +1224,61 @@ clean_scientific_names <- function(names_vector) {
 
     return(names_vector)
 }
+
+#' Slugify a dataset name for use in file names
+#'
+#' Transliterates accents to ASCII, lowercases, and collapses any run of
+#' non-alphanumeric characters into a single hyphen (so `"Meu Data Set"` ->
+#' `"meu-data-set"`). Returns `""` when there is no usable name.
+#'
+#' @param x Dataset name (character) or NULL.
+#' @return Lowercase, hyphen-separated ASCII slug, or `""`.
+#' @noRd
+slugify_dataset_name <- function(x) {
+    if (is.null(x) || length(x) == 0L) return("")
+    s <- as.character(x)[1L]
+    if (is.na(s)) return("")
+    s <- iconv(s, to = "ASCII//TRANSLIT")
+    if (is.na(s)) return("")
+    s <- tolower(s)
+    s <- gsub("[^a-z0-9]+", "-", s)
+    s <- gsub("^-+|-+$", "", s)
+    s
+}
+
+#' Export bundle file names, grouped by role
+#'
+#' Single source of truth for what the DwC-A download contains, so the Export
+#' tab summary and the download handler never drift apart. The Darwin Core
+#' Archive core trio keeps its standard names (IPT/GBIF require them); the
+#' convenience siblings are renamed after the dataset so a user can tell whose
+#' files these are once unzipped (e.g. `meu-data-set-sensitive-coords.csv`).
+#'
+#' @param dataset_name Dataset name (from the `datasetName` constant), or NULL.
+#' @param has_sensitive Whether any record was generalized (adds the private
+#'   real-coordinates CSV to the auxiliary group).
+#' @return List with `slug`, `zip` (download file name), `dwca` (standard core
+#'   trio) and `auxiliary` (named character vector: `xlsx`, `mapping_guide`,
+#'   and `sensitive_coords` when `has_sensitive`).
+#' @noRd
+export_bundle_filenames <- function(dataset_name = NULL, has_sensitive = FALSE) {
+    slug <- slugify_dataset_name(dataset_name)
+    if (!nzchar(slug)) slug <- "saira"
+
+    # A list (not a named vector) so absent slots read back as NULL instead of
+    # erroring on `[[`.
+    auxiliary <- list(
+        xlsx = paste0(slug, "-occurrences.xlsx"),
+        mapping_guide = paste0(slug, "-mapping-guide.txt")
+    )
+    if (isTRUE(has_sensitive)) {
+        auxiliary[["sensitive_coords"]] <- paste0(slug, "-sensitive-coords.csv")
+    }
+
+    list(
+        slug = slug,
+        zip = paste0(slug, "-dwc-archive.zip"),
+        dwca = c("occurrence.txt", "meta.xml", "eml.xml"),
+        auxiliary = auxiliary
+    )
+}

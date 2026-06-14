@@ -69,7 +69,8 @@
    Coords permanece sticky, entao so o conteudo da direita rola. */
 .tab-content > .tab-pane:has(.wiki-module),
 .tab-content > .tab-pane:has(.preview-page),
-.tab-content > .tab-pane:has(.validate-coords-page) {
+.tab-content > .tab-pane:has(.validate-coords-page),
+.tab-content > .tab-pane:has(.export-page) {
   overflow-y: auto;
   height: auto;
   max-height: none;

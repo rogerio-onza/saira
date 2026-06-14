@@ -147,6 +147,18 @@ app_ui <- function() {
                 )
             ),
 
+            # Tab: Export (review-before-publish summary; last workflow step)
+            bslib::nav_panel(
+                title = shiny::tags$span(
+                    class = "nav-title-container",
+                    shiny::tags$span(tr("nav_export", "pt"), class = "nav-title-static"),
+                    shiny::uiOutput("nav_export_title", class = "nav-title-dynamic", inline = TRUE)
+                ),
+                value = "export",
+                icon = shiny::icon("file-export", class = "fa-solid"),
+                mod_export_ui("export")
+            ),
+
             # Tab: Wiki
             bslib::nav_panel(
                 title = shiny::tags$span(

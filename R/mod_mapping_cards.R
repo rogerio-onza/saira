@@ -30,6 +30,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
         term %in% c("taxonRank", "specificEpithet")
 
     shiny::div(
+        id = ns(paste0("fieldcard_", term)),
         class = paste("field-card no-break", cat_class, if (is_mapped) "field-mapped" else "field-unmapped"),
         shiny::div(
             class = "field-header-row",
