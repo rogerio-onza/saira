@@ -4,20 +4,7 @@
 \alias{mod_preview_server}
 \title{Preview Module Server}
 \usage{
-mod_preview_server(
-  id,
-  mapped_data_r,
-  lang_r,
-  download_data_r = mapped_data_r,
-  name_review_payload_r = NULL,
-  sensitivity_payload_r = NULL,
-  sensitive_generalization_payload_r = NULL,
-  raw_data_r = NULL,
-  map_values_r = NULL,
-  custom_values_r = NULL,
-  coords_correction_payload_r = NULL,
-  country_fill_payload_r = NULL
-)
+mod_preview_server(id, mapped_data_r, lang_r)
 }
 \arguments{
 \item{id}{Module ID}
@@ -25,30 +12,12 @@ mod_preview_server(
 \item{mapped_data_r}{Reactive data frame with mapped data}
 
 \item{lang_r}{Reactive language value}
-
-\item{download_data_r}{Reactive data frame with full mapped data for download}
-
-\item{name_review_payload_r}{Optional reactive payload from name manual review}
-
-\item{sensitivity_payload_r}{Optional reactive data.frame of per-species
-sensitivity overrides (scientificName, sensitive) from the Validation >
-Names tab (ADR-092). Still needed so the export masking honours the
-researcher's mark/unmark when resolving which rows are sensitive.}
-
-\item{sensitive_generalization_payload_r}{Optional reactive returning the
-Chapman generalization decision built in the Validation > Coordinates tab
-(ADR-100): a list with `levels` (named `scientificName -> tier` map),
-`review_date`, `justification` and `enabled`.}
-
-\item{raw_data_r}{Optional reactive with the original uploaded data.frame
-(for ZIP bundle: appending non-mapped raw cols and the mapping_guide.txt).}
-
-\item{map_values_r}{Optional reactive with the current mapping list
-(DwC term -> source column(s)). Required for the mapping_guide.txt.}
 }
 \value{
 Reactive preview data frame
 }
 \description{
-Preview Module Server
+Read-only preview of the mapped Darwin Core data. The download/export flow
+lives in the dedicated Export tab (ADR-103), so this module only renders the
+preview table.
 }
