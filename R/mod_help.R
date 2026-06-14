@@ -78,215 +78,76 @@ help_get_author_meta <- function() {
     )
 }
 
-help_bullet_item <- function(text) {
-    shiny::div(
-        class = "help-bullet-item",
-        shiny::tags$span(class = "help-bullet-dot"),
-        shiny::tags$span(class = "help-bullet-text", text)
-    )
-}
-
-help_faq_card <- function(question, answer) {
-    shiny::div(
-        class = "help-faq-card",
-        shiny::div(class = "help-faq-question", question),
-        shiny::div(class = "help-faq-answer", answer)
-    )
-}
-
-help_separator_tokens <- function(tokens, separator_symbol) {
-    if (!length(tokens)) {
-        return(list())
-    }
-
-    parts <- list()
-    for (idx in seq_along(tokens)) {
-        parts[[length(parts) + 1L]] <- shiny::tags$span(tokens[[idx]])
-        if (idx < length(tokens)) {
-            parts[[length(parts) + 1L]] <- shiny::tags$span(
-                class = "help-separator-demo-emph",
-                separator_symbol
-            )
-        }
-    }
-
-    parts
-}
-
-help_dwc_content <- function(lang) {
-    bullet_items <- lapply(
-        X = c(
-            tr("help_dwc_bullet_occurrence", lang),
-            tr("help_dwc_bullet_location", lang),
-            tr("help_dwc_bullet_taxonomy", lang),
-            tr("help_dwc_bullet_event", lang)
-        ),
-        FUN = help_bullet_item
-    )
-
-    shiny::tagList(
-        shiny::p(
-            shiny::strong(tr("help_dwc_term_label", lang)),
-            " ",
-            tr("help_dwc_p1_prefix", lang),
-            " ",
-            shiny::tags$a(
-                href = "https://www.tdwg.org/",
-                target = "_blank",
-                rel = "noopener noreferrer",
-                tr("help_link_tdwg", lang)
-            ),
-            tr("help_dwc_p1_suffix", lang)
-        ),
-        shiny::p(tr("help_dwc_p2", lang)),
-        shiny::div(class = "help-bullet-list", bullet_items),
-        shiny::p(
-            tr("help_dwc_p3_prefix", lang),
-            " ",
-            shiny::tags$a(
-                href = "https://sibbr.gov.br/",
-                target = "_blank",
-                rel = "noopener noreferrer",
-                tr("help_link_sibbr", lang)
-            ),
-            tr("help_dwc_p3_suffix", lang)
-        )
-    )
-}
-
-help_faq_content <- function(lang) {
-    shiny::div(
-        class = "help-faq-grid",
-        help_faq_card(
-            tr("help_faq_q1", lang),
-            tr("help_faq_a1", lang)
-        ),
-        help_faq_card(
-            tr("help_faq_q2", lang),
-            tr("help_faq_a2", lang)
-        ),
-        help_faq_card(
-            tr("help_faq_q3", lang),
-            shiny::tagList(
-                tr("help_faq_a3_prefix", lang),
-                " ",
-                shiny::tags$code("eventDate"),
-                " ",
-                tr("help_faq_a3_suffix", lang)
-            )
-        ),
-        help_faq_card(
-            tr("help_faq_q4", lang),
-            tr("help_faq_a4", lang)
-        )
-    )
-}
-
-help_formats_content <- function(lang) {
-    format_items <- lapply(
-        X = c(
-            tr("help_formats_bullet_1", lang),
-            tr("help_formats_bullet_2", lang),
-            tr("help_formats_bullet_3", lang),
-            tr("help_formats_bullet_4", lang)
-        ),
-        FUN = help_bullet_item
-    )
-
-    shiny::tagList(
-        shiny::p(tr("help_formats_p1", lang)),
-        shiny::p(tr("help_formats_p2", lang)),
-        shiny::div(class = "help-bullet-list", format_items)
-    )
-}
-
-help_separator_content <- function(lang) {
-    input_tokens <- c("catalogNumber", "fieldNumber", "recordNumber")
-    output_tokens <- c("catalogNumber", "fieldNumber", "recordNumber")
-
-    separator_items <- lapply(
-        X = c(
-            tr("help_separator_bullet_1", lang),
-            tr("help_separator_bullet_2", lang),
-            tr("help_separator_bullet_3", lang)
-        ),
-        FUN = help_bullet_item
-    )
-
-    shiny::tagList(
-        shiny::p(tr("help_separator_p1", lang)),
-        shiny::div(
-            class = "help-separator-demo",
-            shiny::tags$span(class = "help-separator-demo-label", tr("help_separator_demo_input", lang)),
-            shiny::tags$span(
-                class = "help-separator-demo-input-value",
-                help_separator_tokens(input_tokens, ";")
-            ),
-            shiny::tags$span(
-                class = "help-separator-demo-arrow",
-                shiny::tags$i(class = "fa-solid fa-arrow-right", `aria-hidden` = "true")
-            ),
-            shiny::tags$span(
-                class = "help-separator-demo-output-value",
-                help_separator_tokens(output_tokens, "|")
-            )
-        ),
-        shiny::p(tr("help_separator_p2", lang)),
-        shiny::div(class = "help-bullet-list", separator_items)
-    )
-}
-
-help_panels <- function(lang) {
-    is_pt <- identical(lang, "pt")
-
+help_workflow_steps <- function(lang) {
     list(
         list(
-            value = "dwc",
-            title = tr("help_section_dwc_title", lang),
-            icon = "fa-solid fa-book-open",
-            theme = "dwc",
-            search_text = if (is_pt) {
-                "darwin core dwc tdwg sibbr biodiversidade taxonomia ocorrencia localizacao coleta"
-            } else {
-                "darwin core dwc tdwg sibbr biodiversity taxonomy occurrence location collection"
-            },
-            content = help_dwc_content(lang)
+            icon = "fa-solid fa-upload",
+            title = tr("help_workflow_step_upload_title", lang),
+            desc = tr("help_workflow_step_upload_desc", lang)
         ),
         list(
-            value = "faq",
-            title = tr("help_section_faq_title", lang),
-            icon = "fa-solid fa-circle-question",
-            theme = "faq",
-            search_text = if (is_pt) {
-                "faq perguntas frequentes csv tamanho arquivo automapeamento privacidade eventdate"
-            } else {
-                "faq questions csv file size auto-mapping privacy eventdate"
-            },
-            content = help_faq_content(lang)
+            icon = "fa-solid fa-arrows-alt",
+            title = tr("help_workflow_step_map_title", lang),
+            desc = tr("help_workflow_step_map_desc", lang)
         ),
         list(
-            value = "formats",
-            title = tr("help_section_formats_title", lang),
-            icon = "fa-solid fa-file-csv",
-            theme = "formats",
-            search_text = if (is_pt) {
-                "formatos csv utf-8 delimitador separador virgula ponto e virgula colunas"
-            } else {
-                "formats csv utf-8 delimiter separator semicolon columns"
-            },
-            content = help_formats_content(lang)
+            icon = "fa-solid fa-clipboard-check",
+            title = tr("help_workflow_step_validate_title", lang),
+            desc = tr("help_workflow_step_validate_desc", lang)
         ),
         list(
-            value = "separator",
-            title = tr("help_section_separator_title", lang),
-            icon = "fa-solid fa-exchange-alt",
-            theme = "separator",
-            search_text = if (is_pt) {
-                "separador multiplos valores ponto e virgula pipe mapeamento dwc"
-            } else {
-                "separator multiple values semicolon pipe mapping dwc"
-            },
-            content = help_separator_content(lang)
+            icon = "fa-solid fa-shield-halved",
+            title = tr("help_workflow_step_generalize_title", lang),
+            desc = tr("help_workflow_step_generalize_desc", lang)
+        ),
+        list(
+            icon = "fa-solid fa-file-export",
+            title = tr("help_workflow_step_export_title", lang),
+            desc = tr("help_workflow_step_export_desc", lang)
+        )
+    )
+}
+
+help_workflow_step_item <- function(step, idx, is_last) {
+    shiny::div(
+        class = paste("help-workflow-step", if (is_last) "is-last" else ""),
+        shiny::div(
+            class = "help-workflow-step-rail",
+            shiny::tags$span(class = "help-workflow-step-num", sprintf("%02d", idx)),
+            shiny::tags$span(class = "help-workflow-step-line")
+        ),
+        shiny::div(
+            class = "help-workflow-step-content",
+            shiny::div(
+                class = "help-workflow-step-head",
+                shiny::tags$span(
+                    class = "help-workflow-step-icon",
+                    shiny::tags$i(class = step$icon, `aria-hidden` = "true")
+                ),
+                shiny::tags$span(class = "help-workflow-step-title", step$title)
+            ),
+            shiny::div(class = "help-workflow-step-desc", step$desc)
+        )
+    )
+}
+
+help_workflow_content <- function(lang) {
+    steps <- help_workflow_steps(lang)
+    total <- length(steps)
+
+    shiny::div(
+        class = "help-workflow-card",
+        shiny::div(
+            class = "help-workflow-card-head",
+            shiny::tags$h2(class = "help-workflow-title", tr("help_workflow_title", lang)),
+            shiny::div(class = "help-workflow-subtitle", tr("help_workflow_subtitle", lang))
+        ),
+        shiny::div(
+            class = "help-workflow-steps",
+            lapply(
+                X = seq_len(total),
+                FUN = function(idx) help_workflow_step_item(steps[[idx]], idx, idx == total)
+            )
         )
     )
 }
@@ -473,46 +334,6 @@ help_sidebar_stack_card <- function(lang) {
     )
 }
 
-help_accordion_item <- function(panel, idx, ns, open = FALSE) {
-    panel_id <- ns(paste0("help_acc_", panel$value))
-    button_id <- ns(paste0("help_acc_btn_", panel$value))
-    body_id <- ns(paste0("help_acc_body_", panel$value))
-
-    shiny::tags$section(
-        id = panel_id,
-        class = paste("help-acc-item", if (open) "is-open" else ""),
-        `data-help-acc-item` = "true",
-        `data-value` = panel$value,
-        shiny::tags$button(
-            id = button_id,
-            class = "help-acc-header",
-            type = "button",
-            `data-help-acc-toggle` = "true",
-            `aria-controls` = body_id,
-            `aria-expanded` = if (open) "true" else "false",
-            shiny::tags$span(
-                class = paste("help-acc-icon-wrap", paste0("help-acc-icon-wrap--", panel$theme)),
-                shiny::tags$i(class = panel$icon, `aria-hidden` = "true")
-            ),
-            shiny::tags$span(class = "help-acc-seq", sprintf("%02d", idx)),
-            shiny::tags$span(class = "help-acc-title", panel$title),
-            shiny::tags$span(
-                class = "help-acc-chevron",
-                shiny::tags$i(class = "fa-solid fa-chevron-down", `aria-hidden` = "true")
-            )
-        ),
-        shiny::tags$div(
-            id = body_id,
-            class = "help-acc-body",
-            `data-help-acc-body` = "true",
-            role = "region",
-            `aria-labelledby` = button_id,
-            `aria-hidden` = if (open) "false" else "true",
-            panel$content
-        )
-    )
-}
-
 #' Help Module UI
 #'
 #' @param id Module ID
@@ -531,17 +352,6 @@ mod_help_ui <- function(id) {
                     shiny::div(
                         class = "help-main-column",
                         shiny::uiOutput(ns("help_header_card")),
-                        shiny::div(
-                            class = "help-search-card",
-                            shiny::div(
-                                class = "help-search-input-wrap",
-                                shiny::tags$span(
-                                    class = "help-search-icon",
-                                    shiny::tags$i(class = "fa-solid fa-magnifying-glass", `aria-hidden` = "true")
-                                ),
-                                shiny::uiOutput(ns("help_search_input"))
-                            )
-                        ),
                         shiny::uiOutput(ns("help_content"))
                     ),
                     shiny::div(
@@ -561,8 +371,6 @@ mod_help_ui <- function(id) {
 #' @export
 mod_help_server <- function(id, lang_r) {
     shiny::moduleServer(id, function(input, output, session) {
-        ns <- session$ns
-
         output$help_header_card <- shiny::renderUI({
             shiny::div(
                 class = "help-page-header-card",
@@ -577,62 +385,8 @@ mod_help_server <- function(id, lang_r) {
             )
         })
 
-        output$help_search_input <- shiny::renderUI({
-            shiny::div(
-                class = "help-search-native",
-                shiny::tags$label(
-                    `for` = ns("help_search"),
-                    class = "visually-hidden",
-                    tr("a11y_help_search_label", lang_r())
-                ),
-                shiny::tags$input(
-                    id = ns("help_search"),
-                    type = "search",
-                    class = "form-control",
-                    placeholder = tr("help_search_placeholder", lang_r()),
-                    autocomplete = "off",
-                    spellcheck = "false",
-                    `aria-label` = tr("a11y_help_search_label", lang_r())
-                )
-            )
-        })
-
         output$help_content <- shiny::renderUI({
-            search_value <- if (is.null(input$help_search)) "" else as.character(input$help_search)
-            search_query <- tolower(trimws(search_value))
-
-            panels <- help_panels(lang_r())
-            if (nzchar(search_query)) {
-                panels <- Filter(
-                    f = function(panel) grepl(search_query, tolower(panel$search_text), fixed = TRUE),
-                    x = panels
-                )
-            }
-
-            if (length(panels) == 0L) {
-                return(
-                    shiny::div(
-                        class = "help-empty-state",
-                        tr("help_empty_state", lang_r())
-                    )
-                )
-            }
-
-            panel_tags <- lapply(seq_along(panels), function(idx) {
-                help_accordion_item(
-                    panel = panels[[idx]],
-                    idx = idx,
-                    ns = ns,
-                    open = idx == 1L
-                )
-            })
-
-            shiny::div(
-                id = ns("help_accordion"),
-                class = "help-accordion",
-                `data-help-accordion` = "true",
-                panel_tags
-            )
+            help_workflow_content(lang_r())
         })
 
         output$help_sidebar <- shiny::renderUI({

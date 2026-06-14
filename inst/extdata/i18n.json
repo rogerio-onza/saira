@@ -2791,165 +2791,53 @@
     "pt": "Tudo o que você precisa para usar o Saíra com confiança.",
     "en": "Everything you need to use Saíra with confidence."
   },
-  "a11y_help_search_label": {
-    "pt": "Buscar na ajuda",
-    "en": "Search help"
+  "help_workflow_title": {
+    "pt": "Fluxo de trabalho",
+    "en": "Workflow"
   },
-  "help_search_placeholder": {
-    "pt": "Buscar tópicos, termos e respostas...",
-    "en": "Search topics, terms, and answers..."
+  "help_workflow_subtitle": {
+    "pt": "Cinco passos para padronizar e publicar seus dados no padrão Darwin Core.",
+    "en": "Five steps to standardize and publish your data in Darwin Core."
   },
-  "help_empty_state": {
-    "pt": "Nenhum conteúdo encontrado para a busca informada.",
-    "en": "No help content matched your search."
+  "help_workflow_step_upload_title": {
+    "pt": "Enviar",
+    "en": "Upload"
   },
-  "help_section_dwc_title": {
-    "pt": "Darwin Core",
-    "en": "Darwin Core"
+  "help_workflow_step_upload_desc": {
+    "pt": "Envie sua planilha em CSV; o Saíra detecta o encoding e o delimitador automaticamente.",
+    "en": "Upload your CSV spreadsheet; Saíra detects encoding and delimiter automatically."
   },
-  "help_section_faq_title": {
-    "pt": "FAQ",
-    "en": "FAQ"
+  "help_workflow_step_map_title": {
+    "pt": "Mapear",
+    "en": "Map"
   },
-  "help_section_formats_title": {
-    "pt": "Formatos aceitos",
-    "en": "Accepted formats"
+  "help_workflow_step_map_desc": {
+    "pt": "Associe as colunas do seu arquivo aos termos Darwin Core, com sugestões automáticas.",
+    "en": "Match your file columns to Darwin Core terms, with automatic suggestions."
   },
-  "help_section_separator_title": {
-    "pt": "Separador de múltiplos valores",
-    "en": "Multi-value separator"
+  "help_workflow_step_validate_title": {
+    "pt": "Validar",
+    "en": "Validate"
   },
-  "help_dwc_term_label": {
-    "pt": "Darwin Core (DwC)",
-    "en": "Darwin Core (DwC)"
+  "help_workflow_step_validate_desc": {
+    "pt": "Confira nomes científicos e coordenadas com verificações e alertas automáticos.",
+    "en": "Check scientific names and coordinates with automatic checks and alerts."
   },
-  "help_dwc_p1_prefix": {
-    "pt": "é um padrão de dados para compartilhamento de informações sobre biodiversidade, mantido pela",
-    "en": "is a data standard for sharing biodiversity information, maintained by"
+  "help_workflow_step_generalize_title": {
+    "pt": "Generalizar",
+    "en": "Generalize"
   },
-  "help_dwc_p1_suffix": {
-    "pt": ".",
-    "en": "."
+  "help_workflow_step_generalize_desc": {
+    "pt": "Generalize as coordenadas de espécies sensíveis antes de publicar.",
+    "en": "Generalize the coordinates of sensitive species before publishing."
   },
-  "help_dwc_p2": {
-    "pt": "Ele fornece um vocabulário estável para descrever ocorrências, localizações, taxonomia e eventos de coleta.",
-    "en": "It provides a stable vocabulary to describe occurrences, locations, taxonomy, and collection events."
+  "help_workflow_step_export_title": {
+    "pt": "Exportar",
+    "en": "Export"
   },
-  "help_dwc_bullet_occurrence": {
-    "pt": "Ocorrências de espécies com estrutura compatível para publicação.",
-    "en": "Species occurrences structured for publication."
-  },
-  "help_dwc_bullet_location": {
-    "pt": "Localizações geográficas com foco em coordenadas e país.",
-    "en": "Geographic locations with emphasis on coordinates and country."
-  },
-  "help_dwc_bullet_taxonomy": {
-    "pt": "Taxonomia com nomes científicos e classificação.",
-    "en": "Taxonomy with scientific names and classification."
-  },
-  "help_dwc_bullet_event": {
-    "pt": "Eventos de coleta com datas e contexto de amostragem.",
-    "en": "Collection events with dates and sampling context."
-  },
-  "help_dwc_p3_prefix": {
-    "pt": "No Brasil, o",
-    "en": "In Brazil, the"
-  },
-  "help_dwc_p3_suffix": {
-    "pt": "adota o Darwin Core como referência para publicação de dados.",
-    "en": "adopts Darwin Core as a reference for data publication."
-  },
-  "help_link_tdwg": {
-    "pt": "TDWG",
-    "en": "TDWG"
-  },
-  "help_link_sibbr": {
-    "pt": "SiBBr",
-    "en": "SiBBr"
-  },
-  "help_faq_q1": {
-    "pt": "Quais formatos de arquivo são aceitos?",
-    "en": "What file formats are accepted?"
-  },
-  "help_faq_a1": {
-    "pt": "A aba de upload trabalha com arquivos CSV (.csv).",
-    "en": "The upload tab works with CSV files (.csv)."
-  },
-  "help_faq_q2": {
-    "pt": "Qual o tamanho máximo de arquivo?",
-    "en": "What is the maximum file size?"
-  },
-  "help_faq_a2": {
-    "pt": "O limite padrão é 500 MB por arquivo.",
-    "en": "The default limit is 500 MB per file."
-  },
-  "help_faq_q3": {
-    "pt": "Como o Saíra interpreta datas?",
-    "en": "How does Saíra interpret dates?"
-  },
-  "help_faq_a3_prefix": {
-    "pt": "No export, o campo",
-    "en": "On export, the"
-  },
-  "help_faq_a3_suffix": {
-    "pt": "é normalizado para o formato ISO quando possível.",
-    "en": "field is normalized to ISO format whenever possible."
-  },
-  "help_faq_q4": {
-    "pt": "Meus dados ficam armazenados em servidor?",
-    "en": "Is my data stored on any server?"
-  },
-  "help_faq_a4": {
-    "pt": "Não. O processamento ocorre localmente na sessão da aplicação.",
-    "en": "No. Processing runs locally in the application session."
-  },
-  "help_formats_p1": {
-    "pt": "O Saíra aceita arquivos CSV e foi otimizado para planilhas com delimitador ponto e vírgula (;).",
-    "en": "Saíra accepts CSV files and is optimized for spreadsheets that use semicolon (;) as delimiter."
-  },
-  "help_formats_p2": {
-    "pt": "Para reduzir erros de importação, revise encoding e colunas antes do mapeamento.",
-    "en": "To reduce import errors, review encoding and columns before mapping."
-  },
-  "help_formats_bullet_1": {
-    "pt": "Formato suportado: arquivos .csv com cabeçalho na primeira linha.",
-    "en": "Supported format: .csv files with headers on the first row."
-  },
-  "help_formats_bullet_2": {
-    "pt": "Encoding recomendado: UTF-8. O app também lida com Latin-1 quando necessário.",
-    "en": "Recommended encoding: UTF-8. The app also handles Latin-1 when needed."
-  },
-  "help_formats_bullet_3": {
-    "pt": "Para campos multivalorados na entrada, use ponto e vírgula (;).",
-    "en": "For multi-value fields in input data, use semicolon (;)."
-  },
-  "help_formats_bullet_4": {
-    "pt": "Mantenha nomes de colunas consistentes para melhorar o auto-mapeamento.",
-    "en": "Keep column names consistent to improve auto-mapping."
-  },
-  "help_separator_p1": {
-    "pt": "Campos com múltiplos valores entram com ponto e vírgula (;) e saem no padrão DwC com pipe ( | ).",
-    "en": "Fields with multiple values enter using semicolon (;) and are exported in DwC format with pipe ( | )."
-  },
-  "help_separator_p2": {
-    "pt": "Esse ajuste reduz ambiguidades e melhora a compatibilidade para validação e exportação.",
-    "en": "This conversion reduces ambiguity and improves compatibility for validation and export."
-  },
-  "help_separator_demo_input": {
-    "pt": "Entrada",
-    "en": "Input"
-  },
-  "help_separator_bullet_1": {
-    "pt": "Use ; apenas para separar tokens dentro da mesma célula.",
-    "en": "Use ; only to separate tokens inside the same cell."
-  },
-  "help_separator_bullet_2": {
-    "pt": "Evite vírgula como separador de tokens, pois ela pode aparecer em coordenadas decimais.",
-    "en": "Avoid comma as token separator because it can appear in decimal coordinates."
-  },
-  "help_separator_bullet_3": {
-    "pt": "Na exportação, o Saíra converte automaticamente para o formato com pipe.",
-    "en": "During export, Saíra automatically converts values to the pipe-based format."
+  "help_workflow_step_export_desc": {
+    "pt": "Revise o resumo e baixe o pacote Darwin Core (.zip) pronto para publicação.",
+    "en": "Review the summary and download the publication-ready Darwin Core package (.zip)."
   },
   "help_author_role": {
     "pt": "Maintainer",

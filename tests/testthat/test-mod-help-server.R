@@ -17,7 +17,7 @@ testthat::test_that("mod_help_server renders header card", {
     )
 })
 
-testthat::test_that("mod_help_server renders search input", {
+testthat::test_that("mod_help_server renders the workflow stepper with all five steps", {
     shiny::testServer(
         mod_help_server,
         args = list(
@@ -25,23 +25,15 @@ testthat::test_that("mod_help_server renders search input", {
         ),
         {
             session$flushReact()
-            search_html <- output$help_search_input
-            testthat::expect_true(!is.null(search_html))
-        }
-    )
-})
+            html <- paste(output$help_content$html, collapse = " ")
 
-testthat::test_that("mod_help_server renders all 4 sections without search filter", {
-    shiny::testServer(
-        mod_help_server,
-        args = list(
-            lang_r = shiny::reactive("en")
-        ),
-        {
-            # No search input set — should render all 4 panels
-            session$flushReact()
-            content_html <- output$help_content
-            testthat::expect_true(!is.null(content_html))
+            testthat::expect_true(grepl("help-workflow-steps", html, fixed = TRUE))
+            # Five numbered step markers, 01 through 05.
+            num_markers <- lengths(regmatches(
+                html,
+                gregexpr("help-workflow-step-num", html, fixed = TRUE)
+            ))
+            testthat::expect_equal(num_markers, 5L)
         }
     )
 })
@@ -74,37 +66,6 @@ testthat::test_that("mod_help_server works with PT language", {
             testthat::expect_true(!is.null(content_html))
             sidebar_html <- output$help_sidebar
             testthat::expect_true(!is.null(sidebar_html))
-        }
-    )
-})
-
-testthat::test_that("mod_help_server filters content with search query", {
-    shiny::testServer(
-        mod_help_server,
-        args = list(
-            lang_r = shiny::reactive("en")
-        ),
-        {
-            # Search for "separator" — should match the separator section
-            session$setInputs(help_search = "separator")
-            session$flushReact()
-            content_html <- output$help_content
-            testthat::expect_true(!is.null(content_html))
-        }
-    )
-})
-
-testthat::test_that("mod_help_server shows empty state for unmatched search", {
-    shiny::testServer(
-        mod_help_server,
-        args = list(
-            lang_r = shiny::reactive("en")
-        ),
-        {
-            session$setInputs(help_search = "xyznonexistent12345")
-            session$flushReact()
-            content_html <- output$help_content
-            testthat::expect_true(!is.null(content_html))
         }
     )
 })
