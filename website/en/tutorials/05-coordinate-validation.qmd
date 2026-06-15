@@ -140,4 +140,4 @@ Most of Brazil has **negative latitude and longitude**. Positive coordinates whe
 
 ## Next steps
 
-Data mapped, names resolved and coordinates reviewed: time to finish. Go to **[Preview and export](06-preview-export.qmd)**.
+Data mapped, names resolved and coordinates reviewed. If there are threatened species, the next step decides how to protect them: go to **[Generalizing sensitive species](06-generalization.qmd)**.

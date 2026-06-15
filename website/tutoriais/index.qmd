@@ -17,7 +17,8 @@ Os tutoriais acompanham o fluxo de trabalho do Saíra, etapa por etapa. Use a **
 3. **[Mapeando campos para Darwin Core](03-mapeamento-dwc.qmd)**: associe cada coluna a um termo Darwin Core com sugestões automáticas, modelos e o assistente de `basisOfRecord`.
 4. **[Validando nomes científicos](04-validacao-nomes.qmd)**: confira a nomenclatura contra Flora do Brasil, Fauna do Brasil ou GBIF, resolva sinônimos, corrija nomes e veja quais táxons são ameaçados pela lista nacional do MMA.
 5. **[Validando coordenadas](05-validacao-coordenadas.qmd)**: encontre coordenadas ausentes, invertidas ou transpostas, preencha o país a partir do ponto e revise no mapa.
-6. **[Pré-visualização e exportação](06-preview-exportacao.qmd)**: revise o resultado, trate espécies sensíveis e gere o Darwin Core Archive.
+6. **[Generalizando espécies sensíveis](06-generalizacao.qmd)**: decida, espécie por espécie, se e quanto reduzir a precisão das coordenadas de táxons ameaçados, seguindo a tabela de decisão de Chapman (2020).
+7. **[Pré-visualização e exportação](07-preview-exportacao.qmd)**: revise o resultado e as correções e gere o Darwin Core Archive.
 
 ::: {.callout-note}
 ## O fluxo é flexível

@@ -4,7 +4,7 @@ pagetitle: "Exportação DwC-A — Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-A reta final: revise o resultado completo, trate espécies sensíveis e gere o Darwin Core Archive pronto para publicar no GBIF e no SiBBr.
+A reta final: confira o resultado completo, revise o que foi corrigido e quais espécies serão generalizadas, e gere o Darwin Core Archive pronto para publicar no GBIF e no SiBBr.
 :::
 
 ## Pré-visualização
@@ -22,6 +22,46 @@ Na aba **Pré-visualização**, o Saíra mostra a tabela final já em vocabulár
 </figure>
 ```
 
+## A aba Exportação: revisão antes de publicar
+
+A aba **Exportação** é um **hub de revisão**: antes de baixar o pacote, ela reúne num só lugar o que foi corrigido, quais espécies serão generalizadas e quais arquivos vão no `.zip`. Confira cada bloco antes de gerar o Darwin Core Archive.
+
+```{=html}
+<figure class="shot">
+  <div class="frame"><span class="ph-label">screenshot · aba Exportação (prontidão, correções, espécies generalizadas e arquivos)</span></div>
+  <figcaption><b>Figura 2.</b> O hub de revisão da Exportação, com a prontidão, as correções aplicadas, as espécies generalizadas e os arquivos do pacote.</figcaption>
+</figure>
+```
+
+### Prontidão para exportar
+
+No topo, um indicador diz se o conjunto está **pronto para publicar** (verde) ou se a **exportação está bloqueada** (vermelho). Quando bloqueia, o Saíra lista o que falta — em geral, **termos obrigatórios** não preenchidos ou **espécies generalizadas sem a justificativa** exigida para as Categorias 1–3 — e oferece um atalho para resolver a pendência.
+
+::: {.callout-warning}
+## Sem occurrenceID mapeado
+Se você não mapeou um <span class="term">occurrenceID</span>, o Saíra avisa: o IPT/GBIF passa a gerar identificadores instáveis a cada publicação. A exportação ainda funciona (o Saíra gera um UUID), mas o recomendado é **mapear um occurrenceID estável** para que cada registro mantenha o mesmo identificador ao longo do tempo.
+:::
+
+### Correções aplicadas
+
+Um resumo mostra tudo o que as etapas anteriores ajustaram, para você conferir de relance antes de publicar:
+
+- **Nomes corrigidos** e **nomes confirmados** na [validação de nomes](04-validacao-nomes.qmd);
+- **Coordenadas corrigidas** (transposições, troca lat/lon, preenchimento conjunto) e **países preenchidos** na [validação de coordenadas](05-validacao-coordenadas.qmd).
+
+### Espécies generalizadas
+
+Se você generalizou algum táxon na etapa de [generalização](06-generalizacao.qmd), uma tabela lista cada **espécie**, sua **ameaça (MMA)** e o **nível de generalização** que sairá no pacote:
+
+| Nível (na exportação) | Grade |
+|---|---|
+| País (~111 km) | Categoria 1 |
+| Estado (~11 km) | Categoria 2 |
+| Cidade (~1 km) | Categoria 3 |
+| Local (~100 m) | Categoria 4 |
+
+Se nada foi generalizado, o Saíra registra: *nenhuma espécie será generalizada — as coordenadas serão publicadas como estão*. As coordenadas originais e precisas dos registros generalizados não entram no pacote público: ficam num arquivo à parte (veja **Arquivos do pacote**, abaixo).
+
 ## O que o Saíra ajusta na exportação
 
 Ao gerar o pacote, o Saíra padroniza automaticamente o conjunto para que ele atenda às expectativas dos repositórios:
@@ -32,14 +72,12 @@ Ao gerar o pacote, o Saíra padroniza automaticamente o conjunto para que ele at
 - **Licenças** abreviadas para a URL canônica (por exemplo, a URL da Creative Commons correspondente).
 - **Colunas reordenadas** na sequência canônica do Darwin Core, com as colunas não mapeadas anexadas à direita, preservando seus nomes originais.
 
-## Espécies sensíveis
+## Arquivos do pacote
 
-Antes de publicar, o Saíra verifica se há **táxons ameaçados** — os mesmos sinalizados na [validação de nomes](04-validacao-nomes.qmd), com base na lista nacional do MMA embutida no app. Para esses registros, você pode optar por **generalizar a localização** (reduzir a precisão das coordenadas) ou omiti-la, protegendo populações vulneráveis sem deixar de publicar o dado. As coordenadas originais e precisas dos registros sensíveis ficam num arquivo à parte, fora do pacote público.
+O download gera um `.zip` com dois conjuntos de arquivos:
 
-::: {.callout-warning}
-## Dados sensíveis exigem decisão consciente
-Generalizar coordenadas de espécies ameaçadas é uma boa prática recomendada por GBIF e SiBBr. Avalie caso a caso: o objetivo é compartilhar o conhecimento sem expor a espécie a coleta ou perseguição.
-:::
+- **Darwin Core Archive (IPT)** — o que você envia ao repositório: <span class="term">occurrence.txt</span> (os dados), <span class="term">meta.xml</span> (o descritor que diz o que cada coluna significa) e <span class="term">eml.xml</span> (os metadados do conjunto).
+- **Arquivos auxiliares** — para o seu controle, fora do pacote público: o **modelo de mapeamento** (`mapping_guide_*.txt`) para reaproveitar em planilhas futuras, e, quando houver espécies generalizadas, o arquivo com as **coordenadas reais e precisas** desses registros, que você guarda mas não publica.
 
 ## Gerando o Darwin Core Archive
 
@@ -67,11 +105,6 @@ O `.zip` também inclui um **modelo de mapeamento** (`mapping_guide_*.txt`): o r
 ::: {.callout-note}
 ## Precisa de uma planilha em vez do pacote?
 Além do DwC-A, o Saíra também exporta o conjunto como `.xlsx` com **todas as células forçadas a texto**, evitando que o Excel reinterprete datas, números de tombo ou coordenadas. Útil para conferência manual ou para enviar a colaboradores.
-:::
-
-::: {.callout-warning}
-## A exportação falhou ou ficou indisponível?
-Quase sempre é um **campo obrigatório vazio** ou uma pendência de validação. Confira se há <span class="term">occurrenceID</span>, <span class="term">basisOfRecord</span>, <span class="term">scientificName</span> e <span class="term">eventDate</span> preenchidos, e se as etapas de nomes e coordenadas não deixaram itens não resolvidos. O Saíra indica o que falta antes de liberar o download.
 :::
 
 ## Publicando no GBIF e no SiBBr

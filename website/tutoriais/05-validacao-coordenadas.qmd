@@ -140,4 +140,4 @@ A maior parte do Brasil tem **latitude e longitude negativas**. Coordenadas posi
 
 ## Próximos passos
 
-Dados mapeados, nomes resolvidos e coordenadas revisadas: hora de finalizar. Siga para **[Pré-visualização e exportação](06-preview-exportacao.qmd)**.
+Dados mapeados, nomes resolvidos e coordenadas revisadas. Se houver espécies ameaçadas, o próximo passo decide como protegê-las: siga para **[Generalizando espécies sensíveis](06-generalizacao.qmd)**.

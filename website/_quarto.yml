@@ -46,7 +46,8 @@ website:
             - tutoriais/03-mapeamento-dwc.qmd
             - tutoriais/04-validacao-nomes.qmd
             - tutoriais/05-validacao-coordenadas.qmd
-            - tutoriais/06-preview-exportacao.qmd
+            - tutoriais/06-generalizacao.qmd
+            - tutoriais/07-preview-exportacao.qmd
     - id: tutorials-en
       title: "Tutorials"
       style: floating
@@ -61,7 +62,8 @@ website:
             - en/tutorials/03-dwc-mapping.qmd
             - en/tutorials/04-name-validation.qmd
             - en/tutorials/05-coordinate-validation.qmd
-            - en/tutorials/06-preview-export.qmd
+            - en/tutorials/06-generalization.qmd
+            - en/tutorials/07-preview-export.qmd
   page-footer:
     border: true
     left: "© 2026 Saíra · Licença GPL-3.0"

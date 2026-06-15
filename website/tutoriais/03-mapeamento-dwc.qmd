@@ -104,7 +104,7 @@ A tabela abaixo mostra um mapeamento típico de uma coleção ornitológica:
 
 ## Modelos (templates)
 
-Você não precisa salvar o mapeamento à mão. Quando você baixa a planilha padronizada (ver [Pré-visualização e exportação](06-preview-exportacao.qmd)), o Saíra inclui no `.zip` um **modelo**: um arquivo de texto (`mapping_guide_*.txt`) que registra apenas o vocabulário "sua coluna → termo Darwin Core", sem nenhum dado. É o seu mapeamento guardado, pronto para reusar mais tarde ou repassar a outra pessoa da equipe.
+Você não precisa salvar o mapeamento à mão. Quando você baixa a planilha padronizada (ver [Pré-visualização e exportação](07-preview-exportacao.qmd)), o Saíra inclui no `.zip` um **modelo**: um arquivo de texto (`mapping_guide_*.txt`) que registra apenas o vocabulário "sua coluna → termo Darwin Core", sem nenhum dado. É o seu mapeamento guardado, pronto para reusar mais tarde ou repassar a outra pessoa da equipe.
 
 Para reaproveitar, abra o mapeamento de uma nova planilha e clique em **Importar modelo** na barra de ações. Cada linha do modelo é salva como alias no seu Rostrum local, então colunas com o mesmo nome são mapeadas automaticamente — você só revisa o que mudou.
 

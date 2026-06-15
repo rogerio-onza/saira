@@ -12,7 +12,7 @@ The first step inside the application is loading your occurrence spreadsheet. Sa
 | Format | Extension | Notes |
 |---|---|---|
 | Delimited text | `.csv`, `.tsv`, `.txt` | Comma, semicolon or tab, detected automatically |
-| Camera trap | `.zip` | Camtrap DP packages and Wildlife Insights exports (see below) |
+| Camera trap | `.zip` | Camtrap DP (with or without descriptor) and Wildlife Insights exports (see below) |
 
 Each **row** should be one occurrence (a record of an organism in a place and time) and each **column** an attribute: catalog number, species, date, locality, collector, and so on.
 
@@ -64,12 +64,13 @@ Saíra assumes the **first row** holds the column names. Remove title rows, logo
 
 ## Camera-trap data
 
-If your data comes from camera traps, Saíra recognizes the two most common formats and converts them into an occurrence table before mapping:
+If your data comes from camera traps, Saíra recognizes three formats and converts them into an occurrence table before mapping:
 
-- **Camtrap DP** (Camera Trap Data Package): the standardized `.zip` package, with `media`, `observations` and `deployments`.
-- **Wildlife Insights**: the platform's CSV export, from which Saíra derives the scientific name (from class, order, family, genus and species), the record timestamp and the observation type.
+- **Camtrap DP** (Camera Trap Data Package): the standardized `.zip` package, with the `datapackage.json` descriptor and the `deployments`, `observations` and (optionally) `media` tables.
+- **Loose Camtrap DP CSVs**: the same set of tables (`deployments.csv` + `observations.csv`, with optional `media.csv`) in a `.zip`, but **without the descriptor** — Saíra synthesizes a `datapackage.json` from the CSVs it finds.
+- **Wildlife Insights**: the platform's export (`deployments.csv` + `projects.csv` + images), where Saíra renames the columns to the Camtrap DP shape and derives the scientific name (from class, order, family, genus and species), the record timestamp and the observation type.
 
-In both cases Saíra builds a consistent scientific name and organizes the time and place fields, so the rest of the workflow (mapping, names, coordinates) works just like a regular spreadsheet.
+In every case Saíra builds a consistent scientific name and organizes the time and place fields, so the rest of the workflow (mapping, names, coordinates) works just like a regular spreadsheet.
 
 ::: {.callout-note}
 ## Incomplete camtrap package?

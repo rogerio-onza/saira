@@ -51,7 +51,7 @@ It's an encoding issue. Change the encoding on import (usually **UTF-8** or **La
 It **suggests** corrections from taxonomic backbones, but the final decision is always the specialist's. See [Validating scientific names](tutorials/04-name-validation.qmd).
 
 ### How does Saíra handle threatened species?
-Before export, it flags threatened taxa (national MMA list) and lets you **generalize or omit the location**, protecting vulnerable populations. See [Preview and export](tutorials/06-preview-export.qmd).
+In a dedicated **generalization** step, it flags threatened taxa (national MMA list) and helps you decide, species by species, whether and how much to reduce coordinate precision — following Chapman's (2020) decision table. See [Generalizing sensitive species](tutorials/06-generalization.qmd).
 
 ## Export and publication
 
