@@ -353,3 +353,21 @@ testthat::test_that("basisOfRecord choices include skip option and descriptions"
     pt_choice_names_ascii <- iconv(names(pt_choices), from = "", to = "ASCII//TRANSLIT")
     testthat::expect_true(any(grepl("Observacao", pt_choice_names_ascii, fixed = TRUE)))
 })
+
+testthat::test_that("detect_extra_dwc_terms returns catalog-valid, non-base columns only", {
+    cols <- c("scientificName", "geodeticDatum", "taxonID", "my_random_col", "")
+    extra <- detect_extra_dwc_terms(cols)
+    # geodeticDatum / taxonID are DwC terms outside the base set.
+    testthat::expect_true(all(c("geodeticDatum", "taxonID") %in% extra))
+    # Base terms and non-DwC columns are excluded.
+    testthat::expect_false("scientificName" %in% extra)
+    testthat::expect_false("my_random_col" %in% extra)
+    testthat::expect_false("" %in% extra)
+    # None of the returned terms belong to the curated base set.
+    testthat::expect_length(intersect(extra, get_dwc_terms()$term), 0L)
+})
+
+testthat::test_that("detect_extra_dwc_terms handles empty input", {
+    testthat::expect_identical(detect_extra_dwc_terms(character(0)), character(0))
+    testthat::expect_identical(detect_extra_dwc_terms(c(NA, "")), character(0))
+})

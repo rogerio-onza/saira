@@ -339,6 +339,29 @@ get_active_dwc_terms_list <- function(extra = character(0), lang = "en") {
     terms_list
 }
 
+#' Detect uploaded columns that are valid DwC terms outside the base set
+#'
+#' Returns the subset of \code{columns} whose names are valid Darwin Core terms
+#' present in the full catalog but not in the curated base set. These can be
+#' auto-registered as session extra terms so they become first-class mapping
+#' targets instead of being treated as unknown columns. The main driver is
+#' camera-trap ingestion: \code{camtrapdp::write_dwc()} emits terms such as
+#' \code{geodeticDatum}, \code{taxonID}, \code{organismID},
+#' \code{coordinatePrecision} and \code{identificationVerificationStatus} that
+#' are real DwC terms but not in Saira's default list.
+#'
+#' @param columns Character vector of uploaded column names.
+#' @return Character vector of catalog-valid, non-base term names (input order).
+#' @export
+detect_extra_dwc_terms <- function(columns) {
+    columns <- unique(as.character(columns))
+    columns <- columns[!is.na(columns) & nzchar(columns)]
+    if (length(columns) == 0L) return(character(0))
+    base_terms <- get_dwc_terms()$term
+    catalog_terms <- get_dwc_full_catalog()$term
+    columns[columns %in% catalog_terms & !columns %in% base_terms]
+}
+
 get_basis_of_record_vocab <- function(lang = "en") {
     use_lang <- if (identical(lang, "pt")) "pt" else "en"
 

@@ -465,3 +465,88 @@ testthat::test_that("WI rows with duplicate image_id yield unique IDs + dedup me
     testthat::expect_equal(nrow(media), 1L)
     testthat::expect_identical(media$mediaID, "img-dup")
 })
+
+# strip_fabricated_utc (C1) ----------------------------------------------
+
+testthat::test_that("strip_fabricated_utc drops the Z designator only", {
+    testthat::expect_identical(
+        saira:::strip_fabricated_utc(c("2021-06-11T06:52:55Z", NA, "")),
+        c("2021-06-11T06:52:55", NA, "")
+    )
+    # Range form (start/end) loses both designators.
+    testthat::expect_identical(
+        saira:::strip_fabricated_utc("2021-06-11T06:52:55Z/2021-06-11T07:00:00Z"),
+        "2021-06-11T06:52:55/2021-06-11T07:00:00"
+    )
+    testthat::expect_null(saira:::strip_fabricated_utc(NULL))
+})
+
+# wi_to_camtrap_csv: habitat + count defaults (H4) -----------------------
+
+testthat::test_that("wi_to_camtrap_csv leaves habitat empty and defaults count to 1", {
+    deployments <- c(
+        "project_id,deployment_id,placename,longitude,latitude,start_date,end_date,camera_id,quiet_period,feature_type,recorded_by,subproject_name,remarks",
+        "1,DEP1,site-a,-62.94,-8.57,2021-08-26 00:00:00,2021-09-01 00:00:00,c1,0,Trail - game,,UMF,"
+    )
+    cameras <- c(
+        "project_id,camera_id,camera_name,make,model,serial_number,year_purchased",
+        "1,c1,n,Bushnell,T,c1,2020"
+    )
+    projects <- c("project_id,project_name,project_short_name", "1,P,TP")
+    images <- c(
+        paste0("project_id,deployment_id,image_id,filename,location,is_blank,",
+               "identified_by,wi_taxon_id,class,order,family,genus,species,",
+               "common_name,uncertainty,timestamp,number_of_objects,age,sex,",
+               "animal_recognizable,individual_id,individual_animal_notes,",
+               "behavior,highlighted,markings,cv_confidence,license,bounding_boxes"),
+        # animal row with EMPTY number_of_objects -> count must default to 1
+        "1,DEP1,img-a,a.jpg,gs://a,0,me,,Mammalia,Carnivora,Felidae,Panthera,onca,Jaguar,,2021-08-26 10:00:00,,,,,,,,false,,,CC-BY-NC,"
+    )
+    fx <- build_zip_fixture(list(
+        "deployments.csv" = deployments,
+        "cameras.csv" = cameras,
+        "projects.csv" = projects,
+        "images_2004252.csv" = images
+    ), prefix = "wi_h4_")
+    dest <- tempfile("wi_h4_unzip_")
+    dir.create(dest)
+    utils::unzip(fx$zip, exdir = dest)
+    withr::defer(unlink(c(fx$dir, fx$zip, dest), recursive = TRUE))
+
+    norm_dir <- saira:::wi_to_camtrap_csv(dest, lang = "en")
+    dep <- utils::read.csv(file.path(norm_dir, "deployments.csv"),
+                           stringsAsFactors = FALSE, na.strings = "")
+    obs <- utils::read.csv(file.path(norm_dir, "observations.csv"),
+                           stringsAsFactors = FALSE, na.strings = "")
+    testthat::expect_true(all(is.na(dep$habitat)))
+    testthat::expect_identical(obs$count[obs$mediaID == "img-a"], 1L)
+})
+
+# convert_camtrap_to_dwc_occurrence: WI eventDate carries no Z (C1) ------
+
+testthat::test_that("WI conversion strips the fabricated UTC designator from eventDate", {
+    testthat::skip_if_not_installed("camtrapdp")
+    skip_if_offline()
+
+    fx <- wi_zip_fixture()
+    withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
+
+    pkg <- tryCatch(
+        suppressWarnings(saira:::read_camtrap_dp_zip(fx$zip, lang = "en")),
+        error = function(e) e
+    )
+    if (inherits(pkg, "error")) {
+        testthat::skip(paste("camtrapdp could not parse synthesized descriptor:",
+                             conditionMessage(pkg)))
+    }
+    df <- tryCatch(
+        suppressWarnings(saira:::convert_camtrap_to_dwc_occurrence(pkg, lang = "en")),
+        error = function(e) e
+    )
+    if (inherits(df, "error")) {
+        testthat::skip(paste("write_dwc() rejected synthesized package:",
+                             conditionMessage(df)))
+    }
+    testthat::expect_false(any(grepl("Z", df$eventDate)))
+    testthat::expect_true(any(grepl("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$", df$eventDate)))
+})
