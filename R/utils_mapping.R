@@ -1553,6 +1553,22 @@ format_epithet_token <- function(token) {
 }
 
 extract_scientific_name_components <- function(scientific_names) {
+    # Parse over UNIQUE names and expand back: the genus/epithet/rank of a row
+    # depends only on its scientificName, and a dataset repeats a handful of
+    # species across thousands of rows (camera traps especially). The per-name
+    # regex (gsub/sub/trimws via format_*_token) is otherwise the dominant cost
+    # of build_processed_mapping_df. (LESSONS: unique -> resolve -> match back.)
+    sn <- as.character(scientific_names)
+    if (length(sn) > 1L) {
+        u <- unique(sn)
+        if (length(u) < length(sn)) {
+            res_u <- extract_scientific_name_components(u)
+            out <- res_u[match(sn, u), , drop = FALSE]
+            rownames(out) <- NULL
+            return(out)
+        }
+    }
+
     unknown_markers <- c("sp", "sp.", "spp", "spp.")
     qualifier_markers <- c("cf", "cf.", "aff", "aff.", "nr", "nr.")
 
@@ -1695,19 +1711,31 @@ parse_year_to_number <- function(x) {
 
 normalize_semicolon_tokens <- function(x, out_sep = " | ") {
     x_chr <- as.character(x)
-    x_chr[is.na(x)] <- NA_character_
+    # Vectorized fast path: the overwhelming majority of cells hold a single
+    # value with no ";" separator, so resolve those with one vectorized trim
+    # (blank -> NA, matching is_blank_value/split_semicolon_tokens). Only the
+    # cells that actually contain ";" need the per-cell split/rejoin. This is the
+    # difference between ~15 s and < 1 s for a large multi-column dataset, since
+    # base trimws() runs match.arg + a regex sub on every call.
+    trimmed <- trimws(x_chr)
+    out <- trimmed
+    out[is.na(x_chr) | !nzchar(trimmed)] <- NA_character_
 
-    vapply(
-        x_chr,
-        FUN = function(value) {
-            tokens <- split_semicolon_tokens(value)
-            if (length(tokens) == 0) {
-                return(NA_character_)
-            }
-            paste(tokens, collapse = out_sep)
-        },
-        FUN.VALUE = character(1)
-    )
+    multi <- !is.na(out) & grepl(";", out, fixed = TRUE)
+    if (any(multi)) {
+        out[multi] <- vapply(
+            x_chr[multi],
+            FUN = function(value) {
+                tokens <- split_semicolon_tokens(value)
+                if (length(tokens) == 0) {
+                    return(NA_character_)
+                }
+                paste(tokens, collapse = out_sep)
+            },
+            FUN.VALUE = character(1)
+        )
+    }
+    unname(out)
 }
 
 collapse_mapped_values <- function(df, cols, out_sep = " | ") {
@@ -1723,6 +1751,12 @@ collapse_mapped_values <- function(df, cols, out_sep = " | ") {
     normalized_cols <- lapply(cols, function(col_name) {
         normalize_semicolon_tokens(df[[col_name]], out_sep = out_sep)
     })
+
+    # Single source column (the common case) is already normalized -- skip the
+    # per-row re-split/re-join entirely.
+    if (length(normalized_cols) == 1L) {
+        return(normalized_cols[[1]])
+    }
 
     vapply(
         seq_len(nrow(df)),
@@ -2113,6 +2147,62 @@ build_term_value <- function(
     }
 
     list(values = values, eventdate_failure_count = failure_count)
+}
+
+# Resolve the occurrenceID vector for a dataset. When the uploaded data already
+# carries a non-blank `occurrenceID` column (e.g. a camera-trap observationID, or
+# a CSV that ships stable identifiers), preserve those values for provenance;
+# fill any missing/blank entries with fresh UUIDs. Datasets without the column
+# keep the previous behaviour (all random UUIDs).
+resolve_occurrence_ids <- function(df, n = NULL) {
+    n <- n %||% (if (is.data.frame(df)) nrow(df) else length(df))
+    out <- ids::uuid(n = n)
+    if (is.data.frame(df) && "occurrenceID" %in% names(df)) {
+        src <- trimws(as.character(df[["occurrenceID"]]))
+        keep <- !is.na(src) & nzchar(src)
+        out[keep] <- src[keep]
+    }
+    out
+}
+
+# Detect raw/source columns selected for more than one Darwin Core term. Mapping
+# one column to several terms is allowed (the same value is published under each),
+# but it is usually a mistake worth flagging -- e.g. a camera-trap `type` column
+# left on both `basisOfRecord` and `type`. Returns a named list keyed by the
+# shared source column, each holding the character vector of terms that use it
+# (only columns used by >= 2 terms); an empty list when there are no collisions.
+# `exclude` drops terms that do not draw from a source column (constants such as
+# license/language, the generated occurrenceID).
+detect_duplicate_source_mappings <- function(map_values, exclude = character(0)) {
+    if (!is.list(map_values) || length(map_values) == 0L) {
+        return(list())
+    }
+    terms <- setdiff(names(map_values), exclude)
+    # `verbatim*` terms intentionally mirror a source column (the raw value kept
+    # alongside its parsed term, e.g. verbatimEventDate next to eventDate), so a
+    # column shared with one of them is expected, not a mistake -- never flag it.
+    terms <- terms[!grepl("verbatim", terms, ignore.case = TRUE)]
+    cols <- character(0)
+    tms <- character(0)
+    for (term in terms) {
+        v <- map_values[[term]]
+        if (is.null(v)) next
+        v <- as.character(v)
+        v <- v[!is.na(v)]
+        if (length(v) == 0L) next
+        v <- trimws(v[[1]])
+        if (!nzchar(v)) next
+        cols <- c(cols, v)
+        tms <- c(tms, term)
+    }
+    if (length(cols) == 0L) {
+        return(list())
+    }
+    dup_cols <- unique(cols[duplicated(cols)])
+    if (length(dup_cols) == 0L) {
+        return(list())
+    }
+    stats::setNames(lapply(dup_cols, function(col) tms[cols == col]), dup_cols)
 }
 
 build_processed_mapping_df <- function(

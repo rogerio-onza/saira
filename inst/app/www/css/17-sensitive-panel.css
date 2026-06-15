@@ -811,7 +811,6 @@
     font-size: var(--text-sm);
     color: var(--text-muted);
     margin-bottom: var(--space-4);
-    max-width: 70ch;
 }
 
 /* Two-column shell: DECIDE on the left, the consequence (result + map +
@@ -888,12 +887,73 @@
     margin-top: var(--space-2);
 }
 
+/* Threat-level filter chips above the result list (shown when >1 MMA group) */
+.sc-result-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
+}
+
+.sc-result-filter .sc-rfilter-chip {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.04em;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-default);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    cursor: pointer;
+    line-height: 1.5;
+    box-shadow: none;
+}
+
+.sc-result-filter .sc-rfilter-chip:hover {
+    border-color: var(--text-muted);
+    color: var(--text-primary);
+}
+
+.sc-result-filter .sc-rfilter-chip--active {
+    background: var(--text-primary);
+    color: var(--bg-card);
+    border-color: var(--text-primary);
+}
+
+/* Active threat chips fill with their category colour (matches the pills). */
+.sc-result-filter .sc-rfilter-chip--vu.sc-rfilter-chip--active {
+    background: #fbf1d0;
+    color: #7a5c00;
+    border-color: #e6c84d;
+}
+.sc-result-filter .sc-rfilter-chip--en.sc-rfilter-chip--active {
+    background: #fbe2cc;
+    color: #8a3d00;
+    border-color: #e6873c;
+}
+.sc-result-filter .sc-rfilter-chip--cr.sc-rfilter-chip--active {
+    background: var(--error-bg);
+    color: var(--error);
+    border-color: var(--error-border);
+}
+.sc-result-filter .sc-rfilter-chip--crpex.sc-rfilter-chip--active {
+    background: #f0d6de;
+    color: #6b132a;
+    border-color: #a33b57;
+}
+
 /* Per-species result rows: threat pill + name -> outcome */
 .sc-sp-list {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
     margin: var(--space-2) 0;
+    /* Cap to ~10 rows; longer lists scroll inside the card so the map below
+       stays in view instead of being pushed off-screen (ADR-100 layout). */
+    max-height: 19rem;
+    overflow-y: auto;
+    padding-right: var(--space-1);
 }
 
 .sc-sp-row {

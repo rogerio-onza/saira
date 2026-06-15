@@ -65,11 +65,15 @@
    (Wiki com 217 termos + 12 pills, Preview com pageLength alto ou muitas
    colunas, Validate Coords com mapa 560px + tabela + painel de correcao de
    transpostas + legendas abaixo do mapa) precisam liberar scroll de pagina.
+   A Generalizacao tem o mesmo padrao: card de resultado + mapa 380px + escala
+   + tabela de referencia de Chapman empilhados na coluna direita, que
+   extrapolam a viewport quando ha muitas especies sensiveis.
    :has() e tecnica validada no projeto (LESSONS:226). A coluna esquerda do
    Coords permanece sticky, entao so o conteudo da direita rola. */
 .tab-content > .tab-pane:has(.wiki-module),
 .tab-content > .tab-pane:has(.preview-page),
 .tab-content > .tab-pane:has(.validate-coords-page),
+.tab-content > .tab-pane:has(.sensitive-coords-page),
 .tab-content > .tab-pane:has(.export-page) {
   overflow-y: auto;
   height: auto;

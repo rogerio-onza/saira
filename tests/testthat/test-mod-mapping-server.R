@@ -780,3 +780,120 @@ testthat::test_that("required-fields strip reflects live mapped status", {
         }
     )
 })
+
+testthat::test_that("mod_mapping_server auto-registers extra DwC columns from the upload", {
+    raw_data_state <- shiny::reactiveVal(NULL)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(raw_data_state()),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            raw_data_state(data.frame(
+                scientificName = "Panthera onca",
+                decimalLatitude = "-10.1",
+                geodeticDatum = "EPSG:4326",
+                taxonID = "12345",
+                my_random_col = "x",
+                stringsAsFactors = FALSE
+            ))
+            session$flushReact()
+
+            # DwC terms outside the base set are auto-added; base terms and
+            # non-DwC columns are not.
+            testthat::expect_true(all(c("geodeticDatum", "taxonID") %in% rv$extra_terms))
+            testthat::expect_false("scientificName" %in% rv$extra_terms)
+            testthat::expect_false("my_random_col" %in% rv$extra_terms)
+
+            # They become first-class mapping terms.
+            testthat::expect_true(all(c("geodeticDatum", "taxonID") %in% all_term_names()))
+        }
+    )
+})
+
+# The camtrap auto-map is deferred until the field cards render (the first
+# non-NULL scientificName), so the engine's selections land on real inputs. We
+# assert the trigger wiring (pending TRUE -> FALSE) and that the engine actually
+# ran on the camtrap data, mapping base AND extra terms. The final map_values
+# round-trip through updateSelectInput is not simulated by testServer (it does
+# not echo updateSelectInput back to the input), so it is covered by the button
+# path / manual testing; here we verify the engine decisions directly.
+testthat::test_that("camtrap-origin uploads queue and run auto-map once cards render", {
+    raw_data_state <- shiny::reactiveVal(NULL)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(raw_data_state()),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            df <- data.frame(
+                scientificName = c("Panthera onca", "Leopardus pardalis"),
+                decimalLatitude = c("-10.1", "-11.2"),
+                decimalLongitude = c("-55.3", "-54.1"),
+                eventDate = c("2021-06-11T06:52:55", "2021-06-12T18:03:21"),
+                geodeticDatum = c("EPSG:4326", "EPSG:4326"),
+                stringsAsFactors = FALSE
+            )
+            attr(df, "saira_camtrap_source") <- "wildlife_insights_zip"
+            raw_data_state(df)
+            session$flushReact()
+
+            # Run is deferred (cards not rendered yet); engine has not run.
+            testthat::expect_true(camtrap_automap_pending())
+            testthat::expect_null(rv$rostrum_decisions)
+            testthat::expect_true("geodeticDatum" %in% rv$extra_terms)
+
+            # Simulate the field cards rendering: the first non-NULL
+            # scientificName consumes the deferred auto-map. No `auto_map`
+            # button input was ever set.
+            session$setInputs(map_scientificName = "")
+            session$flushReact()
+
+            testthat::expect_false(camtrap_automap_pending())
+            dec <- rv$rostrum_decisions
+            testthat::expect_false(is.null(dec))
+            # Exact-name columns are applied 1:1 by the auto-triggered engine...
+            sn <- dec[dec$term == "scientificName", , drop = FALSE]
+            testthat::expect_identical(sn$selected_col, "scientificName")
+            testthat::expect_true(isTRUE(sn$applied))
+            # ...including the auto-registered extra term (item 2): it is mapped,
+            # not just added as an empty card.
+            gd <- dec[dec$term == "geodeticDatum", , drop = FALSE]
+            testthat::expect_identical(gd$selected_col, "geodeticDatum")
+            testthat::expect_true(isTRUE(gd$applied))
+        }
+    )
+})
+
+testthat::test_that("non-camtrap uploads do NOT auto-map on load", {
+    raw_data_state <- shiny::reactiveVal(NULL)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(raw_data_state()),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            # Same columns, but no camtrap source attribute (a plain CSV).
+            raw_data_state(data.frame(
+                scientificName = "Panthera onca",
+                decimalLatitude = "-10.1",
+                decimalLongitude = "-55.3",
+                stringsAsFactors = FALSE
+            ))
+            session$flushReact()
+            testthat::expect_false(camtrap_automap_pending())
+
+            # Even after the cards render, the engine does not run on its own.
+            session$setInputs(map_scientificName = "")
+            session$flushReact()
+            testthat::expect_false(camtrap_automap_pending())
+            testthat::expect_null(rv$rostrum_decisions)
+        }
+    )
+})

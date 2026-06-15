@@ -63,6 +63,7 @@ mod_mapping_ui <- function(id) {
                     condition = paste0("output['", ns("file_uploaded"), "']"),
                     shiny::div(
                         class = "mapping-scroll-container",
+                        shiny::uiOutput(ns("duplicate_source_warning")),
                         shiny::uiOutput(ns("class_pills")),
                         shiny::uiOutput(ns("mapping_ui"))
                     )
@@ -333,6 +334,15 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
         # Returns n sample values as the *processed* output for a term — same
         # logic as build_processed_mapping_df, run on a head-slice for cost.
+        # Memoize per-card sample previews by (term, columns, n): mapping_ui
+        # re-renders ALL cards on any change, but only the edited card's preview
+        # actually changes. Without this, editing one field recomputes the
+        # head(200) sample for every mapped standard term (camtrap maps ~25-40 ->
+        # noticeable lag). Dataset-scoped: cleared on a new upload. Restricted to
+        # standard terms, whose preview depends only on (term, columns,
+        # raw_data) -- never on rv$basis_of_record_map / rv$dyn_props_keys.
+        preview_cache <- new.env(parent = emptyenv())
+
         processed_preview_for_term <- function(term, current_val, n = 3L) {
             df <- raw_data_r()
             if (!is.data.frame(df) || nrow(df) == 0) return(character(0))
@@ -340,6 +350,17 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             if (!has_selected_value(user_cols)) return(character(0))
             missing <- setdiff(user_cols, names(df))
             if (length(missing) > 0) return(character(0))
+
+            cacheable <- !(term %in% c("basisOfRecord", "dynamicProperties"))
+            key <- if (cacheable) {
+                paste(term, paste(user_cols, collapse = ""), n, sep = "")
+            } else {
+                NA_character_
+            }
+            if (cacheable && exists(key, envir = preview_cache, inherits = FALSE)) {
+                return(get(key, envir = preview_cache, inherits = FALSE))
+            }
+
             slice <- utils::head(df, 200L)
             result <- tryCatch(
                 build_term_value(
@@ -354,7 +375,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             )
             vals <- as.character(result$values)
             vals <- vals[!is.na(vals) & nzchar(vals)]
-            utils::head(vals, as.integer(n))
+            out <- utils::head(vals, as.integer(n))
+            if (cacheable) {
+                assign(key, out, envir = preview_cache)
+            }
+            out
         }
 
         show_next_ambiguity_modal <- function() {
@@ -669,14 +694,30 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             }
         })
 
+        # Camtrap-origin uploads should auto-map without an "Auto-map" click, but
+        # we cannot run the engine the instant data loads: the mapping field
+        # cards have not rendered yet, so the programmatic selections would be
+        # read back as NULL by the input-sync observer below and wiped (it treats
+        # a not-yet-rendered input as a user clear). This flag defers the run
+        # until the UI is up (see the scientificName-triggered observer).
+        camtrap_automap_pending <- shiny::reactiveVal(FALSE)
+
         shiny::observeEvent(raw_data_r(),
             {
                 shiny::req(raw_data_r())
-                term_names <- all_term_names()
+
+                # Auto-register uploaded columns that are valid DwC terms outside
+                # the base set (e.g. the extra terms camtrapdp::write_dwc() emits:
+                # geodeticDatum, taxonID, organismID, coordinatePrecision, ...) so
+                # they appear as mapping targets instead of unknown columns.
+                rv$extra_terms <- detect_extra_dwc_terms(names(raw_data_r()))
+                term_names <- names(get_active_dwc_terms_list(
+                    extra = rv$extra_terms, lang = lang_r()
+                ))
 
                 rv$map_values <- empty_map_values(term_names)
                 rv$map_meta <- empty_map_meta(term_names)
-                rv$occurrence_ids <- ids::uuid(n = nrow(raw_data_r()))
+                rv$occurrence_ids <- resolve_occurrence_ids(raw_data_r())
                 rv$eventdate_parse_failures <- 0L
                 rv$last_eventdate_warn_count <- NA_integer_
                 rv$programmatic_terms <- character(0)
@@ -685,9 +726,29 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 rv$rostrum_run_stats <- list()
                 rv$dyn_props_keys <- list()
                 reset_basis_of_record_state(rv)
+                rm(list = ls(preview_cache, all.names = TRUE), envir = preview_cache)
+
+                # Camtrap columns are Darwin Core terms already: queue the
+                # automatic mapping (run once the cards render). Non-camtrap
+                # uploads leave the flag FALSE and require the manual click.
+                camtrap_automap_pending(
+                    !is.null(attr(raw_data_r(), "saira_camtrap_source"))
+                )
             },
             ignoreNULL = TRUE
         )
+
+        # Consume the deferred camtrap auto-map: the first non-NULL scientificName
+        # means the field cards have rendered, so perform_auto_map()'s selections
+        # land on real inputs (and survive the sync observer). Fires only when the
+        # flag was set by a camtrap upload; otherwise a no-op on every remap.
+        shiny::observeEvent(input$map_scientificName, {
+            if (!isTRUE(camtrap_automap_pending())) {
+                return(invisible(NULL))
+            }
+            camtrap_automap_pending(FALSE)
+            perform_auto_map()
+        }, ignoreInit = TRUE, ignoreNULL = TRUE)
 
         shiny::observe({
             shiny::req(raw_data_r())
@@ -1205,6 +1266,36 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             )
         })
 
+        # Flag when one source column feeds two or more DwC terms (allowed, but
+        # usually a mistake -- e.g. a camtrap `type` column left on both
+        # basisOfRecord and type). Amber, non-blocking; just reads rv$map_values
+        # (no inputs recreated here, so no re-render loop).
+        output$duplicate_source_warning <- shiny::renderUI({
+            dups <- detect_duplicate_source_mappings(
+                rv$map_values,
+                exclude = c("occurrenceID", "datasetName", "modified",
+                            "license", "language")
+            )
+            if (length(dups) == 0L) {
+                return(NULL)
+            }
+            lang <- lang_r()
+            rows <- lapply(names(dups), function(col) {
+                shiny::tags$li(
+                    shiny::tags$strong(col), " → ",
+                    paste(dups[[col]], collapse = ", ")
+                )
+            })
+            shiny::div(
+                class = "alert alert-warning mapping-dup-warning",
+                shiny::div(
+                    shiny::icon("triangle-exclamation"), " ",
+                    tr("mapping_dup_source_warning", lang)
+                ),
+                shiny::tags$ul(class = "mapping-dup-list", rows)
+            )
+        })
+
         # Mapping UI generation (card builder delegated to mod_mapping_cards.R).
         # All category sections always render so scroll-anchors are always in DOM.
         output$mapping_ui <- shiny::renderUI({
@@ -1307,8 +1398,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         })
 
 
-        # Auto-mapping
-        shiny::observeEvent(input$auto_map, {
+        # Auto-mapping logic, shared by the "Auto-map" button and the automatic
+        # run on camtrap-origin uploads (their columns are already Darwin Core
+        # terms, so the exact-name matches map 1:1 -- including the extra terms
+        # auto-registered on load -- without making the user click).
+        perform_auto_map <- function() {
             shiny::req(raw_data_r())
             term_names <- all_term_names()
             special_fields <- c("occurrenceID", "modified", "license", "language")
@@ -1449,6 +1543,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                     )
                 }
             )
+        }
+
+        shiny::observeEvent(input$auto_map, {
+            perform_auto_map()
         })
 
         # Reset mapping
@@ -1549,7 +1647,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
             df <- raw_data_r()
             if (is.null(rv$occurrence_ids) || length(rv$occurrence_ids) != nrow(df)) {
-                rv$occurrence_ids <- ids::uuid(n = nrow(df))
+                rv$occurrence_ids <- resolve_occurrence_ids(df)
             }
 
             processed_result <- build_mapped_result(
@@ -1696,10 +1794,15 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             shiny::req(raw_data_r())
 
             preview_raw <- utils::head(raw_data_r(), 100L)
-            preview_occurrence_ids <- if (nrow(preview_raw) > 0L) {
-                sprintf("preview-%06d", seq_len(nrow(preview_raw)))
-            } else {
+            # Show real identifiers in the preview when the upload ships them
+            # (e.g. camera-trap occurrenceID); otherwise keep lightweight
+            # placeholders for the sampled rows.
+            preview_occurrence_ids <- if (nrow(preview_raw) == 0L) {
                 character(0)
+            } else if ("occurrenceID" %in% names(preview_raw)) {
+                resolve_occurrence_ids(preview_raw)
+            } else {
+                sprintf("preview-%06d", seq_len(nrow(preview_raw)))
             }
 
             preview_result <- build_mapped_result(

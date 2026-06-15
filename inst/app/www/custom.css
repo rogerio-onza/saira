@@ -2032,11 +2032,15 @@ table.dataTable tbody tr.validate-invalid td {
    (Wiki com 217 termos + 12 pills, Preview com pageLength alto ou muitas
    colunas, Validate Coords com mapa 560px + tabela + painel de correcao de
    transpostas + legendas abaixo do mapa) precisam liberar scroll de pagina.
+   A Generalizacao tem o mesmo padrao: card de resultado + mapa 380px + escala
+   + tabela de referencia de Chapman empilhados na coluna direita, que
+   extrapolam a viewport quando ha muitas especies sensiveis.
    :has() e tecnica validada no projeto (LESSONS:226). A coluna esquerda do
    Coords permanece sticky, entao so o conteudo da direita rola. */
 .tab-content > .tab-pane:has(.wiki-module),
 .tab-content > .tab-pane:has(.preview-page),
 .tab-content > .tab-pane:has(.validate-coords-page),
+.tab-content > .tab-pane:has(.sensitive-coords-page),
 .tab-content > .tab-pane:has(.export-page) {
   overflow-y: auto;
   height: auto;
@@ -3706,6 +3710,26 @@ table.dataTable tbody tr.validate-invalid td {
     outline: 2px solid transparent;
     outline-offset: 3px;
   }
+}
+
+/* Duplicate-source mapping warning: one raw column used by >=2 DwC terms.
+   Reuses the amber .alert-warning, pinned to the top of the scrolling mapping
+   panel so it stays visible. The .alert-warning fill is translucent, so layer
+   it over an opaque card background or scrolled cards would show through. */
+.mapping-dup-warning {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin-bottom: var(--space-3);
+  background-color: var(--bg-card);
+  background-image: linear-gradient(var(--warning-bg), var(--warning-bg));
+  padding-top: var(--space-2);
+  padding-bottom: var(--space-2);
+}
+
+.mapping-dup-list {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-4);
 }
 /* =============================================================================
    VALIDATE NAMES: TWO COLUMN UX + INCREMENTAL STREAM
@@ -7178,7 +7202,6 @@ body.vn-review-open .modal-backdrop.show {
     font-size: var(--text-sm);
     color: var(--text-muted);
     margin-bottom: var(--space-4);
-    max-width: 70ch;
 }
 
 /* Two-column shell: DECIDE on the left, the consequence (result + map +
@@ -7255,12 +7278,73 @@ body.vn-review-open .modal-backdrop.show {
     margin-top: var(--space-2);
 }
 
+/* Threat-level filter chips above the result list (shown when >1 MMA group) */
+.sc-result-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
+}
+
+.sc-result-filter .sc-rfilter-chip {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: 0.04em;
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-default);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    cursor: pointer;
+    line-height: 1.5;
+    box-shadow: none;
+}
+
+.sc-result-filter .sc-rfilter-chip:hover {
+    border-color: var(--text-muted);
+    color: var(--text-primary);
+}
+
+.sc-result-filter .sc-rfilter-chip--active {
+    background: var(--text-primary);
+    color: var(--bg-card);
+    border-color: var(--text-primary);
+}
+
+/* Active threat chips fill with their category colour (matches the pills). */
+.sc-result-filter .sc-rfilter-chip--vu.sc-rfilter-chip--active {
+    background: #fbf1d0;
+    color: #7a5c00;
+    border-color: #e6c84d;
+}
+.sc-result-filter .sc-rfilter-chip--en.sc-rfilter-chip--active {
+    background: #fbe2cc;
+    color: #8a3d00;
+    border-color: #e6873c;
+}
+.sc-result-filter .sc-rfilter-chip--cr.sc-rfilter-chip--active {
+    background: var(--error-bg);
+    color: var(--error);
+    border-color: var(--error-border);
+}
+.sc-result-filter .sc-rfilter-chip--crpex.sc-rfilter-chip--active {
+    background: #f0d6de;
+    color: #6b132a;
+    border-color: #a33b57;
+}
+
 /* Per-species result rows: threat pill + name -> outcome */
 .sc-sp-list {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
     margin: var(--space-2) 0;
+    /* Cap to ~10 rows; longer lists scroll inside the card so the map below
+       stays in view instead of being pushed off-screen (ADR-100 layout). */
+    max-height: 19rem;
+    overflow-y: auto;
+    padding-right: var(--space-1);
 }
 
 .sc-sp-row {

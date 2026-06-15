@@ -235,6 +235,24 @@ resolve_row_tiers <- function(species, generalization) {
 # display (the pill in Validation > Names) but is no longer consumed by
 # `mask_sensitive_coordinates` -- the grid is global (Chapman 2020 method).
 sensitive_resolve <- function(names, decisions = NULL) {
+    # Resolve over UNIQUE names and expand back: callers (e.g.
+    # generalization_map_preview) pass per-record vectors, and camera-trap data
+    # repeats a handful of species across thousands of rows. The per-name key
+    # building + MMA match is the dominant cost, so collapsing to unique names
+    # is the difference between ~2.4 s and a few ms on large datasets.
+    # (LESSONS: unique -> resolve -> match back.)
+    names <- as.character(names)
+    if (length(names) > 1L) {
+        u <- unique(names)
+        if (length(u) < length(names)) {
+            res_u <- sensitive_resolve(u, decisions)
+            m <- match(names, u)
+            return(list(
+                sensitive = res_u$sensitive[m],
+                category = res_u$category[m]
+            ))
+        }
+    }
     category <- sensitive_category_for(names)
     sensitive <- !is.na(category)
     if (is.data.frame(decisions) && nrow(decisions) > 0L &&
@@ -318,8 +336,11 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     # Per-row Chapman tier and its grid. Rows whose species resolve to
     # "not_sensitive"/unassessed get NA grid and are left untouched below.
     row_tier <- resolve_row_tiers(df$scientificName, generalization)
-    row_grid <- vapply(row_tier, sensitive_generalization_grid,
-                       FUN.VALUE = numeric(1), USE.NAMES = FALSE)
+    # Grid per row, resolved over the few unique tiers (<= 5) and mapped back --
+    # calling sensitive_generalization_grid per record is O(n) for no reason.
+    row_tier_u <- unique(row_tier)
+    row_grid <- vapply(row_tier_u, sensitive_generalization_grid,
+                       FUN.VALUE = numeric(1), USE.NAMES = FALSE)[match(row_tier, row_tier_u)]
     lat_num <- suppressWarnings(as.numeric(df$decimalLatitude))
     lon_num <- suppressWarnings(as.numeric(df$decimalLongitude))
     target <- decided$sensitive & !is.na(lat_num) & !is.na(lon_num) &
@@ -492,8 +513,11 @@ generalization_map_preview <- function(df, generalization, decisions = NULL) {
     }
     decided <- sensitive_resolve(df$scientificName, decisions)
     row_tier <- resolve_row_tiers(df$scientificName, generalization)
-    row_grid <- vapply(row_tier, sensitive_generalization_grid,
-                       FUN.VALUE = numeric(1), USE.NAMES = FALSE)
+    # Grid per row, resolved over the few unique tiers (<= 5) and mapped back --
+    # calling sensitive_generalization_grid per record is O(n) for no reason.
+    row_tier_u <- unique(row_tier)
+    row_grid <- vapply(row_tier_u, sensitive_generalization_grid,
+                       FUN.VALUE = numeric(1), USE.NAMES = FALSE)[match(row_tier, row_tier_u)]
     lat <- suppressWarnings(as.numeric(df$decimalLatitude))
     lon <- suppressWarnings(as.numeric(df$decimalLongitude))
     target <- decided$sensitive & !is.na(lat) & !is.na(lon) &
@@ -526,15 +550,25 @@ generalization_map_preview <- function(df, generalization, decisions = NULL) {
     ref <- tryCatch(coords_load_ne_land(scale = 50L), error = function(e) NULL)
     if (!is.null(ref) && inherits(ref, "SpatVector") && "admin" %in% names(ref)) {
         admin_at <- function(lo, la) {
+            # Camera-trap data repeats the same coordinates across thousands of
+            # records, so resolve the admin (country) over UNIQUE points only and
+            # map back -- terra::extract over every row is the dominant cost here
+            # (and it runs for both the original and the generalized point sets).
+            key <- paste(lo, la, sep = "|")
+            uk <- unique(key)
+            ui <- match(uk, key)
             pts <- terra::vect(
-                data.frame(.lon = lo, .lat = la),
+                data.frame(.lon = lo[ui], .lat = la[ui]),
                 geom = c(".lon", ".lat"),
                 crs = "+proj=longlat +datum=WGS84 +no_defs"
             )
             ex <- tryCatch(terra::extract(ref[, "admin"], pts), error = function(e) NULL)
             if (is.null(ex) || ncol(ex) < 2L) return(rep(NA_character_, length(lo)))
             ex <- ex[!duplicated(ex[[1]]), , drop = FALSE]
-            as.character(ex[[2]])
+            # ex ID column is 1..length(uk) in order, so this is the per-unique
+            # admin; expand it back to the per-record order.
+            u_admin <- as.character(ex[[2]])
+            u_admin[match(key, uk)]
         }
         out$country_orig <- admin_at(out$lon, out$lat)
         out$country_gen  <- admin_at(out$gen_lon, out$gen_lat)

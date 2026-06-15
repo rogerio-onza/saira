@@ -22,6 +22,11 @@ testthat::test_that("normalize_semicolon_tokens converts semicolon lists to pipe
     testthat::expect_true(is.na(out[[3]]))
     testthat::expect_true(is.na(out[[4]]))
     testthat::expect_true(is.na(out[[5]]))
+
+    # Vectorized fast/multi-path boundary: single values are trimmed, a literal
+    # pipe is NOT a separator (only ";" is), and empty ";" tokens are dropped.
+    out2 <- normalize_semicolon_tokens(c("  solo  ", "p|q", "a;;b"))
+    testthat::expect_identical(out2, c("solo", "p|q", "a | b"))
 })
 
 testthat::test_that("collapse_mapped_values preserves token order and ignores comma as delimiter", {
@@ -855,4 +860,72 @@ testthat::test_that("plan_mapping_guide_restore rebuilds concatenations, constan
     testthat::expect_true("ghost" %in% plan$missing_columns)
     # Constants restored.
     testthat::expect_identical(plan$constants$datasetName, "Rede Felinos")
+})
+
+# resolve_occurrence_ids (C2) --------------------------------------------
+
+testthat::test_that("resolve_occurrence_ids preserves provided IDs and fills gaps", {
+    df <- data.frame(
+        occurrenceID = c("obs-1", NA, "  ", "obs-4"),
+        x = 1:4,
+        stringsAsFactors = FALSE
+    )
+    out <- resolve_occurrence_ids(df)
+    testthat::expect_length(out, 4L)
+    testthat::expect_identical(out[c(1L, 4L)], c("obs-1", "obs-4"))
+    # Blank/NA entries are backfilled with non-empty UUIDs.
+    testthat::expect_true(all(nchar(out[c(2L, 3L)]) > 10L))
+    testthat::expect_false(anyNA(out))
+})
+
+testthat::test_that("resolve_occurrence_ids generates UUIDs when no column exists", {
+    out <- resolve_occurrence_ids(data.frame(x = 1:3))
+    testthat::expect_length(out, 3L)
+    testthat::expect_true(all(nchar(out) > 10L))
+    testthat::expect_false(anyDuplicated(out) > 0L)
+})
+
+# detect_duplicate_source_mappings (item 3) ------------------------------
+testthat::test_that("detect_duplicate_source_mappings flags a column used by two terms", {
+    mv <- list(
+        scientificName = "taxon",
+        decimalLatitude = "lat",
+        basisOfRecord = "type_col",
+        type = "type_col"
+    )
+    dups <- detect_duplicate_source_mappings(mv)
+    testthat::expect_named(dups, "type_col")
+    testthat::expect_setequal(dups[["type_col"]], c("basisOfRecord", "type"))
+})
+
+testthat::test_that("detect_duplicate_source_mappings ignores blanks, singles, and excluded terms", {
+    # No collisions: every column used once.
+    mv_ok <- list(scientificName = "taxon", decimalLatitude = "lat", type = "")
+    testthat::expect_length(detect_duplicate_source_mappings(mv_ok), 0L)
+
+    # A clash only on an excluded constant term is not reported.
+    mv_excl <- list(license = "x", language = "x", scientificName = "taxon")
+    testthat::expect_length(
+        detect_duplicate_source_mappings(
+            mv_excl,
+            exclude = c("license", "language")
+        ),
+        0L
+    )
+
+    # Empty / non-list input is safe.
+    testthat::expect_length(detect_duplicate_source_mappings(list()), 0L)
+})
+
+testthat::test_that("detect_duplicate_source_mappings ignores verbatim terms", {
+    # A column shared between a parsed term and its verbatim twin is expected.
+    mv <- list(eventDate = "date_col", verbatimEventDate = "date_col")
+    testthat::expect_length(detect_duplicate_source_mappings(mv), 0L)
+
+    # But a clash between two non-verbatim terms is still flagged.
+    mv2 <- list(eventDate = "date_col", year = "date_col",
+                verbatimEventDate = "date_col")
+    dups <- detect_duplicate_source_mappings(mv2)
+    testthat::expect_named(dups, "date_col")
+    testthat::expect_setequal(dups[["date_col"]], c("eventDate", "year"))
 })

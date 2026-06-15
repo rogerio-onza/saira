@@ -255,6 +255,10 @@
     "pt": "-- Não mapeado --",
     "en": "-- Not mapped --"
   },
+  "mapping_dup_source_warning": {
+    "pt": "Mesma coluna em mais de um termo Darwin Core — confira se é intencional:",
+    "en": "Same source column in more than one Darwin Core term — check it's intentional:"
+  },
   "mapping_sidebar_title": {
     "pt": "Ferramentas",
     "en": "Tools"
@@ -1627,6 +1631,26 @@
     "pt": "Esta espécie está na lista nacional MMA. Desmarcar é uma decisão de custodiante — as coordenadas serão publicadas sem generalização.",
     "en": "This species is on the MMA national red list. Unmarking is a custodian decision — its coordinates will be published without generalization."
   },
+  "sensitive_pick_level_label": {
+    "pt": "Nível de ameaça (espécie fora da lista do MMA)",
+    "en": "Threat level (species not on the MMA list)"
+  },
+  "sensitive_level_vu": {
+    "pt": "Vulnerável (VU)",
+    "en": "Vulnerable (VU)"
+  },
+  "sensitive_level_en": {
+    "pt": "Em perigo (EN)",
+    "en": "Endangered (EN)"
+  },
+  "sensitive_level_cr": {
+    "pt": "Criticamente em perigo (CR)",
+    "en": "Critically endangered (CR)"
+  },
+  "sensitive_level_crpex": {
+    "pt": "Criticamente em perigo / Possivelmente extinta (CR (PEX))",
+    "en": "Critically endangered / Possibly extinct (CR (PEX))"
+  },
   "sensitive_panel_title": {
     "pt": "Mascaramento de coordenadas (espécies sensíveis)",
     "en": "Coordinate masking (sensitive species)"
@@ -1918,6 +1942,14 @@
   "sc_result_title": {
     "pt": "Resultado",
     "en": "Result"
+  },
+  "sc_result_filter_all": {
+    "pt": "Todas",
+    "en": "All"
+  },
+  "sc_result_filter_label": {
+    "pt": "Filtrar resultados por nível de ameaça",
+    "en": "Filter results by threat level"
   },
   "sc_result_publish_state": {
     "pt": "Publicando coordenadas originais",

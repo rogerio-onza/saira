@@ -125,6 +125,52 @@ testthat::test_that("a per-species exception overrides the group then clears bac
     )
 })
 
+testthat::test_that("threat-level filter narrows the result list to one group", {
+    local_sensitive_fixture(
+        c("Panthera onca", "Leopardus wiedii"),
+        category = c("EN", "VU")
+    )
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus wiedii"),
+        decimalLatitude = c("-27.17", "-10.00"),
+        decimalLongitude = c("-53.90", "-50.00"),
+        stringsAsFactors = FALSE
+    )
+    shiny::testServer(
+        saira:::mod_sensitive_coords_server,
+        args = list(
+            data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(sensitive_mode = "generalize")
+            session$flushReact()
+
+            # Default: filter is "all" and both groups' species are listed.
+            testthat::expect_identical(result_filter_rv(), "all")
+            html_all <- paste(output$result_card$html, collapse = " ")
+            testthat::expect_true(grepl("Panthera onca", html_all))
+            testthat::expect_true(grepl("Leopardus wiedii", html_all))
+
+            # Filter to VU: only the VU species remains in the result list.
+            session$setInputs(rfilter_vu = 1)
+            session$flushReact()
+            testthat::expect_identical(result_filter_rv(), "vu")
+            html_vu <- paste(output$result_card$html, collapse = " ")
+            testthat::expect_true(grepl("Leopardus wiedii", html_vu))
+            testthat::expect_false(grepl("Panthera onca", html_vu))
+
+            # Back to all restores both.
+            session$setInputs(rfilter_all = 1)
+            session$flushReact()
+            testthat::expect_identical(result_filter_rv(), "all")
+            html_back <- paste(output$result_card$html, collapse = " ")
+            testthat::expect_true(grepl("Panthera onca", html_back))
+            testthat::expect_true(grepl("Leopardus wiedii", html_back))
+        }
+    )
+})
+
 testthat::test_that("no sensitive species yields an empty overview and no levels", {
     # Synthetic list contains a different species, so the data below is unlisted.
     local_sensitive_fixture("Xxxia exampla")

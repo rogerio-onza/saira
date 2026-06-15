@@ -202,7 +202,9 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
         timestampIssues = rep(FALSE, n_dep),
         baitUse = rep(NA_character_, n_dep),
         featureType = pick(wi_dep, "feature_type", NA_character_),
-        habitat = pick(wi_dep, "feature_type", NA_character_),
+        # WI has no habitat field; feature_type is a placement feature, not a
+        # habitat description. Leaving habitat empty avoids polluting dwc:habitat.
+        habitat = rep(NA_character_, n_dep),
         deploymentGroups = pick(wi_dep, "subproject_name", NA_character_),
         deploymentTags = rep(NA_character_, n_dep),
         deploymentComments = pick(wi_dep, "remarks", NA_character_),
@@ -289,7 +291,13 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
         observationType = obs_type,
         cameraSetupType = rep(NA_character_, n_img),
         scientificName = sci_name,
-        count = suppressWarnings(as.integer(pick(wi_img, "number_of_objects", 1L))),
+        # Camtrap DP `count` has a minimum of 1; default missing values to 1
+        # rather than emitting an empty individualCount for animal records.
+        count = {
+            n_obj <- suppressWarnings(as.integer(pick(wi_img, "number_of_objects", 1L)))
+            n_obj[is.na(n_obj)] <- 1L
+            n_obj
+        },
         lifeStage = tolower(as.character(pick(wi_img, "age", NA))),
         sex = tolower(as.character(pick(wi_img, "sex", NA))),
         behavior = pick(wi_img, "behavior", NA_character_),
@@ -437,7 +445,20 @@ read_camtrap_dp_zip <- function(path, lang = "en") {
     pkg
 }
 
-# --- Final conversion (unchanged) ---------------------------------------
+# --- Final conversion ----------------------------------------------------
+
+# Wildlife Insights timestamps are bare camera-local time with no timezone
+# (per WI's Data Dictionary). Our synthesized CSVs label them `Z` so frictionless
+# parses them as datetime, and camtrapdp::write_dwc() also hard-codes a `Z`
+# suffix. That falsely claims UTC and corrupts time-of-day analyses. For WI input
+# we drop the fabricated designator so the published value is the honest naive
+# local wall-clock. Real Camtrap DP / datapackage inputs carry genuine timezone
+# designators and are left untouched. `Z` only appears as the ISO 8601 tz
+# designator in these strings, so a fixed substitution is safe.
+strip_fabricated_utc <- function(x) {
+    if (is.null(x)) return(x)
+    gsub("Z", "", as.character(x), fixed = TRUE)
+}
 
 convert_camtrap_to_dwc_occurrence <- function(x, lang = "en") {
     require_camtrapdp(lang)
@@ -459,6 +480,11 @@ convert_camtrap_to_dwc_occurrence <- function(x, lang = "en") {
     }
     df <- as.data.frame(occ, stringsAsFactors = FALSE)
     src <- attr(x, "saira_camtrap_source")
+    if (identical(src, "wildlife_insights_zip")) {
+        for (col in intersect(c("eventDate", "dateIdentified"), names(df))) {
+            df[[col]] <- strip_fabricated_utc(df[[col]])
+        }
+    }
     if (!is.null(src)) attr(df, "saira_camtrap_source") <- src
     df
 }
