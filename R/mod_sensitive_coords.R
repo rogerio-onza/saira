@@ -124,6 +124,16 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
         group_levels_rv <- shiny::reactiveVal(list())
         species_overrides_rv <- shiny::reactiveVal(list())
         preview_tier_rv <- shiny::reactiveVal(NULL)
+        # Raw cascade answers (q43/q44/q45 per group code) kept so the assessment
+        # panel can restore the radios after a re-render: the panel is a renderUI
+        # that recreates these inputs, and without restoration a tab switch wipes
+        # the user's marks (the recreated radios read back as NULL). Same input-
+        # recreation hazard as ADR-098.
+        group_answers_rv <- shiny::reactiveVal(list())
+        # Threat-level filter for the result list ("all" or a threat code:
+        # crpex/cr/en/vu/other). Lets the user narrow a long result list to a
+        # single MMA group. Reset to "all" whenever the detected set changes.
+        result_filter_rv <- shiny::reactiveVal("all")
 
         # Detected sensitive species (>= 1 record with coordinates), grouped by
         # MMA threat status. Sourced from the corrected data already in hand.
@@ -203,10 +213,25 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
         # ---- Cascade -> tier wiring ---------------------------------------
         lapply(sensitive_codes, function(cc) {
             shiny::observe({
-                t <- determine_tier(
-                    input[[paste0("q43_", cc)]], input[[paste0("q44_", cc)]],
-                    input[[paste0("q45_", cc)]]
-                )
+                a3 <- input[[paste0("q43_", cc)]]
+                a4 <- input[[paste0("q44_", cc)]]
+                a5 <- input[[paste0("q45_", cc)]]
+                # A re-render recreates the radios with no selection; ignore that
+                # transient all-empty state so a tab switch never wipes a mark.
+                # The user has no way to clear a radio back to NULL, so NULL here
+                # only ever means "freshly (re)rendered, not yet answered".
+                if (is.null(a3) && is.null(a4) && is.null(a5)) {
+                    return(invisible(NULL))
+                }
+                # Persist the raw answers so the panel can restore them on the
+                # next re-render (see group_answers_rv / yn_radio).
+                ans <- group_answers_rv()
+                ans[[paste0("q43_", cc)]] <- a3
+                ans[[paste0("q44_", cc)]] <- a4
+                ans[[paste0("q45_", cc)]] <- a5
+                group_answers_rv(ans)
+
+                t <- determine_tier(a3, a4, a5)
                 gl <- group_levels_rv()
                 cur <- gl[[cc]]
                 if (is.na(t)) {
@@ -367,10 +392,16 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             n <- sensitive_overview()
 
             yn_radio <- function(id, qkey) {
+                # Restore the prior answer (isolated read: a reactive dependency
+                # here would re-render the panel on every click, recreating the
+                # very inputs we are reading -- the ADR-098 loop).
+                prev_ans <- shiny::isolate(group_answers_rv())[[id]]
                 shiny::radioButtons(
                     ns(id), label = tr(qkey, lang),
                     choiceNames = list(tr("sensitive_q_yes", lang), tr("sensitive_q_no", lang)),
-                    choiceValues = c("yes", "no"), selected = character(0), inline = TRUE
+                    choiceValues = c("yes", "no"),
+                    selected = if (is.null(prev_ans)) character(0) else prev_ans,
+                    inline = TRUE
                 )
             }
             cascade_ui <- function(cc) {
@@ -558,10 +589,59 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             levels <- species_levels_r()
             gl <- group_levels_rv()
             ovr <- species_overrides_rv()
+
+            # Threat-level filter: when more than one MMA group is present, offer
+            # chips so a long list can be narrowed to a single group. A filter for
+            # a no-longer-present group falls back to "all".
+            code_order <- c("crpex", "cr", "en", "vu", "other")
+            present_codes <- code_order[code_order %in% ov$code]
+            active_filter <- result_filter_rv()
+            if (!identical(active_filter, "all") && !active_filter %in% present_codes) {
+                active_filter <- "all"
+            }
+            ov_view <- if (identical(active_filter, "all")) {
+                ov
+            } else {
+                ov[ov$code == active_filter, , drop = FALSE]
+            }
+
+            code_label <- function(cc) {
+                if (identical(cc, "other")) {
+                    tr("sensitive_group_other", lang)
+                } else {
+                    ov$category[match(cc, ov$code)]
+                }
+            }
+            filter_chips <- if (length(present_codes) > 1L) {
+                all_cls <- "sc-rfilter-chip"
+                if (identical(active_filter, "all")) {
+                    all_cls <- paste(all_cls, "sc-rfilter-chip--active")
+                }
+                chips <- c(
+                    list(shiny::actionButton(
+                        ns("rfilter_all"), tr("sc_result_filter_all", lang), class = all_cls
+                    )),
+                    lapply(present_codes, function(cc) {
+                        cls <- paste0("sc-rfilter-chip sc-rfilter-chip--", cc)
+                        if (identical(active_filter, cc)) {
+                            cls <- paste(cls, "sc-rfilter-chip--active")
+                        }
+                        shiny::actionButton(
+                            ns(paste0("rfilter_", cc)), code_label(cc), class = cls
+                        )
+                    })
+                )
+                shiny::div(
+                    class = "sc-result-filter", role = "group",
+                    `aria-label` = tr("sc_result_filter_label", lang),
+                    chips
+                )
+            }
+
             # One row per detected sensitive species: threat pill + name -> outcome.
-            rows <- lapply(seq_len(nrow(ov)), function(i) {
-                sp <- ov$scientificName[i]
-                assessed <- !is.null(ovr[[sp]]) || !is.null(gl[[ov$code[i]]])
+            rows <- lapply(seq_len(nrow(ov_view)), function(i) {
+                sp <- ov_view$scientificName[i]
+                assessed <- !is.null(ovr[[sp]]) || !is.null(gl[[ov_view$code[i]]])
                 tier <- unname(levels[[sp]])
                 outcome <- if (!assessed) {
                     shiny::span(class = "sc-sp-outcome sc-sp-outcome--pending",
@@ -575,7 +655,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 }
                 shiny::div(
                     class = "sc-sp-row",
-                    threat_pill(ov$code[i], ov$category[i]),
+                    threat_pill(ov_view$code[i], ov_view$category[i]),
                     shiny::span(class = "sc-sp-name", shiny::tags$em(sp)),
                     shiny::span(class = "sc-sp-arrow", "→"),
                     outcome
@@ -592,6 +672,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             shiny::div(
                 class = "sc-result sc-result--generalize",
                 shiny::div(class = "sc-result-head", tr("sc_result_title", lang)),
+                filter_chips,
                 shiny::div(class = "sc-sp-list", rows),
                 shiny::div(
                     class = "sc-result-foot",
@@ -610,6 +691,23 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 )
             )
         })
+
+        # Threat-level filter chips drive result_filter_rv. The codes are a
+        # fixed known set, so observers are registered up front.
+        for (code in c("all", "vu", "en", "cr", "crpex", "other")) {
+            local({
+                cc <- code
+                shiny::observeEvent(input[[paste0("rfilter_", cc)]], {
+                    result_filter_rv(cc)
+                }, ignoreInit = TRUE)
+            })
+        }
+
+        # Reset the filter whenever the detected set of sensitive species changes
+        # (a new upload), so a stale group filter never hides the new list.
+        shiny::observeEvent(sensitive_species_overview(), {
+            result_filter_rv("all")
+        }, ignoreInit = TRUE)
 
         # Live "justification required" hint under the field.
         output$justification_warn <- shiny::renderUI({
@@ -842,18 +940,18 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
         # this is the fix for the markers vanishing under the cell rectangles).
         # It deliberately does NOT move the map: tier/what-if redraws keep the
         # user's current zoom so cell sizes are comparable at a glance.
-        shiny::observe({
-            proxy <- leaflet::leafletProxy(ns("gen_map"))
-            leaflet::clearGroup(proxy, "gen_overlay")
-            leaflet::clearGroup(proxy, "orig_points")
+        # Debounced so each cascade answer paints the result card + category
+        # badges immediately, while the heavier map overlay (border lookup +
+        # shape draw) redraws ~300 ms after the user stops answering. Computing
+        # prev here (not in the observe) keeps the whole map path off the
+        # answer's flush, so the pills feel instant.
+        gen_overlay_data_r <- shiny::debounce(shiny::reactive({
             ov <- sensitive_species_overview()
-            if (is.null(ov)) return(invisible(NULL))
+            if (is.null(ov)) return(NULL)
             df <- effective_data_r()
-            if (!is.data.frame(df)) return(invisible(NULL))
-            lang <- lang_r()
+            if (!is.data.frame(df)) return(NULL)
             is_gen <- identical(input$sensitive_mode %||% "publish", "generalize")
-
-            # 1) Published overlay (generalize mode only).
+            prev <- NULL
             if (is_gen) {
                 pt <- preview_tier_rv()
                 levels <- if (!is.null(pt)) {
@@ -865,41 +963,88 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     generalization_map_preview(df, levels, export_sensitivity_payload()),
                     error = function(e) NULL
                 )
+            }
+            list(ov = ov, df = df, is_gen = is_gen, prev = prev, lang = lang_r())
+        }), 300)
+
+        shiny::observe({
+            d <- gen_overlay_data_r()
+            proxy <- leaflet::leafletProxy(ns("gen_map"))
+            leaflet::clearGroup(proxy, "gen_overlay")
+            leaflet::clearGroup(proxy, "orig_points")
+            if (is.null(d)) return(invisible(NULL))
+            ov <- d$ov
+            df <- d$df
+            lang <- d$lang
+            prev <- d$prev
+
+            # 1) Published overlay (generalize mode only).
+            if (isTRUE(d$is_gen)) {
                 if (is.data.frame(prev) && nrow(prev) > 0L) {
-                    g_all <- vapply(prev$tier, sensitive_generalization_grid, numeric(1), USE.NAMES = FALSE)
-                    for (i in seq_len(nrow(prev))) {
-                        g <- g_all[i]
-                        if (is.na(g) || g <= 0) next
-                        crosses <- !is.na(prev$crosses[i]) && prev$crosses[i]
-                        col <- if (crosses) "#C0392B" else "#FFA204"
-                        pop <- gen_popup(prev[i, , drop = FALSE], lang, crosses, col)
-                        # Connector: Origin -> the published generalized
-                        # coordinate (the cell centre = decimalLat/Long). Fixed
-                        # teal, distinct from the orange/red cell so it reads as
-                        # its own thing.
+                    tier_u <- unique(prev$tier)
+                    g_all <- vapply(tier_u, sensitive_generalization_grid, numeric(1), USE.NAMES = FALSE)[match(prev$tier, tier_u)]
+                    crosses_all <- !is.na(prev$crosses) & prev$crosses
+                    has_cell <- !is.na(g_all) & g_all > 0
+                    # Camera-trap data stacks thousands of records on a handful of
+                    # camera coordinates, so the same cell/connector/circle is
+                    # drawn over and over. Collapse to unique (origin, cell, tier,
+                    # crossing) shapes and issue ONE batched, vectorized leaflet
+                    # call per shape type instead of three calls per record -- the
+                    # per-record loop was the source of the freeze on large
+                    # datasets (and the compounding-opacity stacking artefact).
+                    if (any(has_cell)) {
+                        idx <- which(has_cell)
+                        sig <- paste(
+                            prev$scientificName[idx], prev$lon[idx], prev$lat[idx],
+                            prev$gen_lon[idx], prev$gen_lat[idx], prev$tier[idx],
+                            crosses_all[idx],
+                            sep = "|"
+                        )
+                        idx <- idx[!duplicated(sig)]
+
+                        gu <- g_all[idx]
+                        cu <- crosses_all[idx]
+                        col_u <- ifelse(cu, "#C0392B", "#FFA204")
+                        pop_u <- vapply(
+                            idx,
+                            function(i) gen_popup(
+                                prev[i, , drop = FALSE], lang, crosses_all[i],
+                                if (crosses_all[i]) "#C0392B" else "#FFA204"
+                            ),
+                            character(1)
+                        )
+
+                        # Connectors: Origin -> published cell centre. One call,
+                        # NA-separated coordinates so each pair is a distinct
+                        # dashed teal segment. Drawn first (under the cells).
                         leaflet::addPolylines(
-                            proxy, lng = c(prev$lon[i], prev$gen_lon[i]),
-                            lat = c(prev$lat[i], prev$gen_lat[i]),
+                            proxy,
+                            lng = as.vector(rbind(prev$lon[idx], prev$gen_lon[idx], NA_real_)),
+                            lat = as.vector(rbind(prev$lat[idx], prev$gen_lat[idx], NA_real_)),
                             weight = 1.5, color = "#0e7c86", opacity = 0.85,
                             dashArray = "5,5", group = "gen_overlay"
                         )
+                        # Published cells: one vectorized call (per-cell colour
+                        # red when the cell crosses a border, else orange).
                         leaflet::addRectangles(
                             proxy,
-                            lng1 = prev$gen_lon[i] - g / 2, lat1 = prev$gen_lat[i] - g / 2,
-                            lng2 = prev$gen_lon[i] + g / 2, lat2 = prev$gen_lat[i] + g / 2,
-                            weight = 1.5, color = col, fillColor = col,
+                            lng1 = prev$gen_lon[idx] - gu / 2, lat1 = prev$gen_lat[idx] - gu / 2,
+                            lng2 = prev$gen_lon[idx] + gu / 2, lat2 = prev$gen_lat[idx] + gu / 2,
+                            weight = 1.5, color = col_u, fillColor = col_u,
                             fillOpacity = 0.18, opacity = 0.85,
-                            popup = pop, group = "gen_overlay"
+                            popup = pop_u, group = "gen_overlay"
                         )
-                        # Point-radius uncertainty circle (centre -> furthest
-                        # corner = coordinateUncertaintyInMeters), the honest
-                        # GBIF view that circumscribes the cell (Chapman Fig. 2).
-                        # A fixed violet (distinct from the orange/red cell) so
-                        # it never blends into the square it surrounds.
-                        if (!is.null(prev$unc_m) && !is.na(prev$unc_m[i]) && prev$unc_m[i] > 0) {
+                        # Point-radius uncertainty circles (centre -> furthest
+                        # corner = coordinateUncertaintyInMeters), the honest GBIF
+                        # view that circumscribes each cell (Chapman Fig. 2). One
+                        # vectorized call over the rows with a positive radius.
+                        unc_u <- prev$unc_m[idx]
+                        uc <- !is.na(unc_u) & unc_u > 0
+                        if (any(uc)) {
                             leaflet::addCircles(
-                                proxy, lng = prev$gen_lon[i], lat = prev$gen_lat[i],
-                                radius = prev$unc_m[i], weight = 1.5, color = "#6d28d9",
+                                proxy,
+                                lng = prev$gen_lon[idx][uc], lat = prev$gen_lat[idx][uc],
+                                radius = unc_u[uc], weight = 1.5, color = "#6d28d9",
                                 opacity = 0.9, fill = FALSE, dashArray = "6,5",
                                 group = "gen_overlay"
                             )
@@ -909,18 +1054,23 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             }
 
             # 2) Origin markers ON TOP (always shown; the raw published point).
+            # Deduped by (species, coordinate): camera-trap datasets repeat the
+            # same camera location across thousands of records, so one marker per
+            # distinct point keeps the canvas light without changing the view.
             sci <- as.character(df$scientificName)
             lat <- suppressWarnings(as.numeric(df$decimalLatitude))
             lon <- suppressWarnings(as.numeric(df$decimalLongitude))
             sel <- sci %in% ov$scientificName & !is.na(lat) & !is.na(lon)
             if (any(sel)) {
+                s_sci <- sci[sel]; s_lat <- lat[sel]; s_lon <- lon[sel]
+                keep <- !duplicated(paste(s_sci, s_lon, s_lat, sep = "|"))
                 leaflet::addCircleMarkers(
-                    proxy, lng = lon[sel], lat = lat[sel],
+                    proxy, lng = s_lon[keep], lat = s_lat[keep],
                     radius = 6, stroke = TRUE, weight = 3, color = "#1C1C26",
                     fillColor = "#ffffff", fillOpacity = 0.95, opacity = 1,
                     group = "orig_points",
                     popup = sprintf("<strong>%s</strong><br>%s",
-                                    htmltools::htmlEscape(sci[sel]), tr("sc_popup_original", lang))
+                                    htmltools::htmlEscape(s_sci[keep]), tr("sc_popup_original", lang))
                 )
             }
             invisible(NULL)

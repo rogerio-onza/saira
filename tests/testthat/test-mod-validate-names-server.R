@@ -637,16 +637,23 @@ testthat::test_that("sensitivity payload reflects per-species overrides", {
             testthat::expect_true(shiny::is.reactive(payload))
             testthat::expect_equal(nrow(payload()), 0L)
 
-            # Researcher marks a non-MMA species sensitive (ADR-092). The
-            # global Chapman tier is chosen on the Preview tab, so the
-            # payload only needs to carry the boolean decision.
-            register_sensitivity_override("Felis catus", TRUE)
+            # Researcher marks a non-MMA species sensitive and picks a threat
+            # level (item 8). The payload now carries that category so the
+            # Generalization tab can group the species under the chosen level.
+            register_sensitivity_override("Felis catus", TRUE, category = "EN")
             session$flushReact()
 
             df <- payload()
             testthat::expect_equal(df$scientificName, "Felis catus")
             testthat::expect_true(df$sensitive)
-            testthat::expect_false("category" %in% names(df))
+            testthat::expect_true("category" %in% names(df))
+            testthat::expect_identical(df$category, "EN")
+
+            # The chosen level resolves to the matching MMA group code, so the
+            # off-list species joins that group instead of "Other".
+            dec <- saira:::sensitive_resolve("Felis catus", df)
+            testthat::expect_true(dec$sensitive[1])
+            testthat::expect_identical(dec$category[1], "EN")
         }
     )
 })

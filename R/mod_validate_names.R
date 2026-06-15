@@ -251,6 +251,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             empty <- data.frame(
                 scientificName = character(0),
                 sensitive = logical(0),
+                category = character(0),
                 stringsAsFactors = FALSE
             )
             if (!is.list(store) || length(store) == 0L) {
@@ -261,18 +262,36 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 sensitive = vapply(
                     store, function(x) isTRUE(x$sensitive), logical(1)
                 ),
+                # User-chosen MMA threat level for species NOT on the MMA list
+                # (NA otherwise). sensitive_resolve() honours this so the
+                # Generalization tab groups the species under the chosen level
+                # instead of the "Other" bucket.
+                category = vapply(
+                    store, function(x) {
+                        cc <- x$category
+                        if (is.null(cc) || length(cc) == 0L || is.na(cc)) {
+                            NA_character_
+                        } else {
+                            as.character(cc)
+                        }
+                    }, character(1)
+                ),
                 stringsAsFactors = FALSE
             )
         }
 
-        register_sensitivity_override <- function(name, sensitive) {
+        register_sensitivity_override <- function(name, sensitive,
+                                                  category = NA_character_) {
             name <- trimws(as.character(name))
             if (!nzchar(name)) {
                 return(invisible(NULL))
             }
             store <- rv$sensitivity_overrides
             if (!is.list(store)) store <- list()
-            store[[name]] <- list(sensitive = isTRUE(sensitive))
+            store[[name]] <- list(
+                sensitive = isTRUE(sensitive),
+                category = category
+            )
             rv$sensitivity_overrides <- store
             invisible(NULL)
         }
@@ -995,9 +1014,21 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             dec <- sensitive_resolve(name, sensitivity_entries_df())
             is_sens <- isTRUE(dec$sensitive[1])
             on_mma <- !is.na(sensitive_category_for(name)[1])
+            stored <- rv$sensitivity_overrides[[name]]
+            existing_cat <- if (is.list(stored)) stored$category else NULL
+            if (is.null(existing_cat) || length(existing_cat) == 0L ||
+                is.na(existing_cat) || !nzchar(existing_cat)) {
+                existing_cat <- "VU"
+            }
+            lang <- lang_r()
+            level_choices <- stats::setNames(
+                c("VU", "EN", "CR", "CR (PEX)"),
+                c(tr("sensitive_level_vu", lang), tr("sensitive_level_en", lang),
+                  tr("sensitive_level_cr", lang), tr("sensitive_level_crpex", lang))
+            )
 
             shiny::showModal(shiny::modalDialog(
-                title = tr("sensitive_panel_title", lang_r()),
+                title = tr("sensitive_panel_title", lang),
                 shiny::div(
                     class = "vn-sensitivity-modal",
                     shiny::div(
@@ -1006,13 +1037,29 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     ),
                     shiny::checkboxInput(
                         ns("sensitivity_is"),
-                        label = tr("validate_names_status_badge_sensitive", lang_r()),
+                        label = tr("validate_names_status_badge_sensitive", lang),
                         value = is_sens
                     ),
+                    # Species off the MMA list have no auto-category, so let the
+                    # researcher pick the threat level the generalization tab
+                    # should group it under (only relevant while marked sensitive).
+                    if (!isTRUE(on_mma)) {
+                        shiny::conditionalPanel(
+                            condition = sprintf(
+                                "input['%s'] == true", ns("sensitivity_is")
+                            ),
+                            shiny::selectInput(
+                                ns("sensitivity_category"),
+                                label = tr("sensitive_pick_level_label", lang),
+                                choices = level_choices,
+                                selected = existing_cat
+                            )
+                        )
+                    },
                     if (isTRUE(on_mma)) {
                         shiny::div(
                             class = "vn-sensitivity-warning",
-                            tr("sensitive_unmark_mma_warning", lang_r())
+                            tr("sensitive_unmark_mma_warning", lang)
                         )
                     }
                 ),
@@ -1039,9 +1086,21 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 if (is.null(name) || !nzchar(name)) {
                     return(invisible(NULL))
                 }
+                is_sens <- isTRUE(input$sensitivity_is %||% FALSE)
+                # Store the chosen level only for an off-MMA species marked
+                # sensitive; MMA species (no category input) keep their auto
+                # category, and unmarking clears the override level.
+                on_mma <- !is.na(sensitive_category_for(name)[1])
+                category <- if (is_sens && !isTRUE(on_mma)) {
+                    val <- trimws(as.character(input$sensitivity_category %||% ""))
+                    if (nzchar(val)) val else NA_character_
+                } else {
+                    NA_character_
+                }
                 register_sensitivity_override(
                     name = name,
-                    sensitive = isTRUE(input$sensitivity_is %||% FALSE)
+                    sensitive = is_sens,
+                    category = category
                 )
                 shiny::removeModal()
                 sensitivity_target(NULL)
