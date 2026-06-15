@@ -32,6 +32,11 @@ Para o conjunto de registros sensíveis, o Saíra oferece dois caminhos:
 - **Publicar coordenadas originais** *(recomendado)* — mantém a precisão total. É a escolha certa na maioria dos casos.
 - **Avaliar sensibilidade** — abre a tabela de decisão de Chapman para determinar, sem chute, o nível de generalização de cada grupo de ameaça.
 
+::: {.callout-important}
+## NÃO GENERALIZE DADOS DO WILDLIFE INSIGHTS DUAS VEZES
+O **Wildlife Insights já ofusca as coordenadas de espécies sensíveis** na própria exportação. Se o seu conjunto veio de lá e você marcou essas espécies como sensíveis, **escolha "Publicar coordenadas originais" e NÃO aplique a generalização do Saíra**. Generalizar de novo degradaria a localização **DUAS VEZES** — perdendo precisão sem necessidade e sem ganho de proteção.
+:::
+
 ## A tabela de decisão (Tabela 5 de Chapman)
 
 Ao escolher **Avaliar sensibilidade**, as espécies aparecem agrupadas por **categoria de ameaça do MMA** (CR, EN, VU…), além de um grupo para as espécies que você marcou manualmente. Para cada grupo, você responde uma pequena **cascata de perguntas** — da mais geral para a mais específica. A primeira resposta "Sim" define o nível; as espécies daquele grupo herdam o nível determinado.

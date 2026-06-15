@@ -32,6 +32,11 @@ For the set of sensitive records, Saíra offers two paths:
 - **Publish original coordinates** *(recommended)* — keeps the full precision. The right choice in most cases.
 - **Assess sensitivity** — opens Chapman's decision table to determine, with no guessing, the generalization level of each threat group.
 
+::: {.callout-important}
+## DO NOT GENERALIZE WILDLIFE INSIGHTS DATA TWICE
+**Wildlife Insights already obfuscates the coordinates of sensitive species** on export. If your dataset came from there and you flagged those species as sensitive, **choose "Publish original coordinates" and do NOT apply Saíra's generalization**. Generalizing again would degrade the location **TWICE** — losing precision needlessly with no added protection.
+:::
+
 ## The decision table (Chapman's Table 5)
 
 When you choose **Assess sensitivity**, the species appear grouped by **MMA threat category** (CR, EN, VU…), plus a group for the species you flagged by hand. For each group you answer a short **cascade of questions** — from the most general to the most specific. The first "Yes" sets the level; the species in that group inherit the level it determines.
