@@ -33,6 +33,8 @@ website:
         href: faq.qmd
       - text: "Glossário"
         href: glossario.qmd
+      - text: "Tecnologias"
+        href: tecnologias.qmd
       - text: "Novidades"
         href: novidades.qmd
       - icon: github
@@ -102,3 +104,4 @@ format:
     include-in-header:
       - assets/version.html
       - assets/head.html
+      - assets/analytics.html

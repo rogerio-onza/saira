@@ -10,7 +10,7 @@ is_saira_mapping_guide(path)
 \item{path}{Character path to the candidate file.}
 }
 \value{
-TRUE when line 1 matches the v1 magic header. FALSE otherwise
+TRUE when line 1 matches the v1 or v2 magic header. FALSE otherwise
   (including when the file is unreadable).
 }
 \description{

@@ -1,5 +1,8 @@
 # MMA - Lista nacional de espécies ameaçadas de extinção
 
+Fonte: Portaria MMA nº 148, de 7 de junho de 2022, que atualiza os anexos das
+Portarias nº 443/2014 (flora) e nº 444/2014 (fauna).
+
 ANEXO 1
 
 |     |     |     |     |     |

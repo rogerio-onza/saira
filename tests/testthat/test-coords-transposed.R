@@ -1,5 +1,5 @@
-# Tests for transposed-coordinate detection/correction (reimplements the core
-# of bdc::bdc_coordinates_transposed on the bundled Natural Earth layer).
+# Tests for transposed-coordinate detection/correction against the bundled
+# Natural Earth layer.
 
 testthat::test_that("coords_transposed_corrections corrects swapped/sign-flipped coords against country", {
     testthat::skip_if_not_installed("terra")

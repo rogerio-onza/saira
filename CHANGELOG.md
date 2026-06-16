@@ -7,6 +7,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-06-16
+
+### Added
+- **Website: privacy-friendly analytics (Umami).** A cookieless Umami snippet (`assets/analytics.html`, injected via `include-in-header`) now tracks page views across every PT and EN page, so site access can be monitored without cookies or personal-data collection.
+- **Website: a "Technologies and credits" page (PT + EN).** A new bilingual page (`tecnologias.qmd` / `en/technologies.qmd`, in the navbar between Glossary and Releases) gathers, in one discoverable place, every R package Saíra depends on (grouped by role, each linked to CRAN with its license), the public data bundled in the package and its provenance (Natural Earth — public domain; Darwin Core terms from TDWG — CC-BY 4.0; the Brazilian Official List of Threatened Species from Portaria MMA nº 148/2022), and method credits that are *not* dependencies (the `bdc` paper, framed as the basis for two independent coordinate reimplementations; the GBIF/Chapman generalization documents). The README gains a short "Technologies and credits" section (PT + EN) linking to it.
+
+### Changed
+- **In-code documentation no longer names the `bdc` package.** The roxygen for `coords_transposed_corrections()` / `coords_country_from_coordinates()` and the two coordinate test headers now describe the algorithm against Saíra's bundled Natural Earth layer without naming `bdc`; the attribution lives on the new "Technologies and credits" page instead. The functional history in this changelog (0.8.1) is unchanged.
+- **Regenerated roxygen docs (`NAMESPACE` + `man/`).** Running `devtools::document()` synced the generated documentation with the source roxygen, adding 15 previously-undocumented exports' `.Rd` files (including the two coordinate functions) and the matching `NAMESPACE` exports. No behavior change.
+
 ## [0.8.3] - 2026-06-16
 
 ### Added

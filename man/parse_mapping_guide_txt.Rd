@@ -13,7 +13,11 @@ parse_mapping_guide_txt(path)
 Named list:
   \itemize{
     \item \code{meta}: named list of metadata strings (created_at, source_file, ...).
-    \item \code{pairs}: data.frame with columns source_column, dwc_term.
+    \item \code{pairs}: data.frame with columns \code{source_column},
+      \code{dwc_term}, \code{kind} ("column" or "constant"), and
+      \code{constant_value}. For column mappings \code{source_column} holds
+      the raw source (\code{"a + b"} for concatenations) and
+      \code{constant_value} is \code{NA}; for constants the reverse holds.
   }
 }
 \description{

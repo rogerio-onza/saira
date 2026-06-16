@@ -2,16 +2,17 @@
 % Please edit documentation in R/utils_export.R
 \name{add_occurrence_ids}
 \alias{add_occurrence_ids}
-\title{Add occurrence IDs if missing}
+\title{Add occurrence IDs (legacy alias)}
 \usage{
 add_occurrence_ids(df)
 }
 \arguments{
-\item{df}{Data frame}
+\item{df}{Data frame.}
 }
 \value{
-Data frame with occurrenceID column
+Data frame with `occurrenceID` populated.
 }
 \description{
-Add occurrence IDs if missing
+Kept for backward compatibility. New code should call
+`generate_occurrence_ids()` directly.
 }

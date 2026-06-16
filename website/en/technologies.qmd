@@ -1,0 +1,102 @@
+---
+title: "Technologies and credits"
+pagetitle: "Technologies and credits — Saíra"
+---
+
+::: {.tut-standfirst}
+Everything Saíra relies on, in one place: the open-source R packages that make the app work, the public data bundled inside the package, and the method credits. Full transparency about where each piece comes from.
+:::
+
+## R packages used
+
+Saíra is built on open-source R packages, all declared as dependencies in [`DESCRIPTION`](https://github.com/rogerio-onza/saira/blob/main/DESCRIPTION) and called explicitly (`package::function()`). No code from these packages is copied into Saíra — they are used as libraries.
+
+### Interface
+
+| Package | What for | License |
+| --- | --- | --- |
+| [shiny](https://cran.r-project.org/package=shiny) | Web application framework | MIT |
+| [bslib](https://cran.r-project.org/package=bslib) | Bootstrap 5 theme and layout | MIT |
+| [htmltools](https://cran.r-project.org/package=htmltools) | HTML generation | GPL (≥ 2) |
+| [DT](https://cran.r-project.org/package=DT) | Interactive tables | MIT |
+| [leaflet](https://cran.r-project.org/package=leaflet) | Interactive maps | MIT |
+
+### Reading and writing files
+
+| Package | What for | License |
+| --- | --- | --- |
+| [readr](https://cran.r-project.org/package=readr) | CSV reading | MIT |
+| [readxl](https://cran.r-project.org/package=readxl) | Excel reading | MIT |
+| [writexl](https://cran.r-project.org/package=writexl) | Excel writing | BSD 2-Clause |
+| [zip](https://cran.r-project.org/package=zip) | Darwin Core Archive packaging | MIT |
+| [xml2](https://cran.r-project.org/package=xml2) | `meta.xml` / `eml.xml` generation | MIT |
+| [jsonlite](https://cran.r-project.org/package=jsonlite) | JSON reading and writing | MIT |
+
+### Taxonomy
+
+| Package | What for | License |
+| --- | --- | --- |
+| [taxadb](https://cran.r-project.org/package=taxadb) | Local taxonomic backbones to verify scientific names | MIT |
+| [florabr](https://wevertonbio.github.io/florabr/) | Flora e Funga do Brasil (plant, algae and fungi names) | GPL (≥ 3) |
+| [faunabr](https://wevertonbio.github.io/faunabr/) | Catálogo Taxonômico da Fauna do Brasil | GPL (≥ 3) |
+
+### Coordinates and geospatial
+
+| Package | What for | License |
+| --- | --- | --- |
+| [CoordinateCleaner](https://cran.r-project.org/package=CoordinateCleaner) | Coordinate quality tests (sea, capitals, centroids, GBIF HQ, etc.) | GPL-3 |
+| [sf](https://cran.r-project.org/package=sf) | Vector data operations | GPL-2 \| MIT |
+| [terra](https://cran.r-project.org/package=terra) | Spatial operations (point-in-polygon) | GPL (≥ 3) |
+| [countrycode](https://cran.r-project.org/package=countrycode) | Conversion between country names and codes | GPL-3 |
+| [rnaturalearth](https://cran.r-project.org/package=rnaturalearth) | Access to Natural Earth boundaries | MIT |
+| [rnaturalearthdata](https://cran.r-project.org/package=rnaturalearthdata) | Boundary data (1:110m and 1:50m) | CC0 |
+| [rnaturalearthhires](https://docs.ropensci.org/rnaturalearthhires/) | High-resolution boundaries (1:10m, optional) | CC0 |
+
+### Utilities
+
+| Package | What for | License |
+| --- | --- | --- |
+| [stringr](https://cran.r-project.org/package=stringr) | Text manipulation | MIT |
+| [digest](https://cran.r-project.org/package=digest) | Deterministic hashing for `occurrenceID` | GPL (≥ 2) |
+| [ids](https://cran.r-project.org/package=ids) | Identifier generation | MIT |
+| [uuid](https://cran.r-project.org/package=uuid) | UUIDs | MIT |
+| [withr](https://cran.r-project.org/package=withr) | Temporary state management | MIT |
+| [DBI](https://cran.r-project.org/package=DBI) | Database interface | LGPL (≥ 2.1) |
+| [RSQLite](https://cran.r-project.org/package=RSQLite) | SQLite backend for the taxonomic caches | LGPL (≥ 2.1) |
+
+### Camera traps (optional)
+
+| Package | What for | License |
+| --- | --- | --- |
+| [camtrapdp](https://cran.r-project.org/package=camtrapdp) | Camtrap DP package import | MIT |
+
+::: {.callout-note}
+Saíra is distributed under **GPL-3** because it uses GPL-licensed packages — among them `CoordinateCleaner`, `countrycode`, `terra`, `florabr` and `faunabr`. The GPL requires that a work depending on these packages keep a compatible license. It is a compatibility choice, not an imposed restriction.
+:::
+
+## Data bundled in the package
+
+Some reference data ships inside the package (under `inst/extdata/`) so Saíra can work without a connection on every use. All of it comes from public sources, and the scripts that generate it live in [`data-raw/`](https://github.com/rogerio-onza/saira/tree/main/data-raw).
+
+| Data | Source | License / condition |
+| --- | --- | --- |
+| Land and country layer (Natural Earth) | [Natural Earth](https://www.naturalearthdata.com/) | Public domain |
+| Darwin Core terms | [TDWG — Darwin Core](https://dwc.tdwg.org/) ([repository](https://github.com/tdwg/dwc)) | CC-BY 4.0 |
+| Brazilian Official List of Threatened Species | [Portaria MMA nº 148/2022](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733) | Public government record |
+| DwC term synonyms and aliases, country aliases, interface text (i18n) | Authored by Saíra | GPL-3 |
+
+The Darwin Core term list is published by TDWG under **CC-BY 4.0**, which requires attribution — fulfilled by this page and the links above.
+
+## Methods and credits
+
+Beyond its dependencies, Saíra builds on ideas and methodologies published by other projects. These are **not dependencies** — they are method acknowledgements.
+
+- **bdc — Biodiversity Data Cleaning.** Ribeiro, B. R. et al. (2022). *bdc: A toolkit for standardizing, integrating and improving the quality of biodiversity data.* *Methods in Ecology and Evolution.* <https://doi.org/10.1111/2041-210X.13868>. Two of Saíra's coordinate corrections — transposed-coordinate detection and filling country from coordinates — are **independent reimplementations inspired by `bdc`'s approach, with no code reuse**, running on Saíra's own bundled Natural Earth layer. Saíra **does not depend** on the `bdc` package.
+- **Sensitive-species generalization (GBIF).** The decision cascade and generalization levels follow GBIF best practices:
+  - Chapman, A. D. (2020). *Current Best Practices for Generalizing Sensitive Species Occurrence Data.* GBIF Secretariat. <https://doi.org/10.15468/doc-5jp4-5g10>
+  - Chapman, A. D., & Wieczorek, J. R. (2020). *Georeferencing Best Practices.* GBIF Secretariat. <https://doi.org/10.15468/doc-gg7h-s853>
+  - Zermoglio, P. F., Chapman, A. D., Wieczorek, J. R., Luna, M. C., & Bloom, D. A. (2020). *Georeferencing Quick Reference Guide.* GBIF Secretariat. <https://doi.org/10.35035/e09p-h128>
+
+## Saíra's license
+
+Saíra is free software under the [GNU General Public License v3.0](https://github.com/rogerio-onza/saira/blob/main/LICENSE.md). The source is open at [github.com/rogerio-onza/saira](https://github.com/rogerio-onza/saira).

@@ -10,7 +10,9 @@ build_mapping_guide_txt(
   lang = "pt",
   required_terms = c("scientificName", "eventDate", "decimalLatitude",
     "decimalLongitude", "basisOfRecord"),
-  source_file = NA_character_
+  source_file = NA_character_,
+  id_strategy = NA_character_,
+  constants = NULL
 )
 }
 \arguments{
@@ -24,6 +26,11 @@ fonte (multi-coluna serializa como "colA + colB").}
 \item{required_terms}{Character vector de termos DwC obrigatorios (default = required do preview).}
 
 \item{source_file}{Optional character: nome do arquivo de origem para metadados.}
+
+\item{id_strategy}{Optional character: occurrenceID strategy used at export
+(`"user_supplied"`, `"stable_v5"`, `"stable_v5_with_random_fallback"`,
+`"random_v4"`). When supplied, an "Identifier Strategy" section is
+appended explaining the consequence for GBIF republication.}
 }
 \value{
 character vector (uma entrada por linha), encoding UTF-8.
