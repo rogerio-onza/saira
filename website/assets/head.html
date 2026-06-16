@@ -13,6 +13,7 @@
     ["index.html",                              "en/index.html"],
     ["faq.html",                                "en/faq.html"],
     ["glossario.html",                          "en/glossary.html"],
+    ["novidades.html",                          "en/releases.html"],
     ["tutoriais/index.html",                    "en/tutorials/index.html"],
     ["tutoriais/01-instalacao.html",            "en/tutorials/01-installation.html"],
     ["tutoriais/02-upload.html",                "en/tutorials/02-upload.html"],
@@ -27,7 +28,8 @@
     "index.html": "Project",
     "tutoriais/index.html": "Tutorials",
     "faq.html": "FAQ",
-    "glossario.html": "Glossary"
+    "glossario.html": "Glossary",
+    "novidades.html": "Releases"
   };
   // do mais específico ao mais genérico: "index.html" é sufixo de "tutoriais/index.html"
   PAIRS.sort(function (a, b) { return b[0].length - a[0].length; });
@@ -99,7 +101,21 @@
       if (tools) tools.appendChild(a);
     }
 
-    // 4) Lightbox: clicar numa captura de tela (.shot img) abre em tamanho grande
+    // 4) Badge de versão na navbar (versão vem de assets/version.html, gerado no
+    //    pre-render a partir do DESCRIPTION); aponta para a página de novidades.
+    if (window.SAIRA_VERSION && !document.querySelector(".ver-badge")) {
+      var vb = document.createElement("a");
+      vb.className = "ver-badge";
+      vb.textContent = "v" + window.SAIRA_VERSION;
+      vb.href = info.base + (info.isEN ? "en/releases.html" : "novidades.html");
+      vb.setAttribute("aria-label", info.isEN ? "Release notes" : "Novidades");
+      var vtools = document.querySelector(".quarto-navbar-tools") ||
+                   document.querySelector(".navbar .navbar-nav.ms-auto") ||
+                   document.querySelector(".navbar .navbar-nav");
+      if (vtools) vtools.insertBefore(vb, vtools.firstChild);
+    }
+
+    // 5) Lightbox: clicar numa captura de tela (.shot img) abre em tamanho grande
     setupLightbox(info.isEN);
   }
 

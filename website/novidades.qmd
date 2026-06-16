@@ -1,0 +1,13 @@
+---
+title: "Novidades"
+pagetitle: "Novidades — Saíra"
+toc: false
+---
+
+::: {.tut-standfirst}
+O que mudou em cada versão do Saíra. Aqui ficam os destaques recentes; o histórico completo está no [CHANGELOG no GitHub](https://github.com/rogerio-onza/saira/blob/main/CHANGELOG.md).
+:::
+
+A versão atual é a **{{< var version >}}**.
+
+{{< include _releases-pt.md >}}

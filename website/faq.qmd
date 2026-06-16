@@ -58,7 +58,7 @@ Numa etapa dedicada de **generalização**, ele sinaliza táxons ameaçados (Lis
 ### O que o Saíra gera no final?
 Um **Darwin Core Archive (DwC-A)**: um pacote `.zip` com `occurrence.txt`, `meta.xml` e `eml.xml`, pronto para publicação.
 
-### Como publico o arquivo no GBIF ou no SiBBr?
+### Como publico o arquivo no SiBBr ou no GBIF?
 A publicação acontece fora do Saíra, normalmente via **IPT** (Integrated Publishing Toolkit) da sua instituição ou do SiBBr. O arquivo gerado já está no formato esperado.
 
 ## Projeto

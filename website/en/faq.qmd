@@ -58,7 +58,7 @@ In a dedicated **generalization** step, it flags threatened taxa (national MMA l
 ### What does Saíra produce in the end?
 A **Darwin Core Archive (DwC-A)**: a `.zip` package with `occurrence.txt`, `meta.xml` and `eml.xml`, ready for publication.
 
-### How do I publish the file on GBIF or SiBBr?
+### How do I publish the file on SiBBr or GBIF?
 Publication happens outside Saíra, usually via your institution's or SiBBr's **IPT** (Integrated Publishing Toolkit). The generated file is already in the expected format.
 
 ## Project

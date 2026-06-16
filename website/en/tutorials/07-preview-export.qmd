@@ -4,7 +4,7 @@ pagetitle: "DwC-A export — Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-The home stretch: check the complete result, review what was corrected and which species will be generalized, and generate the Darwin Core Archive ready to publish on GBIF and SiBBr.
+The home stretch: check the complete result, review what was corrected and which species will be generalized, and generate the Darwin Core Archive ready to publish on SiBBr and GBIF.
 :::
 
 ## Preview
@@ -95,7 +95,7 @@ The download produces a `.zip` with two sets of files:
   <li><strong>Generate the archive.</strong>
     <p>Saíra assembles the <span class="term">.zip</span> package with <span class="term">occurrence.txt</span>, <span class="term">meta.xml</span> and <span class="term">eml.xml</span>.</p></li>
   <li><strong>Download and publish.</strong>
-    <p>Download the Darwin Core Archive and send it to your IPT (GBIF/SiBBr) for publication.</p></li>
+    <p>Download the Darwin Core Archive and send it to your IPT (SiBBr/GBIF) for publication.</p></li>
 </ol>
 ```
 
@@ -114,7 +114,7 @@ The `.zip` also includes a **mapping template** (`mapping_guide_*.txt`): the "yo
 Besides the DwC-A, Saíra also exports the dataset as `.xlsx` with **every cell forced to text**, preventing Excel from reinterpreting dates, catalog numbers or coordinates. Handy for manual review or for sending to collaborators.
 :::
 
-## Publishing on GBIF and SiBBr
+## Publishing on SiBBr and GBIF
 
 With the `.zip` in hand, publication happens outside Saíra, usually via your institution's or SiBBr's **IPT** (Integrated Publishing Toolkit). The archive Saíra generates is already in the expected format: just upload it, check the mapping in the IPT and publish.
 
