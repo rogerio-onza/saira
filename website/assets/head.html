@@ -98,6 +98,63 @@
                   document.querySelector(".navbar .navbar-nav");
       if (tools) tools.appendChild(a);
     }
+
+    // 4) Lightbox: clicar numa captura de tela (.shot img) abre em tamanho grande
+    setupLightbox(info.isEN);
+  }
+
+  // Cria (uma vez) o overlay de lightbox e liga o clique em cada .shot img.
+  function setupLightbox(isEN) {
+    var imgs = document.querySelectorAll(".shot img");
+    if (!imgs.length) return;
+
+    var overlay = document.querySelector(".lightbox-overlay");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.className = "lightbox-overlay";
+      overlay.setAttribute("role", "dialog");
+      overlay.setAttribute("aria-modal", "true");
+      overlay.setAttribute("aria-hidden", "true");
+
+      var big = document.createElement("img");
+      big.alt = "";
+
+      var close = document.createElement("button");
+      close.type = "button";
+      close.className = "lightbox-close";
+      close.innerHTML = "×"; // ×
+      close.setAttribute("aria-label", isEN ? "Close" : "Fechar");
+
+      overlay.appendChild(big);
+      overlay.appendChild(close);
+      document.body.appendChild(overlay);
+
+      function closeLb() {
+        overlay.classList.remove("is-open");
+        overlay.setAttribute("aria-hidden", "true");
+        big.src = "";
+      }
+      // clicar em qualquer lugar do overlay (incl. imagem e botão) fecha
+      overlay.addEventListener("click", closeLb);
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && overlay.classList.contains("is-open")) closeLb();
+      });
+
+      overlay._open = function (src, alt) {
+        big.src = src;
+        big.alt = alt || "";
+        overlay.setAttribute("aria-hidden", "false");
+        overlay.classList.add("is-open");
+      };
+    }
+
+    for (var i = 0; i < imgs.length; i++) {
+      if (imgs[i].getAttribute("data-lb")) continue;
+      imgs[i].setAttribute("data-lb", "1");
+      imgs[i].addEventListener("click", function () {
+        overlay._open(this.currentSrc || this.src, this.alt);
+      });
+    }
   }
 
   if (document.readyState === "loading") {

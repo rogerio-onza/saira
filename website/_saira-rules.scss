@@ -304,6 +304,37 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
 }
 .shot figcaption { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.04em; color: var(--text-soft); margin-top: 12px; text-align: center; }
 .shot figcaption b { color: var(--text); font-weight: 700; }
+// screenshots are downscaled inline (tab captures are ~1900px wide); invite the
+// click-to-zoom lightbox built in assets/head.html.
+.shot img { cursor: zoom-in; }
+
+// screenshot lightbox — overlay built by JS (assets/head.html), appended to body
+.lightbox-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  display: flex; align-items: center; justify-content: center;
+  padding: clamp(16px, 4vw, 56px);
+  background: rgba(12, 14, 20, 0.82);
+  cursor: zoom-out;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+.lightbox-overlay.is-open { opacity: 1; visibility: visible; }
+.lightbox-overlay img {
+  max-width: 100%; max-height: 100%; width: auto; height: auto;
+  border: 1px solid var(--border-strong); border-radius: var(--r);
+  box-shadow: var(--shadow-md);
+  transform: scale(0.98); transition: transform 0.18s ease;
+}
+.lightbox-overlay.is-open img { transform: scale(1); }
+.lightbox-close {
+  position: fixed; top: 18px; right: 22px;
+  width: 42px; height: 42px; display: grid; place-items: center;
+  border: none; border-radius: 100px;
+  background: rgba(244, 243, 238, 0.14); color: #f4f3ee;
+  font-family: var(--mono); font-size: 1.5rem; line-height: 1;
+  cursor: pointer; transition: background 0.15s ease;
+}
+.lightbox-close:hover { background: rgba(244, 243, 238, 0.26); }
 
 // =============================================================================
 //  Estilizando o chrome nativo do Quarto (navbar, sidebar, TOC, callouts, código)

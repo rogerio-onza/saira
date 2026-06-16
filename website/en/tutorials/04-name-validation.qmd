@@ -37,7 +37,7 @@ Below the databases, two options control how each name is prepared before the lo
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/8-validacao-nomes-provedores.png" alt="Name validation configuration column: Flora BR, Fauna BR and GBIF provider cards with status, the normalization options and the Validate Names button">
+  <img src="../../assets/img/8-validacao-nomes-provedores-EN.png" alt="Name validation configuration column: Flora BR, Fauna BR and GBIF provider cards with status, the normalization options and the Validate Names button">
   <figcaption><b>Figure 1.</b> The configuration column: providers with the status of each local database, the normalization options and the <span class="term">Validate Names</span> button.</figcaption>
 </figure>
 ```
@@ -66,14 +66,14 @@ Saíra **does not fix spelling on its own** nor guess the "closest" name: it onl
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/8.1-painel-nomes-processados.png" alt="Processed Names panel with filters by situation (All, Problems only, Not found, Ambiguous, Synonyms, Accepted) and entries with a Review button">
+  <img src="../../assets/img/8.1-painel-nomes-processados-EN.png" alt="Processed Names panel with filters by situation (All, Problems only, Not found, Ambiguous, Synonyms, Accepted) and entries with a Review button">
   <figcaption><b>Figure 2.</b> The <span class="term">Processed Names</span> panel: the summary by situation, with filters to isolate the problems and a <span class="term">Review</span> button on each pending name.</figcaption>
 </figure>
 ```
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/8.2-painel-relatorio-nomes.png" alt="Name Report table with Scientific name, Status and Taxonomic status columns, and the valid/invalid/unresolved counts at the top">
+  <img src="../../assets/img/8.2-painel-relatorio-nomes-EN.png" alt="Name Report table with Scientific name, Status and Taxonomic status columns, and the valid/invalid/unresolved counts at the top">
   <figcaption><b>Figure 3.</b> The Name Report: every taxon in a table, with each one's status and the valid/invalid/unresolved counts at the top.</figcaption>
 </figure>
 ```
@@ -89,14 +89,14 @@ The decision is **reapplied automatically** to every row with that same name —
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/8.3-pop-up-revisao-nomes.png" alt="Manual review modal asking whether the name is correct, with the option to confirm or to correct the name">
+  <img src="../../assets/img/8.3-pop-up-revisao-nomes-EN.png" alt="Manual review modal asking whether the name is correct, with the option to confirm or to correct the name">
   <figcaption><b>Figure 4.</b> The review modal: confirm the name as is, or choose to correct it.</figcaption>
 </figure>
 ```
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/8.4-pop-up-revisao-nomes-edicao-de-nome.png" alt="Review modal in edit mode, with the Name correction field and a reason field">
+  <img src="../../assets/img/8.4-pop-up-revisao-nomes-edicao-de-nome-EN.png" alt="Review modal in edit mode, with the Name correction field and a reason field">
   <figcaption><b>Figure 5.</b> Edit mode: type the right spelling and, if you wish, record the reason for the change.</figcaption>
 </figure>
 ```
@@ -117,7 +117,7 @@ The bundled list corresponds to **Portaria MMA nº 148, of 7 June 2022** (which 
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/8.6-relatorio-nomes-especie-sensivel.png" alt="Report with taxa flagged Sensitive and their threat category, and a mark option for species not on the list">
+  <img src="../../assets/img/8.6-relatorio-nomes-especie-sensivel-EN.png" alt="Report with taxa flagged Sensitive and their threat category, and a mark option for species not on the list">
   <figcaption><b>Figure 6.</b> In the report, taxa on the list carry the <span class="term">Sensitive</span> tag with the category; the others carry a <span class="term">+ mark</span> option.</figcaption>
 </figure>
 ```
@@ -133,7 +133,7 @@ The adjustment is made in a small confirmation dialog and applies at export.
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/8.5-pop-up-especie-sensivel.png" alt="Coordinate masking dialog with a Sensitive checkbox ticked and the warning that unmarking is a custodian decision">
+  <img src="../../assets/img/8.5-pop-up-especie-sensivel-EN.png" alt="Coordinate masking dialog with a Sensitive checkbox ticked and the warning that unmarking is a custodian decision">
   <figcaption><b>Figure 7.</b> The sensitivity dialog: mark or unmark the taxon. When you unmark a species from the MMA list, Saíra reminds you that the decision is yours and that the coordinates will be published without generalization.</figcaption>
 </figure>
 ```
