@@ -7,6 +7,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.3] - 2026-06-16
+
 ### Added
 - **Tutorial website: screenshots now open in a click-to-zoom lightbox.** The tab captures are ~1900 px wide but render at ~760 px inline (≈40 % scale), making panel details hard to read. Clicking any tutorial screenshot now opens it over a dimmed overlay at viewport size (near 1:1 for the wide captures); dismiss by clicking anywhere, pressing **Esc**, or the close button (bilingual label). Built as a small vanilla-JS enhancement in `assets/head.html` bound to every `.shot img`, plus matching styles in `_saira-rules.scss` — no per-page markup, so it covers all PT and EN tutorials at once.
 - **Tutorial website: English tutorials now use English screenshots.** The EN tutorials referenced the Portuguese screenshots throughout; each `.shot img` now points to its `-EN` variant (home screen, upload, mapping, name validation, coordinate validation, generalization and export), and the new generalization/export pages (steps 6–7) had their placeholder frames replaced with the real screenshots in both languages.

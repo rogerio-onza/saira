@@ -2,6 +2,18 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.8.3</span>
+    <time class="release-date">2026-06-16</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text">A new <strong>Releases</strong> page with each version's highlights, and a <strong>version badge</strong> in the navbar.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text">A <strong>Saíra-pintor</strong> photo on the home page and <strong>English screenshots</strong> in the EN tutorials; click any screenshot to <strong>zoom in</strong>.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text">The site now leads with <strong>SiBBr</strong> ahead of GBIF, foregrounding the Brazilian platform.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.8.2</span>
     <time class="release-date">2026-06-16</time>
   </header>

@@ -2,6 +2,18 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.8.3</span>
+    <time class="release-date">2026-06-16</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text">Nova página <strong>Novidades</strong> com os destaques de cada versão, e um <strong>badge de versão</strong> na barra de navegação.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text">Foto da <strong>saíra-pintor</strong> na página inicial e <strong>capturas de tela em inglês</strong> nos tutoriais em EN; clique numa captura para <strong>ampliá-la</strong>.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text">O site agora destaca o <strong>SiBBr</strong> à frente do GBIF, valorizando a plataforma brasileira.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.8.2</span>
     <time class="release-date">2026-06-16</time>
   </header>

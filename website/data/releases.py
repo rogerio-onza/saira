@@ -11,6 +11,20 @@
 
 RELEASES = [
     {
+        "version": "0.8.3",
+        "date": "2026-06-16",
+        "pt": [
+            ("added", "Nova página **Novidades** com os destaques de cada versão, e um **badge de versão** na barra de navegação."),
+            ("added", "Foto da **saíra-pintor** na página inicial e **capturas de tela em inglês** nos tutoriais em EN; clique numa captura para **ampliá-la**."),
+            ("changed", "O site agora destaca o **SiBBr** à frente do GBIF, valorizando a plataforma brasileira."),
+        ],
+        "en": [
+            ("added", "A new **Releases** page with each version's highlights, and a **version badge** in the navbar."),
+            ("added", "A **Saíra-pintor** photo on the home page and **English screenshots** in the EN tutorials; click any screenshot to **zoom in**."),
+            ("changed", "The site now leads with **SiBBr** ahead of GBIF, foregrounding the Brazilian platform."),
+        ],
+    },
+    {
         "version": "0.8.2",
         "date": "2026-06-16",
         "pt": [
