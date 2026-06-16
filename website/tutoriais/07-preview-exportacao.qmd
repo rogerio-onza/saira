@@ -4,7 +4,7 @@ pagetitle: "Exportação DwC-A — Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-A reta final: confira o resultado completo, revise o que foi corrigido e quais espécies serão generalizadas, e gere o Darwin Core Archive pronto para publicar no GBIF e no SiBBr.
+A reta final: confira o resultado completo, revise o que foi corrigido e quais espécies serão generalizadas, e gere o Darwin Core Archive pronto para publicar no SiBBr e no GBIF.
 :::
 
 ## Pré-visualização
@@ -95,7 +95,7 @@ O download gera um `.zip` com dois conjuntos de arquivos:
   <li><strong>Gere o arquivo.</strong>
     <p>O Saíra monta o pacote <span class="term">.zip</span> com <span class="term">occurrence.txt</span>, <span class="term">meta.xml</span> e <span class="term">eml.xml</span>.</p></li>
   <li><strong>Baixe e publique.</strong>
-    <p>Faça o download do Darwin Core Archive e envie-o ao seu IPT (GBIF/SiBBr) para publicação.</p></li>
+    <p>Faça o download do Darwin Core Archive e envie-o ao seu IPT (SiBBr/GBIF) para publicação.</p></li>
 </ol>
 ```
 
@@ -114,7 +114,7 @@ O `.zip` também inclui um **modelo de mapeamento** (`mapping_guide_*.txt`): o r
 Além do DwC-A, o Saíra também exporta o conjunto como `.xlsx` com **todas as células forçadas a texto**, evitando que o Excel reinterprete datas, números de tombo ou coordenadas. Útil para conferência manual ou para enviar a colaboradores.
 :::
 
-## Publicando no GBIF e no SiBBr
+## Publicando no SiBBr e no GBIF
 
 Com o `.zip` em mãos, a publicação acontece fora do Saíra, normalmente via **IPT** (Integrated Publishing Toolkit) da sua instituição ou do SiBBr. O arquivo gerado pelo Saíra já está no formato esperado: basta carregá-lo, conferir o mapeamento no IPT e publicar.
 

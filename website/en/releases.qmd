@@ -1,0 +1,13 @@
+---
+title: "Releases"
+pagetitle: "Releases — Saíra"
+toc: false
+---
+
+::: {.tut-standfirst}
+What changed in each version of Saíra. These are the recent highlights; the full history lives in the [CHANGELOG on GitHub](https://github.com/rogerio-onza/saira/blob/main/CHANGELOG.md).
+:::
+
+The current version is **{{< var version >}}**.
+
+{{< include ../_releases-en.md >}}

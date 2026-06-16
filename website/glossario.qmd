@@ -9,7 +9,7 @@ Os termos Darwin Core mais usados ao preparar dados de ocorrência no Saíra, co
 
 ## O que é Darwin Core
 
-**Darwin Core (DwC)** é o padrão da [TDWG](https://www.tdwg.org) para descrever ocorrências de organismos no tempo e no espaço. Ao usar os mesmos termos que o resto da comunidade, sua coleção se torna localizável e combinável com milhões de registros do GBIF, SiBBr e SpeciesLink.
+**Darwin Core (DwC)** é o padrão da [TDWG](https://www.tdwg.org) para descrever ocorrências de organismos no tempo e no espaço. Ao usar os mesmos termos que o resto da comunidade, sua coleção se torna localizável e combinável com milhões de registros do SiBBr e do GBIF.
 
 Uma **ocorrência** (`Occurrence`) é o registro de um organismo em um lugar e momento: uma linha na sua planilha.
 

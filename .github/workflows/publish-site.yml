@@ -7,6 +7,7 @@ on:
     branches: [main]
     paths:
       - 'website/**'
+      - 'DESCRIPTION'  # version badge + "current version" derive from here
       - '.github/workflows/publish-site.yml'
   workflow_dispatch:
 

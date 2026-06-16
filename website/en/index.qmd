@@ -55,8 +55,9 @@ anchor-sections: false
         <p>It's a guided, bilingual workflow (PT-BR/EN) to map your fields to Darwin Core, detect inconsistencies and export a publication-ready package. Built in R and Shiny, it runs on your own computer or an institutional server, with no mandatory command line: every transformation is recorded and reproducible.</p>
       </div>
       <div class="about-media">
-        <figure class="shot" style="margin:0">
-          <div class="frame"><span class="ph-label">illustration · coming soon</span></div>
+        <figure class="bird-figure">
+          <img src="../assets/img/saira-sete-cores-Ester-Ramirez.jpg" alt="Saíra-pintor (Tangara fastuosa), the multicoloured tanager the app is named after, perched on a branch with yellow flowers behind">
+          <figcaption>Saíra-pintor <span class="gloss">(seven-coloured tanager)</span> · <em>Tangara fastuosa</em> · <span class="credit">Photo: Ester Ramirez</span></figcaption>
         </figure>
       </div>
     </div>
@@ -102,8 +103,8 @@ anchor-sections: false
         <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div>
         <div class="flow-body">
           <span class="flow-num">03</span>
-          <h3>Export a DwC-A ready for GBIF</h3>
-          <p>Generate the complete Darwin Core Archive and automatically generalize the coordinates of threatened species (national MMA list) before publishing to GBIF and SiBBr.</p>
+          <h3>Export a DwC-A ready for SiBBr</h3>
+          <p>Generate the complete Darwin Core Archive and automatically generalize the coordinates of threatened species (national MMA list) before publishing to SiBBr and GBIF.</p>
           <div class="flow-tags">
             <span class="flow-tag">occurrence.txt</span>
             <span class="flow-tag">meta.xml</span>
@@ -123,7 +124,7 @@ anchor-sections: false
         <span class="eyebrow">Why Darwin Core?</span>
         <h2>A common language for life</h2>
         <p class="lead">Darwin Core is the TDWG standard that describes occurrences of organisms in time and space.</p>
-        <p>By speaking Darwin Core, your collection becomes discoverable and combinable with millions of records from GBIF, SiBBr and SpeciesLink. Each term has a stable definition, which makes the data useful far beyond your own institution.</p>
+        <p>By speaking Darwin Core, your collection becomes discoverable and combinable with millions of records from SiBBr and GBIF. Each term has a stable definition, which makes the data useful far beyond your own institution.</p>
         <div class="dwc-chips">
           <span class="chip">occurrenceID</span>
           <span class="chip">scientificName</span>
