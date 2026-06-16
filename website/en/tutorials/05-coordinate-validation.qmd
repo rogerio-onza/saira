@@ -26,7 +26,7 @@ Click **Validate Coordinates**. Validation is triggered by you, not on every cha
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/9-painel-validação.png" alt="Left panel of coordinate validation: status of the mapped columns (latitude, longitude, country), the Complete/Fast Profile selector and the Validate Coordinates button">
+  <img src="../../assets/img/9-painel-validação-EN.png" alt="Left panel of coordinate validation: status of the mapped columns (latitude, longitude, country), the Complete/Fast Profile selector and the Validate Coordinates button">
   <figcaption><b>Figure 1.</b> Left panel: status of the mapped columns (latitude, longitude, country), the Profile selector (Complete / Fast) and the Validate Coordinates button.</figcaption>
 </figure>
 ```
@@ -76,7 +76,7 @@ Once validation finishes, the results appear on the right.
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/9.1-mapa-pontos-validados.png" alt="Geographic Distribution map with records as points colored by situation (valid, invalid, sea, zero/equal, reference) and the color legend below the map">
+  <img src="../../assets/img/9.1-mapa-pontos-validados-EN.png" alt="Geographic Distribution map with records as points colored by situation (valid, invalid, sea, zero/equal, reference) and the color legend below the map">
   <figcaption><b>Figure 2.</b> Geographic Distribution: points colored by situation, with the color legend below the map.</figcaption>
 </figure>
 ```
@@ -90,7 +90,7 @@ The sea test uses simplified coastline data. Points very close to the coast may 
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/9.2-diagnostico-coordenadas-pilulas.png" alt="Filter buttons above the Coordinate Diagnostics table, with the Row, Diagnosis, Latitude, Longitude, Country and ISO3 columns">
+  <img src="../../assets/img/9.2-diagnostico-coordenadas-pilulas-EN.png" alt="Filter buttons above the Coordinate Diagnostics table, with the Row, Diagnosis, Latitude, Longitude, Country and ISO3 columns">
   <figcaption><b>Figure 3.</b> The filters and the Coordinate Diagnostics table (Row, Diagnosis, Latitude, Longitude, Country, ISO3).</figcaption>
 </figure>
 ```
@@ -114,14 +114,14 @@ When candidates exist, panels appear on the left. Each shows the count and one e
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/9.3-correcao-coordenadas-transpostas.png" alt="Transposed-coordinate correction panel, with the record count, an old → new example and the Correct transposed coordinates button">
+  <img src="../../assets/img/9.3-correcao-coordenadas-transpostas-EN.png" alt="Transposed-coordinate correction panel, with the record count, an old → new example and the Correct transposed coordinates button">
   <figcaption><b>Figure 4.</b> Transposed-coordinate correction panel: count, example (old → new) and the Correct transposed coordinates button.</figcaption>
 </figure>
 ```
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/9.4-correcao-pais-faltando-coordenadas..png" alt="Fill-country-from-coordinates panel, with the count, an example and the Fill country from coordinates button">
+  <img src="../../assets/img/9.4-correcao-pais-faltando-coordenadas-EN.png" alt="Fill-country-from-coordinates panel, with the count, an example and the Fill country from coordinates button">
   <figcaption><b>Figure 5.</b> Country-fillable-from-coordinates panel (and the "sea + blank country → fixable by lat/lon swap" variant).</figcaption>
 </figure>
 ```

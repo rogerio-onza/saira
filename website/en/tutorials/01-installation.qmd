@@ -94,7 +94,7 @@ On servers or environments without a default browser, `run_app()` prints a local
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/1-tela-inicial.png" alt="Saíra start screen: Home tab with the upload area and welcome panel">
+  <img src="../../assets/img/1-tela-inicial-EN.png" alt="Saíra start screen: Home tab with the upload area and welcome panel">
   <figcaption><b>Figure 8.</b> Saíra's welcome screen, with the language selector (PT-BR/EN) and the start of the import workflow.</figcaption>
 </figure>
 ```

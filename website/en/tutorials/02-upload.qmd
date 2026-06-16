@@ -38,7 +38,7 @@ In the **Upload** tab, drag the file onto the indicated area or click to select 
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/2-area-upload-resumo-arquivo.png" alt="Saíra upload card with the file summary: 6 records, 7 columns, 0 MB">
+  <img src="../../assets/img/2-area-upload-resumo-arquivo-EN.png" alt="Saíra upload card with the file summary: 6 records, 7 columns, 0 MB">
   <figcaption><b>Figure 1.</b> Upload area with the file summary (rows, columns and size) after loading.</figcaption>
 </figure>
 ```

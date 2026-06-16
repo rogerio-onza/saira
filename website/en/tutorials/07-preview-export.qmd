@@ -28,7 +28,7 @@ The **Export** tab is a **review hub**: before you download the package, it gath
 
 ```{=html}
 <figure class="shot">
-  <div class="frame"><span class="ph-label">screenshot · Export tab (readiness, corrections, generalized species and files)</span></div>
+  <img src="../../assets/img/11-aba-exportacao-EN.png" alt="Export tab with readiness indicator, applied corrections summary, generalized species and bundle files">
   <figcaption><b>Figure 2.</b> The Export review hub, with readiness, applied corrections, generalized species and the bundle files.</figcaption>
 </figure>
 ```
@@ -36,6 +36,13 @@ The **Export** tab is a **review hub**: before you download the package, it gath
 ### Export readiness
 
 At the top, an indicator says whether the dataset is **ready to publish** (green) or whether the **export is blocked** (red). When it blocks, Saíra lists what is missing — usually **required terms** left unfilled or **generalized species without the justification** required for Categories 1–3 — and offers a shortcut to resolve the pending item.
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/11.1-aba-exportacao-blocante-faltando-info-EN.png" alt="Export tab with red blocked indicator listing the pending required information and shortcut links">
+  <figcaption><b>Figure 3.</b> The blocked indicator: Saíra lists the missing required fields or pending justifications and offers direct shortcuts to resolve each one.</figcaption>
+</figure>
+```
 
 ::: {.callout-warning}
 ## No occurrenceID mapped

@@ -15,7 +15,7 @@ Saíra suggests matches automatically from each column's name and content. A goo
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/6-aba-mapeamento.png" alt="Saíra's Mapping tab right after import, with the Darwin Core term cards still empty">
+  <img src="../../assets/img/6-aba-mapeamento-EN.png" alt="Saíra's Mapping tab right after import, with the Darwin Core term cards still empty">
   <figcaption><b>Figure 1.</b> The <b>Mapping</b> tab right after import, before any mapping: on the left, the required-fields panel and the actions bar (Auto-map, Reset, Add term, Import template); on the right, the Darwin Core term cards grouped by class (here, Occurrence).</figcaption>
 </figure>
 ```
@@ -31,7 +31,7 @@ The **Auto-map** button, in the actions bar, sweeps every column at once and pro
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/3-auto-mapear-botão.png" alt="Mapper actions bar with the Auto-map button highlighted">
+  <img src="../../assets/img/3-auto-mapear-botao-EN.png" alt="Mapper actions bar with the Auto-map button highlighted">
   <figcaption><b>Figure 2.</b> The <b>Auto-map</b> button in the actions bar, next to Reset, Add term and Import template.</figcaption>
 </figure>
 ```
@@ -59,8 +59,8 @@ At the end, Saíra shows a summary (for example, "12 AUTO, 5 SUGGESTED"). Review
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/4.2-exemplo-sugerido.png" alt="Two mapping cards (catalogNumber and recordedBy) with the SUGGESTED badge">
-  <figcaption><b>Figure 3.</b> Mapping cards after Auto-map: <span class="term">numero_tombo</span> → <span class="term">catalogNumber</span> and <span class="term">coletor</span> → <span class="term">recordedBy</span>, both marked SUGGESTED for you to confirm.</figcaption>
+  <img src="../../assets/img/4.2-exemplo-sugerido-EN.png" alt="Two mapping cards: scientificName mapped from the especie column with an ALIAS badge, and specificEpithet auto-inferred from scientificName">
+  <figcaption><b>Figure 3.</b> Mapping cards after Auto-map: <span class="term">especie</span> → <span class="term">scientificName</span>, marked <b>ALIAS</b> (matched from a remembered mapping), while <span class="term">specificEpithet</span> is <b>auto-inferred from scientificName</b>.</figcaption>
 </figure>
 ```
 
@@ -75,11 +75,11 @@ The mapper works with a base set of the most-used Darwin Core terms, but the ful
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/4-adicionar-termo.png" alt="Actions bar with the Add term button highlighted">
+  <img src="../../assets/img/4-adicionar-termo-EN.png" alt="Actions bar with the Add term button highlighted">
   <figcaption><b>Figure 4.</b> The <b>Add term</b> button in the actions bar.</figcaption>
 </figure>
 <figure class="shot">
-  <img src="../../assets/img/4.1-adicionar-termo-pop-up.png" alt="'Add DwC term' dialog with the term selector">
+  <img src="../../assets/img/4.1-adicionar-termo-pop-up-EN.png" alt="'Add DwC term' dialog with the term selector">
   <figcaption><b>Figure 5.</b> The <b>Add DwC term</b> dialog: pick the term in the selector and confirm to add it as a new card.</figcaption>
 </figure>
 ```
@@ -110,11 +110,11 @@ To reuse it, open the mapping for a new spreadsheet and click **Import template*
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/7-importar-modelo.png" alt="Actions bar with the Import template button highlighted">
+  <img src="../../assets/img/7-importar-modelo-EN.png" alt="Actions bar with the Import template button highlighted">
   <figcaption><b>Figure 6.</b> The <b>Import template</b> button, in the actions bar, brings back a template saved from an earlier export.</figcaption>
 </figure>
 <figure class="shot">
-  <img src="../../assets/img/7.1-importar-modelo-pop-up.png" alt="'Import mapping template' dialog with the .txt file selector">
+  <img src="../../assets/img/7.1-importar-modelo-pop-up-EN.png" alt="'Import mapping template' dialog with the .txt file selector">
   <figcaption><b>Figure 7.</b> The <b>Import mapping template</b> dialog: pick the <code>mapping_guide_*.txt</code> file that came in the <code>.zip</code> and confirm. Each line becomes an alias to auto-map future spreadsheets.</figcaption>
 </figure>
 ```
@@ -130,7 +130,7 @@ The term <span class="term">basisOfRecord</span> describes the nature of the rec
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/5-basisOfRecord-selection.png" alt="basisOfRecord card with the tipo_de_registro column selected and the basisOfRecord assistant button highlighted">
+  <img src="../../assets/img/5-basisOfRecord-selection-EN.png" alt="basisOfRecord card with the tipo_de_registro column selected and the basisOfRecord assistant button highlighted">
   <figcaption><b>Figure 8.</b> In the <span class="term">basisOfRecord</span> card, pick the source column (here, <span class="term">tipo_de_registro</span>) and open the <b>basisOfRecord assistant</b>.</figcaption>
 </figure>
 ```
@@ -144,7 +144,7 @@ The term <span class="term">basisOfRecord</span> describes the nature of the rec
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/5.1-assistente-basisOfRecord.png" alt="basisOfRecord assistant dialog mapping each raw value to a DwC term, with a live preview">
+  <img src="../../assets/img/5.1-assistente-basisOfRecord-EN.png" alt="basisOfRecord assistant dialog mapping each raw value to a DwC term, with a live preview">
   <figcaption><b>Figure 9.</b> The assistant maps <b>each value</b> to a DwC term — Espécime preservado → PreservedSpecimen, Observação → HumanObservation, Armadilha fotográfica → MachineObservation — with a live preview before saving.</figcaption>
 </figure>
 ```

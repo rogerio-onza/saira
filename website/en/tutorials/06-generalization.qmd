@@ -15,7 +15,7 @@ If no sensitive taxon was detected, there is nothing to generalize: Saíra tells
 
 ```{=html}
 <figure class="shot">
-  <div class="frame"><span class="ph-label">screenshot · Generalization tab with the detected sensitive records</span></div>
+  <img src="../../assets/img/10-aba-generalização-EN.png" alt="Generalization tab listing the threatened-species records detected from name validation">
   <figcaption><b>Figure 1.</b> The Generalization tab lists the threatened-species records that came from name validation.</figcaption>
 </figure>
 ```
@@ -54,7 +54,7 @@ When you choose **Assess sensitivity**, the species appear grouped by **MMA thre
 
 ```{=html}
 <figure class="shot">
-  <div class="frame"><span class="ph-label">screenshot · decision cascade for a threat group</span></div>
+  <img src="../../assets/img/10.1-cascata-decisao-EN.png" alt="Chapman's decision cascade with three sequential questions to determine the generalization category for the threat group">
   <figcaption><b>Figure 2.</b> Chapman's decision cascade: each "No" reveals the next, finer question.</figcaption>
 </figure>
 ```
@@ -94,7 +94,7 @@ Whenever a group or species lands on **Category 1, 2 or 3**, Saíra requires a w
 
 ```{=html}
 <figure class="shot">
-  <div class="frame"><span class="ph-label">screenshot · justification field (dataGeneralizations)</span></div>
+  <img src="../../assets/img/10.3-justificativa-categorias-EN.png" alt="Justification text field for Categories 1–3 written into the dataGeneralizations Darwin Core field">
   <figcaption><b>Figure 3.</b> The justification required for Categories 1–3 is written into the record's <span class="term">dataGeneralizations</span> field.</figcaption>
 </figure>
 ```
@@ -110,7 +110,7 @@ The colour warns about a common pitfall of generalization:
 
 ```{=html}
 <figure class="shot">
-  <div class="frame"><span class="ph-label">screenshot · map with original point, generalized cell and border alert</span></div>
+  <img src="../../assets/img/10.4-pre-visualizacao-mapa-generalizacao-EN.png" alt="Preview map with original point, generalized cell, uncertainty radius and red alert when generalization crosses a border">
   <figcaption><b>Figure 4.</b> The preview map: original point, generalized cell and uncertainty radius, with the red alert when generalization crosses a border.</figcaption>
 </figure>
 ```

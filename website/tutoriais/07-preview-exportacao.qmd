@@ -28,7 +28,7 @@ A aba **Exportação** é um **hub de revisão**: antes de baixar o pacote, ela 
 
 ```{=html}
 <figure class="shot">
-  <div class="frame"><span class="ph-label">screenshot · aba Exportação (prontidão, correções, espécies generalizadas e arquivos)</span></div>
+  <img src="../assets/img/11-aba-exportacao.png" alt="Aba Exportação com indicador de prontidão, resumo de correções aplicadas, espécies generalizadas e arquivos do pacote">
   <figcaption><b>Figura 2.</b> O hub de revisão da Exportação, com a prontidão, as correções aplicadas, as espécies generalizadas e os arquivos do pacote.</figcaption>
 </figure>
 ```
@@ -36,6 +36,13 @@ A aba **Exportação** é um **hub de revisão**: antes de baixar o pacote, ela 
 ### Prontidão para exportar
 
 No topo, um indicador diz se o conjunto está **pronto para publicar** (verde) ou se a **exportação está bloqueada** (vermelho). Quando bloqueia, o Saíra lista o que falta — em geral, **termos obrigatórios** não preenchidos ou **espécies generalizadas sem a justificativa** exigida para as Categorias 1–3 — e oferece um atalho para resolver a pendência.
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/11.1-aba-exportacao-blocante-faltando-info.png" alt="Aba Exportação com indicador vermelho de exportação bloqueada e lista de informações pendentes a resolver">
+  <figcaption><b>Figura 3.</b> Indicador de bloqueio: o Saíra lista os campos obrigatórios faltantes ou as justificativas pendentes e oferece atalhos diretos para cada pendência.</figcaption>
+</figure>
+```
 
 ::: {.callout-warning}
 ## Sem occurrenceID mapeado
