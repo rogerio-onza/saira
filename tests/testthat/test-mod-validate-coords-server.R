@@ -13,6 +13,43 @@ prime_validate_button <- function(session) {
     session$flushReact()
 }
 
+testthat::test_that("upstream reset signal clears coordinate corrections and result", {
+    mapped_df <- data.frame(
+        decimalLatitude = c(-10),
+        decimalLongitude = c(-50),
+        country = c("Brasil"),
+        stringsAsFactors = FALSE
+    )
+    signal <- shiny::reactiveVal(0L)
+
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en"),
+            reset_signal_r = signal
+        ),
+        {
+            # Seed a completed run with pending/applied corrections.
+            coord_validation_r(mapped_df)
+            rv$coords_corrections <- list(corrections = data.frame(occurrenceID = "1"))
+            rv$country_fills <- list(country = data.frame(occurrenceID = "1"))
+            rv$transposed_applied <- TRUE
+            rv$stream_filter <- "problems"
+            session$flushReact()
+
+            signal(1L)
+            session$flushReact()
+
+            testthat::expect_null(coord_validation_r())
+            testthat::expect_null(rv$coords_corrections)
+            testthat::expect_null(rv$country_fills)
+            testthat::expect_false(rv$transposed_applied)
+            testthat::expect_identical(rv$stream_filter, "all")
+        }
+    )
+})
+
 testthat::test_that("validate coords blocks execution when country is missing in gate", {
     mapped_df <- data.frame(
         decimalLatitude = c(-10),

@@ -61,7 +61,8 @@ mod_sensitive_coords_ui <- function(id) {
 mod_sensitive_coords_server <- function(id, data_r, lang_r,
                                         sensitivity_payload_r = NULL,
                                         coords_correction_payload_r = NULL,
-                                        country_fill_payload_r = NULL) {
+                                        country_fill_payload_r = NULL,
+                                        reset_signal_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
@@ -1103,6 +1104,24 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             }
             invisible(NULL)
         })
+
+        # A re-upload or a confirmed Mapping reset invalidates the dataset
+        # baseline: drop the generalization determination, the per-species
+        # exceptions, and the decision inputs (mode/justification/review date) so
+        # nothing from the previous dataset carries into the new one.
+        if (!is.null(reset_signal_r)) {
+            shiny::observeEvent(reset_signal_r(), {
+                group_levels_rv(list())
+                species_overrides_rv(list())
+                preview_tier_rv(NULL)
+                group_answers_rv(list())
+                result_filter_rv("all")
+                map_fitted_sig_rv(NULL)
+                shiny::updateRadioButtons(session, "sensitive_mode", selected = "publish")
+                shiny::updateTextAreaInput(session, "sensitive_justification", value = "")
+                shiny::updateDateInput(session, "sensitive_review_date", value = Sys.Date() + 1460)
+            }, ignoreInit = TRUE)
+        }
 
         # ---- Decision consumed by the export (Preview tab) ----------------
         sensitive_generalization_payload_r <- shiny::reactive({

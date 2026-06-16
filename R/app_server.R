@@ -76,6 +76,9 @@ app_server <- function(input, output, session) {
     preview_data <- mapping_result$preview_data_r
     validation_gate <- mapping_result$validation_gate_r
     coord_validation_gate <- mapping_result$validation_gate_coords_r
+    # Bumped on re-upload or a confirmed Mapping reset: tells the downstream tabs
+    # to discard the decisions made for the previous dataset (ADR-054 slot).
+    reset_signal <- mapping_result$reset_signal_r
     if (is.null(preview_data) || !shiny::is.reactive(preview_data)) {
         warning("[Sa\u00EDra] preview_data slot missing from mapping module, using mapped_data fallback")
         preview_data <- mapped_data
@@ -89,7 +92,7 @@ app_server <- function(input, output, session) {
         coord_validation_gate <- NULL
     }
 
-    validate_names_r <- mod_validate_names_server("validate_names", mapped_data, lang_r, validation_gate_r = validation_gate)
+    validate_names_r <- mod_validate_names_server("validate_names", mapped_data, lang_r, validation_gate_r = validation_gate, reset_signal_r = reset_signal)
     name_review_payload_r <- attr(validate_names_r, "review_export_payload")
     sensitivity_payload_r <- attr(validate_names_r, "sensitivity_payload")
 
@@ -99,7 +102,8 @@ app_server <- function(input, output, session) {
         "validate_coords",
         mapped_data,
         lang_r,
-        validation_gate_r = coord_validation_gate
+        validation_gate_r = coord_validation_gate,
+        reset_signal_r = reset_signal
     )
     coords_correction_payload_r <- attr(coord_validation_r, "coords_correction_payload")
     country_fill_payload_r <- attr(coord_validation_r, "country_fill_payload")
@@ -113,7 +117,8 @@ app_server <- function(input, output, session) {
         lang_r,
         sensitivity_payload_r = sensitivity_payload_r,
         coords_correction_payload_r = coords_correction_payload_r,
-        country_fill_payload_r = country_fill_payload_r
+        country_fill_payload_r = country_fill_payload_r,
+        reset_signal_r = reset_signal
     )
 
     # Preview is read-only (the download/export flow lives in the Export tab).

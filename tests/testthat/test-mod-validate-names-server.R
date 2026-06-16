@@ -3,6 +3,50 @@
 # Date: 2026-02-19
 # Version: 2.3
 
+testthat::test_that("upstream reset signal clears reviews but keeps providers", {
+    mapped_df <- data.frame(scientificName = c("Puma concolor"), stringsAsFactors = FALSE)
+    testthat::local_mocked_bindings(
+        brprovider_data_available = function(provider_id) FALSE,
+        .package = "saira"
+    )
+    signal <- shiny::reactiveVal(0L)
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en"),
+            reset_signal_r = signal
+        ),
+        {
+            # Seed decision state for a prior dataset.
+            rv$manual_reviews <- data.frame(
+                query_name = "Puma concolor",
+                review_type = "confirm",
+                original_name = "Puma concolor",
+                corrected_name = NA_character_,
+                reason = "ok",
+                reviewed_at = Sys.time(),
+                stringsAsFactors = FALSE
+            )
+            rv$sensitivity_overrides <- list("Puma concolor" = list(sensitive = TRUE, category = "EN"))
+            validation_result(mapped_df)
+            session$flushReact()
+            testthat::expect_identical(nrow(rv$manual_reviews), 1L)
+
+            # A re-upload or a confirmed Mapping reset wipes the decisions.
+            signal(1L)
+            session$flushReact()
+
+            testthat::expect_identical(nrow(rv$manual_reviews), 0L)
+            testthat::expect_length(rv$sensitivity_overrides, 0L)
+            testthat::expect_null(validation_result())
+            # Provider selection mirrors the on-disk cache, not dataset work: kept.
+            testthat::expect_identical(rv$selected_providers, "gbif")
+        }
+    )
+})
+
 testthat::test_that("provider priority follows toggle order", {
     mapped_df <- data.frame(scientificName = c("Puma concolor"), stringsAsFactors = FALSE)
     # Pin the on-disk cache to "nothing downloaded" so the default is
