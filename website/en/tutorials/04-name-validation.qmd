@@ -25,7 +25,7 @@ When you select more than one database, Saíra queries them in a **cascade** —
 
 ::: {.callout-note}
 ## Brazilian databases live on your computer
-Flora do Brasil and Fauna do Brasil are **downloaded and stored locally** the first time you use them. After that, validation runs even without internet and is faster. Saíra shows the status of each database (not downloaded, downloading, up to date) and the local version. GBIF is queried as needed.
+Flora do Brasil and Fauna do Brasil are **downloaded and stored locally** the first time you use them. After that, validation runs even without internet and is faster. Each database appears as a **provider card** showing its status (not downloaded, downloading, up to date) and the local version; the databases you already downloaded stay **pre-selected** when you reopen the app, so your choice persists across sessions. GBIF is queried as needed.
 :::
 
 ## Before you run: normalization
@@ -138,7 +138,7 @@ The adjustment is made in a small confirmation dialog and applies at export.
 </figure>
 ```
 
-Here the step only **flags** what is sensitive. The actual protection of the coordinates — generalizing the location or omitting it — happens at **[export](06-preview-export.qmd)**, where the threat category sets the generalization level.
+Here the step only **flags** what is sensitive. The actual protection of the coordinates — deciding whether and how much to generalize the location — happens in the **[generalization](06-generalization.qmd)** step, following Chapman's (2020) decision table.
 
 ## Next steps
 

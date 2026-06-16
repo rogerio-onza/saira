@@ -7,6 +7,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Tutorial website: a dedicated "Generalizing sensitive species" tutorial (PT + EN).** The site documented only four workflow steps while the app has five (Upload → Map → Validate → **Generalize** → Export); generalization survived as a single legacy "sensitive species" paragraph inside the export tutorial describing the old generalize-or-omit model. A new page (`06-generalizacao.qmd` / `06-generalization.qmd`) covers the current Generalization tab: the Chapman (2020) Table 5 decision cascade (Q4.3/4.4/4.5 → Categories 2/3/4, or not-sensitive), the Table 7 four-tier grid (1° / 0.1° / 0.01° / 0.001°), per-species exceptions (the only path to Category 1), the mandatory `dataGeneralizations` justification for Categories 1–3, the map preview with border-crossing alerts, the 2–5-year review cycle, and a References section citing the three GBIF documents (Chapman 2020 `doi:10.15468/doc-5jp4-5g10`; Chapman & Wieczorek 2020 `doi:10.15468/doc-gg7h-s853`; Zermoglio et al. 2020 `doi:10.35035/e09p-h128`). The export tutorial was renumbered to `07-…` and the sidebar, overview and cross-links updated to insert Generalization as step 6.
+
+### Changed
+- **Tutorial website: refreshed to match the current app.** The upload tutorial now lists all three camera-trap formats (Camtrap DP with descriptor, loose Camtrap DP CSVs with a synthesized descriptor, Wildlife Insights) instead of two; the name-validation tutorial explains the provider cards (status badges, local version) and that already-downloaded providers stay pre-selected across sessions; and the export tutorial was rewritten around the dedicated Export review hub (readiness banner, applied-corrections summary, generalized-species table, and the DwC-A + auxiliary bundle file list).
+
 ## [0.8.1] - 2026-06-15
 
 ### Changed

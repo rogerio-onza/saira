@@ -104,7 +104,7 @@ The table below shows a typical mapping for an ornithological collection:
 
 ## Templates
 
-You don't need to save the mapping by hand. When you download the standardized spreadsheet (see [Preview and export](06-preview-export.qmd)), Saíra includes a **template** in the `.zip`: a text file (`mapping_guide_*.txt`) that records only the "your column → Darwin Core term" vocabulary, with no data. It is your mapping saved, ready to reuse later or hand to a colleague.
+You don't need to save the mapping by hand. When you download the standardized spreadsheet (see [Preview and export](07-preview-export.qmd)), Saíra includes a **template** in the `.zip`: a text file (`mapping_guide_*.txt`) that records only the "your column → Darwin Core term" vocabulary, with no data. It is your mapping saved, ready to reuse later or hand to a colleague.
 
 To reuse it, open the mapping for a new spreadsheet and click **Import template** in the actions bar. Each line of the template is saved as an alias in your local Rostrum, so columns with the same name are mapped automatically — you only review what changed.
 

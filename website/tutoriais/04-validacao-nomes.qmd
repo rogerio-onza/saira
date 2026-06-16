@@ -25,7 +25,7 @@ Quando você marca mais de uma base, o Saíra consulta em **cascata** — Flora 
 
 ::: {.callout-note}
 ## Bases brasileiras ficam no seu computador
-Flora do Brasil e Fauna do Brasil são **baixadas e armazenadas localmente** na primeira vez que você as usa. Depois disso, a validação roda mesmo sem internet e fica mais rápida. O Saíra mostra o status de cada base (não baixada, baixando, atualizada) e a versão local. O GBIF é consultado conforme a necessidade.
+Flora do Brasil e Fauna do Brasil são **baixadas e armazenadas localmente** na primeira vez que você as usa. Depois disso, a validação roda mesmo sem internet e fica mais rápida. Cada base aparece como um **cartão de provedor** com o seu status (não baixada, baixando, atualizada) e a versão local; as bases que você já baixou ficam **pré-selecionadas** ao reabrir o app, para que sua escolha persista entre sessões. O GBIF é consultado conforme a necessidade.
 :::
 
 ## Antes de rodar: normalização
@@ -138,7 +138,7 @@ O ajuste é feito num pequeno diálogo de confirmação e vale para a exportaç�
 </figure>
 ```
 
-Aqui a etapa apenas **sinaliza** o que é sensível. A proteção efetiva das coordenadas — generalizar a localização ou omiti-la — acontece na **[exportação](06-preview-exportacao.qmd)**, onde a categoria de ameaça define o nível de generalização.
+Aqui a etapa apenas **sinaliza** o que é sensível. A proteção efetiva das coordenadas — decidir se e quanto generalizar a localização — acontece na etapa de **[generalização](06-generalizacao.qmd)**, seguindo a tabela de decisão de Chapman (2020).
 
 ## Próximos passos
 

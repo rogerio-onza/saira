@@ -51,7 +51,7 @@ CSV (`.csv`, `.tsv`, `.txt`) e Excel (`.xlsx`, `.xls`), com detecção automáti
 Ele **sugere** correções a partir de bases taxonômicas, mas a decisão final é sempre do especialista. Veja [Validando nomes científicos](tutoriais/04-validacao-nomes.qmd).
 
 ### Como o Saíra trata espécies ameaçadas?
-Antes da exportação, ele sinaliza táxons ameaçados (Lista Nacional do MMA) e permite **generalizar ou omitir a localização**, protegendo populações vulneráveis. Veja [Pré-visualização e exportação](tutoriais/06-preview-exportacao.qmd).
+Numa etapa dedicada de **generalização**, ele sinaliza táxons ameaçados (Lista Nacional do MMA) e ajuda você a decidir, espécie por espécie, se e quanto reduzir a precisão das coordenadas — seguindo a tabela de decisão de Chapman (2020). Veja [Generalizando espécies sensíveis](tutoriais/06-generalizacao.qmd).
 
 ## Exportação e publicação
 
