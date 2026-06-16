@@ -104,3 +104,4 @@ format:
     include-in-header:
       - assets/version.html
       - assets/head.html
+      - assets/analytics.html
