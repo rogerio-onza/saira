@@ -4,7 +4,13 @@
 \alias{mod_validate_names_server}
 \title{Validate Names Module Server}
 \usage{
-mod_validate_names_server(id, mapped_data_r, lang_r, validation_gate_r = NULL)
+mod_validate_names_server(
+  id,
+  mapped_data_r,
+  lang_r,
+  validation_gate_r = NULL,
+  reset_signal_r = NULL
+)
 }
 \arguments{
 \item{id}{Module ID}

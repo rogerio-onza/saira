@@ -10,7 +10,8 @@ mod_sensitive_coords_server(
   lang_r,
   sensitivity_payload_r = NULL,
   coords_correction_payload_r = NULL,
-  country_fill_payload_r = NULL
+  country_fill_payload_r = NULL,
+  reset_signal_r = NULL
 )
 }
 \arguments{

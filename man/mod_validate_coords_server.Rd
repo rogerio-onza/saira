@@ -4,7 +4,13 @@
 \alias{mod_validate_coords_server}
 \title{Validate Coordinates Module Server}
 \usage{
-mod_validate_coords_server(id, mapped_data_r, lang_r, validation_gate_r = NULL)
+mod_validate_coords_server(
+  id,
+  mapped_data_r,
+  lang_r,
+  validation_gate_r = NULL,
+  reset_signal_r = NULL
+)
 }
 \arguments{
 \item{id}{Module ID}
