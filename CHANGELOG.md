@@ -7,6 +7,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.2] - 2026-06-16
+
 ### Added
 - **Tutorial website: a dedicated "Generalizing sensitive species" tutorial (PT + EN).** The site documented only four workflow steps while the app has five (Upload → Map → Validate → **Generalize** → Export); generalization survived as a single legacy "sensitive species" paragraph inside the export tutorial describing the old generalize-or-omit model. A new page (`06-generalizacao.qmd` / `06-generalization.qmd`) covers the current Generalization tab: the Chapman (2020) Table 5 decision cascade (Q4.3/4.4/4.5 → Categories 2/3/4, or not-sensitive), the Table 7 four-tier grid (1° / 0.1° / 0.01° / 0.001°), per-species exceptions (the only path to Category 1), the mandatory `dataGeneralizations` justification for Categories 1–3, the map preview with border-crossing alerts, the 2–5-year review cycle, and a References section citing the three GBIF documents (Chapman 2020 `doi:10.15468/doc-5jp4-5g10`; Chapman & Wieczorek 2020 `doi:10.15468/doc-gg7h-s853`; Zermoglio et al. 2020 `doi:10.35035/e09p-h128`). The export tutorial was renumbered to `07-…` and the sidebar, overview and cross-links updated to insert Generalization as step 6.
 
