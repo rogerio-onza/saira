@@ -623,6 +623,10 @@
     "pt": "Mapeamentos resetados",
     "en": "Mappings reset"
   },
+  "notif_reupload_cleared": {
+    "pt": "Novo arquivo carregado — as validações e a generalização anteriores foram limpas.",
+    "en": "New file uploaded — previous validations and generalization were cleared."
+  },
   "notif_eventdate_parse_warning": {
     "pt": "eventDate: %s linha(s) não puderam ser convertidas para YYYY-MM/YYYY-MM; o valor bruto foi mantido.",
     "en": "eventDate: %s row(s) could not be converted to YYYY-MM/YYYY-MM; raw value was kept."

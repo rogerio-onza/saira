@@ -3,6 +3,39 @@
 # Date: 2026-02-12
 # Version: 1.0
 
+testthat::test_that("reset signal bumps on first upload, re-upload, and confirm_reset", {
+    df1 <- data.frame(scientificName = c("Panthera onca"), stringsAsFactors = FALSE)
+    df2 <- data.frame(scientificName = c("Leopardus pardalis"), stringsAsFactors = FALSE)
+    raw_r <- shiny::reactiveVal(df1)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = raw_r,
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            # First upload arms the counter; no re-upload notification yet.
+            testthat::expect_identical(rv$downstream_reset, 1L)
+            testthat::expect_true(rv$had_first_upload)
+
+            # A re-upload in the same session bumps the signal again.
+            raw_r(df2)
+            session$flushReact()
+            testthat::expect_identical(rv$downstream_reset, 2L)
+
+            # A confirmed Mapping reset also bumps it.
+            session$setInputs(confirm_reset = 1)
+            session$flushReact()
+            testthat::expect_identical(rv$downstream_reset, 3L)
+
+            # Exposed as the ADR-054 return slot the downstream tabs observe.
+            testthat::expect_identical(session$getReturned()$reset_signal_r(), 3L)
+        }
+    )
+})
+
 testthat::test_that("rostrum auto-map runs by default and fills badge metadata", {
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis"),
@@ -49,7 +82,7 @@ testthat::test_that("mod_mapping_server exposes lightweight preview_data alongsi
                     "validation_gate_r", "validation_gate_coords_r",
                     "sensitive_overview_input_r",
                     "rostrum_decisions_r", "rostrum_explain_r", "rostrum_run_stats_r",
-                    "map_values_r", "custom_values_r"
+                    "map_values_r", "custom_values_r", "reset_signal_r"
                 )
             )
 

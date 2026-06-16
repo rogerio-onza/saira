@@ -55,7 +55,7 @@ mod_validate_coords_ui <- function(id) {
 #' @param validation_gate_r Optional lightweight coordinate gate reactive
 #' @return Reactive coordinate validation data frame
 #' @export
-mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL) {
+mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL, reset_signal_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
@@ -1132,6 +1132,29 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 key = "coords_country_filled"
             )
         }, ignoreInit = TRUE)
+
+        # A re-upload or a confirmed Mapping reset invalidates the dataset
+        # baseline: drop the validation result and every pending/applied
+        # correction so nothing from the previous dataset carries over.
+        if (!is.null(reset_signal_r)) {
+            shiny::observeEvent(reset_signal_r(), {
+                coord_validation_r(NULL)
+                rv$stream_filter <- "all"
+                rv$last_run_status <- "idle"
+                rv$transposed_table <- NULL
+                rv$transposed_applied <- FALSE
+                rv$coords_corrections <- NULL
+                rv$country_fill_table <- NULL
+                rv$country_fill_applied <- FALSE
+                rv$country_fills <- NULL
+                rv$swap_fill_table <- NULL
+                rv$swap_fill_applied <- FALSE
+                rv$starting <- FALSE
+                rv$running <- FALSE
+                rv$start_requested <- FALSE
+                rv$run_requested <- FALSE
+            }, ignoreInit = TRUE)
+        }
 
         result_r <- shiny::reactive(coord_validation_r())
         attr(result_r, "filtered_data") <- filtered_result_r

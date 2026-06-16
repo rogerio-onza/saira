@@ -13,6 +13,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - **Tutorial website: refreshed to match the current app.** The upload tutorial now lists all three camera-trap formats (Camtrap DP with descriptor, loose Camtrap DP CSVs with a synthesized descriptor, Wildlife Insights) instead of two; the name-validation tutorial explains the provider cards (status badges, local version) and that already-downloaded providers stay pre-selected across sessions; and the export tutorial was rewritten around the dedicated Export review hub (readiness banner, applied-corrections summary, generalized-species table, and the DwC-A + auxiliary bundle file list).
 
+### Fixed
+- **Resetting the mapping or re-uploading now clears the downstream tabs.** Clicking **Reset** in Mapping, or uploading a new file in the same session, left the **Names**, **Coordinates**, and **Generalization** tabs holding the decisions made for the *previous* dataset (name reviews and sensitivity marks, coordinate transposition/country-fill corrections, and the generalization tier cascade with its per-species exceptions). The mapped data did invalidate downstream, but each tab keeps its user decisions in its own reactive state that was never cleared — so stale reviews and corrections could be exported against a different dataset. Mapping now emits a single "data baseline reset" signal (a new `reset_signal_r` slot on its ADR-054 return) on both events; each downstream tab observes it and wipes its retained state back to empty. The signal fires only on those two discrete events — incremental field-mapping edits and tab switches leave existing work untouched. The Names tab keeps its provider selection (it mirrors the on-disk download cache, not dataset work), and a re-upload shows a short heads-up notification so the cleared validations are not a surprise.
+
 ## [0.8.1] - 2026-06-15
 
 ### Changed

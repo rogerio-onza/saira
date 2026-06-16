@@ -25,6 +25,38 @@ sample_occurrence_df <- function() {
     )
 }
 
+testthat::test_that("upstream reset signal clears the generalization determination", {
+    local_sensitive_fixture("Panthera onca", category = "EN")
+    df <- sample_occurrence_df()
+    signal <- shiny::reactiveVal(0L)
+
+    shiny::testServer(
+        saira:::mod_sensitive_coords_server,
+        args = list(
+            data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en"),
+            reset_signal_r = signal
+        ),
+        {
+            # Seed a determination + per-species exception for a prior dataset
+            # (overrides hold a tier string, as the exc_apply handlers write).
+            group_levels_rv(list(cr = "high"))
+            species_overrides_rv(list("Panthera onca" = "extreme"))
+            preview_tier_rv("high")
+            result_filter_rv("cr")
+            session$flushReact()
+
+            signal(1L)
+            session$flushReact()
+
+            testthat::expect_length(group_levels_rv(), 0L)
+            testthat::expect_length(species_overrides_rv(), 0L)
+            testthat::expect_null(preview_tier_rv())
+            testthat::expect_identical(result_filter_rv(), "all")
+        }
+    )
+})
+
 testthat::test_that("payload starts disabled (publish) with no levels", {
     local_sensitive_fixture("Panthera onca", category = "EN")
     df <- sample_occurrence_df()

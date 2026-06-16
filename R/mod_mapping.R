@@ -160,7 +160,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             automap_phrase_idx = 1L,
             automap_phrase_order = integer(0),
             ambiguity_queue = list(),
-            dyn_props_keys = list()
+            dyn_props_keys = list(),
+            # Counter bumped on every event that invalidates the dataset baseline
+            # (re-upload or a confirmed Reset). Exposed as reset_signal_r so the
+            # downstream tabs (names/coords/generalization) can wipe their retained
+            # decision state. had_first_upload distinguishes the initial upload
+            # (nothing downstream to clear) from a true re-upload.
+            downstream_reset = 0L,
+            had_first_upload = FALSE
         )
 
         # SQLite connection for alias and template persistence
@@ -734,6 +741,19 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 camtrap_automap_pending(
                     !is.null(attr(raw_data_r(), "saira_camtrap_source"))
                 )
+
+                # Signal the downstream tabs to clear their retained decisions.
+                # The first upload has nothing downstream to clear (silent); a
+                # re-upload warns the user why their validations disappeared.
+                rv$downstream_reset <- rv$downstream_reset + 1L
+                if (isTRUE(rv$had_first_upload)) {
+                    shiny::showNotification(
+                        tr("notif_reupload_cleared", lang_r()),
+                        type = "warning", duration = 4
+                    )
+                } else {
+                    rv$had_first_upload <- TRUE
+                }
             },
             ignoreNULL = TRUE
         )
@@ -1586,6 +1606,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             reset_basis_of_record_state(rv)
             rv$is_programmatic_update <- FALSE
             rv$programmatic_terms <- character(0)
+            # Clear the downstream tabs too (the existing notification covers it).
+            rv$downstream_reset <- rv$downstream_reset + 1L
             shiny::removeModal()
             shiny::showNotification(tr("notif_mapping_reset", lang_r()), type = "warning", duration = 3)
         })
@@ -1846,7 +1868,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             rostrum_explain_r           = shiny::reactive(rv$map_meta),
             rostrum_run_stats_r         = shiny::reactive(rv$rostrum_run_stats),
             map_values_r                = shiny::reactive(rv$map_values),
-            custom_values_r             = custom_values_r
+            custom_values_r             = custom_values_r,
+            reset_signal_r              = shiny::reactive(rv$downstream_reset)
         ))
     })
 }

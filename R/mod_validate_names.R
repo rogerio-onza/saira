@@ -53,7 +53,7 @@ mod_validate_names_ui <- function(id) {
 #' @param validation_gate_r Optional lightweight gate reactive from mapping module
 #' @return Reactive validation report data frame
 #' @export
-mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL) {
+mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL, reset_signal_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
@@ -81,6 +81,27 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         validation_result <- shiny::reactiveVal(NULL)
         validation_meta <- shiny::reactiveVal(NULL)
 
+        # Empty schemas reused by the rv init, the validate-click reset, and the
+        # upstream reset observer so the three stay in lockstep.
+        empty_manual_reviews <- function() {
+            data.frame(
+                query_name = character(0),
+                review_type = character(0),
+                original_name = character(0),
+                corrected_name = character(0),
+                reason = character(0),
+                reviewed_at = as.POSIXct(character(0), tz = "UTC"),
+                stringsAsFactors = FALSE
+            )
+        }
+        empty_exiting_reviews <- function() {
+            data.frame(
+                query_name = character(0),
+                expires_at = as.POSIXct(character(0), tz = "UTC"),
+                stringsAsFactors = FALSE
+            )
+        }
+
         rv <- shiny::reactiveValues(
             # GBIF is always on (priority 1); any BR provider already downloaded
             # to the on-disk cache is pre-selected so the user's last download
@@ -98,23 +119,11 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             stream_filter = "all",
             last_run_status = "idle",
             last_error = NA_character_,
-            manual_reviews = data.frame(
-                query_name = character(0),
-                review_type = character(0),
-                original_name = character(0),
-                corrected_name = character(0),
-                reason = character(0),
-                reviewed_at = as.POSIXct(character(0), tz = "UTC"),
-                stringsAsFactors = FALSE
-            ),
+            manual_reviews = empty_manual_reviews(),
             review_target = NULL,
             review_mode = "confirm",
             sensitivity_overrides = list(),
-            exiting_reviews = data.frame(
-                query_name = character(0),
-                expires_at = as.POSIXct(character(0), tz = "UTC"),
-                stringsAsFactors = FALSE
-            ),
+            exiting_reviews = empty_exiting_reviews(),
             provider_runtime_status = initial_provider_runtime_status
         )
 
@@ -1798,22 +1807,10 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 rv$last_error <- NA_character_
                 validation_result(NULL)
                 validation_meta(NULL)
-                rv$manual_reviews <- data.frame(
-                    query_name = character(0),
-                    review_type = character(0),
-                    original_name = character(0),
-                    corrected_name = character(0),
-                    reason = character(0),
-                    reviewed_at = as.POSIXct(character(0), tz = "UTC"),
-                    stringsAsFactors = FALSE
-                )
+                rv$manual_reviews <- empty_manual_reviews()
                 rv$review_target <- NULL
                 rv$review_mode <- "confirm"
-                rv$exiting_reviews <- data.frame(
-                    query_name = character(0),
-                    expires_at = as.POSIXct(character(0), tz = "UTC"),
-                    stringsAsFactors = FALSE
-                )
+                rv$exiting_reviews <- empty_exiting_reviews()
                 rv$stream_filter <- "all"
                 shiny::showNotification(tr("validate_names_progress_status_running", lang_r()), type = "message", duration = 2)
 
@@ -1934,6 +1931,32 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         sensitivity_payload <- shiny::reactive({
             sensitivity_entries_df()
         })
+
+        # A re-upload or a confirmed Mapping reset invalidates the dataset
+        # baseline: drop every decision made for the previous dataset so nothing
+        # leaks into the new one. Provider selection and runtime status are kept
+        # (they mirror the on-disk download cache, not dataset work).
+        if (!is.null(reset_signal_r)) {
+            shiny::observeEvent(reset_signal_r(), {
+                validation_result(NULL)
+                validation_meta(NULL)
+                sensitivity_target(NULL)
+                rv$manual_reviews <- empty_manual_reviews()
+                rv$review_target <- NULL
+                rv$review_mode <- "confirm"
+                rv$sensitivity_overrides <- list()
+                rv$exiting_reviews <- empty_exiting_reviews()
+                rv$stream_df <- empty_validation_stream()
+                rv$stream_filter <- "all"
+                rv$run_state <- NULL
+                rv$last_run_status <- "idle"
+                rv$last_error <- NA_character_
+                rv$starting <- FALSE
+                rv$running <- FALSE
+                rv$start_requested <- FALSE
+                rv$abort_requested <- FALSE
+            }, ignoreInit = TRUE)
+        }
 
         result_r <- shiny::reactive(validation_result())
         attr(result_r, "review_export_payload") <- review_export_payload
