@@ -1,5 +1,5 @@
-# Tests for country-from-coordinates fill (reimplements the core of
-# bdc::bdc_country_from_coordinates on the bundled Natural Earth layer).
+# Tests for country-from-coordinates fill against the bundled Natural Earth
+# layer.
 
 testthat::test_that("coords_country_from_coordinates fills missing country from valid coords", {
     testthat::skip_if_not_installed("terra")

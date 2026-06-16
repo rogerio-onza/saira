@@ -2,7 +2,8 @@
 #
 # Source: data-raw/redlist_brasil_mma.md
 #   Official MMA Brazilian national list of threatened species
-#   (Portaria MMA 443 de 2014, flora and fauna anexos), a Markdown table.
+#   (Portaria MMA no 148 de 2022, which updates the flora/fauna anexos of
+#   Portarias 443/2014 and 444/2014), a Markdown table.
 #   Two row layouts coexist. Flora rows hold five cells: number, legacy
 #   marker, family, species, category. Fauna rows hold six: number,
 #   marker, order, family, species, category. The species name is always

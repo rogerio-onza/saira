@@ -1167,13 +1167,12 @@ coords_points_in_poly <- function(lon, lat, poly) {
 
 #' Detect and correct transposed / sign-flipped geographic coordinates
 #'
-#' Reimplements the core of \code{bdc::bdc_coordinates_transposed()} on Saira's
-#' bundled Natural Earth country layer (no \code{bdc} dependency). For records
-#' whose verbatim coordinates fall outside the informed country (plus an optional
-#' border buffer), tries latitude/longitude swap and sign-flip transformations
-#' and accepts the first that lands inside the country. Verbatim coordinates are
-#' never mutated here — corrections are returned alongside the originals so the
-#' caller (UI) can preview and apply them explicitly.
+#' For records whose verbatim coordinates fall outside the informed country (plus
+#' an optional border buffer), tries latitude/longitude swap and sign-flip
+#' transformations on Saira's bundled Natural Earth country layer and accepts the
+#' first that lands inside the country. Verbatim coordinates are never mutated
+#' here — corrections are returned alongside the originals so the caller (UI) can
+#' preview and apply them explicitly.
 #'
 #' @param df data.frame with coordinate and country columns.
 #' @param lat_col,lon_col,country_col Column names.
@@ -1335,11 +1334,10 @@ apply_coords_correction_payload <- function(df, payload = NULL) {
 
 #' Derive country names from valid coordinates for records missing them
 #'
-#' Reimplements the core of \code{bdc::bdc_country_from_coordinates()} on Saira's
-#' bundled Natural Earth country layer (no \code{bdc} dependency). For records
-#' whose \code{country} is blank but whose coordinates are valid, looks up the
-#' country the point falls in (no name for points in the sea). Existing country
-#' values are never overwritten.
+#' For records whose \code{country} is blank but whose coordinates are valid,
+#' looks up the country the point falls in on Saira's bundled Natural Earth
+#' country layer (no name for points in the sea). Existing country values are
+#' never overwritten.
 #'
 #' @param df data.frame with coordinate + country columns.
 #' @param lat_col,lon_col,country_col Column names.
