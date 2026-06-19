@@ -5582,7 +5582,8 @@ body.vn-review-open .modal-backdrop.show {
 .vn-report-table-shell {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .vn-report-empty {
@@ -5593,7 +5594,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .vn-report-table-shell .dataTables_wrapper {
-  height: 100%;
+  height: auto;
   display: flex;
   flex-direction: column;
 }
@@ -5724,6 +5725,10 @@ body.vn-review-open .modal-backdrop.show {
   gap: 0.45rem;
   flex-wrap: wrap;
   flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  background: #ffffff;
+  z-index: 2;
 }
 
 .vn-report-pagination .dataTables_info {

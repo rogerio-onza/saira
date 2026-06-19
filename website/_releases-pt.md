@@ -2,6 +2,16 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.8.6</span>
+    <time class="release-date">2026-06-19</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text">Na <strong>validação de nomes</strong>, a tabela do relatório agora <strong>rola</strong> e a <strong>paginação fica acessível</strong> quando há mais de 10 nomes — antes a 10ª linha e os controles ficavam cortados.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.8.5</span>
     <time class="release-date">2026-06-18</time>
   </header>

@@ -1741,7 +1741,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     pageLength = 10,
                     lengthMenu = c(10, 25, 50, 100),
                     autoWidth = FALSE,
-                    scrollX = TRUE,
                     dom = "t<'vn-report-pagination'ip>",
                     columnDefs = list(
                         list(targets = 0, render = scientific_name_js, className = "vn-col-scientific", width = "56%"),

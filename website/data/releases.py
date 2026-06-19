@@ -11,6 +11,16 @@
 
 RELEASES = [
     {
+        "version": "0.8.6",
+        "date": "2026-06-19",
+        "pt": [
+            ("fixed", "Na **validação de nomes**, a tabela do relatório agora **rola** e a **paginação fica acessível** quando há mais de 10 nomes — antes a 10ª linha e os controles ficavam cortados."),
+        ],
+        "en": [
+            ("fixed", "In **name validation**, the report table now **scrolls** and **pagination is reachable** with more than 10 names — previously the 10th row and the controls were clipped."),
+        ],
+    },
+    {
         "version": "0.8.5",
         "date": "2026-06-18",
         "pt": [

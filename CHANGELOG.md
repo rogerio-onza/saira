@@ -7,6 +7,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.6] - 2026-06-19
+
+### Fixed
+- **Name-validation report: the results table now scrolls and its pagination is reachable.** With more than 10 names the report panel (a fixed-height box) clipped the 10th row and the pager beneath it, with no scrollbar, so longer datasets could not be browsed past the first page. The table had `scrollX` enabled, which moves the header into DataTables' own scroll container and leaves the body unable to scroll vertically inside the panel — also leaving the existing sticky-header rule inert. Dropping `scrollX`, making the table shell scroll vertically, and pinning the header (sticky top) and pagination (sticky bottom) keeps every row reachable and both the column headers and the pager visible while scrolling. No new `!important` (bundle stays at 11).
+
 ## [0.8.5] - 2026-06-18
 
 ### Changed
