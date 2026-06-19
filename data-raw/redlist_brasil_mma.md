@@ -1,7 +1,12 @@
 # MMA - Lista nacional de espécies ameaçadas de extinção
 
-Fonte: Portaria MMA nº 148, de 7 de junho de 2022, que atualiza os anexos das
-Portarias nº 443/2014 (flora) e nº 444/2014 (fauna).
+Fontes oficiais (DOU / Imprensa Nacional):
+- Flora (ANEXO 1): Portaria MMA nº 148, de 7 de junho de 2022 — atualiza o ANEXO
+  da Portaria nº 443, de 17 de dezembro de 2014.
+- Fauna terrestre (ANEXO 2): Portaria MMA nº 1.704, de 16 de junho de 2026 —
+  atualiza os ANEXOS I e II da Portaria nº 444, de 17 de dezembro de 2014.
+- Fauna aquática, peixes e invertebrados (ANEXO 3): Portaria GM/MMA nº 1.667, de
+  27 de abril de 2026 — revoga a Portaria nº 445, de 17 de dezembro de 2014.
 
 ANEXO 1
 
@@ -3267,1324 +3272,1326 @@ ANEXO 1
 
 ANEXO 2
 
-|     |     |     |     |     |     |
-| --- | --- | --- | --- | --- | --- |
-| ANEXO 2. Atualiza o teor dos ANEXOS I e II da Portaria nº 444, de 17 de dezembro de 2014. |
-| ANEXO I. LISTA OFICIAL DA FAUNA BRASILEIRA AMEAÇADA DE EXTINÇÃO |
-|  | # | Ordem | Família | Espécie ou Subespécie | Categoria |
-|  |  | INVERTEBRADOS TERRESTRES |  |
-| 1 | \* | Amblypygi | Charinidae | Charinus acaraje | VU |
-| 2 | \* | Amblypygi | Charinidae | Charinus asturius | EN |
-| 3 |  | Amblypygi | Charinidae | Charinus caatingae | CR |
-| 4 | \* | Amblypygi | Charinidae | Charinus eleonorae | EN |
-| 5 |  | Amblypygi | Charinidae | Charinus ferreus | CR |
-| 6 | \* | Amblypygi | Charinidae | Charinus potiguar | VU |
-| 7 |  | Amblypygi | Charinidae | Charinus spelaeus | VU |
-| 8 |  | Amblypygi | Charinidae | Charinus taboa | CR |
-| 9 | \* | Amblypygi | Charinidae | Charinus troglobius | EN |
-| 10 |  | Araneae | Caponiidae | Carajas paraua | EN |
-| 11 |  | Araneae | Caponiidae | Tisentnops onix | CR |
-| 12 | \* | Araneae | Corinnidae | Ianduba paubrasil | EN |
-| 13 | \* | Araneae | Ctenidae | Celaetycheus mungunza | CR |
-| 14 | \* | Araneae | Ctenidae | Isoctenus corymbus | CR |
-| 15 | \* | Araneae | Dipluridae | Harmonicon cerberus | CR |
+| ANEXO 2. Atualiza os ANEXOS I e II da Portaria nº 444, de 17 de dezembro de 2014, conforme a Portaria MMA nº 1.704, de 16 de junho de 2026. |
+| --- | --- | --- | --- |
+| ANEXO I. LISTA OFICIAL DA FAUNA TERRESTRE BRASILEIRA AMEAÇADA DE EXTINÇÃO |
+| --- | --- | --- | --- |
+|  | Família | Espécie ou Subespécie | Categoria |
+| 1 | Aromobatidae | Anomaloglossus apiau | EN |
+| 2 | Aromobatidae | Anomaloglossus tepequem | CR (PE) |
+| 3 | Brachycephalidae | Brachycephalus mirissimus | VU |
+| 4 | Brachycephalidae | Brachycephalus pernix | CR |
+| 5 | Brachycephalidae | Brachycephalus quiririensis | EN |
+| 6 | Brachycephalidae | Ischnocnema epipeda | CR (PE) |
+| 7 | Brachycephalidae | Ischnocnema garciai | CR |
+| 8 | Brachycephalidae | Ischnocnema karst | VU |
+| 9 | Brachycephalidae | Ischnocnema manezinho | EN |
+| 10 | Bufonidae | Melanophryniscus admirabilis | CR |
+| 11 | Bufonidae | Melanophryniscus biancae | EN |
+| 12 | Bufonidae | Melanophryniscus cambaraensis | EN |
+| 13 | Bufonidae | Melanophryniscus formosus | VU |
+| 14 | Bufonidae | Melanophryniscus klappenbachi | VU |
+| 15 | Bufonidae | Melanophryniscus macrogranulosus | EN |
+| 16 | Bufonidae | Melanophryniscus montevidensis | VU |
+| 17 | Bufonidae | Melanophryniscus setiba | VU |
+| 18 | Bufonidae | Rhinella casconi | CR |
+| 19 | Ceratophryidae | Ceratophrys ornata | CR (PE) |
+| 20 | Cycloramphidae | Cycloramphus diringshofeni | CR |
+| 21 | Cycloramphidae | Cycloramphus faustoi | VU |
+| 22 | Cycloramphidae | Cycloramphus stejnegeri | CR (PE) |
+| 23 | Cycloramphidae | Thoropa lutzi | CR (PE) |
+| 24 | Cycloramphidae | Thoropa petropolitana | CR (PE) |
+| 25 | Eleutherodactylidae | Adelophryne maranguapensis | CR |
+| 26 | Hylidae | Boana buriti | VU |
+| 27 | Hylidae | Bokermannohyla napolii | VU |
+| 28 | Hylidae | Bokermannohyla vulcaniae | EN |
+| 29 | Hylidae | Julianus pinimus | VU |
+| 30 | Hylidae | Nyctimantis pomba | CR |
+| 31 | Hylidae | Ololygon alcatraz | VU |
+| 32 | Hylidae | Ololygon faivovichi | VU |
+| 33 | Hylidae | Ololygon muriciensis | CR |
+| 34 | Hylidae | Ololygon peixotoi | CR (PE) |
+| 35 | Hylidae | Sphaenorhynchus bromelicola | EN |
+| 36 | Hylidae | Sphaenorhynchus cammaeus | CR |
+| 37 | Hylidae | Sphaenorhynchus canga | CR |
+| 38 | Hylidae | Xenohyla truncata | VU |
+| 39 | Hylodidae | Crossodactylus boulengeri | CR (PE) |
+| 40 | Hylodidae | Crossodactylus dantei | CR |
+| 41 | Hylodidae | Crossodactylus dispar | CR (PE) |
+| 42 | Hylodidae | Crossodactylus franciscanus | CR (PE) |
+| 43 | Hylodidae | Hylodes glaber | CR (PE) |
+| 44 | Hylodidae | Hylodes magalhaesi | VU |
+| 45 | Hylodidae | Hylodes mertensi | CR |
+| 46 | Hylodidae | Hylodes sazimai | EN |
+| 47 | Leptodactylidae | Crossodactylodes itambe | CR |
+| 48 | Leptodactylidae | Crossodactylodes izecksohni | EN |
+| 49 | Leptodactylidae | Paratelmatobius lutzii | CR (PE) |
+| 50 | Leptodactylidae | Physalaemus soaresi | CR |
+| 51 | Microhylidae | Chiasmocleis alagoana | VU |
+| 52 | Odontophrynidae | Proceratophrys ararype | CR |
+| 53 | Odontophrynidae | Proceratophrys palustris | CR |
+| 54 | Odontophrynidae | Proceratophrys sanctaritae | CR |
+| 55 | Phyllomedusidae | Phrynomedusa marginata | CR (PE) |
+| 56 | Phyllomedusidae | Phrynomedusa vanzolinii | CR (PE) |
+| 57 | Phyllomedusidae | Pithecopus rusticus | CR |
+| 58 | Strabomantidae | Euparkerella robusta | CR |
+| 59 | Strabomantidae | Holoaden bradei | CR (PE) |
+| 60 | Accipitridae | Amadonastur lacernulatus | VU |
+| 61 | Accipitridae | Circus cinereus | VU |
+| 62 | Accipitridae | Leptodon forbesi | EN |
+| 63 | Accipitridae | Urubitinga coronata | EN |
+| 64 | Anatidae | Mergus octosetaceus | CR |
+| 65 | Trochilidae | Augastes lumachella | VU |
+| 66 | Trochilidae | Campylopterus calcirupicola | VU |
+| 67 | Trochilidae | Colibri delphinae greenewalti | VU |
+| 68 | Trochilidae | Discosura langsdorffi langsdorffi | EN |
+| 69 | Trochilidae | Glaucis dohrnii | VU |
+| 70 | Trochilidae | Lophornis gouldii | VU |
+| 71 | Trochilidae | Phaethornis major | VU |
+| 72 | Trochilidae | Phaethornis margarettae | EN |
+| 73 | Trochilidae | Thalurania watertonii | EN |
+| 74 | Caprimulgidae | Hydropsalis candicans | EN |
+| 75 | Burhinidae | Burhinus bistriatus | VU |
+| 76 | Charadriidae | Charadrius wilsonia | VU |
+| 77 | Laridae | Sterna dougallii | VU |
+| 78 | Laridae | Sterna hirundinacea | VU |
+| 79 | Laridae | Thalasseus acuflavidus | VU |
+| 80 | Laridae | Thalasseus maximus | EN |
+| 81 | Scolopacidae | Calidris canutus | VU |
+| 82 | Scolopacidae | Calidris pusilla | EN |
+| 83 | Scolopacidae | Calidris subruficollis | VU |
+| 84 | Scolopacidae | Limnodromus griseus | EN |
+| 85 | Scolopacidae | Numenius hudsonicus | VU |
+| 86 | Columbidae | Columbina cyanopis | CR |
+| 87 | Columbidae | Paraclaravis geoffroyi | CR (PE) |
+| 88 | Momotidae | Momotus momota marcgravianus | EN |
+| 89 | Cuculidae | Neomorphus geoffroyi amazonicus | VU |
+| 90 | Cuculidae | Neomorphus geoffroyi dulcis | EN |
+| 91 | Cuculidae | Neomorphus geoffroyi geoffroyi | CR (PE) |
+| 92 | Cuculidae | Neomorphus squamiger | VU |
+| 93 | Falconidae | Micrastur mintoni | VU |
+| 94 | Bucconidae | Malacoptila minor | VU |
+| 95 | Bucconidae | Monasa morphoeus morphoeus | EN |
+| 96 | Cracidae | Aburria cujubi | VU |
+| 97 | Cracidae | Aburria jacutinga | EN |
+| 98 | Cracidae | Crax blumenbachii | EN |
+| 99 | Cracidae | Crax fasciolata pinima | CR |
+| 100 | Cracidae | Crax globulosa | EN |
+| 101 | Cracidae | Ortalis remota | CR |
+| 102 | Cracidae | Pauxi mitu | EW |
+| 103 | Cracidae | Penelope jacucaca | VU |
+| 104 | Cracidae | Penelope pileata | VU |
+| 105 | Cracidae | Penelope superciliaris alagoensis | EN |
+| 106 | Odontophoridae | Odontophorus capueira plumbeicollis | CR |
+| 107 | Psophiidae | Psophia dextralis | VU |
+| 108 | Psophiidae | Psophia interjecta | EN |
+| 109 | Psophiidae | Psophia obscura | CR |
+| 110 | Psophiidae | Psophia viridis | VU |
+| 111 | Rallidae | Laterallus xenopterus | EN |
+| 112 | Nyctibiidae | Nyctibius aethereus aethereus | EN |
+| 113 | Nyctibiidae | Nyctibius leucopterus | CR |
+| 114 | Cardinalidae | Granatellus pelzelni paraensis | VU |
+| 115 | Conopophagidae | Conopophaga cearae | EN |
+| 116 | Conopophagidae | Conopophaga lineata lineata | VU |
+| 117 | Corvidae | Cyanocorax hafferi | VU |
+| 118 | Cotingidae | Cotinga maculata | EN |
+| 119 | Cotingidae | Lipaugus conditus | VU |
+| 120 | Cotingidae | Procnias averano averano | EN |
+| 121 | Cotingidae | Xipholena atropurpurea | VU |
+| 122 | Cotingidae | Xipholena lamellipennis | VU |
+| 123 | Dendrocolaptidae | Campylorhamphus cardosoi | VU |
+| 124 | Dendrocolaptidae | Campylorhamphus multostriatus | VU |
+| 125 | Dendrocolaptidae | Campylorhamphus trochilirostris trochilirostris | VU |
+| 126 | Dendrocolaptidae | Dendrexetastes paraensis paraensis | VU |
+| 127 | Dendrocolaptidae | Dendrocincla merula badia | VU |
+| 128 | Dendrocolaptidae | Dendrocincla taunayi | EN |
+| 129 | Dendrocolaptidae | Dendrocolaptes medius | VU |
+| 130 | Dendrocolaptidae | Dendrocolaptes retentus | VU |
+| 131 | Dendrocolaptidae | Dendrocolaptes transfasciatus | VU |
+| 132 | Dendrocolaptidae | Hylexetastes uniformis | VU |
+| 133 | Dendrocolaptidae | Lepidocolaptes wagleri | EN |
+| 134 | Dendrocolaptidae | Xiphocolaptes carajaensis | VU |
+| 135 | Dendrocolaptidae | Xiphocolaptes falcirostris | VU |
+| 136 | Dendrocolaptidae | Xiphorhynchus atlanticus | VU |
+| 137 | Dendrocolaptidae | Xiphorhynchus guttatoides gracilirostris | EN |
+| 138 | Formicariidae | Chamaeza nobilis fulvipectus | VU |
+| 139 | Fringillidae | Spinus yarrellii | VU |
+| 140 | Furnariidae | Acrobatornis fonsecai | VU |
+| 141 | Furnariidae | Anabazenops dorsalis | VU |
+| 142 | Furnariidae | Asthenes luizae | EN |
+| 143 | Furnariidae | Automolus lammi | EN |
+| 144 | Furnariidae Furnariidae | Cinclodes espinhacensis | EN |
+| 145 | Furnariidae | Coryphistera alaudina | CR |
+| 146 | Furnariidae | Leptasthenura platensis | CR |
+| 147 | Furnariidae | Synallaxis infuscata | EN |
+| 148 | Furnariidae | Synallaxis kollari | VU |
+| 149 | Furnariidae | Syndactyla ucayalae | VU |
+| 150 | Furnariidae | Thripophaga macroura | VU |
+| 151 | Grallariidae | Grallaria varia distincta | VU |
+| 152 | Grallariidae | Grallaria varia intercedens | EN |
+| 153 | Grallariidae | Hylopezus ochroleucus | VU |
+| 154 | Grallariidae | Hylopezus paraensis | VU |
+| 155 | Grallariidae | Hylopezus whittakeri | VU |
+| 156 | Icteridae | Anumara forbesi | VU |
+| 157 | Icteridae | Cacicus koepckeae | VU |
+| 158 | Motacillidae | Anthus nattereri | VU |
+| 159 | Onychorhynchidae | Onychorhynchus swainsoni | VU |
+| 160 | Oxyruncidae | Oxyruncus cristatus tocantinsi | VU |
+| 161 | Passerellidae | Arremonops conirostris | EN |
+| 162 | Pipridae | Antilophia bokermanni | EN |
+| 163 | Pipridae | Lepidothrix iris | EN |
+| 164 | Pipridae | Lepidothrix vilasboasi | EN |
+| 165 | Pipridae | Neopelma aurifrons | EN |
+| 166 | Platyrinchidae | Calyptura cristata | CR (PE) |
+| 167 | Platyrinchidae | Platyrinchus leucoryphus | VU |
+| 168 | Platyrinchidae | Platyrinchus niveigularis | VU |
+| 169 | Rhinocryptidae | Eleoscytalopus psychopompus | EN |
+| 170 | Rhinocryptidae | Merulaxis stresemanni | CR |
+| 171 | Rhinocryptidae | Scytalopus diamantinensis | VU |
+| 172 | Rhinocryptidae | Scytalopus gonzagai | EN |
+| 173 | Rhinocryptidae | Scytalopus iraiensis | EN |
+| 174 | Rhinocryptidae | Scytalopus novacapitalis | EN |
+| 175 | Rhynchocyclidae | Cnipodectes superrufus | VU |
+| 176 | Rhynchocyclidae | Hemitriccus kaempferi | VU |
+| 177 | Rhynchocyclidae | Hemitriccus mirandae | EN |
+| 178 | Rhynchocyclidae | Phylloscartes ceciliae | EN |
+| 179 | Rhynchocyclidae | Phylloscartes roquettei | EN |
+| 180 | Rhynchocyclidae | Poecilotriccus albifacies | VU |
+| 181 | Scleruridae | Geositta poeciloptera | VU |
+| 182 | Scleruridae | Sclerurus caudacutus caligineus | CR |
+| 183 | Scleruridae | Sclerurus caudacutus umbretta | CR |
+| 184 | Scleruridae | Sclerurus cearensis | EN |
+| 185 | Scleruridae | Sclerurus macconnelli bahiae | EN |
+| 186 | Thamnophilidae | Clytoctantes atrogularis | VU |
+| 187 | Thamnophilidae | Dysithamnus plumbeus | EN |
+| 188 | Thamnophilidae | Epinecrophylla dentei | VU |
+| 189 | Thamnophilidae | Formicivora acutirostris | VU |
+| 190 | Thamnophilidae | Formicivora erythronotos | CR |
+| 191 | Thamnophilidae | Formicivora grantsaui | VU |
+| 192 | Thamnophilidae | Formicivora iheringi | VU |
+| 193 | Thamnophilidae | Formicivora littoralis | EN |
+| 194 | Thamnophilidae | Formicivora paludicola | CR |
+| 195 | Thamnophilidae | Hypocnemis hypoxantha ochraceiventris | VU |
+| 196 | Thamnophilidae | Hypocnemis ochrogyna | VU |
+| 197 | Thamnophilidae | Hypocnemis striata | VU |
+| 198 | Thamnophilidae | Myrmoderus ruficauda | EN |
+| 199 | Thamnophilidae | Myrmotherula fluminensis | CR (PE) |
+| 200 | Thamnophilidae | Myrmotherula minor | VU |
+| 201 | Thamnophilidae | Myrmotherula oreni | VU |
+| 202 | Thamnophilidae | Myrmotherula snowi | CR |
+| 203 | Thamnophilidae | Myrmotherula urosticta | VU |
+| 204 | Thamnophilidae | Phlegopsis borbae | VU |
+| 205 | Thamnophilidae | Phlegopsis nigromaculata confinis | VU |
+| 206 | Thamnophilidae | Pyriglena atra | EN |
+| 207 | Thamnophilidae | Pyriglena pernambucensis | VU |
+| 208 | Thamnophilidae | Rhegmatorhina gymnops | VU |
+| 209 | Thamnophilidae | Rhegmatorhina hoffmannsi | VU |
+| 210 | Thamnophilidae | Rhopornis ardesiacus | VU |
+| 211 | Thamnophilidae | Terenura sicki | EN |
+| 212 | Thamnophilidae | Thamnomanes caesius caesius | EN |
+| 213 | Thamnophilidae | Thamnophilus aethiops distans | EN |
+| 214 | Thamnophilidae | Thamnophilus caerulescens cearensis | VU |
+| 215 | Thamnophilidae | Thamnophilus caerulescens pernambucensis | VU |
+| 216 | Thamnophilidae | Thamnophilus nigrocinereus huberi | VU |
+| 217 | Thamnophilidae | Thamnophilus nigrocinereus tschudii | EN |
+| 218 | Thraupidae | Conothraupis mesoleuca | EN |
+| 219 | Thraupidae | Coryphaspiza melanotis | VU |
+| 220 | Thraupidae | Gubernatrix cristata | CR |
+| 221 | Thraupidae | Nemosia rourei | CR |
+| 222 | Thraupidae | Sporophila beltoni | EN |
+| 223 | Thraupidae | Sporophila falcirostris | VU |
+| 224 | Thraupidae | Sporophila frontalis | VU |
+| 225 | Thraupidae | Sporophila maximiliani | CR |
+| 226 | Thraupidae | Sporophila melanogaster | VU |
+| 227 | Thraupidae | Sporophila nigrorufa | VU |
+| 228 | Thraupidae | Tangara cyanocephala cearensis | VU |
+| 229 | Thraupidae | Tangara fastuosa | VU |
+| 230 | Thraupidae | Tangara velia signata | VU |
+| 231 | Tityridae | Iodopleura pipra leucopygia | EN |
+| 232 | Tityridae | Laniisoma elegans | EN |
+| 233 | Tityridae | Schiffornis turdina intermedia | EN |
+| 234 | Troglodytidae | Cyphorhinus griseolateralis | VU |
+| 235 | Turdidae | Cichlopsis leucogenys | EN |
+| 236 | Tyrannidae | Alectrurus tricolor | VU |
+| 237 | Tyrannidae | Attila spadiceus uropygiatus | EN |
+| 238 | Tyrannidae | Contopus nigrescens | VU |
+| 239 | Tyrannidae | Elaenia ridleyana | VU |
+| 240 | Tyrannidae | Heteroxolmis dominicanus | VU |
+| 241 | Tyrannidae | Knipolegus franciscanus | VU |
+| 242 | Tyrannidae | Phyllomyias reiseri | EN |
+| 243 | Tyrannidae | Serpophaga hypoleuca pallida | VU |
+| 244 | Tyrannidae | Stigmatura napensis napensis | VU |
+| 245 | Vireonidae | Vireo gracilirostris | VU |
+| 246 | Xenopidae | Xenops minutus alagoanus | VU |
+| 247 | Phaethontidae | Phaethon aethereus | EN |
+| 248 | Phaethontidae | Phaethon lepturus | EN |
+| 249 | Capitonidae | Capito dayi | VU |
+| 250 | Picidae | Celeus flavus subflavus | CR |
+| 251 | Picidae | Celeus galeatus | EN |
+| 252 | Picidae | Celeus obrieni | VU |
+| 253 | Picidae | Celeus torquatus pieteroyensi | VU |
+| 254 | Picidae | Celeus torquatus tinnunculus | EN |
+| 255 | Picidae | Piculus paraensis | VU |
+| 256 | Picidae | Piculus polyzonus | EN |
+| 257 | Ramphastidae | Pteroglossus bitorquatus bitorquatus | VU |
+| 258 | Diomedeidae | Diomedea dabbenena | CR |
+| 259 | Diomedeidae | Diomedea epomophora | VU |
+| 260 | Diomedeidae | Diomedea exulans | CR |
+| 261 | Diomedeidae | Diomedea sanfordi | EN |
+| 262 | Diomedeidae | Thalassarche chlororhynchos | EN |
+| 263 | Procellariidae | Procellaria aequinoctialis | VU |
+| 264 | Procellariidae | Pterodroma arminjoniana | CR |
+| 265 | Procellariidae | Pterodroma deserta | VU |
+| 266 | Procellariidae | Pterodroma incerta | EN |
+| 267 | Procellariidae | Pterodroma madeira | EN |
+| 268 | Procellariidae | Puffinus lherminieri | CR |
+| 269 | Psittacidae | Amazona pretrei | VU |
+| 270 | Psittacidae | Amazona rhodocorytha | VU |
+| 271 | Psittacidae | Amazona vinacea | VU |
+| 272 | Psittacidae | Anodorhynchus hyacinthinus | VU |
+| 273 | Psittacidae | Anodorhynchus leari | VU |
+| 274 | Psittacidae | Aratinga solstitialis | EN |
+| 275 | Psittacidae | Cyanopsitta spixii | CR (PE) |
+| 276 | Psittacidae | Guaruba guarouba | VU |
+| 277 | Psittacidae | Pionus reichenowi | VU |
+| 278 | Psittacidae | Pyrilia vulturina | VU |
+| 279 | Psittacidae | Pyrrhura amazonum | VU |
+| 280 | Psittacidae | Pyrrhura anerythra | VU |
+| 281 | Psittacidae | Pyrrhura coerulescens | VU |
+| 282 | Psittacidae | Pyrrhura cruentata | VU |
+| 283 | Psittacidae | Pyrrhura griseipectus | EN |
+| 284 | Psittacidae | Pyrrhura leucotis | VU |
+| 285 | Psittacidae | Pyrrhura molinae | VU |
+| 286 | Psittacidae | Pyrrhura pallescens | VU |
+| 287 | Psittacidae | Pyrrhura perlata | VU |
+| 288 | Psittacidae | Pyrrhura pfrimeri | EN |
+| 289 | Psittacidae | Touit melanonotus | VU |
+| 290 | Psittacidae | Touit surdus | VU |
+| 291 | Strigidae | Megascops alagoensis | EN |
+| 292 | Strigidae | Pulsatrix perspicillata pulsatrix | CR |
+| 293 | Fregatidae | Fregata minor | CR |
+| 294 | Fregatidae | Fregata trinitatis | CR |
+| 295 | Sulidae | Sula sula | EN |
+| 296 | Tinamidae | Crypturellus zabele | VU |
+| 297 | Tinamidae | Nothura minor | EN |
+| 298 | Tinamidae | Taoniscus nanus | EN |
+| 299 | Tinamidae | Tinamus tao | VU |
+| 300 | Trogonidae | Trogon collaris eytoni | EN |
+| 301 | Trogonidae | Trogon muriciensis | CR |
+| 302 | Charinidae | Charinus asturius | EN |
+| 303 | Charinidae | Charinus caatingae | CR |
+| 304 | Charinidae | Charinus eleonorae | EN |
+| 305 | Charinidae | Charinus potiguar | EN |
+| 306 | Charinidae | Charinus spelaeus | VU |
+| 307 | Charinidae | Charinus taboa | CR |
+| 308 | Caponiidae | Carajas paraua | EN |
+| 309 | Caponiidae | Tisentnops onix | CR |
+| 310 | Ctenidae | Isoctenus corymbus | CR |
+| 311 | Dipluridae | Harmonicon cerberus | CR |
+| 312 | Drymusidae | Drymusa spelunca | CR |
+| 313 | Gnaphosidae | Brasilomma enigmatica | EN |
+| 314 | Gnaphosidae | Indiani gaspar | CR |
+| 315 | Gnaphosidae | Tricongius ybyguara | VU |
+| 316 | Ochyroceratidae | Ochyrocera ibitipoca | EN |
+| 317 | Ochyroceratidae | Ochyrocera ritxoco | EN |
+| 318 | Ochyroceratidae | Ochyrocera ritxoo | EN |
+| 319 | Ochyroceratidae | Ochyrocera rosinha | VU |
+| 320 | Ochyroceratidae | Speocera eleonorae | EN |
+| 321 | Pholcidae | Metagonia diamantina | CR |
+| 322 | Pholcidae | Metagonia potiguar | CR |
+| 323 | Prodidomidae | Paracymbiomma caecus | EN |
+| 324 | Segestriidae | Ariadna aurea | VU |
+| 325 | Sicariidae | Loxosceles troglobia | VU |
+| 326 | Theraphosidae | Dolichothele diamantinensis | EN |
+| 327 | Theraphosidae | Lasiocyano sazimai | VU |
+| 328 | Theraphosidae | Tmesiphantes hypogeus | CR |
+| 329 | Theraphosidae | Typhochlaena seladonia | EN |
+| 330 | Theraphosidae | Ybyrapora diversipes | EN |
+| 331 | Theraphosidae | Ybyrapora gamba | CR |
+| 332 | Cryptogeobiidae | Spinopilar moria | CR |
+| 333 | Escadabiidae | Spaeleoleptes spaeleus | VU |
+| 334 | Gerdesiidae | Gonycranaus pluto | VU |
+| 335 | Gonyleptidae | Discocyrtus pedrosoi | VU |
+| 336 | Gonyleptidae | Eusarcus elinae | EN |
+| 337 | Gonyleptidae | Iandumoema setimapocu | VU |
+| 338 | Gonyleptidae | Iandumoema smeagol | EN |
+| 339 | Gonyleptidae | Iandumoema uai | CR |
+| 340 | Gonyleptidae | Pachylospeleus strinatii | CR |
+| 341 | Kimulidae | Relictopiolus galadriel | CR |
+| 342 | Eukoeneniidae | Allokoenenia canhembora | CR |
+| 343 | Eukoeneniidae | Eukoenenia cavatica | EN |
+| 344 | Eukoeneniidae | Eukoenenia jequitinhonha | CR |
+| 345 | Eukoeneniidae | Eukoenenia maquinensis | VU |
+| 346 | Eukoeneniidae | Eukoenenia navi | VU |
+| 347 | Eukoeneniidae | Eukoenenia neytiri | EN |
+| 348 | Eukoeneniidae | Eukoenenia potiguar | CR |
+| 349 | Eukoeneniidae | Eukoenenia sagarana | CR |
+| 350 | Eukoeneniidae | Eukoenenia spelunca | CR |
+| 351 | Eukoeneniidae | Eukoenenia virgemdalapa | CR |
+| 352 | Eukoeneniidae | Leptokoenenia pelada | CR |
+| 353 | Eukoeneniidae | Leptokoenenia thalassophobica | EN |
+| 354 | Bochicidae | Spelaeobochica allodentatus | EN |
+| 355 | Bochicidae | Spelaeobochica muchmorei | CR |
+| 356 | Chernetidae | Maxchernes iporangae | CR |
+| 357 | Chernetidae | Spelaeochernes gracilipalpus | EN |
+| 358 | Chthoniidae | Pseudochthonius biseriatus | EN |
+| 359 | Chthoniidae | Pseudochthonius diamachi | VU |
+| 360 | Chthoniidae | Pseudochthonius koinopoliteia | EN |
+| 361 | Chthoniidae | Pseudochthonius limettioides | EN |
+| 362 | Ideoroncidae | Ideoroncus cavicola | EN |
+| 363 | Olpiidae | Progarypus nigrimanus | CR |
+| 364 | Hubbardiidae | Rowlandius potiguar | EN |
+| 365 | Hubbardiidae | Rowlandius ubajara | CR |
+| 366 | Buthidae | Ischnotelson guanambiensis | CR |
+| 367 | Buthidae | Tityus kuryi | EN |
+| 368 | Buthidae | Troglorhopalurus translucidus | EN |
+| 369 | Cryptopidae | Cryptops iporangensis | EN |
+| 370 | Cryptopidae | Cryptops spelaeoraptor | CR |
+| 371 | Scolopocryptopidae | Newportia potiguar | VU |
+| 372 | Scolopocryptopidae | Newportia spelaea | CR |
+| 373 | Scolopocryptopidae | Scolopocryptops troglocaudatus | EN |
+| 374 | Glossoscolecidae | Fimoscolex sporadochaetus | EN |
+| 375 | Glossoscolecidae | Glossoscolex lutocolus | VU |
+| 376 | Glossoscolecidae | Glossoscolex matogrossensis | VU |
+| 377 | Glossoscolecidae | Glossoscolex riograndensis | EN |
+| 378 | Glossoscolecidae | Holoscolex dossantosi | EN |
+| 379 | Ocnerodrilidae | Arraia nelmae | CR |
+| 380 | Glomerodesmidae | Glomeridesmus spelaeus | EN |
+| 381 | Chelodesmidae | Atlantodesmus pickeli | CR (PE) |
+| 382 | Chelodesmidae | Cayenniola albaserrata | EN |
+| 383 | Chelodesmidae | Leodesmus yporangae | EN |
+| 384 | Chelodesmidae | Odontopeltis giganteus | VU |
+| 385 | Dobrodesmidae | Dobrodesmus mirabilis | CR |
+| 386 | Trichopolydesmidae | Phaneromerium troglopterygotum | VU |
+| 387 | Pseudonannolenidae | Pseudonannolene lundi | CR |
+| 388 | Pseudonannolenidae | Pseudonannolene spelaea | CR |
+| 389 | Pseudonannolenidae | Pseudonannolene tocaiensis | VU |
+| 390 | Entomobryidae | Pseudosinella ambigua | VU |
+| 391 | Isotomidae | Archisotoma arariboia | CR |
+| 392 | Neanuridae | Friesea noronhaensis | VU |
+| 393 | Campodeidae | Oncinocampa trajanoae | CR |
+| 394 | Entomobryidae | Pseudosinella alfanjeunguiculata | VU |
+| 395 | Entomobryidae | Pseudosinella brumadinhoensis | VU |
+| 396 | Entomobryidae | Pseudosinella cearensis | VU |
+| 397 | Entomobryidae | Pseudosinella guanhaensis | CR |
+| 398 | Entomobryidae | Pseudosinella neriae | EN |
+| 399 | Entomobryidae | Pseudosinella paraensis | EN |
+| 400 | Entomobryidae | Pseudosinella serpentinensis | VU |
+| 401 | Entomobryidae | Seira arenicola | EN |
+| 402 | Entomobryidae | Seira mataraquensis | EN |
+| 403 | Isotomidae | Archisotoma catiae | EN |
+| 404 | Isotomidae | Arlea arenicola | EN |
+| 405 | Isotomidae | Arlea psammophila | EN |
+| 406 | Isotomidae | Isotomiella uai | VU |
+| 407 | Isotomidae | Isotomurus riparius | EN |
+| 408 | Isotomidae | Paracerura gandarela | VU |
+| 409 | Isotomidae | Psammisotoma restingae | EN |
+| 410 | Paronellidae | Troglobius brasiliensis | VU |
+| 411 | Paronellidae | Troglobius ferroicus | CR |
+| 412 | Paronellidae | Trogolaphysa aelleni | CR |
+| 413 | Paronellidae | Trogolaphysa barroca | VU |
+| 414 | Paronellidae | Trogolaphysa chapelensis | VU |
+| 415 | Brachystomellidae | Maricaella duna | EN |
+| 416 | Isotogastruridae | Isotogastrura mucrospatulata | VU |
+| 417 | Neanuridae | Arlesia intermedia | EN |
+| 418 | Tullbergiidae | Mesaphorura maricaensis | EN |
+| 419 | Arrhopalitidae | Arrhopalites alambariensis | VU |
+| 420 | Arrhopalitidae | Arrhopalites amorimi | VU |
+| 421 | Arrhopalitidae | Arrhopalites botuveraensis | VU |
+| 422 | Arrhopalitidae | Arrhopalites glabrofasciatus | EN |
+| 423 | Arrhopalitidae | Arrhopalites gnaspinii | CR |
+| 424 | Arrhopalitidae | Arrhopalites heteroculatus | VU |
+| 425 | Arrhopalitidae | Arrhopalites lawrencei | VU |
+| 426 | Arrhopalitidae | Arrhopalites paranaensis | CR |
+| 427 | Arrhopalitidae | Willemia zeppelinii | EN |
+| 428 | Sminthuridae | Pararrhopalites papaveroi | EN |
+| 429 | Sminthuridae | Pararrhopalites sideroicus | CR |
+| 430 | Sminthuridae | Pararrhopalites ubiquum | VU |
+| 431 | Sminthuridae | Pararrhopalites wallacei | CR |
+| 432 | Sminthuridae | Troglobentosminthurus luridus | CR |
+| 433 | Veronicellidae | Phyllocaulis renschi | EN |
+| 434 | Bulimulidae | Anthinus henselii | EN |
+| 435 | Bulimulidae | Biotocus turbinatus | EN |
+| 436 | Bulimulidae | Eudolichotis lacerta | EN |
+| 437 | Bulimulidae | Thaumastus lundi | EN |
+| 438 | Odontostomidae | Odontostomus dautzenbergianus | VU |
+| 439 | Planorbidae | Drepanotrema pileatum | EN |
+| 440 | Planorbidae | Plesiophysa dolichomastix | EN |
+| 441 | Scolodontidae | Ridleyconcha quinquelirata | EN |
+| 442 | Simpulopsidae | Simpulopsis wiebesi | VU |
+| 443 | Subulinidae | Synapterpes hanleyi | VU |
+| 444 | Succineidae | Succinea lopesi | VU |
+| 445 | Achatinidae | Lavajatus moroi | VU |
+| 446 | Odontostomidae | Hyperaulax ramagei | CR |
+| 447 | Odontostomidae | Hyperaulax ridleyi | VU |
+| 448 | Odontostomidae | Tomigerus gibberulus | EN |
+| 449 | Strophocheilidae | Gonyostomus insularis | VU |
+| 450 | Strophocheilidae | Megalobulimus cardosoi | EN |
+| 451 | Strophocheilidae | Megalobulimus fragilior | CR |
+| 452 | Strophocheilidae | Megalobulimus lopesi | VU |
+| 453 | Strophocheilidae | Megalobulimus parafragilior | CR |
+| 454 | Strophocheilidae | Megalobulimus proclivis | EN |
+| 455 | Strophocheilidae | Megalobulimus rolandianus | EN |
+| 456 | Strophocheilidae | Mirinaba curytibana | EN |
+| 457 | Blattellidae | Litoblatta camargoi | EN |
+| 458 | Carabidae | Ardistomis ferreirai | CR |
+| 459 | Carabidae | Coarazuphium amazonicus | CR |
+| 460 | Carabidae | Coarazuphium caatinga | EN |
+| 461 | Carabidae | Coarazuphium cessaima | EN |
+| 462 | Carabidae | Coarazuphium formoso | CR |
+| 463 | Carabidae | Coarazuphium kayapo | EN |
+| 464 | Carabidae | Coarazuphium lundi | EN |
+| 465 | Carabidae | Coarazuphium pains | VU |
+| 466 | Carabidae | Coarazuphium ricardoi | CR |
+| 467 | Carabidae | Coarazuphium spinifemur | CR |
+| 468 | Carabidae | Coarazuphium tapiaguassu | EN |
+| 469 | Carabidae | Coarazuphium tessai | CR |
+| 470 | Carabidae | Coarazuphium xikrin | VU |
+| 471 | Carabidae | Coarazuphium xingu | VU |
+| 472 | Carabidae | Perigona spelunca | VU |
+| 473 | Carabidae | Schizogenius ocellatus | EN |
+| 474 | Carabidae | Whiteheadiana thaisae | CR |
+| 475 | Lampyridae | Amydetes bellorum | EN |
+| 476 | Lucanidae | Altitatiayus campoi | CR |
+| 477 | Lucanidae | Altitatiayus dulceae | CR |
+| 478 | Lucanidae | Altitatiayus godinhorum | CR |
+| 479 | Lucanidae | Altitatiayus rotundatus | CR |
+| 480 | Lycidae | Cartagonum apiuba | EN |
+| 481 | Lycidae | Currhaeus polegattoi | EN |
+| 482 | Lycidae | Falsocaenia santatereza | EN |
+| 483 | Lycidae | Lycomorphon brasiliense | EN |
+| 484 | Scarabaeidae | Canthon quadripunctatus | VU |
+| 485 | Scarabaeidae | Dichotomius eucranioides | VU |
+| 486 | Scarabaeidae | Dichotomius mysticus | EN |
+| 487 | Scarabaeidae | Dichotomius schiffleri | VU |
+| 488 | Staphylinidae | Metopiellus painensis | EN |
+| 489 | Staphylinidae | Metopioxys carajas | CR |
+| 490 | Cixiidae | Ferricixius davidi | CR |
+| 491 | Cixiidae | Ferricixius goliathi | CR |
+| 492 | Cixiidae | Ferricixius michaeli | CR |
+| 493 | Hydrometridae | Cephalometra pallida | VU |
+| 494 | Kinnaridae | Iuiuia caeca | EN |
+| 495 | Kinnaridae | Kinnapotiguara troglobia | VU |
+| 496 | Andrenidae | Arhysosage biguttulata | VU |
+| 497 | Andrenidae | Arhysosage cactorum | VU |
+| 498 | Andrenidae | Arhysosage flava | VU |
+| 499 | Apidae | Bombus bahiensis | EN |
+| 500 | Apidae | Bombus bellicosus | VU |
+| 501 | Apidae | Centris hyptidoides | VU |
+| 502 | Apidae | Centris thelyopsis | EN |
+| 503 | Apidae | Eufriesea brasilianorum | VU |
+| 504 | Apidae | Eufriesea pyrrhopyga | VU |
+| 505 | Apidae | Euglossa avicula | VU |
+| 506 | Apidae | Euglossa cyanochlora | VU |
+| 507 | Apidae | Eulaema felipei | CR |
+| 508 | Apidae | Melipona capixaba | EN |
+| 509 | Apidae | Partamona littoralis | EN |
+| 510 | Apidae | Schwarziana bocainensis | CR (PE) |
+| 511 | Colletidae | Actenosigynes mantiqueirensis | CR |
+| 512 | Colletidae | Albinapis gracilis | VU |
+| 513 | Formicidae | Cephalotes liviaprado | VU |
+| 514 | Formicidae | Monomorium delabiei | VU |
+| 515 | Formicidae | Mycetagroicus urbanus | CR (PE) |
+| 516 | Formicidae | Poneracantha wilsoni | CR |
+| 517 | Formicidae | Rhopalothrix plaumanni | CR |
+| 518 | Crambidae | Parapoynx restingalis | EN |
+| 519 | Hesperiidae | Thespieus maacki | EN |
+| 520 | Nymphalidae | Actinote zikani | CR |
+| 521 | Nymphalidae | Aeria olena tiuma | VU |
+| 522 | Nymphalidae | Forsterinaria itatiaia | VU |
+| 523 | Nymphalidae | Morpho epistrophus nikolajewna | VU |
+| 524 | Nymphalidae | Orobrassolis ornamentalis | CR |
+| 525 | Nymphalidae | Pampasatyrus glaucope boenninghauseni | EN |
+| 526 | Nymphalidae | Pampasatyrus glaucope eberti | CR |
+| 527 | Nymphalidae | Pampasatyrus glaucope glaucope | VU |
+| 528 | Nymphalidae | Pampasatyrus reticulata gagarini | EN |
+| 529 | Nymphalidae | Praepedaliodes sequeirae | CR |
+| 530 | Nymphalidae | Scada karschina delicata | VU |
+| 531 | Papilionidae | Parides ascanius | VU |
+| 532 | Papilionidae | Parides bunichus chamissonia | EN |
+| 533 | Papilionidae | Parides panthonus castilhoi | VU |
+| 534 | Riodinidae | Stichelia pelotensis | EN |
+| 535 | Sphingidae | Nyceryx mielkei | VU |
+| 536 | Sphingidae | Xylophanes mielkei | VU |
+| 537 | Phalangopsidae | Endecous apterus | EN |
+| 538 | Phalangopsidae | Endecous peruassuensis | EN |
+| 539 | Phalangopsidae | Erebonyx catacumbae | CR |
+| 540 | Nicoletiidae | Cubacubana spelaea | VU |
+| 541 | Armadillidae | Gabunillo enfurnado | VU |
+| 542 | Philosciidae | Benthana alba | VU |
+| 543 | Philosciidae | Benthanoides amazonicus | VU |
+| 544 | Pudeoniscidae | Iansaoniscus georginae | CR |
+| 545 | Pudeoniscidae | Iansaoniscus iraquara | CR |
+| 546 | Pudeoniscidae | Iansaoniscus leilae | VU |
+| 547 | Pudeoniscidae | Iansaoniscus paulae | VU |
+| 548 | Scleropactidae | Amazoniscus leistikowi | CR |
+| 549 | Scleropactidae | Circoniscus buckupi | EN |
+| 550 | Scleropactidae | Circoniscus mendesi | VU |
+| 551 | Styloniscidae | Chaimowiczia obybytyra | CR |
+| 552 | Styloniscidae | Cylindroniscus platoi | EN |
+| 553 | Styloniscidae | Iuiuniscus iuiuensis | VU |
+| 554 | Styloniscidae | Pectenoniscus monsviridis | VU |
+| 555 | Styloniscidae | Pectenoniscus montalvaniensis | VU |
+| 556 | Styloniscidae | Pectenoniscus pankaru | VU |
+| 557 | Styloniscidae | Pectenoniscus sepultus | VU |
+| 558 | Styloniscidae | Spelunconiscus castroi | EN |
+| 559 | Styloniscidae | Xangoniscus aganju | EN |
+| 560 | Styloniscidae | Xangoniscus itacarambiensis | CR |
+| 561 | Peripatidae | Cerradopatus sucuriuensis | CR |
+| 562 | Peripatidae | Epiperipatus adenocryptus | CR |
+| 563 | Peripatidae | Epiperipatus diadenoproctus | VU |
+| 564 | Peripatidae | Epiperipatus ohausi | EN |
+| 565 | Peripatidae | Epiperipatus paurognostus | CR |
+| 566 | Balaenidae | Eubalaena australis | VU |
+| 567 | Balaenopteridae | Balaenoptera borealis | EN |
+| 568 | Balaenopteridae | Balaenoptera musculus | CR |
+| 569 | Balaenopteridae | Balaenoptera physalus | EN |
+| 570 | Cervidae | Blastocerus dichotomus | VU |
+| 571 | Cervidae | Mazama nana | VU |
+| 572 | Cervidae | Ozotoceros bezoarticus bezoarticus | VU |
+| 573 | Delphinidae | Sotalia fluviatilis | EN |
+| 574 | Delphinidae | Sotalia guianensis | EN |
+| 575 | Delphinidae | Tursiops gephyreus | CR |
+| 576 | Iniidae | Inia araguaiaensis | VU |
+| 577 | Iniidae | Inia geoffrensis | EN |
+| 578 | Physeteridae | Physeter macrocephalus | VU |
+| 579 | Pontoporiidae | Pontoporia blainvillei | CR |
+| 580 | Tayassuidae | Tayassu pecari | VU |
+| 581 | Canidae | Atelocynus microtis | VU |
+| 582 | Canidae | Chrysocyon brachyurus | VU |
+| 583 | Canidae | Speothos venaticus | VU |
+| 584 | Felidae | Herpailurus yagouaroundi | VU |
+| 585 | Felidae | Leopardus braccatus | EN |
+| 586 | Felidae | Leopardus geoffroyi | VU |
+| 587 | Felidae | Leopardus guttulus | EN |
+| 588 | Felidae | Leopardus munoai | CR |
+| 589 | Felidae | Leopardus tigrinus | EN |
+| 590 | Felidae | Leopardus wiedii | VU |
+| 591 | Felidae | Panthera onca | VU |
+| 592 | Mustelidae | Pteronura brasiliensis | EN |
+| 593 | Otariidae | Otaria flavescens | VU |
+| 594 | Furipteridae | Furipterus horrens | VU |
+| 595 | Natalidae | Natalus macrourus | VU |
+| 596 | Phyllostomidae | Lonchophylla bokermanni | VU |
+| 597 | Phyllostomidae | Lonchophylla dekeyseri | EN |
+| 598 | Dasypodidae | Priodontes maximus | VU |
+| 599 | Dasypodidae | Tolypeutes tricinctus | EN |
+| 600 | Didelphidae | Monodelphis vossi | VU |
+| 601 | Tapiridae | Tapirus terrestris | VU |
+| 602 | Bradypodidae | Bradypus torquatus | VU |
+| 603 | Cyclopedidae | Cyclopes rufus | VU |
+| 604 | Myrmecophagidae | Myrmecophaga tridactyla | VU |
+| 605 | Atelidae | Alouatta belzebul | VU |
+| 606 | Atelidae | Alouatta caraya | VU |
+| 607 | Atelidae | Alouatta discolor | VU |
+| 608 | Atelidae | Alouatta guariba | EN |
+| 609 | Atelidae | Alouatta ululata | EN |
+| 610 | Atelidae | Ateles belzebuth | VU |
+| 611 | Atelidae | Ateles chamek | EN |
+| 612 | Atelidae | Ateles marginatus | EN |
+| 613 | Atelidae | Brachyteles arachnoides | EN |
+| 614 | Atelidae | Brachyteles hypoxanthus | CR |
+| 615 | Atelidae | Lagothrix lagothricha | VU |
+| 616 | Callitrichidae | Callithrix aurita | EN |
+| 617 | Callitrichidae | Callithrix flaviceps | CR |
+| 618 | Callitrichidae | Leontopithecus caissara | EN |
+| 619 | Callitrichidae | Leontopithecus chrysomelas | VU |
+| 620 | Callitrichidae | Leontopithecus chrysopygus | EN |
+| 621 | Callitrichidae | Leontopithecus rosalia | EN |
+| 622 | Callitrichidae | Saguinus bicolor | EN |
+| 623 | Cebidae | Cebus kaapori | CR |
+| 624 | Cebidae | Saimiri vanzolinii | EN |
+| 625 | Cebidae | Sapajus cay | VU |
+| 626 | Cebidae | Sapajus flavius | EN |
+| 627 | Cebidae | Sapajus libidinosus | VU |
+| 628 | Cebidae | Sapajus robustus | EN |
+| 629 | Cebidae | Sapajus xanthosternos | EN |
+| 630 | Pitheciidae | Callicebus barbarabrownae | EN |
+| 631 | Pitheciidae | Callicebus coimbrai | EN |
+| 632 | Pitheciidae | Callicebus nigrifrons | VU |
+| 633 | Pitheciidae | Callicebus personatus | VU |
+| 634 | Pitheciidae | Chiropotes satanas | EN |
+| 635 | Pitheciidae | Chiropotes utahickae | VU |
+| 636 | Pitheciidae | Plecturocebus bernhardi | VU |
+| 637 | Pitheciidae | Plecturocebus brunneus | VU |
+| 638 | Pitheciidae | Plecturocebus grovesi | EN |
+| 639 | Caviidae | Cavia intermedia | CR |
+| 640 | Caviidae | Kerodon acrobata | VU |
+| 641 | Cricetidae | Cerradomys goytaca | EN |
+| 642 | Cricetidae | Deltamys araucaria | EN |
+| 643 | Cricetidae | Euryoryzomys lamia | EN |
+| 644 | Cricetidae | Gyldenstolpia planaltensis | VU |
+| 645 | Cricetidae | Hylaeamys oniscus | VU |
+| 646 | Cricetidae | Juscelinomys candango | CR (PE) |
+| 647 | Cricetidae | Microakodontomys transitorius | EN |
+| 648 | Cricetidae | Oxymycterus caparaoe | VU |
+| 649 | Cricetidae | Phaenomys ferrugineus | VU |
+| 650 | Cricetidae | Rhipidomys cariri | VU |
+| 651 | Cricetidae | Thalpomys lasiotis | EN |
+| 652 | Ctenomyidae | Ctenomys bicolor | EN |
+| 653 | Ctenomyidae | Ctenomys flamarioni | VU |
+| 654 | Ctenomyidae | Ctenomys ibicuiensis | EN |
+| 655 | Ctenomyidae | Ctenomys lami | EN |
+| 656 | Ctenomyidae | Ctenomys minutus | VU |
+| 657 | Echimyidae | Callistomys pictus | EN |
+| 658 | Echimyidae | Phyllomys brasiliensis | EN |
+| 659 | Echimyidae | Phyllomys centralis | VU |
+| 660 | Echimyidae | Phyllomys unicolor | CR (PE) |
+| 661 | Echimyidae | Trinomys eliasi | VU |
+| 662 | Echimyidae | Trinomys minor | VU |
+| 663 | Echimyidae | Trinomys moojeni | EN |
+| 664 | Echimyidae | Trinomys yonenagae | EN |
+| 665 | Erethizontidae | Coendou speratus | VU |
+| 666 | Trichechidae | Trichechus inunguis | VU |
+| 667 | Trichechidae | Trichechus manatus | CR |
+| 668 | Alopoglossidae | Alopoglossus collii | VU |
+| 669 | Amphisbaenidae | Amphisbaena acangaoba | EN |
+| 670 | Amphisbaenidae | Amphisbaena arda | VU |
+| 671 | Amphisbaenidae | Amphisbaena arenaria | EN |
+| 672 | Amphisbaenidae | Amphisbaena bahiana | EN |
+| 673 | Amphisbaenidae | Amphisbaena carli | VU |
+| 674 | Amphisbaenidae | Amphisbaena carvalhoi | EN |
+| 675 | Amphisbaenidae | Amphisbaena heathi | VU |
+| 676 | Amphisbaenidae | Amphisbaena kiriri | EN |
+| 677 | Amphisbaenidae | Amphisbaena leucocephala | VU |
+| 678 | Amphisbaenidae | Amphisbaena littoralis | VU |
+| 679 | Amphisbaenidae | Amphisbaena metallurga | EN |
+| 680 | Amphisbaenidae | Amphisbaena nigricauda | VU |
+| 681 | Amphisbaenidae | Amphisbaena persephone | VU |
+| 682 | Amphisbaenidae | Amphisbaena ridleyi | EN |
+| 683 | Amphisbaenidae | Amphisbaena sanctaeritae | EN |
+| 684 | Amphisbaenidae | Amphisbaena saxosa | EN |
+| 685 | Amphisbaenidae | Amphisbaena supernumeraria | EN |
+| 686 | Amphisbaenidae | Amphisbaena tiaraju | VU |
+| 687 | Amphisbaenidae | Amphisbaena uroxena | EN |
+| 688 | Amphisbaenidae | Leposternon kisteumacheri | VU |
+| 689 | Amphisbaenidae | Leposternon maximus | EN |
+| 690 | Amphisbaenidae | Leposternon mineiro | VU |
+| 691 | Amphisbaenidae | Leposternon octostegum | EN |
+| 692 | Amphisbaenidae | Leposternon scutigerum | EN |
+| 693 | Boidae | Corallus cropanii | EN |
+| 694 | Dactyloidae | Dactyloa nasofrontalis | CR |
+| 695 | Dactyloidae | Dactyloa pseudotigrina | CR |
+| 696 | Diploglossidae | Ophiodes enso | EN |
+| 697 | Dipsadidae | Apostolepis arenaria | EN |
+| 698 | Dipsadidae | Apostolepis gaboi | VU |
+| 699 | Dipsadidae | Apostolepis phillipsi | EN |
+| 700 | Dipsadidae | Apostolepis quirogai | EN |
+| 701 | Dipsadidae | Apostolepis striata | VU |
+| 702 | Dipsadidae | Apostolepis thalesdelemai | VU |
+| 703 | Dipsadidae | Apostolepis vittata | EN |
+| 704 | Dipsadidae | Atractus caete | EN |
+| 705 | Dipsadidae | Atractus ronnie | VU |
+| 706 | Dipsadidae | Atractus thalesdelemai | EN |
+| 707 | Dipsadidae | Caaeteboia gaeli | EN |
+| 708 | Dipsadidae | Calamodontophis ronaldoi | EN |
+| 709 | Dipsadidae | Chlorosoma laticeps | VU |
+| 710 | Dipsadidae | Ditaxodon taeniatus | VU |
+| 711 | Dipsadidae | Echinanthera cephalomaculata | EN |
+| 712 | Dipsadidae | Helicops boitata | EN |
+| 713 | Dipsadidae | Phalotris lativittatus | VU |
+| 714 | Dipsadidae | Phalotris multipunctatus | CR |
+| 715 | Dipsadidae | Philodryas livida | VU |
+| 716 | Dipsadidae | Rodriguesophis chui | VU |
+| 717 | Dipsadidae | Rodriguesophis scriptorcibatus | VU |
+| 718 | Gymnophthalmidae | Acratosaura spinosa | EN |
+| 719 | Gymnophthalmidae | Alexandresaurus camacan | VU |
+| 720 | Gymnophthalmidae | Anotosaura collaris | EN |
+| 721 | Gymnophthalmidae | Bachia didactyla | EN |
+| 722 | Gymnophthalmidae | Bachia psamophila | VU |
+| 723 | Gymnophthalmidae | Calyptommatus leiolepis | VU |
+| 724 | Gymnophthalmidae | Calyptommatus nicterus | EN |
+| 725 | Gymnophthalmidae | Calyptommatus sinebrachiatus | EN |
+| 726 | Gymnophthalmidae | Caparaonia itaiquara | EN |
+| 727 | Gymnophthalmidae | Colobodactylus dalcyanus | EN |
+| 728 | Gymnophthalmidae | Heterodactylus lundii | VU |
+| 729 | Gymnophthalmidae | Heterodactylus septentrionalis | EN |
+| 730 | Gymnophthalmidae | Leposoma annectans | VU |
+| 731 | Gymnophthalmidae | Leposoma baturitensis | VU |
+| 732 | Gymnophthalmidae | Leposoma nanodactylus | EN |
+| 733 | Gymnophthalmidae | Leposoma puk | VU |
+| 734 | Gymnophthalmidae | Leposoma sinepollex | EN |
+| 735 | Gymnophthalmidae | Marinussaurus curupira | VU |
+| 736 | Gymnophthalmidae | Placosoma cipoense | EN |
+| 737 | Gymnophthalmidae | Placosoma limaverdorum | EN |
+| 738 | Gymnophthalmidae | Procellosaurinus tetradactylus | EN |
+| 739 | Gymnophthalmidae | Psilops mucugensis | VU |
+| 740 | Gymnophthalmidae | Psilops seductus | VU |
+| 741 | Gymnophthalmidae | Scriptosaura catimbau | EN |
+| 742 | Leiosauridae | Anisolepis undulatus | VU |
+| 743 | Leiosauridae | Enyalius brasiliensis | VU |
+| 744 | Leiosauridae | Enyalius capetinga | VU |
+| 745 | Leiosauridae | Enyalius erythroceneus | EN |
+| 746 | Liolaemidae | Liolaemus arambarensis | EN |
+| 747 | Liolaemidae | Liolaemus lutzae | EN |
+| 748 | Liolaemidae | Liolaemus occipitalis | VU |
+| 749 | Mabuyidae | Brasiliscincus caissara | EN |
+| 750 | Mabuyidae | Trachylepis atlantica | EN |
+| 751 | Phyllodactylidae | Gymnodactylus vanzolinii | EN |
+| 752 | Phyllodactylidae | Homonota uruguayensis | VU |
+| 753 | Sphaerodactylidae | Coleodactylus elizae | CR |
+| 754 | Sphaerodactylidae | Coleodactylus natalensis | EN |
+| 755 | Teiidae | Ameiva jacuba | VU |
+| 756 | Teiidae | Ameiva parecis | EN |
+| 757 | Teiidae | Ameivula cipoensis | EN |
+| 758 | Teiidae | Contomastix vacariensis | EN |
+| 759 | Teiidae | Glaucomastix abaetensis | EN |
+| 760 | Teiidae | Glaucomastix cyanura | VU |
+| 761 | Teiidae | Glaucomastix itabaianensis | EN |
+| 762 | Teiidae | Glaucomastix littoralis | EN |
+| 763 | Teiidae | Kentropyx viridistriga | VU |
+| 764 | Tropiduridae | Eurolophosaurus amathites | VU |
+| 765 | Tropiduridae | Eurolophosaurus divaricatus | VU |
+| 766 | Tropiduridae | Stenocercus azureus | EN |
+| 767 | Tropiduridae | Stenocercus quinarius | VU |
+| 768 | Tropiduridae | Tropidurus callathelys | EN |
+| 769 | Tropiduridae | Tropidurus chromatops | EN |
+| 770 | Tropiduridae | Tropidurus erythrocephalus | EN |
+| 771 | Tropiduridae | Tropidurus hygomi | VU |
+| 772 | Tropiduridae | Tropidurus mucujensis | EN |
+| 773 | Viperidae | Bothrops alcatraz | VU |
+| 774 | Viperidae | Bothrops germanoi | VU |
+| 775 | Viperidae | Bothrops insularis | CR |
+| 776 | Viperidae | Bothrops itapetiningae | VU |
+| 777 | Viperidae | Bothrops jabrensis | CR |
+| 778 | Viperidae | Bothrops muriciensis | CR |
+| 779 | Viperidae | Bothrops otavioi | CR |
+| 780 | Viperidae | Bothrops sazimai | CR |
+| 781 | Chelidae | Acanthochelys macrocephala | VU |
+| 782 | Chelidae | Phrynops williamsi | VU |
+| 783 | Chelidae | Ranacephala hogei | EN |
+| 784 | Cheloniidae | Caretta caretta | VU |
+| 785 | Cheloniidae | Eretmochelys imbricata | EN |
+| 786 | Cheloniidae | Lepidochelys olivacea | VU |
+| 787 | Dermochelyidae | Dermochelys coriacea | CR |
+| 788 | Podocnemididae | Podocnemis sextuberculata | EN |
+| 789 | Testudinidae | Chelonoidis carbonarius | VU |
+| 790 | Testudinidae | Chelonoidis denticulatus | EN |
 
-|     |     |     |     |     |     |
-| --- | --- | --- | --- | --- | --- |
-| 16 | \* | Araneae | Drymusidae | Drymusa spelunca | CR |
-| 17 | \* | Araneae | Gnaphosidae | Brasilomma enigmatica | EN |
-| 18 | \* | Araneae | Gnaphosidae | Tricongius ybyguara | VU |
-| 19 | \* | Araneae | Ochyroceratidae | Ochyrocera ibitipoca | EN |
-| 20 | \* | Araneae | Ochyroceratidae | Speocera eleonorae | EN |
-| 21 | \* | Araneae | Pholcidae | Metagonia diamantina | CR |
-| 22 | \* | Araneae | Pholcidae | Metagonia potiguar | CR |
-| 23 | \* | Araneae | Salticidae | Matagaia chromatopus | VU |
-| 24 | \* | Araneae | Salticidae | Neonella noronha | VU |
-| 25 |  | Araneae | Segestriidae | Ariadna aurea | VU |
-| 26 |  | Araneae | Sicariidae | Loxosceles troglobia | VU |
-| 27 | \* | Araneae | Theraphosidae | Dolichothele diamantinensis | EN |
-| 28 | \* | Araneae | Theraphosidae | Pterinopelma sazimai | VU |
-| 29 | \* | Araneae | Theraphosidae | Tmesiphantes hypogeus | CR |
-| 30 | \* | Araneae | Theraphosidae | Typhochlaena curumim | CR |
-| 31 | \* | Araneae | Theraphosidae | Typhochlaena seladonia | EN |
-| 32 | \* | Araneae | Theraphosidae | Ybyrapora diversipes | EN |
-| 33 | \* | Araneae | Theraphosidae | Ybyrapora gamba | CR |
-| 34 |  | Blattodea | Blattellidae | Litoblatta camargoi | EN |
-| 35 | \* | Caenogastropoda | Ampullariidae | Pomacea sordida | EN |
-| 36 | \* | Caenogastropoda | Hydrobiidae | Potamolithus karsticus | CR |
-| 37 |  | Coleoptera | Carabidae | Coarazuphium amazonicus | CR |
-| 38 | \* | Coleoptera | Carabidae | Coarazuphium caatinga | EN |
-| 39 | \* | Coleoptera | Carabidae | Coarazuphium cessaima | EN |
-| 40 | \* | Coleoptera | Carabidae | Coarazuphium formoso | CR |
-| 41 | \* | Coleoptera | Carabidae | Coarazuphium pains | EN |
-| 42 | \* | Coleoptera | Carabidae | Coarazuphium ricardoi | CR |
-| 43 |  | Coleoptera | Carabidae | Coarazuphium spinifemur | CR |
-| 44 | \* | Coleoptera | Carabidae | Coarazuphium tapiaguassu | EN |
-| 45 | \* | Coleoptera | Carabidae | Coarazuphium tessai | CR |
-| 46 | \* | Coleoptera | Carabidae | Schizogenius ocellatus | EN |
-| 47 | \* | Coleoptera | Ciidae | Ceracis cassumbensis | EN |
-| 48 | \* | Coleoptera | Lampyridae | Amydetes bellorum | EN |
-| 49 | \* | Coleoptera | Lucanidae | Altitatiayus campoi | VU |
-| 50 | \* | Coleoptera | Lucanidae | Altitatiayus dulceae | VU |
-| 51 | \* | Coleoptera | Lucanidae | Altitatiayus godinhorum | VU |
-| 52 | \* | Coleoptera | Lucanidae | Altitatiayus koikei | VU |
-| 53 | \* | Coleoptera | Lucanidae | Altitatiayus rotundatus | VU |
-| 54 | \* | Coleoptera | Lucanidae | Altitatiayus ruficollis | VU |
-| 55 | \* | Coleoptera | Lucanidae | Altitatiayus trifurcatus | VU |
-| 56 | \* | Coleoptera | Lycidae | Cartagonum apiuba | CR |
-| 57 | \* | Coleoptera | Lycidae | Lycomorphon brasiliense | CR |
-| 58 | \* | Coleoptera | Scarabaeidae | Ateuchus squalidus | VU |
-| 59 | \* | Coleoptera | Scarabaeidae | Canthon corpulentus | VU |
-| 60 | \* | Coleoptera | Scarabaeidae | Canthon quadripunctatus | VU |
-| 61 | \* | Coleoptera | Scarabaeidae | Dichotomius eucranioides | EN |
-| 62 | \* | Coleoptera | Scarabaeidae | Dichotomius mysticus | EN |
-| 63 | \* | Coleoptera | Scarabaeidae | Dichotomius schiffleri | EN |
-| 64 | \* | Coleoptera | Scarabaeidae | Pedaridium hirsutum | VU |
-| 65 |  | Coleoptera | Staphylinidae | Metopiellus painensis | EN |
-| 66 | \* | Coleoptera | Vesperidae | Hypocephalus armatus | VU |
-| 67 | \* | Collembola | Arrhopalitidae | Arrhopalites amorimi | VU |
-| 68 |  | Collembola | Arrhopalitidae | Arrhopalites glabrofasciatus | EN |
-| 69 |  | Collembola | Entomobryidae | Pseudosinella ambigua | VU |
-| 70 |  | Collembola | Entomobryidae | Pseudosinella guanhaensis | CR |
-| 71 |  | Collembola | Isotomidae | Archisotoma arariboia | CR |
-| 72 | \* | Collembola | Paronellidae | Troglobius brasiliensis | CR |
-| 73 | \* | Collembola | Paronellidae | Troglobius ferroicus | CR |
-| 74 | \* | Collembola | Paronellidae | Trogolaphysa aelleni | CR |
-| 75 | \* | Collembola | Sminthuridae | Pararrhopalites papaveroi | EN |
-| 76 |  | Collembola | Sminthuridae | Pararrhopalites sideroicus | CR |
-| 77 |  | Collembola | Sminthuridae | Pararrhopalites ubiquum | VU |
-| 78 | \* | Collembola | Sminthuridae | Pararrhopalites wallacei | CR |
-| 79 |  | Diplura | Campodeidae | Oncinocampa trajanoae | CR |
-| 80 |  | Entomobryomorpha | Entomobryidae | Seira arenicola | EN |
-| 81 |  | Entomobryomorpha | Entomobryidae | Seira mataraquensis | EN |
-| 82 |  | Entomobryomorpha | Entomobryidae | Seira musarum | VU |
-| 83 |  | Entomobryomorpha | Entomobryidae | Seira pseudoannulata | EN |
-| 84 |  | Entomobryomorpha | Isotomidae | Archisotoma catiae | CR |
-| 85 |  | Entomobryomorpha | Isotomidae | Arlea arenicola | CR |
-| 86 |  | Entomobryomorpha | Isotomidae | Arlea psammophila | CR |
-| 87 | \* | Entomobryomorpha | Isotomidae | Isotomiella uai | VU |
-| 88 |  | Entomobryomorpha | Isotomidae | Isotomodes cariocus | CR |
-| 89 |  | Entomobryomorpha | Isotomidae | Isotomurus riparius | CR |
-| 90 |  | Entomobryomorpha | Isotomidae | Paracerura gandarela | VU |
-| 91 |  | Entomobryomorpha | Isotomidae | Psammisotoma restingae | CR |
-| 92 | \* | Euonychophora | Peripatidae | Epiperipatus adenocryptus | CR |
-| 93 | \* | Euonychophora | Peripatidae | Epiperipatus diadenoproctus | VU |
-| 94 | \* | Euonychophora | Peripatidae | Epiperipatus ohausi | EN |
-| 95 | \* | Euonychophora | Peripatidae | Epiperipatus paurognostus | CR |
-| 96 | \* | Glomeridesmida | Glomerodesmidae | Glomeridesmus spelaeus | EN |
-| 97 | \* | Gymnomorpha | Veronicellidae | Phyllocaulis renschi | CR |
-| 98 | \* | Haplotaxida | Glossoscolecidae | Fimoscolex sporadochaetus | EN |
-| 99 |  | Hemiptera | Cixiidae | Ferricixius davidi | CR |
-| 100 |  | Hemiptera | Kinnaridae | Iuiuia caeca | VU |
-| 101 |  | Hemiptera | Kinnaridae | Kinnapotiguara troglobia | VU |
-| 102 | \* | Hymenoptera | Andrenidae | Arhysosage cactorum | VU |
-| 103 | \* | Hymenoptera | Apidae | Melipona capixaba | EN |
-| 104 | \* | Hymenoptera | Apidae | Melipona rufiventris | EN |
-| 105 | \* | Hymenoptera | Apidae | Melipona scutellaris | EN |
-| 106 | \* | Hymenoptera | Apidae | Partamona littoralis | EN |
-| 107 | \* | Hymenoptera | Formicidae | Atta robusta | VU |
-| 108 | \* | Hymenoptera | Formicidae | Brachymyrmex micromegas | VU |
-| 109 | \* | Hymenoptera | Formicidae | Diaphoromyrma sofiae | EN |
-| 110 | \* | Hymenoptera | Formicidae | Dinoponera lucida | EN |
-| 111 | \* | Hymenoptera | Formicidae | Fulakora cleae | CR |
-| 112 | \* | Hymenoptera | Formicidae | Gnamptogenys wilsoni | EN |
-| 113 | \* | Hymenoptera | Formicidae | Monomorium delabiei | VU |
-| 114 | \* | Hymenoptera | Formicidae | Mycetagroicus urbanus | CR |
-| 115 | \* | Hymenoptera | Formicidae | Mycetomoellerius atlanticus | VU |
-| 116 | \* | Hymenoptera | Formicidae | Mycetophylax simplex | VU |
-| 117 | \* | Hymenoptera | Formicidae | Rhopalothrix plaumanni | EN |
-| 118 |  | Isopoda | Pudeoniscidae | Iansaoniscus georginae | CR |
-| 119 |  | Isopoda | Pudeoniscidae | Iansaoniscus iraquara | CR |
-| 120 |  | Isopoda | Scleropactidae | Amazoniscus leistikowi | CR |
-| 121 |  | Isopoda | Scleropactidae | Circoniscus buckupi | CR |
-| 122 |  | Isopoda | Scleropactidae | Circoniscus carajasensis | EN |
-| 123 |  | Isopoda | Styloniscidae | Iuiuniscus iuiuensis | VU |
-| 124 |  | Isopoda | Styloniscidae | Spelunconiscus castroi | CR |
-| 125 |  | Isopoda | Styloniscidae | Xangoniscus aganju | EN |
-| 126 |  | Isopoda | Styloniscidae | Xangoniscus itacarambiensis | CR |
-| 127 |  | Isopoda | Styloniscidae | Xangoniscus odara | EN |
-| 128 | \* | Lepidoptera | Crambidae | Parapoynx restingalis | VU |
-| 129 | \* | Lepidoptera | Hesperiidae | Drephalys miersi | EN |
-| 130 | \* | Lepidoptera | Hesperiidae | Drephalys mourei | CR |
-| 131 | \* | Lepidoptera | Hesperiidae | Olafia roscius iphimedia | VU |
-| 132 | \* | Lepidoptera | Hesperiidae | Parelbella polyzona | EN |
-| 133 | \* | Lepidoptera | Hesperiidae | Pseudocroniades machaon seabrai | CR |
-| 134 | \* | Lepidoptera | Hesperiidae | Turmosa camposa | EN |
-| 135 | \* | Lepidoptera | Hesperiidae | Zonia zonia diabo | EN |
-| 136 | \* | Lepidoptera | Lycaenidae | Arawacus aethesa | EN |
-| 137 | \* | Lepidoptera | Lycaenidae | Magnastigma julia | EN |
-| 138 | \* | Lepidoptera | Lycaenidae | Strymon ohausi | EN |
-| 139 | \* | Lepidoptera | Nymphalidae | Actinote quadra | VU |
-| 140 | \* | Lepidoptera | Nymphalidae | Actinote zikani | CR |
-| 141 |  | Lepidoptera | Nymphalidae | Adelpha atlantica | EN |
-| 142 | \* | Lepidoptera | Nymphalidae | Dasyophthalma geraensis | CR |
-| 143 | \* | Lepidoptera | Nymphalidae | Dasyophthalma rusina delanira | EN |
-| 144 | \* | Lepidoptera | Nymphalidae | Dasyophthalma vertebralis | CR (PEX) |
-| 145 | \* | Lepidoptera | Nymphalidae | Doxocopa zalmunna | CR (PEX) |
-| 146 | \* | Lepidoptera | Nymphalidae | Episcada vitrea | EN |
-| 147 | \* | Lepidoptera | Nymphalidae | Eresia erysice erysice | CR |
-| 148 | \* | Lepidoptera | Nymphalidae | Euptychia boulleti | CR |
-| 149 |  | Lepidoptera | Nymphalidae | Forsterinaria itatiaia | VU |
-| 150 | \* | Lepidoptera | Nymphalidae | Hamadryas velutina browni | EN |
-| 151 | \* | Lepidoptera | Nymphalidae | Heliconius nattereri | EN |
-| 152 | \* | Lepidoptera | Nymphalidae | Hyalyris fiammetta | CR (PEX) |
-| 153 | \* | Lepidoptera | Nymphalidae | Mcclungia cymo fallens | CR |
-| 154 | \* | Lepidoptera | Nymphalidae | Melinaea mnasias thera | CR |
-| 155 | \* | Lepidoptera | Nymphalidae | Morpho epistrophus nikolajewna | CR |
-| 156 | \* | Lepidoptera | Nymphalidae | Morpho menelaus eberti | CR |
-| 157 | \* | Lepidoptera | Nymphalidae | Napeogenes rhezia rhezia | CR |
-| 158 | \* | Lepidoptera | Nymphalidae | Orobrassolis ornamentalis | CR |
-| 159 | \* | Lepidoptera | Nymphalidae | Pampasatyrus glaucope boenninghauseni | EN |
-| 160 |  | Lepidoptera | Nymphalidae | Pampasatyrus glaucope eberti | VU |
-| 161 | \* | Lepidoptera | Nymphalidae | Pampasatyrus glaucope glaucope | EN |
-| 162 | \* | Lepidoptera | Nymphalidae | Pampasatyrus gyrtone | EN |
-| 163 |  | Lepidoptera | Nymphalidae | Pampasatyrus reticulata gagarini | EN |
-| 164 | \* | Lepidoptera | Nymphalidae | Paulogramma hydarnis | EN |
-| 165 | \* | Lepidoptera | Nymphalidae | Polygrapha suprema | EN |
-| 166 |  | Lepidoptera | Nymphalidae | Praepedaliodes sequeirae | CR |
-| 167 | \* | Lepidoptera | Nymphalidae | Prepona deiphile | VU |
-| 168 | \* | Lepidoptera | Nymphalidae | Scada karschina delicata | CR |
-| 169 | \* | Lepidoptera | Nymphalidae | Tithorea harmonia caissara | VU |
-| 170 |  | Lepidoptera | Nymphalidae | Yphthimoides iserhardi | EN |
-| 171 | \* | Lepidoptera | Papilionidae | Heraclides himeros baia | EN |
-| 172 | \* | Lepidoptera | Papilionidae | Heraclides himeros himeros | EN |
-| 173 | \* | Lepidoptera | Papilionidae | Mimoides lysithous harrisianus | CR |
-| 174 | \* | Lepidoptera | Papilionidae | Mimoides lysithous sebastianus | VU |
-| 175 | \* | Lepidoptera | Papilionidae | Parides ascanius | EN |
-| 176 | \* | Lepidoptera | Papilionidae | Parides bunichus chamissonia | CR |
-| 177 | \* | Lepidoptera | Papilionidae | Parides burchellanus | CR |
-| 178 | \* | Lepidoptera | Papilionidae | Parides klagesi | CR |
-| 179 | \* | Lepidoptera | Papilionidae | Parides panthonus castilhoi | CR |
-| 180 | \* | Lepidoptera | Papilionidae | Parides tros danunciae | EN |
-| 181 | \* | Lepidoptera | Pieridae | Charonias theano | EN |
-| 182 | \* | Lepidoptera | Pieridae | Cunizza hirlanda fulvinota | VU |
-| 183 | \* | Lepidoptera | Pieridae | Cunizza hirlanda planasia | VU |
-| 184 | \* | Lepidoptera | Pieridae | Glennia pylotis | EN |
-| 185 | \* | Lepidoptera | Pieridae | Moschoneura pinthous methymna | VU |
-| 186 | \* | Lepidoptera | Pieridae | Perrhybris pamela flava | EN |
-| 187 | \* | Lepidoptera | Riodinidae | Joiceya praeclarus | CR |
-| 188 | \* | Lepidoptera | Riodinidae | Panara ovifera | VU |
-| 189 | \* | Lepidoptera | Riodinidae | Petrocerus catiena | EN |
-| 190 | \* | Lepidoptera | Riodinidae | Rhetus belphegor | CR |
-| 191 | \* | Lepidoptera | Riodinidae | Voltinia sanarita | EN |
-| 192 | \* | Lepidoptera | Saturniidae | Dirphia monticola | VU |
-| 193 | \* | Lepidoptera | Sphingidae | Nyceryx mielkei | CR |
-| 194 | \* | Opiliones | Cryptogeobiidae | Spinopilar moria | CR |
-| 195 | \* | Opiliones | Escadabiidae | Spaeleoleptes spaeleus | EN |
-| 196 |  | Opiliones | Gerdesiidae | Gonycranaus pluto | VU |
-| 197 |  | Opiliones | Gonyleptidae | Discocyrtus pedrosoi | VU |
-| 198 | \* | Opiliones | Gonyleptidae | Eusarcus elinae | EN |
-| 199 | \* | Opiliones | Gonyleptidae | Giupponia chagasi | EN |
-| 200 | \* | Opiliones | Gonyleptidae | Iandumoema setimapocu | VU |
-| 201 |  | Opiliones | Gonyleptidae | Iandumoema smeagol | EN |
-| 202 | \* | Opiliones | Gonyleptidae | Iandumoema uai | CR |
-| 203 | \* | Opiliones | Gonyleptidae | Pachylospeleus strinatii | CR |
-| 204 |  | Opiliones | Kimulidae | Relictopiolus galadriel | CR |
-| 205 |  | Orthoptera | Phalangopsidae | Endecous apterus | EN |
-| 206 |  | Orthoptera | Phalangopsidae | Endecous peruassuensis | EN |
-| 207 |  | Palpigradi | Eukoeneniidae | Eukoenenia cavatica | CR |
-| 208 |  | Palpigradi | Eukoeneniidae | Eukoenenia eywa | EN |
-| 209 |  | Palpigradi | Eukoeneniidae | Eukoenenia jequitinhonha | CR |
-| 210 | \* | Palpigradi | Eukoeneniidae | Eukoenenia maquinensis | VU |
-| 211 |  | Palpigradi | Eukoeneniidae | Eukoenenia navi | CR |
-| 212 |  | Palpigradi | Eukoeneniidae | Eukoenenia neytiri | EN |
-| 213 | \* | Palpigradi | Eukoeneniidae | Eukoenenia potiguar | VU |
-| 214 | \* | Palpigradi | Eukoeneniidae | Eukoenenia sagarana | CR |
-| 215 | \* | Palpigradi | Eukoeneniidae | Eukoenenia spelunca | CR |
-| 216 | \* | Palpigradi | Eukoeneniidae | Eukoenenia virgemdalapa | CR |
-| 217 | \* | Palpigradi | Eukoeneniidae | Leptokoenenia pelada | CR |
-| 218 | \* | Palpigradi | Eukoeneniidae | Leptokoenenia thalassophobica | EN |
-| 219 |  | Poduromorpha | Brachystomellidae | Maricaella duna | CR |
-| 220 | \* | Poduromorpha | Hypogastruridae | Acherontides eleonorae | VU |
-| 221 |  | Poduromorpha | Neanuridae | Aethiopella littoralis | CR |
-| 222 |  | Poduromorpha | Neanuridae | Arlesia intermedia | CR |
-| 223 |  | Poduromorpha | Neanuridae | Hyleanura mendoncae | VU |
-| 224 |  | Poduromorpha | Neanuridae | Micranurida fluminensis | CR |
-| 225 |  | Poduromorpha | Onychiuridae | Agraphorura mariapetrae | CR |
-| 226 |  | Poduromorpha | Tullbergiidae | Mesaphorura maricaensis | CR |
-| 227 | \* | Polydesmida | Chelodesmidae | Dioplosternus salvatrix | VU |
-| 228 | \* | Polydesmida | Chelodesmidae | Leodesmus yporangae | EN |
-| 229 | \* | Polydesmida | Chelodesmidae | Odontopeltis giganteus | VU |
-| 230 | \* | Polydesmida | Chelodesmidae | Sandalodesmus stramineus | VU |
-| 231 | \* | Polydesmida | Cryptodesmidae | Peridontodesmella alba | VU |
-| 232 |  | Polydesmida | Dobrodesmidae | Dobrodesmus mirabilis | CR |
-| 233 | \* | Pseudoscorpiones | Bochicidae | Spelaeobochica allodentatus | EN |
-| 234 | \* | Pseudoscorpiones | Bochicidae | Spelaeobochica iuiu | EN |
-| 235 | \* | Pseudoscorpiones | Bochicidae | Spelaeobochica muchmorei | CR |
-| 236 | \* | Pseudoscorpiones | Chernetidae | Maxchernes iporangae | CR |
-| 237 | \* | Pseudoscorpiones | Chernetidae | Spelaeochernes gracilipalpus | EN |
-| 238 | \* | Pseudoscorpiones | Chthoniidae | Pseudochthonius biseriatus | EN |
-| 239 | \* | Pseudoscorpiones | Ideoroncidae | Ideoroncus cavicola | EN |
-| 240 | \* | Pseudoscorpiones | Olpiidae | Progarypus nigrimanus | CR |
-| 241 | \* | Pulmonata | Bulimulidae | Thaumastus lundi | CR |
-| 242 | \* | Pulmonata | Lymnaeidae | Lymnaea rupestris | VU |
-| 243 | \* | Pulmonata | Odontostomidae | Macrodontes dautzenbergianus | VU |
-| 244 | \* | Pulmonata | Physidae | Physa marmorata | VU |
-| 245 | \* | Pulmonata | Planorbidae | Plesiophysa dolichomastix | CR |
-| 246 | \* | Pulmonata | Succineidae | Succinea lopesi | EN |
-| 247 | \* | Schizomida | Hubbardiidae | Rowlandius ubajara | CR |
-| 248 | \* | Scolopendromorpha | Cryptopidae | Cryptops iporangensis | EN |
+| ANEXO II. LISTA OFICIAL DE ESPÉCIES EXTINTAS DA FAUNA TERRESTRE BRASILEIRA |
+| --- | --- | --- | --- |
+|  | Família | Espécie ou Subespécie | Categoria |
+| 1 | Hylidae | Boana cymbalum | EX |
+| 2 | Phyllomedusidae | Phrynomedusa fimbriata | EX |
+| 3 | Scolopacidae | Numenius borealis | RE |
+| 4 | Furnariidae | Cichlocolaptes mazarbarnetti | EX |
+| 5 | Furnariidae | Philydor novaesi | EX |
+| 6 | Icteridae | Leistes defilippii | RE |
+| 7 | Psittacidae | Anodorhynchus glaucus | RE |
+| 8 | Strigidae | Glaucidium mooreorum | EX |
+| 9 | Cricetidae | Noronhomys vespuccii | EX |
 
-|     |     |     |     |     |     |
-| --- | --- | --- | --- | --- | --- |
-| 249 | \* | Scolopendromorpha | Cryptopidae | Cryptops spelaeoraptor | CR |
-| 250 | \* | Scolopendromorpha | Scolopendridae | Scolopendropsis duplicata | CR |
-| 251 |  | Scolopendromorpha | Scolopocryptopidae | Newportia potiguar | VU |
-| 252 |  | Scolopendromorpha | Scolopocryptopidae | Newportia spelaea | CR |
-| 253 |  | Scolopendromorpha | Scolopocryptopidae | Scolopocryptops troglocaudatus | EN |
-| 254 | \* | Scorpiones | Buthidae | Ananteris infuscata | EN |
-| 255 | \* | Scorpiones | Buthidae | Troglorhopalurus translucidus | EN |
-| 256 | \* | Scorpiones | Chactidae | Hadrurochactas araripe | CR |
-| 257 | \* | Scorpiones | Chactidae | Hadrurochactas brejo | CR |
-| 258 |  | Spirostreptida | Pseudonannolenidae | Pseudonannolene lundi | CR |
-| 259 | \* | Spirostreptida | Spirostreptidae | Pseudonannolene ambuatinga | EN |
-| 260 | \* | Spirostreptida | Spirostreptidae | Pseudonannolene imbirensis | EN |
-| 261 | \* | Spirostreptida | Spirostreptidae | Pseudonannolene spelaea | CR |
-| 262 | \* | Spirostreptida | Spirostreptidae | Pseudonannolene tocaiensis | CR |
-| 263 | \* | Spongillida | Metaniidae | Corvomeyenia epilithosa | VU |
-| 264 | \* | Stylommatophora | Bulimulidae | Tomigerus gibberulus | EN |
-| 265 | \* | Stylommatophora | Megalobulimidae | Megalobulimus cardosoi | CR |
-| 266 | \* | Stylommatophora | Strophocheilidae | Gonyostomus insularis | EN |
-| 267 | \* | Symphypleona | Arrhopalitidae | Arrhopalites alambariensis | VU |
-| 268 | \* | Symphypleona | Arrhopalitidae | Arrhopalites botuveraensis | VU |
-| 269 | \* | Symphypleona | Arrhopalitidae | Arrhopalites gnaspinii | CR |
-| 270 | \* | Symphypleona | Arrhopalitidae | Arrhopalites heteroculatus | VU |
-| 271 | \* | Symphypleona | Arrhopalitidae | Arrhopalites lawrencei | VU |
-| 272 | \* | Symphypleona | Arrhopalitidae | Arrhopalites paranaensis | CR |
-| 273 | \* | Unionoida | Hyriidae | Diplodon koseritzi | EN |
-| 274 | \* | Unionoida | Mycetopodidae | Mycetopoda legumen | EN |
-| 275 |  | Zygentoma | Nicoletiidae | Cubacubana spelaea | VU |
-|  |  | ANFÍBIOS |  |
-| 276 |  | Anura | Aromobatidae | Anomaloglossus apiau | EN |
-| 277 |  | Anura | Aromobatidae | Anomaloglossus tepequem | CR (PEX) |
-| 278 |  | Anura | Brachycephalidae | Brachycephalus mirissimus | VU |
-| 279 | \* | Anura | Brachycephalidae | Brachycephalus pernix | CR |
-| 280 |  | Anura | Brachycephalidae | Brachycephalus quiririensis | EN |
-| 281 |  | Anura | Brachycephalidae | Ischnocnema epipeda | CR (PEX) |
-| 282 |  | Anura | Brachycephalidae | Ischnocnema garciai | CR |
-| 283 |  | Anura | Brachycephalidae | Ischnocnema karst | VU |
-| 284 | \* | Anura | Brachycephalidae | Ischnocnema manezinho | EN |
-| 285 | \* | Anura | Bufonidae | Melanophryniscus admirabilis | CR |
-| 286 |  | Anura | Bufonidae | Melanophryniscus biancae | EN |
-| 287 | \* | Anura | Bufonidae | Melanophryniscus cambaraensis | EN |
-| 288 | \* | Anura | Bufonidae | Melanophryniscus dorsalis | VU |
-| 289 |  | Anura | Bufonidae | Melanophryniscus klappenbachi | VU |
-| 290 | \* | Anura | Bufonidae | Melanophryniscus macrogranulosus | EN |
-| 291 |  | Anura | Bufonidae | Melanophryniscus montevidensis | VU |
-| 292 | \* | Anura | Bufonidae | Melanophryniscus setiba | VU |
-| 293 |  | Anura | Bufonidae | Rhinella casconi | CR |
-| 294 |  | Anura | Ceratophryidae | Ceratophrys ornata | CR (PEX) |
-| 295 | \* | Anura | Cycloramphidae | Cycloramphus diringshofeni | CR |
-| 296 | \* | Anura | Cycloramphidae | Cycloramphus faustoi | VU |
-| 297 |  | Anura | Cycloramphidae | Cycloramphus stejnegeri | CR (PEX) |
-| 298 |  | Anura | Cycloramphidae | Thoropa lutzi | CR (PEX) |
-| 299 | \* | Anura | Cycloramphidae | Thoropa petropolitana | CR (PEX) |
-| 300 | \* | Anura | Eleutherodactylidae | Adelophryne maranguapensis | CR |
-| 301 |  | Anura | Hylidae | Boana buriti | VU |
-| 302 |  | Anura | Hylidae | Bokermannohyla napolii | VU |
-| 303 | \* | Anura | Hylidae | Bokermannohyla vulcaniae | EN |
-| 304 | \* | Anura | Hylidae | Nyctimantis pomba | CR |
-| 305 | \* | Anura | Hylidae | Scinax alcatraz | VU |
-| 306 | \* | Anura | Hylidae | Scinax faivovichi | VU |
-| 307 |  | Anura | Hylidae | Scinax muriciensis | CR |
-| 308 | \* | Anura | Hylidae | Scinax peixotoi | CR (PEX) |
-| 309 |  | Anura | Hylidae | Scinax pinimus | VU |
-| 310 |  | Anura | Hylidae | Sphaenorhynchus bromelicola | EN |
-| 311 |  | Anura | Hylidae | Sphaenorhynchus cammaeus | CR |
-| 312 |  | Anura | Hylidae | Sphaenorhynchus canga | CR |
-| 313 | \* | Anura | Hylidae | Xenohyla truncata | VU |
-| 314 |  | Anura | Hylodidae | Crossodactylus boulengeri | CR (PEX) |
-| 315 | \* | Anura | Hylodidae | Crossodactylus dantei | CR |
-| 316 |  | Anura | Hylodidae | Crossodactylus dispar | CR (PEX) |
-| 317 |  | Anura | Hylodidae | Crossodactylus franciscanus | CR (PEX) |
-| 318 |  | Anura | Hylodidae | Hylodes glaber | CR (PEX) |
-| 319 |  | Anura | Hylodidae | Hylodes magalhaesi | VU |
-| 320 |  | Anura | Hylodidae | Hylodes mertensi | CR |
-| 321 |  | Anura | Hylodidae | Hylodes sazimai | EN |
-| 322 |  | Anura | Leptodactylidae | Crossodactylodes itambe | CR |
-| 323 |  | Anura | Leptodactylidae | Crossodactylodes izecksohni | EN |
-| 324 | \* | Anura | Leptodactylidae | Paratelmatobius lutzii | CR (PEX) |
-| 325 | \* | Anura | Leptodactylidae | Physalaemus soaresi | CR |
-| 326 | \* | Anura | Microhylidae | Chiasmocleis alagoana | VU |
-| 327 |  | Anura | Odontophrynidae | Proceratophrys ararype | CR |
-| 328 | \* | Anura | Odontophrynidae | Proceratophrys palustris | CR |
-| 329 | \* | Anura | Odontophrynidae | Proceratophrys sanctaritae | CR |
-| 330 |  | Anura | Phyllomedusidae | Phrynomedusa marginata | CR (PEX) |
-| 331 |  | Anura | Phyllomedusidae | Phrynomedusa vanzolinii | CR (PEX) |
-| 332 |  | Anura | Phyllomedusidae | Pithecopus rusticus | CR |
-| 333 |  | Anura | Strabomantidae | Euparkerella robusta | CR |
-| 334 | \* | Anura | Strabomantidae | Holoaden bradei | CR (PEX) |
-|  |  | RÉPTEIS |  |
-| 335 | \* | Squamata | Amphisbaenidae | Amphisbaena arda | EN |
-| 336 | \* | Squamata | Amphisbaenidae | Amphisbaena frontalis | EN |
-| 337 | \* | Squamata | Amphisbaenidae | Amphisbaena nigricauda | EN |
-| 338 | \* | Squamata | Amphisbaenidae | Amphisbaena supernumeraria | EN |
-| 339 | \* | Squamata | Amphisbaenidae | Amphisbaena uroxena | EN |
-| 340 | \* | Squamata | Amphisbaenidae | Leposternon kisteumacheri | VU |
-| 341 | \* | Squamata | Amphisbaenidae | Leposternon octostegum | EN |
-| 342 | \* | Squamata | Amphisbaenidae | Leposternon scutigerum | EN |
-| 343 | \* | Squamata | Boidae | Corallus cropanii | VU |
-| 344 | \* | Squamata | Dactyloidae | Dactyloa nasofrontalis | VU |
-| 345 | \* | Squamata | Dactyloidae | Dactyloa pseudotigrina | VU |
-| 346 | \* | Squamata | Dipsadidae | Apostolepis arenaria | EN |
-| 347 | \* | Squamata | Dipsadidae | Apostolepis gaboi | EN |
-| 348 | \* | Squamata | Dipsadidae | Apostolepis quirogai | EN |
-| 349 | \* | Squamata | Dipsadidae | Apostolepis striata | EN |
-| 350 | \* | Squamata | Dipsadidae | Atractus caete | EN |
-| 351 | \* | Squamata | Dipsadidae | Atractus ronnie | EN |
-| 352 | \* | Squamata | Dipsadidae | Atractus thalesdelemai | EN |
-| 353 | \* | Squamata | Dipsadidae | Calamodontophis ronaldoi | EN |
-| 354 | \* | Squamata | Dipsadidae | Ditaxodon taeniatus | VU |
-| 355 | \* | Squamata | Dipsadidae | Echinanthera cephalomaculata | VU |
-| 356 | \* | Squamata | Dipsadidae | Phalotris multipunctatus | EN |
-| 357 | \* | Squamata | Dipsadidae | Philodryas livida | VU |
-| 358 | \* | Squamata | Dipsadidae | Rodriguesophis chui | EN |
-| 359 | \* | Squamata | Dipsadidae | Rodriguesophis scriptorcibatus | EN |
-| 360 | \* | Squamata | Gymnophthalmidae | Bachia didactyla | EN |
-| 361 | \* | Squamata | Gymnophthalmidae | Bachia psamophila | CR |
-| 362 | \* | Squamata | Gymnophthalmidae | Calyptommatus leiolepis | EN |
-| 363 | \* | Squamata | Gymnophthalmidae | Calyptommatus nicterus | EN |
-| 364 | \* | Squamata | Gymnophthalmidae | Calyptommatus sinebrachiatus | EN |
-| 365 | \* | Squamata | Gymnophthalmidae | Colobodactylus dalcyanus | EN |
-| 366 | \* | Squamata | Gymnophthalmidae | Heterodactylus lundii | VU |
-| 367 | \* | Squamata | Gymnophthalmidae | Heterodactylus septentrionalis | EN |
-| 368 | \* | Squamata | Gymnophthalmidae | Leposoma annectans | VU |
-| 369 | \* | Squamata | Gymnophthalmidae | Leposoma baturitensis | EN |
-| 370 | \* | Squamata | Gymnophthalmidae | Leposoma nanodactylus | EN |
-| 371 | \* | Squamata | Gymnophthalmidae | Leposoma puk | EN |
-| 372 | \* | Squamata | Gymnophthalmidae | Placosoma cipoense | EN |
-| 373 | \* | Squamata | Gymnophthalmidae | Procellosaurinus tetradactylus | EN |
-| 374 | \* | Squamata | Leiosauridae | Enyalius erythroceneus | CR |
-| 375 | \* | Squamata | Liolaemidae | Liolaemus arambarensis | EN |
-| 376 | \* | Squamata | Liolaemidae | Liolaemus lutzae | CR |
-| 377 | \* | Squamata | Liolaemidae | Liolaemus occipitalis | VU |
-| 378 | \* | Squamata | Mabuyidae | Brasiliscincus caissara | EN |
-| 379 | \* | Squamata | Phyllodactylidae | Homonota uruguayensis | VU |
-| 380 | \* | Squamata | Sphaerodactylidae | Coleodactylus natalensis | EN |
-| 381 | \* | Squamata | Sphaerodactylidae | Gonatodes tapajonicus | EN |
-| 382 | \* | Squamata | Teiidae | Ameiva parecis | EN |
-| 383 | \* | Squamata | Teiidae | Ameivula nativo | EN |
-| 384 | \* | Squamata | Teiidae | Contomastix vacariensis | VU |
-| 385 | \* | Squamata | Teiidae | Glaucomastix abaetensis | EN |
-| 386 | \* | Squamata | Teiidae | Glaucomastix littoralis | EN |
-| 387 | \* | Squamata | Teiidae | Kentropyx vanzoi | VU |
-| 388 | \* | Squamata | Tropidophiidae | Tropidophis grapiuna | VU |
-| 389 | \* | Squamata | Tropiduridae | Eurolophosaurus amathites | EN |
-| 390 | \* | Squamata | Tropiduridae | Stenocercus azureus | EN |
-| 391 | \* | Squamata | Tropiduridae | Stenocercus dumerilii | VU |
-| 392 | \* | Squamata | Tropiduridae | Tropidurus erythrocephalus | VU |
-| 393 | \* | Squamata | Tropiduridae | Tropidurus hygomi | VU |
-| 394 | \* | Squamata | Tropiduridae | Tropidurus imbituba | CR |
-| 395 | \* | Squamata | Tropiduridae | Tropidurus psammonastes | EN |
-| 396 | \* | Squamata | Viperidae | Bothrops alcatraz | CR |
-| 397 | \* | Squamata | Viperidae | Bothrops insularis | CR |
-| 398 | \* | Squamata | Viperidae | Bothrops muriciensis | EN |
-| 399 | \* | Squamata | Viperidae | Bothrops otavioi | CR |
-| 400 | \* | Squamata | Viperidae | Bothrops pirajai | EN |
-| 401 | \* | Testudines | Chelidae | Ranacephala hogei | VU |
-| 402 | \* | Testudines | Cheloniidae | Caretta caretta | VU |
-| 403 | \* | Testudines | Cheloniidae | Eretmochelys imbricata | EN |
-| 404 | \* | Testudines | Cheloniidae | Lepidochelys olivacea | VU |
-| 405 | \* | Testudines | Dermochelyidae | Dermochelys coriacea | CR |
-|  |  | AVES |  |
-| 406 | \* | Accipitriformes | Accipitridae | Amadonastur lacernulatus | VU |
-| 407 | \* | Accipitriformes | Accipitridae | Circus cinereus | VU |
-| 408 | \* | Accipitriformes | Accipitridae | Harpia harpyja | VU |
-| 409 | \* | Accipitriformes | Accipitridae | Leptodon forbesi | EN |
-| 410 | \* | Accipitriformes | Accipitridae | Morphnus guianensis | VU |
-| 411 | \* | Accipitriformes | Accipitridae | Urubitinga coronata | EN |
-| 412 | \* | Anseriformes | Anatidae | Mergus octosetaceus | CR |
-| 413 | \* | Apodiformes | Trochilidae | Augastes lumachella | EN |
-| 414 |  | Apodiformes | Trochilidae | Campylopterus calcirupicola | EN |
-| 415 |  | Apodiformes | Trochilidae | Colibri delphinae greenewalti | EN |
-| 416 | \* | Apodiformes | Trochilidae | Discosura langsdorffi langsdorffi | EN |
-| 417 | \* | Apodiformes | Trochilidae | Glaucis dohrnii | VU |
-| 418 | \* | Apodiformes | Trochilidae | Lophornis gouldii | VU |
-| 419 | \* | Apodiformes | Trochilidae | Phaethornis aethopygus | VU |
-| 420 | \* | Apodiformes | Trochilidae | Phaethornis major | VU |
-| 421 | \* | Apodiformes | Trochilidae | Phaethornis margarettae | EN |
-| 422 | \* | Apodiformes | Trochilidae | Thalurania watertonii | EN |
-| 423 | \* | Caprimulgiformes | Caprimulgidae | Hydropsalis candicans | EN |
-| 424 |  | Caprimulgiformes | Caprimulgidae | Nyctiprogne vielliardi | EN |
-| 425 |  | Charadriiformes | Burhinidae | Burhinus bistriatus | VU |
-| 426 | \* | Charadriiformes | Charadriidae | Charadrius wilsonia | VU |
-| 427 | \* | Charadriiformes | Laridae | Sterna dougallii | VU |
-| 428 | \* | Charadriiformes | Laridae | Sterna hirundinacea | VU |
-| 429 |  | Charadriiformes | Laridae | Thalasseus acuflavidus | VU |
-| 430 | \* | Charadriiformes | Laridae | Thalasseus maximus | EN |
-| 431 | \* | Charadriiformes | Scolopacidae | Calidris canutus | VU |
-| 432 | \* | Charadriiformes | Scolopacidae | Calidris pusilla | EN |
-| 433 | \* | Charadriiformes | Scolopacidae | Calidris subruficollis | VU |
-| 434 | \* | Charadriiformes | Scolopacidae | Limnodromus griseus | EN |
-| 435 |  | Charadriiformes | Scolopacidae | Numenius hudsonicus | VU |
-| 436 | \* | Columbiformes | Columbidae | Columbina cyanopis | CR |
-| 437 | \* | Columbiformes | Columbidae | Paraclaravis geoffroyi | CR (PEX) |
-| 438 | \* | Coraciiformes | Momotidae | Momotus momota marcgraviana | EN |
-| 439 | \* | Cuculiformes | Cuculidae | Neomorphus geoffroyi | VU |
-| 440 | \* | Cuculiformes | Cuculidae | Neomorphus geoffroyi amazonicus | VU |
-| 441 | \* | Cuculiformes | Cuculidae | Neomorphus geoffroyi dulcis | EN |
-| 442 | \* | Cuculiformes | Cuculidae | Neomorphus geoffroyi geoffroyi | CR (PEX) |
-| 443 | \* | Cuculiformes | Cuculidae | Neomorphus squamiger | VU |
-| 444 |  | Galbuliformes | Bucconidae | Malacoptila minor | VU |
-| 445 | \* | Galbuliformes | Bucconidae | Monasa morphoeus morphoeus | EN |
-| 446 |  | Galliformes | Cracidae | Aburria cujubi | VU |
-| 447 | \* | Galliformes | Cracidae | Aburria jacutinga | EN |
-| 448 | \* | Galliformes | Cracidae | Crax blumenbachii | EN |
-| 449 | \* | Galliformes | Cracidae | Crax fasciolata pinima | CR |
-| 450 | \* | Galliformes | Cracidae | Crax globulosa | EN |
-| 451 | \* | Galliformes | Cracidae | Ortalis remota | CR |
-| 452 | \* | Galliformes | Cracidae | Pauxi mitu | EW |
-| 453 | \* | Galliformes | Cracidae | Penelope jacucaca | VU |
-| 454 | \* | Galliformes | Cracidae | Penelope pileata | VU |
-| 455 | \* | Galliformes | Cracidae | Penelope superciliaris alagoensis | CR |
-| 456 | \* | Galliformes | Odontophoridae | Odontophorus capueira plumbeicollis | CR |
-| 457 | \* | Gruiformes | Psophiidae | Psophia dextralis | VU |
-| 458 | \* | Gruiformes | Psophiidae | Psophia interjecta | EN |
-| 459 | \* | Gruiformes | Psophiidae | Psophia obscura | CR |
-| 460 |  | Gruiformes | Psophiidae | Psophia viridis | VU |
-| 461 | \* | Gruiformes | Rallidae | Laterallus spilopterus | EN |
-| 462 |  | Gruiformes | Rallidae | Laterallus xenopterus | EN |
-| 463 | \* | Nyctibiiformes | Nyctibiidae | Nyctibius aethereus aethereus | EN |
-| 464 | \* | Nyctibiiformes | Nyctibiidae | Nyctibius leucopterus | CR |
-| 465 |  | Passeriformes | Cardinalidae | Granatellus pelzelni paraensis | VU |
-| 466 | \* | Passeriformes | Conopophagidae | Conopophaga cearae | EN |
-| 467 | \* | Passeriformes | Conopophagidae | Conopophaga lineata lineata | VU |
-| 468 | \* | Passeriformes | Corvidae | Cyanocorax hafferi | VU |
-| 469 | \* | Passeriformes | Cotingidae | Cotinga maculata | EN |
-| 470 | \* | Passeriformes | Cotingidae | Lipaugus conditus | VU |
-| 471 | \* | Passeriformes | Cotingidae | Procnias albus wallacei | VU |
-| 472 | \* | Passeriformes | Cotingidae | Xipholena atropurpurea | VU |
-| 473 |  | Passeriformes | Cotingidae | Xipholena lamellipennis | VU |
-| 474 | \* | Passeriformes | Dendrocolaptidae | Campylorhamphus cardosoi | VU |
-| 475 | \* | Passeriformes | Dendrocolaptidae | Campylorhamphus multostriatus | VU |
-| 476 | \* | Passeriformes | Dendrocolaptidae | Campylorhamphus trochilirostris trochilirostris | VU |
-| 477 | \* | Passeriformes | Dendrocolaptidae | Dendrexetastes rufigula paraensis | VU |
-
-|     |     |     |     |     |     |
-| --- | --- | --- | --- | --- | --- |
-| 478 | \* | Passeriformes | Dendrocolaptidae | Dendrocincla merula badia | VU |
-| 479 | \* | Passeriformes | Dendrocolaptidae | Dendrocincla taunayi | EN |
-| 480 | \* | Passeriformes | Dendrocolaptidae | Dendrocolaptes medius | VU |
-| 481 | \* | Passeriformes | Dendrocolaptidae | Dendrocolaptes retentus | VU |
-| 482 | \* | Passeriformes | Dendrocolaptidae | Dendrocolaptes transfasciatus | VU |
-| 483 | \* | Passeriformes | Dendrocolaptidae | Hylexetastes brigidai | VU |
-| 484 |  | Passeriformes | Dendrocolaptidae | Hylexetastes uniformis | VU |
-| 485 | \* | Passeriformes | Dendrocolaptidae | Xiphocolaptes carajaensis | VU |
-| 486 | \* | Passeriformes | Dendrocolaptidae | Xiphocolaptes falcirostris | VU |
-| 487 | \* | Passeriformes | Dendrocolaptidae | Xiphorhynchus atlanticus | VU |
-| 488 | \* | Passeriformes | Dendrocolaptidae | Xiphorhynchus guttatoides gracilirostris | EN |
-| 489 | \* | Passeriformes | Formicariidae | Chamaeza nobilis fulvipectus | VU |
-| 490 | \* | Passeriformes | Fringillidae | Spinus yarrellii | VU |
-| 491 | \* | Passeriformes | Furnariidae | Acrobatornis fonsecai | VU |
-| 492 |  | Passeriformes | Furnariidae | Anabazenops dorsalis | VU |
-| 493 | \* | Passeriformes | Furnariidae | Asthenes hudsoni | VU |
-| 494 |  | Passeriformes | Furnariidae | Asthenes luizae | EN |
-| 495 | \* | Passeriformes | Furnariidae | Automolus lammi | EN |
-| 496 | \* | Passeriformes | Furnariidae | Cinclodes espinhacensis | EN |
-| 497 | \* | Passeriformes | Furnariidae | Coryphistera alaudina | CR |
-| 498 | \* | Passeriformes | Furnariidae | Leptasthenura platensis | CR |
-| 499 | \* | Passeriformes | Furnariidae | Pseudoseisura lophotes | VU |
-| 500 | \* | Passeriformes | Furnariidae | Synallaxis infuscata | EN |
-| 501 | \* | Passeriformes | Furnariidae | Synallaxis kollari | VU |
-| 502 |  | Passeriformes | Furnariidae | Syndactyla ucayalae | VU |
-| 503 | \* | Passeriformes | Furnariidae | Thripophaga macroura | VU |
-| 504 | \* | Passeriformes | Grallariidae | Grallaria varia distincta | VU |
-| 505 | \* | Passeriformes | Grallariidae | Grallaria varia intercedens | EN |
-| 506 | \* | Passeriformes | Grallariidae | Hylopezus paraensis | VU |
-| 507 |  | Passeriformes | Grallariidae | Hylopezus whittakeri | VU |
-| 508 | \* | Passeriformes | Icteridae | Anumara forbesi | VU |
-| 509 |  | Passeriformes | Icteridae | Cacicus koepckeae | VU |
-| 510 | \* | Passeriformes | Icteridae | Xanthopsar flavus | VU |
-| 511 | \* | Passeriformes | Motacillidae | Anthus nattereri | VU |
-| 512 |  | Passeriformes | Onychorhynchidae | Onychorhynchus swainsoni | VU |
-| 513 |  | Passeriformes | Oxyruncidae | Oxyruncus cristatus tocantinsi | VU |
-| 514 | \* | Passeriformes | Passerellidae | Arremonops conirostris | EN |
-| 515 | \* | Passeriformes | Pipridae | Antilophia bokermanni | CR |
-| 516 | \* | Passeriformes | Pipridae | Lepidothrix iris | EN |
-| 517 | \* | Passeriformes | Pipridae | Lepidothrix iris iris | EN |
-| 518 | \* | Passeriformes | Pipridae | Lepidothrix vilasboasi | EN |
-| 519 | \* | Passeriformes | Pipridae | Neopelma aurifrons | EN |
-| 520 | \* | Passeriformes | Platyrinchidae | Calyptura cristata | CR (PEX) |
-| 521 |  | Passeriformes | Platyrinchidae | Platyrinchus leucoryphus | VU |
-| 522 | \* | Passeriformes | Platyrinchidae | Platyrinchus mystaceus niveigularis | VU |
-| 523 | \* | Passeriformes | Rhinocryptidae | Eleoscytalopus psychopompus | EN |
-| 524 | \* | Passeriformes | Rhinocryptidae | Merulaxis stresemanni | CR |
-| 525 | \* | Passeriformes | Rhinocryptidae | Scytalopus diamantinensis | EN |
-| 526 | \* | Passeriformes | Rhinocryptidae | Scytalopus gonzagai | EN |
-| 527 | \* | Passeriformes | Rhinocryptidae | Scytalopus iraiensis | EN |
-| 528 | \* | Passeriformes | Rhinocryptidae | Scytalopus novacapitalis | EN |
-| 529 |  | Passeriformes | Rhynchocyclidae | Cnipodectes superrufus | VU |
-| 530 | \* | Passeriformes | Rhynchocyclidae | Hemitriccus kaempferi | VU |
-| 531 | \* | Passeriformes | Rhynchocyclidae | Hemitriccus mirandae | EN |
-| 532 | \* | Passeriformes | Rhynchocyclidae | Phylloscartes beckeri | EN |
-| 533 | \* | Passeriformes | Rhynchocyclidae | Phylloscartes ceciliae | CR |
-| 534 | \* | Passeriformes | Rhynchocyclidae | Phylloscartes roquettei | EN |
-| 535 |  | Passeriformes | Rhynchocyclidae | Poecilotriccus albifacies | VU |
-| 536 | \* | Passeriformes | Scleruridae | Geositta poeciloptera | VU |
-| 537 | \* | Passeriformes | Scleruridae | Sclerurus caudacutus caligineus | CR |
-| 538 | \* | Passeriformes | Scleruridae | Sclerurus caudacutus umbretta | CR |
-| 539 | \* | Passeriformes | Scleruridae | Sclerurus cearensis | EN |
-| 540 | \* | Passeriformes | Scleruridae | Sclerurus macconnelli bahiae | EN |
-| 541 |  | Passeriformes | Thamnophilidae | Clytoctantes atrogularis | VU |
-| 542 | \* | Passeriformes | Thamnophilidae | Dysithamnus plumbeus | EN |
-| 543 |  | Passeriformes | Thamnophilidae | Epinecrophylla dentei | VU |
-| 544 | \* | Passeriformes | Thamnophilidae | Formicivora acutirostris | VU |
-| 545 | \* | Passeriformes | Thamnophilidae | Formicivora erythronotos | CR |
-| 546 | \* | Passeriformes | Thamnophilidae | Formicivora grantsaui | EN |
-| 547 | \* | Passeriformes | Thamnophilidae | Formicivora littoralis | EN |
-| 548 | \* | Passeriformes | Thamnophilidae | Formicivora paludicola | CR |
-| 549 |  | Passeriformes | Thamnophilidae | Hypocnemis hypoxantha ochraceiventris | VU |
-| 550 | \* | Passeriformes | Thamnophilidae | Hypocnemis ochrogyna | VU |
-| 551 |  | Passeriformes | Thamnophilidae | Hypocnemis striata | VU |
-| 552 | \* | Passeriformes | Thamnophilidae | Myrmoderus ruficauda | EN |
-| 553 | \* | Passeriformes | Thamnophilidae | Myrmotherula fluminensis | CR (PEX) |
-| 554 | \* | Passeriformes | Thamnophilidae | Myrmotherula minor | VU |
-| 555 |  | Passeriformes | Thamnophilidae | Myrmotherula oreni | VU |
-| 556 | \* | Passeriformes | Thamnophilidae | Myrmotherula snowi | CR |
-| 557 | \* | Passeriformes | Thamnophilidae | Myrmotherula urosticta | VU |
-| 558 |  | Passeriformes | Thamnophilidae | Phlegopsis borbae | VU |
-| 559 | \* | Passeriformes | Thamnophilidae | Phlegopsis nigromaculata confinis | VU |
-| 560 | \* | Passeriformes | Thamnophilidae | Phlegopsis nigromaculata paraensis | VU |
-| 561 | \* | Passeriformes | Thamnophilidae | Pyriglena atra | EN |
-| 562 | \* | Passeriformes | Thamnophilidae | Pyriglena pernambucensis | VU |
-| 563 | \* | Passeriformes | Thamnophilidae | Rhegmatorhina gymnops | VU |
-| 564 |  | Passeriformes | Thamnophilidae | Rhegmatorhina hoffmannsi | VU |
-| 565 | \* | Passeriformes | Thamnophilidae | Rhopornis ardesiacus | EN |
-| 566 | \* | Passeriformes | Thamnophilidae | Terenura sicki | CR |
-| 567 | \* | Passeriformes | Thamnophilidae | Thamnomanes caesius caesius | VU |
-| 568 | \* | Passeriformes | Thamnophilidae | Thamnophilus aethiops distans | EN |
-| 569 | \* | Passeriformes | Thamnophilidae | Thamnophilus caerulescens cearensis | VU |
-| 570 | \* | Passeriformes | Thamnophilidae | Thamnophilus caerulescens pernambucensis | VU |
-| 571 |  | Passeriformes | Thamnophilidae | Thamnophilus nigrocinereus huberi | VU |
-| 572 | \* | Passeriformes | Thamnophilidae | Thamnophilus nigrocinereus tschudii | EN |
-| 573 | \* | Passeriformes | Thraupidae | Conothraupis mesoleuca | EN |
-| 574 | \* | Passeriformes | Thraupidae | Coryphaspiza melanotis | VU |
-| 575 | \* | Passeriformes | Thraupidae | Gubernatrix cristata | CR |
-| 576 | \* | Passeriformes | Thraupidae | Nemosia rourei | CR |
-| 577 | \* | Passeriformes | Thraupidae | Sporophila beltoni | VU |
-| 578 | \* | Passeriformes | Thraupidae | Sporophila falcirostris | VU |
-| 579 | \* | Passeriformes | Thraupidae | Sporophila frontalis | VU |
-| 580 | \* | Passeriformes | Thraupidae | Sporophila hypoxantha | VU |
-| 581 | \* | Passeriformes | Thraupidae | Sporophila maximiliani | CR |
-| 582 | \* | Passeriformes | Thraupidae | Sporophila melanogaster | VU |
-| 583 | \* | Passeriformes | Thraupidae | Sporophila nigrorufa | VU |
-| 584 | \* | Passeriformes | Thraupidae | Sporophila palustris | VU |
-| 585 | \* | Passeriformes | Thraupidae | Sporophila ruficollis | VU |
-| 586 | \* | Passeriformes | Thraupidae | Tangara cyanocephala cearensis | VU |
-| 587 | \* | Passeriformes | Thraupidae | Tangara fastuosa | VU |
-| 588 | \* | Passeriformes | Thraupidae | Tangara velia signata | VU |
-| 589 | \* | Passeriformes | Tityridae | Iodopleura pipra | EN |
-| 590 | \* | Passeriformes | Tityridae | Iodopleura pipra leucopygia | EN |
-| 591 | \* | Passeriformes | Tityridae | Iodopleura pipra pipra | EN |
-| 592 |  | Passeriformes | Tityridae | Laniisoma elegans | EN |
-| 593 | \* | Passeriformes | Tityridae | Schiffornis turdina intermedia | VU |
-| 594 |  | Passeriformes | Troglodytidae | Cyphorhinus griseolateralis | VU |
-| 595 | \* | Passeriformes | Turdidae | Cichlopsis leucogenys | EN |
-| 596 | \* | Passeriformes | Tyrannidae | Alectrurus tricolor | VU |
-| 597 | \* | Passeriformes | Tyrannidae | Attila spadiceus uropygiatus | EN |
-| 598 |  | Passeriformes | Tyrannidae | Contopus nigrescens | VU |
-| 599 | \* | Passeriformes | Tyrannidae | Elaenia ridleyana | VU |
-| 600 |  | Passeriformes | Tyrannidae | Knipolegus franciscanus | VU |
-| 601 |  | Passeriformes | Tyrannidae | Phyllomyias reiseri | EN |
-| 602 | \* | Passeriformes | Tyrannidae | Serpophaga hypoleuca pallida | VU |
-| 603 | \* | Passeriformes | Tyrannidae | Stigmatura napensis napensis | VU |
-| 604 | \* | Passeriformes | Tyrannidae | Xolmis dominicanus | VU |
-| 605 | \* | Passeriformes | Vireonidae | Vireo gracilirostris | VU |
-| 606 | \* | Passeriformes | Xenopidae | Xenops minutus alagoanus | VU |
-| 607 | \* | Pelecaniformes | Ardeidae | Tigrisoma fasciatum | VU |
-| 608 | \* | Phaethontiformes | Phaethontidae | Phaethon aethereus | EN |
-| 609 | \* | Phaethontiformes | Phaethontidae | Phaethon lepturus | EN |
-| 610 | \* | Piciformes | Capitonidae | Capito dayi | VU |
-| 611 | \* | Piciformes | Picidae | Celeus flavus subflavus | CR |
-| 612 | \* | Piciformes | Picidae | Celeus galeatus | EN |
-| 613 | \* | Piciformes | Picidae | Celeus obrieni | VU |
-| 614 | \* | Piciformes | Picidae | Celeus torquatus pieteroyensi | VU |
-| 615 | \* | Piciformes | Picidae | Celeus torquatus tinnunculus | EN |
-| 616 | \* | Piciformes | Picidae | Piculus paraensis | VU |
-| 617 | \* | Piciformes | Picidae | Piculus polyzonus | EN |
-| 618 | \* | Piciformes | Ramphastidae | Pteroglossus bitorquatus bitorquatus | VU |
-| 619 | \* | Piciformes | Ramphastidae | Selenidera gouldii baturitensis | EN |
-| 620 | \* | Procellariiformes | Diomedeidae | Diomedea dabbenena | CR |
-| 621 | \* | Procellariiformes | Diomedeidae | Diomedea epomophora | VU |
-| 622 | \* | Procellariiformes | Diomedeidae | Diomedea exulans | CR |
-| 623 | \* | Procellariiformes | Diomedeidae | Diomedea sanfordi | EN |
-| 624 | \* | Procellariiformes | Diomedeidae | Thalassarche chlororhynchos | EN |
-| 625 | \* | Procellariiformes | Procellariidae | Procellaria aequinoctialis | VU |
-| 626 | \* | Procellariiformes | Procellariidae | Procellaria conspicillata | VU |
-| 627 | \* | Procellariiformes | Procellariidae | Pterodroma arminjoniana | CR |
-| 628 | \* | Procellariiformes | Procellariidae | Pterodroma deserta | VU |
-| 629 | \* | Procellariiformes | Procellariidae | Pterodroma incerta | EN |
-| 630 | \* | Procellariiformes | Procellariidae | Pterodroma madeira | EN |
-| 631 | \* | Procellariiformes | Procellariidae | Puffinus lherminieri | CR |
-| 632 | \* | Psittaciformes | Psittacidae | Amazona pretrei | VU |
-| 633 | \* | Psittaciformes | Psittacidae | Amazona rhodocorytha | VU |
-| 634 | \* | Psittaciformes | Psittacidae | Amazona vinacea | VU |
-| 635 | \* | Psittaciformes | Psittacidae | Anodorhynchus leari | EN |
-| 636 | \* | Psittaciformes | Psittacidae | Aratinga solstitialis | EN |
-| 637 | \* | Psittaciformes | Psittacidae | Cyanopsitta spixii | CR |
-| 638 | \* | Psittaciformes | Psittacidae | Guaruba guarouba | VU |
-| 639 | \* | Psittaciformes | Psittacidae | Pionus reichenowi | VU |
-| 640 | \* | Psittaciformes | Psittacidae | Pyrilia vulturina | VU |
-| 641 |  | Psittaciformes | Psittacidae | Pyrrhura amazonum | VU |
-| 642 |  | Psittaciformes | Psittacidae | Pyrrhura anerythra | VU |
-| 643 | \* | Psittaciformes | Psittacidae | Pyrrhura coerulescens | VU |
-| 644 | \* | Psittaciformes | Psittacidae | Pyrrhura cruentata | VU |
-| 645 | \* | Psittaciformes | Psittacidae | Pyrrhura griseipectus | EN |
-| 646 | \* | Psittaciformes | Psittacidae | Pyrrhura leucotis | VU |
-| 647 |  | Psittaciformes | Psittacidae | Pyrrhura molinae | VU |
-| 648 |  | Psittaciformes | Psittacidae | Pyrrhura pallescens | VU |
-| 649 |  | Psittaciformes | Psittacidae | Pyrrhura perlata | VU |
-| 650 | \* | Psittaciformes | Psittacidae | Pyrrhura pfrimeri | EN |
-| 651 | \* | Psittaciformes | Psittacidae | Touit melanonotus | VU |
-| 652 | \* | Psittaciformes | Psittacidae | Touit surdus | VU |
-| 653 | \* | Strigiformes | Strigidae | Pulsatrix perspicillata pulsatrix | CR |
-| 654 | \* | Strigiformes | Strigidae | Strix huhula albomarginata | VU |
-| 655 | \* | Suliformes | Fregatidae | Fregata minor | CR |
-| 656 | \* | Suliformes | Fregatidae | Fregata trinitatis | CR |
-| 657 | \* | Suliformes | Sulidae | Sula sula | EN |
-| 658 | \* | Tinamiformes | Tinamidae | Crypturellus zabele | VU |
-| 659 | \* | Tinamiformes | Tinamidae | Nothura minor | EN |
-| 660 | \* | Tinamiformes | Tinamidae | Taoniscus nanus | EN |
-| 661 | \* | Tinamiformes | Tinamidae | Tinamus tao | VU |
-| 662 | \* | Trogoniformes | Trogonidae | Trogon collaris eytoni | EN |
-|  |  | MAMÍFEROS |  |
-| 663 | \* | Carnivora | Canidae | Atelocynus microtis | VU |
-| 664 | \* | Carnivora | Canidae | Chrysocyon brachyurus | VU |
-| 665 | \* | Carnivora | Canidae | Lycalopex vetulus | VU |
-| 666 | \* | Carnivora | Canidae | Speothos venaticus | VU |
-| 667 | \* | Carnivora | Felidae | Herpailurus yagouaroundi | VU |
-| 668 | \* | Carnivora | Felidae | Leopardus colocolo | VU |
-| 669 | \* | Carnivora | Felidae | Leopardus geoffroyi | VU |
-| 670 | \* | Carnivora | Felidae | Leopardus guttulus | VU |
-| 671 | \* | Carnivora | Felidae | Leopardus tigrinus | EN |
-| 672 | \* | Carnivora | Felidae | Leopardus wiedii | VU |
-| 673 | \* | Carnivora | Felidae | Panthera onca | VU |
-| 674 | \* | Carnivora | Mustelidae | Pteronura brasiliensis | VU |
-| 675 | \* | Cetartiodactyla | Cervidae | Blastocerus dichotomus | VU |
-| 676 | \* | Cetartiodactyla | Cervidae | Mazama nana | VU |
-| 677 | \* | Cetartiodactyla | Cervidae | Ozotoceros bezoarticus bezoarticus | VU |
-| 678 | \* | Cetartiodactyla | Tayassuidae | Tayassu pecari | VU |
-| 679 | \* | Chiroptera | Furipteridae | Furipterus horrens | VU |
-| 680 | \* | Chiroptera | Natalidae | Natalus macrourus | VU |
-| 681 |  | Chiroptera | Phyllostomidae | Lonchophylla bokermanni | VU |
-| 682 | \* | Chiroptera | Phyllostomidae | Lonchophylla dekeyseri | EN |
-| 683 | \* | Cingulata | Dasypodidae | Priodontes maximus | VU |
-| 684 | \* | Cingulata | Dasypodidae | Tolypeutes tricinctus | EN |
-| 685 | \* | Perissodactyla | Tapiridae | Tapirus terrestris | VU |
-| 686 | \* | Pilosa | Bradypodidae | Bradypus torquatus | VU |
-| 687 | \* | Pilosa | Myrmecophagidae | Myrmecophaga tridactyla | VU |
-| 688 | \* | Primates | Atelidae | Alouatta belzebul | VU |
-| 689 | \* | Primates | Atelidae | Alouatta discolor | VU |
-| 690 | \* | Primates | Atelidae | Alouatta guariba clamitans | VU |
-| 691 | \* | Primates | Atelidae | Alouatta guariba guariba | CR |
-| 692 | \* | Primates | Atelidae | Alouatta ululata | EN |
-| 693 | \* | Primates | Atelidae | Ateles belzebuth | VU |
-| 694 | \* | Primates | Atelidae | Ateles chamek | VU |
-| 695 | \* | Primates | Atelidae | Ateles marginatus | EN |
-| 696 | \* | Primates | Atelidae | Brachyteles arachnoides | EN |
-| 697 | \* | Primates | Atelidae | Brachyteles hypoxanthus | CR |
-| 698 | \* | Primates | Atelidae | Lagothrix lagothricha cana | EN |
-| 699 | \* | Primates | Atelidae | Lagothrix lagothricha lagothricha | VU |
-| 700 | \* | Primates | Atelidae | Lagothrix lagothricha poeppigii | VU |
-| 701 | \* | Primates | Callitrichidae | Callithrix aurita | EN |
-| 702 | \* | Primates | Callitrichidae | Callithrix flaviceps | EN |
-| 703 | \* | Primates | Callitrichidae | Leontopithecus caissara | EN |
-| 704 | \* | Primates | Callitrichidae | Leontopithecus chrysomelas | EN |
-| 705 | \* | Primates | Callitrichidae | Leontopithecus chrysopygus | EN |
-| 706 | \* | Primates | Callitrichidae | Leontopithecus rosalia | EN |
-| 707 | \* | Primates | Callitrichidae | Mico rondoni | VU |
-| 708 | \* | Primates | Callitrichidae | Saguinus bicolor | CR |
-| 709 | \* | Primates | Callitrichidae | Saguinus niger | VU |
-
-|     |     |     |     |     |     |
-| --- | --- | --- | --- | --- | --- |
-| 710 | \* | Primates | Cebidae | Cebus kaapori | CR |
-| 711 | \* | Primates | Cebidae | Saimiri vanzolinii | VU |
-| 712 | \* | Primates | Cebidae | Sapajus cay | VU |
-| 713 | \* | Primates | Cebidae | Sapajus flavius | EN |
-| 714 | \* | Primates | Cebidae | Sapajus robustus | EN |
-| 715 | \* | Primates | Cebidae | Sapajus xanthosternos | EN |
-| 716 | \* | Primates | Pitheciidae | Cacajao hosomi | EN |
-| 717 | \* | Primates | Pitheciidae | Callicebus barbarabrownae | CR |
-| 718 | \* | Primates | Pitheciidae | Callicebus coimbrai | EN |
-| 719 | \* | Primates | Pitheciidae | Callicebus melanochir | VU |
-| 720 | \* | Primates | Pitheciidae | Callicebus personatus | VU |
-| 721 | \* | Primates | Pitheciidae | Chiropotes satanas | CR |
-| 722 | \* | Primates | Pitheciidae | Chiropotes utahickae | VU |
-| 723 | \* | Rodentia | Caviidae | Cavia intermedia | CR |
-| 724 | \* | Rodentia | Caviidae | Kerodon acrobata | VU |
-| 725 | \* | Rodentia | Caviidae | Kerodon rupestris | VU |
-| 726 | \* | Rodentia | Cricetidae | Akodon mystax | VU |
-| 727 | \* | Rodentia | Cricetidae | Cerradomys goytaca | EN |
-| 728 | \* | Rodentia | Cricetidae | Euryoryzomys lamia | EN |
-| 729 | \* | Rodentia | Cricetidae | Gyldenstolpia planaltensis | EN |
-| 730 | \* | Rodentia | Cricetidae | Juscelinomys candango | CR (PEX) |
-| 731 | \* | Rodentia | Cricetidae | Microakodontomys transitorius | EN |
-| 732 | \* | Rodentia | Cricetidae | Oligoryzomys rupestris | EN |
-| 733 | \* | Rodentia | Cricetidae | Rhipidomys cariri | VU |
-| 734 | \* | Rodentia | Cricetidae | Rhipidomys tribei | EN |
-| 735 | \* | Rodentia | Cricetidae | Thalpomys cerradensis | VU |
-| 736 | \* | Rodentia | Cricetidae | Thalpomys lasiotis | EN |
-| 737 | \* | Rodentia | Cricetidae | Wilfredomys oenax | EN |
-| 738 | \* | Rodentia | Ctenomyidae | Ctenomys bicolor | EN |
-| 739 | \* | Rodentia | Ctenomyidae | Ctenomys flamarioni | EN |
-| 740 | \* | Rodentia | Ctenomyidae | Ctenomys lami | EN |
-| 741 | \* | Rodentia | Ctenomyidae | Ctenomys minutus | VU |
-| 742 | \* | Rodentia | Echimyidae | Callistomys pictus | EN |
-| 743 | \* | Rodentia | Echimyidae | Phyllomys brasiliensis | EN |
-| 744 | \* | Rodentia | Echimyidae | Phyllomys lundi | EN |
-| 745 | \* | Rodentia | Echimyidae | Phyllomys thomasi | EN |
-| 746 | \* | Rodentia | Echimyidae | Phyllomys unicolor | CR |
-| 747 | \* | Rodentia | Echimyidae | Trinomys eliasi | VU |
-| 748 | \* | Rodentia | Echimyidae | Trinomys mirapitanga | EN |
-| 749 | \* | Rodentia | Echimyidae | Trinomys moojeni | EN |
-| 750 | \* | Rodentia | Echimyidae | Trinomys yonenagae | EN |
-| 751 | \* | Rodentia | Erethizontidae | Chaetomys subspinosus | VU |
-| 752 | \* | Rodentia | Erethizontidae | Coendou speratus | EN |
-| 753 | \* | Cetartiodactyla | Balaenidae | Eubalaena australis | EN |
-| 754 | \* | Cetartiodactyla | Balaenopteridae | Balaenoptera borealis | EN |
-| 755 | \* | Cetartiodactyla | Balaenopteridae | Balaenoptera musculus | CR |
-| 756 | \* | Cetartiodactyla | Balaenopteridae | Balaenoptera physalus | EN |
-| 757 | \* | Cetartiodactyla | Delphinidae | Sotalia guianensis | VU |
-| 758 |  | Cetartiodactyla | Delphinidae | Tursiops gephyreus | EN |
-| 759 |  | Cetartiodactyla | Iniidae | Inia araguaiaensis | VU |
-| 760 | \* | Cetartiodactyla | Iniidae | Inia geoffrensis | EN |
-| 761 | \* | Cetartiodactyla | Physeteridae | Physeter macrocephalus | VU |
-| 762 | \* | Cetartiodactyla | Pontoporiidae | Pontoporia blainvillei | CR |
-| 763 | \* | Sirenia | Trichechidae | Trichechus inunguis | VU |
-| 764 | \* | Sirenia | Trichechidae | Trichechus manatus | EN |
-|  |  |  |  |  |  |
-| \* |  | Espécies constantes na Lista anterior (2014) |  |  |
-| VU |  | Vulnerável |  |  |  |
-| EN |  | Em Perigo |  |  |  |
-| CR |  | Criticamente em Perigo |  |  |  |
-| CR (PEX) | Criticamente em Perigo (Provavelmente Extinta) |  |
-| EW |  | Extinta na Natureza |  |  |  |
-|  |  |  |  |  |  |
-| ANEXO II. LISTA OFICIAL DE ESPÉCIES EXTINTAS DA FAUNA BRASILEIRA |
-|  | # | Ordem | Família | Espécie ou Subespécie | Categoria |
-|  |  | ANFÍBIOS |  |
-| 1 |  | Anura | Hylidae | Boana cymbalum | EX |
-| 2 | \* | Anura | Phyllomedusidae | Phrynomedusa fimbriata | EX |
-|  |  | AVES |  |
-| 3 | \* | Charadriiformes | Scolopacidae | Numenius borealis | RE |
-| 4 | \* | Passeriformes | Furnariidae | Cichlocolaptes mazarbarnetti | EX |
-| 5 | \* | Passeriformes | Furnariidae | Philydor novaesi | EX |
-| 6 | \* | Passeriformes | Icteridae | Leistes defilippii | RE |
-| 7 | \* | Psittaciformes | Psittacidae | Anodorhynchus glaucus | RE |
-| 8 | \* | Strigiformes | Strigidae | Glaucidium mooreorum | EX |
-|  |  | MAMÍFEROS |  |
-| 9 | \* | Rodentia | Cricetidae | Noronhomys vespuccii | EX |
-|  |  |  |  |  |  |
-| \* |  | Espécies constantes na Lista anterior (2014) |  |  |
-| EX |  | Extinta |  |  |  |
-| RE |  | Regionalmente Extinta (Extinta no Brasil) |  |  |
-|  |  |  |  |  |  |
+| Legenda |
+| --- | --- | --- | --- |
+| VU |  | Vulnerável |  |
+| EN |  | Em Perigo |  |
+| CR |  | Criticamente em Perigo |  |
+| CR (PE) | Criticamente em Perigo (Possivelmente Extinta) |  |
+| EW |  | Extinta na Natureza |  |
+| EX |  | Extinta |  |
+| RE |  | Regionalmente Extinta |  |
 
 ANEXO 3
 
-|     |     |     |     |     |     |
-| --- | --- | --- | --- | --- | --- |
-| ANEXO 3. Atualiza o teor dos ANEXOS I e II da Portaria nº 445, de 17 de dezembro de 2014. |
-| ANEXO I. LISTA OFICIAL DA FAUNA BRASILEIRA AMEAÇADA DE EXTINÇÃO |
-|  | # | Ordem | Família | Espécie ou Subespécie | Categoria |
-|  |  | INVERTEBRADOS AQUÁTICOS |  |
-| 1 |  | Amphipoda | Artesiidae | Spelaeogammarus bahiensis | VU |
-| 2 |  | Amphipoda | Artesiidae | Spelaeogammarus sanctus | CR |
-| 3 |  | Amphipoda | Artesiidae | Spelaeogammarus santanensis | CR |
-| 4 |  | Amphipoda | Artesiidae | Spelaeogammarus spinilacertus | EN |
-| 5 |  | Amphipoda | Artesiidae | Spelaeogammarus titan | CR |
-| 6 |  | Amphipoda | Bogidiellidae | Megagidiella azul | VU |
-| 7 |  | Amphipoda | Dogielinotidae | Hyalella caeca | VU |
-| 8 |  | Amphipoda | Hyalellidae | Hyalella epikarstica | CR |
-| 9 |  | Amphipoda | Hyalellidae | Hyalella formosa | CR |
-| 10 |  | Amphipoda | Hyalellidae | Hyalella imbya | CR (PEX) |
-| 11 |  | Amphipoda | Hyalellidae | Hyalella veredae | CR |
-| 12 |  | Amphipoda | Mesogammaridae | Potiberaba porakuara | VU |
-| 13 |  | Amphipoda | Sebidae | Seborgia potiguar | CR |
-| 14 | \* | Caenogastropoda | Hydrobiidae | Potamolithus troglobius | CR |
-| 15 | \* | Coleoptera | Dytiscidae | Copelatus cessaima | EN |
-| 16 | \* | Decapoda | Aeglidae | Aegla brevipalma | CR |
-| 17 | \* | Decapoda | Aeglidae | Aegla camargoi | EN |
-| 18 | \* | Decapoda | Aeglidae | Aegla cavernicola | CR |
-| 19 |  | Decapoda | Aeglidae | Aegla charon | CR |
-| 20 | \* | Decapoda | Aeglidae | Aegla franca | CR |
-| 21 | \* | Decapoda | Aeglidae | Aegla inconspicua | VU |
-| 22 | \* | Decapoda | Aeglidae | Aegla inermis | EN |
-| 23 | \* | Decapoda | Aeglidae | Aegla itacolomiensis | EN |
-| 24 | \* | Decapoda | Aeglidae | Aegla leachi | EN |
-| 25 | \* | Decapoda | Aeglidae | Aegla leptochela | CR |
-| 26 | \* | Decapoda | Aeglidae | Aegla leptodactyla | VU |
-| 27 | \* | Decapoda | Aeglidae | Aegla manuinflata | EN |
-| 28 | \* | Decapoda | Aeglidae | Aegla microphthalma | CR |
-| 29 | \* | Decapoda | Aeglidae | Aegla oblata | EN |
-| 30 | \* | Decapoda | Aeglidae | Aegla obstipa | EN |
-| 31 | \* | Decapoda | Aeglidae | Aegla perobae | CR |
-| 32 | \* | Decapoda | Aeglidae | Aegla renana | CR |
-| 33 | \* | Decapoda | Aeglidae | Aegla violacea | EN |
-| 34 | \* | Ephemeroptera | Baetidae | Adebrotus lugoi | VU |
-| 35 |  | Ephemeroptera | Baetidae | Camelobaetidius juparana | VU |
-| 36 | \* | Ephemeroptera | Baetidae | Camelobaetidius maranhensis | VU |
-| 37 | \* | Ephemeroptera | Baetidae | Camelobaetidius spinosus | VU |
-| 38 | \* | Ephemeroptera | Leptophlebiidae | Hermanella amere | EN |
-| 39 | \* | Ephemeroptera | Leptophlebiidae | Hermanella nigra | VU |
-| 40 |  | Ephemeroptera | Leptophlebiidae | Simothraulopsis eurybasis | VU |
-| 41 |  | Isopoda | Brasileirinidae | Brasileirinho cavaticus | CR |
-| 42 |  | Isopoda | Calabozoidae | Pongycarcinia xiphidiourus | EN |
-| 43 | \* | Littorinimorpha | Pomatiopsidae | Spiripockia punctata | CR |
-| 44 | \* | Odonata | Aeshnidae | Castoraeschna januaria | VU |
-| 45 | \* | Odonata | Aeshnidae | Rhionaeschna eduardoi | EN |
-| 46 | \* | Odonata | Coenagrionidae | Homeoura lindneri | VU |
-| 47 | \* | Odonata | Coenagrionidae | Leptagrion acutum | CR |
-| 48 | \* | Odonata | Coenagrionidae | Leptagrion bocainense | VU |
-| 49 | \* | Odonata | Coenagrionidae | Leptagrion capixabae | VU |
-| 50 | \* | Odonata | Coenagrionidae | Leptagrion porrectum | EN |
-| 51 | \* | Odonata | Coenagrionidae | Leptagrion vriesianum | VU |
-| 52 | \* | Odonata | Gomphidae | Phyllocycla bartica | VU |
-| 53 | \* | Odonata | Libellulidae | Elasmothemis schubarti | EN |
-| 54 | \* | Odonata | Libellulidae | Macrothemis tessellata | VU |
-| 55 | \* | Odonata | Libellulidae | Micrathyria borgmeieri | VU |
-| 56 | \* | Odonata | Libellulidae | Micrathyria divergens | VU |
-| 57 | \* | Odonata | Megapodagrionidae | Heteragrion petiense | EN |
-| 58 | \* | Odonata | Pseudostigmatidae | Mecistogaster pronoti | CR (PEX) |
-| 59 | \* | Pulmonata | Streptaxidae | Hypselartemon alveus | VU |
-| 60 | \* | Spongillida | Spongillidae | Racekiela cavernicola | VU |
-| 61 |  | Tricladida | Dimarcusidae | Hausera hauseri | VU |
-| 62 |  | Tricladida | Dugesiidae | Girardia arenicola | CR |
-| 63 |  | Tricladida | Dugesiidae | Girardia desiderensis | CR |
-| 64 |  | Tricladida | Dugesiidae | Girardia multidiverticulata | CR |
-| 65 |  | Tricladida | Dugesiidae | Girardia paucipuntacta | CR |
-| 66 |  | Tricladida | Uteriporidae | Sluysia triapertura | CR |
-| 67 | \* | Zygoptera | Coenagrionidae | Aceratobasis cornicauda | VU |
-| 68 | \* | Zygoptera | Coenagrionidae | Aceratobasis mourei | EN |
-| 69 | \* | Zygoptera | Coenagrionidae | Fluminagrion taxaense | CR (PEX) |
-| 70 |  | Amphipoda | Artesiidae | Spelaeogammarus trajanoae | EN |
-| 71 | \* | Actiniaria | Actiniidae | Condylactis gigantea | EN |
-| 72 | \* | Anthoathecata | Milleporidae | Millepora laboreli | VU |
-| 73 | \* | Apodida | Synaptidae | Synaptula secreta | CR |
-| 74 | \* | Camarodonta | Toxopneustidae | Lytechinus variegatus | VU |
-| 75 | \* | Cassiduloida | Cassidulidae | Cassidulus mitis | EN |
-| 76 | \* | Decapoda | Gecarcinidae | Cardisoma guanhumi | VU |
-| 77 | \* | Decapoda | Gecarcinidae | Johngarthia lagostoma | EN |
-| 78 | \* | Enteropneusta | Spengelidae | Willeya loya | CR |
-| 79 | \* | Eunicida | Eunicidae | Eunice sebastiani | EN |
-| 80 | \* | Eunicida | Onuphidae | Diopatra cuprea | VU |
-| 81 | \* | Forcipulatida | Asteriidae | Coscinasterias tenuispina | VU |
-| 82 | \* | Littorinimorpha | Strombidae | Eustrombus goliath | VU |
-| 83 | \* | Littorinimorpha | Strombidae | Lobatus costatus | VU |
-| 84 | \* | Littorinimorpha | Vermetidae | Petaloconchus myrakeenae | VU |
-| 85 | \* | Ostreoida | Pectinidae | Euvola ziczac | EN |
-| 86 | \* | Paxillosida | Astropectinidae | Astropecten articulatus | VU |
-| 87 | \* | Paxillosida | Astropectinidae | Astropecten brasiliensis | VU |
-| 88 | \* | Paxillosida | Astropectinidae | Astropecten marginatus | VU |
-| 89 | \* | Paxillosida | Luidiidae | Luidia senegalensis | VU |
-| 90 | \* | Poecilosclerida | Latrunculiidae | Latrunculia janeirensis | VU |
-| 91 | \* | Scleractinia | Mussidae | Mussismilia braziliensis | VU |
-| 92 | \* | Scleractinia | Mussidae | Mussismilia harttii | EN |
-| 93 | \* | Suberitida | Halichondriidae | Halichondria cebimarensis | VU |
-| 94 | \* | Suberitida | Halichondriidae | Halichondria tenebrica | VU |
-| 95 | \* | Terebratulida | Bouchardiidae | Bouchardia rosea | EN |
-| 96 | \* | Valvatida | Ophidiasteridae | Linckia guildingi | VU |
-| 97 | \* | Valvatida | Oreasteridae | Oreaster reticulatus | VU |
-|  |  | PEIXES |  |
-| 98 | \* | Atheriniformes | Atherinopsidae | Odontesthes bicudo | EN |
-| 99 | \* | Carcharhiniformes | Carcharhinidae | Carcharhinus galapagensis | CR |
-| 100 | \* | Carcharhiniformes | Carcharhinidae | Carcharhinus longimanus | VU |
-| 101 | \* | Carcharhiniformes | Carcharhinidae | Carcharhinus obscurus | EN |
-| 102 | \* | Carcharhiniformes | Carcharhinidae | Carcharhinus perezi | VU |
-| 103 | \* | Carcharhiniformes | Carcharhinidae | Carcharhinus plumbeus | CR |
-| 104 | \* | Carcharhiniformes | Carcharhinidae | Carcharhinus porosus | CR |
-| 105 | \* | Carcharhiniformes | Carcharhinidae | Carcharhinus signatus | EN |
-| 106 | \* | Carcharhiniformes | Carcharhinidae | Isogomphodon oxyrhynchus | CR |
-| 107 | \* | Carcharhiniformes | Carcharhinidae | Negaprion brevirostris | EN |
-| 108 | \* | Carcharhiniformes | Sphyrnidae | Sphyrna lewini | CR |
-| 109 | \* | Carcharhiniformes | Sphyrnidae | Sphyrna media | CR |
-| 110 | \* | Carcharhiniformes | Sphyrnidae | Sphyrna mokarran | CR |
-| 111 | \* | Carcharhiniformes | Sphyrnidae | Sphyrna tiburo | CR |
-| 112 | \* | Carcharhiniformes | Sphyrnidae | Sphyrna tudes | CR |
-| 113 | \* | Carcharhiniformes | Sphyrnidae | Sphyrna zygaena | CR |
-| 114 | \* | Carcharhiniformes | Triakidae | Galeorhinus galeus | CR |
-| 115 | \* | Carcharhiniformes | Triakidae | Mustelus canis | EN |
-| 116 | \* | Carcharhiniformes | Triakidae | Mustelus fasciatus | CR |
-| 117 | \* | Carcharhiniformes | Triakidae | Mustelus schmitti | CR |
-| 118 | \* | Characiformes | Anostomidae | Hypomasticus thayeri | VU |
-| 119 | \* | Characiformes | Anostomidae | Leporinus guttatus | VU |
-| 120 | \* | Characiformes | Anostomidae | Leporinus pitingai | CR |
-| 121 | \* | Characiformes | Anostomidae | Sartor tucuruiense | EN |
-| 122 | \* | Characiformes | Characidae | Astyanax eremus | CR |
-| 123 | \* | Characiformes | Characidae | Brycon devillei | EN |
-| 124 | \* | Characiformes | Characidae | Brycon gouldingi | EN |
-| 125 | \* | Characiformes | Characidae | Brycon insignis | EN |
-| 126 | \* | Characiformes | Characidae | Brycon opalinus | VU |
-| 127 | \* | Characiformes | Characidae | Brycon orbignyanus | CR |
-| 128 | \* | Characiformes | Characidae | Brycon vermelha | EN |
-| 129 | \* | Characiformes | Characidae | Bryconamericus lambari | EN |
-| 130 | \* | Characiformes | Characidae | Diapoma pyrrhopteryx | EN |
-| 131 | \* | Characiformes | Characidae | Hasemania crenuchoides | EN |
-| 132 |  | Characiformes | Characidae | Hasemania maxillaris | CR (PEX) |
-| 133 |  | Characiformes | Characidae | Hasemania melanura | CR (PEX) |
+| ANEXO 3. Lista oficial de peixes e invertebrados aquáticos ameaçados, conforme a Portaria GM/MMA nº 1.667, de 27 de abril de 2026 (revoga a Portaria nº 445, de 17 de dezembro de 2014). |
+| --- | --- | --- | --- |
+| ANEXO I. LISTA OFICIAL DA FAUNA AQUÁTICA (PEIXES E INVERTEBRADOS) AMEAÇADA DE EXTINÇÃO |
+| --- | --- | --- | --- |
+|  | Família | Espécie ou Subespécie | Categoria |
+| 1 | Atherinopsidae | Odontesthes bicudo | EN |
+| 2 | Anostomidae | Hypomasticus santanai | EN |
+| 3 | Anostomidae | Leporinus guttatus | EN |
+| 4 | Anostomidae | Leporinus pitingai | EN |
+| 5 | Anostomidae | Megaleporinus gaiero | VU |
+| 6 | Anostomidae | Sartor tucuruiensis | EN |
+| 7 | Bryconidae | Brycon dulcis | VU |
+| 8 | Bryconidae | Brycon gouldingi | VU |
+| 9 | Bryconidae | Brycon orbignyanus | CR |
+| 10 | Bryconidae | Brycon vermelha | EN |
+| 11 | Bryconidae | Brycon vonoi | EN |
+| 12 | Characidae | Astyanax brucutu | CR |
+| 13 | Characidae | Astyanax eremus | CR |
+| 14 | Characidae | Hasemania maxillaris | CR |
+| 15 | Characidae | Hasemania melanura | CR |
+| 16 | Characidae | Hasemania piatan | EN |
+| 17 | Characidae | Hollandichthys taramandahy | VU |
+| 18 | Acestrorhamphidae | Hyphessobrycon cantoi | EN |
+| 19 | Characidae | Hyphessobrycon duragenys | EN |
+| 20 | Characidae | Hyphessobrycon flammeus | EN |
+| 21 | Characidae | Hyphessobrycon taurocephalus | CR |
+| 22 | Characidae | Hyphessobrycon veredus | EN |
+| 23 | Stevardiidae | Knodus dorsomaculatus | EN |
+| 24 | Characidae | Kolpotocheirodon figueiredoi | CR |
+| 25 | Characidae | Lepidocharax diamantina | EN |
+| 26 | Characidae | Mimagoniates lateralis | VU |
+| 27 | Characidae | Mimagoniates sylvicola | EN |
+| 28 | Acestrorhamphidae | Moenkhausia parecis | EN |
+| 29 | Characidae | Nematocharax varii | EN |
+| 30 | Characidae | Psalidodon crenuchoides | EN |
+| 31 | Characidae | Psalidodon uberaba | EN |
+| 32 | Characidae | Rachoviscus crassiceps | VU |
+| 33 | Characidae | Rachoviscus graciliceps | EN |
+| 34 | Characidae | Spintherobolus ankoseion | VU |
+| 35 | Characidae | Stygichthys typhlops | CR |
+| 36 | Crenuchidae | Characidium onca | EN |
+| 37 | Crenuchidae | Characidium vestigipinne | EN |
+| 38 | Curimatidae | Cyphocharax jagunco | CR |
+| 39 | Lebiasinidae | Lebiasina marilynae | VU |
+| 40 | Lebiasinidae | Lebiasina minuta | VU |
+| 41 | Prochilodontidae | Prochilodus britskii | VU |
+| 42 | Prochilodontidae | Prochilodus harttii | VU |
+| 43 | Prochilodontidae | Prochilodus vimboides | VU |
+| 44 | Serrasalmidae | Colossoma macropomum | VU |
+| 45 | Cichlidae | Crenicichla jupiaensis | EN |
+| 46 | Cichlidae | Teleocichla centisquama | VU |
+| 47 | Cichlidae | Wallaciia urosema | VU |
+| 48 | Anablepidae | Jenynsia sanctaecatarinae | EN |
+| 49 | Poeciliidae | Cnesterodon carnegiei | VU |
+| 50 | Poeciliidae | Cnesterodon omorgmatos | CR |
+| 51 | Poeciliidae | Phalloptychus eigenmanni | EN |
+| 52 | Poeciliidae | Phalloptychus iheringii | VU |
+| 53 | Poeciliidae | Phallotorynus fasciolatus | CR |
+| 54 | Poeciliidae | Poecilia akroa | EN |
+| 55 | Poeciliidae | Poecilia pertapeh | CR |
+| 56 | Rivulidae | Acrolebias carvalhoi | CR |
+| 57 | Rivulidae | Anablepsoides cearensis | VU |
+| 58 | Rivulidae | Atlantirivulus lazzarotoi | CR |
+| 59 | Rivulidae | Atlantirivulus maricensis | CR |
+| 60 | Rivulidae | Atlantirivulus nudiventris | CR |
+| 61 | Rivulidae | Atlantirivulus simplicis | EN |
+| 62 | Rivulidae | Acantholebias quirogai | CR |
+| 63 | Rivulidae | Austrolebias ephemerus | EN |
+| 64 | Rivulidae | Austrolebias univentripinnis | EN |
+| 65 | Rivulidae | Amatolebias varzeae | CR |
+| 66 | Rivulidae | Campellolebias brucei | CR |
+| 67 | Rivulidae | Campellolebias chrysolineatus | CR |
+| 68 | Rivulidae | Campellolebias dorsimaculatus | CR |
+| 69 | Rivulidae | Campellolebias intermedius | CR |
+| 70 | Rivulidae | Cynolebias akroa | VU |
+| 71 | Rivulidae | Cynolebias elegans | CR |
+| 72 | Rivulidae | Cynolebias gorutuba | EN |
+| 73 | Rivulidae | Cynolebias griseus | EN |
+| 74 | Rivulidae | Cynolebias leptocephalus | EN |
+| 75 | Rivulidae | Cynolebias parnaibensis | CR |
+| 76 | Rivulidae | Cynopoecilus feltrini | VU |
+| 77 | Rivulidae | Cynopoecilus intimus | EN |
+| 78 | Rivulidae | Cypholebias cinereus | CR |
+| 79 | Rivulidae | Garcialebias adloffi | EN |
+| 80 | Rivulidae | Garcialebias arachan | VU |
+| 81 | Rivulidae | Garcialebias araucarianus | VU |
+| 82 | Rivulidae | Garcialebias bagual | CR |
+| 83 | Rivulidae | Garcialebias botocudo | CR |
+| 84 | Rivulidae | Garcialebias cheffei | CR |
+| 85 | Rivulidae | Garcialebias lourenciano | CR |
+| 86 | Rivulidae | Garcialebias nachtigalli | VU |
+| 87 | Rivulidae | Garcialebias nigrofasciatus | EN |
+| 88 | Rivulidae | Garcialebias nubium | CR |
+| 89 | Rivulidae | Garcialebias pelotapes | EN |
+| 90 | Rivulidae | Garcialebias pongondo | EN |
+| 91 | Rivulidae | Garcialebias reicherti | EN |
+| 92 | Rivulidae | Gymnolebias jaegari | EN |
+| 93 | Rivulidae | Hypsolebias adornatus | CR |
+| 94 | Rivulidae | Hypsolebias alternatus | EN |
+| 95 | Rivulidae | Hypsolebias auratus | CR |
+| 96 | Rivulidae | Hypsolebias brunoi | VU |
+| 97 | Rivulidae | Hypsolebias carlettoi | EN |
+| 98 | Rivulidae | Hypsolebias delucai | VU |
+| 99 | Rivulidae | Hypsolebias faouri | VU |
+| 100 | Rivulidae | Hypsolebias fasciatus | VU |
+| 101 | Rivulidae | Hypsolebias flammeus | VU |
+| 102 | Rivulidae | Hypsolebias flavicaudatus | EN |
+| 103 | Rivulidae | Hypsolebias fulminantis | CR |
+| 104 | Rivulidae | Hypsolebias gardneri | EN |
+| 105 | Rivulidae | Hypsolebias ghisolfii | EN |
+| 106 | Rivulidae | Hypsolebias gibberatus | VU |
+| 107 | Rivulidae | Hypsolebias gilbertobrasili | CR |
+| 108 | Rivulidae | Hypsolebias guanambi | VU |
+| 109 | Rivulidae | Hypsolebias hamadryades | CR |
+| 110 | Rivulidae | Hypsolebias harmonicus | VU |
+| 111 | Rivulidae | Hypsolebias hellneri | EN |
+| 112 | Rivulidae | Hypsolebias igneus | EN |
+| 113 | Rivulidae | Hypsolebias janaubensis | CR |
+| 114 | Rivulidae | Hypsolebias longignatus | VU |
+| 115 | Rivulidae | Hypsolebias lopesi | CR |
+| 116 | Rivulidae | Hypsolebias macaubensis | EN |
+| 117 | Rivulidae | Hypsolebias magnificus | EN |
+| 118 | Rivulidae | Hypsolebias marginatus | CR |
+| 119 | Rivulidae | Hypsolebias mediopapillatus | VU |
+| 120 | Rivulidae | Hypsolebias multiradiatus | EN |
+| 121 | Rivulidae | Hypsolebias nielseni | EN |
+| 122 | Rivulidae | Hypsolebias notatus | EN |
+| 123 | Rivulidae | Hypsolebias nudiorbitatus | VU |
+| 124 | Rivulidae | Hypsolebias picturatus | EN |
+| 125 | Rivulidae | Hypsolebias radiosus | CR |
+| 126 | Rivulidae | Hypsolebias radiseriatus | EN |
+| 127 | Rivulidae | Hypsolebias rufus | CR |
+| 128 | Rivulidae | Hypsolebias shibattai | VU |
+| 129 | Rivulidae | Hypsolebias splendissimus | VU |
+| 130 | Rivulidae | Hypsolebias stellatus | EN |
+| 131 | Rivulidae | Hypsolebias tocantinensis | CR |
+| 132 | Rivulidae | Hypsolebias trilineatus | CR |
+| 133 | Rivulidae | Hypsolebias virgulatus | CR |
+| 134 | Rivulidae | Kryptolebias brasiliensis | EN |
+| 135 | Rivulidae | Kryptolebias gracilis | CR |
+| 136 | Rivulidae | Leptolebias marmoratus | CR |
+| 137 | Rivulidae | Leptopanchax citrinipinnis | CR |
+| 138 | Rivulidae | Leptopanchax itanhaensis | CR |
+| 139 | Rivulidae | Leptopanchax opalescens | CR |
+| 140 | Rivulidae | Leptopanchax sanguineus | CR |
+| 141 | Rivulidae | Leptopanchax splendens | CR |
+| 142 | Rivulidae | Maratecoara formosa | EN |
+| 143 | Rivulidae | Maratecoara splendida | EN |
+| 144 | Rivulidae | Matilebias alexandri | EN |
+| 145 | Rivulidae | Matilebias camaquensis | EN |
+| 146 | Rivulidae | Matilebias cyaneus | EN |
+| 147 | Rivulidae | Matilebias ibicuiensis | EN |
+| 148 | Rivulidae | Matilebias litzi | VU |
+| 149 | Rivulidae | Matilebias paucisquama | VU |
+| 150 | Rivulidae | Melanorivulus amambaiensis | CR |
+| 151 | Rivulidae | Melanorivulus egens | CR |
+| 152 | Rivulidae | Melanorivulus interruptus | VU |
+| 153 | Rivulidae | Melanorivulus leali | VU |
+| 154 | Rivulidae | Melanorivulus linearis | VU |
+| 155 | Rivulidae | Melanorivulus paracatuensis | VU |
+| 156 | Rivulidae | Melanorivulus pinima | EN |
+| 157 | Rivulidae | Melanorivulus rutilicaudus | VU |
+| 158 | Rivulidae | Melanorivulus vittatus | EN |
+| 159 | Rivulidae | Moema piriana | CR |
+| 160 | Rivulidae | Nematolebias catimbau | CR |
+| 161 | Rivulidae | Nematolebias papilliferus | CR |
+| 162 | Rivulidae | Nematolebias whitei | EN |
+| 163 | Rivulidae | Notholebias cruzi | CR |
+| 164 | Rivulidae | Notholebias fractifasciatus | CR |
+| 165 | Rivulidae | Notholebias minimus | EN |
+| 166 | Rivulidae | Notholebias vermiculatus | CR |
+| 167 | Rivulidae | Ophthalmolebias bokermanni | CR |
+| 168 | Rivulidae | Ophthalmolebias constanciae | CR |
+| 169 | Rivulidae | Ophthalmolebias ilheusensis | EN |
+| 170 | Rivulidae | Ophthalmolebias perpendicularis | CR |
+| 171 | Rivulidae | Ophthalmolebias rosaceus | CR |
+| 172 | Rivulidae | Ophthalmolebias suzarti | VU |
+| 173 | Rivulidae | Pituna brevirostrata | CR |
+| 174 | Rivulidae | Plesiolebias xavantei | EN |
+| 175 | Rivulidae | Simpsonichthys boitonei | CR |
+| 176 | Rivulidae | Simpsonichthys cholopteryx | EN |
+| 177 | Rivulidae | Simpsonichthys espinhacensis | EN |
+| 178 | Rivulidae | Simpsonichthys nigromaculatus | VU |
+| 179 | Rivulidae | Simpsonichthys parallelus | EN |
+| 180 | Rivulidae | Simpsonichthys punctulatus | CR |
+| 181 | Rivulidae | Simpsonichthys santanae | EN |
+| 182 | Rivulidae | Simpsonichthys zonatus | CR |
+| 183 | Rivulidae | Titanolebias cheradophilus | CR |
+| 184 | Rivulidae | Trigonectes strigabundus | EN |
+| 185 | Rivulidae | Xenurolebias myersi | EN |
+| 186 | Rivulidae | Xenurolebias pataxo | EN |
+| 187 | Apteronotidae | Sternarchogiton zuanoni | EN |
+| 188 | Apteronotidae | Sternarchorhynchus caboclo | VU |
+| 189 | Apteronotidae | Sternarchorhynchus higuchii | CR |
+| 190 | Apteronotidae | Sternarchorhynchus inpai | VU |
+| 191 | Apteronotidae | Sternarchorhynchus jaimei | CR |
+| 192 | Apteronotidae | Sternarchorhynchus kokraimoro | EN |
+| 193 | Apteronotidae | Sternarchorhynchus mareikeae | VU |
+| 194 | Apteronotidae | Sternarchorhynchus severii | VU |
+| 195 | Apteronotidae | Sternarchorhynchus villasboasi | EN |
+| 196 | Sternopygidae | Archolaemus ferreirai | VU |
+| 197 | Sternopygidae | Archolaemus santosi | VU |
+| 198 | Sternopygidae | Eigenmannia vicentespelaea | EN |
+| 199 | Ariidae | Paragenidens grandoculis | CR |
+| 200 | Callichthyidae | Aspidoras mephisto | CR |
+| 201 | Heptapteridae | Chasmocranus brachynemus | EN |
+| 202 | Heptapteridae | Heptapterus multiradiatus | CR |
+| 203 | Heptapteridae | Pimelodella kronei | EN |
+| 204 | Heptapteridae | Pimelodella spelaea | VU |
+| 205 | Heptapteridae | Rhamdia enfurnada | VU |
+| 206 | Heptapteridae | Rhamdiopsis krugi | EN |
+| 207 | Loricariidae | Ancistrus cryptophthalmus | EN |
+| 208 | Loricariidae | Ancistrus formoso | EN |
+| 209 | Loricariidae | Ancistrus minutus | EN |
+| 210 | Loricariidae | Baryancistrus longipinnis | EN |
+| 211 | Loricariidae | Baryancistrus niveatus | VU |
+| 212 | Loricariidae | Delturus parahybae | CR |
+| 213 | Loricariidae | Eurycheilichthys apocremnus | CR |
+| 214 | Loricariidae | Harttia depressa | EN |
+| 215 | Loricariidae | Harttia panara | VU |
+| 216 | Loricariidae | Harttia villasboas | VU |
+| 217 | Loricariidae | Hemiancistrus megalopteryx | EN |
+| 218 | Loricariidae | Hypancistrus zebra | CR |
+| 219 | Loricariidae | Hypostomus subcarinatus | CR |
+| 220 | Loricariidae | Isbrueckerichthys saxicola | EN |
+| 221 | Loricariidae | Microlepidogaster perforata | CR |
+| 222 | Loricariidae | Neoplecostomus botucatu | CR |
+| 223 | Loricariidae | Otothyris juquiae | EN |
+| 224 | Loricariidae | Parancistrus nudiventris | EN |
+| 225 | Loricariidae | Parotocinclus cesarpintoi | EN |
+| 226 | Loricariidae | Parotocinclus seridoensis | EN |
+| 227 | Loricariidae | Parotocinclus spilosoma | EN |
+| 228 | Loricariidae | Parotocinclus spilurus | EN |
+| 229 | Loricariidae | Plesioptopoma curvidens | CR |
+| 230 | Loricariidae | Pogonopoma obscurum | VU |
+| 231 | Loricariidae | Pogonopoma parahybae | EN |
+| 232 | Loricariidae | Pseudotocinclus tietensis | EN |
+| 233 | Pimelodidae | Conorhynchos conirostris | EN |
+| 234 | Pimelodidae | Pseudoplatystoma corruscans | VU |
+| 235 | Pimelodidae | Steindachneridion amblyurum | VU |
+| 236 | Pimelodidae | Steindachneridion doceanum | EN |
+| 237 | Pimelodidae | Steindachneridion melanodermatum | EN |
+| 238 | Pimelodidae | Steindachneridion parahybae | EN |
+| 239 | Pimelodidae | Steindachneridion punctatum | EN |
+| 240 | Pimelodidae | Steindachneridion scriptum | VU |
+| 241 | Pseudopimelodidae | Lophiosilurus alexandri | VU |
+| 242 | Pseudopimelodidae | Microglanis maculatus | CR |
+| 243 | Pseudopimelodidae | Microglanis robustus | EN |
+| 244 | Trichomycteridae | Cambeva crassicaudata | EN |
+| 245 | Trichomycteridae | Cambeva igobi | VU |
+| 246 | Trichomycteridae | Cambeva mboycy | EN |
+| 247 | Trichomycteridae | Cambeva papillifera | EN |
+| 248 | Trichomycteridae | Cambeva pascuali | CR |
+| 249 | Trichomycteridae | Cambeva tropeiro | EN |
+| 250 | Trichomycteridae | Ituglanis bambui | CR |
+| 251 | Trichomycteridae | Ituglanis epikarsticus | CR |
+| 252 | Trichomycteridae | Ituglanis mambai | CR |
+| 253 | Trichomycteridae | Ituglanis passensis | CR |
+| 254 | Trichomycteridae | Ituglanis ramiroi | VU |
+| 255 | Trichomycteridae | Listrura depinnai | EN |
+| 256 | Trichomycteridae | Listrura nematopteryx | EN |
+| 257 | Trichomycteridae | Trichogenes claviger | EN |
+| 258 | Trichomycteridae | Trichomycterus dali | EN |
+| 259 | Trichomycteridae | Trichomycterus itacarambiensis | VU |
+| 260 | Trichomycteridae | Trichomycterus rubbioli | VU |
+| 261 | Megalopidae | Megalops atlanticus | VU |
+| 262 | Gobiesocidae | Acyrtus pauciradiatus | VU |
+| 263 | Ophidiidae | Otophidium chickcharney | CR |
+| 264 | Blenniidae | Hypleurochilus brasil | VU |
+| 265 | Blenniidae | Scartella itajobi | VU |
+| 266 | Blenniidae | Scartella poiti | VU |
+| 267 | Chaetodontidae | Prognathodes obliquus | VU |
+| 268 | Epinephelidae | Epinephelus itajara | CR |
+| 269 | Epinephelidae | Epinephelus marginatus | VU |
+| 270 | Epinephelidae | Epinephelus morio | EN |
+| 271 | Gobiidae | Bathygobius brasiliensis | VU |
+| 272 | Gobiidae | Elacatinus figaro | EN |
+| 273 | Gobiidae | Elacatinus phthirophagus | VU |
+| 274 | Istiophoridae | Makaira nigricans | VU |
+| 275 | Labridae | Halichoeres rubrovirens | VU |
+| 276 | Labrisomidae | Malacoctenus brunoi | VU |
+| 277 | Labrisomidae | Starksia multilepis | VU |
+| 278 | Lutjanidae | Lutjanus cyanopterus | VU |
+| 279 | Lutjanidae | Lutjanus purpureus | EN |
+| 280 | Latilidae | Lopholatilus villarii | VU |
+| 281 | Gobiidae | Cerdale fasciata | EN |
+| 282 | Pempheridae | Pempheris gasparinii | VU |
+| 283 | Polyprionidae | Polyprion americanus | CR |
+| 284 | Pomacentridae | Microspathodon chrysurus | VU |
+| 285 | Pomacentridae | Stegastes rocasensis | VU |
+| 286 | Pomacentridae | Stegastes sanctipauli | VU |
+| 287 | Pomacentridae | Stegastes trindadensis | VU |
+| 288 | Scaridae | Scarus trispinosus | CR |
+| 289 | Scaridae | Scarus zelindae | EN |
+| 290 | Scaridae | Sparisoma amplum | VU |
+| 291 | Scaridae | Sparisoma axillare | VU |
+| 292 | Scaridae | Sparisoma frondosum | VU |
+| 293 | Scaridae | Sparisoma rocha | VU |
+| 294 | Sciaenidae | Pogonias courbina | CR |
+| 295 | Scombridae | Thunnus thynnus | EN |
+| 296 | Anthiadidae | Choranthias salmopunctatus | VU |
+| 297 | Epinephelidae | Hyporthodus flavolimbatus | EN |
+| 298 | Epinephelidae | Hyporthodus nigritus | EN |
+| 299 | Epinephelidae | Hyporthodus niveatus | VU |
+| 300 | Epinephelidae | Mycteroperca acutirostris | EN |
+| 301 | Epinephelidae | Mycteroperca bonaci | EN |
+| 302 | Epinephelidae | Mycteroperca interstitialis | VU |
+| 303 | Anthiadidae | Odontanthias cauoh | VU |
+| 304 | Anthiadidae | Tosanoides aphrodite | VU |
+| 305 | Tripterygiidae | Enneanectes smithi | VU |
+| 306 | Achiridae | Achirus mucuri | EN |
+| 307 | Ariidae | Genidens barbus | EN |
+| 308 | Ariidae | Genidens planifrons | EN |
+| 309 | Ariidae | Sciades parkeri | VU |
+| 310 | Syngnathidae | Hippocampus erectus | VU |
+| 311 | Syngnathidae | Hippocampus patagonicus | VU |
+| 312 | Syngnathidae | Hippocampus reidi | VU |
+| 313 | Balistidae | Balistes capriscus | EN |
+| 314 | Carcharhinidae | Carcharhinus acronotus | VU |
+| 315 | Carcharhinidae | Carcharhinus brevipinna | VU |
+| 316 | Carcharhinidae | Carcharhinus falciformis | CR |
+| 317 | Carcharhinidae | Carcharhinus galapagensis | CR |
+| 318 | Carcharhinidae | Carcharhinus leucas | VU |
+| 319 | Carcharhinidae | Carcharhinus longimanus | CR |
+| 320 | Carcharhinidae | Carcharhinus obscurus | EN |
+| 321 | Carcharhinidae | Carcharhinus perezi | VU |
+| 322 | Carcharhinidae | Carcharhinus plumbeus | CR |
+| 323 | Carcharhinidae | Carcharhinus porosus | CR |
+| 324 | Carcharhinidae | Carcharhinus signatus | EN |
+| 325 | Carcharhinidae | Isogomphodon oxyrhynchus | CR |
+| 326 | Carcharhinidae | Negaprion brevirostris | EN |
+| 327 | Sphyrnidae | Sphyrna gilberti | CR |
+| 328 | Sphyrnidae | Sphyrna lewini | CR |
+| 329 | Sphyrnidae | Sphyrna media | CR |
+| 330 | Sphyrnidae | Sphyrna mokarran | CR |
+| 331 | Sphyrnidae | Sphyrna tiburo | CR |
+| 332 | Sphyrnidae | Sphyrna tudes | CR |
+| 333 | Sphyrnidae | Sphyrna zygaena | CR |
+| 334 | Triakidae | Galeorhinus galeus | CR |
+| 335 | Triakidae | Mustelus canis | EN |
+| 336 | Triakidae | Mustelus fasciatus | CR |
+| 337 | Triakidae | Mustelus schmitti | CR |
+| 338 | Hexanchidae | Notorynchus cepedianus | CR |
+| 339 | Alopiidae | Alopias superciliosus | EN |
+| 340 | Alopiidae | Alopias vulpinus | CR |
+| 341 | Carchariidae | Carcharias taurus | CR |
+| 342 | Cetorhinidae | Cetorhinus maximus | CR |
+| 343 | Lamnidae | Carcharodon carcharias | VU |
+| 344 | Lamnidae | Isurus oxyrinchus | CR |
+| 345 | Dasyatidae | Bathytoshia centroura | CR |
+| 346 | Dasyatidae | Fontitrygon colarensis | VU |
+| 347 | Dasyatidae | Hypanus berthalutzae | VU |
+| 348 | Dasyatidae | Hypanus marianae | VU |
+| 349 | Gymnuridae | Gymnura altavela | CR |
+| 350 | Mobulidae | Mobula birostris | VU |
+| 351 | Mobulidae | Mobula mobular | VU |
+| 352 | Mobulidae | Mobula tarapacana | VU |
+| 353 | Mobulidae | Mobula thurstoni | VU |
+| 354 | Myliobatidae | Myliobatis freminvillei | EN |
+| 355 | Myliobatidae | Myliobatis goodei | CR |
+| 356 | Myliobatidae | Myliobatis ridens | CR |
+| 357 | Potamotrygonidae | Paratrygon aiereba | CR |
+| 358 | Potamotrygonidae | Potamotrygon leopoldi | VU |
+| 359 | Potamotrygonidae | Potamotrygon marquesi | VU |
+| 360 | Potamotrygonidae | Potamotrygon signata | EN |
+| 361 | Rhinopteridae | Rhinoptera brasiliensis | CR |
+| 362 | Urotrygonidae | Urotrygon microphthalmum | VU |
+| 363 | Ginglymostomatidae | Ginglymostoma cirratum | VU |
+| 364 | Rhincodontidae | Rhincodon typus | VU |
+| 365 | Arhynchobatidae | Atlantoraja castelnaui | EN |
+| 366 | Arhynchobatidae | Atlantoraja cyclophora | VU |
+| 367 | Arhynchobatidae | Rioraja agassizii | VU |
+| 368 | Arhynchobatidae | Sympterygia acuta | EN |
+| 369 | Arhynchobatidae | Sympterygia bonapartii | EN |
+| 370 | Pristidae | Pristis pectinata | CR |
+| 371 | Pristidae | Pristis pristis | CR |
+| 372 | Rhinobatidae | Pseudobatos horkelii | CR |
+| 373 | Rhinobatidae | Pseudobatos percellens | VU |
+| 374 | Trygonorhinidae | Zapteryx brevirostris | VU |
+| 375 | Squatinidae | Squatina argentina | CR |
+| 376 | Squatinidae | Squatina guggenheim | CR |
+| 377 | Squatinidae | Squatina occulta | CR |
+| 378 | Narcinidae | Narcine brasiliensis | VU |
+| 379 | Sphaeriidae | Eupera troglobia | CR |
+| 380 | Hyriidae | Castalia martensi | VU |
+| 381 | Hyriidae | Diplodon fontainianus | VU |
+| 382 | Hyriidae | Rhipidodonta garbei | VU |
+| 383 | Hyriidae | Rhipidodonta iheringi | EN |
+| 384 | Hyriidae | Rhipidodonta koseritzi | EN |
+| 385 | Mycetopodidae | Anodontites ferrarisii | EN |
+| 386 | Mycetopodidae | Anodontites iheringi | EN |
+| 387 | Mycetopodidae | Haasica balzani | VU |
+| 388 | Mycetopodidae | Leila blainvilliana | CR |
+| 389 | Mycetopodidae | Monocondylaea franciscana | VU |
+| 390 | Mycetopodidae | Monocondylaea paraguayana | VU |
+| 391 | Mycetopodidae | Mycetopoda legumen | EN |
+| 392 | Cyrenidae | Cyanocyclas guahybensis | EN |
+| 393 | Spongillidae | Racekiela cavernicola | CR |
+| 394 |  | Arinosaster patriciae | CR |
+| 395 | Hydrobiidae | Potamolithus troglobius | CR |
+| 396 | Tateidae | Potamolithus karsticus | EN |
+| 397 | Thiaridae | Aylacostoma tenuilabris | VU |
+| 398 | Pomatiopsidae | Spiripockia punctata | CR |
+| 399 | Dytiscidae | Copelatus cessaima | EN |
+| 400 | Baetidae | Adebrotus lugoi | VU |
+| 401 | Baetidae | Camelobaetidius juparana | VU |
+| 402 | Baetidae | Camelobaetidius maranhensis | VU |
+| 403 | Baetidae | Camelobaetidius spinosus | VU |
+| 404 | Leptophlebiidae | Hermanella amere | EN |
+| 405 | Leptophlebiidae | Hermanella nigra | VU |
+| 406 | Leptophlebiidae | Miroculis stenopterus | EN |
+| 407 | Leptophlebiidae | Simothraulopsis eurybasis | VU |
+| 408 | Oligoneuriidae | Lachlania aldinae | VU |
+| 409 | Oligoneuriidae | Oligoneuria amandae | VU |
+| 410 | Oligoneuriidae | Oligoneuria macabaiba | EN |
+| 411 | Hydrometridae | Spelaeometra hypogea | CR |
+| 412 | Coenagrionidae | Forcepsioneura machadorum | CR |
+| 413 | Coenagrionidae | Franciscobasis franciscoi | EN |
+| 414 | Coenagrionidae | Kiautagrion acutum | EN |
+| 415 | Coenagrionidae | Leptagrion bocainense | VU |
+| 416 | Coenagrionidae | Machadagrion garbei | VU |
+| 417 | Coenagrionidae | Minagrion canaanense | VU |
+| 418 | Megapodagrionidae | Heteragrion mantiqueirae | EN |
+| 419 | Coenagrionidae | Fluminagrion taxaense | CR |
+| 420 | Artesiidae | Spelaeogammarus bahiensis | VU |
+| 421 | Artesiidae | Spelaeogammarus ginae | CR |
+| 422 | Artesiidae | Spelaeogammarus sanctus | CR |
+| 423 | Artesiidae | Spelaeogammarus santanensis | CR |
+| 424 | Artesiidae | Spelaeogammarus spinilacertus | EN |
+| 425 | Artesiidae | Spelaeogammarus titan | CR |
+| 426 | Artesiidae | Spelaeogammarus trajanoae | EN |
+| 427 | Bogidiellidae | Megagidiella azul | VU |
+| 428 | Hyalellidae | Hyalella caeca | VU |
+| 429 | Hyalellidae | Hyalella epikarstica | CR |
+| 430 | Hyalellidae | Hyalella formosa | CR |
+| 431 | Hyalellidae | Hyalella imbya | CR |
+| 432 | Hyalellidae | Hyalella veredae | VU |
+| 433 | Mesogammaridae | Potiberaba porakuara | VU |
+| 434 | Seborgiidae | Seborgia potiguar | CR |
+| 435 | Aeglidae | Aegla brevipalma | CR |
+| 436 | Aeglidae | Aegla camargoi | EN |
+| 437 | Aeglidae | Aegla cavernicola | CR |
+| 438 | Aeglidae | Aegla charon | CR |
+| 439 | Aeglidae | Aegla franca | EN |
+| 440 | Aeglidae | Aegla georginae | EN |
+| 441 | Aeglidae | Aegla inconspicua | VU |
+| 442 | Aeglidae | Aegla inermis | EN |
+| 443 | Aeglidae | Aegla itacolomiensis | EN |
+| 444 | Aeglidae | Aegla leachi | EN |
+| 445 | Aeglidae | Aegla leptochela | CR |
+| 446 | Aeglidae | Aegla loyolai | EN |
+| 447 | Aeglidae | Aegla ludwigi | EN |
+| 448 | Aeglidae | Aegla manuinflata | EN |
+| 449 | Aeglidae | Aegla meloi | EN |
+| 450 | Aeglidae | Aegla microphthalma | CR |
+| 451 | Aeglidae | Aegla oblata | EN |
+| 452 | Aeglidae | Aegla obstipa | EN |
+| 453 | Aeglidae | Aegla okora | EN |
+| 454 | Aeglidae | Aegla perobae | EN |
+| 455 | Aeglidae | Aegla renana | EN |
+| 456 | Aeglidae | Aegla rosanae | EN |
+| 457 | Aeglidae | Aegla violacea | EN |
+| 458 | Palaemonidae | Macrobrachium denticulatum | VU |
+| 459 | Parastacidae | Parastacus tuerkayi | EN |
+| 460 | Pseudothelphusidae | Kingsleya attenboroughi | EN |
+| 461 | Brasileirinidae | Brasileirinho cavaticus | CR |
+| 462 | Calabozoidae | Pongycarcinia xiphidiourus | EN |
+| 463 | Dugesiidae | Girardia arenicola | CR |
+| 464 | Dugesiidae | Girardia desiderensis | CR |
+| 465 | Dugesiidae | Girardia multidiverticulata | CR |
+| 466 | Dugesiidae | Girardia paucipunctata | CR |
+| 467 | Dugesiidae | Girardia spelaea | VU |
+| 468 | Uteriporidae | Sluysia triapertura | CR |
+| 469 | Dimarcusidae | Hausera hauseri | VU |
+| 470 | Actiniidae | Condylactis gigantea | VU |
+| 471 | Plexauridae | Plexaurella obesa | CR |
+| 472 | Faviidae | Mussismilia braziliensis | VU |
+| 473 | Faviidae | Mussismilia harttii | EN |
+| 474 | Astropectinidae | Astropecten marginatus | VU |
+| 475 | Ophidiasteridae | Linckia guildingi | VU |
+| 476 | Oreasteridae | Oreaster reticulatus | VU |
+| 477 | Pectinidae | Euvola ziczac | EN |
+| 478 | Cassidulidae | Cassidulus infidus | EN |
+| 479 | Cassidulidae | Cassidulus mitis | VU |
+| 480 | Cassidae | Cassis tuberosa | VU |
+| 481 | Strombidae | Eustrombus goliath | EN |
+| 482 | Strombidae | Macrostrombus costatus | VU |
+| 483 | Vermetidae | Petaloconchus myrakeenae | VU |
+| 484 | Synaptidae | Synaptula secreta | CR |
+| 485 | Cucumariidae | Parathyone surinamensis | VU |
+| 486 | Milleporidae | Millepora braziliensis | CR |
+| 487 | Milleporidae | Millepora laboreli | VU |
+| 488 | Gecarcinidae | Cardisoma guanhumi | VU |
+| 489 | Gecarcinidae | Johngarthia lagostoma | EN |
+| 490 | Onuphidae | Diopatra victoriae | EN |
 
-|     |     |     |     |     |     |
-| --- | --- | --- | --- | --- | --- |
-| 134 | \* | Characiformes | Characidae | Hasemania piatan | EN |
-| 135 |  | Characiformes | Characidae | Hasemania uberaba | EN |
-| 136 | \* | Characiformes | Characidae | Henochilus wheatlandii | CR |
-| 137 | \* | Characiformes | Characidae | Hollandichthys taramandahy | EN |
-| 138 | \* | Characiformes | Characidae | Hyphessobrycon duragenys | EN |
-| 139 | \* | Characiformes | Characidae | Hyphessobrycon flammeus | EN |
-| 140 |  | Characiformes | Characidae | Hyphessobrycon taurocephalus | CR (PEX) |
-| 141 | \* | Characiformes | Characidae | Kolpotocheirodon figueiredoi | CR |
-| 142 | \* | Characiformes | Characidae | Lepidocharax diamantina | EN |
-| 143 | \* | Characiformes | Characidae | Mimagoniates lateralis | VU |
-| 144 | \* | Characiformes | Characidae | Mimagoniates sylvicola | EN |
-| 145 | \* | Characiformes | Characidae | Rachoviscus crassiceps | EN |
-| 146 | \* | Characiformes | Characidae | Rachoviscus graciliceps | EN |
-| 147 | \* | Characiformes | Characidae | Rhinopetitia potamorhachia | EN |
-| 148 | \* | Characiformes | Characidae | Spintherobolus ankoseion | VU |
-| 149 | \* | Characiformes | Characidae | Spintherobolus broccae | EN |
-| 150 | \* | Characiformes | Characidae | Spintherobolus leptoura | EN |
-| 151 | \* | Characiformes | Characidae | Spintherobolus papilliferus | EN |
-| 152 | \* | Characiformes | Characidae | Stygichthys typhlops | EN |
-| 153 | \* | Characiformes | Crenuchidae | Characidium grajahuensis | CR |
-| 154 | \* | Characiformes | Crenuchidae | Characidium vestigipinne | CR |
-| 155 | \* | Characiformes | Crenuchidae | Melanocharacidium nigrum | EN |
-| 156 | \* | Characiformes | Cynodontidae | Roestes itupiranga | VU |
-| 157 | \* | Characiformes | Lebiasinidae | Lebiasina marilynae | VU |
-| 158 | \* | Characiformes | Lebiasinidae | Lebiasina melanoguttata | VU |
-| 159 | \* | Characiformes | Lebiasinidae | Lebiasina minuta | VU |
-| 160 | \* | Characiformes | Parodontidae | Apareiodon davisi | EN |
-| 161 | \* | Characiformes | Prochilodontidae | Prochilodus britskii | EN |
-| 162 | \* | Characiformes | Prochilodontidae | Prochilodus vimboides | VU |
-| 163 | \* | Characiformes | Serrasalmidae | Mylesinus paucisquamatus | EN |
-| 164 | \* | Characiformes | Serrasalmidae | Myloplus tiete | EN |
-| 165 | \* | Characiformes | Serrasalmidae | Ossubtus xinguense | VU |
-| 166 | \* | Cyprinodontiformes | Anablepidae | Jenynsia sanctaecatarinae | EN |
-| 167 | \* | Cyprinodontiformes | Poeciliidae | Cnesterodon carnegiei | VU |
-| 168 | \* | Cyprinodontiformes | Poeciliidae | Cnesterodon iguape | CR |
-| 169 | \* | Cyprinodontiformes | Poeciliidae | Cnesterodon omorgmatos | CR |
-| 170 | \* | Cyprinodontiformes | Poeciliidae | Pamphorichthys pertapeh | CR |
-| 171 | \* | Cyprinodontiformes | Poeciliidae | Phalloptychus eigenmanni | CR |
-| 172 | \* | Cyprinodontiformes | Poeciliidae | Phallotorynus fasciolatus | CR (PEX) |
-| 173 | \* | Cyprinodontiformes | Rivulidae | Anablepsoides cearensis | CR |
-| 174 | \* | Cyprinodontiformes | Rivulidae | Atlantirivulus lazzarotoi | CR |
-| 175 | \* | Cyprinodontiformes | Rivulidae | Atlantirivulus maricensis | CR |
-| 176 | \* | Cyprinodontiformes | Rivulidae | Atlantirivulus nudiventris | CR |
-| 177 | \* | Cyprinodontiformes | Rivulidae | Atlantirivulus simplicis | EN |
-| 178 | \* | Cyprinodontiformes | Rivulidae | Austrolebias adloffi | EN |
-| 179 | \* | Cyprinodontiformes | Rivulidae | Austrolebias alexandri | EN |
-| 180 | \* | Cyprinodontiformes | Rivulidae | Austrolebias arachan | VU |
-| 181 |  | Cyprinodontiformes | Rivulidae | Austrolebias araucarianus | VU |
-| 182 |  | Cyprinodontiformes | Rivulidae | Austrolebias bagual | CR |
-| 183 |  | Cyprinodontiformes | Rivulidae | Austrolebias camaquensis | EN |
-| 184 | \* | Cyprinodontiformes | Rivulidae | Austrolebias carvalhoi | CR |
-| 185 | \* | Cyprinodontiformes | Rivulidae | Austrolebias cheradophilus | CR |
-| 186 | \* | Cyprinodontiformes | Rivulidae | Austrolebias cinereus | CR |
-| 187 | \* | Cyprinodontiformes | Rivulidae | Austrolebias cyaneus | EN |
-| 188 |  | Cyprinodontiformes | Rivulidae | Austrolebias ephemerus | EN |
-| 189 | \* | Cyprinodontiformes | Rivulidae | Austrolebias ibicuiensis | EN |
-| 190 | \* | Cyprinodontiformes | Rivulidae | Austrolebias jaegari | CR |
-| 191 | \* | Cyprinodontiformes | Rivulidae | Austrolebias litzi | VU |
-| 192 | \* | Cyprinodontiformes | Rivulidae | Austrolebias nachtigalli | VU |
-| 193 | \* | Cyprinodontiformes | Rivulidae | Austrolebias nigrofasciatus | EN |
-| 194 | \* | Cyprinodontiformes | Rivulidae | Austrolebias paucisquama | VU |
-| 195 |  | Cyprinodontiformes | Rivulidae | Austrolebias pelotapes | CR |
-| 196 |  | Cyprinodontiformes | Rivulidae | Austrolebias pongondo | EN |
-| 197 |  | Cyprinodontiformes | Rivulidae | Austrolebias quirogai | CR |
-| 198 | \* | Cyprinodontiformes | Rivulidae | Austrolebias univentripinnis | CR |
-| 199 | \* | Cyprinodontiformes | Rivulidae | Austrolebias varzeae | CR |
-| 200 | \* | Cyprinodontiformes | Rivulidae | Campellolebias brucei | CR |
-| 201 | \* | Cyprinodontiformes | Rivulidae | Campellolebias chrysolineatus | CR |
-| 202 | \* | Cyprinodontiformes | Rivulidae | Campellolebias dorsimaculatus | CR |
-| 203 | \* | Cyprinodontiformes | Rivulidae | Campellolebias intermedius | CR |
-| 204 |  | Cyprinodontiformes | Rivulidae | Cynolebias akroa | VU |
-| 205 |  | Cyprinodontiformes | Rivulidae | Cynolebias elegans | CR |
-| 206 |  | Cyprinodontiformes | Rivulidae | Cynolebias gorutuba | EN |
-| 207 | \* | Cyprinodontiformes | Rivulidae | Cynolebias griseus | EN |
-| 208 | \* | Cyprinodontiformes | Rivulidae | Cynolebias leptocephalus | EN |
-| 209 |  | Cyprinodontiformes | Rivulidae | Cynolebias parnaibensis | CR |
-| 210 |  | Cyprinodontiformes | Rivulidae | Cynopoecilus feltrini | VU |
-| 211 | \* | Cyprinodontiformes | Rivulidae | Cynopoecilus intimus | VU |
-| 212 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias adornatus | CR |
-| 213 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias alternatus | EN |
-| 214 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias auratus | CR |
-| 215 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias brunoi | VU |
-| 216 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias carlettoi | EN |
-| 217 |  | Cyprinodontiformes | Rivulidae | Hypsolebias delucai | VU |
-| 218 |  | Cyprinodontiformes | Rivulidae | Hypsolebias faouri | VU |
-| 219 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias fasciatus | VU |
-| 220 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias flammeus | EN |
-| 221 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias flavicaudatus | EN |
-| 222 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias fulminantis | CR |
-| 223 |  | Cyprinodontiformes | Rivulidae | Hypsolebias gardneri | EN |
-| 224 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias ghisolfii | EN |
-| 225 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias gibberatus | VU |
-| 226 |  | Cyprinodontiformes | Rivulidae | Hypsolebias gilbertobrasili | CR |
-| 227 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias guanambi | VU |
-| 228 |  | Cyprinodontiformes | Rivulidae | Hypsolebias hamadryades | CR |
-| 229 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias harmonicus | VU |
-| 230 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias hellneri | EN |
-| 231 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias igneus | EN |
-| 232 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias janaubensis | CR |
-| 233 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias longignatus | VU |
-| 234 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias lopesi | CR |
-| 235 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias macaubensis | EN |
-| 236 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias magnificus | EN |
-| 237 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias marginatus | CR (PEX) |
-| 238 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias mediopapillatus | VU |
-| 239 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias multiradiatus | CR |
-| 240 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias nielseni | EN |
-| 241 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias notatus | EN |
-| 242 |  | Cyprinodontiformes | Rivulidae | Hypsolebias nudiorbitatus | VU |
-| 243 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias picturatus | EN |
-| 244 |  | Cyprinodontiformes | Rivulidae | Hypsolebias radiseriatus | EN |
-| 245 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias rufus | CR |
-| 246 |  | Cyprinodontiformes | Rivulidae | Hypsolebias shibattai | VU |
-| 247 |  | Cyprinodontiformes | Rivulidae | Hypsolebias splendissimus | VU |
-| 248 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias stellatus | EN |
-| 249 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias tocantinensis | CR |
-| 250 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias trilineatus | CR |
-| 251 | \* | Cyprinodontiformes | Rivulidae | Hypsolebias virgulatus | CR |
-| 252 | \* | Cyprinodontiformes | Rivulidae | Kryptolebias brasiliensis | EN |
-| 253 | \* | Cyprinodontiformes | Rivulidae | Kryptolebias campelloi | CR |
-| 254 | \* | Cyprinodontiformes | Rivulidae | Kryptolebias gracilis | CR |
-| 255 | \* | Cyprinodontiformes | Rivulidae | Leptolebias marmoratus | CR |
-| 256 | \* | Cyprinodontiformes | Rivulidae | Leptopanchax citrinipinnis | CR |
-| 257 | \* | Cyprinodontiformes | Rivulidae | Leptopanchax itanhaensis | CR |
-| 258 | \* | Cyprinodontiformes | Rivulidae | Leptopanchax opalescens | CR |
-| 259 | \* | Cyprinodontiformes | Rivulidae | Leptopanchax splendens | CR |
-| 260 | \* | Cyprinodontiformes | Rivulidae | Maratecoara formosa | VU |
-| 261 | \* | Cyprinodontiformes | Rivulidae | Maratecoara splendida | VU |
-| 262 | \* | Cyprinodontiformes | Rivulidae | Melanorivulus crixas | VU |
-| 263 | \* | Cyprinodontiformes | Rivulidae | Melanorivulus illuminatus | VU |
-| 264 | \* | Cyprinodontiformes | Rivulidae | Melanorivulus karaja | VU |
-| 265 | \* | Cyprinodontiformes | Rivulidae | Melanorivulus kayapo | VU |
-| 266 | \* | Cyprinodontiformes | Rivulidae | Melanorivulus kunzei | VU |
-| 267 | \* | Cyprinodontiformes | Rivulidae | Melanorivulus pinima | EN |
-| 268 | \* | Cyprinodontiformes | Rivulidae | Melanorivulus rubromarginatus | VU |
-| 269 | \* | Cyprinodontiformes | Rivulidae | Melanorivulus rutilicaudus | VU |
-| 270 | \* | Cyprinodontiformes | Rivulidae | Melanorivulus salmonicaudus | VU |
-| 271 | \* | Cyprinodontiformes | Rivulidae | Melanorivulus scalaris | EN |
-| 272 | \* | Cyprinodontiformes | Rivulidae | Melanorivulus ubirajarai | VU |
-| 273 | \* | Cyprinodontiformes | Rivulidae | Melanorivulus vittatus | EN |
-| 274 | \* | Cyprinodontiformes | Rivulidae | Moema piriana | CR (PEX) |
-| 275 | \* | Cyprinodontiformes | Rivulidae | Nematolebias catimbau | CR |
-| 276 | \* | Cyprinodontiformes | Rivulidae | Nematolebias papilliferus | CR |
-| 277 | \* | Cyprinodontiformes | Rivulidae | Nematolebias whitei | CR |
-| 278 | \* | Cyprinodontiformes | Rivulidae | Notholebias cruzi | CR |
-| 279 | \* | Cyprinodontiformes | Rivulidae | Notholebias fractifasciatus | CR |
-| 280 | \* | Cyprinodontiformes | Rivulidae | Notholebias minimus | EN |
-| 281 | \* | Cyprinodontiformes | Rivulidae | Notholebias vermiculatus | CR |
-| 282 | \* | Cyprinodontiformes | Rivulidae | Ophthalmolebias bokermanni | CR |
-| 283 | \* | Cyprinodontiformes | Rivulidae | Ophthalmolebias constanciae | CR |
-| 284 | \* | Cyprinodontiformes | Rivulidae | Ophthalmolebias ilheusensis | EN |
-| 285 | \* | Cyprinodontiformes | Rivulidae | Ophthalmolebias perpendicularis | CR |
-| 286 | \* | Cyprinodontiformes | Rivulidae | Ophthalmolebias rosaceus | CR |
-| 287 | \* | Cyprinodontiformes | Rivulidae | Ophthalmolebias suzarti | VU |
-| 288 | \* | Cyprinodontiformes | Rivulidae | Pituna brevirostrata | CR |
-| 289 | \* | Cyprinodontiformes | Rivulidae | Pituna xinguensis | CR |
-| 290 | \* | Cyprinodontiformes | Rivulidae | Plesiolebias canabravensis | VU |
-| 291 | \* | Cyprinodontiformes | Rivulidae | Plesiolebias xavantei | EN |
-| 292 | \* | Cyprinodontiformes | Rivulidae | Simpsonichthys boitonei | CR |
-| 293 | \* | Cyprinodontiformes | Rivulidae | Simpsonichthys cholopteryx | EN |
-| 294 |  | Cyprinodontiformes | Rivulidae | Simpsonichthys espinhacensis | EN |
-| 295 | \* | Cyprinodontiformes | Rivulidae | Simpsonichthys nigromaculatus | VU |
-| 296 | \* | Cyprinodontiformes | Rivulidae | Simpsonichthys parallelus | EN |
-| 297 | \* | Cyprinodontiformes | Rivulidae | Simpsonichthys punctulatus | CR |
-| 298 | \* | Cyprinodontiformes | Rivulidae | Simpsonichthys santanae | EN |
-| 299 | \* | Cyprinodontiformes | Rivulidae | Simpsonichthys zonatus | CR (PEX) |
-| 300 | \* | Cyprinodontiformes | Rivulidae | Spectrolebias reticulatus | CR |
-| 301 | \* | Cyprinodontiformes | Rivulidae | Trigonectes strigabundus | EN |
-| 302 | \* | Cyprinodontiformes | Rivulidae | Xenurolebias myersi | EN |
-| 303 | \* | Elopiformes | Megalopidae | Megalops atlanticus | VU |
-| 304 | \* | Gymnotiformes | Apteronotidae | Sternarchella curvioperculata | EN |
-| 305 | \* | Gymnotiformes | Apteronotidae | Sternarchogiton zuanoni | EN |
-| 306 | \* | Gymnotiformes | Apteronotidae | Sternarchorhynchus britskii | EN |
-| 307 | \* | Gymnotiformes | Apteronotidae | Sternarchorhynchus caboclo | VU |
-| 308 | \* | Gymnotiformes | Apteronotidae | Sternarchorhynchus higuchii | CR |
-| 309 | \* | Gymnotiformes | Apteronotidae | Sternarchorhynchus inpai | VU |
-| 310 | \* | Gymnotiformes | Apteronotidae | Sternarchorhynchus jaimei | CR |
-| 311 | \* | Gymnotiformes | Apteronotidae | Sternarchorhynchus kokraimoro | EN |
-| 312 | \* | Gymnotiformes | Apteronotidae | Sternarchorhynchus mareikeae | VU |
-| 313 | \* | Gymnotiformes | Apteronotidae | Sternarchorhynchus severii | VU |
-| 314 | \* | Gymnotiformes | Apteronotidae | Sternarchorhynchus villasboasi | EN |
-| 315 | \* | Gymnotiformes | Apteronotidae | Tembeassu marauna | CR |
-| 316 |  | Gymnotiformes | Sternopygidae | Archolaemus ferreirai | VU |
-| 317 |  | Gymnotiformes | Sternopygidae | Archolaemus santosi | VU |
-| 318 | \* | Gymnotiformes | Sternopygidae | Eigenmannia vicentespelaea | VU |
-| 319 | \* | Hexanchiformes | Hexanchidae | Notorynchus cepedianus | CR |
-| 320 | \* | Lamniformes | Alopiidae | Alopias superciliosus | EN |
-| 321 | \* | Lamniformes | Alopiidae | Alopias vulpinus | CR |
-| 322 | \* | Lamniformes | Cetorhinidae | Cetorhinus maximus | CR |
-| 323 | \* | Lamniformes | Lamnidae | Carcharodon carcharias | VU |
-| 324 | \* | Lamniformes | Odontaspididae | Carcharias taurus | CR |
-| 325 | \* | Ophidiiformes | Ophidiidae | Ophidion holbrookii | CR |
-| 326 |  | Ophidiiformes | Ophidiidae | Otophidium chickcharney | CR (PEX) |
-| 327 | \* | Orectolobiformes | Ginglymostomatidae | Ginglymostoma cirratum | VU |
-| 328 | \* | Orectolobiformes | Rhincodontidae | Rhincodon typus | VU |
-| 329 | \* | Perciformes | Chaetodontidae | Prognathodes obliquus | VU |
-| 330 | \* | Perciformes | Cichlidae | Crenicichla cyclostoma | CR |
-| 331 | \* | Perciformes | Cichlidae | Crenicichla empheres | VU |
-| 332 | \* | Perciformes | Cichlidae | Crenicichla hadrostigma | VU |
-| 333 | \* | Perciformes | Cichlidae | Crenicichla heckeli | VU |
-| 334 | \* | Perciformes | Cichlidae | Crenicichla jegui | EN |
-| 335 | \* | Perciformes | Cichlidae | Crenicichla jupiaensis | EN |
-| 336 | \* | Perciformes | Cichlidae | Crenicichla urosema | EN |
-| 337 | \* | Perciformes | Cichlidae | Teleocichla centisquama | EN |
-| 338 | \* | Perciformes | Cichlidae | Teleocichla cinderella | EN |
-| 339 | \* | Perciformes | Cichlidae | Teleocichla prionogenys | VU |
-| 340 | \* | Perciformes | Cichlidae | Teleocichla wajapi | EN |
-| 341 | \* | Perciformes | Epinephelidae | Epinephelus itajara | CR |
-| 342 | \* | Perciformes | Epinephelidae | Epinephelus marginatus | VU |
-| 343 | \* | Perciformes | Epinephelidae | Epinephelus morio | VU |
-| 344 | \* | Perciformes | Gobiidae | Elacatinus figaro | VU |
-| 345 | \* | Perciformes | Istiophoridae | Kajikia albida | VU |
-| 346 | \* | Perciformes | Istiophoridae | Makaira nigricans | EN |
-| 347 | \* | Perciformes | Labridae | Halichoeres rubrovirens | VU |
-| 348 | \* | Perciformes | Labrisomidae | Malacoctenus brunoi | VU |
-| 349 | \* | Perciformes | Lutjanidae | Lutjanus cyanopterus | VU |
-| 350 | \* | Perciformes | Lutjanidae | Lutjanus purpureus | VU |
-| 351 | \* | Perciformes | Malacanthidae | Lopholatilus villarii | VU |
-| 352 | \* | Perciformes | Microdesmidae | Cerdale fasciata | EN |
-| 353 | \* | Perciformes | Polyprionidae | Polyprion americanus | CR |
-| 354 | \* | Perciformes | Pomacentridae | Microspathodon chrysurus | VU |
-| 355 | \* | Perciformes | Pomacentridae | Stegastes rocasensis | VU |
-| 356 | \* | Perciformes | Pomacentridae | Stegastes sanctipauli | VU |
-| 357 | \* | Perciformes | Pomacentridae | Stegastes trindadensis | VU |
-| 358 | \* | Perciformes | Scaridae | Scarus trispinosus | EN |
-| 359 | \* | Perciformes | Scaridae | Scarus zelindae | VU |
-| 360 | \* | Perciformes | Scaridae | Sparisoma axillare | VU |
-| 361 | \* | Perciformes | Scaridae | Sparisoma frondosum | VU |
-| 362 | \* | Perciformes | Scaridae | Sparisoma rocha | VU |
-| 363 | \* | Perciformes | Sciaenidae | Pogonias cromis | EN |
-| 364 | \* | Perciformes | Scombridae | Thunnus thynnus | EN |
-| 365 | \* | Perciformes | Serranidae | Choranthias salmopunctatus | VU |
-| 366 | \* | Perciformes | Serranidae | Hyporthodus nigritus | EN |
+| Legenda |
+| --- | --- | --- | --- |
+| VU |  | Vulnerável |  |
+| EN |  | Em Perigo |  |
+| CR |  | Criticamente em Perigo |  |
 
-|     |     |     |     |     |     |
-| --- | --- | --- | --- | --- | --- |
-| 367 | \* | Perciformes | Serranidae | Hyporthodus niveatus | VU |
-| 368 | \* | Perciformes | Serranidae | Mycteroperca bonaci | VU |
-| 369 | \* | Perciformes | Serranidae | Mycteroperca interstitialis | VU |
-| 370 | \* | Perciformes | Tripterygiidae | Enneanectes smithi | VU |
-| 371 | \* | Pleuronectiformes | Achiridae | Achirus mucuri | VU |
-| 372 | \* | Pristiformes | Pristidae | Pristis pectinata | CR (PEX) |
-| 373 | \* | Pristiformes | Pristidae | Pristis pristis | CR |
-| 374 | \* | Rajiformes | Dasyatidae | Bathytoshia centroura | CR |
-| 375 | \* | Rajiformes | Dasyatidae | Fontitrygon colarensis | VU |
-| 376 |  | Rajiformes | Dasyatidae | Hypanus americanus | VU |
-| 377 |  | Rajiformes | Dasyatidae | Hypanus marianae | VU |
-| 378 | \* | Rajiformes | Gymnuridae | Gymnura altavela | CR |
-| 379 | \* | Rajiformes | Myliobatidae | Manta birostris | VU |
-| 380 | \* | Rajiformes | Myliobatidae | Mobula mobular | VU |
-| 381 | \* | Rajiformes | Myliobatidae | Mobula tarapacana | VU |
-| 382 | \* | Rajiformes | Myliobatidae | Mobula thurstoni | VU |
-| 383 | \* | Rajiformes | Myliobatidae | Myliobatis freminvillei | EN |
-| 384 | \* | Rajiformes | Myliobatidae | Myliobatis goodei | CR |
-| 385 | \* | Rajiformes | Myliobatidae | Myliobatis ridens | CR |
-| 386 | \* | Rajiformes | Myliobatidae | Rhinoptera brasiliensis | CR |
-| 387 | \* | Rajiformes | Potamotrygonidae | Paratrygon aiereba | CR |
-| 388 | \* | Rajiformes | Rajidae | Atlantoraja castelnaui | EN |
-| 389 |  | Rajiformes | Rajidae | Atlantoraja cyclophora | VU |
-| 390 | \* | Rajiformes | Rajidae | Rioraja agassizii | VU |
-| 391 | \* | Rajiformes | Rajidae | Sympterygia acuta | EN |
-| 392 | \* | Rajiformes | Rajidae | Sympterygia bonapartii | EN |
-| 393 | \* | Rajiformes | Rhinobatidae | Pseudobatos horkelii | CR |
-| 394 |  | Rajiformes | Rhinobatidae | Pseudobatos percellens | VU |
-| 395 | \* | Rajiformes | Rhinobatidae | Zapteryx brevirostris | VU |
-| 396 |  | Rajiformes | Urolophidae | Urotrygon microphthalmum | VU |
-| 397 | \* | Scorpaeniformes | Scorpaenidae | Scorpaenodes insularis | VU |
-| 398 | \* | Siluriformes | Ariidae | Genidens barbus | EN |
-| 399 | \* | Siluriformes | Ariidae | Genidens planifrons | CR |
-| 400 | \* | Siluriformes | Ariidae | Paragenidens grandoculis | CR |
-| 401 | \* | Siluriformes | Ariidae | Sciades parkeri | VU |
-| 402 | \* | Siluriformes | Callichthyidae | Corydoras lacerdai | EN |
-| 403 | \* | Siluriformes | Callichthyidae | Scleromystax macropterus | EN |
-| 404 | \* | Siluriformes | Doradidae | Kalyptodoras bahiensis | EN |
-| 405 | \* | Siluriformes | Doradidae | Rhynchodoras xingui | EN |
-| 406 | \* | Siluriformes | Heptapteridae | Chasmocranus brachynemus | EN |
-| 407 | \* | Siluriformes | Heptapteridae | Heptapterus multiradiatus | CR (PEX) |
-| 408 | \* | Siluriformes | Heptapteridae | Pimelodella kronei | EN |
-| 409 | \* | Siluriformes | Heptapteridae | Pimelodella spelaea | EN |
-| 410 | \* | Siluriformes | Heptapteridae | Rhamdia jequitinhonha | VU |
-| 411 | \* | Siluriformes | Heptapteridae | Rhamdiopsis krugi | VU |
-| 412 | \* | Siluriformes | Heptapteridae | Taunayia bifasciata | VU |
-| 413 | \* | Siluriformes | Loricariidae | Ancistrus cryptophthalmus | EN |
-| 414 | \* | Siluriformes | Loricariidae | Ancistrus formoso | VU |
-| 415 | \* | Siluriformes | Loricariidae | Ancistrus minutus | EN |
-| 416 | \* | Siluriformes | Loricariidae | Baryancistrus longipinnis | CR |
-| 417 | \* | Siluriformes | Loricariidae | Baryancistrus niveatus | CR |
-| 418 | \* | Siluriformes | Loricariidae | Delturus parahybae | CR |
-| 419 | \* | Siluriformes | Loricariidae | Harttia depressa | EN |
-| 420 | \* | Siluriformes | Loricariidae | Harttia dissidens | VU |
-| 421 |  | Siluriformes | Loricariidae | Harttia panara | VU |
-| 422 |  | Siluriformes | Loricariidae | Harttia villasboas | VU |
-| 423 | \* | Siluriformes | Loricariidae | Hemiancistrus megalopteryx | EN |
-| 424 | \* | Siluriformes | Loricariidae | Hypancistrus zebra | CR |
-| 425 |  | Siluriformes | Loricariidae | Hypostomus subcarinatus | CR |
-| 426 | \* | Siluriformes | Loricariidae | Isbrueckerichthys saxicola | EN |
-| 427 | \* | Siluriformes | Loricariidae | Leporacanthicus joselimai | VU |
-| 428 | \* | Siluriformes | Loricariidae | Lithoxus lithoides | VU |
-| 429 | \* | Siluriformes | Loricariidae | Loricaria coximensis | CR |
-| 430 | \* | Siluriformes | Loricariidae | Microlepidogaster perforatus | CR |
-| 431 | \* | Siluriformes | Loricariidae | Neoplecostomus botucatu | VU |
-| 432 | \* | Siluriformes | Loricariidae | Otothyris juquiae | CR |
-| 433 | \* | Siluriformes | Loricariidae | Parancistrus nudiventris | EN |
-| 434 | \* | Siluriformes | Loricariidae | Pareiorhaphis nasuta | CR |
-| 435 | \* | Siluriformes | Loricariidae | Pareiorhaphis scutula | EN |
-| 436 | \* | Siluriformes | Loricariidae | Parotocinclus spilurus | EN |
-| 437 |  | Siluriformes | Loricariidae | Plesioptopoma curvidens | CR |
-| 438 | \* | Siluriformes | Loricariidae | Pogonopoma obscurum | EN |
-| 439 | \* | Siluriformes | Loricariidae | Pogonopoma parahybae | EN |
-| 440 | \* | Siluriformes | Loricariidae | Pseudotocinclus juquiae | CR |
-| 441 | \* | Siluriformes | Loricariidae | Pseudotocinclus tietensis | EN |
-| 442 | \* | Siluriformes | Loricariidae | Scobinancistrus aureatus | VU |
-| 443 | \* | Siluriformes | Loricariidae | Scobinancistrus pariolispos | VU |
-| 444 | \* | Siluriformes | Pimelodidae | Aguarunichthys tocantinsensis | EN |
-| 445 | \* | Siluriformes | Pimelodidae | Conorhynchos conirostris | EN |
-| 446 | \* | Siluriformes | Pimelodidae | Pimelodus joannis | VU |
-| 447 | \* | Siluriformes | Pimelodidae | Pimelodus stewartii | VU |
-| 448 |  | Siluriformes | Pimelodidae | Pseudoplatystoma corruscans | VU |
-| 449 | \* | Siluriformes | Pimelodidae | Steindachneridion amblyurum | CR |
-| 450 | \* | Siluriformes | Pimelodidae | Steindachneridion doceanum | CR |
-| 451 | \* | Siluriformes | Pimelodidae | Steindachneridion melanodermatum | EN |
-| 452 | \* | Siluriformes | Pimelodidae | Steindachneridion parahybae | EN |
-| 453 | \* | Siluriformes | Pimelodidae | Steindachneridion scriptum | EN |
-| 454 | \* | Siluriformes | Pseudopimelodidae | Lophiosilurus alexandri | VU |
-| 455 |  | Siluriformes | Pseudopimelodidae | Microglanis maculatus | CR |
-| 456 | \* | Siluriformes | Pseudopimelodidae | Microglanis robustus | CR |
-| 457 | \* | Siluriformes | Trichomycteridae | Cambeva crassicaudata | EN |
-| 458 | \* | Siluriformes | Trichomycteridae | Cambeva igobi | VU |
-| 459 | \* | Siluriformes | Trichomycteridae | Cambeva mboycy | EN |
-| 460 | \* | Siluriformes | Trichomycteridae | Cambeva paolence | EN |
-| 461 | \* | Siluriformes | Trichomycteridae | Cambeva papillifera | EN |
-| 462 |  | Siluriformes | Trichomycteridae | Cambeva pascuali | CR |
-| 463 | \* | Siluriformes | Trichomycteridae | Cambeva tropeiro | CR |
-| 464 | \* | Siluriformes | Trichomycteridae | Glaphyropoma spinosum | VU |
-| 465 | \* | Siluriformes | Trichomycteridae | Ituglanis bambui | CR |
-| 466 | \* | Siluriformes | Trichomycteridae | Ituglanis cahyensis | EN |
-| 467 | \* | Siluriformes | Trichomycteridae | Ituglanis epikarsticus | VU |
-| 468 | \* | Siluriformes | Trichomycteridae | Ituglanis mambai | EN |
-| 469 | \* | Siluriformes | Trichomycteridae | Ituglanis passensis | VU |
-| 470 | \* | Siluriformes | Trichomycteridae | Ituglanis ramiroi | VU |
-| 471 | \* | Siluriformes | Trichomycteridae | Listrura camposi | CR |
-| 472 | \* | Siluriformes | Trichomycteridae | Listrura nematopteryx | CR |
-| 473 | \* | Siluriformes | Trichomycteridae | Microcambeva draco | EN |
-| 474 | \* | Siluriformes | Trichomycteridae | Trichogenes claviger | CR |
-| 475 | \* | Siluriformes | Trichomycteridae | Trichomycterus dali | VU |
-| 476 | \* | Siluriformes | Trichomycteridae | Trichomycterus itacarambiensis | CR |
-| 477 | \* | Siluriformes | Trichomycteridae | Trichomycterus rubbioli | VU |
-| 478 | \* | Siluriformes | Trichomycteridae | Trichomycterus triguttatus | CR |
-| 479 | \* | Squatiniformes | Squatinidae | Squatina argentina | CR |
-| 480 | \* | Squatiniformes | Squatinidae | Squatina guggenheim | CR |
-| 481 | \* | Squatiniformes | Squatinidae | Squatina occulta | CR |
-| 482 | \* | Syngnathiformes | Syngnathidae | Hippocampus erectus | VU |
-| 483 | \* | Syngnathiformes | Syngnathidae | Hippocampus patagonicus | VU |
-| 484 | \* | Syngnathiformes | Syngnathidae | Hippocampus reidi | VU |
-| 485 |  | Torpediniformes | Narcinidae | Narcine brasiliensis | VU |
-|  |  |  |  |  |  |
-| \* |  | Espécies constantes na Lista anterior (2014) |  |  |
-| VU |  | Vulnerável |  |  |  |
-| EN |  | Em Perigo |  |  |  |
-| CR |  | Criticamente em Perigo |  |  |
-| CR (PEX) | Criticamente em Perigo (Provavelmente Extinta) |  |
-|  |  |  |  |  |  |

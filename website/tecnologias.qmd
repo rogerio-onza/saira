@@ -82,7 +82,7 @@ Alguns dados de referência vêm dentro do pacote (em `inst/extdata/`) para que 
 | --- | --- | --- |
 | Camada de terra e países (Natural Earth) | [Natural Earth](https://www.naturalearthdata.com/) | Domínio público |
 | Termos Darwin Core | [TDWG — Darwin Core](https://dwc.tdwg.org/) ([repositório](https://github.com/tdwg/dwc)) | CC-BY 4.0 |
-| Lista Nacional Oficial de Espécies Ameaçadas | [Portaria MMA nº 148/2022](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733) | Registro público de governo |
+| Lista Nacional Oficial de Espécies Ameaçadas | [Portaria MMA nº 148/2022](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733) (flora), [nº 1.704/2026](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917) (fauna terrestre), [GM/MMA nº 1.667/2026](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623) (fauna aquática) | Registro público de governo |
 | Sinônimos e apelidos de termos DwC, apelidos de país, textos da interface (i18n) | Autoral do Saíra | GPL-3 |
 
 A lista de termos Darwin Core é publicada pelo TDWG sob **CC-BY 4.0**, que pede atribuição — cumprida por esta página e pelos links acima.

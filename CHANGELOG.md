@@ -7,6 +7,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-06-18
+
+### Changed
+- **Refreshed the bundled Brazilian threatened-fauna lists to the 2026 official portarias.** The in-package list that drives sensitive-coordinate generalization on export was rebuilt from the new DOU rulings: **terrestrial fauna** now follows **Portaria MMA nº 1.704, de 16 de junho de 2026** (updates Portaria 444/2014 — 790 threatened taxa across Aves, Répteis, Anfíbios, Mamíferos and Invertebrados Terrestres), and **aquatic fauna** (fish + aquatic invertebrates) now follows **Portaria GM/MMA nº 1.667, de 27 de abril de 2026** (revokes Portaria 445/2014 — 490 taxa). The **flora** list is unchanged (Portaria MMA nº 148/2022). Net effect on the masking lookup: **4455 → 4486 taxa** (332 added, 301 removed, 170 recategorized). The 2026 fauna lists spell the "possibly extinct" tier `CR (PE)`; it is canonicalized to the app's existing `CR (PEX)` label, so the threat-category display, i18n and generalization grid are unchanged. Extinct tags (EX/RE/EW) remain excluded from masking, as before. The source-of-truth Markdown (`data-raw/redlist_brasil_mma.md`) and the regenerated `inst/extdata/sensitive_species.rds` were rebuilt from the official PDFs; portaria citations in the README, the "Technologies and credits" page and the name-validation tutorial now credit all three rulings by scope.
+
 ## [0.8.4] - 2026-06-16
 
 ### Added

@@ -2,6 +2,16 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.8.5</span>
+    <time class="release-date">2026-06-18</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>Lista nacional de fauna ameaçada atualizada para as portarias de 2026</strong>: fauna terrestre pela Portaria MMA nº 1.704/2026 e fauna aquática (peixes e invertebrados) pela Portaria GM/MMA nº 1.667/2026. A flora segue a Portaria MMA nº 148/2022.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.8.4</span>
     <time class="release-date">2026-06-16</time>
   </header>

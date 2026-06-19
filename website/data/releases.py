@@ -11,6 +11,16 @@
 
 RELEASES = [
     {
+        "version": "0.8.5",
+        "date": "2026-06-18",
+        "pt": [
+            ("changed", "**Lista nacional de fauna ameaçada atualizada para as portarias de 2026**: fauna terrestre pela Portaria MMA nº 1.704/2026 e fauna aquática (peixes e invertebrados) pela Portaria GM/MMA nº 1.667/2026. A flora segue a Portaria MMA nº 148/2022."),
+        ],
+        "en": [
+            ("changed", "**National threatened-fauna list updated to the 2026 ordinances**: terrestrial fauna from Portaria MMA nº 1.704/2026 and aquatic fauna (fish and invertebrates) from Portaria GM/MMA nº 1.667/2026. Flora still follows Portaria MMA nº 148/2022."),
+        ],
+    },
+    {
         "version": "0.8.4",
         "date": "2026-06-16",
         "pt": [

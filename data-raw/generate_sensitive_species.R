@@ -1,14 +1,16 @@
 # Build the sensitive-species lookup used to mask coordinates on export.
 #
 # Source: data-raw/redlist_brasil_mma.md
-#   Official MMA Brazilian national list of threatened species
-#   (Portaria MMA no 148 de 2022, which updates the flora/fauna anexos of
-#   Portarias 443/2014 and 444/2014), a Markdown table.
-#   Two row layouts coexist. Flora rows hold five cells: number, legacy
-#   marker, family, species, category. Fauna rows hold six: number,
-#   marker, order, family, species, category. The species name is always
-#   the second-to-last cell and the category the last cell. Valid
-#   categories are VU, EN, CR and CR (PEX).
+#   Official MMA Brazilian national list of threatened species, a Markdown
+#   table built from three DOU portarias: flora (ANEXO 1) from Portaria MMA
+#   no 148 de 2022 (updates Portaria 443/2014); terrestrial fauna (ANEXO 2)
+#   from Portaria MMA no 1.704 de 2026 (updates Portaria 444/2014); aquatic
+#   fauna (ANEXO 3) from Portaria GM/MMA no 1.667 de 2026 (revokes 445/2014).
+#   Row layouts vary by annex, but the species name is always the
+#   second-to-last cell and the category the last cell. Threatened categories
+#   are VU, EN, CR and CR (PEX); the 2026 fauna lists spell the last one
+#   CR (PE) -- same meaning -- and it is canonicalized to CR (PEX) below.
+#   Extinct tags (EX, RE, EW) are intentionally excluded from masking.
 #
 # Output: inst/extdata/sensitive_species.rds
 #   A table with columns scientificName, match_key and category
@@ -35,7 +37,7 @@ if (length(lines) > 0L) {
   lines[1L] <- sub(paste0("^", bom), "", lines[1L])
 }
 
-category_re <- "^(VU|EN|CR|CR \\(PEX\\))$"
+category_re <- "^(VU|EN|CR|CR \\(PE\\)|CR \\(PEX\\))$"
 
 parse_row <- function(line) {
   if (!grepl("|", line, fixed = TRUE)) {
@@ -78,6 +80,11 @@ parsed <- lapply(lines, parse_row)
 parsed <- parsed[!vapply(parsed, is.null, logical(1L))]
 raw_names <- vapply(parsed, function(x) unname(x[["species"]]), character(1L))
 raw_cats <- vapply(parsed, function(x) unname(x[["category"]]), character(1L))
+
+# The 2026 fauna portarias spell "possibly extinct" CR (PE); the flora list
+# (and the rest of the app, i18n included) uses CR (PEX). Same meaning, so
+# canonicalize to a single label that flows unchanged downstream.
+raw_cats[raw_cats == "CR (PE)"] <- "CR (PEX)"
 
 # Same normalization the validator uses, so list and validated names match.
 canonical <- vapply(
