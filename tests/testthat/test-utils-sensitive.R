@@ -69,6 +69,86 @@ testthat::test_that("generalization grid maps each tier to the right degree", {
     testthat::expect_true(is.na(saira:::sensitive_generalization_grid(NA_character_)))
 })
 
+# precision lock ---------------------------------------------------------
+
+testthat::test_that("coordinate_decimal_grid reads precision from the literal string", {
+    testthat::expect_equal(
+        saira:::coordinate_decimal_grid(c("-81.41", "-81.40", "-81", "12.34567")),
+        c(0.01, 0.01, 1, 1e-5)
+    )
+    # Trailing zeros count (as.numeric would drop them); blank/NA -> NA.
+    testthat::expect_equal(
+        saira:::coordinate_decimal_grid(c("-23.500", "", NA)),
+        c(0.001, NA, NA)
+    )
+})
+
+testthat::test_that("existing_precision_grid takes the coarsest signal per row", {
+    df <- data.frame(
+        decimalLatitude = c("-81.41", "-10.12345", "-5.1"),
+        decimalLongitude = c("-46.666", "-40.54321", "-39.0"),
+        stringsAsFactors = FALSE
+    )
+    # Coarsest of the two axes: row1 lat 0.01 vs lon 0.001 -> 0.01.
+    testthat::expect_equal(saira:::existing_precision_grid(df), c(0.01, 1e-5, 0.1))
+    # An explicit coordinatePrecision column widens the lock when coarser.
+    df$coordinatePrecision <- c("0.1", NA, NA)
+    testthat::expect_equal(saira:::existing_precision_grid(df)[1], 0.1)
+})
+
+testthat::test_that("mask clamps the grid to existing precision, never finer (Chapman)", {
+    local_sensitive_fixture("Panthera onca")
+    # 2-decimal coordinate -> existing precision 0.01 deg.
+    df <- data.frame(
+        occurrenceID = "o1", scientificName = "Panthera onca",
+        decimalLatitude = "-81.41", decimalLongitude = "-46.66",
+        stringsAsFactors = FALSE
+    )
+
+    # low (0.001) is finer than the data -> clamped to 0.01 (never invent
+    # precision), but STILL masked + documented (Chapman sec. 5.1).
+    res_low <- saira:::mask_sensitive_coordinates(df, generalization = "low", lang = "en")
+    testthat::expect_equal(res_low$n_masked, 1L)
+    testthat::expect_equal(res_low$n_clamped_to_precision, 1L)
+    testthat::expect_equal(res_low$masked$decimalLatitude[1], "-81.41")
+    testthat::expect_equal(res_low$masked$coordinatePrecision[1], "0.01")
+    testthat::expect_true("o1" %in% res_low$real$occurrenceID)
+    # The record is still protected: informationWithheld + a precision-stored note.
+    testthat::expect_true(nzchar(res_low$masked$informationWithheld[1]))
+    testthat::expect_match(res_low$masked$dataGeneralizations[1], "0.01", fixed = TRUE)
+
+    # medium (0.01) == existing precision -> applied, no clamp, coords unchanged.
+    res_med <- saira:::mask_sensitive_coordinates(df, generalization = "medium", lang = "en")
+    testthat::expect_equal(res_med$n_masked, 1L)
+    testthat::expect_equal(res_med$n_clamped_to_precision, 0L)
+    testthat::expect_equal(res_med$masked$decimalLatitude[1], "-81.41")
+
+    # high (0.1) is coarser -> genuinely generalized, no clamp.
+    res_high <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    testthat::expect_equal(res_high$n_masked, 1L)
+    testthat::expect_equal(res_high$n_clamped_to_precision, 0L)
+    testthat::expect_equal(res_high$masked$decimalLatitude[1], "-81.4")
+})
+
+testthat::test_that("map preview clamps (never drops) and reports the clamped count", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        scientificName = "Panthera onca",
+        decimalLatitude = "-81.41", decimalLongitude = "-46.66",
+        stringsAsFactors = FALSE
+    )
+    # low (0.001) finer than 0.01 -> still shown, but generalized at 0.01.
+    clamped <- saira:::generalization_map_preview(df, generalization = "low")
+    testthat::expect_equal(nrow(clamped), 1L)
+    testthat::expect_equal(attr(clamped, "n_clamped_to_precision"), 1L)
+    testthat::expect_equal(clamped$gen_lat, -81.41)
+    # high (0.1) coarser -> one row, nothing clamped.
+    shown <- saira:::generalization_map_preview(df, generalization = "high")
+    testthat::expect_equal(nrow(shown), 1L)
+    testthat::expect_equal(attr(shown, "n_clamped_to_precision"), 0L)
+    testthat::expect_equal(shown$gen_lat, -81.4)
+})
+
 # sensitive_category_for / flag ------------------------------------------
 
 testthat::test_that("sensitive_category_for returns the MMA category or NA", {
@@ -592,7 +672,7 @@ testthat::test_that("mask appends the custodian justification to dataGeneralizat
     local_sensitive_fixture("Panthera onca")
     df <- data.frame(
         occurrenceID = "j1", scientificName = "Panthera onca",
-        decimalLatitude = "-23.5", decimalLongitude = "-46.6",
+        decimalLatitude = "-23.5612", decimalLongitude = "-46.6543",
         stringsAsFactors = FALSE
     )
     res <- saira:::mask_sensitive_coordinates(

@@ -21,6 +21,7 @@ mod_sensitive_coords_ui <- function(id) {
             class = "container-fluid sensitive-coords-page",
             shiny::uiOutput(ns("title")),
             shiny::uiOutput(ns("subtitle")),
+            shiny::uiOutput(ns("precision_lock_alert")),
             shiny::uiOutput(ns("border_alert")),
             # One screen, two jobs: DECIDE on the left, SEE the consequence
             # (per-species result stacked directly over the hero map) on the right.
@@ -769,6 +770,29 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
         })
 
         # Loud border-crossing alert: the single most important event on screen.
+        # Surfaces records published at the data's real precision rather than the
+        # finer chosen grid: clamped because the chosen level was finer than the
+        # data (Chapman: generalization never increases precision) or preserved
+        # because already generalized upstream (ADR-095). Without this the
+        # behaviour was silent.
+        output$precision_lock_alert <- shiny::renderUI({
+            if (!identical(input$sensitive_mode %||% "publish", "generalize")) return(NULL)
+            prev <- actual_preview_r()
+            if (is.null(prev)) return(NULL)
+            n_locked <- (attr(prev, "n_clamped_to_precision") %||% 0L) +
+                (attr(prev, "n_upstream_preserved") %||% 0L)
+            if (n_locked == 0L) return(NULL)
+            lang <- lang_r()
+            shiny::div(
+                class = "sc-precision-lock-alert",
+                shiny::icon("lock"), " ",
+                shiny::span(
+                    class = "sc-precision-lock-text",
+                    sprintf(tr("sc_precision_lock_desc", lang), n_locked)
+                )
+            )
+        })
+
         output$border_alert <- shiny::renderUI({
             if (!identical(input$sensitive_mode %||% "publish", "generalize")) return(NULL)
             prev <- actual_preview_r()

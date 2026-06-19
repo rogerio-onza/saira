@@ -119,6 +119,41 @@ testthat::test_that("group cascade resolves to a tier carried per species in the
     )
 })
 
+testthat::test_that("precision-lock banner appears when the chosen tier is finer than the data", {
+    local_sensitive_fixture("Panthera onca", category = "EN")
+    # Integer coords -> existing precision 1 deg; the cascade resolves to `high`
+    # (0.1 deg, q43 yes -> Cat 2), finer than the data, so every row is clamped
+    # to 1 deg (still generalized, just not at false precision).
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Panthera onca"),
+        decimalLatitude = c("-27", "-28"),
+        decimalLongitude = c("-53", "-54"),
+        stringsAsFactors = FALSE
+    )
+    shiny::testServer(
+        saira:::mod_sensitive_coords_server,
+        args = list(
+            data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(sensitive_mode = "generalize")
+            session$setInputs(q43_en = "yes")
+            session$flushReact()
+
+            prev <- actual_preview_r()
+            # Clamped, not dropped: the rows are still shown, generalized at 1 deg.
+            testthat::expect_equal(nrow(prev), 2L)
+            testthat::expect_equal(attr(prev, "n_clamped_to_precision"), 2L)
+            # The banner renders the count; publish mode would suppress it.
+            banner <- output$precision_lock_alert
+            banner_html <- if (is.list(banner)) banner$html else as.character(banner)
+            testthat::expect_true(nzchar(banner_html))
+            testthat::expect_match(banner_html, "real precision", fixed = TRUE)
+        }
+    )
+})
+
 testthat::test_that("a per-species exception overrides the group then clears back", {
     local_sensitive_fixture("Panthera onca", category = "EN")
     df <- sample_occurrence_df()

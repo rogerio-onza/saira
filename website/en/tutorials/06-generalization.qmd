@@ -77,6 +77,11 @@ Each category maps to a generalization **grid**: the coordinate is shifted to th
 
 : Generalization levels (Table 7, Chapman 2020 / GBIF)
 
+::: {.callout-note}
+## Generalization never increases precision
+Generalizing *reduces* precision — it never invents it (Chapman 2020, §4.1). If a coordinate is already *less* precise than the category you picked — say, a coordinate from a paper with only two decimal places (~1 km) while you chose Category 4 (~100 m) — Saíra **publishes it at the data's real precision** (the grid is never finer than the original) instead of rounding to a false 100 m precision. The record is **still protected**: it gets <span class="term">informationWithheld</span>, the generalized cell, the uncertainty radius, and the locality fields scrubbed. <span class="term">dataGeneralizations</span> records **both precisions** — the one provided and the one originally retained by the custodian (Chapman §4.3 and §5.1). A banner on the tab counts how many records were published at the data's real precision.
+:::
+
 ## Per-species exceptions
 
 The group decision is the starting point, not the final word. Under **Per-species exceptions** you can assess a single taxon — answering the same cascade — and override the level inherited from the group. Use this when one species in the group deserves different treatment from the rest.

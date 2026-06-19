@@ -1619,6 +1619,10 @@
     "pt": "Coordenadas de espécie %s (lista nacional MMA) generalizadas para %s grau pois",
     "en": "Coordinates of a %s species (MMA national red list) generalized to %s degree because"
   },
+  "sensitive_precision_stored": {
+    "pt": "| Precisão original retida pelo custodiante: %s grau.",
+    "en": "| Original precision retained by the custodian: %s degree."
+  },
   "sensitive_information_withheld": {
     "pt": "Coordenadas precisas omitidas por se tratar de espécie ameaçada | Disponíveis com o publicador dos dados mediante solicitação.",
     "en": "Precise coordinates withheld for a threatened species | Available from the data publisher on request."
@@ -2090,6 +2094,10 @@
   "sc_border_alert_recommend": {
     "pt": "Considere uma categoria menos agressiva (ex.: Categoria 2) para manter o ponto dentro do país.",
     "en": "Consider a less aggressive category (e.g. Category 2) to keep the point inside the country."
+  },
+  "sc_precision_lock_desc": {
+    "pt": "%d registro(s) mantidos na precisão real do dado — generalizar nunca aumenta a precisão (Chapman 2020). Inclui dados já generalizados pela fonte e casos em que o nível escolhido era mais fino que o dado.",
+    "en": "%d record(s) kept at the data's real precision — generalization never increases precision (Chapman 2020). Includes data already generalized by the source, and cases where the chosen level was finer than the data."
   },
   "sensitive_eml_access_note": {
     "pt": "Este conjunto de dados contém %s registro(s) de espécies sensíveis cujas coordenadas foram generalizadas seguindo as melhores práticas do Chapman (2020). Os dados precisos podem ser disponibilizados sob solicitação ao publicador. Revisão da sensibilidade prevista para %s.",
