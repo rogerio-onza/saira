@@ -2,6 +2,16 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.8.5</span>
+    <time class="release-date">2026-06-18</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>National threatened-fauna list updated to the 2026 ordinances</strong>: terrestrial fauna from Portaria MMA nº 1.704/2026 and aquatic fauna (fish and invertebrates) from Portaria GM/MMA nº 1.667/2026. Flora still follows Portaria MMA nº 148/2022.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.8.4</span>
     <time class="release-date">2026-06-16</time>
   </header>

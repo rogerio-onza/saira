@@ -633,3 +633,32 @@ testthat::test_that("generalization_map_preview is empty when nothing is masked"
     prev <- saira:::generalization_map_preview(df, c("Panthera onca" = "extreme"))
     testthat::expect_equal(nrow(prev), 0L)
 })
+
+# shipped data integrity (Portarias 148/2022, 1.667/2026, 1.704/2026) ------
+
+testthat::test_that("bundled sensitive_species.rds carries only canonical categories", {
+    lk <- saira:::load_sensitive_species(force = TRUE)
+    testthat::expect_gt(nrow(lk), 4000L)
+    # The build canonicalizes the 2026 fauna label CR (PE) -> CR (PEX) and
+    # excludes extinct tags; nothing else should reach the lookup.
+    testthat::expect_setequal(
+        unique(lk$category), c("VU", "EN", "CR", "CR (PEX)")
+    )
+    testthat::expect_false(any(c("CR (PE)", "EX", "RE", "EW") %in% lk$category))
+    testthat::expect_equal(sum(duplicated(lk$match_key)), 0L)
+})
+
+testthat::test_that("2026 fauna refresh: terrestrial, aquatic and flora resolve", {
+    # 1.704/2026 terrestrial, 1.667/2026 aquatic, 148/2022 flora; extinct -> NA.
+    got <- saira:::sensitive_category_for(c(
+        "Anomaloglossus apiau", "Crossodactylodes itambe",
+        "Odontesthes bicudo", "Hippocampus reidi",
+        "Aphelandra espirito-santensis", "Boana cymbalum"
+    ))
+    testthat::expect_equal(got[1], "EN")          # terrestrial amphibian
+    testthat::expect_equal(got[2], "CR")          # wrap-recovered row (Nº 47)
+    testthat::expect_equal(got[3], "EN")          # aquatic fish
+    testthat::expect_equal(got[4], "VU")          # seahorse
+    testthat::expect_equal(got[5], "EN")          # flora (unchanged)
+    testthat::expect_true(is.na(got[6]))          # extinct (EX) excluded
+})

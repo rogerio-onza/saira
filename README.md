@@ -116,7 +116,8 @@ Antes de abrir um pull request, leia [CONTRIBUTING.md](CONTRIBUTING.md).
 O Saíra usa pacotes R de código aberto (Shiny, `taxadb`/`florabr`/`faunabr`,
 `CoordinateCleaner`/`sf`/`terra`, entre outros) e embute dados de fontes públicas
 (camada Natural Earth, termos Darwin Core do TDWG sob CC-BY, Lista Nacional de
-Espécies Ameaçadas da Portaria MMA nº 148/2022). Duas correções de coordenadas são
+Espécies Ameaçadas — Portarias MMA nº 148/2022, nº 1.704/2026 e GM/MMA
+nº 1.667/2026). Duas correções de coordenadas são
 reimplementações independentes inspiradas na abordagem do pacote `bdc`, **sem
 reutilização de código nem dependência dele**. A lista completa, com links e
 licenças, está em
@@ -235,7 +236,8 @@ Before opening a pull request, read [CONTRIBUTING.md](CONTRIBUTING.md).
 Saíra uses open-source R packages (Shiny, `taxadb`/`florabr`/`faunabr`,
 `CoordinateCleaner`/`sf`/`terra`, among others) and bundles data from public
 sources (Natural Earth layer, Darwin Core terms from TDWG under CC-BY, the
-Brazilian Official List of Threatened Species from Portaria MMA nº 148/2022). Two
+Brazilian Official List of Threatened Species — Portarias MMA nº 148/2022,
+nº 1.704/2026 and GM/MMA nº 1.667/2026). Two
 coordinate corrections are independent reimplementations inspired by the `bdc`
 package's approach, **with no code reuse and no dependency on it**. The full list,
 with links and licenses, is in [Technologies and credits](https://rogerio-onza.github.io/saira/en/technologies.html).

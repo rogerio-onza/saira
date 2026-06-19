@@ -82,7 +82,7 @@ Some reference data ships inside the package (under `inst/extdata/`) so Saíra c
 | --- | --- | --- |
 | Land and country layer (Natural Earth) | [Natural Earth](https://www.naturalearthdata.com/) | Public domain |
 | Darwin Core terms | [TDWG — Darwin Core](https://dwc.tdwg.org/) ([repository](https://github.com/tdwg/dwc)) | CC-BY 4.0 |
-| Brazilian Official List of Threatened Species | [Portaria MMA nº 148/2022](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733) | Public government record |
+| Brazilian Official List of Threatened Species | [Portaria MMA nº 148/2022](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733) (flora), [nº 1.704/2026](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917) (terrestrial fauna), [GM/MMA nº 1.667/2026](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623) (aquatic fauna) | Public government record |
 | DwC term synonyms and aliases, country aliases, interface text (i18n) | Authored by Saíra | GPL-3 |
 
 The Darwin Core term list is published by TDWG under **CC-BY 4.0**, which requires attribution — fulfilled by this page and the links above.
