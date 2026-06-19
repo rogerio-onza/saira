@@ -2,6 +2,17 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.8.4</span>
+    <time class="release-date">2026-06-16</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text">Nova página <strong>Tecnologias e créditos</strong> (PT e EN) reunindo, num só lugar, todos os pacotes R que o Saíra usa, os dados públicos embutidos e suas fontes, e os créditos de método.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>Análise de acesso sem cookies</strong> (Umami) no site, para acompanhar as visitas sem coletar dados pessoais.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.8.3</span>
     <time class="release-date">2026-06-16</time>
   </header>

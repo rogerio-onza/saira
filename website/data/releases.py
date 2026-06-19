@@ -11,6 +11,18 @@
 
 RELEASES = [
     {
+        "version": "0.8.4",
+        "date": "2026-06-16",
+        "pt": [
+            ("added", "Nova página **Tecnologias e créditos** (PT e EN) reunindo, num só lugar, todos os pacotes R que o Saíra usa, os dados públicos embutidos e suas fontes, e os créditos de método."),
+            ("added", "**Análise de acesso sem cookies** (Umami) no site, para acompanhar as visitas sem coletar dados pessoais."),
+        ],
+        "en": [
+            ("added", "A new **Technologies and credits** page (PT and EN) gathering, in one place, every R package Saíra uses, the bundled public data and its provenance, and method credits."),
+            ("added", "**Cookieless analytics** (Umami) on the site, to monitor visits without collecting personal data."),
+        ],
+    },
+    {
         "version": "0.8.3",
         "date": "2026-06-16",
         "pt": [

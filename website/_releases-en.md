@@ -2,6 +2,17 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.8.4</span>
+    <time class="release-date">2026-06-16</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text">A new <strong>Technologies and credits</strong> page (PT and EN) gathering, in one place, every R package Saíra uses, the bundled public data and its provenance, and method credits.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Cookieless analytics</strong> (Umami) on the site, to monitor visits without collecting personal data.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.8.3</span>
     <time class="release-date">2026-06-16</time>
   </header>

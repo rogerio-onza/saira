@@ -35,7 +35,7 @@ website:
         href: glossario.qmd
       - text: "Tecnologias"
         href: tecnologias.qmd
-      - text: "Novidades"
+      - text: "Atualizações"
         href: novidades.qmd
       - icon: github
         href: https://github.com/rogerio-onza/saira
