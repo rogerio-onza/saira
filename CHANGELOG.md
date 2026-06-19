@@ -7,6 +7,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **Camtrap DP uploads now map cleanly: filled columns, AUTO badges, no blank fields.** Three problems in the camtrap mapping flow were fixed together:
+  - **Blank columns no longer appear.** `camtrapdp::write_dwc()` emits a fixed Darwin Core Occurrence schema, so terms the source package had no data for (e.g. `organismID`, `minimum/maximumDepthInMeters`, `identificationVerificationStatus`) came out as entirely empty columns — surfacing as blank mapping cards and title-only, empty preview columns (and any one of them could even be hand-mapped to an empty result). The converter now drops every all-empty column, so only columns that actually carry data are offered for mapping.
+  - **Auto-mapped values stay selected.** The deferred auto-map set each mapping, but the mapping tab's input-sync observer wiped any value whose `selectInput` had not yet echoed its selection back from the client — it could not tell "input not rendered yet" from "user cleared the field" and reset the still-`NULL` extra-term inputs to empty (base terms survived only because they echoed first). The observer now tracks which `map_<term>` inputs have reported a value at least once and only treats a later `NULL` as a user-clear.
+  - **Camtrap columns are badged AUTO, not "suggested"/ambiguous.** Because every camtrap column *is* its Darwin Core term, the mapping is a deterministic identity (column X → term X). Camtrap uploads now take a direct identity map badged AUTO instead of the fuzzy Rostrum engine, which had downgraded these exact matches to "suggested" and invented spurious cross-matches (e.g. the `decimalLatitude` column suggested for the `verbatimLongitude` term). Non-camtrap uploads are unchanged.
+  - **The `occurrenceID` card no longer misleadingly says "UUID auto-generated" when the upload already has IDs.** `resolve_occurrence_ids()` preserves an existing `occurrenceID` column (e.g. a Wildlife Insights / Camtrap observation id), minting a UUID only for blank rows — but the mapping card always claimed the id would be auto-generated. It now reads "Existing occurrence IDs preserved; blank rows get a UUID" whenever the source data carries `occurrenceID` values.
+
 ## [0.8.6] - 2026-06-19
 
 ### Fixed

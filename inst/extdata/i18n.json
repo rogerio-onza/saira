@@ -511,6 +511,10 @@
     "pt": "UUID será gerado automaticamente",
     "en": "UUID will be auto-generated"
   },
+  "occurrence_id_preserved": {
+    "pt": "IDs de ocorrência existentes preservados; linhas em branco recebem um UUID",
+    "en": "Existing occurrence IDs preserved; blank rows get a UUID"
+  },
   "taxon_auto_derived": {
     "pt": "Inferido automaticamente a partir do scientificName",
     "en": "Auto-inferred from scientificName"

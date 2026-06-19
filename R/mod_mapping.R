@@ -350,6 +350,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         # raw_data) -- never on rv$basis_of_record_map / rv$dyn_props_keys.
         preview_cache <- new.env(parent = emptyenv())
 
+        # Tracks which map_<term> inputs have reported a non-NULL value at least
+        # once (i.e. the card rendered and the client echoed it). The input-sync
+        # observer needs this to tell "input not rendered yet" (skip) from "user
+        # cleared a selectInput" (NULL after it had a value). Non-reactive on
+        # purpose: writing here must not re-trigger the observer. Reset per
+        # upload alongside preview_cache.
+        rendered_map_inputs <- new.env(parent = emptyenv())
+
         processed_preview_for_term <- function(term, current_val, n = 3L) {
             df <- raw_data_r()
             if (!is.data.frame(df) || nrow(df) == 0) return(character(0))
@@ -734,6 +742,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 rv$dyn_props_keys <- list()
                 reset_basis_of_record_state(rv)
                 rm(list = ls(preview_cache, all.names = TRUE), envir = preview_cache)
+                rm(
+                    list = ls(rendered_map_inputs, all.names = TRUE),
+                    envir = rendered_map_inputs
+                )
 
                 # Camtrap columns are Darwin Core terms already: queue the
                 # automatic mapping (run once the cards render). Non-camtrap
@@ -779,17 +791,27 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 input_value <- input[[input_id]]
                 if (is.null(input_value)) {
                     # NULL pode significar: (a) input ainda nao renderizado
-                    # (carga inicial — nao devemos sobrescrever map_values com
-                    # ""), ou (b) usuario limpou um selectInput que estava
-                    # setado (input devolve NULL, nao ""). Distinguimos pelo
-                    # valor atual em rv$map_values: se ja era vazio, no-op;
-                    # se tinha valor, o usuario limpou — escrevemos "".
+                    # (carga inicial ou valor setado por codigo cujo card ainda
+                    # nao ecoou — nao devemos sobrescrever map_values com ""), ou
+                    # (b) usuario limpou um selectInput que estava setado (input
+                    # devolve NULL, nao ""). So e (b) se o input ja reportou um
+                    # valor antes (rendered_map_inputs); senao e (a). Sem esse
+                    # gate, um valor programatico (ex.: auto-map camtrap em
+                    # extra-terms) era apagado na janela entre o set e o eco do
+                    # cliente.
+                    if (!isTRUE(rendered_map_inputs[[term]])) {
+                        next
+                    }
                     old_value_isolated <- shiny::isolate(rv$map_values[[term]])
                     if (is.null(old_value_isolated) ||
                         !nzchar(trimws(as.character(old_value_isolated)[[1]]))) {
                         next
                     }
                     input_value <- ""
+                } else {
+                    # First non-NULL report for this input: the card rendered and
+                    # the client echoed it. A later NULL is then a real clear.
+                    rendered_map_inputs[[term]] <- TRUE
                 }
 
                 sanitized <- sanitize_map_selection(term, input_value)
@@ -1338,6 +1360,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 sanitize_map_selection("scientificName", sn_val)
             )
 
+            # When the upload already carries occurrenceID values (e.g. a
+            # camera-trap observationID), resolve_occurrence_ids() preserves them
+            # -- only blank rows get a fresh UUID. The card message reflects that
+            # instead of claiming every id is auto-generated.
+            occ_id_col <- raw_data_r()[["occurrenceID"]]
+            occurrence_id_preserved <- !is.null(occ_id_col) &&
+                any(!is.na(occ_id_col) & nzchar(trimws(as.character(occ_id_col))))
+
             shiny::tagList(
                 lapply(categories, function(cat) {
                     cat_fields <- Filter(function(x) x$category == cat, fields_to_show)
@@ -1408,7 +1438,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                     ns = ns, lang_r = lang,
                                     input = input, cat_class = cat_class,
                                     sample_preview = sample_preview,
-                                    scientificname_mapped = scientificname_mapped
+                                    scientificname_mapped = scientificname_mapped,
+                                    occurrence_id_preserved = occurrence_id_preserved
                                 )
                             })
                         )
@@ -1418,12 +1449,67 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         })
 
 
+        # Camtrap DP columns are already canonical Darwin Core terms
+        # (camtrapdp::write_dwc() emits them by name), so the mapping is a
+        # deterministic identity: column X -> term X. We map them directly as
+        # AUTO instead of running the fuzzy Rostrum engine, which would both
+        # downgrade these exact matches to "suggested" (the extra-term rule
+        # below) and invent spurious cross-matches (e.g. the decimalLatitude
+        # column suggested for the verbatimLongitude term). Blank columns were
+        # already dropped at conversion, so nothing empty maps here.
+        perform_camtrap_automap <- function() {
+            shiny::req(raw_data_r())
+            cols <- names(raw_data_r())
+            term_names <- all_term_names()
+            # Same fields the engine path skips: their value comes from a custom
+            # input (UUID/date/checkbox), not a source-column dropdown.
+            special_fields <- c("occurrenceID", "modified", "license", "language")
+
+            rv$is_programmatic_update <- TRUE
+            on.exit(
+                {
+                    rv$is_programmatic_update <- FALSE
+                    rv$programmatic_terms <- character(0)
+                },
+                add = TRUE
+            )
+
+            next_meta <- empty_map_meta(term_names)
+            mapped_n <- 0L
+            for (term in term_names) {
+                if (term %in% special_fields || !(term %in% cols)) {
+                    next
+                }
+                next_meta[[term]] <- list(
+                    status = "AUTO",
+                    score = 1,
+                    reason = "exact_match",
+                    source = "auto",
+                    alternatives_json = "[]"
+                )
+                set_map_value(term, term, update_input = TRUE)
+                mapped_n <- mapped_n + 1L
+            }
+            rv$map_meta <- next_meta
+            rv$rostrum_decisions <- NULL
+            rv$ambiguity_queue <- list()
+
+            shiny::showNotification(
+                sprintf(tr("notif_auto_mapping_v1", lang_r()), mapped_n, 0L),
+                type = "message",
+                duration = 6
+            )
+        }
+
         # Auto-mapping logic, shared by the "Auto-map" button and the automatic
-        # run on camtrap-origin uploads (their columns are already Darwin Core
-        # terms, so the exact-name matches map 1:1 -- including the extra terms
-        # auto-registered on load -- without making the user click).
+        # run on camtrap-origin uploads. Camtrap uploads take the deterministic
+        # identity path above; everything else runs the fuzzy Rostrum engine.
         perform_auto_map <- function() {
             shiny::req(raw_data_r())
+            if (!is.null(attr(raw_data_r(), "saira_camtrap_source"))) {
+                perform_camtrap_automap()
+                return(invisible(NULL))
+            }
             term_names <- all_term_names()
             special_fields <- c("occurrenceID", "modified", "license", "language")
             show_automap_loading_modal(rv, ns, lang_r)

@@ -847,13 +847,13 @@ testthat::test_that("mod_mapping_server auto-registers extra DwC columns from th
 })
 
 # The camtrap auto-map is deferred until the field cards render (the first
-# non-NULL scientificName), so the engine's selections land on real inputs. We
-# assert the trigger wiring (pending TRUE -> FALSE) and that the engine actually
-# ran on the camtrap data, mapping base AND extra terms. The final map_values
-# round-trip through updateSelectInput is not simulated by testServer (it does
-# not echo updateSelectInput back to the input), so it is covered by the button
-# path / manual testing; here we verify the engine decisions directly.
-testthat::test_that("camtrap-origin uploads queue and run auto-map once cards render", {
+# non-NULL scientificName). Camtrap columns are canonical Darwin Core terms, so
+# the mapping is a deterministic identity (column X -> term X) badged AUTO, not a
+# fuzzy engine run (rostrum_decisions stays NULL). We assert the trigger wiring
+# (pending TRUE -> FALSE), the AUTO identity meta, and that the resulting
+# map_values survive the input-sync observer for cards that have not echoed their
+# input yet (the bug: extra-term values were wiped between set and echo).
+testthat::test_that("camtrap-origin uploads queue and run identity auto-map once cards render", {
     raw_data_state <- shiny::reactiveVal(NULL)
 
     shiny::testServer(
@@ -887,17 +887,23 @@ testthat::test_that("camtrap-origin uploads queue and run auto-map once cards re
             session$flushReact()
 
             testthat::expect_false(camtrap_automap_pending())
-            dec <- rv$rostrum_decisions
-            testthat::expect_false(is.null(dec))
-            # Exact-name columns are applied 1:1 by the auto-triggered engine...
-            sn <- dec[dec$term == "scientificName", , drop = FALSE]
-            testthat::expect_identical(sn$selected_col, "scientificName")
-            testthat::expect_true(isTRUE(sn$applied))
-            # ...including the auto-registered extra term (item 2): it is mapped,
-            # not just added as an empty card.
-            gd <- dec[dec$term == "geodeticDatum", , drop = FALSE]
-            testthat::expect_identical(gd$selected_col, "geodeticDatum")
-            testthat::expect_true(isTRUE(gd$applied))
+            # Identity map, not the fuzzy engine: no decisions frame is produced.
+            testthat::expect_null(rv$rostrum_decisions)
+
+            # Exact-name columns are mapped 1:1 and badged AUTO, including the
+            # auto-registered extra term (geodeticDatum) -- not downgraded to
+            # SUGERIDO and not just added as an empty card.
+            testthat::expect_identical(rv$map_meta[["geodeticDatum"]]$status, "AUTO")
+            testthat::expect_identical(rv$map_meta[["decimalLatitude"]]$status, "AUTO")
+
+            # ...and the value is actually retained in rv$map_values. Their
+            # map_<term> inputs were never echoed (only map_scientificName was
+            # set), so before the rendered_map_inputs gate the sync observer
+            # treated the NULL input as a user-clear and wiped the auto-mapped
+            # value back to "". The extra term (geodeticDatum) and a base term
+            # (decimalLatitude) must both keep their identity mapping.
+            testthat::expect_identical(rv$map_values[["geodeticDatum"]], "geodeticDatum")
+            testthat::expect_identical(rv$map_values[["decimalLatitude"]], "decimalLatitude")
         }
     )
 })

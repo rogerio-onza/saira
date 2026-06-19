@@ -479,6 +479,18 @@ convert_camtrap_to_dwc_occurrence <- function(x, lang = "en") {
         stop(tr("err_camtrap_empty_occurrence", lang), call. = FALSE)
     }
     df <- as.data.frame(occ, stringsAsFactors = FALSE)
+    # camtrapdp::write_dwc() emits a fixed Occurrence schema; terms the source
+    # package had no data for come back as entirely empty columns (e.g.
+    # organismID, minimum/maximumDepthInMeters, identificationVerificationStatus).
+    # Drop them so they do not surface as blank mapping cards or title-only,
+    # empty preview columns. scientificName is guaranteed non-empty (checked
+    # above), so the core column always survives this filter.
+    has_data <- vapply(
+        df,
+        function(v) any(!is.na(v) & nzchar(trimws(as.character(v)))),
+        logical(1)
+    )
+    df <- df[, has_data, drop = FALSE]
     src <- attr(x, "saira_camtrap_source")
     if (identical(src, "wildlife_insights_zip")) {
         for (col in intersect(c("eventDate", "dateIdentified"), names(df))) {
