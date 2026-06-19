@@ -19,8 +19,11 @@
 #'   mapped source column (standard select terms only); NULL hides the preview
 #' @param scientificname_mapped Logical; when TRUE, taxonRank and specificEpithet
 #'   are locked because they are derived from scientificName.
+#' @param occurrence_id_preserved Logical; when TRUE, the uploaded data already
+#'   carries occurrenceID values (e.g. a camera-trap observationID), so the card
+#'   says those are preserved instead of auto-generated.
 #' @noRd
-build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, sample_preview = NULL, scientificname_mapped = FALSE) {
+build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, sample_preview = NULL, scientificname_mapped = FALSE, occurrence_id_preserved = FALSE) {
     term <- item$term
 
     # taxonRank/specificEpithet are inferred from scientificName (see
@@ -52,11 +55,16 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 " ", tr("taxon_auto_derived", lang_r)
             )
         } else if (term == "occurrenceID") {
+            occ_id_key <- if (isTRUE(occurrence_id_preserved)) {
+                "occurrence_id_preserved"
+            } else {
+                "uuid_auto_generated"
+            }
             shiny::div(
                 class = "alert alert-info",
                 style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
                 shiny::icon("info-circle"),
-                " ", tr("uuid_auto_generated", lang_r)
+                " ", tr(occ_id_key, lang_r)
             )
         } else if (term == "datasetName") {
             # datasetName: dropdown + separate text input

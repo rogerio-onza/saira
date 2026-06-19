@@ -272,6 +272,21 @@ testthat::test_that("read_camtrap_dp_zip round-trips a descriptor zip (canonical
     testthat::expect_true(is.data.frame(df))
     testthat::expect_gt(nrow(df), 0L)
     testthat::expect_true("scientificName" %in% names(df))
+
+    # write_dwc() emits a fixed schema; columns with no source data come back
+    # entirely empty and must be dropped (else they surface as blank mapping
+    # cards / title-only preview columns). For the canonical example,
+    # organismID and the depth columns are always empty.
+    testthat::expect_false("organismID" %in% names(df))
+    testthat::expect_false("minimumDepthInMeters" %in% names(df))
+    testthat::expect_false("identificationVerificationStatus" %in% names(df))
+    # Every surviving column must carry at least one non-blank value.
+    has_data <- vapply(
+        df,
+        function(v) any(!is.na(v) & nzchar(trimws(as.character(v)))),
+        logical(1)
+    )
+    testthat::expect_true(all(has_data))
 })
 
 testthat::test_that("read_camtrap_dp_zip round-trips a loose Camtrap DP csv zip", {
