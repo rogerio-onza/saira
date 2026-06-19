@@ -196,6 +196,66 @@ sensitive_generalization_grid <- function(level) {
     unname(m[level])
 }
 
+# Precision grid implied by a coordinate's decimal places, read from the LITERAL
+# string so trailing zeros count ("-81.40" -> 2 decimals -> 0.01, which
+# as.numeric() would collapse to 1). No decimal point -> 0 places -> grid 1.0.
+# Blank/NA -> NA (no precision signal). Vectorized.
+coordinate_decimal_grid <- function(x) {
+    s <- trimws(as.character(x))
+    grid <- rep(NA_real_, length(s))
+    ok <- !is.na(s) & nzchar(s)
+    if (!any(ok)) return(grid)
+    # Drop the integer part (everything up to the first "."), then the dot, then
+    # keep only the leading run of digits (defends against stray suffixes).
+    dec <- sub("^[^.]*", "", s[ok])
+    dec <- sub("^\\.", "", dec)
+    dec <- regmatches(dec, regexpr("^[0-9]*", dec))
+    grid[ok] <- 10^(-nchar(dec))
+    grid
+}
+
+# Per-row coarsest existing precision (the LARGEST grid the data already sits on),
+# used to block generalizing to a finer grid than the coordinates carry -- which
+# would fabricate precision. Coarsest of: decimal places of decimalLatitude and
+# decimalLongitude, plus an explicit `coordinatePrecision` column when present.
+# NA where no signal exists (then no lock applies). Vectorized over rows.
+existing_precision_grid <- function(df) {
+    n <- if (is.data.frame(df)) nrow(df) else 0L
+    get_col <- function(nm) {
+        if (is.data.frame(df) && nm %in% names(df)) df[[nm]] else rep(NA_character_, n)
+    }
+    lat_g <- coordinate_decimal_grid(get_col("decimalLatitude"))
+    lon_g <- coordinate_decimal_grid(get_col("decimalLongitude"))
+    g <- pmax(lat_g, lon_g, na.rm = TRUE)
+    if (is.data.frame(df) && "coordinatePrecision" %in% names(df)) {
+        cp <- suppressWarnings(as.numeric(df[["coordinatePrecision"]]))
+        g <- pmax(g, cp, na.rm = TRUE)
+    }
+    # pmax(na.rm = TRUE) returns -Inf when every input is NA; normalize to NA so
+    # "no precision signal" stays distinct from "infinitely coarse".
+    g[!is.finite(g)] <- NA_real_
+    g
+}
+
+# Rows the publisher already generalized (ADR-095): `coordinateUncertaintyInMeters`
+# at/above the threshold, OR a non-empty `dataGeneralizations`. The export leaves
+# these intact and the generalization preview drops them. Vectorized over rows.
+sensitive_already_masked_rows <- function(df) {
+    n <- if (is.data.frame(df)) nrow(df) else 0L
+    unc <- if (is.data.frame(df) && "coordinateUncertaintyInMeters" %in% names(df)) {
+        suppressWarnings(as.numeric(df$coordinateUncertaintyInMeters))
+    } else {
+        rep(NA_real_, n)
+    }
+    dg <- if (is.data.frame(df) && "dataGeneralizations" %in% names(df)) {
+        trimws(as.character(df$dataGeneralizations))
+    } else {
+        rep("", n)
+    }
+    dg[is.na(dg)] <- ""
+    (!is.na(unc) & unc >= SENSITIVE_ALREADY_MASKED_THRESHOLD_M) | nzchar(dg)
+}
+
 # Condensed Chapman Table 5 "Decision on release" statement for a tier,
 # documented at the record level so a data user knows WHY the coordinates were
 # generalized (Chapman 2020 sec. 5, statements 4c-4f). Vectorized over `tier`;
@@ -318,7 +378,8 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
             stringsAsFactors = FALSE
         ),
         n_masked = 0L,
-        n_skipped_already_masked = 0L
+        n_skipped_already_masked = 0L,
+        n_clamped_to_precision = 0L
     )
 
     if (!isTRUE(enabled)) {
@@ -355,22 +416,25 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     #      generalization (3 digits -> ~150 m uncertainty, below 1000 m).
     # Skip those rows so we neither overwrite their values nor leak them
     # into the `real` companion file (we do not have the originals).
-    existing_unc <- if ("coordinateUncertaintyInMeters" %in% names(df)) {
-        suppressWarnings(as.numeric(df$coordinateUncertaintyInMeters))
-    } else {
-        rep(NA_real_, nrow(df))
-    }
-    existing_dg <- if ("dataGeneralizations" %in% names(df)) {
-        trimws(as.character(df$dataGeneralizations))
-    } else {
-        rep("", nrow(df))
-    }
-    existing_dg[is.na(existing_dg)] <- ""
-    already_masked <- (!is.na(existing_unc) &
-        existing_unc >= SENSITIVE_ALREADY_MASKED_THRESHOLD_M) |
-        nzchar(existing_dg)
+    already_masked <- sensitive_already_masked_rows(df)
     result$n_skipped_already_masked <- sum(target & already_masked)
     target <- target & !already_masked
+
+    # Precision clamp (Chapman 2020 sec. 4.1-4.3 + glossary). Generalization
+    # REDUCES precision and must never increase it: rounding a 2-decimal value
+    # (~0.01 deg) to the 0.001 grid would invent false precision the data never
+    # had ("precision"/"randomization" glossary). So each row's grid is widened
+    # to never be finer than the precision the coordinates already carry. The
+    # records are NOT skipped -- sec. 5.1 requires the sensitivity record-level
+    # metadata (informationWithheld, dataGeneralizations, precision provided +
+    # stored, locality scrub) regardless of whether the coordinate moves; only
+    # the grid is clamped to the data's real precision.
+    exist_prec <- existing_precision_grid(df)
+    eff_grid <- row_grid
+    has_prec <- !is.na(exist_prec) & !is.na(row_grid)
+    eff_grid[has_prec] <- pmax(row_grid[has_prec], exist_prec[has_prec])
+    result$n_clamped_to_precision <- sum(target & has_prec & row_grid < exist_prec)
+
     if (!any(target)) {
         return(result)
     }
@@ -418,9 +482,10 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     # values, bijective with the Chapman tier) keeps `generalize_coord` the
     # single source of the rounding rule. `dataGeneralizations` carries the MMA
     # category, the grid, and the Chapman Table 5 reason for the record.
-    for (g in unique(row_grid[idx])) {
-        rows <- idx[row_grid[idx] == g]
-        cat_disp <- row_cat_display[row_grid[idx] == g]
+    for (g in unique(eff_grid[idx])) {
+        in_group <- eff_grid[idx] == g
+        rows <- idx[in_group]
+        cat_disp <- row_cat_display[in_group]
         masked$decimalLatitude[rows]  <- generalize_coord(lat_num[rows], g)
         masked$decimalLongitude[rows] <- generalize_coord(lon_num[rows], g)
         masked$coordinatePrecision[rows] <- format(g, trim = TRUE, scientific = FALSE)
@@ -451,6 +516,18 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
             wkt_num(gen_lon - half), wkt_num(gen_lat - half)
         )
         masked$footprintSRS[rows] <- "EPSG:4326"
+        # Chapman sec. 4.3 / 5.1: record BOTH the precision provided (the grid,
+        # = coordinatePrecision above) AND the precision originally stored. The
+        # latter has no adopted Darwin Core term, so it rides in
+        # dataGeneralizations text where the data's real resolution is known.
+        stored <- exist_prec[rows]
+        stored_note <- ifelse(
+            is.na(stored), "",
+            sprintf(
+                tr("sensitive_precision_stored", lang),
+                format(stored, trim = TRUE, scientific = FALSE)
+            )
+        )
         masked$dataGeneralizations[rows] <- trimws(paste(
             sprintf(
                 tr("sensitive_data_generalizations", lang),
@@ -458,6 +535,7 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
                 format(g, trim = TRUE, scientific = FALSE)
             ),
             sensitive_reason_statement(row_tier[rows], lang),
+            stored_note,
             just_text
         ))
     }
@@ -522,9 +600,33 @@ generalization_map_preview <- function(df, generalization, decisions = NULL) {
     lon <- suppressWarnings(as.numeric(df$decimalLongitude))
     target <- decided$sensitive & !is.na(lat) & !is.na(lon) &
         !is.na(row_grid) & row_grid > 0
-    if (!any(target)) return(empty)
+
+    # The export leaves publisher-generalized rows intact (ADR-095) -- exclude
+    # them so the map shows only what Saira changes; the count rides to the
+    # banner. Every other sensitive row IS generalized (Chapman sec. 5.1), but
+    # its grid is clamped to never be finer than the data's own precision
+    # (sec. 4.1: generalization reduces precision, it never invents it).
+    already_masked <- sensitive_already_masked_rows(df)
+    n_upstream_preserved <- sum(target & already_masked)
+    target <- target & !already_masked
+
+    exist_prec <- existing_precision_grid(df)
+    eff_grid <- row_grid
+    has_prec <- !is.na(exist_prec) & !is.na(row_grid)
+    eff_grid[has_prec] <- pmax(row_grid[has_prec], exist_prec[has_prec])
+    n_clamped_to_precision <- sum(target & has_prec & row_grid < exist_prec)
+
+    set_lock_attrs <- function(d) {
+        attr(d, "n_clamped_to_precision") <- n_clamped_to_precision
+        attr(d, "n_upstream_preserved") <- n_upstream_preserved
+        d
+    }
+
+    if (!any(target)) {
+        return(set_lock_attrs(empty))
+    }
     idx <- which(target)
-    g <- row_grid[idx]
+    g <- eff_grid[idx]
     gen_lat <- round(round(lat[idx] / g) * g, 6L)
     gen_lon <- round(round(lon[idx] / g) * g, 6L)
     # Same point-radius uncertainty the export writes (centre -> furthest
@@ -575,5 +677,5 @@ generalization_map_preview <- function(df, generalization, decisions = NULL) {
         out$crosses <- !is.na(out$country_orig) &
             (is.na(out$country_gen) | out$country_orig != out$country_gen)
     }
-    out
+    set_lock_attrs(out)
 }

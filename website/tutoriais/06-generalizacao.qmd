@@ -77,6 +77,11 @@ Cada categoria corresponde a uma **grade** de generalização: a coordenada é d
 
 : Níveis de generalização (Tabela 7, Chapman 2020 / GBIF)
 
+::: {.callout-note}
+## A generalização nunca aumenta a precisão
+Generalizar **reduz** a precisão — nunca a inventa (Chapman 2020, seç. 4.1). Se a coordenada já vier **menos precisa** que a categoria escolhida — por exemplo, uma coordenada de artigo com apenas duas casas decimais (~1 km) e você escolheu a Categoria 4 (~100 m) — o Saíra **publica na precisão real do dado** (a grade nunca fica mais fina que o original), em vez de arredondar para uma falsa precisão de 100 m. O registro **continua protegido**: recebe <span class="term">informationWithheld</span>, a célula generalizada, o raio de incerteza e a limpeza dos campos de localidade. O <span class="term">dataGeneralizations</span> grava **as duas precisões** — a fornecida e a originalmente retida pelo custodiante (Chapman seç. 4.3 e 5.1). Um aviso na própria aba conta quantos registros saíram na precisão real do dado.
+:::
+
 ## Exceções por espécie
 
 A decisão do grupo é o ponto de partida, não a palavra final. Em **Exceções por espécie** você pode avaliar um táxon individualmente — respondendo a mesma cascata — e sobrescrever o nível herdado do grupo. Use isso quando uma espécie do grupo merece tratamento diferente do restante.

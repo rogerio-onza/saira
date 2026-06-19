@@ -7508,6 +7508,27 @@ body.vn-review-open .modal-backdrop.show {
     gap: var(--space-1);
 }
 
+/* Precision lock: informational (not an error) -- records kept as-is because
+   they are already at/below the chosen precision or were generalized upstream.
+   Flat: uniform border, no left accent bar, no shadow. */
+.sc-precision-lock-alert {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    background: var(--info-bg);
+    border: 1px solid var(--info-border);
+    border-radius: var(--radius);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-4);
+    color: var(--info);
+    box-shadow: none;
+}
+
+.sc-precision-lock-text {
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+}
+
 /* Cat-1 alert (within the assessment column) -------------------------- */
 .sc-cat1-alert {
     margin: var(--space-2) 0;
