@@ -2,6 +2,16 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.8.6</span>
+    <time class="release-date">2026-06-19</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text">In <strong>name validation</strong>, the report table now <strong>scrolls</strong> and <strong>pagination is reachable</strong> with more than 10 names — previously the 10th row and the controls were clipped.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.8.5</span>
     <time class="release-date">2026-06-18</time>
   </header>
