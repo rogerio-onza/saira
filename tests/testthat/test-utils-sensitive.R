@@ -251,7 +251,7 @@ testthat::test_that("load_sensitive_species reads the bundled MMA list", {
     df <- saira:::load_sensitive_species(force = TRUE)
     testthat::expect_true(is.data.frame(df))
     testthat::expect_setequal(
-        names(df), c("scientificName", "match_key", "category")
+        names(df), c("scientificName", "match_key", "category", "source")
     )
     testthat::expect_gt(nrow(df), 0L)
     testthat::expect_equal(anyDuplicated(df$match_key), 0L)
@@ -264,7 +264,7 @@ testthat::test_that("sensitive_species_empty has the contract shape", {
     e <- saira:::sensitive_species_empty()
     testthat::expect_equal(nrow(e), 0L)
     testthat::expect_setequal(
-        names(e), c("scientificName", "match_key", "category")
+        names(e), c("scientificName", "match_key", "category", "source")
     )
 })
 
@@ -741,4 +741,56 @@ testthat::test_that("2026 fauna refresh: terrestrial, aquatic and flora resolve"
     testthat::expect_equal(got[4], "VU")          # seahorse
     testthat::expect_equal(got[5], "EN")          # flora (unchanged)
     testthat::expect_true(is.na(got[6]))          # extinct (EX) excluded
+})
+
+# sensitive_source_for + load_sensitive_species source provenance ---------
+
+testthat::test_that("sensitive_source_for returns the portaria, NA for non-listed", {
+    species <- c("Panthera onca", "Harpia harpyja")
+    fixture <- data.frame(
+        scientificName = species,
+        match_key = saira:::build_sensitive_match_keys(species),
+        category = c("VU", "EN"),
+        source = c("Portaria 1.704/2026", "Portaria 1.667/2026"),
+        stringsAsFactors = FALSE
+    )
+    saira:::sensitive_species_cache$set(fixture, path = "test-fixture")
+    withr::defer(saira:::sensitive_species_cache$reset())
+    out <- saira:::sensitive_source_for(
+        c("Panthera onca", "Harpia harpyja", "Canis familiaris")
+    )
+    testthat::expect_identical(
+        out, c("Portaria 1.704/2026", "Portaria 1.667/2026", NA_character_)
+    )
+})
+
+testthat::test_that("load_sensitive_species injects NA source for a pre-source RDS", {
+    tmp <- withr::local_tempfile(fileext = ".rds")
+    legacy <- data.frame(
+        scientificName = "Panthera onca",
+        match_key = saira:::build_sensitive_match_keys("Panthera onca"),
+        category = "VU",
+        stringsAsFactors = FALSE
+    )
+    saveRDS(legacy, tmp)
+    testthat::local_mocked_bindings(
+        resolve_sensitive_species_path = function() tmp, .package = "saira"
+    )
+    saira:::sensitive_species_cache$reset()
+    withr::defer(saira:::sensitive_species_cache$reset())
+    loaded <- saira:::load_sensitive_species(force = TRUE)
+    testthat::expect_true("source" %in% names(loaded))
+    testthat::expect_true(all(is.na(loaded$source)))
+})
+
+testthat::test_that("bundled sensitive_species.rds carries the source column", {
+    saira:::sensitive_species_cache$reset()
+    withr::defer(saira:::sensitive_species_cache$reset())
+    loaded <- saira:::load_sensitive_species(force = TRUE)
+    testthat::expect_true("source" %in% names(loaded))
+    testthat::expect_false(anyNA(loaded$source))
+    testthat::expect_true(all(
+        loaded$source %in%
+            c("Portaria 148/2022", "Portaria 1.704/2026", "Portaria 1.667/2026")
+    ))
 })

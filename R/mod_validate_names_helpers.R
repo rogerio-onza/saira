@@ -385,3 +385,53 @@ review_status_context <- function(status_key, lang = "pt") {
 render_review_name_em <- function(value) {
     shiny::HTML(sprintf("<em>%s</em>", htmltools::htmlEscape(as.character(value %||% ""))))
 }
+
+#' Summary of conservation status that export will add to dynamicProperties
+#'
+#' Shown above the validation report. MMA is an exact local count of records on
+#' the national threatened list; IUCN is the number of resolved records GBIF
+#' will be queried for on export (some may have no assessment). Returns NULL when
+#' no source applies or there is nothing to count, so it drops out of the layout.
+#'
+#' @param report Validation report data frame (needs `scientificName`).
+#' @param selected Character vector of selected provider IDs.
+#' @param br_provider_ids Character vector of Brazilian provider IDs.
+#' @param lang Active language code.
+#' @return A Shiny tag or NULL.
+#' @noRd
+conservation_status_summary_ui <- function(report, selected, br_provider_ids, lang) {
+    include_mma <- length(intersect(selected, br_provider_ids)) > 0L
+    include_iucn <- "gbif" %in% selected
+    name_col <- if (is.data.frame(report) && "scientificName" %in% names(report)) {
+        as.character(report$scientificName)
+    } else {
+        character(0)
+    }
+    if (length(name_col) == 0L || (!include_mma && !include_iucn)) {
+        return(NULL)
+    }
+
+    lines <- list()
+    if (include_mma) {
+        mma_n <- sum(!is.na(sensitive_category_for(name_col)))
+        if (mma_n > 0L) {
+            lines[[length(lines) + 1L]] <- shiny::tags$span(
+                class = "vn-conservation-line",
+                sprintf(tr("validate_names_conservation_summary_mma", lang), mma_n)
+            )
+        }
+    }
+    if (include_iucn) {
+        iucn_n <- sum(!is.na(name_col) & nzchar(trimws(name_col)))
+        if (iucn_n > 0L) {
+            lines[[length(lines) + 1L]] <- shiny::tags$span(
+                class = "vn-conservation-line",
+                sprintf(tr("validate_names_conservation_summary_iucn", lang), iucn_n)
+            )
+        }
+    }
+    if (length(lines) == 0L) {
+        return(NULL)
+    }
+    shiny::div(class = "vn-conservation-summary", lines)
+}

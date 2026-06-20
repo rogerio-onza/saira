@@ -1927,6 +1927,49 @@ build_dynamic_properties_json <- function(df, cols, keys = NULL) {
     out
 }
 
+#' Merge one key/value pair into existing dynamicProperties JSON
+#'
+#' Folds `"key":"value"` into each element of `existing` — a vector of flat
+#' dynamicProperties JSON strings produced by [build_dynamic_properties_json()]
+#' (`{"k":"v"}`) or `""`/NA. Used on export to add conservation-status entries
+#' without hand-concatenating strings: the value is JSON-escaped and the object
+#' reserialized (same no-whitespace convention). Rows whose `value` is NA or
+#' blank are returned unchanged, so empty keys are never emitted.
+#'
+#' @param existing Character vector of dynamicProperties JSON strings.
+#' @param key Single JSON key, assumed ASCII-safe (e.g. a DwC-style term).
+#' @param value Character vector of length 1 or `length(existing)`.
+#' @return Character vector the same length as `existing`.
+#' @keywords internal
+#' @noRd
+merge_dynamic_property <- function(existing, key, value) {
+    n <- length(existing)
+    if (n == 0L) {
+        return(character(0))
+    }
+    existing <- as.character(existing)
+    existing[is.na(existing)] <- ""
+    value <- as.character(value)
+    if (length(value) == 1L) {
+        value <- rep(value, n)
+    }
+    out <- existing
+    add <- !is.na(value) & nzchar(trimws(value))
+    if (!any(add)) {
+        return(out)
+    }
+    pair <- paste0("\"", key, "\":\"", json_escape_string(value), "\"")
+    # Empty target -> wrap the pair as a fresh object.
+    fresh <- add & !nzchar(existing)
+    out[fresh] <- paste0("{", pair[fresh], "}")
+    # Existing object -> splice the pair in before the closing brace.
+    obj <- add & nzchar(existing)
+    inner <- sub("\\}$", "", sub("^\\{", "", existing[obj]))
+    joined <- ifelse(nzchar(inner), paste0(inner, ",", pair[obj]), pair[obj])
+    out[obj] <- paste0("{", joined, "}")
+    out
+}
+
 detect_eventdate_roles <- function(col_names) {
     normalized_names <- normalize_for_matching(col_names)
     used_env <- new.env(parent = emptyenv())

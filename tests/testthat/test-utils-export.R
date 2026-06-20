@@ -655,3 +655,174 @@ testthat::test_that("export pipeline masks sensitive coords and emits a companio
         masked$masked$occurrenceID[sens_row]
     )
 })
+
+# apply_conservation_status ----------------------------------------------
+
+# Install a synthetic sensitive list (with the source/portaria column) for the
+# duration of the calling test, then restore the real one.
+local_conservation_fixture <- function(env = parent.frame()) {
+    species <- c("Panthera onca", "Harpia harpyja")
+    fixture <- data.frame(
+        scientificName = species,
+        match_key = saira:::build_sensitive_match_keys(species),
+        category = c("VU", "EN"),
+        source = c("Portaria 1.704/2026", "Portaria 1.704/2026"),
+        stringsAsFactors = FALSE
+    )
+    saira:::sensitive_species_cache$set(fixture, path = "test-fixture")
+    withr::defer(saira:::sensitive_species_cache$reset(), envir = env)
+    fixture
+}
+
+testthat::test_that("apply_conservation_status adds MMA keys for a BR provider", {
+    local_conservation_fixture()
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Canis familiaris"),
+        stringsAsFactors = FALSE
+    )
+    out <- saira:::apply_conservation_status(
+        df, list(include_mma = TRUE, include_iucn = FALSE)
+    )
+    testthat::expect_identical(
+        out$dynamicProperties[[1]],
+        "{\"mmaThreatStatus\":\"VU\",\"mmaSource\":\"Portaria 1.704/2026\"}"
+    )
+    # A species not on the list gets no key.
+    testthat::expect_identical(out$dynamicProperties[[2]], "")
+})
+
+testthat::test_that("apply_conservation_status adds IUCN key and merges existing dynprops", {
+    testthat::local_mocked_bindings(
+        fetch_gbif_iucn_category = function(usage_keys) {
+            ifelse(!is.na(usage_keys), "NT", NA_character_)
+        },
+        gbif_match_usage_keys = function(names) rep(NA_character_, length(names)),
+        .package = "saira"
+    )
+    df <- data.frame(
+        scientificName = c("Harpia harpyja", "Foo bar"),
+        dynamicProperties = c("{\"k\":\"v\"}", ""),
+        stringsAsFactors = FALSE
+    )
+    payload <- list(
+        include_mma = FALSE, include_iucn = TRUE,
+        taxon_keys = data.frame(
+            scientificName = "Harpia harpyja",
+            taxonID = "GBIF:2480528",
+            provider = "gbif",
+            stringsAsFactors = FALSE
+        )
+    )
+    out <- saira:::apply_conservation_status(df, payload)
+    testthat::expect_identical(
+        out$dynamicProperties[[1]], "{\"k\":\"v\",\"iucnRedListCategory\":\"NT\"}"
+    )
+    # Row with no GBIF key (match fallback returns NA) -> unchanged.
+    testthat::expect_identical(out$dynamicProperties[[2]], "")
+})
+
+testthat::test_that("apply_conservation_status merges both MMA and IUCN keys additively", {
+    local_conservation_fixture()
+    testthat::local_mocked_bindings(
+        fetch_gbif_iucn_category = function(usage_keys) rep("NT", length(usage_keys)),
+        gbif_match_usage_keys = function(names) rep("123", length(names)),
+        .package = "saira"
+    )
+    df <- data.frame(scientificName = "Panthera onca", stringsAsFactors = FALSE)
+    payload <- list(
+        include_mma = TRUE, include_iucn = TRUE,
+        taxon_keys = data.frame(
+            scientificName = "Panthera onca", taxonID = "GBIF:1",
+            provider = "gbif", stringsAsFactors = FALSE
+        )
+    )
+    out <- saira:::apply_conservation_status(df, payload)
+    testthat::expect_identical(
+        out$dynamicProperties[[1]],
+        paste0(
+            "{\"mmaThreatStatus\":\"VU\",\"mmaSource\":\"Portaria 1.704/2026\",",
+            "\"iucnRedListCategory\":\"NT\"}"
+        )
+    )
+})
+
+testthat::test_that("apply_conservation_status is a no-op without name, payload or flags", {
+    df_no_name <- data.frame(x = 1:2)
+    testthat::expect_identical(
+        saira:::apply_conservation_status(df_no_name, list(include_mma = TRUE)),
+        df_no_name
+    )
+    df <- data.frame(scientificName = c("a", "b"), stringsAsFactors = FALSE)
+    testthat::expect_identical(saira:::apply_conservation_status(df, NULL), df)
+    testthat::expect_identical(
+        saira:::apply_conservation_status(df, list(include_mma = FALSE, include_iucn = FALSE)),
+        df
+    )
+})
+
+testthat::test_that("apply_conservation_status keeps MMA when the IUCN fetch errors", {
+    local_conservation_fixture()
+    testthat::local_mocked_bindings(
+        fetch_gbif_iucn_category = function(usage_keys) stop("network down"),
+        gbif_match_usage_keys = function(names) rep(NA_character_, length(names)),
+        .package = "saira"
+    )
+    df <- data.frame(scientificName = "Panthera onca", stringsAsFactors = FALSE)
+    payload <- list(
+        include_mma = TRUE, include_iucn = TRUE,
+        taxon_keys = data.frame(
+            scientificName = "Panthera onca", taxonID = "GBIF:1",
+            provider = "gbif", stringsAsFactors = FALSE
+        )
+    )
+    out <- testthat::expect_warning(
+        saira:::apply_conservation_status(df, payload), "IUCN skipped"
+    )
+    # MMA keys survive the independent IUCN failure; no iucn key written.
+    testthat::expect_identical(
+        out$dynamicProperties[[1]],
+        "{\"mmaThreatStatus\":\"VU\",\"mmaSource\":\"Portaria 1.704/2026\"}"
+    )
+})
+
+testthat::test_that("apply_conservation_status does not add a spurious empty dynprops column", {
+    local_conservation_fixture()
+    # A species not on the MMA list, IUCN off, and no dynamicProperties column:
+    # nothing matched, so no empty column should be created.
+    df <- data.frame(scientificName = "Canis familiaris", stringsAsFactors = FALSE)
+    out <- saira:::apply_conservation_status(
+        df, list(include_mma = TRUE, include_iucn = FALSE)
+    )
+    testthat::expect_false("dynamicProperties" %in% names(out))
+})
+
+testthat::test_that("apply_conservation_status keeps an existing dynprops column even when empty", {
+    local_conservation_fixture()
+    df <- data.frame(
+        scientificName = "Canis familiaris",
+        dynamicProperties = "",
+        stringsAsFactors = FALSE
+    )
+    out <- saira:::apply_conservation_status(
+        df, list(include_mma = TRUE, include_iucn = FALSE)
+    )
+    testthat::expect_true("dynamicProperties" %in% names(out))
+    testthat::expect_identical(out$dynamicProperties[[1]], "")
+})
+
+testthat::test_that("resolve_iucn_usage_keys strips the GBIF prefix and falls back by name", {
+    testthat::local_mocked_bindings(
+        gbif_match_usage_keys = function(names) rep("999", length(names)),
+        .package = "saira"
+    )
+    tk <- data.frame(
+        scientificName = c("A b", "C d"),
+        taxonID = c("GBIF:111", "FLORABR:xyz"),
+        provider = c("gbif", "florabr"),
+        stringsAsFactors = FALSE
+    )
+    out <- saira:::resolve_iucn_usage_keys(c("A b", "C d", "E f"), tk)
+    # "A b": GBIF taxonID stripped to bare key; "C d": non-GBIF provider -> match
+    # fallback; "E f": absent from taxon_keys -> match fallback.
+    testthat::expect_identical(out, c("111", "999", "999"))
+})

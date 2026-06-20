@@ -1488,6 +1488,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         shiny::div(class = "vn-report-statlabel", tr("validate_names_unresolved", lang_r()))
                     )
                 ),
+                if (has_report) conservation_status_summary_ui(report, as.character(rv$selected_providers), br_provider_ids, lang_r()),
                 shiny::div(
                     class = "vn-report-header",
                     shiny::div(class = "vn-report-title", tr("validate_names_report_title", lang_r())),
@@ -1931,6 +1932,32 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             sensitivity_entries_df()
         })
 
+        # Conservation-status enrichment for the export's dynamicProperties.
+        # MMA (local) when a BR provider is selected; IUCN (GBIF network) when
+        # GBIF is selected -- GBIF is pre-selected, so IUCN is on by default.
+        # taxon_keys carries the GBIF usageKey (taxonID) per resolved name so the
+        # export can query IUCN without re-resolving rows GBIF already matched.
+        conservation_payload <- shiny::reactive({
+            selected <- as.character(rv$selected_providers)
+            report <- validation_result()
+            key_cols <- c("scientificName", "taxonID", "provider")
+            taxon_keys <- if (is.data.frame(report) && all(key_cols %in% names(report))) {
+                report[, key_cols, drop = FALSE]
+            } else {
+                data.frame(
+                    scientificName = character(0),
+                    taxonID = character(0),
+                    provider = character(0),
+                    stringsAsFactors = FALSE
+                )
+            }
+            list(
+                include_mma = length(intersect(selected, br_provider_ids)) > 0L,
+                include_iucn = "gbif" %in% selected,
+                taxon_keys = taxon_keys
+            )
+        })
+
         # A re-upload or a confirmed Mapping reset invalidates the dataset
         # baseline: drop every decision made for the previous dataset so nothing
         # leaks into the new one. Provider selection and runtime status are kept
@@ -1960,6 +1987,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         result_r <- shiny::reactive(validation_result())
         attr(result_r, "review_export_payload") <- review_export_payload
         attr(result_r, "sensitivity_payload") <- sensitivity_payload
+        attr(result_r, "conservation_payload") <- conservation_payload
         result_r
     })
 }

@@ -969,3 +969,53 @@ testthat::test_that("detect_duplicate_source_mappings ignores verbatim terms", {
     testthat::expect_named(dups, "date_col")
     testthat::expect_setequal(dups[["date_col"]], c("eventDate", "year"))
 })
+
+# merge_dynamic_property --------------------------------------------------
+
+testthat::test_that("merge_dynamic_property wraps an empty or NA target", {
+    testthat::expect_identical(
+        saira:::merge_dynamic_property(c("", NA), "iucnRedListCategory", c("NT", "VU")),
+        c("{\"iucnRedListCategory\":\"NT\"}", "{\"iucnRedListCategory\":\"VU\"}")
+    )
+})
+
+testthat::test_that("merge_dynamic_property splices into an existing object", {
+    testthat::expect_identical(
+        saira:::merge_dynamic_property("{\"a\":\"1\"}", "mmaThreatStatus", "CR"),
+        "{\"a\":\"1\",\"mmaThreatStatus\":\"CR\"}"
+    )
+})
+
+testthat::test_that("merge_dynamic_property leaves NA/blank values untouched", {
+    testthat::expect_identical(
+        saira:::merge_dynamic_property(
+            c("{\"x\":\"y\"}", "", "{\"z\":\"1\"}"),
+            "mmaSource", c(NA, "  ", "Portaria 1.704/2026")
+        ),
+        c("{\"x\":\"y\"}", "", "{\"z\":\"1\",\"mmaSource\":\"Portaria 1.704/2026\"}")
+    )
+})
+
+testthat::test_that("merge_dynamic_property JSON-escapes the value", {
+    testthat::expect_identical(
+        saira:::merge_dynamic_property("", "k", "a\"b\\c"),
+        "{\"k\":\"a\\\"b\\\\c\"}"
+    )
+})
+
+testthat::test_that("merge_dynamic_property recycles a scalar value over rows", {
+    testthat::expect_identical(
+        saira:::merge_dynamic_property(
+            c("", "{\"a\":\"1\"}"), "mmaSource", "Portaria 148/2022"
+        ),
+        c("{\"mmaSource\":\"Portaria 148/2022\"}",
+          "{\"a\":\"1\",\"mmaSource\":\"Portaria 148/2022\"}")
+    )
+})
+
+testthat::test_that("merge_dynamic_property handles empty input", {
+    testthat::expect_identical(
+        saira:::merge_dynamic_property(character(0), "k", character(0)),
+        character(0)
+    )
+})
