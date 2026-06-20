@@ -79,6 +79,15 @@ Ao gerar o pacote, o Saíra padroniza automaticamente o conjunto para que ele at
 - **Licenças** abreviadas para a URL canônica (por exemplo, a URL da Creative Commons correspondente).
 - **Colunas reordenadas** na sequência canônica do Darwin Core, com as colunas não mapeadas anexadas à direita, preservando seus nomes originais.
 
+### Status de conservação no `dynamicProperties`
+
+Para cada registro de um táxon avaliado, o Saíra também grava o status de conservação na coluna `dynamicProperties` como chaves JSON limpas, conforme as bases que você escolheu na [validação de nomes](04-validacao-nomes.qmd):
+
+- uma base **brasileira** (Flora BR / Fauna BR) adiciona `mmaThreatStatus` (a categoria de ameaça) e `mmaSource` (a portaria que listou o táxon);
+- o **GBIF** adiciona `iucnRedListCategory` (o código IUCN global), consultado ao vivo no GBIF.
+
+As duas podem aparecer juntas — por exemplo `{"mmaThreatStatus":"CR","mmaSource":"Portaria 1.704/2026","iucnRedListCategory":"NT"}` — e se somam a qualquer `dynamicProperties` que você mesmo mapeou. A consulta ao GBIF é best-effort: sem internet, ou para um táxon que o GBIF não avalia, a chave IUCN é apenas omitida e a exportação segue normalmente.
+
 ## Arquivos do pacote
 
 O download gera um `.zip` com dois conjuntos de arquivos:

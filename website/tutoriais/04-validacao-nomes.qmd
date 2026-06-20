@@ -140,6 +140,10 @@ O ajuste é feito num pequeno diálogo de confirmação e vale para a exportaç�
 
 Aqui a etapa apenas **sinaliza** o que é sensível. A proteção efetiva das coordenadas — decidir se e quanto generalizar a localização — acontece na etapa de **[generalização](06-generalizacao.qmd)**, seguindo a tabela de decisão de Chapman (2020).
 
+## O status de conservação vai para a exportação
+
+As bases que você seleciona aqui também definem qual **status de conservação** o Saíra adiciona ao `dynamicProperties` da exportação: uma base **brasileira** contribui com a categoria **MMA** (e a portaria que listou o táxon), e o **GBIF** contribui com a categoria **IUCN** global. Uma linha curta acima do relatório informa quantos registros receberão cada um. As chaves são gravadas quando você gera o pacote — veja **[exportação](07-preview-exportacao.qmd)**.
+
 ## Próximos passos
 
 Com os nomes resolvidos, vamos ao espaço: siga para **[Validando coordenadas](05-validacao-coordenadas.qmd)**.

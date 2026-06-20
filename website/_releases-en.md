@@ -2,6 +2,19 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.0</span>
+    <time class="release-date">2026-06-20</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Automatic conservation status on export</strong>: every record of an assessed taxon gets, in <code>dynamicProperties</code>, the <strong>MMA</strong> threat category (with the portaria that listed it) when you use a Brazilian database, and/or the global <strong>IUCN</strong> category (looked up on GBIF) when you use GBIF. The GBIF lookup is optional and non-blocking — offline, the IUCN key is simply omitted and the export proceeds normally.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Fixed value for more dataset-level terms</strong>: <code>rightsHolder</code>, <code>institutionCode</code>, <code>collectionCode</code>, <code>country</code>, <code>references</code>, <code>bibliographicCitation</code> and <code>geodeticDatum</code> can take a single value applied to every row instead of mapping a column.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Coordinate generalization is now fully Chapman 2020-compliant</strong>: it never rounds to a finer precision than the data already has (no invented precision) and never drops the protection metadata.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Camtrap DP packages</strong> now map cleanly: empty columns dropped, auto-mapped values preserved, and <strong>AUTO</strong> badges for columns that already are Darwin Core terms.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.8.6</span>
     <time class="release-date">2026-06-19</time>
   </header>
