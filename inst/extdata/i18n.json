@@ -1531,6 +1531,14 @@
     "pt": "Não resolvidos",
     "en": "Unresolved"
   },
+  "validate_names_conservation_summary_mma": {
+    "pt": "Status de conservação MMA será adicionado a %d registro(s) no export.",
+    "en": "MMA conservation status will be added to %d record(s) on export."
+  },
+  "validate_names_conservation_summary_iucn": {
+    "pt": "Status IUCN (GBIF) será consultado para %d registro(s) no export.",
+    "en": "IUCN (GBIF) conservation status will be looked up for %d record(s) on export."
+  },
   "validate_names_accepted": {
     "pt": "Aceitos",
     "en": "Accepted"

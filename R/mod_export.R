@@ -65,6 +65,8 @@ mod_export_ui <- function(id) {
 #' @param sensitivity_payload_r Optional reactive with per-species sensitivity marks.
 #' @param sensitive_generalization_payload_r Optional reactive with the
 #'   generalization decision (`levels`, `enabled`, ...).
+#' @param conservation_payload_r Optional reactive with the conservation-status
+#'   selection (`include_mma`, `include_iucn`, `taxon_keys`).
 #' @param raw_data_r Optional reactive with the original uploaded data.frame.
 #' @param map_values_r Optional reactive with the current mapping list.
 #' @param custom_values_r Optional reactive with typed constants (`datasetName`,
@@ -80,6 +82,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                               country_fill_payload_r = NULL,
                               sensitivity_payload_r = NULL,
                               sensitive_generalization_payload_r = NULL,
+                              conservation_payload_r = NULL,
                               raw_data_r = NULL,
                               map_values_r = NULL,
                               custom_values_r = NULL,
@@ -129,6 +132,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             name_review_payload_r = name_review_payload_r,
             sensitivity_payload_r = sensitivity_payload_r,
             sensitive_generalization_payload_r = sensitive_generalization_payload_r,
+            conservation_payload_r = conservation_payload_r,
             raw_data_r = raw_data_r,
             map_values_r = map_values_r,
             custom_values_r = custom_values_r,

@@ -43,6 +43,7 @@ sensitive_species_empty <- function() {
         scientificName = character(0),
         match_key = character(0),
         category = character(0),
+        source = character(0),
         stringsAsFactors = FALSE
     )
 }
@@ -79,6 +80,12 @@ load_sensitive_species <- function(force = FALSE) {
     }
     df$category <- as.character(df$category)
     df$category[is.na(df$category) | !nzchar(df$category)] <- "CR"
+    # Backward compatible: an RDS built before the source column simply has no
+    # provenance. mmaSource is then omitted from the export (NA -> no key).
+    if (!"source" %in% names(df)) {
+        df$source <- NA_character_
+    }
+    df$source <- as.character(df$source)
     df <- df[!is.na(df$match_key) & nzchar(df$match_key), , drop = FALSE]
     rownames(df) <- NULL
     sensitive_species_cache$set(df, path = path)
@@ -123,6 +130,28 @@ sensitive_category_for <- function(names) {
     m <- match(keys, lookup$match_key)
     ok <- !is.na(keys) & nzchar(keys) & !is.na(m)
     out[ok] <- as.character(lookup$category)[m[ok]]
+    out
+}
+
+# Portaria that listed each name (e.g. "Portaria 1.704/2026"), or NA when the
+# name is not on the MMA list or the bundled list predates the source column.
+# Feeds the mmaSource conservation-status field on export; mirrors the matching
+# in sensitive_category_for() so the two line up row for row.
+sensitive_source_for <- function(names) {
+    n <- length(names)
+    if (n == 0L) {
+        return(character(0))
+    }
+    out <- rep(NA_character_, n)
+    lookup <- load_sensitive_species()
+    if (!is.data.frame(lookup) || nrow(lookup) == 0L ||
+        is.null(lookup$source)) {
+        return(out)
+    }
+    keys <- build_sensitive_match_keys(names)
+    m <- match(keys, lookup$match_key)
+    ok <- !is.na(keys) & nzchar(keys) & !is.na(m)
+    out[ok] <- as.character(lookup$source)[m[ok]]
     out
 }
 

@@ -13,12 +13,13 @@
 #   Extinct tags (EX, RE, EW) are intentionally excluded from masking.
 #
 # Output: inst/extdata/sensitive_species.rds
-#   A table with columns scientificName, match_key and category
-#   (VU/EN/CR/CR (PEX)), deduped by match_key keeping the most
-#   restrictive category. The match_key uses the SAME normalization the
-#   name validator applies, so the list and validated names compare
-#   identically. The category drives the per-record generalization grid
-#   on export (ADR-092).
+#   A table with columns scientificName, match_key, category
+#   (VU/EN/CR/CR (PEX)) and source (the portaria that listed the taxon),
+#   deduped by match_key keeping the most restrictive category. The
+#   match_key uses the SAME normalization the name validator applies, so
+#   the list and validated names compare identically. The category drives
+#   the per-record generalization grid on export (ADR-092); the source
+#   feeds the mmaSource conservation-status field on export.
 #
 # To regenerate (from the project root):
 #   Rscript -e "source('data-raw/generate_sensitive_species.R')"
@@ -76,10 +77,33 @@ parse_row <- function(line) {
   c(species = trimws(species), category = trimws(category))
 }
 
-parsed <- lapply(lines, parse_row)
-parsed <- parsed[!vapply(parsed, is.null, logical(1L))]
+# Portaria provenance per annex. The source file is a flat Markdown table with
+# three standalone section markers ("ANEXO 1/2/3"); track which annex each row
+# falls under so the export can cite the portaria a taxon's listing comes from.
+annex_source <- c(
+  "1" = "Portaria 148/2022",   # ANEXO 1 - flora (Portaria MMA 148/2022)
+  "2" = "Portaria 1.704/2026", # ANEXO 2 - fauna terrestre (Portaria MMA 1.704/2026)
+  "3" = "Portaria 1.667/2026"  # ANEXO 3 - fauna aquatica (Portaria GM/MMA 1.667/2026)
+)
+
+current_source <- NA_character_
+parsed <- list()
+for (line in lines) {
+  marker <- regmatches(line, regexec("^ANEXO\\s+([123])\\s*$", line))[[1L]]
+  if (length(marker) == 2L) {
+    current_source <- unname(annex_source[[marker[[2L]]]])
+    next
+  }
+  row <- parse_row(line)
+  if (is.null(row)) {
+    next
+  }
+  parsed[[length(parsed) + 1L]] <- c(row, source = current_source)
+}
+
 raw_names <- vapply(parsed, function(x) unname(x[["species"]]), character(1L))
 raw_cats <- vapply(parsed, function(x) unname(x[["category"]]), character(1L))
+raw_source <- vapply(parsed, function(x) unname(x[["source"]]), character(1L))
 
 # The 2026 fauna portarias spell "possibly extinct" CR (PE); the flora list
 # (and the rest of the app, i18n included) uses CR (PEX). Same meaning, so
@@ -105,6 +129,7 @@ sensitive_species <- data.frame(
   scientificName = raw_names,
   match_key = match_key,
   category = raw_cats,
+  source = raw_source,
   stringsAsFactors = FALSE
 )
 keep <- !is.na(sensitive_species$match_key) &

@@ -120,6 +120,112 @@ apply_name_review_payload <- function(df, payload = NULL) {
     out
 }
 
+#' Append conservation-status entries to dynamicProperties on export
+#'
+#' Additively folds each selected provider's conservation status into the
+#' `dynamicProperties` column (creating it when absent): the Brazilian MMA
+#' category plus its portaria source when a BR provider was selected, and/or the
+#' global IUCN Red List code from GBIF when GBIF was selected. The two sources
+#' are independent — a taxon can receive both, or only the MMA keys when GBIF
+#' does not assess it. The GBIF lookup is optional and non-blocking: any failure
+#' simply omits the IUCN key and never breaks the export. Runs after
+#' [apply_name_review_payload()] so it sees the corrected `scientificName`.
+#'
+#' @param df Data frame to export (post name review).
+#' @param payload Optional list with `include_mma`, `include_iucn` (logical) and
+#'   `taxon_keys` (data.frame of `scientificName`, `taxonID`, `provider`).
+#' @return `df` with an updated `dynamicProperties` column.
+#' @keywords internal
+#' @noRd
+apply_conservation_status <- function(df, payload = NULL) {
+    if (!is.data.frame(df) || nrow(df) == 0L ||
+        !("scientificName" %in% names(df)) ||
+        is.null(payload) || !is.list(payload)) {
+        return(df)
+    }
+    include_mma <- isTRUE(payload$include_mma)
+    include_iucn <- isTRUE(payload$include_iucn)
+    if (!include_mma && !include_iucn) {
+        return(df)
+    }
+
+    names_vec <- as.character(df$scientificName)
+    had_column <- "dynamicProperties" %in% names(df)
+    dynprops <- df[["dynamicProperties"]]
+    if (is.null(dynprops)) {
+        dynprops <- rep("", nrow(df))
+    }
+
+    # Each source is wrapped independently so a failure in one (e.g. the GBIF
+    # network) never blocks the export nor drops the other source's keys.
+    if (include_mma) {
+        dynprops <- tryCatch(
+            {
+                dp <- merge_dynamic_property(
+                    dynprops, "mmaThreatStatus", sensitive_category_for(names_vec)
+                )
+                merge_dynamic_property(
+                    dp, "mmaSource", sensitive_source_for(names_vec)
+                )
+            },
+            error = function(e) {
+                warning("apply_conservation_status: MMA skipped (", conditionMessage(e), ")")
+                dynprops
+            }
+        )
+    }
+
+    if (include_iucn) {
+        dynprops <- tryCatch(
+            {
+                usage_keys <- resolve_iucn_usage_keys(names_vec, payload$taxon_keys)
+                merge_dynamic_property(
+                    dynprops, "iucnRedListCategory",
+                    fetch_gbif_iucn_category(usage_keys)
+                )
+            },
+            error = function(e) {
+                warning("apply_conservation_status: IUCN skipped (", conditionMessage(e), ")")
+                dynprops
+            }
+        )
+    }
+
+    # Keep an already-mapped column even if nothing merged; but do not create a
+    # spurious all-empty column when no taxon matched and none was mapped.
+    if (had_column || any(nzchar(dynprops))) {
+        df[["dynamicProperties"]] <- dynprops
+    }
+    df
+}
+
+# GBIF usage keys for the IUCN lookup. Prefer the taxonID taxadb already resolved
+# for rows GBIF matched (stripping any "GBIF:" prefix to the bare numeric key),
+# and fall back to the keyless match endpoint for the rest (BR-resolved rows or
+# manual renames).
+resolve_iucn_usage_keys <- function(names_vec, taxon_keys) {
+    n <- length(names_vec)
+    keys <- rep(NA_character_, n)
+    if (is.data.frame(taxon_keys) && nrow(taxon_keys) > 0L &&
+        all(c("scientificName", "taxonID", "provider") %in% names(taxon_keys))) {
+        is_gbif <- tolower(as.character(taxon_keys$provider)) == "gbif"
+        sci <- as.character(taxon_keys$scientificName)[is_gbif]
+        bare <- sub("^[^0-9]*", "", as.character(taxon_keys$taxonID)[is_gbif])
+        ok <- !is.na(bare) & nzchar(bare) & !is.na(sci) & nzchar(sci)
+        sci <- sci[ok]
+        bare <- bare[ok]
+        if (length(sci) > 0L) {
+            keys <- bare[match(names_vec, sci)]
+        }
+    }
+    need <- is.na(keys) & !is.na(names_vec) &
+        nzchar(trimws(as.character(names_vec)))
+    if (any(need)) {
+        keys[need] <- gbif_match_usage_keys(names_vec[need])
+    }
+    keys
+}
+
 #' Process data for DwC-compliant export
 #'
 #' @param df Data frame with mapped columns

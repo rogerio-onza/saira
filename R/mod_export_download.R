@@ -16,6 +16,7 @@ mount_export_download <- function(input, output, session, lang_r,
                                   name_review_payload_r = NULL,
                                   sensitivity_payload_r = NULL,
                                   sensitive_generalization_payload_r = NULL,
+                                  conservation_payload_r = NULL,
                                   raw_data_r = NULL,
                                   map_values_r = NULL,
                                   custom_values_r = NULL,
@@ -511,6 +512,18 @@ mount_export_download <- function(input, output, session, lang_r,
                             download_data(),
                             payload = export_name_review_payload()
                         )
+
+                        # Add conservation status (MMA and/or IUCN) to
+                        # dynamicProperties, keyed to the providers chosen in the
+                        # Name tab. Runs on the corrected scientificName; the GBIF
+                        # IUCN call is optional/non-blocking (NA on any failure).
+                        conservation_payload <- if (!is.null(conservation_payload_r) &&
+                                                    shiny::is.reactive(conservation_payload_r)) {
+                            tryCatch(conservation_payload_r(), error = function(e) NULL)
+                        } else {
+                            NULL
+                        }
+                        review_ready <- apply_conservation_status(review_ready, conservation_payload)
 
                         # Apply transposed-coordinate corrections approved in the
                         # coordinate validation tab (preserves verbatim coords).

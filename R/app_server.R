@@ -95,6 +95,7 @@ app_server <- function(input, output, session) {
     validate_names_r <- mod_validate_names_server("validate_names", mapped_data, lang_r, validation_gate_r = validation_gate, reset_signal_r = reset_signal)
     name_review_payload_r <- attr(validate_names_r, "review_export_payload")
     sensitivity_payload_r <- attr(validate_names_r, "sensitivity_payload")
+    conservation_payload_r <- attr(validate_names_r, "conservation_payload")
 
     # Coordinate validation runs before preview so its transposed-coordinate
     # correction payload can be applied at export (mirrors name review).
@@ -136,6 +137,7 @@ app_server <- function(input, output, session) {
         country_fill_payload_r             = country_fill_payload_r,
         sensitivity_payload_r              = sensitivity_payload_r,
         sensitive_generalization_payload_r = sensitive_generalization_payload_r,
+        conservation_payload_r             = conservation_payload_r,
         raw_data_r                         = raw_data,
         map_values_r                       = mapping_result$map_values_r,
         custom_values_r                    = mapping_result$custom_values_r,
