@@ -859,6 +859,50 @@
     "pt": "Sep",
     "en": "Sep"
   },
+  "mapping_or_separator": {
+    "pt": "OU",
+    "en": "OR"
+  },
+  "mapping_use_fixed_value": {
+    "pt": "Usar um valor fixo",
+    "en": "Use a fixed value"
+  },
+  "mapping_fixed_value_hint": {
+    "pt": "Ignora o mapeamento e aplica este valor integralmente.",
+    "en": "Ignores the mapping and applies this value in full."
+  },
+  "mapping_fills_every_row": {
+    "pt": "Este valor preencherá TODAS as linhas deste campo ao exportar os dados.",
+    "en": "This value will fill EVERY row of this field when you export your data."
+  },
+  "const_placeholder_rightsHolder": {
+    "pt": "Ex: Museu Nacional/UFRJ",
+    "en": "Ex: National Museum/UFRJ"
+  },
+  "const_placeholder_institutionCode": {
+    "pt": "Ex: MNRJ",
+    "en": "Ex: MNRJ"
+  },
+  "const_placeholder_collectionCode": {
+    "pt": "Ex: Mastozoologia",
+    "en": "Ex: Mammalogy"
+  },
+  "const_placeholder_country": {
+    "pt": "Ex: Brasil",
+    "en": "Ex: Brazil"
+  },
+  "const_placeholder_references": {
+    "pt": "Ex: https://doi.org/10.xxxx/xxxxx",
+    "en": "Ex: https://doi.org/10.xxxx/xxxxx"
+  },
+  "const_placeholder_bibliographicCitation": {
+    "pt": "Ex: Sobrenome, N. (2026). Título do conjunto de dados.",
+    "en": "Ex: Surname, N. (2026). Title of the dataset."
+  },
+  "const_placeholder_geodeticDatum": {
+    "pt": "Ex: EPSG:4326",
+    "en": "Ex: EPSG:4326"
+  },
   "preview_title": {
     "pt": "Pré-visualização dos Dados",
     "en": "Data Preview"

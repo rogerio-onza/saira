@@ -362,6 +362,25 @@ detect_extra_dwc_terms <- function(columns) {
     columns[columns %in% catalog_terms & !columns %in% base_terms]
 }
 
+#' Dataset-level terms eligible for a fixed (constant) value
+#'
+#' Single source of truth for the terms whose mapping card offers an opt-in
+#' "use a fixed value" input applied to every row (extends ADR-005). Consumed by
+#' the card builder, the value collector, the meta observers and the export
+#' injector. `datasetName`/`modified`/`license`/`language` keep their own
+#' dedicated inputs and are intentionally excluded here; `countryCode` is
+#' derived during coordinate validation and `basisOfRecord` has the per-value
+#' assistant, so both are excluded too.
+#'
+#' @return Character vector of DwC term names.
+#' @noRd
+constant_value_terms <- function() {
+    c(
+        "rightsHolder", "institutionCode", "collectionCode", "country",
+        "references", "bibliographicCitation", "geodeticDatum"
+    )
+}
+
 get_basis_of_record_vocab <- function(lang = "en") {
     use_lang <- if (identical(lang, "pt")) "pt" else "en"
 

@@ -149,6 +149,26 @@ O termo <span class="term">basisOfRecord</span> descreve a natureza do registro:
 </figure>
 ```
 
+## Valores fixos para todo o conjunto
+
+Alguns termos descrevem o **conjunto inteiro**, não cada registro: quem detém os direitos (<span class="term">rightsHolder</span>), a instituição e a coleção (<span class="term">institutionCode</span>, <span class="term">collectionCode</span>), o país (<span class="term">country</span>), uma referência ou citação (<span class="term">references</span>, <span class="term">bibliographicCitation</span>) ou o datum geodésico (<span class="term">geodeticDatum</span>). Em vez de criar uma coluna repetida na planilha, marque **Usar um valor fixo** no card do termo e digite o valor uma vez — o Saíra o aplica a **todas as linhas** na exportação. O card permanece igual ao normal até você marcar a opção, então nada polui a tela à toa. Como mapear uma coluna e usar um valor fixo são alternativas (um **OU** separa as duas), marcar a opção esconde o seletor de coluna — assim o valor fixo nunca sobrescreve em silêncio uma coluna que você já havia mapeado.
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/8-valor-fixo-checkbox.png" alt="Card rightsHolder com a opção 'Usar um valor fixo' marcada, revelando o campo de texto e a faixa de aviso">
+  <figcaption><b>Figura 10.</b> No card de um termo elegível, marque <b>Usar um valor fixo</b> e digite o valor uma vez. <i>(placeholder — substitua pela captura de tela.)</i></figcaption>
+</figure>
+<figure class="shot">
+  <img src="../assets/img/8.1-valor-fixo-faixa-todas-linhas.png" alt="Detalhe da faixa de aviso informando que o valor preenche todas as linhas do campo">
+  <figcaption><b>Figura 11.</b> A faixa de aviso deixa claro que o valor preenche <b>todas as linhas</b> daquele campo. <i>(placeholder — substitua pela captura de tela.)</i></figcaption>
+</figure>
+```
+
+::: {.callout-note}
+## Termos que não aparecem por padrão
+<span class="term">references</span>, <span class="term">bibliographicCitation</span> e <span class="term">geodeticDatum</span> não vêm no conjunto-base de cards. Inclua-os com **Adicionar termo** (ver acima) e a opção de valor fixo aparece no card assim que o termo é adicionado. Já <span class="term">countryCode</span> é preenchido automaticamente na validação de coordenadas, e <span class="term">basisOfRecord</span> tem o próprio assistente — por isso esses dois não usam valor fixo.
+:::
+
 ## Colunas não mapeadas
 
 Nem toda coluna precisa virar um termo Darwin Core — basta deixá-la sem mapear. Na exportação, o Saíra **anexa à direita** as colunas que você não usou como fonte de nenhum termo, preservando o nome e a ordem originais, para que nenhum dado se perca: você pode editá-las à mão depois, já no IPT.
