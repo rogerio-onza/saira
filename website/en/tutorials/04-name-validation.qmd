@@ -140,6 +140,10 @@ The adjustment is made in a small confirmation dialog and applies at export.
 
 Here the step only **flags** what is sensitive. The actual protection of the coordinates — deciding whether and how much to generalize the location — happens in the **[generalization](06-generalization.qmd)** step, following Chapman's (2020) decision table.
 
+## Conservation status goes to the export
+
+The databases you select here also decide which **conservation status** Saíra adds to the export's `dynamicProperties`: a **Brazilian** database contributes the **MMA** category (and the portaria that listed the taxon), and **GBIF** contributes the global **IUCN** category. A short line above the report tells you how many records will receive each one. The keys are written when you generate the package — see **[exporting](07-preview-export.qmd)**.
+
 ## Next steps
 
 With the names resolved, on to space: go to **[Validating coordinates](05-coordinate-validation.qmd)**.

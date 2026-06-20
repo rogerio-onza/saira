@@ -79,6 +79,15 @@ When generating the package, Saíra automatically standardizes the dataset so it
 - **Licenses** abbreviated to the canonical URL (for example, the matching Creative Commons URL).
 - **Columns reordered** into the canonical Darwin Core sequence, with unmapped columns appended on the right, preserving their original names.
 
+### Conservation status in `dynamicProperties`
+
+For each record of an assessed taxon, Saíra also writes its conservation status into the `dynamicProperties` column as clean JSON keys, based on the databases you chose in [name validation](04-name-validation.qmd):
+
+- a **Brazilian** database (Flora BR / Fauna BR) adds `mmaThreatStatus` (the threat category) and `mmaSource` (the portaria that listed the taxon);
+- **GBIF** adds `iucnRedListCategory` (the global IUCN code), looked up live on GBIF.
+
+Both can appear together — for example `{"mmaThreatStatus":"CR","mmaSource":"Portaria 1.704/2026","iucnRedListCategory":"NT"}` — and they merge into any `dynamicProperties` you mapped yourself. The GBIF lookup is best-effort: with no internet, or for a taxon GBIF does not assess, the IUCN key is simply omitted and the export proceeds normally.
+
 ## Bundle files
 
 The download produces a `.zip` with two sets of files:
