@@ -149,6 +149,26 @@ The term <span class="term">basisOfRecord</span> describes the nature of the rec
 </figure>
 ```
 
+## Fixed values for the whole dataset
+
+Some terms describe the **whole dataset**, not each record: who holds the rights (<span class="term">rightsHolder</span>), the institution and collection (<span class="term">institutionCode</span>, <span class="term">collectionCode</span>), the country (<span class="term">country</span>), a reference or citation (<span class="term">references</span>, <span class="term">bibliographicCitation</span>), or the geodetic datum (<span class="term">geodeticDatum</span>). Instead of adding a repeated column to your spreadsheet, tick **Use a fixed value** on the term's card and type the value once — Saíra writes it to **every row** at export. The card looks exactly like a normal one until you tick the box, so nothing clutters the screen needlessly. Because mapping a column and using a fixed value are alternatives (an **OR** separates them), ticking the box hides the column selector — so the constant can never silently overwrite a column you had already mapped.
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/8-valor-fixo-checkbox-EN.png" alt="rightsHolder card with the 'Use a fixed value' option ticked, revealing the text field and the warning strip">
+  <figcaption><b>Figure 10.</b> On an eligible term's card, tick <b>Use a fixed value</b> and type the value once. <i>(placeholder — replace with a screenshot.)</i></figcaption>
+</figure>
+<figure class="shot">
+  <img src="../../assets/img/8.1-valor-fixo-faixa-todas-linhas-EN.png" alt="Close-up of the warning strip stating the value fills every row of the field">
+  <figcaption><b>Figure 11.</b> The warning strip makes clear the value fills <b>every row</b> of that field. <i>(placeholder — replace with a screenshot.)</i></figcaption>
+</figure>
+```
+
+::: {.callout-note}
+## Terms not shown by default
+<span class="term">references</span>, <span class="term">bibliographicCitation</span> and <span class="term">geodeticDatum</span> are not in the base set of cards. Add them with **Add term** (see above) and the fixed-value option appears on the card as soon as the term is added. <span class="term">countryCode</span> is filled automatically during coordinate validation, and <span class="term">basisOfRecord</span> has its own assistant — so those two do not use a fixed value.
+:::
+
 ## Unmapped columns
 
 Not every column has to become a Darwin Core term — just leave it unmapped. At export, Saíra **appends to the right** the columns you did not use as a source for any term, preserving their original names and order, so no data is lost: you can edit them by hand later, already in the IPT.

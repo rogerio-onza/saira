@@ -2215,6 +2215,7 @@ build_processed_mapping_df <- function(
   custom_modified_date = NULL,
   custom_license = NULL,
   custom_language = NULL,
+  constant_values = list(),
   basis_of_record_map = NULL,
   now_utc = Sys.time(),
   out_sep = " | ",
@@ -2269,6 +2270,18 @@ build_processed_mapping_df <- function(
         if (term == "language") {
             if (!is.null(custom_language) && length(custom_language) > 0) {
                 df_final[[term]] <- rep(custom_language[[1]], nrow(df))
+                selected_terms <- c(selected_terms, term)
+            }
+            next
+        }
+
+        # Generalized fixed values (constant_value_terms allowlist): a single
+        # enabled value is replicated across every row, taking precedence over
+        # any column mapping for the term.
+        if (term %in% names(constant_values)) {
+            value <- constant_values[[term]]
+            if (!is.null(value) && nzchar(trimws(value))) {
+                df_final[[term]] <- rep(trimws(value), nrow(df))
                 selected_terms <- c(selected_terms, term)
             }
             next

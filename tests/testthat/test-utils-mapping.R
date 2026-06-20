@@ -657,6 +657,46 @@ testthat::test_that("build_processed_mapping_df preserves processed_data contrac
     testthat::expect_false(any(is.na(out)))
 })
 
+testthat::test_that("build_processed_mapping_df injects constant_values across all rows with precedence over columns", {
+    df <- data.frame(
+        rights_col = c("Org A", "Org B", "Org C"),
+        sci_col = c("Panthera onca", "Leopardus pardalis", "Puma concolor"),
+        stringsAsFactors = FALSE
+    )
+
+    dwc_terms <- list(
+        list(term = "occurrenceID"),
+        list(term = "rightsHolder"),
+        list(term = "geodeticDatum"),
+        list(term = "scientificName"),
+        list(term = "genus"),
+        list(term = "specificEpithet"),
+        list(term = "taxonRank")
+    )
+
+    map_values <- empty_map_values(vapply(dwc_terms, function(item) item$term, FUN.VALUE = character(1)))
+    # rightsHolder also points at a column: the fixed value must take precedence.
+    map_values$rightsHolder <- "rights_col"
+    map_values$scientificName <- "sci_col"
+
+    result <- build_processed_mapping_df(
+        df = df,
+        dwc_terms = dwc_terms,
+        map_values = map_values,
+        occurrence_ids = c("id-1", "id-2", "id-3"),
+        constant_values = list(
+            rightsHolder = "Museu Nacional/UFRJ",
+            geodeticDatum = "EPSG:4326"
+        )
+    )
+
+    out <- result$data
+    # Constant wins over the mapped column, applied to every row.
+    testthat::expect_identical(out$rightsHolder, rep("Museu Nacional/UFRJ", 3L))
+    # A term with no source column still gets the constant on every row.
+    testthat::expect_identical(out$geodeticDatum, rep("EPSG:4326", 3L))
+})
+
 testthat::test_that("basisOfRecord helpers normalize and auto-suggest canonical terms", {
     testthat::expect_identical(normalize_basis_of_record_key("  HumanObservation  "), "humanobservation")
     testthat::expect_identical(normalize_basis_of_record_key(NA_character_), "")

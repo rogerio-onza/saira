@@ -243,7 +243,8 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 }
             )
         } else {
-            shiny::tagList(
+            is_const_term <- term %in% constant_value_terms()
+            map_block <- shiny::tagList(
                 bslib::layout_columns(
                     col_widths = if (item$sep != "") c(8, 4) else c(12),
                     shiny::selectInput(
@@ -283,7 +284,81 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                     )
                 }
             )
+            shiny::tagList(
+                if (is_const_term) {
+                    # Mutually exclusive with the fixed value: while "use a fixed
+                    # value" is on, hide the column selector (and its sample, plus
+                    # the "OU" divider) so a mapped column cannot be silently
+                    # overwritten by the constant at export -- the constant takes
+                    # precedence in build_processed_mapping_df. Client-side toggle,
+                    # no re-render.
+                    shiny::conditionalPanel(
+                        condition = paste0("!input.usecustom_", term),
+                        ns = ns,
+                        map_block,
+                        shiny::div(
+                            class = "field-or-divider",
+                            shiny::span(tr("mapping_or_separator", lang_r))
+                        )
+                    )
+                } else {
+                    map_block
+                },
+                if (is_const_term) {
+                    build_constant_value_input(term, ns, lang_r, input)
+                }
+            )
         }
+    )
+}
+
+#' Build the opt-in fixed-value input for a constant-value term
+#'
+#' A `usecustom_<term>` checkbox (with a one-line hint that it ignores the
+#' column mapping) reveals (client-side) a tinted "every row" note plus a
+#' free-text `custom_<term>` input. Saved values are read with `isolate()` so
+#' live typing never re-renders the mapping UI (ADR-098).
+#'
+#' @param term DwC term name (must be in `constant_value_terms()`).
+#' @param ns Namespace function.
+#' @param lang_r Reactive language code (already evaluated).
+#' @param input Shiny input from parent module.
+#' @noRd
+build_constant_value_input <- function(term, ns, lang_r, input) {
+    saved_use <- shiny::isolate(input[[paste0("usecustom_", term)]])
+    saved_val <- shiny::isolate(input[[paste0("custom_", term)]])
+    shiny::tagList(
+        shiny::div(
+            class = "fixed-value-toggle",
+            shiny::checkboxInput(
+                ns(paste0("usecustom_", term)),
+                tr("mapping_use_fixed_value", lang_r),
+                value = isTRUE(saved_use)
+            ),
+            # A div (not <p>): the global `.card p` rule (01-base.css) would win
+            # by specificity and force this subtitle to --text-md. .field-desc
+            # sidesteps the same rule the same way.
+            shiny::div(
+                class = "fixed-value-hint",
+                tr("mapping_fixed_value_hint", lang_r)
+            )
+        ),
+        shiny::conditionalPanel(
+            condition = paste0("input.usecustom_", term),
+            ns = ns,
+            shiny::div(
+                class = "field-allrows-note",
+                shiny::icon("info-circle"),
+                " ", tr("mapping_fills_every_row", lang_r)
+            ),
+            shiny::textInput(
+                ns(paste0("custom_", term)),
+                NULL,
+                value = if (!is.null(saved_val)) saved_val else "",
+                placeholder = tr(paste0("const_placeholder_", term), lang_r),
+                width = "100%"
+            )
+        )
     )
 }
 
@@ -314,6 +389,17 @@ is_field_mapped <- function(term, current_val, input) {
         is_mapped <- !is.null(input$custom_license) && length(input$custom_license) > 0
     } else if (term == "language") {
         is_mapped <- !is.null(input$custom_language) && length(input$custom_language) > 0
+    } else if (term %in% constant_value_terms()) {
+        # Mapped if a column is selected OR a fixed value is enabled and filled.
+        # The checkbox read stays reactive so the mapped border updates live on
+        # toggle (a discrete event, like license/language); the free-text value
+        # is isolated so typing it does not re-render and blur the field (ADR-098,
+        # like datasetName -- the border refreshes on the next render).
+        use_const <- input[[paste0("usecustom_", term)]]
+        const_val <- shiny::isolate(input[[paste0("custom_", term)]])
+        if (isTRUE(use_const) && !is.null(const_val) && nchar(trimws(const_val)) > 0) {
+            is_mapped <- TRUE
+        }
     }
 
     is_mapped

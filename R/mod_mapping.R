@@ -97,6 +97,43 @@ mod_mapping_ui <- function(id) {
               if (frames++ < 40) { window.requestAnimationFrame(tryScroll); }
             })();
           });
+          // Live-toggle a field card's mapped border without re-rendering the
+          // whole mapping grid. Used for fixed-value terms whose free-text read
+          // is isolated (ADR-098): the server recomputes is_field_mapped() after
+          // typing settles and flips the class here, matching the next render.
+          Shiny.addCustomMessageHandler('saira-toggle-field-mapped', function (payload) {
+            var id = payload && payload.id;
+            if (!id) { return; }
+            var el = document.getElementById(id);
+            if (!el) { return; }
+            if (payload.mapped) {
+              el.classList.add('field-mapped');
+              el.classList.remove('field-unmapped');
+            } else {
+              el.classList.add('field-unmapped');
+              el.classList.remove('field-mapped');
+            }
+            // Sync the status badge (e.g. -> EDITADO) without re-rendering. The
+            // badge span carries a stable .field-status-badge hook; create it if
+            // the term had no badge, remove it when the recomputed badge is null.
+            var badge = payload.badge;
+            if (badge) {
+              var span = el.querySelector('.field-status-badge');
+              if (badge.show) {
+                if (!span) {
+                  var row = el.querySelector('.field-header-row');
+                  if (row) { span = document.createElement('span'); row.appendChild(span); }
+                }
+                if (span) {
+                  span.className = badge.class;
+                  span.title = badge.title || '';
+                  span.textContent = badge.label || '';
+                }
+              } else if (span && span.parentNode) {
+                span.parentNode.removeChild(span);
+              }
+            }
+          });
         })();"
     ))
     )
@@ -1731,6 +1768,81 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             ignoreInit = TRUE
         )
 
+        # Track fixed-value edits for the constant-value allowlist (mirrors the
+        # datasetName meta observer). Marks the term EDITADO so its badge and
+        # mapped border update; ignoreInit avoids firing on card creation.
+        lapply(constant_value_terms(), function(term) {
+            use_id <- paste0("usecustom_", term)
+            val_id <- paste0("custom_", term)
+            has_fixed_value <- function() {
+                isTRUE(input[[use_id]]) &&
+                    !is.null(input[[val_id]]) &&
+                    nzchar(trimws(input[[val_id]]))
+            }
+            # The free-text read is isolated in the renderUI (ADR-098), so typing
+            # a fixed value does not re-render the card and its mapped border
+            # would lag until some other change forces a render. Recompute the
+            # same is_field_mapped() the renderUI would and flip the card's border
+            # class client-side -- no re-render, no blur, and the class always
+            # matches the next full render. Runs in an observeEvent handler, which
+            # isolates these reads (no extra reactive dependencies).
+            refresh_card_state <- function() {
+                current_val <- rv$map_values[[term]]
+                if (is.null(current_val)) {
+                    current_val <- input[[paste0("map_", term)]]
+                }
+                current_val <- sanitize_map_selection(term, current_val)
+                # Recompute the same badge the renderUI would from the (just
+                # updated) meta, so the live update matches the next full render.
+                meta <- rv$map_meta[[term]]
+                if (is.null(meta)) {
+                    meta <- default_meta()
+                }
+                badge <- build_badge_info(meta)
+                badge_payload <- if (is.null(badge)) {
+                    list(show = FALSE)
+                } else {
+                    list(
+                        show = TRUE,
+                        label = badge$label,
+                        class = badge$class,
+                        title = badge$title
+                    )
+                }
+                session$sendCustomMessage(
+                    "saira-toggle-field-mapped",
+                    list(
+                        id = ns(paste0("fieldcard_", term)),
+                        mapped = isTRUE(is_field_mapped(term, current_val, input)),
+                        badge = badge_payload
+                    )
+                )
+            }
+            shiny::observeEvent(input[[val_id]], {
+                set_custom_term_meta(term, has_fixed_value())
+                refresh_card_state()
+            }, ignoreInit = TRUE)
+            shiny::observeEvent(input[[use_id]], {
+                set_custom_term_meta(term, has_fixed_value())
+                refresh_card_state()
+            }, ignoreInit = TRUE)
+        })
+
+        # Collect enabled fixed values (usecustom_<term> on + non-empty) for the
+        # constant-value allowlist. Reused by build_mapped_result (export/preview)
+        # and custom_values_r (mapping-guide serialization).
+        collect_constant_values <- function() {
+            vals <- list()
+            for (term in constant_value_terms()) {
+                if (!isTRUE(input[[paste0("usecustom_", term)]])) next
+                value <- input[[paste0("custom_", term)]]
+                if (!is.null(value) && nzchar(trimws(value))) {
+                    vals[[term]] <- trimws(value)
+                }
+            }
+            vals
+        }
+
         build_mapped_result <- function(df_input, occurrence_ids_input) {
             build_processed_mapping_df(
                 df = df_input,
@@ -1742,6 +1854,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 custom_modified_date = input$custom_modified_date,
                 custom_license = input$custom_license,
                 custom_language = input$custom_language,
+                constant_values = collect_constant_values(),
                 basis_of_record_map = rv$basis_of_record_map,
                 now_utc = Sys.time(),
                 out_sep = " | ",
@@ -1924,9 +2037,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         # Return named list of reactives (ADR-054: replaces attr()-based contract)
         # Slots kept for 1-release transition: processed_data_r, preview_data_r,
         #   validation_gate_r, validation_gate_coords_r.
-        # Typed/selected constant values (datasetName, license, language)
-        # applied to every row. Exposed so the export can serialize them in
-        # the mapping guide and restore them on re-import.
+        # Typed/selected constant values (datasetName, license, language plus the
+        # constant_value_terms() allowlist) applied to every row. Exposed so the
+        # export can serialize them in the mapping guide and restore on re-import.
         custom_values_r <- shiny::reactive({
             vals <- list()
             dn <- input$custom_datasetName
@@ -1939,7 +2052,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             if (!is.null(lng) && length(lng) > 0 && nzchar(lng[[1]])) {
                 vals$language <- as.character(lng[[1]])
             }
-            vals
+            c(vals, collect_constant_values())
         })
 
         # New Rostrum slots (Onda 2): rostrum_decisions_r, rostrum_explain_r,

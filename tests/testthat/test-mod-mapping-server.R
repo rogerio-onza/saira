@@ -440,6 +440,57 @@ testthat::test_that("reactive mapping state remains consistent after filter togg
     )
 })
 
+testthat::test_that("fixed-value constant term flows to every row, custom_values_r, and meta", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis", "Puma concolor"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+
+            # Enable a fixed value for rightsHolder and type it.
+            session$setInputs(
+                usecustom_rightsHolder = TRUE,
+                custom_rightsHolder = "Museu Nacional/UFRJ"
+            )
+            session$flushReact()
+
+            # Meta flips to a manual edit (mirrors datasetName behaviour).
+            testthat::expect_identical(rv$map_meta$rightsHolder$status, "EDITADO")
+
+            # Collector exposes it via the ADR-054 return slot.
+            testthat::expect_identical(
+                session$getReturned()$custom_values_r()$rightsHolder,
+                "Museu Nacional/UFRJ"
+            )
+
+            # Every row of the processed output carries the constant.
+            out <- processed_data()
+            testthat::expect_true("rightsHolder" %in% names(out))
+            testthat::expect_identical(
+                out$rightsHolder,
+                rep("Museu Nacional/UFRJ", 3L)
+            )
+
+            # Unchecking the box drops the term entirely (no column mapped).
+            session$setInputs(usecustom_rightsHolder = FALSE)
+            session$flushReact()
+
+            testthat::expect_null(
+                session$getReturned()$custom_values_r()$rightsHolder
+            )
+            testthat::expect_false("rightsHolder" %in% names(processed_data()))
+        }
+    )
+})
+
 testthat::test_that("basisOfRecord assistant persists mapping and processed_data keeps single value", {
     df <- data.frame(
         basis_raw = c(
