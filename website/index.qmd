@@ -78,7 +78,7 @@ anchor-sections: false
         <div class="flow-body">
           <span class="flow-num">01</span>
           <h3>Importe qualquer planilha</h3>
-          <p>CSV, TSV ou Excel, incluindo dados de armadilhas fotográficas. O Saíra detecta sozinho a codificação, o separador e mapeia suas colunas aos termos Darwin Core com sugestões automáticas e modelos reutilizáveis.</p>
+          <p>CSV, TSV ou TXT, incluindo dados de armadilhas fotográficas. O Saíra detecta sozinho a codificação, o separador e mapeia suas colunas aos termos Darwin Core com sugestões automáticas e modelos reutilizáveis.</p>
           <div class="proof">
             <span class="proof-in">acentuação quebrada · sep ";"</span>
             <span class="proof-arrow">→</span>
