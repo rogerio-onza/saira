@@ -1,6 +1,6 @@
 ---
 title: "Pré-visualização e exportação"
-pagetitle: "Exportação DwC-A — Tutoriais Saíra"
+pagetitle: "Exportação DwC-A · Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
@@ -35,7 +35,7 @@ A aba **Exportação** é um **hub de revisão**: antes de baixar o pacote, ela 
 
 ### Prontidão para exportar
 
-No topo, um indicador diz se o conjunto está **pronto para publicar** (verde) ou se a **exportação está bloqueada** (vermelho). Quando bloqueia, o Saíra lista o que falta — em geral, **termos obrigatórios** não preenchidos ou **espécies generalizadas sem a justificativa** exigida para as Categorias 1–3 — e oferece um atalho para resolver a pendência.
+No topo, um indicador diz se o conjunto está **pronto para publicar** (verde) ou se a **exportação está bloqueada** (vermelho). Quando bloqueia, o Saíra lista o que falta (em geral, **termos obrigatórios** não preenchidos ou **espécies generalizadas sem a justificativa** exigida para as Categorias 1–3) e oferece um atalho para resolver a pendência.
 
 ```{=html}
 <figure class="shot">
@@ -60,14 +60,19 @@ Um resumo mostra tudo o que as etapas anteriores ajustaram, para você conferir 
 
 Se você generalizou algum táxon na etapa de [generalização](06-generalizacao.qmd), uma tabela lista cada **espécie**, sua **ameaça (MMA)** e o **nível de generalização** que sairá no pacote:
 
-| Nível (na exportação) | Grade |
-|---|---|
-| País (~111 km) | Categoria 1 |
-| Estado (~11 km) | Categoria 2 |
-| Cidade (~1 km) | Categoria 3 |
-| Local (~100 m) | Categoria 4 |
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Nível (na exportação)</th><th></th><th>Grade</th></tr></thead>
+  <tbody>
+    <tr><td>País (~111 km)</td><td><span class="arrow">→</span></td><td>Categoria 1</td></tr>
+    <tr><td>Estado (~11 km)</td><td><span class="arrow">→</span></td><td>Categoria 2</td></tr>
+    <tr><td>Cidade (~1 km)</td><td><span class="arrow">→</span></td><td>Categoria 3</td></tr>
+    <tr><td>Local (~100 m)</td><td><span class="arrow">→</span></td><td>Categoria 4</td></tr>
+  </tbody>
+</table>
+```
 
-Se nada foi generalizado, o Saíra registra: *nenhuma espécie será generalizada — as coordenadas serão publicadas como estão*. As coordenadas originais e precisas dos registros generalizados não entram no pacote público: ficam num arquivo à parte (veja **Arquivos do pacote**, abaixo).
+Se nada foi generalizado, o Saíra registra: *nenhuma espécie será generalizada; as coordenadas serão publicadas como estão*. As coordenadas originais e precisas dos registros generalizados não entram no pacote público: ficam num arquivo à parte (veja **Arquivos do pacote**, abaixo).
 
 ## O que o Saíra ajusta na exportação
 
@@ -86,19 +91,53 @@ Para cada registro de um táxon avaliado, o Saíra também grava o status de con
 - uma base **brasileira** (Flora BR / Fauna BR) adiciona `mmaThreatStatus` (a categoria de ameaça) e `mmaSource` (a portaria que listou o táxon);
 - o **GBIF** adiciona `iucnRedListCategory` (o código IUCN global), consultado ao vivo no GBIF.
 
-As duas podem aparecer juntas — por exemplo `{"mmaThreatStatus":"CR","mmaSource":"Portaria 1.704/2026","iucnRedListCategory":"NT"}` — e se somam a qualquer `dynamicProperties` que você mesmo mapeou. A consulta ao GBIF é best-effort: sem internet, ou para um táxon que o GBIF não avalia, a chave IUCN é apenas omitida e a exportação segue normalmente.
+As duas podem aparecer juntas e se somam a qualquer `dynamicProperties` que você mesmo mapeou. Por exemplo:
+
+```json
+{"mmaThreatStatus":"CR","mmaSource":"Portaria 1.704/2026","iucnRedListCategory":"NT"}
+```
+
+A consulta ao GBIF é best-effort: sem internet, ou para um táxon que o GBIF não avalia, a chave IUCN é apenas omitida e a exportação segue normalmente.
+
+::: {.callout-tip}
+## Não trabalha com espécies brasileiras?
+Marque **apenas o GBIF** na validação de nomes. Assim o Saíra grava só `iucnRedListCategory` (IUCN global) e não tenta aplicar a categoria MMA, que vale para a fauna e a flora do Brasil.
+:::
 
 ## Arquivos do pacote
 
-O download gera um `.zip` com dois conjuntos de arquivos:
+O download gera um `.zip` (`<dataset>-dwc-archive.zip`) com dois conjuntos de arquivos.
 
-- **Darwin Core Archive (IPT)** — o que você envia ao repositório: <span class="term">occurrence.txt</span> (os dados), <span class="term">meta.xml</span> (o descritor que diz o que cada coluna significa) e <span class="term">eml.xml</span> (os metadados do conjunto).
-- **Arquivos auxiliares** — para o seu controle, fora do pacote público: o **modelo de mapeamento** (`mapping_guide_*.txt`) para reaproveitar em planilhas futuras, e, quando houver espécies generalizadas, o arquivo com as **coordenadas reais e precisas** desses registros, que você guarda mas não publica.
+O **Darwin Core Archive**, que você envia ao repositório:
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Arquivo</th><th>O que é</th></tr></thead>
+  <tbody>
+    <tr><td>occurrence.txt</td><td>Os dados: o núcleo do Darwin Core Archive.</td></tr>
+    <tr><td>meta.xml</td><td>O descritor que diz o que cada coluna significa.</td></tr>
+    <tr><td>eml.xml</td><td>Os metadados do conjunto (título, instituição, licença).</td></tr>
+  </tbody>
+</table>
+```
+
+E os **arquivos auxiliares**, para o seu controle, fora do pacote público:
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Arquivo</th><th>O que é</th></tr></thead>
+  <tbody>
+    <tr><td>&lt;dataset&gt;-occurrences.xlsx</td><td>Espelho em Excel, com todas as células forçadas a texto.</td></tr>
+    <tr><td>&lt;dataset&gt;-mapping-guide.txt</td><td>O modelo "sua coluna → termo Darwin Core", para reaproveitar.</td></tr>
+    <tr><td>&lt;dataset&gt;-sensitive-coords.csv</td><td>Coordenadas reais e precisas dos registros generalizados. Só aparece quando há generalização; você guarda, mas não publica.</td></tr>
+  </tbody>
+</table>
+```
 
 ## Gerando o Darwin Core Archive
 
 ```{=html}
-<ol class="steps">
+<ol class="fix-steps">
   <li><strong>Revise os metadados (EML).</strong>
     <p>Preencha título do conjunto, instituição, licença e responsáveis; eles vão no <span class="term">eml.xml</span> e descrevem o conjunto para quem o encontrar.</p></li>
   <li><strong>Gere o arquivo.</strong>
@@ -115,7 +154,7 @@ O download gera um `.zip` com dois conjuntos de arquivos:
 
 ::: {.callout-tip}
 ## Um modelo reutilizável vem junto
-O `.zip` também inclui um **modelo de mapeamento** (`mapping_guide_*.txt`): o registro "sua coluna → termo Darwin Core" do mapeamento que você fez, sem nenhum dado. Guarde-o para auto-mapear planilhas futuras com a mesma estrutura, via **Importar modelo** (ver [Mapeando Darwin Core](03-mapeamento-dwc.qmd)).
+O `.zip` também inclui um **modelo de mapeamento** (`<dataset>-mapping-guide.txt`): o registro "sua coluna → termo Darwin Core" do mapeamento que você fez, sem nenhum dado. Guarde-o para auto-mapear planilhas futuras com a mesma estrutura, via **Importar modelo** (ver [Mapeando Darwin Core](03-mapeamento-dwc.qmd)).
 :::
 
 ::: {.callout-note}

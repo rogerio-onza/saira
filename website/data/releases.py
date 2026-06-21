@@ -7,20 +7,20 @@
 # To add a release: prepend a new dict at the top of RELEASES with the version,
 # the date (YYYY-MM-DD) and a short list of highlights in both languages. Each
 # highlight is (type, text) where type is one of: "added", "changed", "fixed".
-# Wrap code/term names in `backticks` — they render as <code>.
+# Wrap code/term names in `backticks`, which render as <code>.
 
 RELEASES = [
     {
         "version": "0.9.0",
         "date": "2026-06-20",
         "pt": [
-            ("added", "**Status de conservação automático no export**: cada registro de um táxon avaliado ganha, no `dynamicProperties`, a categoria de ameaça **MMA** (com a portaria que o listou) quando você usa uma base brasileira, e/ou a categoria **IUCN** global (consultada no GBIF) quando usa o GBIF. A consulta ao GBIF é opcional e não-bloqueante — offline, a chave IUCN é apenas omitida e a exportação segue normal."),
+            ("added", "**Status de conservação automático no export**: cada registro de um táxon avaliado ganha, no `dynamicProperties`, a categoria de ameaça **MMA** (com a portaria que o listou) quando você usa uma base brasileira, e/ou a categoria **IUCN** global (consultada no GBIF) quando usa o GBIF. A consulta ao GBIF é opcional e não-bloqueante: offline, a chave IUCN é apenas omitida e a exportação segue normal."),
             ("added", "**Valor fixo para mais termos de nível-dataset**: `rightsHolder`, `institutionCode`, `collectionCode`, `country`, `references`, `bibliographicCitation` e `geodeticDatum` podem receber um único valor aplicado a todas as linhas, em vez de mapear uma coluna."),
             ("changed", "**Generalização de coordenadas 100% Chapman 2020**: nunca arredonda para uma precisão mais fina do que o dado já tem (sem inventar precisão) e nunca descarta os metadados de proteção."),
             ("fixed", "**Pacotes Camtrap DP** agora mapeiam de forma limpa: colunas vazias descartadas, valores auto-mapeados preservados e badges **AUTO** para as colunas que já são termos Darwin Core."),
         ],
         "en": [
-            ("added", "**Automatic conservation status on export**: every record of an assessed taxon gets, in `dynamicProperties`, the **MMA** threat category (with the portaria that listed it) when you use a Brazilian database, and/or the global **IUCN** category (looked up on GBIF) when you use GBIF. The GBIF lookup is optional and non-blocking — offline, the IUCN key is simply omitted and the export proceeds normally."),
+            ("added", "**Automatic conservation status on export**: every record of an assessed taxon gets, in `dynamicProperties`, the **MMA** threat category (with the portaria that listed it) when you use a Brazilian database, and/or the global **IUCN** category (looked up on GBIF) when you use GBIF. The GBIF lookup is optional and non-blocking: offline, the IUCN key is simply omitted and the export proceeds normally."),
             ("added", "**Fixed value for more dataset-level terms**: `rightsHolder`, `institutionCode`, `collectionCode`, `country`, `references`, `bibliographicCitation` and `geodeticDatum` can take a single value applied to every row instead of mapping a column."),
             ("changed", "**Coordinate generalization is now fully Chapman 2020-compliant**: it never rounds to a finer precision than the data already has (no invented precision) and never drops the protection metadata."),
             ("fixed", "**Camtrap DP packages** now map cleanly: empty columns dropped, auto-mapped values preserved, and **AUTO** badges for columns that already are Darwin Core terms."),
@@ -30,10 +30,10 @@ RELEASES = [
         "version": "0.8.6",
         "date": "2026-06-19",
         "pt": [
-            ("fixed", "Na **validação de nomes**, a tabela do relatório agora **rola** e a **paginação fica acessível** quando há mais de 10 nomes — antes a 10ª linha e os controles ficavam cortados."),
+            ("fixed", "Na **validação de nomes**, a tabela do relatório agora **rola** e a **paginação fica acessível** quando há mais de 10 nomes; antes a 10ª linha e os controles ficavam cortados."),
         ],
         "en": [
-            ("fixed", "In **name validation**, the report table now **scrolls** and **pagination is reachable** with more than 10 names — previously the 10th row and the controls were clipped."),
+            ("fixed", "In **name validation**, the report table now **scrolls** and **pagination is reachable** with more than 10 names; previously the 10th row and the controls were clipped."),
         ],
     },
     {
@@ -89,13 +89,13 @@ RELEASES = [
         "date": "2026-06-15",
         "pt": [
             ("changed", "A aba **Generalização** agora rola por inteiro e a lista de espécies pode ser **filtrada por nível de ameaça** (VU, EN, CR…)."),
-            ("changed", "Uploads que já trazem um `occurrenceID` **mantêm o identificador** em vez de receber um UUID aleatório — preservando IDs de armadilha fotográfica e a procedência."),
+            ("changed", "Uploads que já trazem um `occurrenceID` **mantêm o identificador** em vez de receber um UUID aleatório, preservando IDs de armadilha fotográfica e a procedência."),
             ("fixed", "Grandes conjuntos de armadilha fotográfica **não travam mais** o mapa de generalização nem o mapeamento (correções de desempenho)."),
             ("fixed", "Carimbos de data/hora do **Wildlife Insights** não assumem mais um fuso UTC falso."),
         ],
         "en": [
             ("changed", "The **Generalization** tab now scrolls in full and the species list can be **filtered by threat level** (VU, EN, CR…)."),
-            ("changed", "Uploads that already carry an `occurrenceID` now **keep the identifier** instead of getting a random UUID — preserving camera-trap IDs and provenance."),
+            ("changed", "Uploads that already carry an `occurrenceID` now **keep the identifier** instead of getting a random UUID, preserving camera-trap IDs and provenance."),
             ("fixed", "Large camera-trap datasets **no longer freeze** the generalization map or the mapping step (performance fixes)."),
             ("fixed", "**Wildlife Insights** timestamps no longer falsely claim a UTC timezone."),
         ],

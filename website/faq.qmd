@@ -1,6 +1,6 @@
 ---
 title: "Perguntas frequentes"
-pagetitle: "FAQ — Saíra"
+pagetitle: "FAQ · Saíra"
 ---
 
 ::: {.tut-standfirst}
@@ -40,7 +40,10 @@ O Saíra é bilíngue: **Português (PT-BR)** e **Inglês (EN-US)**. Você alter
 Sim. O fluxo é flexível: você pode remapear um campo, recarregar a planilha ou revalidar a qualquer momento.
 
 ### Quais formatos de planilha o Saíra aceita?
-CSV (`.csv`, `.tsv`, `.txt`) e Excel (`.xlsx`, `.xls`), com detecção automática de codificação e separador. Detalhes em [Importando seus dados](tutoriais/02-upload.qmd).
+CSV (`.csv`, `.tsv`, `.txt`) e Excel (`.xlsx`, `.xls`), com detecção automática de codificação e separador. Também aceita pacotes de **armadilha fotográfica** (`.zip`): Camtrap DP e exportações do Wildlife Insights. Detalhes em [Importando seus dados](tutoriais/02-upload.qmd).
+
+### Posso definir um valor fixo para o conjunto todo?
+Sim. Sete termos de nível de conjunto (`rightsHolder`, `institutionCode`, `collectionCode`, `country`, `references`, `bibliographicCitation` e `geodeticDatum`) aceitam um **valor fixo**: você o digita uma vez no card do termo e o Saíra o aplica a todas as linhas na exportação. Veja [Mapeando campos para Darwin Core](tutoriais/03-mapeamento-dwc.qmd).
 
 ## Dados e qualidade
 
@@ -51,12 +54,15 @@ CSV (`.csv`, `.tsv`, `.txt`) e Excel (`.xlsx`, `.xls`), com detecção automáti
 Ele **sugere** correções a partir de bases taxonômicas, mas a decisão final é sempre do especialista. Veja [Validando nomes científicos](tutoriais/04-validacao-nomes.qmd).
 
 ### Como o Saíra trata espécies ameaçadas?
-Numa etapa dedicada de **generalização**, ele sinaliza táxons ameaçados (Lista Nacional do MMA) e ajuda você a decidir, espécie por espécie, se e quanto reduzir a precisão das coordenadas — seguindo a tabela de decisão de Chapman (2020). Veja [Generalizando espécies sensíveis](tutoriais/06-generalizacao.qmd).
+Numa etapa dedicada de **generalização**, ele sinaliza táxons ameaçados (Lista Nacional do MMA) e ajuda você a decidir, espécie por espécie, se e quanto reduzir a precisão das coordenadas, seguindo a tabela de decisão de Chapman (2020). Veja [Generalizando espécies sensíveis](tutoriais/06-generalizacao.qmd).
+
+### O Saíra adiciona o status de conservação das espécies?
+Sim. Na exportação, ele grava o status no campo `dynamicProperties` conforme as bases escolhidas na validação de nomes: uma base brasileira (Flora BR / Fauna BR) adiciona a categoria **MMA** (`mmaThreatStatus`) e a portaria de origem (`mmaSource`); o **GBIF** adiciona a categoria **IUCN** global (`iucnRedListCategory`). Se você não trabalha com espécies brasileiras, marque apenas o GBIF.
 
 ## Exportação e publicação
 
 ### O que o Saíra gera no final?
-Um **Darwin Core Archive (DwC-A)**: um pacote `.zip` com `occurrence.txt`, `meta.xml` e `eml.xml`, pronto para publicação.
+Um **Darwin Core Archive (DwC-A)**: um pacote `.zip` com `occurrence.txt`, `meta.xml` e `eml.xml`, pronto para publicação. No mesmo `.zip` vão também um espelho em Excel (`.xlsx`), o modelo de mapeamento reutilizável (`<dataset>-mapping-guide.txt`) e, quando há espécies generalizadas, um arquivo com as coordenadas precisas que você guarda mas não publica.
 
 ### Como publico o arquivo no SiBBr ou no GBIF?
 A publicação acontece fora do Saíra, normalmente via **IPT** (Integrated Publishing Toolkit) da sua instituição ou do SiBBr. O arquivo gerado já está no formato esperado.

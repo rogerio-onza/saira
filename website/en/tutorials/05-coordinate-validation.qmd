@@ -1,10 +1,10 @@
 ---
 title: "Validating coordinates"
-pagetitle: "Coordinate validation — Saíra Tutorials"
+pagetitle: "Coordinate validation · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-Wrong coordinates are one of the biggest sources of error in biodiversity data. Saíra runs a deterministic diagnosis, shows every record on a map and in a table, and **proposes safe corrections** — applied only on export, never silently over your data.
+Wrong coordinates are one of the biggest sources of error in biodiversity data. Saíra runs a deterministic diagnosis, shows every record on a map and in a table, and **proposes safe corrections**, applied only on export, never silently over your data.
 :::
 
 ## Before validating: what must be mapped
@@ -19,8 +19,8 @@ The left panel shows the column associated with each term. While any is missing,
 
 Before running, choose the **Profile**:
 
-- **Complete** — runs every test, including the detection of *reference hotspots* (suspicious points on capitals, country centroids, the GBIF HQ and biodiversity institutions).
-- **Fast** — skips the reference tests; handy for a first pass over large datasets.
+- **Complete**: runs every test, including the detection of *reference hotspots* (suspicious points on capitals, country centroids, the GBIF HQ and biodiversity institutions).
+- **Fast**: skips the reference tests; handy for a first pass over large datasets.
 
 Click **Validate Coordinates**. Validation is triggered by you, not on every change to the data.
 
@@ -45,21 +45,21 @@ From <span class="term">decimalLatitude</span>, <span class="term">decimalLongit
     <tr><td><span class="swatch" style="background:var(--coord-swap)"></span>Possible swap</td><td>Latitude and longitude appear switched.</td></tr>
     <tr><td><span class="swatch" style="background:var(--info)"></span>At sea</td><td>The point falls in the water according to the coastline layer, when it should be on land.</td></tr>
     <tr><td><span class="swatch" style="background:var(--warning)"></span>Zero/Equal</td><td>Coordinate at (0, 0) or with identical latitude and longitude.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--coord-identical)"></span>All identical</td><td>Every valid record shares the same coordinate pair — a sign of a collective placeholder.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--coord-identical)"></span>All identical</td><td>Every valid record shares the same coordinate pair: a sign of a collective placeholder.</td></tr>
     <tr><td><span class="swatch" style="background:var(--coord-reference)"></span>Reference hotspot</td><td>Point near a capital, country centroid, GBIF HQ or biological institution (<b>Complete</b> profile only).</td></tr>
   </tbody>
 </table>
 ```
 
-The tests are deterministic (in the style of `CoordinateCleaner`) and use the Natural Earth country layer bundled with Saíra — they run without depending on external services.
+The tests are deterministic (in the style of `CoordinateCleaner`) and use the Natural Earth country layer bundled with Saíra: they run without depending on external services.
 
 ## Reading the results
 
 Once validation finishes, the results appear on the right.
 
-**Filters.** Above the map, buttons filter the view by category — **All**, **Problems**, **Invalid**, **Sea**, **Zero/Equal** and **Reference**. Clicking one filters the map and the table at once.
+**Filters.** Above the map, buttons filter the view by category: **All**, **Problems**, **Invalid**, **Sea**, **Zero/Equal** and **Reference**. Clicking one filters the map and the table at once.
 
-**Map — Geographic Distribution.** Each record becomes a point, colored by situation. Click a point to see its row, diagnosis and coordinates; clusters outside the expected area stand out.
+**Map: Geographic Distribution.** Each record becomes a point, colored by situation. Click a point to see its row, diagnosis and coordinates; clusters outside the expected area stand out.
 
 ```{=html}
 <table class="maptable">
@@ -86,7 +86,7 @@ Once validation finishes, the results appear on the right.
 The sea test uses simplified coastline data. Points very close to the coast may be incorrectly flagged. **Verify visually on the map before discarding** a record marked *At sea*.
 :::
 
-**Table — Coordinate Diagnostics.** Below the map, a table lists each record with the columns **Row**, **Diagnosis** (colored badge), **Latitude**, **Longitude**, **Country** and **ISO3** (the resolved country code). It is searchable, paginated and follows the active filter.
+**Table: Coordinate Diagnostics.** Below the map, a table lists each record with the columns **Row**, **Diagnosis** (colored badge), **Latitude**, **Longitude**, **Country** and **ISO3** (the resolved country code). It is searchable, paginated and follows the active filter.
 
 ```{=html}
 <figure class="shot">
@@ -126,7 +126,7 @@ When candidates exist, panels appear on the left. Each shows the count and one e
 </figure>
 ```
 
-**Records with no coordinate** are marked *Missing coordinate*. Saíra does not invent a point from the locality text — those records are left to your judgement: keep them ungeoreferenced as a conscious choice, or fill in the coordinates before upload.
+**Records with no coordinate** are marked *Missing coordinate*. Saíra does not invent a point from the locality text: those records are left to your judgement. Keep them ungeoreferenced as a conscious choice, or fill in the coordinates before upload.
 
 ::: {.callout-tip}
 ## Datum and precision

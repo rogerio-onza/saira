@@ -1,6 +1,6 @@
 ---
 title: "Importing your data"
-pagetitle: "Importing data — Saíra Tutorials"
+pagetitle: "Importing data · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
@@ -20,13 +20,13 @@ Each **row** should be one occurrence (a record of an organism in a place and ti
 
 ::: {.callout-tip}
 ## Download the sample spreadsheet
-To practice this and the next steps, download [`ocorrencias-exemplo.csv`](../../assets/exemplo/ocorrencias-exemplo.csv) — a deliberately imperfect sample dataset (several columns to map, one swapped coordinate and a blank country to fix during validation).
+To practice this and the next steps, download [`ocorrencias-exemplo.csv`](../../assets/exemplo/ocorrencias-exemplo.csv), a deliberately imperfect sample dataset (several columns to map, one swapped coordinate and a blank country to fix during validation).
 :::
 
 In the **Upload** tab, drag the file onto the indicated area or click to select it.
 
 ```{=html}
-<ol class="steps">
+<ol class="fix-steps">
   <li><strong>Select the file.</strong>
     <p>Drop the CSV or the camera-trap package onto the upload area (or click to choose).</p></li>
   <li><strong>Wait for the reading.</strong>
@@ -67,7 +67,7 @@ Saíra assumes the **first row** holds the column names. Remove title rows, logo
 If your data comes from camera traps, Saíra recognizes three formats and converts them into an occurrence table before mapping:
 
 - **Camtrap DP** (Camera Trap Data Package): the standardized `.zip` package, with the `datapackage.json` descriptor and the `deployments`, `observations` and (optionally) `media` tables.
-- **Loose Camtrap DP CSVs**: the same set of tables (`deployments.csv` + `observations.csv`, with optional `media.csv`) in a `.zip`, but **without the descriptor** — Saíra synthesizes a `datapackage.json` from the CSVs it finds.
+- **Loose Camtrap DP CSVs**: the same set of tables (`deployments.csv` + `observations.csv`, with optional `media.csv`) in a `.zip`, but **without the descriptor**: Saíra synthesizes a `datapackage.json` from the CSVs it finds.
 - **Wildlife Insights**: the platform's export (`deployments.csv` + `projects.csv` + images), where Saíra renames the columns to the Camtrap DP shape and derives the scientific name (from class, order, family, genus and species), the record timestamp and the observation type.
 
 In every case Saíra builds a consistent scientific name and organizes the time and place fields, so the rest of the workflow (mapping, names, coordinates) works just like a regular spreadsheet.

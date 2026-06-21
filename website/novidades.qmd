@@ -1,6 +1,6 @@
 ---
 title: "Atualizações"
-pagetitle: "Atualizações — Saíra"
+pagetitle: "Atualizações · Saíra"
 toc: false
 ---
 

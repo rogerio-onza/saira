@@ -1,5 +1,5 @@
 ---
-pagetitle: "Saíra — Darwin Core para a Biodiversidade Brasileira"
+pagetitle: "Saíra · Darwin Core para a Biodiversidade Brasileira"
 page-layout: custom
 toc: false
 anchor-sections: false
@@ -70,7 +70,7 @@ anchor-sections: false
     <div class="flow-intro">
       <span class="eyebrow">Funcionalidades</span>
       <h2>Da planilha bruta<br>ao <em>DwC-A</em> publicável</h2>
-      <p>Três movimentos, pensados para curadores e pesquisadores de campo, <strong>não para programadores.</strong> Sem tocar em uma linha de código.</p>
+      <p>Quatro movimentos, pensados para curadores e pesquisadores de campo! Sem tocar em uma linha de código.</p>
     </div>
     <ol class="flow-steps">
       <li class="flow-step" style="--step:#38CFF6">
@@ -78,7 +78,7 @@ anchor-sections: false
         <div class="flow-body">
           <span class="flow-num">01</span>
           <h3>Importe qualquer planilha</h3>
-          <p>CSV, TSV ou Excel, incluindo dados de armadilhas fotográficas. O Saíra detecta sozinho a codificação e o separador, abrindo arquivos que o Excel embaralharia, e mapeia suas colunas aos termos Darwin Core com sugestões automáticas e modelos reutilizáveis.</p>
+          <p>CSV, TSV ou TXT, incluindo dados de armadilhas fotográficas. O Saíra detecta sozinho a codificação, o separador e mapeia suas colunas aos termos Darwin Core com sugestões automáticas e modelos reutilizáveis.</p>
           <div class="proof">
             <span class="proof-in">acentuação quebrada · sep ";"</span>
             <span class="proof-arrow">→</span>
@@ -99,12 +99,25 @@ anchor-sections: false
           </div>
         </div>
       </li>
+      <li class="flow-step" style="--step:#6d28d9">
+        <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="10" r="2.2"/><path d="M12 12.2V15"/></svg></div>
+        <div class="flow-body">
+          <span class="flow-num">03</span>
+          <h3>Generalize espécies sensíveis</h3>
+          <p>Reduza a precisão das coordenadas de táxons ameaçados (Lista MMA), espécie por espécie, seguindo a tabela de decisão de Chapman (2020). Protege locais sensíveis sem descartar o registro.</p>
+          <div class="proof">
+            <span class="proof-in">coordenada exata</span>
+            <span class="proof-arrow">→</span>
+            <span class="proof-out">precisão reduzida · Chapman</span>
+          </div>
+        </div>
+      </li>
       <li class="flow-step" style="--step:#2fc488">
         <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div>
         <div class="flow-body">
-          <span class="flow-num">03</span>
+          <span class="flow-num">04</span>
           <h3>Exporte um DwC-A pronto para o SiBBr</h3>
-          <p>Gere o Darwin Core Archive completo e generalize automaticamente as coordenadas de espécies ameaçadas (Lista MMA) antes de publicar no SiBBr e no GBIF.</p>
+          <p>Gere o Darwin Core Archive completo, com o status de conservação (MMA e IUCN) anexado, pronto para publicar no SiBBr e no GBIF.</p>
           <div class="flow-tags">
             <span class="flow-tag">occurrence.txt</span>
             <span class="flow-tag">meta.xml</span>

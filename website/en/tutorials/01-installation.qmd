@@ -1,6 +1,6 @@
 ---
 title: "Installation and first steps"
-pagetitle: "Installation — Saíra Tutorials"
+pagetitle: "Installation · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
@@ -24,7 +24,7 @@ Download R from the official **[CRAN](https://cran.r-project.org/)** site. The s
 </figure>
 <figure class="shot">
   <img src="../../assets/img/01.1-r-instalacao-cran.png" alt="R for Windows page with the base link highlighted">
-  <figcaption><b>Figure 2.</b> Click <b>base</b> — that is the distribution you install the first time.</figcaption>
+  <figcaption><b>Figure 2.</b> Click <b>base</b>: that is the distribution you install the first time.</figcaption>
 </figure>
 <figure class="shot">
   <img src="../../assets/img/01.2-r-instalacao-cran-final.png" alt="Download link for the R installer for Windows">
@@ -45,7 +45,12 @@ Download R from the official **[CRAN](https://cran.r-project.org/)** site. The s
 
 ## Windows: install Rtools
 
-Because Saíra **is not on CRAN**, it is installed from source (next section). On **Windows**, compiling packages from source requires **Rtools**. Install the Rtools version that matches your R version before installing Saíra. (On macOS and Linux this step is usually not needed.)
+Because Saíra **is not on CRAN**, it is installed from source. On **Windows**, compiling packages from source requires **Rtools**. Install the Rtools version that matches your R version before installing Saíra. (On macOS and Linux this step is usually not needed.)
+
+::: {.callout-note}
+## Rtools lives on the same R page
+No need to look elsewhere: the Rtools installer is **on the same R download page on CRAN** (Figure 5 shows the link). Download the Rtools version that matches your R right there.
+:::
 
 ```{=html}
 <figure class="shot">
@@ -99,6 +104,19 @@ On servers or environments without a default browser, `run_app()` prints a local
 </figure>
 ```
 
+## Updating
+
+Saíra is installed from GitHub, so **updating means reinstalling**: the same install command always pulls the latest version.
+
+1. Close the app, if it is open.
+2. In the R (or RStudio) console, run again:
+
+```r
+pak::pak("rogerio-onza/saira")
+```
+
+`pak` downloads the latest version and updates only what changed (later installs are fast). Reopen the app with `saira::run_app()`. To check which version is installed, run `packageVersion("saira")`.
+
 ## Language
 
 Saíra is bilingual. In the top corner of the interface you switch between **Portuguese (PT-BR)** and **English (EN-US)** at any time, handy for mixed teams or for publishing metadata in English. The switch is instant and does not interrupt work in progress.
@@ -106,10 +124,6 @@ Saíra is bilingual. In the top corner of the interface you switch between **Por
 ## File size and performance
 
 The app accepts uploads of up to **500 MB**, enough for datasets with hundreds of thousands of occurrences. Very large datasets make name validation and the map slower, because each name is looked up in the databases and each point is drawn. If you are just practicing the workflow, start with the sample spreadsheet.
-
-## Updating
-
-To update Saíra later, run the install command again (`pak::pak("rogerio-onza/saira")`). It pulls the latest version from the repository.
 
 ## Next steps
 

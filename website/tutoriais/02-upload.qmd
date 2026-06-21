@@ -1,6 +1,6 @@
 ---
 title: "Importando seus dados"
-pagetitle: "Importando dados — Tutoriais Saíra"
+pagetitle: "Importando dados · Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
@@ -20,13 +20,13 @@ Cada **linha** deve ser uma ocorrência (um registro de um organismo em um lugar
 
 ::: {.callout-tip}
 ## Baixe a planilha de exemplo
-Para praticar esta e as próximas etapas, baixe [`ocorrencias-exemplo.csv`](../assets/exemplo/ocorrencias-exemplo.csv) — um conjunto de exemplo propositalmente imperfeito (várias colunas para mapear, uma coordenada invertida e um país em branco para corrigir na validação).
+Para praticar esta e as próximas etapas, baixe [`ocorrencias-exemplo.csv`](../assets/exemplo/ocorrencias-exemplo.csv), um conjunto de exemplo propositalmente imperfeito (várias colunas para mapear, uma coordenada invertida e um país em branco para corrigir na validação).
 :::
 
 Na aba **Upload**, arraste o arquivo para a área indicada ou clique para selecioná-lo.
 
 ```{=html}
-<ol class="steps">
+<ol class="fix-steps">
   <li><strong>Selecione o arquivo.</strong>
     <p>Solte o CSV ou o pacote de armadilha fotográfica na área de upload (ou clique para escolher).</p></li>
   <li><strong>Aguarde a leitura.</strong>
@@ -67,7 +67,7 @@ O Saíra assume que a **primeira linha** contém os nomes das colunas. Remova li
 Se seus dados vêm de armadilhas fotográficas (camera trap), o Saíra reconhece três formatos e os converte em uma tabela de ocorrências antes do mapeamento:
 
 - **Camtrap DP** (Camera Trap Data Package): o pacote `.zip` padronizado, com o descritor `datapackage.json` e as tabelas `deployments`, `observations` e (opcionalmente) `media`.
-- **CSVs de Camtrap DP soltos**: o mesmo conjunto de tabelas (`deployments.csv` + `observations.csv`, com `media.csv` opcional) num `.zip`, mas **sem o descritor** — o Saíra sintetiza um `datapackage.json` a partir dos CSVs encontrados.
+- **CSVs de Camtrap DP soltos**: o mesmo conjunto de tabelas (`deployments.csv` + `observations.csv`, com `media.csv` opcional) num `.zip`, mas **sem o descritor**: o Saíra sintetiza um `datapackage.json` a partir dos CSVs encontrados.
 - **Wildlife Insights**: a exportação da plataforma (`deployments.csv` + `projects.csv` + imagens), em que o Saíra renomeia as colunas para o formato Camtrap DP e deriva o nome científico (a partir de classe, ordem, família, gênero e espécie), a data/hora do registro e o tipo de observação.
 
 Em ambos os casos o Saíra monta um nome científico consistente e organiza os campos de tempo e local, para que o restante do fluxo (mapeamento, nomes, coordenadas) funcione igual ao de uma planilha comum.

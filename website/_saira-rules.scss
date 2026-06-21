@@ -287,10 +287,47 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
 .fix-steps li strong { font-weight: 600; }
 .fix-steps li p { margin: 0.3em 0 0; font-size: 1.02rem; color: var(--text-soft); }
 
+// =============================================================================
+//  Grade de cards da página de Tutoriais — cada etapa é um card clicável
+// =============================================================================
+.tut-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin: 1.8em 0;
+}
+.tut-card {
+  display: flex; flex-direction: column;
+  padding: 1.4rem 1.5rem 1.2rem;
+  border: 1px solid var(--border); border-radius: var(--r);
+  background: var(--surface); box-shadow: none; text-decoration: none;
+  transition: border-color .2s ease, transform .2s ease;
+}
+.tut-card:hover { border-color: var(--accent); transform: translateY(-2px); text-decoration: none; }
+.tut-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.85rem; }
+.tut-card-num {
+  font-family: var(--mono); font-weight: 700; font-size: 1.05rem; color: var(--accent);
+  background: var(--accent-soft); border-radius: 8px; padding: 0.1em 0.5em;
+}
+.tut-card-eyebrow { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft); }
+.tut-card-title { font-family: var(--serif); font-size: 1.32rem; font-weight: 600; color: var(--text); margin: 0 0 0.45rem; line-height: 1.25; }
+.tut-card-desc { font-size: 0.98rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+.tut-card-arrow { margin-top: auto; padding-top: 1rem; font-family: var(--mono); font-size: 1.1rem; color: var(--accent); align-self: flex-end; transition: transform .2s ease; }
+.tut-card:hover .tut-card-arrow { transform: translateX(4px); }
+@media (prefers-reduced-motion: reduce) {
+  .tut-card, .tut-card-arrow { transition: none; }
+  .tut-card:hover { transform: none; }
+  .tut-card:hover .tut-card-arrow { transform: none; }
+}
+
 // inline color dot for legend/category tables — fill set inline as a theme token
 .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--border); vertical-align: middle; margin-right: 8px; }
 
 .term { font-family: var(--mono); font-size: 0.86em; background: var(--accent-soft); color: var(--accent); padding: 0.1em 0.45em; border-radius: 6px; }
+
+// row of term chips (e.g. the fixed-value DwC terms) — wraps neatly with even spacing
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 1em 0 1.4em; }
+.chip-row .term { font-size: 0.82rem; padding: 0.32em 0.62em; }
 
 .maptable { width: 100%; border-collapse: collapse; margin: 1.4em 0; font-size: 0.95rem; }
 .maptable th { text-align: left; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-soft); padding: 10px 14px; border-bottom: 1px solid var(--border-strong); }
@@ -299,6 +336,27 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
 .maptable td .arrow { color: var(--primary-dark); }
 .maptable td:last-child { font-family: var(--mono); font-size: 0.82rem; color: var(--accent); font-weight: 700; }
 .maptable tr:hover td { background: var(--surface); }
+
+// plain Quarto/markdown tables (rendered as Bootstrap `table.table`) share the
+// maptable family look — mono uppercase headers, subtle borders, row hover — so
+// reference tables (technologies, FAQ) match the hand-built .maptable ones.
+table.table:not(.maptable) {
+  width: 100%; border-collapse: collapse; margin: 1.4em 0; font-size: 0.95rem;
+  --bs-table-bg: transparent; --bs-table-accent-bg: transparent; color: var(--text);
+}
+table.table:not(.maptable) > :not(caption) > * > th,
+table.table:not(.maptable) thead th {
+  text-align: left; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-soft); padding: 10px 14px;
+  border-bottom: 1px solid var(--border-strong); background: transparent; box-shadow: none;
+}
+table.table:not(.maptable) > :not(caption) > * > td,
+table.table:not(.maptable) tbody td {
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  background: transparent; box-shadow: none;
+}
+table.table:not(.maptable) tbody tr:hover td { background: var(--surface); }
+table.table:not(.maptable) code { font-family: var(--mono); }
 
 // screenshot placeholder
 .shot { margin: 1.8em 0; }
