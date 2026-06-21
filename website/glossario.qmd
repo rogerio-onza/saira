@@ -1,6 +1,6 @@
 ---
 title: "Glossário Darwin Core"
-pagetitle: "Glossário Darwin Core — Saíra"
+pagetitle: "Glossário Darwin Core · Saíra"
 ---
 
 ::: {.tut-standfirst}

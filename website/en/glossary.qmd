@@ -1,6 +1,6 @@
 ---
 title: "Darwin Core glossary"
-pagetitle: "Darwin Core glossary — Saíra"
+pagetitle: "Darwin Core glossary · Saíra"
 ---
 
 ::: {.tut-standfirst}

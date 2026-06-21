@@ -1,6 +1,6 @@
 ---
 title: "Validating scientific names"
-pagetitle: "Name validation — Saíra Tutorials"
+pagetitle: "Name validation · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
@@ -13,15 +13,20 @@ The same taxon can appear written in many ways: with typos, old synonyms, abbrev
 
 ## Choosing the reference database
 
-In the **Name validation** tab, Saíra offers three taxonomic databases. Select one or more — whichever suits your group:
+In the **Name validation** tab, Saíra offers three taxonomic databases. Select one or more, whichever suits your group:
 
-| Database | Coverage | When to use |
-|---|---|---|
-| **Flora do Brasil** | Plants, algae and fungi of Brazil | National botanical and mycological collections |
-| **Fauna do Brasil** | Animals of Brazil | National zoological collections |
-| **GBIF** *(recommended)* | Global taxonomic backbone | Any group, or when the taxon is not Brazilian |
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Database</th><th>Coverage</th><th>When to use</th></tr></thead>
+  <tbody>
+    <tr><td>Flora do Brasil</td><td>Plants, algae and fungi of Brazil</td><td>National botanical and mycological collections</td></tr>
+    <tr><td>Fauna do Brasil</td><td>Animals of Brazil</td><td>National zoological collections</td></tr>
+    <tr><td>GBIF (recommended)</td><td>Global taxonomic backbone</td><td>Any group, or when the taxon is not Brazilian</td></tr>
+  </tbody>
+</table>
+```
 
-When you select more than one database, Saíra queries them in a **cascade** — Flora do Brasil → Fauna do Brasil → GBIF — and uses the first provider that returns a result as the verdict. Under the hood, every lookup goes through the `taxadb` package.
+When you select more than one database, Saíra queries them in a **cascade** (Flora do Brasil → Fauna do Brasil → GBIF) and uses the first provider that returns a result as the verdict. Under the hood, every lookup goes through the `taxadb` package.
 
 ::: {.callout-note}
 ## Brazilian databases live on your computer
@@ -32,8 +37,8 @@ Flora do Brasil and Fauna do Brasil are **downloaded and stored locally** the fi
 
 Below the databases, two options control how each name is prepared before the lookup. Both are **on** by default:
 
-- **Remove authors** — drops authorship and year to improve cross-provider matching. E.g. `Harpia harpyja (Daudin, 1800)` becomes `Harpia harpyja`.
-- **Ignore sp., cf., aff., nr.** — ignores non-taxonomic qualifiers during normalization.
+- **Remove authors**: drops authorship and year to improve cross-provider matching. E.g. `Harpia harpyja (Daudin, 1800)` becomes `Harpia harpyja`.
+- **Ignore sp., cf., aff., nr.**: ignores non-taxonomic qualifiers during normalization.
 
 ```{=html}
 <figure class="shot">
@@ -54,7 +59,7 @@ When you click **Validate Names**, Saíra compares each <span class="term">scien
 Saíra **does not fix spelling on its own** nor guess the "closest" name: it only reports what the taxonomic database returns. Any correction comes from you.
 
 ```{=html}
-<ol class="steps">
+<ol class="fix-steps">
   <li><strong>Run the check.</strong>
     <p>Saíra processes the list of names (each distinct name is queried once) and shows a summary by status, with filters to isolate the problems.</p></li>
   <li><strong>Review the problems.</strong>
@@ -82,10 +87,10 @@ Saíra **does not fix spelling on its own** nor guess the "closest" name: it onl
 
 Correction is manual and happens in the **review modal**. Click a problem name and choose:
 
-- **Yes, this name is correct** — confirms the name as is; it will be exported exactly that way. Useful for recently described taxa or names missing from the database.
-- **No, I want to correct the name** — opens the **Name correction** field for you to type the right spelling, with an optional reason (e.g. typo in the original sheet, updated name according to publication).
+- **Yes, this name is correct**: confirms the name as is; it will be exported exactly that way. Useful for recently described taxa or names missing from the database.
+- **No, I want to correct the name**: opens the **Name correction** field for you to type the right spelling, with an optional reason (e.g. typo in the original sheet, updated name according to publication).
 
-The decision is **reapplied automatically** to every row with that same name — since validation groups identical names, you review each one only once and the correction holds for the whole dataset. This is what saves the most time on large sheets with the same repeated error.
+The decision is **reapplied automatically** to every row with that same name: since validation groups identical names, you review each one only once and the correction holds for the whole dataset. This is what saves the most time on large sheets with the same repeated error.
 
 ```{=html}
 <figure class="shot">
@@ -108,7 +113,7 @@ Saíra resolves names against the database, but authority belongs to the special
 
 ## Threatened species (MMA list)
 
-After resolving the names, Saíra compares each taxon against Brazil's **national list of species threatened with extinction**, which is **bundled with the app** — nothing to download. Taxa on the list get a **Sensitive** flag in the report, with the threat category: **VU** (vulnerable), **EN** (endangered), **CR** (critically endangered) and **CR (PEX)** (critically endangered, possibly extinct).
+After resolving the names, Saíra compares each taxon against Brazil's **national list of species threatened with extinction**, which is **bundled with the app** (nothing to download). Taxa on the list get a **Sensitive** flag in the report, with the threat category: **VU** (vulnerable), **EN** (endangered), **CR** (critically endangered) and **CR (PEX)** (critically endangered, possibly extinct).
 
 ::: {.callout-note}
 ## Where the list comes from
@@ -126,8 +131,8 @@ The bundled list comes from Brazil's Ministry of the Environment official lists:
 
 The MMA list is the starting point, not the final word. Each taxon carries a sensitivity control in the report that you can adjust according to your experience and the reality of your study region:
 
-- **Unmark a species from the list** — if, in your context, that record is not sensitive, unmark it. Saíra warns that this is a **custodian decision**: without the flag, that taxon's coordinates will be published without generalization.
-- **Mark a species that is not on the list** — use **+ mark** to flag as sensitive a taxon the national list does not cover but that you know to be vulnerable in your area.
+- **Unmark a species from the list**: if, in your context, that record is not sensitive, unmark it. Saíra warns that this is a **custodian decision**: without the flag, that taxon's coordinates will be published without generalization.
+- **Mark a species that is not on the list**: use **+ mark** to flag as sensitive a taxon the national list does not cover but that you know to be vulnerable in your area.
 
 The adjustment is made in a small confirmation dialog and applies at export.
 
@@ -138,11 +143,19 @@ The adjustment is made in a small confirmation dialog and applies at export.
 </figure>
 ```
 
-Here the step only **flags** what is sensitive. The actual protection of the coordinates — deciding whether and how much to generalize the location — happens in the **[generalization](06-generalization.qmd)** step, following Chapman's (2020) decision table.
+Here the step only **flags** what is sensitive. The actual protection of the coordinates (deciding whether and how much to generalize the location) happens in the **[generalization](06-generalization.qmd)** step, following Chapman's (2020) decision table.
 
 ## Conservation status goes to the export
 
-The databases you select here also decide which **conservation status** Saíra adds to the export's `dynamicProperties`: a **Brazilian** database contributes the **MMA** category (and the portaria that listed the taxon), and **GBIF** contributes the global **IUCN** category. A short line above the report tells you how many records will receive each one. The keys are written when you generate the package — see **[exporting](07-preview-export.qmd)**.
+::: {.callout-important}
+## The databases you pick decide the conservation status
+The databases you select here decide which **conservation status** Saíra writes to the export's `dynamicProperties`:
+
+- a **Brazilian** database (Flora BR / Fauna BR) contributes the **MMA** category (`mmaThreatStatus`) and the portaria that listed the taxon (`mmaSource`);
+- **GBIF** contributes the global **IUCN** category (`iucnRedListCategory`).
+
+A short line above the report tells you how many records will receive each one. **If you do not work with Brazilian species, select GBIF only** to get just the IUCN status. The keys are written when you generate the package (see **[exporting](07-preview-export.qmd)**).
+:::
 
 ## Next steps
 

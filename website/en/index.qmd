@@ -1,5 +1,5 @@
 ---
-pagetitle: "Saíra — Darwin Core for Brazilian Biodiversity"
+pagetitle: "Saíra · Darwin Core for Brazilian Biodiversity"
 page-layout: custom
 toc: false
 anchor-sections: false
@@ -70,7 +70,7 @@ anchor-sections: false
     <div class="flow-intro">
       <span class="eyebrow">Features</span>
       <h2>From raw spreadsheet<br>to a publishable <em>DwC-A</em></h2>
-      <p>Three moves, designed for curators and field researchers, <strong>not for programmers.</strong> Without touching a line of code.</p>
+      <p>Four moves, designed for curators and field researchers! Without touching a line of code.</p>
     </div>
     <ol class="flow-steps">
       <li class="flow-step" style="--step:#38CFF6">
@@ -78,7 +78,7 @@ anchor-sections: false
         <div class="flow-body">
           <span class="flow-num">01</span>
           <h3>Import any spreadsheet</h3>
-          <p>CSV, TSV or Excel, including camera-trap data. Saíra detects the encoding and separator on its own, opening files that Excel would scramble, and maps your columns to Darwin Core terms with automatic suggestions and reusable templates.</p>
+          <p>CSV, TSV or Excel, including camera-trap data. Saíra detects the encoding and separator on its own and maps your columns to Darwin Core terms with automatic suggestions and reusable templates.</p>
           <div class="proof">
             <span class="proof-in">broken accents · sep ";"</span>
             <span class="proof-arrow">→</span>
@@ -99,12 +99,25 @@ anchor-sections: false
           </div>
         </div>
       </li>
+      <li class="flow-step" style="--step:#6d28d9">
+        <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="10" r="2.2"/><path d="M12 12.2V15"/></svg></div>
+        <div class="flow-body">
+          <span class="flow-num">03</span>
+          <h3>Generalize sensitive species</h3>
+          <p>Reduce the coordinate precision of threatened taxa (national MMA list), species by species, following Chapman's (2020) decision table. It protects sensitive localities without discarding the record.</p>
+          <div class="proof">
+            <span class="proof-in">exact coordinate</span>
+            <span class="proof-arrow">→</span>
+            <span class="proof-out">reduced precision · Chapman</span>
+          </div>
+        </div>
+      </li>
       <li class="flow-step" style="--step:#2fc488">
         <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div>
         <div class="flow-body">
-          <span class="flow-num">03</span>
+          <span class="flow-num">04</span>
           <h3>Export a DwC-A ready for SiBBr</h3>
-          <p>Generate the complete Darwin Core Archive and automatically generalize the coordinates of threatened species (national MMA list) before publishing to SiBBr and GBIF.</p>
+          <p>Generate the complete Darwin Core Archive, with conservation status (MMA and IUCN) attached, ready to publish to SiBBr and GBIF.</p>
           <div class="flow-tags">
             <span class="flow-tag">occurrence.txt</span>
             <span class="flow-tag">meta.xml</span>

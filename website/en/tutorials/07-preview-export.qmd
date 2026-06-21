@@ -1,6 +1,6 @@
 ---
 title: "Preview and export"
-pagetitle: "DwC-A export — Saíra Tutorials"
+pagetitle: "DwC-A export · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
@@ -35,7 +35,7 @@ The **Export** tab is a **review hub**: before you download the package, it gath
 
 ### Export readiness
 
-At the top, an indicator says whether the dataset is **ready to publish** (green) or whether the **export is blocked** (red). When it blocks, Saíra lists what is missing — usually **required terms** left unfilled or **generalized species without the justification** required for Categories 1–3 — and offers a shortcut to resolve the pending item.
+At the top, an indicator says whether the dataset is **ready to publish** (green) or whether the **export is blocked** (red). When it blocks, Saíra lists what is missing (usually **required terms** left unfilled or **generalized species without the justification** required for Categories 1–3) and offers a shortcut to resolve the pending item.
 
 ```{=html}
 <figure class="shot">
@@ -60,14 +60,19 @@ A summary shows everything the previous steps adjusted, so you can check at a gl
 
 If you generalized any taxon in the [generalization](06-generalization.qmd) step, a table lists each **species**, its **threat (MMA)** and the **generalization level** that will go into the package:
 
-| Level (at export) | Grid |
-|---|---|
-| Country (~111 km) | Category 1 |
-| State (~11 km) | Category 2 |
-| City (~1 km) | Category 3 |
-| Local (~100 m) | Category 4 |
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Level (at export)</th><th></th><th>Grid</th></tr></thead>
+  <tbody>
+    <tr><td>Country (~111 km)</td><td><span class="arrow">→</span></td><td>Category 1</td></tr>
+    <tr><td>State (~11 km)</td><td><span class="arrow">→</span></td><td>Category 2</td></tr>
+    <tr><td>City (~1 km)</td><td><span class="arrow">→</span></td><td>Category 3</td></tr>
+    <tr><td>Local (~100 m)</td><td><span class="arrow">→</span></td><td>Category 4</td></tr>
+  </tbody>
+</table>
+```
 
-If nothing was generalized, Saíra records: *no species will be generalized — coordinates will be published as held*. The original, precise coordinates of generalized records do not go into the public package: they stay in a separate file (see **Bundle files**, below).
+If nothing was generalized, Saíra records: *no species will be generalized; coordinates will be published as held*. The original, precise coordinates of generalized records do not go into the public package: they stay in a separate file (see **Bundle files**, below).
 
 ## What Saíra adjusts at export
 
@@ -86,19 +91,53 @@ For each record of an assessed taxon, Saíra also writes its conservation status
 - a **Brazilian** database (Flora BR / Fauna BR) adds `mmaThreatStatus` (the threat category) and `mmaSource` (the portaria that listed the taxon);
 - **GBIF** adds `iucnRedListCategory` (the global IUCN code), looked up live on GBIF.
 
-Both can appear together — for example `{"mmaThreatStatus":"CR","mmaSource":"Portaria 1.704/2026","iucnRedListCategory":"NT"}` — and they merge into any `dynamicProperties` you mapped yourself. The GBIF lookup is best-effort: with no internet, or for a taxon GBIF does not assess, the IUCN key is simply omitted and the export proceeds normally.
+Both can appear together and they merge into any `dynamicProperties` you mapped yourself. For example:
+
+```json
+{"mmaThreatStatus":"CR","mmaSource":"Portaria 1.704/2026","iucnRedListCategory":"NT"}
+```
+
+The GBIF lookup is best-effort: with no internet, or for a taxon GBIF does not assess, the IUCN key is simply omitted and the export proceeds normally.
+
+::: {.callout-tip}
+## Not working with Brazilian species?
+Select **GBIF only** in name validation. Saíra then writes just `iucnRedListCategory` (global IUCN) and does not try to apply the MMA category, which covers Brazil's fauna and flora.
+:::
 
 ## Bundle files
 
-The download produces a `.zip` with two sets of files:
+The download produces a `.zip` (`<dataset>-dwc-archive.zip`) with two sets of files.
 
-- **Darwin Core Archive (IPT)** — what you send to the repository: <span class="term">occurrence.txt</span> (the data), <span class="term">meta.xml</span> (the descriptor that says what each column means) and <span class="term">eml.xml</span> (the dataset metadata).
-- **Auxiliary files** — for your own control, kept out of the public package: the **mapping template** (`mapping_guide_*.txt`) to reuse on future spreadsheets, and, when there are generalized species, the file with the **real, precise coordinates** of those records, which you keep but do not publish.
+The **Darwin Core Archive**, what you send to the repository:
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>File</th><th>What it is</th></tr></thead>
+  <tbody>
+    <tr><td>occurrence.txt</td><td>The data: the core of the Darwin Core Archive.</td></tr>
+    <tr><td>meta.xml</td><td>The descriptor that says what each column means.</td></tr>
+    <tr><td>eml.xml</td><td>The dataset metadata (title, institution, license).</td></tr>
+  </tbody>
+</table>
+```
+
+And the **auxiliary files**, for your own control, kept out of the public package:
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>File</th><th>What it is</th></tr></thead>
+  <tbody>
+    <tr><td>&lt;dataset&gt;-occurrences.xlsx</td><td>An Excel mirror, with every cell forced to text.</td></tr>
+    <tr><td>&lt;dataset&gt;-mapping-guide.txt</td><td>The "your column → Darwin Core term" template, to reuse.</td></tr>
+    <tr><td>&lt;dataset&gt;-sensitive-coords.csv</td><td>The real, precise coordinates of generalized records. Only present when there is generalization; you keep it, but do not publish it.</td></tr>
+  </tbody>
+</table>
+```
 
 ## Generating the Darwin Core Archive
 
 ```{=html}
-<ol class="steps">
+<ol class="fix-steps">
   <li><strong>Review the metadata (EML).</strong>
     <p>Fill in the dataset title, institution, license and responsible parties; they go into <span class="term">eml.xml</span> and describe the dataset to whoever finds it.</p></li>
   <li><strong>Generate the archive.</strong>
@@ -115,7 +154,7 @@ It is a standardized `.zip` package: a data file (<span class="term">occurrence.
 
 ::: {.callout-tip}
 ## A reusable template comes along
-The `.zip` also includes a **mapping template** (`mapping_guide_*.txt`): the "your column → Darwin Core term" record of the mapping you did, with no data. Keep it to auto-map future spreadsheets with the same structure, via **Import template** (see [Darwin Core mapping](03-dwc-mapping.qmd)).
+The `.zip` also includes a **mapping template** (`<dataset>-mapping-guide.txt`): the "your column → Darwin Core term" record of the mapping you did, with no data. Keep it to auto-map future spreadsheets with the same structure, via **Import template** (see [Darwin Core mapping](03-dwc-mapping.qmd)).
 :::
 
 ::: {.callout-note}

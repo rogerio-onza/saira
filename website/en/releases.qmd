@@ -1,6 +1,6 @@
 ---
 title: "Releases"
-pagetitle: "Releases — Saíra"
+pagetitle: "Releases · Saíra"
 toc: false
 ---
 

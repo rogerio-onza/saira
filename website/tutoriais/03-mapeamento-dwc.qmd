@@ -1,6 +1,6 @@
 ---
 title: "Mapeando campos para Darwin Core"
-pagetitle: "Mapeamento Darwin Core — Tutoriais Saíra"
+pagetitle: "Mapeamento Darwin Core · Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
@@ -22,7 +22,7 @@ O Saíra sugere correspondências automaticamente a partir do nome e do conteúd
 
 ::: {.callout-note}
 ## A decisão final é sempre sua
-O Saíra **sugere**, mas quem decide é você. Toda sugestão pode ser confirmada, trocada ou descartada — nada é aplicado sem a sua revisão.
+O Saíra **sugere**, mas quem decide é você. Toda sugestão pode ser confirmada, trocada ou descartada; nada é aplicado sem a sua revisão.
 :::
 
 ## Auto-mapeamento
@@ -36,22 +36,35 @@ O botão **Auto-mapear**, na barra de ações, percorre todas as colunas de uma 
 </figure>
 ```
 
-- **AUTO**: alta confiança (score alto e tipo de dado compatível); já vem preenchido.
-- **SUGERIDO**: correspondência provável; confirme ou ajuste antes de seguir.
-- **EDITADO**: você ajustou manualmente; a sua escolha prevalece sobre as sugestões.
+Cada card recebe um **selo de status**. Você verá sete, conforme a origem da correspondência:
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Selo</th><th>O que significa</th></tr></thead>
+  <tbody>
+    <tr><td><span class="swatch" style="background:var(--success)"></span>AUTO</td><td>Alta confiança (score alto e tipo de dado compatível). Já vem preenchido.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--warning)"></span>SUGERIDO</td><td>Correspondência provável. Confirme ou ajuste antes de seguir.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--coord-reference)"></span>AMBÍGUO</td><td>Dois ou mais termos com confiança parecida. O Saíra não escolhe sozinho.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--info)"></span>EDITADO</td><td>Você ajustou manualmente. Sua escolha prevalece sobre as sugestões.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--primary)"></span>ALIAS</td><td>Reconhecido por um alias salvo de um mapeamento anterior.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--primary-dark)"></span>TEMPLATE</td><td>Veio de um modelo (template) importado.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--coord-missing)"></span>MANUAL</td><td>Definido por você, ou deixado sem mapear, sem sugestão automática.</td></tr>
+  </tbody>
+</table>
+```
 
 Ao fim, o Saíra mostra um resumo (por exemplo, "12 AUTO, 5 SUGERIDO"). Revise os SUGERIDO com atenção e confirme ou corrija cada um.
 
 ```{=html}
-<ol class="steps">
+<ol class="fix-steps">
   <li><strong>Rode o auto-mapeamento.</strong>
     <p>Clique em <span class="term">Auto-mapear</span>. Campos com alta confiança aparecem preenchidos e marcados como AUTO.</p></li>
   <li><strong>Revise os sugeridos.</strong>
     <p>Para cada coluna marcada como SUGERIDO, confirme o termo ou troque-o no seletor.</p></li>
   <li><strong>Resolva os campos não mapeados.</strong>
-    <p>Colunas sem correspondência clara ficam destacadas. Escolha o termo Darwin Core correspondente ou <strong>deixe a coluna sem mapear</strong> — ela é preservada na exportação (ver abaixo).</p></li>
+    <p>Colunas sem correspondência clara ficam destacadas. Escolha o termo Darwin Core correspondente ou <strong>deixe a coluna sem mapear</strong>: ela é preservada na exportação (ver abaixo).</p></li>
   <li><strong>Defina o basisOfRecord.</strong>
-    <p>Use o assistente (ver abaixo) para mapear o tipo de registro a partir de uma coluna (ex.: <span class="term">tipo_de_registro</span>), associando cada valor — Espécime, Observação, Armadilha — ao termo Darwin Core.</p></li>
+    <p>Use o assistente (ver abaixo) para mapear o tipo de registro a partir de uma coluna (ex.: <span class="term">tipo_de_registro</span>), associando cada valor (Espécime, Observação, Armadilha) ao termo Darwin Core.</p></li>
   <li><strong>Confira a pré-visualização.</strong>
     <p>O painel inferior mostra as primeiras linhas já com os nomes Darwin Core, para você validar antes de seguir.</p></li>
 </ol>
@@ -104,9 +117,9 @@ A tabela abaixo mostra um mapeamento típico de uma coleção ornitológica:
 
 ## Modelos (templates)
 
-Você não precisa salvar o mapeamento à mão. Quando você baixa a planilha padronizada (ver [Pré-visualização e exportação](07-preview-exportacao.qmd)), o Saíra inclui no `.zip` um **modelo**: um arquivo de texto (`mapping_guide_*.txt`) que registra apenas o vocabulário "sua coluna → termo Darwin Core", sem nenhum dado. É o seu mapeamento guardado, pronto para reusar mais tarde ou repassar a outra pessoa da equipe.
+Você não precisa salvar o mapeamento à mão. Quando você baixa a planilha padronizada (ver [Pré-visualização e exportação](07-preview-exportacao.qmd)), o Saíra inclui no `.zip` um **modelo**: um arquivo de texto (`<dataset>-mapping-guide.txt`) que registra apenas o vocabulário "sua coluna → termo Darwin Core", sem nenhum dado. É o seu mapeamento guardado, pronto para reusar mais tarde ou repassar a outra pessoa da equipe.
 
-Para reaproveitar, abra o mapeamento de uma nova planilha e clique em **Importar modelo** na barra de ações. Cada linha do modelo é salva como alias no seu Rostrum local, então colunas com o mesmo nome são mapeadas automaticamente — você só revisa o que mudou.
+Para reaproveitar, abra o mapeamento de uma nova planilha e clique em **Importar modelo** na barra de ações. Cada linha do modelo é salva como alias no seu Rostrum local, então colunas com o mesmo nome são mapeadas automaticamente: você só revisa o que mudou.
 
 ```{=html}
 <figure class="shot">
@@ -115,7 +128,7 @@ Para reaproveitar, abra o mapeamento de uma nova planilha e clique em **Importar
 </figure>
 <figure class="shot">
   <img src="../assets/img/7.1-importar-modelo-pop-up.png" alt="Janela 'Importar modelo de mapeamento' com o seletor de arquivo .txt">
-  <figcaption><b>Figura 7.</b> A janela <b>Importar modelo de mapeamento</b>: selecione o arquivo <code>mapping_guide_*.txt</code> que veio no <code>.zip</code> e confirme. Cada linha vira um alias para auto-mapear planilhas futuras.</figcaption>
+  <figcaption><b>Figura 7.</b> A janela <b>Importar modelo de mapeamento</b>: selecione o arquivo <code><dataset>-mapping-guide.txt</code> que veio no <code>.zip</code> e confirme. Cada linha vira um alias para auto-mapear planilhas futuras.</figcaption>
 </figure>
 ```
 
@@ -126,7 +139,7 @@ Coleções costumam reimportar planilhas com a mesma estrutura. Reaplicar o mode
 
 ## O assistente de basisOfRecord
 
-O termo <span class="term">basisOfRecord</span> descreve a natureza do registro: espécime preservado, observação humana, material fóssil, registro de máquina (armadilha fotográfica), entre outros. Em vez de um valor único para o lote, o Saíra traz um **assistente** que parte de uma coluna da sua planilha (por exemplo, <span class="term">tipo_de_registro</span>) e deixa você associar **cada valor distinto** ao termo Darwin Core correspondente, explicando cada opção em linguagem simples — assim você não precisa decorar os valores controlados do padrão.
+O termo <span class="term">basisOfRecord</span> descreve a natureza do registro: espécime preservado, observação humana, material fóssil, registro de máquina (armadilha fotográfica), entre outros. Em vez de um valor único para o lote, o Saíra traz um **assistente** que parte de uma coluna da sua planilha (por exemplo, <span class="term">tipo_de_registro</span>) e deixa você associar **cada valor distinto** ao termo Darwin Core correspondente, explicando cada opção em linguagem simples, para você não precisar decorar os valores controlados do padrão.
 
 ```{=html}
 <figure class="shot">
@@ -135,43 +148,64 @@ O termo <span class="term">basisOfRecord</span> descreve a natureza do registro:
 </figure>
 ```
 
-| Seu valor na planilha | Termo Darwin Core |
-|---|---|
-| Material tombado em coleção | `PreservedSpecimen` |
-| Observação em campo (sem coleta) | `HumanObservation` |
-| Foto de armadilha fotográfica | `MachineObservation` |
-| Material fóssil | `FossilSpecimen` |
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Seu valor na planilha</th><th></th><th>Termo Darwin Core</th></tr></thead>
+  <tbody>
+    <tr><td>Material tombado em coleção</td><td><span class="arrow">→</span></td><td>PreservedSpecimen</td></tr>
+    <tr><td>Observação em campo (sem coleta)</td><td><span class="arrow">→</span></td><td>HumanObservation</td></tr>
+    <tr><td>Foto de armadilha fotográfica</td><td><span class="arrow">→</span></td><td>MachineObservation</td></tr>
+    <tr><td>Material fóssil</td><td><span class="arrow">→</span></td><td>FossilSpecimen</td></tr>
+  </tbody>
+</table>
+```
 
 ```{=html}
 <figure class="shot">
   <img src="../assets/img/5.1-assistente-basisOfRecord.png" alt="Janela do assistente de basisOfRecord mapeando cada valor bruto para um termo DwC, com prévia ao vivo">
-  <figcaption><b>Figura 9.</b> O assistente mapeia <b>cada valor</b> para um termo DwC — Espécime preservado → PreservedSpecimen, Observação → HumanObservation, Armadilha fotográfica → MachineObservation — com prévia ao vivo antes de salvar.</figcaption>
+  <figcaption><b>Figura 9.</b> O assistente mapeia <b>cada valor</b> para um termo DwC (Espécime preservado → PreservedSpecimen, Observação → HumanObservation, Armadilha fotográfica → MachineObservation), com prévia ao vivo antes de salvar.</figcaption>
 </figure>
 ```
 
 ## Valores fixos para todo o conjunto
 
-Alguns termos descrevem o **conjunto inteiro**, não cada registro: quem detém os direitos (<span class="term">rightsHolder</span>), a instituição e a coleção (<span class="term">institutionCode</span>, <span class="term">collectionCode</span>), o país (<span class="term">country</span>), uma referência ou citação (<span class="term">references</span>, <span class="term">bibliographicCitation</span>) ou o datum geodésico (<span class="term">geodeticDatum</span>). Em vez de criar uma coluna repetida na planilha, marque **Usar um valor fixo** no card do termo e digite o valor uma vez — o Saíra o aplica a **todas as linhas** na exportação. O card permanece igual ao normal até você marcar a opção, então nada polui a tela à toa. Como mapear uma coluna e usar um valor fixo são alternativas (um **OU** separa as duas), marcar a opção esconde o seletor de coluna — assim o valor fixo nunca sobrescreve em silêncio uma coluna que você já havia mapeado.
+Alguns termos descrevem o **conjunto inteiro**, não cada registro. Em vez de repetir o valor em todas as linhas da planilha, marque **Usar um valor fixo** no card do termo e digite o valor uma vez: o Saíra o aplica a **todas as linhas** na exportação.
+
+Sete termos aceitam valor fixo:
+
+```{=html}
+<p class="chip-row">
+  <span class="term">rightsHolder</span>
+  <span class="term">institutionCode</span>
+  <span class="term">collectionCode</span>
+  <span class="term">country</span>
+  <span class="term">references</span>
+  <span class="term">bibliographicCitation</span>
+  <span class="term">geodeticDatum</span>
+</p>
+```
+
+Mapear uma coluna e usar um valor fixo são alternativas (um **OU** separa as duas): ao marcar a opção, o seletor de coluna some, então o valor fixo nunca sobrescreve em silêncio uma coluna já mapeada. O campo de texto só aparece depois que você marca a opção, sem poluir a tela à toa.
 
 ```{=html}
 <figure class="shot">
   <img src="../assets/img/8-valor-fixo-checkbox.png" alt="Card rightsHolder com a opção 'Usar um valor fixo' marcada, revelando o campo de texto e a faixa de aviso">
-  <figcaption><b>Figura 10.</b> No card de um termo elegível, marque <b>Usar um valor fixo</b> e digite o valor uma vez. <i>(placeholder — substitua pela captura de tela.)</i></figcaption>
+  <figcaption><b>Figura 10.</b> No card de um termo elegível, marque <b>Usar um valor fixo</b> e digite o valor uma vez.</figcaption>
 </figure>
 <figure class="shot">
   <img src="../assets/img/8.1-valor-fixo-faixa-todas-linhas.png" alt="Detalhe da faixa de aviso informando que o valor preenche todas as linhas do campo">
-  <figcaption><b>Figura 11.</b> A faixa de aviso deixa claro que o valor preenche <b>todas as linhas</b> daquele campo. <i>(placeholder — substitua pela captura de tela.)</i></figcaption>
+  <figcaption><b>Figura 11.</b> A faixa de aviso deixa claro que o valor preenche <b>todas as linhas</b> daquele campo.</figcaption>
 </figure>
 ```
 
 ::: {.callout-note}
 ## Termos que não aparecem por padrão
-<span class="term">references</span>, <span class="term">bibliographicCitation</span> e <span class="term">geodeticDatum</span> não vêm no conjunto-base de cards. Inclua-os com **Adicionar termo** (ver acima) e a opção de valor fixo aparece no card assim que o termo é adicionado. Já <span class="term">countryCode</span> é preenchido automaticamente na validação de coordenadas, e <span class="term">basisOfRecord</span> tem o próprio assistente — por isso esses dois não usam valor fixo.
+<span class="term">references</span>, <span class="term">bibliographicCitation</span> e <span class="term">geodeticDatum</span> não vêm no conjunto-base de cards. Inclua-os com **Adicionar termo** (ver acima) e a opção de valor fixo aparece no card assim que o termo é adicionado. Já <span class="term">countryCode</span> é preenchido automaticamente na validação de coordenadas, e <span class="term">basisOfRecord</span> tem o próprio assistente, então esses dois não usam valor fixo.
 :::
 
 ## Colunas não mapeadas
 
-Nem toda coluna precisa virar um termo Darwin Core — basta deixá-la sem mapear. Na exportação, o Saíra **anexa à direita** as colunas que você não usou como fonte de nenhum termo, preservando o nome e a ordem originais, para que nenhum dado se perca: você pode editá-las à mão depois, já no IPT.
+Nem toda coluna precisa virar um termo Darwin Core: basta deixá-la sem mapear. Na exportação, o Saíra **anexa à direita** as colunas que você não usou como fonte de nenhum termo, preservando o nome e a ordem originais, para que nenhum dado se perca: você pode editá-las à mão depois, já no IPT.
 
 ## Próximos passos
 

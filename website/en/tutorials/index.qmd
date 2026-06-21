@@ -1,6 +1,6 @@
 ---
 title: "Tutorials"
-pagetitle: "Tutorials — Saíra"
+pagetitle: "Tutorials · Saíra"
 toc: false
 ---
 
@@ -8,17 +8,56 @@ toc: false
 Step-by-step guides to take your occurrence spreadsheet from the field notebook to a Darwin Core Archive, following the same workflow as the application, step by step.
 :::
 
-The tutorials follow Saíra's workflow, step by step. Use the **sidebar** on the left to move between them and the **previous / next** buttons at the bottom of each page: the reading flows continuously, from installation to the final export. Each step can also be read on its own.
+The tutorials follow Saíra's workflow, step by step. Move between them with the **sidebar** or the **previous / next** buttons at the bottom of each page. Each step can also be read on its own.
 
 ## The workflow, from raw data to DwC-A
 
-1. **[Installation and first steps](01-installation.qmd)**: install Saíra from GitHub and open the application in your browser.
-2. **[Importing your data](02-upload.qmd)**: load CSV or Excel spreadsheets (or a camera-trap package) and run a first inspection of the columns.
-3. **[Mapping fields to Darwin Core](03-dwc-mapping.qmd)**: match each column to a Darwin Core term with automatic suggestions, templates and the `basisOfRecord` assistant.
-4. **[Validating scientific names](04-name-validation.qmd)**: check nomenclature against Flora do Brasil, Fauna do Brasil or GBIF, resolve synonyms, correct names and see which taxa are threatened per the national MMA list.
-5. **[Validating coordinates](05-coordinate-validation.qmd)**: find missing, swapped or transposed coordinates, fill the country from the point and review on the map.
-6. **[Generalizing sensitive species](06-generalization.qmd)**: decide, species by species, whether and how much to reduce coordinate precision for threatened taxa, following Chapman's (2020) decision table.
-7. **[Preview and export](07-preview-export.qmd)**: review the result and the corrections and generate the Darwin Core Archive.
+```{=html}
+<div class="tut-grid">
+  <a class="tut-card" href="01-installation.html">
+    <div class="tut-card-top"><span class="tut-card-num">01</span><span class="tut-card-eyebrow">Step</span></div>
+    <h3 class="tut-card-title">Installation and first steps</h3>
+    <p class="tut-card-desc">Install Saíra from GitHub and open the app in your browser.</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+  <a class="tut-card" href="02-upload.html">
+    <div class="tut-card-top"><span class="tut-card-num">02</span><span class="tut-card-eyebrow">Step</span></div>
+    <h3 class="tut-card-title">Importing your data</h3>
+    <p class="tut-card-desc">Load CSV, TSV, Excel or a camera-trap package.</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+  <a class="tut-card" href="03-dwc-mapping.html">
+    <div class="tut-card-top"><span class="tut-card-num">03</span><span class="tut-card-eyebrow">Step</span></div>
+    <h3 class="tut-card-title">Mapping fields to Darwin Core</h3>
+    <p class="tut-card-desc">Match each column to a Darwin Core term, with automatic suggestions.</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+  <a class="tut-card" href="04-name-validation.html">
+    <div class="tut-card-top"><span class="tut-card-num">04</span><span class="tut-card-eyebrow">Step</span></div>
+    <h3 class="tut-card-title">Validating scientific names</h3>
+    <p class="tut-card-desc">Check nomenclature, resolve synonyms and see threatened taxa.</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+  <a class="tut-card" href="05-coordinate-validation.html">
+    <div class="tut-card-top"><span class="tut-card-num">05</span><span class="tut-card-eyebrow">Step</span></div>
+    <h3 class="tut-card-title">Validating coordinates</h3>
+    <p class="tut-card-desc">Find missing, swapped or transposed coordinates and review on the map.</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+  <a class="tut-card" href="06-generalization.html">
+    <div class="tut-card-top"><span class="tut-card-num">06</span><span class="tut-card-eyebrow">Step</span></div>
+    <h3 class="tut-card-title">Generalizing sensitive species</h3>
+    <p class="tut-card-desc">Reduce coordinate precision for threatened taxa (Chapman 2020).</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+  <a class="tut-card" href="07-preview-export.html">
+    <div class="tut-card-top"><span class="tut-card-num">07</span><span class="tut-card-eyebrow">Step</span></div>
+    <h3 class="tut-card-title">Preview and export</h3>
+    <p class="tut-card-desc">Review the result and the corrections and generate the Darwin Core Archive.</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+</div>
+```
 
 ::: {.callout-note}
 ## The workflow is flexible

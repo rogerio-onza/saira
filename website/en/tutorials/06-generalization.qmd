@@ -1,15 +1,15 @@
 ---
 title: "Generalizing sensitive species"
-pagetitle: "Sensitive-species generalization — Saíra Tutorials"
+pagetitle: "Sensitive-species generalization · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-Publishing the exact location of a threatened species can expose it to collection or persecution. In this step Saíra helps you decide, species by species, **whether** and **how much** to reduce coordinate precision before publishing — following the GBIF best practices described by Chapman (2020).
+Publishing the exact location of a threatened species can expose it to collection or persecution. In this step Saíra helps you decide, species by species, **whether** and **how much** to reduce coordinate precision before publishing, following the GBIF best practices described by Chapman (2020).
 :::
 
 ## When this step appears
 
-The **Generalization** tab only has work to do when [name validation](04-name-validation.qmd) flagged records of **threatened species** — the taxa on the national MMA list, plus any species you marked as sensitive by hand. Those are the records that arrive here for assessment.
+The **Generalization** tab only has work to do when [name validation](04-name-validation.qmd) flagged records of **threatened species** (the taxa on the national MMA list, plus any species you marked as sensitive by hand). Those are the records that arrive here for assessment.
 
 If no sensitive taxon was detected, there is nothing to generalize: Saíra tells you so and you go straight to export, publishing the coordinates as they are.
 
@@ -29,26 +29,26 @@ Precise data has **greater scientific value**. Generalizing is the exception, no
 
 For the set of sensitive records, Saíra offers two paths:
 
-- **Publish original coordinates** *(recommended)* — keeps the full precision. The right choice in most cases.
-- **Assess sensitivity** — opens Chapman's decision table to determine, with no guessing, the generalization level of each threat group.
+- **Publish original coordinates** *(recommended)*: keeps the full precision. The right choice in most cases.
+- **Assess sensitivity**: opens Chapman's decision table to determine, with no guessing, the generalization level of each threat group.
 
 ::: {.callout-important}
 ## DO NOT GENERALIZE WILDLIFE INSIGHTS DATA TWICE
-**Wildlife Insights already obfuscates the coordinates of sensitive species** on export. If your dataset came from there and you flagged those species as sensitive, **choose "Publish original coordinates" and do NOT apply Saíra's generalization**. Generalizing again would degrade the location **TWICE** — losing precision needlessly with no added protection.
+**Wildlife Insights already obfuscates the coordinates of sensitive species** on export. If your dataset came from there and you flagged those species as sensitive, **choose "Publish original coordinates" and do NOT apply Saíra's generalization**. Generalizing again would degrade the location **TWICE**, losing precision needlessly with no added protection.
 :::
 
 ## The decision table (Chapman's Table 5)
 
-When you choose **Assess sensitivity**, the species appear grouped by **MMA threat category** (CR, EN, VU…), plus a group for the species you flagged by hand. For each group you answer a short **cascade of questions** — from the most general to the most specific. The first "Yes" sets the level; the species in that group inherit the level it determines.
+When you choose **Assess sensitivity**, the species appear grouped by **MMA threat category** (CR, EN, VU…), plus a group for the species you flagged by hand. For each group you answer a short **cascade of questions**, from the most general to the most specific. The first "Yes" sets the level; the species in that group inherit the level it determines.
 
 ```{=html}
-<ol class="steps">
+<ol class="fix-steps">
   <li><strong>Would providing locations finer than ~11 km (0.1°) subject the species to disturbance or exploitation?</strong>
-    <p><b>Yes →</b> Category 2 — High (0.1°). <b>No →</b> move on to the next question.</p></li>
+    <p><b>Yes →</b> Category 2 (High, 0.1°). <b>No →</b> move on to the next question.</p></li>
   <li><strong>Would providing locations finer than ~1 km (0.01°) subject the species to collection or deliberate damage?</strong>
-    <p><b>Yes →</b> Category 3 — Medium (0.01°). <b>No →</b> move on to the next question.</p></li>
+    <p><b>Yes →</b> Category 3 (Medium, 0.01°). <b>No →</b> move on to the next question.</p></li>
   <li><strong>Is there low-to-medium threat if locations finer than ~100 m (0.001°) become publicly available?</strong>
-    <p><b>Yes →</b> Category 4 — Low (0.001°). <b>No →</b> the group is treated as <b>not sensitive</b> and its coordinates are published unmasked.</p></li>
+    <p><b>Yes →</b> Category 4 (Low, 0.001°). <b>No →</b> the group is treated as <b>not sensitive</b> and its coordinates are published unmasked.</p></li>
 </ol>
 ```
 
@@ -66,31 +66,36 @@ Until a group is assessed, Saíra shows how many species are still pending and w
 
 ### The four levels (Chapman's Table 7)
 
-Each category maps to a generalization **grid**: the coordinate is shifted to the centre of a cell of that size. The larger the grid, the less precise — and less useful — the locality becomes.
+Each category maps to a generalization **grid**: the coordinate is shifted to the centre of a cell of that size. The larger the grid, the less precise (and less useful) the locality becomes.
 
-| Level | Generalization grid | Spatial result |
-|---|---|---|
-| **Category 1 — Extreme** | 1° (~111 km) | Country or region |
-| **Category 2 — High** | 0.1° (~11 km) | State or province |
-| **Category 3 — Medium** | 0.01° (~1 km) | City or district |
-| **Category 4 — Low** | 0.001° (~100 m) | Local area |
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Level</th><th>Generalization grid</th><th>Spatial result</th></tr></thead>
+  <tbody>
+    <tr><td>Category 1 · Extreme</td><td>1° (~111 km)</td><td>Country or region</td></tr>
+    <tr><td>Category 2 · High</td><td>0.1° (~11 km)</td><td>State or province</td></tr>
+    <tr><td>Category 3 · Medium</td><td>0.01° (~1 km)</td><td>City or district</td></tr>
+    <tr><td>Category 4 · Low</td><td>0.001° (~100 m)</td><td>Local area</td></tr>
+  </tbody>
+</table>
+```
 
-: Generalization levels (Table 7, Chapman 2020 / GBIF)
+*Generalization levels (Table 7, Chapman 2020 / GBIF).*
 
 ::: {.callout-note}
 ## Generalization never increases precision
-Generalizing *reduces* precision — it never invents it (Chapman 2020, §4.1). If a coordinate is already *less* precise than the category you picked — say, a coordinate from a paper with only two decimal places (~1 km) while you chose Category 4 (~100 m) — Saíra **publishes it at the data's real precision** (the grid is never finer than the original) instead of rounding to a false 100 m precision. The record is **still protected**: it gets <span class="term">informationWithheld</span>, the generalized cell, the uncertainty radius, and the locality fields scrubbed. <span class="term">dataGeneralizations</span> records **both precisions** — the one provided and the one originally retained by the custodian (Chapman §4.3 and §5.1). A banner on the tab counts how many records were published at the data's real precision.
+Generalizing *reduces* precision, it never invents it (Chapman 2020, §4.1). If a coordinate is already *less* precise than the category you picked (say, a coordinate from a paper with only two decimal places, ~1 km, while you chose Category 4, ~100 m), Saíra **publishes it at the data's real precision** (the grid is never finer than the original) instead of rounding to a false 100 m precision. The record is **still protected**: it gets <span class="term">informationWithheld</span>, the generalized cell, the uncertainty radius, and the locality fields scrubbed. <span class="term">dataGeneralizations</span> records **both precisions**: the one provided and the one originally retained by the custodian (Chapman §4.3 and §5.1). A banner on the tab counts how many records were published at the data's real precision.
 :::
 
 ## Per-species exceptions
 
-The group decision is the starting point, not the final word. Under **Per-species exceptions** you can assess a single taxon — answering the same cascade — and override the level inherited from the group. Use this when one species in the group deserves different treatment from the rest.
+The group decision is the starting point, not the final word. Under **Per-species exceptions** you can assess a single taxon (answering the same cascade) and override the level inherited from the group. Use this when one species in the group deserves different treatment from the rest.
 
-**Category 1 — Extreme (~111 km)** can only be assigned here, as an exception, through its own button. It is the only path to the extreme level, reserved for low-mobility or endemic species for which even general locality information is a risk.
+**Category 1, Extreme (~111 km),** can only be assigned here, as an exception, through its own button. It is the only path to the extreme level, reserved for low-mobility or endemic species for which even general locality information is a risk.
 
 ::: {.callout-warning}
 ## Category 1 destroys almost all spatial value
-At ~111 km the record loses almost all usefulness for spatial analysis and distribution modeling. **Do not use it** merely to mask localities the local community already knows — reserve it for extreme cases of threat to the species.
+At ~111 km the record loses almost all usefulness for spatial analysis and distribution modeling. **Do not use it** merely to mask localities the local community already knows: reserve it for extreme cases of threat to the species.
 :::
 
 ## Mandatory justification
@@ -110,8 +115,8 @@ On the right, the map shows the effect of each decision before you confirm it: t
 
 The colour warns about a common pitfall of generalization:
 
-- **Orange** — the generalized cell stays inside the country of origin.
-- **Red** — the generalized cell **crosses the border** and the point leaves its country of origin. In that case, **choose a less aggressive level** (a smaller grid), because a coordinate that changed country is worse than one that is merely imprecise.
+- **Orange**: the generalized cell stays inside the country of origin.
+- **Red**: the generalized cell **crosses the border** and the point leaves its country of origin. In that case, **choose a less aggressive level** (a smaller grid), because a coordinate that changed country is worse than one that is merely imprecise.
 
 ```{=html}
 <figure class="shot">
@@ -127,7 +132,7 @@ Sensitivity changes over time: risk can rise or disappear. Chapman recommends **
 
 ## What ends up in the package
 
-On generalized records, Saíra publishes the **cell coordinate** (not the original), fills <span class="term">coordinateUncertaintyInMeters</span> and <span class="term">dataGeneralizations</span>, and **blanks the fields that could reveal the exact locality** (verbatim coordinates and the like). The **original, precise coordinates** of those records do not go into the public package: they stay in a **separate file**, under your control, so you never lose the precise data.
+On generalized records, Saíra publishes the **cell coordinate** (not the original), fills <span class="term">coordinateUncertaintyInMeters</span>, <span class="term">dataGeneralizations</span> and <span class="term">informationWithheld</span>, and **blanks the fields that could reveal the exact locality** (verbatim coordinates and the like). The **original, precise coordinates** of those records do not go into the public `occurrence.txt`: they stay in a **separate file** inside the same `.zip` (`<dataset>-sensitive-coords.csv`), under your control, so you never lose the precise data.
 
 With the decisions made, go to **[export](07-preview-export.qmd)**, where you review everything and generate the Darwin Core Archive.
 
@@ -135,8 +140,8 @@ With the decisions made, go to **[export](07-preview-export.qmd)**, where you re
 
 The rules in this step follow three GBIF best-practice documents:
 
-- Chapman, A. D. (2020). *Current Best Practices for Generalizing Sensitive Species Occurrence Data.* Copenhagen: GBIF Secretariat. <https://doi.org/10.15468/doc-5jp4-5g10> — Table 5 (decision cascade) and Table 7 (generalization grid).
-- Chapman, A. D., & Wieczorek, J. R. (2020). *Georeferencing Best Practices.* Copenhagen: GBIF Secretariat. <https://doi.org/10.15468/doc-gg7h-s853> — sec. 2.3.4 (point-radius uncertainty).
+- Chapman, A. D. (2020). *Current Best Practices for Generalizing Sensitive Species Occurrence Data.* Copenhagen: GBIF Secretariat. <https://doi.org/10.15468/doc-5jp4-5g10> (Table 5, decision cascade; Table 7, generalization grid).
+- Chapman, A. D., & Wieczorek, J. R. (2020). *Georeferencing Best Practices.* Copenhagen: GBIF Secretariat. <https://doi.org/10.15468/doc-gg7h-s853> (sec. 2.3.4, point-radius uncertainty).
 - Zermoglio, P. F., Chapman, A. D., Wieczorek, J. R., Luna, M. C., & Bloom, D. A. (2020). *Georeferencing Quick Reference Guide.* Copenhagen: GBIF Secretariat. <https://doi.org/10.35035/e09p-h128>
 
 ## Next steps

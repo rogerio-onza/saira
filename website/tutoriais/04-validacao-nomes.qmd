@@ -1,6 +1,6 @@
 ---
 title: "Validando nomes científicos"
-pagetitle: "Validação de nomes — Tutoriais Saíra"
+pagetitle: "Validação de nomes · Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
@@ -13,15 +13,20 @@ Um mesmo táxon pode aparecer escrito de muitas formas: com erros de digitação
 
 ## Escolhendo a base de referência
 
-Na aba **Validação de nomes**, o Saíra oferece três bases taxonômicas. Marque uma ou mais — a mais adequada ao seu grupo:
+Na aba **Validação de nomes**, o Saíra oferece três bases taxonômicas. Marque uma ou mais, a mais adequada ao seu grupo:
 
-| Base | Cobertura | Quando usar |
-|---|---|---|
-| **Flora do Brasil** | Plantas, algas e fungos do Brasil | Coleções botânicas e micológicas nacionais |
-| **Fauna do Brasil** | Animais do Brasil | Coleções zoológicas nacionais |
-| **GBIF** *(recomendada)* | Backbone taxonômico global | Qualquer grupo, ou quando o táxon não é brasileiro |
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Base</th><th>Cobertura</th><th>Quando usar</th></tr></thead>
+  <tbody>
+    <tr><td>Flora do Brasil</td><td>Plantas, algas e fungos do Brasil</td><td>Coleções botânicas e micológicas nacionais</td></tr>
+    <tr><td>Fauna do Brasil</td><td>Animais do Brasil</td><td>Coleções zoológicas nacionais</td></tr>
+    <tr><td>GBIF (recomendada)</td><td>Backbone taxonômico global</td><td>Qualquer grupo, ou quando o táxon não é brasileiro</td></tr>
+  </tbody>
+</table>
+```
 
-Quando você marca mais de uma base, o Saíra consulta em **cascata** — Flora do Brasil → Fauna do Brasil → GBIF — e usa como veredito o primeiro provedor que retornar um resultado. Por baixo, todas as consultas passam pelo pacote `taxadb`.
+Quando você marca mais de uma base, o Saíra consulta em **cascata** (Flora do Brasil → Fauna do Brasil → GBIF) e usa como veredito o primeiro provedor que retornar um resultado. Por baixo, todas as consultas passam pelo pacote `taxadb`.
 
 ::: {.callout-note}
 ## Bases brasileiras ficam no seu computador
@@ -32,8 +37,8 @@ Flora do Brasil e Fauna do Brasil são **baixadas e armazenadas localmente** na 
 
 Abaixo das bases, duas opções controlam como cada nome é preparado antes da consulta. As duas vêm **ligadas** por padrão:
 
-- **Remover autores** — descarta autoria e ano para melhorar a comparação entre provedores. Ex.: `Harpia harpyja (Daudin, 1800)` vira `Harpia harpyja`.
-- **Ignorar sp., cf., aff., nr.** — ignora qualificadores não taxonômicos durante a normalização.
+- **Remover autores**: descarta autoria e ano para melhorar a comparação entre provedores. Ex.: `Harpia harpyja (Daudin, 1800)` vira `Harpia harpyja`.
+- **Ignorar sp., cf., aff., nr.**: ignora qualificadores não taxonômicos durante a normalização.
 
 ```{=html}
 <figure class="shot">
@@ -54,7 +59,7 @@ Ao clicar em **Validar Nomes**, o Saíra compara cada <span class="term">scienti
 O Saíra **não corrige grafia por conta própria** nem adivinha o nome "mais parecido": ele só reporta o que a base taxonômica devolve. Qualquer correção parte de você.
 
 ```{=html}
-<ol class="steps">
+<ol class="fix-steps">
   <li><strong>Rode a verificação.</strong>
     <p>O Saíra processa a lista de nomes (cada nome distinto é consultado uma vez) e mostra um resumo por status, com filtros para isolar os problemas.</p></li>
   <li><strong>Revise os problemas.</strong>
@@ -82,10 +87,10 @@ O Saíra **não corrige grafia por conta própria** nem adivinha o nome "mais pa
 
 A correção é manual e acontece no **modal de revisão**. Clique em um nome problemático e escolha:
 
-- **Sim, este nome está correto** — confirma o nome como está; ele será exportado exatamente assim. Útil para táxons recém-descritos ou ausentes da base.
-- **Não, quero corrigir o nome** — abre o campo **Correção do nome** para você digitar a grafia certa, com um motivo opcional (ex.: erro de digitação na planilha original, nome atualizado conforme publicação).
+- **Sim, este nome está correto**: confirma o nome como está; ele será exportado exatamente assim. Útil para táxons recém-descritos ou ausentes da base.
+- **Não, quero corrigir o nome**: abre o campo **Correção do nome** para você digitar a grafia certa, com um motivo opcional (ex.: erro de digitação na planilha original, nome atualizado conforme publicação).
 
-A decisão é **reaplicada automaticamente** a todas as linhas com aquele mesmo nome — como a validação agrupa nomes idênticos, você revisa cada um uma única vez e a correção vale para o conjunto inteiro. É o que mais economiza tempo em planilhas grandes com o mesmo erro repetido.
+A decisão é **reaplicada automaticamente** a todas as linhas com aquele mesmo nome: como a validação agrupa nomes idênticos, você revisa cada um uma única vez e a correção vale para o conjunto inteiro. É o que mais economiza tempo em planilhas grandes com o mesmo erro repetido.
 
 ```{=html}
 <figure class="shot">
@@ -108,7 +113,7 @@ O Saíra resolve os nomes contra a base, mas a autoridade é do especialista. Em
 
 ## Espécies ameaçadas (Lista MMA)
 
-Depois de resolver os nomes, o Saíra compara cada táxon com a **lista nacional de espécies ameaçadas de extinção**, que vem **embutida no app** — não é preciso baixar nada. Os táxons presentes na lista recebem uma sinalização **Sensível** no relatório, com a categoria de ameaça: **VU** (vulnerável), **EN** (em perigo), **CR** (criticamente em perigo) e **CR (PEX)** (criticamente em perigo, possivelmente extinta).
+Depois de resolver os nomes, o Saíra compara cada táxon com a **lista nacional de espécies ameaçadas de extinção**, que vem **embutida no app** (não é preciso baixar nada). Os táxons presentes na lista recebem uma sinalização **Sensível** no relatório, com a categoria de ameaça: **VU** (vulnerável), **EN** (em perigo), **CR** (criticamente em perigo) e **CR (PEX)** (criticamente em perigo, possivelmente extinta).
 
 ::: {.callout-note}
 ## De onde vem a lista
@@ -126,8 +131,8 @@ A lista embutida vem das listas oficiais do Ministério do Meio Ambiente: a **fl
 
 A lista do MMA é o ponto de partida, não a palavra final. Cada táxon traz no relatório um controle de sensibilidade que você pode ajustar conforme sua experiência e a realidade da sua região de trabalho:
 
-- **Desmarcar uma espécie da lista** — se, no seu contexto, aquele registro não for sensível, desmarque-o. O Saíra avisa que essa é uma **decisão de custódia**: sem a marca, as coordenadas daquele táxon serão publicadas sem generalização.
-- **Marcar uma espécie fora da lista** — use **+ marcar** para sinalizar como sensível um táxon que a lista nacional não cobre, mas que você sabe ser vulnerável na sua área.
+- **Desmarcar uma espécie da lista**: se, no seu contexto, aquele registro não for sensível, desmarque-o. O Saíra avisa que essa é uma **decisão de custódia**: sem a marca, as coordenadas daquele táxon serão publicadas sem generalização.
+- **Marcar uma espécie fora da lista**: use **+ marcar** para sinalizar como sensível um táxon que a lista nacional não cobre, mas que você sabe ser vulnerável na sua área.
 
 O ajuste é feito num pequeno diálogo de confirmação e vale para a exportação.
 
@@ -138,11 +143,19 @@ O ajuste é feito num pequeno diálogo de confirmação e vale para a exportaç�
 </figure>
 ```
 
-Aqui a etapa apenas **sinaliza** o que é sensível. A proteção efetiva das coordenadas — decidir se e quanto generalizar a localização — acontece na etapa de **[generalização](06-generalizacao.qmd)**, seguindo a tabela de decisão de Chapman (2020).
+Aqui a etapa apenas **sinaliza** o que é sensível. A proteção efetiva das coordenadas (decidir se e quanto generalizar a localização) acontece na etapa de **[generalização](06-generalizacao.qmd)**, seguindo a tabela de decisão de Chapman (2020).
 
 ## O status de conservação vai para a exportação
 
-As bases que você seleciona aqui também definem qual **status de conservação** o Saíra adiciona ao `dynamicProperties` da exportação: uma base **brasileira** contribui com a categoria **MMA** (e a portaria que listou o táxon), e o **GBIF** contribui com a categoria **IUCN** global. Uma linha curta acima do relatório informa quantos registros receberão cada um. As chaves são gravadas quando você gera o pacote — veja **[exportação](07-preview-exportacao.qmd)**.
+::: {.callout-important}
+## A escolha das bases define o status de conservação
+As bases que você marca aqui definem qual **status de conservação** o Saíra grava no `dynamicProperties` da exportação:
+
+- uma base **brasileira** (Flora BR / Fauna BR) contribui com a categoria **MMA** (`mmaThreatStatus`) e a portaria que listou o táxon (`mmaSource`);
+- o **GBIF** contribui com a categoria **IUCN** global (`iucnRedListCategory`).
+
+Uma linha curta acima do relatório informa quantos registros receberão cada um. **Se você não trabalha com espécies brasileiras, marque apenas o GBIF** para receber só o status IUCN. As chaves são gravadas quando você gera o pacote (veja **[exportação](07-preview-exportacao.qmd)**).
+:::
 
 ## Próximos passos
 

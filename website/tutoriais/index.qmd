@@ -1,6 +1,6 @@
 ---
 title: "Tutoriais"
-pagetitle: "Tutoriais — Saíra"
+pagetitle: "Tutoriais · Saíra"
 toc: false
 ---
 
@@ -8,17 +8,56 @@ toc: false
 Guias passo a passo para levar sua planilha de ocorrências do caderno de campo ao Darwin Core Archive, seguindo o mesmo fluxo do aplicativo, etapa por etapa.
 :::
 
-Os tutoriais acompanham o fluxo de trabalho do Saíra, etapa por etapa. Use a **barra lateral** à esquerda para navegar entre eles e os botões **anterior / próximo** no rodapé de cada página: a leitura segue de forma contínua, da instalação à exportação final. Cada etapa também pode ser lida de forma independente.
+Os tutoriais seguem o fluxo do app, etapa por etapa. Navegue pela **barra lateral** ou pelos botões **anterior / próximo** no rodapé. Cada etapa também pode ser lida de forma independente.
 
 ## O fluxo, do dado bruto ao DwC-A
 
-1. **[Instalação e primeiros passos](01-instalacao.qmd)**: instale o Saíra a partir do GitHub e abra o aplicativo no navegador.
-2. **[Importando seus dados](02-upload.qmd)**: carregue planilhas em CSV ou Excel (ou um pacote de armadilha fotográfica) e faça a primeira inspeção das colunas.
-3. **[Mapeando campos para Darwin Core](03-mapeamento-dwc.qmd)**: associe cada coluna a um termo Darwin Core com sugestões automáticas, modelos e o assistente de `basisOfRecord`.
-4. **[Validando nomes científicos](04-validacao-nomes.qmd)**: confira a nomenclatura contra Flora do Brasil, Fauna do Brasil ou GBIF, resolva sinônimos, corrija nomes e veja quais táxons são ameaçados pela lista nacional do MMA.
-5. **[Validando coordenadas](05-validacao-coordenadas.qmd)**: encontre coordenadas ausentes, invertidas ou transpostas, preencha o país a partir do ponto e revise no mapa.
-6. **[Generalizando espécies sensíveis](06-generalizacao.qmd)**: decida, espécie por espécie, se e quanto reduzir a precisão das coordenadas de táxons ameaçados, seguindo a tabela de decisão de Chapman (2020).
-7. **[Pré-visualização e exportação](07-preview-exportacao.qmd)**: revise o resultado e as correções e gere o Darwin Core Archive.
+```{=html}
+<div class="tut-grid">
+  <a class="tut-card" href="01-instalacao.html">
+    <div class="tut-card-top"><span class="tut-card-num">01</span><span class="tut-card-eyebrow">Etapa</span></div>
+    <h3 class="tut-card-title">Instalação e primeiros passos</h3>
+    <p class="tut-card-desc">Instale o Saíra a partir do GitHub e abra o app no navegador.</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+  <a class="tut-card" href="02-upload.html">
+    <div class="tut-card-top"><span class="tut-card-num">02</span><span class="tut-card-eyebrow">Etapa</span></div>
+    <h3 class="tut-card-title">Importando seus dados</h3>
+    <p class="tut-card-desc">Carregue CSV, TSV, Excel ou um pacote de armadilha fotográfica.</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+  <a class="tut-card" href="03-mapeamento-dwc.html">
+    <div class="tut-card-top"><span class="tut-card-num">03</span><span class="tut-card-eyebrow">Etapa</span></div>
+    <h3 class="tut-card-title">Mapeando campos para Darwin Core</h3>
+    <p class="tut-card-desc">Associe cada coluna a um termo Darwin Core, com sugestões automáticas.</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+  <a class="tut-card" href="04-validacao-nomes.html">
+    <div class="tut-card-top"><span class="tut-card-num">04</span><span class="tut-card-eyebrow">Etapa</span></div>
+    <h3 class="tut-card-title">Validando nomes científicos</h3>
+    <p class="tut-card-desc">Confira a nomenclatura, resolva sinônimos e veja os táxons ameaçados.</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+  <a class="tut-card" href="05-validacao-coordenadas.html">
+    <div class="tut-card-top"><span class="tut-card-num">05</span><span class="tut-card-eyebrow">Etapa</span></div>
+    <h3 class="tut-card-title">Validando coordenadas</h3>
+    <p class="tut-card-desc">Encontre coordenadas ausentes, invertidas ou transpostas e revise no mapa.</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+  <a class="tut-card" href="06-generalizacao.html">
+    <div class="tut-card-top"><span class="tut-card-num">06</span><span class="tut-card-eyebrow">Etapa</span></div>
+    <h3 class="tut-card-title">Generalizando espécies sensíveis</h3>
+    <p class="tut-card-desc">Reduza a precisão das coordenadas de táxons ameaçados (Chapman 2020).</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+  <a class="tut-card" href="07-preview-exportacao.html">
+    <div class="tut-card-top"><span class="tut-card-num">07</span><span class="tut-card-eyebrow">Etapa</span></div>
+    <h3 class="tut-card-title">Pré-visualização e exportação</h3>
+    <p class="tut-card-desc">Revise o resultado e as correções e gere o Darwin Core Archive.</p>
+    <span class="tut-card-arrow">→</span>
+  </a>
+</div>
+```
 
 ::: {.callout-note}
 ## O fluxo é flexível

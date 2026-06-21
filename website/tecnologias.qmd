@@ -1,15 +1,15 @@
 ---
 title: "Tecnologias e créditos"
-pagetitle: "Tecnologias e créditos — Saíra"
+pagetitle: "Tecnologias e créditos · Saíra"
 ---
 
 ::: {.tut-standfirst}
-Tudo o que o Saíra usa, em um só lugar: os pacotes R de código aberto que fazem o aplicativo funcionar, os dados públicos que vêm embutidos no pacote e os créditos de método. Transparência total sobre a procedência de cada peça.
+Tudo o que o Saíra usa, em um só lugar: os pacotes R de código aberto que fazem o aplicativo funcionar, os dados públicos que vêm embutidos no pacote e os créditos de método.
 :::
 
 ## Pacotes R utilizados
 
-O Saíra é construído sobre pacotes R de código aberto, todos declarados como dependências em [`DESCRIPTION`](https://github.com/rogerio-onza/saira/blob/main/DESCRIPTION) e chamados de forma explícita (`pacote::função()`). Nenhum código desses pacotes é copiado para dentro do Saíra — eles são usados como bibliotecas.
+O Saíra é construído sobre pacotes R de código aberto, todos declarados como dependências em [`DESCRIPTION`](https://github.com/rogerio-onza/saira/blob/main/DESCRIPTION) e chamados de forma explícita (`pacote::função()`). Nenhum código desses pacotes é copiado para dentro do Saíra; eles são usados como bibliotecas.
 
 ### Interface
 
@@ -71,7 +71,7 @@ O Saíra é construído sobre pacotes R de código aberto, todos declarados como
 | [camtrapdp](https://cran.r-project.org/package=camtrapdp) | Importação de pacotes Camtrap DP | MIT |
 
 ::: {.callout-note}
-O Saíra é distribuído sob **GPL-3** porque usa pacotes licenciados em GPL — entre eles `CoordinateCleaner`, `countrycode`, `terra`, `florabr` e `faunabr`. A GPL exige que um trabalho que dependa desses pacotes mantenha uma licença compatível. É uma escolha de compatibilidade, não uma restrição imposta.
+O Saíra é distribuído sob **GPL-3** porque usa pacotes licenciados em GPL (entre eles `CoordinateCleaner`, `countrycode`, `terra`, `florabr` e `faunabr`). A GPL exige que um trabalho que dependa desses pacotes mantenha uma licença compatível. É uma escolha de compatibilidade, não uma restrição imposta.
 :::
 
 ## Dados embarcados no pacote
@@ -81,17 +81,17 @@ Alguns dados de referência vêm dentro do pacote (em `inst/extdata/`) para que 
 | Dado | Origem | Licença / condição |
 | --- | --- | --- |
 | Camada de terra e países (Natural Earth) | [Natural Earth](https://www.naturalearthdata.com/) | Domínio público |
-| Termos Darwin Core | [TDWG — Darwin Core](https://dwc.tdwg.org/) ([repositório](https://github.com/tdwg/dwc)) | CC-BY 4.0 |
+| Termos Darwin Core | [TDWG · Darwin Core](https://dwc.tdwg.org/) ([repositório](https://github.com/tdwg/dwc)) | CC-BY 4.0 |
 | Lista Nacional Oficial de Espécies Ameaçadas | [Portaria MMA nº 148/2022](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733) (flora), [nº 1.704/2026](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917) (fauna terrestre), [GM/MMA nº 1.667/2026](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623) (fauna aquática) | Registro público de governo |
 | Sinônimos e apelidos de termos DwC, apelidos de país, textos da interface (i18n) | Autoral do Saíra | GPL-3 |
 
-A lista de termos Darwin Core é publicada pelo TDWG sob **CC-BY 4.0**, que pede atribuição — cumprida por esta página e pelos links acima.
+A lista de termos Darwin Core é publicada pelo TDWG sob **CC-BY 4.0**, que pede atribuição, cumprida por esta página e pelos links acima.
 
 ## Métodos e créditos
 
-Além das dependências, o Saíra aproveita ideias e metodologias publicadas por outros projetos. Elas **não são dependências** — são reconhecimento de método.
+Além das dependências, o Saíra aproveita ideias e metodologias publicadas por outros projetos. Elas **não são dependências**: são reconhecimento de método.
 
-- **bdc — Biodiversity Data Cleaning.** Ribeiro, B. R. et al. (2022). *bdc: A toolkit for standardizing, integrating and improving the quality of biodiversity data.* *Methods in Ecology and Evolution.* <https://doi.org/10.1111/2041-210X.13868>. Duas correções de coordenadas do Saíra — detecção de coordenadas transpostas e preenchimento de país a partir das coordenadas — são **reimplementações independentes inspiradas na abordagem do `bdc`, sem reutilização de código**, executadas sobre a camada Natural Earth própria do Saíra. O Saíra **não depende** do pacote `bdc`.
+- **bdc (Biodiversity Data Cleaning).** Ribeiro, B. R. et al. (2022). *bdc: A toolkit for standardizing, integrating and improving the quality of biodiversity data.* *Methods in Ecology and Evolution.* <https://doi.org/10.1111/2041-210X.13868>. Duas correções de coordenadas do Saíra (detecção de coordenadas transpostas e preenchimento de país a partir das coordenadas) são **reimplementações independentes inspiradas na abordagem do `bdc`, sem reutilização de código**, executadas sobre a camada Natural Earth própria do Saíra. O Saíra **não depende** do pacote `bdc`.
 - **Generalização de espécies sensíveis (GBIF).** A cascata de decisão e os níveis de generalização seguem as boas práticas do GBIF:
   - Chapman, A. D. (2020). *Current Best Practices for Generalizing Sensitive Species Occurrence Data.* GBIF Secretariat. <https://doi.org/10.15468/doc-5jp4-5g10>
   - Chapman, A. D., & Wieczorek, J. R. (2020). *Georeferencing Best Practices.* GBIF Secretariat. <https://doi.org/10.15468/doc-gg7h-s853>

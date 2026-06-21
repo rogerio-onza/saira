@@ -1,10 +1,10 @@
 ---
 title: "Validando coordenadas"
-pagetitle: "Validação de coordenadas — Tutoriais Saíra"
+pagetitle: "Validação de coordenadas · Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-Coordenadas erradas são uma das maiores fontes de erro em dados de biodiversidade. O Saíra roda um diagnóstico determinístico, mostra cada registro no mapa e numa tabela, e **propõe correções seguras** — aplicadas só na exportação, nunca por cima dos seus dados.
+Coordenadas erradas são uma das maiores fontes de erro em dados de biodiversidade. O Saíra roda um diagnóstico determinístico, mostra cada registro no mapa e numa tabela, e **propõe correções seguras**, aplicadas só na exportação, nunca por cima dos seus dados.
 :::
 
 ## Antes de validar: o que precisa estar mapeado
@@ -19,8 +19,8 @@ O painel da esquerda mostra a coluna associada a cada termo. Enquanto algum falt
 
 Antes de rodar, escolha o **Perfil**:
 
-- **Completo** — roda todos os testes, incluindo a detecção de *referências sensíveis* (pontos suspeitos sobre capitais, centróides de país, sede do GBIF e instituições de biodiversidade).
-- **Rápido** — pula os testes de referência; útil para uma primeira passada em bases grandes.
+- **Completo**: roda todos os testes, incluindo a detecção de *referências sensíveis* (pontos suspeitos sobre capitais, centróides de país, sede do GBIF e instituições de biodiversidade).
+- **Rápido**: pula os testes de referência; útil para uma primeira passada em bases grandes.
 
 Clique em **Validar Coordenadas**. A validação é disparada por você, não a cada mudança nos dados.
 
@@ -45,21 +45,21 @@ A partir de <span class="term">decimalLatitude</span>, <span class="term">decima
     <tr><td><span class="swatch" style="background:var(--coord-swap)"></span>Possível inversão</td><td>Latitude e longitude aparentam estar trocadas.</td></tr>
     <tr><td><span class="swatch" style="background:var(--info)"></span>Em mar aberto</td><td>O ponto cai na água segundo a camada de costa, quando deveria estar em terra.</td></tr>
     <tr><td><span class="swatch" style="background:var(--warning)"></span>Zero/Equal</td><td>Coordenada em (0, 0) ou com latitude e longitude idênticas.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--coord-identical)"></span>Todas idênticas</td><td>Todos os registros válidos compartilham o mesmo par de coordenadas — sinal de um valor padrão coletivo.</td></tr>
+    <tr><td><span class="swatch" style="background:var(--coord-identical)"></span>Todas idênticas</td><td>Todos os registros válidos compartilham o mesmo par de coordenadas: sinal de um valor padrão coletivo.</td></tr>
     <tr><td><span class="swatch" style="background:var(--coord-reference)"></span>Referência sensível</td><td>Ponto próximo de capital, centróide de país, sede do GBIF ou instituição biológica (só no perfil <b>Completo</b>).</td></tr>
   </tbody>
 </table>
 ```
 
-Os testes são determinísticos (no estilo do `CoordinateCleaner`) e usam a camada de países do Natural Earth embutida no Saíra — rodam sem depender de serviços externos.
+Os testes são determinísticos (no estilo do `CoordinateCleaner`) e usam a camada de países do Natural Earth embutida no Saíra: rodam sem depender de serviços externos.
 
 ## Lendo os resultados
 
 Concluída a validação, os resultados aparecem à direita.
 
-**Filtros.** Acima do mapa, botões filtram a visão por categoria — **Todos**, **Problemas**, **Inválida**, **Mar**, **Zero/Equal** e **Referência**. Clicar em um filtra o mapa e a tabela ao mesmo tempo.
+**Filtros.** Acima do mapa, botões filtram a visão por categoria: **Todos**, **Problemas**, **Inválida**, **Mar**, **Zero/Equal** e **Referência**. Clicar em um filtra o mapa e a tabela ao mesmo tempo.
 
-**Mapa — Distribuição Geográfica.** Cada registro vira um ponto, colorido pela situação. Clique em um ponto para ver linha, diagnóstico e coordenadas; concentrações fora da área esperada saltam aos olhos.
+**Mapa: Distribuição Geográfica.** Cada registro vira um ponto, colorido pela situação. Clique em um ponto para ver linha, diagnóstico e coordenadas; concentrações fora da área esperada saltam aos olhos.
 
 ```{=html}
 <table class="maptable">
@@ -86,7 +86,7 @@ Concluída a validação, os resultados aparecem à direita.
 O teste de mar usa dados de costa simplificados. Pontos muito próximos da costa podem ser flagados incorretamente. **Verifique visualmente no mapa antes de descartar** um registro marcado como *Em mar aberto*.
 :::
 
-**Tabela — Diagnóstico de Coordenadas.** Abaixo do mapa, uma tabela lista cada registro com as colunas **Linha**, **Diagnóstico** (badge colorido), **Latitude**, **Longitude**, **Country** e **ISO3** (o código de país resolvido). É pesquisável, paginada e acompanha o filtro ativo.
+**Tabela: Diagnóstico de Coordenadas.** Abaixo do mapa, uma tabela lista cada registro com as colunas **Linha**, **Diagnóstico** (badge colorido), **Latitude**, **Longitude**, **Country** e **ISO3** (o código de país resolvido). É pesquisável, paginada e acompanha o filtro ativo.
 
 ```{=html}
 <figure class="shot">
@@ -126,7 +126,7 @@ Havendo candidatos, painéis aparecem à esquerda. Cada um mostra a contagem e u
 </figure>
 ```
 
-**Registros sem coordenada** ficam marcados como *Coordenada ausente*. O Saíra não inventa um ponto a partir do texto da localidade — esses registros ficam a seu critério: mantenha-os sem georreferenciamento de forma consciente, ou preencha as coordenadas antes do upload.
+**Registros sem coordenada** ficam marcados como *Coordenada ausente*. O Saíra não inventa um ponto a partir do texto da localidade: esses registros ficam a seu critério. Mantenha-os sem georreferenciamento de forma consciente, ou preencha as coordenadas antes do upload.
 
 ::: {.callout-tip}
 ## Datum e precisão
