@@ -4,7 +4,7 @@ pagetitle: "Validação de nomes · Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-Nomes científicos são a chave que conecta seus registros ao resto da biodiversidade conhecida. Esta etapa confere cada nome contra uma base taxonômica à sua escolha, resolve sinônimos e ainda sinaliza espécies ameaçadas da lista nacional do MMA.
+Esta etapa confere cada nome científico contra uma base taxonômica à sua escolha, resolve sinônimos e grafias divergentes, e sinaliza as espécies ameaçadas da lista nacional do MMA, mantendo seus registros combináveis com os de outras coleções.
 :::
 
 ## Por que validar nomes
@@ -129,9 +129,9 @@ A lista embutida vem das listas oficiais do Ministério do Meio Ambiente: a **fl
 
 ### Ajustando a sensibilidade
 
-A lista do MMA é o ponto de partida, não a palavra final. Cada táxon traz no relatório um controle de sensibilidade que você pode ajustar conforme sua experiência e a realidade da sua região de trabalho:
+A lista do MMA é a referência oficial e o Saíra não a edita: as categorias de ameaça vêm das portarias e não mudam. O que você ajusta é a **marcação de sensibilidade** de cada táxon, conforme sua experiência e a realidade da sua região de trabalho:
 
-- **Desmarcar uma espécie da lista**: se, no seu contexto, aquele registro não for sensível, desmarque-o. O Saíra avisa que essa é uma **decisão de custódia**: sem a marca, as coordenadas daquele táxon serão publicadas sem generalização.
+- **Desmarcar a sensibilidade de um táxon**: se, no seu contexto, aquele registro não for sensível, desmarque-o. O Saíra avisa que essa é uma **decisão de custódia**: sem a marca, as coordenadas daquele táxon serão publicadas sem generalização.
 - **Marcar uma espécie fora da lista**: use **+ marcar** para sinalizar como sensível um táxon que a lista nacional não cobre, mas que você sabe ser vulnerável na sua área.
 
 O ajuste é feito num pequeno diálogo de confirmação e vale para a exportação.

@@ -4,7 +4,7 @@ pagetitle: "Validação de coordenadas · Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-Coordenadas erradas são uma das maiores fontes de erro em dados de biodiversidade. O Saíra roda um diagnóstico determinístico, mostra cada registro no mapa e numa tabela, e **propõe correções seguras**, aplicadas só na exportação, nunca por cima dos seus dados.
+Coordenadas invertidas, trocadas ou em (0, 0) estão entre os erros mais comuns em planilhas de campo. O Saíra roda um diagnóstico determinístico, mostra cada registro no mapa e numa tabela, e **propõe correções seguras**, aplicadas só na exportação, nunca por cima dos seus dados.
 :::
 
 ## Antes de validar: o que precisa estar mapeado

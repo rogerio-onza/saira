@@ -4,7 +4,7 @@ pagetitle: "Name validation · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-Scientific names are the key that connects your records to the rest of known biodiversity. This step checks each name against a taxonomic database of your choice, resolves synonyms and also flags threatened species from Brazil's national MMA list.
+This step checks each scientific name against a taxonomic database of your choice, resolves synonyms and divergent spellings, and flags the threatened species on Brazil's national MMA list, keeping your records combinable with those of other collections.
 :::
 
 ## Why validate names
@@ -129,9 +129,9 @@ The bundled list comes from Brazil's Ministry of the Environment official lists:
 
 ### Adjusting sensitivity
 
-The MMA list is the starting point, not the final word. Each taxon carries a sensitivity control in the report that you can adjust according to your experience and the reality of your study region:
+The MMA list is the official reference and Saíra does not edit it: the threat categories come from the federal ordinances and do not change. What you adjust is each taxon's **sensitivity flag**, according to your experience and the reality of your study region:
 
-- **Unmark a species from the list**: if, in your context, that record is not sensitive, unmark it. Saíra warns that this is a **custodian decision**: without the flag, that taxon's coordinates will be published without generalization.
+- **Unflag a taxon's sensitivity**: if, in your context, that record is not sensitive, unmark it. Saíra warns that this is a **custodian decision**: without the flag, that taxon's coordinates will be published without generalization.
 - **Mark a species that is not on the list**: use **+ mark** to flag as sensitive a taxon the national list does not cover but that you know to be vulnerable in your area.
 
 The adjustment is made in a small confirmation dialog and applies at export.
