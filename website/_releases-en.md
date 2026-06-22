@@ -2,6 +2,16 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.1</span>
+    <time class="release-date">2026-06-22</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Tab-separated (<code>.tsv</code>) files are now accepted on upload.</strong> The reader already detected the delimiter, but the file-picker filter and validation only allowed <code>.csv</code>/<code>.txt</code>; now <code>.tsv</code> is offered in the picker and passes validation.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.0</span>
     <time class="release-date">2026-06-20</time>
   </header>
