@@ -133,8 +133,8 @@ Para reaproveitar, abra o mapeamento de uma nova planilha e clique em **Importar
 ```
 
 ::: {.callout-tip}
-## Reaproveite e poupe horas
-Coleções costumam reimportar planilhas com a mesma estrutura. Reaplicar o modelo aplica todo o mapeamento de uma vez e poupa horas a cada novo lote de registros.
+## Reaplique o mapeamento de uma vez
+Coleções costumam reimportar planilhas com a mesma estrutura. Importar o modelo reaplica todo o vocabulário coluna → termo de uma vez e salva cada par como alias, então só as colunas novas ou renomeadas pedem revisão.
 :::
 
 ## O assistente de basisOfRecord

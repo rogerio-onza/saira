@@ -90,7 +90,7 @@ A correção é manual e acontece no **modal de revisão**. Clique em um nome pr
 - **Sim, este nome está correto**: confirma o nome como está; ele será exportado exatamente assim. Útil para táxons recém-descritos ou ausentes da base.
 - **Não, quero corrigir o nome**: abre o campo **Correção do nome** para você digitar a grafia certa, com um motivo opcional (ex.: erro de digitação na planilha original, nome atualizado conforme publicação).
 
-A decisão é **reaplicada automaticamente** a todas as linhas com aquele mesmo nome: como a validação agrupa nomes idênticos, você revisa cada um uma única vez e a correção vale para o conjunto inteiro. É o que mais economiza tempo em planilhas grandes com o mesmo erro repetido.
+A decisão é **reaplicada automaticamente** a todas as linhas com aquele mesmo nome: como a validação agrupa nomes idênticos, você revisa cada um uma única vez e a correção vale para o conjunto inteiro. Um erro repetido em centenas de linhas é corrigido com uma única revisão.
 
 ```{=html}
 <figure class="shot">

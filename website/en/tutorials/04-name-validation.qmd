@@ -90,7 +90,7 @@ Correction is manual and happens in the **review modal**. Click a problem name a
 - **Yes, this name is correct**: confirms the name as is; it will be exported exactly that way. Useful for recently described taxa or names missing from the database.
 - **No, I want to correct the name**: opens the **Name correction** field for you to type the right spelling, with an optional reason (e.g. typo in the original sheet, updated name according to publication).
 
-The decision is **reapplied automatically** to every row with that same name: since validation groups identical names, you review each one only once and the correction holds for the whole dataset. This is what saves the most time on large sheets with the same repeated error.
+The decision is **reapplied automatically** to every row with that same name: since validation groups identical names, you review each one only once and the correction holds for the whole dataset. An error repeated across hundreds of rows is fixed with a single review.
 
 ```{=html}
 <figure class="shot">

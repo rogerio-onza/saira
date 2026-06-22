@@ -133,8 +133,8 @@ To reuse it, open the mapping for a new spreadsheet and click **Import template*
 ```
 
 ::: {.callout-tip}
-## Reuse it and save hours
-Collections often re-import spreadsheets with the same structure. Reapplying the template applies the whole mapping at once and saves hours on every new batch of records.
+## Reapply the mapping in one go
+Collections often re-import spreadsheets with the same structure. Importing the template reapplies the whole column → term vocabulary at once and saves each pair as an alias, so only new or renamed columns need review.
 :::
 
 ## The basisOfRecord assistant
