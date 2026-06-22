@@ -257,6 +257,18 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
 .cta .btn-ghost-saira { color: var(--cta-fg); border-color: var(--cta-border); }
 .cta .btn-ghost-saira:hover { border-color: var(--cta-fg); background: var(--cta-hover); }
 
+// ---------- closing sign-off (single elegant line; not a SaaS CTA card) ----------
+.closing { text-align: center; max-width: 560px; margin-inline: auto; }
+.closing::before {
+  content: ""; display: block; width: 40px; height: 2px;
+  background: var(--accent); border-radius: 2px; margin: 0 auto 1.8em;
+}
+.closing p {
+  font-family: var(--serif); font-size: clamp(1.15rem, 2vw, 1.4rem);
+  line-height: 1.5; color: var(--text-soft); margin: 0;
+}
+.closing p em { color: var(--accent); font-style: italic; }
+
 // =============================================================================
 //  Tutoriais — primitivas reutilizáveis (steps, tabela de mapeamento, figura)
 // =============================================================================

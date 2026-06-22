@@ -51,8 +51,9 @@ anchor-sections: false
     <div class="about-grid">
       <div class="about-text">
         <span class="eyebrow">What it is</span>
-        <p class="lead">Saíra takes your data from the field notebook to the global repository, turning heterogeneous spreadsheets into <em>clean, validated and interoperable</em> records.</p>
-        <p>It's a guided, bilingual workflow (PT-BR/EN) to map your fields to Darwin Core, detect inconsistencies and export a publication-ready package. Built in R and Shiny, it runs on your own computer or an institutional server, with no mandatory command line: every transformation is recorded and reproducible.</p>
+        <p class="lead">Saíra was born out of a <em>concrete problem</em>.</p>
+        <p>Helping projects, institutions and organisations like those of the <a href="https://sibbr.gov.br/page/por-onde-andam-os-felinos.html">Rede Felinos do Brasil</a>, with years of monitoring history spread across proprietary spreadsheets in different formats, to move that data backlog into Darwin Core, without having to deal with complicated R scripts.</p>
+        <p>Built in R/Shiny, it works in PT-BR and EN, runs locally, with no scripts or command lines to touch.</p>
       </div>
       <div class="about-media">
         <figure class="bird-figure">
@@ -70,7 +71,7 @@ anchor-sections: false
     <div class="flow-intro">
       <span class="eyebrow">Features</span>
       <h2>From raw spreadsheet<br>to a publishable <em>DwC-A</em></h2>
-      <p>Four moves, designed for curators and field researchers! Without touching a line of code.</p>
+      <p>Four steps designed to make it easier to convert data into the common language of GBIF and SiBBr: Darwin Core.</p>
     </div>
     <ol class="flow-steps">
       <li class="flow-step" style="--step:#38CFF6">
@@ -170,20 +171,11 @@ anchor-sections: false
   </div>
 </section>
 
-<!-- ===================== CTA ===================== -->
+<!-- ===================== CLOSING ===================== -->
 <section class="band" style="padding-bottom:clamp(48px,7vw,90px)">
   <div class="wrap">
-    <div class="cta cta-bordered">
-      <span class="eyebrow">Start now</span>
-      <h2>Publish your collection with confidence</h2>
-      <p>Install Saíra, import your first spreadsheet and get a validated Darwin Core Archive in just a few steps. Free and open source.</p>
-      <div class="hero-actions">
-        <a class="btn-saira btn-primary-saira" href="tutorials/index.html">Read the tutorials</a>
-        <a class="btn-saira btn-ghost-saira" href="tutorials/01-installation.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
-          Download
-        </a>
-      </div>
+    <div class="closing">
+      <p>Free, <em>open source</em>, no hosting cost to run.</p>
     </div>
   </div>
 </section>

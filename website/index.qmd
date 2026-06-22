@@ -51,8 +51,9 @@ anchor-sections: false
     <div class="about-grid">
       <div class="about-text">
         <span class="eyebrow">O que é</span>
-        <p class="lead">O Saíra leva seus dados do caderno de campo ao repositório global, transformando planilhas heterogêneas em registros <em>limpos, validados e interoperáveis</em>.</p>
-        <p>É um fluxo guiado e bilíngue (PT-BR/EN) para mapear seus campos ao padrão Darwin Core, detectar inconsistências e exportar um pacote pronto para publicação. Construído em R e Shiny, roda no seu computador ou em servidor institucional, sem linha de comando obrigatória: cada transformação fica registrada e reproduzível.</p>
+        <p class="lead">O Saíra nasceu de um <em>problema concreto</em>.</p>
+        <p>Ajudar projetos, instituições e organizações como as da <a href="https://sibbr.gov.br/page/por-onde-andam-os-felinos.html">Rede Felinos do Brasil</a>, com históricos de anos de monitoramento em planilhas próprias e formatos distintos, a colocar esse passivo de dados em Darwin Core, sem lidar com scripts complicados no ambiente R.</p>
+        <p>Construído em R/Shiny, funciona em PT-BR e EN, roda localmente, sem tocar em scripts ou linhas de comando.</p>
       </div>
       <div class="about-media">
         <figure class="bird-figure">
@@ -70,7 +71,7 @@ anchor-sections: false
     <div class="flow-intro">
       <span class="eyebrow">Funcionalidades</span>
       <h2>Da planilha bruta<br>ao <em>DwC-A</em> publicável</h2>
-      <p>Quatro movimentos, pensados para curadores e pesquisadores de campo! Sem tocar em uma linha de código.</p>
+      <p>Quatro passos pensados para facilitar a conversão de dados para a língua comum do SiBBr e GBIF: o Darwin Core.</p>
     </div>
     <ol class="flow-steps">
       <li class="flow-step" style="--step:#38CFF6">
@@ -170,20 +171,11 @@ anchor-sections: false
   </div>
 </section>
 
-<!-- ===================== CTA ===================== -->
+<!-- ===================== FECHO ===================== -->
 <section class="band" style="padding-bottom:clamp(48px,7vw,90px)">
   <div class="wrap">
-    <div class="cta cta-bordered">
-      <span class="eyebrow">Comece agora</span>
-      <h2>Publique sua coleção com confiança</h2>
-      <p>Instale o Saíra, importe sua primeira planilha e tenha um Darwin Core Archive validado em poucos passos. Gratuito e de código aberto.</p>
-      <div class="hero-actions">
-        <a class="btn-saira btn-primary-saira" href="tutoriais/index.html">Ler os tutoriais</a>
-        <a class="btn-saira btn-ghost-saira" href="tutoriais/01-instalacao.html">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
-          Download
-        </a>
-      </div>
+    <div class="closing">
+      <p>Gratuito, <em>código aberto</em>, sem custo de hospedagem pra rodar.</p>
     </div>
   </div>
 </section>
