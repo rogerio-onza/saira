@@ -11,6 +11,16 @@
 
 RELEASES = [
     {
+        "version": "0.9.1",
+        "date": "2026-06-22",
+        "pt": [
+            ("added", "**Arquivos separados por tabulação (`.tsv`) agora são aceitos no upload.** O leitor já detectava o delimitador, mas o filtro do seletor de arquivos e a validação só aceitavam `.csv`/`.txt`; agora `.tsv` aparece no seletor e passa na validação."),
+        ],
+        "en": [
+            ("added", "**Tab-separated (`.tsv`) files are now accepted on upload.** The reader already detected the delimiter, but the file-picker filter and validation only allowed `.csv`/`.txt`; now `.tsv` is offered in the picker and passes validation."),
+        ],
+    },
+    {
         "version": "0.9.0",
         "date": "2026-06-20",
         "pt": [

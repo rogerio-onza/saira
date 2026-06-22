@@ -3,6 +3,8 @@ project:
   output-dir: _site
   resources:
     - assets/
+    # Google Search Console domain verification — must be served at site root.
+    - google11be5d551b394a13.html
   # Generates _variables.yml (version), assets/version.html (navbar badge) and
   # the PT/EN release cards from website/data/releases.py. Standard-library
   # Python only, so it runs in the Quarto-only publish CI.

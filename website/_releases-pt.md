@@ -2,6 +2,16 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.1</span>
+    <time class="release-date">2026-06-22</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>Arquivos separados por tabulação (<code>.tsv</code>) agora são aceitos no upload.</strong> O leitor já detectava o delimitador, mas o filtro do seletor de arquivos e a validação só aceitavam <code>.csv</code>/<code>.txt</code>; agora <code>.tsv</code> aparece no seletor e passa na validação.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.0</span>
     <time class="release-date">2026-06-20</time>
   </header>
