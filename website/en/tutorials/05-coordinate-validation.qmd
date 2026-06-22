@@ -4,7 +4,7 @@ pagetitle: "Coordinate validation · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-Wrong coordinates are one of the biggest sources of error in biodiversity data. Saíra runs a deterministic diagnosis, shows every record on a map and in a table, and **proposes safe corrections**, applied only on export, never silently over your data.
+Inverted, swapped or (0, 0) coordinates are among the most common errors in field spreadsheets. Saíra runs a deterministic diagnosis, shows every record on a map and in a table, and **proposes safe corrections**, applied only on export, never silently over your data.
 :::
 
 ## Before validating: what must be mapped
