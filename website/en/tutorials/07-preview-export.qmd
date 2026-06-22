@@ -168,6 +168,6 @@ With the `.zip` in hand, publication happens outside Saíra, usually via your in
 
 ## Done
 
-You took a raw spreadsheet all the way to a validated Darwin Core Archive. From here, your data can be found, cited and combined with collections around the world. 🐦
+You took a raw spreadsheet all the way to a validated Darwin Core Archive. Published on SiBBr/GBIF, each record keeps its <span class="term">occurrenceID</span>, appears in searches and downloads combined with other collections, and enters the dataset's citation. 🐦
 
 Back to the **[tutorials overview](index.qmd)** or to the **[home page](../index.qmd)**.

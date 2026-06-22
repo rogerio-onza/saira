@@ -168,6 +168,6 @@ Com o `.zip` em mãos, a publicação acontece fora do Saíra, normalmente via *
 
 ## Concluído
 
-Você levou uma planilha bruta até um Darwin Core Archive validado. A partir daqui, seus dados podem ser localizados, citados e combinados com coleções do mundo inteiro. 🐦
+Você levou uma planilha bruta até um Darwin Core Archive validado. Publicado no SiBBr/GBIF, cada registro mantém seu <span class="term">occurrenceID</span>, aparece em buscas e downloads combinados com outras coleções, e entra na citação do conjunto. 🐦
 
 Voltar à **[visão geral dos tutoriais](index.qmd)** ou ao **[início](../index.qmd)**.

@@ -130,7 +130,7 @@ Havendo candidatos, painéis aparecem à esquerda. Cada um mostra a contagem e u
 
 ::: {.callout-tip}
 ## Datum e precisão
-Registre o <span class="term">geodeticDatum</span> (por exemplo, <em>WGS84</em>) e, quando souber, a incerteza em metros (<span class="term">coordinateUncertaintyInMeters</span>). Isso aumenta muito o valor científico do dado e ajuda quem for reutilizá-lo a julgar a precisão.
+Registre o <span class="term">geodeticDatum</span> (por exemplo, <em>WGS84</em>) e, quando souber, a incerteza em metros (<span class="term">coordinateUncertaintyInMeters</span>). Sem esses dois campos, quem reutiliza o registro não consegue saber se o ponto é confiável a 10 m ou a 10 km. Muitas análises, como modelagem de distribuição, filtram justamente por <span class="term">coordinateUncertaintyInMeters</span>.
 :::
 
 ::: {.callout-warning}

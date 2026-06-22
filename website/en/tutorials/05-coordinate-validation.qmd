@@ -130,7 +130,7 @@ When candidates exist, panels appear on the left. Each shows the count and one e
 
 ::: {.callout-tip}
 ## Datum and precision
-Record the <span class="term">geodeticDatum</span> (for example, <em>WGS84</em>) and, when known, the uncertainty in meters (<span class="term">coordinateUncertaintyInMeters</span>). This greatly increases the scientific value of the data and helps whoever reuses it judge the precision.
+Record the <span class="term">geodeticDatum</span> (for example, <em>WGS84</em>) and, when known, the uncertainty in meters (<span class="term">coordinateUncertaintyInMeters</span>). Without these two fields, whoever reuses the record cannot tell whether the point is reliable to 10 m or to 10 km. Many analyses, such as distribution modeling, filter precisely on <span class="term">coordinateUncertaintyInMeters</span>.
 :::
 
 ::: {.callout-warning}
