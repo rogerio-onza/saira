@@ -204,12 +204,12 @@
     "en": "Upload Data"
   },
   "upload_subtitle": {
-    "pt": "Selecione um arquivo CSV com seus dados de biodiversidade",
-    "en": "Select a CSV file with your biodiversity data"
+    "pt": "Selecione um arquivo CSV ou TSV com seus dados de biodiversidade",
+    "en": "Select a CSV or TSV file with your biodiversity data"
   },
   "upload_button": {
-    "pt": "Selecionar arquivo CSV",
-    "en": "Select CSV file"
+    "pt": "Selecionar arquivo CSV ou TSV",
+    "en": "Select CSV or TSV file"
   },
   "upload_success": {
     "pt": "Arquivo carregado com sucesso!",
@@ -3048,8 +3048,8 @@
     "en": "Please select a file."
   },
   "err_invalid_format": {
-    "pt": "Formato inválido. Apenas arquivos CSV são aceitos.",
-    "en": "Invalid format. Only CSV files are accepted."
+    "pt": "Formato inválido. Apenas arquivos CSV ou TSV são aceitos.",
+    "en": "Invalid format. Only CSV or TSV files are accepted."
   },
   "err_read_failed": {
     "pt": "Falha ao ler o arquivo. Verifique o formato.",

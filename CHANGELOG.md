@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Tab-separated (`.tsv`) files are now accepted on upload.** The reader already auto-detected the tab delimiter, but the upload control's `accept` filter and the format gate only allowed `.csv`/`.txt`, so a `.tsv` was rejected before it could be read. `.tsv` is now offered in the file picker and passes validation (a non-mapping-guide `.txt` is still rejected). The upload labels and the invalid-format message now read "CSV or TSV" in both languages.
+
 ## [0.9.0] - 2026-06-20
 
 ### Added

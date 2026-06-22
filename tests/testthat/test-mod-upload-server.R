@@ -234,3 +234,36 @@ testthat::test_that("mod_upload_server reads semicolon-delimited CSV", {
         }
     )
 })
+
+testthat::test_that("mod_upload_server reads tab-delimited TSV", {
+    tsv_path <- tempfile(fileext = ".tsv")
+    on.exit(unlink(tsv_path), add = TRUE)
+    writeLines(
+        c("scientificName\tdecimalLatitude\tdecimalLongitude",
+          "Panthera onca\t-10.5\t-55.2",
+          "Leopardus pardalis\t-11.3\t-54.8"),
+        tsv_path
+    )
+
+    shiny::testServer(
+        mod_upload_server,
+        args = list(
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(file = list(
+                name = "occurrences.tsv",
+                size = file.info(tsv_path)$size,
+                type = "text/tab-separated-values",
+                datapath = tsv_path
+            ))
+            session$flushReact()
+
+            returned <- session$getReturned()
+            df <- returned()
+            testthat::expect_true(is.data.frame(df))
+            testthat::expect_equal(nrow(df), 2L)
+            testthat::expect_true("scientificName" %in% names(df))
+        }
+    )
+})

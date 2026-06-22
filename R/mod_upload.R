@@ -119,7 +119,11 @@ mod_upload_ui <- function(id) {
                                     shiny::fileInput(
                                         inputId = ns("file"),
                                         label = shiny::tags$span(tr("a11y_upload_file_label", "pt"), class = "visually-hidden"),
-                                        accept = c(".csv", "text/csv", ".txt", "text/plain"),
+                                        accept = c(
+                                            ".csv", "text/csv",
+                                            ".tsv", "text/tab-separated-values",
+                                            ".txt", "text/plain"
+                                        ),
                                         buttonLabel = shiny::icon("upload", class = "fa-solid"),
                                         placeholder = ""
                                     )
@@ -415,7 +419,7 @@ mod_upload_server <- function(id, lang_r) {
                 if (!is_camtrap_dp_zip(input$file$datapath)) return("invalid")
                 return("camtrap_dp")
             }
-            if (!ext %in% c("csv", "txt")) return("invalid")
+            if (!ext %in% c("csv", "tsv", "txt")) return("invalid")
             if (is_saira_mapping_guide(input$file$datapath)) return("guide")
             if (ext == "txt") return("invalid")  # .txt without magic = bogus
             "data"
