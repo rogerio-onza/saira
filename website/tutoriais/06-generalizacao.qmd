@@ -22,7 +22,7 @@ Se nenhum táxon sensível foi detectado, não há nada a generalizar: o Saíra 
 
 ::: {.callout-important}
 ## O padrão é publicar a coordenada original
-Dados precisos têm **maior valor científico**. Generalizar é a exceção, não a regra: reduza a precisão apenas quando houver risco real de coleta, perseguição ou exploração. Na dúvida, publique a coordenada original.
+Dados precisos têm **maior valor científico**. Generalizar é a exceção, não a regra: reduza a precisão apenas quando houver risco real de coleta, perseguição ou exploração. Na dúvida, consulte as diretrizes das autoridades de conservação do seu país. No Brasil, recomenda-se seguir as diretrizes recomendadas pelo GBIF.
 :::
 
 ## Duas escolhas de entrada
@@ -30,14 +30,16 @@ Dados precisos têm **maior valor científico**. Generalizar é a exceção, nã
 Para o conjunto de registros sensíveis, o Saíra oferece dois caminhos:
 
 - **Publicar coordenadas originais** *(recomendado)*: mantém a precisão total. É a escolha certa na maioria dos casos.
-- **Avaliar sensibilidade**: abre a tabela de decisão de Chapman para determinar, sem chute, o nível de generalização de cada grupo de ameaça.
+- **Avaliar sensibilidade**: abre a tabela de decisão de [Chapman (2020)](https://doi.org/10.15468/doc-5jp4-5g10) para determinar, sem chute, o nível de generalização de cada grupo de ameaça.
+
+O Saíra também **identifica automaticamente** coordenadas que já chegaram generalizadas (de uma fonte anterior) e **não as generaliza de novo** — assim a localização nunca é degradada duas vezes.
 
 ::: {.callout-important}
 ## NÃO GENERALIZE DADOS DO WILDLIFE INSIGHTS DUAS VEZES
 O **Wildlife Insights já ofusca as coordenadas de espécies sensíveis** na própria exportação. Se o seu conjunto veio de lá e você marcou essas espécies como sensíveis, **escolha "Publicar coordenadas originais" e NÃO aplique a generalização do Saíra**. Generalizar de novo degradaria a localização **DUAS VEZES**, perdendo precisão sem necessidade e sem ganho de proteção.
 :::
 
-## A tabela de decisão (Tabela 5 de Chapman)
+## A tabela de decisão
 
 Ao escolher **Avaliar sensibilidade**, as espécies aparecem agrupadas por **categoria de ameaça do MMA** (CR, EN, VU…), além de um grupo para as espécies que você marcou manualmente. Para cada grupo, você responde uma pequena **cascata de perguntas**, da mais geral para a mais específica. A primeira resposta "Sim" define o nível; as espécies daquele grupo herdam o nível determinado.
 
@@ -64,7 +66,7 @@ Ao escolher **Avaliar sensibilidade**, as espécies aparecem agrupadas por **cat
 Enquanto um grupo não for avaliado, o Saíra mostra quantas espécies ainda faltam e avisa que elas **serão publicadas sem generalização**. Avalie todos os grupos antes de exportar para não deixar nenhuma espécie sensível de fora por esquecimento.
 :::
 
-### Os quatro níveis (Tabela 7 de Chapman)
+### Os quatro níveis
 
 Cada categoria corresponde a uma **grade** de generalização: a coordenada é deslocada para o centro da célula daquele tamanho. Quanto maior a grade, menos precisa (e menos útil) fica a localidade.
 
@@ -80,11 +82,11 @@ Cada categoria corresponde a uma **grade** de generalização: a coordenada é d
 </table>
 ```
 
-*Níveis de generalização (Tabela 7, Chapman 2020 / GBIF).*
+*Níveis de generalização, conforme [Chapman (2020)](https://doi.org/10.15468/doc-5jp4-5g10).*
 
 ::: {.callout-note}
 ## A generalização nunca aumenta a precisão
-Generalizar **reduz** a precisão, nunca a inventa (Chapman 2020, seç. 4.1). Se a coordenada já vier **menos precisa** que a categoria escolhida (por exemplo, uma coordenada de artigo com apenas duas casas decimais, ~1 km, e você escolheu a Categoria 4, ~100 m), o Saíra **publica na precisão real do dado** (a grade nunca fica mais fina que o original), em vez de arredondar para uma falsa precisão de 100 m. O registro **continua protegido**: recebe <span class="term">informationWithheld</span>, a célula generalizada, o raio de incerteza e a limpeza dos campos de localidade. O <span class="term">dataGeneralizations</span> grava **as duas precisões**: a fornecida e a originalmente retida pelo custodiante (Chapman seç. 4.3 e 5.1). Um aviso na própria aba conta quantos registros saíram na precisão real do dado.
+Generalizar só **reduz** a precisão, nunca a inventa. Se a coordenada já for menos precisa que a categoria escolhida, o Saíra publica na **precisão real do dado** — nunca finge 100 m — e ainda protege o registro com <span class="term">informationWithheld</span>, <span class="term">dataGeneralizations</span> e o raio de incerteza. Um aviso na aba conta quantos registros saíram assim.
 :::
 
 ## Exceções por espécie
@@ -95,7 +97,7 @@ A **Categoria 1, Extrema (~111 km),** só pode ser atribuída aqui, por exceçã
 
 ::: {.callout-warning}
 ## A Categoria 1 destrói quase todo o valor espacial
-A ~111 km o registro perde quase toda a utilidade para análise espacial e modelagem de distribuição. **Não a use** apenas para mascarar localidades que a comunidade local já conhece: reserve-a para casos extremos de ameaça à espécie.
+A ~111 km o registro perde quase toda a utilidade para análise espacial e modelagem de distribuição. **Não a use** apenas de forma indiscriminada e sem justificativas plausíveis.
 :::
 
 ## Justificativa obrigatória

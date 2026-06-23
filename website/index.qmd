@@ -71,7 +71,7 @@ anchor-sections: false
     <div class="flow-intro">
       <span class="eyebrow">Funcionalidades</span>
       <h2>Da planilha bruta<br>ao <em>DwC-A</em> publicável</h2>
-      <p>Quatro passos pensados para facilitar a conversão de dados para a língua comum do SiBBr e GBIF: o Darwin Core.</p>
+      <p>Cinco passos pensados para facilitar a conversão de dados para a língua comum do SiBBr e GBIF: o Darwin Core.</p>
     </div>
     <ol class="flow-steps">
       <li class="flow-step" style="--step:#38CFF6">
@@ -79,18 +79,31 @@ anchor-sections: false
         <div class="flow-body">
           <span class="flow-num">01</span>
           <h3>Importe qualquer planilha</h3>
-          <p>CSV, TSV ou TXT, incluindo dados de armadilhas fotográficas. O Saíra detecta sozinho a codificação, o separador e mapeia suas colunas aos termos Darwin Core com sugestões automáticas e modelos reutilizáveis.</p>
+          <p>CSV, TSV ou TXT, incluindo dados de armadilhas fotográficas. O Saíra detecta sozinho a codificação e o separador e prepara a planilha para o mapeamento.</p>
           <div class="proof">
             <span class="proof-in">acentuação quebrada · sep ";"</span>
             <span class="proof-arrow">→</span>
-            <span class="proof-out">UTF-8 · colunas mapeadas</span>
+            <span class="proof-out">UTF-8 · leitura correta</span>
+          </div>
+        </div>
+      </li>
+      <li class="flow-step" style="--step:#20C0D0">
+        <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h6M3 12h6M3 18h6"/><path d="M15 6h6M15 12h6M15 18h6"/><path d="M9 12h6"/></svg></div>
+        <div class="flow-body">
+          <span class="flow-num">02</span>
+          <h3>Mapeie suas colunas</h3>
+          <p>Associe cada coluna aos termos Darwin Core, com sugestões automáticas e modelos reutilizáveis. Um assistente guia campos como o basisOfRecord, sem você decorar vocabulários.</p>
+          <div class="proof">
+            <span class="proof-in">minha_coluna</span>
+            <span class="proof-arrow">→</span>
+            <span class="proof-out">scientificName ✓</span>
           </div>
         </div>
       </li>
       <li class="flow-step" style="--step:#16B3BD">
         <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/></svg></div>
         <div class="flow-body">
-          <span class="flow-num">02</span>
+          <span class="flow-num">03</span>
           <h3>Valide nomes e coordenadas</h3>
           <p>Harmonize nomes científicos contra bases taxonômicas (sinônimos e grafias divergentes) e flagre coordenadas ausentes, invertidas ou em terra/mar incompatível, corrigindo cada ponto com revisão visual no mapa.</p>
           <div class="proof">
@@ -103,7 +116,7 @@ anchor-sections: false
       <li class="flow-step" style="--step:#6d28d9">
         <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="10" r="2.2"/><path d="M12 12.2V15"/></svg></div>
         <div class="flow-body">
-          <span class="flow-num">03</span>
+          <span class="flow-num">04</span>
           <h3>Generalize espécies sensíveis</h3>
           <p>Reduza a precisão das coordenadas de táxons ameaçados (Lista MMA), espécie por espécie, seguindo a tabela de decisão de Chapman (2020). Protege locais sensíveis sem descartar o registro.</p>
           <div class="proof">
@@ -116,7 +129,7 @@ anchor-sections: false
       <li class="flow-step" style="--step:#2fc488">
         <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div>
         <div class="flow-body">
-          <span class="flow-num">04</span>
+          <span class="flow-num">05</span>
           <h3>Exporte um DwC-A pronto para o SiBBr</h3>
           <p>Gere o Darwin Core Archive completo, com o status de conservação (MMA e IUCN) anexado, pronto para publicar no SiBBr e no GBIF.</p>
           <div class="flow-tags">
@@ -175,7 +188,7 @@ anchor-sections: false
 <section class="band" style="padding-bottom:clamp(48px,7vw,90px)">
   <div class="wrap">
     <div class="closing">
-      <p>Gratuito, <em>código aberto</em>, sem custo de hospedagem pra rodar.</p>
+      <p>Gratuito, <em>código aberto</em>!</p>
     </div>
   </div>
 </section>

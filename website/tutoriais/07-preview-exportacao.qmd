@@ -86,22 +86,22 @@ Ao gerar o pacote, o Saíra padroniza automaticamente o conjunto para que ele at
 
 ### Status de conservação no `dynamicProperties`
 
-Para cada registro de um táxon avaliado, o Saíra também grava o status de conservação na coluna `dynamicProperties` como chaves JSON limpas, conforme as bases que você escolheu na [validação de nomes](04-validacao-nomes.qmd):
+Para cada táxon avaliado, o Saíra grava o status de conservação em `dynamicProperties` como chaves JSON, conforme as bases escolhidas na [validação de nomes](04-validacao-nomes.qmd):
 
-- uma base **brasileira** (Flora BR / Fauna BR) adiciona `mmaThreatStatus` (a categoria de ameaça) e `mmaSource` (a portaria que listou o táxon);
-- o **GBIF** adiciona `iucnRedListCategory` (o código IUCN global), consultado ao vivo no GBIF.
+- base **brasileira** (Flora BR / Fauna BR) → `mmaThreatStatus` (categoria) e `mmaSource` (portaria);
+- **GBIF** → `iucnRedListCategory` (código IUCN global, consultado ao vivo).
 
-As duas podem aparecer juntas e se somam a qualquer `dynamicProperties` que você mesmo mapeou. Por exemplo:
+As duas podem aparecer juntas e se somam ao que você mesmo mapeou:
 
 ```json
 {"mmaThreatStatus":"CR","mmaSource":"Portaria 1.704/2026","iucnRedListCategory":"NT"}
 ```
 
-A consulta ao GBIF é best-effort: sem internet, ou para um táxon que o GBIF não avalia, a chave IUCN é apenas omitida e a exportação segue normalmente.
+A consulta ao GBIF é best-effort: sem internet ou sem avaliação, a chave IUCN é omitida e a exportação segue.
 
-::: {.callout-tip}
+::: {.callout-warning}
 ## Não trabalha com espécies brasileiras?
-Marque **apenas o GBIF** na validação de nomes. Assim o Saíra grava só `iucnRedListCategory` (IUCN global) e não tenta aplicar a categoria MMA, que vale para a fauna e a flora do Brasil.
+Só nesse caso marque **apenas o GBIF** na validação de nomes: o Saíra grava só `iucnRedListCategory` (IUCN global) e não aplica a categoria MMA, que vale para a fauna e a flora do Brasil. Se você trabalha com espécies brasileiras, mantenha a base nacional marcada.
 :::
 
 ## Arquivos do pacote
@@ -136,10 +136,10 @@ E os **arquivos auxiliares**, para o seu controle, fora do pacote público:
 
 ## Gerando o Darwin Core Archive
 
+Os metadados (`eml.xml`) são montados **automaticamente**: o Saíra usa um título padrão, calcula a extensão geográfica e o intervalo de datas a partir dos seus dados e aplica a licença CC0 por padrão — você não precisa preencher nada. O ajuste fino dos metadados (instituição, responsáveis, licença definitiva) é feito depois, no IPT, na hora de publicar.
+
 ```{=html}
 <ol class="fix-steps">
-  <li><strong>Revise os metadados (EML).</strong>
-    <p>Preencha título do conjunto, instituição, licença e responsáveis; eles vão no <span class="term">eml.xml</span> e descrevem o conjunto para quem o encontrar.</p></li>
   <li><strong>Gere o arquivo.</strong>
     <p>O Saíra monta o pacote <span class="term">.zip</span> com <span class="term">occurrence.txt</span>, <span class="term">meta.xml</span> e <span class="term">eml.xml</span>.</p></li>
   <li><strong>Baixe e publique.</strong>
@@ -152,15 +152,9 @@ E os **arquivos auxiliares**, para o seu controle, fora do pacote público:
 É um pacote `.zip` padronizado: um arquivo de dados (<span class="term">occurrence.txt</span>), um descritor que diz o que cada coluna significa (<span class="term">meta.xml</span>) e os metadados do conjunto (<span class="term">eml.xml</span>). É exatamente o que os repositórios globais esperam receber.
 :::
 
-::: {.callout-tip}
-## Um modelo reutilizável vem junto
-O `.zip` também inclui um **modelo de mapeamento** (`<dataset>-mapping-guide.txt`): o registro "sua coluna → termo Darwin Core" do mapeamento que você fez, sem nenhum dado. Guarde-o para auto-mapear planilhas futuras com a mesma estrutura, via **Importar modelo** (ver [Mapeando Darwin Core](03-mapeamento-dwc.qmd)).
-:::
+O `.zip` também traz um **modelo de mapeamento** (`<dataset>-mapping-guide.txt`): o registro "sua coluna → termo Darwin Core", sem dados. Guarde-o para auto-mapear planilhas futuras com a mesma estrutura, via **Importar modelo** (ver [Mapeando Darwin Core](03-mapeamento-dwc.qmd)).
 
-::: {.callout-note}
-## Precisa de uma planilha em vez do pacote?
-Além do DwC-A, o Saíra também exporta o conjunto como `.xlsx` com **todas as células forçadas a texto**, evitando que o Excel reinterprete datas, números de tombo ou coordenadas. Útil para conferência manual ou para enviar a colaboradores.
-:::
+Além do DwC-A, o Saíra exporta o conjunto como `.xlsx` com **todas as células forçadas a texto**, evitando que o Excel reinterprete datas, números de tombo ou coordenadas — útil para conferência manual ou para enviar a colaboradores.
 
 ## Publicando no SiBBr e no GBIF
 

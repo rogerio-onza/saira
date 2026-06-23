@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **Help site and README corrections (docs only).** The landing page now shows the full **five-step** workflow (the Mapping step was missing) and a trimmed closing line. Several tutorial sections were tightened and corrected: the camera-trap section now makes clear Saíra reads any accepted spreadsheet and that Camtrap DP / Wildlife Insights are handled specially only because those datasets arrive as multiple files to be joined; the Modelos/basisOfRecord, generalization and export prose were made leaner; the "Tabela 5/7 de Chapman" references became linked citations to the Chapman (2020) DOI; the MMA "where the list comes from" callout moved to the end of its section; the export page now states the EML metadata is generated automatically (it is **not** filled in by the user) and collapses three stacked callouts into one callout plus prose; the "not working with Brazilian species?" note became a warning. The FAQ answers are now flat cards (question as a heading above each card). In light mode, table backgrounds are now solid white. **Correctness fix:** the README and FAQ no longer claim Excel (`.xlsx`/`.xls`) is accepted on **upload** — only CSV/TSV/TXT (plus camera-trap `.zip`) are; the `.xlsx` Saíra produces is an export mirror. All changes mirrored in PT and EN.
+
 ## [0.9.1] - 2026-06-22
 
 ### Added

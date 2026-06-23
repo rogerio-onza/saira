@@ -299,6 +299,16 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
 .fix-steps li strong { font-weight: 600; }
 .fix-steps li p { margin: 0.3em 0 0; font-size: 1.02rem; color: var(--text-soft); }
 
+// FAQ answers as flat cards — the question stays as a heading above the card
+.faq-card {
+  padding: 14px 18px; margin: 0.4em 0 1.4em;
+  background: var(--table-bg); border: 1px solid var(--border);
+  border-radius: var(--r); box-shadow: none;
+}
+.faq-card > :first-child { margin-top: 0; }
+.faq-card > :last-child { margin-bottom: 0; }
+.faq-card p { color: var(--text-soft); }
+
 // =============================================================================
 //  Grade de cards da página de Tutoriais — cada etapa é um card clicável
 // =============================================================================
@@ -342,8 +352,8 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
 .chip-row .term { font-size: 0.82rem; padding: 0.32em 0.62em; }
 
 .maptable { width: 100%; border-collapse: collapse; margin: 1.4em 0; font-size: 0.95rem; }
-.maptable th { text-align: left; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-soft); padding: 10px 14px; border-bottom: 1px solid var(--border-strong); }
-.maptable td { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.maptable th { text-align: left; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-soft); padding: 10px 14px; border-bottom: 1px solid var(--border-strong); background: var(--table-bg); }
+.maptable td { padding: 12px 14px; border-bottom: 1px solid var(--border); background: var(--table-bg); }
 .maptable td:first-child { font-family: var(--mono); font-size: 0.82rem; color: var(--text-soft); }
 .maptable td .arrow { color: var(--primary-dark); }
 .maptable td:last-child { font-family: var(--mono); font-size: 0.82rem; color: var(--accent); font-weight: 700; }
@@ -360,12 +370,12 @@ table.table:not(.maptable) > :not(caption) > * > th,
 table.table:not(.maptable) thead th {
   text-align: left; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--text-soft); padding: 10px 14px;
-  border-bottom: 1px solid var(--border-strong); background: transparent; box-shadow: none;
+  border-bottom: 1px solid var(--border-strong); background: var(--table-bg); box-shadow: none;
 }
 table.table:not(.maptable) > :not(caption) > * > td,
 table.table:not(.maptable) tbody td {
   padding: 12px 14px; border-bottom: 1px solid var(--border);
-  background: transparent; box-shadow: none;
+  background: var(--table-bg); box-shadow: none;
 }
 table.table:not(.maptable) tbody tr:hover td { background: var(--surface); }
 table.table:not(.maptable) code { font-family: var(--mono); }
