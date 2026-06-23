@@ -64,13 +64,13 @@ O Saíra assume que a **primeira linha** contém os nomes das colunas. Remova li
 
 ## Dados de armadilha fotográfica
 
-Se seus dados vêm de armadilhas fotográficas (camera trap), o Saíra reconhece três formatos e os converte em uma tabela de ocorrências antes do mapeamento:
+Uma planilha comum de ocorrências você carrega direto (ver [Formatos aceitos](#formatos-aceitos)). Conjuntos de armadilha fotográfica são diferentes: chegam em **vários arquivos separados** (registros, implantações, mídia) que precisam ser unidos numa única tabela. Por isso o Saíra trata esses pacotes `.zip` à parte, juntando-os automaticamente antes do mapeamento. Ele reconhece:
 
-- **Camtrap DP** (Camera Trap Data Package): o pacote `.zip` padronizado, com o descritor `datapackage.json` e as tabelas `deployments`, `observations` e (opcionalmente) `media`.
-- **CSVs de Camtrap DP soltos**: o mesmo conjunto de tabelas (`deployments.csv` + `observations.csv`, com `media.csv` opcional) num `.zip`, mas **sem o descritor**: o Saíra sintetiza um `datapackage.json` a partir dos CSVs encontrados.
-- **Wildlife Insights**: a exportação da plataforma (`deployments.csv` + `projects.csv` + imagens), em que o Saíra renomeia as colunas para o formato Camtrap DP e deriva o nome científico (a partir de classe, ordem, família, gênero e espécie), a data/hora do registro e o tipo de observação.
+- **Camtrap DP** (Camera Trap Data Package): o `.zip` padronizado, com o descritor `datapackage.json` e as tabelas `deployments`, `observations` e (opcional) `media`.
+- **CSVs de Camtrap DP soltos**: as mesmas tabelas num `.zip`, mas **sem o descritor** — o Saíra o sintetiza a partir dos CSVs encontrados.
+- **Wildlife Insights**: a exportação da plataforma, em que o Saíra renomeia as colunas para o formato Camtrap DP e deriva o nome científico, a data/hora e o tipo de observação.
 
-Em ambos os casos o Saíra monta um nome científico consistente e organiza os campos de tempo e local, para que o restante do fluxo (mapeamento, nomes, coordenadas) funcione igual ao de uma planilha comum.
+Em todos os casos o Saíra monta um nome científico consistente e organiza tempo e local, para o restante do fluxo (mapeamento, nomes, coordenadas) funcionar igual ao de uma planilha comum.
 
 ::: {.callout-note}
 ## Pacote camtrap incompleto?

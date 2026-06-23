@@ -20,20 +20,30 @@ termos do Darwin Core, valida nomes e coordenadas e gera o arquivo final.
 O app abre no navegador; você usa por menus, botões e tabelas. Código, só na
 instalação.
 
+📚 **Tutoriais completos e documentação** ficam no site do projeto:
+<https://rogerio-onza.github.io/saira/>. Este README é só um resumo.
+
 ### 🔄 Como funciona
 
-1. **Upload** — carregue seu CSV ou Excel.
+1. **Upload** — carregue seu CSV (`.csv`, `.tsv`, `.txt`) ou pacote de armadilha fotográfica.
 2. **Mapeamento** — associe cada coluna a um termo do Darwin Core (com sugestões automáticas).
 3. **Validação** — confira nomes científicos e coordenadas.
-4. **Exportar** — baixe o arquivo padronizado, pronto para o GBIF/IPT.
+4. **Generalização** — proteja coordenadas de espécies ameaçadas (Lista MMA), seguindo a tabela de decisão de Chapman (2020).
+5. **Exportar** — baixe o arquivo padronizado, pronto para o GBIF/IPT.
 
 ### ✨ Recursos
 
-- Lê CSV e Excel.
+- Lê CSV (`.csv`, `.tsv`, `.txt`).
 - Mapeamento de colunas com sugestões automáticas para os termos Darwin Core.
 - Verificação de nomes científicos contra bases taxonômicas (grafia e sinônimos).
 - Validação de coordenadas: faixas de lat/lon, pontos no mar, país e coordenadas
   trocadas, com correção em um clique.
+- Generalização de espécies sensíveis: para táxons ameaçados (Lista Nacional do
+  MMA), ajuda a reduzir a precisão das coordenadas espécie por espécie, seguindo
+  a tabela de decisão de Chapman (2020).
+- Status de conservação anexado na exportação (campo `dynamicProperties`):
+  categoria MMA (`mmaThreatStatus`) das bases brasileiras e categoria IUCN global
+  (`iucnRedListCategory`) do GBIF.
 - Exporta um Darwin Core Archive (`occurrence.txt`, `meta.xml`, `eml.xml`) pronto
   para o GBIF/IPT, mais uma cópia em `.xlsx` e o guia de mapeamento. O `eml.xml`
   já traz a área geográfica e o intervalo de datas calculados dos seus dados.
@@ -141,20 +151,30 @@ validates names and coordinates, and produces the final archive.
 The app opens in your browser; you work through menus, buttons, and tables. Code,
 only at install time.
 
+📚 **Full tutorials and documentation** live on the project site:
+<https://rogerio-onza.github.io/saira/en/>. This README is only a summary.
+
 ### 🔄 How it works
 
-1. **Upload** — load your CSV or Excel file.
+1. **Upload** — load your CSV (`.csv`, `.tsv`, `.txt`) or camera-trap package.
 2. **Mapping** — match each column to a Darwin Core term (with automatic suggestions).
 3. **Validation** — check scientific names and coordinates.
-4. **Export** — download the standardized file, ready for GBIF/IPT.
+4. **Generalization** — protect coordinates of threatened species (MMA list), following Chapman's (2020) decision table.
+5. **Export** — download the standardized file, ready for GBIF/IPT.
 
 ### ✨ Features
 
-- Reads CSV and Excel.
+- Reads CSV (`.csv`, `.tsv`, `.txt`).
 - Column mapping with automatic suggestions for Darwin Core terms.
 - Scientific-name verification against taxonomic backbones (spelling and synonyms).
 - Coordinate validation: lat/lon ranges, points at sea, country, and swapped
   coordinates, with one-click correction.
+- Generalization of sensitive species: for threatened taxa (national MMA list),
+  helps reduce coordinate precision species by species, following Chapman's
+  (2020) decision table.
+- Conservation status attached at export (`dynamicProperties` field): the MMA
+  category (`mmaThreatStatus`) from the Brazilian databases and the global IUCN
+  category (`iucnRedListCategory`) from GBIF.
 - Exports a Darwin Core Archive (`occurrence.txt`, `meta.xml`, `eml.xml`) ready
   for GBIF/IPT, plus an `.xlsx` copy and the mapping guide. The `eml.xml` already
   carries the geographic bounding box and date range computed from your data.

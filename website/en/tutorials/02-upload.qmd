@@ -64,13 +64,13 @@ Saíra assumes the **first row** holds the column names. Remove title rows, logo
 
 ## Camera-trap data
 
-If your data comes from camera traps, Saíra recognizes three formats and converts them into an occurrence table before mapping:
+A regular occurrence spreadsheet you load directly (see [Supported formats](#supported-formats)). Camera-trap datasets are different: they arrive as **several separate files** (records, deployments, media) that have to be joined into a single table. That is why Saíra handles these `.zip` packages on their own, merging them automatically before mapping. It recognizes:
 
-- **Camtrap DP** (Camera Trap Data Package): the standardized `.zip` package, with the `datapackage.json` descriptor and the `deployments`, `observations` and (optionally) `media` tables.
-- **Loose Camtrap DP CSVs**: the same set of tables (`deployments.csv` + `observations.csv`, with optional `media.csv`) in a `.zip`, but **without the descriptor**: Saíra synthesizes a `datapackage.json` from the CSVs it finds.
-- **Wildlife Insights**: the platform's export (`deployments.csv` + `projects.csv` + images), where Saíra renames the columns to the Camtrap DP shape and derives the scientific name (from class, order, family, genus and species), the record timestamp and the observation type.
+- **Camtrap DP** (Camera Trap Data Package): the standardized `.zip`, with the `datapackage.json` descriptor and the `deployments`, `observations` and (optional) `media` tables.
+- **Loose Camtrap DP CSVs**: the same tables in a `.zip`, but **without the descriptor** — Saíra synthesizes one from the CSVs it finds.
+- **Wildlife Insights**: the platform's export, where Saíra renames the columns to the Camtrap DP shape and derives the scientific name, the timestamp and the observation type.
 
-In every case Saíra builds a consistent scientific name and organizes the time and place fields, so the rest of the workflow (mapping, names, coordinates) works just like a regular spreadsheet.
+In every case Saíra builds a consistent scientific name and organizes time and place, so the rest of the workflow (mapping, names, coordinates) works just like a regular spreadsheet.
 
 ::: {.callout-note}
 ## Incomplete camtrap package?

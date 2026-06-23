@@ -86,22 +86,22 @@ When generating the package, Saíra automatically standardizes the dataset so it
 
 ### Conservation status in `dynamicProperties`
 
-For each record of an assessed taxon, Saíra also writes its conservation status into the `dynamicProperties` column as clean JSON keys, based on the databases you chose in [name validation](04-name-validation.qmd):
+For each assessed taxon, Saíra writes its conservation status into `dynamicProperties` as JSON keys, based on the databases you chose in [name validation](04-name-validation.qmd):
 
-- a **Brazilian** database (Flora BR / Fauna BR) adds `mmaThreatStatus` (the threat category) and `mmaSource` (the portaria that listed the taxon);
-- **GBIF** adds `iucnRedListCategory` (the global IUCN code), looked up live on GBIF.
+- a **Brazilian** database (Flora BR / Fauna BR) → `mmaThreatStatus` (category) and `mmaSource` (portaria);
+- **GBIF** → `iucnRedListCategory` (global IUCN code, looked up live).
 
-Both can appear together and they merge into any `dynamicProperties` you mapped yourself. For example:
+Both can appear together and they merge into whatever you mapped yourself:
 
 ```json
 {"mmaThreatStatus":"CR","mmaSource":"Portaria 1.704/2026","iucnRedListCategory":"NT"}
 ```
 
-The GBIF lookup is best-effort: with no internet, or for a taxon GBIF does not assess, the IUCN key is simply omitted and the export proceeds normally.
+The GBIF lookup is best-effort: with no internet or no assessment, the IUCN key is omitted and the export proceeds.
 
-::: {.callout-tip}
+::: {.callout-warning}
 ## Not working with Brazilian species?
-Select **GBIF only** in name validation. Saíra then writes just `iucnRedListCategory` (global IUCN) and does not try to apply the MMA category, which covers Brazil's fauna and flora.
+Only then select **GBIF only** in name validation: Saíra writes just `iucnRedListCategory` (global IUCN) and does not apply the MMA category, which covers Brazil's fauna and flora. If you do work with Brazilian species, keep the national database selected.
 :::
 
 ## Bundle files
@@ -136,10 +136,10 @@ And the **auxiliary files**, for your own control, kept out of the public packag
 
 ## Generating the Darwin Core Archive
 
+The metadata (`eml.xml`) is assembled **automatically**: Saíra uses a default title, computes the geographic bounding box and date range from your data, and applies the CC0 license by default — there is nothing to fill in. Fine-tuning the metadata (institution, responsible parties, final license) happens later, in the IPT, at publication time.
+
 ```{=html}
 <ol class="fix-steps">
-  <li><strong>Review the metadata (EML).</strong>
-    <p>Fill in the dataset title, institution, license and responsible parties; they go into <span class="term">eml.xml</span> and describe the dataset to whoever finds it.</p></li>
   <li><strong>Generate the archive.</strong>
     <p>Saíra assembles the <span class="term">.zip</span> package with <span class="term">occurrence.txt</span>, <span class="term">meta.xml</span> and <span class="term">eml.xml</span>.</p></li>
   <li><strong>Download and publish.</strong>
@@ -152,15 +152,9 @@ And the **auxiliary files**, for your own control, kept out of the public packag
 It is a standardized `.zip` package: a data file (<span class="term">occurrence.txt</span>), a descriptor that says what each column means (<span class="term">meta.xml</span>) and the dataset metadata (<span class="term">eml.xml</span>). It is exactly what global repositories expect to receive.
 :::
 
-::: {.callout-tip}
-## A reusable template comes along
 The `.zip` also includes a **mapping template** (`<dataset>-mapping-guide.txt`): the "your column → Darwin Core term" record of the mapping you did, with no data. Keep it to auto-map future spreadsheets with the same structure, via **Import template** (see [Darwin Core mapping](03-dwc-mapping.qmd)).
-:::
 
-::: {.callout-note}
-## Need a spreadsheet instead of the package?
-Besides the DwC-A, Saíra also exports the dataset as `.xlsx` with **every cell forced to text**, preventing Excel from reinterpreting dates, catalog numbers or coordinates. Handy for manual review or for sending to collaborators.
-:::
+Besides the DwC-A, Saíra also exports the dataset as `.xlsx` with **every cell forced to text**, preventing Excel from reinterpreting dates, catalog numbers or coordinates — handy for manual review or for sending to collaborators.
 
 ## Publishing on SiBBr and GBIF
 

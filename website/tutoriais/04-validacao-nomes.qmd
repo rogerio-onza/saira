@@ -115,11 +115,6 @@ O Saíra resolve os nomes contra a base, mas a autoridade é do especialista. Em
 
 Depois de resolver os nomes, o Saíra compara cada táxon com a **lista nacional de espécies ameaçadas de extinção**, que vem **embutida no app** (não é preciso baixar nada). Os táxons presentes na lista recebem uma sinalização **Sensível** no relatório, com a categoria de ameaça: **VU** (vulnerável), **EN** (em perigo), **CR** (criticamente em perigo) e **CR (PEX)** (criticamente em perigo, possivelmente extinta).
 
-::: {.callout-note}
-## De onde vem a lista
-A lista embutida vem das listas oficiais do Ministério do Meio Ambiente: a **flora** pela [**Portaria MMA nº 148, de 7 de junho de 2022**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733); a **fauna terrestre** pela [**Portaria MMA nº 1.704, de 16 de junho de 2026**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917); e a **fauna aquática** (peixes e invertebrados) pela [**Portaria GM/MMA nº 1.667, de 27 de abril de 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623).
-:::
-
 ```{=html}
 <figure class="shot">
   <img src="../assets/img/8.6-relatorio-nomes-especie-sensivel.png" alt="Relatório com táxons sinalizados como Sensível e a categoria de ameaça, e a opção marcar para espécies fora da lista">
@@ -144,6 +139,11 @@ O ajuste é feito num pequeno diálogo de confirmação e vale para a exportaç�
 ```
 
 Aqui a etapa apenas **sinaliza** o que é sensível. A proteção efetiva das coordenadas (decidir se e quanto generalizar a localização) acontece na etapa de **[generalização](06-generalizacao.qmd)**, seguindo a tabela de decisão de Chapman (2020).
+
+::: {.callout-note}
+## De onde vem a lista
+A lista embutida vem das listas oficiais do Ministério do Meio Ambiente: a **flora** pela [**Portaria MMA nº 148, de 7 de junho de 2022**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733); a **fauna terrestre** pela [**Portaria MMA nº 1.704, de 16 de junho de 2026**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917); e a **fauna aquática** (peixes e invertebrados) pela [**Portaria GM/MMA nº 1.667, de 27 de abril de 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623).
+:::
 
 ## O status de conservação vai para a exportação
 

@@ -117,9 +117,9 @@ A tabela abaixo mostra um mapeamento típico de uma coleção ornitológica:
 
 ## Modelos (templates)
 
-Você não precisa salvar o mapeamento à mão. Quando você baixa a planilha padronizada (ver [Pré-visualização e exportação](07-preview-exportacao.qmd)), o Saíra inclui no `.zip` um **modelo**: um arquivo de texto (`<dataset>-mapping-guide.txt`) que registra apenas o vocabulário "sua coluna → termo Darwin Core", sem nenhum dado. É o seu mapeamento guardado, pronto para reusar mais tarde ou repassar a outra pessoa da equipe.
+Você não precisa salvar o mapeamento à mão. Ao baixar a planilha padronizada (ver [Pré-visualização e exportação](07-preview-exportacao.qmd)), o Saíra inclui no `.zip` um **modelo** (`<dataset>-mapping-guide.txt`): só o vocabulário "sua coluna → termo Darwin Core", sem dados. É o seu mapeamento guardado, pronto para reusar ou repassar à equipe.
 
-Para reaproveitar, abra o mapeamento de uma nova planilha e clique em **Importar modelo** na barra de ações. Cada linha do modelo é salva como alias no seu Rostrum local, então colunas com o mesmo nome são mapeadas automaticamente: você só revisa o que mudou.
+Para reaproveitar, abra o mapeamento de uma nova planilha e clique em **Importar modelo**. Cada linha vira um alias no seu Rostrum local, então colunas com o mesmo nome são mapeadas automaticamente — você só revisa o que mudou. Útil para coleções que reimportam planilhas com a mesma estrutura.
 
 ```{=html}
 <figure class="shot">
@@ -132,14 +132,9 @@ Para reaproveitar, abra o mapeamento de uma nova planilha e clique em **Importar
 </figure>
 ```
 
-::: {.callout-tip}
-## Reaplique o mapeamento de uma vez
-Coleções costumam reimportar planilhas com a mesma estrutura. Importar o modelo reaplica todo o vocabulário coluna → termo de uma vez e salva cada par como alias, então só as colunas novas ou renomeadas pedem revisão.
-:::
-
 ## O assistente de basisOfRecord
 
-O termo <span class="term">basisOfRecord</span> descreve a natureza do registro: espécime preservado, observação humana, material fóssil, registro de máquina (armadilha fotográfica), entre outros. Em vez de um valor único para o lote, o Saíra traz um **assistente** que parte de uma coluna da sua planilha (por exemplo, <span class="term">tipo_de_registro</span>) e deixa você associar **cada valor distinto** ao termo Darwin Core correspondente, explicando cada opção em linguagem simples, para você não precisar decorar os valores controlados do padrão.
+O termo <span class="term">basisOfRecord</span> descreve a natureza do registro (espécime preservado, observação humana, material fóssil, registro de máquina…). Em vez de um valor único para o lote, o Saíra traz um **assistente**: a partir de uma coluna da sua planilha (por exemplo, <span class="term">tipo_de_registro</span>), você associa **cada valor distinto** ao termo Darwin Core, com uma explicação simples de cada opção.
 
 ```{=html}
 <figure class="shot">

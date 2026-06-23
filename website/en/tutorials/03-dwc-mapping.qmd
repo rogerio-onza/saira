@@ -117,9 +117,9 @@ The table below shows a typical mapping for an ornithological collection:
 
 ## Templates
 
-You don't need to save the mapping by hand. When you download the standardized spreadsheet (see [Preview and export](07-preview-export.qmd)), Saíra includes a **template** in the `.zip`: a text file (`<dataset>-mapping-guide.txt`) that records only the "your column → Darwin Core term" vocabulary, with no data. It is your mapping saved, ready to reuse later or hand to a colleague.
+You don't need to save the mapping by hand. When you download the standardized spreadsheet (see [Preview and export](07-preview-export.qmd)), Saíra includes a **template** in the `.zip` (`<dataset>-mapping-guide.txt`): just the "your column → Darwin Core term" vocabulary, with no data. It is your mapping saved, ready to reuse or hand to a colleague.
 
-To reuse it, open the mapping for a new spreadsheet and click **Import template** in the actions bar. Each line of the template is saved as an alias in your local Rostrum, so columns with the same name are mapped automatically: you only review what changed.
+To reuse it, open the mapping for a new spreadsheet and click **Import template**. Each line becomes an alias in your local Rostrum, so columns with the same name are mapped automatically — you only review what changed. Handy for collections that re-import spreadsheets with the same structure.
 
 ```{=html}
 <figure class="shot">
@@ -132,14 +132,9 @@ To reuse it, open the mapping for a new spreadsheet and click **Import template*
 </figure>
 ```
 
-::: {.callout-tip}
-## Reapply the mapping in one go
-Collections often re-import spreadsheets with the same structure. Importing the template reapplies the whole column → term vocabulary at once and saves each pair as an alias, so only new or renamed columns need review.
-:::
-
 ## The basisOfRecord assistant
 
-The term <span class="term">basisOfRecord</span> describes the nature of the record: preserved specimen, human observation, fossil material, machine record (camera trap), among others. Rather than a single value for the whole batch, Saíra includes an **assistant** that starts from a column of your spreadsheet (for example, <span class="term">tipo_de_registro</span>) and lets you pair **each distinct value** with its Darwin Core term, explaining each option in plain language, so you do not have to memorize the standard's controlled values.
+The term <span class="term">basisOfRecord</span> describes the nature of the record (preserved specimen, human observation, fossil material, machine record…). Rather than a single value for the whole batch, Saíra includes an **assistant**: starting from a column of your spreadsheet (for example, <span class="term">tipo_de_registro</span>), you pair **each distinct value** with its Darwin Core term, with a plain-language explanation of each option.
 
 ```{=html}
 <figure class="shot">

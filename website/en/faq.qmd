@@ -10,12 +10,20 @@ Common questions for people getting started with Saíra to prepare and publish b
 ## Installation and requirements
 
 ### Do I need to know how to program to use Saíra?
+
+::: {.faq-card}
 No. Once installed, all the work happens through a visual interface in your browser: menus, buttons and tables. The only line of code you need is the one that opens the application.
+:::
 
 ### What do I need to have installed?
+
+::: {.faq-card}
 **R** (version 4.1 or later). RStudio is recommended but not required. See the step-by-step in [Installation and first steps](tutorials/01-installation.qmd).
+:::
 
 ### How do I install Saíra?
+
+::: {.faq-card}
 We recommend `pak`, which resolves dependencies automatically:
 
 ```r
@@ -24,53 +32,96 @@ pak::pak("rogerio-onza/saira")
 ```
 
 As an alternative, `remotes::install_github("rogerio-onza/saira")` also works.
+:::
 
 ### The first installation is taking a long time. Is that normal?
+
+::: {.faq-card}
 Yes. Saíra depends on several packages (Shiny, spreadsheet readers, taxonomic and geographic backbones). The first installation downloads and compiles those dependencies and may take a few minutes.
+:::
 
 ## Using the application
 
 ### Does Saíra send my data to the internet?
+
+::: {.faq-card}
 No. The application runs **locally** on your computer (or on an institutional server). Your data never leave the environment where the app is running.
+:::
 
 ### Which languages does the application work in?
+
+::: {.faq-card}
 Saíra is bilingual: **Portuguese (PT-BR)** and **English (EN-US)**. You can switch the language at any time in the top corner of the interface. This help site is also available in both languages (see the language button at the top).
+:::
 
 ### Can I go back to a previous step without losing my work?
+
+::: {.faq-card}
 Yes. The workflow is flexible: you can remap a field, reload the spreadsheet or revalidate at any time.
+:::
 
 ### Which spreadsheet formats does Saíra accept?
-CSV (`.csv`, `.tsv`, `.txt`) and Excel (`.xlsx`, `.xls`), with automatic encoding and separator detection. It also accepts **camera-trap** packages (`.zip`): Camtrap DP and Wildlife Insights exports. Details in [Importing your data](tutorials/02-upload.qmd).
+
+::: {.faq-card}
+CSV (`.csv`, `.tsv`, `.txt`), with automatic encoding and separator detection. It also accepts **camera-trap** packages (`.zip`): Camtrap DP and Wildlife Insights exports. Details in [Importing your data](tutorials/02-upload.qmd).
+:::
 
 ### Can I set a fixed value for the whole dataset?
+
+::: {.faq-card}
 Yes. Seven dataset-level terms (`rightsHolder`, `institutionCode`, `collectionCode`, `country`, `references`, `bibliographicCitation` and `geodeticDatum`) accept a **fixed value**: you type it once on the term's card and Saíra writes it to every row at export. See [Mapping fields to Darwin Core](tutorials/03-dwc-mapping.qmd).
+:::
 
 ## Data and quality
 
 ### The accents in my spreadsheet show up broken. What should I do?
+
+::: {.faq-card}
 It's an encoding issue. Change the encoding on import (usually **UTF-8** or **Latin-1**) until the preview looks right. See [Importing your data](tutorials/02-upload.qmd).
+:::
 
 ### Does Saíra automatically fix scientific names?
+
+::: {.faq-card}
 It **suggests** corrections from taxonomic backbones, but the final decision is always the specialist's. See [Validating scientific names](tutorials/04-name-validation.qmd).
+:::
 
 ### How does Saíra handle threatened species?
+
+::: {.faq-card}
 In a dedicated **generalization** step, it flags threatened taxa (national MMA list) and helps you decide, species by species, whether and how much to reduce coordinate precision, following Chapman's (2020) decision table. See [Generalizing sensitive species](tutorials/06-generalization.qmd).
+:::
 
 ### Does Saíra add the species' conservation status?
+
+::: {.faq-card}
 Yes. At export, it writes the status into the `dynamicProperties` field based on the databases chosen in name validation: a Brazilian database (Flora BR / Fauna BR) adds the **MMA** category (`mmaThreatStatus`) and the source portaria (`mmaSource`); **GBIF** adds the global **IUCN** category (`iucnRedListCategory`). If you do not work with Brazilian species, select GBIF only.
+:::
 
 ## Export and publication
 
 ### What does Saíra produce in the end?
+
+::: {.faq-card}
 A **Darwin Core Archive (DwC-A)**: a `.zip` package with `occurrence.txt`, `meta.xml` and `eml.xml`, ready for publication. The same `.zip` also carries an Excel mirror (`.xlsx`), the reusable mapping template (`<dataset>-mapping-guide.txt`) and, when there are generalized species, a file with the precise coordinates that you keep but do not publish.
+:::
 
 ### How do I publish the file on SiBBr or GBIF?
+
+::: {.faq-card}
 Publication happens outside Saíra, usually via your institution's or SiBBr's **IPT** (Integrated Publishing Toolkit). The generated file is already in the expected format.
+:::
 
 ## Project
 
 ### What is Saíra's license?
+
+::: {.faq-card}
 Saíra is free software, licensed under the **GPL-3.0**. The code is available on [GitHub](https://github.com/rogerio-onza/saira).
+:::
 
 ### I found a problem or have a suggestion. Where do I report it?
+
+::: {.faq-card}
 Open an *issue* on the [project repository on GitHub](https://github.com/rogerio-onza/saira).
+:::
