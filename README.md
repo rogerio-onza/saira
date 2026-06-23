@@ -69,8 +69,8 @@ O Saíra roda em R. Se você nunca usou R, faça isto uma vez:
      CRAN     = "https://cloud.r-project.org"
    ))
 
-   install.packages("remotes")
-   remotes::install_github("rogerio-onza/saira")
+   install.packages("pak")
+   pak::pak("rogerio-onza/saira")
    ```
 
 A primeira instalação pode levar alguns minutos.
@@ -200,8 +200,8 @@ Saíra runs in R. If you have never used R, do this once:
      CRAN     = "https://cloud.r-project.org"
    ))
 
-   install.packages("remotes")
-   remotes::install_github("rogerio-onza/saira")
+   install.packages("pak")
+   pak::pak("rogerio-onza/saira")
    ```
 
 The first install may take a few minutes.
