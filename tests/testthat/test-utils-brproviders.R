@@ -236,8 +236,19 @@ testthat::test_that(".brprovider_check_artifacts: florabr missing artifact menti
 
     testthat::expect_error(
         .brprovider_check_artifacts("florabr", tmp),
-        regexp = "Flora_e_Funga_do_Brasil\\.rds"
+        regexp = "CompleteBrazilianFlora\\.rds"
     )
+})
+
+testthat::test_that(".brprovider_check_artifacts: florabr present artifact returns invisibly", {
+    tmp <- tempfile(pattern = "brp_flora_ok_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+    writeLines("", file.path(tmp, "CompleteBrazilianFlora.rds"))
+
+    result <- .brprovider_check_artifacts("florabr", tmp)
+    testthat::expect_true(length(result) >= 1L)
+    testthat::expect_match(result[[1L]], "CompleteBrazilianFlora\\.rds")
 })
 
 testthat::test_that(".brprovider_check_artifacts: present artifact returns invisibly", {

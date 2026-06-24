@@ -487,7 +487,7 @@ brprovider_latest_remote_version <- function(provider_id) {
 #' @noRd
 .brprovider_check_artifacts <- function(provider_id, tmp_dir) {
     expected <- switch(provider_id,
-        florabr = "Flora_e_Funga_do_Brasil.rds",
+        florabr = "CompleteBrazilianFlora.rds",
         faunabr = "CompleteBrazilianFauna.gz",
         NULL
     )
@@ -519,6 +519,13 @@ brprovider_latest_remote_version <- function(provider_id) {
     tmp_dir <- file.path(tempdir(), provider_id)
     unlink(tmp_dir, recursive = TRUE, force = TRUE)
     dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
+
+    # The IPT data archives are large; on slow links the default 60s download
+    # timeout truncates the zip and surfaces as "extracting from zip" failures.
+    # Raise it for the duration of the download and restore it on exit.
+    old_timeout <- getOption("timeout")
+    options(timeout = max(old_timeout, 600L))
+    on.exit(options(timeout = old_timeout), add = TRUE)
 
     if (isTRUE(verbose)) {
         message(sprintf(
@@ -553,9 +560,11 @@ brprovider_latest_remote_version <- function(provider_id) {
             }
 
             .brprovider_check_artifacts(provider_id, tmp_dir)
+            load_version <- .brprovider_detect_downloaded_version(tmp_dir, data_version)
+            if (is.na(load_version) || !nzchar(load_version)) load_version <- data_version
             data <- florabr::load_florabr(
                 data_dir = tmp_dir,
-                data_version = data_version,
+                data_version = load_version,
                 type = "short",
                 verbose = FALSE
             )
@@ -608,9 +617,11 @@ brprovider_latest_remote_version <- function(provider_id) {
             }
 
             .brprovider_check_artifacts(provider_id, tmp_dir)
+            load_version <- .brprovider_detect_downloaded_version(tmp_dir, data_version)
+            if (is.na(load_version) || !nzchar(load_version)) load_version <- data_version
             data <- faunabr::load_faunabr(
                 data_dir = tmp_dir,
-                data_version = data_version,
+                data_version = load_version,
                 type = "short",
                 verbose = FALSE
             )
@@ -622,12 +633,10 @@ brprovider_latest_remote_version <- function(provider_id) {
         backup_path <- .brprovider_backup_path(provider_id)
         .brprovider_write_rds_atomic(data, persist_path, backup_path)
 
-        local_version <- .brprovider_detect_downloaded_version(tmp_dir, data_version)
-        if (is.na(local_version) || !nzchar(local_version)) {
-            local_version <- as.character(data_version)
-            if (identical(local_version, "latest")) {
-                local_version <- NA_character_
-            }
+        local_version <- load_version
+        if (is.na(local_version) || !nzchar(local_version) ||
+            identical(local_version, "latest")) {
+            local_version <- NA_character_
         }
 
         list(

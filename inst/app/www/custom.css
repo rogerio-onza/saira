@@ -5627,8 +5627,9 @@ body.vn-review-open .modal-backdrop.show {
 .vn-conservation-summary {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.6rem 1rem;
+  gap: 0.3rem;
+  padding: 0.7rem 1rem;
+  border-top: 1px solid rgba(40, 51, 172, 0.08);
   border-bottom: 1px solid rgba(40, 51, 172, 0.08);
   background: rgba(40, 51, 172, 0.03);
 }
@@ -5636,6 +5637,7 @@ body.vn-review-open .modal-backdrop.show {
 .vn-conservation-line {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+  line-height: var(--leading-normal);
   color: var(--text-muted);
 }
 

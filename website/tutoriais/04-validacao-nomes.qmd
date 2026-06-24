@@ -33,6 +33,17 @@ Quando você marca mais de uma base, o Saíra consulta em **cascata** (Flora do 
 Flora do Brasil e Fauna do Brasil são **baixadas e armazenadas localmente** na primeira vez que você as usa. Depois disso, a validação roda mesmo sem internet e fica mais rápida. Cada base aparece como um **cartão de provedor** com o seu status (não baixada, baixando, atualizada) e a versão local; as bases que você já baixou ficam **pré-selecionadas** ao reabrir o app, para que sua escolha persista entre sessões. O GBIF é consultado conforme a necessidade.
 :::
 
+::: {.callout-warning}
+## Flora BR / Fauna BR não baixam? Atualize o Saíra
+Os arquivos publicados pela Flora e Funga do Brasil e pelo Catálogo Taxonômico da Fauna do Brasil mudam de tempos em tempos, e o Saíra acompanha esses formatos. Se o cartão travar com **"falha na atualização"** e nunca ficar verde, é sinal de que você está numa versão antiga do app. **Reinstale o Saíra com `pak`** para pegar a correção mais recente — o `pak` resolve sozinho as versões certas dos pacotes das bases (Flora BR e Fauna BR):
+
+```r
+pak::pak("rogerio-onza/saira")
+```
+
+Depois reabra o app com `saira::run_app()` e tente a validação de novo.
+:::
+
 ## Antes de rodar: normalização
 
 Abaixo das bases, duas opções controlam como cada nome é preparado antes da consulta. As duas vêm **ligadas** por padrão:
