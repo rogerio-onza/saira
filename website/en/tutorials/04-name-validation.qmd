@@ -33,6 +33,17 @@ When you select more than one database, Saíra queries them in a **cascade** (Fl
 Flora do Brasil and Fauna do Brasil are **downloaded and stored locally** the first time you use them. After that, validation runs even without internet and is faster. Each database appears as a **provider card** showing its status (not downloaded, downloading, up to date) and the local version; the databases you already downloaded stay **pre-selected** when you reopen the app, so your choice persists across sessions. GBIF is queried as needed.
 :::
 
+::: {.callout-warning}
+## Flora BR / Fauna BR won't download? Update Saíra
+The files published by Flora e Funga do Brasil and by the Catálogo Taxonômico da Fauna do Brasil change from time to time, and Saíra keeps up with those formats. If a card gets stuck on **"update failed"** and never turns green, you are likely on an older version of the app. **Reinstall Saíra with `pak`** to get the latest fix — `pak` resolves the correct versions of the database packages (Flora BR and Fauna BR) for you:
+
+```r
+pak::pak("rogerio-onza/saira")
+```
+
+Then reopen the app with `saira::run_app()` and try validation again.
+:::
+
 ## Before you run: normalization
 
 Below the databases, two options control how each name is prepared before the lookup. Both are **on** by default:

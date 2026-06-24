@@ -2147,11 +2147,11 @@
     },
     "faunabr": {
       "Package": "faunabr",
-      "Version": "1.0.0",
-      "Source": "Repository",
+      "Version": "1.0.1",
+      "Source": "GitHub",
       "Title": "Explore Catálogo Taxônomico da Fauna do Brasil Database",
       "Authors@R": "person(\"Weverton\", \"Trindade\", , \"wevertonf1993@gmail.com\", role = c(\"aut\", \"cre\"), comment = c(ORCID = \"0000-0003-2045-4555\"))",
-      "Description": "A collection of functions designed to retrieve, filter and spatialize data from the Catálogo Taxônomico da Fauna do Brasil. For more information about the dataset, please visit <http://fauna.jbrj.gov.br/fauna/listaBrasil/>.",
+      "Description": "A collection of functions designed to retrieve, filter and spatialize data from the Catálogo Taxônomico da Fauna do Brasil. For more information about the dataset, please visit <https://fauna.jbrj.gov.br/fauna/listaBrasil/>.",
       "Imports": [
         "XML (>= 3.99.0.14)",
         "data.table (>= 1.14.8)",
@@ -2162,6 +2162,7 @@
       ],
       "License": "GPL (>= 3)",
       "Encoding": "UTF-8",
+      "Roxygen": "list(markdown = TRUE)",
       "RoxygenNote": "7.3.3",
       "Depends": [
         "R (>= 2.10)"
@@ -2175,10 +2176,14 @@
       "VignetteBuilder": "knitr",
       "BugReports": "https://github.com/wevertonbio/faunabr/issues",
       "URL": "https://wevertonbio.github.io/faunabr/",
-      "NeedsCompilation": "no",
       "Author": "Weverton Trindade [aut, cre] (ORCID: <https://orcid.org/0000-0003-2045-4555>)",
       "Maintainer": "Weverton Trindade <wevertonf1993@gmail.com>",
-      "Repository": "CRAN"
+      "RemoteType": "github",
+      "RemoteHost": "api.github.com",
+      "RemoteUsername": "wevertonbio",
+      "RemoteRepo": "faunabr",
+      "RemoteRef": "e3d4331a1cec6c797343dfe2dc8d74df74165df5",
+      "RemoteSha": "e3d4331a1cec6c797343dfe2dc8d74df74165df5"
     },
     "florabr": {
       "Package": "florabr",
