@@ -94,3 +94,4 @@ Collate:
     'utils_taxadb.R'
     'utils_threat_status.R'
     'utils_upload.R'
+    'utils_version.R'

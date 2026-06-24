@@ -40,6 +40,12 @@ Como alternativa, `remotes::install_github("rogerio-onza/saira")` também funcio
 Sim. O Saíra depende de vários pacotes (Shiny, leitura de planilhas, bases taxonômicas e geográficas). A primeira instalação baixa e compila essas dependências e pode levar alguns minutos.
 :::
 
+### Atualizei o Saíra, mas ele parece a versão antiga. O que houve?
+
+::: {.faq-card}
+Quase sempre é o **R que não foi reiniciado**. Ao atualizar o pacote (via `pak` ou reinstalação) com o R aberto, a sessão continua rodando a versão antiga já carregada na memória — o app "parece" não ter mudado. **Feche e reabra o R** (no RStudio, *Session › Restart R*) e abra o app de novo. O Saíra detecta essa situação e mostra um aviso pedindo para reiniciar; ele também exibe, na barra de navegação (ao lado do seletor de idioma), a versão em uso (ex.: `v0.9.1`) — que leva a esta página de atualizações — então confira se bate com a que você instalou.
+:::
+
 ## Usando o aplicativo
 
 ### O Saíra envia meus dados para a internet?

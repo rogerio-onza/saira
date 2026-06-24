@@ -27,6 +27,9 @@ app_server <- function(input, output, session) {
         }
     })
 
+    # Warn once if the package was updated without restarting R (no-op otherwise).
+    notify_session_stale(session, lang_r)
+
     # Dynamic navigation titles based on language
     output$nav_upload_title <- shiny::renderUI({
         tr("nav_home", lang_r())
@@ -66,6 +69,21 @@ app_server <- function(input, output, session) {
 
     output$nav_help_title <- shiny::renderUI({
         tr("nav_help", lang_r())
+    })
+
+    # Version badge (navbar): links to the releases page in the active language.
+    # Shows the version loaded in this session (not on disk) so it stays truthful
+    # when the package was updated without restarting R.
+    output$version_badge <- shiny::renderUI({
+        version <- saira_running_version()
+        shiny::tags$a(
+            paste0("v", version),
+            class = "ver-badge",
+            href = saira_releases_url(lang_r()),
+            target = "_blank",
+            rel = "noopener",
+            title = tr("version_badge_title", lang_r())
+        )
     })
 
     # Chain of Reactivity: Data Flow
