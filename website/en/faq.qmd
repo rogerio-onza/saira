@@ -40,6 +40,12 @@ As an alternative, `remotes::install_github("rogerio-onza/saira")` also works.
 Yes. Saíra depends on several packages (Shiny, spreadsheet readers, taxonomic and geographic backbones). The first installation downloads and compiles those dependencies and may take a few minutes.
 :::
 
+### I updated Saíra, but it still looks like the old version. What happened?
+
+::: {.faq-card}
+It is almost always **R that was not restarted**. When you update the package (via `pak` or a reinstall) with R still open, the session keeps running the old version already loaded in memory — so the app "looks" unchanged. **Close and reopen R** (in RStudio, *Session › Restart R*) and launch the app again. Saíra detects this and shows a warning asking you to restart; it also displays, in the navbar (next to the language selector), the running version (e.g. `v0.9.1`) — which links to this releases page — so check that it matches the one you installed.
+:::
+
 ## Using the application
 
 ### Does Saíra send my data to the internet?

@@ -12,6 +12,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **`pkgload::load_all()`** carrega todos os arquivos de `R/` automaticamente -- nao precisa de `source()` em cada modulo.
 - **Diretorio de trabalho**: `pkgload::load_all()` precisa ser chamado a partir do diretorio que contem `DESCRIPTION`.
 - **Rename de pacote sem compat legada exige varredura por string literal**: atualizar `Package`, `library()`, `test_check()`, `system.file(package=...)`, `asNamespace()` e `getFromNamespace()` no mesmo ciclo evita ambiente parcialmente quebrado.
+- **Sessao R com namespace defasado apos update sem reiniciar**: ao atualizar o pacote (via `pak`/reinstalar) com o R aberto, a sessao continua executando o namespace antigo ja carregado na memoria enquanto o disco ja tem a versao nova -- o app "parece" a versao velha (foi a causa-raiz de um falso "cache de mapeamento preso na 0.3.0"). Detectar comparando `getNamespaceVersion("saira")` (carregado na sessao) com `utils::packageVersion("saira")` (le o DESCRIPTION no disco); sob `pkgload::load_all()` ambos batem, entao dev nao dispara falso positivo. Implementado em `saira_session_is_stale()`/`notify_session_stale()` (aviso fixo no app + `warning()` no console) mais um badge de versao no navbar para confirmacao visual.
 
 ## Shiny / Reactive Patterns
 

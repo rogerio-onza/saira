@@ -3,6 +3,18 @@
     "pt": "Saíra - Padronização DwC",
     "en": "Saíra - DwC Standardization"
   },
+  "session_stale_title": {
+    "pt": "Versão desatualizada nesta sessão",
+    "en": "Outdated version in this session"
+  },
+  "session_stale_body": {
+    "pt": "Você está rodando o Saíra %s, mas a %s está instalada. Reinicie o R (a sessão) para carregar a atualização.",
+    "en": "You are running Saíra %s, but %s is installed. Restart R (the session) to load the update."
+  },
+  "version_badge_title": {
+    "pt": "Ver as atualizações no site",
+    "en": "See the releases on the website"
+  },
   "nav_home": {
     "pt": "Início",
     "en": "Home"

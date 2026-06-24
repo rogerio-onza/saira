@@ -19,6 +19,17 @@ run_app <- function(...) {
         warning("[Sa\u00EDra] Unhandled error in Shiny reactive context", call. = FALSE)
     })
 
+    # Warn (server logs) when the loaded namespace is older than the installed
+    # package: the user updated Saira without restarting R. The in-app banner is
+    # raised in app_server() via notify_session_stale().
+    stale <- saira_session_is_stale()
+    if (isTRUE(stale$stale)) {
+        warning(sprintf(
+            "[Sa\u00EDra] Session is running v%s but v%s is installed on disk. Restart R to load the update.",
+            stale$loaded, stale$installed
+        ), call. = FALSE)
+    }
+
     # Get path to www directory
     www_path <- system.file("app/www", package = "saira")
 

@@ -293,6 +293,39 @@ label,
   font-style: italic;
 }
 
+/* Version badge — mirrors the website navbar pill (Tangara plumage gradient:
+   cyan -> teal -> green). Sits in the navbar item row beside the language
+   selector so users can confirm at a glance which version they run; pairs with
+   the stale-session warning (saira_session_is_stale). align-self:center keeps it
+   on the shared horizontal baseline of the other navbar items. Dark text keeps
+   AA contrast over the light/medium gradient; box-shadow:none keeps cards flat. */
+.navbar .ver-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  background: linear-gradient(120deg, var(--primary) 0%, var(--primary-hover) 45%, var(--success) 100%);
+  border: 1px solid transparent;
+  border-radius: 100px;
+  padding: 0.14em 0.72em;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  white-space: nowrap;
+  box-shadow: none;
+  transition: filter 0.15s ease;
+}
+
+/* Links to the releases page; subtle lift on hover/focus (matches the site). */
+.navbar .ver-badge:hover,
+.navbar .ver-badge:focus {
+  filter: brightness(1.06) saturate(1.08);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
 /* Nav title: show static fallback immediately, hide once server populates dynamic.
    Without this, both .nav-title-static and .nav-title-dynamic render together,
    producing "Mapeamento Mapeamento" / "Coordenadas Coordenadas" in the navbar. */

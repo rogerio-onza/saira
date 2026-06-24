@@ -180,7 +180,7 @@ app_ui <- function() {
                 mod_help_ui("help")
             ),
 
-            # Spacer pushes language selector to the right
+            # Spacer pushes the language selector and version badge to the right
             bslib::nav_spacer(),
 
             # Language selector
@@ -193,6 +193,13 @@ app_ui <- function() {
                     width = "150px",
                     selectize = FALSE
                 )
+            ),
+
+            # Version badge \u2014 sits with the navbar items, beside the language
+            # selector. Rendered server-side (output$version_badge) as a link to
+            # the releases page, language-aware, mirroring the website navbar pill.
+            bslib::nav_item(
+                shiny::uiOutput("version_badge", inline = TRUE)
             )
         )
     )
