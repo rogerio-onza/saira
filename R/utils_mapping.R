@@ -2291,7 +2291,9 @@ build_processed_mapping_df <- function(
 
         if (term == "modified") {
             if (isTRUE(modified_use_today)) {
-                date_str <- format(now_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+                # Date only (no time/zone), matching the manual date-picker path
+                # below -- the user wants a plain calendar date for `modified`.
+                date_str <- format(now_utc, "%Y-%m-%d", tz = "UTC")
                 df_final[[term]] <- rep(date_str, nrow(df))
                 selected_terms <- c(selected_terms, term)
             } else if (!is.null(custom_modified_date)) {

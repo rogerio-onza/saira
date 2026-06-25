@@ -5,6 +5,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Fixed
+- **The `modified` term is now a plain date when "use today's date" is checked.** Ticking "use today's date" wrote `modified` as a full UTC timestamp (e.g. `2026-06-25T14:30:00Z`), while the manual date picker wrote a plain date (`2026-06-25`). The "use today" path now also writes a date only, so the two paths are consistent and `modified` never carries a time or timezone.
+
 ## [0.9.2] - 2026-06-24
 
 ### Added
