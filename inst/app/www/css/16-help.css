@@ -76,94 +76,23 @@
   color: #2833ac;
 }
 
-.help-workflow-card {
+/* Resource cards (Tutorials, Useful links, References, FAQ) in the main column */
+.help-resource-card {
   background: #ffffff;
   border: 1.5px solid rgba(40, 51, 172, 0.18);
   border-radius: 16px;
-  padding: 24px 28px;
+  padding: 22px 26px;
   box-shadow: none;
 }
 
-.help-workflow-card-head {
-  margin-bottom: 18px;
-}
-
-.help-workflow-title {
-  font-family: var(--font-serif);
-  font-size: var(--text-lg);
-  font-weight: var(--weight-semibold);
-  color: #1c1c26;
-  letter-spacing: -0.02em;
-  margin: 0;
-}
-
-.help-workflow-subtitle {
-  margin-top: 4px;
-  font-size: var(--text-sm);
-  color: #6c757d;
-}
-
-.help-workflow-steps {
-  display: flex;
-  flex-direction: column;
-}
-
-.help-workflow-step {
-  display: flex;
-  gap: 16px;
-}
-
-.help-workflow-step-rail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.help-workflow-step-num {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #2833ac;
-  color: #ffffff;
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.help-workflow-step-line {
-  flex: 1;
-  width: 2px;
-  min-height: 18px;
-  background: rgba(40, 51, 172, 0.15);
-  margin: 4px 0;
-}
-
-.help-workflow-step.is-last .help-workflow-step-line {
-  display: none;
-}
-
-.help-workflow-step-content {
-  flex: 1;
-  min-width: 0;
-  padding-bottom: 22px;
-}
-
-.help-workflow-step.is-last .help-workflow-step-content {
-  padding-bottom: 0;
-}
-
-.help-workflow-step-head {
+.help-resource-head {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 6px;
 }
 
-.help-workflow-step-icon {
+.help-resource-head > i {
   width: 30px;
   height: 30px;
   border-radius: 8px;
@@ -176,19 +105,209 @@
   flex-shrink: 0;
 }
 
-.help-workflow-step-title {
+.help-resource-title {
   font-family: var(--font-serif);
-  font-size: var(--text-base);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: #1c1c26;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.help-resource-subtitle {
+  margin: 0 0 14px;
+  font-size: var(--text-sm);
+  color: #6c757d;
+}
+
+.help-resource-body {
+  margin: 0 0 14px;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: #6c757d;
+}
+
+.help-tutorials-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  background: #2833ac;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  border-radius: 12px;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(40, 51, 172, 0.28);
+  transition: all 0.2s ease;
+}
+
+.help-tutorials-button:hover {
+  background: #1e2790;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(40, 51, 172, 0.33);
+  color: #ffffff;
+}
+
+.help-links-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* References list (Chapman / GBIF PDFs) */
+.help-refs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.help-ref-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(40, 51, 172, 0.1);
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.help-ref-item:hover {
+  border-color: rgba(40, 51, 172, 0.25);
+  background: rgba(40, 51, 172, 0.04);
+}
+
+.help-ref-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(192, 57, 43, 0.08);
+  color: #c0392b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.help-ref-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.help-ref-title {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: #1c1c26;
+  line-height: var(--leading-tight);
+}
+
+.help-ref-authors {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: #6c757d;
+}
+
+.help-ref-arrow {
+  color: #6c757d;
+  opacity: 0.5;
+  font-size: var(--text-xs);
+  flex-shrink: 0;
+}
+
+/* FAQ accordion (native details/summary, zero-JS) */
+.help-faq-toggle {
+  border: 1px solid rgba(40, 51, 172, 0.12);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.help-faq-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: #2833ac;
+  background: rgba(40, 51, 172, 0.05);
+}
+
+.help-faq-summary::-webkit-details-marker,
+.help-faq-question::-webkit-details-marker {
+  display: none;
+}
+
+.help-faq-toggle[open] > .help-faq-summary {
+  border-bottom: 1px solid rgba(40, 51, 172, 0.12);
+}
+
+.help-faq-chevron {
+  transition: transform 0.2s ease;
+  font-size: var(--text-xs);
+  color: #6c757d;
+}
+
+.help-faq-toggle[open] > .help-faq-summary .help-faq-chevron,
+.help-faq-item[open] > .help-faq-question .help-faq-chevron {
+  transform: rotate(180deg);
+}
+
+.help-faq-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.help-faq-item {
+  border-bottom: 1px solid rgba(40, 51, 172, 0.08);
+}
+
+.help-faq-item:last-child {
+  border-bottom: 0;
+}
+
+.help-faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   color: #1c1c26;
 }
 
-.help-workflow-step-desc {
-  margin-top: 6px;
-  padding-left: 40px;
+.help-faq-answer {
+  padding: 0 16px 14px;
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
   color: #6c757d;
+}
+
+.help-faq-view-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 16px 14px;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: #2833ac;
+  text-decoration: none;
+}
+
+.help-faq-view-all:hover {
+  text-decoration: underline;
 }
 
 .help-sidebar-card {
@@ -371,29 +490,20 @@
   color: #ffffff;
 }
 
-.help-links-header {
-  padding: 14px 20px;
-  border-bottom: 1px solid rgba(40, 51, 172, 0.08);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
-  color: #1c1c26;
-}
-
 .help-link-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 20px;
+  padding: 9px 12px;
+  border: 1px solid rgba(40, 51, 172, 0.1);
+  border-radius: 12px;
   text-decoration: none;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .help-link-item:hover {
-  background: rgba(40, 51, 172, 0.07);
+  border-color: rgba(40, 51, 172, 0.25);
+  background: rgba(40, 51, 172, 0.05);
 }
 
 .help-link-icon-wrap {
@@ -423,6 +533,11 @@
   background: rgba(255, 162, 4, 0.1);
 }
 
+.help-link-icon-wrap--issues {
+  background: rgba(28, 28, 38, 0.08);
+  color: #1c1c26;
+}
+
 .help-link-text {
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
@@ -447,6 +562,12 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #6c757d;
+  margin-bottom: 4px;
+}
+
+.help-stack-subtitle {
+  font-size: var(--text-xs);
+  color: #6c757d;
   margin-bottom: 12px;
 }
 
@@ -469,35 +590,12 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  text-decoration: none;
 }
 
 .help-stack-chip:hover {
   border-color: rgba(40, 51, 172, 0.18);
   color: #2833ac;
-}
-
-.help-stack-chip--ai {
-  border-width: 1px;
-  border-style: solid;
-}
-
-.help-stack-chip-logo {
-  width: 9px;
-  height: 9px;
-  display: inline-block;
-  flex-shrink: 0;
-}
-
-.help-stack-chip--codex {
-  background: rgba(8, 8, 8, 0.08);
-  color: #080808;
-  border-color: rgba(8, 8, 8, 0.22);
-}
-
-.help-stack-chip--sonnet {
-  background: rgba(193, 95, 60, 0.1);
-  color: #c15f3c;
-  border-color: rgba(193, 95, 60, 0.28);
 }
 
 @media (max-width: 1200px) {
@@ -525,8 +623,12 @@
     padding: 20px 20px;
   }
 
-  .help-workflow-card {
+  .help-resource-card {
     padding: 20px 20px;
+  }
+
+  .help-links-grid {
+    grid-template-columns: 1fr;
   }
 }
 
