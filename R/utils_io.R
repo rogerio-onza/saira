@@ -167,6 +167,30 @@ detect_delimiter <- function(file_path) {
     }
 }
 
+# Decide whether a column of slash/dash/dot dates is day-first (DD/MM) or
+# month-first (MM/DD). Any value with a first component > 12 proves day-first;
+# otherwise any value with a second component > 12 proves month-first. When no
+# value disambiguates (every component <= 12), default to month-first (MM/DD):
+# most published datasets use the English convention, so this is the safer
+# long-term guess. Year-first ISO dates are ignored here.
+detect_day_first <- function(date_chr) {
+    orderable <- "^(\\d{1,2})[/.-](\\d{1,2})[/.-]\\d{2,4}$"
+    parts <- regmatches(date_chr, regexec(orderable, date_chr))
+    parts <- parts[lengths(parts) == 3L]
+    if (!length(parts)) {
+        return(FALSE)
+    }
+    first_comp <- as.integer(vapply(parts, `[`, character(1), 2L))
+    second_comp <- as.integer(vapply(parts, `[`, character(1), 3L))
+    if (any(first_comp > 12, na.rm = TRUE)) {
+        return(TRUE)
+    }
+    if (any(second_comp > 12, na.rm = TRUE)) {
+        return(FALSE)
+    }
+    FALSE
+}
+
 #' Parse dates from various formats to ISO
 #'
 #' @param date_vector Character vector of dates
@@ -181,12 +205,22 @@ parse_dates_to_iso <- function(date_vector) {
         return(result)
     }
 
+    # Disambiguate day-first (DD/MM) vs month-first (MM/DD) for slash/dash/dot
+    # dates by voting over the whole column: a value whose first component is
+    # > 12 proves day-first; one whose second component is > 12 proves
+    # month-first. A fully ambiguous column (every component <= 12) falls back
+    # to month-first (MM/DD), the safer guess for English-published datasets.
+    day_first <- detect_day_first(date_chr)
+
     # Parse in batches by format to avoid element-wise loops.
+    # Day/month accept 1-2 digits so unpadded inputs (e.g. 2/9/2021, exported by
+    # spreadsheets) parse the same as zero-padded ones (02/09/2021).
+    dm <- if (day_first) c("%d", "%m") else c("%m", "%d")
     format_specs <- list(
-        list(regex = "^\\d{4}-\\d{2}-\\d{2}$", fmt = "%Y-%m-%d"), # 2023-12-25 (ISO)
-        list(regex = "^\\d{2}/\\d{2}/\\d{4}$", fmt = "%d/%m/%Y"), # 25/12/2023
-        list(regex = "^\\d{2}-\\d{2}-\\d{4}$", fmt = "%d-%m-%Y"), # 25-12-2023
-        list(regex = "^\\d{2}\\.\\d{2}\\.\\d{4}$", fmt = "%d.%m.%Y") # 25.12.2023
+        list(regex = "^\\d{4}-\\d{1,2}-\\d{1,2}$", fmt = "%Y-%m-%d"), # 2023-12-25 (ISO)
+        list(regex = "^\\d{1,2}/\\d{1,2}/\\d{4}$", fmt = sprintf("%s/%s/%%Y", dm[1], dm[2])),
+        list(regex = "^\\d{1,2}-\\d{1,2}-\\d{4}$", fmt = sprintf("%s-%s-%%Y", dm[1], dm[2])),
+        list(regex = "^\\d{1,2}\\.\\d{1,2}\\.\\d{4}$", fmt = sprintf("%s.%s.%%Y", dm[1], dm[2]))
     )
 
     for (spec in format_specs) {
@@ -215,13 +249,16 @@ parse_dates_to_iso <- function(date_vector) {
     idx <- which(remaining)
     if (length(idx)) {
         yy_candidates <- date_chr[idx]
-        yy_mask <- grepl("^\\d{2}/\\d{2}/\\d{2}$", yy_candidates)
+        yy_re <- "^(\\d{1,2})/(\\d{1,2})/(\\d{2})$"
+        yy_mask <- grepl(yy_re, yy_candidates)
 
         if (any(yy_mask)) {
             yy_values <- yy_candidates[yy_mask]
-            day <- as.integer(substr(yy_values, 1, 2))
-            month <- as.integer(substr(yy_values, 4, 5))
-            year_two_digits <- as.integer(substr(yy_values, 7, 8))
+            comp1 <- as.integer(sub(yy_re, "\\1", yy_values))
+            comp2 <- as.integer(sub(yy_re, "\\2", yy_values))
+            day <- if (day_first) comp1 else comp2
+            month <- if (day_first) comp2 else comp1
+            year_two_digits <- as.integer(sub(yy_re, "\\3", yy_values))
             current_yy <- as.integer(format(Sys.Date(), "%y"))
             full_year <- ifelse(
                 year_two_digits <= current_yy,
