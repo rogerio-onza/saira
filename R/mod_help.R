@@ -78,77 +78,199 @@ help_get_author_meta <- function() {
     )
 }
 
-help_workflow_steps <- function(lang) {
-    list(
-        list(
-            icon = "fa-solid fa-upload",
-            title = tr("help_workflow_step_upload_title", lang),
-            desc = tr("help_workflow_step_upload_desc", lang)
+# Language-aware website URL for tutorials/FAQ pages.
+help_site_url <- function(lang, path_pt, path_en) {
+    base <- "https://rogerio-onza.github.io/saira"
+    paste0(base, if (identical(lang, "en")) path_en else path_pt)
+}
+
+help_link_item <- function(link_item, lang) {
+    shiny::tags$a(
+        href = link_item$href,
+        class = "help-link-item",
+        target = "_blank",
+        rel = "noopener noreferrer",
+        `aria-label` = paste0(tr("a11y_help_external_link", lang), ": ", link_item$label),
+        shiny::tags$span(
+            class = paste("help-link-icon-wrap", paste0("help-link-icon-wrap--", link_item$theme)),
+            shiny::tags$i(class = link_item$icon, `aria-hidden` = "true")
         ),
-        list(
-            icon = "fa-solid fa-arrows-alt",
-            title = tr("help_workflow_step_map_title", lang),
-            desc = tr("help_workflow_step_map_desc", lang)
-        ),
-        list(
-            icon = "fa-solid fa-clipboard-check",
-            title = tr("help_workflow_step_validate_title", lang),
-            desc = tr("help_workflow_step_validate_desc", lang)
-        ),
-        list(
-            icon = "fa-solid fa-shield-halved",
-            title = tr("help_workflow_step_generalize_title", lang),
-            desc = tr("help_workflow_step_generalize_desc", lang)
-        ),
-        list(
-            icon = "fa-solid fa-file-export",
-            title = tr("help_workflow_step_export_title", lang),
-            desc = tr("help_workflow_step_export_desc", lang)
+        shiny::tags$span(class = "help-link-text", link_item$label),
+        shiny::tags$span(
+            class = "help-link-arrow",
+            shiny::tags$i(class = "fa-solid fa-arrow-up-right-from-square", `aria-hidden` = "true")
         )
     )
 }
 
-help_workflow_step_item <- function(step, idx, is_last) {
+help_tutorials_card <- function(lang) {
     shiny::div(
-        class = paste("help-workflow-step", if (is_last) "is-last" else ""),
+        class = "help-resource-card help-tutorials-card",
         shiny::div(
-            class = "help-workflow-step-rail",
-            shiny::tags$span(class = "help-workflow-step-num", sprintf("%02d", idx)),
-            shiny::tags$span(class = "help-workflow-step-line")
+            class = "help-resource-head",
+            shiny::tags$i(class = "fa-solid fa-graduation-cap", `aria-hidden` = "true"),
+            shiny::tags$h2(class = "help-resource-title", tr("help_tutorials_title", lang))
+        ),
+        shiny::p(class = "help-resource-body", tr("help_tutorials_body", lang)),
+        shiny::tags$a(
+            href = help_site_url(lang, "/tutoriais/", "/en/tutorials/"),
+            class = "help-tutorials-button",
+            target = "_blank",
+            rel = "noopener noreferrer",
+            shiny::tags$i(class = "fa-solid fa-arrow-up-right-from-square", `aria-hidden` = "true"),
+            tr("help_tutorials_link", lang)
+        )
+    )
+}
+
+help_links_card <- function(lang) {
+    links <- list(
+        list(
+            label = tr("help_links_dwc", lang),
+            href = "https://dwc.tdwg.org/terms/",
+            icon = "fa-solid fa-book-open",
+            theme = "dwc"
+        ),
+        list(
+            label = tr("help_links_sibbr", lang),
+            href = "https://sibbr.gov.br/",
+            icon = "fa-solid fa-leaf",
+            theme = "sibbr"
+        ),
+        list(
+            label = tr("help_links_gbif", lang),
+            href = "https://www.gbif.org/darwin-core",
+            icon = "fa-solid fa-globe",
+            theme = "gbif"
+        ),
+        list(
+            label = tr("help_links_issues", lang),
+            href = "https://github.com/rogerio-onza/saira/issues",
+            icon = "fa-brands fa-github",
+            theme = "issues"
+        )
+    )
+
+    shiny::div(
+        class = "help-resource-card help-links-card",
+        shiny::div(
+            class = "help-resource-head",
+            shiny::tags$i(class = "fa-solid fa-up-right-from-square", `aria-hidden` = "true"),
+            shiny::tags$h2(class = "help-resource-title", tr("help_links_title", lang))
         ),
         shiny::div(
-            class = "help-workflow-step-content",
-            shiny::div(
-                class = "help-workflow-step-head",
-                shiny::tags$span(
-                    class = "help-workflow-step-icon",
-                    shiny::tags$i(class = step$icon, `aria-hidden` = "true")
-                ),
-                shiny::tags$span(class = "help-workflow-step-title", step$title)
+            class = "help-links-grid",
+            lapply(links, function(link_item) help_link_item(link_item, lang))
+        )
+    )
+}
+
+help_refs_card <- function(lang) {
+    refs <- list(
+        list(
+            title = "Current Best Practices for Generalizing Sensitive Species Occurrence Data",
+            authors = "Chapman (2020) · GBIF",
+            href = "https://doi.org/10.15468/doc-5jp4-5g10"
+        ),
+        list(
+            title = "Georeferencing Best Practices",
+            authors = "Chapman & Wieczorek (2020) · GBIF",
+            href = "https://doi.org/10.15468/doc-gg7h-s853"
+        ),
+        list(
+            title = "Georeferencing Quick Reference Guide",
+            authors = "Zermoglio et al. (2020) · GBIF",
+            href = "https://doi.org/10.35035/e09p-h128"
+        )
+    )
+
+    shiny::div(
+        class = "help-resource-card help-refs-card",
+        shiny::div(
+            class = "help-resource-head",
+            shiny::tags$i(class = "fa-solid fa-file-pdf", `aria-hidden` = "true"),
+            shiny::tags$h2(class = "help-resource-title", tr("help_refs_title", lang))
+        ),
+        shiny::p(class = "help-resource-subtitle", tr("help_refs_subtitle", lang)),
+        shiny::div(
+            class = "help-refs-list",
+            lapply(refs, function(ref) {
+                shiny::tags$a(
+                    href = ref$href,
+                    class = "help-ref-item",
+                    target = "_blank",
+                    rel = "noopener noreferrer",
+                    shiny::tags$span(
+                        class = "help-ref-icon",
+                        shiny::tags$i(class = "fa-solid fa-file-pdf", `aria-hidden` = "true")
+                    ),
+                    shiny::tags$span(
+                        class = "help-ref-text",
+                        shiny::tags$span(class = "help-ref-title", ref$title),
+                        shiny::tags$span(class = "help-ref-authors", ref$authors)
+                    ),
+                    shiny::tags$i(class = "fa-solid fa-arrow-up-right-from-square help-ref-arrow", `aria-hidden` = "true")
+                )
+            })
+        )
+    )
+}
+
+help_faq_card <- function(lang) {
+    faq_items <- lapply(seq_len(6), function(i) {
+        list(
+            q = tr(paste0("help_faq_q", i), lang),
+            a = tr(paste0("help_faq_a", i), lang)
+        )
+    })
+
+    shiny::div(
+        class = "help-resource-card help-faq-card",
+        shiny::div(
+            class = "help-resource-head",
+            shiny::tags$i(class = "fa-solid fa-circle-question", `aria-hidden` = "true"),
+            shiny::tags$h2(class = "help-resource-title", tr("help_faq", lang))
+        ),
+        shiny::p(class = "help-resource-subtitle", tr("help_faq_subtitle", lang)),
+        shiny::tags$details(
+            class = "help-faq-toggle",
+            shiny::tags$summary(
+                class = "help-faq-summary",
+                shiny::tags$span(tr("help_faq_toggle", lang)),
+                shiny::tags$i(class = "fa-solid fa-chevron-down help-faq-chevron", `aria-hidden` = "true")
             ),
-            shiny::div(class = "help-workflow-step-desc", step$desc)
-        )
-    )
-}
-
-help_workflow_content <- function(lang) {
-    steps <- help_workflow_steps(lang)
-    total <- length(steps)
-
-    shiny::div(
-        class = "help-workflow-card",
-        shiny::div(
-            class = "help-workflow-card-head",
-            shiny::tags$h2(class = "help-workflow-title", tr("help_workflow_title", lang)),
-            shiny::div(class = "help-workflow-subtitle", tr("help_workflow_subtitle", lang))
-        ),
-        shiny::div(
-            class = "help-workflow-steps",
-            lapply(
-                X = seq_len(total),
-                FUN = function(idx) help_workflow_step_item(steps[[idx]], idx, idx == total)
+            shiny::div(
+                class = "help-faq-list",
+                lapply(faq_items, function(item) {
+                    shiny::tags$details(
+                        class = "help-faq-item",
+                        shiny::tags$summary(
+                            class = "help-faq-question",
+                            shiny::tags$span(item$q),
+                            shiny::tags$i(class = "fa-solid fa-chevron-down help-faq-chevron", `aria-hidden` = "true")
+                        ),
+                        shiny::div(class = "help-faq-answer", item$a)
+                    )
+                })
+            ),
+            shiny::tags$a(
+                href = help_site_url(lang, "/faq.html", "/en/faq.html"),
+                class = "help-faq-view-all",
+                target = "_blank",
+                rel = "noopener noreferrer",
+                tr("help_faq_view_all", lang),
+                shiny::tags$i(class = "fa-solid fa-arrow-up-right-from-square", `aria-hidden` = "true")
             )
         )
+    )
+}
+
+help_resources_content <- function(lang) {
+    shiny::tagList(
+        help_tutorials_card(lang),
+        help_links_card(lang),
+        help_refs_card(lang),
+        help_faq_card(lang)
     )
 }
 
@@ -232,104 +354,43 @@ help_sidebar_bug_card <- function(lang) {
     )
 }
 
-help_sidebar_links_card <- function(lang) {
-    links <- list(
-        list(
-            label = tr("help_links_dwc", lang),
-            href = "https://dwc.tdwg.org/terms/",
-            icon = "fa-solid fa-book-open",
-            theme = "dwc"
-        ),
-        list(
-            label = tr("help_links_sibbr", lang),
-            href = "https://sibbr.gov.br/",
-            icon = "fa-solid fa-leaf",
-            theme = "sibbr"
-        ),
-        list(
-            label = tr("help_links_gbif", lang),
-            href = "https://www.gbif.org/darwin-core",
-            icon = "fa-solid fa-globe",
-            theme = "gbif"
-        )
+# Runtime dependencies (DESCRIPTION Imports) with a link per package.
+help_dependency_packages <- function() {
+    pkgs <- c(
+        "shiny", "htmltools", "bslib", "readr", "stringr", "taxadb",
+        "CoordinateCleaner", "countrycode", "sf", "terra", "rnaturalearth",
+        "rnaturalearthdata", "DT", "leaflet", "ids", "jsonlite", "DBI",
+        "RSQLite", "digest", "withr", "florabr", "faunabr", "writexl", "zip",
+        "uuid", "xml2"
     )
-
-    shiny::div(
-        class = "help-sidebar-card help-links-card",
-        shiny::div(
-            class = "help-links-header",
-            shiny::tags$i(class = "fa-solid fa-up-right-from-square", `aria-hidden` = "true"),
-            shiny::span(tr("help_links_title", lang))
-        ),
-        lapply(links, function(link_item) {
-            shiny::tags$a(
-                href = link_item$href,
-                class = "help-link-item",
-                target = "_blank",
-                rel = "noopener noreferrer",
-                `aria-label` = paste0(tr("a11y_help_external_link", lang), ": ", link_item$label),
-                shiny::tags$span(
-                    class = paste("help-link-icon-wrap", paste0("help-link-icon-wrap--", link_item$theme)),
-                    shiny::tags$i(class = link_item$icon, `aria-hidden` = "true")
-                ),
-                shiny::tags$span(class = "help-link-text", link_item$label),
-                shiny::tags$span(
-                    class = "help-link-arrow",
-                    shiny::tags$i(class = "fa-solid fa-arrow-up-right-from-square", `aria-hidden` = "true")
-                )
-            )
-        })
-    )
-}
-
-help_chip_logo_svg <- function(path_d) {
-    shiny::tags$svg(
-        class = "help-stack-chip-logo",
-        xmlns = "http://www.w3.org/2000/svg",
-        viewBox = "0 0 512 512",
-        fill = "currentColor",
-        `aria-hidden` = "true",
-        shiny::tags$path(d = path_d)
-    )
-}
-
-help_chip_logo_openai <- function() {
-    help_chip_logo_svg("M196.4 185.8l0-48.6c0-4.1 1.5-7.2 5.1-9.2l97.8-56.3c13.3-7.7 29.2-11.3 45.6-11.3 61.4 0 100.4 47.6 100.4 98.3 0 3.6 0 7.7-.5 11.8L343.3 111.1c-6.1-3.6-12.3-3.6-18.4 0L196.4 185.8zM424.7 375.2l0-116.2c0-7.2-3.1-12.3-9.2-15.9L287 168.4 329 144.3c3.6-2 6.7-2 10.2 0L437 200.7c28.2 16.4 47.1 51.2 47.1 85 0 38.9-23 74.8-59.4 89.6l0 0zM166.2 272.8l-42-24.6c-3.6-2-5.1-5.1-5.1-9.2l0-112.6c0-54.8 42-96.3 98.8-96.3 21.5 0 41.5 7.2 58.4 20L175.4 108.5c-6.1 3.6-9.2 8.7-9.2 15.9l0 148.5 0 0zm90.4 52.2l-60.2-33.8 0-71.7 60.2-33.8 60.2 33.8 0 71.7-60.2 33.8zm38.7 155.7c-21.5 0-41.5-7.2-58.4-20l100.9-58.4c6.1-3.6 9.2-8.7 9.2-15.9l0-148.5 42.5 24.6c3.6 2 5.1 5.1 5.1 9.2l0 112.6c0 54.8-42.5 96.3-99.3 96.3l0 0zM173.8 366.5L76.1 310.2c-28.2-16.4-47.1-51.2-47.1-85 0-39.4 23.6-74.8 59.9-89.6l0 116.7c0 7.2 3.1 12.3 9.2 15.9l128 74.2-42 24.1c-3.6 2-6.7 2-10.2 0zm-5.6 84c-57.9 0-100.4-43.5-100.4-97.3 0-4.1 .5-8.2 1-12.3l100.9 58.4c6.1 3.6 12.3 3.6 18.4 0l128.5-74.2 0 48.6c0 4.1-1.5 7.2-5.1 9.2l-97.8 56.3c-13.3 7.7-29.2 11.3-45.6 11.3l0 0zm127 60.9c62 0 113.7-44 125.4-102.4 57.3-14.9 94.2-68.6 94.2-123.4 0-35.8-15.4-70.7-43-95.7 2.6-10.8 4.1-21.5 4.1-32.3 0-73.2-59.4-128-128-128-13.8 0-27.1 2-40.4 6.7-23-22.5-54.8-36.9-89.6-36.9-62 0-113.7 44-125.4 102.4-57.3 14.8-94.2 68.6-94.2 123.4 0 35.8 15.4 70.7 43 95.7-2.6 10.8-4.1 21.5-4.1 32.3 0 73.2 59.4 128 128 128 13.8 0 27.1-2 40.4-6.7 23 22.5 54.8 36.9 89.6 36.9z")
-}
-
-help_chip_logo_claude <- function() {
-    help_chip_logo_svg("M100.4 340.5l100.7-56.5 1.7-4.9-1.7-2.7-4.9 0-16.8-1-57.5-1.6-49.9-2.1-48.3-2.6-12.2-2.6-11.4-15 1.2-7.5 10.2-6.9 14.7 1.3c18.9 1.3 45.9 3.1 81 5.6l35.2 2.1 52.2 5.4 8.3 0 1.2-3.4-2.8-2.1-2.2-2.1-50.3-34.1-54.4-36-28.5-20.7-15.4-10.5-7.8-9.8-3.4-21.5 14-15.4 18.8 1.3 4.8 1.3 19 14.7 40.7 31.5 53.1 39.1 7.8 6.5 3.1-2.2 .4-1.6-3.5-5.8-28.9-52.2-30.8-53.1-13.7-22-3.6-13.2c-1.3-5.4-2.2-10-2.2-15.5l15.9-21.6 8.8-2.8 21.2 2.8 8.9 7.8 13.2 30.2 21.4 47.5 33.2 64.6 9.7 19.2 5.2 17.8 1.9 5.4 3.4 0 0-3.1 2.7-36.4 5-44.7 4.9-57.5 1.7-16.2 8-19.4 15.9-10.5 12.4 5.9 10.2 14.7-1.4 9.5-6.1 39.5-11.9 61.9-7.8 41.5 4.5 0 5.2-5.2 21-27.8 35.2-44.1 15.5-17.5 18.1-19.3 11.6-9.2 22 0 16.2 24.1-7.3 24.9-22.7 28.7-18.8 24.4-27 36.3-16.8 29 1.6 2.3 4-.4 60.9-13 32.9-5.9 39.3-6.7 17.8 8.3 1.9 8.4-7 17.2-42 10.4-49.2 9.8-73.3 17.3-.9 .7 1 1.3 33 3.1 14.1 .8 34.6 0 64.4 4.8 16.8 11.1 10.1 13.6-1.7 10.4-25.9 13.2c-15.5-3.7-54.4-12.9-116.6-27.7l-28-7-3.9 0 0 2.3 23.3 22.8 42.7 38.6 53.5 49.8 2.7 12.3-6.9 9.7-7.3-1-47-35.4-18.1-15.9-41.1-34.6-2.7 0 0 3.6 9.5 13.9 50 75.2 2.6 23-3.6 7.5-13 4.5-14.2-2.6-29.3-41.1-30.2-46.3-24.4-41.5-3 1.7-14.4 154.8-6.7 7.9-15.5 5.9-13-9.8-6.9-15.9 6.9-31.5 8.3-41.1 6.7-32.7 6.1-40.6 3.6-13.5-.2-.9-3 .4-30.6 42-46.5 62.9-36.8 39.4-8.8 3.5-15.3-7.9 1.4-14.1 8.5-12.6 50.9-64.8 30.7-40.2 19.8-23.2-.1-3.4-1.2 0-135.3 87.8-24.1 3.1-10.4-9.7 1.3-15.9 4.9-5.2 40.7-28-.1 .1 0 .1z")
+    overrides <- list(faunabr = "https://github.com/wevertonbio/faunabr")
+    lapply(pkgs, function(name) {
+        href <- overrides[[name]]
+        if (is.null(href)) {
+            href <- paste0("https://cran.r-project.org/package=", name)
+        }
+        list(name = name, href = href)
+    })
 }
 
 help_sidebar_stack_card <- function(lang) {
-    base_stack <- c(
-        tr("help_stack_r", lang),
-        tr("help_stack_shiny", lang),
-        tr("help_stack_bslib", lang),
-        tr("help_stack_dt", lang),
-        tr("help_stack_leaflet", lang),
-        tr("help_stack_coordinatecleaner", lang),
-        tr("help_stack_taxadb", lang)
-    )
+    packages <- help_dependency_packages()
 
     shiny::div(
         class = "help-sidebar-card help-stack-card",
         shiny::div(class = "help-stack-title", tr("help_stack_title", lang)),
+        shiny::div(class = "help-stack-subtitle", tr("help_stack_subtitle", lang)),
         shiny::div(
             class = "help-stack-chip-list",
-            lapply(base_stack, function(chip) {
-                shiny::tags$span(class = "help-stack-chip", chip)
-            }),
-            shiny::tags$span(
-                class = "help-stack-chip help-stack-chip--ai help-stack-chip--codex",
-                help_chip_logo_openai(),
-                tr("help_stack_codex", lang)
-            ),
-            shiny::tags$span(
-                class = "help-stack-chip help-stack-chip--ai help-stack-chip--sonnet",
-                help_chip_logo_claude(),
-                tr("help_stack_sonnet", lang)
-            )
+            lapply(packages, function(pkg) {
+                shiny::tags$a(
+                    class = "help-stack-chip",
+                    href = pkg$href,
+                    target = "_blank",
+                    rel = "noopener noreferrer",
+                    pkg$name
+                )
+            })
         )
     )
 }
@@ -386,7 +447,7 @@ mod_help_server <- function(id, lang_r) {
         })
 
         output$help_content <- shiny::renderUI({
-            help_workflow_content(lang_r())
+            help_resources_content(lang_r())
         })
 
         output$help_sidebar <- shiny::renderUI({
@@ -396,7 +457,6 @@ mod_help_server <- function(id, lang_r) {
                 class = "help-sidebar",
                 help_sidebar_author_card(lang_r(), author_meta),
                 help_sidebar_bug_card(lang_r()),
-                help_sidebar_links_card(lang_r()),
                 help_sidebar_stack_card(lang_r())
             )
         })

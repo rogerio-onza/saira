@@ -14,11 +14,13 @@ RELEASES = [
         "version": "0.9.3",
         "date": "2026-06-25",
         "pt": [
+            ("changed", "**A aba Ajuda virou uma central de recursos.** Saiu o passo a passo (que repetia os tutoriais do site) e entrou uma seção de **Recursos** em destaque: link direto para os **tutoriais** no site, os **links úteis** (Darwin Core / TDWG, SiBBr, GBIF), um link direto para os **issues no GitHub** e os três PDFs de boas práticas do GBIF (Chapman 2020; Chapman & Wieczorek 2020; Zermoglio et al. 2020). Um **FAQ** condensado abre com um clique, e o card **Construído com** agora lista todas as dependências, cada uma com link para o pacote."),
             ("fixed", "**O mapeamento agora responde na hora.** Selecionar uma coluna, marcar \"usar data de hoje\" ou escolher uma licença não trava mais a tela por segundos — cada clique é praticamente instantâneo, mesmo ao concatenar várias colunas (por exemplo no `eventDate`)."),
             ("fixed", "**`modified` vira data pura** ao marcar \"usar data de hoje\": sem hora nem fuso, igual ao seletor de data manual."),
             ("fixed", "**`eventDate` e `dateIdentified` já aparecem em ISO 8601 na pré-visualização** do mapeamento (igual ao arquivo exportado), e datas sem zero à esquerda (`2/9/2021`) agora convertem; a ordem dia/mês é decidida por coluna a partir dos próprios dados."),
         ],
         "en": [
+            ("changed", "**The Help tab is now a resource hub.** The step-by-step recap (which duplicated the website tutorials) was dropped for a **Resources** section in evidence: a direct link to the **tutorials** on the site, the **useful links** (Darwin Core / TDWG, SiBBr, GBIF), a direct **GitHub issues** link, and the three GBIF best-practice PDFs (Chapman 2020; Chapman & Wieczorek 2020; Zermoglio et al. 2020). A condensed **FAQ** opens with one click, and the **Built with** card now lists every dependency, each linking to its package."),
             ("fixed", "**Mapping is now instant.** Picking a column, ticking \"use today's date\" or choosing a license no longer freezes the screen for seconds — every click is effectively instant, even when concatenating several columns (e.g. into `eventDate`)."),
             ("fixed", "**`modified` is written as a plain date** when \"use today's date\" is checked: no time or timezone, matching the manual date picker."),
             ("fixed", "**`eventDate` and `dateIdentified` now show in ISO 8601 in the mapping preview** (matching the exported file), and unpadded dates (`2/9/2021`) now convert; day/month order is decided per column from the data itself."),

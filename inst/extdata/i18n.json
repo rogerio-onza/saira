@@ -2903,54 +2903,6 @@
     "pt": "Tudo o que você precisa para usar o Saíra com confiança.",
     "en": "Everything you need to use Saíra with confidence."
   },
-  "help_workflow_title": {
-    "pt": "Fluxo de trabalho",
-    "en": "Workflow"
-  },
-  "help_workflow_subtitle": {
-    "pt": "Cinco passos para padronizar e publicar seus dados no padrão Darwin Core.",
-    "en": "Five steps to standardize and publish your data in Darwin Core."
-  },
-  "help_workflow_step_upload_title": {
-    "pt": "Enviar",
-    "en": "Upload"
-  },
-  "help_workflow_step_upload_desc": {
-    "pt": "Envie sua planilha em CSV; o Saíra detecta o encoding e o delimitador automaticamente.",
-    "en": "Upload your CSV spreadsheet; Saíra detects encoding and delimiter automatically."
-  },
-  "help_workflow_step_map_title": {
-    "pt": "Mapear",
-    "en": "Map"
-  },
-  "help_workflow_step_map_desc": {
-    "pt": "Associe as colunas do seu arquivo aos termos Darwin Core, com sugestões automáticas.",
-    "en": "Match your file columns to Darwin Core terms, with automatic suggestions."
-  },
-  "help_workflow_step_validate_title": {
-    "pt": "Validar",
-    "en": "Validate"
-  },
-  "help_workflow_step_validate_desc": {
-    "pt": "Confira nomes científicos e coordenadas com verificações e alertas automáticos.",
-    "en": "Check scientific names and coordinates with automatic checks and alerts."
-  },
-  "help_workflow_step_generalize_title": {
-    "pt": "Generalizar",
-    "en": "Generalize"
-  },
-  "help_workflow_step_generalize_desc": {
-    "pt": "Generalize as coordenadas de espécies sensíveis antes de publicar.",
-    "en": "Generalize the coordinates of sensitive species before publishing."
-  },
-  "help_workflow_step_export_title": {
-    "pt": "Exportar",
-    "en": "Export"
-  },
-  "help_workflow_step_export_desc": {
-    "pt": "Revise o resumo e baixe o pacote Darwin Core (.zip) pronto para publicação.",
-    "en": "Review the summary and download the publication-ready Darwin Core package (.zip)."
-  },
   "help_author_role": {
     "pt": "Maintainer",
     "en": "Maintainer"
@@ -3011,49 +2963,101 @@
     "pt": "Construído com",
     "en": "Built with"
   },
-  "help_stack_r": {
-    "pt": "R",
-    "en": "R"
+  "help_stack_subtitle": {
+    "pt": "Pacotes de R que tornam o Saíra possível.",
+    "en": "R packages that make Saíra possible."
   },
-  "help_stack_shiny": {
-    "pt": "Shiny",
-    "en": "Shiny"
+  "help_resources_title": {
+    "pt": "Recursos",
+    "en": "Resources"
   },
-  "help_stack_bslib": {
-    "pt": "bslib",
-    "en": "bslib"
+  "help_tutorials_title": {
+    "pt": "Tutoriais",
+    "en": "Tutorials"
   },
-  "help_stack_dt": {
-    "pt": "DT",
-    "en": "DT"
+  "help_tutorials_body": {
+    "pt": "Tutoriais passo a passo de cada etapa do Saíra estão no site do aplicativo, em português e inglês.",
+    "en": "Step-by-step tutorials for every stage of Saíra live on the app website, in Portuguese and English."
   },
-  "help_stack_leaflet": {
-    "pt": "Leaflet",
-    "en": "Leaflet"
+  "help_tutorials_link": {
+    "pt": "Ver todos os tutoriais",
+    "en": "See all tutorials"
   },
-  "help_stack_coordinatecleaner": {
-    "pt": "CoordinateCleaner",
-    "en": "CoordinateCleaner"
+  "help_links_issues": {
+    "pt": "GitHub Issues",
+    "en": "GitHub Issues"
   },
-  "help_stack_taxadb": {
-    "pt": "taxadb",
-    "en": "taxadb"
+  "help_refs_title": {
+    "pt": "Boas práticas e referências",
+    "en": "Best practices and references"
   },
-  "help_stack_codex": {
-    "pt": "Codex 5.3",
-    "en": "Codex 5.3"
-  },
-  "help_stack_sonnet": {
-    "pt": "Sonnet 4.6",
-    "en": "Sonnet 4.6"
-  },
-  "help_getting_started": {
-    "pt": "Começando",
-    "en": "Getting Started"
+  "help_refs_subtitle": {
+    "pt": "Guias do GBIF que fundamentam a generalização e o georreferenciamento no Saíra.",
+    "en": "GBIF guides behind Saíra's generalization and georeferencing."
   },
   "help_faq": {
-    "pt": "Perguntas Frequentes",
+    "pt": "Perguntas frequentes",
     "en": "FAQ"
+  },
+  "help_faq_subtitle": {
+    "pt": "Dúvidas comuns de quem está começando.",
+    "en": "Common questions for people getting started."
+  },
+  "help_faq_toggle": {
+    "pt": "Mostrar perguntas frequentes",
+    "en": "Show frequently asked questions"
+  },
+  "help_faq_view_all": {
+    "pt": "Ver todas as perguntas no site",
+    "en": "See all questions on the site"
+  },
+  "help_faq_q1": {
+    "pt": "Preciso saber programar para usar o Saíra?",
+    "en": "Do I need to know how to program to use Saíra?"
+  },
+  "help_faq_a1": {
+    "pt": "Não. Depois de instalado, todo o uso acontece por uma interface visual no navegador: menus, botões e tabelas. A única linha de código necessária é a que abre o aplicativo.",
+    "en": "No. Once installed, everything happens through a visual interface in your browser: menus, buttons and tables. The only line of code you need is the one that opens the app."
+  },
+  "help_faq_q2": {
+    "pt": "O Saíra envia meus dados para a internet?",
+    "en": "Does Saíra send my data to the internet?"
+  },
+  "help_faq_a2": {
+    "pt": "Não. O aplicativo roda localmente no seu computador (ou em um servidor da sua instituição). Seus dados não saem do ambiente onde o app está rodando.",
+    "en": "No. The app runs locally on your computer (or on your institution's server). Your data never leaves the environment where the app is running."
+  },
+  "help_faq_q3": {
+    "pt": "Quais formatos de planilha o Saíra aceita?",
+    "en": "Which spreadsheet formats does Saíra accept?"
+  },
+  "help_faq_a3": {
+    "pt": "CSV (.csv, .tsv, .txt), com detecção automática de codificação e separador. Também aceita pacotes de armadilha fotográfica (.zip): Camtrap DP e exportações do Wildlife Insights.",
+    "en": "CSV (.csv, .tsv, .txt), with automatic encoding and delimiter detection. It also accepts camera-trap packages (.zip): Camtrap DP and Wildlife Insights exports."
+  },
+  "help_faq_q4": {
+    "pt": "O Saíra corrige automaticamente os nomes científicos?",
+    "en": "Does Saíra correct scientific names automatically?"
+  },
+  "help_faq_a4": {
+    "pt": "Ele sugere correções a partir de bases taxonômicas, mas a decisão final é sempre do especialista.",
+    "en": "It suggests corrections from taxonomic databases, but the final decision is always the specialist's."
+  },
+  "help_faq_q5": {
+    "pt": "Como o Saíra trata espécies ameaçadas?",
+    "en": "How does Saíra handle threatened species?"
+  },
+  "help_faq_a5": {
+    "pt": "Numa etapa dedicada de generalização, ele sinaliza táxons ameaçados (Lista Nacional do MMA) e ajuda você a decidir, espécie por espécie, se e quanto reduzir a precisão das coordenadas, seguindo a tabela de decisão de Chapman (2020).",
+    "en": "In a dedicated generalization step, it flags threatened taxa (the MMA National List) and helps you decide, species by species, whether and how much to reduce coordinate precision, following Chapman's (2020) decision table."
+  },
+  "help_faq_q6": {
+    "pt": "O que o Saíra gera no final?",
+    "en": "What does Saíra produce in the end?"
+  },
+  "help_faq_a6": {
+    "pt": "Um Darwin Core Archive (DwC-A): um pacote .zip com occurrence.txt, meta.xml e eml.xml, pronto para publicação. No mesmo .zip vão também um espelho em Excel (.xlsx) e o modelo de mapeamento reutilizável.",
+    "en": "A Darwin Core Archive (DwC-A): a .zip with occurrence.txt, meta.xml and eml.xml, ready to publish. The same .zip also carries an Excel mirror (.xlsx) and the reusable mapping template."
   },
   "err_no_file": {
     "pt": "Por favor, selecione um arquivo.",

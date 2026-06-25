@@ -74,7 +74,8 @@
 .tab-content > .tab-pane:has(.preview-page),
 .tab-content > .tab-pane:has(.validate-coords-page),
 .tab-content > .tab-pane:has(.sensitive-coords-page),
-.tab-content > .tab-pane:has(.export-page) {
+.tab-content > .tab-pane:has(.export-page),
+.tab-content > .tab-pane:has(.help-module) {
   overflow-y: auto;
   height: auto;
   max-height: none;

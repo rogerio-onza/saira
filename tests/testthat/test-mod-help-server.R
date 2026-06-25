@@ -17,7 +17,7 @@ testthat::test_that("mod_help_server renders header card", {
     )
 })
 
-testthat::test_that("mod_help_server renders the workflow stepper with all five steps", {
+testthat::test_that("mod_help_server renders the resources content (tutorials, links, refs, FAQ)", {
     shiny::testServer(
         mod_help_server,
         args = list(
@@ -27,13 +27,50 @@ testthat::test_that("mod_help_server renders the workflow stepper with all five 
             session$flushReact()
             html <- paste(output$help_content$html, collapse = " ")
 
-            testthat::expect_true(grepl("help-workflow-steps", html, fixed = TRUE))
-            # Five numbered step markers, 01 through 05.
-            num_markers <- lengths(regmatches(
+            # No leftover workflow stepper.
+            testthat::expect_false(grepl("help-workflow", html, fixed = TRUE))
+            # Tutorials link to the website index.
+            testthat::expect_true(grepl("rogerio-onza.github.io/saira/en/tutorials/", html, fixed = TRUE))
+            # Direct GitHub issues link.
+            testthat::expect_true(grepl("github.com/rogerio-onza/saira/issues", html, fixed = TRUE))
+            # All three Chapman / GBIF reference PDFs.
+            testthat::expect_true(grepl("doi.org/10.15468/doc-5jp4-5g10", html, fixed = TRUE))
+            testthat::expect_true(grepl("doi.org/10.15468/doc-gg7h-s853", html, fixed = TRUE))
+            testthat::expect_true(grepl("doi.org/10.35035/e09p-h128", html, fixed = TRUE))
+            # FAQ toggle with six collapsible items.
+            testthat::expect_true(grepl("help-faq-toggle", html, fixed = TRUE))
+            faq_items <- lengths(regmatches(
                 html,
-                gregexpr("help-workflow-step-num", html, fixed = TRUE)
+                gregexpr("help-faq-item", html, fixed = TRUE)
             ))
-            testthat::expect_equal(num_markers, 5L)
+            testthat::expect_equal(faq_items, 6L)
+            # FAQ links out to the full site FAQ.
+            testthat::expect_true(grepl("rogerio-onza.github.io/saira/en/faq.html", html, fixed = TRUE))
+        }
+    )
+})
+
+testthat::test_that("mod_help_server built-with card links every dependency and drops AI chips", {
+    shiny::testServer(
+        mod_help_server,
+        args = list(
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            html <- paste(output$help_sidebar$html, collapse = " ")
+
+            # Every runtime dependency renders as a linked chip.
+            pkgs <- help_dependency_packages()
+            testthat::expect_equal(length(pkgs), 26L)
+            for (pkg in pkgs) {
+                testthat::expect_true(grepl(pkg$href, html, fixed = TRUE))
+            }
+            # faunabr points at the GitHub source, not CRAN.
+            testthat::expect_true(grepl("github.com/wevertonbio/faunabr", html, fixed = TRUE))
+            # The AI-tool chips are gone.
+            testthat::expect_false(grepl("Codex", html, fixed = TRUE))
+            testthat::expect_false(grepl("Sonnet", html, fixed = TRUE))
         }
     )
 })
