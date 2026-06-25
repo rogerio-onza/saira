@@ -193,6 +193,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             basis_of_record_page = 1L,
             is_programmatic_update = FALSE,
             programmatic_terms = character(0),
+            # Deduped boolean tracked by an observer below. Drives the only
+            # selection that re-renders the whole mapping grid (taxonRank /
+            # specificEpithet lock); every other selection updates its card
+            # surgically without rebuilding the 50-selectize grid.
+            scientificname_mapped = FALSE,
             automap_progress = 0L,
             automap_phrase_idx = 1L,
             automap_phrase_order = integer(0),
@@ -342,6 +347,44 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 class = badge_class,
                 title = tooltip
             )
+        }
+
+        # Push a single card's mapped border + status badge to the client without
+        # re-rendering the whole mapping grid. Reproduces exactly what the next
+        # full render of build_field_card would produce for this term, via the
+        # `saira-toggle-field-mapped` handler (ADR-098). Reads are isolated so
+        # callers inside reactive observers do not gain extra dependencies.
+        push_card_state <- function(term) {
+            shiny::isolate({
+                current_val <- sanitize_map_selection(term, rv$map_values[[term]])
+                if (!has_selected_value(current_val)) {
+                    current_val <- sanitize_map_selection(term, input[[paste0("map_", term)]])
+                }
+                meta <- rv$map_meta[[term]]
+                if (is.null(meta)) {
+                    meta <- default_meta()
+                }
+                badge <- build_badge_info(meta)
+                badge_payload <- if (is.null(badge)) {
+                    list(show = FALSE)
+                } else {
+                    list(
+                        show = TRUE,
+                        label = badge$label,
+                        class = badge$class,
+                        title = badge$title
+                    )
+                }
+                session$sendCustomMessage(
+                    "saira-toggle-field-mapped",
+                    list(
+                        id = ns(paste0("fieldcard_", term)),
+                        mapped = isTRUE(is_field_mapped(term, current_val, input)),
+                        badge = badge_payload
+                    )
+                )
+            })
+            invisible(NULL)
         }
 
         parse_ambiguity_candidates <- function(alternatives_json) {
@@ -910,7 +953,21 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                             )
                         }
                     }
+                    # Surgically refresh this card's border/badge (no grid re-render).
+                    push_card_state(term)
                 }
+            }
+        })
+
+        # Deduped flag driving the single re-render path (taxon lock). Updates
+        # only when scientificName's mapped-state flips, so changing the
+        # scientificName column does not rebuild the grid.
+        shiny::observe({
+            mapped <- has_selected_value(
+                sanitize_map_selection("scientificName", rv$map_values[["scientificName"]])
+            )
+            if (!identical(isTRUE(rv$scientificname_mapped), mapped)) {
+                rv$scientificname_mapped <- mapped
             }
         })
 
@@ -967,6 +1024,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             {
                 has_value <- !is.null(input$custom_datasetName) && nchar(trimws(input$custom_datasetName)) > 0
                 set_custom_term_meta("datasetName", has_value)
+                push_card_state("datasetName")
             },
             ignoreInit = TRUE
         )
@@ -975,6 +1033,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             {
                 has_value <- isTRUE(input$modified_use_today) || !is.null(input$custom_modified_date)
                 set_custom_term_meta("modified", has_value)
+                push_card_state("modified")
             },
             ignoreInit = TRUE
         )
@@ -983,6 +1042,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             {
                 has_value <- isTRUE(input$modified_use_today) || !is.null(input$custom_modified_date)
                 set_custom_term_meta("modified", has_value)
+                push_card_state("modified")
             },
             ignoreInit = TRUE
         )
@@ -1380,109 +1440,126 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         output$mapping_ui <- shiny::renderUI({
             shiny::req(raw_data_r())
 
-            cols <- c("-- " = "", names(raw_data_r()))
-            fields_to_show <- dwc_all()
-
-            all_categories <- vapply(fields_to_show, function(x) x$category, FUN.VALUE = character(1))
-            categories <- unique(all_categories)
+            # The grid (50 selectize inputs) is expensive to rebuild, so it is
+            # rendered only on a real structural change: a new upload, a language
+            # switch, the show-only-mapped toggle, or when scientificName's
+            # mapped-state flips (which locks/unlocks taxonRank/specificEpithet).
+            # These four are the only reactive dependencies. Everything else --
+            # per-term map_values, fixed-value inputs, meta -- is read inside the
+            # isolate() below, so selecting a column updates just that card via
+            # its carddyn_<term> output and push_card_state(), never the grid.
             lang <- lang_r()
+            show_only_mapped <- isTRUE(input$show_only_mapped)
+            scientificname_mapped <- isTRUE(rv$scientificname_mapped)
 
-            # When scientificName is mapped, taxonRank and specificEpithet are
-            # derived from it (build_processed_mapping_df), so their cards lock.
-            sn_val <- rv$map_values[["scientificName"]]
-            if (is.null(sn_val)) {
-                sn_val <- input[["map_scientificName"]]
-            }
-            scientificname_mapped <- has_selected_value(
-                sanitize_map_selection("scientificName", sn_val)
-            )
+            shiny::isolate({
+                cols <- c("-- " = "", names(raw_data_r()))
+                fields_to_show <- dwc_all()
 
-            # When the upload already carries occurrenceID values (e.g. a
-            # camera-trap observationID), resolve_occurrence_ids() preserves them
-            # -- only blank rows get a fresh UUID. The card message reflects that
-            # instead of claiming every id is auto-generated.
-            occ_id_col <- raw_data_r()[["occurrenceID"]]
-            occurrence_id_preserved <- !is.null(occ_id_col) &&
-                any(!is.na(occ_id_col) & nzchar(trimws(as.character(occ_id_col))))
+                all_categories <- vapply(fields_to_show, function(x) x$category, FUN.VALUE = character(1))
+                categories <- unique(all_categories)
 
-            shiny::tagList(
-                lapply(categories, function(cat) {
-                    cat_fields <- Filter(function(x) x$category == cat, fields_to_show)
-                    cat_class <- paste0("cat-", tolower(gsub("-", "", cat)))
+                # When the upload already carries occurrenceID values (e.g. a
+                # camera-trap observationID), resolve_occurrence_ids() preserves
+                # them -- only blank rows get a fresh UUID. The card message
+                # reflects that instead of claiming every id is auto-generated.
+                occ_id_col <- raw_data_r()[["occurrenceID"]]
+                occurrence_id_preserved <- !is.null(occ_id_col) &&
+                    any(!is.na(occ_id_col) & nzchar(trimws(as.character(occ_id_col))))
 
-                    shiny::tagList(
-                        shiny::div(
-                            id = ns(paste0("cat_anchor_", slug(cat))),
-                            class = "category-header",
-                            category_label(cat)
-                        ),
-                        shiny::div(
-                            class = "two-column-layout",
-                            lapply(cat_fields, function(item) {
-                                term <- item$term
-                                current_val <- rv$map_values[[term]]
-                                if (is.null(current_val)) {
-                                    current_val <- input[[paste0("map_", term)]]
-                                }
-                                current_val <- sanitize_map_selection(term, current_val)
-                                # is_field_mapped() isolates only the free-text
-                                # datasetName read internally, so typing it does not
-                                # re-render (and blur) the whole mapping_ui. The
-                                # checkbox/date custom inputs (license, language,
-                                # modified) stay reactive here so their mapped
-                                # border updates live on toggle.
-                                is_mapped <- is_field_mapped(term, current_val, input)
-                                # taxonRank/specificEpithet lock (and read as
-                                # mapped) once scientificName is set; they are
-                                # derived from it at export.
-                                locked_taxon <- isTRUE(scientificname_mapped) &&
-                                    term %in% c("taxonRank", "specificEpithet")
-                                if (locked_taxon) {
-                                    is_mapped <- TRUE
-                                }
-                                # Isolated: custom-value observers write
-                                # rv$map_meta on every keystroke; a reactive
-                                # read here would re-render and re-create the
-                                # inputs, feeding an infinite loop.
-                                field_meta <- shiny::isolate(rv$map_meta[[term]])
-                                if (is.null(field_meta)) {
-                                    field_meta <- default_meta()
-                                }
-                                badge_info <- build_badge_info(field_meta)
+                shiny::tagList(
+                    lapply(categories, function(cat) {
+                        cat_fields <- Filter(function(x) x$category == cat, fields_to_show)
+                        cat_class <- paste0("cat-", tolower(gsub("-", "", cat)))
 
-                                # Apply "show only mapped" filter
-                                if (isTRUE(input$show_only_mapped) && !is_mapped) {
-                                    return(NULL)
-                                }
+                        shiny::tagList(
+                            shiny::div(
+                                id = ns(paste0("cat_anchor_", slug(cat))),
+                                class = "category-header",
+                                category_label(cat)
+                            ),
+                            shiny::div(
+                                class = "two-column-layout",
+                                lapply(cat_fields, function(item) {
+                                    term <- item$term
+                                    current_val <- rv$map_values[[term]]
+                                    if (is.null(current_val)) {
+                                        current_val <- input[[paste0("map_", term)]]
+                                    }
+                                    current_val <- sanitize_map_selection(term, current_val)
+                                    is_mapped <- is_field_mapped(term, current_val, input)
+                                    # taxonRank/specificEpithet lock (and read as
+                                    # mapped) once scientificName is set; they are
+                                    # derived from it at export.
+                                    locked_taxon <- isTRUE(scientificname_mapped) &&
+                                        term %in% c("taxonRank", "specificEpithet")
+                                    if (locked_taxon) {
+                                        is_mapped <- TRUE
+                                    }
+                                    field_meta <- rv$map_meta[[term]]
+                                    if (is.null(field_meta)) {
+                                        field_meta <- default_meta()
+                                    }
+                                    badge_info <- build_badge_info(field_meta)
 
-                                is_standard <- !(term %in% c(
-                                    "occurrenceID", "datasetName", "modified",
-                                    "license", "language", "basisOfRecord",
-                                    "dynamicProperties"
-                                ))
-                                sample_preview <- if (is_standard && !locked_taxon &&
-                                                      has_selected_value(current_val)) {
-                                    processed_preview_for_term(term, current_val, 1L)
-                                } else {
-                                    NULL
-                                }
+                                    # Apply "show only mapped" filter
+                                    if (show_only_mapped && !is_mapped) {
+                                        return(NULL)
+                                    }
 
-                                build_field_card(
-                                    item = item, cols = cols,
-                                    current_val = current_val,
-                                    is_mapped = is_mapped,
-                                    badge_info = badge_info,
-                                    ns = ns, lang_r = lang,
-                                    input = input, cat_class = cat_class,
-                                    sample_preview = sample_preview,
-                                    scientificname_mapped = scientificname_mapped,
-                                    occurrence_id_preserved = occurrence_id_preserved
-                                )
-                            })
+                                    build_field_card(
+                                        item = item, cols = cols,
+                                        current_val = current_val,
+                                        is_mapped = is_mapped,
+                                        badge_info = badge_info,
+                                        ns = ns, lang_r = lang,
+                                        input = input, cat_class = cat_class,
+                                        scientificname_mapped = scientificname_mapped,
+                                        occurrence_id_preserved = occurrence_id_preserved
+                                    )
+                                })
+                            )
                         )
+                    })
+                )
+            })
+        })
+
+        # Per-term dynamic card content (source sample, basisOfRecord assistant
+        # button, dynamicProperties key inputs) rendered into the carddyn_<term>
+        # slots. Each output depends only on its own term's selection, so picking
+        # a column updates just that card instead of rebuilding the grid. Created
+        # once per term (extra terms included as they appear); the five special
+        # terms without selection-dependent content have no slot.
+        carddyn_no_slot <- c(
+            "occurrenceID", "datasetName", "modified", "license", "language"
+        )
+        carddyn_created <- new.env(parent = emptyenv())
+        make_carddyn_output <- function(term) {
+            force(term)
+            output[[paste0("carddyn_", term)]] <- shiny::renderUI({
+                lang <- lang_r()
+                current_val <- sanitize_map_selection(term, rv$map_values[[term]])
+                if (identical(term, "basisOfRecord")) {
+                    build_basis_assistant_button(current_val, ns, lang)
+                } else if (identical(term, "dynamicProperties")) {
+                    build_dynprops_keys_block(current_val, ns, lang, input)
+                } else if (has_selected_value(current_val)) {
+                    build_field_sample(
+                        processed_preview_for_term(term, current_val, 1L), lang
                     )
-                })
-            )
+                } else {
+                    NULL
+                }
+            })
+        }
+        shiny::observe({
+            for (term in all_term_names()) {
+                if (term %in% carddyn_no_slot) next
+                if (isTRUE(carddyn_created[[term]])) next
+                make_carddyn_output(term)
+                carddyn_created[[term]] <- TRUE
+            }
         })
 
 
@@ -1748,6 +1825,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
                 has_value <- !is.null(input$custom_license) && length(input$custom_license) > 0
                 set_custom_term_meta("license", has_value)
+                push_card_state("license")
             },
             ignoreInit = TRUE
         )
@@ -1764,6 +1842,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
                 has_value <- !is.null(input$custom_language) && length(input$custom_language) > 0
                 set_custom_term_meta("language", has_value)
+                push_card_state("language")
             },
             ignoreInit = TRUE
         )
@@ -1780,51 +1859,16 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                     nzchar(trimws(input[[val_id]]))
             }
             # The free-text read is isolated in the renderUI (ADR-098), so typing
-            # a fixed value does not re-render the card and its mapped border
-            # would lag until some other change forces a render. Recompute the
-            # same is_field_mapped() the renderUI would and flip the card's border
-            # class client-side -- no re-render, no blur, and the class always
-            # matches the next full render. Runs in an observeEvent handler, which
-            # isolates these reads (no extra reactive dependencies).
-            refresh_card_state <- function() {
-                current_val <- rv$map_values[[term]]
-                if (is.null(current_val)) {
-                    current_val <- input[[paste0("map_", term)]]
-                }
-                current_val <- sanitize_map_selection(term, current_val)
-                # Recompute the same badge the renderUI would from the (just
-                # updated) meta, so the live update matches the next full render.
-                meta <- rv$map_meta[[term]]
-                if (is.null(meta)) {
-                    meta <- default_meta()
-                }
-                badge <- build_badge_info(meta)
-                badge_payload <- if (is.null(badge)) {
-                    list(show = FALSE)
-                } else {
-                    list(
-                        show = TRUE,
-                        label = badge$label,
-                        class = badge$class,
-                        title = badge$title
-                    )
-                }
-                session$sendCustomMessage(
-                    "saira-toggle-field-mapped",
-                    list(
-                        id = ns(paste0("fieldcard_", term)),
-                        mapped = isTRUE(is_field_mapped(term, current_val, input)),
-                        badge = badge_payload
-                    )
-                )
-            }
+            # a fixed value does not re-render the card. push_card_state() flips
+            # the card's border/badge client-side to match the next full render --
+            # no re-render, no blur.
             shiny::observeEvent(input[[val_id]], {
                 set_custom_term_meta(term, has_fixed_value())
-                refresh_card_state()
+                push_card_state(term)
             }, ignoreInit = TRUE)
             shiny::observeEvent(input[[use_id]], {
                 set_custom_term_meta(term, has_fixed_value())
-                refresh_card_state()
+                push_card_state(term)
             }, ignoreInit = TRUE)
         })
 
