@@ -2189,6 +2189,17 @@ build_term_value <- function(
         values <- collapse_mapped_values(df = df, cols = user_cols, out_sep = out_sep)
     }
 
+    # Normalise to ISO 8601 (YYYY-MM-DD) for date-typed DWC terms so the card
+    # preview matches what the export pipeline emits via fix_dates_to_iso().
+    # Unparseable values (already-correct intervals "YYYY-MM/YYYY-MM", partial
+    # dates like "2026", or invalid text) keep their raw value.
+    if (term %in% c("eventDate", "dateIdentified")) {
+        parsed <- parse_dates_to_iso(values)
+        keep_raw <- is.na(parsed) & !is.na(values) & nzchar(values)
+        parsed[keep_raw] <- values[keep_raw]
+        values <- parsed
+    }
+
     list(values = values, eventdate_failure_count = failure_count)
 }
 
@@ -2291,7 +2302,9 @@ build_processed_mapping_df <- function(
 
         if (term == "modified") {
             if (isTRUE(modified_use_today)) {
-                date_str <- format(now_utc, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+                # Date only (no time/zone), matching the manual date-picker path
+                # below -- the user wants a plain calendar date for `modified`.
+                date_str <- format(now_utc, "%Y-%m-%d", tz = "UTC")
                 df_final[[term]] <- rep(date_str, nrow(df))
                 selected_terms <- c(selected_terms, term)
             } else if (!is.null(custom_modified_date)) {

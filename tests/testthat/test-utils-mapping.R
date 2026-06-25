@@ -644,7 +644,7 @@ testthat::test_that("build_processed_mapping_df preserves processed_data contrac
     testthat::expect_identical(result$eventdate_failure_count, 1L)
     testthat::expect_identical(out$occurrenceID, c("id-1", "id-2"))
     testthat::expect_identical(out$datasetName, c("Dataset Custom", "Dataset Custom"))
-    testthat::expect_identical(out$modified, c("2026-02-14T10:11:12Z", "2026-02-14T10:11:12Z"))
+    testthat::expect_identical(out$modified, c("2026-02-14", "2026-02-14"))
     testthat::expect_identical(out$license, c("CC0", "CC0"))
     testthat::expect_identical(out$language, c("pt", "pt"))
     testthat::expect_identical(out$eventDate[[1]], "2017-08/2018-06")
