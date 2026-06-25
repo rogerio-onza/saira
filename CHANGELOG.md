@@ -5,6 +5,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.9.3] - 2026-06-25
+
+### Fixed
+- **The Mapping step no longer freezes for several seconds after each selection.** Picking a column for a term (e.g. concatenating four columns into `eventDate`), toggling "use today's date" (`modified`), or choosing a `license` used to lock the UI for ~5s before the next click was accepted. The cause was that every one of these changes re-rendered the **entire** mapping grid — all ~50 selectize inputs, each carrying the full column list — even though only one card actually changed. The grid is now rendered once and rebuilt only on a real structural change (new upload, language switch, the show-only-mapped toggle, or when `scientificName`'s mapped-state flips, which locks/unlocks `taxonRank`/`specificEpithet`). Selecting a column now updates just that card: its mapped border and status badge are pushed to the client without a re-render (the same `saira-toggle-field-mapped` path already used for fixed-value terms), and its source sample, the `basisOfRecord` assistant button, and the `dynamicProperties` key inputs render into per-term `carddyn_<term>` slots that react only to their own term. Clicking through a multi-column mapping is now effectively instant.
+
 ## [0.9.2] - 2026-06-24
 
 ### Added

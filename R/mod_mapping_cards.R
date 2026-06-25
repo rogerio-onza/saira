@@ -15,15 +15,18 @@
 #' @param lang_r Reactive language code (already evaluated)
 #' @param input Shiny input from parent module
 #' @param cat_class CSS class for the category
-#' @param sample_preview Optional character vector of sample values from the
-#'   mapped source column (standard select terms only); NULL hides the preview
 #' @param scientificname_mapped Logical; when TRUE, taxonRank and specificEpithet
 #'   are locked because they are derived from scientificName.
 #' @param occurrence_id_preserved Logical; when TRUE, the uploaded data already
 #'   carries occurrenceID values (e.g. a camera-trap observationID), so the card
 #'   says those are preserved instead of auto-generated.
+#'
+#'   Selection-dependent content (the source sample, the basisOfRecord assistant
+#'   button, and the dynamicProperties key inputs) is rendered into a per-term
+#'   `carddyn_<term>` uiOutput slot, so picking a column updates only that card
+#'   instead of rebuilding the whole 50-selectize grid (see mod_mapping.R).
 #' @noRd
-build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, sample_preview = NULL, scientificname_mapped = FALSE, occurrence_id_preserved = FALSE) {
+build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, occurrence_id_preserved = FALSE) {
     term <- item$term
 
     # taxonRank/specificEpithet are inferred from scientificName (see
@@ -174,14 +177,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                     selectize = TRUE,
                     width = "100%"
                 ),
-                if (has_selected_value(basis_selected)) {
-                    shiny::actionButton(
-                        ns("open_basis_of_record_assistant"),
-                        tr("bor_assistant_button", lang_r),
-                        class = "btn btn-outline-primary btn-sm w-100 mt-2",
-                        icon = shiny::icon("list-check")
-                    )
-                }
+                shiny::uiOutput(ns("carddyn_basisOfRecord"))
             )
         } else if (term == "dynamicProperties") {
             selected_cols <- if (has_selected_value(current_val)) {
@@ -200,47 +196,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                     selectize = TRUE,
                     width = "100%"
                 ),
-                if (length(selected_cols) > 0) {
-                    shiny::div(
-                        class = "dynprops-keys-block",
-                        shiny::tags$label(
-                            class = "custom-field-label",
-                            tr("dynprops_keys_header", lang_r)
-                        ),
-                        shiny::tags$p(
-                            class = "dynprops-help",
-                            tr("dynprops_help", lang_r)
-                        ),
-                        lapply(selected_cols, function(col_name) {
-                            auto_key <- derive_dynprops_key(col_name)
-                            input_id <- paste0(
-                                "dynprops_key_", make.names(col_name)
-                            )
-                            saved <- shiny::isolate(input[[input_id]])
-                            bslib::layout_columns(
-                                col_widths = c(5, 7),
-                                shiny::tags$div(
-                                    class = "dynprops-source-col",
-                                    col_name
-                                ),
-                                shiny::textInput(
-                                    ns(input_id),
-                                    NULL,
-                                    value = if (!is.null(saved) && nzchar(saved)) {
-                                        saved
-                                    } else {
-                                        ""
-                                    },
-                                    placeholder = sprintf(
-                                        tr("dynprops_key_placeholder", lang_r),
-                                        auto_key
-                                    ),
-                                    width = "100%"
-                                )
-                            )
-                        })
-                    )
-                }
+                shiny::uiOutput(ns("carddyn_dynamicProperties"))
             )
         } else {
             is_const_term <- term %in% constant_value_terms()
@@ -274,15 +230,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                         )
                     }
                 ),
-                if (length(sample_preview) > 0) {
-                    shiny::div(
-                        class = "field-card-sample",
-                        paste0(
-                            tr("mapping_card_sample_prefix", lang_r), "  ",
-                            paste(sample_preview, collapse = "  ")
-                        )
-                    )
-                }
+                shiny::uiOutput(ns(paste0("carddyn_", term)))
             )
             shiny::tagList(
                 if (is_const_term) {
@@ -358,6 +306,88 @@ build_constant_value_input <- function(term, ns, lang_r, input) {
                 placeholder = tr(paste0("const_placeholder_", term), lang_r),
                 width = "100%"
             )
+        )
+    )
+}
+
+#' Selection-dependent content rendered into a card's `carddyn_<term>` slot.
+#'
+#' These build the fragments that used to live inline in `build_field_card` and
+#' depend on the current selection. They are rendered by per-term `renderUI`
+#' outputs in `mod_mapping_server`, so a selection updates only its own card.
+#' @noRd
+build_basis_assistant_button <- function(current_val, ns, lang_r) {
+    basis_selected <- if (has_selected_value(current_val)) {
+        as.character(current_val[[1]])
+    } else {
+        ""
+    }
+    if (!has_selected_value(basis_selected)) {
+        return(NULL)
+    }
+    shiny::actionButton(
+        ns("open_basis_of_record_assistant"),
+        tr("bor_assistant_button", lang_r),
+        class = "btn btn-outline-primary btn-sm w-100 mt-2",
+        icon = shiny::icon("list-check")
+    )
+}
+
+#' @noRd
+build_dynprops_keys_block <- function(current_val, ns, lang_r, input) {
+    selected_cols <- if (has_selected_value(current_val)) {
+        as.character(current_val)
+    } else {
+        character(0)
+    }
+    if (length(selected_cols) == 0) {
+        return(NULL)
+    }
+    shiny::div(
+        class = "dynprops-keys-block",
+        shiny::tags$label(
+            class = "custom-field-label",
+            tr("dynprops_keys_header", lang_r)
+        ),
+        shiny::tags$p(
+            class = "dynprops-help",
+            tr("dynprops_help", lang_r)
+        ),
+        lapply(selected_cols, function(col_name) {
+            auto_key <- derive_dynprops_key(col_name)
+            input_id <- paste0("dynprops_key_", make.names(col_name))
+            saved <- shiny::isolate(input[[input_id]])
+            bslib::layout_columns(
+                col_widths = c(5, 7),
+                shiny::tags$div(
+                    class = "dynprops-source-col",
+                    col_name
+                ),
+                shiny::textInput(
+                    ns(input_id),
+                    NULL,
+                    value = if (!is.null(saved) && nzchar(saved)) saved else "",
+                    placeholder = sprintf(
+                        tr("dynprops_key_placeholder", lang_r),
+                        auto_key
+                    ),
+                    width = "100%"
+                )
+            )
+        })
+    )
+}
+
+#' @noRd
+build_field_sample <- function(sample_preview, lang_r) {
+    if (length(sample_preview) == 0) {
+        return(NULL)
+    }
+    shiny::div(
+        class = "field-card-sample",
+        paste0(
+            tr("mapping_card_sample_prefix", lang_r), "  ",
+            paste(sample_preview, collapse = "  ")
         )
     )
 }
