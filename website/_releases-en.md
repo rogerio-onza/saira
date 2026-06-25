@@ -2,6 +2,18 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.3</span>
+    <time class="release-date">2026-06-25</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping is now instant.</strong> Picking a column, ticking "use today's date" or choosing a license no longer freezes the screen for seconds — every click is effectively instant, even when concatenating several columns (e.g. into <code>eventDate</code>).</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>modified</code> is written as a plain date</strong> when "use today's date" is checked: no time or timezone, matching the manual date picker.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>eventDate</code> and <code>dateIdentified</code> now show in ISO 8601 in the mapping preview</strong> (matching the exported file), and unpadded dates (<code>2/9/2021</code>) now convert; day/month order is decided per column from the data itself.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.1</span>
     <time class="release-date">2026-06-22</time>
   </header>

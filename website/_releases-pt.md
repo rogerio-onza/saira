@@ -2,6 +2,18 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.3</span>
+    <time class="release-date">2026-06-25</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>O mapeamento agora responde na hora.</strong> Selecionar uma coluna, marcar "usar data de hoje" ou escolher uma licença não trava mais a tela por segundos — cada clique é praticamente instantâneo, mesmo ao concatenar várias colunas (por exemplo no <code>eventDate</code>).</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong><code>modified</code> vira data pura</strong> ao marcar "usar data de hoje": sem hora nem fuso, igual ao seletor de data manual.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong><code>eventDate</code> e <code>dateIdentified</code> já aparecem em ISO 8601 na pré-visualização</strong> do mapeamento (igual ao arquivo exportado), e datas sem zero à esquerda (<code>2/9/2021</code>) agora convertem; a ordem dia/mês é decidida por coluna a partir dos próprios dados.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.1</span>
     <time class="release-date">2026-06-22</time>
   </header>
