@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 280" width="100%" role="img" aria-label="Where Saíra fits in the GBIF data flow: sources, Saíra at the source, GBIF/SiBBr, downstream tools, research and policy.">
+  <defs>
+    <marker id="ah-primary" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill="#38cff6"/></marker>
+    <marker id="ah-accent" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill="#2833ac"/></marker>
+  </defs>
+
+  <rect x="0" y="0" width="960" height="280" rx="14" fill="#f4f3ee"/>
+
+  <!-- Section title -->
+  <text x="40" y="40" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="14" font-weight="700" letter-spacing="1.5" fill="#2833ac">WHERE SAÍRA FITS IN GBIF</text>
+
+  <!-- Arrows (flow) -->
+  <line x1="182" y1="138" x2="212" y2="138" stroke="#38cff6" stroke-width="2.6" marker-end="url(#ah-primary)"/>
+  <line x1="370" y1="138" x2="402" y2="138" stroke="#38cff6" stroke-width="2.6" marker-end="url(#ah-primary)"/>
+  <line x1="558" y1="138" x2="590" y2="138" stroke="#2833ac" stroke-width="2.2" stroke-opacity="0.55" marker-end="url(#ah-accent)"/>
+  <line x1="746" y1="138" x2="778" y2="138" stroke="#2833ac" stroke-width="2.2" stroke-opacity="0.55" marker-end="url(#ah-accent)"/>
+
+  <!-- Gate label over Saíra -->
+  <text x="292" y="76" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="8.5" font-weight="700" letter-spacing="1.2" fill="#0e8a95">QUALITY GATE</text>
+
+  <!-- Node 1: Sources -->
+  <rect x="28" y="84" width="152" height="104" rx="10" fill="#ffffff" stroke="#2833ac" stroke-opacity="0.18" stroke-width="1.5"/>
+  <text x="104" y="120" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" fill="#1c1c26">Sources</text>
+  <text x="104" y="146" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">Herbaria, museums, field</text>
+  <text x="104" y="162" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">· CSV/Excel spreadsheets</text>
+
+  <!-- Node 2: Saíra (highlight / gate) -->
+  <rect x="216" y="84" width="152" height="104" rx="10" fill="#2833ac"/>
+  <text x="292" y="120" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="13" font-weight="700" fill="#ffffff">Saíra</text>
+  <text x="292" y="146" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#ffffff" fill-opacity="0.92">Quality at the source →</text>
+  <text x="292" y="162" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#ffffff" fill-opacity="0.92">clean Darwin Core</text>
+
+  <!-- Node 3: GBIF / SiBBr -->
+  <rect x="404" y="84" width="152" height="104" rx="10" fill="#ffffff" stroke="#2833ac" stroke-opacity="0.18" stroke-width="1.5"/>
+  <text x="480" y="120" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" fill="#1c1c26">GBIF / SiBBr</text>
+  <text x="480" y="146" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">Aggregation and</text>
+  <text x="480" y="162" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">publishing in the network</text>
+
+  <!-- Node 4: Downstream -->
+  <rect x="592" y="84" width="152" height="104" rx="10" fill="#ffffff" stroke="#2833ac" stroke-opacity="0.18" stroke-width="1.5"/>
+  <text x="668" y="120" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" fill="#1c1c26">Downstream</text>
+  <text x="668" y="146" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">Annotation &amp; QA, ecological</text>
+  <text x="668" y="162" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">indices, semantic queries</text>
+
+  <!-- Node 5: Research & policy -->
+  <rect x="780" y="84" width="152" height="104" rx="10" fill="#ffffff" stroke="#2833ac" stroke-opacity="0.18" stroke-width="1.5"/>
+  <text x="856" y="120" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" fill="#1c1c26">Research &amp; policy</text>
+  <text x="856" y="146" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">Science and</text>
+  <text x="856" y="162" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">management use</text>
+
+  <!-- Caption -->
+  <text x="480" y="236" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="12.5" font-style="italic" fill="#1c1c26">Quality starts at the source: Saíra delivers clean, standardized data, avoiding corrections after publication to GBIF.</text>
+</svg>

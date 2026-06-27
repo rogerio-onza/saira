@@ -5,6 +5,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased]
+
+### Added
+- **The README now leads with two diagrams (PT/EN).** A *Where Saíra fits in GBIF* diagram places Saíra at the source of the data flow — the quality gate before publication — and a *How it works* diagram shows the five-step pipeline (Upload → Mapping → Validation → Generalization → Export). Both are SVGs in Saíra's design system (Tangara palette, Source Serif 4 / Space Mono), stored under `man/figures/` and referenced from the README's PT and EN sections.
+
 ## [0.9.3] - 2026-06-25
 
 ### Changed
