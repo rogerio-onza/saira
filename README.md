@@ -23,7 +23,11 @@ instalação.
 📚 **Tutoriais completos e documentação** ficam no site do projeto:
 <https://rogerio-onza.github.io/saira/>. Este README é só um resumo.
 
+![Onde a Saíra se encaixa no fluxo de dados do GBIF: ele atua na origem, entregando dados limpos e padronizados e evitando correções após a publicação na rede.](man/figures/saira-gbif-fit.svg)
+
 ### 🔄 Como funciona
+
+![Os cinco passos da Saíra: Upload, Mapeamento, Validação, Generalização e Exportar.](man/figures/saira-how-it-works.svg)
 
 1. **Upload** — carregue seu CSV (`.csv`, `.tsv`, `.txt`) ou pacote de armadilha fotográfica.
 2. **Mapeamento** — associe cada coluna a um termo do Darwin Core (com sugestões automáticas).
@@ -154,7 +158,11 @@ only at install time.
 📚 **Full tutorials and documentation** live on the project site:
 <https://rogerio-onza.github.io/saira/en/>. This README is only a summary.
 
+![Where Saíra fits in the GBIF data flow: it acts at the source, delivering clean, standardized data and avoiding corrections after publication to the network.](man/figures/saira-gbif-fit-EN.svg)
+
 ### 🔄 How it works
+
+![Saíra's five steps: Upload, Mapping, Validation, Generalization and Export.](man/figures/saira-how-it-works-EN.svg)
 
 1. **Upload** — load your CSV (`.csv`, `.tsv`, `.txt`) or camera-trap package.
 2. **Mapping** — match each column to a Darwin Core term (with automatic suggestions).
