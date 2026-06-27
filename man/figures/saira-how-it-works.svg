@@ -25,8 +25,8 @@
     <path d="M95,126 V132 H121 V126"/>
   </g>
   <text x="108" y="160" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12.5" font-weight="700" fill="#1c1c26">Upload</text>
-  <text x="108" y="182" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">CSV, Excel ou</text>
-  <text x="108" y="198" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">Camtrap DP</text>
+  <text x="108" y="182" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">CSV, Excel e Camtrap DP</text>
+  <text x="108" y="198" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">(compatibilidade total)</text>
 
   <!-- Card 2: Mapeamento (accent #2833ac) -->
   <rect x="210" y="70" width="168" height="150" rx="10" fill="#ffffff" stroke="#2833ac" stroke-opacity="0.18" stroke-width="1.5"/>
