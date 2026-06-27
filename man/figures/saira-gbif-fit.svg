@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 280" width="100%" role="img" aria-label="Onde a Saíra se encaixa no fluxo de dados do GBIF: fontes, Saíra na origem, GBIF/SiBBr, ferramentas a jusante, pesquisa e política.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 280" width="960" height="280" role="img" aria-label="Onde a Saíra se encaixa no fluxo de dados do GBIF: fontes, Saíra na origem, GBIF/SiBBr, ferramentas a jusante, pesquisa e política.">
   <defs>
     <marker id="ah-primary" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill="#38cff6"/></marker>
     <marker id="ah-accent" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill="#2833ac"/></marker>
