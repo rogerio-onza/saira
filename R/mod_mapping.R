@@ -87,14 +87,20 @@ mod_mapping_ui <- function(id) {
           Shiny.addCustomMessageHandler('saira-mapping-scroll-to-class', function (payload) {
             var id = payload && payload.anchor_id;
             if (!id) { return; }
-            var frames = 0;
+            // Poll until the target element exists, then scroll. For a class
+            // anchor it is already in the DOM (resolves immediately); for a
+            // freshly added term card the grid is still rebuilding (~50
+            // selectize inputs), which can take a few seconds, so poll on a
+            // time budget rather than a fixed frame count.
+            var deadline = (window.performance ? performance.now() : Date.now()) + 8000;
             (function tryScroll() {
               var el = document.getElementById(id);
               if (el) {
                 el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 return;
               }
-              if (frames++ < 40) { window.requestAnimationFrame(tryScroll); }
+              var now = (window.performance ? performance.now() : Date.now());
+              if (now < deadline) { window.requestAnimationFrame(tryScroll); }
             })();
           });
           // Live-toggle a field card's mapped border without re-rendering the
@@ -1294,6 +1300,15 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             available_columns <- tryCatch(names(raw_data_r()), error = function(e) character(0))
             plan <- plan_mapping_guide_restore(payload, available_columns)
 
+            # Register any catalog terms the guide maps that are outside the
+            # default set, so their cards render (mirrors the Add-term flow).
+            # Without this the value is restored into rv$map_values but no card
+            # is ever shown for it.
+            restore_extras <- detect_extra_dwc_terms(names(plan$map_values))
+            if (length(restore_extras) > 0L) {
+                rv$extra_terms <- unique(c(rv$extra_terms, restore_extras))
+            }
+
             rv$is_programmatic_update <- TRUE
             on.exit({
                 rv$is_programmatic_update <- FALSE
@@ -1398,6 +1413,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
             rv$extra_terms <- c(rv$extra_terms, new_term)
             shiny::removeModal()
+            # Scroll to the freshly added card once the grid re-renders. The
+            # card may not be in the DOM yet, so the handler retries across
+            # animation frames (reuses the class-scroll handler, which targets
+            # any element id -- here the term's fieldcard_<term> anchor).
+            session$sendCustomMessage(
+                "saira-mapping-scroll-to-class",
+                list(anchor_id = ns(paste0("fieldcard_", new_term)))
+            )
             shiny::showNotification(
                 paste(tr("notif_term_added", lang_r()), new_term),
                 type     = "message",
@@ -1442,15 +1465,22 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
             # The grid (50 selectize inputs) is expensive to rebuild, so it is
             # rendered only on a real structural change: a new upload, a language
-            # switch, the show-only-mapped toggle, or when scientificName's
+            # switch, the show-only-mapped toggle, a change to the active term set
+            # (Add-term modal, template import, reset), or when scientificName's
             # mapped-state flips (which locks/unlocks taxonRank/specificEpithet).
-            # These four are the only reactive dependencies. Everything else --
+            # These are the only reactive dependencies. Everything else --
             # per-term map_values, fixed-value inputs, meta -- is read inside the
             # isolate() below, so selecting a column updates just that card via
             # its carddyn_<term> output and push_card_state(), never the grid.
             lang <- lang_r()
             show_only_mapped <- isTRUE(input$show_only_mapped)
             scientificname_mapped <- isTRUE(rv$scientificname_mapped)
+            # Structural dependency: adding/removing terms must rebuild the grid
+            # so the new card actually appears. dwc_all() carries rv$extra_terms
+            # but is read inside isolate() below, so depend on the term set
+            # explicitly here (read outside the isolate). Without this, terms
+            # added via the "Add term" modal/template import never render.
+            rv$extra_terms
 
             shiny::isolate({
                 cols <- c("-- " = "", names(raw_data_r()))

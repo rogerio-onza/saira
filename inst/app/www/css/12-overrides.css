@@ -62,16 +62,18 @@
 /* ========== Tab-specific page-scroll overrides ==========
    bslib::page_navbar(fillable = TRUE) impoe height: 100vh; overflow: hidden
    no body. Abas com conteudo que naturalmente extrapola a viewport
-   (Wiki com 217 termos + 12 pills, Preview com pageLength alto ou muitas
-   colunas, Validate Coords com mapa 560px + tabela + painel de correcao de
-   transpostas + legendas abaixo do mapa) precisam liberar scroll de pagina.
+   (Wiki com 217 termos + 12 pills, Validate Coords com mapa 560px + tabela +
+   painel de correcao de transpostas + legendas abaixo do mapa) precisam
+   liberar scroll de pagina.
    A Generalizacao tem o mesmo padrao: card de resultado + mapa 380px + escala
    + tabela de referencia de Chapman empilhados na coluna direita, que
    extrapolam a viewport quando ha muitas especies sensiveis.
+   Preview NAO esta aqui de proposito: a tabela tem scroll vertical proprio
+   (DataTables scrollY), entao o cabecalho com os termos DwC fica congelado
+   enquanto so o corpo da tabela rola (a pagina permanece presa a viewport).
    :has() e tecnica validada no projeto (LESSONS:226). A coluna esquerda do
    Coords permanece sticky, entao so o conteudo da direita rola. */
 .tab-content > .tab-pane:has(.wiki-module),
-.tab-content > .tab-pane:has(.preview-page),
 .tab-content > .tab-pane:has(.validate-coords-page),
 .tab-content > .tab-pane:has(.sensitive-coords-page),
 .tab-content > .tab-pane:has(.export-page),

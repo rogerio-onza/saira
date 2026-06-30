@@ -897,6 +897,93 @@ testthat::test_that("mod_mapping_server auto-registers extra DwC columns from th
     )
 })
 
+# Regression: the "Add term" modal appends to rv$extra_terms, but the mapping
+# grid reads dwc_all() (which carries rv$extra_terms) inside isolate(), so the
+# grid must take an explicit dependency on rv$extra_terms or the newly added
+# term never renders a card.
+testthat::test_that("Add-term modal renders the new term's card in the grid", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+
+            # organismID is a catalog term outside the base set: no card yet.
+            mui_before <- paste(output$mapping_ui$html, collapse = " ")
+            testthat::expect_false(grepl("fieldcard_organismID", mui_before, fixed = TRUE))
+            testthat::expect_false("organismID" %in% rv$extra_terms)
+
+            # Simulate the modal: pick a term, then confirm.
+            session$setInputs(add_term_select = "organismID")
+            session$setInputs(confirm_add_term = 1)
+            session$flushReact()
+
+            # The term is registered AND its card now renders in the grid.
+            testthat::expect_true("organismID" %in% rv$extra_terms)
+            mui_after <- paste(output$mapping_ui$html, collapse = " ")
+            testthat::expect_true(grepl("fieldcard_organismID", mui_after, fixed = TRUE))
+        }
+    )
+})
+
+# Regression: importing a mapping guide that maps a term outside the default set
+# must register it as an extra term, otherwise the value is restored into
+# rv$map_values but no card ever renders for it.
+testthat::test_that("importing a mapping guide registers and renders non-default terms", {
+    withr::local_envvar(c(
+        SAIRA_DATA_DIR = withr::local_tempdir(),
+        SAIRA_USER = paste0("test_isolation_", as.integer(Sys.time()))
+    ))
+
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        datum_col = c("EPSG:4326", "EPSG:4326"),
+        stringsAsFactors = FALSE
+    )
+    # A guide that maps geodeticDatum (outside the base set) to a column.
+    guide <- build_mapping_guide_txt(
+        list(scientificName = "scientificName", geodeticDatum = "datum_col"),
+        df, lang = "en"
+    )
+    guide_path <- withr::local_tempfile(fileext = ".txt")
+    writeLines(guide, guide_path)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            mui_before <- paste(output$mapping_ui$html, collapse = " ")
+            testthat::expect_false(grepl("fieldcard_geodeticDatum", mui_before, fixed = TRUE))
+
+            session$setInputs(import_template_file = list(
+                name = "guide.txt", size = 1L,
+                type = "text/plain", datapath = guide_path
+            ))
+            session$setInputs(confirm_import_template = 1)
+            session$flushReact()
+
+            # The non-default term is registered and now renders a card, with
+            # its restored mapping value.
+            testthat::expect_true("geodeticDatum" %in% rv$extra_terms)
+            testthat::expect_identical(rv$map_values[["geodeticDatum"]], "datum_col")
+            mui_after <- paste(output$mapping_ui$html, collapse = " ")
+            testthat::expect_true(grepl("fieldcard_geodeticDatum", mui_after, fixed = TRUE))
+        }
+    )
+})
+
 # The camtrap auto-map is deferred until the field cards render (the first
 # non-NULL scientificName). Camtrap columns are canonical Darwin Core terms, so
 # the mapping is a deterministic identity (column X -> term X) badged AUTO, not a
