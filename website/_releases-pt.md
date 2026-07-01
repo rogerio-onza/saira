@@ -2,6 +2,21 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.4</span>
+    <time class="release-date">2026-07-01</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>Vocabulário Darwin Core atualizado com o TDWG (de 217 para 262 termos).</strong> Chegaram 45 novos termos e 9 novas classes (Agent, Assertion, BibliographicResource, MolecularProtocol, NucleotideAnalysis, NucleotideSequence, OrganismInteraction, Protocol, Provenance), cada um com definição em português — disponíveis na Wiki e em "Adicionar termo". Oito termos foram reclassificados para a classe correta do TDWG (por exemplo, <code>catalogNumber</code> agora é <code>MaterialEntity</code>).</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>O EML exportado agora sai com a licença que você escolheu</strong>, não mais sempre CC0. O <code>intellectualRights</code> do <code>eml.xml</code> reflete CC0 1.0, CC-BY 4.0 ou CC-BY-NC 4.0 conforme o mapeamento, no formato do GBIF/IPT.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>"Adicionar termo" agora funciona de verdade</strong>: o termo escolhido aparece no mapeamento e a tela rola até o card recém-criado.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Importar um guia de mapeamento mostra os cards</strong> dos termos fora do conjunto padrão (por exemplo, um <code>geodeticDatum</code> herdado de outro conjunto de dados).</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>A tabela de pré-visualização congela o cabeçalho Darwin Core</strong> enquanto você rola as linhas, então os nomes dos termos e o que foi mapeado ficam sempre visíveis.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong><code>fundingAttribution</code> é declarado no namespace correto</strong> (Audiovisual Core, <code>ac:</code>) no <code>meta.xml</code>.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.3</span>
     <time class="release-date">2026-06-25</time>
   </header>

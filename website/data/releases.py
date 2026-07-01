@@ -11,6 +11,26 @@
 
 RELEASES = [
     {
+        "version": "0.9.4",
+        "date": "2026-07-01",
+        "pt": [
+            ("added", "**Vocabulário Darwin Core atualizado com o TDWG (de 217 para 262 termos).** Chegaram 45 novos termos e 9 novas classes (Agent, Assertion, BibliographicResource, MolecularProtocol, NucleotideAnalysis, NucleotideSequence, OrganismInteraction, Protocol, Provenance), cada um com definição em português — disponíveis na Wiki e em \"Adicionar termo\". Oito termos foram reclassificados para a classe correta do TDWG (por exemplo, `catalogNumber` agora é `MaterialEntity`)."),
+            ("fixed", "**O EML exportado agora sai com a licença que você escolheu**, não mais sempre CC0. O `intellectualRights` do `eml.xml` reflete CC0 1.0, CC-BY 4.0 ou CC-BY-NC 4.0 conforme o mapeamento, no formato do GBIF/IPT."),
+            ("fixed", "**\"Adicionar termo\" agora funciona de verdade**: o termo escolhido aparece no mapeamento e a tela rola até o card recém-criado."),
+            ("fixed", "**Importar um guia de mapeamento mostra os cards** dos termos fora do conjunto padrão (por exemplo, um `geodeticDatum` herdado de outro conjunto de dados)."),
+            ("fixed", "**A tabela de pré-visualização congela o cabeçalho Darwin Core** enquanto você rola as linhas, então os nomes dos termos e o que foi mapeado ficam sempre visíveis."),
+            ("fixed", "**`fundingAttribution` é declarado no namespace correto** (Audiovisual Core, `ac:`) no `meta.xml`."),
+        ],
+        "en": [
+            ("added", "**Darwin Core vocabulary resynced with TDWG (from 217 to 262 terms).** 45 new terms and 9 new classes (Agent, Assertion, BibliographicResource, MolecularProtocol, NucleotideAnalysis, NucleotideSequence, OrganismInteraction, Protocol, Provenance), each with a Portuguese definition — available in the Wiki and the \"Add term\" modal. Eight terms were re-classified to their correct TDWG class (for example, `catalogNumber` is now `MaterialEntity`)."),
+            ("fixed", "**The exported EML now carries the license you chose**, no longer always CC0. The `eml.xml` `intellectualRights` reflects CC0 1.0, CC-BY 4.0 or CC-BY-NC 4.0 per the mapping, in the GBIF/IPT format."),
+            ("fixed", "**\"Add term\" now actually works**: the chosen term shows up in the mapping and the page scrolls to the newly added card."),
+            ("fixed", "**Importing a mapping guide shows the cards** for terms outside the default set (for example, a `geodeticDatum` carried over from another dataset)."),
+            ("fixed", "**The preview table freezes the Darwin Core header** while you scroll the rows, so the term names and what was mapped stay visible."),
+            ("fixed", "**`fundingAttribution` is declared under its correct namespace** (Audiovisual Core, `ac:`) in `meta.xml`."),
+        ],
+    },
+    {
         "version": "0.9.3",
         "date": "2026-06-25",
         "pt": [
