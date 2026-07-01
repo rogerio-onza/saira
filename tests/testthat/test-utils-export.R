@@ -329,12 +329,13 @@ testthat::test_that("apply_name_review_payload applies 'correct' replacement to 
     testthat::expect_false("motivo_revisao"  %in% names(out))
 })
 
-testthat::test_that("dwc_canonical_class_order lists 12 DwC classes with Occurrence first", {
+testthat::test_that("dwc_canonical_class_order lists 21 DwC classes with Occurrence first", {
     classes <- dwc_canonical_class_order()
     testthat::expect_identical(classes[1], "Occurrence")
     testthat::expect_true("Taxon" %in% classes)
     testthat::expect_true("Location" %in% classes)
-    testthat::expect_length(classes, 12L)
+    testthat::expect_true("MaterialEntity" %in% classes)
+    testthat::expect_length(classes, 21L)
     testthat::expect_identical(anyDuplicated(classes), 0L)
 })
 

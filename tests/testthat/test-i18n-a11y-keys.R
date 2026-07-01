@@ -30,7 +30,17 @@ testthat::test_that("a11y/ui keys for this cycle exist in pt/en", {
         "class_materialsample",
         "class_measurementorfact",
         "class_organism",
-        "class_resourcerelationship"
+        "class_resourcerelationship",
+        # DwC-DP classes added in the TDWG resync
+        "class_agent",
+        "class_assertion",
+        "class_bibliographicresource",
+        "class_molecularprotocol",
+        "class_nucleotideanalysis",
+        "class_nucleotidesequence",
+        "class_organisminteraction",
+        "class_protocol",
+        "class_provenance"
     )
 
     missing_keys <- setdiff(required_keys, names(dict))
@@ -78,7 +88,16 @@ testthat::test_that("a11y/ui keys resolve with tr in pt/en", {
         "class_materialsample",
         "class_measurementorfact",
         "class_organism",
-        "class_resourcerelationship"
+        "class_resourcerelationship",
+        "class_agent",
+        "class_assertion",
+        "class_bibliographicresource",
+        "class_molecularprotocol",
+        "class_nucleotideanalysis",
+        "class_nucleotidesequence",
+        "class_organisminteraction",
+        "class_protocol",
+        "class_provenance"
     )
 
     for (key in keys) {

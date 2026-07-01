@@ -637,6 +637,20 @@ mount_export_download <- function(input, output, session, lang_r,
                         # Record the dataset-level access constraint (Chapman
                         # sec. 5.1) in the EML when any record was generalized.
                         eml_metadata <- list()
+                        # The EML intellectualRights must reflect the license the
+                        # user chose in the mapping (constant card or a mapped
+                        # column), carried in the export's license column — not
+                        # the CC0 default. Use the most frequent non-empty value
+                        # when a mapped column carries more than one.
+                        if ("license" %in% names(export_data)) {
+                            lic_vals <- trimws(as.character(export_data[["license"]]))
+                            lic_vals <- lic_vals[!is.na(lic_vals) & nzchar(lic_vals)]
+                            if (length(lic_vals) > 0L) {
+                                eml_metadata$license <- names(
+                                    sort(table(lic_vals), decreasing = TRUE)
+                                )[[1]]
+                            }
+                        }
                         if (masked$n_masked > 0L) {
                             review_date <- if (is.list(gen)) gen$review_date else NULL
                             if (is.null(review_date) || length(review_date) == 0L) {

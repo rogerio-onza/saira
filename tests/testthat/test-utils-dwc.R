@@ -200,6 +200,9 @@ testthat::test_that("default base term set matches the Rede Felinos template + k
     # Coherent class grouping: temporal/sampling terms live under Event.
     testthat::expect_identical(base$class[base$term == "eventDate"], "Event")
     testthat::expect_identical(base$class[base$term == "year"], "Event")
+
+    # TDWG resync: catalogNumber is organised under MaterialEntity upstream.
+    testthat::expect_identical(base$class[base$term == "catalogNumber"], "MaterialEntity")
 })
 
 testthat::test_that("get_dwc_full_catalog returns superset of base terms with correct schema", {

@@ -80,14 +80,17 @@ testthat::test_that("generate_occurrence_ids accepts eventID or recordNumber as 
     )
 })
 
-testthat::test_that("dwc_term_uri maps DwC terms, DC terms, and rejects unknowns", {
-    out <- dwc_term_uri(c("scientificName", "license", "type", "foobar"))
+testthat::test_that("dwc_term_uri maps DwC, DC and AC terms, and rejects unknowns", {
+    out <- dwc_term_uri(c("scientificName", "license", "type",
+                          "fundingAttribution", "foobar"))
     testthat::expect_identical(
         out,
         c(
             "http://rs.tdwg.org/dwc/terms/scientificName",
             "http://purl.org/dc/terms/license",
             "http://purl.org/dc/terms/type",
+            # fundingAttribution is an Audiovisual Core (ac:) term, not dwc:.
+            "http://rs.tdwg.org/ac/terms/fundingAttribution",
             NA_character_
         )
     )
@@ -98,6 +101,7 @@ testthat::test_that("build_meta_xml emits the archive shell, id index, and DwC f
         occurrenceID = "x",
         scientificName = "y",
         basisOfRecord = "z",
+        fundingAttribution = "Funded by X",
         unknown_col = "w",
         stringsAsFactors = FALSE
     )
@@ -110,6 +114,8 @@ testthat::test_that("build_meta_xml emits the archive shell, id index, and DwC f
     testthat::expect_true(grepl("<id index=\"0\"/>", xml_str, fixed = TRUE))
     testthat::expect_true(grepl("term=\"http://rs.tdwg.org/dwc/terms/scientificName\"", xml_str, fixed = TRUE))
     testthat::expect_true(grepl("term=\"http://rs.tdwg.org/dwc/terms/basisOfRecord\"", xml_str, fixed = TRUE))
+    # fundingAttribution is declared under its Audiovisual Core (ac:) URI.
+    testthat::expect_true(grepl("term=\"http://rs.tdwg.org/ac/terms/fundingAttribution\"", xml_str, fixed = TRUE))
     # Unknown column is in occurrence.txt but NOT declared as a field.
     testthat::expect_false(grepl("unknown_col", xml_str, fixed = TRUE))
 })
@@ -192,13 +198,59 @@ testthat::test_that("build_eml_xml respects user-supplied metadata", {
         "jane@ex.org"
     )
     testthat::expect_true(grepl(
-        "Attribution 4.0",
+        "Creative Commons Attribution \\(CC-BY\\) 4.0",
         xml2::xml_text(xml2::xml_find_first(doc, "//intellectualRights"))
     ))
+    testthat::expect_identical(
+        xml2::xml_attr(
+            xml2::xml_find_first(doc, "//intellectualRights//ulink"), "url"
+        ),
+        "http://creativecommons.org/licenses/by/4.0/legalcode"
+    )
     testthat::expect_identical(
         xml2::xml_text(xml2::xml_find_first(doc, "//abstract")),
         "Short description."
     )
+})
+
+testthat::test_that("build_eml_xml reflects the chosen license and never mislabels as CC0", {
+    df <- data.frame(scientificName = "x", stringsAsFactors = FALSE)
+    ir_url <- function(x) xml2::xml_attr(
+        xml2::xml_find_first(xml2::read_xml(x), "//intellectualRights//ulink"),
+        "url"
+    )
+    ir_text <- function(x) xml2::xml_text(
+        xml2::xml_find_first(xml2::read_xml(x), "//intellectualRights")
+    )
+
+    # The mapping card stores full CC URLs; they must map like the tokens do.
+    by <- build_eml_xml(df, metadata = list(
+        license = "https://creativecommons.org/licenses/by/4.0/legalcode"
+    ))
+    testthat::expect_identical(ir_url(by),
+        "http://creativecommons.org/licenses/by/4.0/legalcode")
+    testthat::expect_true(grepl("Attribution \\(CC-BY\\) 4.0", ir_text(by)))
+    testthat::expect_false(grepl("waived all rights", ir_text(by)))
+
+    bync <- build_eml_xml(df, metadata = list(
+        license = "https://creativecommons.org/licenses/by-nc/4.0/legalcode"
+    ))
+    testthat::expect_identical(ir_url(bync),
+        "http://creativecommons.org/licenses/by-nc/4.0/legalcode")
+    testthat::expect_true(grepl("Non Commercial", ir_text(bync)))
+
+    cc0 <- build_eml_xml(df, metadata = list(
+        license = "https://creativecommons.org/publicdomain/zero/1.0/legalcode"
+    ))
+    testthat::expect_true(grepl("waived all rights", ir_text(cc0)))
+
+    # No license supplied still defaults to CC0.
+    testthat::expect_true(grepl("waived all rights", ir_text(build_eml_xml(df))))
+
+    # An unrecognized value is cited verbatim, not silently turned into CC0.
+    other <- build_eml_xml(df, metadata = list(license = "All rights reserved"))
+    testthat::expect_true(grepl("All rights reserved", ir_text(other)))
+    testthat::expect_false(grepl("waived all rights", ir_text(other)))
 })
 
 testthat::test_that("build_eml_xml emits a sensitivity access block when masking ran", {

@@ -232,21 +232,30 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             }
         })
 
-        # i18n keys for all 12 catalog classes (base + on-demand extras).
+        # i18n keys for all 21 catalog classes (base + on-demand extras).
         # Falls back to raw class name if a future class isn't covered.
         class_tr_keys_map <- c(
-            "Record-level"         = "class_record",
-            "Occurrence"           = "class_occurrence",
-            "Event"                = "class_event",
-            "Location"             = "class_location",
-            "Taxon"                = "class_taxon",
-            "Identification"       = "class_identification",
-            "GeologicalContext"    = "class_geologicalcontext",
-            "MaterialEntity"       = "class_materialentity",
-            "MaterialSample"       = "class_materialsample",
-            "MeasurementOrFact"    = "class_measurementorfact",
-            "Organism"             = "class_organism",
-            "ResourceRelationship" = "class_resourcerelationship"
+            "Record-level"          = "class_record",
+            "Occurrence"            = "class_occurrence",
+            "Event"                 = "class_event",
+            "Location"              = "class_location",
+            "Taxon"                 = "class_taxon",
+            "Identification"        = "class_identification",
+            "GeologicalContext"     = "class_geologicalcontext",
+            "MaterialEntity"        = "class_materialentity",
+            "MaterialSample"        = "class_materialsample",
+            "MeasurementOrFact"     = "class_measurementorfact",
+            "Organism"              = "class_organism",
+            "ResourceRelationship"  = "class_resourcerelationship",
+            "Agent"                 = "class_agent",
+            "Assertion"             = "class_assertion",
+            "BibliographicResource" = "class_bibliographicresource",
+            "MolecularProtocol"     = "class_molecularprotocol",
+            "NucleotideAnalysis"    = "class_nucleotideanalysis",
+            "NucleotideSequence"    = "class_nucleotidesequence",
+            "OrganismInteraction"   = "class_organisminteraction",
+            "Protocol"              = "class_protocol",
+            "Provenance"            = "class_provenance"
         )
 
         # Required DwC terms surfaced as a live status strip in the sidebar

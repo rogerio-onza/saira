@@ -3179,6 +3179,42 @@
     "pt": "ResourceRelationship",
     "en": "ResourceRelationship"
   },
+  "class_agent": {
+    "pt": "Agent",
+    "en": "Agent"
+  },
+  "class_assertion": {
+    "pt": "Assertion",
+    "en": "Assertion"
+  },
+  "class_bibliographicresource": {
+    "pt": "BibliographicResource",
+    "en": "BibliographicResource"
+  },
+  "class_molecularprotocol": {
+    "pt": "MolecularProtocol",
+    "en": "MolecularProtocol"
+  },
+  "class_nucleotideanalysis": {
+    "pt": "NucleotideAnalysis",
+    "en": "NucleotideAnalysis"
+  },
+  "class_nucleotidesequence": {
+    "pt": "NucleotideSequence",
+    "en": "NucleotideSequence"
+  },
+  "class_organisminteraction": {
+    "pt": "OrganismInteraction",
+    "en": "OrganismInteraction"
+  },
+  "class_protocol": {
+    "pt": "Protocol",
+    "en": "Protocol"
+  },
+  "class_provenance": {
+    "pt": "Provenance",
+    "en": "Provenance"
+  },
   "mapping_pill_all": {
     "pt": "Todos",
     "en": "All"

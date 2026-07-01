@@ -35,21 +35,30 @@ mod_wiki_server <- function(id, lang_r) {
 
         dwc_terms <- get_dwc_full_catalog()
 
-        # i18n keys for all 12 catalog classes. Falls back to raw class name
+        # i18n keys for all 21 catalog classes. Falls back to raw class name
         # if a future class isn't covered.
         class_tr_keys <- c(
-            "Record-level"         = "class_record",
-            "Occurrence"           = "class_occurrence",
-            "Event"                = "class_event",
-            "Location"             = "class_location",
-            "Identification"       = "class_identification",
-            "Taxon"                = "class_taxon",
-            "GeologicalContext"    = "class_geologicalcontext",
-            "MaterialEntity"       = "class_materialentity",
-            "MaterialSample"       = "class_materialsample",
-            "MeasurementOrFact"    = "class_measurementorfact",
-            "Organism"             = "class_organism",
-            "ResourceRelationship" = "class_resourcerelationship"
+            "Record-level"          = "class_record",
+            "Occurrence"            = "class_occurrence",
+            "Event"                 = "class_event",
+            "Location"              = "class_location",
+            "Identification"        = "class_identification",
+            "Taxon"                 = "class_taxon",
+            "GeologicalContext"     = "class_geologicalcontext",
+            "MaterialEntity"        = "class_materialentity",
+            "MaterialSample"        = "class_materialsample",
+            "MeasurementOrFact"     = "class_measurementorfact",
+            "Organism"              = "class_organism",
+            "ResourceRelationship"  = "class_resourcerelationship",
+            "Agent"                 = "class_agent",
+            "Assertion"             = "class_assertion",
+            "BibliographicResource" = "class_bibliographicresource",
+            "MolecularProtocol"     = "class_molecularprotocol",
+            "NucleotideAnalysis"    = "class_nucleotideanalysis",
+            "NucleotideSequence"    = "class_nucleotidesequence",
+            "OrganismInteraction"   = "class_organisminteraction",
+            "Protocol"              = "class_protocol",
+            "Provenance"            = "class_provenance"
         )
 
         get_class_label <- function(cls, lang) {
