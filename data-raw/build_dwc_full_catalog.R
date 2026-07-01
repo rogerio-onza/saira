@@ -38,15 +38,33 @@ class_map <- list(
   "http://rs.tdwg.org/dwc/terms/Occurrence"            = "Occurrence",
   "http://rs.tdwg.org/dwc/terms/Organism"              = "Organism",
   "http://rs.tdwg.org/dwc/terms/ResourceRelationship"  = "ResourceRelationship",
-  "http://rs.tdwg.org/dwc/terms/Taxon"                 = "Taxon"
+  "http://rs.tdwg.org/dwc/terms/Taxon"                 = "Taxon",
+  # DwC-DP classes added to the recommended vocabulary upstream.
+  "http://purl.org/dc/terms/Agent"                     = "Agent",
+  "http://purl.org/dc/terms/BibliographicResource"     = "BibliographicResource",
+  "http://rs.tdwg.org/dwc/terms/Assertion"             = "Assertion",
+  "http://rs.tdwg.org/dwc/terms/OrganismInteraction"   = "OrganismInteraction",
+  "http://rs.tdwg.org/dwc/terms/MolecularProtocol"     = "MolecularProtocol",
+  "http://rs.tdwg.org/dwc/terms/NucleotideAnalysis"    = "NucleotideAnalysis",
+  "http://rs.tdwg.org/dwc/terms/NucleotideSequence"    = "NucleotideSequence",
+  "http://rs.tdwg.org/dwc/terms/Protocol"              = "Protocol",
+  "http://rs.tdwg.org/dwc/terms/Provenance"            = "Provenance"
 )
 
-map_class <- function(organized_in) {
-  vapply(organized_in, function(x) {
+# Per-term class overrides for upstream quirks. agentRoleOrder belongs to Agent
+# but ships with an empty organized_in in term_versions.csv, so it would
+# otherwise fall through to Record-level.
+term_class_overrides <- c(agentRoleOrder = "Agent")
+
+map_class <- function(term_local_name, organized_in) {
+  cls <- vapply(organized_in, function(x) {
     if (!nzchar(x) || is.na(x)) return("Record-level")
     hit <- class_map[[x]]
     if (is.null(hit)) "Record-level" else hit
   }, FUN.VALUE = character(1), USE.NAMES = FALSE)
+  ov <- term_class_overrides[term_local_name]
+  cls[!is.na(ov)] <- ov[!is.na(ov)]
+  cls
 }
 
 message("Downloading TDWG term_versions.csv...")
@@ -85,7 +103,7 @@ message("  Base terms loaded: ", nrow(base))
 
 catalog <- data.frame(
   term          = active$term_localName,
-  class         = map_class(active$organized_in),
+  class         = map_class(active$term_localName, active$organized_in),
   definition_en = trimws(active$definition),
   definition_pt = "",
   examples      = trimws(active$examples),

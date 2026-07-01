@@ -602,7 +602,17 @@ dwc_canonical_class_order <- function() {
         "MaterialEntity",
         "MaterialSample",
         "MeasurementOrFact",
-        "ResourceRelationship"
+        "ResourceRelationship",
+        # DwC-DP classes (rarely present in occurrence exports; ordered last).
+        "Agent",
+        "Assertion",
+        "BibliographicResource",
+        "MolecularProtocol",
+        "NucleotideAnalysis",
+        "NucleotideSequence",
+        "OrganismInteraction",
+        "Protocol",
+        "Provenance"
     )
 }
 
@@ -618,7 +628,7 @@ dwc_canonical_class_order <- function() {
 dwc_canonical_preferred_terms <- function() {
     list(
         Occurrence = c(
-            "occurrenceID", "catalogNumber", "recordNumber",
+            "occurrenceID", "recordNumber",
             "recordedBy", "individualCount", "occurrenceStatus",
             "preparations", "disposition", "occurrenceRemarks"
         ),
@@ -648,7 +658,11 @@ dwc_canonical_preferred_terms <- function() {
         ),
         Identification = c(
             "identifiedBy", "dateIdentified", "identificationRemarks", "typeStatus"
-        )
+        ),
+        # catalogNumber/otherCatalogNumbers moved from Occurrence to
+        # MaterialEntity in the TDWG resync; keep them leading the MaterialEntity
+        # block so the catalog identifiers stay near the front of the export.
+        MaterialEntity = c("catalogNumber", "otherCatalogNumbers")
     )
 }
 
@@ -997,6 +1011,10 @@ convert_country_code_to_alpha2 <- function(df) {
     "accessRights", "bibliographicCitation", "references"
 )
 
+# Audiovisual Core terms recommended by DwC. fundingAttribution is organised
+# under the Provenance class but its authoritative IRI is ac:, not dwc:.
+.ac_terms <- c("fundingAttribution")
+
 #' Map a DwC/DC column name to its full term URI
 #'
 #' @param column Character vector of column names.
@@ -1011,9 +1029,13 @@ dwc_term_uri <- function(column) {
         column %in% .dc_terms,
         paste0("http://purl.org/dc/terms/", column),
         ifelse(
-            column %in% known,
-            paste0("http://rs.tdwg.org/dwc/terms/", column),
-            NA_character_
+            column %in% .ac_terms,
+            paste0("http://rs.tdwg.org/ac/terms/", column),
+            ifelse(
+                column %in% known,
+                paste0("http://rs.tdwg.org/dwc/terms/", column),
+                NA_character_
+            )
         )
     )
     out
@@ -1111,6 +1133,71 @@ compute_dataset_extents <- function(df) {
     list(bbox = bbox, dates = dates)
 }
 
+# Escape text for safe insertion into XML content or a double-quoted attribute.
+.xml_escape <- function(x) {
+    x <- gsub("&", "&amp;", x, fixed = TRUE)
+    x <- gsub("<", "&lt;", x, fixed = TRUE)
+    x <- gsub(">", "&gt;", x, fixed = TRUE)
+    gsub("\"", "&quot;", x, fixed = TRUE)
+}
+
+# Build the <intellectualRights> element for a chosen license, following the
+# GBIF/IPT convention: a <para> with a <ulink url><citetitle> naming the
+# license. Accepts either the short token ("CC-BY-4.0") or the full Creative
+# Commons URL the mapping card stores. Only the three GBIF-accepted licenses
+# (CC0 1.0, CC-BY 4.0, CC-BY-NC 4.0) get a canonical statement; any other value
+# is cited verbatim so the EML never silently claims CC0/public domain for a
+# dataset the publisher licensed differently. Returns a serialized XML string.
+build_intellectual_rights_xml <- function(license_value) {
+    norm <- tolower(trimws(as.character(license_value)))
+    norm <- gsub("^https?://", "", norm)
+    norm <- gsub("/legalcode/?$", "", norm)
+    norm <- gsub("/+$", "", norm)
+
+    para <- if (norm %in% c("cc0-1.0", "cc0",
+                            "creativecommons.org/publicdomain/zero/1.0")) {
+        paste0(
+            "<para>To the extent possible under law, the publisher has waived ",
+            "all rights to these data and has dedicated them to the ",
+            "<ulink url=\"http://creativecommons.org/publicdomain/zero/1.0/legalcode\">",
+            "<citetitle>Public Domain (CC0 1.0)</citetitle></ulink>. Users may ",
+            "copy, modify, distribute and use the work, including for commercial ",
+            "purposes, without restriction.</para>"
+        )
+    } else if (norm %in% c("cc-by-4.0", "cc-by",
+                           "creativecommons.org/licenses/by/4.0")) {
+        paste0(
+            "<para>This work is licensed under a ",
+            "<ulink url=\"http://creativecommons.org/licenses/by/4.0/legalcode\">",
+            "<citetitle>Creative Commons Attribution (CC-BY) 4.0 License</citetitle>",
+            "</ulink>.</para>"
+        )
+    } else if (norm %in% c("cc-by-nc-4.0", "cc-by-nc",
+                           "creativecommons.org/licenses/by-nc/4.0")) {
+        paste0(
+            "<para>This work is licensed under a ",
+            "<ulink url=\"http://creativecommons.org/licenses/by-nc/4.0/legalcode\">",
+            "<citetitle>Creative Commons Attribution Non Commercial (CC-BY-NC) 4.0 License</citetitle>",
+            "</ulink>.</para>"
+        )
+    } else {
+        val <- trimws(as.character(license_value))
+        esc <- .xml_escape(val)
+        if (grepl("^https?://", val)) {
+            paste0(
+                "<para>This work is released under the license at ",
+                "<ulink url=\"", esc, "\"><citetitle>", esc,
+                "</citetitle></ulink>.</para>"
+            )
+        } else {
+            paste0("<para>This work is released under the following license: ",
+                   esc, ".</para>")
+        }
+    }
+
+    paste0("<intellectualRights>", para, "</intellectualRights>")
+}
+
 #' Build an EML 2.1.1 dataset descriptor for a Saira export
 #'
 #' Produces a minimal-but-valid EML document with required GBIF/IPT fields:
@@ -1136,17 +1223,12 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
     creator$name         <- creator$name         %||% ""
     creator$email        <- creator$email        %||% ""
     creator$organization <- creator$organization %||% ""
+    # Reflect the license the user chose in the mapping (default CC0 only when
+    # no license was set). Mapped to the GBIF/IPT intellectualRights form below.
     license  <- metadata$license  %||% "CC0-1.0"
     abstract <- metadata$abstract %||% sprintf(
         "Biodiversity occurrence dataset standardized to Darwin Core via Saira v%s.",
         utils::packageVersion("saira")
-    )
-    rights_text <- switch(
-        license,
-        "CC0-1.0"     = "To the extent possible under law, the publisher has waived all rights to these data under the Creative Commons CC0 1.0 Universal Public Domain Dedication (https://creativecommons.org/publicdomain/zero/1.0/legalcode).",
-        "CC-BY-4.0"   = "This work is licensed under the Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/legalcode).",
-        "CC-BY-NC-4.0" = "This work is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License (https://creativecommons.org/licenses/by-nc/4.0/legalcode).",
-        license
     )
     pkg_id <- package_id %||% paste0("urn:uuid:", ids::uuid())
 
@@ -1209,8 +1291,7 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
         xml2::xml_add_child(ai_el, "para", note)
     }
 
-    rights_el <- xml2::xml_add_child(ds, "intellectualRights")
-    xml2::xml_add_child(rights_el, "para", rights_text)
+    xml2::xml_add_child(ds, xml2::read_xml(build_intellectual_rights_xml(license)))
 
     cov <- xml2::xml_add_child(ds, "coverage")
     if (all(is.finite(ext$bbox))) {
