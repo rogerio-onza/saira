@@ -2,6 +2,21 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.4</span>
+    <time class="release-date">2026-07-01</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Darwin Core vocabulary resynced with TDWG (from 217 to 262 terms).</strong> 45 new terms and 9 new classes (Agent, Assertion, BibliographicResource, MolecularProtocol, NucleotideAnalysis, NucleotideSequence, OrganismInteraction, Protocol, Provenance), each with a Portuguese definition — available in the Wiki and the "Add term" modal. Eight terms were re-classified to their correct TDWG class (for example, <code>catalogNumber</code> is now <code>MaterialEntity</code>).</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>The exported EML now carries the license you chose</strong>, no longer always CC0. The <code>eml.xml</code> <code>intellectualRights</code> reflects CC0 1.0, CC-BY 4.0 or CC-BY-NC 4.0 per the mapping, in the GBIF/IPT format.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>"Add term" now actually works</strong>: the chosen term shows up in the mapping and the page scrolls to the newly added card.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Importing a mapping guide shows the cards</strong> for terms outside the default set (for example, a <code>geodeticDatum</code> carried over from another dataset).</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>The preview table freezes the Darwin Core header</strong> while you scroll the rows, so the term names and what was mapped stay visible.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>fundingAttribution</code> is declared under its correct namespace</strong> (Audiovisual Core, <code>ac:</code>) in <code>meta.xml</code>.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.3</span>
     <time class="release-date">2026-06-25</time>
   </header>
