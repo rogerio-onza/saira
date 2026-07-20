@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **The tutorials' downloadable sample is now Saíra's full demonstration dataset.** The help-site sample linked from the tutorials index and the Upload step (PT/EN) was a hand-built 12-row spreadsheet (`ocorrencias-exemplo.csv`); it is replaced by `ocorrencias-demo.csv`, the 1,075-occurrence demonstration dataset (48 real Brazilian species across ~19 biomes, threatened taxa included, with deliberate imperfections), so anyone following the tutorials works with the same dataset used in the app demonstration. The four download links and the sample descriptions are updated; the old "one swapped coordinate and a blank country" wording is corrected, since the demonstration dataset has no blank country (the country-from-coordinates fix still exists in the app, it is just not exercised by this sample). Known follow-up: the mapping (03) and export (07) walkthroughs still describe the single-date `data_coleta` sample, whereas the demonstration dataset uses month/year interval date columns (`mes_inicio`/`ano_inicio`/`mes_fim`/`ano_fim`); their prose, example table and screenshots are not yet re-shot for the new dataset.
+
 ## [0.9.4] - 2026-07-01
 
 ### Fixed

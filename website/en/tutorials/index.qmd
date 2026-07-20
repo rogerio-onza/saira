@@ -66,5 +66,5 @@ You do not have to follow every step in a rigid sequence. Saíra lets you go bac
 
 ::: {.callout-tip}
 ## Practice with the sample file
-Download the sample spreadsheet [`ocorrencias-exemplo.csv`](../../assets/exemplo/ocorrencias-exemplo.csv) and follow the tutorials with it. It is a deliberately imperfect sample dataset (several columns to map, one swapped coordinate and a blank country to fix during validation).
+Download the sample spreadsheet [`ocorrencias-demo.csv`](../../assets/exemplo/ocorrencias-demo.csv) and follow the tutorials with it. It is Saíra's demonstration dataset: 1,075 real occurrences of Brazilian species across several biomes, deliberately imperfect so you can practice every step: many Portuguese columns to map, coordinates with problems to review, a few names to check (one of them misspelled), and threatened species to try generalization.
 :::
