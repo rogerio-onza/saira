@@ -66,5 +66,5 @@ Você não precisa seguir todas as etapas em sequência rígida. O Saíra permit
 
 ::: {.callout-tip}
 ## Pratique com o arquivo de exemplo
-Baixe a planilha de exemplo [`ocorrencias-exemplo.csv`](../assets/exemplo/ocorrencias-exemplo.csv) e siga os tutoriais com ela. É um conjunto de exemplo propositalmente imperfeito (várias colunas para mapear, uma coordenada invertida e um país em branco para corrigir na validação).
+Baixe a planilha de exemplo [`ocorrencias-demo.csv`](../assets/exemplo/ocorrencias-demo.csv) e siga os tutoriais com ela. É o conjunto de demonstração do Saíra: 1.075 ocorrências reais de espécies brasileiras de vários biomas, propositalmente imperfeito para você exercitar cada etapa: muitas colunas em português para mapear, coordenadas com problemas para revisar, alguns nomes para conferir (um deles com erro de digitação) e espécies ameaçadas para testar a generalização.
 :::
