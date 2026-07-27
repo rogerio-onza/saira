@@ -96,13 +96,24 @@ test_that("basisOfRecord and dynamicProperties cards embed their carddyn slots",
     expect_match(dyn_html, ns("carddyn_dynamicProperties"), fixed = TRUE)
 })
 
-test_that("build_field_sample renders the sample only when values are present", {
-    expect_null(build_field_sample(character(0), "en"))
-
+test_that("build_field_sample renders the sample when values are present", {
     html <- as.character(build_field_sample(c("2020-01", "2020-02"), "en"))
     expect_match(html, "field-card-sample", fixed = TRUE)
     expect_match(html, "2020-01", fixed = TRUE)
     expect_match(html, tr("mapping_card_sample_prefix", "en"), fixed = TRUE)
+})
+
+# The helper is only reached for a term that already has a column selected, so
+# an empty sample means "mapped but the sampled rows are blank". Rendering
+# nothing made that indistinguishable from an unmapped card.
+test_that("build_field_sample states the empty case instead of rendering nothing", {
+    html <- as.character(build_field_sample(character(0), "en"))
+    expect_match(html, "field-card-sample-empty", fixed = TRUE)
+    expect_match(html, tr("mapping_card_sample_empty", "en"), fixed = TRUE)
+    expect_false(grepl(tr("mapping_card_sample_prefix", "en"), html, fixed = TRUE))
+
+    html_pt <- as.character(build_field_sample(character(0), "pt"))
+    expect_match(html_pt, tr("mapping_card_sample_empty", "pt"), fixed = TRUE)
 })
 
 test_that("build_basis_assistant_button appears only when a column is selected", {

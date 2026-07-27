@@ -378,10 +378,21 @@ build_dynprops_keys_block <- function(current_val, ns, lang_r, input) {
     )
 }
 
+#' Sample line shown under a card's column selector.
+#'
+#' Only called for a term that already has a column selected, so an empty
+#' sample means "mapped, but the sampled rows are blank" -- previously rendered
+#' as nothing, which was indistinguishable from an unmapped card. Purely
+#' visual: the returned div never reaches the mapping pipeline. A mapped column
+#' whose source rows are blank still exports as "" via replace_na_with_blank(),
+#' the DwC blank convention.
 #' @noRd
 build_field_sample <- function(sample_preview, lang_r) {
     if (length(sample_preview) == 0) {
-        return(NULL)
+        return(shiny::div(
+            class = "field-card-sample field-card-sample-empty",
+            tr("mapping_card_sample_empty", lang_r)
+        ))
     }
     shiny::div(
         class = "field-card-sample",

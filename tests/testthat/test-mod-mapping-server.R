@@ -1074,3 +1074,111 @@ testthat::test_that("non-camtrap uploads do NOT auto-map on load", {
         }
     )
 })
+
+# --- Card sample line (PR: fix/mapping-card-sample) -------------------------
+# A term added via "Add term" and then mapped must reach the preview data AND
+# show its sample line. Before, the carddyn slot read only rv$map_values, which
+# the sync observer fills one flush late, so a freshly mapped card stayed mute.
+testthat::test_that("an added term reaches the preview and renders its sample line", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        site_code = c("SITE-01", "SITE-02"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(add_term_select = "locationID")
+            session$setInputs(confirm_add_term = 1)
+            session$flushReact()
+
+            session$setInputs(map_locationID = "site_code")
+            session$flushReact()
+
+            preview <- session$getReturned()$preview_data_r()
+            testthat::expect_true("locationID" %in% names(preview))
+            testthat::expect_equal(preview$locationID, c("SITE-01", "SITE-02"))
+
+            slot <- paste(output$carddyn_locationID$html, collapse = " ")
+            testthat::expect_true(grepl("field-card-sample", slot, fixed = TRUE))
+            testthat::expect_true(grepl("SITE-01", slot, fixed = TRUE))
+        }
+    )
+})
+
+# A mapped-but-blank column must SAY so on the card, and must still export as
+# "" -- the hint is a UI label and must never leak into the data.
+testthat::test_that("a mapped blank column shows the empty hint but exports blank", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        empty_col = c("", ""),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(map_locality = "empty_col")
+            session$flushReact()
+
+            slot <- paste(output$carddyn_locality$html, collapse = " ")
+            testthat::expect_true(grepl("field-card-sample-empty", slot, fixed = TRUE))
+            testthat::expect_true(
+                grepl(tr("mapping_card_sample_empty", "en"), slot, fixed = TRUE)
+            )
+
+            preview <- session$getReturned()$preview_data_r()
+            testthat::expect_true("locality" %in% names(preview))
+            testthat::expect_equal(preview$locality, c("", ""))
+            testthat::expect_false(
+                any(grepl(tr("mapping_card_sample_empty", "en"), preview$locality,
+                          fixed = TRUE))
+            )
+        }
+    )
+})
+
+# dynamicProperties builds its JSON correctly but the card never showed it, so
+# the user could not tell whether {"key":"value"} was being generated.
+testthat::test_that("the dynamicProperties card shows the assembled JSON", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        cor = c("melanico", "normal"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(map_dynamicProperties = "cor")
+            session$flushReact()
+
+            slot <- paste(output$carddyn_dynamicProperties$html, collapse = " ")
+            # Keys editor still there, now followed by the sample.
+            testthat::expect_true(grepl("dynprops-keys-block", slot, fixed = TRUE))
+            testthat::expect_true(grepl("field-card-sample", slot, fixed = TRUE))
+            testthat::expect_true(grepl("melanico", slot, fixed = TRUE))
+
+            preview <- session$getReturned()$preview_data_r()
+            testthat::expect_equal(
+                preview$dynamicProperties[[1]], "{\"cor\":\"melanico\"}"
+            )
+        }
+    )
+})

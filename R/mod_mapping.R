@@ -1578,11 +1578,28 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             force(term)
             output[[paste0("carddyn_", term)]] <- shiny::renderUI({
                 lang <- lang_r()
-                current_val <- sanitize_map_selection(term, rv$map_values[[term]])
+                # Same fallback the grid uses (see the card loop above): the
+                # sync observer fills rv$map_values one flush after the client
+                # echoes a selection, so reading rv alone leaves a freshly
+                # mapped card with no sample line.
+                current_val <- rv$map_values[[term]]
+                if (is.null(current_val)) {
+                    current_val <- input[[paste0("map_", term)]]
+                }
+                current_val <- sanitize_map_selection(term, current_val)
                 if (identical(term, "basisOfRecord")) {
                     build_basis_assistant_button(current_val, ns, lang)
                 } else if (identical(term, "dynamicProperties")) {
-                    build_dynprops_keys_block(current_val, ns, lang, input)
+                    # Keys block plus the assembled JSON, so the user can see
+                    # the {"key":"value"} the export will emit while editing.
+                    shiny::tagList(
+                        build_dynprops_keys_block(current_val, ns, lang, input),
+                        if (has_selected_value(current_val)) {
+                            build_field_sample(
+                                processed_preview_for_term(term, current_val, 1L), lang
+                            )
+                        }
+                    )
                 } else if (has_selected_value(current_val)) {
                     build_field_sample(
                         processed_preview_for_term(term, current_val, 1L), lang

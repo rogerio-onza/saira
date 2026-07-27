@@ -352,6 +352,14 @@
   text-overflow: ellipsis;
 }
 
+/* Mapped card whose sampled rows are all blank: says so instead of rendering
+   nothing, which read as "the app ignored my mapping". Label only -- the
+   exported cell stays empty per the DwC blank convention. */
+.field-card-sample-empty {
+  font-style: italic;
+  opacity: 0.75;
+}
+
 /* "OU" rule-divider separating the column selector from the fixed-value option
    on constant_value_terms() cards (the two are mutually exclusive). */
 .field-or-divider {
