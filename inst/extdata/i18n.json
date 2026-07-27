@@ -315,6 +315,10 @@
     "pt": "ex.:",
     "en": "e.g.:"
   },
+  "mapping_card_sample_empty": {
+    "pt": "coluna mapeada, sem valores nas primeiras 200 linhas",
+    "en": "column mapped, no values in the first 200 rows"
+  },
   "toggle_automap_v1_label": {
     "pt": "Rostrum (beta)",
     "en": "Rostrum (beta)"
