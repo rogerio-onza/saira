@@ -1355,7 +1355,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 list(key = "not_found", class = "pill-error", label_key = "validate_names_stream_filter_not_found"),
                 list(key = "ambiguous", class = "pill-warning", label_key = "validate_names_stream_filter_ambiguous"),
                 list(key = "synonym", class = "pill-info", label_key = "validate_names_stream_filter_synonym"),
-                list(key = "accepted", class = "pill-success", label_key = "validate_names_stream_filter_accepted")
+                list(key = "accepted", class = "pill-success", label_key = "validate_names_stream_filter_accepted"),
+                list(key = "invasive", class = "pill-invasive", label_key = "validate_names_stream_filter_invasive")
             )
 
             pills_ui <- shiny::div(
@@ -1551,6 +1552,11 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             cat_for_pill <- du$category[sens_idx]
             cat_for_pill[is.na(cat_for_pill) | !nzchar(cat_for_pill)] <- "\u2014"
             is_sensitive_vec <- ifelse(du$sensitive[sens_idx], cat_for_pill, "")
+            # Alien invasive species (Instituto Horus). invasive_info_for()
+            # dedupes internally, so the same unique-name economy applies.
+            is_invasive_vec <- ifelse(
+                flag_invasive_species(sensitive_source), "1", ""
+            )
 
             table_df <- data.frame(
                 scientificName = scientific_name,
@@ -1559,6 +1565,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 review_original_name = review_original_name,
                 is_sensitive = is_sensitive_vec,
                 sensitive_name = sensitive_source,
+                is_invasive = is_invasive_vec,
                 stringsAsFactors = FALSE
             )
 
@@ -1568,7 +1575,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 tr("validate_names_table_col_taxonomic_status", lang_r()),
                 ".review_original_name",
                 ".is_sensitive",
-                ".sensitive_name"
+                ".sensitive_name",
+                ".is_invasive"
             )
 
             status_labels <- list(
@@ -1584,6 +1592,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             replaced_prefix_json <- jsonlite::toJSON(tr("validate_names_review_replaced_prefix", lang_r()), auto_unbox = TRUE)
             sensitive_label_json <- jsonlite::toJSON(tr("validate_names_status_badge_sensitive", lang_r()), auto_unbox = TRUE)
             sensitive_mark_json <- jsonlite::toJSON(tr("sensitive_mark_label", lang_r()), auto_unbox = TRUE)
+            invasive_label_json <- jsonlite::toJSON(tr("validate_names_status_badge_invasive", lang_r()), auto_unbox = TRUE)
 
             status_badge_js <- DT::JS(
                 sprintf(
@@ -1628,12 +1637,18 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         "    var mLabel = %s;",
                         "    content += '<div class=\"vn-cell-sensitive\"><span class=\"vn-sensitive-trigger vn-sensitive-add\" role=\"button\" tabindex=\"0\" data-sname=\"' + sn + '\">+ ' + $('<div/>').text(String(mLabel)).html() + '</span></div>';",
                         "  }",
+                        "  var invasive = String(row[6] === null || row[6] === undefined ? '' : row[6]).trim();",
+                        "  if (invasive.length > 0) {",
+                        "    var iLabel = %s;",
+                        "    content += '<div class=\"vn-cell-invasive\"><span class=\"vn-status-badge badge-error\">' + $('<div/>').text(String(iLabel)).html() + '</span></div>';",
+                        "  }",
                         "  return content;",
                         "}"
                     ),
                     replaced_prefix_json,
                     sensitive_label_json,
-                    sensitive_mark_json
+                    sensitive_mark_json,
+                    invasive_label_json
                 )
             )
 
@@ -1749,7 +1764,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         list(targets = 2, render = taxonomic_status_js, className = "vn-col-taxonomic", width = "28%"),
                         list(targets = 3, visible = FALSE, searchable = FALSE),
                         list(targets = 4, visible = FALSE, searchable = FALSE),
-                        list(targets = 5, visible = FALSE, searchable = FALSE)
+                        list(targets = 5, visible = FALSE, searchable = FALSE),
+                        list(targets = 6, visible = FALSE, searchable = FALSE)
                     ),
                     rowCallback = row_callback_js,
                     headerCallback = header_callback_js,

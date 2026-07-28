@@ -9,7 +9,11 @@
 
 .vn_provider_labels <- c(florabr = "Flora BR", faunabr = "Fauna BR", gbif = "GBIF")
 .vn_stream_window_limit <- 100L
-.vn_stream_filter_values <- c("all", "problems", "not_found", "ambiguous", "synonym", "ignored", "accepted")
+# "invasive" filters on a different axis than the rest: the others read
+# validation_status, this one reads the species name against the bundled
+# invasive list. Kept in the same bar because the user reasons about both as
+# "narrow the processed names down to the ones I care about".
+.vn_stream_filter_values <- c("all", "problems", "not_found", "ambiguous", "synonym", "ignored", "accepted", "invasive")
 .vn_problem_status_values <- c("not_found", "ambiguous", "synonym")
 .vn_review_exit_ms <- 320L
 
@@ -280,7 +284,8 @@ stream_filter_counts <- function(stream_df, reviewed_keys = character(0)) {
         ambiguous = 0L,
         synonym = 0L,
         ignored = 0L,
-        accepted = 0L
+        accepted = 0L,
+        invasive = 0L
     )
     if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
         return(out)
@@ -297,6 +302,7 @@ stream_filter_counts <- function(stream_df, reviewed_keys = character(0)) {
     out[["ignored"]] <- as.integer(sum(status_vec == "ignored", na.rm = TRUE))
     out[["problems"]] <- as.integer(sum(unresolved_problem, na.rm = TRUE))
     out[["accepted"]] <- as.integer(sum(status_vec == "accepted", na.rm = TRUE))
+    out[["invasive"]] <- as.integer(sum(flag_invasive_species(query_vec), na.rm = TRUE))
     out
 }
 
@@ -330,6 +336,9 @@ filter_stream_df <- function(stream_df, filter_key = "all", reviewed_keys = char
         synonym = ((status_vec == "synonym") & !reviewed_vec) | exiting_vec,
         ignored = status_vec == "ignored",
         accepted = status_vec == "accepted",
+        # Species-list axis, so no reviewed/exiting interplay: a name is on the
+        # invasive list or it is not, regardless of its validation status.
+        invasive = flag_invasive_species(query_vec),
         rep(TRUE, length(status_vec))
     )
     out <- stream_df[keep_idx, , drop = FALSE]
@@ -407,7 +416,9 @@ conservation_status_summary_ui <- function(report, selected, br_provider_ids, la
     } else {
         character(0)
     }
-    if (length(name_col) == 0L || (!include_mma && !include_iucn)) {
+    # The invasive count comes from a bundled list and is provider-independent,
+    # so it is reported even when neither conservation provider is selected.
+    if (length(name_col) == 0L) {
         return(NULL)
     }
 
@@ -429,6 +440,13 @@ conservation_status_summary_ui <- function(report, selected, br_provider_ids, la
                 sprintf(tr("validate_names_conservation_summary_iucn", lang), iucn_n)
             )
         }
+    }
+    invasive_n <- sum(flag_invasive_species(name_col))
+    if (invasive_n > 0L) {
+        lines[[length(lines) + 1L]] <- shiny::tags$span(
+            class = "vn-conservation-line",
+            sprintf(tr("validate_names_conservation_summary_invasive", lang), invasive_n)
+        )
     }
     if (length(lines) == 0L) {
         return(NULL)

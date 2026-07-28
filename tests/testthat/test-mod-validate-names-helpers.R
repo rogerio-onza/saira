@@ -133,6 +133,45 @@ test_that("stream_filter_counts: reviewed keys reduce problem count", {
     expect_equal(out[["problems"]], 1L)
 })
 
+test_that("stream_filter_counts: invasive counts species-list hits, not statuses", {
+    df <- data.frame(
+        validation_status = c("accepted", "accepted", "not_found"),
+        query_name = c("Sus scrofa", "Panthera onca", "Felis catus"),
+        stringsAsFactors = FALSE
+    )
+    out <- saira:::stream_filter_counts(df)
+    # Sus scrofa and Felis catus are on the Horus list; Panthera onca is not.
+    # The count is independent of validation_status (one of the two hits is a
+    # not_found row).
+    expect_equal(out[["invasive"]], 2L)
+    expect_equal(out[["all"]], 3L)
+})
+
+test_that("filter_stream_df: 'invasive' keeps only listed taxa", {
+    df <- data.frame(
+        validation_status = c("accepted", "accepted", "synonym"),
+        query_name = c("Sus scrofa", "Panthera onca", "Felis catus"),
+        stringsAsFactors = FALSE
+    )
+    out <- saira:::filter_stream_df(df, "invasive")
+    expect_equal(out$query_name, c("Sus scrofa", "Felis catus"))
+})
+
+test_that("filter_stream_df: 'invasive' ignores reviewed and exiting keys", {
+    df <- data.frame(
+        validation_status = c("accepted", "accepted"),
+        query_name = c("Sus scrofa", "Panthera onca"),
+        stringsAsFactors = FALSE
+    )
+    # Neither a review nor an exit animation changes whether a taxon is on the
+    # list -- unlike the status-based filters, which suppress reviewed rows.
+    out <- saira:::filter_stream_df(
+        df, "invasive",
+        reviewed_keys = "Sus scrofa", exiting_keys = "Panthera onca"
+    )
+    expect_equal(out$query_name, "Sus scrofa")
+})
+
 test_that("filter_stream_df: 'all' returns full df", {
     df <- data.frame(
         validation_status = c("accepted", "not_found"),

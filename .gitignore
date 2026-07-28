@@ -40,3 +40,9 @@ website/.quarto/
 # Python bytecode cache (website pre-render scripts)
 __pycache__/
 *.pyc
+
+# Source spreadsheet for the invasive-species lookup. Not versioned: the
+# generated inst/extdata/invasive_species.rds is what ships and what the app
+# reads. To regenerate, drop the Instituto Horus CSV back at this path and run
+# data-raw/generate_invasive_species.R.
+data-raw/invasive_species_horus_2023.csv

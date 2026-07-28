@@ -85,6 +85,7 @@ Collate:
     'utils_export.R'
     'utils_export_summary.R'
     'utils_i18n.R'
+    'utils_invasive.R'
     'utils_io.R'
     'utils_mapping.R'
     'utils_preview.R'
