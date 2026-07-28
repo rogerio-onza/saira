@@ -1467,6 +1467,10 @@
     "pt": "Ignorados",
     "en": "Ignored"
   },
+  "validate_names_stream_filter_invasive": {
+    "pt": "Invasoras",
+    "en": "Invasive"
+  },
   "validate_names_stream_filter_accepted": {
     "pt": "Aceitos",
     "en": "Accepted"
@@ -1546,6 +1550,10 @@
   "validate_names_unresolved": {
     "pt": "Não resolvidos",
     "en": "Unresolved"
+  },
+  "validate_names_conservation_summary_invasive": {
+    "pt": "%d registro(s) de espécie exótica invasora (Instituto Hórus, 2023).",
+    "en": "%d record(s) of invasive alien species (Instituto Hórus, 2023)."
   },
   "validate_names_conservation_summary_mma": {
     "pt": "Status de conservação MMA será adicionado a %d registro(s) no export.",
@@ -1682,6 +1690,10 @@
   "validate_names_status_badge_sensitive": {
     "pt": "Sensível",
     "en": "Sensitive"
+  },
+  "validate_names_status_badge_invasive": {
+    "pt": "Exótica invasora",
+    "en": "Invasive alien"
   },
   "sensitive_data_generalizations": {
     "pt": "Coordenadas de espécie %s (lista nacional MMA) generalizadas para %s grau pois",

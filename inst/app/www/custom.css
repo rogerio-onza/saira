@@ -5117,6 +5117,13 @@ table.dataTable tbody tr.validate-invalid td {
   border-color: #252659;
 }
 
+/* Invasive-species filter. Deliberately not the red of pill-error (which means
+   "not found" here): this pill is not an error, it is a species-list fact. */
+.vn-stream-pill.pill-invasive.is-active {
+  background: #8c4a00;
+  border-color: #8c4a00;
+}
+
 .vn-pill-count {
   border-radius: 9999px;
   padding: 0 0.32rem;
@@ -5555,6 +5562,13 @@ table.dataTable tbody tr.validate-invalid td {
   font-size: var(--text-xs);
   color: var(--text-muted);
   line-height: var(--leading-normal);
+}
+
+/* Invasive-alien-species badge, stacked under the sensitive pill in the
+   scientificName cell. Only the spacing is set: the badge itself reuses
+   .vn-status-badge + .badge-error, like every other pill in this table. */
+.vn-cell-invasive {
+  margin-top: var(--space-1);
 }
 
 .vn-report-table tbody tr.vn-row-manual > td {
