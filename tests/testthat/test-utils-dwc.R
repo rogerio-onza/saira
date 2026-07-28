@@ -164,7 +164,16 @@ testthat::test_that("default base term set matches the Rede Felinos template + k
     base <- get_dwc_terms()
     terms <- base$term
 
-    testthat::expect_identical(nrow(base), 64L)
+    # 64 template + kept extras, plus the two establishment terms promoted in
+    # ADR-110 so their per-species assistant is reachable without "Add term".
+    testthat::expect_identical(nrow(base), 66L)
+    establishment_added <- c("establishmentMeans", "degreeOfEstablishment")
+    testthat::expect_true(all(establishment_added %in% terms))
+    testthat::expect_true(all(
+        base$class[match(establishment_added, terms)] == "Occurrence"
+    ))
+    # Optional: the assistant must never make them a gate for export.
+    testthat::expect_false(any(base$required[match(establishment_added, terms)]))
 
     # Template terms newly added to the default.
     template_added <- c(

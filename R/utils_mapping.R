@@ -253,6 +253,194 @@ map_basis_of_record_values <- function(raw_values, basis_of_record_map = NULL) {
     mapped
 }
 
+# ---------------------------------------------------------------------------
+# establishmentMeans / degreeOfEstablishment (per-species assistant)
+#
+# Unlike the basisOfRecord assistant, which translates the unique values of a
+# mapped column, this one is keyed on the SPECIES: the user answers once per
+# taxon and the answer is expanded to every record of that taxon. That is what
+# makes a spreadsheet with thousands of rows and a few dozen species tractable.
+# All helpers are vectorized (ADR-018).
+# ---------------------------------------------------------------------------
+
+normalize_species_keys <- function(values) {
+    chr <- as.character(values)
+    chr[is.na(values)] <- ""
+    tolower(trimws(chr))
+}
+
+sanitize_establishment_terms <- function(values, field = "means") {
+    allowed <- if (identical(field, "degree")) {
+        get_degree_of_establishment_terms()
+    } else {
+        get_establishment_means_terms()
+    }
+    chr <- trimws(as.character(values))
+    chr[is.na(values)] <- ""
+    ifelse(chr %in% allowed, chr, "")
+}
+
+# Normalize one field's species -> term map: blank keys dropped, values not in
+# the controlled vocabulary reduced to "".
+sanitize_establishment_field_map <- function(field_map, field = "means") {
+    if (is.null(field_map) || length(field_map) == 0) {
+        return(stats::setNames(character(0), character(0)))
+    }
+    raw_values <- unlist(field_map, use.names = FALSE)
+    raw_keys <- names(field_map)
+    if (is.null(raw_keys)) {
+        raw_keys <- rep("", length(raw_values))
+    }
+    clean_keys <- normalize_species_keys(raw_keys)
+    clean_values <- sanitize_establishment_terms(raw_values, field = field)
+    keep <- nzchar(clean_keys)
+    if (!any(keep)) {
+        return(stats::setNames(character(0), character(0)))
+    }
+    stats::setNames(clean_values[keep], clean_keys[keep])
+}
+
+# The assistant's committed state: list(means = <named chr>, degree = <named chr>).
+sanitize_establishment_map <- function(establishment_map) {
+    if (!is.list(establishment_map)) {
+        establishment_map <- list()
+    }
+    list(
+        means = sanitize_establishment_field_map(
+            establishment_map$means, field = "means"
+        ),
+        degree = sanitize_establishment_field_map(
+            establishment_map$degree, field = "degree"
+        )
+    )
+}
+
+establishment_map_is_empty <- function(establishment_map) {
+    clean <- sanitize_establishment_map(establishment_map)
+    !any(nzchar(clean$means)) && !any(nzchar(clean$degree))
+}
+
+# Unique species in the mapped scientificName column, with the record count so
+# the assistant can show how much data each answer covers. Ordered by count
+# (descending) then name: the taxa that matter most come first.
+extract_species_entries <- function(raw_values) {
+    raw_chr <- as.character(raw_values)
+    raw_chr[is.na(raw_values)] <- ""
+    raw_chr <- trimws(raw_chr)
+
+    keys <- normalize_species_keys(raw_chr)
+    keep_idx <- which(nzchar(keys))
+    if (length(keep_idx) == 0) {
+        return(data.frame(
+            idx = integer(0), key = character(0), raw = character(0),
+            n_records = integer(0), stringsAsFactors = FALSE
+        ))
+    }
+
+    keys_non_blank <- keys[keep_idx]
+    raw_non_blank <- raw_chr[keep_idx]
+    first_occurrence <- !duplicated(keys_non_blank)
+    unique_keys <- keys_non_blank[first_occurrence]
+    raw_display <- raw_non_blank[first_occurrence]
+    counts <- as.integer(table(keys_non_blank)[unique_keys])
+
+    ord <- order(-counts, raw_display)
+    data.frame(
+        idx = seq_along(unique_keys),
+        key = unique_keys[ord],
+        raw = raw_display[ord],
+        n_records = counts[ord],
+        stringsAsFactors = FALSE
+    )
+}
+
+# Pre-fill establishmentMeans for taxa on the bundled invasive list: being
+# recorded as an alien invasive species in Brazil is what supports
+# "introduced". Nothing is suggested for the rest -- guessing "native" for an
+# unlisted taxon would assert something the app cannot know. Nothing is ever
+# suggested for degreeOfEstablishment: that depends on the record (a captive
+# animal and a feral one are the same species), so it stays with the user.
+auto_suggest_establishment_means <- function(species_names) {
+    n <- length(species_names)
+    if (n == 0L) {
+        return(stats::setNames(character(0), character(0)))
+    }
+    listed <- flag_invasive_species(species_names)
+    out <- ifelse(listed, "introduced", "")
+    stats::setNames(out, normalize_species_keys(species_names))
+}
+
+# Expand a per-species answer to one value per row.
+map_establishment_values <- function(species_values, establishment_map = NULL,
+                                     field = "means") {
+    keys <- normalize_species_keys(species_values)
+    if (is.null(establishment_map) || length(establishment_map) == 0) {
+        return(rep("", length(keys)))
+    }
+    clean <- sanitize_establishment_map(establishment_map)
+    field_map <- if (identical(field, "degree")) clean$degree else clean$means
+    if (length(field_map) == 0) {
+        return(rep("", length(keys)))
+    }
+    mapped <- unname(field_map[keys])
+    mapped[is.na(mapped)] <- ""
+    mapped
+}
+
+# Value of one establishment term for a data slice: the user's mapped column
+# (if any) with the blanks filled from the per-species answers. Shared by the
+# export pipeline and the mapping card's sample line so both show the same
+# thing. `species_values` NULL (scientificName not mapped) means the assistant
+# contributes nothing.
+build_establishment_term_value <- function(term, df, user_cols = NULL,
+                                           species_values = NULL,
+                                           establishment_map = NULL,
+                                           out_sep = " | ") {
+    field <- if (identical(term, "degreeOfEstablishment")) "degree" else "means"
+    n <- nrow(df)
+    assistant_values <- if (is.null(species_values)) {
+        rep("", n)
+    } else {
+        map_establishment_values(species_values, establishment_map, field = field)
+    }
+    column_values <- if (has_selected_value(user_cols)) {
+        build_term_value(term = term, df = df, user_cols = user_cols, out_sep = out_sep)$values
+    } else {
+        rep(NA_character_, n)
+    }
+    fill_missing_character_values(column_values, assistant_values)
+}
+
+# How many species have an answer for one of the two fields. Drives the card's
+# "filled by the assistant" state, so the card stops reading as unmapped once
+# the assistant has done its job.
+establishment_answer_count <- function(establishment_map, field = "means") {
+    clean <- sanitize_establishment_map(establishment_map)
+    values <- if (identical(field, "degree")) clean$degree else clean$means
+    if (length(values) == 0L) {
+        return(0L)
+    }
+    sum(nzchar(values))
+}
+
+# Species that got an establishmentMeans but no degreeOfEstablishment. The
+# pair is strongly recommended, so the assistant and the export surface this --
+# but it never blocks: Darwin Core does not require degreeOfEstablishment, and
+# a taxon whose degree is genuinely unknown must still be publishable.
+establishment_pairs_missing_degree <- function(establishment_map) {
+    clean <- sanitize_establishment_map(establishment_map)
+    if (length(clean$means) == 0) {
+        return(character(0))
+    }
+    with_means <- names(clean$means)[nzchar(clean$means)]
+    if (length(with_means) == 0) {
+        return(character(0))
+    }
+    degree_for <- clean$degree[with_means]
+    degree_for[is.na(degree_for)] <- ""
+    with_means[!nzchar(degree_for)]
+}
+
 default_meta <- function() {
     list(
         status = NA_character_,
@@ -2273,7 +2461,8 @@ build_processed_mapping_df <- function(
   basis_of_record_map = NULL,
   now_utc = Sys.time(),
   out_sep = " | ",
-  dyn_props_keys = list()
+  dyn_props_keys = list(),
+  establishment_map = NULL
 ) {
     if (length(occurrence_ids) != nrow(df)) {
         stop("occurrence_ids must have the same length as nrow(df).")
@@ -2282,6 +2471,18 @@ build_processed_mapping_df <- function(
     df_final <- data.frame(matrix(ncol = 0, nrow = nrow(df)))
     eventdate_failure_count <- 0L
     selected_terms <- character(0)
+
+    # Species vector backing the per-species establishment answers (ADR-110).
+    # Resolved from the raw data via the scientificName mapping rather than from
+    # df_final, so it does not depend on where scientificName falls in the term
+    # loop. NULL means "no assistant answers to apply".
+    establishment_species <- NULL
+    if (!is.null(establishment_map) && !establishment_map_is_empty(establishment_map)) {
+        sci_cols <- sanitize_map_selection("scientificName", map_values[["scientificName"]])
+        if (has_selected_value(sci_cols) && sci_cols[[1]] %in% names(df)) {
+            establishment_species <- as.character(df[[sci_cols[[1]]]])
+        }
+    }
 
     for (item in dwc_terms) {
         term <- item$term
@@ -2338,6 +2539,25 @@ build_processed_mapping_df <- function(
             value <- constant_values[[term]]
             if (!is.null(value) && nzchar(trimws(value))) {
                 df_final[[term]] <- rep(trimws(value), nrow(df))
+                selected_terms <- c(selected_terms, term)
+            }
+            next
+        }
+
+        # The two establishment terms can be filled by the per-species
+        # assistant, by a mapped column, or by both. The user's own column
+        # always wins; the assistant only fills the rows it left blank.
+        if (term %in% c("establishmentMeans", "degreeOfEstablishment") &&
+            !is.null(establishment_species)) {
+            user_cols <- sanitize_map_selection(term, map_values[[term]])
+            has_column <- has_selected_value(user_cols)
+            merged <- build_establishment_term_value(
+                term = term, df = df, user_cols = user_cols,
+                species_values = establishment_species,
+                establishment_map = establishment_map, out_sep = out_sep
+            )
+            if (has_column || any(nzchar(merged[!is.na(merged)]))) {
+                df_final[[term]] <- merged
                 selected_terms <- c(selected_terms, term)
             }
             next

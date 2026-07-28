@@ -197,6 +197,27 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 stringsAsFactors = FALSE
             ),
             basis_of_record_page = 1L,
+            # Per-species establishment answers (ADR-110). Keyed on the species,
+            # not on a source column: one answer covers every record of that
+            # taxon. `map` is what reaches the data; `draft` is in-modal only.
+            establishment_map = list(
+                means = stats::setNames(character(0), character(0)),
+                degree = stats::setNames(character(0), character(0))
+            ),
+            establishment_draft = list(
+                means = stats::setNames(character(0), character(0)),
+                degree = stats::setNames(character(0), character(0))
+            ),
+            establishment_auto_map = stats::setNames(character(0), character(0)),
+            establishment_entries = data.frame(
+                idx = integer(0),
+                key = character(0),
+                raw = character(0),
+                n_records = integer(0),
+                invasive = logical(0),
+                stringsAsFactors = FALSE
+            ),
+            establishment_page = 1L,
             is_programmatic_update = FALSE,
             programmatic_terms = character(0),
             # Deduped boolean tracked by an observer below. Drives the only
@@ -333,6 +354,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 EDITADO = "badge field-status-badge bg-info",
                 ALIAS = "badge field-status-badge bg-primary",
                 TEMPLATE = "badge field-status-badge badge-template",
+                ASSISTENTE = "badge field-status-badge badge-assistant",
                 MANUAL = "badge field-status-badge bg-light text-muted border",
                 "badge field-status-badge bg-light text-muted border"
             )
@@ -344,6 +366,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 EDITADO = tr("badge_edited", lang_r()),
                 ALIAS = tr("rostrum_badge_alias", lang_r()),
                 TEMPLATE = tr("rostrum_badge_template", lang_r()),
+                ASSISTENTE = tr("rostrum_badge_assistant", lang_r()),
                 MANUAL = tr("rostrum_badge_manual", lang_r()),
                 tr("rostrum_badge_manual", lang_r())
             )
@@ -369,6 +392,26 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         # full render of build_field_card would produce for this term, via the
         # `saira-toggle-field-mapped` handler (ADR-098). Reads are isolated so
         # callers inside reactive observers do not gain extra dependencies.
+        establishment_terms <- c("establishmentMeans", "degreeOfEstablishment")
+
+        # Answers given in the per-species assistant make an establishment card
+        # count as mapped even with no column selected, and give it its own
+        # badge instead of the grey MANUAL one. Shared by the grid render and
+        # push_card_state so the two never disagree about a card's state.
+        apply_establishment_card_state <- function(term, current_val, is_mapped, meta) {
+            if (!(term %in% establishment_terms)) {
+                return(list(is_mapped = is_mapped, meta = meta))
+            }
+            field <- if (identical(term, "establishmentMeans")) "means" else "degree"
+            if (establishment_answer_count(rv$establishment_map, field) > 0L) {
+                is_mapped <- TRUE
+                if (!has_selected_value(current_val)) {
+                    meta$status <- "ASSISTENTE"
+                }
+            }
+            list(is_mapped = is_mapped, meta = meta)
+        }
+
         push_card_state <- function(term) {
             shiny::isolate({
                 current_val <- sanitize_map_selection(term, rv$map_values[[term]])
@@ -379,6 +422,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 if (is.null(meta)) {
                     meta <- default_meta()
                 }
+                card_state <- apply_establishment_card_state(
+                    term, current_val, is_field_mapped(term, current_val, input), meta
+                )
+                meta <- card_state$meta
                 badge <- build_badge_info(meta)
                 badge_payload <- if (is.null(badge)) {
                     list(show = FALSE)
@@ -394,7 +441,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                     "saira-toggle-field-mapped",
                     list(
                         id = ns(paste0("fieldcard_", term)),
-                        mapped = isTRUE(is_field_mapped(term, current_val, input)),
+                        mapped = isTRUE(card_state$is_mapped),
                         badge = badge_payload
                     )
                 )
@@ -457,11 +504,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             df <- raw_data_r()
             if (!is.data.frame(df) || nrow(df) == 0) return(character(0))
             user_cols <- sanitize_map_selection(term, current_val)
-            if (!has_selected_value(user_cols)) return(character(0))
-            missing <- setdiff(user_cols, names(df))
+            is_establishment <- term %in% establishment_terms
+            # The establishment terms can have values with no column mapped, so
+            # they are the one case where an empty selection is not the end.
+            if (!has_selected_value(user_cols) && !is_establishment) return(character(0))
+            missing <- setdiff(user_cols[nzchar(user_cols)], names(df))
             if (length(missing) > 0) return(character(0))
 
-            cacheable <- !(term %in% c("basisOfRecord", "dynamicProperties"))
+            cacheable <- !(term %in% c("basisOfRecord", "dynamicProperties", establishment_terms))
             key <- if (cacheable) {
                 paste(term, paste(user_cols, collapse = ""), n, sep = "")
             } else {
@@ -473,14 +523,26 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
             slice <- utils::head(df, 200L)
             result <- tryCatch(
-                build_term_value(
-                    term = term,
-                    df = slice,
-                    user_cols = user_cols,
-                    basis_of_record_map = rv$basis_of_record_map,
-                    dyn_props_keys = rv$dyn_props_keys,
-                    out_sep = " | "
-                ),
+                if (is_establishment) {
+                    species <- utils::head(get_establishment_species(), 200L)
+                    list(values = build_establishment_term_value(
+                        term = term,
+                        df = slice,
+                        user_cols = user_cols,
+                        species_values = if (length(species) == nrow(slice)) species else NULL,
+                        establishment_map = rv$establishment_map,
+                        out_sep = " | "
+                    ))
+                } else {
+                    build_term_value(
+                        term = term,
+                        df = slice,
+                        user_cols = user_cols,
+                        basis_of_record_map = rv$basis_of_record_map,
+                        dyn_props_keys = rv$dyn_props_keys,
+                        out_sep = " | "
+                    )
+                },
                 error = function(e) list(values = character(0))
             )
             vals <- as.character(result$values)
@@ -661,6 +723,146 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             invisible(NULL)
         }
 
+        # --- establishmentMeans / degreeOfEstablishment assistant (ADR-110) ---
+        # Same page size and snapshot-sync contract as the basisOfRecord
+        # assistant, but keyed on the species read from the scientificName
+        # column instead of on the unique values of the term's own column.
+        establishment_page_size <- 20L
+
+        get_establishment_species <- function() {
+            df <- raw_data_r()
+            if (!is.data.frame(df) || nrow(df) == 0L) {
+                return(character(0))
+            }
+            selected <- sanitize_map_selection(
+                "scientificName", rv$map_values[["scientificName"]]
+            )
+            if (!has_selected_value(selected)) {
+                selected <- sanitize_map_selection(
+                    "scientificName", input$map_scientificName
+                )
+            }
+            if (!has_selected_value(selected)) {
+                return(character(0))
+            }
+            col <- as.character(selected[[1]])
+            if (!(col %in% names(df))) {
+                return(character(0))
+            }
+            as.character(df[[col]])
+        }
+
+        establishment_page_count <- function() {
+            total_items <- nrow(rv$establishment_entries)
+            if (total_items <= 0) {
+                return(1L)
+            }
+            max(1L, as.integer(ceiling(total_items / establishment_page_size)))
+        }
+
+        get_establishment_page_entries <- function() {
+            entries <- rv$establishment_entries
+            if (nrow(entries) == 0) {
+                return(entries)
+            }
+            total_pages <- establishment_page_count()
+            current_page <- max(1L, min(as.integer(rv$establishment_page), total_pages))
+            start_idx <- ((current_page - 1L) * establishment_page_size) + 1L
+            end_idx <- min(nrow(entries), start_idx + establishment_page_size - 1L)
+            entries[start_idx:end_idx, , drop = FALSE]
+        }
+
+        establishment_choices <- function(field = "means") {
+            catalog <- if (identical(field, "degree")) {
+                degree_of_establishment_vocab_catalog
+            } else {
+                establishment_means_vocab_catalog
+            }
+            dwc_vocab_choices(
+                catalog,
+                lang = lang_r(),
+                include_skip = TRUE,
+                skip_label = tr("est_assistant_skip_option", lang_r())
+            )
+        }
+
+        # Auto-suggestions overlaid by the user's in-modal edits. Only
+        # establishmentMeans has suggestions; degreeOfEstablishment starts empty
+        # by design (it depends on the record, not on the species).
+        get_effective_establishment_map <- function() {
+            entries <- rv$establishment_entries
+            empty <- stats::setNames(character(0), character(0))
+            if (nrow(entries) == 0) {
+                return(list(means = empty, degree = empty))
+            }
+
+            keys <- entries$key
+            auto <- sanitize_establishment_field_map(rv$establishment_auto_map, "means")
+            draft <- sanitize_establishment_map(rv$establishment_draft)
+
+            means <- auto[keys]
+            means[is.na(means)] <- ""
+            draft_means <- draft$means[keys]
+            has_draft <- !is.na(draft_means)
+            means[has_draft] <- draft_means[has_draft]
+
+            degree <- draft$degree[keys]
+            degree[is.na(degree)] <- ""
+
+            list(
+                means = stats::setNames(
+                    as.character(sanitize_establishment_terms(means, "means")), keys
+                ),
+                degree = stats::setNames(
+                    as.character(sanitize_establishment_terms(degree, "degree")), keys
+                )
+            )
+        }
+
+        sync_establishment_page_to_draft <- function() {
+            entries <- get_establishment_page_entries()
+            if (nrow(entries) == 0) {
+                return(invisible(NULL))
+            }
+            for (i in seq_len(nrow(entries))) {
+                key <- entries$key[[i]]
+                idx <- entries$idx[[i]]
+                for (field in c("means", "degree")) {
+                    input_value <- input[[paste0("est_", field, "_", idx)]]
+                    if (is.null(input_value)) {
+                        next
+                    }
+                    sanitized <- sanitize_establishment_terms(
+                        as.character(input_value)[[1]], field
+                    )
+                    # [[ ]] on a named character vector errors for an absent
+                    # name (unlike a list), so gate the read like the
+                    # basisOfRecord assistant does.
+                    draft_field <- rv$establishment_draft[[field]]
+                    has_key <- key %in% names(draft_field)
+                    current <- if (has_key) as.character(draft_field[[key]]) else NA_character_
+                    if (!has_key || !identical(current, sanitized)) {
+                        rv$establishment_draft[[field]][[key]] <- sanitized
+                    }
+                }
+            }
+            invisible(NULL)
+        }
+
+        reset_establishment_state <- function() {
+            empty <- stats::setNames(character(0), character(0))
+            rv$establishment_map <- list(means = empty, degree = empty)
+            rv$establishment_draft <- list(means = empty, degree = empty)
+            rv$establishment_auto_map <- empty
+            rv$establishment_entries <- data.frame(
+                idx = integer(0), key = character(0), raw = character(0),
+                n_records = integer(0), invasive = logical(0),
+                stringsAsFactors = FALSE
+            )
+            rv$establishment_page <- 1L
+            invisible(NULL)
+        }
+
         # Loading modal helpers (delegated to mod_mapping_loading.R)
         loading_phrase_specs <- mapping_loading_phrase_specs()
 
@@ -778,6 +980,27 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             sync_current_page_to_draft = sync_current_page_to_draft
         )
 
+        # The grid only re-renders on structural changes (ADR-098), so saving
+        # the assistant would leave the two cards showing their old badge and
+        # border. Refresh them surgically, the same way a column selection does.
+        shiny::observeEvent(rv$establishment_map, {
+            for (term in establishment_terms) {
+                push_card_state(term)
+            }
+        }, ignoreInit = TRUE)
+
+        setup_establishment_assistant(
+            input = input, output = output, session = session,
+            rv = rv, ns = ns, lang_r = lang_r,
+            establishment_page_size = establishment_page_size,
+            establishment_page_count = establishment_page_count,
+            get_establishment_page_entries = get_establishment_page_entries,
+            establishment_choices = establishment_choices,
+            get_effective_establishment_map = get_effective_establishment_map,
+            get_establishment_species = get_establishment_species,
+            sync_establishment_page_to_draft = sync_establishment_page_to_draft
+        )
+
 
         shiny::observe({
             term_names <- all_term_names()
@@ -836,6 +1059,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 rv$rostrum_run_stats <- list()
                 rv$dyn_props_keys <- list()
                 reset_basis_of_record_state(rv)
+                reset_establishment_state()
                 rm(list = ls(preview_cache, all.names = TRUE), envir = preview_cache)
                 rm(
                     list = ls(rendered_map_inputs, all.names = TRUE),
@@ -1539,6 +1763,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                     if (is.null(field_meta)) {
                                         field_meta <- default_meta()
                                     }
+                                    card_state <- apply_establishment_card_state(
+                                        term, current_val, is_mapped, field_meta
+                                    )
+                                    is_mapped <- card_state$is_mapped
+                                    field_meta <- card_state$meta
                                     badge_info <- build_badge_info(field_meta)
 
                                     # Apply "show only mapped" filter
@@ -1589,6 +1818,33 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 current_val <- sanitize_map_selection(term, current_val)
                 if (identical(term, "basisOfRecord")) {
                     build_basis_assistant_button(current_val, ns, lang)
+                } else if (term %in% establishment_terms) {
+                    # One modal fills both terms, so the button lives on the
+                    # lead term only -- rendering it on both cards would put two
+                    # inputs with the same id on the page. The degree card gets
+                    # a pointer instead.
+                    field <- if (identical(term, "establishmentMeans")) "means" else "degree"
+                    answered <- establishment_answer_count(rv$establishment_map, field)
+                    pending <- if (identical(field, "degree")) {
+                        length(establishment_pairs_missing_degree(rv$establishment_map))
+                    } else {
+                        0L
+                    }
+                    sample_vals <- processed_preview_for_term(term, current_val, 1L)
+                    shiny::tagList(
+                        if (identical(term, "establishmentMeans")) {
+                            build_establishment_assistant_button(ns, lang)
+                        } else {
+                            build_establishment_degree_hint(ns, lang)
+                        },
+                        build_establishment_status_note(answered, pending, lang),
+                        # Only when there is a value to show. The generic empty
+                        # hint says "column mapped, no values", which would be
+                        # false here: these terms can be filled with no column.
+                        if (length(sample_vals) > 0) {
+                            build_field_sample(sample_vals, lang)
+                        }
+                    )
                 } else if (identical(term, "dynamicProperties")) {
                     # Keys block plus the assembled JSON, so the user can see
                     # the {"key":"value"} the export will emit while editing.
@@ -1860,6 +2116,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             shiny::updateCheckboxGroupInput(session, "custom_license", selected = character(0))
             shiny::updateCheckboxGroupInput(session, "custom_language", selected = character(0))
             reset_basis_of_record_state(rv)
+            reset_establishment_state()
             rv$is_programmatic_update <- FALSE
             rv$programmatic_terms <- character(0)
             # Clear the downstream tabs too (the existing notification covers it).
@@ -1958,7 +2215,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 basis_of_record_map = rv$basis_of_record_map,
                 now_utc = Sys.time(),
                 out_sep = " | ",
-                dyn_props_keys = rv$dyn_props_keys
+                dyn_props_keys = rv$dyn_props_keys,
+                establishment_map = rv$establishment_map
             )
         }
 

@@ -67,6 +67,7 @@ Collate:
     'mod_mapping.R'
     'mod_mapping_basis_assistant.R'
     'mod_mapping_cards.R'
+    'mod_mapping_establishment_assistant.R'
     'mod_mapping_loading.R'
     'mod_preview.R'
     'mod_sensitive_coords.R'

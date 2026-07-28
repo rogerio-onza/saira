@@ -1182,3 +1182,264 @@ testthat::test_that("the dynamicProperties card shows the assembled JSON", {
         }
     )
 })
+
+# --- establishmentMeans / degreeOfEstablishment assistant (ADR-110) ---------
+
+testthat::test_that("the establishment assistant lists species and pre-fills invasives", {
+    df <- data.frame(
+        especie = c("Sus scrofa", "Panthera onca", "Sus scrofa"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(map_scientificName = "especie")
+            session$flushReact()
+
+            session$setInputs(open_establishment_assistant = 1)
+            session$flushReact()
+
+            entries <- rv$establishment_entries
+            testthat::expect_equal(entries$raw, c("Sus scrofa", "Panthera onca"))
+            testthat::expect_equal(entries$n_records, c(2L, 1L))
+            testthat::expect_equal(entries$invasive, c(TRUE, FALSE))
+            # Only the listed taxon is pre-filled, and only establishmentMeans.
+            testthat::expect_equal(
+                unname(rv$establishment_auto_map[["sus scrofa"]]), "introduced"
+            )
+            testthat::expect_equal(
+                unname(rv$establishment_auto_map[["panthera onca"]]), ""
+            )
+        }
+    )
+})
+
+testthat::test_that("saved answers reach the preview for every record of the species", {
+    df <- data.frame(
+        especie = c("Sus scrofa", "Panthera onca", "Sus scrofa"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(map_scientificName = "especie")
+            session$flushReact()
+            session$setInputs(open_establishment_assistant = 1)
+            session$flushReact()
+
+            idx <- rv$establishment_entries$idx[
+                rv$establishment_entries$key == "sus scrofa"
+            ]
+            do.call(session$setInputs, stats::setNames(
+                list("introduced"), paste0("est_means_", idx)
+            ))
+            do.call(session$setInputs, stats::setNames(
+                list("invasive"), paste0("est_degree_", idx)
+            ))
+            session$setInputs(save_establishment_assistant = 1)
+            session$flushReact()
+
+            preview <- session$getReturned()$preview_data_r()
+            testthat::expect_equal(
+                preview$establishmentMeans, c("introduced", "", "introduced")
+            )
+            testthat::expect_equal(
+                preview$degreeOfEstablishment, c("invasive", "", "invasive")
+            )
+        }
+    )
+})
+
+# The pair is recommended, never enforced: a species can be saved with
+# establishmentMeans alone and the export still proceeds.
+testthat::test_that("establishmentMeans without a degree is reported, not blocked", {
+    df <- data.frame(especie = c("Sus scrofa"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(map_scientificName = "especie")
+            session$flushReact()
+            session$setInputs(open_establishment_assistant = 1)
+            session$flushReact()
+
+            idx <- rv$establishment_entries$idx[[1]]
+            do.call(session$setInputs, stats::setNames(
+                list("introduced"), paste0("est_means_", idx)
+            ))
+            session$setInputs(save_establishment_assistant = 1)
+            session$flushReact()
+
+            testthat::expect_equal(
+                establishment_pairs_missing_degree(rv$establishment_map), "sus scrofa"
+            )
+            preview <- session$getReturned()$preview_data_r()
+            testthat::expect_equal(preview$establishmentMeans, "introduced")
+            testthat::expect_false("degreeOfEstablishment" %in% names(preview))
+        }
+    )
+})
+
+testthat::test_that("the assistant refuses to open without a scientificName column", {
+    df <- data.frame(especie = c("Sus scrofa"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(open_establishment_assistant = 1)
+            session$flushReact()
+
+            testthat::expect_equal(nrow(rv$establishment_entries), 0L)
+            testthat::expect_true(establishment_map_is_empty(rv$establishment_map))
+        }
+    )
+})
+
+# A new upload must not carry the previous dataset's per-species answers.
+testthat::test_that("a new upload clears the establishment answers", {
+    data_rv <- shiny::reactiveVal(
+        data.frame(especie = c("Sus scrofa"), stringsAsFactors = FALSE)
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(data_rv()),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            rv$establishment_map <- list(
+                means = c("sus scrofa" = "introduced"),
+                degree = c("sus scrofa" = "invasive")
+            )
+            testthat::expect_false(establishment_map_is_empty(rv$establishment_map))
+
+            data_rv(data.frame(especie = c("Panthera onca"), stringsAsFactors = FALSE))
+            session$flushReact()
+
+            testthat::expect_true(establishment_map_is_empty(rv$establishment_map))
+        }
+    )
+})
+
+# Regression: one modal fills both establishment terms, so the assistant button
+# must exist on the lead card only. Rendering it on both put two inputs with the
+# id `open_establishment_assistant` on the page, which is undefined behaviour in
+# Shiny (the click may not fire reliably).
+testthat::test_that("the assistant button renders on establishmentMeans only", {
+    df <- data.frame(especie = c("Sus scrofa"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+
+            means_slot <- paste(output$carddyn_establishmentMeans$html, collapse = " ")
+            degree_slot <- paste(output$carddyn_degreeOfEstablishment$html, collapse = " ")
+
+            testthat::expect_true(
+                grepl("open_establishment_assistant", means_slot, fixed = TRUE)
+            )
+            testthat::expect_false(
+                grepl("open_establishment_assistant", degree_slot, fixed = TRUE)
+            )
+            # The degree card points at the card that owns the assistant.
+            testthat::expect_true(
+                grepl("est-degree-hint", degree_slot, fixed = TRUE)
+            )
+            testthat::expect_true(
+                grepl("fieldcard_establishmentMeans", degree_slot, fixed = TRUE)
+            )
+        }
+    )
+})
+
+# After the assistant runs, a card with no column selected must stop reading as
+# untouched: it counted as unmapped, kept the grey MANUAL badge, and its sample
+# line claimed "column mapped, no values" -- which was false, no column was.
+testthat::test_that("an assistant-filled card reads as mapped, not as untouched", {
+    df <- data.frame(especie = c("Sus scrofa", "Panthera onca"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(map_scientificName = "especie")
+            session$flushReact()
+            session$setInputs(open_establishment_assistant = 1)
+            session$flushReact()
+
+            idx <- rv$establishment_entries$idx[
+                rv$establishment_entries$key == "sus scrofa"
+            ]
+            do.call(session$setInputs, stats::setNames(
+                list("introduced"), paste0("est_means_", idx)
+            ))
+            session$setInputs(save_establishment_assistant = 1)
+            session$flushReact()
+
+            means_slot <- paste(output$carddyn_establishmentMeans$html, collapse = " ")
+            degree_slot <- paste(output$carddyn_degreeOfEstablishment$html, collapse = " ")
+
+            # Mapped state and badge come from one shared helper, consumed by
+            # the grid render and by push_card_state (which pushes over a
+            # custom message the test harness does not surface).
+            state <- apply_establishment_card_state(
+                "establishmentMeans", "", FALSE, default_meta()
+            )
+            testthat::expect_true(state$is_mapped)
+            testthat::expect_identical(state$meta$status, "ASSISTENTE")
+            # A term with no answers stays untouched.
+            degree_state <- apply_establishment_card_state(
+                "degreeOfEstablishment", "", FALSE, default_meta()
+            )
+            testthat::expect_false(degree_state$is_mapped)
+            # A mapped column keeps its own badge; the assistant only completes.
+            with_column <- apply_establishment_card_state(
+                "establishmentMeans", "origem", TRUE, default_meta()
+            )
+            testthat::expect_true(is.na(with_column$meta$status))
+            # Says what the assistant did.
+            testthat::expect_true(grepl("est-card-status", means_slot, fixed = TRUE))
+            # No degree answered yet -> the card nudges instead of claiming a
+            # mapped-but-empty column.
+            testthat::expect_true(
+                grepl("est-card-status-pending", degree_slot, fixed = TRUE)
+            )
+            testthat::expect_false(
+                grepl(tr("mapping_card_sample_empty", "en"), degree_slot, fixed = TRUE)
+            )
+        }
+    )
+})
