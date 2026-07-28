@@ -50,6 +50,11 @@ ordered_terms <- c(
   "taxonRemarks",
   # Occurrence (organism traits)
   "individualCount", "sex", "lifeStage", "reproductiveCondition", "behavior",
+  # Occurrence (establishment). Both carry a TDWG controlled vocabulary and are
+  # filled together by the per-species assistant (ADR-110), so they belong in
+  # the default set: having to hunt for them in "Add term" first would defeat
+  # the assistant's purpose.
+  "establishmentMeans", "degreeOfEstablishment",
   # Identification
   "identifiedBy", "identifiedByID", "dateIdentified", "identificationRemarks",
   "identificationQualifier",

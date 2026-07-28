@@ -334,6 +334,80 @@ build_basis_assistant_button <- function(current_val, ns, lang_r) {
 }
 
 #' @noRd
+#' Assistant button, on the establishmentMeans card only.
+#'
+#' The assistant fills both establishment terms in one modal, so the button
+#' belongs to the lead term alone -- rendering it on both cards would put two
+#' inputs with the same id on the page. degreeOfEstablishment gets
+#' build_establishment_degree_hint() instead.
+#'
+#' Unlike the basisOfRecord button, this one is always offered: the assistant
+#' works off the scientificName column, so it is useful precisely when the
+#' term's own column is empty (the common case -- most spreadsheets do not
+#' carry establishmentMeans at all).
+#' @noRd
+build_establishment_assistant_button <- function(ns, lang_r) {
+    shiny::actionButton(
+        ns("open_establishment_assistant"),
+        tr("est_assistant_button", lang_r),
+        class = "btn btn-outline-primary btn-sm w-100 mt-2",
+        icon = shiny::icon("seedling")
+    )
+}
+
+#' Note on the degreeOfEstablishment card pointing at its lead term.
+#'
+#' Uses the same `alert alert-info` shell as the occurrenceID and locked-taxon
+#' notices, which is the app's established way of saying "this field is filled
+#' another way". The link is a plain anchor: no Shiny input, so no second id
+#' competing with the assistant button, and the browser handles the jump.
+#' @noRd
+build_establishment_degree_hint <- function(ns, lang_r) {
+    shiny::div(
+        class = "alert alert-info est-degree-hint",
+        shiny::icon("link"),
+        " ",
+        tr("est_degree_card_hint", lang_r),
+        " ",
+        shiny::tags$a(
+            href = paste0("#", ns("fieldcard_establishmentMeans")),
+            tr("est_degree_card_hint_link", lang_r)
+        )
+    )
+}
+
+#' "Filled by the assistant" state note on an establishment card.
+#'
+#' Without this the card reads as untouched after the assistant runs: the
+#' column selector is still on "--" and the badge still says MANUAL. Reports
+#' what the assistant actually did, and the pending pairs when there are any.
+#' @noRd
+build_establishment_status_note <- function(answered, missing_degree, lang_r) {
+    # The pending line matters most when nothing has been answered yet, so it
+    # renders on its own too.
+    if (answered <= 0L && missing_degree <= 0L) {
+        return(NULL)
+    }
+    shiny::div(
+        class = "est-card-status",
+        if (answered > 0L) {
+            shiny::div(
+                class = "est-card-status-line",
+                shiny::icon("wand-magic-sparkles"),
+                " ",
+                sprintf(tr("est_card_filled_by_assistant", lang_r), answered)
+            )
+        },
+        if (missing_degree > 0L) {
+            shiny::div(
+                class = "est-card-status-pending",
+                sprintf(tr("est_card_pending_degree", lang_r), missing_degree)
+            )
+        }
+    )
+}
+
+#' @noRd
 build_dynprops_keys_block <- function(current_val, ns, lang_r, input) {
     selected_cols <- if (has_selected_value(current_val)) {
         as.character(current_val)

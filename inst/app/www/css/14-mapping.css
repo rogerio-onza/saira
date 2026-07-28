@@ -118,6 +118,14 @@
   color: #ffffff;
 }
 
+/* Term filled by the per-species establishment assistant rather than by a
+   mapped column. Distinct from MANUAL (grey) so the card stops reading as
+   untouched once the assistant has answers. */
+.badge-assistant {
+  background-color: #4a5568;
+  color: #ffffff;
+}
+
 /* Field description */
 .field-desc {
   font-size: var(--text-sm);
@@ -702,6 +710,65 @@
   font-weight: var(--weight-medium);
 }
 
+/* establishmentMeans / degreeOfEstablishment assistant. The modal carries both
+   .bor-assistant-modal and .est-assistant-modal, so everything above applies;
+   only the per-species column and the three-column layout differ. */
+.est-assistant-table th:first-child,
+.est-assistant-table td:first-child {
+  width: 34%;
+}
+
+.est-assistant-species-meta {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.est-assistant-invasive {
+  display: inline-block;
+  margin-top: var(--space-1);
+}
+
+/* Pointer from the degreeOfEstablishment card to the card that owns the
+   assistant. Reuses the alert-info shell used by occurrenceID and the locked
+   taxon cards -- same kind of message, same treatment. */
+.est-degree-hint {
+  margin-top: var(--space-2);
+  margin-bottom: 0;
+  padding: var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}
+
+.est-degree-hint a {
+  font-weight: var(--weight-semibold);
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+/* "Filled by the assistant" state on an establishment card. */
+.est-card-status {
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}
+
+.est-card-status-line {
+  color: var(--success);
+  font-weight: var(--weight-medium);
+}
+
+.est-card-status-pending {
+  color: var(--warning);
+}
+
+.est-assistant-pair-warning {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--warning);
+  font-weight: var(--weight-medium);
+}
+
 @media (max-width: 768px) {
   .bor-assistant-pagination {
     justify-content: center;
@@ -710,6 +777,11 @@
 
   .bor-assistant-table-wrap {
     max-height: 240px;
+  }
+
+  .est-assistant-table th:first-child,
+  .est-assistant-table td:first-child {
+    width: auto;
   }
 }
 

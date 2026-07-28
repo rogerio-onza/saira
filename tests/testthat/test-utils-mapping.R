@@ -1019,3 +1019,151 @@ testthat::test_that("merge_dynamic_property handles empty input", {
         character(0)
     )
 })
+
+# --- establishmentMeans / degreeOfEstablishment assistant (ADR-110) ---------
+
+test_that("extract_species_entries dedupes, counts and orders by frequency", {
+    entries <- extract_species_entries(
+        c("Sus scrofa", "Panthera onca", "Sus scrofa", NA, "", "  ", "Sus scrofa")
+    )
+    expect_equal(entries$raw, c("Sus scrofa", "Panthera onca"))
+    expect_equal(entries$n_records, c(3L, 1L))
+    expect_equal(entries$key, c("sus scrofa", "panthera onca"))
+    expect_equal(entries$idx, c(1L, 2L))
+})
+
+test_that("extract_species_entries returns the empty schema for no species", {
+    entries <- extract_species_entries(c(NA, "", "   "))
+    expect_equal(nrow(entries), 0L)
+    expect_equal(names(entries), c("idx", "key", "raw", "n_records"))
+})
+
+test_that("auto_suggest_establishment_means only pre-fills listed invasives", {
+    out <- auto_suggest_establishment_means(c("Sus scrofa", "Panthera onca"))
+    expect_equal(unname(out), c("introduced", ""))
+    expect_equal(names(out), c("sus scrofa", "panthera onca"))
+    # Never guesses "native" for an unlisted taxon: the app cannot know that.
+    expect_false(any(out == "native"))
+})
+
+test_that("map_establishment_values expands per-species answers to rows", {
+    map <- list(
+        means = c("sus scrofa" = "introduced", "panthera onca" = "native"),
+        degree = c("sus scrofa" = "invasive")
+    )
+    species <- c("Sus scrofa", "Panthera onca", "Sus scrofa", "Bos taurus", NA)
+
+    expect_equal(
+        map_establishment_values(species, map, "means"),
+        c("introduced", "native", "introduced", "", "")
+    )
+    expect_equal(
+        map_establishment_values(species, map, "degree"),
+        c("invasive", "", "invasive", "", "")
+    )
+    expect_equal(map_establishment_values(species, NULL, "means"), rep("", 5L))
+})
+
+test_that("map_establishment_values drops values outside the controlled vocabulary", {
+    map <- list(means = c("sus scrofa" = "bogus"), degree = c("sus scrofa" = "invasive"))
+    expect_equal(map_establishment_values("Sus scrofa", map, "means"), "")
+    # A valid term in the other field is unaffected by the invalid one.
+    expect_equal(map_establishment_values("Sus scrofa", map, "degree"), "invasive")
+})
+
+test_that("establishment_pairs_missing_degree lists means without a degree", {
+    map <- list(
+        means = c("sus scrofa" = "introduced", "bos taurus" = "introduced", "x" = ""),
+        degree = c("sus scrofa" = "invasive")
+    )
+    expect_equal(establishment_pairs_missing_degree(map), "bos taurus")
+    expect_equal(establishment_pairs_missing_degree(NULL), character(0))
+})
+
+test_that("build_establishment_term_value lets the user's column win", {
+    df <- data.frame(
+        especie = c("Sus scrofa", "Sus scrofa", "Sus scrofa"),
+        origem = c("vagrant", "", NA),
+        stringsAsFactors = FALSE
+    )
+    map <- list(means = c("sus scrofa" = "introduced"), degree = character(0))
+
+    out <- build_establishment_term_value(
+        "establishmentMeans", df, user_cols = "origem",
+        species_values = df$especie, establishment_map = map
+    )
+    # Row 1 keeps the user's value; the blank rows are filled by the assistant.
+    expect_equal(out, c("vagrant", "introduced", "introduced"))
+})
+
+test_that("build_establishment_term_value works with no column and no assistant", {
+    df <- data.frame(especie = c("Sus scrofa", "Panthera onca"), stringsAsFactors = FALSE)
+    map <- list(means = c("sus scrofa" = "introduced"), degree = character(0))
+
+    expect_equal(
+        build_establishment_term_value(
+            "establishmentMeans", df, user_cols = NULL,
+            species_values = df$especie, establishment_map = map
+        ),
+        c("introduced", "")
+    )
+    # scientificName not mapped -> no species to key the answers on, so every
+    # row comes out blank (which keeps the column out of the export entirely).
+    expect_equal(
+        build_establishment_term_value(
+            "establishmentMeans", df, user_cols = NULL,
+            species_values = NULL, establishment_map = map
+        ),
+        c("", "")
+    )
+})
+
+test_that("build_processed_mapping_df emits establishment columns from the assistant alone", {
+    df <- data.frame(
+        especie = c("Sus scrofa", "Panthera onca", "Sus scrofa"),
+        stringsAsFactors = FALSE
+    )
+    terms <- get_active_dwc_terms_list()
+    map <- list(
+        means = c("sus scrofa" = "introduced", "panthera onca" = "native"),
+        degree = c("sus scrofa" = "invasive")
+    )
+
+    out <- build_processed_mapping_df(
+        df = df, dwc_terms = terms,
+        map_values = list(scientificName = "especie"),
+        occurrence_ids = paste0("id-", seq_len(nrow(df))),
+        establishment_map = map
+    )$data
+
+    expect_true(all(c("establishmentMeans", "degreeOfEstablishment") %in% names(out)))
+    expect_equal(out$establishmentMeans, c("introduced", "native", "introduced"))
+    expect_equal(out$degreeOfEstablishment, c("invasive", "", "invasive"))
+})
+
+test_that("build_processed_mapping_df omits establishment columns without answers", {
+    df <- data.frame(especie = c("Sus scrofa"), stringsAsFactors = FALSE)
+    out <- build_processed_mapping_df(
+        df = df, dwc_terms = get_active_dwc_terms_list(),
+        map_values = list(scientificName = "especie"),
+        occurrence_ids = "id-1",
+        establishment_map = NULL
+    )$data
+    expect_false("establishmentMeans" %in% names(out))
+    expect_false("degreeOfEstablishment" %in% names(out))
+})
+
+test_that("build_processed_mapping_df needs scientificName for the assistant to apply", {
+    df <- data.frame(
+        especie = c("Sus scrofa"), outra = c("x"), stringsAsFactors = FALSE
+    )
+    map <- list(means = c("sus scrofa" = "introduced"), degree = character(0))
+    # scientificName unmapped: there is no species vector to key the answers on.
+    out <- build_processed_mapping_df(
+        df = df, dwc_terms = get_active_dwc_terms_list(),
+        map_values = list(locality = "outra"),
+        occurrence_ids = "id-1",
+        establishment_map = map
+    )$data
+    expect_false("establishmentMeans" %in% names(out))
+})

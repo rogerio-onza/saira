@@ -654,7 +654,10 @@ dwc_canonical_preferred_terms <- function() {
             "scientificName", "scientificNameAuthorship",
             "kingdom", "phylum", "class", "order", "family", "genus",
             "subgenus", "specificEpithet", "infraspecificEpithet", "taxonRank",
-            "verbatimIdentification", "identificationQualifier", "vernacularName"
+            "verbatimIdentification", "identificationQualifier", "vernacularName",
+            # Relocated here from Occurrence for reading order -- see
+            # dwc_canonical_class_overrides().
+            "establishmentMeans", "degreeOfEstablishment"
         ),
         Identification = c(
             "identifiedBy", "dateIdentified", "identificationRemarks", "typeStatus"
@@ -663,6 +666,27 @@ dwc_canonical_preferred_terms <- function() {
         # MaterialEntity in the TDWG resync; keep them leading the MaterialEntity
         # block so the catalog identifiers stay near the front of the export.
         MaterialEntity = c("catalogNumber", "otherCatalogNumbers")
+    )
+}
+
+#' Terms placed outside their DwC class in the exported column order
+#'
+#' `establishmentMeans` and `degreeOfEstablishment` are Occurrence terms, which
+#' would put them at the very front of the sheet, far from the species they
+#' describe. They read as attributes of the taxon, so the export places them at
+#' the end of the Taxon block: whoever opens the file sees the scientific name
+#' and, right next to it, whether that species is native or introduced.
+#'
+#' Display order only. The catalog class is untouched, so the mapping grid still
+#' groups both cards under Occurrence and `meta.xml` still declares the real
+#' Darwin Core term URIs.
+#'
+#' @return Named character vector: term -> class used for ordering.
+#' @noRd
+dwc_canonical_class_overrides <- function() {
+    c(
+        establishmentMeans = "Taxon",
+        degreeOfEstablishment = "Taxon"
     )
 }
 
@@ -696,7 +720,14 @@ order_columns_dwc_canonical <- function(df) {
     preferred <- dwc_canonical_preferred_terms()
     unknown_class_idx <- length(class_order) + 1L
 
+    class_overrides <- dwc_canonical_class_overrides()
+
     lookup_class <- function(col) {
+        # Overrides win so both the class block and the within-class preferred
+        # position are resolved against the same (relocated) class.
+        if (col %in% names(class_overrides)) {
+            return(unname(class_overrides[[col]]))
+        }
         if (length(cls_lookup) == 0L || !(col %in% names(cls_lookup))) {
             return(NA_character_)
         }

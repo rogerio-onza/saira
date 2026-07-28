@@ -327,6 +327,94 @@
     "pt": "Motor proprietário para mapear colunas da planilha aos termos DwC.",
     "en": "Proprietary engine to map spreadsheet columns to DwC terms."
   },
+  "est_degree_card_hint": {
+    "pt": "Preenchido junto com establishmentMeans.",
+    "en": "Filled together with establishmentMeans."
+  },
+  "est_degree_card_hint_link": {
+    "pt": "Ir para o assistente",
+    "en": "Go to the assistant"
+  },
+  "est_card_filled_by_assistant": {
+    "pt": "Preenchido pelo assistente: %d espécie(s).",
+    "en": "Filled by the assistant: %d species."
+  },
+  "est_card_pending_degree": {
+    "pt": "%d espécie(s) ainda sem grau definido.",
+    "en": "%d species still have no degree set."
+  },
+  "est_assistant_button": {
+    "pt": "Assistente de estabelecimento",
+    "en": "Establishment assistant"
+  },
+  "est_assistant_title": {
+    "pt": "establishmentMeans e degreeOfEstablishment por espécie",
+    "en": "establishmentMeans and degreeOfEstablishment by species"
+  },
+  "est_assistant_subtitle": {
+    "pt": "Responda uma vez por espécie: a resposta vale para todos os registros daquele táxon. Espécies da lista de exóticas invasoras do Brasil já vêm sugeridas como introduced. O grau de estabelecimento depende do registro (cativeiro, solta, invasora), por isso não é sugerido automaticamente.",
+    "en": "Answer once per species: the answer applies to every record of that taxon. Species on the Brazilian invasive alien species list are pre-filled as introduced. The degree of establishment depends on the record (captive, released, invasive), so it is never suggested automatically."
+  },
+  "est_assistant_save": {
+    "pt": "Salvar respostas",
+    "en": "Save answers"
+  },
+  "est_assistant_saved": {
+    "pt": "%d de %d espécies com establishmentMeans definido.",
+    "en": "%d of %d species have establishmentMeans set."
+  },
+  "est_assistant_skip_option": {
+    "pt": "-- Não definir --",
+    "en": "-- Not set --"
+  },
+  "est_assistant_progress": {
+    "pt": "%d de %d espécies respondidas",
+    "en": "%d of %d species answered"
+  },
+  "est_assistant_missing_degree": {
+    "pt": "%d espécie(s) com establishmentMeans e sem degreeOfEstablishment. O par é recomendado, mas a exportação segue normalmente.",
+    "en": "%d species have establishmentMeans without degreeOfEstablishment. The pair is recommended, but the export proceeds normally."
+  },
+  "est_assistant_no_species": {
+    "pt": "Nenhuma espécie encontrada na coluna mapeada em scientificName.",
+    "en": "No species found in the column mapped to scientificName."
+  },
+  "est_assistant_col_species": {
+    "pt": "Espécie",
+    "en": "Species"
+  },
+  "est_assistant_col_means": {
+    "pt": "establishmentMeans",
+    "en": "establishmentMeans"
+  },
+  "est_assistant_col_degree": {
+    "pt": "degreeOfEstablishment",
+    "en": "degreeOfEstablishment"
+  },
+  "est_assistant_record_count": {
+    "pt": "%d registro(s)",
+    "en": "%d record(s)"
+  },
+  "est_assistant_invasive_hint": {
+    "pt": "Exótica invasora",
+    "en": "Invasive alien"
+  },
+  "est_assistant_map_scientificname_first": {
+    "pt": "Mapeie a coluna de scientificName antes de abrir o assistente.",
+    "en": "Map the scientificName column before opening the assistant."
+  },
+  "est_assistant_open_error": {
+    "pt": "Não foi possível abrir o assistente: %s",
+    "en": "Could not open the assistant: %s"
+  },
+  "a11y_est_means_label": {
+    "pt": "establishmentMeans para %s",
+    "en": "establishmentMeans for %s"
+  },
+  "a11y_est_degree_label": {
+    "pt": "degreeOfEstablishment para %s",
+    "en": "degreeOfEstablishment for %s"
+  },
   "bor_assistant_button": {
     "pt": "Assistente basisOfRecord",
     "en": "basisOfRecord Assistant"
@@ -770,6 +858,10 @@
   "rostrum_badge_ambiguous": {
     "pt": "AMB\u00cdGUO",
     "en": "AMBIGUOUS"
+  },
+  "rostrum_badge_assistant": {
+    "pt": "ASSISTENTE",
+    "en": "ASSISTANT"
   },
   "rostrum_badge_manual": {
     "pt": "MANUAL",

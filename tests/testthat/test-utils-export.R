@@ -411,7 +411,10 @@ testthat::test_that("order_columns_dwc_canonical places extra terms in their sem
 
     testthat::expect_identical(nm[1], "occurrenceID")
     testthat::expect_true(match("behavior", nm) < match("decimalLatitude", nm))
-    testthat::expect_true(match("establishmentMeans", nm) < match("decimalLatitude", nm))
+    # establishmentMeans is an Occurrence term but is deliberately relocated to
+    # the end of the Taxon block (ADR-110), so it now trails scientificName
+    # instead of leading the sheet with the other Occurrence terms.
+    testthat::expect_true(match("scientificName", nm) < match("establishmentMeans", nm))
     testthat::expect_true(match("decimalLatitude", nm) < match("coordinateUncertaintyInMeters", nm))
     testthat::expect_true(match("decimalLatitude", nm) < match("scientificName", nm))
     testthat::expect_true(match("scientificName", nm) < match("measurementValue", nm))
@@ -826,4 +829,36 @@ testthat::test_that("resolve_iucn_usage_keys strips the GBIF prefix and falls ba
     # "A b": GBIF taxonID stripped to bare key; "C d": non-GBIF provider -> match
     # fallback; "E f": absent from taxon_keys -> match fallback.
     testthat::expect_identical(out, c("111", "999", "999"))
+})
+
+# The two establishment terms are Occurrence terms, which would put them at the
+# very front of the sheet. The export relocates them to the end of the Taxon
+# block so they sit next to the species they describe (ADR-110).
+test_that("establishment terms are exported right after the Taxon block", {
+    df <- data.frame(
+        occurrenceID = "1", basisOfRecord = "HumanObservation",
+        degreeOfEstablishment = "invasive", country = "BR",
+        scientificName = "Sus scrofa", vernacularName = "javali",
+        establishmentMeans = "introduced", taxonRemarks = "x",
+        identifiedBy = "y", stringsAsFactors = FALSE
+    )
+    ordered <- names(order_columns_dwc_canonical(df))
+
+    expect_equal(
+        ordered[which(ordered == "vernacularName") + 0:2],
+        c("vernacularName", "establishmentMeans", "degreeOfEstablishment")
+    )
+    # Relocated, not promoted: they still trail the Taxon identity terms.
+    expect_lt(which(ordered == "scientificName"), which(ordered == "establishmentMeans"))
+    # And they no longer lead the sheet with the other Occurrence terms.
+    expect_lt(which(ordered == "occurrenceID"), which(ordered == "establishmentMeans"))
+})
+
+test_that("the class override does not disturb terms it does not name", {
+    df <- data.frame(
+        taxonRemarks = "x", scientificName = "Sus scrofa",
+        occurrenceID = "1", stringsAsFactors = FALSE
+    )
+    ordered <- names(order_columns_dwc_canonical(df))
+    expect_equal(ordered, c("occurrenceID", "scientificName", "taxonRemarks"))
 })

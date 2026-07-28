@@ -67,6 +67,146 @@ basis_of_record_vocab_catalog <- list(
     )
 )
 
+# establishmentMeans controlled vocabulary (TDWG, 2026-05-26).
+# http://rs.tdwg.org/dwcem/values/ -- controlled values are normative;
+# labels and descriptions here are condensed for the assistant UI.
+establishment_means_vocab_catalog <- list(
+    list(
+        term = "native",
+        label_en = "native (indigenous)",
+        label_pt = "nativa (ind\u00EDgena)",
+        desc_en = "A taxon occurring within its natural range.",
+        desc_pt = "T\u00E1xon que ocorre dentro de sua distribui\u00E7\u00E3o natural."
+    ),
+    list(
+        term = "nativeEndemic",
+        label_en = "native: endemic",
+        label_pt = "nativa: end\u00EAmica",
+        desc_en = "A taxon with a natural distribution restricted to a single geographical area.",
+        desc_pt = "T\u00E1xon com distribui\u00E7\u00E3o natural restrita a uma \u00FAnica \u00E1rea geogr\u00E1fica."
+    ),
+    list(
+        term = "nativeReintroduced",
+        label_en = "native: reintroduced",
+        label_pt = "nativa: reintroduzida",
+        desc_en = "A taxon re-established by humans in an area that was once part of its natural range, but from where it had become extinct.",
+        desc_pt = "T\u00E1xon restabelecido por a\u00E7\u00E3o humana em \u00E1rea que j\u00E1 fez parte de sua distribui\u00E7\u00E3o natural, mas de onde havia sido extinto."
+    ),
+    list(
+        term = "introduced",
+        label_en = "introduced (alien, exotic, non-native)",
+        label_pt = "introduzida (ex\u00F3tica, n\u00E3o nativa)",
+        desc_en = "Establishment of a taxon by human agency into an area that is not part of its natural range.",
+        desc_pt = "Estabelecimento de um t\u00E1xon por a\u00E7\u00E3o humana em \u00E1rea que n\u00E3o faz parte de sua distribui\u00E7\u00E3o natural."
+    ),
+    list(
+        term = "introducedAssistedColonisation",
+        label_en = "introduced: assisted colonisation",
+        label_pt = "introduzida: coloniza\u00E7\u00E3o assistida",
+        desc_en = "Establishment of a taxon specifically to create a self-sustaining wild population outside its natural range.",
+        desc_pt = "Estabelecimento de um t\u00E1xon com a inten\u00E7\u00E3o espec\u00EDfica de criar popula\u00E7\u00E3o silvestre autossustent\u00E1vel fora de sua distribui\u00E7\u00E3o natural."
+    ),
+    list(
+        term = "vagrant",
+        label_en = "vagrant (casual)",
+        label_pt = "vagante (casual)",
+        desc_en = "The temporary occurrence of a taxon far outside its natural or migratory range.",
+        desc_pt = "Ocorr\u00EAncia tempor\u00E1ria de um t\u00E1xon muito al\u00E9m de sua distribui\u00E7\u00E3o natural ou migrat\u00F3ria."
+    ),
+    list(
+        term = "uncertain",
+        label_en = "uncertain (unknown, cryptogenic)",
+        label_pt = "incerta (desconhecida, criptog\u00EAnica)",
+        desc_en = "The origin of the occurrence of the taxon in an area is obscure.",
+        desc_pt = "A origem da ocorr\u00EAncia do t\u00E1xon na \u00E1rea \u00E9 obscura."
+    )
+)
+
+# degreeOfEstablishment controlled vocabulary (TDWG, 2026-05-26).
+# http://rs.tdwg.org/dwcdoe/values/ -- ordered along the introduction
+# pathway (Blackburn et al. categories A to E), which is the order the
+# assistant presents them in.
+degree_of_establishment_vocab_catalog <- list(
+    list(
+        term = "native",
+        label_en = "native (category A)",
+        label_pt = "nativa (categoria A)",
+        desc_en = "Not transported beyond limits of native range.",
+        desc_pt = "N\u00E3o transportada al\u00E9m dos limites de sua distribui\u00E7\u00E3o nativa."
+    ),
+    list(
+        term = "captive",
+        label_en = "captive (category B1)",
+        label_pt = "em cativeiro (categoria B1)",
+        desc_en = "Individuals in captivity or quarantine, with explicit measures of containment in place.",
+        desc_pt = "Indiv\u00EDduos em cativeiro ou quarentena, com medidas expl\u00EDcitas de conten\u00E7\u00E3o."
+    ),
+    list(
+        term = "cultivated",
+        label_en = "cultivated (category B2)",
+        label_pt = "cultivada (categoria B2)",
+        desc_en = "Individuals in cultivation, with measures to prevent dispersal limited at best.",
+        desc_pt = "Indiv\u00EDduos em cultivo, com medidas limitadas para impedir a dispers\u00E3o."
+    ),
+    list(
+        term = "released",
+        label_en = "released (category B3)",
+        label_pt = "solta (categoria B3)",
+        desc_en = "Individuals directly released into a novel environment.",
+        desc_pt = "Indiv\u00EDduos soltos diretamente em ambiente novo."
+    ),
+    list(
+        term = "failing",
+        label_en = "failing (category C0)",
+        label_pt = "em decl\u00EDnio (categoria C0)",
+        desc_en = "Individuals released outside captivity or cultivation, but incapable of surviving for a significant period.",
+        desc_pt = "Indiv\u00EDduos soltos fora de cativeiro ou cultivo, incapazes de sobreviver por per\u00EDodo significativo."
+    ),
+    list(
+        term = "casual",
+        label_en = "casual (category C1)",
+        label_pt = "casual (categoria C1)",
+        desc_en = "Individuals surviving outside captivity or cultivation, with no reproduction.",
+        desc_pt = "Indiv\u00EDduos sobrevivendo fora de cativeiro ou cultivo, sem reprodu\u00E7\u00E3o."
+    ),
+    list(
+        term = "reproducing",
+        label_en = "reproducing (category C2)",
+        label_pt = "reprodutiva (categoria C2)",
+        desc_en = "Reproduction is occurring, but the population is not self-sustaining.",
+        desc_pt = "H\u00E1 reprodu\u00E7\u00E3o, mas a popula\u00E7\u00E3o n\u00E3o \u00E9 autossustent\u00E1vel."
+    ),
+    list(
+        term = "established",
+        label_en = "established (category C3)",
+        label_pt = "estabelecida (categoria C3)",
+        desc_en = "Reproduction occurring and population self-sustaining.",
+        desc_pt = "Reprodu\u00E7\u00E3o ocorrendo e popula\u00E7\u00E3o autossustent\u00E1vel."
+    ),
+    list(
+        term = "colonising",
+        label_en = "colonising (category D1)",
+        label_pt = "colonizadora (categoria D1)",
+        desc_en = "Self-sustaining population, with individuals surviving a significant distance from the original point of introduction.",
+        desc_pt = "Popula\u00E7\u00E3o autossustent\u00E1vel, com indiv\u00EDduos sobrevivendo a dist\u00E2ncia significativa do ponto original de introdu\u00E7\u00E3o."
+    ),
+    list(
+        term = "invasive",
+        label_en = "invasive (category D2)",
+        label_pt = "invasora (categoria D2)",
+        desc_en = "Self-sustaining population, with individuals surviving and reproducing a significant distance from the original point of introduction.",
+        desc_pt = "Popula\u00E7\u00E3o autossustent\u00E1vel, com indiv\u00EDduos sobrevivendo e se reproduzindo a dist\u00E2ncia significativa do ponto original de introdu\u00E7\u00E3o."
+    ),
+    list(
+        term = "widespreadInvasive",
+        label_en = "widespread invasive (category E)",
+        label_pt = "invasora disseminada (categoria E)",
+        desc_en = "Fully invasive species, dispersing, surviving and reproducing at multiple sites across a spectrum of habitats.",
+        desc_pt = "Esp\u00E9cie plenamente invasora, dispersando, sobrevivendo e se reproduzindo em m\u00FAltiplos locais e h\u00E1bitats."
+    )
+)
+
+
 #' @noRd
 resolve_dwc_full_catalog_path <- function() {
     candidates <- c(
@@ -412,6 +552,51 @@ is_valid_basis_of_record_term <- function(value) {
 
     value_chr <- trimws(as.character(value)[[1]])
     nzchar(value_chr) && value_chr %in% get_basis_of_record_terms()
+}
+
+# The establishment vocabularies share basisOfRecord's catalog shape, so the
+# accessors below take the catalog instead of being copied per vocabulary.
+dwc_vocab_terms <- function(catalog) {
+    vapply(catalog, function(item) item$term, FUN.VALUE = character(1))
+}
+
+is_valid_dwc_vocab_term <- function(value, catalog) {
+    if (is.null(value) || length(value) == 0) {
+        return(FALSE)
+    }
+    value_chr <- trimws(as.character(value)[[1]])
+    nzchar(value_chr) && value_chr %in% dwc_vocab_terms(catalog)
+}
+
+# Choices for a controlled-vocabulary select: "term - description", value =
+# term. The leading blank entry is what "not set" looks like in the assistant.
+dwc_vocab_choices <- function(catalog, lang = "en", include_skip = TRUE, skip_label = NULL) {
+    use_lang <- if (identical(lang, "pt")) "pt" else "en"
+    labels <- vapply(
+        catalog,
+        function(item) {
+            desc <- if (use_lang == "pt") item$desc_pt else item$desc_en
+            paste0(item$term, " - ", desc)
+        },
+        FUN.VALUE = character(1)
+    )
+    choices <- stats::setNames(dwc_vocab_terms(catalog), labels)
+    if (isTRUE(include_skip)) {
+        final_skip_label <- skip_label
+        if (is.null(final_skip_label) || !nzchar(as.character(final_skip_label))) {
+            final_skip_label <- if (identical(lang, "pt")) "-- N\u00E3o definir --" else "-- Not set --"
+        }
+        choices <- c(stats::setNames("", final_skip_label), choices)
+    }
+    choices
+}
+
+get_establishment_means_terms <- function() {
+    dwc_vocab_terms(establishment_means_vocab_catalog)
+}
+
+get_degree_of_establishment_terms <- function() {
+    dwc_vocab_terms(degree_of_establishment_vocab_catalog)
 }
 
 get_basis_of_record_term_choices <- function(lang = "en", include_skip = TRUE, with_description = TRUE, skip_label = NULL) {
