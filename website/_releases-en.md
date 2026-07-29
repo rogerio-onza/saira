@@ -2,6 +2,22 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.5</span>
+    <time class="release-date">2026-07-29</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong><code>establishmentMeans</code> and <code>degreeOfEstablishment</code> can now be filled for a whole spreadsheet, one answer per species.</strong> Both carry a TDWG controlled vocabulary (7 and 11 values) and describe the <strong>species</strong>, not the row. An assistant lists the distinct species in the column mapped to <code>scientificName</code>, with a record count for each, and asks for both values once per taxon. Species on the invasive alien list arrive pre-filled as <code>introduced</code>; the degree is never suggested, because it depends on the record. If you also map a column, its values win and the assistant only fills the blanks.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Name validation now flags invasive alien species.</strong> The Brazilian <strong>Instituto Hórus</strong> list (483 taxa, animals and plants) is bundled with the app, so the check is local, offline and instant. Taxa get an <strong>Invasive alien</strong> badge in the report, and an <strong>Invasive</strong> filter pill narrows Processed Names down to just those.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>The <code>dynamicProperties</code> card shows the JSON it will generate.</strong> Under the key editor you now see the object assembled for the first row (for example <code>{"cor":"Melânico"}</code>), refreshed on every key edit.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Switching the interface language no longer wipes your mapping.</strong> Changing between Portuguese and English re-read the uploaded file and handed the rest of the app a new table, which it correctly read as a fresh upload: the mapping was cleared, both assistants lost their answers and the caches were dropped.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>A mapping card always says what it did with the column you picked.</strong> When the column is mapped but its first rows are empty, the card says so explicitly instead of rendering nothing and looking exactly like an unmapped card.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Table and validation screens got faster.</strong> Labels are now resolved once per distinct value instead of once per row. Over 50,000 records: the coordinate table badges went from 1.9 s to 0.005 s, and the translation lookup is 5.5x faster.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The tutorials' downloadable sample is now Saíra's full demonstration dataset</strong>: 1,075 occurrences, 48 real Brazilian species across about 19 biomes, with deliberate imperfections that exercise the validations.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.4</span>
     <time class="release-date">2026-07-01</time>
   </header>
