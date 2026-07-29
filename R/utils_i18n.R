@@ -4,7 +4,18 @@
 # Version: 1.1
 
 # Resolve dictionary from current environment or package namespace
+#
+# The warm cache is read first: tr() calls this once per invocation and runs
+# inside per-row renderers, where the two exists() scans below dominate the
+# cost. They stay as the cold path (cache empty: partial test loads, or before
+# .onLoad() has warmed it), so the legacy environment/namespace override still
+# resolves when it is the only source available.
 resolve_i18n_dict <- function() {
+    cached <- i18n_cache$get()
+    if (!is.null(cached)) {
+        return(cached)
+    }
+
     if (exists("i18n_dict", inherits = TRUE)) {
         dict <- get("i18n_dict", inherits = TRUE)
         if (is.list(dict)) {
@@ -40,17 +51,22 @@ resolve_i18n_dict <- function() {
 tr <- function(key, lang = "en") {
     dict <- resolve_i18n_dict()
 
+    # Direct [[ lookup instead of `key %in% names(dict)`: names() materialises
+    # an 869-element character vector on every call. dict is a list, so [[
+    # returns NULL for an absent key instead of erroring.
+    entry <- dict[[key]]
+
     # Fallback to key placeholder if key not found
-    if (!key %in% names(dict)) {
+    if (is.null(entry)) {
         warning(paste("Translation key not found:", key))
         return(paste0("[", key, "]"))
     }
 
-    translation <- dict[[key]][[lang]]
+    translation <- entry[[lang]]
 
     if (is.null(translation)) {
         warning(paste("Translation missing for", key, "in", lang))
-        return(dict[[key]][["en"]]) # Fallback to English
+        return(entry[["en"]]) # Fallback to English
     }
 
     return(translation)

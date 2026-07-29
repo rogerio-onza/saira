@@ -267,3 +267,25 @@ test_that("render_review_name_em: escapes HTML special characters", {
     expect_false(grepl("<script>", as.character(out), fixed = TRUE))
     expect_true(grepl("&lt;script&gt;", as.character(out), fixed = TRUE))
 })
+
+test_that("normalize_status_vec matches the scalar helper element by element", {
+    values <- c(
+        "accepted", "SYNONYM", "unresolved", "invalid", "not_found",
+        "ambiguous", "ignored", "", "bogus", "accepted"
+    )
+    expected <- vapply(
+        values, saira:::normalize_status_for_filter,
+        FUN.VALUE = character(1), USE.NAMES = FALSE
+    )
+
+    expect_equal(saira:::normalize_status_vec(values), expected)
+})
+
+test_that("normalize_status_vec handles empty, NA and factor inputs", {
+    expect_equal(saira:::normalize_status_vec(character(0)), character(0))
+    expect_equal(saira:::normalize_status_vec(NA_character_), "not_found")
+    expect_equal(
+        saira:::normalize_status_vec(factor(c("accepted", "invalid"))),
+        c("accepted", "ignored")
+    )
+})

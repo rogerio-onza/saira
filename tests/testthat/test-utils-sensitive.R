@@ -794,3 +794,22 @@ testthat::test_that("bundled sensitive_species.rds carries the source column", {
             c("Portaria 148/2022", "Portaria 1.704/2026", "Portaria 1.667/2026")
     ))
 })
+
+testthat::test_that("sensitive_reason_statement preserves per-row order with repeats", {
+    tiers <- c("low", "extreme", "not_sensitive", "extreme", "high", "low")
+    out <- saira:::sensitive_reason_statement(tiers, "en")
+
+    testthat::expect_length(out, length(tiers))
+    # Same tier always yields the same statement, regardless of position.
+    testthat::expect_equal(out[[1]], out[[6]])
+    testthat::expect_equal(out[[2]], out[[4]])
+    testthat::expect_equal(out[[3]], "")
+    testthat::expect_equal(out[[2]], saira:::sensitive_reason_statement("extreme", "en"))
+    testthat::expect_equal(out[[5]], saira:::sensitive_reason_statement("high", "en"))
+})
+
+testthat::test_that("sensitive_reason_statement returns character(0) for empty input", {
+    testthat::expect_equal(
+        saira:::sensitive_reason_statement(character(0), "en"), character(0)
+    )
+})

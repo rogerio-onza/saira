@@ -262,6 +262,28 @@ normalize_status_for_filter <- function(status_value) {
     "not_found"
 }
 
+#' Vectorized companion to normalize_status_for_filter()
+#'
+#' Same mapping, resolved once per distinct status instead of once per row. A
+#' status vector has at most a handful of distinct values whatever the dataset
+#' size, so this turns an O(rows) loop into O(distinct statuses).
+#'
+#' @param status_values Character vector of raw status values
+#' @return Character vector of canonical keys, same length as the input
+#' @noRd
+normalize_status_vec <- function(status_values) {
+    values <- as.character(status_values)
+    if (length(values) == 0L) {
+        return(character(0))
+    }
+    uniq <- unique(values)
+    resolved <- vapply(
+        uniq, normalize_status_for_filter,
+        FUN.VALUE = character(1), USE.NAMES = FALSE
+    )
+    resolved[match(values, uniq)]
+}
+
 #' Test if status represents an unresolved problem
 #' @param status_key Status value (raw or canonical)
 #' @return Logical

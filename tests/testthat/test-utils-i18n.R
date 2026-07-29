@@ -355,3 +355,29 @@ testthat::test_that("all dictionary keys contain non-empty pt and en translation
         )
     }
 })
+
+testthat::test_that("resolve_i18n_dict serves the loader dictionary from cache", {
+    loaded <- saira:::load_i18n_dict()
+    resolved <- saira:::resolve_i18n_dict()
+
+    testthat::expect_identical(resolved, loaded)
+})
+
+testthat::test_that("tr resolves both languages and both fallback paths", {
+    testthat::expect_true(nzchar(saira::tr("nav_home", "pt")))
+    testthat::expect_true(nzchar(saira::tr("nav_home", "en")))
+
+    # Unknown key: warns and returns the bracketed placeholder.
+    testthat::expect_warning(
+        placeholder <- saira::tr("saira_key_that_does_not_exist", "pt"),
+        "Translation key not found"
+    )
+    testthat::expect_equal(placeholder, "[saira_key_that_does_not_exist]")
+
+    # Known key, unknown language: warns and falls back to English.
+    testthat::expect_warning(
+        fallback <- saira::tr("nav_home", "de"),
+        "Translation missing"
+    )
+    testthat::expect_equal(fallback, saira::tr("nav_home", "en"))
+})

@@ -294,10 +294,18 @@ sensitive_reason_statement <- function(tier, lang = "en") {
               high    = "sensitive_reason_cat2",
               medium  = "sensitive_reason_cat3",
               low     = "sensitive_reason_cat4")
-    vapply(as.character(tier), function(t) {
+    values <- as.character(tier)
+    if (length(values) == 0L) {
+        return(character(0))
+    }
+    # There are at most 5 distinct tiers whatever the row count, so resolve the
+    # statement once each and expand by index instead of calling tr() per row.
+    uniq <- unique(values)
+    resolved <- vapply(uniq, function(t) {
         k <- unname(keys[t])
         if (is.na(k)) "" else tr(k, lang)
     }, FUN.VALUE = character(1), USE.NAMES = FALSE)
+    resolved[match(values, uniq)]
 }
 
 # Resolve a per-row Chapman tier from the `generalization` argument of
