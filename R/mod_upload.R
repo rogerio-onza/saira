@@ -432,6 +432,18 @@ mod_upload_server <- function(id, lang_r) {
         raw_data <- shiny::reactive({
             shiny::req(input$file)
 
+            # The language is read ONCE, isolated: it only picks the wording of
+            # notifications and errors, and no parsed value depends on it (every
+            # lang argument below lands in a tr() for a message). Taking a
+            # reactive dependency on lang_r() here made a language switch
+            # invalidate this reactive, re-read the uploaded file from disk and
+            # emit a NEW data frame -- which observeEvent(raw_data_r()) in
+            # mod_mapping legitimately reads as a fresh upload, wiping the whole
+            # mapping, both assistants and the caches. A notification is a
+            # point-in-time event; it should not be re-emitted in another
+            # language later either.
+            lang <- shiny::isolate(lang_r())
+
             kind <- file_kind()
             if (identical(kind, "invalid")) {
                 msg_key <- if (identical(input$upload_mode %||% "csv", "camtrap")) {
@@ -440,7 +452,7 @@ mod_upload_server <- function(id, lang_r) {
                     "err_invalid_format"
                 }
                 shiny::validate(
-                    shiny::need(FALSE, tr(msg_key, lang_r()))
+                    shiny::need(FALSE, tr(msg_key, lang))
                 )
             }
             if (identical(kind, "guide")) {
@@ -452,17 +464,17 @@ mod_upload_server <- function(id, lang_r) {
             if (identical(kind, "camtrap_dp")) {
                 return(tryCatch(
                     {
-                        pkg <- read_camtrap_dp_zip(input$file$datapath, lang = lang_r())
-                        df <- convert_camtrap_to_dwc_occurrence(pkg, lang = lang_r())
+                        pkg <- read_camtrap_dp_zip(input$file$datapath, lang = lang)
+                        df <- convert_camtrap_to_dwc_occurrence(pkg, lang = lang)
                         src <- attr(df, "saira_camtrap_source")
                         src_label <- switch(
                             src %||% "",
-                            "wildlife_insights_zip" = tr("upload_camtrap_source_wi", lang_r()),
-                            "camtrap_csv_zip" = tr("upload_camtrap_source_camtrap", lang_r()),
-                            "datapackage_zip" = tr("upload_camtrap_source_camtrap", lang_r()),
+                            "wildlife_insights_zip" = tr("upload_camtrap_source_wi", lang),
+                            "camtrap_csv_zip" = tr("upload_camtrap_source_camtrap", lang),
+                            "datapackage_zip" = tr("upload_camtrap_source_camtrap", lang),
                             ""
                         )
-                        msg <- sprintf(tr("upload_camtrap_success", lang_r()), nrow(df))
+                        msg <- sprintf(tr("upload_camtrap_success", lang), nrow(df))
                         if (nzchar(src_label)) {
                             msg <- paste0(msg, " (", src_label, ")")
                         }
@@ -473,7 +485,7 @@ mod_upload_server <- function(id, lang_r) {
                     },
                     error = function(e) {
                         shiny::showNotification(
-                            paste(tr("err_camtrap_invalid_zip", lang_r()), ":", e$message),
+                            paste(tr("err_camtrap_invalid_zip", lang), ":", e$message),
                             type = "error",
                             duration = 8
                         )
@@ -486,7 +498,7 @@ mod_upload_server <- function(id, lang_r) {
                 {
                     df <- read_biodiversity_csv(input$file$datapath)
                     shiny::showNotification(
-                        tr("success_upload", lang_r()),
+                        tr("success_upload", lang),
                         type = "message",
                         duration = 3
                     )
@@ -494,7 +506,7 @@ mod_upload_server <- function(id, lang_r) {
                 },
                 error = function(e) {
                     shiny::showNotification(
-                        paste(tr("err_read_failed", lang_r()), ":", e$message),
+                        paste(tr("err_read_failed", lang), ":", e$message),
                         type = "error",
                         duration = 5
                     )
