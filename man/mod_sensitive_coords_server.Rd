@@ -28,6 +28,9 @@ sensitivity decisions from Validation > Names (researcher mark/unmark).}
 correction payload, applied so the preview matches the published point.}
 
 \item{country_fill_payload_r}{Optional reactive country-fill payload.}
+
+\item{reset_signal_r}{Optional reactive reset signal from the mapping module.
+When it fires, module-local state and inputs are cleared.}
 }
 \value{
 Reactive list `{ levels, justification, review_date, enabled }`

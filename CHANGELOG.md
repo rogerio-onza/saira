@@ -7,6 +7,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.9.6] - 2026-07-29
+
+Maintenance release. Nothing changes for the user: the app behaves exactly as in 0.9.5. This clears the warnings `R CMD check` had accumulated over several releases and makes the editor's linter agree with the project's own conventions.
+
+### Changed
+- **`R CMD check` no longer reports non-ASCII characters in the package code.** Seventeen string literals across five files carried raw `—`, `·`, `→` and `°` glyphs, which is what makes a package non-portable. They are now written as `\uxxxx` escapes, which R parses into byte-for-byte identical characters, so every label, separator and arrow on screen stays exactly as it was. Comments were deliberately left untouched: the check tolerates non-ASCII there, and the package has legitimate accented Portuguese comments.
+- **Editor lint warnings now match the project's actual style.** The repository had no `.lintr`, so `lintr` fell back to its defaults (2-space indentation, 80-character lines) against a codebase that is 4-space with longer lines, and reported thousands of false positives. A `.lintr` now sets `indent = 4` and a 120-character limit, consistent with the existing `.editorconfig`. On a four-file sample the reported warnings drop from 1165 to 177, and what survives is genuine rather than noise.
+- **Five wrapped `if` conditions in the coordinate module are now indented apart from their body.** In `mod_validate_coords.R` the continuation lines of four multi-line conditions sat at the same depth as the code they guard, so reading the block gave no visual cue where the condition ended. They now use the double indent the style guide prescribes. Whitespace only: `git diff -w` shows no change.
+
+### Documentation
+- **Five roxygen documentation warnings cleared.** `build_mapping_guide_txt()` (`constants`) and the sensitive-coordinates, coordinate-validation and name-validation module servers (`reset_signal_r`) had arguments that were never documented, and the help page for `mod_export_server()` was missing `conservation_payload_r`. All five help pages now match their function signatures.
+- **`devtools::document()` now runs without complaints.** `build_establishment_assistant_button()` carried a duplicate `@noRd` tag placed above its title, which roxygen rejected on every run. The tag at the end of the block was already doing the job, so the stray one was removed and no generated file changed.
+
+### Tests
+- **New `test-ascii-source.R` guards against non-ASCII creeping back into R code.** It parses each source file and inspects only code tokens, skipping comments, which mirrors what `R CMD check` actually looks at. A plain text sweep would have failed on the tolerated Portuguese comments.
+
 ## [0.9.5] - 2026-07-29
 
 ### Added

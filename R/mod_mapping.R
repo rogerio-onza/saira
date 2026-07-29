@@ -1687,7 +1687,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             lang <- lang_r()
             rows <- lapply(names(dups), function(col) {
                 shiny::tags$li(
-                    shiny::tags$strong(col), " → ",
+                    shiny::tags$strong(col), " \u2192 ",
                     paste(dups[[col]], collapse = ", ")
                 )
             })

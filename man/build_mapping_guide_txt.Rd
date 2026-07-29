@@ -31,6 +31,9 @@ fonte (multi-coluna serializa como "colA + colB").}
 (`"user_supplied"`, `"stable_v5"`, `"stable_v5_with_random_fallback"`,
 `"random_v4"`). When supplied, an "Identifier Strategy" section is
 appended explaining the consequence for GBIF republication.}
+
+\item{constants}{Optional named list: name = DwC term, value = typed constant
+applied to every row. Rendered as the guide's `constants` section.}
 }
 \value{
 character vector (uma entrada por linha), encoding UTF-8.

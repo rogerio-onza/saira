@@ -56,6 +56,8 @@ mod_sensitive_coords_ui <- function(id) {
 #' @param coords_correction_payload_r Optional reactive transposed-coordinate
 #'   correction payload, applied so the preview matches the published point.
 #' @param country_fill_payload_r Optional reactive country-fill payload.
+#' @param reset_signal_r Optional reactive reset signal from the mapping module.
+#'   When it fires, module-local state and inputs are cleared.
 #' @return Reactive list `{ levels, justification, review_date, enabled }`
 #'   consumed by the export (Preview tab).
 #' @export
@@ -166,7 +168,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             ok <- n_rec > 0L
             if (!any(ok)) return(NULL)
             cats_ok <- cats[ok]
-            cats_ok[is.na(cats_ok) | !nzchar(cats_ok)] <- "—"
+            cats_ok[is.na(cats_ok) | !nzchar(cats_ok)] <- "\u2014"
             out <- data.frame(
                 scientificName = sens[ok], category = cats_ok,
                 code = cat_code(cats_ok), n = n_rec[ok],
@@ -305,7 +307,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 sprintf("~%s km", format(round(g * 111.32), trim = TRUE))
             }
             paste0(
-                tr(paste0("sensitive_card_num_", tier), lang), " · ",
+                tr(paste0("sensitive_card_num_", tier), lang), " \u00b7 ",
                 tr(paste0("sensitive_card_impact_", tier), lang), " ", scale_txt
             )
         }
@@ -323,7 +325,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             } else {
                 sprintf("~%s km", format(round(g * 111.32), trim = TRUE))
             }
-            paste0(tr(paste0("sensitive_card_num_", tier), lang), " · ", scale_txt)
+            paste0(tr(paste0("sensitive_card_num_", tier), lang), " \u00b7 ", scale_txt)
         }
 
         # MMA threat-category pill (colour differs per category via CSS).
@@ -377,7 +379,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             lang <- lang_r()
             if (length(ovr) == 0L) return(NULL)
             items <- lapply(names(ovr), function(s) {
-                shiny::tags$li(shiny::tags$em(s), " — ", badge_for_tier(ovr[[s]], lang))
+                shiny::tags$li(shiny::tags$em(s), " \u2014 ", badge_for_tier(ovr[[s]], lang))
             })
             shiny::tagList(
                 shiny::tags$ul(class = "sp-override-list", items),
@@ -665,7 +667,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     class = "sc-sp-row",
                     threat_pill(ov_view$code[i], ov_view$category[i]),
                     shiny::span(class = "sc-sp-name", shiny::tags$em(sp)),
-                    shiny::span(class = "sc-sp-arrow", "→"),
+                    shiny::span(class = "sc-sp-arrow", "\u2192"),
                     outcome
                 )
             })
@@ -811,8 +813,8 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             crossing <- crossing[!duplicated(crossing$scientificName), , drop = FALSE]
             items <- lapply(seq_len(nrow(crossing)), function(i) {
                 shiny::tags$li(
-                    shiny::tags$em(crossing$scientificName[i]), " — ",
-                    sprintf("%s → %s", crossing$country_orig[i] %||% "?", crossing$country_gen[i] %||% "?")
+                    shiny::tags$em(crossing$scientificName[i]), " \u2014 ",
+                    sprintf("%s \u2192 %s", crossing$country_orig[i] %||% "?", crossing$country_gen[i] %||% "?")
                 )
             })
             shiny::div(
@@ -903,10 +905,10 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 g <- sensitive_generalization_grid(level)
                 if (is.na(g)) return(tr("sensitive_grid_unmasked", lang))
                 km <- round(g * 111.32, 1)
-                sprintf("%s° (~%s km)", format(g, trim = TRUE, scientific = FALSE), format(km, trim = TRUE))
+                sprintf("%s\u00b0 (~%s km)", format(g, trim = TRUE, scientific = FALSE), format(km, trim = TRUE))
             }
             spatial_for <- function(level) {
-                if (identical(level, "not_sensitive")) return("—")
+                if (identical(level, "not_sensitive")) return("\u2014")
                 tr(paste0("sensitive_card_impact_", level), lang)
             }
             table_rows <- lapply(sensitive_generalization_levels(), function(level) {

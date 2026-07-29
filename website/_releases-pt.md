@@ -2,6 +2,16 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.6</span>
+    <time class="release-date">2026-07-29</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>Versão de manutenção, sem nenhuma mudança no aplicativo.</strong> O Saíra 0.9.6 se comporta exatamente como o 0.9.5. A limpeza foi toda interna: avisos de empacotamento e de documentação que vinham acumulando desde versões anteriores, e a configuração do analisador de código alinhada ao estilo real do projeto. As notas completas estão no lançamento correspondente no GitHub.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.5</span>
     <time class="release-date">2026-07-29</time>
   </header>

@@ -53,6 +53,8 @@ mod_validate_coords_ui <- function(id) {
 #' @param mapped_data_r Reactive data frame with mapped data
 #' @param lang_r Reactive language value
 #' @param validation_gate_r Optional lightweight coordinate gate reactive
+#' @param reset_signal_r Optional reactive reset signal from the mapping module.
+#'   When it fires, module-local state and inputs are cleared.
 #' @return Reactive coordinate validation data frame
 #' @export
 mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL, reset_signal_r = NULL) {
@@ -872,7 +874,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     error = function(e) NULL
                 )
                 if (!is.null(tr_res) && isTRUE(tr_res$available) &&
-                    tr_res$n_corrected > 0L && "occurrenceID" %in% names(df)) {
+                        tr_res$n_corrected > 0L && "occurrenceID" %in% names(df)) {
                     ci <- which(tr_res$corrected)
                     rv$transposed_table <- data.frame(
                         occurrenceID = as.character(df$occurrenceID)[ci],
@@ -900,7 +902,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     error = function(e) NULL
                 )
                 if (!is.null(cf_res) && isTRUE(cf_res$available) &&
-                    cf_res$n_filled > 0L && "occurrenceID" %in% names(df)) {
+                        cf_res$n_filled > 0L && "occurrenceID" %in% names(df)) {
                     fi <- which(cf_res$filled)
                     rv$country_fill_table <- data.frame(
                         occurrenceID = as.character(df$occurrenceID)[fi],
@@ -925,7 +927,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     error = function(e) NULL
                 )
                 if (!is.null(sf_res) && isTRUE(sf_res$available) &&
-                    sf_res$n > 0L && "occurrenceID" %in% names(df)) {
+                        sf_res$n > 0L && "occurrenceID" %in% names(df)) {
                     si <- which(sf_res$applies)
                     rv$swap_fill_table <- data.frame(
                         occurrenceID = as.character(df$occurrenceID)[si],
@@ -941,8 +943,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 conversion <- attr(result, "conversion_failures")
                 total_conversion_failures <- suppressWarnings(as.integer(conversion$total))
                 if (length(total_conversion_failures) == 1L &&
-                    !is.na(total_conversion_failures) &&
-                    total_conversion_failures > 0L) {
+                        !is.na(total_conversion_failures) &&
+                        total_conversion_failures > 0L) {
                     notify_saira(
                         message = sprintf(tr("validate_coords_conversion_warning", lang_r()), total_conversion_failures),
                         type = "warning",
@@ -982,7 +984,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     shiny::div(class = "coords-transposed-ex-country", ex$country),
                     shiny::div(sprintf("(%.2f, %.2f)", ex$lat_old, ex$lon_old)),
                     shiny::div(class = "coords-transposed-ex-arrow",
-                               sprintf("→ (%.2f, %.2f)", ex$decimalLatitude, ex$decimalLongitude))
+                               sprintf("\u2192 (%.2f, %.2f)", ex$decimalLatitude, ex$decimalLongitude))
                 ),
                 if (n > 1L) {
                     shiny::p(class = "coords-transposed-more",
@@ -1055,7 +1057,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     class = "coords-transposed-example",
                     shiny::div(sprintf("(%.2f, %.2f)", ex$lat_old, ex$lon_old)),
                     shiny::div(class = "coords-transposed-ex-arrow",
-                               sprintf("→ (%.2f, %.2f) · %s",
+                               sprintf("\u2192 (%.2f, %.2f) \u00b7 %s",
                                        ex$decimalLatitude, ex$decimalLongitude, ex$country))
                 ),
                 if (n > 1L) {
@@ -1113,7 +1115,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 shiny::div(
                     class = "coords-transposed-example",
                     shiny::div(sprintf("(%.2f, %.2f)", ex$lat, ex$lon)),
-                    shiny::div(class = "coords-transposed-ex-arrow", sprintf("→ %s", ex$country))
+                    shiny::div(class = "coords-transposed-ex-arrow", sprintf("\u2192 %s", ex$country))
                 ),
                 if (n > 1L) {
                     shiny::p(class = "coords-transposed-more",

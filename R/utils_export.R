@@ -365,6 +365,8 @@ write_xlsx_text_only <- function(df, path) {
 #'   (`"user_supplied"`, `"stable_v5"`, `"stable_v5_with_random_fallback"`,
 #'   `"random_v4"`). When supplied, an "Identifier Strategy" section is
 #'   appended explaining the consequence for GBIF republication.
+#' @param constants Optional named list: name = DwC term, value = typed constant
+#'   applied to every row. Rendered as the guide's `constants` section.
 #' @return character vector (uma entrada por linha), encoding UTF-8.
 #' @export
 build_mapping_guide_txt <- function(map_values,
