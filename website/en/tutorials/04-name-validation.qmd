@@ -156,6 +156,30 @@ Here the step only **flags** what is sensitive. The actual protection of the coo
 The bundled list comes from Brazil's Ministry of the Environment official lists: **flora** from [**Portaria MMA nº 148, of 7 June 2022**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733); **terrestrial fauna** from [**Portaria MMA nº 1.704, of 16 June 2026**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917); and **aquatic fauna** (fish and invertebrates) from [**Portaria GM/MMA nº 1.667, of 27 April 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623).
 :::
 
+## Invasive alien species (Instituto Hórus)
+
+Beyond the threatened list, Saíra compares every taxon against the **Brazilian invasive alien species list** from **Instituto Hórus**, 483 taxa covering animals and plants. It is **bundled with the app** as well: the check is local, offline and instant.
+
+Taxa on the list get an **Invasive alien** badge next to the name in the report, and a line above the table reports how many records are affected. The <span class="term">Invasive</span> **filter pill** joins the others above the processed names and narrows the list down to just those taxa, which helps when the list is long.
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/8.7-relatorio-nomes-especie-invasora-EN.png" alt="Name report with the Invasive alien badge next to a taxon and the Invasive filter pill above the table">
+  <figcaption><b>Figure 8.</b> The <span class="term">Invasive alien</span> badge in the report and the <span class="term">Invasive</span> pill, which filters the table down to those taxa.</figcaption>
+</figure>
+```
+
+Matching uses **exactly the same name normalization** as the validator, so authorship and qualifiers do not defeat it: <span class="term">Felis catus (Linnaeus, 1758)</span> is recognized.
+
+::: {.callout-note}
+## Invasive is not the same as threatened, and the pills differ too
+The other pills filter by **validation status** (accepted, synonym, not found…), which changes as you review names. The <span class="term">Invasive</span> pill filters by the **species list**, so your reviews do not affect it. A taxon can be in both conditions or in neither: they are independent lists with opposite purposes.
+
+Being on this list means the taxon is **alien and invasive in Brazil**, which is exactly the input for the automatic <span class="term">establishmentMeans</span> suggestion in **[mapping](03-dwc-mapping.qmd)**: those species reach the assistant pre-filled as `introduced`. The list deliberately says **nothing** about <span class="term">degreeOfEstablishment</span>, which depends on the record: a captive animal and a feral one are the same species.
+:::
+
+If the list is missing or unreadable, validation keeps working and simply stops flagging, with a warning, rather than breaking.
+
 ## Conservation status goes to the export
 
 ::: {.callout-important}

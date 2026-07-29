@@ -162,6 +162,69 @@ The term <span class="term">basisOfRecord</span> describes the nature of the rec
 </figure>
 ```
 
+## The establishmentMeans and degreeOfEstablishment assistant
+
+<span class="term">establishmentMeans</span> says **how the taxon got there** (native, introduced, vagrant…) and <span class="term">degreeOfEstablishment</span> says **what situation it is in** (captive, cultivated, released, invasive…). Both carry a TDWG controlled vocabulary, 7 and 11 values, and both describe the **species**, not the row. Filling that in by hand across thousands of records is not realistic.
+
+So this assistant works **per species**, not per column value like the <span class="term">basisOfRecord</span> one. It lists the distinct species found in the column mapped to <span class="term">scientificName</span>, with a record count for each and ordered from the answer that covers the most data to the one that covers the least, and asks for both values **once per taxon**. The answer is expanded to every record of that species.
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/5.2-card-assistente-establishment-EN.png" alt="establishmentMeans card with the assistant button, next to the degreeOfEstablishment card carrying the note that points to it">
+  <figcaption><b>Figure 10.</b> The button sits on the <span class="term">establishmentMeans</span> card and is always shown, even with no column selected: the assistant exists precisely for people whose spreadsheet has no such column.</figcaption>
+</figure>
+```
+
+::: {.callout-note}
+## `scientificName` must be mapped
+The assistant works over the species in the column mapped to <span class="term">scientificName</span>. Without that mapping it notifies you and does not open.
+:::
+
+Species on the invasive alien species list (the same one used in **[name validation](04-name-validation.qmd)**) arrive **pre-filled as `introduced`** and carry a badge inside the assistant. The **degree is never suggested**: by the TDWG definition it is a property of the **record**, not of the species. A captive <span class="term">Sus scrofa</span> and a feral one are the same species at different degrees, and only you know which case your data is.
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Species</th><th></th><th>establishmentMeans</th><th>degreeOfEstablishment</th></tr></thead>
+  <tbody>
+    <tr><td>Sus scrofa</td><td><span class="arrow">→</span></td><td>introduced</td><td>invasive</td></tr>
+    <tr><td>Canis familiaris</td><td><span class="arrow">→</span></td><td>introduced</td><td>released</td></tr>
+    <tr><td>Bos taurus</td><td><span class="arrow">→</span></td><td>introduced</td><td>captive</td></tr>
+    <tr><td>Panthera onca</td><td><span class="arrow">→</span></td><td>native</td><td>native</td></tr>
+  </tbody>
+</table>
+```
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/5.3-assistente-establishment-EN.png" alt="Assistant window listing unique species with record counts, two selectors per row and an invasive badge on listed species">
+  <figcaption><b>Figure 11.</b> One row per species, with the record count each answer covers. Both selectors offer the full controlled vocabulary with the TDWG definition next to each value.</figcaption>
+</figure>
+```
+
+### Your own data always wins
+
+If you **also** map a column to either term, the column's values are kept and the assistant only fills the rows you left blank. The two paths coexist deliberately: a half-filled column plus the assistant completing the rest is a real case.
+
+A species left unanswered comes out blank, and a term with no answers at all produces no column in the export. Saíra invents nothing.
+
+### The card shows what the assistant did
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/5.4-cards-establishment-preenchidos-EN.png" alt="Both cards after saving the assistant, with the mapped-field border, an ASSISTANT badge and the note reporting how many species were answered">
+  <figcaption><b>Figure 12.</b> After saving, the cards count as filled, with an <span class="term">ASSISTANT</span> badge and a note stating how many species were answered (and how many still have no degree).</figcaption>
+</figure>
+```
+
+The assistant button sits on the <span class="term">establishmentMeans</span> card **only**, because one window fills both terms. The <span class="term">degreeOfEstablishment</span> card still exists with its own column selector, which is how your own data wins there, plus a note pointing at the card that owns the assistant.
+
+A degree saved without a means is dropped: on its own it says nothing. The other way round, a means without a degree, Saíra **warns but never blocks**, with a running count while you work and a warning on save. Darwin Core does not require <span class="term">degreeOfEstablishment</span>, and a taxon whose degree is genuinely unknown must stay publishable.
+
+::: {.callout-note}
+## In the exported sheet both sit next to the name
+Both are **Occurrence** class terms, which would place them at the very front of the file, far from the species they describe. The export relocates them to the end of the **Taxon** block, just after <span class="term">vernacularName</span>: you open the file, see the scientific name and, right beside it, whether that species is native or introduced. Display order only, `meta.xml` still declares the real term URIs.
+:::
+
 ## Fixed values for the whole dataset
 
 Some terms describe the **whole dataset**, not each record. Instead of repeating the value in every row of your spreadsheet, tick **Use a fixed value** on the term's card and type the value once: Saíra writes it to **every row** at export.
@@ -185,11 +248,11 @@ Mapping a column and using a fixed value are alternatives (an **OR** separates t
 ```{=html}
 <figure class="shot">
   <img src="../../assets/img/8-valor-fixo-checkbox-EN.png" alt="rightsHolder card with the 'Use a fixed value' option ticked, revealing the text field and the warning strip">
-  <figcaption><b>Figure 10.</b> On an eligible term's card, tick <b>Use a fixed value</b> and type the value once.</figcaption>
+  <figcaption><b>Figure 13.</b> On an eligible term's card, tick <b>Use a fixed value</b> and type the value once.</figcaption>
 </figure>
 <figure class="shot">
   <img src="../../assets/img/8.1-valor-fixo-faixa-todas-linhas-EN.png" alt="Close-up of the warning strip stating the value fills every row of the field">
-  <figcaption><b>Figure 11.</b> The warning strip makes clear the value fills <b>every row</b> of that field.</figcaption>
+  <figcaption><b>Figure 14.</b> The warning strip makes clear the value fills <b>every row</b> of that field.</figcaption>
 </figure>
 ```
 
@@ -197,6 +260,26 @@ Mapping a column and using a fixed value are alternatives (an **OR** separates t
 ## Terms not shown by default
 <span class="term">references</span>, <span class="term">bibliographicCitation</span> and <span class="term">geodeticDatum</span> are not in the base set of cards. Add them with **Add term** (see above) and the fixed-value option appears on the card as soon as the term is added. <span class="term">countryCode</span> is filled automatically during coordinate validation, and <span class="term">basisOfRecord</span> has its own assistant, so those two do not use a fixed value.
 :::
+
+## dynamicProperties: what the standard terms do not cover
+
+Not every measurement fits a Darwin Core term. Coat colour, apparent sex, reproductive condition, weight, an internal project code: Darwin Core reserves <span class="term">dynamicProperties</span> for these, in a single JSON-formatted field.
+
+On the <span class="term">dynamicProperties</span> card you pick the columns you want to carry over and set the **key** for each one. Saíra assembles the JSON object from those keys, one entry per column, and the card shows **the result assembled for the first row**, updating as you edit the keys. You can check the output right there instead of finding out at export time.
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/6.1-card-dynamicproperties-previa-EN.png" alt="dynamicProperties card with the per-column key editor and, below it, the JSON preview assembled for the first row">
+  <figcaption><b>Figure 15.</b> The key editor and, underneath, the JSON assembled for the first row (for example <code>{"colour":"melanic"}</code>), refreshed on every key edit.</figcaption>
+</figure>
+```
+
+::: {.callout-note}
+## A card always says what it did with your column
+The example line under the selector (<code>e.g.: Panthera onca</code>) shows what Saíra read from the column you picked. When the column is mapped but its first rows are empty, the card says so explicitly instead of rendering nothing, so that **"mapped and empty"** never looks like **"not mapped"**. The exported cell stays blank, which is the Darwin Core convention for missing information.
+:::
+
+Conservation status (MMA and IUCN categories) is also written into <span class="term">dynamicProperties</span>, but by a different route: it comes from **[name validation](04-name-validation.qmd)** and is added without erasing the keys you set here. See **[export](07-preview-export.qmd)**.
 
 ## Unmapped columns
 

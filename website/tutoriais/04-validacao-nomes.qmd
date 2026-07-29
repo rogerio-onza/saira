@@ -156,6 +156,30 @@ Aqui a etapa apenas **sinaliza** o que é sensível. A proteção efetiva das co
 A lista embutida vem das listas oficiais do Ministério do Meio Ambiente: a **flora** pela [**Portaria MMA nº 148, de 7 de junho de 2022**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733); a **fauna terrestre** pela [**Portaria MMA nº 1.704, de 16 de junho de 2026**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917); e a **fauna aquática** (peixes e invertebrados) pela [**Portaria GM/MMA nº 1.667, de 27 de abril de 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623).
 :::
 
+## Espécies exóticas invasoras (Instituto Hórus)
+
+Além da lista de ameaçadas, o Saíra compara cada táxon com a **lista brasileira de espécies exóticas invasoras** do **Instituto Hórus**, com 483 táxons entre animais e plantas. Ela também vem **embutida no app**: a verificação é local, offline e instantânea.
+
+Os táxons da lista recebem a etiqueta **Exótica invasora** ao lado do nome no relatório, e uma linha acima da tabela informa quantos registros estão nessa condição. A **pílula de filtro** <span class="term">Invasoras</span> se junta às demais acima dos nomes processados e isola só esses táxons, o que ajuda quando a lista é longa.
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/8.7-relatorio-nomes-especie-invasora.png" alt="Relatório de nomes com a etiqueta Exótica invasora ao lado de um táxon e a pílula de filtro Invasoras acima da tabela">
+  <figcaption><b>Figura 8.</b> A etiqueta <span class="term">Exótica invasora</span> no relatório e a pílula <span class="term">Invasoras</span>, que filtra a tabela para esses táxons.</figcaption>
+</figure>
+```
+
+O casamento usa **exatamente a mesma normalização de nomes** da validação, então autoria e qualificadores não atrapalham: <span class="term">Felis catus (Linnaeus, 1758)</span> é reconhecido.
+
+::: {.callout-note}
+## Invasora é diferente de ameaçada, e as duas pílulas são diferentes
+As outras pílulas filtram por **situação da validação** (aceito, sinônimo, não encontrado…), que muda conforme você revisa os nomes. A pílula <span class="term">Invasoras</span> filtra pela **lista de espécies**, então ela não é afetada pelas suas revisões. Um táxon pode estar nas duas condições ou em nenhuma: são listas independentes, com finalidades opostas.
+:::
+
+Estar nessa lista significa que o táxon é **exótico e invasor no Brasil**, o que é exatamente o insumo da sugestão automática de <span class="term">establishmentMeans</span> no **[mapeamento](03-mapeamento-dwc.qmd)**: essas espécies chegam ao assistente já pré-preenchidas como `introduced`. A lista deliberadamente **não** diz nada sobre <span class="term">degreeOfEstablishment</span>, que depende do registro: um animal em cativeiro e um assilvestrado são a mesma espécie.
+
+Se a lista estiver ausente ou ilegível, a validação continua funcionando normalmente e apenas deixa de sinalizar, com um aviso, em vez de quebrar.
+
 ## O status de conservação vai para a exportação
 
 ::: {.callout-important}
