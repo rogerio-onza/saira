@@ -169,17 +169,17 @@ help_refs_card <- function(lang) {
     refs <- list(
         list(
             title = "Current Best Practices for Generalizing Sensitive Species Occurrence Data",
-            authors = "Chapman (2020) · GBIF",
+            authors = "Chapman (2020) \u00b7 GBIF",
             href = "https://doi.org/10.15468/doc-5jp4-5g10"
         ),
         list(
             title = "Georeferencing Best Practices",
-            authors = "Chapman & Wieczorek (2020) · GBIF",
+            authors = "Chapman & Wieczorek (2020) \u00b7 GBIF",
             href = "https://doi.org/10.15468/doc-gg7h-s853"
         ),
         list(
             title = "Georeferencing Quick Reference Guide",
-            authors = "Zermoglio et al. (2020) · GBIF",
+            authors = "Zermoglio et al. (2020) \u00b7 GBIF",
             href = "https://doi.org/10.35035/e09p-h128"
         )
     )

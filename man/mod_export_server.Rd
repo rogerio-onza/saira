@@ -14,6 +14,7 @@ mod_export_server(
   country_fill_payload_r = NULL,
   sensitivity_payload_r = NULL,
   sensitive_generalization_payload_r = NULL,
+  conservation_payload_r = NULL,
   raw_data_r = NULL,
   map_values_r = NULL,
   custom_values_r = NULL,
@@ -36,6 +37,9 @@ download (defaults to `mapped_data_r`).}
 
 \item{sensitive_generalization_payload_r}{Optional reactive with the
 generalization decision (`levels`, `enabled`, ...).}
+
+\item{conservation_payload_r}{Optional reactive with the conservation-status
+selection (`include_mma`, `include_iucn`, `taxon_keys`).}
 
 \item{raw_data_r}{Optional reactive with the original uploaded data.frame.}
 

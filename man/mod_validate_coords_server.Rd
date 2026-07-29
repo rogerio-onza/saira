@@ -20,6 +20,9 @@ mod_validate_coords_server(
 \item{lang_r}{Reactive language value}
 
 \item{validation_gate_r}{Optional lightweight coordinate gate reactive}
+
+\item{reset_signal_r}{Optional reactive reset signal from the mapping module.
+When it fires, module-local state and inputs are cleared.}
 }
 \value{
 Reactive coordinate validation data frame

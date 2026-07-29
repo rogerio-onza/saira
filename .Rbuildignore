@@ -9,6 +9,7 @@
 ^\.github$
 ^\.agent$
 ^\.editorconfig$
+^\.lintr$
 ^\.gitattributes$
 ^\.gitignore$
 Zone\.Identifier$

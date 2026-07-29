@@ -333,7 +333,6 @@ build_basis_assistant_button <- function(current_val, ns, lang_r) {
     )
 }
 
-#' @noRd
 #' Assistant button, on the establishmentMeans card only.
 #'
 #' The assistant fills both establishment terms in one modal, so the button

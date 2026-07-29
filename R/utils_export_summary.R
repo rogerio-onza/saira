@@ -75,7 +75,7 @@ build_export_summary <- function(mapped_data,
                 sensitive_resolve(sp, sensitivity_payload)$category,
                 error = function(e) rep(NA_character_, length(sp))
             )
-            cats[is.na(cats) | !nzchar(cats)] <- "—"
+            cats[is.na(cats) | !nzchar(cats)] <- "\u2014"
             gen <- data.frame(
                 scientificName = sp, category = cats,
                 tier = unname(lv[keep]), stringsAsFactors = FALSE

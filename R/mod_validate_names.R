@@ -51,6 +51,8 @@ mod_validate_names_ui <- function(id) {
 #' @param mapped_data_r Reactive data frame with mapped data
 #' @param lang_r Reactive language value
 #' @param validation_gate_r Optional lightweight gate reactive from mapping module
+#' @param reset_signal_r Optional reactive reset signal from the mapping module.
+#'   When it fires, module-local state and inputs are cleared.
 #' @return Reactive validation report data frame
 #' @export
 mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL, reset_signal_r = NULL) {

@@ -11,6 +11,16 @@
 
 RELEASES = [
     {
+        "version": "0.9.6",
+        "date": "2026-07-29",
+        "pt": [
+            ("changed", "**Versão de manutenção, sem nenhuma mudança no aplicativo.** O Saíra 0.9.6 se comporta exatamente como o 0.9.5. A limpeza foi toda interna: avisos de empacotamento e de documentação que vinham acumulando desde versões anteriores, e a configuração do analisador de código alinhada ao estilo real do projeto. As notas completas estão no lançamento correspondente no GitHub."),
+        ],
+        "en": [
+            ("changed", "**Maintenance release, with no changes to the app.** Saíra 0.9.6 behaves exactly like 0.9.5. The cleanup is entirely internal: packaging and documentation warnings that had been accumulating since earlier versions, plus a linter configuration that now matches the project's real style. The full notes are on the corresponding GitHub release."),
+        ],
+    },
+    {
         "version": "0.9.5",
         "date": "2026-07-29",
         "pt": [

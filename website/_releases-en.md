@@ -2,6 +2,16 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.6</span>
+    <time class="release-date">2026-07-29</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Maintenance release, with no changes to the app.</strong> Saíra 0.9.6 behaves exactly like 0.9.5. The cleanup is entirely internal: packaging and documentation warnings that had been accumulating since earlier versions, plus a linter configuration that now matches the project's real style. The full notes are on the corresponding GitHub release.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.5</span>
     <time class="release-date">2026-07-29</time>
   </header>

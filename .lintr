@@ -1,0 +1,6 @@
+linters: linters_with_defaults(
+    indentation_linter(indent = 4),
+    line_length_linter(120)
+  )
+encoding: "UTF-8"
+exclusions: list("renv")
