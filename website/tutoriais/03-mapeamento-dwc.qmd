@@ -162,6 +162,69 @@ O termo <span class="term">basisOfRecord</span> descreve a natureza do registro 
 </figure>
 ```
 
+## O assistente de establishmentMeans e degreeOfEstablishment
+
+<span class="term">establishmentMeans</span> diz **como o táxon chegou ali** (nativo, introduzido, vagante…) e <span class="term">degreeOfEstablishment</span>, **em que situação ele está** (em cativeiro, cultivado, solto, invasor…). São vocabulários controlados do TDWG, com 7 e 11 valores, e descrevem a **espécie**, não a linha.
+
+Por isso o assistente pergunta **uma vez por táxon**, não por valor de coluna: ele lista as espécies distintas da coluna mapeada em <span class="term">scientificName</span>, ordenadas pelo número de registros que cada uma cobre, e expande sua resposta para todos os registros daquela espécie.
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/5.2-card-assistente-establishment.png" alt="Card establishmentMeans sem coluna escolhida, com o selo ASSISTENTE e o botão do assistente destacados em verde">
+  <figcaption><b>Figura 10.</b> O botão fica no card de <span class="term">establishmentMeans</span> e aparece sempre, mesmo sem coluna escolhida: o assistente serve justamente para quem não tem essas colunas na planilha.</figcaption>
+</figure>
+```
+
+::: {.callout-note}
+## É preciso ter `scientificName` mapeado
+O assistente trabalha sobre as espécies da coluna mapeada em <span class="term">scientificName</span>. Sem esse mapeamento ele avisa e não abre.
+:::
+
+Espécies que estão na lista de exóticas invasoras (a mesma usada na **[validação de nomes](04-validacao-nomes.qmd)**) já chegam **pré-preenchidas com `introduced`** e marcadas com um selo dentro do assistente. O **grau nunca é sugerido**: pela definição do TDWG ele é propriedade do **registro**, não da espécie. Um <span class="term">Sus scrofa</span> em cativeiro e um javali assilvestrado são a mesma espécie em graus diferentes, e só você sabe qual é o caso do seu dado.
+
+```{=html}
+<table class="maptable">
+  <thead><tr><th>Espécie</th><th></th><th>establishmentMeans</th><th>degreeOfEstablishment</th></tr></thead>
+  <tbody>
+    <tr><td>Sus scrofa</td><td><span class="arrow">→</span></td><td>introduced</td><td>invasive</td></tr>
+    <tr><td>Canis familiaris</td><td><span class="arrow">→</span></td><td>introduced</td><td>released</td></tr>
+    <tr><td>Bos taurus</td><td><span class="arrow">→</span></td><td>introduced</td><td>captive</td></tr>
+    <tr><td>Panthera onca</td><td><span class="arrow">→</span></td><td>native</td><td>native</td></tr>
+  </tbody>
+</table>
+```
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/5.3-assistente-establishment.png" alt="Janela do assistente listando espécies únicas com contagem de registros, barra de progresso, aviso de grau faltando e setas verdes apontando os seletores de establishmentMeans">
+  <figcaption><b>Figura 11.</b> Uma linha por espécie, com a contagem de registros que cada resposta cobre. Os dois seletores trazem o vocabulário completo com a definição do TDWG ao lado de cada valor.</figcaption>
+</figure>
+```
+
+### Sua planilha sempre vence
+
+Se você **também** mapear uma coluna para um desses termos, os valores da coluna são mantidos e o assistente preenche apenas as linhas que ficaram em branco. Os dois caminhos convivem de propósito: uma coluna preenchida pela metade mais o assistente completando o resto é um caso real.
+
+Espécie deixada sem resposta sai em branco, e um termo sem nenhuma resposta não gera coluna nenhuma na exportação. O Saíra não inventa valor.
+
+### O card mostra o que o assistente fez
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/5.4-cards-establishment-preenchidos.png" alt="Card establishmentMeans após salvar o assistente, com borda de campo preenchido, selo ASSISTENTE e uma seta verde apontando a nota 'Preenchido pelo assistente: 17 espécie(s)', seguida da linha de exemplo">
+  <figcaption><b>Figura 12.</b> Depois de salvar, o card passa a contar como preenchido mesmo sem coluna escolhida: borda verde, selo <span class="term">ASSISTENTE</span> e a nota dizendo quantas espécies foram respondidas, com a linha de exemplo do valor gerado.</figcaption>
+</figure>
+```
+
+O botão do assistente fica **só no card de <span class="term">establishmentMeans</span>**, porque uma única janela preenche os dois termos. O card de <span class="term">degreeOfEstablishment</span> continua existindo com o próprio seletor de coluna, que é por onde a sua planilha vence, e traz uma nota apontando para o card que abre o assistente.
+
+Um grau salvo sem o meio é descartado: sozinho ele não diz nada. Já o contrário, meio sem grau, o Saíra **avisa mas não bloqueia**, com uma contagem viva enquanto você preenche e um aviso ao salvar. O Darwin Core não exige <span class="term">degreeOfEstablishment</span>, e um táxon cujo grau é genuinamente desconhecido precisa continuar publicável.
+
+::: {.callout-note}
+## Na planilha exportada os dois ficam ao lado do nome
+Ambos são termos da classe **Occurrence**, o que os jogaria para o começo do arquivo, longe da espécie que descrevem. Na exportação o Saíra os move para o fim do bloco **Taxon**, logo depois de <span class="term">vernacularName</span>: você abre o arquivo, vê o nome científico e, ao lado, se aquela espécie é nativa ou introduzida. É ordem de exibição apenas, o `meta.xml` continua declarando as URIs corretas dos termos.
+:::
+
 ## Valores fixos para todo o conjunto
 
 Alguns termos descrevem o **conjunto inteiro**, não cada registro. Em vez de repetir o valor em todas as linhas da planilha, marque **Usar um valor fixo** no card do termo e digite o valor uma vez: o Saíra o aplica a **todas as linhas** na exportação.
@@ -184,12 +247,8 @@ Mapear uma coluna e usar um valor fixo são alternativas (um **OU** separa as du
 
 ```{=html}
 <figure class="shot">
-  <img src="../assets/img/8-valor-fixo-checkbox.png" alt="Card rightsHolder com a opção 'Usar um valor fixo' marcada, revelando o campo de texto e a faixa de aviso">
-  <figcaption><b>Figura 10.</b> No card de um termo elegível, marque <b>Usar um valor fixo</b> e digite o valor uma vez.</figcaption>
-</figure>
-<figure class="shot">
-  <img src="../assets/img/8.1-valor-fixo-faixa-todas-linhas.png" alt="Detalhe da faixa de aviso informando que o valor preenche todas as linhas do campo">
-  <figcaption><b>Figura 11.</b> A faixa de aviso deixa claro que o valor preenche <b>todas as linhas</b> daquele campo.</figcaption>
+  <img src="../assets/img/8-valor-fixo-checkbox.png" alt="Card rightsHolder com a opção 'Usar um valor fixo' marcada, apontada por uma seta verde, revelando a faixa de aviso e o campo de texto preenchido com SiBBr">
+  <figcaption><b>Figura 13.</b> No card de um termo elegível, marque <b>Usar um valor fixo</b> e digite o valor uma vez. A faixa de aviso deixa claro que ele preenche <b>todas as linhas</b> daquele campo.</figcaption>
 </figure>
 ```
 
@@ -197,6 +256,26 @@ Mapear uma coluna e usar um valor fixo são alternativas (um **OU** separa as du
 ## Termos que não aparecem por padrão
 <span class="term">references</span>, <span class="term">bibliographicCitation</span> e <span class="term">geodeticDatum</span> não vêm no conjunto-base de cards. Inclua-os com **Adicionar termo** (ver acima) e a opção de valor fixo aparece no card assim que o termo é adicionado. Já <span class="term">countryCode</span> é preenchido automaticamente na validação de coordenadas, e <span class="term">basisOfRecord</span> tem o próprio assistente, então esses dois não usam valor fixo.
 :::
+
+## dynamicProperties: o que não cabe nos termos padrão
+
+Nem toda medida cabe num termo Darwin Core. Cor da pelagem, sexo aparente, condição reprodutiva, peso, um código interno do projeto: o Darwin Core reserva <span class="term">dynamicProperties</span> para isso, num único campo em formato JSON.
+
+No card de <span class="term">dynamicProperties</span> você escolhe as colunas que quer levar e define a **chave** de cada uma. O Saíra monta o objeto JSON com essas chaves, uma entrada por coluna, e o card mostra **o resultado montado para a primeira linha**, atualizando conforme você edita as chaves. Assim dá para conferir na hora se a saída é o que você espera, em vez de descobrir só na exportação.
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/6.1-card-dynamicproperties-previa.png" alt="Card dynamicProperties com a coluna Cor mapeada, o editor de chaves por coluna mostrando a chave automática cor, e uma seta verde apontando a prévia do JSON montado para a primeira linha">
+  <figcaption><b>Figura 14.</b> Com a coluna <span class="term">Cor</span> mapeada, o editor deriva a chave <code>cor</code> e, abaixo, mostra o JSON montado para a primeira linha (<code>{"cor":"Melânico"}</code>), que se atualiza a cada edição de chave.</figcaption>
+</figure>
+```
+
+::: {.callout-note}
+## O card sempre diz o que fez com a sua coluna
+A linha de exemplo embaixo do seletor (<code>ex.: Panthera onca</code>) mostra o que o Saíra leu da coluna que você escolheu. Quando a coluna está mapeada mas as primeiras linhas estão vazias, o card diz isso com todas as letras em vez de não mostrar nada, para que **"mapeado e vazio"** nunca se pareça com **"não mapeado"**. A célula exportada continua em branco, que é a convenção do Darwin Core para ausência de informação.
+:::
+
+O status de conservação (categorias MMA e IUCN) também é gravado em <span class="term">dynamicProperties</span>, mas por outro caminho: ele vem da **[validação de nomes](04-validacao-nomes.qmd)** e é adicionado sem apagar as chaves que você definiu aqui. Veja **[exportação](07-preview-exportacao.qmd)**.
 
 ## Colunas não mapeadas
 
