@@ -404,32 +404,33 @@ get_active_dwc_terms <- function(extra = character(0)) {
 get_dwc_terms_list <- function(lang = "en") {
     terms_df <- load_dwc_terms_rds()
 
-    terms_list <- lapply(seq_len(nrow(terms_df)), function(i) {
-        term_val <- as.character(terms_df$term[i])
-        class_val <- as.character(terms_df$class[i])
+    # Columns are extracted once and zipped with Map(); the previous per-row
+    # lapply re-indexed the data frame four times per term.
+    n <- nrow(terms_df)
+    desc <- if (lang == "pt" && "definition_pt" %in% names(terms_df)) {
+        as.character(terms_df$definition_pt)
+    } else if ("definition_en" %in% names(terms_df)) {
+        as.character(terms_df$definition_en)
+    } else {
+        rep("", n)
+    }
 
-        desc <- if (lang == "pt" && "definition_pt" %in% names(terms_df)) {
-            as.character(terms_df$definition_pt[i])
-        } else if ("definition_en" %in% names(terms_df)) {
-            as.character(terms_df$definition_en[i])
-        } else {
-            ""
-        }
-
-        required_val <- if ("required" %in% names(terms_df)) {
-            isTRUE(terms_df$required[i])
-        } else {
-            FALSE
-        }
-
-        list(
-            term = term_val,
-            category = class_val,
-            desc = desc,
-            sep = "",
-            required = required_val
-        )
-    })
+    terms_list <- Map(
+        function(term, category, desc, required) {
+            list(
+                term = term,
+                category = category,
+                desc = desc,
+                sep = "",
+                required = required
+            )
+        },
+        as.character(terms_df$term),
+        as.character(terms_df$class),
+        desc,
+        dwc_required_flags(terms_df),
+        USE.NAMES = FALSE
+    )
 
     names(terms_list) <- terms_df$term
     terms_list
@@ -447,36 +448,53 @@ get_dwc_terms_list <- function(lang = "en") {
 get_active_dwc_terms_list <- function(extra = character(0), lang = "en") {
     terms_df <- get_active_dwc_terms(extra = extra)
 
-    terms_list <- lapply(seq_len(nrow(terms_df)), function(i) {
-        term_val  <- as.character(terms_df$term[i])
-        class_val <- as.character(terms_df$class[i])
+    # Same column-wise construction as get_dwc_terms_list(), with the extra
+    # rule that a blank Portuguese definition falls back to English.
+    n <- nrow(terms_df)
+    desc <- if (lang == "pt" && "definition_pt" %in% names(terms_df)) {
+        pt <- as.character(terms_df$definition_pt)
+        en <- as.character(terms_df$definition_en)
+        ifelse(nzchar(pt), pt, en)
+    } else if ("definition_en" %in% names(terms_df)) {
+        as.character(terms_df$definition_en)
+    } else {
+        rep("", n)
+    }
 
-        desc <- if (lang == "pt" && "definition_pt" %in% names(terms_df)) {
-            pt <- as.character(terms_df$definition_pt[i])
-            if (nzchar(pt)) pt else as.character(terms_df$definition_en[i])
-        } else if ("definition_en" %in% names(terms_df)) {
-            as.character(terms_df$definition_en[i])
-        } else {
-            ""
-        }
-
-        required_val <- if ("required" %in% names(terms_df)) {
-            isTRUE(terms_df$required[i])
-        } else {
-            FALSE
-        }
-
-        list(
-            term     = term_val,
-            category = class_val,
-            desc     = desc,
-            sep      = "",
-            required = required_val
-        )
-    })
+    terms_list <- Map(
+        function(term, category, desc, required) {
+            list(
+                term     = term,
+                category = category,
+                desc     = desc,
+                sep      = "",
+                required = required
+            )
+        },
+        as.character(terms_df$term),
+        as.character(terms_df$class),
+        desc,
+        dwc_required_flags(terms_df),
+        USE.NAMES = FALSE
+    )
 
     names(terms_list) <- terms_df$term
     terms_list
+}
+
+# Per-term `required` flag as a logical vector. Mirrors the previous per-row
+# isTRUE(): TRUE only for a non-NA logical TRUE, FALSE for anything else
+# (missing column, or a column that is not logical at all).
+dwc_required_flags <- function(terms_df) {
+    n <- nrow(terms_df)
+    if (!"required" %in% names(terms_df)) {
+        return(rep(FALSE, n))
+    }
+    required <- terms_df$required
+    if (!is.logical(required)) {
+        return(rep(FALSE, n))
+    }
+    !is.na(required) & required
 }
 
 #' Detect uploaded columns that are valid DwC terms outside the base set

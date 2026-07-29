@@ -511,21 +511,24 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             if (!"validation_status" %in% names(out)) {
                 out$validation_status <- rep("not_found", nrow(out))
             }
-            out$validation_status <- vapply(out$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
+            out$validation_status <- normalize_status_vec(out$validation_status)
 
             if (!"query_name" %in% names(out)) {
                 scientific_name <- if ("scientificName" %in% names(out)) as.character(out$scientificName) else rep("", nrow(out))
                 remove_authors_opt <- isTRUE(input$remove_authors %||% TRUE)
                 ignore_qualifiers_opt <- isTRUE(input$ignore_qualifiers %||% TRUE)
-                query_name <- vapply(scientific_name, function(value) {
+                # normalize_scientific_name() is scalar and datasets repeat names
+                # heavily, so normalise the distinct names and map back by index.
+                unique_names <- unique(scientific_name)
+                unique_query <- vapply(unique_names, function(value) {
                     normalized <- normalize_scientific_name(
                         value,
                         remove_authors = remove_authors_opt,
                         ignore_qualifiers = ignore_qualifiers_opt
                     )
                     if (is.na(normalized) || !nzchar(normalized)) as.character(value %||% "") else normalized
-                }, FUN.VALUE = character(1))
-                out$query_name <- query_name
+                }, FUN.VALUE = character(1), USE.NAMES = FALSE)
+                out$query_name <- unique_query[match(scientific_name, unique_names)]
             } else {
                 out$query_name <- as.character(out$query_name)
             }
@@ -585,7 +588,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 return(out)
             }
 
-            status_vec <- vapply(report_df$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
+            status_vec <- normalize_status_vec(report_df$validation_status)
             reviewed_vec <- if ("manual_review" %in% names(report_df)) as.logical(report_df$manual_review) else rep(FALSE, length(status_vec))
             reviewed_vec[is.na(reviewed_vec)] <- FALSE
             out[["total"]] <- as.integer(length(status_vec))
@@ -1534,7 +1537,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             status_vec <- if ("display_status" %in% names(report)) {
                 as.character(report$display_status)
             } else {
-                vapply(report$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
+                normalize_status_vec(report$validation_status)
             }
             scientific_name <- if ("scientificName_display" %in% names(report)) as.character(report$scientificName_display) else if ("scientificName" %in% names(report)) as.character(report$scientificName) else rep("", nrow(report))
             taxonomic_status <- if ("taxonomicStatus" %in% names(report)) as.character(report$taxonomicStatus) else rep("", nrow(report))

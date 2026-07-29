@@ -1103,6 +1103,16 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
         shiny::observe({
             shiny::req(raw_data_r())
+            # all_term_names() carries lang_r() through dwc_all(), and that
+            # dependency is load-bearing -- do not isolate it to "save" a scan
+            # over the terms on a language switch. output$mapping_ui also
+            # depends on lang_r(), so switching language destroys and rebuilds
+            # every map_<term> input. Re-running here in the same flush reaffirms
+            # rv$map_values from the still-valid inputs before the grid is
+            # rebuilt from it. Without it, this observer only wakes once the
+            # client re-binds the new inputs, reads them as NULL with
+            # rendered_map_inputs already TRUE, and takes the "user cleared the
+            # field" branch below -- wiping the whole mapping (ADR-111).
             term_names <- all_term_names()
 
             for (term in term_names) {

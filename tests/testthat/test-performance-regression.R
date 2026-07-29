@@ -215,3 +215,41 @@ testthat::test_that("Performance regression: DwC-A bundle for 100k rows under 12
     testthat::expect_lt(elapsed, 12)
     testthat::expect_true(file.exists(zip_path))
 })
+
+# ADR-111: render hot paths. Each budget is set far above the vectorized cost
+# and far below the per-row cost it replaced, so it fails if a per-row loop
+# comes back but tolerates a slow CI runner.
+
+testthat::test_that("Performance regression: tr() stays under 1.2s for 50k lookups", {
+    elapsed <- unname(system.time({
+        for (i in seq_len(50000L)) tr("nav_home", "pt")
+    })[["elapsed"]])
+
+    # Pre-ADR-111 (exists() scans + names(dict) per call): ~1.59s.
+    testthat::expect_lt(elapsed, 1.2)
+})
+
+testthat::test_that("Performance regression: per-row label expansion stays vectorized", {
+    set.seed(20260728L)
+    rows_n <- 50000L
+
+    tiers <- sample(
+        c("extreme", "high", "medium", "low", "not_sensitive"), rows_n,
+        replace = TRUE
+    )
+    elapsed_tiers <- unname(system.time({
+        saira:::sensitive_reason_statement(tiers, "pt")
+    })[["elapsed"]])
+    # Pre-ADR-111 (tr() per masked row): ~1.44s.
+    testthat::expect_lt(elapsed_tiers, 0.5)
+
+    statuses <- sample(
+        c("accepted", "synonym", "not_found", "ambiguous", "invalid"), rows_n,
+        replace = TRUE
+    )
+    elapsed_status <- unname(system.time({
+        saira:::normalize_status_vec(statuses)
+    })[["elapsed"]])
+    # Pre-ADR-111 (scalar vapply per row): ~0.65s.
+    testthat::expect_lt(elapsed_status, 0.3)
+})

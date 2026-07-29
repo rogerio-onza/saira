@@ -383,3 +383,39 @@ testthat::test_that("detect_extra_dwc_terms handles empty input", {
     testthat::expect_identical(detect_extra_dwc_terms(character(0)), character(0))
     testthat::expect_identical(detect_extra_dwc_terms(c(NA, "")), character(0))
 })
+
+testthat::test_that("dwc_required_flags mirrors the per-row isTRUE() contract", {
+    df <- data.frame(
+        term = c("a", "b", "c"),
+        required = c(TRUE, FALSE, NA),
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_equal(saira:::dwc_required_flags(df), c(TRUE, FALSE, FALSE))
+
+    # Missing column -> all FALSE.
+    testthat::expect_equal(
+        saira:::dwc_required_flags(df["term"]), c(FALSE, FALSE, FALSE)
+    )
+
+    # Non-logical column -> all FALSE, matching isTRUE("TRUE") == FALSE.
+    df$required <- c("TRUE", "FALSE", "TRUE")
+    testthat::expect_equal(saira:::dwc_required_flags(df), c(FALSE, FALSE, FALSE))
+})
+
+testthat::test_that("term list builders expose required as a plain logical scalar", {
+    for (terms_list in list(
+        get_dwc_terms_list("pt"),
+        get_active_dwc_terms_list(extra = character(0), lang = "en")
+    )) {
+        required_slots <- vapply(terms_list, function(x) x$required, logical(1))
+        testthat::expect_false(anyNA(required_slots))
+        testthat::expect_true(any(required_slots))
+        # scientificName is a required base term and must stay flagged.
+        testthat::expect_true(terms_list[["scientificName"]]$required)
+        # Names come from the term column, one entry per term, no dropped rows.
+        testthat::expect_equal(
+            names(terms_list),
+            vapply(terms_list, function(x) x$term, character(1), USE.NAMES = FALSE)
+        )
+    }
+})

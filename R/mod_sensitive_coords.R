@@ -156,7 +156,13 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             cats <- dec$category[dec$sensitive]
             if (length(sens) == 0L) return(NULL)
             has_coord <- !is.na(lat) & !is.na(lon)
-            n_rec <- vapply(sens, function(s) sum(sci == s & has_coord), integer(1))
+            # One table() pass over the georeferenced rows instead of rescanning
+            # the whole column once per sensitive species. It also skips the
+            # NA/blank names `keep` already excludes, so a nameless row with
+            # coordinates can no longer turn a count into NA.
+            coord_counts <- table(sci[keep & has_coord])
+            n_rec <- as.integer(coord_counts[sens])
+            n_rec[is.na(n_rec)] <- 0L
             ok <- n_rec > 0L
             if (!any(ok)) return(NULL)
             cats_ok <- cats[ok]

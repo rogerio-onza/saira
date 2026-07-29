@@ -674,8 +674,17 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             fam <- as.character(res$diagnostic_family)
             fam[is.na(fam) | !nzchar(fam)] <- "validity"
 
-            labels <- vapply(diag, function(x) tr(diag_label_key(x), lang_r()), FUN.VALUE = character(1))
-            classes <- vapply(fam, diag_badge_class, FUN.VALUE = character(1))
+            # Resolve one label per distinct diagnostic (~9) and one class per
+            # distinct family (~4), then expand by name. Called per row this
+            # ran tr() and the reactive read once per record.
+            label_map <- vapply(
+                unique(diag),
+                function(x) tr(diag_label_key(x), lang_r()),
+                FUN.VALUE = character(1)
+            )
+            class_map <- vapply(unique(fam), diag_badge_class, FUN.VALUE = character(1))
+            labels <- unname(label_map[diag])
+            classes <- unname(class_map[fam])
             badges <- paste0("<span class=\"coord-issue-badge ", classes, "\">", labels, "</span>")
 
             lat_display <- ifelse(is.na(res$lat_num), "", format(round(res$lat_num, 6), trim = TRUE))
