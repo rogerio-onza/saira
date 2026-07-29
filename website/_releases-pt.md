@@ -2,6 +2,22 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.5</span>
+    <time class="release-date">2026-07-29</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong><code>establishmentMeans</code> e <code>degreeOfEstablishment</code> agora se preenchem para a planilha inteira, uma resposta por espécie.</strong> Os dois têm vocabulário controlado do TDWG (7 e 11 valores) e descrevem a <strong>espécie</strong>, não a linha. Um assistente lista as espécies distintas da coluna mapeada em <code>scientificName</code>, com a contagem de registros de cada uma, e pergunta os dois valores uma vez por táxon. Espécies da lista de exóticas invasoras já chegam sugeridas como <code>introduced</code>; o grau nunca é sugerido, porque depende do registro. Se você também mapear uma coluna, os valores dela vencem e o assistente só completa os brancos.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>A validação de nomes passou a sinalizar espécies exóticas invasoras.</strong> A lista brasileira do <strong>Instituto Hórus</strong> (483 táxons, animais e plantas) vem embutida no app, então a verificação é local, offline e instantânea. Os táxons recebem a etiqueta <strong>Exótica invasora</strong> no relatório, e a pílula de filtro <strong>Invasoras</strong> isola só eles nos Nomes Processados.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>O card <code>dynamicProperties</code> mostra o JSON que vai gerar.</strong> Abaixo do editor de chaves aparece o objeto montado para a primeira linha (por exemplo <code>{"cor":"Melânico"}</code>), atualizado a cada edição de chave.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Trocar o idioma não apaga mais o mapeamento.</strong> Alternar entre português e inglês relia o arquivo enviado e entregava uma tabela nova ao restante do app, que corretamente a lia como um upload novo: o mapeamento era limpo, os dois assistentes perdiam as respostas e os caches eram descartados.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>O card de mapeamento sempre diz o que fez com a coluna escolhida.</strong> Quando a coluna está mapeada mas as primeiras linhas estão vazias, o card diz isso com todas as letras, em vez de não mostrar nada e ficar idêntico a um card sem mapeamento.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>As telas de tabela e validação ficaram mais rápidas.</strong> Os rótulos passaram a ser resolvidos uma vez por valor distinto, e não uma vez por linha. Em 50 mil registros: os selos da tabela de coordenadas caíram de 1,9 s para 0,005 s, e a busca de tradução ficou 5,5x mais rápida.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>A planilha de exemplo dos tutoriais passou a ser o conjunto de demonstração completo</strong> do Saíra: 1.075 ocorrências, 48 espécies brasileiras reais em cerca de 19 biomas, com imperfeições deliberadas para exercitar as validações.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.4</span>
     <time class="release-date">2026-07-01</time>
   </header>

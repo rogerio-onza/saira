@@ -11,6 +11,28 @@
 
 RELEASES = [
     {
+        "version": "0.9.5",
+        "date": "2026-07-29",
+        "pt": [
+            ("added", "**`establishmentMeans` e `degreeOfEstablishment` agora se preenchem para a planilha inteira, uma resposta por esp\u00e9cie.** Os dois t\u00eam vocabul\u00e1rio controlado do TDWG (7 e 11 valores) e descrevem a **esp\u00e9cie**, n\u00e3o a linha. Um assistente lista as esp\u00e9cies distintas da coluna mapeada em `scientificName`, com a contagem de registros de cada uma, e pergunta os dois valores uma vez por t\u00e1xon. Esp\u00e9cies da lista de ex\u00f3ticas invasoras j\u00e1 chegam sugeridas como `introduced`; o grau nunca \u00e9 sugerido, porque depende do registro. Se voc\u00ea tamb\u00e9m mapear uma coluna, os valores dela vencem e o assistente s\u00f3 completa os brancos."),
+            ("added", "**A valida\u00e7\u00e3o de nomes passou a sinalizar esp\u00e9cies ex\u00f3ticas invasoras.** A lista brasileira do **Instituto H\u00f3rus** (483 t\u00e1xons, animais e plantas) vem embutida no app, ent\u00e3o a verifica\u00e7\u00e3o \u00e9 local, offline e instant\u00e2nea. Os t\u00e1xons recebem a etiqueta **Ex\u00f3tica invasora** no relat\u00f3rio, e a p\u00edlula de filtro **Invasoras** isola s\u00f3 eles nos Nomes Processados."),
+            ("added", "**O card `dynamicProperties` mostra o JSON que vai gerar.** Abaixo do editor de chaves aparece o objeto montado para a primeira linha (por exemplo `{\"cor\":\"Mel\u00e2nico\"}`), atualizado a cada edi\u00e7\u00e3o de chave."),
+            ("fixed", "**Trocar o idioma n\u00e3o apaga mais o mapeamento.** Alternar entre portugu\u00eas e ingl\u00eas relia o arquivo enviado e entregava uma tabela nova ao restante do app, que corretamente a lia como um upload novo: o mapeamento era limpo, os dois assistentes perdiam as respostas e os caches eram descartados."),
+            ("fixed", "**O card de mapeamento sempre diz o que fez com a coluna escolhida.** Quando a coluna est\u00e1 mapeada mas as primeiras linhas est\u00e3o vazias, o card diz isso com todas as letras, em vez de n\u00e3o mostrar nada e ficar id\u00eantico a um card sem mapeamento."),
+            ("changed", "**As telas de tabela e valida\u00e7\u00e3o ficaram mais r\u00e1pidas.** Os r\u00f3tulos passaram a ser resolvidos uma vez por valor distinto, e n\u00e3o uma vez por linha. Em 50 mil registros: os selos da tabela de coordenadas ca\u00edram de 1,9 s para 0,005 s, e a busca de tradu\u00e7\u00e3o ficou 5,5x mais r\u00e1pida."),
+            ("changed", "**A planilha de exemplo dos tutoriais passou a ser o conjunto de demonstra\u00e7\u00e3o completo** do Sa\u00edra: 1.075 ocorr\u00eancias, 48 esp\u00e9cies brasileiras reais em cerca de 19 biomas, com imperfei\u00e7\u00f5es deliberadas para exercitar as valida\u00e7\u00f5es."),
+        ],
+        "en": [
+            ("added", "**`establishmentMeans` and `degreeOfEstablishment` can now be filled for a whole spreadsheet, one answer per species.** Both carry a TDWG controlled vocabulary (7 and 11 values) and describe the **species**, not the row. An assistant lists the distinct species in the column mapped to `scientificName`, with a record count for each, and asks for both values once per taxon. Species on the invasive alien list arrive pre-filled as `introduced`; the degree is never suggested, because it depends on the record. If you also map a column, its values win and the assistant only fills the blanks."),
+            ("added", "**Name validation now flags invasive alien species.** The Brazilian **Instituto H\u00f3rus** list (483 taxa, animals and plants) is bundled with the app, so the check is local, offline and instant. Taxa get an **Invasive alien** badge in the report, and an **Invasive** filter pill narrows Processed Names down to just those."),
+            ("added", "**The `dynamicProperties` card shows the JSON it will generate.** Under the key editor you now see the object assembled for the first row (for example `{\"cor\":\"Mel\u00e2nico\"}`), refreshed on every key edit."),
+            ("fixed", "**Switching the interface language no longer wipes your mapping.** Changing between Portuguese and English re-read the uploaded file and handed the rest of the app a new table, which it correctly read as a fresh upload: the mapping was cleared, both assistants lost their answers and the caches were dropped."),
+            ("fixed", "**A mapping card always says what it did with the column you picked.** When the column is mapped but its first rows are empty, the card says so explicitly instead of rendering nothing and looking exactly like an unmapped card."),
+            ("changed", "**Table and validation screens got faster.** Labels are now resolved once per distinct value instead of once per row. Over 50,000 records: the coordinate table badges went from 1.9 s to 0.005 s, and the translation lookup is 5.5x faster."),
+            ("changed", "**The tutorials' downloadable sample is now Sa\u00edra's full demonstration dataset**: 1,075 occurrences, 48 real Brazilian species across about 19 biomes, with deliberate imperfections that exercise the validations."),
+        ],
+    },
+    {
         "version": "0.9.4",
         "date": "2026-07-01",
         "pt": [
