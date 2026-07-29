@@ -160,12 +160,21 @@ The bundled list comes from Brazil's Ministry of the Environment official lists:
 
 Beyond the threatened list, Saíra compares every taxon against the **Brazilian invasive alien species list** from **Instituto Hórus**, 483 taxa covering animals and plants. It is **bundled with the app** as well: the check is local, offline and instant.
 
-Taxa on the list get an **Invasive alien** badge next to the name in the report, and a line above the table reports how many records are affected. The <span class="term">Invasive</span> **filter pill** joins the others above the processed names and narrows the list down to just those taxa, which helps when the list is long.
+The flag shows up in two places. In **Processed Names**, the <span class="term">Invasive</span> filter pill joins the others, with a taxon count, and narrows the list down to just those, which helps when the list is long.
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/8.7-relatorio-nomes-especie-invasora-EN.png" alt="Name report with the Invasive alien badge next to a taxon and the Invasive filter pill above the table">
-  <figcaption><b>Figure 8.</b> The <span class="term">Invasive alien</span> badge in the report and the <span class="term">Invasive</span> pill, which filters the table down to those taxa.</figcaption>
+  <img src="../../assets/img/8.7-pilula-filtro-invasoras-EN.png" alt="Processed Names panel with the Invasive filter pill highlighted by a red arrow, next to the status pills, and the filtered list showing Sus scrofa, Felis catus, Equus caballus and Canis familiaris">
+  <figcaption><b>Figure 8.</b> The <span class="term">Invasive</span> pill in Processed Names, with its taxon count. Clicking it leaves only the species on the Hórus list.</figcaption>
+</figure>
+```
+
+In the **Name Report**, each taxon on the list carries an **Invasive alien** badge under the name, and a line above the table reports how many records are affected.
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/8.8-relatorio-nomes-especie-invasora-EN.png" alt="Name report with the Invasive alien badge under Canis familiaris, Sus scrofa and Equus caballus, Panthera onca carrying a Sensitive VU badge instead, and Bos taurus carrying neither">
+  <figcaption><b>Figure 9.</b> The <span class="term">Invasive alien</span> badge in the report. The same frame shows the two lists are independent: <span class="term">Panthera onca</span> is <span class="term">Sensitive · VU</span> but not invasive, and <span class="term">Bos taurus</span> is neither.</figcaption>
 </figure>
 ```
 

@@ -160,12 +160,21 @@ A lista embutida vem das listas oficiais do Ministério do Meio Ambiente: a **fl
 
 Além da lista de ameaçadas, o Saíra compara cada táxon com a **lista brasileira de espécies exóticas invasoras** do **Instituto Hórus**, com 483 táxons entre animais e plantas. Ela também vem **embutida no app**: a verificação é local, offline e instantânea.
 
-Os táxons da lista recebem a etiqueta **Exótica invasora** ao lado do nome no relatório, e uma linha acima da tabela informa quantos registros estão nessa condição. A **pílula de filtro** <span class="term">Invasoras</span> se junta às demais acima dos nomes processados e isola só esses táxons, o que ajuda quando a lista é longa.
+A sinalização aparece em dois lugares. Nos **Nomes Processados**, a pílula de filtro <span class="term">Invasoras</span> se junta às demais, com a contagem de táxons, e isola só esses, o que ajuda quando a lista é longa.
 
 ```{=html}
 <figure class="shot">
-  <img src="../assets/img/8.7-relatorio-nomes-especie-invasora.png" alt="Relatório de nomes com a etiqueta Exótica invasora ao lado de um táxon e a pílula de filtro Invasoras acima da tabela">
-  <figcaption><b>Figura 8.</b> A etiqueta <span class="term">Exótica invasora</span> no relatório e a pílula <span class="term">Invasoras</span>, que filtra a tabela para esses táxons.</figcaption>
+  <img src="../assets/img/8.7-pilula-filtro-invasoras.png" alt="Painel Nomes Processados com a pílula de filtro Invasoras destacada por uma seta vermelha, ao lado das pílulas de situação, e a lista filtrada mostrando Sus scrofa, Felis catus, Equus caballus e Canis familiaris">
+  <figcaption><b>Figura 8.</b> A pílula <span class="term">Invasoras</span> nos Nomes Processados, com a contagem de táxons. Ao clicar, a lista mostra só as espécies da lista do Hórus.</figcaption>
+</figure>
+```
+
+No **Relatório de Nomes**, cada táxon da lista traz a etiqueta **Exótica invasora** abaixo do nome, e uma linha acima da tabela informa quantos registros estão nessa condição.
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/8.8-relatorio-nomes-especie-invasora.png" alt="Relatório de nomes com a etiqueta Exótica invasora abaixo de Sus scrofa, Equus caballus e Felis catus, enquanto Bubalus sp. aparece sem etiqueta">
+  <figcaption><b>Figura 9.</b> A etiqueta <span class="term">Exótica invasora</span> no relatório. <span class="term">Bubalus sp.</span> aparece sem ela: não está na lista, e o Saíra não deduz a partir do gênero.</figcaption>
 </figure>
 ```
 

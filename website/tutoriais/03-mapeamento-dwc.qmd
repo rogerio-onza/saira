@@ -170,7 +170,7 @@ Por isso o assistente pergunta **uma vez por táxon**, não por valor de coluna:
 
 ```{=html}
 <figure class="shot">
-  <img src="../assets/img/5.2-card-assistente-establishment.png" alt="Card establishmentMeans com o botão do assistente e o card degreeOfEstablishment ao lado com a nota que aponta para ele">
+  <img src="../assets/img/5.2-card-assistente-establishment.png" alt="Card establishmentMeans sem coluna escolhida, com o selo ASSISTENTE e o botão do assistente destacados em verde">
   <figcaption><b>Figura 10.</b> O botão fica no card de <span class="term">establishmentMeans</span> e aparece sempre, mesmo sem coluna escolhida: o assistente serve justamente para quem não tem essas colunas na planilha.</figcaption>
 </figure>
 ```
@@ -196,7 +196,7 @@ Espécies que estão na lista de exóticas invasoras (a mesma usada na **[valida
 
 ```{=html}
 <figure class="shot">
-  <img src="../assets/img/5.3-assistente-establishment.png" alt="Janela do assistente listando espécies únicas com contagem de registros, dois seletores por linha e selo de invasora nas espécies listadas">
+  <img src="../assets/img/5.3-assistente-establishment.png" alt="Janela do assistente listando espécies únicas com contagem de registros, barra de progresso, aviso de grau faltando e setas verdes apontando os seletores de establishmentMeans">
   <figcaption><b>Figura 11.</b> Uma linha por espécie, com a contagem de registros que cada resposta cobre. Os dois seletores trazem o vocabulário completo com a definição do TDWG ao lado de cada valor.</figcaption>
 </figure>
 ```
@@ -211,8 +211,8 @@ Espécie deixada sem resposta sai em branco, e um termo sem nenhuma resposta nã
 
 ```{=html}
 <figure class="shot">
-  <img src="../assets/img/5.4-cards-establishment-preenchidos.png" alt="Os dois cards após salvar o assistente, com borda de campo preenchido, selo ASSISTENTE e a nota informando quantas espécies foram respondidas">
-  <figcaption><b>Figura 12.</b> Depois de salvar, os cards passam a contar como preenchidos, com o selo <span class="term">ASSISTENTE</span> e uma nota dizendo quantas espécies foram respondidas (e quantas ainda estão sem grau).</figcaption>
+  <img src="../assets/img/5.4-cards-establishment-preenchidos.png" alt="Card establishmentMeans após salvar o assistente, com borda de campo preenchido, selo ASSISTENTE e uma seta verde apontando a nota 'Preenchido pelo assistente: 17 espécie(s)', seguida da linha de exemplo">
+  <figcaption><b>Figura 12.</b> Depois de salvar, o card passa a contar como preenchido mesmo sem coluna escolhida: borda verde, selo <span class="term">ASSISTENTE</span> e a nota dizendo quantas espécies foram respondidas, com a linha de exemplo do valor gerado.</figcaption>
 </figure>
 ```
 
@@ -247,12 +247,8 @@ Mapear uma coluna e usar um valor fixo são alternativas (um **OU** separa as du
 
 ```{=html}
 <figure class="shot">
-  <img src="../assets/img/8-valor-fixo-checkbox.png" alt="Card rightsHolder com a opção 'Usar um valor fixo' marcada, revelando o campo de texto e a faixa de aviso">
-  <figcaption><b>Figura 13.</b> No card de um termo elegível, marque <b>Usar um valor fixo</b> e digite o valor uma vez.</figcaption>
-</figure>
-<figure class="shot">
-  <img src="../assets/img/8.1-valor-fixo-faixa-todas-linhas.png" alt="Detalhe da faixa de aviso informando que o valor preenche todas as linhas do campo">
-  <figcaption><b>Figura 14.</b> A faixa de aviso deixa claro que o valor preenche <b>todas as linhas</b> daquele campo.</figcaption>
+  <img src="../assets/img/8-valor-fixo-checkbox.png" alt="Card rightsHolder com a opção 'Usar um valor fixo' marcada, apontada por uma seta verde, revelando a faixa de aviso e o campo de texto preenchido com SiBBr">
+  <figcaption><b>Figura 13.</b> No card de um termo elegível, marque <b>Usar um valor fixo</b> e digite o valor uma vez. A faixa de aviso deixa claro que ele preenche <b>todas as linhas</b> daquele campo.</figcaption>
 </figure>
 ```
 
@@ -269,8 +265,8 @@ No card de <span class="term">dynamicProperties</span> você escolhe as colunas 
 
 ```{=html}
 <figure class="shot">
-  <img src="../assets/img/6.1-card-dynamicproperties-previa.png" alt="Card dynamicProperties com o editor de chaves por coluna e, abaixo, a prévia do JSON montado para a primeira linha">
-  <figcaption><b>Figura 15.</b> O editor de chaves e, abaixo dele, o JSON montado para a primeira linha (por exemplo <code>{"cor":"melanico"}</code>), que se atualiza a cada edição de chave.</figcaption>
+  <img src="../assets/img/6.1-card-dynamicproperties-previa.png" alt="Card dynamicProperties com a coluna Cor mapeada, o editor de chaves por coluna mostrando a chave automática cor, e uma seta verde apontando a prévia do JSON montado para a primeira linha">
+  <figcaption><b>Figura 14.</b> Com a coluna <span class="term">Cor</span> mapeada, o editor deriva a chave <code>cor</code> e, abaixo, mostra o JSON montado para a primeira linha (<code>{"cor":"Melânico"}</code>), que se atualiza a cada edição de chave.</figcaption>
 </figure>
 ```
 
