@@ -344,8 +344,8 @@
     "en": "%d species still have no degree set."
   },
   "est_assistant_button": {
-    "pt": "Assistente de estabelecimento",
-    "en": "Establishment assistant"
+    "pt": "Assistente establishmentMeans",
+    "en": "establishmentMeans Assistant"
   },
   "est_assistant_title": {
     "pt": "establishmentMeans e degreeOfEstablishment por espécie",
