@@ -164,9 +164,9 @@ The term <span class="term">basisOfRecord</span> describes the nature of the rec
 
 ## The establishmentMeans and degreeOfEstablishment assistant
 
-<span class="term">establishmentMeans</span> says **how the taxon got there** (native, introduced, vagrant…) and <span class="term">degreeOfEstablishment</span> says **what situation it is in** (captive, cultivated, released, invasive…). Both carry a TDWG controlled vocabulary, 7 and 11 values, and both describe the **species**, not the row. Filling that in by hand across thousands of records is not realistic.
+<span class="term">establishmentMeans</span> says **how the taxon got there** (native, introduced, vagrant…) and <span class="term">degreeOfEstablishment</span>, **what situation it is in** (captive, cultivated, released, invasive…). Both are TDWG controlled vocabularies, 7 and 11 values, and both describe the **species**, not the row.
 
-So this assistant works **per species**, not per column value like the <span class="term">basisOfRecord</span> one. It lists the distinct species found in the column mapped to <span class="term">scientificName</span>, with a record count for each and ordered from the answer that covers the most data to the one that covers the least, and asks for both values **once per taxon**. The answer is expanded to every record of that species.
+So the assistant asks **once per taxon**, not per column value: it lists the distinct species from the column mapped to <span class="term">scientificName</span>, ordered by how many records each one covers, and expands your answer to every record of that species.
 
 ```{=html}
 <figure class="shot">

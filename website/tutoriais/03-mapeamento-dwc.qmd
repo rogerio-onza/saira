@@ -164,9 +164,9 @@ O termo <span class="term">basisOfRecord</span> descreve a natureza do registro 
 
 ## O assistente de establishmentMeans e degreeOfEstablishment
 
-<span class="term">establishmentMeans</span> diz **como o táxon chegou ali** (nativo, introduzido, vagante…) e <span class="term">degreeOfEstablishment</span> diz **em que situação ele está** (em cativeiro, cultivado, solto, invasor…). Os dois têm vocabulário controlado do TDWG, com 7 e 11 valores, e descrevem a **espécie**, não a linha. Repetir a resposta à mão em milhares de registros não é realista.
+<span class="term">establishmentMeans</span> diz **como o táxon chegou ali** (nativo, introduzido, vagante…) e <span class="term">degreeOfEstablishment</span>, **em que situação ele está** (em cativeiro, cultivado, solto, invasor…). São vocabulários controlados do TDWG, com 7 e 11 valores, e descrevem a **espécie**, não a linha.
 
-Por isso este assistente é **por espécie**, e não por valor de coluna como o de <span class="term">basisOfRecord</span>. Ele lista as espécies distintas encontradas na coluna mapeada em <span class="term">scientificName</span>, com o número de registros de cada uma e ordenadas da que cobre mais dado para a que cobre menos, e pergunta os dois valores **uma vez por táxon**. A resposta é expandida para todos os registros daquela espécie.
+Por isso o assistente pergunta **uma vez por táxon**, não por valor de coluna: ele lista as espécies distintas da coluna mapeada em <span class="term">scientificName</span>, ordenadas pelo número de registros que cada uma cobre, e expande sua resposta para todos os registros daquela espécie.
 
 ```{=html}
 <figure class="shot">
