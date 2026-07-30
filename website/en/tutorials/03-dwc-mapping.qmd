@@ -4,14 +4,12 @@ pagetitle: "Darwin Core mapping · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-How to match your spreadsheet columns to the terms of the Darwin Core standard using Saíra's visual mapper: the step that turns local data into interoperable records.
+How to match your spreadsheet columns to the terms of the Darwin Core standard using Saíra's visual mapper.
 :::
 
 ## Overview
 
-After importing your data (see [Importing your data](02-upload.qmd)), each column still carries the name you use day to day: <span class="term">numero_tombo</span>, <span class="term">especie</span>, <span class="term">data_coleta</span>. Mapping is the step where we tell Saíra which Darwin Core term matches each of those columns.
-
-Saíra suggests matches automatically from each column's name and content. A good mapping is the foundation of everything that follows: validation, export and data quality all depend on it.
+After importing your data (see [Importing your data](02-upload.qmd)), each column still carries the name you use day to day: <span class="term">numero_tombo</span>, <span class="term">especie</span>, <span class="term">data_coleta</span>. Mapping tells Saíra which Darwin Core term matches each of them, starting from automatic suggestions based on each column's name and content.
 
 ```{=html}
 <figure class="shot">
@@ -119,7 +117,7 @@ The table below shows a typical mapping for an ornithological collection:
 
 You don't need to save the mapping by hand. When you download the standardized spreadsheet (see [Preview and export](07-preview-export.qmd)), Saíra includes a **template** in the `.zip` (`<dataset>-mapping-guide.txt`): just the "your column → Darwin Core term" vocabulary, with no data. It is your mapping saved, ready to reuse or hand to a colleague.
 
-To reuse it, open the mapping for a new spreadsheet and click **Import template**. Each line becomes an alias in your local Rostrum, so columns with the same name are mapped automatically — you only review what changed. Handy for collections that re-import spreadsheets with the same structure.
+To reuse it, open the mapping for a new spreadsheet and click **Import template**. Each line becomes an alias in your local Rostrum, so columns with the same name are mapped automatically and you only review what changed. Handy for collections that re-import spreadsheets with the same structure.
 
 ```{=html}
 <figure class="shot">
@@ -203,7 +201,7 @@ Species on the invasive alien species list (the same one used in **[name validat
 
 ### Your own data always wins
 
-If you **also** map a column to either term, the column's values are kept and the assistant only fills the rows you left blank. The two paths coexist deliberately: a half-filled column plus the assistant completing the rest is a real case.
+If you **also** map a column to either term, the column's values are kept and the assistant only fills the rows you left blank.
 
 A species left unanswered comes out blank, and a term with no answers at all produces no column in the export. Saíra invents nothing.
 
@@ -243,7 +241,7 @@ Seven terms accept a fixed value:
 </p>
 ```
 
-Mapping a column and using a fixed value are alternatives (an **OR** separates them): ticking the box hides the column selector, so the constant can never silently overwrite a column you had already mapped. The text field appears only after you tick the box, so nothing clutters the screen needlessly.
+Mapping a column and using a fixed value are alternatives (an **OR** separates them): ticking the box hides the column selector, so the constant can never silently overwrite a column you had already mapped. The text field appears only after you tick the box.
 
 ```{=html}
 <figure class="shot">
@@ -280,7 +278,5 @@ Conservation status (MMA and IUCN categories) is also written into <span class="
 ## Unmapped columns
 
 Not every column has to become a Darwin Core term: just leave it unmapped. At export, Saíra **appends to the right** the columns you did not use as a source for any term, preserving their original names and order, so no data is lost: you can edit them by hand later, already in the IPT.
-
-## Next steps
 
 With the fields mapped, your data is already in Darwin Core vocabulary, but it has not been verified yet. Go to **[Validating scientific names](04-name-validation.qmd)**.

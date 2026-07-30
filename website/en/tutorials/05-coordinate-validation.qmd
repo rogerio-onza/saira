@@ -97,7 +97,7 @@ The sea test uses simplified coastline data. Points very close to the coast may 
 
 ## Assisted corrections
 
-Saíra does not just point out the error: it **proposes the correction** for you to apply explicitly. The original coordinates are never silently overwritten, and accepted corrections are **applied on export**, not in the preview. When the export template has empty <span class="term">verbatimLatitude</span> and <span class="term">verbatimLongitude</span> columns, the original values are preserved there.
+Saíra **proposes the correction** for you to apply explicitly. The original coordinates are never silently overwritten, and accepted corrections are **applied on export**, not in the preview. When the export template has empty <span class="term">verbatimLatitude</span> and <span class="term">verbatimLongitude</span> columns, the original values are preserved there.
 
 When candidates exist, panels appear on the left. Each shows the count and one example, and turns green with a ✓ once applied:
 
@@ -137,7 +137,5 @@ Record the <span class="term">geodeticDatum</span> (for example, <em>WGS84</em>)
 ## Coordinate signs in Brazil
 Most of Brazil has **negative latitude and longitude**. Positive coordinates where the south/west hemisphere was expected are a strong sign of a sign error or a swap. The classic example: `-34.87, -8.04` (lat, lon) instead of `-8.04, -34.87` throws a point from Pernambuco into the middle of the Atlantic.
 :::
-
-## Next steps
 
 Data mapped, names resolved and coordinates reviewed. If there are threatened species, the next step decides how to protect them: go to **[Generalizing sensitive species](06-generalization.qmd)**.

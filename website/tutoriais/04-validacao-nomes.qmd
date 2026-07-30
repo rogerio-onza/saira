@@ -4,7 +4,7 @@ pagetitle: "Validação de nomes · Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-Esta etapa confere cada nome científico contra uma base taxonômica à sua escolha, resolve sinônimos e grafias divergentes, e sinaliza as espécies ameaçadas da lista nacional do MMA, mantendo seus registros combináveis com os de outras coleções.
+Esta etapa confere cada nome científico contra uma base taxonômica à sua escolha, resolve sinônimos e grafias divergentes, e sinaliza as espécies ameaçadas da lista nacional do MMA.
 :::
 
 ## Por que validar nomes
@@ -35,7 +35,7 @@ Flora do Brasil e Fauna do Brasil são **baixadas e armazenadas localmente** na 
 
 ::: {.callout-warning}
 ## Flora BR / Fauna BR não baixam? Atualize o Saíra
-Os arquivos publicados pela Flora e Funga do Brasil e pelo Catálogo Taxonômico da Fauna do Brasil mudam de tempos em tempos, e o Saíra acompanha esses formatos. Se o cartão travar com **"falha na atualização"** e nunca ficar verde, é sinal de que você está numa versão antiga do app. **Reinstale o Saíra com `pak`** para pegar a correção mais recente — o `pak` resolve sozinho as versões certas dos pacotes das bases (Flora BR e Fauna BR):
+Os arquivos publicados pela Flora e Funga do Brasil e pelo Catálogo Taxonômico da Fauna do Brasil mudam de tempos em tempos, e o Saíra acompanha esses formatos. Se o cartão travar com **"falha na atualização"** e nunca ficar verde, é sinal de que você está numa versão antiga do app. **Reinstale o Saíra com `pak`** para pegar a correção mais recente. O `pak` resolve sozinho as versões certas dos pacotes das bases (Flora BR e Fauna BR):
 
 ```r
 pak::pak("rogerio-onza/saira")
@@ -101,7 +101,7 @@ A correção é manual e acontece no **modal de revisão**. Clique em um nome pr
 - **Sim, este nome está correto**: confirma o nome como está; ele será exportado exatamente assim. Útil para táxons recém-descritos ou ausentes da base.
 - **Não, quero corrigir o nome**: abre o campo **Correção do nome** para você digitar a grafia certa, com um motivo opcional (ex.: erro de digitação na planilha original, nome atualizado conforme publicação).
 
-A decisão é **reaplicada automaticamente** a todas as linhas com aquele mesmo nome: como a validação agrupa nomes idênticos, você revisa cada um uma única vez e a correção vale para o conjunto inteiro. Um erro repetido em centenas de linhas é corrigido com uma única revisão.
+A decisão é **reaplicada automaticamente** a todas as linhas com aquele mesmo nome: como a validação agrupa nomes idênticos, você revisa cada um uma única vez e a correção vale para o conjunto inteiro.
 
 ```{=html}
 <figure class="shot">
@@ -119,7 +119,7 @@ A decisão é **reaplicada automaticamente** a todas as linhas com aquele mesmo 
 
 ::: {.callout-warning}
 ## A decisão taxonômica é sua
-O Saíra resolve os nomes contra a base, mas a autoridade é do especialista. Em grupos com taxonomia instável, confira cada caso antes de aceitar. Trocar um nome por seu sinônimo aceito significa substituir o nome no conjunto exportado: o nome original pode ser preservado em <span class="term">verbatimIdentification</span> ou <span class="term">originalNameUsage</span> se você mapeou esses campos.
+Em grupos com taxonomia instável, confira cada caso antes de aceitar. Trocar um nome por seu sinônimo aceito significa substituir o nome no conjunto exportado: o nome original pode ser preservado em <span class="term">verbatimIdentification</span> ou <span class="term">originalNameUsage</span> se você mapeou esses campos.
 :::
 
 ## Espécies ameaçadas (Lista MMA)
@@ -193,14 +193,7 @@ Se a lista estiver ausente ou ilegível, a validação continua funcionando norm
 
 ::: {.callout-important}
 ## A escolha das bases define o status de conservação
-As bases que você marca aqui definem qual **status de conservação** o Saíra grava no `dynamicProperties` da exportação:
-
-- uma base **brasileira** (Flora BR / Fauna BR) contribui com a categoria **MMA** (`mmaThreatStatus`) e a portaria que listou o táxon (`mmaSource`);
-- o **GBIF** contribui com a categoria **IUCN** global (`iucnRedListCategory`).
-
-Uma linha curta acima do relatório informa quantos registros receberão cada um. **Se você não trabalha com espécies brasileiras, marque apenas o GBIF** para receber só o status IUCN. As chaves são gravadas quando você gera o pacote (veja **[exportação](07-preview-exportacao.qmd)**).
+As bases marcadas aqui decidem o que o Saíra grava em `dynamicProperties` na exportação: uma base **brasileira** (Flora BR / Fauna BR) contribui com a categoria **MMA**, o **GBIF** com a categoria **IUCN** global. Uma linha curta acima do relatório informa quantos registros receberão cada uma. As chaves geradas e o comportamento sem internet estão em **[Pré-visualização e exportação](07-preview-exportacao.qmd)**.
 :::
-
-## Próximos passos
 
 Com os nomes resolvidos, vamos ao espaço: siga para **[Validando coordenadas](05-validacao-coordenadas.qmd)**.

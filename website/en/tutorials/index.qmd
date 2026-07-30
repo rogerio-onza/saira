@@ -5,10 +5,16 @@ toc: false
 ---
 
 ::: {.tut-standfirst}
-Step-by-step guides to take your occurrence spreadsheet from the field notebook to a Darwin Core Archive, following the same workflow as the application, step by step.
+Step-by-step guides to take your occurrence spreadsheet from the field notebook to a Darwin Core Archive, following the workflow of the application.
 :::
 
-The tutorials follow Saíra's workflow, step by step. Move between them with the **sidebar** or the **previous / next** buttons at the bottom of each page. Each step can also be read on its own.
+```{=html}
+<figure class="shot diagram-flow">
+  <img src="../../assets/img/saira-how-it-works-EN.svg" alt="Saíra's flow in five chained steps: Upload, Mapping, Validation, Generalization and Export">
+</figure>
+```
+
+The diagram shows the app's five working steps. The tutorials below are seven because installation comes before everything else and validation splits into names and coordinates. Move between them with the **sidebar** or the **previous / next** buttons at the bottom of each page; each step can also be read on its own.
 
 ## The workflow, from raw data to DwC-A
 
@@ -23,7 +29,7 @@ The tutorials follow Saíra's workflow, step by step. Move between them with the
   <a class="tut-card" href="02-upload.html">
     <div class="tut-card-top"><span class="tut-card-num">02</span><span class="tut-card-eyebrow">Step</span></div>
     <h3 class="tut-card-title">Importing your data</h3>
-    <p class="tut-card-desc">Load CSV, TSV, Excel or a camera-trap package.</p>
+    <p class="tut-card-desc">Load CSV, TSV/TXT or a camera-trap package.</p>
     <span class="tut-card-arrow">→</span>
   </a>
   <a class="tut-card" href="03-dwc-mapping.html">
@@ -45,9 +51,9 @@ The tutorials follow Saíra's workflow, step by step. Move between them with the
     <span class="tut-card-arrow">→</span>
   </a>
   <a class="tut-card" href="06-generalization.html">
-    <div class="tut-card-top"><span class="tut-card-num">06</span><span class="tut-card-eyebrow">Step</span></div>
+    <div class="tut-card-top"><span class="tut-card-num">06</span><span class="tut-card-eyebrow">If needed</span></div>
     <h3 class="tut-card-title">Generalizing sensitive species</h3>
-    <p class="tut-card-desc">Reduce coordinate precision for threatened taxa (Chapman 2020).</p>
+    <p class="tut-card-desc">Only when name validation flags threatened species: reduce coordinate precision (Chapman 2020).</p>
     <span class="tut-card-arrow">→</span>
   </a>
   <a class="tut-card" href="07-preview-export.html">
@@ -61,10 +67,10 @@ The tutorials follow Saíra's workflow, step by step. Move between them with the
 
 ::: {.callout-note}
 ## The workflow is flexible
-You do not have to follow every step in a rigid sequence. Saíra lets you go back to any step (remap a field, reload the spreadsheet or revalidate) without losing the work already done. You can move backward at any time.
+You do not have to follow the steps in a rigid sequence: you can go back to any step (remap a field, reload the spreadsheet or revalidate) without losing the work already done.
 :::
 
 ::: {.callout-tip}
 ## Practice with the sample file
-Download the sample spreadsheet [`ocorrencias-demo.csv`](../../assets/exemplo/ocorrencias-demo.csv) and follow the tutorials with it. It is Saíra's demonstration dataset: 1,075 real occurrences of Brazilian species across several biomes, deliberately imperfect so you can practice every step: many Portuguese columns to map, coordinates with problems to review, a few names to check (one of them misspelled), and threatened species to try generalization.
+Download [`ocorrencias-demo.csv`](../../assets/exemplo/ocorrencias-demo.csv) and follow the tutorials with it. What the spreadsheet carries as deliberate imperfections is described in [Importing your data](02-upload.qmd).
 :::

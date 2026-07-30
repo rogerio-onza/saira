@@ -399,6 +399,17 @@ table.table:not(.maptable) code { font-family: var(--mono); }
 // click-to-zoom lightbox built in assets/head.html.
 .shot img { cursor: zoom-in; }
 
+// the how-it-works diagram is a drawing, not a screen capture: it carries its own
+// background panel, so the .shot frame would nest a second border around the first.
+// It also has nothing to zoom into.
+// It fills the text column and stops there, so it shares its edges with the
+// screenshots and the prose. Negative margins only push the figure under the
+// grid, which clips the drawing instead of enlarging it.
+.shot.diagram-flow img {
+  width: 100%; max-width: none;
+  border: 0; border-radius: 0; box-shadow: none; cursor: default;
+}
+
 // screenshot lightbox — overlay built by JS (assets/head.html), appended to body
 .lightbox-overlay {
   position: fixed; inset: 0; z-index: 2000;

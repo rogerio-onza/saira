@@ -22,17 +22,17 @@ If no sensitive taxon was detected, there is nothing to generalize: Saíra tells
 
 ::: {.callout-important}
 ## The default is to publish the original coordinate
-Precise data has **greater scientific value**. Generalizing is the exception, not the rule: reduce precision only when there is a real risk of collection, persecution or exploitation. When in doubt, consult your country's conservation-authority guidelines. In Brazil, the recommendation is to follow the guidelines recommended by GBIF.
+Precise data has **greater scientific value**. Generalizing is the exception, not the rule: reduce precision only when there is a real risk of collection, persecution or exploitation. When in doubt, consult your country's conservation-authority guidelines. In Brazil, follow GBIF's.
 :::
 
 ## Two entry choices
 
 For the set of sensitive records, Saíra offers two paths:
 
-- **Publish original coordinates** *(recommended)*: keeps the full precision. The right choice in most cases.
+- **Publish original coordinates** *(recommended)*: keeps the full precision.
 - **Assess sensitivity**: opens [Chapman's (2020)](https://doi.org/10.15468/doc-5jp4-5g10) decision table to determine, with no guessing, the generalization level of each threat group.
 
-Saíra also **detects automatically** coordinates that already arrived generalized (from an upstream source) and **does not generalize them again** — so the location is never degraded twice.
+Saíra also **detects automatically** coordinates that already arrived generalized and **does not generalize them again**, as long as the source carries the signal: <span class="term">coordinateUncertaintyInMeters</span> of 1 km or more, or a filled <span class="term">dataGeneralizations</span>. Without either of those the detection has no way to tell, and the decision becomes yours.
 
 ::: {.callout-important}
 ## DO NOT GENERALIZE WILDLIFE INSIGHTS DATA TWICE
@@ -86,7 +86,7 @@ Each category maps to a generalization **grid**: the coordinate is shifted to th
 
 ::: {.callout-note}
 ## Generalization never increases precision
-Generalizing only **reduces** precision, it never invents it. If a coordinate is already less precise than the category you picked, Saíra publishes it at the **data's real precision** — it never fakes 100 m — and still protects the record with <span class="term">informationWithheld</span>, <span class="term">dataGeneralizations</span> and the uncertainty radius. A banner on the tab counts how many records were published this way.
+Generalizing only **reduces** precision, it never invents it. If a coordinate is already less precise than the category you picked, Saíra publishes it at the **data's real precision**, without faking 100 m, and still protects the record with <span class="term">informationWithheld</span>, <span class="term">dataGeneralizations</span> and the uncertainty radius. A banner on the tab counts how many records were published this way.
 :::
 
 ## Per-species exceptions
@@ -145,7 +145,3 @@ The rules in this step follow three GBIF best-practice documents:
 - Chapman, A. D. (2020). *Current Best Practices for Generalizing Sensitive Species Occurrence Data.* Copenhagen: GBIF Secretariat. <https://doi.org/10.15468/doc-5jp4-5g10> (Table 5, decision cascade; Table 7, generalization grid).
 - Chapman, A. D., & Wieczorek, J. R. (2020). *Georeferencing Best Practices.* Copenhagen: GBIF Secretariat. <https://doi.org/10.15468/doc-gg7h-s853> (sec. 2.3.4, point-radius uncertainty).
 - Zermoglio, P. F., Chapman, A. D., Wieczorek, J. R., Luna, M. C., & Bloom, D. A. (2020). *Georeferencing Quick Reference Guide.* Copenhagen: GBIF Secretariat. <https://doi.org/10.35035/e09p-h128>
-
-## Next steps
-
-Sensitivity decisions made, it's time to wrap up the package: go to **[Preview and export](07-preview-export.qmd)**.

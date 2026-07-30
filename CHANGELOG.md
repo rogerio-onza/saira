@@ -7,6 +7,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **The help-site tutorials are shorter and stick to what the app does.** An editing pass over all seven tutorial pages, in Portuguese and English, removed value-proposition clauses from the standfirsts, sentences that restated the sentence before them, and the seven `Next steps` headings that duplicated the previous/next buttons Quarto already renders. Facts that were explained on two or three pages now live on the page where the reader acts on them and are linked from the others: the mapping template, the sensitive-coordinates file, the generalization levels table and the DwC-A definition each had two or three copies. No figure, table or page was removed.
+- **The how-it-works diagram was redrawn and now opens the tutorial index.** The old version packed five boxes into a 960x240 band, which forced 10.5px labels that rendered at roughly 8px once scaled into the text column. It is now a continuous flow curve with the five stations threaded along it and their labels alternating above and below, on a 1000x460 canvas: the same information, horizontal as before, but with 14 to 18px type that survives being placed on a page. The diagram carries its own background panel, so it is exempted from the screenshot frame instead of being wrapped in a second border. A line below it explains why the diagram has five steps and the index has seven cards.
+- **Step 06 is marked as conditional.** Generalization only has work to do when name validation flagged threatened species, which the page itself said but the index card and the sidebar did not.
+
+### Fixed
+- **The tutorial index and the README no longer list Excel as an upload format.** Saira accepts `.csv`, `.tsv`, `.txt` and camera-trap `.zip` packages; Excel appears only on the way out, as the `.xlsx` mirror in the export bundle. The `02-upload` tutorial page was already correct, so the index contradicted the page it linked to. The flow diagram carried the same claim and was corrected at the source in `man/figures/`.
+- **The generalization tutorial no longer promises that coordinates are never degraded twice.** Saira skips rows the publisher already generalized only when the source carries `coordinateUncertaintyInMeters` of 1 km or more, or a filled `dataGeneralizations`. The page stated the guarantee unconditionally, one line above the warning that exists precisely for the cases it misses. It now states the condition.
+- **A misplaced "apenas" in the Portuguese generalization page inverted a warning.** "Não a use apenas de forma indiscriminada" read as licensing indiscriminate use; the English page was already correct.
+- **A callout boundary in the English name-validation page** enclosed a paragraph that is body text in the Portuguese page, so the two rendered differently.
+
 ## [0.9.7] - 2026-07-30
 
 Performance release. The app behaves exactly as in 0.9.6 everywhere except one fixed bug: startup, column mapping and the taxonomic validation screen are faster, and nothing they produce changed. Every number below was measured on the maintainer's machine and is guarded by a budget in the opt-in `RUN_PERF=true` suite.

@@ -12,7 +12,7 @@ A interface é visual e bilíngue (PT-BR/EN-US); não é preciso programar para 
 
 ### 🔎 O que é
 
-Você tem uma planilha (CSV ou Excel) com registros de espécies e precisa
+Você tem uma planilha (CSV/TSV) com registros de espécies e precisa
 publicá-la no Darwin Core — o conjunto de nomes de colunas e formatos que o GBIF
 e o SiBBr esperam. O Saíra carrega a planilha, ajuda a associar suas colunas aos
 termos do Darwin Core, valida nomes e coordenadas e gera o arquivo final.
@@ -145,7 +145,7 @@ GNU General Public License v3.0 (GPL-3) — veja [LICENSE.md](LICENSE.md).
 
 ### 🔎 What it is
 
-You have a spreadsheet (CSV or Excel) with species records and need to publish it
+You have a spreadsheet (CSV/TSV) with species records and need to publish it
 in Darwin Core — the set of column names and formats that GBIF and SiBBr expect.
 Saíra loads the spreadsheet, helps you map your columns to Darwin Core terms,
 validates names and coordinates, and produces the final archive.

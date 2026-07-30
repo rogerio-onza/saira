@@ -97,7 +97,7 @@ O teste de mar usa dados de costa simplificados. Pontos muito próximos da costa
 
 ## Correções assistidas
 
-O Saíra não só aponta o erro: ele **propõe a correção** para você aplicar explicitamente. As coordenadas originais nunca são sobrescritas em silêncio, e as correções aceitas são **aplicadas na exportação**, não no preview. Quando o modelo de exportação tem as colunas <span class="term">verbatimLatitude</span> e <span class="term">verbatimLongitude</span> vazias, os valores originais são preservados ali.
+O Saíra **propõe a correção** para você aplicar explicitamente. As coordenadas originais nunca são sobrescritas em silêncio, e as correções aceitas são **aplicadas na exportação**, não no preview. Quando o modelo de exportação tem as colunas <span class="term">verbatimLatitude</span> e <span class="term">verbatimLongitude</span> vazias, os valores originais são preservados ali.
 
 Havendo candidatos, painéis aparecem à esquerda. Cada um mostra a contagem e um exemplo, e fica verde com um ✓ depois de aplicado:
 
@@ -137,7 +137,5 @@ Registre o <span class="term">geodeticDatum</span> (por exemplo, <em>WGS84</em>)
 ## Sinal das coordenadas no Brasil
 A maior parte do Brasil tem **latitude e longitude negativas**. Coordenadas positivas onde se esperava o hemisfério sul/oeste são um forte indício de erro de sinal ou de inversão. O exemplo clássico: `-34.87, -8.04` (lat, lon) em vez de `-8.04, -34.87` joga um ponto de Pernambuco para o meio do Atlântico.
 :::
-
-## Próximos passos
 
 Dados mapeados, nomes resolvidos e coordenadas revisadas. Se houver espécies ameaçadas, o próximo passo decide como protegê-las: siga para **[Generalizando espécies sensíveis](06-generalizacao.qmd)**.

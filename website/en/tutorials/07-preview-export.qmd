@@ -4,7 +4,7 @@ pagetitle: "DwC-A export · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-The home stretch: check the complete result, review what was corrected and which species will be generalized, and generate the Darwin Core Archive ready to publish on SiBBr and GBIF.
+Check the complete result, review what was corrected and which species will be generalized, and generate the Darwin Core Archive ready to publish on SiBBr and GBIF.
 :::
 
 ## Preview
@@ -24,7 +24,7 @@ In the **Preview** tab, Saíra shows the final table already in Darwin Core voca
 
 ## The Export tab: review before publishing
 
-The **Export** tab is a **review hub**: before you download the package, it gathers in one place what was corrected, which species will be generalized and which files go into the `.zip`. Check each block before generating the Darwin Core Archive.
+Before you download the package, the **Export** tab gathers in one place what was corrected, which species will be generalized and which files go into the `.zip`. Check each block before generating the Darwin Core Archive.
 
 ```{=html}
 <figure class="shot">
@@ -58,21 +58,9 @@ A summary shows everything the previous steps adjusted, so you can check at a gl
 
 ### Generalized species
 
-If you generalized any taxon in the [generalization](06-generalization.qmd) step, a table lists each **species**, its **threat (MMA)** and the **generalization level** that will go into the package:
+If you generalized any taxon in the [generalization](06-generalization.qmd) step, a table lists each **species**, its **threat (MMA)** and the **generalization level** that will go into the package, at the same four levels described in [Generalizing sensitive species](06-generalization.qmd).
 
-```{=html}
-<table class="maptable">
-  <thead><tr><th>Level (at export)</th><th></th><th>Grid</th></tr></thead>
-  <tbody>
-    <tr><td>Country (~111 km)</td><td><span class="arrow">→</span></td><td>Category 1</td></tr>
-    <tr><td>State (~11 km)</td><td><span class="arrow">→</span></td><td>Category 2</td></tr>
-    <tr><td>City (~1 km)</td><td><span class="arrow">→</span></td><td>Category 3</td></tr>
-    <tr><td>Local (~100 m)</td><td><span class="arrow">→</span></td><td>Category 4</td></tr>
-  </tbody>
-</table>
-```
-
-If nothing was generalized, Saíra records: *no species will be generalized; coordinates will be published as held*. The original, precise coordinates of generalized records do not go into the public package: they stay in a separate file (see **Bundle files**, below).
+If nothing was generalized, Saíra records: *no species will be generalized; coordinates will be published as held*.
 
 ## What Saíra adjusts at export
 
@@ -136,7 +124,7 @@ And the **auxiliary files**, for your own control, kept out of the public packag
 
 ## Generating the Darwin Core Archive
 
-The metadata (`eml.xml`) is assembled **automatically**: Saíra uses a default title, computes the geographic bounding box and date range from your data, and applies the CC0 license by default — there is nothing to fill in. Fine-tuning the metadata (institution, responsible parties, final license) happens later, in the IPT, at publication time.
+The metadata (`eml.xml`) is assembled **automatically**: Saíra uses a default title, computes the geographic bounding box and date range from your data, and applies the CC0 license by default, with nothing for you to fill in. Fine-tuning the metadata (institution, responsible parties, final license) happens later, in the IPT, at publication time.
 
 ```{=html}
 <ol class="fix-steps">
@@ -147,21 +135,8 @@ The metadata (`eml.xml`) is assembled **automatically**: Saíra uses a default t
 </ol>
 ```
 
-::: {.callout-tip}
-## What is a Darwin Core Archive (DwC-A)
-It is a standardized `.zip` package: a data file (<span class="term">occurrence.txt</span>), a descriptor that says what each column means (<span class="term">meta.xml</span>) and the dataset metadata (<span class="term">eml.xml</span>). It is exactly what global repositories expect to receive.
-:::
-
-The `.zip` also includes a **mapping template** (`<dataset>-mapping-guide.txt`): the "your column → Darwin Core term" record of the mapping you did, with no data. Keep it to auto-map future spreadsheets with the same structure, via **Import template** (see [Darwin Core mapping](03-dwc-mapping.qmd)).
-
-Besides the DwC-A, Saíra also exports the dataset as `.xlsx` with **every cell forced to text**, preventing Excel from reinterpreting dates, catalog numbers or coordinates — handy for manual review or for sending to collaborators.
-
 ## Publishing on SiBBr and GBIF
 
 With the `.zip` in hand, publication happens outside Saíra, usually via your institution's or SiBBr's **IPT** (Integrated Publishing Toolkit). The archive Saíra generates is already in the expected format: just upload it, check the mapping in the IPT and publish.
-
-## Done
-
-You took a raw spreadsheet all the way to a validated Darwin Core Archive. Published on SiBBr/GBIF, each record keeps its <span class="term">occurrenceID</span>, appears in searches and downloads combined with other collections, and enters the dataset's citation. 🐦
 
 Back to the **[tutorials overview](index.qmd)** or to the **[home page](../index.qmd)**.
