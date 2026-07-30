@@ -1740,6 +1740,67 @@ format_epithet_token <- function(token) {
     cleaned
 }
 
+#' Vectorized companions to format_genus_token() / format_epithet_token()
+#'
+#' Straight transliterations: every operation the scalars use (gsub, toupper,
+#' tolower, substr, nchar, grepl) is already vectorized in base R, so no
+#' unique/expand step is needed. Called per row the closure and dispatch overhead
+#' dominated; over a column it is a handful of vectorized passes. Names are
+#' dropped, matching what the paste() at the call site expects.
+#'
+#' @param token Character vector of raw name tokens
+#' @return Character vector the same length as the input, NA where the token has
+#'   no usable letters
+#' @noRd
+format_genus_token_vec <- function(token) {
+    values <- as.character(token)
+    n <- length(values)
+    out <- rep(NA_character_, n)
+    if (n == 0L) {
+        return(out)
+    }
+
+    keep <- !(is.na(values) | !nzchar(trimws(values)))
+    if (!any(keep)) {
+        return(out)
+    }
+
+    cleaned <- gsub("^[^A-Za-z]+|[^A-Za-z-]+$", "", values[keep])
+    ok <- nzchar(cleaned)
+    resolved <- rep(NA_character_, length(cleaned))
+    resolved[ok] <- paste0(
+        toupper(substr(cleaned[ok], 1, 1)),
+        tolower(substr(cleaned[ok], 2, nchar(cleaned[ok])))
+    )
+
+    out[keep] <- resolved
+    out
+}
+
+#' @rdname format_genus_token_vec
+#' @noRd
+format_epithet_token_vec <- function(token) {
+    values <- as.character(token)
+    n <- length(values)
+    out <- rep(NA_character_, n)
+    if (n == 0L) {
+        return(out)
+    }
+
+    keep <- !(is.na(values) | !nzchar(trimws(values)))
+    if (!any(keep)) {
+        return(out)
+    }
+
+    cleaned <- tolower(gsub("^[^A-Za-z]+|[^A-Za-z-]+$", "", values[keep]))
+    ok <- grepl("^[a-z][a-z-]*$", cleaned)
+    resolved <- rep(NA_character_, length(cleaned))
+    resolved[ok] <- cleaned[ok]
+
+    out[keep] <- resolved
+    out
+}
+
 extract_scientific_name_components <- function(scientific_names) {
     # Parse over UNIQUE names and expand back: the genus/epithet/rank of a row
     # depends only on its scientificName, and a dataset repeats a handful of
@@ -1895,6 +1956,55 @@ parse_year_to_number <- function(x) {
     }
 
     as.integer(year_match)
+}
+
+#' Vectorized companion to parse_year_to_number()
+#'
+#' Same extraction, resolved once per distinct value instead of once per row.
+#' Years repeat by construction, so the distinct count stays small even on a
+#' free-text date column.
+#'
+#' @param x Character vector of raw year values
+#' @return Integer vector of years, NA where no 4-digit run is present, same
+#'   length as the input
+#' @noRd
+parse_year_to_number_vec <- function(x) {
+    values <- as.character(x)
+    n <- length(values)
+    out <- rep(NA_integer_, n)
+    if (n == 0L) {
+        return(out)
+    }
+
+    trimmed <- trimws(values)
+    candidates <- !(is.na(values) | !nzchar(trimmed))
+    if (!any(candidates)) {
+        return(out)
+    }
+
+    uniq <- unique(trimmed[candidates])
+    resolved <- rep(NA_integer_, length(uniq))
+
+    exact <- grepl("^\\d{4}$", uniq)
+    resolved[exact] <- as.integer(uniq[exact])
+
+    rest <- which(!exact)
+    if (length(rest) > 0L) {
+        # Deliberately NOT regmatches(): it DROPS non-matching elements and so
+        # silently shortens the vector, which would misalign every value after
+        # the first miss. The match position is used directly instead.
+        m <- regexpr("\\d{4}", uniq[rest], perl = TRUE)
+        hit <- m > 0L
+        if (any(hit)) {
+            starts <- m[hit]
+            resolved[rest[hit]] <- as.integer(
+                substring(uniq[rest][hit], starts, starts + 3L)
+            )
+        }
+    }
+
+    out[candidates] <- resolved[match(trimmed[candidates], uniq)]
+    out
 }
 
 normalize_semicolon_tokens <- function(x, out_sep = " | ") {
@@ -2205,6 +2315,26 @@ detect_eventdate_roles <- function(col_names) {
     )
 }
 
+# Month name lookup, hoisted to a file-level constant so it is allocated once per
+# session instead of once per call. It used to live inside parse_month_to_number(),
+# which meant a 40-element named vector was built for every row of the dataset.
+# Both the scalar helper and its vectorized companion read this same object, so
+# the two spellings of the month table cannot drift apart.
+.month_name_map <- c(
+    jan = "01", janeiro = "01", january = "01",
+    fev = "02", fevereiro = "02", feb = "02", february = "02",
+    mar = "03", marco = "03", march = "03",
+    abr = "04", abril = "04", apr = "04", april = "04",
+    mai = "05", maio = "05", may = "05",
+    jun = "06", junho = "06", june = "06",
+    jul = "07", julho = "07", july = "07",
+    ago = "08", agosto = "08", aug = "08", august = "08",
+    set = "09", setembro = "09", sep = "09", sept = "09", september = "09",
+    out = "10", outubro = "10", oct = "10", october = "10",
+    nov = "11", novembro = "11", november = "11",
+    dez = "12", dezembro = "12", dec = "12", december = "12"
+)
+
 parse_month_to_number <- function(x) {
     if (is_blank_value(x)) {
         return(NA_character_)
@@ -2221,26 +2351,57 @@ parse_month_to_number <- function(x) {
     normalized <- normalize_for_matching(value)
     normalized <- gsub("\\s+", "", normalized)
 
-    month_map <- c(
-        jan = "01", janeiro = "01", january = "01",
-        fev = "02", fevereiro = "02", feb = "02", february = "02",
-        mar = "03", marco = "03", march = "03",
-        abr = "04", abril = "04", apr = "04", april = "04",
-        mai = "05", maio = "05", may = "05",
-        jun = "06", junho = "06", june = "06",
-        jul = "07", julho = "07", july = "07",
-        ago = "08", agosto = "08", aug = "08", august = "08",
-        set = "09", setembro = "09", sep = "09", sept = "09", september = "09",
-        out = "10", outubro = "10", oct = "10", october = "10",
-        nov = "11", novembro = "11", november = "11",
-        dez = "12", dezembro = "12", dec = "12", december = "12"
-    )
-
-    if (!normalized %in% names(month_map)) {
+    if (!normalized %in% names(.month_name_map)) {
         return(NA_character_)
     }
 
-    unname(month_map[[normalized]])
+    unname(.month_name_map[[normalized]])
+}
+
+#' Vectorized companion to parse_month_to_number()
+#'
+#' Same mapping, resolved once per distinct month value instead of once per row.
+#' A month column has at most a few dozen distinct spellings whatever the dataset
+#' size, while the scalar version paid a grepl, an iconv (via
+#' normalize_for_matching) and two gsub per record.
+#'
+#' @param x Character vector of raw month values
+#' @return Character vector of "01".."12", NA where unparseable, same length as
+#'   the input
+#' @noRd
+parse_month_to_number_vec <- function(x) {
+    values <- as.character(x)
+    n <- length(values)
+    out <- rep(NA_character_, n)
+    if (n == 0L) {
+        return(out)
+    }
+
+    trimmed <- trimws(values)
+    blank <- is.na(values) | !nzchar(trimmed)
+
+    numeric_like <- !blank & grepl("^\\d{1,2}$", trimmed)
+    month_num <- rep(NA_integer_, n)
+    month_num[numeric_like] <- suppressWarnings(as.integer(trimmed[numeric_like]))
+    in_range <- numeric_like & !is.na(month_num) & month_num >= 1L & month_num <= 12L
+    out[in_range] <- sprintf("%02d", month_num[in_range])
+
+    # Anything that is neither blank nor an in-range number falls through to the
+    # name path. That includes out-of-range digits such as "0" and "13": the
+    # scalar version does not short-circuit them to NA either, it lets them reach
+    # the lookup (where they miss and yield NA). Keeping the fall-through is what
+    # makes this a behaviour-preserving rewrite.
+    named <- !blank & !in_range
+    if (any(named)) {
+        uniq <- unique(trimmed[named])
+        norm <- gsub("\\s+", "", normalize_for_matching(uniq))
+        # Single bracket, not [[: on a NAMED VECTOR (unlike a list) [[key]] errors
+        # on a missing key, while [ ] with an NA index returns NA (ADR-110).
+        resolved <- unname(.month_name_map[match(norm, names(.month_name_map))])
+        out[named] <- resolved[match(trimmed[named], uniq)]
+    }
+
+    out
 }
 
 build_eventdate_interval <- function(df, cols, fallback_raw = TRUE) {
@@ -2272,26 +2433,13 @@ build_eventdate_interval <- function(df, cols, fallback_raw = TRUE) {
     }))
     all_blank <- rowSums(blank_matrix) == ncol(blank_matrix)
 
-    start_month <- vapply(
-        row_values[[role_indices[[1]]]],
-        FUN = parse_month_to_number,
-        FUN.VALUE = character(1)
-    )
-    start_year <- vapply(
-        row_values[[role_indices[[2]]]],
-        FUN = parse_year_to_number,
-        FUN.VALUE = integer(1)
-    )
-    end_month <- vapply(
-        row_values[[role_indices[[3]]]],
-        FUN = parse_month_to_number,
-        FUN.VALUE = character(1)
-    )
-    end_year <- vapply(
-        row_values[[role_indices[[4]]]],
-        FUN = parse_year_to_number,
-        FUN.VALUE = integer(1)
-    )
+    # Four column-wide passes instead of four per-row vapply loops. The vapply
+    # calls also carried USE.NAMES = TRUE (the default), so each one built and
+    # threw away a names attribute as long as the dataset.
+    start_month <- parse_month_to_number_vec(row_values[[role_indices[[1]]]])
+    start_year <- parse_year_to_number_vec(row_values[[role_indices[[2]]]])
+    end_month <- parse_month_to_number_vec(row_values[[role_indices[[3]]]])
+    end_year <- parse_year_to_number_vec(row_values[[role_indices[[4]]]])
 
     has_all_parts <- !is.na(start_month) & !is.na(start_year) & !is.na(end_month) & !is.na(end_year)
     failed_rows <- !all_blank & !has_all_parts

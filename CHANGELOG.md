@@ -7,6 +7,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Performance
+- **Automapping and the eventDate mapping card are much faster on a large spreadsheet.** Four helpers that read a single month, year or scientific-name token were being called once per record, even though a column has at most a few dozen distinct values whatever its length. Measured over 50,000 rows: month parsing 5.85s to 0.03s, year parsing 4.05s to 0.02s, and genus/epithet formatting 3.24s to 0.05s. The month helper was the worst of them because it rebuilt a 40-entry lookup table on every single call. The whole four-column eventDate interval (month/year start and end) drops from 36.1s to 15.1s; the cost that remains there is a separate issue, addressed next. This also fixes two performance budgets that were already failing before this change: Rostrum Stage 2 was at 7.7s against a 2s target and the full pipeline at 10.5s against 8s, both now inside budget.
+- Nothing on screen or in an export changes. Every existing test of the touched functions passes unedited, and each new helper is checked against its original element by element, including the values that look numeric but are out of range ("0", "13") and the accented Portuguese month names.
+
 ## [0.9.6] - 2026-07-29
 
 Maintenance release. Nothing changes for the user: the app behaves exactly as in 0.9.5. This clears the warnings `R CMD check` had accumulated over several releases and makes the editor's linter agree with the project's own conventions.
