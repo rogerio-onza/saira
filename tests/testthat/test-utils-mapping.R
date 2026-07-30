@@ -228,6 +228,106 @@ testthat::test_that("parse_month_to_number supports numeric, Portuguese and Engl
     testthat::expect_true(is.na(parse_month_to_number("foo")))
 })
 
+# Vectorized parser companions ------------------------------------------
+# Each one is asserted against its scalar original element by element, so the
+# scalar stays the specification and the companion can only be accepted when it
+# agrees on every case -- including the awkward ones.
+
+testthat::test_that("parse_month_to_number_vec matches the scalar helper element by element", {
+    # "0" and "13" are the important cases: they match ^\\d{1,2}$ but fall
+    # outside 1..12, and the scalar does NOT short-circuit them to NA -- it lets
+    # them reach the name lookup, where they miss. A naive vectorization that
+    # returns NA at the numeric step would silently agree on the result here but
+    # diverge for any future name that looks numeric.
+    # "Março" guards the iconv transliteration inside normalize_for_matching().
+    values <- c(
+        "8", "08", "0", "13", "Aug", "August", "Ago", "Agosto",
+        "Mar\u00E7o", "  jun  ", "foo", "", NA, "12", "SET", "sept"
+    )
+
+    expected <- vapply(
+        values, parse_month_to_number,
+        FUN.VALUE = character(1), USE.NAMES = FALSE
+    )
+
+    testthat::expect_identical(parse_month_to_number_vec(values), expected)
+})
+
+testthat::test_that("parse_month_to_number_vec handles empty, NA and factor input", {
+    testthat::expect_identical(parse_month_to_number_vec(character(0)), character(0))
+    testthat::expect_identical(parse_month_to_number_vec(NA_character_), NA_character_)
+    testthat::expect_identical(
+        parse_month_to_number_vec(factor(c("jan", "dez"))),
+        c("01", "12")
+    )
+})
+
+testthat::test_that("parse_year_to_number_vec matches the scalar helper element by element", {
+    # "20201" and "19-07-2011" exercise the "first 4-digit run" branch, where a
+    # regmatches()-based rewrite would drop the non-matching elements and
+    # misalign everything after the first miss.
+    values <- c(
+        "1998", "98", "2020-01-01", "coletado em 1975", "abc",
+        "", NA, "20201", "0000", "19-07-2011"
+    )
+
+    expected <- vapply(
+        values, parse_year_to_number,
+        FUN.VALUE = integer(1), USE.NAMES = FALSE
+    )
+
+    testthat::expect_identical(parse_year_to_number_vec(values), expected)
+    testthat::expect_identical(parse_year_to_number_vec(character(0)), integer(0))
+})
+
+testthat::test_that("format_genus_token_vec and format_epithet_token_vec match their scalars", {
+    values <- c(
+        "panthera", "PANTHERA", "  onca ", "x-ray", "3panthera",
+        "cf.", "", NA, "Leopardus-", "aff. onca"
+    )
+
+    testthat::expect_identical(
+        format_genus_token_vec(values),
+        vapply(values, format_genus_token, FUN.VALUE = character(1), USE.NAMES = FALSE)
+    )
+    testthat::expect_identical(
+        format_epithet_token_vec(values),
+        vapply(values, format_epithet_token, FUN.VALUE = character(1), USE.NAMES = FALSE)
+    )
+    testthat::expect_identical(format_genus_token_vec(character(0)), character(0))
+    testthat::expect_identical(format_epithet_token_vec(character(0)), character(0))
+})
+
+testthat::test_that("build_eventdate_interval is unchanged when month/year values repeat across rows", {
+    # The vectorized parsers resolve over unique() and expand with match(), so a
+    # frame with heavy repetition and an interleaved failure is what proves the
+    # expansion preserves row order rather than grouping equal values together.
+    df <- data.frame(
+        COL_START_MO = c("Aug", "Agosto", "foo", "Aug", "jun", "Aug", "foo", "jun", "Agosto", "Aug", "13", "jun"),
+        COL_START_YR = c("2017", "2017", "2017", "1998", "2017", "2017", "1998", "2017", "1998", "2017", "2017", "1998"),
+        COL_END_MO   = c("Jun", "June", "Jun", "Jun", "dez", "June", "Jun", "dez", "Jun", "Jun", "Jun", "dez"),
+        COL_END_YR   = c("2018", "2018", "2018", "2018", "2019", "2018", "2018", "2019", "2018", "2018", "2018", "2019"),
+        stringsAsFactors = FALSE
+    )
+
+    out <- build_eventdate_interval(
+        df = df,
+        cols = c("COL_START_MO", "COL_START_YR", "COL_END_MO", "COL_END_YR"),
+        fallback_raw = TRUE
+    )
+
+    testthat::expect_identical(out$values[[1]], "2017-08/2018-06")
+    testthat::expect_identical(out$values[[4]], "1998-08/2018-06")
+    testthat::expect_identical(out$values[[5]], "2017-06/2019-12")
+    testthat::expect_identical(out$values[[9]], "1998-08/2018-06")
+    # Row 3 and 7 fail on "foo"; row 11 fails on the out-of-range month "13".
+    testthat::expect_identical(out$values[[3]], "foo | 2017 | Jun | 2018")
+    testthat::expect_identical(out$values[[7]], "foo | 1998 | Jun | 2018")
+    testthat::expect_identical(out$values[[11]], "13 | 2017 | Jun | 2018")
+    testthat::expect_identical(out$failure_count, 3L)
+    testthat::expect_identical(which(out$failed_rows), c(3L, 7L, 11L))
+})
+
 testthat::test_that("build_eventdate_interval produces YYYY-MM/YYYY-MM and keeps raw fallback on failures", {
     df <- data.frame(
         COL_START_MO = c("Aug", "Agosto", "foo"),
@@ -923,6 +1023,51 @@ testthat::test_that("resolve_occurrence_ids generates UUIDs when no column exist
     testthat::expect_length(out, 3L)
     testthat::expect_true(all(nchar(out) > 10L))
     testthat::expect_false(anyDuplicated(out) > 0L)
+})
+
+testthat::test_that("resolve_occurrence_ids generates no UUIDs when every row ships an ID", {
+    # Asserted structurally rather than by timing: if ids::uuid() is reached at
+    # all on a fully-populated column, every identifier it produces would be
+    # overwritten on the next line, which is the waste being removed. A timing
+    # assertion would rot on faster hardware; this one cannot.
+    df <- data.frame(
+        occurrenceID = c("obs-1", "obs-2", "obs-3"),
+        x = 1:3,
+        stringsAsFactors = FALSE
+    )
+
+    testthat::local_mocked_bindings(
+        uuid = function(...) stop("ids::uuid() must not be called when no ID is missing"),
+        .package = "ids"
+    )
+
+    testthat::expect_identical(
+        resolve_occurrence_ids(df),
+        c("obs-1", "obs-2", "obs-3")
+    )
+})
+
+testthat::test_that("resolve_occurrence_ids still generates for the rows that need one", {
+    # The paired negative: the mock above must not be able to pass by making the
+    # function never generate anything.
+    df <- data.frame(
+        occurrenceID = c("obs-1", "", "obs-3"),
+        x = 1:3,
+        stringsAsFactors = FALSE
+    )
+
+    calls <- 0L
+    testthat::local_mocked_bindings(
+        uuid = function(n = 1L, ...) {
+            calls <<- calls + 1L
+            sprintf("generated-%02d", seq_len(n))
+        },
+        .package = "ids"
+    )
+
+    out <- resolve_occurrence_ids(df)
+    testthat::expect_identical(calls, 1L)
+    testthat::expect_identical(out, c("obs-1", "generated-01", "obs-3"))
 })
 
 # detect_duplicate_source_mappings (item 3) ------------------------------
