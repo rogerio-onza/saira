@@ -253,3 +253,92 @@ testthat::test_that("Performance regression: per-row label expansion stays vecto
     # Pre-ADR-111 (scalar vapply per row): ~0.65s.
     testthat::expect_lt(elapsed_status, 0.3)
 })
+
+# ADR-113: mapping parser hot paths. Same convention as the ADR-111 block above.
+# Each fixture samples from a small realistic alphabet, because the property
+# being asserted is that cost tracks the number of DISTINCT values rather than
+# the number of rows -- a returning per-row loop blows the budget, a slow runner
+# does not.
+
+testthat::test_that("Performance regression: month and year parsers stay vectorized", {
+    set.seed(20260730L)
+    rows_n <- 50000L
+
+    months <- sample(
+        c("jan", "Fev", "3", "Marco", "december", "", NA, "08", "SET"), rows_n,
+        replace = TRUE
+    )
+    elapsed_month <- unname(system.time({
+        saira:::parse_month_to_number_vec(months)
+    })[["elapsed"]])
+    # Pre-ADR-113 (vapply per row, rebuilding a 40-element month_map each call):
+    # ~5.85s. Vectorized: ~0.03s.
+    testthat::expect_lt(elapsed_month, 1.0)
+
+    years <- sample(
+        c(as.character(2000:2025), "", NA, "coletado em 1975"), rows_n,
+        replace = TRUE
+    )
+    elapsed_year <- unname(system.time({
+        saira:::parse_year_to_number_vec(years)
+    })[["elapsed"]])
+    # Pre-ADR-113 (vapply per row): ~4.05s. Vectorized: ~0.02s.
+    testthat::expect_lt(elapsed_year, 0.75)
+})
+
+testthat::test_that("Performance regression: scientific name token formatters stay vectorized", {
+    set.seed(20260730L)
+    rows_n <- 50000L
+
+    tokens <- sample(
+        c("panthera", "LEOPARDUS", "tapirus", "", NA), rows_n,
+        replace = TRUE
+    )
+
+    elapsed_genus <- unname(system.time({
+        saira:::format_genus_token_vec(tokens)
+    })[["elapsed"]])
+    # Pre-ADR-113 (vapply per row): ~3.24s. Vectorized: ~0.05s.
+    testthat::expect_lt(elapsed_genus, 0.6)
+
+    elapsed_epithet <- unname(system.time({
+        saira:::format_epithet_token_vec(tokens)
+    })[["elapsed"]])
+    testthat::expect_lt(elapsed_epithet, 0.6)
+})
+
+testthat::test_that("Performance regression: 4-column eventDate interval stays under 25s for 50k rows", {
+    set.seed(20260730L)
+    rows_n <- 50000L
+
+    months <- sample(
+        c("jan", "Fev", "3", "Marco", "december", "", NA, "08", "SET"), rows_n,
+        replace = TRUE
+    )
+    years <- sample(
+        c(as.character(2000:2025), "", NA, "coletado em 1975"), rows_n,
+        replace = TRUE
+    )
+    df <- data.frame(
+        mes_inicio = months,
+        ano_inicio = years,
+        mes_fim = sample(months),
+        ano_fim = sample(years),
+        stringsAsFactors = FALSE
+    )
+
+    elapsed <- unname(system.time({
+        saira:::build_eventdate_interval(
+            df,
+            cols = c("mes_inicio", "ano_inicio", "mes_fim", "ano_fim")
+        )
+    })[["elapsed"]])
+
+    # Pre-ADR-113: ~36.1s (the four scalar parsers ran once per row each).
+    # Vectorizing them brings it to ~15.1s. The remaining cost is
+    # collapse_mapped_values(), built unconditionally for the raw fallback even
+    # when no row fails to parse; that is addressed separately and this budget
+    # tightens then. Set above 15.1s and far below 36.1s so a returning per-row
+    # parser fails here.
+    testthat::expect_lt(elapsed, 25)
+})
