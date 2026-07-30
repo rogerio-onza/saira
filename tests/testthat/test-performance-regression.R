@@ -392,3 +392,34 @@ testthat::test_that("Performance regression: resolve_occurrence_ids generates no
     # After sizing the call to the number of gaps: ~0.02s.
     testthat::expect_lt(elapsed, 0.2)
 })
+
+# ADR-113: the validation run tick. stream_window() runs on every 60ms step of a
+# taxonomic run, on the same single R thread doing the taxadb work, and the
+# stream is largest exactly when the run is busiest.
+
+testthat::test_that("Performance regression: stream_window truncates the index, not the frame", {
+    set.seed(20260730L)
+    rows_n <- 20000L
+    df <- data.frame(
+        query_name = paste0("name-", seq_len(rows_n)),
+        display_order = sample(rows_n),
+        status = sample(c("accepted", "synonym", "not_found"), rows_n, replace = TRUE),
+        provider = sample(c("gbif", "florabr"), rows_n, replace = TRUE),
+        rank = sample(c("species", "genus"), rows_n, replace = TRUE),
+        matched = paste0("matched-", seq_len(rows_n)),
+        authorship = paste0("auth-", seq_len(rows_n)),
+        note = paste0("note-", seq_len(rows_n)),
+        stringsAsFactors = FALSE
+    )
+
+    # A real for-loop over the call, NOT `force(expr)`: the latter evaluates the
+    # promise once and then measures nothing, which once nearly caused a genuine
+    # 3x win here to be dismissed as noise.
+    elapsed <- unname(system.time({
+        for (i in seq_len(200L)) saira:::stream_window(df, limit = 100L)
+    })[["elapsed"]])
+
+    # Pre-ADR-113 (order() then subset the WHOLE frame, then keep 100 rows):
+    # ~1.02s. After truncating the index first: ~0.06s.
+    testthat::expect_lt(elapsed, 0.35)
+})

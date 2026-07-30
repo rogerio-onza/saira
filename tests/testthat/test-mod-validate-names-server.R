@@ -709,3 +709,78 @@ testthat::test_that("sensitivity payload reflects per-species overrides", {
         }
     )
 })
+
+# ADR-113: the run tick repaints the progress bar, not the config panel -------
+
+testthat::test_that("progress_block renders the percentage independently of config_panel", {
+    gate <- list(status = "ok", has_data = TRUE, scientific_col = "scientificName")
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(
+                data.frame(scientificName = "Puma concolor", stringsAsFactors = FALSE)
+            ),
+            lang_r = shiny::reactive("en"),
+            validation_gate_r = shiny::reactive(gate)
+        ),
+        {
+            rv$run_state <- list(
+                total_unique = 10L, resolved_unique = 5L,
+                provider_batch_idx = 1L, provider_batch_total = 2L,
+                phase = "querying"
+            )
+            session$flushReact()
+
+            progress_html <- paste(output$progress_block$html, collapse = " ")
+            config_html <- paste(output$config_panel$html, collapse = " ")
+
+            # The bar moved to its own output and still renders the fill.
+            testthat::expect_true(grepl("vn-progress-fill", progress_html, fixed = TRUE))
+            testthat::expect_true(grepl("vn-progress-percent", progress_html, fixed = TRUE))
+
+            # config_panel keeps the widgets that are NOT progress, and no longer
+            # carries the bar itself -- it only hosts the output placeholder.
+            testthat::expect_true(grepl("vn-config-panel", config_html, fixed = TRUE))
+            testthat::expect_false(grepl("vn-progress-fill", config_html, fixed = TRUE))
+
+            # NOTE: this asserts the WIRING, which is all testServer can see. It
+            # deliberately does not attempt to assert that config_panel stopped
+            # depending on rv$run_state: testServer cannot observe render counts
+            # or DOM input rebinding, so that half is covered by manual testing
+            # (a run must not make the two option switches flicker).
+        }
+    )
+})
+
+testthat::test_that("config panel keeps the option switches across a language switch", {
+    gate <- list(status = "ok", has_data = TRUE, scientific_col = "scientificName")
+    lang <- shiny::reactiveVal("pt")
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(
+                data.frame(scientificName = "Puma concolor", stringsAsFactors = FALSE)
+            ),
+            lang_r = lang,
+            validation_gate_r = shiny::reactive(gate)
+        ),
+        {
+            session$setInputs(remove_authors = FALSE, ignore_qualifiers = FALSE)
+            session$flushReact()
+
+            lang("en")
+            session$flushReact()
+
+            # The switches are recreated by the renderUI on a language change;
+            # the isolate() must still read the user's value back, so the markup
+            # must not come out checked. (The DOM rebinding that makes this
+            # user-visible is only reproducible manually.)
+            testthat::expect_false(isTRUE(input$remove_authors))
+            testthat::expect_false(isTRUE(input$ignore_qualifiers))
+            config_html <- paste(output$config_panel$html, collapse = " ")
+            testthat::expect_true(grepl("vn-config-panel", config_html, fixed = TRUE))
+        }
+    )
+})
