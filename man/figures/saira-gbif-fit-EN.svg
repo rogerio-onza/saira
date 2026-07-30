@@ -1,53 +1,98 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 280" width="960" height="280" role="img" aria-label="Where Saíra fits in the GBIF data flow: sources, Saíra at the source, GBIF/SiBBr, downstream tools, research and policy.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 460" width="1000" height="460" role="img" aria-label="Where Saíra fits in the GBIF data flow: the data sources, Saíra as the quality gate, GBIF and SiBBr, the downstream tools and the final use in research and management.">
   <defs>
-    <marker id="ah-primary" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill="#38cff6"/></marker>
-    <marker id="ah-accent" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6" refY="4" orient="auto"><path d="M1,1 L7,4 L1,7 Z" fill="#2833ac"/></marker>
+    <linearGradient id="flow" x1="20" y1="0" x2="980" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38cff6"/>
+      <stop offset="0.117" stop-color="#38cff6"/>
+      <stop offset="0.308" stop-color="#2833ac"/>
+      <stop offset="0.5" stop-color="#00a86b"/>
+      <stop offset="0.692" stop-color="#6d28d9"/>
+      <stop offset="0.883" stop-color="#0e8a95"/>
+      <stop offset="1" stop-color="#0e8a95"/>
+    </linearGradient>
+    <marker id="flow-end" viewBox="0 0 10 10" markerWidth="7" markerHeight="7" refX="7" refY="5" orient="auto">
+      <path d="M1,1 L9,5 L1,9 Z" fill="#0e8a95"/>
+    </marker>
   </defs>
 
-  <rect x="0" y="0" width="960" height="280" rx="14" fill="#f4f3ee"/>
+  <rect x="0" y="0" width="1000" height="460" rx="16" fill="#f4f3ee"/>
 
-  <!-- Section title -->
-  <text x="40" y="40" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="14" font-weight="700" letter-spacing="1.5" fill="#2833ac">WHERE SAÍRA FITS IN GBIF</text>
+  <text x="40" y="44" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="16" font-weight="700" letter-spacing="2" fill="#2833ac">WHERE SAÍRA FITS IN GBIF · QUALITY AT THE SOURCE</text>
+  <line x1="40" y1="60" x2="196" y2="60" stroke="#2833ac" stroke-width="2" stroke-opacity="0.3" stroke-linecap="round"/>
 
-  <!-- Arrows (flow) -->
-  <line x1="182" y1="138" x2="212" y2="138" stroke="#38cff6" stroke-width="2.6" marker-end="url(#ah-primary)"/>
-  <line x1="370" y1="138" x2="402" y2="138" stroke="#38cff6" stroke-width="2.6" marker-end="url(#ah-primary)"/>
-  <line x1="558" y1="138" x2="590" y2="138" stroke="#2833ac" stroke-width="2.2" stroke-opacity="0.55" marker-end="url(#ah-accent)"/>
-  <line x1="746" y1="138" x2="778" y2="138" stroke="#2833ac" stroke-width="2.2" stroke-opacity="0.55" marker-end="url(#ah-accent)"/>
+  <!-- Continuous flow: the same wave as the how-it-works diagram, so the pair reads as one set -->
+  <circle cx="26" cy="307" r="4.5" fill="#38cff6"/>
+  <path d="M26,307 C62,303 100,290 132,250 C178,222 270,222 316,250 C362,278 454,278 500,250 C546,222 638,222 684,250 C730,278 822,278 868,250 C902,247 932,231 958,199"
+        fill="none" stroke="url(#flow)" stroke-width="3" stroke-linecap="round" marker-end="url(#flow-end)"/>
 
-  <!-- Gate label over Saíra -->
-  <text x="292" y="76" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="8.5" font-weight="700" letter-spacing="1.2" fill="#0e8a95">QUALITY GATE</text>
+  <!-- Stems tying each label block to its station -->
+  <g stroke="#6c757d" stroke-opacity="0.35" stroke-width="1.5" stroke-dasharray="3 4">
+    <line x1="132" y1="272" x2="132" y2="304"/>
+    <line x1="316" y1="214" x2="316" y2="196"/>
+    <line x1="500" y1="272" x2="500" y2="304"/>
+    <line x1="684" y1="228" x2="684" y2="196"/>
+    <line x1="868" y1="272" x2="868" y2="304"/>
+  </g>
 
-  <!-- Node 1: Sources -->
-  <rect x="28" y="84" width="152" height="104" rx="10" fill="#ffffff" stroke="#2833ac" stroke-opacity="0.18" stroke-width="1.5"/>
-  <text x="104" y="120" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" fill="#1c1c26">Sources</text>
-  <text x="104" y="146" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">Herbaria, museums, field</text>
-  <text x="104" y="162" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">· CSV/Excel spreadsheets</text>
+  <!-- Station 1: Sources (#38cff6), label below -->
+  <circle cx="132" cy="250" r="22" fill="#38cff6" stroke="#f4f3ee" stroke-width="5"/>
+  <g stroke="#1c1c26" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M123,259 C123,247 132,242 141,242 C141,251 134,259 123,259 Z"/>
+    <line x1="125" y1="257" x2="138" y2="246"/>
+  </g>
+  <text x="132" y="328" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" letter-spacing="1.5" fill="#0f8fb5">SOURCE</text>
+  <text x="132" y="356" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="18" font-weight="700" fill="#1c1c26">Sources</text>
+  <text x="132" y="382" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="14" fill="#5a6169">herbaria, museums, field</text>
+  <text x="132" y="402" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="14" fill="#5a6169">CSV, TSV or TXT files</text>
 
-  <!-- Node 2: Saíra (highlight / gate) -->
-  <rect x="216" y="84" width="152" height="104" rx="10" fill="#2833ac"/>
-  <text x="292" y="120" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="13" font-weight="700" fill="#ffffff">Saíra</text>
-  <text x="292" y="146" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#ffffff" fill-opacity="0.92">Quality at the source →</text>
-  <text x="292" y="162" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#ffffff" fill-opacity="0.92">clean Darwin Core</text>
+  <!-- Station 2: Saíra (#2833ac), the gate — halo marks it as the emphasis, label above -->
+  <circle cx="316" cy="250" r="34" fill="#2833ac" fill-opacity="0.1"/>
+  <circle cx="316" cy="250" r="22" fill="#2833ac" stroke="#f4f3ee" stroke-width="5"/>
+  <g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M306,241 H326 L318,251 V259 L314,256 V251 Z"/>
+  </g>
+  <text x="316" y="124" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" letter-spacing="1.5" fill="#2833ac">QUALITY GATE</text>
+  <text x="316" y="152" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="18" font-weight="700" fill="#1c1c26">Saíra</text>
+  <text x="316" y="178" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="14" fill="#5a6169">maps, validates and</text>
+  <text x="316" y="198" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="14" fill="#5a6169">generalizes before publishing</text>
 
-  <!-- Node 3: GBIF / SiBBr -->
-  <rect x="404" y="84" width="152" height="104" rx="10" fill="#ffffff" stroke="#2833ac" stroke-opacity="0.18" stroke-width="1.5"/>
-  <text x="480" y="120" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" fill="#1c1c26">GBIF / SiBBr</text>
-  <text x="480" y="146" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">Aggregation and</text>
-  <text x="480" y="162" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">publishing in the network</text>
+  <!-- Station 3: GBIF / SiBBr (#00a86b), label below -->
+  <circle cx="500" cy="250" r="22" fill="#00a86b" stroke="#f4f3ee" stroke-width="5"/>
+  <g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="500" cy="250" r="9"/>
+    <ellipse cx="500" cy="250" rx="4" ry="9"/>
+    <line x1="491" y1="250" x2="509" y2="250"/>
+  </g>
+  <text x="500" y="328" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" letter-spacing="1.5" fill="#00875a">NETWORK</text>
+  <text x="500" y="356" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="18" font-weight="700" fill="#1c1c26">GBIF / SiBBr</text>
+  <text x="500" y="382" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="14" fill="#5a6169">aggregation and publishing</text>
+  <text x="500" y="402" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="14" fill="#5a6169">in the network</text>
 
-  <!-- Node 4: Downstream -->
-  <rect x="592" y="84" width="152" height="104" rx="10" fill="#ffffff" stroke="#2833ac" stroke-opacity="0.18" stroke-width="1.5"/>
-  <text x="668" y="120" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" fill="#1c1c26">Downstream</text>
-  <text x="668" y="146" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">Annotation &amp; QA, ecological</text>
-  <text x="668" y="162" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">indices, semantic queries</text>
+  <!-- Station 4: Tools (#6d28d9), label above -->
+  <circle cx="684" cy="250" r="22" fill="#6d28d9" stroke="#f4f3ee" stroke-width="5"/>
+  <g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="677" y1="243" x2="691" y2="243"/>
+    <line x1="677" y1="243" x2="684" y2="257"/>
+    <line x1="691" y1="243" x2="684" y2="257"/>
+    <circle cx="677" cy="243" r="2.4" fill="#ffffff"/>
+    <circle cx="691" cy="243" r="2.4" fill="#ffffff"/>
+    <circle cx="684" cy="257" r="2.4" fill="#ffffff"/>
+  </g>
+  <text x="684" y="124" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" letter-spacing="1.5" fill="#6d28d9">DOWNSTREAM</text>
+  <text x="684" y="152" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="18" font-weight="700" fill="#1c1c26">Tools</text>
+  <text x="684" y="178" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="14" fill="#5a6169">annotation &amp; QA, ecological</text>
+  <text x="684" y="198" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="14" fill="#5a6169">indices, queries</text>
 
-  <!-- Node 5: Research & policy -->
-  <rect x="780" y="84" width="152" height="104" rx="10" fill="#ffffff" stroke="#2833ac" stroke-opacity="0.18" stroke-width="1.5"/>
-  <text x="856" y="120" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" fill="#1c1c26">Research &amp; policy</text>
-  <text x="856" y="146" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">Science and</text>
-  <text x="856" y="162" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="10.5" fill="#6c757d">management use</text>
+  <!-- Station 5: Research (#0e8a95), label below -->
+  <circle cx="868" cy="250" r="22" fill="#0e8a95" stroke="#f4f3ee" stroke-width="5"/>
+  <g stroke="#ffffff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="860" y="240" width="16" height="20" rx="2"/>
+    <line x1="864" y1="248" x2="872" y2="248"/>
+    <line x1="864" y1="254" x2="869" y2="254"/>
+  </g>
+  <text x="868" y="328" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="12" font-weight="700" letter-spacing="1.5" fill="#0e8a95">END USE</text>
+  <text x="868" y="356" text-anchor="middle" font-family="'Space Mono','IBM Plex Mono',monospace" font-size="18" font-weight="700" fill="#1c1c26">Research</text>
+  <text x="868" y="382" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="14" fill="#5a6169">science and public policy</text>
+  <text x="868" y="402" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="14" fill="#5a6169">built on reliable data</text>
 
-  <!-- Caption -->
-  <text x="480" y="236" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="12.5" font-style="italic" fill="#1c1c26">Quality starts at the source: Saíra delivers clean, standardized data, avoiding corrections after publication to GBIF.</text>
+  <text x="500" y="434" text-anchor="middle" font-family="'Source Serif 4',Georgia,serif" font-size="13.5" font-style="italic" fill="#5a6169">Quality starts at the source: clean data avoids corrections after publication.</text>
 </svg>
