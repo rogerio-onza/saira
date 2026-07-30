@@ -2,6 +2,19 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.7</span>
+    <time class="release-date">2026-07-30</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>O aplicativo abre cerca de 5x mais rápido.</strong> Carregar o pacote levava 5,78 s e agora leva 1,04 s. Toda a diferença era a camada geográfica usada nas checagens de mar e de referência, que era carregada na abertura mesmo para quem nunca valida coordenadas. Agora ela é carregada na primeira vez em que é realmente necessária, ao clicar em validar coordenadas, e fica em memória pelo resto da sessão. A análise não mudou: no mesmo conjunto de dados, cada linha sai com o mesmo diagnóstico e o mesmo código ISO3.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>O mapeamento ficou muito mais rápido em planilhas grandes.</strong> Quatro auxiliares que leem um mês, um ano ou um pedaço de nome científico eram chamados uma vez por registro, embora uma coluna tenha no máximo algumas dezenas de valores distintos. Em 50 mil registros: o intervalo de datas montado a partir de quatro colunas (mês e ano de início e fim) caiu de 36,1 s para 0,27 s. Além disso, quando a planilha já traz o próprio <code>occurrenceID</code>, o Saíra não gera mais um conjunto inteiro de identificadores aleatórios só para descartá-los.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>A barra de progresso não disputa mais espaço com a validação que ela reporta.</strong> Durante uma consulta taxonômica, o painel inteiro de configuração era reconstruído umas 16 vezes por segundo, na mesma linha de execução que fazia as consultas. Agora só a barra se atualiza a cada passo, e a lista de nomes que vai aparecendo redesenha bem mais rápido em execuções longas.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Trocar o idioma não liga mais as duas opções da validação de nomes.</strong> Desligar "remover autores" ou "ignorar qualificadores" e depois alternar entre português e inglês religava as duas chaves, mudando em silêncio como a próxima validação trataria os seus nomes.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.6</span>
     <time class="release-date">2026-07-29</time>
   </header>

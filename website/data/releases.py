@@ -11,6 +11,22 @@
 
 RELEASES = [
     {
+        "version": "0.9.7",
+        "date": "2026-07-30",
+        "pt": [
+            ("changed", "**O aplicativo abre cerca de 5x mais rápido.** Carregar o pacote levava 5,78 s e agora leva 1,04 s. Toda a diferença era a camada geográfica usada nas checagens de mar e de referência, que era carregada na abertura mesmo para quem nunca valida coordenadas. Agora ela é carregada na primeira vez em que é realmente necessária, ao clicar em validar coordenadas, e fica em memória pelo resto da sessão. A análise não mudou: no mesmo conjunto de dados, cada linha sai com o mesmo diagnóstico e o mesmo código ISO3."),
+            ("changed", "**O mapeamento ficou muito mais rápido em planilhas grandes.** Quatro auxiliares que leem um mês, um ano ou um pedaço de nome científico eram chamados uma vez por registro, embora uma coluna tenha no máximo algumas dezenas de valores distintos. Em 50 mil registros: o intervalo de datas montado a partir de quatro colunas (mês e ano de início e fim) caiu de 36,1 s para 0,27 s. Além disso, quando a planilha já traz o próprio `occurrenceID`, o Saíra não gera mais um conjunto inteiro de identificadores aleatórios só para descartá-los."),
+            ("changed", "**A barra de progresso não disputa mais espaço com a validação que ela reporta.** Durante uma consulta taxonômica, o painel inteiro de configuração era reconstruído umas 16 vezes por segundo, na mesma linha de execução que fazia as consultas. Agora só a barra se atualiza a cada passo, e a lista de nomes que vai aparecendo redesenha bem mais rápido em execuções longas."),
+            ("fixed", "**Trocar o idioma não liga mais as duas opções da validação de nomes.** Desligar \"remover autores\" ou \"ignorar qualificadores\" e depois alternar entre português e inglês religava as duas chaves, mudando em silêncio como a próxima validação trataria os seus nomes."),
+        ],
+        "en": [
+            ("changed", "**The app starts about 5x faster.** Loading the package took 5.78 s and now takes 1.04 s. All of the difference was the geographic layer used by the sea and reference checks, loaded at startup even for people who never validate coordinates. It is now loaded the first time it is actually needed, when you click validate coordinates, and kept in memory for the rest of the session. The analysis did not change: on the same dataset every row comes out with the same diagnostic and the same ISO3 code."),
+            ("changed", "**Column mapping is much faster on a large spreadsheet.** Four helpers that read a single month, year or scientific-name token were being called once per record, even though a column has at most a few dozen distinct values. Over 50,000 records: the date interval assembled from four columns (start and end month and year) dropped from 36.1 s to 0.27 s. On top of that, when your spreadsheet already brings its own `occurrenceID`, Saíra no longer generates a whole set of random identifiers just to discard them."),
+            ("changed", "**The progress bar no longer competes with the validation it reports.** During a taxonomic run the entire configuration panel was rebuilt about 16 times per second, on the same thread doing the queries. Now only the bar repaints on each step, and the stream of names redraws far faster on long runs."),
+            ("fixed", "**Switching the language no longer turns the two name-validation options back on.** Turning off \"remove authors\" or \"ignore qualifiers\" and then switching between Portuguese and English put both switches back on, silently changing how the next validation would treat your names."),
+        ],
+    },
+    {
         "version": "0.9.6",
         "date": "2026-07-29",
         "pt": [
