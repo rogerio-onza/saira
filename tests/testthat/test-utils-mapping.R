@@ -1025,6 +1025,51 @@ testthat::test_that("resolve_occurrence_ids generates UUIDs when no column exist
     testthat::expect_false(anyDuplicated(out) > 0L)
 })
 
+testthat::test_that("resolve_occurrence_ids generates no UUIDs when every row ships an ID", {
+    # Asserted structurally rather than by timing: if ids::uuid() is reached at
+    # all on a fully-populated column, every identifier it produces would be
+    # overwritten on the next line, which is the waste being removed. A timing
+    # assertion would rot on faster hardware; this one cannot.
+    df <- data.frame(
+        occurrenceID = c("obs-1", "obs-2", "obs-3"),
+        x = 1:3,
+        stringsAsFactors = FALSE
+    )
+
+    testthat::local_mocked_bindings(
+        uuid = function(...) stop("ids::uuid() must not be called when no ID is missing"),
+        .package = "ids"
+    )
+
+    testthat::expect_identical(
+        resolve_occurrence_ids(df),
+        c("obs-1", "obs-2", "obs-3")
+    )
+})
+
+testthat::test_that("resolve_occurrence_ids still generates for the rows that need one", {
+    # The paired negative: the mock above must not be able to pass by making the
+    # function never generate anything.
+    df <- data.frame(
+        occurrenceID = c("obs-1", "", "obs-3"),
+        x = 1:3,
+        stringsAsFactors = FALSE
+    )
+
+    calls <- 0L
+    testthat::local_mocked_bindings(
+        uuid = function(n = 1L, ...) {
+            calls <<- calls + 1L
+            sprintf("generated-%02d", seq_len(n))
+        },
+        .package = "ids"
+    )
+
+    out <- resolve_occurrence_ids(df)
+    testthat::expect_identical(calls, 1L)
+    testthat::expect_identical(out, c("obs-1", "generated-01", "obs-3"))
+})
+
 # detect_duplicate_source_mappings (item 3) ------------------------------
 testthat::test_that("detect_duplicate_source_mappings flags a column used by two terms", {
     mv <- list(

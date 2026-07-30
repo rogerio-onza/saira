@@ -2421,7 +2421,6 @@ build_eventdate_interval <- function(df, cols, fallback_raw = TRUE) {
         stop("Could not detect eventDate roles for all 4 mapped columns.")
     }
 
-    raw_values <- collapse_mapped_values(df, cols, out_sep = " | ")
     row_values <- lapply(cols, function(col_name) {
         values <- as.character(df[[col_name]])
         values[is.na(df[[col_name]])] <- NA_character_
@@ -2455,6 +2454,14 @@ build_eventdate_interval <- function(df, cols, fallback_raw = TRUE) {
         )
     }
     if (isTRUE(fallback_raw) && any(failed_rows)) {
+        # Built here rather than up front: it is only ever read on this branch,
+        # and on a clean dataset (no parse failures, the common case) nothing
+        # reads it at all. With 4 columns collapse_mapped_values() takes its
+        # multi-column path, an O(nrow) loop that was costing ~14s per call at
+        # 50k rows purely to be discarded. Nothing is lost by deferring: the
+        # function is pure, and its only other effect -- stop() on a missing
+        # column -- is already reached by df[[col_name]] above.
+        raw_values <- collapse_mapped_values(df, cols, out_sep = " | ")
         result[failed_rows] <- raw_values[failed_rows]
     }
 
@@ -2546,12 +2553,25 @@ build_term_value <- function(
 # keep the previous behaviour (all random UUIDs).
 resolve_occurrence_ids <- function(df, n = NULL) {
     n <- n %||% (if (is.data.frame(df)) nrow(df) else length(df))
-    out <- ids::uuid(n = n)
+    # Generate only the identifiers actually needed. The previous shape built n
+    # UUIDs and then overwrote the ones the upload already supplied, so a file
+    # that ships a complete occurrenceID column (camera-trap observationID, a
+    # GBIF re-import) paid for a full set of UUIDs and discarded every one of
+    # them. Same approach as generate_occurrence_ids() in utils_export.R, which
+    # already sized its call to the number of gaps.
+    out <- character(n)
+    keep <- rep(FALSE, n)
     if (is.data.frame(df) && "occurrenceID" %in% names(df)) {
         src <- trimws(as.character(df[["occurrenceID"]]))
         keep <- !is.na(src) & nzchar(src)
         out[keep] <- src[keep]
     }
+
+    missing_n <- sum(!keep)
+    if (missing_n > 0L) {
+        out[!keep] <- ids::uuid(n = missing_n)
+    }
+
     out
 }
 

@@ -335,10 +335,60 @@ testthat::test_that("Performance regression: 4-column eventDate interval stays u
     })[["elapsed"]])
 
     # Pre-ADR-113: ~36.1s (the four scalar parsers ran once per row each).
-    # Vectorizing them brings it to ~15.1s. The remaining cost is
-    # collapse_mapped_values(), built unconditionally for the raw fallback even
-    # when no row fails to parse; that is addressed separately and this budget
-    # tightens then. Set above 15.1s and far below 36.1s so a returning per-row
-    # parser fails here.
+    # Vectorizing them brings it to ~13.4s on THIS fixture, which deliberately
+    # samples blanks and free-text years so a large share of rows fail to parse
+    # and genuinely need the raw fallback -- so collapse_mapped_values() still
+    # runs and still dominates. That is the honest worst case; the clean-data
+    # case is the test below. Set above 13.4s and far below 36.1s, so a
+    # returning per-row parser fails here.
     testthat::expect_lt(elapsed, 25)
+})
+
+testthat::test_that("Performance regression: a clean 4-column eventDate does not build the raw fallback", {
+    # Same shape as above but every row parses, which is the common case. The
+    # raw fallback is then never read, so collapse_mapped_values() must not run:
+    # it is an O(nrow) multi-column loop costing ~14s at this size. Building it
+    # unconditionally is what this budget guards against coming back.
+    set.seed(20260730L)
+    rows_n <- 50000L
+
+    months <- sample(c("jan", "Fev", "3", "Marco", "december", "08", "SET"), rows_n, replace = TRUE)
+    years <- sample(as.character(2000:2025), rows_n, replace = TRUE)
+    df <- data.frame(
+        mes_inicio = months,
+        ano_inicio = years,
+        mes_fim = sample(months),
+        ano_fim = sample(years),
+        stringsAsFactors = FALSE
+    )
+
+    elapsed <- unname(system.time({
+        out <- saira:::build_eventdate_interval(
+            df,
+            cols = c("mes_inicio", "ano_inicio", "mes_fim", "ano_fim")
+        )
+    })[["elapsed"]])
+
+    # Guard that the fixture really is clean, or the budget would prove nothing.
+    testthat::expect_identical(out$failure_count, 0L)
+    # Pre-ADR-113: ~36.1s. After vectorizing the parsers: ~15.1s. After making
+    # the raw fallback lazy: ~0.27s.
+    testthat::expect_lt(elapsed, 2.5)
+})
+
+testthat::test_that("Performance regression: resolve_occurrence_ids generates nothing when IDs are supplied", {
+    rows_n <- 50000L
+    df <- data.frame(
+        occurrenceID = sprintf("obs-%06d", seq_len(rows_n)),
+        x = rep(1L, rows_n),
+        stringsAsFactors = FALSE
+    )
+
+    elapsed <- unname(system.time({
+        saira:::resolve_occurrence_ids(df)
+    })[["elapsed"]])
+
+    # Pre-ADR-113 (ids::uuid(n) built unconditionally, then overwritten): ~0.86s.
+    # After sizing the call to the number of gaps: ~0.02s.
+    testthat::expect_lt(elapsed, 0.2)
 })
