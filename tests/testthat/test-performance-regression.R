@@ -391,6 +391,7 @@ testthat::test_that("Performance regression: resolve_occurrence_ids generates no
     # Pre-ADR-113 (ids::uuid(n) built unconditionally, then overwritten): ~0.86s.
     # After sizing the call to the number of gaps: ~0.02s.
     testthat::expect_lt(elapsed, 0.2)
+})
 
 # ADR-113: the validation run tick. stream_window() runs on every 60ms step of a
 # taxonomic run, on the same single R thread doing the taxadb work, and the
