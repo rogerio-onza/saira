@@ -289,3 +289,47 @@ test_that("normalize_status_vec handles empty, NA and factor inputs", {
         c("accepted", "ignored")
     )
 })
+
+# ADR-113: stream_window truncates the index, not the frame ------------------
+
+test_that("stream_window returns the same rows and order after the index-first change", {
+    # display_order is deliberately non-monotone and out of step with row order,
+    # so ordering the index and ordering the frame can be told apart.
+    df <- data.frame(
+        query_name = paste0("name-", 1:10),
+        display_order = c(3L, 9L, 1L, 7L, 10L, 2L, 8L, 4L, 6L, 5L),
+        stringsAsFactors = FALSE
+    )
+
+    out <- saira:::stream_window(df, limit = 4L)
+    expect_equal(nrow(out), 4L)
+    expect_equal(out$display_order, c(10L, 9L, 8L, 7L))
+    expect_equal(out$query_name, c("name-5", "name-2", "name-7", "name-4"))
+    expect_null(attr(out, "row.names.orig"))
+    expect_equal(rownames(out), as.character(1:4))
+})
+
+test_that("stream_window keeps every row when limit is NULL", {
+    # ADR-093: the 100-row cap applies only while a run is in flight. After the
+    # run the panel shows the whole stream, so limit = NULL must not truncate.
+    df <- data.frame(
+        query_name = paste0("name-", 1:10),
+        display_order = c(3L, 9L, 1L, 7L, 10L, 2L, 8L, 4L, 6L, 5L),
+        stringsAsFactors = FALSE
+    )
+
+    out <- saira:::stream_window(df, limit = NULL)
+    expect_equal(nrow(out), 10L)
+    expect_equal(out$display_order, 10:1)
+
+    out_inf <- saira:::stream_window(df, limit = Inf)
+    expect_equal(nrow(out_inf), 10L)
+    expect_equal(out_inf$display_order, 10:1)
+})
+
+test_that("stream_window still adds display_order when the column is absent", {
+    df <- data.frame(query_name = c("a", "b", "c"), stringsAsFactors = FALSE)
+    out <- saira:::stream_window(df, limit = 2L)
+    expect_equal(out$query_name, c("c", "b"))
+    expect_equal(out$display_order, c(3L, 2L))
+})

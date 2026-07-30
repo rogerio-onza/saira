@@ -98,13 +98,22 @@ stream_window <- function(stream_df, limit = .vn_stream_window_limit) {
     }
     out <- stream_df
     if (!"display_order" %in% names(out)) out$display_order <- seq_len(nrow(out))
-    out <- out[order(out$display_order, decreasing = TRUE), , drop = FALSE]
+
+    # Order to an INDEX, truncate the index, then subset once. The previous shape
+    # materialized the whole reordered frame -- every column of the entire
+    # accumulated stream -- and only then kept the first `limit` rows. This runs
+    # on every 60ms tick of a run, when the stream is at its largest.
+    # ADR-093 is untouched: limit = NULL still returns every row (the post-run
+    # contract), and the cap still applies only while the run is in flight.
+    idx <- order(out$display_order, decreasing = TRUE)
     if (!is.null(limit) && !is.infinite(limit)) {
         limit_int <- suppressWarnings(as.integer(limit))
-        if (!is.na(limit_int) && limit_int > 0L && nrow(out) > limit_int) {
-            out <- out[seq_len(limit_int), , drop = FALSE]
+        if (!is.na(limit_int) && limit_int > 0L && length(idx) > limit_int) {
+            idx <- idx[seq_len(limit_int)]
         }
     }
+
+    out <- out[idx, , drop = FALSE]
     rownames(out) <- NULL
     out
 }

@@ -306,8 +306,8 @@ rostrum_compose_eventdate_values <- function(df, source_columns) {
     day_blank <- is.na(day_values) | !nzchar(trimws(day_values))
     has_any_input <- !(year_blank & month_blank & day_blank)
 
-    parsed_year <- vapply(year_values, parse_year_to_number, FUN.VALUE = integer(1))
-    parsed_month <- vapply(month_values, parse_month_to_number, FUN.VALUE = character(1))
+    parsed_year <- parse_year_to_number_vec(year_values)
+    parsed_month <- parse_month_to_number_vec(month_values)
     parsed_month_num <- suppressWarnings(as.integer(parsed_month))
     parsed_day <- rostrum_eventdate_parse_day(day_values)
 
@@ -357,9 +357,9 @@ rostrum_compose_scientific_name_values <- function(df, source_columns) {
     infra_values <- rostrum_extract_column(df, source_columns[["infraspecificEpithet"]])
     authorship_values <- rostrum_extract_column(df, source_columns[["scientificNameAuthorship"]])
 
-    genus_fmt <- vapply(genus_values, format_genus_token, FUN.VALUE = character(1))
-    specific_fmt <- vapply(specific_values, format_epithet_token, FUN.VALUE = character(1))
-    infra_fmt <- vapply(infra_values, format_epithet_token, FUN.VALUE = character(1))
+    genus_fmt <- format_genus_token_vec(genus_values)
+    specific_fmt <- format_epithet_token_vec(specific_values)
+    infra_fmt <- format_epithet_token_vec(infra_values)
 
     genus_fmt[!is.na(genus_fmt) & !nzchar(genus_fmt)] <- NA_character_
     specific_fmt[!is.na(specific_fmt) & !nzchar(specific_fmt)] <- NA_character_

@@ -253,3 +253,173 @@ testthat::test_that("Performance regression: per-row label expansion stays vecto
     # Pre-ADR-111 (scalar vapply per row): ~0.65s.
     testthat::expect_lt(elapsed_status, 0.3)
 })
+
+# ADR-113: mapping parser hot paths. Same convention as the ADR-111 block above.
+# Each fixture samples from a small realistic alphabet, because the property
+# being asserted is that cost tracks the number of DISTINCT values rather than
+# the number of rows -- a returning per-row loop blows the budget, a slow runner
+# does not.
+
+testthat::test_that("Performance regression: month and year parsers stay vectorized", {
+    set.seed(20260730L)
+    rows_n <- 50000L
+
+    months <- sample(
+        c("jan", "Fev", "3", "Marco", "december", "", NA, "08", "SET"), rows_n,
+        replace = TRUE
+    )
+    elapsed_month <- unname(system.time({
+        saira:::parse_month_to_number_vec(months)
+    })[["elapsed"]])
+    # Pre-ADR-113 (vapply per row, rebuilding a 40-element month_map each call):
+    # ~5.85s. Vectorized: ~0.03s.
+    testthat::expect_lt(elapsed_month, 1.0)
+
+    years <- sample(
+        c(as.character(2000:2025), "", NA, "coletado em 1975"), rows_n,
+        replace = TRUE
+    )
+    elapsed_year <- unname(system.time({
+        saira:::parse_year_to_number_vec(years)
+    })[["elapsed"]])
+    # Pre-ADR-113 (vapply per row): ~4.05s. Vectorized: ~0.02s.
+    testthat::expect_lt(elapsed_year, 0.75)
+})
+
+testthat::test_that("Performance regression: scientific name token formatters stay vectorized", {
+    set.seed(20260730L)
+    rows_n <- 50000L
+
+    tokens <- sample(
+        c("panthera", "LEOPARDUS", "tapirus", "", NA), rows_n,
+        replace = TRUE
+    )
+
+    elapsed_genus <- unname(system.time({
+        saira:::format_genus_token_vec(tokens)
+    })[["elapsed"]])
+    # Pre-ADR-113 (vapply per row): ~3.24s. Vectorized: ~0.05s.
+    testthat::expect_lt(elapsed_genus, 0.6)
+
+    elapsed_epithet <- unname(system.time({
+        saira:::format_epithet_token_vec(tokens)
+    })[["elapsed"]])
+    testthat::expect_lt(elapsed_epithet, 0.6)
+})
+
+testthat::test_that("Performance regression: 4-column eventDate interval stays under 25s for 50k rows", {
+    set.seed(20260730L)
+    rows_n <- 50000L
+
+    months <- sample(
+        c("jan", "Fev", "3", "Marco", "december", "", NA, "08", "SET"), rows_n,
+        replace = TRUE
+    )
+    years <- sample(
+        c(as.character(2000:2025), "", NA, "coletado em 1975"), rows_n,
+        replace = TRUE
+    )
+    df <- data.frame(
+        mes_inicio = months,
+        ano_inicio = years,
+        mes_fim = sample(months),
+        ano_fim = sample(years),
+        stringsAsFactors = FALSE
+    )
+
+    elapsed <- unname(system.time({
+        saira:::build_eventdate_interval(
+            df,
+            cols = c("mes_inicio", "ano_inicio", "mes_fim", "ano_fim")
+        )
+    })[["elapsed"]])
+
+    # Pre-ADR-113: ~36.1s (the four scalar parsers ran once per row each).
+    # Vectorizing them brings it to ~13.4s on THIS fixture, which deliberately
+    # samples blanks and free-text years so a large share of rows fail to parse
+    # and genuinely need the raw fallback -- so collapse_mapped_values() still
+    # runs and still dominates. That is the honest worst case; the clean-data
+    # case is the test below. Set above 13.4s and far below 36.1s, so a
+    # returning per-row parser fails here.
+    testthat::expect_lt(elapsed, 25)
+})
+
+testthat::test_that("Performance regression: a clean 4-column eventDate does not build the raw fallback", {
+    # Same shape as above but every row parses, which is the common case. The
+    # raw fallback is then never read, so collapse_mapped_values() must not run:
+    # it is an O(nrow) multi-column loop costing ~14s at this size. Building it
+    # unconditionally is what this budget guards against coming back.
+    set.seed(20260730L)
+    rows_n <- 50000L
+
+    months <- sample(c("jan", "Fev", "3", "Marco", "december", "08", "SET"), rows_n, replace = TRUE)
+    years <- sample(as.character(2000:2025), rows_n, replace = TRUE)
+    df <- data.frame(
+        mes_inicio = months,
+        ano_inicio = years,
+        mes_fim = sample(months),
+        ano_fim = sample(years),
+        stringsAsFactors = FALSE
+    )
+
+    elapsed <- unname(system.time({
+        out <- saira:::build_eventdate_interval(
+            df,
+            cols = c("mes_inicio", "ano_inicio", "mes_fim", "ano_fim")
+        )
+    })[["elapsed"]])
+
+    # Guard that the fixture really is clean, or the budget would prove nothing.
+    testthat::expect_identical(out$failure_count, 0L)
+    # Pre-ADR-113: ~36.1s. After vectorizing the parsers: ~15.1s. After making
+    # the raw fallback lazy: ~0.27s.
+    testthat::expect_lt(elapsed, 2.5)
+})
+
+testthat::test_that("Performance regression: resolve_occurrence_ids generates nothing when IDs are supplied", {
+    rows_n <- 50000L
+    df <- data.frame(
+        occurrenceID = sprintf("obs-%06d", seq_len(rows_n)),
+        x = rep(1L, rows_n),
+        stringsAsFactors = FALSE
+    )
+
+    elapsed <- unname(system.time({
+        saira:::resolve_occurrence_ids(df)
+    })[["elapsed"]])
+
+    # Pre-ADR-113 (ids::uuid(n) built unconditionally, then overwritten): ~0.86s.
+    # After sizing the call to the number of gaps: ~0.02s.
+    testthat::expect_lt(elapsed, 0.2)
+})
+
+# ADR-113: the validation run tick. stream_window() runs on every 60ms step of a
+# taxonomic run, on the same single R thread doing the taxadb work, and the
+# stream is largest exactly when the run is busiest.
+
+testthat::test_that("Performance regression: stream_window truncates the index, not the frame", {
+    set.seed(20260730L)
+    rows_n <- 20000L
+    df <- data.frame(
+        query_name = paste0("name-", seq_len(rows_n)),
+        display_order = sample(rows_n),
+        status = sample(c("accepted", "synonym", "not_found"), rows_n, replace = TRUE),
+        provider = sample(c("gbif", "florabr"), rows_n, replace = TRUE),
+        rank = sample(c("species", "genus"), rows_n, replace = TRUE),
+        matched = paste0("matched-", seq_len(rows_n)),
+        authorship = paste0("auth-", seq_len(rows_n)),
+        note = paste0("note-", seq_len(rows_n)),
+        stringsAsFactors = FALSE
+    )
+
+    # A real for-loop over the call, NOT `force(expr)`: the latter evaluates the
+    # promise once and then measures nothing, which once nearly caused a genuine
+    # 3x win here to be dismissed as noise.
+    elapsed <- unname(system.time({
+        for (i in seq_len(200L)) saira:::stream_window(df, limit = 100L)
+    })[["elapsed"]])
+
+    # Pre-ADR-113 (order() then subset the WHOLE frame, then keep 100 rows):
+    # ~1.02s. After truncating the index first: ~0.06s.
+    testthat::expect_lt(elapsed, 0.35)
+})
