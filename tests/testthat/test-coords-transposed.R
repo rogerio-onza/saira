@@ -139,3 +139,49 @@ testthat::test_that("apply_coord_corrections_to_result is a safe no-op without o
     # occurrenceID not present in occ_ids -> no change.
     testthat::expect_identical(apply_coord_corrections_to_result(res, cc, NULL, c("A", "B")), res)
 })
+
+# ADR-113: the caller already holds the resolved ISO3 -------------------------
+
+testthat::test_that("coords_transposed_corrections does not resolve ISO3 when it is supplied", {
+    # validate_coords_cc_df() already runs the full country -> ISO3 cascade and
+    # returns it as result$country_iso3. Passing it through must skip the second
+    # pass entirely, including the utils::adist fuzzy matrix at the end of it.
+    df <- data.frame(
+        decimalLatitude = c(-46.6, -47.9),
+        decimalLongitude = c(-23.5, -15.8),
+        country = c("Brazil", "Brazil"),
+        stringsAsFactors = FALSE
+    )
+
+    testthat::local_mocked_bindings(
+        coords_country_to_iso3 = function(...) {
+            stop("coords_country_to_iso3() must not run when country_iso3 is supplied")
+        }
+    )
+
+    out <- coords_transposed_corrections(df, country_iso3 = c("BRA", "BRA"))
+    testthat::expect_identical(out$informed_country, c("BRA", "BRA"))
+})
+
+testthat::test_that("coords_transposed_corrections still resolves ISO3 when it is omitted", {
+    # The paired negative: without it, the test above would also pass on an
+    # implementation that never resolves ISO3 at all.
+    df <- data.frame(
+        decimalLatitude = c(-46.6, -47.9),
+        decimalLongitude = c(-23.5, -15.8),
+        country = c("Brazil", "Brazil"),
+        stringsAsFactors = FALSE
+    )
+
+    calls <- 0L
+    testthat::local_mocked_bindings(
+        coords_country_to_iso3 = function(x, ...) {
+            calls <<- calls + 1L
+            rep("BRA", length(x))
+        }
+    )
+
+    out <- coords_transposed_corrections(df)
+    testthat::expect_identical(calls, 1L)
+    testthat::expect_identical(out$informed_country, c("BRA", "BRA"))
+})

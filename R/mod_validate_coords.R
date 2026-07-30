@@ -869,7 +869,16 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                         df,
                         lat_col = "decimalLatitude",
                         lon_col = "decimalLongitude",
-                        country_col = "country"
+                        country_col = "country",
+                        # `result` already carries the resolved ISO3, aligned to
+                        # .row_index = seq_len(nrow(df)) and never subset or
+                        # reordered. Without this argument the function re-runs
+                        # the whole country -> ISO3 cascade (iso3c, iso2c, CLDR,
+                        # aliases, then a utils::adist matrix against ~3k
+                        # aliases) over the same column, seconds after
+                        # validate_coords_cc_df() computed exactly that vector.
+                        # The parameter exists for this.
+                        country_iso3 = result$country_iso3
                     ),
                     error = function(e) NULL
                 )
