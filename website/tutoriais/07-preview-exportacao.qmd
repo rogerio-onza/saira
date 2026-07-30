@@ -4,7 +4,7 @@ pagetitle: "Exportação DwC-A · Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-A reta final: confira o resultado completo, revise o que foi corrigido e quais espécies serão generalizadas, e gere o Darwin Core Archive pronto para publicar no SiBBr e no GBIF.
+Confira o resultado completo, revise o que foi corrigido e quais espécies serão generalizadas, e gere o Darwin Core Archive pronto para publicar no SiBBr e no GBIF.
 :::
 
 ## Pré-visualização
@@ -24,7 +24,7 @@ Na aba **Pré-visualização**, o Saíra mostra a tabela final já em vocabulár
 
 ## A aba Exportação: revisão antes de publicar
 
-A aba **Exportação** é um **hub de revisão**: antes de baixar o pacote, ela reúne num só lugar o que foi corrigido, quais espécies serão generalizadas e quais arquivos vão no `.zip`. Confira cada bloco antes de gerar o Darwin Core Archive.
+Antes de baixar o pacote, a aba **Exportação** reúne num só lugar o que foi corrigido, quais espécies serão generalizadas e quais arquivos vão no `.zip`. Confira cada bloco antes de gerar o Darwin Core Archive.
 
 ```{=html}
 <figure class="shot">
@@ -58,21 +58,9 @@ Um resumo mostra tudo o que as etapas anteriores ajustaram, para você conferir 
 
 ### Espécies generalizadas
 
-Se você generalizou algum táxon na etapa de [generalização](06-generalizacao.qmd), uma tabela lista cada **espécie**, sua **ameaça (MMA)** e o **nível de generalização** que sairá no pacote:
+Se você generalizou algum táxon na etapa de [generalização](06-generalizacao.qmd), uma tabela lista cada **espécie**, sua **ameaça (MMA)** e o **nível de generalização** que sairá no pacote, nos mesmos quatro níveis descritos em [Generalizando espécies sensíveis](06-generalizacao.qmd).
 
-```{=html}
-<table class="maptable">
-  <thead><tr><th>Nível (na exportação)</th><th></th><th>Grade</th></tr></thead>
-  <tbody>
-    <tr><td>País (~111 km)</td><td><span class="arrow">→</span></td><td>Categoria 1</td></tr>
-    <tr><td>Estado (~11 km)</td><td><span class="arrow">→</span></td><td>Categoria 2</td></tr>
-    <tr><td>Cidade (~1 km)</td><td><span class="arrow">→</span></td><td>Categoria 3</td></tr>
-    <tr><td>Local (~100 m)</td><td><span class="arrow">→</span></td><td>Categoria 4</td></tr>
-  </tbody>
-</table>
-```
-
-Se nada foi generalizado, o Saíra registra: *nenhuma espécie será generalizada; as coordenadas serão publicadas como estão*. As coordenadas originais e precisas dos registros generalizados não entram no pacote público: ficam num arquivo à parte (veja **Arquivos do pacote**, abaixo).
+Se nada foi generalizado, o Saíra registra: *nenhuma espécie será generalizada; as coordenadas serão publicadas como estão*.
 
 ## O que o Saíra ajusta na exportação
 
@@ -136,7 +124,7 @@ E os **arquivos auxiliares**, para o seu controle, fora do pacote público:
 
 ## Gerando o Darwin Core Archive
 
-Os metadados (`eml.xml`) são montados **automaticamente**: o Saíra usa um título padrão, calcula a extensão geográfica e o intervalo de datas a partir dos seus dados e aplica a licença CC0 por padrão — você não precisa preencher nada. O ajuste fino dos metadados (instituição, responsáveis, licença definitiva) é feito depois, no IPT, na hora de publicar.
+Os metadados (`eml.xml`) são montados **automaticamente**: o Saíra usa um título padrão, calcula a extensão geográfica e o intervalo de datas a partir dos seus dados e aplica a licença CC0 por padrão, sem você precisar preencher nada. O ajuste fino dos metadados (instituição, responsáveis, licença definitiva) é feito depois, no IPT, na hora de publicar.
 
 ```{=html}
 <ol class="fix-steps">
@@ -147,21 +135,8 @@ Os metadados (`eml.xml`) são montados **automaticamente**: o Saíra usa um tít
 </ol>
 ```
 
-::: {.callout-tip}
-## O que é um Darwin Core Archive (DwC-A)
-É um pacote `.zip` padronizado: um arquivo de dados (<span class="term">occurrence.txt</span>), um descritor que diz o que cada coluna significa (<span class="term">meta.xml</span>) e os metadados do conjunto (<span class="term">eml.xml</span>). É exatamente o que os repositórios globais esperam receber.
-:::
-
-O `.zip` também traz um **modelo de mapeamento** (`<dataset>-mapping-guide.txt`): o registro "sua coluna → termo Darwin Core", sem dados. Guarde-o para auto-mapear planilhas futuras com a mesma estrutura, via **Importar modelo** (ver [Mapeando Darwin Core](03-mapeamento-dwc.qmd)).
-
-Além do DwC-A, o Saíra exporta o conjunto como `.xlsx` com **todas as células forçadas a texto**, evitando que o Excel reinterprete datas, números de tombo ou coordenadas — útil para conferência manual ou para enviar a colaboradores.
-
 ## Publicando no SiBBr e no GBIF
 
 Com o `.zip` em mãos, a publicação acontece fora do Saíra, normalmente via **IPT** (Integrated Publishing Toolkit) da sua instituição ou do SiBBr. O arquivo gerado pelo Saíra já está no formato esperado: basta carregá-lo, conferir o mapeamento no IPT e publicar.
-
-## Concluído
-
-Você levou uma planilha bruta até um Darwin Core Archive validado. Publicado no SiBBr/GBIF, cada registro mantém seu <span class="term">occurrenceID</span>, aparece em buscas e downloads combinados com outras coleções, e entra na citação do conjunto. 🐦
 
 Voltar à **[visão geral dos tutoriais](index.qmd)** ou ao **[início](../index.qmd)**.

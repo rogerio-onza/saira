@@ -4,14 +4,12 @@ pagetitle: "Mapeamento Darwin Core · Tutoriais Saíra"
 ---
 
 ::: {.tut-standfirst}
-Como associar as colunas da sua planilha aos termos do padrão Darwin Core usando o mapeador visual do Saíra: a etapa que transforma dados locais em registros interoperáveis.
+Como associar as colunas da sua planilha aos termos do padrão Darwin Core usando o mapeador visual do Saíra.
 :::
 
 ## Visão geral
 
-Depois de importar seus dados (ver [Importando seus dados](02-upload.qmd)), cada coluna ainda carrega o nome que você usa no dia a dia: <span class="term">numero_tombo</span>, <span class="term">especie</span>, <span class="term">data_coleta</span>. O mapeamento é o passo em que dizemos ao Saíra qual termo Darwin Core corresponde a cada uma dessas colunas.
-
-O Saíra sugere correspondências automaticamente a partir do nome e do conteúdo de cada coluna. Um bom mapeamento é a base de tudo o que vem depois: validação, exportação e qualidade dos dados dependem dele.
+Depois de importar seus dados (ver [Importando seus dados](02-upload.qmd)), cada coluna ainda carrega o nome que você usa no dia a dia: <span class="term">numero_tombo</span>, <span class="term">especie</span>, <span class="term">data_coleta</span>. O mapeamento diz ao Saíra qual termo Darwin Core corresponde a cada uma, a partir de sugestões automáticas baseadas no nome e no conteúdo de cada coluna.
 
 ```{=html}
 <figure class="shot">
@@ -119,7 +117,7 @@ A tabela abaixo mostra um mapeamento típico de uma coleção ornitológica:
 
 Você não precisa salvar o mapeamento à mão. Ao baixar a planilha padronizada (ver [Pré-visualização e exportação](07-preview-exportacao.qmd)), o Saíra inclui no `.zip` um **modelo** (`<dataset>-mapping-guide.txt`): só o vocabulário "sua coluna → termo Darwin Core", sem dados. É o seu mapeamento guardado, pronto para reusar ou repassar à equipe.
 
-Para reaproveitar, abra o mapeamento de uma nova planilha e clique em **Importar modelo**. Cada linha vira um alias no seu Rostrum local, então colunas com o mesmo nome são mapeadas automaticamente — você só revisa o que mudou. Útil para coleções que reimportam planilhas com a mesma estrutura.
+Para reaproveitar, abra o mapeamento de uma nova planilha e clique em **Importar modelo**. Cada linha vira um alias no seu Rostrum local, então colunas com o mesmo nome são mapeadas automaticamente e você só revisa o que mudou. Útil para coleções que reimportam planilhas com a mesma estrutura.
 
 ```{=html}
 <figure class="shot">
@@ -203,7 +201,7 @@ Espécies que estão na lista de exóticas invasoras (a mesma usada na **[valida
 
 ### Sua planilha sempre vence
 
-Se você **também** mapear uma coluna para um desses termos, os valores da coluna são mantidos e o assistente preenche apenas as linhas que ficaram em branco. Os dois caminhos convivem de propósito: uma coluna preenchida pela metade mais o assistente completando o resto é um caso real.
+Se você **também** mapear uma coluna para um desses termos, os valores da coluna são mantidos e o assistente preenche apenas as linhas que ficaram em branco.
 
 Espécie deixada sem resposta sai em branco, e um termo sem nenhuma resposta não gera coluna nenhuma na exportação. O Saíra não inventa valor.
 
@@ -243,7 +241,7 @@ Sete termos aceitam valor fixo:
 </p>
 ```
 
-Mapear uma coluna e usar um valor fixo são alternativas (um **OU** separa as duas): ao marcar a opção, o seletor de coluna some, então o valor fixo nunca sobrescreve em silêncio uma coluna já mapeada. O campo de texto só aparece depois que você marca a opção, sem poluir a tela à toa.
+Mapear uma coluna e usar um valor fixo são alternativas (um **OU** separa as duas): ao marcar a opção, o seletor de coluna some, então o valor fixo nunca sobrescreve em silêncio uma coluna já mapeada. O campo de texto só aparece depois que você marca a opção.
 
 ```{=html}
 <figure class="shot">
@@ -280,7 +278,5 @@ O status de conservação (categorias MMA e IUCN) também é gravado em <span cl
 ## Colunas não mapeadas
 
 Nem toda coluna precisa virar um termo Darwin Core: basta deixá-la sem mapear. Na exportação, o Saíra **anexa à direita** as colunas que você não usou como fonte de nenhum termo, preservando o nome e a ordem originais, para que nenhum dado se perca: você pode editá-las à mão depois, já no IPT.
-
-## Próximos passos
 
 Com os campos mapeados, seus dados já estão em vocabulário Darwin Core, mas ainda não foram verificados. Siga para **[Validando nomes científicos](04-validacao-nomes.qmd)**.

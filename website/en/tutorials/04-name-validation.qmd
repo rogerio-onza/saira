@@ -4,7 +4,7 @@ pagetitle: "Name validation · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-This step checks each scientific name against a taxonomic database of your choice, resolves synonyms and divergent spellings, and flags the threatened species on Brazil's national MMA list, keeping your records combinable with those of other collections.
+This step checks each scientific name against a taxonomic database of your choice, resolves synonyms and divergent spellings, and flags the threatened species on Brazil's national MMA list.
 :::
 
 ## Why validate names
@@ -35,7 +35,7 @@ Flora do Brasil and Fauna do Brasil are **downloaded and stored locally** the fi
 
 ::: {.callout-warning}
 ## Flora BR / Fauna BR won't download? Update Saíra
-The files published by Flora e Funga do Brasil and by the Catálogo Taxonômico da Fauna do Brasil change from time to time, and Saíra keeps up with those formats. If a card gets stuck on **"update failed"** and never turns green, you are likely on an older version of the app. **Reinstall Saíra with `pak`** to get the latest fix — `pak` resolves the correct versions of the database packages (Flora BR and Fauna BR) for you:
+The files published by Flora e Funga do Brasil and by the Catálogo Taxonômico da Fauna do Brasil change from time to time, and Saíra keeps up with those formats. If a card gets stuck on **"update failed"** and never turns green, you are likely on an older version of the app. **Reinstall Saíra with `pak`** to get the latest fix. `pak` resolves the correct versions of the database packages (Flora BR and Fauna BR) for you:
 
 ```r
 pak::pak("rogerio-onza/saira")
@@ -101,7 +101,7 @@ Correction is manual and happens in the **review modal**. Click a problem name a
 - **Yes, this name is correct**: confirms the name as is; it will be exported exactly that way. Useful for recently described taxa or names missing from the database.
 - **No, I want to correct the name**: opens the **Name correction** field for you to type the right spelling, with an optional reason (e.g. typo in the original sheet, updated name according to publication).
 
-The decision is **reapplied automatically** to every row with that same name: since validation groups identical names, you review each one only once and the correction holds for the whole dataset. An error repeated across hundreds of rows is fixed with a single review.
+The decision is **reapplied automatically** to every row with that same name: since validation groups identical names, you review each one only once and the correction holds for the whole dataset.
 
 ```{=html}
 <figure class="shot">
@@ -119,7 +119,7 @@ The decision is **reapplied automatically** to every row with that same name: si
 
 ::: {.callout-warning}
 ## The taxonomic decision is yours
-Saíra resolves names against the database, but authority belongs to the specialist. In groups with unstable taxonomy, check each case before accepting. Replacing a name with its accepted synonym means replacing the name in the exported dataset: the original name can be preserved in <span class="term">verbatimIdentification</span> or <span class="term">originalNameUsage</span> if you mapped those fields.
+In groups with unstable taxonomy, check each case before accepting. Replacing a name with its accepted synonym means replacing the name in the exported dataset: the original name can be preserved in <span class="term">verbatimIdentification</span> or <span class="term">originalNameUsage</span> if you mapped those fields.
 :::
 
 ## Threatened species (MMA list)
@@ -183,9 +183,9 @@ Matching uses **exactly the same name normalization** as the validator, so autho
 ::: {.callout-note}
 ## Invasive is not the same as threatened, and the pills differ too
 The other pills filter by **validation status** (accepted, synonym, not found…), which changes as you review names. The <span class="term">Invasive</span> pill filters by the **species list**, so your reviews do not affect it. A taxon can be in both conditions or in neither: they are independent lists with opposite purposes.
+:::
 
 Being on this list means the taxon is **alien and invasive in Brazil**, which is exactly the input for the automatic <span class="term">establishmentMeans</span> suggestion in **[mapping](03-dwc-mapping.qmd)**: those species reach the assistant pre-filled as `introduced`. The list deliberately says **nothing** about <span class="term">degreeOfEstablishment</span>, which depends on the record: a captive animal and a feral one are the same species.
-:::
 
 If the list is missing or unreadable, validation keeps working and simply stops flagging, with a warning, rather than breaking.
 
@@ -193,14 +193,7 @@ If the list is missing or unreadable, validation keeps working and simply stops 
 
 ::: {.callout-important}
 ## The databases you pick decide the conservation status
-The databases you select here decide which **conservation status** Saíra writes to the export's `dynamicProperties`:
-
-- a **Brazilian** database (Flora BR / Fauna BR) contributes the **MMA** category (`mmaThreatStatus`) and the portaria that listed the taxon (`mmaSource`);
-- **GBIF** contributes the global **IUCN** category (`iucnRedListCategory`).
-
-A short line above the report tells you how many records will receive each one. **If you do not work with Brazilian species, select GBIF only** to get just the IUCN status. The keys are written when you generate the package (see **[exporting](07-preview-export.qmd)**).
+The databases you select here decide what Saíra writes to `dynamicProperties` on export: a **Brazilian** database (Flora BR / Fauna BR) contributes the **MMA** category, **GBIF** the global **IUCN** one. A short line above the report tells you how many records will receive each. The keys produced and the offline behaviour are covered in **[Preview and export](07-preview-export.qmd)**.
 :::
-
-## Next steps
 
 With the names resolved, on to space: go to **[Validating coordinates](05-coordinate-validation.qmd)**.

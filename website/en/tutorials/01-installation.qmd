@@ -47,11 +47,6 @@ Download R from the official **[CRAN](https://cran.r-project.org/)** site. The s
 
 Because Saíra **is not on CRAN**, it is installed from source. On **Windows**, compiling packages from source requires **Rtools**. Install the Rtools version that matches your R version before installing Saíra. (On macOS and Linux this step is usually not needed.)
 
-::: {.callout-note}
-## Rtools lives on the same R page
-No need to look elsewhere: the Rtools installer is **on the same R download page on CRAN** (Figure 5 shows the link). Download the Rtools version that matches your R right there.
-:::
-
 ```{=html}
 <figure class="shot">
   <img src="../../assets/img/0.3-r-tools-instalacao.png" alt="R for Windows page with the Rtools link highlighted">
@@ -124,7 +119,5 @@ Saíra is bilingual. In the top corner of the interface you switch between **Por
 ## File size and performance
 
 The app accepts uploads of up to **500 MB**, enough for datasets with hundreds of thousands of occurrences. Very large datasets make name validation and the map slower, because each name is looked up in the databases and each point is drawn. If you are just practicing the workflow, start with the sample spreadsheet.
-
-## Next steps
 
 With the app open, go to **[Importing your data](02-upload.qmd)** and load your first spreadsheet.

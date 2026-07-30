@@ -47,11 +47,6 @@ O **[RStudio Desktop](https://posit.co/download/rstudio-desktop)** é opcional, 
 
 Como o Saíra **não está no CRAN**, ele é instalado a partir do código-fonte. No **Windows**, compilar pacotes a partir do código exige o **Rtools**. Instale a versão de Rtools que corresponde à sua versão do R antes de instalar o Saíra. (No macOS e no Linux esse passo normalmente não é necessário.)
 
-::: {.callout-note}
-## O Rtools fica na mesma página do R
-Você não precisa procurar em outro site: o instalador do Rtools está **na mesma página de download do R no CRAN** (a Figura 5 mostra o link). Baixe a versão de Rtools compatível com o seu R ali mesmo.
-:::
-
 ```{=html}
 <figure class="shot">
   <img src="../assets/img/0.3-r-tools-instalacao.png" alt="Página do R para Windows com o link Rtools destacado">
@@ -124,7 +119,5 @@ O Saíra é bilíngue. No canto superior da interface você alterna entre **Port
 ## Tamanho de arquivo e desempenho
 
 O app aceita uploads de até **500 MB**, suficiente para conjuntos com centenas de milhares de ocorrências. Conjuntos muito grandes deixam a validação de nomes e o mapa mais lentos, porque cada nome é consultado nas bases e cada ponto é desenhado. Se for só treinar o fluxo, comece com a planilha de exemplo.
-
-## Próximos passos
 
 Com o app aberto, siga para **[Importando seus dados](02-upload.qmd)** e carregue sua primeira planilha.

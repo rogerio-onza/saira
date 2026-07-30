@@ -5,10 +5,16 @@ toc: false
 ---
 
 ::: {.tut-standfirst}
-Guias passo a passo para levar sua planilha de ocorrências do caderno de campo ao Darwin Core Archive, seguindo o mesmo fluxo do aplicativo, etapa por etapa.
+Guias passo a passo para levar sua planilha de ocorrências do caderno de campo ao Darwin Core Archive, seguindo o fluxo do aplicativo.
 :::
 
-Os tutoriais seguem o fluxo do app, etapa por etapa. Navegue pela **barra lateral** ou pelos botões **anterior / próximo** no rodapé. Cada etapa também pode ser lida de forma independente.
+```{=html}
+<figure class="shot diagram-flow">
+  <img src="../assets/img/saira-how-it-works.svg" alt="Fluxo do Saíra em cinco etapas encadeadas: Upload, Mapeamento, Validação, Generalização e Exportar">
+</figure>
+```
+
+O diagrama mostra as cinco etapas de trabalho do app. Os tutoriais abaixo são sete porque a instalação vem antes de tudo e a validação se divide em nomes e coordenadas. Navegue pela **barra lateral** ou pelos botões **anterior / próximo** no rodapé; cada etapa também pode ser lida de forma independente.
 
 ## O fluxo, do dado bruto ao DwC-A
 
@@ -23,7 +29,7 @@ Os tutoriais seguem o fluxo do app, etapa por etapa. Navegue pela **barra latera
   <a class="tut-card" href="02-upload.html">
     <div class="tut-card-top"><span class="tut-card-num">02</span><span class="tut-card-eyebrow">Etapa</span></div>
     <h3 class="tut-card-title">Importando seus dados</h3>
-    <p class="tut-card-desc">Carregue CSV, TSV, Excel ou um pacote de armadilha fotográfica.</p>
+    <p class="tut-card-desc">Carregue CSV, TSV/TXT ou um pacote de armadilha fotográfica.</p>
     <span class="tut-card-arrow">→</span>
   </a>
   <a class="tut-card" href="03-mapeamento-dwc.html">
@@ -45,9 +51,9 @@ Os tutoriais seguem o fluxo do app, etapa por etapa. Navegue pela **barra latera
     <span class="tut-card-arrow">→</span>
   </a>
   <a class="tut-card" href="06-generalizacao.html">
-    <div class="tut-card-top"><span class="tut-card-num">06</span><span class="tut-card-eyebrow">Etapa</span></div>
+    <div class="tut-card-top"><span class="tut-card-num">06</span><span class="tut-card-eyebrow">Se houver</span></div>
     <h3 class="tut-card-title">Generalizando espécies sensíveis</h3>
-    <p class="tut-card-desc">Reduza a precisão das coordenadas de táxons ameaçados (Chapman 2020).</p>
+    <p class="tut-card-desc">Só quando a validação de nomes sinaliza espécies ameaçadas: reduza a precisão das coordenadas (Chapman 2020).</p>
     <span class="tut-card-arrow">→</span>
   </a>
   <a class="tut-card" href="07-preview-exportacao.html">
@@ -61,10 +67,10 @@ Os tutoriais seguem o fluxo do app, etapa por etapa. Navegue pela **barra latera
 
 ::: {.callout-note}
 ## O fluxo é flexível
-Você não precisa seguir todas as etapas em sequência rígida. O Saíra permite voltar a qualquer passo (remapear um campo, recarregar a planilha ou revalidar) sem perder o trabalho já feito. Você navega livremente para trás a qualquer momento.
+Você não precisa seguir as etapas em sequência rígida: dá para voltar a qualquer passo (remapear um campo, recarregar a planilha ou revalidar) sem perder o trabalho já feito.
 :::
 
 ::: {.callout-tip}
 ## Pratique com o arquivo de exemplo
-Baixe a planilha de exemplo [`ocorrencias-demo.csv`](../assets/exemplo/ocorrencias-demo.csv) e siga os tutoriais com ela. É o conjunto de demonstração do Saíra: 1.075 ocorrências reais de espécies brasileiras de vários biomas, propositalmente imperfeito para você exercitar cada etapa: muitas colunas em português para mapear, coordenadas com problemas para revisar, alguns nomes para conferir (um deles com erro de digitação) e espécies ameaçadas para testar a generalização.
+Baixe [`ocorrencias-demo.csv`](../assets/exemplo/ocorrencias-demo.csv) e siga os tutoriais com ele. O que a planilha traz de propositalmente imperfeito está descrito em [Importando seus dados](02-upload.qmd).
 :::

@@ -32,7 +32,7 @@ Na aba **Upload**, arraste o arquivo para a área indicada ou clique para seleci
   <li><strong>Aguarde a leitura.</strong>
     <p>O Saíra detecta a codificação e o separador automaticamente e exibe um resumo do arquivo: número de linhas, número de colunas e tamanho.</p></li>
   <li><strong>Confira o resumo.</strong>
-    <p>Verifique se a contagem de linhas e colunas bate com o esperado. O conteúdo célula a célula você confere nas etapas de Mapeamento e na aba Pré-visualização.</p></li>
+    <p>Verifique se a contagem de linhas e colunas bate com o esperado.</p></li>
 </ol>
 ```
 
@@ -67,7 +67,7 @@ O Saíra assume que a **primeira linha** contém os nomes das colunas. Remova li
 Uma planilha comum de ocorrências você carrega direto (ver [Formatos aceitos](#formatos-aceitos)). Conjuntos de armadilha fotográfica são diferentes: chegam em **vários arquivos separados** (registros, implantações, mídia) que precisam ser unidos numa única tabela. Por isso o Saíra trata esses pacotes `.zip` à parte, juntando-os automaticamente antes do mapeamento. Ele reconhece:
 
 - **Camtrap DP** (Camera Trap Data Package): o `.zip` padronizado, com o descritor `datapackage.json` e as tabelas `deployments`, `observations` e (opcional) `media`.
-- **CSVs de Camtrap DP soltos**: as mesmas tabelas num `.zip`, mas **sem o descritor** — o Saíra o sintetiza a partir dos CSVs encontrados.
+- **CSVs de Camtrap DP soltos**: as mesmas tabelas num `.zip`, mas **sem o descritor**: o Saíra o sintetiza a partir dos CSVs encontrados.
 - **Wildlife Insights**: a exportação da plataforma, em que o Saíra renomeia as colunas para o formato Camtrap DP e deriva o nome científico, a data/hora e o tipo de observação.
 
 Em todos os casos o Saíra monta um nome científico consistente e organiza tempo e local, para o restante do fluxo (mapeamento, nomes, coordenadas) funcionar igual ao de uma planilha comum.
@@ -76,7 +76,5 @@ Em todos os casos o Saíra monta um nome científico consistente e organiza temp
 ## Pacote camtrap incompleto?
 Se faltar o descritor do pacote, o Saíra tenta **sintetizar** um a partir dos CSVs encontrados. Ainda assim, confira no resumo e nas próximas etapas se as colunas de espécie, data e coordenada vieram preenchidas antes de prosseguir.
 :::
-
-## Próximos passos
 
 Com os dados carregados e exibidos corretamente, avance para **[Mapeando campos para Darwin Core](03-mapeamento-dwc.qmd)**.
