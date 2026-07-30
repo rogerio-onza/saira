@@ -1144,10 +1144,14 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             selected <- selected[!is.na(selected) & nzchar(selected)]
             is_busy <- isTRUE(rv$running) || isTRUE(rv$starting)
             quick <- quick_inputs()
-            snapshot <- progress_snapshot()
-            report_df <- validation_result()
-            has_report <- is.data.frame(report_df) && nrow(report_df) > 0L
-            show_progress_meta <- is_busy || !is.null(rv$run_state) || has_report
+            # Deliberately does NOT read progress_snapshot(), rv$run_state or
+            # validation_result(). The run loop rewrites rv$run_state every 60ms,
+            # and reactiveValues invalidate on write whether or not the value
+            # changed -- so a single read here, even one whose result is thrown
+            # away, rebuilds this whole panel ~16 times a second during a run,
+            # recreating the two input_switch widgets below each time. The
+            # progress bar lives in output$progress_block for exactly this
+            # reason; keep the two dependency sets apart.
             run_label <- if (is_busy) tr("validate_names_run_running", lang_r()) else tr("validate_names_run_cta", lang_r())
             can_run <- isTRUE(can_run_validation())
 
@@ -1259,12 +1263,22 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     shiny::div(class = "vn-section-label", tr("validate_names_options_card_title", lang_r())),
                     shiny::div(
                         class = "vn-toggle-list",
+                        # isolate() on both reads: this renderUI RECREATES these
+                        # switches, so an un-isolated read makes each toggle
+                        # rebuild the widget that produced it. The value is still
+                        # carried across a legitimate re-render (a language
+                        # switch) because it is read back here -- it just no
+                        # longer invalidates the panel. Checked against the
+                        # ADR-111 trap before isolating: no observer needs to
+                        # re-run in the same flush as this recreation, because
+                        # nothing syncs these two inputs into rv -- they are read
+                        # directly by report_df and review_export_payload.
                         shiny::div(
                             class = "vn-toggle-item",
                             bslib::input_switch(
                                 ns("remove_authors"),
                                 tr("validate_names_remove_authors", lang_r()),
-                                value = isTRUE(input$remove_authors %||% TRUE)
+                                value = isTRUE(shiny::isolate(input$remove_authors) %||% TRUE)
                             ),
                             shiny::p(tr("validate_names_remove_authors_desc", lang_r()), class = "vn-toggle-desc")
                         ),
@@ -1273,7 +1287,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                             bslib::input_switch(
                                 ns("ignore_qualifiers"),
                                 tr("validate_names_ignore_qualifiers", lang_r()),
-                                value = isTRUE(input$ignore_qualifiers %||% TRUE)
+                                value = isTRUE(shiny::isolate(input$ignore_qualifiers) %||% TRUE)
                             ),
                             shiny::p(tr("validate_names_ignore_qualifiers_desc", lang_r()), class = "vn-toggle-desc")
                         )
@@ -1314,27 +1328,36 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                             shiny::div(class = "vn-mini-stat-label", tr("validate_names_action_metric_options", lang_r()))
                         )
                     ),
-                    shiny::div(
-                        class = "vn-progress-block",
-                        shiny::div(
-                            class = "vn-progress-header",
-                            shiny::span(class = "vn-progress-title", tr("validate_names_progress_label", lang_r())),
-                            shiny::span(class = "vn-progress-percent", sprintf("%d%%", snapshot$progress_pct))
-                        ),
-                        shiny::div(
-                            class = "vn-progress-track",
-                            shiny::div(class = "vn-progress-fill", style = paste0("width: ", snapshot$progress_pct, "%;"))
-                        ),
-                        if (isTRUE(rv$running) && !is.null(rv$run_state)) {
-                            shiny::div(
-                                class = "vn-progress-phrase-row",
-                                shiny::icon(vn_phase_icon(rv$run_state), class = "fa-solid vn-progress-phrase-icon"),
-                                shiny::span(class = "vn-progress-phrase-text", vn_phase_text(rv$run_state, lang_r()))
-                            )
-                        }
-                    ),
+                    shiny::uiOutput(ns("progress_block")),
                     shiny::div(class = "vn-action-helper", helper_text)
                 )
+            )
+        })
+
+        # Split out of output$config_panel so the 60ms run tick repaints only the
+        # bar. This is the ONLY output allowed to depend on rv$run_state; keeping
+        # it small is the whole point.
+        output$progress_block <- shiny::renderUI({
+            snapshot <- progress_snapshot()
+
+            shiny::div(
+                class = "vn-progress-block",
+                shiny::div(
+                    class = "vn-progress-header",
+                    shiny::span(class = "vn-progress-title", tr("validate_names_progress_label", lang_r())),
+                    shiny::span(class = "vn-progress-percent", sprintf("%d%%", snapshot$progress_pct))
+                ),
+                shiny::div(
+                    class = "vn-progress-track",
+                    shiny::div(class = "vn-progress-fill", style = paste0("width: ", snapshot$progress_pct, "%;"))
+                ),
+                if (isTRUE(rv$running) && !is.null(rv$run_state)) {
+                    shiny::div(
+                        class = "vn-progress-phrase-row",
+                        shiny::icon(vn_phase_icon(rv$run_state), class = "fa-solid vn-progress-phrase-icon"),
+                        shiny::span(class = "vn-progress-phrase-text", vn_phase_text(rv$run_state, lang_r()))
+                    )
+                }
             )
         })
 

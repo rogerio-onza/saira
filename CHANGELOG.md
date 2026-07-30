@@ -7,6 +7,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **Switching language no longer resets the two name-validation options.** Turning off "remove authors" or "ignore qualifiers" and then switching between Portuguese and English put both switches back on, silently changing how the next validation would treat your names. The panel rebuilds those switches when the language changes, and it was reading their state from the widgets it was about to replace.
+
+### Performance
+- **The progress bar no longer competes with the validation it is reporting.** During a taxonomic run the whole configuration panel, every provider card and both option switches, was being rebuilt about 16 times per second just to advance the percentage, on the same single thread doing the taxonomic queries. The bar now lives in its own small piece of the screen and is the only thing that repaints on each tick. The panel also no longer rebuilds itself every time you save a manual review.
+- **The name stream redraws faster on a large validation.** Building the visible window used to reorder the entire accumulated list and only then keep the most recent 100 entries. It now sorts a list of positions and reads just the rows it needs: on a 20,000-name run that is 0.06s of work per 200 redraws instead of 1.02s. What is displayed is unchanged, including showing every name once the run has finished.
+
 ## [0.9.6] - 2026-07-29
 
 Maintenance release. Nothing changes for the user: the app behaves exactly as in 0.9.5. This clears the warnings `R CMD check` had accumulated over several releases and makes the editor's linter agree with the project's own conventions.
