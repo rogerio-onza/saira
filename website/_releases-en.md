@@ -2,6 +2,19 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.9.7</span>
+    <time class="release-date">2026-07-30</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The app starts about 5x faster.</strong> Loading the package took 5.78 s and now takes 1.04 s. All of the difference was the geographic layer used by the sea and reference checks, loaded at startup even for people who never validate coordinates. It is now loaded the first time it is actually needed, when you click validate coordinates, and kept in memory for the rest of the session. The analysis did not change: on the same dataset every row comes out with the same diagnostic and the same ISO3 code.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Column mapping is much faster on a large spreadsheet.</strong> Four helpers that read a single month, year or scientific-name token were being called once per record, even though a column has at most a few dozen distinct values. Over 50,000 records: the date interval assembled from four columns (start and end month and year) dropped from 36.1 s to 0.27 s. On top of that, when your spreadsheet already brings its own <code>occurrenceID</code>, Saíra no longer generates a whole set of random identifiers just to discard them.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The progress bar no longer competes with the validation it reports.</strong> During a taxonomic run the entire configuration panel was rebuilt about 16 times per second, on the same thread doing the queries. Now only the bar repaints on each step, and the stream of names redraws far faster on long runs.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Switching the language no longer turns the two name-validation options back on.</strong> Turning off "remove authors" or "ignore qualifiers" and then switching between Portuguese and English put both switches back on, silently changing how the next validation would treat your names.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.6</span>
     <time class="release-date">2026-07-29</time>
   </header>

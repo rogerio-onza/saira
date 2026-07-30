@@ -7,6 +7,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.9.7] - 2026-07-30
+
+Performance release. The app behaves exactly as in 0.9.6 everywhere except one fixed bug: startup, column mapping and the taxonomic validation screen are faster, and nothing they produce changed. Every number below was measured on the maintainer's machine and is guarded by a budget in the opt-in `RUN_PERF=true` suite.
+
 ### Fixed
 - **Switching language no longer resets the two name-validation options.** Turning off "remove authors" or "ignore qualifiers" and then switching between Portuguese and English put both switches back on, silently changing how the next validation would treat your names. The panel rebuilds those switches when the language changes, and it was reading their state from the widgets it was about to replace.
 
