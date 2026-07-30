@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Performance
+- **The app starts about 5x faster.** Loading the package took 5.78s and now takes 1.04s. All of the difference was one line in `.onLoad()` that pre-loaded the Natural Earth land reference used by the sea and reference coordinate checks: 4.4s of it was loading the `terra` namespace and 1.4s was converting the stored geometry. That layer has a single consumer, the Validate coordinates button, which already runs behind a progress modal, so it is now loaded the first time it is actually needed and cached for the rest of the session. Nothing about the analysis changed: on the same dataset every row's diagnostic, diagnostic family and resolved ISO3 code comes out identical, `sea` and `reference` included. Note that this gain does not show up in a `pkgload::load_all()` development cycle, because `load_all()` loads every declared dependency whether or not the package touches it; it shows up in the installed package, which is how the app actually runs.
+
 ## [0.9.6] - 2026-07-29
 
 Maintenance release. Nothing changes for the user: the app behaves exactly as in 0.9.5. This clears the warnings `R CMD check` had accumulated over several releases and makes the editor's linter agree with the project's own conventions.
