@@ -44,6 +44,9 @@ mod_mapping_ui <- function(id) {
                 icon = shiny::icon("file-import")
             ),
             shiny::hr(),
+            shiny::uiOutput(ns("sidebar_view_label")),
+            shiny::uiOutput(ns("view_mode_control")),
+            shiny::hr(),
             shiny::uiOutput(ns("sidebar_filters_label")),
             shiny::checkboxInput(
                 ns("show_only_mapped"),
@@ -922,6 +925,30 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             shiny::tags$label(tr("mapping_sidebar_filters", lang_r()), class = "form-label")
         })
 
+        output$sidebar_view_label <- shiny::renderUI({
+            shiny::tags$label(tr("mapping_sidebar_view", lang_r()), class = "form-label")
+        })
+
+        # Cards to work in, list to review. Rendered here rather than in the UI
+        # so the two labels follow the language switch.
+        output$view_mode_control <- shiny::renderUI({
+            shiny::radioButtons(
+                ns("view_mode"),
+                label = NULL,
+                choices = stats::setNames(
+                    c("cards", "list"),
+                    c(
+                        tr("mapping_view_cards", lang_r()),
+                        tr("mapping_view_list", lang_r())
+                    )
+                ),
+                selected = shiny::isolate(
+                    if (is.null(input$view_mode)) "cards" else input$view_mode
+                ),
+                inline = TRUE
+            )
+        })
+
         output$filter_mapped_label <- shiny::renderUI({
             tr("filter_mapped_only", lang_r())
         })
@@ -1590,10 +1617,17 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 }
                 nxt <- (rv_pending_cursor() %% length(pending)) + 1L
                 rv_pending_cursor(nxt)
+                # The two views render different elements for the same term, so
+                # the jump target follows the view that is actually on screen.
+                prefix <- if (identical(input$view_mode, "list")) {
+                    "fieldrow_"
+                } else {
+                    "fieldcard_"
+                }
                 session$sendCustomMessage(
                     "saira-mapping-scroll-to-class",
                     list(
-                        anchor_id = ns(paste0("fieldcard_", pending[[nxt]]$term)),
+                        anchor_id = ns(paste0(prefix, pending[[nxt]]$term)),
                         block = "center",
                         flash = TRUE
                     )
@@ -1872,6 +1906,103 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             )
         })
 
+        # List view: one read-only row per term, grouped by class, for reviewing
+        # what auto-mapping decided. Reads rv$map_values rather than the map_
+        # inputs, which are not on the page while this view is rendered.
+        build_mapping_list <- function(lang, show_only_mapped, scientificname_mapped) {
+            fields_to_show <- dwc_all()
+            categories <- unique(vapply(
+                fields_to_show, function(x) x$category, FUN.VALUE = character(1)
+            ))
+
+            shiny::tagList(
+                build_field_row_header(lang),
+                lapply(categories, function(cat) {
+                    cat_fields <- Filter(function(x) x$category == cat, fields_to_show)
+
+                    rows <- lapply(cat_fields, function(item) {
+                        term <- item$term
+                        current_val <- sanitize_map_selection(term, rv$map_values[[term]])
+                        is_mapped <- is_field_mapped(term, current_val, input)
+                        locked_taxon <- isTRUE(scientificname_mapped) &&
+                            term %in% c("taxonRank", "specificEpithet")
+                        if (locked_taxon) {
+                            is_mapped <- TRUE
+                        }
+
+                        field_meta <- rv$map_meta[[term]]
+                        if (is.null(field_meta)) {
+                            field_meta <- default_meta()
+                        }
+                        card_state <- apply_establishment_card_state(
+                            term, current_val, is_mapped, field_meta
+                        )
+                        is_mapped <- card_state$is_mapped
+                        field_meta <- card_state$meta
+
+                        if (show_only_mapped && !is_mapped) {
+                            return(NULL)
+                        }
+
+                        source_label <- if (locked_taxon) {
+                            tr("mapping_row_derived", lang)
+                        } else if (identical(term, "occurrenceID")) {
+                            tr("mapping_row_generated", lang)
+                        } else if (has_selected_value(current_val)) {
+                            paste(as.character(current_val), collapse = ", ")
+                        } else {
+                            ""
+                        }
+
+                        sample_vals <- if (has_selected_value(current_val)) {
+                            processed_preview_for_term(term, current_val, 1L)
+                        } else {
+                            character(0)
+                        }
+
+                        build_field_row(
+                            item = item,
+                            source_label = source_label,
+                            sample_text = paste(sample_vals, collapse = "  "),
+                            is_mapped = is_mapped,
+                            badge_info = if (locked_taxon) NULL else build_badge_info(field_meta),
+                            state_class = field_state_class(
+                                term, is_mapped, field_meta, required_fields_strip
+                            ),
+                            ns = ns, lang_r = lang
+                        )
+                    })
+
+                    shiny::tagList(
+                        shiny::div(
+                            id = ns(paste0("cat_anchor_", slug(cat))),
+                            class = "category-header",
+                            category_label(cat)
+                        ),
+                        shiny::div(class = "mapping-row-list", rows)
+                    )
+                })
+            )
+        }
+
+        # A row is a shortcut back to its card: the list is for reviewing, the
+        # cards are where a term is actually edited. This is also what gives the
+        # terms with their own block (license, dynamicProperties, the fixed-value
+        # input, the assistants) a way in, with no special case in the row.
+        shiny::observeEvent(input$edit_in_cards, {
+            term <- input$edit_in_cards
+            shiny::req(nzchar(term))
+            shiny::updateRadioButtons(session, "view_mode", selected = "cards")
+            session$sendCustomMessage(
+                "saira-mapping-scroll-to-class",
+                list(
+                    anchor_id = ns(paste0("fieldcard_", term)),
+                    block = "center",
+                    flash = TRUE
+                )
+            )
+        })
+
         # Mapping UI generation (card builder delegated to mod_mapping_cards.R).
         # All category sections always render so scroll-anchors are always in DOM.
         output$mapping_ui <- shiny::renderUI({
@@ -1895,6 +2026,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             # explicitly here (read outside the isolate). Without this, terms
             # added via the "Add term" modal/template import never render.
             rv$extra_terms
+
+            # The list view recreates no inputs, so unlike the card grid it can
+            # track the mapping reactively and always show what is currently
+            # mapped. The dependency is only registered when this branch runs.
+            if (identical(input$view_mode, "list")) {
+                return(build_mapping_list(lang, show_only_mapped, scientificname_mapped))
+            }
 
             shiny::isolate({
                 cols <- c("-- " = "", names(raw_data_r()))
