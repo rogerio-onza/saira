@@ -400,6 +400,28 @@ get_active_dwc_terms <- function(extra = character(0)) {
 #'
 #' @param lang Language code ("pt" or "en")
 #' @return Named list of DwC term definitions
+#' Short card text for each term, falling back to the full definition
+#'
+#' `card_hint_pt`/`card_hint_en` are filled only for the terms whose definition
+#' is too long for a mapping card (see data-raw/build_dwc_terms.R). Everywhere
+#' else the card shows the definition itself. Returns `desc` unchanged when the
+#' columns are absent, so an older cached rds still works.
+#'
+#' @param terms_df DwC terms data frame.
+#' @param lang Language code ("pt" or "en").
+#' @param desc Character vector of definitions, already resolved for `lang`.
+#' @return Character vector the same length as `desc`.
+#' @noRd
+dwc_card_hints <- function(terms_df, lang, desc) {
+    col <- if (identical(lang, "pt")) "card_hint_pt" else "card_hint_en"
+    if (!col %in% names(terms_df)) {
+        return(desc)
+    }
+    hint <- as.character(terms_df[[col]])
+    hint[is.na(hint)] <- ""
+    ifelse(nzchar(hint), hint, desc)
+}
+
 #' @export
 get_dwc_terms_list <- function(lang = "en") {
     terms_df <- load_dwc_terms_rds()
@@ -416,11 +438,12 @@ get_dwc_terms_list <- function(lang = "en") {
     }
 
     terms_list <- Map(
-        function(term, category, desc, required) {
+        function(term, category, desc, hint, required) {
             list(
                 term = term,
                 category = category,
                 desc = desc,
+                hint = hint,
                 sep = "",
                 required = required
             )
@@ -428,6 +451,7 @@ get_dwc_terms_list <- function(lang = "en") {
         as.character(terms_df$term),
         as.character(terms_df$class),
         desc,
+        dwc_card_hints(terms_df, lang, desc),
         dwc_required_flags(terms_df),
         USE.NAMES = FALSE
     )
@@ -462,11 +486,12 @@ get_active_dwc_terms_list <- function(extra = character(0), lang = "en") {
     }
 
     terms_list <- Map(
-        function(term, category, desc, required) {
+        function(term, category, desc, hint, required) {
             list(
                 term     = term,
                 category = category,
                 desc     = desc,
+                hint     = hint,
                 sep      = "",
                 required = required
             )
@@ -474,6 +499,7 @@ get_active_dwc_terms_list <- function(extra = character(0), lang = "en") {
         as.character(terms_df$term),
         as.character(terms_df$class),
         desc,
+        dwc_card_hints(terms_df, lang, desc),
         dwc_required_flags(terms_df),
         USE.NAMES = FALSE
     )
@@ -537,6 +563,38 @@ constant_value_terms <- function() {
         "rightsHolder", "institutionCode", "collectionCode", "country",
         "references", "bibliographicCitation", "geodeticDatum"
     )
+}
+
+#' Terms the mapping screen treats as required
+#'
+#' Single source of truth for the sidebar readiness strip, the card state
+#' modifier and the "next pending" queue, so the three never disagree about
+#' what is missing. Narrower than the `required` flag in dwc_terms.rds, which
+#' also covers the IPT publishing minimum.
+#'
+#' @return Character vector of DwC term names.
+#' @noRd
+required_mapping_terms <- function() {
+    c(
+        "scientificName", "eventDate", "decimalLatitude",
+        "decimalLongitude", "basisOfRecord", "occurrenceID"
+    )
+}
+
+#' Terms whose mapping card spans two grid tracks
+#'
+#' `dynamicProperties` builds one `bslib::layout_columns(col_widths = c(5, 7))`
+#' row per selected column, and bslib breakpoints follow the viewport rather
+#' than the container: inside a one-track card at 1440px the two columns stay
+#' side by side and the key input drops to roughly 198px. Spanning two tracks
+#' keeps it at the width it had under the old two-column grid. The other cards
+#' with their own block (license, language, modified, the fixed-value input and
+#' the two assistant buttons) are full-width inside the card and need no span.
+#'
+#' @return Character vector of DwC term names.
+#' @noRd
+wide_card_terms <- function() {
+    c("dynamicProperties")
 }
 
 get_basis_of_record_vocab <- function(lang = "en") {

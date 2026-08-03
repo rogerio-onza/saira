@@ -3327,6 +3327,26 @@
     "pt": "Todos",
     "en": "All"
   },
+  "mapping_next_pending": {
+    "pt": "Próximo pendente",
+    "en": "Next pending"
+  },
+  "mapping_next_pending_none": {
+    "pt": "Nada pendente: os obrigatórios estão mapeados e não há sugestões para revisar.",
+    "en": "Nothing pending: required terms are mapped and there are no suggestions to review."
+  },
+  "mapping_pill_state_blocked": {
+    "pt": "Termo obrigatório sem mapeamento nesta classe",
+    "en": "Required term not mapped in this class"
+  },
+  "mapping_pill_state_review": {
+    "pt": "Há termos para revisar nesta classe",
+    "en": "This class has terms to review"
+  },
+  "mapping_pill_state_clear": {
+    "pt": "Sem pendências nesta classe",
+    "en": "No pending items in this class"
+  },
   "upload_data_title": {
     "pt": "Dados",
     "en": "Data"

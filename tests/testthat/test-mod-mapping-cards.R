@@ -132,3 +132,77 @@ test_that("build_dynprops_keys_block renders a key input per selected column", {
     expect_match(html, ns(paste0("dynprops_key_", make.names("colA"))), fixed = TRUE)
     expect_match(html, ns(paste0("dynprops_key_", make.names("colB"))), fixed = TRUE)
 })
+
+test_that("field_state_class flags required gaps and uncertain matches only", {
+    required <- required_mapping_terms()
+
+    # Required and unmapped: the state that blocks export.
+    expect_identical(
+        field_state_class("eventDate", FALSE, NULL, required),
+        "field-required-missing"
+    )
+    # Mapped, but the Rostrum was not sure.
+    expect_identical(
+        field_state_class("lifeStage", TRUE, list(status = "SUGERIDO"), required),
+        "field-attention"
+    )
+    expect_identical(
+        field_state_class("country", TRUE, list(status = "AMBIGUO"), required),
+        "field-attention"
+    )
+    # A confident automatic match is not a pending item.
+    expect_null(field_state_class("country", TRUE, list(status = "AUTO"), required))
+    # An optional term left unmapped is a choice, not a gap.
+    expect_null(field_state_class("habitat", FALSE, NULL, required))
+    # A required term that is mapped and confident is clean.
+    expect_null(
+        field_state_class("eventDate", TRUE, list(status = "AUTO"), required)
+    )
+    # Missing meta must not error.
+    expect_null(field_state_class("habitat", TRUE, NULL, required))
+})
+
+test_that("build_field_card marks state, wide span and the hidden-text tooltip", {
+    ns <- shiny::NS("map")
+    cols <- c("-- " = "", colA = "colA")
+    terms <- get_dwc_terms_list("pt")
+
+    # A term with a short definition shows it in full: no "?" affordance.
+    plain <- as.character(build_field_card(
+        item = terms[["country"]], cols = cols, current_val = "colA",
+        is_mapped = TRUE, badge_info = NULL, ns = ns, lang_r = "pt",
+        input = list(), cat_class = "cat-location"
+    ))
+    expect_false(grepl("field-desc-help", plain, fixed = TRUE))
+    expect_false(grepl("field-card-wide", plain, fixed = TRUE))
+
+    # A term whose definition is too long shows the hint plus the tooltip.
+    hinted <- as.character(build_field_card(
+        item = terms[["eventID"]], cols = cols, current_val = "",
+        is_mapped = FALSE, badge_info = NULL, ns = ns, lang_r = "pt",
+        input = list(), cat_class = "cat-event"
+    ))
+    expect_match(hinted, "field-desc-help", fixed = TRUE)
+    expect_match(hinted, terms[["eventID"]]$hint, fixed = TRUE)
+    # A real tooltip, not the native title attribute, which the browser delays
+    # by a second or two and never opens on click.
+    expect_match(hinted, "<bslib-tooltip", fixed = TRUE)
+    expect_match(hinted, terms[["eventID"]]$desc, fixed = TRUE)
+
+    # dynamicProperties spans two grid tracks so its key rows keep their width.
+    wide <- as.character(build_field_card(
+        item = terms[["dynamicProperties"]], cols = cols, current_val = "",
+        is_mapped = FALSE, badge_info = NULL, ns = ns, lang_r = "pt",
+        input = list(), cat_class = "cat-recordlevel"
+    ))
+    expect_match(wide, "field-card-wide", fixed = TRUE)
+
+    # The state modifier reaches the rendered class list.
+    flagged <- as.character(build_field_card(
+        item = terms[["eventDate"]], cols = cols, current_val = "",
+        is_mapped = FALSE, badge_info = NULL, ns = ns, lang_r = "pt",
+        input = list(), cat_class = "cat-event",
+        state_class = "field-required-missing"
+    ))
+    expect_match(flagged, "field-required-missing", fixed = TRUE)
+})
