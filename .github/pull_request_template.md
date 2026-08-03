@@ -1,8 +1,8 @@
 ## Summary
-<!-- One-line description of what this PR does. -->
+<!-- One line. What this PR does, not how. -->
 
 ## Why
-<!-- Link to the issue or context explaining the motivation. -->
+<!-- One or two sentences, or a link to the issue. -->
 
 ## How to test
 <!-- Checklist of commands and manual steps a reviewer can run. -->
@@ -22,6 +22,6 @@
 - [ ] Conventional Commit prefix (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`, `perf:`) in the PR title
 
 ## Notes
-<!-- Anything reviewer needs to know that doesn't fit above: deferred follow-ups, screenshots, manual verification steps, etc. -->
+<!-- Only what the reviewer would not get from the diff: deferred follow-ups, screenshots, manual verification steps. Delete this section if there is none. -->
 
 🤖 If this PR was authored with [Claude Code](https://claude.com/claude-code), keep the Co-Authored-By trailer on the squash-merge commit.

@@ -6,10 +6,10 @@
     <time class="release-date">2026-07-30</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>O aplicativo abre cerca de 5x mais rápido.</strong> Carregar o pacote levava 5,78 s e agora leva 1,04 s. Toda a diferença era a camada geográfica usada nas checagens de mar e de referência, que era carregada na abertura mesmo para quem nunca valida coordenadas. Agora ela é carregada na primeira vez em que é realmente necessária, ao clicar em validar coordenadas, e fica em memória pelo resto da sessão. A análise não mudou: no mesmo conjunto de dados, cada linha sai com o mesmo diagnóstico e o mesmo código ISO3.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>O mapeamento ficou muito mais rápido em planilhas grandes.</strong> Quatro auxiliares que leem um mês, um ano ou um pedaço de nome científico eram chamados uma vez por registro, embora uma coluna tenha no máximo algumas dezenas de valores distintos. Em 50 mil registros: o intervalo de datas montado a partir de quatro colunas (mês e ano de início e fim) caiu de 36,1 s para 0,27 s. Além disso, quando a planilha já traz o próprio <code>occurrenceID</code>, o Saíra não gera mais um conjunto inteiro de identificadores aleatórios só para descartá-los.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>A barra de progresso não disputa mais espaço com a validação que ela reporta.</strong> Durante uma consulta taxonômica, o painel inteiro de configuração era reconstruído umas 16 vezes por segundo, na mesma linha de execução que fazia as consultas. Agora só a barra se atualiza a cada passo, e a lista de nomes que vai aparecendo redesenha bem mais rápido em execuções longas.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Trocar o idioma não liga mais as duas opções da validação de nomes.</strong> Desligar "remover autores" ou "ignorar qualificadores" e depois alternar entre português e inglês religava as duas chaves, mudando em silêncio como a próxima validação trataria os seus nomes.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>O aplicativo abre cerca de 5x mais rápido.</strong> A camada geográfica das checagens de coordenadas agora só carrega quando você valida coordenadas.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>O mapeamento ficou muito mais rápido em planilhas grandes.</strong> Montar o <code>eventDate</code> a partir de várias colunas agora é praticamente instantâneo.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>A barra de progresso não atrasa mais a validação de nomes.</strong> Agora só a barra se atualiza a cada passo, em vez do painel inteiro.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Trocar o idioma não religa mais as opções da validação de nomes.</strong> Desligar "remover autores" ou "ignorar qualificadores" agora sobrevive à troca.</span></li>
   </ul>
 </section>
 
@@ -19,7 +19,7 @@
     <time class="release-date">2026-07-29</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>Versão de manutenção, sem nenhuma mudança no aplicativo.</strong> O Saíra 0.9.6 se comporta exatamente como o 0.9.5. A limpeza foi toda interna: avisos de empacotamento e de documentação que vinham acumulando desde versões anteriores, e a configuração do analisador de código alinhada ao estilo real do projeto. As notas completas estão no lançamento correspondente no GitHub.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>Versão de manutenção, sem mudanças no aplicativo.</strong> A limpeza foi interna: avisos de empacotamento e de documentação, e a configuração do analisador de código.</span></li>
   </ul>
 </section>
 
@@ -29,13 +29,10 @@
     <time class="release-date">2026-07-29</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong><code>establishmentMeans</code> e <code>degreeOfEstablishment</code> agora se preenchem para a planilha inteira, uma resposta por espécie.</strong> Os dois têm vocabulário controlado do TDWG (7 e 11 valores) e descrevem a <strong>espécie</strong>, não a linha. Um assistente lista as espécies distintas da coluna mapeada em <code>scientificName</code>, com a contagem de registros de cada uma, e pergunta os dois valores uma vez por táxon. Espécies da lista de exóticas invasoras já chegam sugeridas como <code>introduced</code>; o grau nunca é sugerido, porque depende do registro. Se você também mapear uma coluna, os valores dela vencem e o assistente só completa os brancos.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>A validação de nomes passou a sinalizar espécies exóticas invasoras.</strong> A lista brasileira do <strong>Instituto Hórus</strong> (483 táxons, animais e plantas) vem embutida no app, então a verificação é local, offline e instantânea. Os táxons recebem a etiqueta <strong>Exótica invasora</strong> no relatório, e a pílula de filtro <strong>Invasoras</strong> isola só eles nos Nomes Processados.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>O card <code>dynamicProperties</code> mostra o JSON que vai gerar.</strong> Abaixo do editor de chaves aparece o objeto montado para a primeira linha (por exemplo <code>{"cor":"Melânico"}</code>), atualizado a cada edição de chave.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Trocar o idioma não apaga mais o mapeamento.</strong> Alternar entre português e inglês relia o arquivo enviado e entregava uma tabela nova ao restante do app, que corretamente a lia como um upload novo: o mapeamento era limpo, os dois assistentes perdiam as respostas e os caches eram descartados.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>O card de mapeamento sempre diz o que fez com a coluna escolhida.</strong> Quando a coluna está mapeada mas as primeiras linhas estão vazias, o card diz isso com todas as letras, em vez de não mostrar nada e ficar idêntico a um card sem mapeamento.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>As telas de tabela e validação ficaram mais rápidas.</strong> Os rótulos passaram a ser resolvidos uma vez por valor distinto, e não uma vez por linha. Em 50 mil registros: os selos da tabela de coordenadas caíram de 1,9 s para 0,005 s, e a busca de tradução ficou 5,5x mais rápida.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>A planilha de exemplo dos tutoriais passou a ser o conjunto de demonstração completo</strong> do Saíra: 1.075 ocorrências, 48 espécies brasileiras reais dos seis biomas do país, com imperfeições deliberadas para exercitar as validações.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong><code>establishmentMeans</code> e <code>degreeOfEstablishment</code> agora se preenchem para a planilha inteira.</strong> Um assistente pergunta os dois valores uma vez por espécie, com vocabulário do TDWG.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>A validação de nomes sinaliza espécies exóticas invasoras.</strong> A lista do Instituto Hórus (483 táxons) vem embutida, então a checagem é local e instantânea.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>O card <code>dynamicProperties</code> mostra o JSON que vai gerar</strong>, montado para a primeira linha e atualizado a cada edição de chave.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Trocar o idioma não apaga mais o mapeamento.</strong> Alternar entre português e inglês relia o arquivo, e o app tratava aquilo como um upload novo.</span></li>
   </ul>
 </section>
 
@@ -45,12 +42,10 @@
     <time class="release-date">2026-07-01</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>Vocabulário Darwin Core sincronizado com o TDWG (de 217 para 262 termos).</strong> 45 novos termos e 9 novas classes (Agent, Assertion, BibliographicResource, MolecularProtocol, NucleotideAnalysis, NucleotideSequence, OrganismInteraction, Protocol, Provenance), cada um com definição em português — disponíveis na Wiki e em "Adicionar termo". Oito termos foram reclassificados para a classe correspondente no TDWG (por exemplo, <code>catalogNumber</code> passou a <code>MaterialEntity</code>).</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>A licença escolhida no mapeamento passou a ser refletida no EML exportado.</strong> O <code>intellectualRights</code> do <code>eml.xml</code> gera CC0 1.0, CC-BY 4.0 ou CC-BY-NC 4.0 conforme o mapeamento, no formato do GBIF/IPT.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Corrigido um bug que impedia um termo adicionado manualmente (via "Adicionar termo") de aparecer no mapeamento.</strong> O termo passou a ser inserido normalmente e a tela rola até o card recém-criado.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Importar um guia de mapeamento passou a exibir os cards dos termos fora do conjunto padrão</strong> (por exemplo, um <code>geodeticDatum</code> herdado de outro conjunto de dados).</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Na pré-visualização, o cabeçalho Darwin Core permanece fixo ao rolar as linhas</strong>, mantendo visíveis os nomes dos termos e os valores mapeados.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong><code>fundingAttribution</code> passou a ser declarado no namespace Audiovisual Core (<code>ac:</code>) no <code>meta.xml</code>.</strong></span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>Vocabulário Darwin Core sincronizado com o TDWG: de 217 para 262 termos</strong>, cada novo termo com definição em português na Wiki e em "Adicionar termo".</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>A licença escolhida no mapeamento passou a ser refletida no EML exportado</strong>, como CC0 1.0, CC-BY 4.0 ou CC-BY-NC 4.0.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Um termo adicionado manualmente volta a aparecer no mapeamento</strong>, com a tela rolando até o card recém-criado.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Na pré-visualização, o cabeçalho Darwin Core fica fixo ao rolar as linhas</strong>, mantendo visíveis os nomes dos termos.</span></li>
   </ul>
 </section>
 
@@ -60,10 +55,10 @@
     <time class="release-date">2026-06-25</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>A aba Ajuda virou uma central de recursos.</strong> Saiu o passo a passo (que repetia os tutoriais do site) e entrou uma seção de <strong>Recursos</strong> em destaque: link direto para os <strong>tutoriais</strong> no site, os <strong>links úteis</strong> (Darwin Core / TDWG, SiBBr, GBIF), um link direto para os <strong>issues no GitHub</strong> e os três PDFs de boas práticas do GBIF (Chapman 2020; Chapman &amp; Wieczorek 2020; Zermoglio et al. 2020). Um <strong>FAQ</strong> condensado abre com um clique, e o card <strong>Construído com</strong> agora lista todas as dependências, cada uma com link para o pacote.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>O mapeamento agora responde na hora.</strong> Selecionar uma coluna, marcar "usar data de hoje" ou escolher uma licença não trava mais a tela por segundos — cada clique é praticamente instantâneo, mesmo ao concatenar várias colunas (por exemplo no <code>eventDate</code>).</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong><code>modified</code> vira data pura</strong> ao marcar "usar data de hoje": sem hora nem fuso, igual ao seletor de data manual.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong><code>eventDate</code> e <code>dateIdentified</code> já aparecem em ISO 8601 na pré-visualização</strong> do mapeamento (igual ao arquivo exportado), e datas sem zero à esquerda (<code>2/9/2021</code>) agora convertem; a ordem dia/mês é decidida por coluna a partir dos próprios dados.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>A aba Ajuda virou uma central de recursos</strong>: tutoriais, links úteis, issues no GitHub, os PDFs de boas práticas do GBIF e um FAQ.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>O mapeamento responde na hora.</strong> Selecionar uma coluna ou escolher uma licença não trava mais a tela por segundos.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong><code>modified</code> vira data pura</strong> ao marcar "usar data de hoje": sem hora nem fuso, igual ao seletor manual.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong><code>eventDate</code> e <code>dateIdentified</code> aparecem em ISO 8601 na pré-visualização</strong>, e datas sem zero à esquerda (<code>2/9/2021</code>) agora convertem.</span></li>
   </ul>
 </section>
 
@@ -83,10 +78,10 @@
     <time class="release-date">2026-06-20</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>Status de conservação automático no export</strong>: cada registro de um táxon avaliado ganha, no <code>dynamicProperties</code>, a categoria de ameaça <strong>MMA</strong> (com a portaria que o listou) quando você usa uma base brasileira, e/ou a categoria <strong>IUCN</strong> global (consultada no GBIF) quando usa o GBIF. A consulta ao GBIF é opcional e não-bloqueante: offline, a chave IUCN é apenas omitida e a exportação segue normal.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>Valor fixo para mais termos de nível-dataset</strong>: <code>rightsHolder</code>, <code>institutionCode</code>, <code>collectionCode</code>, <code>country</code>, <code>references</code>, <code>bibliographicCitation</code> e <code>geodeticDatum</code> podem receber um único valor aplicado a todas as linhas, em vez de mapear uma coluna.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>Generalização de coordenadas 100% Chapman 2020</strong>: nunca arredonda para uma precisão mais fina do que o dado já tem (sem inventar precisão) e nunca descarta os metadados de proteção.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Pacotes Camtrap DP</strong> agora mapeiam de forma limpa: colunas vazias descartadas, valores auto-mapeados preservados e badges <strong>AUTO</strong> para as colunas que já são termos Darwin Core.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>Status de conservação automático no export</strong>: o <code>dynamicProperties</code> leva a categoria de ameaça do MMA e, com o GBIF, a categoria global da IUCN.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>Valor fixo para mais termos de nível-dataset</strong>: <code>rightsHolder</code>, <code>institutionCode</code>, <code>collectionCode</code>, <code>country</code>, <code>references</code>, <code>bibliographicCitation</code> e <code>geodeticDatum</code>.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>Generalização de coordenadas 100% Chapman 2020</strong>: nunca arredonda para uma precisão mais fina do que o dado já tem.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Pacotes Camtrap DP mapeiam de forma limpa</strong>: colunas vazias descartadas, valores auto-mapeados preservados e badges <strong>AUTO</strong> nos termos Darwin Core.</span></li>
   </ul>
 </section>
 
