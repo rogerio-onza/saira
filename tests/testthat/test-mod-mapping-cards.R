@@ -206,3 +206,47 @@ test_that("build_field_card marks state, wide span and the hidden-text tooltip",
     ))
     expect_match(flagged, "field-required-missing", fixed = TRUE)
 })
+
+test_that("build_field_row renders a read-only row that links back to its card", {
+    ns <- shiny::NS("map")
+    terms <- get_dwc_terms_list("pt")
+    badge <- list(
+        class = "badge field-status-badge bg-success",
+        title = "auto", label = "AUTO"
+    )
+
+    mapped <- as.character(build_field_row(
+        item = terms[["country"]], source_label = "pais", sample_text = "Brasil",
+        is_mapped = TRUE, badge_info = badge, state_class = NULL,
+        ns = ns, lang_r = "pt"
+    ))
+    expect_match(mapped, "field-row field-mapped", fixed = TRUE)
+    expect_match(mapped, ">pais<", fixed = TRUE)
+    expect_match(mapped, ">Brasil<", fixed = TRUE)
+    expect_match(mapped, "AUTO", fixed = TRUE)
+    # The row is the way back to the card, via one shared input for all terms.
+    expect_match(mapped, ns("edit_in_cards"), fixed = TRUE)
+    # Quotes are HTML-escaped in the rendered onclick attribute.
+    expect_match(mapped, "&#39;country&#39;", fixed = TRUE)
+    # Read-only: no selectize is created for a row.
+    expect_false(grepl("selectize", mapped, fixed = TRUE))
+    expect_false(grepl(ns("map_country"), mapped, fixed = TRUE))
+
+    unmapped <- as.character(build_field_row(
+        item = terms[["eventDate"]], source_label = "", sample_text = "",
+        is_mapped = FALSE, badge_info = NULL,
+        state_class = "field-required-missing", ns = ns, lang_r = "pt"
+    ))
+    expect_match(unmapped, "field-required-missing", fixed = TRUE)
+    expect_match(unmapped, tr("mapping_row_no_source", "pt"), fixed = TRUE)
+})
+
+test_that("build_field_row_header names the four list columns in both languages", {
+    for (lang in c("pt", "en")) {
+        html <- as.character(build_field_row_header(lang))
+        for (key in c("mapping_row_col_term", "mapping_row_col_origin",
+                      "mapping_row_col_source", "mapping_row_col_sample")) {
+            expect_match(html, tr(key, lang), fixed = TRUE)
+        }
+    }
+})

@@ -3266,6 +3266,126 @@ table.dataTable tbody tr.validate-invalid td {
   break-inside: avoid;
 }
 
+/* =============================================================================
+   LIST VIEW
+   One read-only row per term, for reviewing what auto-mapping decided. The
+   four tracks are shared by the header and the rows so the columns line up.
+   ============================================================================= */
+.field-row-header,
+.field-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 17rem) 6.5rem minmax(7rem, 1fr) minmax(7rem, 1.4fr);
+  gap: var(--space-3);
+  align-items: center;
+  text-align: left;
+}
+
+.field-row-header {
+  position: sticky;
+  /* Sits below the class pill bar, which is sticky at top: 0. */
+  top: 2.75rem;
+  z-index: 4;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.mapping-row-list {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.field-row {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-card);
+  cursor: pointer;
+  transition: var(--transition-colors);
+}
+
+.field-row:last-child {
+  border-bottom: 0;
+}
+
+.field-row:hover {
+  background-color: var(--hover-bg);
+}
+
+.field-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.field-row.field-unmapped {
+  opacity: 0.7;
+}
+
+/* Same semantic fill as the cards, minus the border: a row has neighbours on
+   two sides, so a full border would read as a box inside the list. */
+.field-row.field-attention {
+  background-color: var(--warning-bg);
+  opacity: 1;
+}
+
+.field-row.field-required-missing {
+  background-color: var(--error-bg);
+  opacity: 1;
+}
+
+.field-row-term {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-row-source,
+.field-row-sample {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-row-source {
+  color: var(--text-primary);
+}
+
+.field-row-source.is-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.field-row-badge {
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  .field-row-header {
+    display: none;
+  }
+
+  .field-row {
+    grid-template-columns: 1fr auto;
+    row-gap: var(--space-1);
+  }
+}
+
 /* State dot on a class pill. Turns the existing navigation bar into a map of
    where the pending work is, without costing a row of height. */
 .pill-state-dot {
