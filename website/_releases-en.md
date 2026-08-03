@@ -6,10 +6,10 @@
     <time class="release-date">2026-07-30</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The app starts about 5x faster.</strong> Loading the package took 5.78 s and now takes 1.04 s. All of the difference was the geographic layer used by the sea and reference checks, loaded at startup even for people who never validate coordinates. It is now loaded the first time it is actually needed, when you click validate coordinates, and kept in memory for the rest of the session. The analysis did not change: on the same dataset every row comes out with the same diagnostic and the same ISO3 code.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Column mapping is much faster on a large spreadsheet.</strong> Four helpers that read a single month, year or scientific-name token were being called once per record, even though a column has at most a few dozen distinct values. Over 50,000 records: the date interval assembled from four columns (start and end month and year) dropped from 36.1 s to 0.27 s. On top of that, when your spreadsheet already brings its own <code>occurrenceID</code>, Saíra no longer generates a whole set of random identifiers just to discard them.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The progress bar no longer competes with the validation it reports.</strong> During a taxonomic run the entire configuration panel was rebuilt about 16 times per second, on the same thread doing the queries. Now only the bar repaints on each step, and the stream of names redraws far faster on long runs.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Switching the language no longer turns the two name-validation options back on.</strong> Turning off "remove authors" or "ignore qualifiers" and then switching between Portuguese and English put both switches back on, silently changing how the next validation would treat your names.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The app starts about 5x faster.</strong> The geographic layer used by the coordinate checks now loads only when you validate coordinates.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Column mapping is much faster on a large spreadsheet.</strong> Assembling <code>eventDate</code> from several columns is now effectively instant.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The progress bar no longer slows down the name validation.</strong> Only the bar repaints on each step now, instead of the whole panel.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Switching the language no longer turns the name-validation options back on.</strong> Turning off "remove authors" or "ignore qualifiers" now survives the switch.</span></li>
   </ul>
 </section>
 
@@ -19,7 +19,7 @@
     <time class="release-date">2026-07-29</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Maintenance release, with no changes to the app.</strong> Saíra 0.9.6 behaves exactly like 0.9.5. The cleanup is entirely internal: packaging and documentation warnings that had been accumulating since earlier versions, plus a linter configuration that now matches the project's real style. The full notes are on the corresponding GitHub release.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Maintenance release, with no changes to the app.</strong> The cleanup is internal: packaging and documentation warnings, plus the linter configuration.</span></li>
   </ul>
 </section>
 
@@ -29,13 +29,10 @@
     <time class="release-date">2026-07-29</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong><code>establishmentMeans</code> and <code>degreeOfEstablishment</code> can now be filled for a whole spreadsheet, one answer per species.</strong> Both carry a TDWG controlled vocabulary (7 and 11 values) and describe the <strong>species</strong>, not the row. An assistant lists the distinct species in the column mapped to <code>scientificName</code>, with a record count for each, and asks for both values once per taxon. Species on the invasive alien list arrive pre-filled as <code>introduced</code>; the degree is never suggested, because it depends on the record. If you also map a column, its values win and the assistant only fills the blanks.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Name validation now flags invasive alien species.</strong> The Brazilian <strong>Instituto Hórus</strong> list (483 taxa, animals and plants) is bundled with the app, so the check is local, offline and instant. Taxa get an <strong>Invasive alien</strong> badge in the report, and an <strong>Invasive</strong> filter pill narrows Processed Names down to just those.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>The <code>dynamicProperties</code> card shows the JSON it will generate.</strong> Under the key editor you now see the object assembled for the first row (for example <code>{"cor":"Melânico"}</code>), refreshed on every key edit.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Switching the interface language no longer wipes your mapping.</strong> Changing between Portuguese and English re-read the uploaded file and handed the rest of the app a new table, which it correctly read as a fresh upload: the mapping was cleared, both assistants lost their answers and the caches were dropped.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>A mapping card always says what it did with the column you picked.</strong> When the column is mapped but its first rows are empty, the card says so explicitly instead of rendering nothing and looking exactly like an unmapped card.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Table and validation screens got faster.</strong> Labels are now resolved once per distinct value instead of once per row. Over 50,000 records: the coordinate table badges went from 1.9 s to 0.005 s, and the translation lookup is 5.5x faster.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The tutorials' downloadable sample is now Saíra's full demonstration dataset</strong>: 1,075 occurrences, 48 real Brazilian species from all six Brazilian biomes, with deliberate imperfections that exercise the validations.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong><code>establishmentMeans</code> and <code>degreeOfEstablishment</code> can now be filled for a whole spreadsheet.</strong> An assistant asks for both values once per species, using the TDWG vocabulary.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Name validation flags invasive alien species.</strong> The Instituto Hórus list (483 taxa) is bundled with the app, so the check is local and instant.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>The <code>dynamicProperties</code> card shows the JSON it will generate</strong>, assembled for the first row and refreshed on every key edit.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Switching the interface language no longer wipes your mapping.</strong> Changing between Portuguese and English re-read the file, and the app treated that as a new upload.</span></li>
   </ul>
 </section>
 
@@ -45,12 +42,10 @@
     <time class="release-date">2026-07-01</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Darwin Core vocabulary synced with TDWG (from 217 to 262 terms).</strong> 45 new terms and 9 new classes (Agent, Assertion, BibliographicResource, MolecularProtocol, NucleotideAnalysis, NucleotideSequence, OrganismInteraction, Protocol, Provenance), each with a Portuguese definition — available in the Wiki and the "Add term" modal. Eight terms were re-classified to their corresponding TDWG class (for example, <code>catalogNumber</code> is now <code>MaterialEntity</code>).</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>The license chosen in the mapping is now reflected in the exported EML.</strong> The <code>eml.xml</code> <code>intellectualRights</code> produces CC0 1.0, CC-BY 4.0 or CC-BY-NC 4.0 according to the mapping, in the GBIF/IPT format.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Fixed a bug that prevented a manually added term (via "Add term") from appearing in the mapping.</strong> The term is now inserted normally and the page scrolls to the newly created card.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Importing a mapping guide now shows the cards for terms outside the default set</strong> (for example, a <code>geodeticDatum</code> carried over from another dataset).</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>In the Preview, the Darwin Core header stays fixed while you scroll the rows</strong>, keeping the term names and mapped values visible.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>fundingAttribution</code> is now declared under the Audiovisual Core namespace (<code>ac:</code>) in <code>meta.xml</code>.</strong></span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Darwin Core vocabulary synced with TDWG: 217 to 262 terms</strong>, each new term with a Portuguese definition in the Wiki and in "Add term".</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>The license chosen in the mapping is now reflected in the exported EML</strong>, as CC0 1.0, CC-BY 4.0 or CC-BY-NC 4.0.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>A manually added term shows up in the mapping again</strong>, with the page scrolling to the newly created card.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>In the Preview, the Darwin Core header stays fixed while you scroll the rows</strong>, keeping the term names visible.</span></li>
   </ul>
 </section>
 
@@ -60,10 +55,10 @@
     <time class="release-date">2026-06-25</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The Help tab is now a resource hub.</strong> The step-by-step recap (which duplicated the website tutorials) was dropped for a <strong>Resources</strong> section in evidence: a direct link to the <strong>tutorials</strong> on the site, the <strong>useful links</strong> (Darwin Core / TDWG, SiBBr, GBIF), a direct <strong>GitHub issues</strong> link, and the three GBIF best-practice PDFs (Chapman 2020; Chapman &amp; Wieczorek 2020; Zermoglio et al. 2020). A condensed <strong>FAQ</strong> opens with one click, and the <strong>Built with</strong> card now lists every dependency, each linking to its package.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping is now instant.</strong> Picking a column, ticking "use today's date" or choosing a license no longer freezes the screen for seconds — every click is effectively instant, even when concatenating several columns (e.g. into <code>eventDate</code>).</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>modified</code> is written as a plain date</strong> when "use today's date" is checked: no time or timezone, matching the manual date picker.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>eventDate</code> and <code>dateIdentified</code> now show in ISO 8601 in the mapping preview</strong> (matching the exported file), and unpadded dates (<code>2/9/2021</code>) now convert; day/month order is decided per column from the data itself.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The Help tab is now a resource hub</strong>: tutorials, useful links, GitHub issues, the GBIF best-practice PDFs and a condensed FAQ.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping responds instantly.</strong> Picking a column or choosing a license no longer freezes the screen for seconds.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>modified</code> is written as a plain date</strong> when "use today's date" is checked: no time and no timezone.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>eventDate</code> and <code>dateIdentified</code> show in ISO 8601 in the preview</strong>, and unpadded dates (<code>2/9/2021</code>) now convert.</span></li>
   </ul>
 </section>
 
@@ -83,10 +78,10 @@
     <time class="release-date">2026-06-20</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Automatic conservation status on export</strong>: every record of an assessed taxon gets, in <code>dynamicProperties</code>, the <strong>MMA</strong> threat category (with the portaria that listed it) when you use a Brazilian database, and/or the global <strong>IUCN</strong> category (looked up on GBIF) when you use GBIF. The GBIF lookup is optional and non-blocking: offline, the IUCN key is simply omitted and the export proceeds normally.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Fixed value for more dataset-level terms</strong>: <code>rightsHolder</code>, <code>institutionCode</code>, <code>collectionCode</code>, <code>country</code>, <code>references</code>, <code>bibliographicCitation</code> and <code>geodeticDatum</code> can take a single value applied to every row instead of mapping a column.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Coordinate generalization is now fully Chapman 2020-compliant</strong>: it never rounds to a finer precision than the data already has (no invented precision) and never drops the protection metadata.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Camtrap DP packages</strong> now map cleanly: empty columns dropped, auto-mapped values preserved, and <strong>AUTO</strong> badges for columns that already are Darwin Core terms.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Automatic conservation status on export</strong>: <code>dynamicProperties</code> carries the MMA threat category and, with GBIF, the global IUCN category.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Fixed value for more dataset-level terms</strong>: <code>rightsHolder</code>, <code>institutionCode</code>, <code>collectionCode</code>, <code>country</code>, <code>references</code>, <code>bibliographicCitation</code> and <code>geodeticDatum</code>.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Coordinate generalization is now fully Chapman 2020-compliant</strong>: it never rounds to a finer precision than the data already has.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Camtrap DP packages now map cleanly</strong>: empty columns dropped, auto-mapped values preserved, and <strong>AUTO</strong> badges on Darwin Core terms.</span></li>
   </ul>
 </section>
 
