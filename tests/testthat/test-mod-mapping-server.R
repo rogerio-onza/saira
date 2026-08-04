@@ -1443,3 +1443,56 @@ testthat::test_that("an assistant-filled card reads as mapped, not as untouched"
         }
     )
 })
+
+# The alias write is wrapped in tryCatch(..., error = function(e) NULL), so it
+# can stop working with no visible sign anywhere. This pins the outcome (ADR-087:
+# an imported guide seeds personal aliases) while the call is changed to reuse
+# the module's connection instead of opening a second one to the same file.
+testthat::test_that("importing a template seeds aliases through the module connection", {
+    data_dir <- withr::local_tempdir()
+    user_id <- paste0("test_conn_", as.integer(Sys.time()))
+    withr::local_envvar(c(SAIRA_DATA_DIR = data_dir, SAIRA_USER = user_id))
+
+    df <- data.frame(
+        especie = c("Panthera onca", "Leopardus pardalis"),
+        latitude = c("-10.1", "-11.2"),
+        stringsAsFactors = FALSE
+    )
+    guide <- build_mapping_guide_txt(
+        list(scientificName = "especie", decimalLatitude = "latitude"),
+        df, lang = "en"
+    )
+    guide_path <- withr::local_tempfile(fileext = ".txt")
+    writeLines(guide, guide_path)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(import_template_file = list(
+                name = "guide.txt", size = 1L,
+                type = "text/plain", datapath = guide_path
+            ))
+            session$setInputs(confirm_import_template = 1)
+            session$flushReact()
+
+            testthat::expect_identical(rv$map_values[["scientificName"]], "especie")
+            testthat::expect_identical(rv$map_values[["decimalLatitude"]], "latitude")
+        }
+    )
+
+    # Read back from a fresh connection to the same database file.
+    check_conn <- rostrum_connect()
+    on.exit(try(DBI::dbDisconnect(check_conn), silent = TRUE), add = TRUE)
+    rows <- DBI::dbGetQuery(
+        check_conn,
+        "SELECT col_name_norm, dwc_term FROM rostrum_aliases WHERE user_id = ? ORDER BY dwc_term",
+        params = list(user_id)
+    )
+    testthat::expect_identical(nrow(rows), 2L)
+    testthat::expect_identical(rows$dwc_term, c("decimalLatitude", "scientificName"))
+})

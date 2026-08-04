@@ -567,6 +567,30 @@
     "pt": "Rostrum em andamento",
     "en": "Rostrum in progress"
   },
+  "loading_import_title": {
+    "pt": "Importando o modelo",
+    "en": "Importing the template"
+  },
+  "loading_import_status": {
+    "pt": "Restaurando o mapeamento... %s%%",
+    "en": "Restoring the mapping... %s%%"
+  },
+  "loading_import_phrase_1": {
+    "pt": "Lendo o modelo e conferindo o cabeçalho Saíra.",
+    "en": "Reading the template and checking the Saíra header."
+  },
+  "loading_import_phrase_2": {
+    "pt": "Casando as colunas do modelo com as da sua planilha.",
+    "en": "Matching the template's columns against your spreadsheet."
+  },
+  "loading_import_phrase_3": {
+    "pt": "Guardando os apelidos de coluna no seu Rostrum local.",
+    "en": "Saving the column aliases to your local Rostrum."
+  },
+  "loading_import_phrase_4": {
+    "pt": "Redesenhando os cartões com o mapeamento restaurado.",
+    "en": "Redrawing the cards with the restored mapping."
+  },
   "loading_automap_status": {
     "pt": "Mapeando campos... %s%%",
     "en": "Mapping fields... %s%%"
