@@ -224,7 +224,8 @@ testthat::test_that("get_dwc_full_catalog returns superset of base terms with co
     testthat::expect_identical(
         sort(names(catalog)),
         sort(c("term", "class", "definition_en", "definition_pt",
-               "examples", "required", "data_type"))
+               "examples", "required", "data_type",
+               "card_hint_pt", "card_hint_en"))
     )
     testthat::expect_identical(
         sum(catalog$required),
@@ -336,7 +337,10 @@ testthat::test_that("get_active_dwc_terms_list appends a valid extra and keeps s
     testthat::expect_equal(length(active), length(base_terms) + 1L)
 
     appended <- active[[which(terms == extra_term)]]
-    testthat::expect_named(appended, c("term", "category", "desc", "sep", "required"))
+    testthat::expect_named(
+        appended,
+        c("term", "category", "desc", "hint", "sep", "required")
+    )
     testthat::expect_type(appended$desc, "character")
     testthat::expect_type(appended$required, "logical")
 })
@@ -418,4 +422,64 @@ testthat::test_that("term list builders expose required as a plain logical scala
             vapply(terms_list, function(x) x$term, character(1), USE.NAMES = FALSE)
         )
     }
+})
+
+testthat::test_that("card hints replace only the definitions too long for a card", {
+    for (lang in c("pt", "en")) {
+        terms_list <- get_dwc_terms_list(lang)
+        hinted <- Filter(function(x) !identical(x$hint, x$desc), terms_list)
+
+        # Eleven base definitions run past what a three-column card can show.
+        testthat::expect_length(hinted, 11L)
+        for (item in hinted) {
+            testthat::expect_true(nzchar(item$hint))
+            testthat::expect_lt(nchar(item$hint), nchar(item$desc))
+        }
+        # A short definition is shown as-is, with nothing hidden behind it.
+        testthat::expect_identical(
+            terms_list[["country"]]$hint,
+            terms_list[["country"]]$desc
+        )
+        # Every term carries the slot, so the card builder never sees NULL.
+        testthat::expect_true(all(vapply(
+            terms_list, function(x) is.character(x$hint), logical(1)
+        )))
+    }
+})
+
+testthat::test_that("get_active_dwc_terms_list carries hints too", {
+    terms_list <- get_active_dwc_terms_list(extra = character(0), lang = "pt")
+    testthat::expect_true(nzchar(terms_list[["eventID"]]$hint))
+    testthat::expect_false(
+        identical(terms_list[["eventID"]]$hint, terms_list[["eventID"]]$desc)
+    )
+})
+
+testthat::test_that("dwc_card_hints falls back when the column is absent", {
+    df <- data.frame(term = c("a", "b"), stringsAsFactors = FALSE)
+    desc <- c("long one", "long two")
+    testthat::expect_identical(dwc_card_hints(df, "pt", desc), desc)
+
+    df$card_hint_pt <- c("short", "")
+    testthat::expect_identical(
+        dwc_card_hints(df, "pt", desc),
+        c("short", "long two")
+    )
+    # A blank English column falls back the same way.
+    df$card_hint_en <- c(NA_character_, "brief")
+    testthat::expect_identical(
+        dwc_card_hints(df, "en", desc),
+        c("long one", "brief")
+    )
+})
+
+testthat::test_that("required_mapping_terms is the readiness strip's term set", {
+    required <- required_mapping_terms()
+    testthat::expect_length(required, 6L)
+    testthat::expect_true(all(required %in% names(get_dwc_terms_list("en"))))
+    testthat::expect_false(anyDuplicated(required) > 0L)
+})
+
+testthat::test_that("wide_card_terms only spans terms that need the extra track", {
+    testthat::expect_identical(wide_card_terms(), "dynamicProperties")
 })

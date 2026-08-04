@@ -28,6 +28,10 @@
   --error: #c0392b;
   --error-bg: rgba(192, 57, 43, 0.1);
   --error-border: rgba(192, 57, 43, 0.25);
+  /* Stronger variants for when the border alone has to carry the state, as on
+     the mapping cards, where the 0.25 alpha reads as no border at all. */
+  --warning-border-strong: rgba(255, 162, 4, 0.55);
+  --error-border-strong: rgba(192, 57, 43, 0.5);
   --info-bg: rgba(37, 38, 89, 0.1);
   --info-border: rgba(37, 38, 89, 0.2);
 
@@ -59,6 +63,9 @@
   /* Type Scale */
   --text-xs: 0.75rem;
   --text-sm: 0.8rem;
+  /* Fills the gap between --text-sm and --text-base, for the mapping card term
+     name on wide monitors where the card is dense but the name still leads. */
+  --text-base-sm: 0.95rem;
   --text-base: 1.05rem;
   --text-md: 1.1rem;
   --text-lg: 1.25rem;

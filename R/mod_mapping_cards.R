@@ -26,7 +26,7 @@
 #'   `carddyn_<term>` uiOutput slot, so picking a column updates only that card
 #'   instead of rebuilding the whole 50-selectize grid (see mod_mapping.R).
 #' @noRd
-build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, occurrence_id_preserved = FALSE) {
+build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, occurrence_id_preserved = FALSE, state_class = NULL) {
     term <- item$term
 
     # taxonRank/specificEpithet are inferred from scientificName (see
@@ -35,12 +35,48 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
     locked_taxon <- isTRUE(scientificname_mapped) &&
         term %in% c("taxonRank", "specificEpithet")
 
+    # The card shows the short hint when the term has one; the official
+    # definition then lives in the "?" tooltip. Terms whose definition is
+    # already short show it in full and get no "?", so the affordance never
+    # competes for width where there is nothing hidden behind it.
+    card_text <- if (!is.null(item$hint) && nzchar(item$hint)) item$hint else item$desc
+    has_hidden_text <- !identical(card_text, item$desc)
+
     shiny::div(
         id = ns(paste0("fieldcard_", term)),
-        class = paste("field-card no-break", cat_class, if (is_mapped) "field-mapped" else "field-unmapped"),
+        class = paste(
+            c(
+                "field-card no-break", cat_class,
+                if (is_mapped) "field-mapped" else "field-unmapped",
+                state_class,
+                if (term %in% wide_card_terms()) "field-card-wide"
+            ),
+            collapse = " "
+        ),
         shiny::div(
             class = "field-header-row",
-            shiny::div(class = "field-header", term),
+            shiny::div(
+                class = "field-header-name",
+                shiny::div(class = "field-header", term),
+                # A real tooltip rather than the native title attribute: the
+                # browser delays that one by a second or two and never responds
+                # to a click, and this trigger is styled as a button, so it gets
+                # clicked. bslib's shows on hover and on focus, immediately.
+                # Only the hinted terms carry one, so this is 11 instances per
+                # render, not 66.
+                if (has_hidden_text) {
+                    bslib::tooltip(
+                        shiny::tags$button(
+                            type = "button",
+                            class = "field-desc-help",
+                            `aria-label` = item$desc,
+                            "?"
+                        ),
+                        item$desc,
+                        placement = "right"
+                    )
+                }
+            ),
             if (!is.null(badge_info) && term != "occurrenceID" && !locked_taxon) {
                 shiny::span(
                     class = badge_info$class,
@@ -49,7 +85,16 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 )
             }
         ),
-        shiny::div(class = "field-desc", item$desc),
+        # The full definition rides on every card, not only the hinted ones:
+        # above 1800px the description is clamped to a single line, and the
+        # terms that overflow there are not the same set that carry a hint.
+        # The "?" stays reserved for the hinted terms, since it marks replaced
+        # text rather than text the viewport happened to cut.
+        shiny::div(
+            class = "field-desc",
+            title = item$desc,
+            card_text
+        ),
         if (locked_taxon) {
             shiny::div(
                 class = "alert alert-info",
@@ -474,6 +519,37 @@ build_field_sample <- function(sample_preview, lang_r) {
             paste(sample_preview, collapse = "  ")
         )
     )
+}
+
+#' State modifier class for a mapping card
+#'
+#' Two states beyond mapped/unmapped need to read at a glance across a grid of
+#' 66 cards: a required term with no mapping, and a term the Rostrum was not
+#' sure about. Both are carried by border colour plus a light semantic fill in
+#' CSS, never by a single-side stripe (ADR-040).
+#'
+#' @param term DwC term name.
+#' @param is_mapped Logical, whether the field is currently mapped.
+#' @param meta Field meta list (uses `$status`), or NULL.
+#' @param required_terms Character vector of required DwC terms.
+#' @return `"field-required-missing"`, `"field-attention"`, or NULL.
+#' @noRd
+field_state_class <- function(term, is_mapped, meta, required_terms) {
+    if (!isTRUE(is_mapped)) {
+        if (term %in% required_terms) {
+            return("field-required-missing")
+        }
+        return(NULL)
+    }
+    status <- if (is.null(meta) || is.null(meta$status)) {
+        ""
+    } else {
+        toupper(as.character(meta$status)[1])
+    }
+    if (isTRUE(status %in% c("SUGERIDO", "AMBIGUO"))) {
+        return("field-attention")
+    }
+    NULL
 }
 
 #' Determine if a mapping field is considered mapped

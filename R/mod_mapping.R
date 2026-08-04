@@ -96,11 +96,52 @@ mod_mapping_ui <- function(id) {
             (function tryScroll() {
               var el = document.getElementById(id);
               if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                el.scrollIntoView({ behavior: 'smooth', block: payload.block || 'start' });
+                // Optional highlight, used by the 'next pending' button so the
+                // card that was scrolled to is identifiable among its
+                // neighbours. Outline only, so nothing shifts.
+                if (payload.flash) {
+                  el.classList.remove('field-card-flash');
+                  void el.offsetWidth;
+                  el.classList.add('field-card-flash');
+                  setTimeout(function () {
+                    el.classList.remove('field-card-flash');
+                  }, 2200);
+                }
                 return;
               }
               var now = (window.performance ? performance.now() : Date.now());
               if (now < deadline) { window.requestAnimationFrame(tryScroll); }
+            })();
+          });
+          // Patch the class pills' state dots and the pending counter in place.
+          // Same reason as saira-toggle-field-mapped below: re-rendering the
+          // pill bar would recreate its actionButtons on every mapping change.
+          Shiny.addCustomMessageHandler('saira-mapping-triage', function (payload) {
+            if (!payload) { return; }
+            // The first push can land before renderUI has put the pill bar in
+            // the DOM (auto-map writes the mapping as the tab is drawn), so
+            // poll on a short budget the same way the scroll handler does
+            // rather than dropping the update.
+            var deadline = (window.performance ? performance.now() : Date.now()) + 3000;
+            (function apply() {
+              var counter = document.getElementById(payload.count_id);
+              if (!counter) {
+                var now = (window.performance ? performance.now() : Date.now());
+                if (now < deadline) { window.requestAnimationFrame(apply); }
+                return;
+              }
+              counter.textContent = payload.count > 0 ? String(payload.count) : '';
+              (payload.dots || []).forEach(function (item) {
+                var dot = document.getElementById(item.id);
+                if (!dot) { return; }
+                dot.className = 'pill-state-dot is-' + item.state;
+                dot.title = item.title || '';
+              });
+              var btn = document.getElementById(payload.button_id);
+              if (btn) {
+                btn.classList.toggle('is-idle', !(payload.count > 0));
+              }
             })();
           });
           // Live-toggle a field card's mapped border without re-rendering the
@@ -280,10 +321,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
         )
 
         # Required DwC terms surfaced as a live status strip in the sidebar
-        required_fields_strip <- c(
-            "scientificName", "eventDate", "decimalLatitude",
-            "decimalLongitude", "basisOfRecord", "occurrenceID"
-        )
+        required_fields_strip <- required_mapping_terms()
 
         # Derives the sorted class list from current active terms (reactive)
         all_filter_categories <- shiny::reactive({
@@ -1410,6 +1448,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
         # Class pill bar: pure scroll-navigation anchors. Clicking a pill scrolls
         # to its category section. No filter toggle — all sections always render.
+        # The state dots and the pending counter are NOT rendered here: this
+        # output must not depend on rv$map_meta, or every column pick would
+        # recreate the pill actionButtons. They are placeholders patched in
+        # place by the saira-mapping-triage handler (see the observer below).
         output$class_pills <- shiny::renderUI({
             cats <- all_filter_categories()
 
@@ -1424,12 +1466,141 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 lapply(cats, function(cat) {
                     shiny::actionButton(
                         ns(paste0("class_pill_", slug(cat))),
-                        category_label(cat),
+                        shiny::tagList(
+                            shiny::span(
+                                id = ns(paste0("pill_dot_", slug(cat))),
+                                class = "pill-state-dot is-clear"
+                            ),
+                            category_label(cat)
+                        ),
                         class = "stream-pill"
                     )
-                })
+                }),
+                shiny::actionButton(
+                    ns("next_pending"),
+                    shiny::tagList(
+                        tr("mapping_next_pending", lang_r()),
+                        shiny::span(
+                            id = ns("next_pending_count"),
+                            class = "next-pending-count"
+                        )
+                    ),
+                    class = "stream-pill next-pending-pill is-idle",
+                    icon = shiny::icon("arrow-right")
+                )
             )
         })
+
+        # Terms that still need the user, in grid order: a required term with no
+        # mapping, or one the Rostrum was not sure about. Feeds both the pill
+        # dots and the "next pending" queue, so the count and the jump target
+        # can never disagree.
+        # Fully isolated: the caller declares what it wakes on. Reading the 66
+        # map_ and usecustom_ inputs here would make the triage observer depend
+        # on all of them, and auto-map writes each term separately with
+        # update_input = TRUE, so the client echo would re-run this 66-term loop
+        # once per flush. rv$map_values is the source of truth anyway; the sync
+        # observer fills it one flush after a selection, which is what the
+        # observer below wakes on.
+        pending_terms <- function() shiny::isolate({
+            fields <- dwc_all()
+            keep <- vapply(fields, function(item) {
+                term <- item$term
+                current_val <- rv$map_values[[term]]
+                if (is.null(current_val)) {
+                    current_val <- input[[paste0("map_", term)]]
+                }
+                current_val <- sanitize_map_selection(term, current_val)
+                is_mapped <- is_field_mapped(term, current_val, input)
+                if (isTRUE(rv$scientificname_mapped) &&
+                    term %in% c("taxonRank", "specificEpithet")) {
+                    is_mapped <- TRUE
+                }
+                field_meta <- rv$map_meta[[term]]
+                if (is.null(field_meta)) {
+                    field_meta <- default_meta()
+                }
+                card_state <- apply_establishment_card_state(
+                    term, current_val, is_mapped, field_meta
+                )
+                !is.null(field_state_class(
+                    term, card_state$is_mapped, card_state$meta,
+                    required_fields_strip
+                ))
+            }, FUN.VALUE = logical(1))
+
+            fields[keep]
+        })
+
+        # Push the dot states and the counter whenever the mapping changes.
+        shiny::observe({
+            rv$map_values
+            rv$map_meta
+            rv$extra_terms
+            rv$scientificname_mapped
+            lang <- lang_r()
+
+            pending <- pending_terms()
+            blocked <- vapply(
+                pending, function(x) x$term %in% required_fields_strip,
+                FUN.VALUE = logical(1)
+            )
+            blocked_cats <- unique(vapply(
+                pending[blocked], function(x) x$category, FUN.VALUE = character(1)
+            ))
+            review_cats <- unique(vapply(
+                pending[!blocked], function(x) x$category, FUN.VALUE = character(1)
+            ))
+
+            dots <- lapply(all_filter_categories(), function(cat) {
+                state <- if (cat %in% blocked_cats) {
+                    "blocked"
+                } else if (cat %in% review_cats) {
+                    "review"
+                } else {
+                    "clear"
+                }
+                list(
+                    id = ns(paste0("pill_dot_", slug(cat))),
+                    state = state,
+                    title = tr(paste0("mapping_pill_state_", state), lang)
+                )
+            })
+
+            session$sendCustomMessage("saira-mapping-triage", list(
+                dots = dots,
+                count = length(pending),
+                count_id = ns("next_pending_count"),
+                button_id = ns("next_pending")
+            ))
+        })
+
+        # Cycles through the pending queue, one term per click.
+        rv_pending_cursor <- shiny::reactiveVal(0L)
+        shiny::observeEvent(input$next_pending,
+            {
+                pending <- pending_terms()
+                if (length(pending) == 0L) {
+                    shiny::showNotification(
+                        tr("mapping_next_pending_none", lang_r()),
+                        type = "message",
+                        duration = 5
+                    )
+                    return()
+                }
+                nxt <- (rv_pending_cursor() %% length(pending)) + 1L
+                rv_pending_cursor(nxt)
+                session$sendCustomMessage(
+                    "saira-mapping-scroll-to-class",
+                    list(
+                        anchor_id = ns(paste0("fieldcard_", pending[[nxt]]$term)),
+                        block = "center",
+                        flash = TRUE
+                    )
+                )
+            },
+            ignoreInit = TRUE
+        )
 
         # Static observer loop over the full 12-class catalog. Clicking a pill
         # scrolls directly to that category's anchor. No filter toggle.
@@ -1752,7 +1923,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                 category_label(cat)
                             ),
                             shiny::div(
-                                class = "two-column-layout",
+                                class = "mapping-card-grid",
                                 lapply(cat_fields, function(item) {
                                     term <- item$term
                                     current_val <- rv$map_values[[term]]
@@ -1793,7 +1964,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                                         ns = ns, lang_r = lang,
                                         input = input, cat_class = cat_class,
                                         scientificname_mapped = scientificname_mapped,
-                                        occurrence_id_preserved = occurrence_id_preserved
+                                        occurrence_id_preserved = occurrence_id_preserved,
+                                        state_class = field_state_class(
+                                            term, is_mapped, field_meta,
+                                            required_fields_strip
+                                        )
                                     )
                                 })
                             )

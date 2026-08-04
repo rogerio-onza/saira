@@ -33,16 +33,40 @@
   margin-top: 0;
 }
 
-/* Two-column layout for field cards */
-.two-column-layout {
+/* Field card grid. Three columns by default: at 1440px the grid area is
+   ~1042px, so each card gets ~339px, which still fits the selectize and a
+   two-line description. Explicit breakpoints rather than auto-fill, which
+   would slip into a fourth column at 1920px. */
+.mapping-card-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-3);
 }
 
-@media (max-width: 992px) {
-  .two-column-layout {
+@media (max-width: 1280px) {
+  .mapping-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .mapping-card-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Terms whose own block needs more room than one track. dynamicProperties
+   builds its key rows with bslib::layout_columns(col_widths = c(5, 7)), and
+   bslib breakpoints follow the viewport, not the container: inside a 339px
+   card at 1440px the two columns stay side by side and the key input drops to
+   ~198px. */
+.field-card-wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 860px) {
+  .field-card-wide {
+    grid-column: span 1;
   }
 }
 
@@ -51,7 +75,10 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: var(--space-3);
+  /* Tighter than the --space-3 the card used at two columns: with three
+     columns there are half again as many cards on screen, so the padding is
+     read as gutter between cards rather than as breathing room inside one. */
+  padding: var(--space-2);
   /* Grid items default to min-width:auto and will not shrink below their
      content's intrinsic width; without this the no-wrap .field-card-sample
      blows the card past its 1fr track and the ellipsis never engages. */
@@ -85,6 +112,34 @@
   box-shadow: none;
 }
 
+/* Cards that need the user's attention. Same grammar as .field-mapped above:
+   the state is carried by the border colour plus a light semantic fill, never
+   by a thick single-side stripe (ADR-040). Both reset the .field-unmapped
+   opacity, since a card that needs attention must not read as faded. */
+.field-card.field-attention {
+  border-color: var(--warning-border-strong);
+  background-color: var(--warning-bg);
+  opacity: 1;
+  box-shadow: none;
+}
+
+.field-card.field-attention:hover {
+  border-color: var(--warning-border-strong);
+  box-shadow: none;
+}
+
+.field-card.field-required-missing {
+  border-color: var(--error-border-strong);
+  background-color: var(--error-bg);
+  opacity: 1;
+  box-shadow: none;
+}
+
+.field-card.field-required-missing:hover {
+  border-color: var(--error-border-strong);
+  box-shadow: none;
+}
+
 /* Field header (term name) */
 .field-header-row {
   display: flex;
@@ -94,12 +149,35 @@
   margin-bottom: var(--space-1);
 }
 
+/* Keeps the term name and its "?" together as one shrinkable unit, so the
+   badge stays pinned to the right edge. min-width:0 lets the pair shrink
+   instead of pushing the badge out of a three-column card. */
+.field-header-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* bslib ships no styling for its tooltip wrapper, so it would default to
+   display:inline and become the flex item in place of the button, taking the
+   button's flex-shrink and baseline alignment with it. display:contents drops
+   the wrapper from layout without affecting the tooltip, which Bootstrap
+   positions against the trigger element itself. */
+.field-header-name > bslib-tooltip {
+  display: contents;
+}
+
 .field-header {
   font-weight: var(--weight-semibold);
   font-family: var(--font-mono);
   font-size: var(--text-base);
   color: var(--text-primary);
   margin-bottom: 0;
+  /* The longest term (coordinateUncertaintyInMeters, 29 mono characters) is
+     about 292px and a three-column card gives it 313px of content box, so with
+     the "?" and a badge alongside it has to be able to break. */
+  overflow-wrap: anywhere;
 }
 
 .field-status-badge {
@@ -126,17 +204,135 @@
   color: #ffffff;
 }
 
-/* Field description */
+/* Field description. Clamped to two lines so every card in a grid row is the
+   same height: the row is sized by its tallest item, and a term added from the
+   full 262-term catalog via "Add term" can carry a much longer definition than
+   the base set. The full text stays in the .field-desc-help tooltip. */
 .field-desc {
   font-size: var(--text-sm);
   color: var(--text-muted);
-  margin-bottom: var(--space-2);
-  line-height: var(--leading-normal);
+  margin-bottom: var(--space-1);
+  /* Two lines of 0.8rem support text do not need reading leading, and this is
+     the single largest block of height in the card. */
+  line-height: var(--leading-tight);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* On a wide monitor a card is ~499px, so one line holds roughly 75 characters
+   and 56 of the 66 card texts fit in it whole. The second line is then height
+   the card reserves and does not use, and because a grid row is sized by its
+   tallest card, the few long ones stretch every row. One line above 1800px
+   trades an ellipsis on about ten terms for a uniformly shorter grid. The full
+   text stays in the .field-desc title on every card, so nothing is lost. */
+/* Wide-monitor scale. Above 1800px a card is around 499px, so one line holds
+   roughly 75 characters and 56 of the 66 card texts fit in it whole: the second
+   line is height the card reserves and does not use, and a grid row is sized by
+   its tallest card, so a few long ones stretch every row. With that much width
+   the term name also no longer needs the full --text-base to stay the first
+   thing read. Together these take the card from about 137px to about 117px.
+   The full definition is on the .field-desc title at every width, so the
+   ellipsis on the ten longest never hides anything. */
+@media (min-width: 1800px) {
+  .field-desc {
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
+  }
+
+  .field-header {
+    font-size: var(--text-base-sm);
+  }
+
+  /* Still 30px tall, comfortably past the 24px WCAG 2.5.8 AA target size. */
+  .field-card .selectize-input {
+    padding: 0.3rem var(--space-2);
+  }
+}
+
+/* Shown next to the term name only when the card text is shorter than the
+   official definition, so it does not compete for width on the cards that
+   already show their definition in full. */
+.field-desc-help {
+  flex-shrink: 0;
+  cursor: help;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  width: 1.05rem;
+  height: 1.05rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-colors);
+}
+
+.field-desc-help:hover {
+  border-color: var(--primary);
+  color: var(--text-primary);
+}
+
+.field-desc-help:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 /* Prevent page break in cards */
 .no-break {
   break-inside: avoid;
+}
+
+/* State dot on a class pill. Turns the existing navigation bar into a map of
+   where the pending work is, without costing a row of height. */
+.pill-state-dot {
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: var(--radius-full);
+  margin-right: 0.4rem;
+  vertical-align: middle;
+  background-color: var(--border-strong);
+}
+
+.pill-state-dot.is-blocked {
+  background-color: var(--error);
+}
+
+.pill-state-dot.is-review {
+  background-color: var(--warning);
+}
+
+/* "Next pending" button, pinned to the end of the pill bar. Reads as an action
+   while there is something to jump to, and as a spent control when the queue
+   is empty. */
+.next-pending-pill {
+  margin-left: auto;
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.next-pending-pill.is-idle {
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.next-pending-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.next-pending-count:not(:empty) {
+  margin-left: 0.35rem;
+  padding: 0 0.35rem;
+  border-radius: var(--radius-full);
+  background-color: var(--error);
+  color: #ffffff;
 }
 
 /* Required-fields status pills in the sidebar */
@@ -156,7 +352,7 @@
 .field-card .selectize-input {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: var(--space-2);
+  padding: 0.35rem var(--space-2);
   font-size: var(--text-sm);
 }
 

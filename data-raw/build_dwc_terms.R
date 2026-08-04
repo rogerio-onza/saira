@@ -96,6 +96,106 @@ stopifnot(nrow(new_base) == length(ordered_terms))
 stopifnot(identical(new_base$term, ordered_terms))
 stopifnot(!any(is.na(new_base$definition_pt) | !nzchar(trimws(new_base$definition_pt))))
 
+# Short card hints -----------------------------------------------------------
+# The mapping card grid is three columns wide, so a card gets about 339px at
+# 1440px and the description is clamped to two lines. Of the 66 base
+# definitions the median is 66 characters, but eleven run past 90 and would be
+# cut mid-sentence. Those eleven get a short line written for the card.
+#
+# definition_pt/definition_en are never edited: the Wiki (mod_wiki.R) and the
+# upload requirements panel (utils_upload.R) render the same columns, and there
+# the full normative text is what is wanted. The card falls back to the
+# definition wherever the hint is empty, and the "?" tooltip always shows the
+# definition in full.
+#
+# What was dropped from each is the usage qualification, not the meaning.
+card_hints <- rbind(
+  data.frame(
+    term = "coordinateUncertaintyInMeters",
+    card_hint_pt = "Raio de incerteza das coordenadas, em metros. Zero não é válido.",
+    card_hint_en = "Radius of coordinate uncertainty, in meters. Zero is not valid.",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    term = "eventID",
+    card_hint_pt = "Identificador do evento de amostragem (um local e um tempo).",
+    card_hint_en = "Identifier for the sampling event (one place, one time).",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    term = "locationID",
+    card_hint_pt = "Identificador do conjunto de informações de Localização.",
+    card_hint_en = "Identifier for the set of Location information.",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    term = "establishmentMeans",
+    card_hint_pt = "Se o organismo foi introduzido por ação humana no local.",
+    card_hint_en = "Whether the organism was introduced by human activity.",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    term = "associatedReferences",
+    card_hint_pt = "Literatura associada à Ocorrência: DOI, citação ou URI.",
+    card_hint_en = "Literature associated with the Occurrence: DOI, citation or URI.",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    term = "sampleSizeValue",
+    card_hint_pt = "Valor numérico do tamanho da amostra no evento.",
+    card_hint_en = "Numeric value for the sample size in the event.",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    term = "identifiedByID",
+    card_hint_pt = "Identificadores únicos globais de quem atribuiu o táxon.",
+    card_hint_en = "Global unique identifiers of whoever assigned the taxon.",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    term = "sampleSizeUnit",
+    card_hint_pt = "Unidade de medida do tamanho da amostra.",
+    card_hint_en = "Unit of measurement for the sample size.",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    term = "associatedMedia",
+    card_hint_pt = "Mídias associadas à Ocorrência: URI, DOI ou identificador.",
+    card_hint_en = "Media associated with the Occurrence: URI, DOI or identifier.",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    term = "lifeStage",
+    card_hint_pt = "Classe etária ou estágio de vida do organismo no registro.",
+    card_hint_en = "Age class or life stage of the organism when recorded.",
+    stringsAsFactors = FALSE
+  ),
+  data.frame(
+    term = "degreeOfEstablishment",
+    card_hint_pt = "Grau em que o organismo se estabelece no local.",
+    card_hint_en = "Degree to which the organism establishes at the place.",
+    stringsAsFactors = FALSE
+  )
+)
+
+stopifnot(!any(duplicated(card_hints$term)))
+stopifnot(all(card_hints$term %in% ordered_terms))
+
+add_card_hints <- function(df) {
+  idx <- match(df$term, card_hints$term)
+  df$card_hint_pt <- ifelse(is.na(idx), "", card_hints$card_hint_pt[idx])
+  df$card_hint_en <- ifelse(is.na(idx), "", card_hints$card_hint_en[idx])
+  df
+}
+
+new_base <- add_card_hints(new_base)
+
+# A hint that is not shorter than the definition it replaces would only add a
+# tooltip for nothing.
+hinted <- new_base[nzchar(new_base$card_hint_pt), , drop = FALSE]
+stopifnot(all(nchar(hinted$card_hint_pt) < nchar(hinted$definition_pt)))
+stopifnot(all(nchar(hinted$card_hint_en) < nchar(hinted$definition_en)))
+
 # Required terms (validation gate + IPT minimum) must stay required.
 required_terms <- c(
   "occurrenceID", "license", "institutionCode", "basisOfRecord", "recordedBy",
@@ -113,6 +213,9 @@ message("Saved: ", base_path, " (", nrow(new_base), " terms, ",
 # recommended terms sorted alphabetically).
 extra_rows <- full[!full$term %in% ordered_terms, , drop = FALSE]
 extra_rows <- extra_rows[order(extra_rows$term), , drop = FALSE]
+# Same columns as the base, so a term pulled in through "Add term" carries the
+# hint columns too (empty for all of them today).
+extra_rows <- add_card_hints(extra_rows)
 new_full <- rbind(new_base, extra_rows)
 rownames(new_full) <- NULL
 stopifnot(nrow(new_full) == nrow(full))
