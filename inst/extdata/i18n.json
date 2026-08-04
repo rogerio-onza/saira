@@ -3327,6 +3327,46 @@
     "pt": "Todos",
     "en": "All"
   },
+  "mapping_sidebar_view": {
+    "pt": "Exibição",
+    "en": "View"
+  },
+  "mapping_view_cards": {
+    "pt": "Cartões",
+    "en": "Cards"
+  },
+  "mapping_view_list": {
+    "pt": "Lista",
+    "en": "List"
+  },
+  "mapping_row_col_term": {
+    "pt": "Termo",
+    "en": "Term"
+  },
+  "mapping_row_col_origin": {
+    "pt": "Origem",
+    "en": "Origin"
+  },
+  "mapping_row_col_source": {
+    "pt": "Coluna do arquivo",
+    "en": "File column"
+  },
+  "mapping_row_col_sample": {
+    "pt": "Exemplo do dado",
+    "en": "Example value"
+  },
+  "mapping_row_no_source": {
+    "pt": "sem coluna",
+    "en": "no column"
+  },
+  "mapping_row_derived": {
+    "pt": "derivado de scientificName",
+    "en": "derived from scientificName"
+  },
+  "mapping_row_generated": {
+    "pt": "UUID gerado",
+    "en": "generated UUID"
+  },
   "mapping_next_pending": {
     "pt": "Próximo pendente",
     "en": "Next pending"

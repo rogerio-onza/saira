@@ -521,6 +521,83 @@ build_field_sample <- function(sample_preview, lang_r) {
     )
 }
 
+#' Build one mapping field row (list view)
+#'
+#' The list view is the review pass over what auto-mapping decided: every term
+#' on one line, with its source column and one example value side by side, so a
+#' column that landed on the wrong term stands out. It is deliberately
+#' read-only. Rendering 66 more selectize inputs would double the cost of the
+#' screen and re-introduce the rebuild coupling the card grid works hard to
+#' avoid (ADR-098); instead the whole row is a button that switches back to the
+#' card view scrolled to that term, which is also what gives the terms with
+#' their own block (license, dynamicProperties, the assistants, the fixed-value
+#' input) a way in without special-casing them here.
+#'
+#' @param item DwC term list element (with $term, $desc, $hint).
+#' @param source_label Column name feeding the term, already resolved, or "".
+#' @param sample_text One-line example of the processed value, or "".
+#' @param is_mapped Logical, whether the field is currently mapped.
+#' @param badge_info Badge list or NULL.
+#' @param state_class State modifier from [field_state_class()], or NULL.
+#' @param ns Namespace function.
+#' @param lang_r Reactive language code (already evaluated).
+#' @noRd
+build_field_row <- function(item, source_label, sample_text, is_mapped,
+                            badge_info, state_class, ns, lang_r) {
+    term <- item$term
+    has_source <- nzchar(source_label)
+
+    shiny::tags$button(
+        id = ns(paste0("fieldrow_", term)),
+        type = "button",
+        class = paste(
+            c(
+                "field-row",
+                if (is_mapped) "field-mapped" else "field-unmapped",
+                state_class
+            ),
+            collapse = " "
+        ),
+        # One shared input for all rows: 66 per-term observers would be a lot
+        # of machinery for "take me to this card".
+        onclick = sprintf(
+            "Shiny.setInputValue('%s', '%s', {priority: 'event'});",
+            ns("edit_in_cards"), term
+        ),
+        title = item$desc,
+        shiny::span(class = "field-row-term", term),
+        shiny::span(
+            class = "field-row-badge",
+            if (!is.null(badge_info)) {
+                shiny::span(
+                    class = badge_info$class,
+                    title = badge_info$title,
+                    badge_info$label
+                )
+            }
+        ),
+        shiny::span(
+            class = if (has_source) "field-row-source" else "field-row-source is-empty",
+            if (has_source) source_label else tr("mapping_row_no_source", lang_r)
+        ),
+        shiny::span(class = "field-row-sample", sample_text)
+    )
+}
+
+#' Column header for the list view
+#'
+#' @param lang_r Reactive language code (already evaluated).
+#' @noRd
+build_field_row_header <- function(lang_r) {
+    shiny::div(
+        class = "field-row-header",
+        shiny::span(tr("mapping_row_col_term", lang_r)),
+        shiny::span(tr("mapping_row_col_origin", lang_r)),
+        shiny::span(tr("mapping_row_col_source", lang_r)),
+        shiny::span(tr("mapping_row_col_sample", lang_r))
+    )
+}
+
 #' State modifier class for a mapping card
 #'
 #' Two states beyond mapped/unmapped need to read at a glance across a grid of
