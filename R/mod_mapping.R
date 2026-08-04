@@ -2670,9 +2670,26 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             lon_col <- if (has_selected_value(lon_selected)) as.character(lon_selected[[1]]) else ""
             country_col <- if (has_selected_value(country_selected)) as.character(country_selected[[1]]) else ""
 
+            # A fixed value on the country card fills the term for every row and
+            # takes precedence over any column mapping (build_processed_mapping_df),
+            # so it satisfies this gate exactly like a mapped column does.
+            # is_field_mapped() already reads it as mapped, so without this the
+            # card goes green while coordinate validation stays blocked -- which
+            # is the whole point of the fixed value on a single-country dataset
+            # whose spreadsheet carries no country column at all.
+            country_const <- if (isTRUE(input$usecustom_country)) {
+                trimws(as.character(input$custom_country %||% ""))
+            } else {
+                ""
+            }
+            if (length(country_const) != 1L || is.na(country_const)) {
+                country_const <- ""
+            }
+
             has_lat <- nzchar(lat_col) && lat_col %in% names(raw_df)
             has_lon <- nzchar(lon_col) && lon_col %in% names(raw_df)
-            has_country <- nzchar(country_col) && country_col %in% names(raw_df)
+            has_country <- nzchar(country_const) ||
+                (nzchar(country_col) && country_col %in% names(raw_df))
 
             missing_count <- sum(!c(has_lat, has_lon, has_country))
             status <- if (has_lat && has_lon && has_country) {
@@ -2692,7 +2709,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 has_data = TRUE,
                 lat_col = lat_col,
                 lon_col = lon_col,
-                country_col = country_col,
+                # Display only: the coords module runs against the mapped frame,
+                # where this term is already a column named "country".
+                country_col = if (nzchar(country_const)) country_const else country_col,
+                country_is_constant = nzchar(country_const),
                 has_lat = has_lat,
                 has_lon = has_lon,
                 has_country = has_country

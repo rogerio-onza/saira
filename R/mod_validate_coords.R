@@ -124,6 +124,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 lat_col = pick_scalar(gate$lat_col),
                 lon_col = pick_scalar(gate$lon_col),
                 country_col = pick_scalar(gate$country_col),
+                country_is_constant = isTRUE(gate$country_is_constant),
                 has_lat = isTRUE(gate$has_lat),
                 has_lon = isTRUE(gate$has_lon),
                 has_country = isTRUE(gate$has_country)
@@ -146,6 +147,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     lat_col = "",
                     lon_col = "",
                     country_col = "",
+                    country_is_constant = FALSE,
                     has_lat = FALSE,
                     has_lon = FALSE,
                     has_country = FALSE
@@ -175,6 +177,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 lat_col = if (has_lat) "decimalLatitude" else "",
                 lon_col = if (has_lon) "decimalLongitude" else "",
                 country_col = if (has_country) "country" else "",
+                country_is_constant = FALSE,
                 has_lat = has_lat,
                 has_lon = has_lon,
                 has_country = has_country
@@ -330,7 +333,18 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
 
             lat_desc <- if (lat_ok) as.character(gate$lat_col) else tr("validate_coords_status_not_mapped", lang_r())
             lon_desc <- if (lon_ok) as.character(gate$lon_col) else tr("validate_coords_status_not_mapped", lang_r())
-            country_desc <- if (country_ok) as.character(gate$country_col) else tr("validate_coords_status_not_mapped", lang_r())
+            # A fixed value is not a column, so name it as what it is instead of
+            # printing "Brasil" where the other two rows print a column name.
+            country_desc <- if (!country_ok) {
+                tr("validate_coords_status_not_mapped", lang_r())
+            } else if (isTRUE(gate$country_is_constant)) {
+                sprintf(
+                    tr("validate_coords_status_fixed_value", lang_r()),
+                    as.character(gate$country_col)
+                )
+            } else {
+                as.character(gate$country_col)
+            }
 
             helper_text <- switch(gate$status,
                 no_data = tr("validate_coords_no_data", lang_r()),

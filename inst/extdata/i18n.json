@@ -2527,6 +2527,10 @@
     "pt": "Longitude",
     "en": "Longitude"
   },
+  "validate_coords_status_fixed_value": {
+    "pt": "valor fixo: %s",
+    "en": "fixed value: %s"
+  },
   "validate_coords_status_not_mapped": {
     "pt": "não mapeada",
     "en": "not mapped"
