@@ -1496,3 +1496,111 @@ testthat::test_that("importing a template seeds aliases through the module conne
     testthat::expect_identical(nrow(rows), 2L)
     testthat::expect_identical(rows$dwc_term, c("decimalLatitude", "scientificName"))
 })
+# A fixed value on the country card fills the term for every row and overrides
+# any column mapping, so the coordinate gate has to accept it. It did not, which
+# blocked coordinate validation for the exact case the fixed value exists for: a
+# single-country dataset whose spreadsheet has no country column.
+testthat::test_that("a fixed country value opens the coordinate gate", {
+    df <- data.frame(
+        especie = c("Panthera onca", "Leopardus pardalis"),
+        lat = c("-10.1", "-11.2"),
+        lon = c("-55.3", "-54.1"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(
+                map_scientificName = "especie",
+                map_decimalLatitude = "lat",
+                map_decimalLongitude = "lon"
+            )
+            session$flushReact()
+
+            gate_r <- session$getReturned()$validation_gate_coords_r
+
+            # No country column and no fixed value: correctly blocked.
+            testthat::expect_false(gate_r()$has_country)
+            testthat::expect_identical(gate_r()$coords_status, "missing_country")
+
+            # Ticking the box with nothing typed is not a value yet.
+            session$setInputs(usecustom_country = TRUE)
+            session$flushReact()
+            testthat::expect_false(gate_r()$has_country)
+
+            session$setInputs(custom_country = "Brasil")
+            session$flushReact()
+
+            gate <- gate_r()
+            testthat::expect_true(gate$has_country)
+            testthat::expect_identical(gate$coords_status, "ok")
+            # Flagged as a value, not a column, so the coords card can say so.
+            testthat::expect_true(gate$country_is_constant)
+            testthat::expect_identical(gate$country_col, "Brasil")
+
+            # Whitespace only is not a value either.
+            session$setInputs(custom_country = "   ")
+            session$flushReact()
+            testthat::expect_false(gate_r()$has_country)
+
+            # Unticking the box falls back to the (absent) column mapping.
+            session$setInputs(custom_country = "Brasil", usecustom_country = FALSE)
+            session$flushReact()
+            testthat::expect_false(gate_r()$has_country)
+
+            # The card already read as mapped throughout; that disagreement with
+            # the gate is what the user saw.
+            session$setInputs(usecustom_country = TRUE)
+            session$flushReact()
+            testthat::expect_true(
+                is_field_mapped("country", rv$map_values[["country"]], input)
+            )
+        }
+    )
+})
+
+# A mapped column keeps working, and the constant wins when both are set, which
+# is the precedence build_processed_mapping_df() applies to the exported data.
+testthat::test_that("the coordinate gate still reports a mapped country column", {
+    df <- data.frame(
+        especie = "Panthera onca",
+        lat = "-10.1",
+        lon = "-55.3",
+        pais = "Brasil",
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(
+                map_decimalLatitude = "lat",
+                map_decimalLongitude = "lon",
+                map_country = "pais"
+            )
+            session$flushReact()
+
+            gate <- session$getReturned()$validation_gate_coords_r()
+            testthat::expect_true(gate$has_country)
+            testthat::expect_identical(gate$coords_status, "ok")
+            testthat::expect_identical(gate$country_col, "pais")
+            testthat::expect_false(gate$country_is_constant)
+
+            session$setInputs(usecustom_country = TRUE, custom_country = "Peru")
+            session$flushReact()
+
+            gate <- session$getReturned()$validation_gate_coords_r()
+            testthat::expect_true(gate$country_is_constant)
+            testthat::expect_identical(gate$country_col, "Peru")
+        }
+    )
+})
