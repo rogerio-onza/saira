@@ -1743,6 +1743,26 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 return(invisible(NULL))
             }
 
+            # From here on the import is committed and takes a couple of
+            # seconds: the alias upserts, then a full grid rebuild (restoring
+            # scientificName flips rv$scientificname_mapped, one of the four
+            # structural dependencies of output$mapping_ui). Nothing above this
+            # line is slow, so the modal opens here and no early return has to
+            # take it back down. showModal writes to the socket immediately, so
+            # it paints while the loop below still runs.
+            show_mapping_loading_modal(
+                rv, ns, lang_r,
+                specs = mapping_import_phrase_specs(),
+                title_key = "loading_import_title",
+                status_key = "loading_import_status"
+            )
+            # The modal has no footer and no easyClose, so anything that throws
+            # before the handover below would strand the user behind it.
+            handed_to_flush <- FALSE
+            on.exit({
+                if (!handed_to_flush) hide_mapping_loading_modal(session)
+            }, add = TRUE)
+
             # Faithful restore: rebuild the exact mapping in the cards by
             # matching the guide's source columns to the loaded dataset.
             available_columns <- tryCatch(names(raw_data_r()), error = function(e) character(0))
@@ -1782,9 +1802,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
 
             # Seed personal aliases for cross-dataset auto-mapping (ADR-087);
             # non-fatal if it fails (the faithful restore already happened).
-            tryCatch(import_mapping_guide_to_aliases(payload), error = function(e) NULL)
+            # Reuses the module's connection: opening a second one to the same
+            # file re-runs the schema migration check and makes the two contend
+            # for the same write lock through BEGIN IMMEDIATE.
+            tryCatch(
+                import_mapping_guide_to_aliases(payload, conn = conn),
+                error = function(e) NULL
+            )
 
-            shiny::removeModal()
             n_terms <- length(plan$applied_terms)
             msg <- sprintf(tr("modal_import_template_restored", lang_r()), n_terms)
             if (length(plan$missing_columns) > 0L) {
@@ -1794,7 +1819,18 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                     paste(utils::head(plan$missing_columns, 5L), collapse = ", ")
                 ))
             }
-            shiny::showNotification(msg, type = "message", duration = 10)
+
+            # The grid rebuild happens in the output pass of this same flush,
+            # after the observer returns. Closing the modal here would hand the
+            # user back a stale screen and let them click into cards that are
+            # about to be replaced, so hold it until the flush is done.
+            session$onFlushed(function() {
+                hide_mapping_loading_modal(session)
+                shiny::showNotification(
+                    msg, type = "message", duration = 10, session = session
+                )
+            }, once = TRUE)
+            handed_to_flush <- TRUE
         }, ignoreInit = TRUE)
 
         # "Add term" modal
@@ -2261,8 +2297,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
             }
             term_names <- all_term_names()
             special_fields <- c("occurrenceID", "modified", "license", "language")
-            show_automap_loading_modal(rv, ns, lang_r)
-            on.exit(hide_automap_loading_modal(), add = TRUE)
+            show_mapping_loading_modal(rv, ns, lang_r)
+            on.exit(hide_mapping_loading_modal(session), add = TRUE)
 
             auto_count <- 0L
             suggested_count <- 0L

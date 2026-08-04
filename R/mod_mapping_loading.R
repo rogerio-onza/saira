@@ -1,4 +1,4 @@
-# Title: Mapping Module - Automap Loading Modal Helpers
+# Title: Mapping Module - Loading Modal Helpers
 # Author: Rogerio Nunes Oliveira
 # Date: 2026-02-28
 # Version: 1.0
@@ -16,6 +16,21 @@ mapping_loading_phrase_specs <- function() {
         list(key = "loading_automap_phrase_6", icon = "binoculars"),
         list(key = "loading_automap_phrase_7", icon = "flask"),
         list(key = "loading_automap_phrase_8", icon = "tree")
+    )
+}
+
+#' Loading phrase specifications for the template import modal
+#'
+#' Deliberately literal, unlike the automap phrases: a template import looks
+#' like an auto-mapping run from the outside (the cards fill themselves in),
+#' and the whole point of showing this modal is to say that it is not one.
+#' @noRd
+mapping_import_phrase_specs <- function() {
+    list(
+        list(key = "loading_import_phrase_1", icon = "file-import"),
+        list(key = "loading_import_phrase_2", icon = "table-list"),
+        list(key = "loading_import_phrase_3", icon = "database"),
+        list(key = "loading_import_phrase_4", icon = "table")
     )
 }
 
@@ -45,17 +60,25 @@ update_automap_loading <- function(rv, step, total_steps) {
     rv$automap_phrase_idx <- as.integer(phrase_order[[phrase_pos]])
 }
 
-#' Show the automap loading modal with animated phrases
+#' Show the mapping loading modal with animated phrases
+#'
+#' Shared by the auto-map run and the template import. The CSS hooks keep the
+#' \code{automap-loading-*} names they were written with; only the phrases,
+#' title and status line vary between the two callers.
 #' @noRd
-show_automap_loading_modal <- function(rv, ns, lang_r) {
-    specs <- mapping_loading_phrase_specs()
+show_mapping_loading_modal <- function(
+    rv, ns, lang_r,
+    specs = mapping_loading_phrase_specs(),
+    title_key = "loading_automap_title",
+    status_key = "loading_automap_status"
+) {
     phrase_count <- length(specs)
     rv$automap_progress <- 0L
     rv$automap_phrase_order <- sample(seq_len(phrase_count))
     rv$automap_phrase_idx <- rv$automap_phrase_order[[1]]
     ordered_specs <- specs[rv$automap_phrase_order]
     first_spec <- ordered_specs[[1]]
-    status_template <- tr("loading_automap_status", lang_r())
+    status_template <- tr(status_key, lang_r())
     status_prefix <- trimws(gsub("%s%%", "", status_template, fixed = TRUE))
     if (!nzchar(status_prefix)) {
         status_prefix <- tr("loading", lang_r())
@@ -187,7 +210,7 @@ show_automap_loading_modal <- function(rv, ns, lang_r) {
             ),
             shiny::div(
                 class = "automap-loading-title",
-                tr("loading_automap_title", lang_r())
+                tr(title_key, lang_r())
             ),
             shiny::div(
                 class = "automap-loading-progress",
@@ -201,7 +224,7 @@ show_automap_loading_modal <- function(rv, ns, lang_r) {
                 class = "automap-loading-status",
                 shiny::span(
                     id = ns("automap_loading_status_text"),
-                    sprintf(tr("loading_automap_status", lang_r()), rv$automap_progress)
+                    sprintf(tr(status_key, lang_r()), rv$automap_progress)
                 )
             ),
             shiny::div(
@@ -239,8 +262,8 @@ show_automap_loading_modal <- function(rv, ns, lang_r) {
     ))
 }
 
-#' Hide the automap loading modal
+#' Hide the mapping loading modal
 #' @noRd
-hide_automap_loading_modal <- function() {
-    shiny::removeModal()
+hide_mapping_loading_modal <- function(session = shiny::getDefaultReactiveDomain()) {
+    shiny::removeModal(session = session)
 }
