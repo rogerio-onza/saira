@@ -2507,3 +2507,22 @@ Formato: ADR leve (Architecture Decision Record).
   - **Equivalencia verificada, nao assumida**: `identical()` contra a implementacao antiga nos quatro termos reais sobre as 21.512 linhas, mais fixture adversarial (branco interno `"x |  | y"`, celula so de separadores, `NA`, ponto-e-virgula, string vazia, `factor`). O teste de referencia ficou no suite: reimplementa o laco antigo e compara com `expect_identical`, entao a equivalencia e reafirmada a cada rodada em vez de ficar so nesta ADR.
   - Budget novo em `RUN_PERF` na convencao da ADR-111 (teto 1,5s; pre-ADR-116 media ~6,0s no mesmo hardware).
 - **Nao corrigido, e nao e regressao**: o budget de `dynamicProperties` (`test-performance-regression.R:121`, teto 0,5s) falha em ~1,4s nesta maquina **com ou sem esta mudanca** -- confirmado rodando o suite com a alteracao guardada em stash. E o item ja aberto na ADR-113 sobre budgets calibrados em hardware mais rapido, nao um efeito deste lote.
+
+---
+
+## ADR-117: `eventDate` montado a partir de colunas de dia/mes/ano compoe ISO 8601, nao junta com pipe
+
+- **Data**: 2026-08-05
+- **Status**: Aceito
+- **Contexto**: Issue #87. `build_term_value()` so tratava `eventDate` de forma especial com **exatamente 4 colunas** (o intervalo `YYYY-MM/YYYY-MM` da ADR-054). Com 2 ou 3 colunas -- o caso comum de planilha brasileira com `dia`, `mes`, `ano` separados -- caia no ramo generico e saia `"12 | 2 | 1809"`, fora do padrao TDWG, que pede ISO 8601-1:2019. A normalizacao seguinte nao recuperava: `parse_dates_to_iso()` nao reconhece a string com pipes e o `keep_raw` devolve o valor cru.
+- **Decisao**:
+  - `detect_eventdate_dmy_roles()` resolve os papeis dia/mes/ano **pelo nome da coluna**, como irma de `detect_eventdate_roles()`. Sem fallback posicional e sem inferencia por valor: selecao nao reconhecida mantem o collapse de hoje.
+  - `build_eventdate_from_parts()` devolve `NULL` -- "isto nao e uma data em partes" -- a menos que **toda** coluna selecionada receba um papel, haja ano, e o dia nunca venha sem o mes. A composicao em si e delegada a `rostrum_compose_eventdate_values()`, que ja emite `YYYY`, `YYYY-MM` e `YYYY-MM-DD` e valida o dia contra o tamanho do mes no ano dado.
+  - Linhas com conteudo mas nao componiveis (31 de fevereiro, mes `"foo"`) caem no valor cru e contam em `eventdate_failure_count`, mesma convencao de `build_eventdate_interval()`.
+- **Alternativas**:
+  - Inferir o papel pelos valores (4 digitos -> ano, <= 12 -> mes) quando o nome falha - rejeitado: com dia 5 e mes 7 na mesma linha nao ha como decidir, e uma data invertida e pior que um pipe visivel.
+  - Casar prefixo em vez de palavra inteira, para pegar `DiaColeta` - rejeitado: em portugues bate em nome comum de coluna (`anotacoes` -> `ano`, `mesorregiao` -> `mes`, `diametro` -> `dia`). `DiaColeta` fica sem deteccao e mantem o comportamento antigo.
+- **Consequencias**:
+  - O caminho de 4 colunas fica intocado: o intervalo continua sendo intervalo.
+  - O preview inline do card usa o mesmo `build_term_value()`, entao acompanha sozinho; `fix_dates_to_iso()` na exportacao preserva `YYYY-MM` e `YYYY` pelo mesmo `keep_raw`.
+  - **Fora de escopo**: 4 colunas das quais 3 sao dia/mes/ano (ex.: `dia, mes, ano, hora`) continuam entrando no construtor de intervalo e saindo lixo pelo fallback posicional. Nao e o caso reportado.

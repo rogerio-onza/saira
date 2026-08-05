@@ -921,6 +921,87 @@ testthat::test_that("build_term_value: eventDate 4-col produces ISO interval", {
     testthat::expect_identical(result$eventdate_failure_count, 1L)
 })
 
+testthat::test_that("detect_eventdate_dmy_roles resolves Portuguese and English names", {
+    pt <- detect_eventdate_dmy_roles(c("dia", "mes", "ano"))
+    testthat::expect_identical(pt$day, 1L)
+    testthat::expect_identical(pt$month, 2L)
+    testthat::expect_identical(pt$year, 3L)
+
+    en <- detect_eventdate_dmy_roles(c("collection_year", "day_of_month", "month"))
+    testthat::expect_identical(en$day, 2L)
+    testthat::expect_identical(en$month, 3L)
+    testthat::expect_identical(en$year, 1L)
+
+    partial <- detect_eventdate_dmy_roles(c("mes", "ano"))
+    testthat::expect_true(is.na(partial$day))
+    testthat::expect_identical(partial$month, 1L)
+    testthat::expect_identical(partial$year, 2L)
+
+    testthat::expect_true(all(vapply(
+        detect_eventdate_dmy_roles(c("a", "b", "c")), is.na, logical(1)
+    )))
+})
+
+testthat::test_that("build_term_value: eventDate from day/month/year columns is ISO 8601", {
+    df <- data.frame(
+        dia = c("12", "5", "31", ""),
+        mes = c("2", "maio", "2", ""),
+        ano = c("1809", "2020", "1809", ""),
+        stringsAsFactors = FALSE
+    )
+
+    result <- build_term_value("eventDate", df, c("dia", "mes", "ano"))
+    testthat::expect_identical(result$values[[1]], "1809-02-12")
+    testthat::expect_identical(result$values[[2]], "2020-05-05")
+    # 31 February is not a date: the row keeps its raw value and is reported.
+    testthat::expect_identical(result$values[[3]], "31 | 2 | 1809")
+    testthat::expect_true(is.na(result$values[[4]]))
+    testthat::expect_identical(result$eventdate_failure_count, 1L)
+
+    # Roles come from the column names, so the order the user picked them in
+    # does not change the composed date.
+    shuffled <- build_term_value("eventDate", df, c("ano", "dia", "mes"))
+    testthat::expect_identical(shuffled$values[[1]], "1809-02-12")
+})
+
+testthat::test_that("build_term_value: eventDate from month/year columns keeps reduced precision", {
+    df <- data.frame(
+        mes = c("2", "dez"), ano = c("1809", "2020"),
+        stringsAsFactors = FALSE
+    )
+    result <- build_term_value("eventDate", df, c("mes", "ano"))
+    testthat::expect_identical(result$values, c("1809-02", "2020-12"))
+    testthat::expect_identical(result$eventdate_failure_count, 0L)
+})
+
+testthat::test_that("build_term_value: eventDate keeps the generic collapse when parts are unrecognizable", {
+    df <- data.frame(
+        a = "12", b = "2", c = "1809",
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_identical(
+        build_term_value("eventDate", df, c("a", "b", "c"))$values,
+        "12 | 2 | 1809"
+    )
+
+    # A day with no month cannot become a date, and a column with no role at all
+    # would be silently dropped -- both keep the collapse.
+    df2 <- data.frame(dia = "12", ano = "1809", obs = "x", stringsAsFactors = FALSE)
+    testthat::expect_identical(
+        build_term_value("eventDate", df2, c("dia", "ano"))$values,
+        "12 | 1809"
+    )
+    testthat::expect_identical(
+        build_term_value("eventDate", df2, c("dia", "ano", "obs"))$values,
+        "12 | 1809 | x"
+    )
+})
+
+testthat::test_that("build_eventdate_from_parts returns NULL when the selection is not a split date", {
+    df <- data.frame(a = "1", b = "2", stringsAsFactors = FALSE)
+    testthat::expect_null(build_eventdate_from_parts(df, c("a", "b")))
+})
+
 testthat::test_that("build_term_value: basisOfRecord applies mapping", {
     df <- data.frame(bor = c("humanobservation", "Unknown"), stringsAsFactors = FALSE)
     bmap <- c("humanobservation" = "HumanObservation")
