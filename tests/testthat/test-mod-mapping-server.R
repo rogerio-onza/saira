@@ -233,11 +233,11 @@ testthat::test_that("validation gates stay in no_data when upstream raw_data_r i
 })
 
 testthat::test_that("v1 auto-map applies metadata and manual override becomes EDITADO", {
-    # Isolate from the user's real ~/.local/share/saira/rostrum.sqlite. Without
-    # this, aliases the developer accumulated during interactive testing leak
-    # into the test (the engine's alias-lookup hits them under user_id =
-    # "anonymous"), which can flip auto-map status to ALIAS and break the
-    # EDITADO assertion below.
+    # Isolate the identity: aliases the developer accumulated during interactive
+    # testing would otherwise leak into the test (the engine's alias-lookup hits
+    # them under user_id = "anonymous"), which can flip auto-map status to ALIAS
+    # and break the EDITADO assertion below. The database FILE is isolated
+    # suite-wide in setup.R -- this line only covers reads, not writes.
     withr::local_envvar(c(SAIRA_USER = paste0("test_isolation_", as.integer(Sys.time()))))
 
     df <- data.frame(
