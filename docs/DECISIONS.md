@@ -2438,3 +2438,51 @@ Formato: ADR leve (Architecture Decision Record).
 - **O budget de `dynamicProperties` fica na fronteira nesta maquina** independentemente de qualquer mudanca (mediana de 5 execucoes: 0,478s contra 0,486s na `main`, teto 0,5s). Nao ha o que otimizar no codigo; decidir se os budgets foram calibrados em hardware mais rapido.
 - **A barra de progresso e grossa demais para a maioria dos datasets.** `progress_pct` avanca so quando um lote inteiro resolve (`utils_taxadb.R:1037`) e o lote e de 200 nomes (`:572`), entao planilha com menos de 200 nomes unicos salta de 0% para 100% sem nada no meio. Nao esta quebrada, e grossa. Correcao de comportamento, nao de desempenho.
 - **`readr::read_delim` em `utils_io.R:27` emite o aviso de "parsing issues" do vroom e o app nunca chama `readr::problems()` nem o mostra ao usuario**, entao arquivo com linhas irregulares pode perder valores para `NA` com aviso so no console de quem roda o R.
+
+---
+
+## ADR-114: Observer de aba escondida nao pode puxar o frame mapeado
+
+- **Data**: 2026-08-04
+- **Status**: Aceito
+- **Contexto**: Investigando o travamento da tela de mapeamento (causa real na ADR-116), apareceu um multiplicador independente: tres pontos de `mod_sensitive_coords.R` -- o pintor do overlay, o enquadramento do mapa e o `observeEvent` que reseta o filtro de resultado -- chamavam `sensitive_species_overview()`, que puxa `effective_data_r()` -> `processed_data_r` -> `build_processed_mapping_df()` sobre **todas** as linhas. Output de aba escondida e suspenso pelo Shiny; **observer nunca e**, e `observeEvent` avalia a expressao de evento com a mesma avidez. Entao toda edicao de mapeamento reconstruia o dataset completo por um mapa que ninguem estava olhando -- e mais de uma vez, porque overlay e enquadramento computavam `ov`/`df` de forma independente. Isso sozinho **nao** explicava os ~65s medidos; era o fator que multiplicava o custo unitario da ADR-116.
+- **Decisao**:
+  - `mod_sensitive_coords_server()` recebe `active_r`, reativa opcional que informa se a aba esta na tela; `app_server` passa `identical(input$main_nav, "sensitive_coords")`.
+  - O gate fica **dentro de `gen_overlay_data_r`**, antes de `sensitive_species_overview()`. Gatear so os observers deixaria a reconstrucao rodando: quem puxa o frame e a reativa, nao o observer.
+  - O observer de enquadramento passa a ler `gen_overlay_data_r()` em vez de recomputar `ov`/`df`, colapsando os dois pulls em um.
+  - O `observeEvent` que reseta `result_filter_rv` devolve `NULL` enquanto a aba esta escondida (o `ignoreNULL` padrao cuida do resto). Abrir a aba reavalia e reseta ali, que e quando importa.
+  - **O gate NAO desce ate `sensitive_species_overview()`.** `sensitive_generalization_payload_r` e devolvido ao `app_server` e lido pela exportacao; gatear o overview faria `species_levels_r()` voltar vazio com a aba escondida e a exportacao perderia a decisao de generalizacao em silencio. O gate vale so para caminhos de exibicao.
+  - `active_r` e dependencia reativa: abrir a aba recomputa e repinta, entao o mapa continua correto quando alguem de fato olha para ele.
+- **Alternativas**:
+  - Acelerar `build_processed_mapping_df()` - rejeitado: esta dentro do proprio teto de 8s da suite (`test-performance-regression.R`). O defeito e rodar durante o mapeamento, nao a velocidade.
+  - Reescrever `sensitive_species_overview()` sobre o slot leve `sensitive_overview_input_r` - rejeitado: `generalization_map_preview()` precisa de `coordinateUncertaintyInMeters` e das colunas de precisao, entao o custo so mudaria de lugar.
+  - `outputOptions(suspendWhenHidden = TRUE)` no `gen_map` - rejeitado: o comentario em `mod_sensitive_coords.R:967` registra um bug real de marcador obsoleto que o `FALSE` conserta, e observer nao e suspenso por essa opcao de qualquer forma.
+- **Consequencias**:
+  - Editar o mapeamento deixa de reconstruir o dataset inteiro a partir deste modulo.
+  - O enquadramento herda o debounce de 300ms do overlay, coerente com ser disparo unico por dataset (`map_fitted_sig_rv` inalterado).
+  - **Limite conhecido**: `output$assessment_panel` (`mod_sensitive_coords.R:402`) tambem puxa o overview. E output, entao no navegador o Shiny o suspende com a aba escondida -- mas isso **nao foi verificado em navegador** (nao ha Chrome nesta maquina para dirigir `shinytest2`; sob `testServer` todo output renderiza, por nao haver cliente que reporte visibilidade). Se um dia se comprovar que `bslib::nav_panel` escondido nao suspende, este e o proximo ponto a gatear.
+  - **Contrato para modulos novos**: um `observe()` que puxa `processed_data_r` roda em toda edicao de mapeamento, de qualquer aba. Quem consome o frame mapeado a partir de observer precisa de gate de aba; quem consome de output nao precisa, porque o Shiny ja suspende.
+
+---
+
+
+---
+
+## ADR-116: `collapse_mapped_values` vetorizado -- o laco por linha era o travamento da tela de mapeamento
+
+- **Data**: 2026-08-04
+- **Status**: Aceito
+- **Contexto**: Relato de ~65s para o botao do assistente de `basisOfRecord` aparecer, com a planilha do Preview nunca chegando e o card de `country` so ficando verde junto com os outros dois -- tudo destravando de uma vez, sinal de fila unica drenando. **A primeira hipotese (observers avidos, ADR-114) estava errada como causa**: reproduzido em harness com a planilha real (Brazil_Roadkill, 21.512 x 28) e o guia de mapeamento do usuario, deu 71,9s; com o gate da ADR-114 aplicado, 71,3s. O gate quase nao moveu o ponteiro.
+  `Rprof` sobre o fluxo apontou o culpado sem ambiguidade: **`split_output_tokens` com 71,66% do tempo total** (37,4s de 52,2s), seguido de `trimws` (63,9%), `sub` (37,9%) e `is_blank_value` (36,4%). Origem: o ramo multi-coluna de `collapse_mapped_values()` era um `vapply` sobre `seq_len(nrow(df))` que chamava `split_output_tokens()` uma vez por celula, e cada chamada roda `strsplit` + `trimws` (que por sua vez e `match.arg` + um `sub` perl). O comentario em `utils_mapping.R` ja registrava "~14s por chamada em 50k linhas" desde a ADR-113, mas como custo de um caminho de fallback -- ninguem tinha ligado ao ramo multi-coluna do uso normal.
+  O guia do usuario tem **quatro** termos multi-coluna (`eventDate` = 3 colunas, `verbatimEventDate` = 2, `samplingEffort` = 2, `footprintWKT` = 4), entao cada reconstrucao pagava o laco quatro vezes.
+- **Decisao**:
+  - Trocar o laco por linha por **uma passada vetorizada por coluna**: acumular o resultado com `paste(..., sep = out_sep)` sobre as mascaras `!is.na()`, k passadas em vez de n x k chamadas escalares. Mesma forma das ADR-111 e ADR-113.
+  - Extrair `clean_out_sep_tokens()`, que aplica a cirurgia de token **so nas celulas que de fato contem `out_sep`** (mesmo truque que `normalize_semicolon_tokens()` ja usava para `;`). A equivalencia se apoia em `normalize_semicolon_tokens()` ja ter aparado cada celula e transformado vazio em `NA` antes -- o que sobra sao apenas celulas com o separador literal dentro.
+- **Alternativas**:
+  - Matriz + `do.call(paste)` com `NA` virando `""` - rejeitado: produz separadores duplicados (`"a |  | b"`) que teriam de ser limpos depois, reintroduzindo trabalho por celula.
+  - Reescrever `split_output_tokens()` para ser vetorizado - rejeitado: ele tem outros chamadores com contrato escalar; o ganho esta em nao chama-lo por celula, nao nele.
+- **Consequencias**:
+  - Medido na planilha real, por termo: `eventDate` 5,33s -> 0,07s (77x), `verbatimEventDate` 3,10s -> 0,03s (89x), `samplingEffort` 3,40s -> 0,04s (81x), `footprintWKT` 6,08s -> 0,10s (62x). Uma reconstrucao completa: **8,65s -> 1,32s**. O fluxo inteiro do harness: **71,9s -> 14,7s**.
+  - **Equivalencia verificada, nao assumida**: `identical()` contra a implementacao antiga nos quatro termos reais sobre as 21.512 linhas, mais fixture adversarial (branco interno `"x |  | y"`, celula so de separadores, `NA`, ponto-e-virgula, string vazia, `factor`). O teste de referencia ficou no suite: reimplementa o laco antigo e compara com `expect_identical`, entao a equivalencia e reafirmada a cada rodada em vez de ficar so nesta ADR.
+  - Budget novo em `RUN_PERF` na convencao da ADR-111 (teto 1,5s; pre-ADR-116 media ~6,0s no mesmo hardware).
+- **Nao corrigido, e nao e regressao**: o budget de `dynamicProperties` (`test-performance-regression.R:121`, teto 0,5s) falha em ~1,4s nesta maquina **com ou sem esta mudanca** -- confirmado rodando o suite com a alteracao guardada em stash. E o item ja aberto na ADR-113 sobre budgets calibrados em hardware mais rapido, nao um efeito deste lote.

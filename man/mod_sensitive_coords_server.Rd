@@ -11,7 +11,8 @@ mod_sensitive_coords_server(
   sensitivity_payload_r = NULL,
   coords_correction_payload_r = NULL,
   country_fill_payload_r = NULL,
-  reset_signal_r = NULL
+  reset_signal_r = NULL,
+  active_r = NULL
 )
 }
 \arguments{
@@ -31,6 +32,12 @@ correction payload, applied so the preview matches the published point.}
 
 \item{reset_signal_r}{Optional reactive reset signal from the mapping module.
 When it fires, module-local state and inputs are cleared.}
+
+\item{active_r}{Optional reactive flagging whether this tab is the one on
+screen. The map path is the only consumer of the full mapped frame that is
+driven by observers, and observers are never suspended by tab visibility,
+so without this every mapping edit pays a whole-dataset rebuild here.
+Defaults to always-active when not supplied.}
 }
 \value{
 Reactive list `{ levels, justification, review_date, enabled }`
