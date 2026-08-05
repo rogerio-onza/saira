@@ -2288,8 +2288,16 @@
     "en": "%d records leave their country of origin."
   },
   "sc_border_alert_recommend": {
-    "pt": "Considere uma categoria menos agressiva (ex.: Categoria 2) para manter o ponto dentro do país.",
-    "en": "Consider a less aggressive category (e.g. Category 2) to keep the point inside the country."
+    "pt": "Considere uma categoria menos agressiva (ex.: Categoria %s) para manter o ponto dentro do país.",
+    "en": "Consider a less aggressive category (e.g. Category %s) to keep the point inside the country."
+  },
+  "sc_border_alert_cat_join": {
+    "pt": " ou ",
+    "en": " or "
+  },
+  "sc_border_alert_recommend_floor": {
+    "pt": "Os pontos já estão na categoria menos agressiva e ainda cruzam a fronteira. Revise as coordenadas ou publique sem generalizar.",
+    "en": "The points are already on the least aggressive category and still cross the border. Review the coordinates or publish without generalizing."
   },
   "sc_precision_lock_desc": {
     "pt": "%d registro(s) mantidos na precisão real do dado — generalizar nunca aumenta a precisão (Chapman 2020). Inclui dados já generalizados pela fonte e casos em que o nível escolhido era mais fino que o dado.",

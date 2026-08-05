@@ -211,6 +211,28 @@ sensitive_generalization_levels <- function() {
     c("extreme", "high", "medium", "low", "not_sensitive")
 }
 
+# Category number the UI shows for a tier: 1 is the most aggressive grid, 4 the
+# least. NA for anything outside the four masking tiers.
+sensitive_tier_category_number <- function(tier) {
+    match(tier, c("extreme", "high", "medium", "low"))
+}
+
+# Tiers that generalize LESS than every tier in `tiers` -- what to suggest when a
+# generalized point lands outside its country of origin. Taken from the least
+# aggressive tier present, not the most, so a single suggestion resolves every
+# species crossing the border at once. Empty when any of them already sits on
+# `low`: there is nothing coarser to back off to, and the border crossing is then
+# real rather than an artefact of the grid.
+sensitive_less_aggressive_tiers <- function(tiers) {
+    masking <- c("extreme", "high", "medium", "low")
+    ranks <- sensitive_tier_category_number(tiers)
+    ranks <- ranks[!is.na(ranks)]
+    if (length(ranks) == 0L || max(ranks) >= length(masking)) {
+        return(character(0))
+    }
+    masking[seq.int(max(ranks) + 1L, length(masking))]
+}
+
 # Grid (in decimal degrees) for a Chapman tier. NA means "no masking".
 sensitive_generalization_grid <- function(level) {
     if (length(level) != 1L) level <- level[1]
