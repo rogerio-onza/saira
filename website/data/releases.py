@@ -11,6 +11,22 @@
 
 RELEASES = [
     {
+        "version": "0.10.0",
+        "date": "2026-08-04",
+        "pt": [
+            ("changed", "**A tela de mapeamento foi reorganizada.** Cabem três colunas de cards, e as pílulas de classe mostram onde ainda falta trabalho."),
+            ("added", "**Uma visão em lista mostra os 66 termos de uma vez**, com a coluna de origem e um valor de exemplo lado a lado."),
+            ("fixed", "**O mapeamento não trava mais em planilhas grandes.** Escolher uma coluna volta a responder na hora."),
+            ("changed", "**Saíra memoriza o nome de uma coluna quando você exporta**, não a cada escolha que você ainda está experimentando."),
+        ],
+        "en": [
+            ("changed", "**The mapping screen was reworked.** It fits three columns of cards, and the class pills show where work is still pending."),
+            ("added", "**A list view shows all 66 terms at once**, with the source column and an example value side by side."),
+            ("fixed", "**Mapping no longer freezes on a large spreadsheet.** Picking a column responds immediately again."),
+            ("changed", "**Saíra remembers a column name when you export**, not on every selection you are still trying out."),
+        ],
+    },
+    {
         "version": "0.9.7",
         "date": "2026-07-30",
         "pt": [

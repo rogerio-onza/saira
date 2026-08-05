@@ -7,6 +7,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-08-04
+
 ### Added
 - **The mapping screen has a list view, for reviewing what auto-mapping decided.** All 66 terms on one line each with their source column and an example value, which makes a column that landed on the wrong term visible.
 - **The class pill bar shows where the pending work is.** A state dot per class, and a "next pending" button that walks through each required term with no mapping and each one Rostrum was unsure about.

@@ -2,6 +2,19 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.10.0</span>
+    <time class="release-date">2026-08-04</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>A tela de mapeamento foi reorganizada.</strong> Cabem três colunas de cards, e as pílulas de classe mostram onde ainda falta trabalho.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>Uma visão em lista mostra os 66 termos de uma vez</strong>, com a coluna de origem e um valor de exemplo lado a lado.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>O mapeamento não trava mais em planilhas grandes.</strong> Escolher uma coluna volta a responder na hora.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>Saíra memoriza o nome de uma coluna quando você exporta</strong>, não a cada escolha que você ainda está experimentando.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.7</span>
     <time class="release-date">2026-07-30</time>
   </header>

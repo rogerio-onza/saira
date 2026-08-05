@@ -2,6 +2,19 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.10.0</span>
+    <time class="release-date">2026-08-04</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The mapping screen was reworked.</strong> It fits three columns of cards, and the class pills show where work is still pending.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>A list view shows all 66 terms at once</strong>, with the source column and an example value side by side.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping no longer freezes on a large spreadsheet.</strong> Picking a column responds immediately again.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Saíra remembers a column name when you export</strong>, not on every selection you are still trying out.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.9.7</span>
     <time class="release-date">2026-07-30</time>
   </header>
