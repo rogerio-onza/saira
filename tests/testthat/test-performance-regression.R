@@ -423,3 +423,56 @@ testthat::test_that("Performance regression: stream_window truncates the index, 
     # ~1.02s. After truncating the index first: ~0.06s.
     testthat::expect_lt(elapsed, 0.35)
 })
+
+# Pre-ADR-116: ~5.3s for a 3-column term at 21.5k rows, and a real mapping guide
+# with four multi-column terms spent ~37s of a ~52s rebuild inside
+# split_output_tokens. The per-row loop is what made the mapping screen stall.
+testthat::test_that("Performance regression: multi-column collapse stays vectorized", {
+    n <- 21512L
+    df <- data.frame(
+        a = as.character(seq_len(n) %% 12L + 1L),
+        b = as.character(seq_len(n) %% 28L + 1L),
+        c = as.character(seq_len(n) %% 2000L + 1L),
+        d = rep(c("x", NA, "y |  | z", ""), length.out = n),
+        stringsAsFactors = FALSE
+    )
+
+    elapsed <- unname(system.time({
+        out <- collapse_mapped_values(df, c("a", "b", "c", "d"), out_sep = " | ")
+    })[["elapsed"]])
+
+    testthat::expect_length(out, n)
+    testthat::expect_lt(elapsed, 1.5)
+})
+
+testthat::test_that("multi-column collapse matches the per-row reference exactly", {
+    reference <- function(df, cols, out_sep = " | ") {
+        normalized <- lapply(cols, function(cn) {
+            saira:::normalize_semicolon_tokens(df[[cn]], out_sep = out_sep)
+        })
+        vapply(seq_len(nrow(df)), function(i) {
+            tokens <- character(0)
+            for (col_values in normalized) {
+                tokens <- c(tokens,
+                            saira:::split_output_tokens(col_values[[i]], out_sep = out_sep))
+            }
+            if (length(tokens) == 0) return(NA_character_)
+            paste(tokens, collapse = out_sep)
+        }, FUN.VALUE = character(1))
+    }
+
+    # Blank cells, NA, internal empty tokens, all-separator, semicolons, factors.
+    df <- data.frame(
+        a = c("x |  | y", " | ", NA, "p;q", "solo", "", "  "),
+        b = c("z", "w", NA, " ; ", NA, "", "v"),
+        c = c(NA, "k |  ", "m", "n", " | | ", "t", NA),
+        stringsAsFactors = FALSE
+    )
+    cols <- c("a", "b", "c")
+    testthat::expect_identical(collapse_mapped_values(df, cols), reference(df, cols))
+
+    fct <- data.frame(a = factor(c("u |  | v", NA)), b = factor(c("s", "r")))
+    testthat::expect_identical(
+        collapse_mapped_values(fct, c("a", "b")), reference(fct, c("a", "b"))
+    )
+})

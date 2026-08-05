@@ -137,7 +137,11 @@ app_server <- function(input, output, session) {
         sensitivity_payload_r = sensitivity_payload_r,
         coords_correction_payload_r = coords_correction_payload_r,
         country_fill_payload_r = country_fill_payload_r,
-        reset_signal_r = reset_signal
+        reset_signal_r = reset_signal,
+        # Its map path is observer-driven, and observers ignore tab visibility,
+        # so without this every mapping edit rebuilds the whole mapped frame for
+        # a map nobody is looking at.
+        active_r = shiny::reactive(identical(input$main_nav, "sensitive_coords"))
     )
 
     # Preview is read-only (the download/export flow lives in the Export tab).

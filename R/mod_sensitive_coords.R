@@ -58,6 +58,11 @@ mod_sensitive_coords_ui <- function(id) {
 #' @param country_fill_payload_r Optional reactive country-fill payload.
 #' @param reset_signal_r Optional reactive reset signal from the mapping module.
 #'   When it fires, module-local state and inputs are cleared.
+#' @param active_r Optional reactive flagging whether this tab is the one on
+#'   screen. The map path is the only consumer of the full mapped frame that is
+#'   driven by observers, and observers are never suspended by tab visibility,
+#'   so without this every mapping edit pays a whole-dataset rebuild here.
+#'   Defaults to always-active when not supplied.
 #' @return Reactive list `{ levels, justification, review_date, enabled }`
 #'   consumed by the export (Preview tab).
 #' @export
@@ -65,9 +70,15 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                                         sensitivity_payload_r = NULL,
                                         coords_correction_payload_r = NULL,
                                         country_fill_payload_r = NULL,
-                                        reset_signal_r = NULL) {
+                                        reset_signal_r = NULL,
+                                        active_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
+
+        is_active <- function() {
+            if (is.null(active_r) || !shiny::is.reactive(active_r)) return(TRUE)
+            isTRUE(tryCatch(active_r(), error = function(e) TRUE))
+        }
 
         output$title <- shiny::renderUI({
             shiny::h3(class = "sensitive-coords-title", tr("sensitive_coords_title", lang_r()))
@@ -715,9 +726,24 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
 
         # Reset the filter whenever the detected set of sensitive species changes
         # (a new upload), so a stale group filter never hides the new list.
-        shiny::observeEvent(sensitive_species_overview(), {
-            result_filter_rv("all")
-        }, ignoreInit = TRUE)
+        # Gated like the map path: observeEvent evaluates its event expression
+        # eagerly, so an ungated sensitive_species_overview() here rebuilt the
+        # whole mapped frame on every mapping edit, from any tab. Returning NULL
+        # while hidden is enough because ignoreNULL is on by default; opening the
+        # tab re-evaluates and resets the filter then, which is when it matters.
+        shiny::observeEvent(
+            {
+                if (!is_active()) {
+                    NULL
+                } else {
+                    sensitive_species_overview()
+                }
+            },
+            {
+                result_filter_rv("all")
+            },
+            ignoreInit = TRUE
+        )
 
         # Live "justification required" hint under the field.
         output$justification_warn <- shiny::renderUI({
@@ -978,7 +1004,12 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
         # shape draw) redraws ~300 ms after the user stops answering. Computing
         # prev here (not in the observe) keeps the whole map path off the
         # answer's flush, so the pills feel instant.
+        # The gate sits HERE, ahead of sensitive_species_overview(), because that
+        # is the call that pulls the full mapped frame -- gating the observers
+        # below would leave the rebuild running while the user is on Mapping.
+        # It is a reactive dependency, so opening the tab recomputes and repaints.
         gen_overlay_data_r <- shiny::debounce(shiny::reactive({
+            if (!is_active()) return(NULL)
             ov <- sensitive_species_overview()
             if (is.null(ov)) return(NULL)
             df <- effective_data_r()
@@ -1113,10 +1144,16 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
         # and what-if redraws must not re-zoom -- otherwise clicking a category
         # pill reframes the view and the same-tier cell looks a different size
         # at the new zoom. Re-fits only when the origin points actually change.
+        # Reads the overlay payload instead of recomputing ov/df: both need the
+        # same two values, and pulling them twice meant every edit rebuilt the
+        # whole mapped frame twice. Inheriting the 300 ms debounce is fine -- the
+        # fit is a one-shot per dataset anyway.
         map_fitted_sig_rv <- shiny::reactiveVal(NULL)
         shiny::observe({
-            ov <- sensitive_species_overview()
-            df <- effective_data_r()
+            d <- gen_overlay_data_r()
+            if (is.null(d)) return(invisible(NULL))
+            ov <- d$ov
+            df <- d$df
             if (is.null(ov) || !is.data.frame(df)) return(invisible(NULL))
             sci <- as.character(df$scientificName)
             lat <- suppressWarnings(as.numeric(df$decimalLatitude))
