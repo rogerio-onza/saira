@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **The export tab no longer says the dataset is ready to publish.** That step produces the bundle; publishing happens afterwards in the IPT.
+
 ## [0.10.0] - 2026-08-04
 
 ### Added
