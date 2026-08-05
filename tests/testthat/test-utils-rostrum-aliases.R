@@ -255,3 +255,60 @@ testthat::test_that("duplicate alias upsert updates existing row instead of inse
     testthat::expect_identical(as.integer(agg$n[[1]]), 1L)
     testthat::expect_equal(as.numeric(agg$max_conf[[1]]), 0.89, tolerance = 1e-09)
 })
+
+testthat::test_that("commit_session_aliases writes the batch under one run_id", {
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
+    committed <- rostrum_commit_session_aliases(
+        conn = conn,
+        map_values = list(
+            scientificName = "especie",
+            basisOfRecord = "tipo registro",
+            # Skipped: no column, blank, and a multi-column term teach nothing.
+            country = NULL,
+            locality = "",
+            eventDate = c("ano", "mes", "dia")
+        ),
+        run_id = "run-abc",
+        user_id = "tester"
+    )
+
+    testthat::expect_identical(nrow(committed), 2L)
+
+    rows <- DBI::dbGetQuery(
+        conn,
+        "SELECT col_name_norm, dwc_term, confidence, reviewed FROM rostrum_aliases ORDER BY dwc_term"
+    )
+    testthat::expect_identical(rows$dwc_term, c("basisOfRecord", "scientificName"))
+    testthat::expect_identical(rows$col_name_norm, c("tipo registro", "especie"))
+    testthat::expect_true(all(rows$confidence == 1))
+    testthat::expect_true(all(rows$reviewed == 1L))
+
+    # One event per alias, not two, and all under the run_id so a single export
+    # can be reversed with undo_session_aliases().
+    events <- DBI::dbGetQuery(
+        conn,
+        "SELECT run_id, action FROM rostrum_alias_events"
+    )
+    testthat::expect_identical(nrow(events), 2L)
+    testthat::expect_true(all(events$run_id == "run-abc"))
+    testthat::expect_true(all(events$action == "alias_created"))
+})
+
+testthat::test_that("commit_session_aliases is a no-op when there is nothing to learn", {
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
+    testthat::expect_identical(
+        nrow(rostrum_commit_session_aliases(conn, map_values = list())), 0L
+    )
+    testthat::expect_identical(
+        nrow(rostrum_commit_session_aliases(conn, map_values = list(country = ""))), 0L
+    )
+    testthat::expect_identical(
+        DBI::dbGetQuery(conn, "SELECT COUNT(*) AS n FROM rostrum_aliases")$n[[1]], 0L
+    )
+})

@@ -1666,3 +1666,72 @@ testthat::test_that("filling a required term clears its red state on the push", 
         }
     )
 })
+
+# Saira used to record an alias on every column pick, so cycling a card through
+# candidates left each rejected one behind as a learned mapping (the real store
+# had accumulated `id -> basisOfRecord`, `1 -> basisOfRecord` and friends this
+# way). Learning now waits for the export, which is the only point the user has
+# actually confirmed the mapping.
+testthat::test_that("picking a column writes no alias, exporting writes the final set", {
+    data_dir <- withr::local_tempdir()
+    user_id <- paste0("test_export_commit_", as.integer(Sys.time()))
+    withr::local_envvar(c(SAIRA_DATA_DIR = data_dir, SAIRA_USER = user_id))
+
+    df <- data.frame(
+        especie = c("Panthera onca", "Leopardus pardalis"),
+        tipo_registro = c("observacao", "especime"),
+        id = c("1", "2"),
+        stringsAsFactors = FALSE
+    )
+
+    count_aliases <- function() {
+        conn <- rostrum_connect()
+        on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+        DBI::dbGetQuery(
+            conn,
+            "SELECT COUNT(*) AS n FROM rostrum_aliases WHERE user_id = ?",
+            params = list(user_id)
+        )$n[[1]]
+    }
+
+    export_signal <- shiny::reactiveVal(0L)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en"),
+            export_signal_r = shiny::reactive(export_signal())
+        ),
+        {
+            session$flushReact()
+
+            # Cycle basisOfRecord through two wrong columns before the right one.
+            session$setInputs(map_scientificName = "especie")
+            session$setInputs(map_basisOfRecord = "id")
+            session$flushReact()
+            session$setInputs(map_basisOfRecord = "especie")
+            session$flushReact()
+            session$setInputs(map_basisOfRecord = "tipo_registro")
+            session$flushReact()
+
+            testthat::expect_identical(count_aliases(), 0L)
+
+            export_signal(1L)
+            session$flushReact()
+        }
+    )
+
+    conn <- rostrum_connect()
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+    rows <- DBI::dbGetQuery(
+        conn,
+        "SELECT col_name_norm, dwc_term FROM rostrum_aliases WHERE user_id = ? ORDER BY dwc_term",
+        params = list(user_id)
+    )
+
+    # Only the mapping the export was built from, none of the rejected picks.
+    testthat::expect_identical(nrow(rows), 2L)
+    testthat::expect_identical(rows$dwc_term, c("basisOfRecord", "scientificName"))
+    testthat::expect_identical(rows$col_name_norm, c("tipo registro", "especie"))
+})

@@ -86,7 +86,8 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                               raw_data_r = NULL,
                               map_values_r = NULL,
                               custom_values_r = NULL,
-                              on_navigate = NULL) {
+                              on_navigate = NULL,
+                              on_export_success = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
@@ -138,7 +139,8 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             custom_values_r = custom_values_r,
             coords_correction_payload_r = coords_correction_payload_r,
             country_fill_payload_r = country_fill_payload_r,
-            blocked_r = blocked_r
+            blocked_r = blocked_r,
+            on_export_success = on_export_success
         )
 
         # Banner CTA: jump to the tab where the blocker is fixed. For a missing

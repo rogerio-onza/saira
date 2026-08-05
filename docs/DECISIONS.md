@@ -2468,6 +2468,27 @@ Formato: ADR leve (Architecture Decision Record).
 
 ---
 
+## ADR-115: Alias e aprendido na exportacao, nao na selecao
+
+- **Data**: 2026-08-04
+- **Status**: Aceito
+- **Contexto**: A ADR-065 fez o `mod_mapping` gravar um alias a cada selecao manual de coluna. Uma selecao no meio do mapeamento e **hipotese**, nao decisao: quem percorre as colunas candidatas de um card deixa cada rejeitada gravada como mapeamento aprendido. O banco real acumulou `id -> basisOfRecord`, `1 -> basisOfRecord`, `class -> basisOfRecord`, `datasetname -> basisOfRecord`, `road id -> basisOfRecord` e `especie -> habitat`, este ultimo convivendo com o correto `especie -> scientificName` porque o indice unico inclui `dwc_term`. Cada gravacao era ainda uma transacao `BEGIN IMMEDIATE` propria com **dois** eventos de auditoria, no meio do flush do mapeamento -- 15.980 eventos para 566 aliases.
+- **Decisao**:
+  - `mod_mapping_server()` recebe `export_signal_r`, contador bumpado por `app_server` quando `mount_export_download()` termina de escrever o pacote DwC-A. Nada e aprendido sem esse sinal.
+  - Novo `rostrum_commit_session_aliases()`: recebe o `rv$map_values` final, descarta termo sem coluna e termo multi-coluna (`eventDate` montado de ano/mes/dia nao e alias um-para-um), e grava o conjunto em **uma** transacao, com **um** evento por alias e um unico `run_id` -- entao `undo_session_aliases()` reverte exatamente uma exportacao, o que antes era impossivel.
+  - O corpo do upsert virou `rostrum_upsert_alias_locked()`, na mesma convencao de `rostrum_insert_alias_event_locked()`: quem chama e dono da transacao. `rostrum_upsert_alias()` continua identico por fora.
+  - A escrita da resolucao de ambiguidade tambem sai. A resposta do modal ja assenta em `rv$map_values`, e o usuario segue livre para mudar antes de exportar.
+  - `import_mapping_guide_to_aliases()` **continua gravando na hora**: nao e aprender com um mapeamento em andamento, e instalar um artefato curado que o usuario trouxe de proposito.
+- **Alternativas**:
+  - Debounce na escrita por selecao - rejeitado: continua gravando hipotese, so menos delas. Nao distingue exploracao de decisao.
+  - Aprender ao sair da aba de mapeamento - rejeitado: sair da aba nao e confirmacao; o usuario volta e mexe mais.
+- **Consequencias**:
+  - Quem mapeia e abandona antes de exportar nao ensina nada ao Rostrum. Aceito: alias so rende no dataset **seguinte**, entao nada se perde dentro da sessao.
+  - O flush do mapeamento deixa de tocar SQLite. `PRAGMA synchronous = NORMAL` (companheiro seguro do WAL) foi somado ao `rostrum_connect()` para o que sobrou de escrita.
+  - `rostrum_record_alias_override()` e `rostrum_record_alias_confirmation()` seguem exportadas e testadas: sao API publica da ADR-065, apenas sem chamador nos modulos.
+
+---
+
 ## ADR-116: `collapse_mapped_values` vetorizado -- o laco por linha era o travamento da tela de mapeamento
 
 - **Data**: 2026-08-04

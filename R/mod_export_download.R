@@ -22,7 +22,8 @@ mount_export_download <- function(input, output, session, lang_r,
                                   custom_values_r = NULL,
                                   coords_correction_payload_r = NULL,
                                   country_fill_payload_r = NULL,
-                                  blocked_r = NULL) {
+                                  blocked_r = NULL,
+                                  on_export_success = NULL) {
     ns <- session$ns
         required_download_fields <- c(
             "scientificName",
@@ -705,6 +706,21 @@ mount_export_download <- function(input, output, session, lang_r,
                             zipfile = file,
                             files = zip_files
                         )
+
+                        # The bundle is written: the mapping is now confirmed, so
+                        # the mapping module may learn its aliases. Fires only
+                        # here, never on the error branch below. Kept
+                        # non-blocking -- a failed alias write must not turn a
+                        # delivered export into a visible failure.
+                        if (is.function(on_export_success)) {
+                            tryCatch(
+                                on_export_success(),
+                                error = function(e) {
+                                    warning("[rostrum] Could not commit aliases on export: ",
+                                            conditionMessage(e))
+                                }
+                            )
+                        }
 
                         session$sendCustomMessage(download_finish_channel, finish_payload)
                         shiny::showNotification(
