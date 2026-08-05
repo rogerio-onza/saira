@@ -392,3 +392,16 @@ testthat::test_that("default migrations include template catalog use_case suppor
     testthat::expect_true("use_case" %in% as.character(cols$name))
     testthat::expect_true("idx_templates_catalog" %in% idx)
 })
+
+# Guard for the suite-wide isolation in setup.R. Without it the suite wrote
+# aliases into the developer's real rostrum.sqlite; 376 rows had accumulated
+# before it was caught. Fails loudly if setup.R is dropped or reordered.
+testthat::test_that("the suite never resolves the database outside tempdir", {
+    resolved <- saira:::rostrum_normalize_db_path(create_dir = FALSE)
+
+    testthat::expect_true(nzchar(Sys.getenv("SAIRA_DATA_DIR", unset = "")))
+    testthat::expect_true(
+        startsWith(normalizePath(resolved, mustWork = FALSE),
+                   normalizePath(tempdir(), mustWork = FALSE))
+    )
+})
