@@ -163,6 +163,11 @@ mod_mapping_ui <- function(id) {
               el.classList.add('field-unmapped');
               el.classList.remove('field-mapped');
             }
+            // Same for the state modifier: it is decided at render time, and
+            // the grid does not re-render on a selection, so a required card
+            // would keep its red border after being filled.
+            el.classList.remove('field-required-missing', 'field-attention');
+            if (payload.state) { el.classList.add(payload.state); }
             // Sync the status badge (e.g. -> EDITADO) without re-rendering. The
             // badge span carries a stable .field-status-badge hook; create it if
             // the term had no badge, remove it when the recomputed badge is null.
@@ -478,12 +483,20 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                         title = badge$title
                     )
                 }
+                # The grid does not rebuild on a selection, so the state
+                # modifier has to travel with the mapped flag. Without it a
+                # required term stayed red after being filled, until some
+                # unrelated structural change happened to redraw the grid.
+                state_class <- field_state_class(
+                    term, card_state$is_mapped, meta, required_fields_strip
+                )
                 session$sendCustomMessage(
                     "saira-toggle-field-mapped",
                     list(
                         id = ns(paste0("fieldcard_", term)),
                         mapped = isTRUE(card_state$is_mapped),
-                        badge = badge_payload
+                        badge = badge_payload,
+                        state = if (is.null(state_class)) "" else state_class
                     )
                 )
             })

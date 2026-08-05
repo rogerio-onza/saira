@@ -1604,3 +1604,65 @@ testthat::test_that("the coordinate gate still reports a mapped country column",
         }
     )
 })
+
+# The grid is only rebuilt on a structural change, so a card's border state has
+# to travel on the incremental push. It did not carry the state modifier, which
+# left a required term red after it was filled -- most visibly on basisOfRecord,
+# where the card sits under the assistant button.
+testthat::test_that("filling a required term clears its red state on the push", {
+    df <- data.frame(
+        especie = c("Panthera onca", "Leopardus pardalis"),
+        tipo_registro = c("observacao", "especime"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            # Inside a module `session` is a proxy and rejects assignment, so
+            # the stub goes on the session it delegates to.
+            sent <- list()
+            real_session <- base::.subset2(session, "parent")
+            real_session$sendCustomMessage <- function(type, message) {
+                if (identical(type, "saira-toggle-field-mapped")) {
+                    sent[[length(sent) + 1L]] <<- message
+                }
+                invisible(NULL)
+            }
+            last_state <- function(term) {
+                id <- session$ns(paste0("fieldcard_", term))
+                hits <- Filter(function(m) identical(m$id, id), sent)
+                if (length(hits) == 0L) return(NULL)
+                hits[[length(hits)]]
+            }
+
+            session$flushReact()
+            session$setInputs(map_basisOfRecord = "tipo_registro")
+            session$flushReact()
+
+            msg <- last_state("basisOfRecord")
+            testthat::expect_false(is.null(msg))
+            testthat::expect_true(msg$mapped)
+            # basisOfRecord is required, so the card was field-required-missing
+            # before this; the push has to take that class back off.
+            testthat::expect_identical(msg$state, "")
+
+            # Clearing it puts the state back, so the two directions agree.
+            session$setInputs(map_basisOfRecord = "")
+            session$flushReact()
+
+            msg <- last_state("basisOfRecord")
+            testthat::expect_false(msg$mapped)
+            testthat::expect_identical(msg$state, "field-required-missing")
+
+            # A non-required term never gets the modifier either way.
+            session$setInputs(map_habitat = "especie")
+            session$flushReact()
+            testthat::expect_identical(last_state("habitat")$state, "")
+        }
+    )
+})
