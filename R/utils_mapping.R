@@ -2056,22 +2056,53 @@ collapse_mapped_values <- function(df, cols, out_sep = " | ") {
         return(normalized_cols[[1]])
     }
 
-    vapply(
-        seq_len(nrow(df)),
-        FUN = function(i) {
-            row_tokens <- character(0)
-            for (col_values in normalized_cols) {
-                row_tokens <- c(row_tokens, split_output_tokens(col_values[[i]], out_sep = out_sep))
-            }
+    # One vectorized pass per COLUMN instead of a scalar pass per ROW. The old
+    # loop called split_output_tokens once per cell, and each of those runs
+    # strsplit + trimws (which is match.arg + a perl sub) -- on a 21.5k-row
+    # dataset with four multi-column terms that was ~37 s of the ~52 s spent
+    # rebuilding the mapped frame, and it is why the mapping screen stalled.
+    # Equivalence rests on normalize_semicolon_tokens() having already trimmed
+    # each cell and turned blanks into NA, so the only cells that still need
+    # token surgery are the ones that literally contain out_sep.
+    normalized_cols <- lapply(
+        normalized_cols, clean_out_sep_tokens, out_sep = out_sep
+    )
 
-            if (length(row_tokens) == 0) {
+    out <- rep(NA_character_, nrow(df))
+    for (col_values in normalized_cols) {
+        has_value <- !is.na(col_values)
+        if (!any(has_value)) next
+        append_to <- has_value & !is.na(out)
+        out[append_to] <- paste(out[append_to], col_values[append_to], sep = out_sep)
+        seed <- has_value & is.na(out)
+        out[seed] <- col_values[seed]
+    }
+    out
+}
+
+# Drop empty tokens from cells that already carry out_sep, keeping the per-cell
+# split for exactly those cells (same shape as normalize_semicolon_tokens): a
+# value like "a |  | b" collapses to "a | b", and one that is all separators
+# becomes NA. Everything else is untouched, because it was trimmed upstream.
+clean_out_sep_tokens <- function(x, out_sep = " | ") {
+    idx <- which(!is.na(x) & grepl(out_sep, x, fixed = TRUE))
+    if (length(idx) == 0L) {
+        return(x)
+    }
+    x[idx] <- vapply(
+        x[idx],
+        FUN = function(value) {
+            parts <- trimws(strsplit(value, out_sep, fixed = TRUE)[[1]])
+            parts <- parts[nzchar(parts)]
+            if (length(parts) == 0L) {
                 return(NA_character_)
             }
-
-            paste(row_tokens, collapse = out_sep)
+            paste(parts, collapse = out_sep)
         },
-        FUN.VALUE = character(1)
+        FUN.VALUE = character(1),
+        USE.NAMES = FALSE
     )
+    x
 }
 
 #' Escape a character vector for embedding inside JSON double-quoted strings
