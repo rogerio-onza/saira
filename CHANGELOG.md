@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- **Day, month and year in separate columns now compose one ISO 8601 `eventDate`.** Mapping all three to the term produced `12 | 2 | 1809` instead of `1809-02-12`. Columns whose names do not identify the parts keep the old joined value rather than risking an invented date. See ADR-117.
 - **The export tab no longer says the dataset is ready to publish.** That step produces the bundle; publishing happens afterwards in the IPT.
 
 ## [0.10.0] - 2026-08-04

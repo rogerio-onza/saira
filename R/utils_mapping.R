@@ -2346,6 +2346,80 @@ detect_eventdate_roles <- function(col_names) {
     )
 }
 
+# Role detection for a SINGLE eventDate spread across separate day/month/year
+# columns -- the sibling of detect_eventdate_roles(), which resolves the 4-column
+# start/end interval instead. Name-based only, with no positional fallback: a
+# selection whose column names do not carry the roles as whole words stays
+# unresolved so the caller keeps the generic collapse rather than guessing a
+# date. Prefix matching is deliberately not attempted, since in Portuguese it
+# misfires on ordinary column names ("anotacoes" -> ano, "mesorregiao" -> mes).
+detect_eventdate_dmy_roles <- function(col_names) {
+    normalized_names <- normalize_for_matching(col_names)
+    used <- rep(FALSE, length(normalized_names))
+
+    pick_first <- function(pattern) {
+        idx <- which(grepl(pattern, normalized_names) & !used)
+        if (length(idx) == 0) {
+            return(NA_integer_)
+        }
+        used[[idx[[1]]]] <<- TRUE
+        idx[[1]]
+    }
+
+    list(
+        day = pick_first("\\b(day|dia|dd)\\b"),
+        month = pick_first("\\b(month|mo|mes)\\b"),
+        year = pick_first("\\b(year|yr|ano)\\b")
+    )
+}
+
+# Compose one ISO 8601 eventDate from the day/month/year columns the user mapped
+# to the term. Returns NULL -- meaning "not a date split into parts, treat it as
+# any other multi-column term" -- unless every selected column resolves to a
+# role, a year is among them, and a day never arrives without its month. That
+# strictness is what keeps an unrelated pair of columns from being read as a
+# date. Composition itself is delegated to the Rostrum composer, which already
+# emits YYYY, YYYY-MM and YYYY-MM-DD and validates the day against the month's
+# length in the given year.
+build_eventdate_from_parts <- function(df, cols, fallback_raw = TRUE) {
+    roles <- detect_eventdate_dmy_roles(cols)
+    resolved <- c(roles$day, roles$month, roles$year)
+
+    if (is.na(roles$year) || sum(!is.na(resolved)) != length(cols)) {
+        return(NULL)
+    }
+    if (!is.na(roles$day) && is.na(roles$month)) {
+        return(NULL)
+    }
+
+    pick_col <- function(idx) if (is.na(idx)) NA_character_ else cols[[idx]]
+    composed <- rostrum_compose_eventdate_values(
+        df = df,
+        source_columns = list(
+            year = pick_col(roles$year),
+            month = pick_col(roles$month),
+            day = pick_col(roles$day)
+        )
+    )
+
+    # A row with no date parts at all is blank, not a failure -- same convention
+    # as build_eventdate_interval().
+    failed_rows <- composed$has_any_input & !composed$valid_mask
+
+    result <- composed$values
+    if (isTRUE(fallback_raw) && any(failed_rows)) {
+        raw_values <- collapse_mapped_values(df, cols, out_sep = " | ")
+        result[failed_rows] <- raw_values[failed_rows]
+    }
+
+    list(
+        values = result,
+        failed_rows = failed_rows,
+        failure_count = sum(failed_rows),
+        role_map = roles
+    )
+}
+
 # Month name lookup, hoisted to a file-level constant so it is allocated once per
 # session instead of once per call. It used to live inside parse_month_to_number(),
 # which meant a 40-element named vector was built for every row of the dataset.
@@ -2557,6 +2631,18 @@ build_term_value <- function(
         event_result <- build_eventdate_interval(df = df, cols = user_cols, fallback_raw = TRUE)
         values <- event_result$values
         failure_count <- event_result$failure_count
+    } else if (term == "eventDate" && length(user_cols) %in% c(2L, 3L)) {
+        # Day/month/year in separate columns describe ONE date, so they compose
+        # into ISO 8601 instead of being pipe-joined like any other multi-column
+        # term. A selection the composer does not recognise keeps that generic
+        # collapse.
+        parts <- build_eventdate_from_parts(df = df, cols = user_cols, fallback_raw = TRUE)
+        if (is.null(parts)) {
+            values <- collapse_mapped_values(df = df, cols = user_cols, out_sep = out_sep)
+        } else {
+            values <- parts$values
+            failure_count <- parts$failure_count
+        }
     } else if (length(user_cols) == 1) {
         values <- normalize_semicolon_tokens(df[[user_cols[[1]]]], out_sep = out_sep)
     } else {
