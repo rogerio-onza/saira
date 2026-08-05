@@ -843,6 +843,28 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     sprintf("%s \u2192 %s", crossing$country_orig[i] %||% "?", crossing$country_gen[i] %||% "?")
                 )
             })
+            # Backing off means a HIGHER category number (a finer grid), and the
+            # suggestion has to clear the least aggressive tier among the
+            # crossing species so it resolves all of them at once.
+            suggestions <- sensitive_tier_category_number(
+                sensitive_less_aggressive_tiers(crossing$tier)
+            )
+            recommendation <- if (length(suggestions) == 0L) {
+                tr("sc_border_alert_recommend_floor", lang)
+            } else {
+                # "2, 3 ou 4" / "2, 3 or 4": the comma is punctuation, only the
+                # last conjunction is language-dependent.
+                listed <- if (length(suggestions) == 1L) {
+                    as.character(suggestions)
+                } else {
+                    paste0(
+                        paste(suggestions[-length(suggestions)], collapse = ", "),
+                        tr("sc_border_alert_cat_join", lang),
+                        suggestions[[length(suggestions)]]
+                    )
+                }
+                sprintf(tr("sc_border_alert_recommend", lang), listed)
+            }
             shiny::div(
                 class = "sc-border-alert",
                 shiny::div(
@@ -852,8 +874,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 ),
                 shiny::div(class = "sc-border-alert-desc", sprintf(tr("sc_border_alert_desc", lang), n_cross)),
                 shiny::tags$ul(class = "sc-border-alert-list", items),
-                shiny::div(class = "sc-border-alert-rec", shiny::icon("lightbulb"), " ",
-                           tr("sc_border_alert_recommend", lang))
+                shiny::div(class = "sc-border-alert-rec", shiny::icon("lightbulb"), " ", recommendation)
             )
         })
 

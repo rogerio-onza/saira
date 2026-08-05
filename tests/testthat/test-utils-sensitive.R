@@ -682,6 +682,47 @@ testthat::test_that("mask appends the custodian justification to dataGeneralizat
     testthat::expect_match(res$masked$dataGeneralizations[1], "Documented poaching risk\\.$")
 })
 
+testthat::test_that("sensitive_tier_category_number matches the numbers the UI shows", {
+    testthat::expect_identical(
+        sensitive_tier_category_number(c("extreme", "high", "medium", "low")),
+        1:4
+    )
+    testthat::expect_true(is.na(sensitive_tier_category_number("not_sensitive")))
+})
+
+testthat::test_that("sensitive_less_aggressive_tiers backs off to coarser categories", {
+    # Less aggressive means a HIGHER category number.
+    testthat::expect_identical(
+        sensitive_less_aggressive_tiers("extreme"),
+        c("high", "medium", "low")
+    )
+    testthat::expect_identical(
+        sensitive_less_aggressive_tiers("high"),
+        c("medium", "low")
+    )
+    testthat::expect_identical(sensitive_less_aggressive_tiers("medium"), "low")
+
+    # Taken from the least aggressive tier present, so one suggestion resolves
+    # every crossing species.
+    testthat::expect_identical(
+        sensitive_less_aggressive_tiers(c("extreme", "medium", "high")),
+        "low"
+    )
+})
+
+testthat::test_that("sensitive_less_aggressive_tiers is empty at the floor and for non-masking input", {
+    testthat::expect_identical(sensitive_less_aggressive_tiers("low"), character(0))
+    testthat::expect_identical(
+        sensitive_less_aggressive_tiers(c("high", "low")),
+        character(0)
+    )
+    testthat::expect_identical(
+        sensitive_less_aggressive_tiers(c("not_sensitive", NA_character_)),
+        character(0)
+    )
+    testthat::expect_identical(sensitive_less_aggressive_tiers(character(0)), character(0))
+})
+
 testthat::test_that("generalization_map_preview returns generalized points (+ border flag)", {
     local_sensitive_fixture("Panthera onca")
     df <- data.frame(
