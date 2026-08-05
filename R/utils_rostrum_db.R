@@ -126,6 +126,10 @@ rostrum_connect <- function(path = NULL, create_dir = TRUE, migrate = TRUE, targ
     DBI::dbExecute(conn, "PRAGMA foreign_keys = ON")
     DBI::dbGetQuery(conn, "PRAGMA journal_mode = WAL")
     DBI::dbExecute(conn, "PRAGMA busy_timeout = 5000")
+    # Safe companion to WAL: commits stop fsync-ing, which on WSL2 was the bulk
+    # of an alias write's latency. Durability is only at risk if the OS itself
+    # crashes mid-commit, never if the app does.
+    DBI::dbExecute(conn, "PRAGMA synchronous = NORMAL")
 
     if (isTRUE(migrate)) {
         migration_ok <- FALSE
@@ -452,6 +456,55 @@ rostrum_upsert_alias <- function(
         stop("conn must be a valid DBI connection.")
     }
 
+    DBI::dbExecute(conn, "BEGIN IMMEDIATE")
+    committed <- FALSE
+    on.exit(
+        {
+            if (!committed) {
+                try(DBI::dbExecute(conn, "ROLLBACK"), silent = TRUE)
+            }
+        },
+        add = TRUE
+    )
+
+    result <- rostrum_upsert_alias_locked(
+        conn = conn,
+        col_name = col_name,
+        dwc_term = dwc_term,
+        confidence = confidence,
+        scope = scope,
+        reviewed = reviewed,
+        run_id = run_id,
+        action = action,
+        created_by = created_by,
+        user_id = user_id,
+        institution_id = institution_id,
+        payload = payload
+    )
+
+    DBI::dbExecute(conn, "COMMIT")
+    committed <- TRUE
+    result
+}
+
+# The upsert body without the transaction, so a batch commit can run many of
+# these inside ONE BEGIN IMMEDIATE. Same convention as
+# rostrum_insert_alias_event_locked: the caller owns the transaction.
+rostrum_upsert_alias_locked <- function(
+    conn,
+    col_name,
+    dwc_term,
+    confidence,
+    scope = "personal",
+    reviewed = TRUE,
+    run_id = NULL,
+    action = "alias_upserted",
+    created_by = NULL,
+    user_id = Sys.getenv("SAIRA_USER", unset = ""),
+    institution_id = Sys.getenv("SAIRA_INSTITUTION", unset = ""),
+    payload = NULL,
+    now_utc = rostrum_now_utc()
+) {
     scope_norm <- rostrum_validate_scope(scope)
     term_chr <- trimws(as.character(dwc_term))
     if (length(term_chr) != 1L || is.na(term_chr) || !nzchar(term_chr)) {
@@ -465,22 +518,10 @@ rostrum_upsert_alias <- function(
     user_id_norm <- rostrum_normalize_identity(user_id)
     institution_id_norm <- rostrum_normalize_identity(institution_id)
     run_id_norm <- rostrum_normalize_identity(run_id)
-    now_utc <- rostrum_now_utc()
 
     if (identical(scope_norm, "personal") && is.na(user_id_norm)) {
         user_id_norm <- "anonymous"
     }
-
-    DBI::dbExecute(conn, "BEGIN IMMEDIATE")
-    committed <- FALSE
-    on.exit(
-        {
-            if (!committed) {
-                try(DBI::dbExecute(conn, "ROLLBACK"), silent = TRUE)
-            }
-        },
-        add = TRUE
-    )
 
     tryCatch(
         {
@@ -576,9 +617,6 @@ rostrum_upsert_alias <- function(
                 )
             }
 
-            DBI::dbExecute(conn, "COMMIT")
-            committed <- TRUE
-
             list(
                 alias_id = alias_id,
                 action = action_effective,
@@ -673,6 +711,111 @@ rostrum_record_alias_override <- function(
         user_id = user_id,
         institution_id = institution_id
     )
+}
+
+#' Commit a Confirmed Mapping to the Alias Store
+#'
+#' Learns column-to-term aliases from a mapping the user has confirmed by
+#' exporting. Saira deliberately does not learn from selections made while
+#' mapping: an intermediate pick is a hypothesis, and recording hypotheses is
+#' what filled the store with entries like \code{id -> basisOfRecord} left
+#' behind by cycling through options on a card.
+#'
+#' The whole set is written in a single transaction under one \code{run_id}, so
+#' \code{undo_session_aliases()} can reverse exactly one export.
+#'
+#' @param conn A DBI connection from \code{rostrum_connect()}.
+#' @param map_values Named list of the final mapping: names are Darwin Core
+#'   terms, values are the source column(s). Terms with no column, or resolved
+#'   from a fixed value rather than a column, are skipped.
+#' @param run_id Optional run identifier string shared by the whole batch.
+#' @param scope Character. One of \code{"personal"}, \code{"institution"}, \code{"public"}.
+#' @param created_by Character. User identifier.
+#' @param user_id Character. User identifier for scope resolution.
+#' @param institution_id Character. Institution identifier.
+#' @return Invisibly, a data frame of the committed pairs (zero rows when there
+#'   was nothing to learn).
+#' @export
+rostrum_commit_session_aliases <- function(
+    conn,
+    map_values,
+    run_id = NULL,
+    scope = "personal",
+    created_by = Sys.getenv("SAIRA_USER", unset = ""),
+    user_id = Sys.getenv("SAIRA_USER", unset = ""),
+    institution_id = Sys.getenv("SAIRA_INSTITUTION", unset = "")
+) {
+    empty <- data.frame(
+        dwc_term = character(0), col_name = character(0),
+        stringsAsFactors = FALSE
+    )
+    if (!inherits(conn, "DBIConnection") || !DBI::dbIsValid(conn)) {
+        return(invisible(empty))
+    }
+    if (!is.list(map_values) || length(map_values) == 0L) {
+        return(invisible(empty))
+    }
+
+    terms <- names(map_values)
+    if (is.null(terms)) {
+        return(invisible(empty))
+    }
+
+    pairs <- empty
+    for (term in terms) {
+        if (!nzchar(trimws(term))) next
+        value <- map_values[[term]]
+        # A multi-column term (e.g. eventDate assembled from year/month/day) is
+        # not a one-to-one alias, so it teaches nothing and is skipped.
+        if (is.null(value) || length(value) != 1L) next
+        col_name <- trimws(as.character(value)[[1]])
+        if (is.na(col_name) || !nzchar(col_name)) next
+        pairs <- rbind(
+            pairs,
+            data.frame(dwc_term = term, col_name = col_name,
+                       stringsAsFactors = FALSE)
+        )
+    }
+
+    if (nrow(pairs) == 0L) {
+        return(invisible(empty))
+    }
+
+    now_utc <- rostrum_now_utc()
+    DBI::dbExecute(conn, "BEGIN IMMEDIATE")
+    committed <- FALSE
+    on.exit(
+        {
+            if (!committed) {
+                try(DBI::dbExecute(conn, "ROLLBACK"), silent = TRUE)
+            }
+        },
+        add = TRUE
+    )
+
+    for (i in seq_len(nrow(pairs))) {
+        rostrum_upsert_alias_locked(
+            conn = conn,
+            col_name = pairs$col_name[[i]],
+            dwc_term = pairs$dwc_term[[i]],
+            confidence = 1.0,
+            scope = scope,
+            reviewed = TRUE,
+            run_id = run_id,
+            # NULL keeps this to one event row per alias. The origin rides in
+            # the payload instead of doubling the audit trail.
+            action = NULL,
+            created_by = created_by,
+            user_id = user_id,
+            institution_id = institution_id,
+            payload = list(origin = "export_confirmed"),
+            now_utc = now_utc
+        )
+    }
+
+    DBI::dbExecute(conn, "COMMIT")
+    committed <- TRUE
+    invisible(pairs)
 }
 
 rostrum_deprecate_alias <- function(

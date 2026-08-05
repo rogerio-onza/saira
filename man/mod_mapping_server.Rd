@@ -4,7 +4,7 @@
 \alias{mod_mapping_server}
 \title{Mapping Module Server}
 \usage{
-mod_mapping_server(id, raw_data_r, lang_r)
+mod_mapping_server(id, raw_data_r, lang_r, export_signal_r = NULL)
 }
 \arguments{
 \item{id}{Module namespace ID}
@@ -12,6 +12,11 @@ mod_mapping_server(id, raw_data_r, lang_r)
 \item{raw_data_r}{Reactive data frame from upload module}
 
 \item{lang_r}{Reactive language code}
+
+\item{export_signal_r}{Optional reactive counter bumped by a successful
+export. Saira learns column-to-term aliases only on that signal, never from
+a selection made while mapping, so an abandoned experiment teaches it
+nothing. Alias learning is disabled when this is not supplied.}
 }
 \value{
 Reactive containing processed/mapped data

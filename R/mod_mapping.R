@@ -217,9 +217,13 @@ reset_basis_of_record_state <- function(rv, reset_source_col = TRUE) {
 #' @param id Module namespace ID
 #' @param raw_data_r Reactive data frame from upload module
 #' @param lang_r Reactive language code
+#' @param export_signal_r Optional reactive counter bumped by a successful
+#'   export. Saira learns column-to-term aliases only on that signal, never from
+#'   a selection made while mapping, so an abandoned experiment teaches it
+#'   nothing. Alias learning is disabled when this is not supplied.
 #' @return Reactive containing processed/mapped data
 #' @export
-mod_mapping_server <- function(id, raw_data_r, lang_r) {
+mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
@@ -301,6 +305,24 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                 DBI::dbDisconnect(conn)
             }
         })
+
+        # Alias learning happens here and nowhere else: one batched write, from
+        # the final mapping, once the user has confirmed it by exporting.
+        if (!is.null(export_signal_r) && shiny::is.reactive(export_signal_r)) {
+            shiny::observeEvent(export_signal_r(), {
+                if (is.null(conn) || !DBI::dbIsValid(conn)) return(invisible(NULL))
+                tryCatch(
+                    rostrum_commit_session_aliases(
+                        conn = conn,
+                        map_values = shiny::isolate(rv$map_values),
+                        run_id = shiny::isolate(rv$rostrum_run_stats[["run_id"]])
+                    ),
+                    error = function(e) {
+                        warning("[rostrum] Could not commit aliases: ", e$message)
+                    }
+                )
+            }, ignoreInit = TRUE)
+        }
 
         # i18n keys for all 21 catalog classes (base + on-demand extras).
         # Falls back to raw class name if a future class isn't covered.
@@ -1262,23 +1284,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                             previous_meta = previous_meta,
                             has_value = has_selected_value(sanitized)
                         )
-                        # Record alias override when user manually selects a column
-                        if (!is.null(conn) && DBI::dbIsValid(conn) &&
-                            has_selected_value(sanitized) && nzchar(sanitized[[1]])) {
-                            col_selected <- as.character(sanitized[[1]])
-                            run_id <- shiny::isolate(rv$rostrum_run_stats[["run_id"]])
-                            tryCatch(
-                                rostrum_record_alias_override(
-                                    conn = conn,
-                                    col_name = col_selected,
-                                    dwc_term = term,
-                                    run_id = run_id
-                                ),
-                                error = function(e) {
-                                    warning("[rostrum] Could not record alias override: ", e$message)
-                                }
-                            )
-                        }
+                        # No alias write here. A selection is a hypothesis, not a
+                        # decision -- learning from every pick is what left
+                        # entries like `id -> basisOfRecord` behind when the user
+                        # cycled through columns on a card. Aliases are committed
+                        # once, from the final mapping, on a successful export.
                     }
                     # Surgically refresh this card's border/badge (no grid re-render).
                     push_card_state(term)
@@ -1417,36 +1427,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r) {
                     alternatives_json = jsonlite::toJSON(item$candidates, auto_unbox = TRUE)
                 )
 
-                # Record alias: confirmation if top candidate chosen, override otherwise
-                if (!is.null(conn) && DBI::dbIsValid(conn)) {
-                    run_id <- shiny::isolate(rv$rostrum_run_stats[["run_id"]])
-                    top_col <- if (length(item$candidates) > 0) {
-                        as.character(item$candidates[[1]]$column_name)
-                    } else {
-                        ""
-                    }
-                    tryCatch(
-                        if (identical(selected_col, top_col) && !is.na(selected_score)) {
-                            rostrum_record_alias_confirmation(
-                                conn = conn,
-                                col_name = selected_col,
-                                dwc_term = term,
-                                score_original = selected_score,
-                                run_id = run_id
-                            )
-                        } else {
-                            rostrum_record_alias_override(
-                                conn = conn,
-                                col_name = selected_col,
-                                dwc_term = term,
-                                run_id = run_id
-                            )
-                        },
-                        error = function(e) {
-                            warning("[rostrum] Could not record alias from ambiguity: ", e$message)
-                        }
-                    )
-                }
+                # No alias write here either: resolving the modal only settles
+                # rv$map_values, and the user is still free to change it before
+                # exporting. The export commit picks up whatever it ends on.
             }
 
             rv$ambiguity_queue <- rv$ambiguity_queue[-1]

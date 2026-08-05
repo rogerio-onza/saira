@@ -88,7 +88,13 @@ app_server <- function(input, output, session) {
 
     # Chain of Reactivity: Data Flow
     raw_data <- mod_upload_server("upload", lang_r)
-    mapping_result <- mod_mapping_server("mapping", raw_data, lang_r)
+    # Bumped once a DwC-A bundle is written. Rostrum treats that as the user
+    # confirming the mapping, and only then learns its aliases (ADR-115).
+    export_signal_rv <- shiny::reactiveVal(0L)
+    mapping_result <- mod_mapping_server(
+        "mapping", raw_data, lang_r,
+        export_signal_r = shiny::reactive(export_signal_rv())
+    )
     # ADR-054: mod_mapping_server returns named list of reactives
     mapped_data <- mapping_result$processed_data_r
     preview_data <- mapping_result$preview_data_r
@@ -163,6 +169,9 @@ app_server <- function(input, output, session) {
         raw_data_r                         = raw_data,
         map_values_r                       = mapping_result$map_values_r,
         custom_values_r                    = mapping_result$custom_values_r,
+        on_export_success                  = function() {
+            export_signal_rv(shiny::isolate(export_signal_rv()) + 1L)
+        },
         # Bind the root session: this callback fires inside the export module's
         # reactive context, so without an explicit session nav_select would
         # namespace "main_nav" and silently no-op. When a term is given, also
