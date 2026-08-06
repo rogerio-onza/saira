@@ -559,3 +559,47 @@ testthat::test_that("validate_coords_cc_df keeps seas_scale=10 without requiring
     testthat::expect_identical(attr(out, "seas_scale"), 10L)
     testthat::expect_true(all(out$diagnostic == "ok"))
 })
+
+# Country fill: match the casing the column already uses -----------------
+
+testthat::test_that("coords_match_country_case follows an all-caps column", {
+    # Filling blanks with the Natural Earth `admin` attribute (Title Case) into
+    # a column the publisher wrote in caps produced "BRAZIL" beside "Peru".
+    testthat::expect_identical(
+        saira:::coords_match_country_case(
+            c("Peru", "Bolivia"), c("BRAZIL", "ARGENTINA", "BRAZIL")
+        ),
+        c("PERU", "BOLIVIA")
+    )
+})
+
+testthat::test_that("coords_match_country_case follows a lower-case column", {
+    testthat::expect_identical(
+        saira:::coords_match_country_case(c("Peru"), c("brazil", "argentina")),
+        "peru"
+    )
+})
+
+testthat::test_that("coords_match_country_case leaves Title Case and mixed columns alone", {
+    testthat::expect_identical(
+        saira:::coords_match_country_case(c("Peru"), c("Brazil", "Argentina")),
+        "Peru"
+    )
+    # A genuinely mixed column has no dominant casing to follow, so guessing
+    # would be worse than leaving the reference value as it came.
+    testthat::expect_identical(
+        saira:::coords_match_country_case(c("Peru"), c("BRAZIL", "Argentina")),
+        "Peru"
+    )
+})
+
+testthat::test_that("coords_match_country_case ignores blanks and uncased values", {
+    testthat::expect_identical(
+        saira:::coords_match_country_case(c("Peru"), c(NA, "", "   ")),
+        "Peru"
+    )
+    testthat::expect_identical(
+        saira:::coords_match_country_case(c("Peru"), c("1234", "5678")),
+        "Peru"
+    )
+})

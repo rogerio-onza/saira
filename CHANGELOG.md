@@ -8,9 +8,18 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- **Your own `occurrenceID` column is no longer discarded.** Saira ignored the mapping unless the column happened to be named `occurrenceID`, replacing every identifier with a random UUID while the guide claimed they came from your data. See ADR-118.
+- **`license` is published as a URI.** The exported column carried a short label like `CC-BY`, which is not what Darwin Core and GBIF expect, and disagreed with the guide and `eml.xml`. All four now write the same canonical URL.
+- **Three-part names are marked `subspecies`, not `species`,** and fill `infraspecificEpithet`. Author names in the same position (`Dasypus novemcinctus Linnaeus, 1758`) are still read as authorship. See ADR-119.
+- **Country filled from coordinates now matches the casing of your column,** so a column written in capitals no longer ends up with `Peru` beside `BRAZIL`.
+- **The guide and export screen now say that unmapped columns are not published.** They stay in the file but are absent from `meta.xml`, so GBIF ignores them. See ADR-120.
+
 - **Day, month and year in separate columns now compose one ISO 8601 `eventDate`.** Mapping all three to the term produced `12 | 2 | 1809` instead of `1809-02-12`. Columns whose names do not identify the parts keep the old joined value rather than risking an invented date. See ADR-117.
 - **The border-crossing alert now suggests a weaker generalization, not a stronger one.** The suggested category was a fixed number written into the translation, correct only back when the alert could only appear at Category 1. It is now computed from the categories of the species that cross, and says so when they are already at Category 4.
 - **The export tab no longer says the dataset is ready to publish.** That step produces the bundle; publishing happens afterwards in the IPT.
+
+### Added
+- **The `occurrenceID` card lets you point at the column that carries your identifiers,** and warns when that column repeats a value. Identifiers you already have are always kept, and the ones Saira generates are derived from each row, so re-uploading the same spreadsheet reproduces them instead of minting new ones.
 
 ## [0.10.0] - 2026-08-04
 

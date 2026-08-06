@@ -17,23 +17,20 @@
 #' @param cat_class CSS class for the category
 #' @param scientificname_mapped Logical; when TRUE, taxonRank and specificEpithet
 #'   are locked because they are derived from scientificName.
-#' @param occurrence_id_preserved Logical; when TRUE, the uploaded data already
-#'   carries occurrenceID values (e.g. a camera-trap observationID), so the card
-#'   says those are preserved instead of auto-generated.
 #'
 #'   Selection-dependent content (the source sample, the basisOfRecord assistant
 #'   button, and the dynamicProperties key inputs) is rendered into a per-term
 #'   `carddyn_<term>` uiOutput slot, so picking a column updates only that card
 #'   instead of rebuilding the whole 50-selectize grid (see mod_mapping.R).
 #' @noRd
-build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, occurrence_id_preserved = FALSE, state_class = NULL) {
+build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL) {
     term <- item$term
 
-    # taxonRank/specificEpithet are inferred from scientificName (see
-    # build_processed_mapping_df). When scientificName is mapped, lock these
-    # cards with a UUID-style notice instead of a column selector.
+    # taxonRank/specificEpithet/infraspecificEpithet are inferred from
+    # scientificName (see build_processed_mapping_df). When scientificName is
+    # mapped, lock these cards with a notice instead of a column selector.
     locked_taxon <- isTRUE(scientificname_mapped) &&
-        term %in% c("taxonRank", "specificEpithet")
+        term %in% locked_taxon_terms()
 
     # The card shows the short hint when the term has one; the official
     # definition then lives in the "?" tooltip. Terms whose definition is
@@ -103,16 +100,25 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 " ", tr("taxon_auto_derived", lang_r)
             )
         } else if (term == "occurrenceID") {
-            occ_id_key <- if (isTRUE(occurrence_id_preserved)) {
-                "occurrence_id_preserved"
-            } else {
-                "uuid_auto_generated"
-            }
-            shiny::div(
-                class = "alert alert-info",
-                style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
-                shiny::icon("info-circle"),
-                " ", tr(occ_id_key, lang_r)
+            # A plain column selector, like any other term. Point it at the
+            # column carrying your identifiers and they are preserved; rows
+            # without one get a generated identifier. Nothing else to decide --
+            # the status line below reports what actually happened.
+            shiny::tagList(
+                shiny::selectInput(
+                    ns(paste0("map_", term)),
+                    NULL,
+                    choices = cols,
+                    selected = if (has_selected_value(current_val)) {
+                        current_val[[1]]
+                    } else {
+                        ""
+                    },
+                    multiple = FALSE,
+                    selectize = TRUE,
+                    width = "100%"
+                ),
+                shiny::uiOutput(ns("occurrence_id_status"))
             )
         } else if (term == "datasetName") {
             # datasetName: dropdown + separate text input
@@ -172,10 +178,12 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 shiny::checkboxGroupInput(
                     ns("custom_license"),
                     NULL,
-                    choices = c(
-                        "CC0 (Public Domain)" = "https://creativecommons.org/publicdomain/zero/1.0/legalcode",
-                        "CC-BY 4.0" = "https://creativecommons.org/licenses/by/4.0/legalcode",
-                        "CC-BY-NC 4.0" = "https://creativecommons.org/licenses/by-nc/4.0/legalcode"
+                    # Values come from cc_license_uris() so the card, the
+                    # license column, the mapping guide and eml.xml all publish
+                    # the same string.
+                    choices = stats::setNames(
+                        unname(cc_license_uris()),
+                        c("CC0 (Public Domain)", "CC-BY 4.0", "CC-BY-NC 4.0")
                     ),
                     selected = if (!is.null(saved_license)) saved_license else character(0),
                     inline = FALSE,

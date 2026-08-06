@@ -1347,6 +1347,40 @@ apply_coords_correction_payload <- function(df, payload = NULL) {
 #'   equal to the original where not filled), \code{n_filled}, \code{n_candidates},
 #'   \code{available} (FALSE when no country layer could be loaded).
 #' @export
+#' Match filled country names to the casing the column already uses
+#'
+#' The Natural Earth `admin` attribute is Title Case ("Peru"), so filling blanks
+#' in a column the publisher wrote in caps produced `BRAZIL` sitting next to
+#' `Peru`. This restyles only the values Saira itself writes; the publisher's
+#' own values are never touched, keeping the non-destructive contract of
+#' ADR-036.
+#'
+#' Casing is inferred from the non-blank values already present. A column is
+#' treated as upper (or lower) case only when every cased existing value agrees,
+#' so a genuinely mixed column is left alone rather than guessed at.
+#'
+#' @param filled Character vector of names to restyle.
+#' @param existing Character vector of values already in the column.
+#' @return `filled`, cased to match `existing`.
+#' @noRd
+coords_match_country_case <- function(filled, existing) {
+    ref <- existing[!is.na(existing)]
+    ref <- ref[nzchar(trimws(ref))]
+    # Only letters carry case, so a value like "1234" must not vote.
+    ref <- ref[grepl("[A-Za-z]", ref)]
+    if (length(ref) == 0L) {
+        return(filled)
+    }
+
+    if (all(ref == toupper(ref))) {
+        return(toupper(filled))
+    }
+    if (all(ref == tolower(ref))) {
+        return(tolower(filled))
+    }
+    filled
+}
+
 coords_country_from_coordinates <- function(df,
                                             lat_col = "decimalLatitude",
                                             lon_col = "decimalLongitude",
@@ -1394,7 +1428,9 @@ coords_country_from_coordinates <- function(df,
             ex <- ex[!duplicated(ex[[1]]), , drop = FALSE]
             names_extracted <- as.character(ex[[2]])
             got <- !is.na(names_extracted) & nzchar(names_extracted)
-            country_new[rows[got]] <- names_extracted[got]
+            country_new[rows[got]] <- coords_match_country_case(
+                names_extracted[got], country0
+            )
             filled[rows[got]] <- TRUE
         }
     }
@@ -1589,7 +1625,7 @@ coords_swap_and_fill <- function(df,
         acc <- rows[got]
         lat_new[acc] <- sw_lat[got]
         lon_new[acc] <- sw_lon[got]
-        country_new[acc] <- sw_name[got]
+        country_new[acc] <- coords_match_country_case(sw_name[got], country0)
         applies[acc] <- TRUE
     }
 

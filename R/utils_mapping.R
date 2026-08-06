@@ -1421,7 +1421,13 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
     terms <- unique(as.character(dwc_terms_df$term))
     columns <- names(df)
     temporal_terms <- c("eventDate", "year", "month", "day", "modified", "dateIdentified")
-    manual_only_terms <- c("occurrenceID", "modified", "license", "language")
+    # Terms whose value comes from a dedicated input (date picker, checkbox),
+    # never from a source column, so scoring them would offer a mapping the card
+    # cannot accept. occurrenceID is not one of them: it takes a real column,
+    # and an upload that ships identifiers -- a re-imported Saira export, an
+    # already-standardized DwC file -- must have them found rather than left for
+    # the user to notice and wire up by hand.
+    manual_only_terms <- c("modified", "license", "language")
     prune_threshold <- suppressWarnings(as.numeric(options$stage1_name_prune_threshold))
     if (!is.finite(prune_threshold)) {
         prune_threshold <- 0.45
@@ -1801,6 +1807,73 @@ format_epithet_token_vec <- function(token) {
     out
 }
 
+# Taxon terms derived from scientificName by extract_scientific_name_components().
+# The mapping cards lock these once scientificName is mapped, so the single list
+# lives here rather than being spelled out at each card call site.
+derived_taxon_terms <- function() {
+    c("genus", "specificEpithet", "infraspecificEpithet", "taxonRank")
+}
+
+# Terms whose card is locked when scientificName is mapped. genus is excluded:
+# it stays user-mappable because a dataset may carry a genus column that
+# disagrees with the parsed name, and fill_missing_character_values() lets the
+# mapped value win.
+locked_taxon_terms <- function() {
+    c("specificEpithet", "infraspecificEpithet", "taxonRank")
+}
+
+# Rank markers that may introduce an infraspecific epithet, mapped to the DwC
+# taxonRank each one implies.
+infraspecific_rank_markers <- function() {
+    c(
+        "subsp" = "subspecies", "subsp." = "subspecies",
+        "ssp" = "subspecies", "ssp." = "subspecies",
+        "var" = "variety", "var." = "variety",
+        "f" = "form", "f." = "form", "forma" = "form"
+    )
+}
+
+# Resolve the infraspecific part of a name from the tokens sitting after the
+# specific epithet. Two shapes are accepted: an explicit marker plus an epithet
+# ("Puma concolor subsp. concolor") and the bare trinomial the zoological code
+# uses ("Dasypus septemcinctus hybridus").
+#
+# The bare form has to be told apart from authorship, which occupies the same
+# position: "Dasypus novemcinctus Linnaeus, 1758". Only a token starting with a
+# lowercase letter and made of letters/hyphen counts as an epithet.
+# format_epithet_token() cannot make that call because it lowercases before
+# validating, so "Linnaeus" would sail through it.
+extract_infraspecific_part <- function(tokens, start) {
+    if (length(tokens) < start) {
+        return(NULL)
+    }
+
+    markers <- infraspecific_rank_markers()
+    marker_idx <- match(tolower(tokens[[start]]), names(markers))
+    if (!is.na(marker_idx)) {
+        if (length(tokens) < start + 1L) {
+            return(NULL)
+        }
+        epithet <- format_epithet_token(tokens[[start + 1L]])
+        if (is.na(epithet)) {
+            return(NULL)
+        }
+        return(list(
+            infraspecificEpithet = epithet,
+            taxonRank = unname(markers[[marker_idx]])
+        ))
+    }
+
+    if (!grepl("^[a-z][a-z-]*$", tokens[[start]])) {
+        return(NULL)
+    }
+    epithet <- format_epithet_token(tokens[[start]])
+    if (is.na(epithet)) {
+        return(NULL)
+    }
+    list(infraspecificEpithet = epithet, taxonRank = "subspecies")
+}
+
 extract_scientific_name_components <- function(scientific_names) {
     # Parse over UNIQUE names and expand back: the genus/epithet/rank of a row
     # depends only on its scientificName, and a dataset repeats a handful of
@@ -1821,13 +1894,32 @@ extract_scientific_name_components <- function(scientific_names) {
     unknown_markers <- c("sp", "sp.", "spp", "spp.")
     qualifier_markers <- c("cf", "cf.", "aff", "aff.", "nr", "nr.")
 
+    blank_result <- list(
+        genus = NA_character_,
+        specificEpithet = NA_character_,
+        infraspecificEpithet = NA_character_,
+        taxonRank = NA_character_
+    )
+
+    # Attach the infraspecific epithet when the tokens after the specific one
+    # carry it, promoting the rank from species to subspecies/variety/form.
+    with_infraspecific <- function(genus, specific, tokens, start) {
+        infra <- extract_infraspecific_part(tokens, start)
+        list(
+            genus = genus,
+            specificEpithet = specific,
+            infraspecificEpithet = if (is.null(infra)) {
+                NA_character_
+            } else {
+                infra$infraspecificEpithet
+            },
+            taxonRank = if (is.null(infra)) "species" else infra$taxonRank
+        )
+    }
+
     parsed <- lapply(scientific_names, function(value) {
         if (is_blank_value(value)) {
-            return(list(
-                genus = NA_character_,
-                specificEpithet = NA_character_,
-                taxonRank = NA_character_
-            ))
+            return(blank_result)
         }
 
         cleaned <- gsub("\\|", " ", as.character(value))
@@ -1836,11 +1928,7 @@ extract_scientific_name_components <- function(scientific_names) {
         tokens <- tokens[nzchar(tokens)]
 
         if (length(tokens) == 0) {
-            return(list(
-                genus = NA_character_,
-                specificEpithet = NA_character_,
-                taxonRank = NA_character_
-            ))
+            return(blank_result)
         }
 
         genus <- format_genus_token(tokens[[1]])
@@ -1850,59 +1938,50 @@ extract_scientific_name_components <- function(scientific_names) {
         }
 
         if (is.na(genus)) {
-            return(list(
-                genus = NA_character_,
-                specificEpithet = NA_character_,
-                taxonRank = NA_character_
-            ))
+            return(blank_result)
         }
 
+        genus_only <- list(
+            genus = genus,
+            specificEpithet = NA_character_,
+            infraspecificEpithet = NA_character_,
+            taxonRank = "genus"
+        )
+
         if (length(tokens) == 1) {
-            return(list(
-                genus = genus,
-                specificEpithet = NA_character_,
-                taxonRank = "genus"
-            ))
+            return(genus_only)
         }
 
         second_lower <- tolower(tokens[[2]])
         if (second_lower %in% unknown_markers) {
-            return(list(
-                genus = genus,
-                specificEpithet = NA_character_,
-                taxonRank = "genus"
-            ))
+            return(genus_only)
         }
 
         if (second_lower %in% qualifier_markers && length(tokens) >= 3) {
             specific <- format_epithet_token(tokens[[3]])
-            return(list(
-                genus = genus,
-                specificEpithet = specific,
-                taxonRank = if (!is.na(specific)) "species" else "genus"
-            ))
+            if (is.na(specific)) {
+                return(genus_only)
+            }
+            return(with_infraspecific(genus, specific, tokens, 4L))
         }
 
         specific <- format_epithet_token(tokens[[2]])
         if (is.na(specific)) {
-            return(list(
-                genus = genus,
-                specificEpithet = NA_character_,
-                taxonRank = "genus"
-            ))
+            return(genus_only)
         }
 
-        list(
-            genus = genus,
-            specificEpithet = specific,
-            taxonRank = "species"
-        )
+        with_infraspecific(genus, specific, tokens, 3L)
     })
 
+    pluck <- function(field) {
+        vapply(parsed, function(x) x[[field]], FUN.VALUE = character(1))
+    }
+
     data.frame(
-        genus = vapply(parsed, function(x) x$genus, FUN.VALUE = character(1)),
-        specificEpithet = vapply(parsed, function(x) x$specificEpithet, FUN.VALUE = character(1)),
-        taxonRank = vapply(parsed, function(x) x$taxonRank, FUN.VALUE = character(1)),
+        genus = pluck("genus"),
+        specificEpithet = pluck("specificEpithet"),
+        infraspecificEpithet = pluck("infraspecificEpithet"),
+        taxonRank = pluck("taxonRank"),
         stringsAsFactors = FALSE
     )
 }
@@ -2663,35 +2742,195 @@ build_term_value <- function(
     list(values = values, eventdate_failure_count = failure_count)
 }
 
-# Resolve the occurrenceID vector for a dataset. When the uploaded data already
-# carries a non-blank `occurrenceID` column (e.g. a camera-trap observationID, or
-# a CSV that ships stable identifiers), preserve those values for provenance;
-# fill any missing/blank entries with fresh UUIDs. Datasets without the column
-# keep the previous behaviour (all random UUIDs).
-resolve_occurrence_ids <- function(df, n = NULL) {
-    n <- n %||% (if (is.data.frame(df)) nrow(df) else length(df))
-    # Generate only the identifiers actually needed. The previous shape built n
-    # UUIDs and then overwrote the ones the upload already supplied, so a file
-    # that ships a complete occurrenceID column (camera-trap observationID, a
-    # GBIF re-import) paid for a full set of UUIDs and discarded every one of
-    # them. Same approach as generate_occurrence_ids() in utils_export.R, which
-    # already sized its call to the number of gaps.
-    out <- character(n)
-    keep <- rep(FALSE, n)
-    if (is.data.frame(df) && "occurrenceID" %in% names(df)) {
-        src <- trimws(as.character(df[["occurrenceID"]]))
-        keep <- !is.na(src) & nzchar(src)
-        out[keep] <- src[keep]
+# Position of each element within its group of equal values, without splitting
+# the vector. ave(FUN = seq_along) is the readable form but builds one group per
+# distinct value, which on a 40k-row upload of mostly unique content is the
+# dominant cost. One sort does the same work.
+seq_within_groups <- function(x) {
+    n <- length(x)
+    if (n == 0L) {
+        return(integer(0))
     }
-
-    missing_n <- sum(!keep)
-    if (missing_n > 0L) {
-        out[!keep] <- ids::uuid(n = missing_n)
-    }
-
+    o <- order(x)
+    sorted <- x[o]
+    starts <- c(TRUE, sorted[-1L] != sorted[-n])
+    out <- integer(n)
+    out[o] <- sequence(diff(c(which(starts), n + 1L)))
     out
 }
 
+# Build the identifier for rows that carry none.
+#
+# Deterministic by construction: the identifier is derived from the row's own
+# content, so re-uploading the same spreadsheet reproduces the same identifiers
+# instead of minting new ones. That is the requirement -- an identifier that
+# stays the same across exports, so republishing updates a record rather than
+# creating a duplicate.
+#
+# Rows whose content is identical are routine in aggregated datasets (the same
+# taxon, at the same point, on the same date, arriving from different source
+# studies), and Darwin Core requires occurrenceID to be unique within the
+# dataset. Each is therefore disambiguated by its occurrence number within its
+# content group. The cost is stated plainly rather than hidden: correcting a
+# value changes that row's identifier, and reordering rows that are identical in
+# every column can swap their identifiers between them.
+#
+# The encoding is confined to this function on purpose: swapping UUID v5 for a
+# ULID or another digest must not reach any caller, or the vocabulary the user
+# reads.
+generate_persistent_ids <- function(df, rows = NULL, exclude = NULL) {
+    n <- if (is.data.frame(df)) nrow(df) else 0L
+    if (n == 0L) {
+        return(character(0))
+    }
+    if (is.null(rows)) rows <- rep(TRUE, n)
+    if (!any(rows)) {
+        return(character(0))
+    }
+
+    # The identifier column itself never feeds the hash: a row that has no
+    # identifier must hash the same whether the column is absent or blank.
+    cols <- setdiff(names(df), c(exclude, "occurrenceID"))
+    # ASCII unit/record separators join the parts. A plain concatenation would
+    # let ("ab", "c") and ("a", "bc") hash to the same key; these bytes cannot
+    # occur in spreadsheet cells, so the join is unambiguous.
+    content <- if (length(cols) == 0L) {
+        rep("", sum(rows))
+    } else {
+        do.call(paste, c(
+            lapply(cols, function(col) as.character(df[[col]])[rows]),
+            list(sep = "\u001f")
+        ))
+    }
+
+    keys <- paste0(content, "\u001e", seq_within_groups(content))
+
+    # UUID v5 is itself SHA-1 over (namespace + name), so the key goes in as the
+    # name and no separate digest step is needed. Feed the distinct keys only,
+    # in one vectorized call: UUIDfromName over a 40k vector is ~80x the loop.
+    uniq <- unique(keys)
+    hashed <- paste0("urn:uuid:", uuid::UUIDfromName(saira_id_namespace(), uniq))
+    hashed[match(keys, uniq)]
+}
+
+# RFC 4122 URL namespace. Fixed forever: changing it would re-mint every
+# identifier Saira has ever generated.
+saira_id_namespace <- function() {
+    "6ba7b811-9dad-11d1-80b4-00c04fd430c8"
+}
+
+# Resolve which column the occurrenceID should be taken from. The user's mapping
+# wins, because the identifier column is rarely called "occurrenceID" in a
+# publisher's own spreadsheet. The literal column is the fallback, which is what
+# a re-imported Saira export and any already-standardized DwC file ship.
+occurrence_id_source_column <- function(df, map_values = NULL) {
+    if (!is.data.frame(df)) {
+        return(NULL)
+    }
+
+    if (is.list(map_values)) {
+        selected <- sanitize_map_selection(
+            "occurrenceID", map_values[["occurrenceID"]]
+        )
+        if (has_selected_value(selected) && selected[[1]] %in% names(df)) {
+            return(selected[[1]])
+        }
+    }
+    if ("occurrenceID" %in% names(df)) {
+        return("occurrenceID")
+    }
+    NULL
+}
+
+occurrence_id_source_values <- function(df, map_values = NULL) {
+    col <- occurrence_id_source_column(df, map_values)
+    if (is.null(col)) {
+        return(NULL)
+    }
+    trimws(as.character(df[[col]]))
+}
+
+# Resolve the occurrenceID vector for a dataset.
+#
+# The whole rule, in one place: an identifier the row already carries wins, and
+# Saira fills only the gaps. That is the TDWG guidance for the term ("in the
+# absence of a persistent global unique identifier, construct one") and it is
+# what makes the round trip work -- export, add rows, re-import, and everything
+# already published keeps its identifier while only the new rows get one.
+#
+# Any stable string qualifies: Darwin Core requires occurrenceID to be unique
+# within the dataset, not globally, so a publisher's own "ABBA_00001" is a
+# perfectly good identifier and is preserved verbatim rather than rewritten.
+#
+# `map_values` is what makes the mapping authoritative; before it was threaded
+# through, a source column named anything other than "occurrenceID" was silently
+# replaced while the mapping guide still reported the ids as user-supplied.
+#
+# Returns the character vector with `id_strategy` and `id_counts` attributes
+# describing what actually happened, which the mapping guide reports verbatim.
+resolve_occurrence_ids <- function(df, n = NULL, map_values = NULL) {
+    n <- n %||% (if (is.data.frame(df)) nrow(df) else length(df))
+
+    # Generate only the identifiers actually needed. Building n and then
+    # overwriting the supplied ones made a file that ships a complete column pay
+    # for a full set and discard every one.
+    out <- character(n)
+    keep <- rep(FALSE, n)
+
+    src_col <- occurrence_id_source_column(df, map_values)
+    if (!is.null(src_col)) {
+        src <- trimws(as.character(df[[src_col]]))
+        if (length(src) == n) {
+            keep <- !is.na(src) & nzchar(src)
+            out[keep] <- src[keep]
+        }
+    }
+
+    n_preserved <- sum(keep)
+    if (n_preserved < n) {
+        out[!keep] <- generate_persistent_ids(df, rows = !keep, exclude = src_col)
+    }
+
+    attr(out, "id_strategy") <- occurrence_id_strategy_label(n_preserved, n)
+    attr(out, "id_counts") <- list(
+        total = n,
+        preserved = n_preserved,
+        generated = n - n_preserved
+    )
+    out
+}
+
+# Name what produced a dataset's identifiers. The mapping guide keys its
+# explanation off this label.
+occurrence_id_strategy_label <- function(n_preserved, n_total) {
+    if (n_preserved == n_total) {
+        # Covers the empty frame too: nothing was generated.
+        return("user_supplied")
+    }
+    if (n_preserved == 0L) {
+        return("generated")
+    }
+    "user_supplied_with_generated"
+}
+
+# Darwin Core requires occurrenceID to be unique within a dataset, so the card
+# reports collisions: pointing at a column that repeats is a GBIF blocker, and
+# it is not obvious from looking at the data. Blank rows are counted apart from
+# collisions -- a blank is not a duplicate, it just gets a generated id.
+check_occurrence_id_uniqueness <- function(values) {
+    v <- trimws(as.character(values))
+    v[is.na(values)] <- ""
+    filled <- nzchar(v)
+    n_filled <- sum(filled)
+
+    list(
+        total = length(v),
+        filled = n_filled,
+        blank = sum(!filled),
+        duplicates = n_filled - length(unique(v[filled])),
+        ok = n_filled == length(unique(v[filled]))
+    )
+}
 # Detect raw/source columns selected for more than one Darwin Core term. Mapping
 # one column to several terms is allowed (the same value is published under each),
 # but it is usually a mistake worth flagging -- e.g. a camera-trap `type` column
@@ -2873,33 +3112,23 @@ build_processed_mapping_df <- function(
 
     if ("scientificName" %in% names(df_final)) {
         scientific_parts <- extract_scientific_name_components(df_final$scientificName)
-        selected_terms <- c(selected_terms, "genus", "specificEpithet", "taxonRank")
+        # infraspecificEpithet is deliberately absent from selected_terms: it
+        # rides on the non-missing filter below, so a dataset without a single
+        # trinomial does not ship (and meta.xml does not declare) an empty
+        # column. The other three are always populated, so they are pinned.
+        selected_terms <- c(
+            selected_terms, "genus", "specificEpithet", "taxonRank"
+        )
 
-        if (!"genus" %in% names(df_final)) {
-            df_final$genus <- scientific_parts$genus
-        } else {
-            df_final$genus <- fill_missing_character_values(
-                df_final$genus,
-                scientific_parts$genus
-            )
-        }
-
-        if (!"specificEpithet" %in% names(df_final)) {
-            df_final$specificEpithet <- scientific_parts$specificEpithet
-        } else {
-            df_final$specificEpithet <- fill_missing_character_values(
-                df_final$specificEpithet,
-                scientific_parts$specificEpithet
-            )
-        }
-
-        if (!"taxonRank" %in% names(df_final)) {
-            df_final$taxonRank <- scientific_parts$taxonRank
-        } else {
-            df_final$taxonRank <- fill_missing_character_values(
-                df_final$taxonRank,
-                scientific_parts$taxonRank
-            )
+        for (derived in derived_taxon_terms()) {
+            if (!derived %in% names(df_final)) {
+                df_final[[derived]] <- scientific_parts[[derived]]
+            } else {
+                df_final[[derived]] <- fill_missing_character_values(
+                    df_final[[derived]],
+                    scientific_parts[[derived]]
+                )
+            }
         }
     }
 

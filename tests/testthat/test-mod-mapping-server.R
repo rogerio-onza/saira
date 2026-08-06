@@ -82,7 +82,8 @@ testthat::test_that("mod_mapping_server exposes lightweight preview_data alongsi
                     "validation_gate_r", "validation_gate_coords_r",
                     "sensitive_overview_input_r",
                     "rostrum_decisions_r", "rostrum_explain_r", "rostrum_run_stats_r",
-                    "map_values_r", "custom_values_r", "reset_signal_r"
+                    "map_values_r", "occurrence_id_info_r",
+                    "custom_values_r", "reset_signal_r"
                 )
             )
 
