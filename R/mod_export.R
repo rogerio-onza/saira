@@ -86,6 +86,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                               raw_data_r = NULL,
                               map_values_r = NULL,
                               custom_values_r = NULL,
+                              occurrence_id_info_r = NULL,
                               on_navigate = NULL,
                               on_export_success = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
@@ -137,6 +138,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             raw_data_r = raw_data_r,
             map_values_r = map_values_r,
             custom_values_r = custom_values_r,
+            occurrence_id_info_r = occurrence_id_info_r,
             coords_correction_payload_r = coords_correction_payload_r,
             country_fill_payload_r = country_fill_payload_r,
             blocked_r = blocked_r,
@@ -281,6 +283,38 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 )
             }
 
+            # Preserving unmapped columns in the CSV does not publish them:
+            # meta.xml declares only recognized DwC terms, so GBIF drops the
+            # rest. Say it here, where the user can still go map them.
+            #
+            # `exclude` is what keeps this honest, and must stay in step with
+            # process_for_export_with_unmapped(): a raw column whose name is
+            # already a column of the export is published under that name, not
+            # dropped. An upload carrying `occurrenceID` is the everyday case --
+            # it feeds the export whether or not the user picked it in the
+            # dropdown, so warning that GBIF would ignore it was simply false.
+            unmapped_cols <- unmapped_raw_columns(
+                call_r(raw_data_r), call_r(map_values_r),
+                exclude = names(call_r(mapped_data_r))
+            )
+            unmapped_notice <- if (length(unmapped_cols) > 0L) {
+                shiny::div(
+                    class = "export-banner export-banner--warning",
+                    shiny::icon("circle-info"),
+                    shiny::div(
+                        class = "export-banner-body",
+                        shiny::p(
+                            class = "mb-0",
+                            sprintf(
+                                tr("export_unmapped_not_published", lang),
+                                length(unmapped_cols)
+                            )
+                        ),
+                        shiny::tags$code(paste(unmapped_cols, collapse = ", "))
+                    )
+                )
+            }
+
             # --- Readiness: counts + per-term presence chips ----------------
             term_chips <- lapply(seq_len(nrow(s$readiness)), function(i) {
                 term <- s$readiness$term[i]
@@ -360,6 +394,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
 
             shiny::tagList(
                 banner,
+                unmapped_notice,
                 shiny::div(
                     class = "export-summary",
                     readiness_card,

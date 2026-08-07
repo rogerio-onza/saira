@@ -80,6 +80,7 @@ Formato: ADR leve (Architecture Decision Record).
 - **Decisao**: Normalizar URLs conhecidas para labels curtas (`CC0`, `CC-BY`, `CC-BY-NC`). Valores fora do mapeamento permanecem inalterados.
 - **Variantes tratadas**: com/sem `http(s)://`, com/sem `/legalcode`, com/sem `/` final.
 - **Consequencias**: Preview legivel e CSV mais limpo, sem perda de informacao.
+- **Superada em parte pela ADR-118 (2026-08-05)**: a abreviacao vale so no preview. `dcterms:license` e URI no Darwin Core, entao o arquivo publicado grava a URI canonica.
 
 ---
 
@@ -2526,3 +2527,62 @@ Formato: ADR leve (Architecture Decision Record).
   - O caminho de 4 colunas fica intocado: o intervalo continua sendo intervalo.
   - O preview inline do card usa o mesmo `build_term_value()`, entao acompanha sozinho; `fix_dates_to_iso()` na exportacao preserva `YYYY-MM` e `YYYY` pelo mesmo `keep_raw`.
   - **Fora de escopo**: 4 colunas das quais 3 sao dia/mes/ano (ex.: `dia, mes, ano, hora`) continuam entrando no construtor de intervalo e saindo lixo pelo fallback posicional. Nao e o caso reportado.
+
+---
+
+## ADR-118: `occurrenceID` sai do mapeamento; identificador existente sempre vence
+
+- **Data**: 2026-08-05
+- **Status**: Aceito
+- **Contexto**: `resolve_occurrence_ids()` procurava uma coluna chamada **literalmente** `occurrenceID` no upload cru e nunca lia `map_values`. Como a coluna de identificador raramente tem esse nome na planilha do publicador, todo dataset cujo ID vinha de outra coluna tinha as linhas substituidas por identificador gerado. Pior, `build_processed_mapping_df()` gravava esse vetor e fazia `next`, pulando o mapeamento; no export, `generate_occurrence_ids()` via a coluna cheia, retornava cedo e rotulava `user_supplied`. O guia entao afirmava "todos vieram dos seus dados e serao preservados literalmente" sobre identificadores que a propria Saira acabara de inventar, e que mudavam a cada exportacao. O card tambem nao oferecia seletor (`occurrenceID` estava em `special_no_dropdown`), entao o unico caminho que chegava a gravar o mapeamento era a importacao de modelo, que nao aplica aquela exclusao. Dois subsistemas discordando, sem nada apontando o desacordo.
+- **Decisao**:
+  - `resolve_occurrence_ids(df, n, map_values)` e a **unica** funcao que responde "qual o occurrenceID desta linha", com uma cadeia de precedencia e nada mais: valor que a linha ja carrega vence, e a Saira preenche so as lacunas.
+  - A fonte e resolvida por `map_values`, com a coluna literal `occurrenceID` como fallback. O fallback cobre sozinho os dois casos de reimportacao que importam: um export da Saira e um arquivo ja padronizado em DwC.
+  - **Qualquer string estavel serve.** O Darwin Core exige `occurrenceID` unico *dentro do conjunto*, nao globalmente, entao um identificador do publicador como `ABBA_00001` e preservado literalmente em vez de reescrito. Segue a nota do TDWG para o termo: *"In the absence of a persistent global unique identifier, construct one from a combination of identifiers in the record"*.
+  - O card e um seletor de coluna comum, como o de qualquer outro termo, mais uma linha de status com a contagem real. Sem modo, sem configuracao.
+  - Identificador gerado e **deterministico**, derivado do conteudo da propria linha: reenviar a mesma planilha reproduz os mesmos identificadores, sem depender de reimportar o arquivo exportado. Linhas identicas em toda coluna -- rotina em dataset agregado, onde o mesmo taxon no mesmo ponto e data vem de estudos-fonte distintos -- sao desempatadas pelo numero de ocorrencia dentro do grupo, porque o Darwin Core exige `occurrenceID` unico no conjunto. Custo assumido e declarado: corrigir um valor muda o identificador daquela linha.
+  - `generate_persistent_ids()` isola a codificacao. O requisito e *permanecer igual entre exportacoes*; UUID v5 e implementacao. Trocar por ULID ou outro digest nao muda chamador nem vocabulario visivel. As partes da linha sao unidas por separadores ASCII de unidade/registro, senao `("ab","c")` e `("a","bc")` colidiriam.
+  - `resolve_occurrence_ids()` devolve `id_strategy` e `id_counts`; o guia reporta a contagem (preservados / gerados) em vez de um rotulo fixo, e instrui o ciclo de reimportacao. O modulo expoe `occurrence_id_info_r` (slot novo, default compativel), consumido pelo card e pela exportacao, para que card, guia e arquivo nao possam divergir.
+- **Alternativas**:
+  - Card com modos (usar coluna / construir de chave natural / aleatorio) e seletor de chave, **implementado e depois removido**: complexidade acidental. O modo "construir" com uma unica coluna nao faz sentido (se a coluna ja identifica a linha, o certo e usa-la), o modo "aleatorio" nao tem caso de uso (quem nao quer usar a coluna nao a mapeia), e a UI cobrava do usuario uma decisao que os dados ja respondem.
+  - Ancorar identificador derivado em `eventDate + basisOfRecord` - **rejeitado por medicao**: numa planilha real de 42.528 registros a chave produziu 2.738 valores unicos, 39.790 colisoes. Nem concatenar as 32 colunas DwC resolveu (5.814 colisoes), porque datasets legitimamente contem linhas identicas em todo campo publicado vindas de estudos-fonte distintos.
+  - Manter a tripleta `institutionCode + catalogNumber` do `generate_occurrence_ids()` como caminho do app - rejeitado: serve espécime tombado e deixa de fora levantamento de campo e camera trap.
+- **Consequencias**:
+  - **Duas camadas de permanencia, nenhuma configurada pelo usuario**: reimportar o arquivo exportado preserva tudo (o identificador virou coluna do arquivo) e, mesmo reenviando a planilha original, a derivacao por conteudo reproduz os mesmos identificadores.
+  - `check_occurrence_id_uniqueness()` reporta colisoes no card. Apontar para uma coluna que repete e um bloqueio no GBIF e nao e obvio olhando o dado.
+  - `occurrenceID` sai de **quatro** listas de exclusao, nao uma: `special_fields` e `special_no_dropdown` em `mod_mapping.R` e `manual_only_terms` em `utils_mapping.R`, esta ultima dentro do scoring do Rostrum. Enquanto a terceira ficou de pe, a coluna chamada exatamente `occurrenceID` continuava saindo `MANUAL` com `reason = "manual_only_term"`, ou seja, o usuario tinha de aponta-la a mao mesmo quando o nome era identico ao termo. Agora `manual_only_terms` guarda so os termos alimentados por input dedicado (`modified`, `license`, `language`), e uma coluna `occurrenceID` casa AUTO (0,90) sozinha; `occurrence_id` casa AMBIGUO (0,80) e vira sugestao para confirmar.
+  - O aviso de colunas nao publicadas precisa do mesmo `exclude` que `process_for_export_with_unmapped()` usa. Sem ele a tela acusava `occurrenceID` como coluna que "o GBIF vai ignorar" enquanto o arquivo a publicava como campo `id` do `meta.xml` -- a mesma classe de divergencia entre tela e arquivo que esta ADR corrige, reintroduzida por uma chamada com um argumento a menos.
+  - Custo de invalidacao: `rv$map_values` muda a cada edicao de mapeamento. O vetor fica atras de uma guarda de assinatura (`id_cache`), entao so a selecao de `occurrenceID` dispara regeracao.
+  - `generate_occurrence_ids()` (utils_export.R) passou a delegar para `resolve_occurrence_ids()`, entao ha **uma** funcao respondendo "qual o occurrenceID desta linha". A ancora de tripleta de museu (`institutionCode` + `catalogNumber`/`eventID`/`recordNumber`) da v0.4.0 e os rotulos `stable_v5`/`random_v4` foram removidos: serviam espécime tombado, eram inalcancaveis pelo fluxo do app e sustentavam um segundo vocabulario para o mesmo conceito.
+  - Custo medido: 0,42s para 42.528 linhas. `uuid::UUIDfromName()` e vetorizado, e chamar uma vez sobre as chaves distintas em vez de uma vez por linha e ~80x mais rapido; a numeracao dentro de cada grupo usa uma ordenacao em vez de `ave()`, que particiona por valor distinto.
+
+---
+
+## ADR-119: `taxonRank` reconhece trinomio; autoria nunca vira epiteto
+
+- **Data**: 2026-08-05
+- **Status**: Aceito
+- **Contexto**: `extract_scientific_name_components()` so olhava os tokens 1 e 2 (o token 3 entrava apenas como resgate de `cf./aff./nr.`), entao todo trinomio saia como `species` e o epiteto infraespecifico era descartado. Assimetrico com `normalize_scientific_name()` em `utils_taxadb.R`, que ja reconhece `subsp./var./f.` para consultar o backbone: a Saira casava a subespecie corretamente no taxadb e depois publicava rank errado.
+- **Decisao**:
+  - Ramo de trinomio devolvendo tambem `infraspecificEpithet`, com `taxonRank` em `subspecies` / `variety` / `form`.
+  - Duas formas aceitas: marcador explicito (`subsp.`, `ssp.`, `var.`, `f.`, `forma`) e o trinomio nu do codigo zoologico.
+  - **Guarda de autoria**: o terceiro token so conta como epiteto se comecar em minuscula e for so letras/hifen. `format_epithet_token()` nao pode julgar isso porque faz `tolower()` antes de validar, entao `Linnaeus` passaria por ele.
+- **Alternativas**:
+  - Aceitar qualquer terceiro token e limpar depois - rejeitado: `Dasypus novemcinctus Linnaeus, 1758` viraria subespecie `linnaeus`.
+  - Adicionar `infraspecificEpithet` ao conjunto padrao de termos - rejeitado: continua a um clique via "Adicionar termo" (`build_dwc_terms.R`), e a coluna aparece sozinha quando ha dado.
+- **Consequencias**:
+  - `infraspecificEpithet` **nao** entra em `selected_terms`: passa pelo filtro de nao-vazios, entao dataset sem nenhum trinomio nao ganha coluna vazia nem campo vazio no `meta.xml`. Ja constava da ordem canonica e do catalogo completo, entao `dwc_term_uri()` o declara sozinho quando existe.
+  - O card e travado junto com `taxonRank`/`specificEpithet` quando `scientificName` esta mapeado. As quatro listas duplicadas desses termos viraram `locked_taxon_terms()` / `derived_taxon_terms()`.
+
+---
+
+## ADR-120: colunas nao mapeadas ficam no arquivo, e a Saira diz que o GBIF as ignora
+
+- **Data**: 2026-08-05
+- **Status**: Aceito
+- **Contexto**: A ADR-087 passou a preservar colunas brutas nao usadas no fim do CSV, para o usuario nao perder dado. Mas `build_meta_xml()` declara `<field>` so para colunas reconhecidas como termo DwC ou Dublin Core, e o GBIF le o `meta.xml`. Na pratica as colunas ficam fisicamente no arquivo e invisiveis no dataset publicado, e nem o guia nem a tela de exportacao diziam isso.
+- **Decisao**: Manter o comportamento fisico e corrigir a comunicacao. O guia ganha nota explicita de que as colunas listadas nao constam do `meta.xml`, que o GBIF vai ignora-las, e as duas saidas (mapear para um termo DwC ou incluir em `dynamicProperties`). A tela de exportacao mostra o mesmo aviso com a contagem e os nomes.
+- **Alternativas**:
+  - Dobrar as colunas em `dynamicProperties` automaticamente - rejeitado nesta rodada: publica de fato, mas muda o significado de um termo que hoje carrega status de conservacao (ADR-086/107) sem o usuario pedir.
+  - Declarar as extras sob namespace proprio (`.../terms/<coluna>`) - rejeitado: o `meta.xml` passaria a bater com o numero de colunas, mas o GBIF continua sem interpretar termo desconhecido, entao o ganho seria cosmetico.
+- **Consequencias**: `unmapped_raw_columns()` passa a ser a fonte unica, usada pelo guia, pela tela de exportacao e por `process_for_export_with_unmapped()`, para que as tres nao divirjam sobre quais colunas estao em questao.

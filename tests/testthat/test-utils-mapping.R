@@ -1106,11 +1106,11 @@ testthat::test_that("resolve_occurrence_ids generates UUIDs when no column exist
     testthat::expect_false(anyDuplicated(out) > 0L)
 })
 
-testthat::test_that("resolve_occurrence_ids generates no UUIDs when every row ships an ID", {
-    # Asserted structurally rather than by timing: if ids::uuid() is reached at
+testthat::test_that("resolve_occurrence_ids generates nothing when every row ships an ID", {
+    # Asserted structurally rather than by timing: if the generator is reached at
     # all on a fully-populated column, every identifier it produces would be
-    # overwritten on the next line, which is the waste being removed. A timing
-    # assertion would rot on faster hardware; this one cannot.
+    # overwritten, which is the waste being avoided. A timing assertion would rot
+    # on faster hardware; this one cannot.
     df <- data.frame(
         occurrenceID = c("obs-1", "obs-2", "obs-3"),
         x = 1:3,
@@ -1118,37 +1118,40 @@ testthat::test_that("resolve_occurrence_ids generates no UUIDs when every row sh
     )
 
     testthat::local_mocked_bindings(
-        uuid = function(...) stop("ids::uuid() must not be called when no ID is missing"),
-        .package = "ids"
+        generate_persistent_ids = function(...) {
+            stop("must not generate when no ID is missing")
+        }
     )
 
     testthat::expect_identical(
-        resolve_occurrence_ids(df),
+        as.character(resolve_occurrence_ids(df)),
         c("obs-1", "obs-2", "obs-3")
     )
 })
 
-testthat::test_that("resolve_occurrence_ids still generates for the rows that need one", {
-    # The paired negative: the mock above must not be able to pass by making the
-    # function never generate anything.
+testthat::test_that("resolve_occurrence_ids generates for exactly the rows that need one", {
+    # The paired negative: the assertion above must not be able to pass by making
+    # the function never generate anything.
     df <- data.frame(
         occurrenceID = c("obs-1", "", "obs-3"),
         x = 1:3,
         stringsAsFactors = FALSE
     )
 
-    calls <- 0L
+    asked_for <- NULL
     testthat::local_mocked_bindings(
-        uuid = function(n = 1L, ...) {
-            calls <<- calls + 1L
-            sprintf("generated-%02d", seq_len(n))
-        },
-        .package = "ids"
+        generate_persistent_ids = function(df, rows = NULL, exclude = NULL) {
+            asked_for <<- rows
+            rep("generated-01", sum(rows))
+        }
     )
 
     out <- resolve_occurrence_ids(df)
-    testthat::expect_identical(calls, 1L)
-    testthat::expect_identical(out, c("obs-1", "generated-01", "obs-3"))
+    testthat::expect_identical(asked_for, c(FALSE, TRUE, FALSE))
+    testthat::expect_identical(
+        as.character(out),
+        c("obs-1", "generated-01", "obs-3")
+    )
 })
 
 # detect_duplicate_source_mappings (item 3) ------------------------------
@@ -1392,4 +1395,262 @@ test_that("build_processed_mapping_df needs scientificName for the assistant to 
         establishment_map = map
     )$data
     expect_false("establishmentMeans" %in% names(out))
+})
+
+# occurrenceID resolution (mapping is authoritative) ----------------------
+
+test_that("resolve_occurrence_ids honours the mapping, not the column name", {
+    # The regression this guards: the resolver used to look for a column
+    # literally named "occurrenceID" and ignored map_values, so any dataset
+    # whose identifier column is named anything else had every id silently
+    # replaced by a random UUID while the guide still called them user-supplied.
+    df <- data.frame(
+        record_key = c("K-1", "K-2", "K-3"),
+        taxon = c("a", "b", "c"),
+        stringsAsFactors = FALSE
+    )
+
+    out <- resolve_occurrence_ids(
+        df, map_values = list(occurrenceID = "record_key", scientificName = "taxon")
+    )
+
+    expect_identical(as.character(out), c("K-1", "K-2", "K-3"))
+    expect_identical(attr(out, "id_strategy"), "user_supplied")
+    expect_identical(attr(out, "id_counts")$preserved, 3L)
+    expect_identical(attr(out, "id_counts")$generated, 0L)
+})
+
+test_that("resolve_occurrence_ids falls back to a literal occurrenceID column", {
+    # A re-imported Saira export and a camtrapdp::write_dwc() upload both ship
+    # the column already named occurrenceID, with no mapping needed.
+    df <- data.frame(
+        occurrenceID = c("obs-a", "obs-b"),
+        x = 1:2,
+        stringsAsFactors = FALSE
+    )
+
+    out <- resolve_occurrence_ids(df, map_values = list())
+    expect_identical(as.character(out), c("obs-a", "obs-b"))
+    expect_identical(attr(out, "id_strategy"), "user_supplied")
+})
+
+test_that("resolve_occurrence_ids preserves existing ids and fills only new rows", {
+    # The round trip: export, add occurrences, re-import. Everything already
+    # published keeps its identifier; only the new rows get one.
+    df <- data.frame(
+        occurrenceID = c("keep-1", "keep-2", "", NA_character_),
+        x = 1:4,
+        stringsAsFactors = FALSE
+    )
+
+    out <- resolve_occurrence_ids(df, map_values = list())
+    counts <- attr(out, "id_counts")
+
+    expect_identical(as.character(out)[1:2], c("keep-1", "keep-2"))
+    expect_true(all(nzchar(as.character(out))))
+    expect_identical(counts$preserved, 2L)
+    expect_identical(counts$generated, 2L)
+    expect_identical(attr(out, "id_strategy"), "user_supplied_with_generated")
+})
+
+test_that("check_occurrence_id_uniqueness separates duplicates from blanks", {
+    res <- check_occurrence_id_uniqueness(c("a", "b", "a", "", NA))
+
+    expect_false(res$ok)
+    expect_identical(res$duplicates, 1L)
+    expect_identical(res$blank, 2L)
+    expect_true(check_occurrence_id_uniqueness(c("a", "b"))$ok)
+})
+
+# Infraspecific names ----------------------------------------------------
+
+test_that("bare trinomials parse as subspecies with an infraspecific epithet", {
+    out <- extract_scientific_name_components(c(
+        "Panthera onca palustris",
+        "Canis lupus familiaris"
+    ))
+
+    expect_identical(out$taxonRank, c("subspecies", "subspecies"))
+    expect_identical(out$specificEpithet, c("onca", "lupus"))
+    expect_identical(out$infraspecificEpithet, c("palustris", "familiaris"))
+})
+
+test_that("explicit rank markers set the matching taxonRank", {
+    out <- extract_scientific_name_components(c(
+        "Puma concolor subsp. concolor",
+        "Solanum lycopersicum var. cerasiforme",
+        "Bradypus torquatus f. minor"
+    ))
+
+    expect_identical(out$taxonRank, c("subspecies", "variety", "form"))
+    expect_identical(
+        out$infraspecificEpithet,
+        c("concolor", "cerasiforme", "minor")
+    )
+})
+
+test_that("authorship is never mistaken for an infraspecific epithet", {
+    # The third token sits where a subspecies epithet would. Capitalisation is
+    # the only signal, and format_epithet_token() cannot be the judge because it
+    # lowercases before validating.
+    out <- extract_scientific_name_components(c(
+        "Dasypus novemcinctus Linnaeus, 1758",
+        "Dasypus novemcinctus (Linnaeus, 1758)",
+        "Tamandua tetradactyla L.",
+        "Bradypus variegatus Schinz 1825"
+    ))
+
+    expect_true(all(out$taxonRank == "species"))
+    expect_true(all(is.na(out$infraspecificEpithet)))
+    expect_true(all(out$specificEpithet %in% c("novemcinctus", "tetradactyla",
+                                               "variegatus")))
+})
+
+test_that("binomials, genus-only and blank names are unchanged", {
+    out <- extract_scientific_name_components(c(
+        "Dasypus novemcinctus", "Dasypus sp.", "Dasypus", "", NA
+    ))
+
+    expect_identical(out$taxonRank, c("species", "genus", "genus", NA, NA))
+    expect_true(all(is.na(out$infraspecificEpithet)))
+})
+
+test_that("infraspecificEpithet is only exported when some row carries one", {
+    # Pinning it unconditionally would add an empty column (and a meta.xml
+    # field) to every dataset without a trinomial.
+    binomials <- build_processed_mapping_df(
+        df = data.frame(taxon = c("Dasypus novemcinctus"), stringsAsFactors = FALSE),
+        dwc_terms = get_active_dwc_terms_list(),
+        map_values = list(scientificName = "taxon"),
+        occurrence_ids = "id-1"
+    )$data
+    expect_false("infraspecificEpithet" %in% names(binomials))
+
+    trinomials <- build_processed_mapping_df(
+        df = data.frame(taxon = c("Canis lupus familiaris"), stringsAsFactors = FALSE),
+        dwc_terms = get_active_dwc_terms_list(),
+        map_values = list(scientificName = "taxon"),
+        occurrence_ids = "id-1"
+    )$data
+    expect_identical(trinomials$infraspecificEpithet, "familiaris")
+    expect_identical(trinomials$taxonRank, "subspecies")
+})
+
+test_that("generated identifiers are derived from row content, not chance", {
+    # The requirement is an identifier that stays the same across exports. Being
+    # derived from the row itself means re-uploading the same spreadsheet
+    # reproduces them, without the user re-importing the exported file.
+    df <- data.frame(
+        sp = c("Dasypus", "Cabassous"),
+        lat = c(-15.7, -22.1),
+        stringsAsFactors = FALSE
+    )
+
+    first <- resolve_occurrence_ids(df)
+    again <- resolve_occurrence_ids(df)
+
+    expect_identical(as.character(first), as.character(again))
+    expect_true(all(grepl("^urn:uuid:", as.character(first))))
+    expect_identical(attr(first, "id_strategy"), "generated")
+})
+
+test_that("a row keeps its identifier when the file is reordered", {
+    df <- data.frame(
+        sp = c("Dasypus", "Cabassous", "Bradypus"),
+        lat = c(-15.7, -22.1, -3.4),
+        stringsAsFactors = FALSE
+    )
+
+    straight <- as.character(resolve_occurrence_ids(df))
+    shuffled <- as.character(resolve_occurrence_ids(df[c(3, 1, 2), ]))
+
+    expect_identical(straight[1], shuffled[2])
+    expect_identical(straight[3], shuffled[1])
+})
+
+test_that("rows identical in every column get unique, stable identifiers", {
+    # Aggregated datasets legitimately hold the same taxon, point and date from
+    # different source studies. Content alone would collide, and Darwin Core
+    # requires occurrenceID to be unique within the dataset.
+    df <- data.frame(
+        sp = rep("Dasypus", 4),
+        lat = rep(-15.7, 4),
+        stringsAsFactors = FALSE
+    )
+
+    out <- as.character(resolve_occurrence_ids(df))
+
+    expect_identical(length(unique(out)), 4L)
+    expect_identical(out, as.character(resolve_occurrence_ids(df)))
+})
+
+test_that("correcting one value changes only that row's identifier", {
+    df <- data.frame(
+        sp = c("Dasypus", "Cabassous"),
+        lat = c(-15.7, -22.1),
+        stringsAsFactors = FALSE
+    )
+    fixed <- df
+    fixed$sp[2] <- "Cabassous unicinctus"
+
+    before <- as.character(resolve_occurrence_ids(df))
+    after <- as.character(resolve_occurrence_ids(fixed))
+
+    expect_identical(before[1], after[1])
+    expect_false(identical(before[2], after[2]))
+})
+
+test_that("the identifier column never feeds its own hash", {
+    # A row without an identifier must hash the same whether the column is
+    # absent or present-but-blank, or a partial upload and a full one would
+    # disagree on the identifier for the very same row.
+    with_col <- data.frame(
+        occurrenceID = c("", ""), sp = c("A", "B"), stringsAsFactors = FALSE
+    )
+    without_col <- data.frame(sp = c("A", "B"), stringsAsFactors = FALSE)
+
+    expect_identical(
+        as.character(resolve_occurrence_ids(with_col)),
+        as.character(resolve_occurrence_ids(without_col))
+    )
+})
+
+test_that("column parts are joined unambiguously", {
+    # A plain concatenation would let ("ab","c") and ("a","bc") hash alike.
+    df <- data.frame(
+        one = c("ab", "a"), two = c("c", "bc"), stringsAsFactors = FALSE
+    )
+    out <- as.character(resolve_occurrence_ids(df))
+    expect_identical(length(unique(out)), 2L)
+})
+
+test_that("seq_within_groups numbers each value's repeats in order", {
+    expect_identical(
+        saira:::seq_within_groups(c("a", "b", "a", "a", "b")),
+        c(1L, 1L, 2L, 3L, 2L)
+    )
+    expect_identical(saira:::seq_within_groups(character(0)), integer(0))
+})
+
+test_that("Rostrum scores occurrenceID instead of leaving it manual-only", {
+    # An upload that ships identifiers must have them found, not left for the
+    # user to notice and wire up by hand. Only terms fed by a dedicated input
+    # (modified/license/language) stay unscored.
+    raw <- data.frame(
+        occurrenceID = c("A-1", "A-2"),
+        decimalLatitude = c(-1, -2),
+        stringsAsFactors = FALSE
+    )
+
+    res <- run_rostrum_engine(df = raw, dwc_terms_df = get_active_dwc_terms())
+    row <- res$data[res$data$term == "occurrenceID", ]
+
+    expect_identical(row$selected_col, "occurrenceID")
+    expect_identical(row$status, "AUTO")
+    expect_true(row$applied)
+
+    for (term in c("modified", "license", "language")) {
+        manual <- res$data[res$data$term == term, ]
+        expect_identical(manual$reason, "manual_only_term")
+    }
 })

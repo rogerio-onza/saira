@@ -20,6 +20,7 @@ mount_export_download <- function(input, output, session, lang_r,
                                   raw_data_r = NULL,
                                   map_values_r = NULL,
                                   custom_values_r = NULL,
+                                  occurrence_id_info_r = NULL,
                                   coords_correction_payload_r = NULL,
                                   country_fill_payload_r = NULL,
                                   blocked_r = NULL,
@@ -626,8 +627,20 @@ mount_export_download <- function(input, output, session, lang_r,
                         xlsx_path  <- file.path(tmpdir, fnames$auxiliary[["xlsx"]])
                         guide_path <- file.path(tmpdir, fnames$auxiliary[["mapping_guide"]])
 
-                        id_strategy <- attr(export_data, "id_strategy")
+                        # The mapping stage is what actually resolves the
+                        # identifiers, so it is the only place that knows how
+                        # many came from the user's data. Reading the attribute
+                        # off export_data only ever reported "user_supplied",
+                        # because by then the column is always full.
+                        id_info <- if (!is.null(occurrence_id_info_r) &&
+                                       shiny::is.reactive(occurrence_id_info_r)) {
+                            tryCatch(occurrence_id_info_r(), error = function(e) NULL)
+                        } else {
+                            NULL
+                        }
+                        id_strategy <- id_info$strategy %||% attr(export_data, "id_strategy")
                         if (is.null(id_strategy)) id_strategy <- NA_character_
+                        id_counts <- id_info$counts
 
                         readr::write_csv(export_data, core_path, na = "")
                         writeLines(
@@ -674,7 +687,8 @@ mount_export_download <- function(input, output, session, lang_r,
                                 mv, raw_df,
                                 lang = lang_r(),
                                 id_strategy = id_strategy,
-                                constants = cv
+                                constants = cv,
+                                id_counts = id_counts
                             ),
                             guide_path,
                             useBytes = TRUE

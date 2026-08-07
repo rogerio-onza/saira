@@ -2,37 +2,41 @@
 # generate_occurrence_ids, build_meta_xml, build_eml_xml,
 # compute_dataset_extents, build_dwca_bundle.
 
-testthat::test_that("generate_occurrence_ids produces deterministic v5 when anchor present", {
+testthat::test_that("generate_occurrence_ids derives the same ids from the same content", {
     df <- data.frame(
-        institutionCode = c("MZUSP", "MZUSP", "UFAM"),
-        catalogNumber   = c("001", "002", "100"),
-        scientificName  = c("A", "B", "C"),
+        scientificName = c("A", "B", "C"),
+        locality       = c("x", "y", "z"),
         stringsAsFactors = FALSE
     )
 
     out1 <- generate_occurrence_ids(df)
     out2 <- generate_occurrence_ids(df)
 
-    testthat::expect_identical(attr(out1, "id_strategy"), "stable_v5")
+    testthat::expect_identical(attr(out1, "id_strategy"), "generated")
     testthat::expect_identical(out1$occurrenceID, out2$occurrenceID)
     testthat::expect_true(all(grepl("^urn:uuid:[0-9a-f-]+$", out1$occurrenceID)))
 })
 
-testthat::test_that("generate_occurrence_ids falls back to v4 when anchor absent", {
-    df <- data.frame(scientificName = c("A", "B"), stringsAsFactors = FALSE)
+testthat::test_that("rows identical in every column still get unique ids", {
+    # Routine in aggregated datasets: the same taxon, point and date arriving
+    # from different source studies. A content hash alone would collide, and
+    # GBIF rejects a duplicate occurrenceID.
+    df <- data.frame(
+        scientificName = c("A", "A", "A"),
+        locality       = c("x", "x", "x"),
+        stringsAsFactors = FALSE
+    )
 
     out <- generate_occurrence_ids(df)
 
-    testthat::expect_identical(attr(out, "id_strategy"), "random_v4")
-    testthat::expect_equal(length(out$occurrenceID), 2L)
-    testthat::expect_true(all(!is.na(out$occurrenceID) & nzchar(out$occurrenceID)))
+    testthat::expect_identical(length(unique(out$occurrenceID)), 3L)
+    testthat::expect_identical(generate_occurrence_ids(df)$occurrenceID, out$occurrenceID)
 })
 
 testthat::test_that("generate_occurrence_ids preserves user-supplied IDs", {
     df <- data.frame(
         occurrenceID = c("custom-id-1", "custom-id-2"),
-        institutionCode = c("MZUSP", "MZUSP"),
-        catalogNumber = c("001", "002"),
+        scientificName = c("A", "B"),
         stringsAsFactors = FALSE
     )
 
@@ -42,58 +46,19 @@ testthat::test_that("generate_occurrence_ids preserves user-supplied IDs", {
     testthat::expect_identical(out$occurrenceID, c("custom-id-1", "custom-id-2"))
 })
 
-testthat::test_that("generate_occurrence_ids mixes v5 and v4 when anchor is partial", {
+testthat::test_that("generate_occurrence_ids fills only the blank rows", {
     df <- data.frame(
-        institutionCode = c("MZUSP", "", "MZUSP"),
-        catalogNumber   = c("001", "002", ""),
-        scientificName  = c("A", "B", "C"),
+        occurrenceID   = c("keep-1", "", NA_character_),
+        scientificName = c("A", "B", "C"),
         stringsAsFactors = FALSE
     )
 
     out <- generate_occurrence_ids(df)
 
-    testthat::expect_identical(attr(out, "id_strategy"), "stable_v5_with_random_fallback")
-    testthat::expect_true(grepl("^urn:uuid:", out$occurrenceID[1]))
-    testthat::expect_true(!grepl("^urn:uuid:", out$occurrenceID[2]))
-    testthat::expect_true(!grepl("^urn:uuid:", out$occurrenceID[3]))
-})
-
-testthat::test_that("generate_occurrence_ids accepts eventID or recordNumber as anchor", {
-    df_event <- data.frame(
-        institutionCode = c("X", "X"),
-        eventID = c("E1", "E2"),
-        stringsAsFactors = FALSE
-    )
-    df_rec <- data.frame(
-        institutionCode = c("X", "X"),
-        recordNumber = c("R1", "R2"),
-        stringsAsFactors = FALSE
-    )
-
-    testthat::expect_identical(
-        attr(generate_occurrence_ids(df_event), "id_strategy"),
-        "stable_v5"
-    )
-    testthat::expect_identical(
-        attr(generate_occurrence_ids(df_rec), "id_strategy"),
-        "stable_v5"
-    )
-})
-
-testthat::test_that("dwc_term_uri maps DwC, DC and AC terms, and rejects unknowns", {
-    out <- dwc_term_uri(c("scientificName", "license", "type",
-                          "fundingAttribution", "foobar"))
-    testthat::expect_identical(
-        out,
-        c(
-            "http://rs.tdwg.org/dwc/terms/scientificName",
-            "http://purl.org/dc/terms/license",
-            "http://purl.org/dc/terms/type",
-            # fundingAttribution is an Audiovisual Core (ac:) term, not dwc:.
-            "http://rs.tdwg.org/ac/terms/fundingAttribution",
-            NA_character_
-        )
-    )
+    testthat::expect_identical(attr(out, "id_strategy"), "user_supplied_with_generated")
+    testthat::expect_identical(out$occurrenceID[1], "keep-1")
+    testthat::expect_true(all(nzchar(out$occurrenceID)))
+    testthat::expect_identical(attr(out, "id_counts")$generated, 2L)
 })
 
 testthat::test_that("build_meta_xml emits the archive shell, id index, and DwC fields", {
@@ -323,13 +288,13 @@ testthat::test_that("build_mapping_guide_txt emits identifier-strategy section w
         map_values = list(scientificName = "sci"),
         raw_data = data.frame(sci = "X", stringsAsFactors = FALSE),
         lang = "en",
-        id_strategy = "random_v4"
+        id_strategy = "generated"
     )
     out_pt <- build_mapping_guide_txt(
         map_values = list(scientificName = "sci"),
         raw_data = data.frame(sci = "X", stringsAsFactors = FALSE),
         lang = "pt",
-        id_strategy = "stable_v5"
+        id_strategy = "user_supplied"
     )
     out_none <- build_mapping_guide_txt(
         map_values = list(scientificName = "sci"),
@@ -338,9 +303,9 @@ testthat::test_that("build_mapping_guide_txt emits identifier-strategy section w
     )
 
     testthat::expect_true(any(grepl("identifier strategy", out_en, ignore.case = TRUE)))
-    testthat::expect_true(any(grepl("Random UUIDs", out_en)))
+    testthat::expect_true(any(grepl("Strategy: generated", out_en)))
     testthat::expect_true(any(grepl("estrategia de occurrenceID", out_pt)))
-    testthat::expect_true(any(grepl("stable_v5", out_pt)))
+    testthat::expect_true(any(grepl("Estrategia: user_supplied", out_pt)))
     # Without id_strategy, no section emitted.
     testthat::expect_false(any(grepl("identifier strategy", out_none, ignore.case = TRUE)))
 })
@@ -351,12 +316,10 @@ testthat::test_that("process_for_export preserves id_strategy attribute through 
         eventDate = c("2024-01-15", "2024-02-20"),
         decimalLatitude = c(-8, -3),
         decimalLongitude = c(-34, -60),
-        institutionCode = c("MZUSP", "MZUSP"),
-        catalogNumber = c("001", "002"),
         basisOfRecord = c("HumanObservation", "HumanObservation"),
         stringsAsFactors = FALSE
     )
 
     out <- process_for_export(df)
-    testthat::expect_identical(attr(out, "id_strategy"), "stable_v5")
+    testthat::expect_identical(attr(out, "id_strategy"), "generated")
 })

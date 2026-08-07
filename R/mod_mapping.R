@@ -231,7 +231,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
         # Reactive values
         rv <- shiny::reactiveValues(
-            occurrence_ids = NULL,
             eventdate_parse_failures = 0L,
             last_eventdate_warn_count = NA_integer_,
             map_values = list(),
@@ -575,6 +574,42 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # purpose: writing here must not re-trigger the observer. Reset per
         # upload alongside preview_cache.
         rendered_map_inputs <- new.env(parent = emptyenv())
+
+        # Tracks the inputs the occurrenceID vector was last built from, so the
+        # ids are rebuilt when the user remaps occurrenceID and only then.
+        # rv$map_values invalidates on every mapping edit, and minting
+        # identifiers for a 40k-row upload on each one is the cost this guard
+        # avoids. Non-reactive on purpose: comparing here must not re-trigger
+        # the reader.
+        id_cache <- new.env(parent = emptyenv())
+
+        occurrence_id_signature <- function(df) {
+            list(
+                selection = sanitize_map_selection(
+                    "occurrenceID", rv$map_values[["occurrenceID"]]
+                ),
+                n = nrow(df)
+            )
+        }
+
+        # Single source of the identifier vector. Reading rv$map_values makes
+        # this invalidate on every mapping edit, so the signature guard decides
+        # whether anything actually has to be rebuilt; only the occurrenceID
+        # selection can change the answer.
+        occurrence_ids_r <- shiny::reactive({
+            df <- raw_data_r()
+            shiny::req(df)
+            signature <- occurrence_id_signature(df)
+            if (is.null(id_cache$ids) ||
+                    length(id_cache$ids) != nrow(df) ||
+                    !identical(signature, id_cache$signature)) {
+                id_cache$signature <- signature
+                id_cache$ids <- resolve_occurrence_ids(
+                    df, map_values = rv$map_values
+                )
+            }
+            id_cache$ids
+        })
 
         processed_preview_for_term <- function(term, current_val, n = 3L) {
             df <- raw_data_r()
@@ -1150,7 +1185,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
                 rv$map_values <- empty_map_values(term_names)
                 rv$map_meta <- empty_map_meta(term_names)
-                rv$occurrence_ids <- resolve_occurrence_ids(raw_data_r())
+                rm(list = ls(id_cache, all.names = TRUE), envir = id_cache)
                 rv$eventdate_parse_failures <- 0L
                 rv$last_eventdate_warn_count <- NA_integer_
                 rv$programmatic_terms <- character(0)
@@ -1536,7 +1571,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 current_val <- sanitize_map_selection(term, current_val)
                 is_mapped <- is_field_mapped(term, current_val, input)
                 if (isTRUE(rv$scientificname_mapped) &&
-                    term %in% c("taxonRank", "specificEpithet")) {
+                    term %in% locked_taxon_terms()) {
                     is_mapped <- TRUE
                 }
                 field_meta <- rv$map_meta[[term]]
@@ -1957,7 +1992,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         current_val <- sanitize_map_selection(term, rv$map_values[[term]])
                         is_mapped <- is_field_mapped(term, current_val, input)
                         locked_taxon <- isTRUE(scientificname_mapped) &&
-                            term %in% c("taxonRank", "specificEpithet")
+                            term %in% locked_taxon_terms()
                         if (locked_taxon) {
                             is_mapped <- TRUE
                         }
@@ -2073,14 +2108,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 all_categories <- vapply(fields_to_show, function(x) x$category, FUN.VALUE = character(1))
                 categories <- unique(all_categories)
 
-                # When the upload already carries occurrenceID values (e.g. a
-                # camera-trap observationID), resolve_occurrence_ids() preserves
-                # them -- only blank rows get a fresh UUID. The card message
-                # reflects that instead of claiming every id is auto-generated.
-                occ_id_col <- raw_data_r()[["occurrenceID"]]
-                occurrence_id_preserved <- !is.null(occ_id_col) &&
-                    any(!is.na(occ_id_col) & nzchar(trimws(as.character(occ_id_col))))
-
                 shiny::tagList(
                     lapply(categories, function(cat) {
                         cat_fields <- Filter(function(x) x$category == cat, fields_to_show)
@@ -2102,11 +2129,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                                     }
                                     current_val <- sanitize_map_selection(term, current_val)
                                     is_mapped <- is_field_mapped(term, current_val, input)
-                                    # taxonRank/specificEpithet lock (and read as
+                                    # The derived taxon terms lock (and read as
                                     # mapped) once scientificName is set; they are
                                     # derived from it at export.
                                     locked_taxon <- isTRUE(scientificname_mapped) &&
-                                        term %in% c("taxonRank", "specificEpithet")
+                                        term %in% locked_taxon_terms()
                                     if (locked_taxon) {
                                         is_mapped <- TRUE
                                     }
@@ -2134,7 +2161,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                                         ns = ns, lang_r = lang,
                                         input = input, cat_class = cat_class,
                                         scientificname_mapped = scientificname_mapped,
-                                        occurrence_id_preserved = occurrence_id_preserved,
                                         state_class = field_state_class(
                                             term, is_mapped, field_meta,
                                             required_fields_strip
@@ -2243,8 +2269,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             cols <- names(raw_data_r())
             term_names <- all_term_names()
             # Same fields the engine path skips: their value comes from a custom
-            # input (UUID/date/checkbox), not a source-column dropdown.
-            special_fields <- c("occurrenceID", "modified", "license", "language")
+            # input (date/checkbox), not a source-column dropdown. occurrenceID
+            # is no longer among them -- it takes a real column, and a
+            # re-imported Saira export ships one named exactly `occurrenceID`,
+            # which is what makes identifiers survive the round trip.
+            special_fields <- c("modified", "license", "language")
 
             rv$is_programmatic_update <- TRUE
             on.exit(
@@ -2292,7 +2321,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 return(invisible(NULL))
             }
             term_names <- all_term_names()
-            special_fields <- c("occurrenceID", "modified", "license", "language")
+            special_fields <- c("modified", "license", "language")
             show_mapping_loading_modal(rv, ns, lang_r)
             on.exit(hide_mapping_loading_modal(session), add = TRUE)
 
@@ -2449,7 +2478,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         })
 
         shiny::observeEvent(input$confirm_reset, {
-            special_no_dropdown <- c("occurrenceID", "modified", "license", "language")
+            special_no_dropdown <- c("modified", "license", "language")
             rv$is_programmatic_update <- TRUE
             for (item in dwc_all()) {
                 if (!(item$term %in% special_no_dropdown)) {
@@ -2575,18 +2604,64 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             )
         }
 
+        # What the identifiers actually are, reported where the user can act on
+        # it. The counts come from the same resolve_occurrence_ids() call the
+        # export uses, so the card, the mapping guide and the published file
+        # cannot disagree the way they did before.
+        occurrence_id_info_r <- shiny::reactive({
+            ids <- occurrence_ids_r()
+            list(
+                strategy = attr(ids, "id_strategy") %||% NA_character_,
+                counts = attr(ids, "id_counts"),
+                uniqueness = check_occurrence_id_uniqueness(ids)
+            )
+        })
+
+        output$occurrence_id_status <- shiny::renderUI({
+            info <- occurrence_id_info_r()
+            lang <- lang_r()
+            counts <- info$counts
+            if (is.null(counts)) return(NULL)
+
+            lines <- list()
+            if (counts$preserved > 0L) {
+                lines <- c(lines, sprintf(
+                    tr("occurrence_id_status_preserved", lang),
+                    counts$preserved, counts$total
+                ))
+            }
+            if (counts$generated > 0L) {
+                lines <- c(lines, sprintf(
+                    tr("occurrence_id_status_generated", lang), counts$generated
+                ))
+            }
+
+            dup <- info$uniqueness$duplicates
+            alert_class <- if (dup > 0L) "alert alert-danger" else "alert alert-info"
+            shiny::div(
+                class = alert_class,
+                style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
+                shiny::icon(if (dup > 0L) "triangle-exclamation" else "info-circle"),
+                " ",
+                paste(unlist(lines), collapse = " "),
+                if (dup > 0L) {
+                    shiny::tags$div(
+                        style = "margin-top: 4px; font-weight: 600;",
+                        sprintf(tr("occurrence_id_duplicates", lang), dup)
+                    )
+                }
+            )
+        })
+
         # Full mapped data (used by export and validation modules)
         processed_data <- shiny::reactive({
             shiny::req(raw_data_r())
 
             df <- raw_data_r()
-            if (is.null(rv$occurrence_ids) || length(rv$occurrence_ids) != nrow(df)) {
-                rv$occurrence_ids <- resolve_occurrence_ids(df)
-            }
 
             processed_result <- build_mapped_result(
                 df_input = df,
-                occurrence_ids_input = rv$occurrence_ids
+                occurrence_ids_input = occurrence_ids_r()
             )
 
             if (!identical(rv$eventdate_parse_failures, processed_result$eventdate_failure_count)) {
@@ -2751,10 +2826,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # Show real identifiers in the preview when the upload ships them
             # (e.g. camera-trap occurrenceID); otherwise keep lightweight
             # placeholders for the sampled rows.
+            has_supplied_ids <- !is.null(
+                occurrence_id_source_values(preview_raw, rv$map_values)
+            )
             preview_occurrence_ids <- if (nrow(preview_raw) == 0L) {
                 character(0)
-            } else if ("occurrenceID" %in% names(preview_raw)) {
-                resolve_occurrence_ids(preview_raw)
+            } else if (has_supplied_ids) {
+                resolve_occurrence_ids(preview_raw, map_values = rv$map_values)
             } else {
                 sprintf("preview-%06d", seq_len(nrow(preview_raw)))
             }
@@ -2800,6 +2878,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             rostrum_explain_r           = shiny::reactive(rv$map_meta),
             rostrum_run_stats_r         = shiny::reactive(rv$rostrum_run_stats),
             map_values_r                = shiny::reactive(rv$map_values),
+            occurrence_id_info_r        = occurrence_id_info_r,
             custom_values_r             = custom_values_r,
             reset_signal_r              = shiny::reactive(rv$downstream_reset)
         ))

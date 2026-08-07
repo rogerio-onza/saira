@@ -253,8 +253,9 @@ process_for_export <- function(df) {
     df <- add_occurrence_ids(df)
     id_strategy <- attr(df, "id_strategy")
 
-    # Normalize known Creative Commons license URLs to short labels
-    df <- abbreviate_license_column(df)
+    # dcterms:license is a URI in Darwin Core, so the published file carries
+    # the full legalcode URL. The short label is a preview affordance only.
+    df <- expand_license_column(df)
 
     # Populate geodeticDatum for rows with valid lat/lon (DwC GBIF expectation).
     df <- apply_geodetic_datum(df)
@@ -287,12 +288,21 @@ process_for_export <- function(df) {
 #'   source column names.
 #' @return Data frame: process_for_export(df_processed) + tail of unused raw cols.
 #' @export
-process_for_export_with_unmapped <- function(df_processed, raw_data, map_values) {
-    out <- process_for_export(df_processed)
-    id_strategy <- attr(out, "id_strategy")
-
+#' Raw columns no DwC term draws from
+#'
+#' The columns `process_for_export_with_unmapped()` appends to the right of the
+#' export. They stay in the CSV but get no `<field>` in `meta.xml`, so GBIF
+#' ignores them; the export screen and the mapping guide both report that, and
+#' both call this so they cannot disagree on which columns are affected.
+#'
+#' @param raw_data Data frame with the original uploaded columns.
+#' @param map_values Named list keyed by DwC term, values are source columns.
+#' @param exclude Character vector of column names already in the export.
+#' @return Character vector of column names, possibly empty.
+#' @export
+unmapped_raw_columns <- function(raw_data, map_values, exclude = character(0)) {
     if (!is.data.frame(raw_data) || ncol(raw_data) == 0L || !is.list(map_values)) {
-        return(out)
+        return(character(0))
     }
 
     used_sources <- unique(unlist(
@@ -305,8 +315,14 @@ process_for_export_with_unmapped <- function(df_processed, raw_data, map_values)
         use.names = FALSE
     ))
 
-    extra_cols <- setdiff(names(raw_data), used_sources)
-    extra_cols <- setdiff(extra_cols, names(out))
+    setdiff(setdiff(names(raw_data), used_sources), exclude)
+}
+
+process_for_export_with_unmapped <- function(df_processed, raw_data, map_values) {
+    out <- process_for_export(df_processed)
+    id_strategy <- attr(out, "id_strategy")
+
+    extra_cols <- unmapped_raw_columns(raw_data, map_values, exclude = names(out))
     if (length(extra_cols) == 0L) return(out)
 
     extras <- raw_data[, extra_cols, drop = FALSE]
@@ -361,10 +377,13 @@ write_xlsx_text_only <- function(df, path) {
 #' @param lang Character scalar "pt" ou "en" (ou reactive — extraido com `()` se for).
 #' @param required_terms Character vector de termos DwC obrigatorios (default = required do preview).
 #' @param source_file Optional character: nome do arquivo de origem para metadados.
-#' @param id_strategy Optional character: occurrenceID strategy used at export
-#'   (`"user_supplied"`, `"stable_v5"`, `"stable_v5_with_random_fallback"`,
-#'   `"random_v4"`). When supplied, an "Identifier Strategy" section is
-#'   appended explaining the consequence for GBIF republication.
+#' @param id_strategy Optional character: occurrenceID strategy used at export,
+#'   as named by `occurrence_id_strategy_label()`. When supplied, an "Identifier
+#'   Strategy" section is appended explaining the consequence for GBIF
+#'   republication.
+#' @param id_counts Optional named list from `resolve_occurrence_ids()`'s
+#'   `id_counts` attribute (`total`, `preserved`, `generated`). Reported
+#'   verbatim so the reader can check the claim against the file.
 #' @param constants Optional named list: name = DwC term, value = typed constant
 #'   applied to every row. Rendered as the guide's `constants` section.
 #' @return character vector (uma entrada por linha), encoding UTF-8.
@@ -377,7 +396,8 @@ build_mapping_guide_txt <- function(map_values,
                                                        "basisOfRecord"),
                                     source_file = NA_character_,
                                     id_strategy = NA_character_,
-                                    constants = NULL) {
+                                    constants = NULL,
+                                    id_counts = NULL) {
     if (is.function(lang)) lang <- lang()
     lang <- as.character(lang)[1L]
     if (!lang %in% c("pt", "en")) lang <- "pt"
@@ -451,6 +471,9 @@ build_mapping_guide_txt <- function(map_values,
             section_const= "#   constantes   (valor digitado/escolhido aplicado a todas as linhas)",
             section_miss = "#   termos DwC obrigatorios ainda nao mapeados",
             section_unmp = "#   colunas brutas nao usadas (mantidas no fim do CSV)",
+            unmp_note_1  = "#     Estas colunas seguem no arquivo, mas NAO sao declaradas no meta.xml,",
+            unmp_note_2  = "#     entao o GBIF vai ignora-las. Para publica-las, mapeie cada uma para",
+            unmp_note_3  = "#     um termo DwC ou inclua o conteudo em dynamicProperties.",
             coverage     = "# cobertura: %d termo(s) DwC mapeado(s), %d constante(s), %d obrigatorio(s) faltando",
             none         = "(nenhum)"
         )
@@ -469,6 +492,9 @@ build_mapping_guide_txt <- function(map_values,
             section_const= "#   constants   (typed/selected value applied to every row)",
             section_miss = "#   required DwC terms not yet mapped",
             section_unmp = "#   unused raw columns (kept at end of CSV)",
+            unmp_note_1  = "#     These columns stay in the file but are NOT declared in meta.xml,",
+            unmp_note_2  = "#     so GBIF will ignore them. To publish them, map each one to a DwC",
+            unmp_note_3  = "#     term or fold its content into dynamicProperties.",
             coverage     = "# coverage: %d DwC term(s) mapped, %d constant(s), %d required missing",
             none         = "(none)"
         )
@@ -549,6 +575,10 @@ build_mapping_guide_txt <- function(map_values,
         for (col in unmapped_cols) {
             out <- c(out, paste0("#     - ", col))
         }
+        # Preserving the columns in the CSV is only half the promise: GBIF reads
+        # meta.xml, and an undeclared column is invisible in the published
+        # dataset. Say so here rather than letting the file imply otherwise.
+        out <- c(out, "#", L$unmp_note_1, L$unmp_note_2, L$unmp_note_3)
     }
 
     if (!is.na(id_strategy) && nzchar(id_strategy)) {
@@ -556,20 +586,34 @@ build_mapping_guide_txt <- function(map_values,
             list(
                 header = "#   estrategia de occurrenceID",
                 explainers = list(
-                    user_supplied = "#     Estrategia: user_supplied. Todos os occurrenceID vieram dos seus dados; serao preservados literalmente no export.",
-                    stable_v5     = "#     Estrategia: stable_v5. UUIDs v5 deterministicos gerados a partir de institutionCode + (catalogNumber/eventID/recordNumber). Mesma combinacao = mesmo UUID em qualquer maquina e re-export. Republicacoes no GBIF aparecerao como atualizacoes do mesmo registro.",
-                    stable_v5_with_random_fallback = "#     Estrategia: stable_v5_with_random_fallback. A maioria das linhas tem UUID v5 estavel; algumas sem institutionCode/anchor cairam em UUID v4 aleatorio. Linhas v4 mudam a cada export.",
-                    random_v4     = "#     Estrategia: random_v4. UUIDs aleatorios (mudam a cada export). Republicacoes no GBIF serao registradas como novos registros, nao atualizacoes. Para estabilidade entre versoes, mapeie institutionCode + catalogNumber (ou eventID/recordNumber)."
+                    user_supplied = "#     Estrategia: user_supplied. Todos os occurrenceID vieram dos seus dados e foram preservados literalmente.",
+                    user_supplied_with_generated = "#     Estrategia: user_supplied_with_generated. Os identificadores do seu dado foram preservados; as linhas que estavam sem um receberam um identificador gerado pela Saira.",
+                    generated = "#     Estrategia: generated. Nenhuma coluna do seu dado carregava identificador, entao a Saira derivou um do conteudo de cada linha. Reenviar a mesma planilha reproduz os mesmos identificadores; corrigir um valor muda o identificador daquela linha."
+                ),
+                counts = "#     Contagem: %d de %d preservados do seu dado, %d gerados.",
+                roundtrip = c(
+                    "#",
+                    "#     Para manter estes identificadores na proxima exportacao, reimporte",
+                    "#     ESTE arquivo (ou copie a coluna occurrenceID para a sua planilha) e",
+                    "#     mapeie occurrenceID. Os existentes sao preservados e so as ocorrencias",
+                    "#     novas recebem um ID."
                 )
             )
         } else {
             list(
                 header = "#   identifier strategy (occurrenceID)",
                 explainers = list(
-                    user_supplied = "#     Strategy: user_supplied. All occurrenceIDs came from your data; they will be preserved verbatim in the export.",
-                    stable_v5     = "#     Strategy: stable_v5. Deterministic UUID v5 generated from institutionCode + (catalogNumber/eventID/recordNumber). Same combination = same UUID across machines and re-exports. Republishing to GBIF will appear as updates to the same record.",
-                    stable_v5_with_random_fallback = "#     Strategy: stable_v5_with_random_fallback. Most rows received stable v5 UUIDs; some lacking an institutionCode/anchor fell back to random v4 UUIDs. v4 rows change on every export.",
-                    random_v4     = "#     Strategy: random_v4. Random UUIDs (change on every export). Republishing to GBIF will create new records, not updates. For stability across versions, map institutionCode + catalogNumber (or eventID/recordNumber)."
+                    user_supplied = "#     Strategy: user_supplied. Every occurrenceID came from your data and was preserved verbatim.",
+                    user_supplied_with_generated = "#     Strategy: user_supplied_with_generated. Identifiers from your data were preserved; rows that had none received one generated by Saira.",
+                    generated = "#     Strategy: generated. No column in your data carried an identifier, so Saira derived one from each row content. Re-uploading the same spreadsheet reproduces the same identifiers; correcting a value changes that row identifier."
+                ),
+                counts = "#     Counts: %d of %d preserved from your data, %d generated.",
+                roundtrip = c(
+                    "#",
+                    "#     To keep these identifiers on your next export, re-import THIS file",
+                    "#     (or copy the occurrenceID column back into your spreadsheet) and map",
+                    "#     occurrenceID. Existing ones are preserved and only newly added",
+                    "#     occurrences receive an ID."
                 )
             )
         }
@@ -577,6 +621,18 @@ build_mapping_guide_txt <- function(map_values,
         explainer <- strategy_section$explainers[[id_strategy]]
         if (is.null(explainer)) explainer <- sprintf("#     Strategy: %s.", id_strategy)
         out <- c(out, explainer)
+
+        # The label alone used to be the whole section, and it was wrong often
+        # enough to matter. The counts are the check the reader can run against
+        # the file itself.
+        if (is.list(id_counts) && !is.null(id_counts$total)) {
+            out <- c(out, sprintf(
+                strategy_section$counts,
+                id_counts$preserved %||% 0L, id_counts$total,
+                id_counts$generated %||% 0L
+            ))
+        }
+        out <- c(out, strategy_section$roundtrip)
     }
 
     out
@@ -771,41 +827,85 @@ order_columns_dwc_canonical <- function(df) {
     df[, cols[ord], drop = FALSE]
 }
 
+#' Canonical URIs for the three Creative Commons licenses GBIF accepts
+#'
+#' `http://` plus the `/legalcode` suffix is the machine-readable form GBIF
+#' documents and the IPT emits. Every place Saira writes a license -- the
+#' mapping card, the `license` data column, the mapping guide and the EML
+#' `<intellectualRights>` -- publishes the string from this one table, so a
+#' bundle can never disagree with itself the way it did before.
+#'
+#' @return Named character vector keyed by short token.
+#' @export
+cc_license_uris <- function() {
+    c(
+        "CC0" =
+            "http://creativecommons.org/publicdomain/zero/1.0/legalcode",
+        "CC-BY" = "http://creativecommons.org/licenses/by/4.0/legalcode",
+        "CC-BY-NC" = "http://creativecommons.org/licenses/by-nc/4.0/legalcode"
+    )
+}
+
+#' Resolve any accepted spelling of a CC license to its short token
+#'
+#' Accepts the short token itself ("CC-BY", "CC-BY-4.0"), either URL scheme,
+#' and the URL with or without the `/legalcode` suffix or a trailing slash.
+#' Anything else resolves to `NA`, which keeps unknown licenses verbatim
+#' wherever this is used.
+#'
+#' @param x Character vector with license values.
+#' @return Character vector of `"CC0"`, `"CC-BY"`, `"CC-BY-NC"` or `NA`.
+#' @export
+normalize_license_key <- function(x) {
+    norm <- tolower(trimws(as.character(x)))
+    norm <- gsub("^https?://", "", norm)
+    norm <- gsub("/legalcode/?$", "", norm)
+    norm <- gsub("/+$", "", norm)
+
+    out <- rep(NA_character_, length(norm))
+    out[norm %in% c("cc0", "cc0-1.0",
+                    "creativecommons.org/publicdomain/zero/1.0")] <- "CC0"
+    out[norm %in% c("cc-by", "cc-by-4.0",
+                    "creativecommons.org/licenses/by/4.0")] <- "CC-BY"
+    out[norm %in% c("cc-by-nc", "cc-by-nc-4.0",
+                    "creativecommons.org/licenses/by-nc/4.0")] <- "CC-BY-NC"
+    out
+}
+
 #' Abbreviate Creative Commons license values
+#'
+#' Used by the on-screen preview only (ADR-008): the short token keeps the
+#' table readable. The published file gets the URI via `expand_license()`.
 #'
 #' @param x Character vector with license values
 #' @return Character vector with known license URLs abbreviated
 #' @export
 abbreviate_license <- function(x) {
     x_chr <- as.character(x)
-    missing_idx <- is.na(x_chr)
-    normalized <- tolower(trimws(x_chr))
-
-    # Normalize common URL variants for stable matching
-    normalized <- gsub("^https?://", "", normalized)
-    normalized <- gsub("/legalcode/?$", "", normalized)
-    normalized <- gsub("/+$", "", normalized)
+    key <- normalize_license_key(x_chr)
+    known <- !is.na(key)
 
     out <- x_chr
+    out[known] <- key[known]
+    return(out)
+}
 
-    is_cc0 <- normalized %in% c(
-        "creativecommons.org/publicdomain/zero/1.0",
-        "cc0"
-    )
-    is_cc_by_nc <- normalized %in% c(
-        "creativecommons.org/licenses/by-nc/4.0",
-        "cc-by-nc"
-    )
-    is_cc_by <- normalized %in% c(
-        "creativecommons.org/licenses/by/4.0",
-        "cc-by"
-    )
+#' Expand Creative Commons license values to their canonical URI
+#'
+#' Inverse of `abbreviate_license()`. `dcterms:license` is a URI in Darwin
+#' Core, so the published `occurrence.txt` carries the full legalcode URL
+#' rather than the short label. Unknown values pass through untouched.
+#'
+#' @param x Character vector with license values
+#' @return Character vector with known licenses expanded to their URI
+#' @export
+expand_license <- function(x) {
+    x_chr <- as.character(x)
+    key <- normalize_license_key(x_chr)
+    known <- !is.na(key)
 
-    out[is_cc0] <- "CC0"
-    out[is_cc_by_nc] <- "CC-BY-NC"
-    out[is_cc_by] <- "CC-BY"
-    out[missing_idx] <- NA_character_
-
+    out <- x_chr
+    out[known] <- unname(cc_license_uris()[key[known]])
     return(out)
 }
 
@@ -821,6 +921,21 @@ abbreviate_license_column <- function(df, col = "license") {
     }
 
     df[[col]] <- abbreviate_license(df[[col]])
+    return(df)
+}
+
+#' Expand the license column in a data frame to canonical URIs
+#'
+#' @param df Data frame
+#' @param col Column name to expand (default: "license")
+#' @return Data frame with expanded license values when column exists
+#' @export
+expand_license_column <- function(df, col = "license") {
+    if (!(col %in% names(df))) {
+        return(df)
+    }
+
+    df[[col]] <- expand_license(df[[col]])
     return(df)
 }
 
@@ -866,96 +981,25 @@ clean_coordinate_separators <- function(df) {
     return(df)
 }
 
-#' Generate occurrenceIDs with deterministic v5 or random v4 strategy
+#' Populate `occurrenceID`, preserving what the data already carries
 #'
-#' Strategy resolution:
-#' - Rows with a user-supplied `occurrenceID` are preserved verbatim.
-#' - For rows missing `occurrenceID`: if the data has `institutionCode` AND one
-#'   of `catalogNumber` / `eventID` / `recordNumber` (the "anchor"), a
-#'   deterministic UUID v5 is generated via `uuid::UUIDfromName()` using the
-#'   RFC 4122 URL namespace plus `saira-occurrence:<institutionCode>|<anchor>`
-#'   as the name. The same anchor combination always produces the same UUID
-#'   across machines and re-exports.
-#' - Otherwise, falls back to random UUID v4 via `ids::uuid()`.
+#' Thin wrapper over `resolve_occurrence_ids()`, which holds the single rule:
+#' an identifier the row already carries wins, and Saira derives one from the
+#' row's own content for the gaps. Kept because `process_for_export()` is also
+#' called directly (tests, `build_dwca_bundle()`) on frames that never passed
+#' through the mapping stage.
 #'
-#' The returned data frame carries an `id_strategy` attribute documenting which
-#' path was used: `"user_supplied"`, `"stable_v5"`, `"stable_v5_with_random_fallback"`,
-#' or `"random_v4"`. Downstream consumers (mapping_guide.txt, export form
-#' banner) read this attribute.
+#' The returned data frame carries `id_strategy` and `id_counts` attributes
+#' documenting what happened; the mapping guide reports them.
 #'
 #' @param df Data frame.
-#' @return Data frame with `occurrenceID` populated. Carries `id_strategy`
-#'   attribute.
+#' @return Data frame with `occurrenceID` populated.
 #' @export
 generate_occurrence_ids <- function(df) {
-    n <- nrow(df)
-    if (n == 0L) {
-        if (!"occurrenceID" %in% names(df)) df$occurrenceID <- character(0)
-        attr(df, "id_strategy") <- "user_supplied"
-        return(df)
-    }
-
-    if ("occurrenceID" %in% names(df)) {
-        current <- as.character(df$occurrenceID)
-    } else {
-        current <- rep(NA_character_, n)
-    }
-    missing <- is.na(current) | !nzchar(trimws(current))
-
-    if (!any(missing)) {
-        df$occurrenceID <- current
-        attr(df, "id_strategy") <- "user_supplied"
-        return(df)
-    }
-
-    has_inst <- "institutionCode" %in% names(df)
-    anchor_col <- if ("catalogNumber" %in% names(df)) {
-        "catalogNumber"
-    } else if ("eventID" %in% names(df)) {
-        "eventID"
-    } else if ("recordNumber" %in% names(df)) {
-        "recordNumber"
-    } else {
-        NA_character_
-    }
-    has_anchor <- has_inst && !is.na(anchor_col) &&
-        requireNamespace("uuid", quietly = TRUE)
-
-    if (has_anchor) {
-        ic <- as.character(df$institutionCode)
-        sec <- as.character(df[[anchor_col]])
-        anchor_valid <- !is.na(ic) & nzchar(trimws(ic)) &
-            !is.na(sec) & nzchar(trimws(sec))
-        rows_v5 <- missing & anchor_valid
-        rows_v4 <- missing & !anchor_valid
-
-        # RFC 4122 URL namespace UUID. Stable across machines and Saira versions.
-        url_ns <- "6ba7b811-9dad-11d1-80b4-00c04fd430c8"
-
-        if (any(rows_v5)) {
-            names_v5 <- paste0("saira-occurrence:", ic[rows_v5], "|", sec[rows_v5])
-            current[rows_v5] <- paste0(
-                "urn:uuid:",
-                vapply(names_v5, function(nm) uuid::UUIDfromName(url_ns, nm), character(1))
-            )
-        }
-        if (any(rows_v4)) {
-            current[rows_v4] <- ids::uuid(n = sum(rows_v4))
-        }
-        strategy <- if (any(rows_v5) && any(rows_v4)) {
-            "stable_v5_with_random_fallback"
-        } else if (any(rows_v5)) {
-            "stable_v5"
-        } else {
-            "random_v4"
-        }
-    } else {
-        current[missing] <- ids::uuid(n = sum(missing))
-        strategy <- "random_v4"
-    }
-
-    df$occurrenceID <- current
-    attr(df, "id_strategy") <- strategy
+    ids <- resolve_occurrence_ids(df)
+    df$occurrenceID <- as.character(ids)
+    attr(df, "id_strategy") <- attr(ids, "id_strategy")
+    attr(df, "id_counts") <- attr(ids, "id_counts")
     df
 }
 
@@ -1182,34 +1226,29 @@ compute_dataset_extents <- function(df) {
 # is cited verbatim so the EML never silently claims CC0/public domain for a
 # dataset the publisher licensed differently. Returns a serialized XML string.
 build_intellectual_rights_xml <- function(license_value) {
-    norm <- tolower(trimws(as.character(license_value)))
-    norm <- gsub("^https?://", "", norm)
-    norm <- gsub("/legalcode/?$", "", norm)
-    norm <- gsub("/+$", "", norm)
+    key <- normalize_license_key(license_value)
+    uris <- cc_license_uris()
 
-    para <- if (norm %in% c("cc0-1.0", "cc0",
-                            "creativecommons.org/publicdomain/zero/1.0")) {
+    para <- if (identical(key, "CC0")) {
         paste0(
             "<para>To the extent possible under law, the publisher has waived ",
             "all rights to these data and has dedicated them to the ",
-            "<ulink url=\"http://creativecommons.org/publicdomain/zero/1.0/legalcode\">",
+            "<ulink url=\"", uris[["CC0"]], "\">",
             "<citetitle>Public Domain (CC0 1.0)</citetitle></ulink>. Users may ",
             "copy, modify, distribute and use the work, including for commercial ",
             "purposes, without restriction.</para>"
         )
-    } else if (norm %in% c("cc-by-4.0", "cc-by",
-                           "creativecommons.org/licenses/by/4.0")) {
+    } else if (identical(key, "CC-BY")) {
         paste0(
             "<para>This work is licensed under a ",
-            "<ulink url=\"http://creativecommons.org/licenses/by/4.0/legalcode\">",
+            "<ulink url=\"", uris[["CC-BY"]], "\">",
             "<citetitle>Creative Commons Attribution (CC-BY) 4.0 License</citetitle>",
             "</ulink>.</para>"
         )
-    } else if (norm %in% c("cc-by-nc-4.0", "cc-by-nc",
-                           "creativecommons.org/licenses/by-nc/4.0")) {
+    } else if (identical(key, "CC-BY-NC")) {
         paste0(
             "<para>This work is licensed under a ",
-            "<ulink url=\"http://creativecommons.org/licenses/by-nc/4.0/legalcode\">",
+            "<ulink url=\"", uris[["CC-BY-NC"]], "\">",
             "<citetitle>Creative Commons Attribution Non Commercial (CC-BY-NC) 4.0 License</citetitle>",
             "</ulink>.</para>"
         )

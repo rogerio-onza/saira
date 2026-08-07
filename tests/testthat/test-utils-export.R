@@ -239,7 +239,16 @@ testthat::test_that("process_for_export keeps date semantics and runs full pipel
     testthat::expect_equal(out$decimalLongitude, c(-46.63, -43.17, NA_real_))
     testthat::expect_false(any(is.na(out$occurrenceID) | out$occurrenceID == ""))
     testthat::expect_identical(out$occurrenceID[3], "existing-id")
-    testthat::expect_identical(out$license, c("CC0", "CC-BY", "custom-license"))
+    # dcterms:license is a URI in Darwin Core, so the published file carries the
+    # canonical legalcode URL; the short label is a preview affordance only.
+    testthat::expect_identical(
+        out$license,
+        c(
+            unname(cc_license_uris()[["CC0"]]),
+            unname(cc_license_uris()[["CC-BY"]]),
+            "custom-license"
+        )
+    )
 })
 
 testthat::test_that("apply_name_review_payload never emits audit columns without payload", {
@@ -861,4 +870,141 @@ test_that("the class override does not disturb terms it does not name", {
     )
     ordered <- names(order_columns_dwc_canonical(df))
     expect_equal(ordered, c("occurrenceID", "scientificName", "taxonRemarks"))
+})
+
+# License: the published file carries a URI ------------------------------
+
+testthat::test_that("expand_license accepts every spelling and emits the canonical URI", {
+    uris <- cc_license_uris()
+
+    testthat::expect_identical(
+        expand_license(c(
+            "CC-BY", "cc-by-4.0",
+            "https://creativecommons.org/licenses/by/4.0/legalcode",
+            "http://creativecommons.org/licenses/by/4.0/"
+        )),
+        rep(unname(uris[["CC-BY"]]), 4L)
+    )
+    testthat::expect_identical(expand_license("CC0"), unname(uris[["CC0"]]))
+    testthat::expect_identical(
+        expand_license("https://creativecommons.org/licenses/by-nc/4.0/"),
+        unname(uris[["CC-BY-NC"]])
+    )
+})
+
+testthat::test_that("expand_license leaves unknown licenses untouched", {
+    testthat::expect_identical(
+        expand_license(c("Licenca Institucional XYZ", NA_character_)),
+        c("Licenca Institucional XYZ", NA_character_)
+    )
+})
+
+testthat::test_that("abbreviate_license still shortens, for the preview", {
+    # ADR-008 keeps the short token on screen; only the published file changed.
+    testthat::expect_identical(
+        abbreviate_license(unname(cc_license_uris())),
+        c("CC0", "CC-BY", "CC-BY-NC")
+    )
+})
+
+testthat::test_that("the license column, the guide and the EML agree on one string", {
+    # The bundle used to disagree with itself: the column said "CC-BY", the
+    # guide said https://...legalcode and the EML said http://...legalcode.
+    for (token in c("CC0", "CC-BY", "CC-BY-NC")) {
+        col <- expand_license_column(
+            data.frame(license = token, stringsAsFactors = FALSE)
+        )$license
+        eml <- build_intellectual_rights_xml(col)
+        url <- regmatches(eml, regexpr('(?<=url=")[^"]+', eml, perl = TRUE))
+
+        testthat::expect_identical(col, unname(cc_license_uris()[[token]]))
+        testthat::expect_identical(url, col)
+    }
+})
+
+testthat::test_that("an unknown license never becomes CC0 in the EML", {
+    eml <- build_intellectual_rights_xml("Licenca Institucional XYZ")
+    testthat::expect_false(grepl("publicdomain/zero", eml, fixed = TRUE))
+    testthat::expect_true(grepl("Licenca Institucional XYZ", eml, fixed = TRUE))
+})
+
+# Mapping guide: identifier counts and the undeclared-column warning -----
+
+testthat::test_that("the guide reports real identifier counts, not just a label", {
+    guide <- build_mapping_guide_txt(
+        map_values = list(occurrenceID = "record_key"),
+        raw_data = data.frame(record_key = c("K-1", "K-2"), stringsAsFactors = FALSE),
+        lang = "en",
+        id_strategy = "user_supplied_with_generated",
+        id_counts = list(total = 10L, preserved = 7L, generated = 3L)
+    )
+    txt <- paste(guide, collapse = "\n")
+
+    testthat::expect_true(grepl("7 of 10 preserved", txt, fixed = TRUE))
+    testthat::expect_true(grepl("3 generated", txt, fixed = TRUE))
+    # The round-trip instruction is the actionable half of the section.
+    testthat::expect_true(grepl("re-import THIS file", txt, fixed = TRUE))
+})
+
+testthat::test_that("the guide warns that undeclared columns are not published", {
+    guide <- build_mapping_guide_txt(
+        map_values = list(scientificName = "taxon"),
+        raw_data = data.frame(
+            taxon = "Dasypus novemcinctus", notes = "x", area_ha = 1,
+            stringsAsFactors = FALSE
+        ),
+        lang = "en"
+    )
+    txt <- paste(guide, collapse = "\n")
+
+    testthat::expect_true(grepl("- notes", txt, fixed = TRUE))
+    testthat::expect_true(grepl("NOT declared in meta.xml", txt, fixed = TRUE))
+    testthat::expect_true(grepl("GBIF will ignore them", txt, fixed = TRUE))
+})
+
+testthat::test_that("the guide stays quiet when every column is mapped", {
+    guide <- build_mapping_guide_txt(
+        map_values = list(scientificName = "taxon"),
+        raw_data = data.frame(taxon = "Dasypus novemcinctus", stringsAsFactors = FALSE),
+        lang = "en"
+    )
+    testthat::expect_false(
+        grepl("NOT declared in meta.xml", paste(guide, collapse = "\n"), fixed = TRUE)
+    )
+})
+
+testthat::test_that("unmapped_raw_columns is what both the guide and the export use", {
+    raw <- data.frame(a = 1, b = 2, c = 3)
+    testthat::expect_identical(
+        unmapped_raw_columns(raw, list(scientificName = "a")),
+        c("b", "c")
+    )
+    testthat::expect_identical(
+        unmapped_raw_columns(raw, list(scientificName = "a"), exclude = "b"),
+        "c"
+    )
+    testthat::expect_identical(
+        unmapped_raw_columns(raw, list(x = c("a", "b", "c"))),
+        character(0)
+    )
+})
+
+testthat::test_that("a raw column already in the export is not reported as dropped", {
+    # The everyday case: an upload that ships occurrenceID feeds the export
+    # whether or not the user picked it in the dropdown, so warning that GBIF
+    # would ignore it was false. The export screen and
+    # process_for_export_with_unmapped() must agree on what is left out.
+    raw <- data.frame(
+        occurrenceID = c("A-1", "A-2"),
+        especie = c("x", "y"),
+        anotacoes = c("n1", "n2"),
+        stringsAsFactors = FALSE
+    )
+    mv <- list(scientificName = "especie")
+    exported <- c("occurrenceID", "scientificName", "genus")
+
+    testthat::expect_identical(
+        unmapped_raw_columns(raw, mv, exclude = exported),
+        "anotacoes"
+    )
 })
