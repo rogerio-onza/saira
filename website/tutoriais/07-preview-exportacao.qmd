@@ -88,8 +88,8 @@ As duas podem aparecer juntas e se somam ao que você mesmo mapeou:
 A consulta ao GBIF é best-effort: sem internet ou sem avaliação, a chave IUCN é omitida e a exportação segue.
 
 ::: {.callout-warning}
-## Não trabalha com espécies brasileiras?
-Só nesse caso marque **apenas o GBIF** na validação de nomes: o Saíra grava só `iucnRedListCategory` (IUCN global) e não aplica a categoria MMA, que vale para a fauna e a flora do Brasil. Se você trabalha com espécies brasileiras, mantenha a base nacional marcada.
+## O status MMA é nacional
+A categoria MMA vem da lista vermelha do Brasil, então o Saíra só a grava nos registros cujo `country` (ou `countryCode`) resolve para o Brasil. Num conjunto com registros de vários países, a mesma espécie recebe as chaves MMA na linha brasileira e não recebe na estrangeira. Registro sem país informado também fica sem as chaves: mapeie `country`, ou use o preenchimento a partir das coordenadas na [validação de coordenadas](05-validacao-coordenadas.qmd). O `iucnRedListCategory` é global e não depende disso.
 :::
 
 ## Arquivos do pacote
