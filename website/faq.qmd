@@ -101,7 +101,7 @@ Numa etapa dedicada de **generalização**, ele sinaliza táxons ameaçados (Lis
 ### O Saíra adiciona o status de conservação das espécies?
 
 ::: {.faq-card}
-Sim. Na exportação, ele grava o status no campo `dynamicProperties` conforme as bases escolhidas na validação de nomes: uma base brasileira (Flora BR / Fauna BR) adiciona a categoria **MMA** (`mmaThreatStatus`) e a portaria de origem (`mmaSource`); o **GBIF** adiciona a categoria **IUCN** global (`iucnRedListCategory`). Se você não trabalha com espécies brasileiras, marque apenas o GBIF.
+Sim. Na exportação, ele grava o status no campo `dynamicProperties` conforme as bases escolhidas na validação de nomes: uma base brasileira (Flora BR / Fauna BR) adiciona a categoria **MMA** (`mmaThreatStatus`) e a portaria de origem (`mmaSource`); o **GBIF** adiciona a categoria **IUCN** global (`iucnRedListCategory`). A categoria MMA vem da lista vermelha nacional, então só é gravada nos registros cujo `country` (ou `countryCode`) resolve para o Brasil; a categoria IUCN é uma avaliação global e vale para qualquer localidade.
 :::
 
 ## Exportação e publicação

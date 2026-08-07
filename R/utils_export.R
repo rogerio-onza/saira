@@ -120,6 +120,36 @@ apply_name_review_payload <- function(df, payload = NULL) {
     out
 }
 
+# Rows whose country resolves to Brazil. The MMA portaria is a *national* legal
+# instrument, so its status must never be asserted for a record collected
+# elsewhere -- picking a BR name provider is a taxonomic-source preference, not
+# a statement about locality. `countryCode` wins when present (Saira keeps it in
+# alpha-3 until convert_country_code_to_alpha2() runs at the export boundary,
+# but a publisher may supply alpha-2); otherwise the free-text `country` goes
+# through the same 5-layer cascade the coordinate tab uses (ADR-036), which
+# resolves multilingual spellings and dedupes internally. A row with no
+# resolvable country is NOT Brazilian: an unknown locality is not evidence of
+# Brazilian occurrence.
+is_brazilian_record <- function(df) {
+    n <- if (is.data.frame(df)) nrow(df) else 0L
+    if (n == 0L) {
+        return(logical(0))
+    }
+    iso <- rep(NA_character_, n)
+    for (col in c("countryCode", "country")) {
+        pending <- is.na(iso)
+        if (!any(pending) || !(col %in% names(df))) {
+            next
+        }
+        values <- as.character(df[[col]])[pending]
+        iso[pending] <- tryCatch(
+            coords_country_to_iso3(values),
+            error = function(e) rep(NA_character_, length(values))
+        )
+    }
+    !is.na(iso) & iso == "BRA"
+}
+
 #' Append conservation-status entries to dynamicProperties on export
 #'
 #' Additively folds each selected provider's conservation status into the
@@ -127,9 +157,13 @@ apply_name_review_payload <- function(df, payload = NULL) {
 #' category plus its portaria source when a BR provider was selected, and/or the
 #' global IUCN Red List code from GBIF when GBIF was selected. The two sources
 #' are independent — a taxon can receive both, or only the MMA keys when GBIF
-#' does not assess it. The GBIF lookup is optional and non-blocking: any failure
-#' simply omits the IUCN key and never breaks the export. Runs after
-#' [apply_name_review_payload()] so it sees the corrected `scientificName`.
+#' does not assess it. The MMA list is national, so its keys go only to records
+#' that resolve to Brazil (see [is_brazilian_record()]); the IUCN assessment is
+#' global and is applied regardless of locality. The GBIF lookup is optional and
+#' non-blocking: any failure simply omits the IUCN key and never breaks the
+#' export. Runs after [apply_name_review_payload()] so it sees the corrected
+#' `scientificName`, and after the country fill so coordinate-derived countries
+#' are already in place.
 #'
 #' @param df Data frame to export (post name review).
 #' @param payload Optional list with `include_mma`, `include_iucn` (logical) and
@@ -161,12 +195,17 @@ apply_conservation_status <- function(df, payload = NULL) {
     if (include_mma) {
         dynprops <- tryCatch(
             {
+                # National list: blank the keys outside Brazil so
+                # merge_dynamic_property() leaves those rows untouched.
+                br <- is_brazilian_record(df)
+                mma_category <- sensitive_category_for(names_vec)
+                mma_category[!br] <- NA_character_
+                mma_source <- sensitive_source_for(names_vec)
+                mma_source[!br] <- NA_character_
                 dp <- merge_dynamic_property(
-                    dynprops, "mmaThreatStatus", sensitive_category_for(names_vec)
+                    dynprops, "mmaThreatStatus", mma_category
                 )
-                merge_dynamic_property(
-                    dp, "mmaSource", sensitive_source_for(names_vec)
-                )
+                merge_dynamic_property(dp, "mmaSource", mma_source)
             },
             error = function(e) {
                 warning("apply_conservation_status: MMA skipped (", conditionMessage(e), ")")

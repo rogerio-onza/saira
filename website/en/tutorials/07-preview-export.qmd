@@ -88,8 +88,8 @@ Both can appear together and they merge into whatever you mapped yourself:
 The GBIF lookup is best-effort: with no internet or no assessment, the IUCN key is omitted and the export proceeds.
 
 ::: {.callout-warning}
-## Not working with Brazilian species?
-Only then select **GBIF only** in name validation: Saíra writes just `iucnRedListCategory` (global IUCN) and does not apply the MMA category, which covers Brazil's fauna and flora. If you do work with Brazilian species, keep the national database selected.
+## The MMA status is national
+The MMA category comes from Brazil's red list, so Saíra writes it only to records whose `country` (or `countryCode`) resolves to Brazil. In a dataset spanning several countries, the same species gets the MMA keys on the Brazilian row and not on the foreign one. A record with no country is left without the keys too: map `country`, or use the fill from coordinates in [coordinate validation](05-coordinate-validation.qmd). `iucnRedListCategory` is global and does not depend on this.
 :::
 
 ## Bundle files

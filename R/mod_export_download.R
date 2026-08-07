@@ -515,18 +515,6 @@ mount_export_download <- function(input, output, session, lang_r,
                             payload = export_name_review_payload()
                         )
 
-                        # Add conservation status (MMA and/or IUCN) to
-                        # dynamicProperties, keyed to the providers chosen in the
-                        # Name tab. Runs on the corrected scientificName; the GBIF
-                        # IUCN call is optional/non-blocking (NA on any failure).
-                        conservation_payload <- if (!is.null(conservation_payload_r) &&
-                                                    shiny::is.reactive(conservation_payload_r)) {
-                            tryCatch(conservation_payload_r(), error = function(e) NULL)
-                        } else {
-                            NULL
-                        }
-                        review_ready <- apply_conservation_status(review_ready, conservation_payload)
-
                         # Apply transposed-coordinate corrections approved in the
                         # coordinate validation tab (preserves verbatim coords).
                         coords_payload <- if (!is.null(coords_correction_payload_r) &&
@@ -545,6 +533,20 @@ mount_export_download <- function(input, output, session, lang_r,
                             NULL
                         }
                         review_ready <- apply_country_fill_payload(review_ready, country_payload)
+
+                        # Add conservation status (MMA and/or IUCN) to
+                        # dynamicProperties, keyed to the providers chosen in the
+                        # Name tab. Runs on the corrected scientificName and after
+                        # the country fill, because the MMA list is national and is
+                        # scoped to records that resolve to Brazil. The GBIF IUCN
+                        # call is optional/non-blocking (NA on any failure).
+                        conservation_payload <- if (!is.null(conservation_payload_r) &&
+                                                    shiny::is.reactive(conservation_payload_r)) {
+                            tryCatch(conservation_payload_r(), error = function(e) NULL)
+                        } else {
+                            NULL
+                        }
+                        review_ready <- apply_conservation_status(review_ready, conservation_payload)
 
                         raw_df <- if (!is.null(raw_data_r) && shiny::is.reactive(raw_data_r)) {
                             tryCatch(raw_data_r(), error = function(e) data.frame())

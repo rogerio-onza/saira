@@ -691,6 +691,7 @@ testthat::test_that("apply_conservation_status adds MMA keys for a BR provider",
     local_conservation_fixture()
     df <- data.frame(
         scientificName = c("Panthera onca", "Canis familiaris"),
+        country = "Brasil",
         stringsAsFactors = FALSE
     )
     out <- saira:::apply_conservation_status(
@@ -741,7 +742,10 @@ testthat::test_that("apply_conservation_status merges both MMA and IUCN keys add
         gbif_match_usage_keys = function(names) rep("123", length(names)),
         .package = "saira"
     )
-    df <- data.frame(scientificName = "Panthera onca", stringsAsFactors = FALSE)
+    df <- data.frame(
+        scientificName = "Panthera onca", country = "Brasil",
+        stringsAsFactors = FALSE
+    )
     payload <- list(
         include_mma = TRUE, include_iucn = TRUE,
         taxon_keys = data.frame(
@@ -780,7 +784,10 @@ testthat::test_that("apply_conservation_status keeps MMA when the IUCN fetch err
         gbif_match_usage_keys = function(names) rep(NA_character_, length(names)),
         .package = "saira"
     )
-    df <- data.frame(scientificName = "Panthera onca", stringsAsFactors = FALSE)
+    df <- data.frame(
+        scientificName = "Panthera onca", country = "Brasil",
+        stringsAsFactors = FALSE
+    )
     payload <- list(
         include_mma = TRUE, include_iucn = TRUE,
         taxon_keys = data.frame(
@@ -802,7 +809,10 @@ testthat::test_that("apply_conservation_status does not add a spurious empty dyn
     local_conservation_fixture()
     # A species not on the MMA list, IUCN off, and no dynamicProperties column:
     # nothing matched, so no empty column should be created.
-    df <- data.frame(scientificName = "Canis familiaris", stringsAsFactors = FALSE)
+    df <- data.frame(
+        scientificName = "Canis familiaris", country = "Brasil",
+        stringsAsFactors = FALSE
+    )
     out <- saira:::apply_conservation_status(
         df, list(include_mma = TRUE, include_iucn = FALSE)
     )
@@ -813,6 +823,7 @@ testthat::test_that("apply_conservation_status keeps an existing dynprops column
     local_conservation_fixture()
     df <- data.frame(
         scientificName = "Canis familiaris",
+        country = "Brasil",
         dynamicProperties = "",
         stringsAsFactors = FALSE
     )
@@ -821,6 +832,109 @@ testthat::test_that("apply_conservation_status keeps an existing dynprops column
     )
     testthat::expect_true("dynamicProperties" %in% names(out))
     testthat::expect_identical(out$dynamicProperties[[1]], "")
+})
+
+# MMA scope: the portaria is a national instrument -------------------------
+
+testthat::test_that("is_brazilian_record resolves country spellings and codes", {
+    df <- data.frame(
+        country = c("Brasil", "Brazil", "BRASIL", "brasil", "Peru", "", NA),
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_identical(
+        saira:::is_brazilian_record(df),
+        c(TRUE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE)
+    )
+    testthat::expect_identical(
+        saira:::is_brazilian_record(
+            data.frame(countryCode = c("BRA", "BR", "PER", "PE"), stringsAsFactors = FALSE)
+        ),
+        c(TRUE, TRUE, FALSE, FALSE)
+    )
+})
+
+testthat::test_that("is_brazilian_record prefers countryCode and handles empty input", {
+    # countryCode wins where it resolves; country fills the rows it leaves NA.
+    df <- data.frame(
+        countryCode = c("PER", "", NA),
+        country = c("Brasil", "Brasil", "Peru"),
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_identical(
+        saira:::is_brazilian_record(df), c(FALSE, TRUE, FALSE)
+    )
+    testthat::expect_identical(saira:::is_brazilian_record(data.frame()), logical(0))
+    testthat::expect_identical(saira:::is_brazilian_record(NULL), logical(0))
+    # No country information at all: strict mode treats every row as unknown.
+    testthat::expect_identical(
+        saira:::is_brazilian_record(data.frame(scientificName = c("a", "b"))),
+        c(FALSE, FALSE)
+    )
+})
+
+testthat::test_that("apply_conservation_status writes MMA keys only for Brazilian records", {
+    local_conservation_fixture()
+    df <- data.frame(
+        scientificName = "Panthera onca",
+        country = c("Brasil", "Peru"),
+        stringsAsFactors = FALSE
+    )
+    out <- saira:::apply_conservation_status(
+        df, list(include_mma = TRUE, include_iucn = FALSE)
+    )
+    testthat::expect_identical(
+        out$dynamicProperties[[1]],
+        "{\"mmaThreatStatus\":\"VU\",\"mmaSource\":\"Portaria 1.704/2026\"}"
+    )
+    # Same taxon, collected outside Brazil: the national portaria says nothing.
+    testthat::expect_identical(out$dynamicProperties[[2]], "")
+})
+
+testthat::test_that("apply_conservation_status skips MMA when the country is unknown", {
+    local_conservation_fixture()
+    payload <- list(include_mma = TRUE, include_iucn = FALSE)
+    blank <- saira:::apply_conservation_status(
+        data.frame(
+            scientificName = "Panthera onca", country = "",
+            dynamicProperties = "", stringsAsFactors = FALSE
+        ),
+        payload
+    )
+    testthat::expect_identical(blank$dynamicProperties[[1]], "")
+    # No country column at all -> nothing to assert on, so no keys.
+    absent <- saira:::apply_conservation_status(
+        data.frame(scientificName = "Panthera onca", stringsAsFactors = FALSE),
+        payload
+    )
+    testthat::expect_false("dynamicProperties" %in% names(absent))
+})
+
+testthat::test_that("apply_conservation_status keeps IUCN global while MMA stays national", {
+    local_conservation_fixture()
+    testthat::local_mocked_bindings(
+        fetch_gbif_iucn_category = function(usage_keys) rep("NT", length(usage_keys)),
+        gbif_match_usage_keys = function(names) rep("123", length(names)),
+        .package = "saira"
+    )
+    df <- data.frame(
+        scientificName = "Panthera onca",
+        country = c("Brasil", "Peru"),
+        stringsAsFactors = FALSE
+    )
+    out <- saira:::apply_conservation_status(
+        df, list(include_mma = TRUE, include_iucn = TRUE)
+    )
+    testthat::expect_identical(
+        out$dynamicProperties[[1]],
+        paste0(
+            "{\"mmaThreatStatus\":\"VU\",\"mmaSource\":\"Portaria 1.704/2026\",",
+            "\"iucnRedListCategory\":\"NT\"}"
+        )
+    )
+    # The IUCN assessment is global, so the Peruvian row keeps it alone.
+    testthat::expect_identical(
+        out$dynamicProperties[[2]], "{\"iucnRedListCategory\":\"NT\"}"
+    )
 })
 
 testthat::test_that("resolve_iucn_usage_keys strips the GBIF prefix and falls back by name", {

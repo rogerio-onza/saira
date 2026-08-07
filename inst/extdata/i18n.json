@@ -1688,8 +1688,8 @@
     "en": "%d record(s) of invasive alien species (Instituto Hórus, 2023)."
   },
   "validate_names_conservation_summary_mma": {
-    "pt": "Status de conservação MMA será adicionado a %d registro(s) no export.",
-    "en": "MMA conservation status will be added to %d record(s) on export."
+    "pt": "%d espécie(s) na lista nacional MMA; o status vai para os registros do Brasil no export.",
+    "en": "%d species on the MMA national list; the status is written to records in Brazil on export."
   },
   "validate_names_conservation_summary_iucn": {
     "pt": "Status IUCN (GBIF) será consultado para %d registro(s) no export.",

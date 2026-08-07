@@ -101,7 +101,7 @@ In a dedicated **generalization** step, it flags threatened taxa (national MMA l
 ### Does Saíra add the species' conservation status?
 
 ::: {.faq-card}
-Yes. At export, it writes the status into the `dynamicProperties` field based on the databases chosen in name validation: a Brazilian database (Flora BR / Fauna BR) adds the **MMA** category (`mmaThreatStatus`) and the source portaria (`mmaSource`); **GBIF** adds the global **IUCN** category (`iucnRedListCategory`). If you do not work with Brazilian species, select GBIF only.
+Yes. At export, it writes the status into the `dynamicProperties` field based on the databases chosen in name validation: a Brazilian database (Flora BR / Fauna BR) adds the **MMA** category (`mmaThreatStatus`) and the source portaria (`mmaSource`); **GBIF** adds the global **IUCN** category (`iucnRedListCategory`). The MMA category comes from the national red list, so it is written only to records whose `country` (or `countryCode`) resolves to Brazil; the IUCN category is a global assessment and applies to any locality.
 :::
 
 ## Export and publication
