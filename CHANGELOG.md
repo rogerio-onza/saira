@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- **The Fauna BR download works again.** The Catálogo Taxonômico da Fauna do Brasil changed its data format once more and broke `faunabr`, which is now updated to 1.1.1. States of occurrence are populated again, having been empty since June.
 - **The MMA threat status is no longer written onto records from other countries.** The Portaria MMA list is Brazil's national red list, but a match on the scientific name was enough to stamp it, so a jaguar recorded in Peru left the export claiming Brazilian legal status. The status now goes only to records whose `country` or `countryCode` resolves to Brazil; the IUCN category, which is a global assessment, is unchanged. See ADR-121.
 - **Your own `occurrenceID` column is no longer discarded.** Saira ignored the mapping unless the column happened to be named `occurrenceID`, replacing every identifier with a random UUID while the guide claimed they came from your data. See ADR-118.
 - **`license` is published as a URI.** The exported column carried a short label like `CC-BY`, which is not what Darwin Core and GBIF expect, and disagreed with the guide and `eml.xml`. All four now write the same canonical URL.

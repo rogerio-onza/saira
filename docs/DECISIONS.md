@@ -1451,6 +1451,10 @@ Formato: ADR leve (Architecture Decision Record).
   - `devtools::check(cran = TRUE)` passa sem ERRORs nos bloqueadores identificados.
   - API publica do Rostrum documentada e acessivel via `saira::fn`.
   - Testes mais claros: acesso intencional a internos via `:::` e acesso a publicos diretamente.
+- **Revisao 2026-08-13 — `Remotes:` voltou, e continua sendo bloqueador de CRAN.** A 0.9.2 reintroduziu `Remotes: github::wevertonbio/faunabr@<sha>` para escapar do crash do `merge_data()` sobre a coluna `locality` vazia do CTFB, e nada registrava a tensao com esta ADR. Fica registrado agora, com a condicao de saida explicita:
+  - **Enquanto o pin existir, a Saira nao pode ser submetida ao CRAN.** Isso e aceito conscientemente: um app que nao baixa o dado do provedor nao serve para nada, e o CRAN nao e destino de curto prazo.
+  - **Condicao para despinar**: `faunabr` no CRAN numa versao cujo `load_faunabr()` complete um download end-to-end contra o CTFB **publicado naquele momento**. Nao basta "o bug antigo foi corrigido no CRAN": ele foi, no 1.1.0, e ainda assim reverter teria trocado um `merge_data()` quebrado por outro, porque o CTFB mudou o formato de novo. Ver a licao correspondente em `LESSONS.md`.
+  - Quando a condicao for satisfeita: remover o bloco `Remotes:`, manter `faunabr` em `Imports` com o floor de versao, rodar `renv::snapshot()` e repetir o download end-to-end antes de fechar.
 
 ---
 
