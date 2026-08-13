@@ -1275,6 +1275,14 @@ test_that("auto_suggest_establishment_means only pre-fills listed invasives", {
     expect_false(any(out == "native"))
 })
 
+test_that("auto_suggest_establishment_means skips translocated natives", {
+    # Nasua nasua is on the Horus list but native to Brazil, so a record could
+    # sit either side of its natural range. Suggesting "introduced" would put
+    # a claim the app cannot support into the exported data.
+    out <- auto_suggest_establishment_means(c("Nasua nasua", "Sus scrofa"))
+    expect_equal(unname(out), c("", "introduced"))
+})
+
 test_that("map_establishment_values expands per-species answers to rows", {
     map <- list(
         means = c("sus scrofa" = "introduced", "panthera onca" = "native"),

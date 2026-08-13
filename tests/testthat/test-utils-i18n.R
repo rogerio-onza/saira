@@ -381,3 +381,23 @@ testthat::test_that("tr resolves both languages and both fallback paths", {
     )
     testthat::expect_equal(fallback, saira::tr("nav_home", "en"))
 })
+
+testthat::test_that("the translocated-native copy exists and reads differently from alien", {
+    for (lang in c("pt", "en")) {
+        for (key in c("validate_names_status_badge_translocated",
+                      "est_assistant_translocated_hint",
+                      "validate_names_conservation_summary_translocated")) {
+            testthat::expect_true(nzchar(saira::tr(key, lang)))
+        }
+        # The whole point of the split is that the two say different things;
+        # copy-pasting the alien wording would silently undo it.
+        testthat::expect_false(identical(
+            saira::tr("validate_names_status_badge_translocated", lang),
+            saira::tr("validate_names_status_badge_invasive", lang)
+        ))
+        testthat::expect_false(identical(
+            saira::tr("est_assistant_translocated_hint", lang),
+            saira::tr("est_assistant_invasive_hint", lang)
+        ))
+    }
+})

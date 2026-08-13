@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- **Species native to Brazil are no longer labelled invasive aliens.** The Instituto Hórus list also covers natives invasive outside their natural range, such as the coati, and they now get their own badge and no longer pre-fill `establishmentMeans` as `introduced`. See ADR-122.
 - **The MMA threat status is no longer written onto records from other countries.** The Portaria MMA list is Brazil's national red list, but a match on the scientific name was enough to stamp it, so a jaguar recorded in Peru left the export claiming Brazilian legal status. The status now goes only to records whose `country` or `countryCode` resolves to Brazil; the IUCN category, which is a global assessment, is unchanged. See ADR-121.
 - **Your own `occurrenceID` column is no longer discarded.** Saira ignored the mapping unless the column happened to be named `occurrenceID`, replacing every identifier with a random UUID while the guide claimed they came from your data. See ADR-118.
 - **`license` is published as a URI.** The exported column carried a short label like `CC-BY`, which is not what Darwin Core and GBIF expect, and disagreed with the guide and `eml.xml`. All four now write the same canonical URL.

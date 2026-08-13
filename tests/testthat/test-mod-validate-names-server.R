@@ -651,13 +651,21 @@ testthat::test_that("report table wires the sensitive-species pill column", {
             )
             # ADR-092: the resolved-name click target sits at hidden index 5.
             testthat::expect_true(5 %in% hidden_targets)
-            # ADR-109: the invasive-species flag sits at hidden index 6.
+            # ADR-109: the invasive-species flag sits at hidden index 6. It
+            # carries the origin_class, not a boolean, so the badge can only
+            # say "alien invasive" where the list asserts it.
             testthat::expect_true(6 %in% hidden_targets)
             testthat::expect_true(
                 grepl("vn-cell-invasive", scientific_render, fixed = TRUE)
             )
             testthat::expect_true(
                 grepl("row[6]", scientific_render, fixed = TRUE)
+            )
+            testthat::expect_true(
+                grepl("invasive === 'alien'", scientific_render, fixed = TRUE)
+            )
+            testthat::expect_true(
+                grepl("badge-translocated", scientific_render, fixed = TRUE)
             )
         }
     )
