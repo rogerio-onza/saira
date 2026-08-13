@@ -1209,7 +1209,7 @@ testthat::test_that("the establishment assistant lists species and pre-fills inv
             entries <- rv$establishment_entries
             testthat::expect_equal(entries$raw, c("Sus scrofa", "Panthera onca"))
             testthat::expect_equal(entries$n_records, c(2L, 1L))
-            testthat::expect_equal(entries$invasive, c(TRUE, FALSE))
+            testthat::expect_equal(entries$origin_class, c("alien", NA))
             # Only the listed taxon is pre-filled, and only establishmentMeans.
             testthat::expect_equal(
                 unname(rv$establishment_auto_map[["sus scrofa"]]), "introduced"

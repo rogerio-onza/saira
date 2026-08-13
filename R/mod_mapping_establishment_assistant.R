@@ -164,12 +164,27 @@ setup_establishment_assistant <- function(
                                     entries$n_records[[i]]
                                 )
                             ),
-                            if (isTRUE(entries$invasive[[i]])) {
+                            local({
+                                origin_class <- entries$origin_class[[i]]
+                                if (is.na(origin_class)) {
+                                    return(NULL)
+                                }
+                                alien <- identical(origin_class, "alien")
                                 shiny::span(
-                                    class = "vn-status-badge badge-error est-assistant-invasive",
-                                    tr("est_assistant_invasive_hint", lang_r())
+                                    class = paste(
+                                        "vn-status-badge est-assistant-invasive",
+                                        if (alien) "badge-error" else "badge-translocated"
+                                    ),
+                                    tr(
+                                        if (alien) {
+                                            "est_assistant_invasive_hint"
+                                        } else {
+                                            "est_assistant_translocated_hint"
+                                        },
+                                        lang_r()
+                                    )
                                 )
-                            }
+                            })
                         ),
                         shiny::tags$td(
                             shiny::selectInput(
@@ -235,7 +250,7 @@ setup_establishment_assistant <- function(
                     )
                     return(invisible(NULL))
                 }
-                entries$invasive <- flag_invasive_species(entries$raw)
+                entries$origin_class <- invasive_origin_class_for(entries$raw)
 
                 rv$establishment_entries <- entries
                 rv$establishment_auto_map <- auto_suggest_establishment_means(entries$raw)

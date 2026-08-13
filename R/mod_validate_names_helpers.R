@@ -13,7 +13,7 @@
 # validation_status, this one reads the species name against the bundled
 # invasive list. Kept in the same bar because the user reasons about both as
 # "narrow the processed names down to the ones I care about".
-.vn_stream_filter_values <- c("all", "problems", "not_found", "ambiguous", "synonym", "ignored", "accepted", "invasive")
+.vn_stream_filter_values <- c("all", "problems", "not_found", "ambiguous", "synonym", "ignored", "accepted", "invasive", "translocated")
 .vn_problem_status_values <- c("not_found", "ambiguous", "synonym")
 .vn_review_exit_ms <- 320L
 
@@ -316,7 +316,8 @@ stream_filter_counts <- function(stream_df, reviewed_keys = character(0)) {
         synonym = 0L,
         ignored = 0L,
         accepted = 0L,
-        invasive = 0L
+        invasive = 0L,
+        translocated = 0L
     )
     if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
         return(out)
@@ -333,8 +334,59 @@ stream_filter_counts <- function(stream_df, reviewed_keys = character(0)) {
     out[["ignored"]] <- as.integer(sum(status_vec == "ignored", na.rm = TRUE))
     out[["problems"]] <- as.integer(sum(unresolved_problem, na.rm = TRUE))
     out[["accepted"]] <- as.integer(sum(status_vec == "accepted", na.rm = TRUE))
-    out[["invasive"]] <- as.integer(sum(flag_invasive_species(query_vec), na.rm = TRUE))
+    # One pill per claim: "invasive" counts only taxa the list calls alien to
+    # Brazil, so a native on the list is never counted as an exotic invader.
+    origin_class <- invasive_origin_class_for(query_vec)
+    out[["invasive"]] <- as.integer(sum(origin_class == "alien", na.rm = TRUE))
+    out[["translocated"]] <- as.integer(sum(origin_class == "translocated_native", na.rm = TRUE))
     out
+}
+
+#' Invasive-list note for one processed-names row
+#'
+#' The same badge vocabulary the report table uses, so the two screens never
+#' disagree about what the list says. The natural range and the Horus "motivo
+#' da introducao" ride below it when the source records them.
+#'
+#' @param query_name Character scalar. The name as the user supplied it.
+#' @param lang Language code.
+#' @return A Shiny tag, or NULL when the name is not on the list.
+#' @noRd
+invasive_stream_note_ui <- function(query_name, lang) {
+    origin_class <- invasive_origin_class_for(query_name)[[1]]
+    if (is.na(origin_class)) {
+        return(NULL)
+    }
+    alien <- identical(origin_class, "alien")
+    detail_lines <- invasive_detail_lines(query_name, lang)
+    shiny::div(
+        class = "vn-stream-item-invasive",
+        shiny::span(
+            class = paste(
+                "vn-status-badge",
+                if (alien) "badge-error" else "badge-translocated"
+            ),
+            title = tr(
+                if (alien) {
+                    "validate_names_invasive_tooltip"
+                } else {
+                    "validate_names_translocated_tooltip"
+                },
+                lang
+            ),
+            tr(
+                if (alien) {
+                    "validate_names_status_badge_invasive"
+                } else {
+                    "validate_names_status_badge_translocated"
+                },
+                lang
+            )
+        ),
+        lapply(detail_lines, function(line) {
+            shiny::span(class = "vn-stream-item-invasive-reason", line)
+        })
+    )
 }
 
 #' Filter stream data frame by category
@@ -360,6 +412,11 @@ filter_stream_df <- function(stream_df, filter_key = "all", reviewed_keys = char
     reviewed_vec[is.na(reviewed_vec)] <- FALSE
     exiting_vec <- query_vec %in% exiting_keys
     exiting_vec[is.na(exiting_vec)] <- FALSE
+    origin_class <- if (key %in% c("invasive", "translocated")) {
+        invasive_origin_class_for(query_vec)
+    } else {
+        rep(NA_character_, length(query_vec))
+    }
     keep_idx <- switch(key,
         problems = (status_vec %in% .vn_problem_status_values & !reviewed_vec) | exiting_vec,
         not_found = ((status_vec == "not_found") & !reviewed_vec) | exiting_vec,
@@ -368,8 +425,10 @@ filter_stream_df <- function(stream_df, filter_key = "all", reviewed_keys = char
         ignored = status_vec == "ignored",
         accepted = status_vec == "accepted",
         # Species-list axis, so no reviewed/exiting interplay: a name is on the
-        # invasive list or it is not, regardless of its validation status.
-        invasive = flag_invasive_species(query_vec),
+        # invasive list or it is not, regardless of its validation status. The
+        # two groups filter apart, matching what their badges claim.
+        invasive = !is.na(origin_class) & origin_class == "alien",
+        translocated = !is.na(origin_class) & origin_class == "translocated_native",
         rep(TRUE, length(status_vec))
     )
     out <- stream_df[keep_idx, , drop = FALSE]
@@ -472,11 +531,25 @@ conservation_status_summary_ui <- function(report, selected, br_provider_ids, la
             )
         }
     }
-    invasive_n <- sum(flag_invasive_species(name_col))
-    if (invasive_n > 0L) {
+    # Counted apart: the list asserts "alien to Brazil" for one group and only
+    # "invasive outside its natural range" for the other, so a single total
+    # would overstate the first.
+    origin_class <- invasive_origin_class_for(name_col)
+    alien_n <- sum(!is.na(origin_class) & origin_class == "alien")
+    if (alien_n > 0L) {
         lines[[length(lines) + 1L]] <- shiny::tags$span(
             class = "vn-conservation-line",
-            sprintf(tr("validate_names_conservation_summary_invasive", lang), invasive_n)
+            sprintf(tr("validate_names_conservation_summary_invasive", lang), alien_n)
+        )
+    }
+    translocated_n <- sum(!is.na(origin_class) & origin_class == "translocated_native")
+    if (translocated_n > 0L) {
+        lines[[length(lines) + 1L]] <- shiny::tags$span(
+            class = "vn-conservation-line",
+            sprintf(
+                tr("validate_names_conservation_summary_translocated", lang),
+                translocated_n
+            )
         )
     }
     if (length(lines) == 0L) {

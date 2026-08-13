@@ -354,19 +354,22 @@ extract_species_entries <- function(raw_values) {
     )
 }
 
-# Pre-fill establishmentMeans for taxa on the bundled invasive list: being
-# recorded as an alien invasive species in Brazil is what supports
-# "introduced". Nothing is suggested for the rest -- guessing "native" for an
-# unlisted taxon would assert something the app cannot know. Nothing is ever
-# suggested for degreeOfEstablishment: that depends on the record (a captive
-# animal and a feral one are the same species), so it stays with the user.
+# Pre-fill establishmentMeans only for taxa the bundled list records as alien
+# to Brazil: that is what supports "introduced". Nothing is suggested for the
+# rest -- guessing "native" for an unlisted taxon would assert something the
+# app cannot know, and the list's translocated natives are alien to part of
+# Brazil only, so a record could sit on either side of the taxon's natural
+# range. Nothing is ever suggested for degreeOfEstablishment: that depends on
+# the record (a captive animal and a feral one are the same species), so it
+# stays with the user.
 auto_suggest_establishment_means <- function(species_names) {
     n <- length(species_names)
     if (n == 0L) {
         return(stats::setNames(character(0), character(0)))
     }
-    listed <- flag_invasive_species(species_names)
-    out <- ifelse(listed, "introduced", "")
+    origin_class <- invasive_origin_class_for(species_names)
+    alien <- !is.na(origin_class) & origin_class == "alien"
+    out <- ifelse(alien, "introduced", "")
     stats::setNames(out, normalize_species_keys(species_names))
 }
 

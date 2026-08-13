@@ -157,6 +157,51 @@ test_that("filter_stream_df: 'invasive' keeps only listed taxa", {
     expect_equal(out$query_name, c("Sus scrofa", "Felis catus"))
 })
 
+test_that("the two list groups count and filter apart in the stream", {
+    df <- data.frame(
+        validation_status = c("accepted", "accepted", "accepted"),
+        query_name = c("Sus scrofa", "Nasua nasua", "Panthera onca"),
+        stringsAsFactors = FALSE
+    )
+    counts <- saira:::stream_filter_counts(df)
+    # The coati is on the list but native, so it must not be counted as an
+    # exotic invader -- that was the bug reported from the processed-names tab.
+    expect_equal(counts[["invasive"]], 1L)
+    expect_equal(counts[["translocated"]], 1L)
+
+    expect_equal(
+        saira:::filter_stream_df(df, "invasive")$query_name, "Sus scrofa"
+    )
+    expect_equal(
+        saira:::filter_stream_df(df, "translocated")$query_name, "Nasua nasua"
+    )
+})
+
+test_that("invasive_stream_note_ui states what the list actually says", {
+    alien <- as.character(saira:::invasive_stream_note_ui("Sus scrofa", "pt"))
+    expect_true(grepl("badge-error", alien, fixed = TRUE))
+    expect_false(grepl("badge-translocated", alien, fixed = TRUE))
+
+    native <- as.character(saira:::invasive_stream_note_ui("Nasua nasua", "pt"))
+    expect_true(grepl("badge-translocated", native, fixed = TRUE))
+    expect_false(grepl("badge-error", native, fixed = TRUE))
+
+    expect_null(saira:::invasive_stream_note_ui("Panthera onca", "pt"))
+})
+
+test_that("the detail lines render only where the source records them", {
+    # The coati and the tegu have no motivo, so they get the range line alone
+    # rather than an empty "Introduzida para:" prefix.
+    for (name in c("Nasua nasua", "Salvator merianae")) {
+        note <- as.character(saira:::invasive_stream_note_ui(name, "pt"))
+        expect_true(grepl("Distribui", note, fixed = TRUE))
+        expect_false(grepl("Introduzida para:", note, fixed = TRUE))
+    }
+    both <- as.character(saira:::invasive_stream_note_ui("Cichla kelberi", "pt"))
+    expect_true(grepl("Distribui", both, fixed = TRUE))
+    expect_true(grepl("Introduzida para:", both, fixed = TRUE))
+})
+
 test_that("filter_stream_df: 'invasive' ignores reviewed and exiting keys", {
     df <- data.frame(
         validation_status = c("accepted", "accepted"),

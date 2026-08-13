@@ -5519,6 +5519,13 @@ table.dataTable tbody tr.validate-invalid td {
   border-color: #8c4a00;
 }
 
+/* Native to Brazil, invasive outside its natural range. Same teal as
+   .badge-translocated so the pill and the badge read as one fact. */
+.vn-stream-pill.pill-translocated.is-active {
+  background: #0f6b5c;
+  border-color: #0f6b5c;
+}
+
 .vn-pill-count {
   border-radius: 9999px;
   padding: 0 0.32rem;
@@ -5959,11 +5966,33 @@ table.dataTable tbody tr.validate-invalid td {
   line-height: var(--leading-normal);
 }
 
-/* Invasive-alien-species badge, stacked under the sensitive pill in the
+/* Invasive-species badge, stacked under the sensitive pill in the
    scientificName cell. Only the spacing is set: the badge itself reuses
-   .vn-status-badge + .badge-error, like every other pill in this table. */
+   .vn-status-badge + .badge-error or .badge-translocated, like every other
+   pill in this table. */
 .vn-cell-invasive {
   margin-top: var(--space-1);
+}
+
+/* Horus "motivo da introducao", under the badge in both the report cell and
+   the processed-names row. Absent for roughly a fifth of the list. */
+.vn-cell-invasive-reason,
+.vn-stream-item-invasive-reason {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: var(--leading-normal);
+}
+
+.vn-cell-invasive-reason {
+  margin-top: 0.15rem;
+}
+
+.vn-stream-item-invasive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: 0.15rem;
 }
 
 .vn-report-table tbody tr.vn-row-manual > td {
@@ -6345,6 +6374,16 @@ body.vn-review-open .modal-backdrop.show {
   background: var(--error-bg);
   color: #c0392b;
   border-color: var(--error-border);
+}
+
+/* Native to Brazil, invasive outside its natural range. Deliberately not the
+   red of .badge-error: that red reads "alien invasive", which is exactly the
+   claim this badge exists to avoid. Teal is unused elsewhere in the table, so
+   the two never blur together. Contrast 5.6:1, AA. */
+.badge-translocated {
+  background: #e6f4f1;
+  color: #0f6b5c;
+  border-color: #b8ddd5;
 }
 
 .badge-info {

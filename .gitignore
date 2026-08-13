@@ -46,3 +46,6 @@ __pycache__/
 # reads. To regenerate, drop the Instituto Horus CSV back at this path and run
 # data-raw/generate_invasive_species.R.
 data-raw/invasive_species_horus_2023.csv
+# Richer Horus export: same database, carries the authoritative `origin`
+# (Native / Non-native / Cripto / Hybrid) and `native_distribution_area`.
+data-raw/invasive_species_horus_detail.csv
