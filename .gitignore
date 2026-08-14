@@ -4,6 +4,7 @@
 .agents/
 scripts/*
 !scripts/release_gate.R
+!scripts/smoke_report.R
 pkg_docs/
 
 # Internal docs kept local, not published to the public repo

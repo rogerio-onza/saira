@@ -20,7 +20,7 @@ Each **row** should be one occurrence (a record of an organism in a place and ti
 
 ::: {.callout-tip}
 ## Download the sample spreadsheet
-To practice this and the next steps, download [`ocorrencias-demo.csv`](../../assets/exemplo/ocorrencias-demo.csv), Saíra's demonstration dataset: 1,075 real occurrences of Brazilian species across several biomes, deliberately imperfect (many columns to map, coordinates with problems to review, a few names to check, and threatened species for generalization).
+To practice this and the next steps, download [`ocorrencias-demo.csv`](../../assets/exemplo/ocorrencias-demo.csv), Saíra's demonstration dataset: 1,105 occurrences of Brazilian species across several biomes, deliberately imperfect. It has 24 columns to map, day, month and year in separate columns, catalogue numbers missing and repeated, coordinates swapped and out of range, records from neighbouring countries, threatened species for generalization and invasive alien species. Every tutorial step has something to resolve in it.
 :::
 
 In the **Upload** tab, drag the file onto the indicated area or click to select it.
