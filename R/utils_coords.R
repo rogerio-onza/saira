@@ -1332,21 +1332,6 @@ apply_coords_correction_payload <- function(df, payload = NULL) {
     df
 }
 
-#' Derive country names from valid coordinates for records missing them
-#'
-#' For records whose \code{country} is blank but whose coordinates are valid,
-#' looks up the country the point falls in on Saira's bundled Natural Earth
-#' country layer (no name for points in the sea). Existing country values are
-#' never overwritten.
-#'
-#' @param df data.frame with coordinate + country columns.
-#' @param lat_col,lon_col,country_col Column names.
-#' @param ref Optional country SpatVector (else \code{coords_load_ne_land(50)}).
-#' @param name_col Country-name attribute column in \code{ref} (default "admin").
-#' @return Named list: \code{filled} (logical), \code{country_new} (character,
-#'   equal to the original where not filled), \code{n_filled}, \code{n_candidates},
-#'   \code{available} (FALSE when no country layer could be loaded).
-#' @export
 #' Match filled country names to the casing the column already uses
 #'
 #' The Natural Earth `admin` attribute is Title Case ("Peru"), so filling blanks
@@ -1381,6 +1366,21 @@ coords_match_country_case <- function(filled, existing) {
     filled
 }
 
+#' Derive country names from valid coordinates for records missing them
+#'
+#' For records whose \code{country} is blank but whose coordinates are valid,
+#' looks up the country the point falls in on Saira's bundled Natural Earth
+#' country layer (no name for points in the sea). Existing country values are
+#' never overwritten.
+#'
+#' @param df data.frame with coordinate + country columns.
+#' @param lat_col,lon_col,country_col Column names.
+#' @param ref Optional country SpatVector (else \code{coords_load_ne_land(50)}).
+#' @param name_col Country-name attribute column in \code{ref} (default "admin").
+#' @return Named list: \code{filled} (logical), \code{country_new} (character,
+#'   equal to the original where not filled), \code{n_filled}, \code{n_candidates},
+#'   \code{available} (FALSE when no country layer could be loaded).
+#' @export
 coords_country_from_coordinates <- function(df,
                                             lat_col = "decimalLatitude",
                                             lon_col = "decimalLongitude",

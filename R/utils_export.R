@@ -313,20 +313,6 @@ process_for_export <- function(df) {
     return(df)
 }
 
-#' Append non-mapped raw columns to processed export
-#'
-#' Wraps process_for_export(): runs the existing pipeline, then appends to
-#' the right side any column from `raw_data` that the user did not select
-#' as a source for any DwC mapping. Preserves original names and order so
-#' the user can hand-edit dropped fields after IPT upload.
-#'
-#' @param df_processed Data frame already produced by build_processed_mapping_df()
-#'   (the DwC-shaped intermediate, BEFORE process_for_export()).
-#' @param raw_data Data frame with original uploaded columns.
-#' @param map_values Named list keyed by DwC term, values are char vectors of
-#'   source column names.
-#' @return Data frame: process_for_export(df_processed) + tail of unused raw cols.
-#' @export
 #' Raw columns no DwC term draws from
 #'
 #' The columns `process_for_export_with_unmapped()` appends to the right of the
@@ -357,6 +343,20 @@ unmapped_raw_columns <- function(raw_data, map_values, exclude = character(0)) {
     setdiff(setdiff(names(raw_data), used_sources), exclude)
 }
 
+#' Append non-mapped raw columns to processed export
+#'
+#' Wraps process_for_export(): runs the existing pipeline, then appends to
+#' the right side any column from `raw_data` that the user did not select
+#' as a source for any DwC mapping. Preserves original names and order so
+#' the user can hand-edit dropped fields after IPT upload.
+#'
+#' @param df_processed Data frame already produced by build_processed_mapping_df()
+#'   (the DwC-shaped intermediate, BEFORE process_for_export()).
+#' @param raw_data Data frame with original uploaded columns.
+#' @param map_values Named list keyed by DwC term, values are char vectors of
+#'   source column names.
+#' @return Data frame: process_for_export(df_processed) + tail of unused raw cols.
+#' @export
 process_for_export_with_unmapped <- function(df_processed, raw_data, map_values) {
     out <- process_for_export(df_processed)
     id_strategy <- attr(out, "id_strategy")

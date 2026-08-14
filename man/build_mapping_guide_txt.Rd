@@ -12,7 +12,8 @@ build_mapping_guide_txt(
     "decimalLongitude", "basisOfRecord"),
   source_file = NA_character_,
   id_strategy = NA_character_,
-  constants = NULL
+  constants = NULL,
+  id_counts = NULL
 )
 }
 \arguments{
@@ -27,13 +28,17 @@ fonte (multi-coluna serializa como "colA + colB").}
 
 \item{source_file}{Optional character: nome do arquivo de origem para metadados.}
 
-\item{id_strategy}{Optional character: occurrenceID strategy used at export
-(`"user_supplied"`, `"stable_v5"`, `"stable_v5_with_random_fallback"`,
-`"random_v4"`). When supplied, an "Identifier Strategy" section is
-appended explaining the consequence for GBIF republication.}
+\item{id_strategy}{Optional character: occurrenceID strategy used at export,
+as named by `occurrence_id_strategy_label()`. When supplied, an "Identifier
+Strategy" section is appended explaining the consequence for GBIF
+republication.}
 
 \item{constants}{Optional named list: name = DwC term, value = typed constant
 applied to every row. Rendered as the guide's `constants` section.}
+
+\item{id_counts}{Optional named list from `resolve_occurrence_ids()`'s
+`id_counts` attribute (`total`, `preserved`, `generated`). Reported
+verbatim so the reader can check the claim against the file.}
 }
 \value{
 character vector (uma entrada por linha), encoding UTF-8.

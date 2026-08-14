@@ -7,12 +7,12 @@
 get_dwc_terms_list(lang = "en")
 }
 \arguments{
-\item{lang}{Language code ("pt" or "en")}
+\item{lang}{Language code ("pt" or "en").}
 }
 \value{
-Named list of DwC term definitions
+Named list of DwC term definitions.
 }
 \description{
-Returns DwC terms in list format for the mapping module UI.
-Each item has: term, category, desc, sep
+Returns DwC terms in list format for the mapping module UI. Each item has:
+`term`, `category`, `desc`, `hint`, `sep`, `required`.
 }

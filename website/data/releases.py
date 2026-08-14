@@ -11,6 +11,22 @@
 
 RELEASES = [
     {
+        "version": "0.10.1",
+        "date": "2026-08-14",
+        "pt": [
+            ("fixed", "**O download do Fauna BR voltou a funcionar.** O Catálogo Taxonômico da Fauna do Brasil mudou o formato dos dados de novo, e os estados de ocorrência voltaram a vir preenchidos."),
+            ("fixed", "**O status de ameaça do MMA não é mais gravado em registros de outros países.** A lista da Portaria é nacional; uma onça registrada no Peru saía do export alegando status legal brasileiro."),
+            ("added", "**O card de `occurrenceID` deixa você apontar a coluna que já carrega seus identificadores**, e avisa quando ela repete um valor."),
+            ("fixed", "**Dia, mês e ano em colunas separadas agora formam uma data ISO 8601.** Antes o `eventDate` saía como `12 | 2 | 1809` em vez de `1809-02-12`."),
+        ],
+        "en": [
+            ("fixed", "**The Fauna BR download works again.** The Catálogo Taxonômico da Fauna do Brasil changed its data format once more, and states of occurrence are populated again."),
+            ("fixed", "**The MMA threat status is no longer written onto records from other countries.** The Portaria list is national; a jaguar recorded in Peru left the export claiming Brazilian legal status."),
+            ("added", "**The `occurrenceID` card lets you point at the column that already carries your identifiers**, and warns when that column repeats a value."),
+            ("fixed", "**Day, month and year in separate columns now compose one ISO 8601 date.** `eventDate` used to come out as `12 | 2 | 1809` instead of `1809-02-12`."),
+        ],
+    },
+    {
         "version": "0.10.0",
         "date": "2026-08-04",
         "pt": [

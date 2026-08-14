@@ -422,6 +422,13 @@ dwc_card_hints <- function(terms_df, lang, desc) {
     ifelse(nzchar(hint), hint, desc)
 }
 
+#' Get Darwin Core terms as list
+#'
+#' Returns DwC terms in list format for the mapping module UI. Each item has:
+#' `term`, `category`, `desc`, `hint`, `sep`, `required`.
+#'
+#' @param lang Language code ("pt" or "en").
+#' @return Named list of DwC term definitions.
 #' @export
 get_dwc_terms_list <- function(lang = "en") {
     terms_df <- load_dwc_terms_rds()

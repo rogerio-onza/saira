@@ -13,5 +13,6 @@ abbreviate_license(x)
 Character vector with known license URLs abbreviated
 }
 \description{
-Abbreviate Creative Commons license values
+Used by the on-screen preview only (ADR-008): the short token keeps the
+table readable. The published file gets the URI via `expand_license()`.
 }

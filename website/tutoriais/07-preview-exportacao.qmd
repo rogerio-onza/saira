@@ -46,7 +46,7 @@ No topo, um indicador diz se o conjunto está **pronto para publicar** (verde) o
 
 ::: {.callout-warning}
 ## Sem occurrenceID mapeado
-Se você não mapeou um <span class="term">occurrenceID</span>, o Saíra avisa: o IPT/GBIF passa a gerar identificadores instáveis a cada publicação. A exportação ainda funciona (o Saíra gera um UUID), mas o recomendado é **mapear um occurrenceID estável** para que cada registro mantenha o mesmo identificador ao longo do tempo.
+Se você não mapeou um <span class="term">occurrenceID</span>, o Saíra avisa: o IPT/GBIF passa a gerar identificadores instáveis a cada publicação. A exportação ainda funciona, e os identificadores que o Saíra gera derivam do conteúdo da linha, então re-enviar a mesma planilha reproduz os mesmos valores. Mesmo assim, o recomendado é **mapear a coluna que já carrega seus identificadores**: o Saíra preserva os que existem e só preenche as linhas em branco.
 :::
 
 ### Correções aplicadas
@@ -68,7 +68,7 @@ Ao gerar o pacote, o Saíra padroniza automaticamente o conjunto para que ele at
 
 - **eventDate** convertido para o formato ISO (`AAAA-MM-DD`).
 - **Coordenadas** com o separador decimal normalizado (vírgula vira ponto).
-- **occurrenceID** gerado quando ausente, para garantir um identificador único por registro.
+- **occurrenceID** derivado do conteúdo da linha quando ausente, para garantir um identificador único e estável por registro.
 - **Licenças** abreviadas para a URL canônica (por exemplo, a URL da Creative Commons correspondente).
 - **Colunas reordenadas** na sequência canônica do Darwin Core, com as colunas não mapeadas anexadas à direita, preservando seus nomes originais.
 

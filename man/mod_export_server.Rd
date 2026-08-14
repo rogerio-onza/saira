@@ -18,6 +18,7 @@ mod_export_server(
   raw_data_r = NULL,
   map_values_r = NULL,
   custom_values_r = NULL,
+  occurrence_id_info_r = NULL,
   on_navigate = NULL,
   on_export_success = NULL
 )
