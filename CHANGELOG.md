@@ -10,294 +10,282 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.10.1] - 2026-08-14
 
 ### Added
-- **The `occurrenceID` card lets you point at the column that carries your identifiers,** and warns when that column repeats a value. Identifiers you already have are always kept, and the ones Saira generates are derived from each row, so re-uploading the same spreadsheet reproduces them instead of minting new ones.
+- **occurrenceID:** Pick the column that carries your identifiers, with a warning on repeated values ([#102](https://github.com/rogerio-onza/saira/pull/102))
 
 ### Fixed
-- **The Fauna BR download works again.** The Catálogo Taxonômico da Fauna do Brasil changed its data format once more and broke `faunabr`, which is now updated to 1.1.1. States of occurrence are populated again, having been empty since June.
-- **The MMA threat status is no longer written onto records from other countries.** The Portaria MMA list is Brazil's national red list, but a match on the scientific name was enough to stamp it, so a jaguar recorded in Peru left the export claiming Brazilian legal status. The status now goes only to records whose `country` or `countryCode` resolves to Brazil; the IUCN category, which is a global assessment, is unchanged. See ADR-121.
-- **Your own `occurrenceID` column is no longer discarded.** Saira ignored the mapping unless the column happened to be named `occurrenceID`, replacing every identifier with a random UUID while the guide claimed they came from your data. See ADR-118.
-- **`license` is published as a URI.** The exported column carried a short label like `CC-BY`, which is not what Darwin Core and GBIF expect, and disagreed with the guide and `eml.xml`. All four now write the same canonical URL.
-- **Three-part names are marked `subspecies`, not `species`,** and fill `infraspecificEpithet`. Author names in the same position (`Dasypus novemcinctus Linnaeus, 1758`) are still read as authorship. See ADR-119.
-- **Country filled from coordinates now matches the casing of your column,** so a column written in capitals no longer ends up with `Peru` beside `BRAZIL`.
-- **The guide and export screen now say that unmapped columns are not published.** They stay in the file but are absent from `meta.xml`, so GBIF ignores them. See ADR-120.
-- **Day, month and year in separate columns now compose one ISO 8601 `eventDate`.** Mapping all three to the term produced `12 | 2 | 1809` instead of `1809-02-12`. Columns whose names do not identify the parts keep the old joined value rather than risking an invented date. See ADR-117.
-- **The border-crossing alert now suggests a weaker generalization, not a stronger one.** The suggested category was a fixed number written into the translation, correct only back when the alert could only appear at Category 1. It is now computed from the categories of the species that cross, and says so when they are already at Category 4.
-- **The export tab no longer says the dataset is ready to publish.** That step produces the bundle; publishing happens afterwards in the IPT.
+- **faunabr:** Update to 1.1.1, so states of occurrence are populated again ([#105](https://github.com/rogerio-onza/saira/pull/105))
+- **export:** Apply the MMA threat status only to records that resolve to Brazil, ADR-121 ([#103](https://github.com/rogerio-onza/saira/pull/103))
+- **export:** Keep the publisher's own `occurrenceID` instead of a random UUID, ADR-118 ([#102](https://github.com/rogerio-onza/saira/pull/102))
+- **export:** Publish `license` as a URI instead of a short label ([#102](https://github.com/rogerio-onza/saira/pull/102))
+- **export:** State in the guide and the export screen that unmapped columns are not published, ADR-120 ([#102](https://github.com/rogerio-onza/saira/pull/102))
+- **export:** Say the dataset is ready to export, not ready to publish ([#99](https://github.com/rogerio-onza/saira/pull/99))
+- **names:** Mark three-part names as `subspecies` and fill `infraspecificEpithet`, ADR-119 ([#102](https://github.com/rogerio-onza/saira/pull/102))
+- **eventDate:** Compose an ISO 8601 date from separate day, month and year columns, ADR-117 ([#100](https://github.com/rogerio-onza/saira/pull/100))
+- **coords:** Match the casing of your column when filling country from coordinates ([#102](https://github.com/rogerio-onza/saira/pull/102))
+- **generalization:** Suggest a weaker category in the border-crossing alert, not a stronger one ([#101](https://github.com/rogerio-onza/saira/pull/101))
 
 ## [0.10.0] - 2026-08-04
 
 ### Added
-- **The mapping screen has a list view, for reviewing what auto-mapping decided.** All 66 terms on one line each with their source column and an example value, which makes a column that landed on the wrong term visible.
-- **The class pill bar shows where the pending work is.** A state dot per class, and a "next pending" button that walks through each required term with no mapping and each one Rostrum was unsure about.
-- **Eleven long Darwin Core definitions now have a short line written for the card.** The official definition is unchanged and still shown in full by the `?` beside the term name.
+- **mapping:** Add a list view with all 66 terms, source column and example value ([#86](https://github.com/rogerio-onza/saira/pull/86))
+- **mapping:** Show a state dot per class and a next-pending button on the pill bar ([#84](https://github.com/rogerio-onza/saira/pull/84))
+- **mapping:** Write a short card line for eleven long Darwin Core definitions ([#84](https://github.com/rogerio-onza/saira/pull/84))
 
 ### Changed
-- **Saira learns a column name only when you export, not when you pick it.** Cycling a card through candidate columns used to teach it every rejected one as a permanent alias.
-- **The mapping screen fits three columns of cards instead of two**, dropping to two below 1280px and one below 860px. Scrolling the 66 terms goes from roughly 7.5 screens to 3.
-- **Card height now follows the monitor.** Above 1800px the description drops to one line, because a card is then wide enough for most definitions to fit on one.
-- **The help-site release cards are back to the house style.** The 0.9.x cards had grown into paragraphs; 0.9.0 and 0.9.3 to 0.9.7 were rewritten in both languages.
-- **The help-site tutorials are shorter.** An editing pass over all seven pages, PT and EN, removed restated sentences and facts duplicated across pages. No figure, table or page was removed.
-- **Both README diagrams were redrawn to the same language.** The old versions used type so small it was unreadable once scaled into the text column.
-- **Step 06 is marked as conditional.** Generalization only has work to do when name validation flagged threatened species.
+- **mapping:** Fit three columns of cards, two below 1280px and one below 860px ([#84](https://github.com/rogerio-onza/saira/pull/84))
+- **rostrum:** Learn a column name on export, not on every column pick, ADR-115 ([#93](https://github.com/rogerio-onza/saira/pull/93))
+- **site:** Trim the release cards back to the house style ([#83](https://github.com/rogerio-onza/saira/pull/83))
+- **site:** Trim the tutorials and redraw the how-it-works diagram ([#80](https://github.com/rogerio-onza/saira/pull/80))
+- **site:** Redraw the GBIF-fit diagram to match the how-it-works diagram ([#81](https://github.com/rogerio-onza/saira/pull/81))
+- **site:** Ring the Saíra station and put SiBBr first in the pt-BR diagram ([#82](https://github.com/rogerio-onza/saira/pull/82))
+- **docs:** Cut CHANGELOG entries back to what changed and why ([#94](https://github.com/rogerio-onza/saira/pull/94))
 
 ### Fixed
-- **Mapping a column no longer freezes the screen for about a minute.** Building the mapped table walked the spreadsheet row by row for every term assembled from more than one column.
-- **The generalization tab no longer rebuilds the whole dataset while you are mapping**, for a map on a tab you are not looking at.
-- **A required mapping card no longer stays red after you fill it.** The warning state was decided when the grid was drawn, and the grid is not redrawn on a selection.
-- **A fixed value on the country card now releases coordinate validation.** The card turned green but the gate still reported country as unmapped, because it only recognised country as a source column.
-- **Importing a mapping template no longer looks like it froze.** It now shows a progress modal that stays up until the rebuilt cards are on screen.
-- **The test suite no longer writes into your local alias database.** It isolated the user identity but not the database file, so every run left two rows behind.
-- **The tutorial index and the README no longer list Excel as an upload format.** Saira accepts `.csv`, `.tsv`, `.txt` and camera-trap `.zip`; the `.xlsx` is an export mirror only.
-- **The generalization tutorial no longer promises that coordinates are never degraded twice.** It now states the condition under which Saira skips rows the publisher already generalized.
-- **A misplaced "apenas" in the Portuguese generalization page inverted a warning.** The English page was already correct.
-- **A callout boundary in the English name-validation page** enclosed a paragraph that is body text in Portuguese, so the two rendered differently.
+- **mapping:** Collapse multi-column terms a column at a time, not a row at a time, ADR-116 ([#95](https://github.com/rogerio-onza/saira/pull/95))
+- **mapping:** Keep a required card's state in sync when you fill it ([#90](https://github.com/rogerio-onza/saira/pull/90))
+- **mapping:** Show a progress modal while a template is imported ([#88](https://github.com/rogerio-onza/saira/pull/88))
+- **coords:** Accept a fixed country value in the validation gate ([#89](https://github.com/rogerio-onza/saira/pull/89))
+- **generalization:** Stop rebuilding the dataset for a map on a hidden tab, ADR-114 ([#95](https://github.com/rogerio-onza/saira/pull/95))
+- **tests:** Isolate the Rostrum database for the whole suite ([#92](https://github.com/rogerio-onza/saira/pull/92))
 
 ## [0.9.7] - 2026-07-30
 
-Performance release. The app behaves exactly as in 0.9.6 apart from one fixed bug. See ADR-113 for the measurements.
-
 ### Fixed
-- **Switching language no longer resets the two name-validation options.** Turning off "remove authors" or "ignore qualifiers" and then changing language put both switches back on, silently changing how the next validation treated your names.
+- **i18n:** Keep the two name-validation options off across a language switch ([#76](https://github.com/rogerio-onza/saira/pull/76))
 
 ### Performance
-- **The app starts about 5x faster.** The Natural Earth land reference was loaded at startup for a check that runs only behind the Validate coordinates button; it is now loaded when first needed.
-- **Auto-mapping and the `eventDate` card are much faster on a large spreadsheet.** Four helpers that read a month, year or name token ran once per record instead of once per distinct value.
-- **Three pieces of work that were computed and then discarded are no longer computed**: the `eventDate` raw fallback on files that do not need it, identifiers for files that already carry `occurrenceID`, and a second country-to-ISO3 pass when accepting a coordinate correction.
-- **The progress bar no longer competes with the validation it reports.** The whole configuration panel was rebuilt about 16 times a second, on the same thread doing the taxonomic queries.
-- **The name stream redraws faster on a large validation.** It reordered the entire accumulated list to show the most recent 100 entries.
+- **startup:** Load the spatial reference lazily, about 5x faster to open ([#73](https://github.com/rogerio-onza/saira/pull/73))
+- **mapping:** Vectorize the per-row month, year and name-token parsers ([#74](https://github.com/rogerio-onza/saira/pull/74))
+- **names:** Stop re-rendering the config panel 16x per second ([#76](https://github.com/rogerio-onza/saira/pull/76))
+- **names:** Redraw the name stream without reordering the whole accumulated list ([#76](https://github.com/rogerio-onza/saira/pull/76))
+- **export:** Stop computing values that are immediately discarded ([#77](https://github.com/rogerio-onza/saira/pull/77))
+- **docs:** Record the performance batch as ADR-113 ([#78](https://github.com/rogerio-onza/saira/pull/78))
 
 ## [0.9.6] - 2026-07-29
 
-Maintenance release. Nothing changes for the user; this clears warnings `R CMD check` had accumulated.
-
 ### Changed
-- **`R CMD check` no longer reports non-ASCII characters in the package code.** Seventeen string literals are now `\uxxxx` escapes, which R parses into identical characters, so every label on screen is unchanged.
-- **Editor lint warnings now match the project's actual style.** With no `.lintr`, lintr assumed 2-space indentation against a 4-space codebase and reported thousands of false positives.
-- **Five wrapped `if` conditions in the coordinate module are indented apart from their body**, so it is visible where the condition ends. Whitespace only.
+- **build:** Escape seventeen non-ASCII string literals for a clean `R CMD check` ([#72](https://github.com/rogerio-onza/saira/pull/72))
+- **build:** Add a `.lintr` matching the project's 4-space style ([#72](https://github.com/rogerio-onza/saira/pull/72))
+- **coords:** Indent five wrapped `if` conditions apart from their body ([#72](https://github.com/rogerio-onza/saira/pull/72))
 
 ### Documentation
-- **Six roxygen warnings cleared.** Five arguments were undocumented and one help page was missing a parameter; all now match their function signatures.
+- **roxygen:** Document five undocumented arguments and one missing parameter ([#72](https://github.com/rogerio-onza/saira/pull/72))
 
 ### Tests
-- **`test-ascii-source.R` guards against non-ASCII returning to R code.** It inspects code tokens only, skipping the tolerated Portuguese comments.
+- **build:** Guard against non-ASCII returning to R code ([#72](https://github.com/rogerio-onza/saira/pull/72))
 
 ## [0.9.5] - 2026-07-29
 
 ### Added
-- **`establishmentMeans` and `degreeOfEstablishment` can now be filled for a whole spreadsheet, one answer per species.** Both carry a controlled vocabulary, so filling them by hand across thousands of rows was not realistic.
-- **Species on the bundled invasive alien species list arrive pre-filled as `introduced`.** `degreeOfEstablishment` is never suggested: whether an individual is captive, released or invasive is a property of the record, not the species.
-- **Your own data always wins over the assistant.** If you also map a column, its values are kept and the assistant fills only the rows you left blank. A species left unanswered comes out blank.
-- **Name validation flags invasive alien species.** Records matching the Brazilian list (Instituto Hórus, 2023, 483 taxa) get a badge, a count above the table and their own filter pill. The list is bundled, so the check is local and offline.
-- **The `dynamicProperties` card shows the JSON it will generate.** The card offered the key editor but no example, so a mapped column looked inert.
+- **establishmentMeans:** Fill both establishment terms for a whole spreadsheet, one answer per species ([#64](https://github.com/rogerio-onza/saira/pull/64))
+- **establishmentMeans:** Pre-fill species on the invasive alien list as `introduced` ([#64](https://github.com/rogerio-onza/saira/pull/64))
+- **establishmentMeans:** Keep your own mapped column, filling only the rows you left blank ([#64](https://github.com/rogerio-onza/saira/pull/64))
+- **names:** Flag invasive alien species against the bundled Instituto Hórus list, 483 taxa ([#63](https://github.com/rogerio-onza/saira/pull/63))
+- **dynamicProperties:** Show the JSON the card will generate
 
 ### Changed
-- **Both establishment terms sit after the taxon columns in the exported sheet**, next to the species they describe, instead of at the front of the file. Display order only.
-- **A card filled by the assistant now looks filled.** It used to keep the grey MANUAL badge and an example line reading "column mapped, no values", which was false.
-- **The tutorials' downloadable sample is now Saíra's full demonstration dataset**, so anyone following the tutorials works with the same 1,075-occurrence file used in the app demonstration.
+- **export:** Place both establishment terms after the taxon columns ([#64](https://github.com/rogerio-onza/saira/pull/64))
+- **mapping:** Show a card filled by the assistant as filled, not MANUAL ([#62](https://github.com/rogerio-onza/saira/pull/62))
+- **site:** Use the full demonstration dataset as the tutorial download ([#61](https://github.com/rogerio-onza/saira/pull/61))
 
 ### Fixed
-- **Switching the interface language no longer wipes your mapping.** The upload step read the language while parsing the file, so a language switch handed the app a new table and every screen correctly treated it as a new upload.
-- **The establishment assistant button no longer translates the Darwin Core term.** A term is an identifier and stays in English in both languages, as the `basisOfRecord` button already did.
-- **A mapping card now always says what it is doing with the column you picked.** When the column was blank in the sampled rows the card rendered nothing, which is what an unmapped card looks like.
-- **A freshly mapped card no longer waits a beat before showing its example.**
+- **i18n:** Stop re-reading the upload on a language switch, which wiped the mapping ([#67](https://github.com/rogerio-onza/saira/pull/67))
+- **establishmentMeans:** Keep the Darwin Core term in English on the assistant button ([#69](https://github.com/rogerio-onza/saira/pull/69))
+- **mapping:** Always state what the card did with the column you picked ([#62](https://github.com/rogerio-onza/saira/pull/62))
+- **mapping:** Show a freshly mapped card's example without a beat of delay ([#62](https://github.com/rogerio-onza/saira/pull/62))
 
 ### Performance
-- **Tables and validation screens build their labels once per distinct value instead of once per row.** The number of distinct values is tiny and does not grow with the spreadsheet.
-- **The translation lookup itself got 5.5x faster.** Every call searched for a legacy dictionary object that no longer exists. `tr()` is called from roughly 700 places, so this compounds into every screen.
-- **Counting records per sensitive species no longer rescans the whole column once per species.** This also fixes a latent crash on a row with coordinates but a blank name.
+- **render:** Build labels once per distinct value instead of once per row ([#66](https://github.com/rogerio-onza/saira/pull/66))
+- **i18n:** Stop searching for a legacy dictionary object on every `tr()` call, 5.5x faster ([#66](https://github.com/rogerio-onza/saira/pull/66))
+- **generalization:** Count records per sensitive species without rescanning the column ([#66](https://github.com/rogerio-onza/saira/pull/66))
 
 ## [0.9.4] - 2026-07-01
 
 ### Added
-- **45 new Darwin Core terms and 9 new classes are in the mapping catalog and Wiki.** The catalog was resynced against TDWG's published list, each new term with a curated PT-BR definition. Nothing was removed upstream.
-- **The README leads with two diagrams (PT/EN)**: where Saíra fits in GBIF, and the five-step pipeline.
+- **dwc:** Resync the catalog against TDWG, 45 new terms and 9 new classes ([#58](https://github.com/rogerio-onza/saira/pull/58))
+- **docs:** Add the GBIF-fit and five-step pipeline diagrams to the README ([#55](https://github.com/rogerio-onza/saira/pull/55))
 
 ### Changed
-- **Eight Darwin Core terms are now grouped under the class TDWG assigns them.** This corrects the grouping in the mapping grid, the Wiki and the export column order; the values written are unchanged.
+- **dwc:** Group eight terms under the class TDWG assigns them ([#58](https://github.com/rogerio-onza/saira/pull/58))
 
 ### Fixed
-- **The exported EML now reflects the license chosen in the mapping.** `eml.xml` claimed the CC0 public-domain waiver on every export, so a dataset licensed CC-BY was published as public domain.
-- **`fundingAttribution` is declared under its Audiovisual Core namespace in `meta.xml`**, not `dwc:`. Only affects archives that map a column to it.
-- **Adding a term via "Add term" now inserts it into the mapping and scrolls to its card.** Confirming the modal had no visible effect, because the grid did not treat a new term as a reason to rebuild.
-- **Importing a mapping template now shows the cards for non-default terms it maps.** The value was restored but no card rendered, so the mapping was invisible.
-- **The Preview table keeps its Darwin Core header frozen while you scroll.** The whole page scrolled, so the term names left the screen and you lost track of which column was which.
+- **eml:** Reflect the license chosen in the mapping instead of always claiming CC0 ([#58](https://github.com/rogerio-onza/saira/pull/58))
+- **export:** Declare `fundingAttribution` under its Audiovisual Core namespace in `meta.xml` ([#58](https://github.com/rogerio-onza/saira/pull/58))
+- **mapping:** Insert a term added via "Add term" and scroll to its card ([#57](https://github.com/rogerio-onza/saira/pull/57))
+- **mapping:** Render the cards for non-default terms restored by a template ([#57](https://github.com/rogerio-onza/saira/pull/57))
+- **preview:** Freeze the Darwin Core header while the rows scroll ([#57](https://github.com/rogerio-onza/saira/pull/57))
+- **docs:** Render the README diagrams at full width ([#56](https://github.com/rogerio-onza/saira/pull/56))
 
 ## [0.9.3] - 2026-06-25
 
 ### Changed
-- **The Help tab is now a resource hub instead of a workflow recap.** The step-by-step duplicated the website tutorials; it is replaced by the tutorials link, the useful links, GBIF's best-practice PDFs, a condensed FAQ and the dependency list.
+- **help:** Rework the tab into a resource hub of tutorials, links, GBIF PDFs and a FAQ ([#54](https://github.com/rogerio-onza/saira/pull/54))
 
 ### Fixed
-- **The Mapping step no longer freezes for several seconds after each selection.** Every change re-rendered the entire grid, all ~50 inputs each carrying the full column list, even though one card had changed. Only the edited card updates now.
-- **The `modified` term is a plain date when "use today's date" is checked**, matching the manual date picker instead of writing a full UTC timestamp.
-- **`eventDate` and `dateIdentified` are normalized to ISO 8601 in the mapping preview**, which showed the raw value while only the export converted it. Unpadded dates now parse, and day-first versus month-first is decided per column by voting over the whole column.
+- **mapping:** Re-render only the edited card on a selection, not all ~50 inputs ([#51](https://github.com/rogerio-onza/saira/pull/51))
+- **modified:** Write a plain date when "use today's date" is checked ([#52](https://github.com/rogerio-onza/saira/pull/52))
+- **eventDate:** Normalize `eventDate` and `dateIdentified` to ISO 8601 in the preview ([#52](https://github.com/rogerio-onza/saira/pull/52))
 
 ## [0.9.2] - 2026-06-24
 
 ### Added
-- **The navbar shows the running version, and the app warns when your R session is stale.** Updating without restarting R leaves the old namespace running while the new version sits on disk, which looks like the update did nothing.
-
-### Fixed
-- **Flora BR and Fauna BR downloads work again.** Two upstream changes in `florabr`/`faunabr` broke the bootstrap, leaving both providers stuck on "update failed" with an empty cache.
-- **Large provider downloads no longer time out on slow connections.** R's default 60s timeout truncated the archive, surfacing as an extraction failure.
-- **The conservation-status summary line no longer crowds the validation stats.**
+- **ui:** Show the running version in the navbar and warn on a stale R session ([#49](https://github.com/rogerio-onza/saira/pull/49))
 
 ### Changed
-- **`faunabr` is pinned to the maintainer's fixed development build.** A crash on the empty `locality` column published upstream is unfixed in CRAN 1.0.0/1.0.1. Revert once a fixed version reaches CRAN.
-- **Help site and README corrections (docs only).** The landing page was missing the Mapping step, several tutorial sections were tightened, and the README no longer claims Excel is accepted on upload.
+- **faunabr:** Pin the maintainer's fixed development build ([#50](https://github.com/rogerio-onza/saira/pull/50))
+- **site:** Correct the help site and README, and rework the FAQ as cards ([#47](https://github.com/rogerio-onza/saira/pull/47))
+
+### Fixed
+- **names:** Restore the Flora BR and Fauna BR provider downloads ([#50](https://github.com/rogerio-onza/saira/pull/50))
+- **names:** Raise R's 60s timeout so a large provider download is not truncated ([#50](https://github.com/rogerio-onza/saira/pull/50))
+- **names:** Stop the conservation-status line crowding the validation stats ([#50](https://github.com/rogerio-onza/saira/pull/50))
 
 ## [0.9.1] - 2026-06-22
 
 ### Added
-- **Tab-separated (`.tsv`) files are accepted on upload.** The reader already detected the tab delimiter, but the file picker and the format gate rejected the extension before it could be read.
+- **upload:** Accept tab-separated (`.tsv`) files in the picker and the format gate ([#42](https://github.com/rogerio-onza/saira/pull/42))
 
 ## [0.9.0] - 2026-06-20
 
 ### Added
-- **Conservation status (global IUCN and Brazilian MMA) is auto-added to `dynamicProperties` on export.** Keyed to the providers chosen in the Name-validation tab, and additive: a taxon can receive both. The IUCN lookup degrades to no key when offline.
-- **Seven more dataset-level terms accept a fixed value applied to every row**, instead of requiring a column: `rightsHolder`, `institutionCode`, `collectionCode`, `country`, `references`, `bibliographicCitation` and `geodeticDatum`. Mapping a column and using a fixed value are mutually exclusive.
-- **Coordinate generalization never makes coordinates look more precise than they already are.** Chapman requires generalization to reduce precision, never invent it, so the grid is now clamped to the record's existing precision. The record is still masked and documented; only the grid widens.
+- **dynamicProperties:** Auto-add the IUCN and MMA conservation status on export ([#39](https://github.com/rogerio-onza/saira/pull/39))
+- **mapping:** Accept a fixed value for seven dataset-level terms ([#38](https://github.com/rogerio-onza/saira/pull/38))
+
+### Changed
+- **generalization:** Clamp the grid to the record's existing precision, per Chapman ([#37](https://github.com/rogerio-onza/saira/pull/37))
 
 ### Fixed
-- **Camtrap DP uploads map cleanly: filled columns, AUTO badges, no blank fields.** Empty columns were offered as mapping cards, auto-mapped values were wiped before the client echoed them back, and exact matches were downgraded to "suggested".
-- **The `occurrenceID` card no longer claims a UUID will be generated when the upload already has IDs.** Existing identifiers were already preserved; only the card text was wrong.
+- **camtrap:** Fill the cards, drop empty columns and badge exact matches AUTO ([#36](https://github.com/rogerio-onza/saira/pull/36))
+- **occurrenceID:** Stop the card claiming a UUID when the upload already has IDs ([#36](https://github.com/rogerio-onza/saira/pull/36))
 
 ## [0.8.6] - 2026-06-19
 
 ### Fixed
-- **Name-validation report: the results table now scrolls and its pagination is reachable.** With more than 10 names the report panel (a fixed-height box) clipped the 10th row and the pager beneath it, with no scrollbar, so longer datasets could not be browsed past the first page. The table had `scrollX` enabled, which moves the header into DataTables' own scroll container and leaves the body unable to scroll vertically inside the panel — also leaving the existing sticky-header rule inert. Dropping `scrollX`, making the table shell scroll vertically, and pinning the header (sticky top) and pagination (sticky bottom) keeps every row reachable and both the column headers and the pager visible while scrolling. No new `!important` (bundle stays at 11).
+- **names:** Scroll the report table and keep its pagination reachable ([#35](https://github.com/rogerio-onza/saira/pull/35))
 
 ## [0.8.5] - 2026-06-18
 
 ### Changed
-- **Refreshed the bundled Brazilian threatened-fauna lists to the 2026 official portarias.** The in-package list that drives sensitive-coordinate generalization on export was rebuilt from the new DOU rulings: **terrestrial fauna** now follows **Portaria MMA nº 1.704, de 16 de junho de 2026** (updates Portaria 444/2014 — 790 threatened taxa across Aves, Répteis, Anfíbios, Mamíferos and Invertebrados Terrestres), and **aquatic fauna** (fish + aquatic invertebrates) now follows **Portaria GM/MMA nº 1.667, de 27 de abril de 2026** (revokes Portaria 445/2014 — 490 taxa). The **flora** list is unchanged (Portaria MMA nº 148/2022). Net effect on the masking lookup: **4455 → 4486 taxa** (332 added, 301 removed, 170 recategorized). The 2026 fauna lists spell the "possibly extinct" tier `CR (PE)`; it is canonicalized to the app's existing `CR (PEX)` label, so the threat-category display, i18n and generalization grid are unchanged. Extinct tags (EX/RE/EW) remain excluded from masking, as before. The source-of-truth Markdown (`data-raw/redlist_brasil_mma.md`) and the regenerated `inst/extdata/sensitive_species.rds` were rebuilt from the official PDFs; portaria citations in the README, the "Technologies and credits" page and the name-validation tutorial now credit all three rulings by scope.
+- **mma:** Refresh the threatened-fauna lists to Portarias 1.704/2026 and 1.667/2026 ([#34](https://github.com/rogerio-onza/saira/pull/34))
 
 ## [0.8.4] - 2026-06-16
 
 ### Added
-- **Website: privacy-friendly analytics (Umami).** A cookieless Umami snippet (`assets/analytics.html`, injected via `include-in-header`) now tracks page views across every PT and EN page, so site access can be monitored without cookies or personal-data collection.
-- **Website: a "Technologies and credits" page (PT + EN).** A new bilingual page (`tecnologias.qmd` / `en/technologies.qmd`, in the navbar between Glossary and Releases) gathers, in one discoverable place, every R package Saíra depends on (grouped by role, each linked to CRAN with its license), the public data bundled in the package and its provenance (Natural Earth — public domain; Darwin Core terms from TDWG — CC-BY 4.0; the Brazilian Official List of Threatened Species from Portaria MMA nº 148/2022), and method credits that are *not* dependencies (the `bdc` paper, framed as the basis for two independent coordinate reimplementations; the GBIF/Chapman generalization documents). The README gains a short "Technologies and credits" section (PT + EN) linking to it.
+- **site:** Add a Technologies and credits page (PT + EN) ([#32](https://github.com/rogerio-onza/saira/pull/32))
+- **site:** Add cookieless analytics (Umami) ([#32](https://github.com/rogerio-onza/saira/pull/32))
 
 ### Changed
-- **In-code documentation no longer names the `bdc` package.** The roxygen for `coords_transposed_corrections()` / `coords_country_from_coordinates()` and the two coordinate test headers now describe the algorithm against Saíra's bundled Natural Earth layer without naming `bdc`; the attribution lives on the new "Technologies and credits" page instead. The functional history in this changelog (0.8.1) is unchanged.
-- **Regenerated roxygen docs (`NAMESPACE` + `man/`).** Running `devtools::document()` synced the generated documentation with the source roxygen, adding 15 previously-undocumented exports' `.Rd` files (including the two coordinate functions) and the matching `NAMESPACE` exports. No behavior change.
+- **docs:** Describe the coordinate algorithms without naming `bdc` ([#32](https://github.com/rogerio-onza/saira/pull/32))
+- **build:** Regenerate `NAMESPACE` and `man/` from the source roxygen ([#32](https://github.com/rogerio-onza/saira/pull/32))
 
 ## [0.8.3] - 2026-06-16
 
 ### Added
-- **Tutorial website: screenshots now open in a click-to-zoom lightbox.** The tab captures are ~1900 px wide but render at ~760 px inline (≈40 % scale), making panel details hard to read. Clicking any tutorial screenshot now opens it over a dimmed overlay at viewport size (near 1:1 for the wide captures); dismiss by clicking anywhere, pressing **Esc**, or the close button (bilingual label). Built as a small vanilla-JS enhancement in `assets/head.html` bound to every `.shot img`, plus matching styles in `_saira-rules.scss` — no per-page markup, so it covers all PT and EN tutorials at once.
-- **Tutorial website: English tutorials now use English screenshots.** The EN tutorials referenced the Portuguese screenshots throughout; each `.shot img` now points to its `-EN` variant (home screen, upload, mapping, name validation, coordinate validation, generalization and export), and the new generalization/export pages (steps 6–7) had their placeholder frames replaced with the real screenshots in both languages.
-- **Website: a "Novidades / Releases" page with a navbar version badge.** A new bilingual page lists recent release highlights as styled cards (colored Added/Changed/Fixed chips). It is generated at Quarto pre-render by a standard-library Python script (`website/scripts/build_releases.py`) from a single curated, bilingual data file (`website/data/releases.py`), so adding a release means adding one entry — PT and EN never drift, and the canonical exhaustive log stays in `CHANGELOG.md`. The navbar gains a version badge (the saíra's cyan→teal→green plumage gradient) that reads the version from `DESCRIPTION` and links to the page. The generated partials are committed because Quarto resolves `{{< include >}}` before the pre-render hook runs; the hook still refreshes them on every build, so the published site is always current.
-- **Landing page: a photo of the Saíra-pintor (*Tangara fastuosa*), the bird the app is named after**, replacing the "coming soon" placeholder in the "What is" section (PT and EN), credited to the photographer (Ester Ramirez).
+- **site:** Add a Releases page and a navbar version badge ([#31](https://github.com/rogerio-onza/saira/pull/31))
+- **site:** Add a Saíra-pintor photo to the landing page ([#31](https://github.com/rogerio-onza/saira/pull/31))
+- **site:** Use English screenshots in the EN tutorials ([#30](https://github.com/rogerio-onza/saira/pull/30))
+- **site:** Open tutorial screenshots in a click-to-zoom lightbox ([#30](https://github.com/rogerio-onza/saira/pull/30))
 
 ### Changed
-- **Website now leads with SiBBr (the Brazilian platform) ahead of GBIF, and no longer mentions SpeciesLink.** In every publishing/repository context — the landing page, FAQ, glossary, the export tutorial and the footer links — SiBBr is listed before GBIF to foreground the Brazilian infrastructure without denying GBIF; the deprecated SpeciesLink is dropped. GBIF's technical roles are untouched (the taxonomic backbone provider in name validation, the GBIF-HQ reference-hotspot check, and the GBIF Secretariat citations in the generalization tutorial).
-- **Website: corrected the bird's common name to "Saíra-pintor"** (was "Saíra-de-sete-cores") in the landing photo caption (PT and EN, the latter glossed as "seven-coloured tanager") and the site footer.
+- **site:** Lead with SiBBr ahead of GBIF and drop SpeciesLink ([#31](https://github.com/rogerio-onza/saira/pull/31))
+- **site:** Correct the bird's common name to Saíra-pintor ([#31](https://github.com/rogerio-onza/saira/pull/31))
 
 ### Fixed
-- **Tutorial website: corrected the EN Figure 3 caption in the mapping tutorial.** The English screenshot illustrates a different example from the Portuguese one — `especie` → `scientificName` carrying an **ALIAS** badge (with `specificEpithet` auto-inferred) rather than the `catalogNumber`/`recordedBy` SUGGESTED example — so the caption and alt text now describe the ALIAS case shown in the EN image.
+- **site:** Correct the EN Figure 3 caption in the mapping tutorial ([#30](https://github.com/rogerio-onza/saira/pull/30))
 
 ## [0.8.2] - 2026-06-16
 
 ### Added
-- **Tutorial website: a dedicated "Generalizing sensitive species" tutorial (PT + EN).** The site documented only four workflow steps while the app has five (Upload → Map → Validate → **Generalize** → Export); generalization survived as a single legacy "sensitive species" paragraph inside the export tutorial describing the old generalize-or-omit model. A new page (`06-generalizacao.qmd` / `06-generalization.qmd`) covers the current Generalization tab: the Chapman (2020) Table 5 decision cascade (Q4.3/4.4/4.5 → Categories 2/3/4, or not-sensitive), the Table 7 four-tier grid (1° / 0.1° / 0.01° / 0.001°), per-species exceptions (the only path to Category 1), the mandatory `dataGeneralizations` justification for Categories 1–3, the map preview with border-crossing alerts, the 2–5-year review cycle, and a References section citing the three GBIF documents (Chapman 2020 `doi:10.15468/doc-5jp4-5g10`; Chapman & Wieczorek 2020 `doi:10.15468/doc-gg7h-s853`; Zermoglio et al. 2020 `doi:10.35035/e09p-h128`). The export tutorial was renumbered to `07-…` and the sidebar, overview and cross-links updated to insert Generalization as step 6.
+- **site:** Add a dedicated sensitive-species generalization tutorial (PT + EN) ([#28](https://github.com/rogerio-onza/saira/pull/28))
 
 ### Changed
-- **Tutorial website: refreshed to match the current app.** The upload tutorial now lists all three camera-trap formats (Camtrap DP with descriptor, loose Camtrap DP CSVs with a synthesized descriptor, Wildlife Insights) instead of two; the name-validation tutorial explains the provider cards (status badges, local version) and that already-downloaded providers stay pre-selected across sessions; and the export tutorial was rewritten around the dedicated Export review hub (readiness banner, applied-corrections summary, generalized-species table, and the DwC-A + auxiliary bundle file list).
+- **site:** Refresh the upload, name-validation and export tutorials to match the app ([#28](https://github.com/rogerio-onza/saira/pull/28))
 
 ### Fixed
-- **Resetting the mapping or re-uploading now clears the downstream tabs.** Clicking **Reset** in Mapping, or uploading a new file in the same session, left the **Names**, **Coordinates**, and **Generalization** tabs holding the decisions made for the *previous* dataset (name reviews and sensitivity marks, coordinate transposition/country-fill corrections, and the generalization tier cascade with its per-species exceptions). The mapped data did invalidate downstream, but each tab keeps its user decisions in its own reactive state that was never cleared — so stale reviews and corrections could be exported against a different dataset. Mapping now emits a single "data baseline reset" signal (a new `reset_signal_r` slot on its ADR-054 return) on both events; each downstream tab observes it and wipes its retained state back to empty. The signal fires only on those two discrete events — incremental field-mapping edits and tab switches leave existing work untouched. The Names tab keeps its provider selection (it mirrors the on-disk download cache, not dataset work), and a re-upload shows a short heads-up notification so the cleared validations are not a surprise.
+- **mapping:** Clear the downstream tabs on a reset or a same-session re-upload ([#29](https://github.com/rogerio-onza/saira/pull/29))
 
 ## [0.8.1] - 2026-06-15
 
 ### Changed
-- **Generalization tab: the result list now scrolls, can be filtered by threat level, and the whole page scrolls.** With many sensitive species the result card grew unbounded, pushing the map off-screen with no scrollbar (everything below got blocked). The per-species list is now capped to ~10 rows and scrolls inside the card, and the **tab itself now scrolls** (joining the Wiki/Preview/Coords/Export `:has()` page-scroll rule) so the result card, the map, the Chapman scale strip and the full reference table are all reachable. When more than one MMA group is present, a chip row above the list (**Todas / VU / EN / CR / CR (PEX) / Outros**, coloured to match the threat pills) filters the list to a single group; the filter resets to "Todas" on a new upload. Zero new `!important` (CSS bundle stays at 11).
-- **Uploads that already carry an `occurrenceID` now keep it instead of getting a fresh random UUID.** `occurrenceID` was always overwritten with a random UUID, discarding stable identifiers shipped in the data — most importantly the camera-trap `observationID` (e.g. `cd0363b1-…-obs-1`), breaking provenance and giving different IDs on every re-run. A new pure `resolve_occurrence_ids()` preserves a non-blank `occurrenceID` column verbatim and backfills only missing/blank rows with UUIDs; datasets without the column behave exactly as before. Preserving the ID is also what lets the upcoming camera-trap media extension link back to the occurrence core.
-- **Uploaded columns that are valid Darwin Core terms outside Saira's default set are now auto-registered as mapping terms.** Camera-trap ingestion (`camtrapdp::write_dwc()`) emits real DwC terms that were not in Saira's curated list — `geodeticDatum`, `taxonID`, `organismID`, `coordinatePrecision`, `identificationVerificationStatus`, `eventRemarks`, `datasetID`, `dataGeneralizations`, and the depth/distance terms — so they did not appear as mapping targets. On upload, a new pure `detect_extra_dwc_terms()` finds such columns (present in the full DwC catalog but not the base set) and seeds them as session extra terms, exactly as if the user had added each via "Add term". They then map 1:1 by exact name like any other term. Columns that are not DwC terms are unaffected (still appended verbatim at export); plain CSVs without DwC-named columns behave exactly as before.
-- **Camera-trap uploads now map themselves automatically — no "Auto-map" click needed.** A camtrap dataset arrives with column names that are already Darwin Core terms, so requiring the manual click was busywork. On a camtrap-origin upload (`saira_camtrap_source` set), the mapping engine now runs automatically once the field cards render — filling the base terms *and* the auto-registered extra terms (e.g. `geodeticDatum`, `taxonID`) by exact name. The run is deferred to first render on purpose: running it the instant data loads would let the input-sync observer wipe the selections before the cards exist. Plain CSV uploads are unchanged (the click still drives auto-mapping). The button path is unchanged and now shares the same `perform_auto_map()` routine.
-- **Mapping now warns when one source column is used for two or more Darwin Core terms.** Mapping a single raw column (e.g. a camtrap `type` column) to multiple DwC terms is allowed — the same value is published under each — but is easy to do by accident. A short, amber, non-blocking alert **pinned to the top of the mapping panel (sticky on scroll)** lists each shared column and the terms using it, so the duplication stays visible instead of silent. `verbatim*` terms are exempt (they intentionally mirror a source column, e.g. `verbatimEventDate` next to `eventDate`), as are constant/generated terms (occurrenceID, datasetName, license, language, modified). Pure `detect_duplicate_source_mappings()`; reuses the existing `.alert-warning` style (no new `!important`).
-- **Sensitive species off the MMA red list can now be assigned a threat level when marked.** Marking a species sensitive in Validation > Names opens a modal; for a species *not* on the MMA national list it now offers a threat-level picker (VU / EN / CR / CR (PEX)). The chosen level rides the sensitivity payload (`sensitive_resolve()` already honours a `category` column) so the Generalization tab groups the species under that level's cascade instead of dropping it into the generic "Other" bucket. MMA-listed species are unchanged (they keep their auto-matched category); the picker only shows while the species is marked sensitive.
+- **generalization:** Scroll the tab and filter the species list by threat level ([#27](https://github.com/rogerio-onza/saira/pull/27))
+- **occurrenceID:** Keep an identifier the upload already carries ([#27](https://github.com/rogerio-onza/saira/pull/27))
+- **mapping:** Auto-register uploaded columns that are DwC terms outside the default set ([#27](https://github.com/rogerio-onza/saira/pull/27))
+- **camtrap:** Auto-map a camera-trap upload without the Auto-map click ([#27](https://github.com/rogerio-onza/saira/pull/27))
+- **mapping:** Warn when one source column feeds two or more Darwin Core terms ([#27](https://github.com/rogerio-onza/saira/pull/27))
+- **names:** Offer a threat level when marking a species that is off the MMA list ([#27](https://github.com/rogerio-onza/saira/pull/27))
 
 ### Fixed
-- **Camera-trap (Wildlife Insights) timestamps no longer claim a false UTC.** WI exports bare camera-local time with no timezone (per WI's own Data Dictionary), but the ingestion stamped a `Z` (UTC) on it — and `camtrapdp::write_dwc()` also hard-codes `Z` — so `eventDate` looked like UTC and corrupted time-of-day / diel-activity analyses (e.g. a dawn 06:52 photo in Rondônia read as 03:52 once consumers applied the −03:00 offset). The WI path now publishes the honest naive local wall-clock (`2021-06-11T06:52:55`, no designator) by stripping the fabricated `Z` from `eventDate`/`dateIdentified`. Real Camtrap DP / Frictionless inputs, which carry genuine timezone designators, are left untouched, and no region-defaulted timezone is assumed — so the fix is correct worldwide.
-- **Wildlife Insights ingestion: `habitat` no longer mirrors `feature_type`, and `count` defaults to 1.** WI has no habitat field, so copying the placement `feature_type` (e.g. `Trail - game`, `None`) into `dwc:habitat` was polluting it — `habitat` is now left empty. Missing `number_of_objects` on animal rows now yields `individualCount = 1` (the Camtrap DP minimum) instead of an empty value.
-- **Generalization map no longer freezes the app on large (camera-trap) datasets.** The overlay painter looped over every masked record and issued three separate `leaflet` proxy calls each (connector + cell rectangle + uncertainty circle), so a dataset with thousands of sensitive records sent tens of thousands of draw messages on every assessment change — and because the map stays live across tabs, this also froze interactions on the *Coordinates/Names* tabs when marking a species sensitive. The painter now **collapses identical shapes** (camera traps stack thousands of records on a few camera coordinates) and issues **one batched, vectorized call per shape type** (connectors via NA-separated polylines; cells and circles vectorized; origin markers deduped by point). Same geometry, colours and popups — minus the compounding-opacity stacking — at a fraction of the cost.
-- **Mapping a field on a large camera-trap dataset no longer freezes for several seconds.** The mapped-data pipeline (`build_processed_mapping_df`) recomputes whenever a mapping changes, and two of its steps were O(rows) where they should be O(unique): (1) `normalize_semicolon_tokens` ran the multi-value split — `strsplit` + `trimws` (which itself does `match.arg` + a regex `sub`) — on **every cell of every mapped column**, even single-value cells with no `;`; (2) `extract_scientific_name_components` re-parsed every `scientificName` **per row** (genus/epithet/rank via per-row `gsub`/`sub`/`trimws`) though a dataset has only a handful of unique species across thousands of rows. With the camtrap auto-map filling ~25–40 columns over 8.5 k rows that stacked to ~15 s, then ~2.4 s, per recompute. Both now resolve over the **unique** values and map back (`normalize` is vectorized with a no-`;` fast path; the binomial parse recurses on `unique(names)`), bringing the pipeline to **~0.2 s** — and a per-card **sample-preview cache** (`mod_mapping.R`) means re-rendering the mapping panel only recomputes the edited card, not all ~40. Behavior is identical (Namibia's `"NA"` and literal pipes are untouched). The whole app benefits — export, preview, validation and generalization all consume this pipeline.
-- **Generalization: answering a category is now fast (was a multi-second lag on large datasets).** Each cascade answer recomputed `generalization_map_preview` — which called `sensitive_resolve()` and the per-tier grid lookup **per record** (O(n) over thousands of identical species/tiers) and ran the country/border spatial lookup over every point — and it did so **twice** (result card + map). It is now resolved over **unique names, tiers and coordinates** and mapped back (≈2.5 s → ≈0.2 s for 6 k records), and the map overlay is **debounced (~300 ms)** so the per-species result pills and category badges paint immediately while the heavier map redraw follows. No blocking modal. `sensitive_resolve()` deduplicates internally, so every caller benefits.
-- **Generalization: the subtitle no longer wraps to two lines** (removed the `max-width: 70ch` constraint on `.sensitive-coords-subtitle`).
-- **Generalization: assessment marks are no longer wiped when you switch tabs.** The assessment panel is a `renderUI` that recreates its cascade radios; on a re-render (e.g. returning to the tab, or marking a species sensitive elsewhere) the recreated radios read back as empty, and the cascade observer cleared the group's tier. Raw cascade answers are now persisted (`group_answers_rv`) and the radios restored from them on re-render (isolated read, so no render loop), and the observer ignores the transient all-empty state — so a group assessed as CR/EN/VU stays assessed across navigation.
+- **camtrap:** Publish Wildlife Insights timestamps as naive local time, not a false UTC ([#27](https://github.com/rogerio-onza/saira/pull/27))
+- **camtrap:** Leave `habitat` empty and default `individualCount` to 1 on Wildlife Insights rows ([#27](https://github.com/rogerio-onza/saira/pull/27))
+- **generalization:** Batch the map overlay draws instead of three proxy calls per record ([#27](https://github.com/rogerio-onza/saira/pull/27))
+- **mapping:** Resolve multi-value splits and name parsing over unique values, not every row ([#27](https://github.com/rogerio-onza/saira/pull/27))
+- **generalization:** Resolve the cascade over unique names, tiers and coordinates ([#27](https://github.com/rogerio-onza/saira/pull/27))
+- **generalization:** Keep assessment marks when you switch tabs ([#27](https://github.com/rogerio-onza/saira/pull/27))
+- **generalization:** Stop the subtitle wrapping to two lines ([#27](https://github.com/rogerio-onza/saira/pull/27))
 
 ## [0.8.0] - 2026-06-14
 
 ### Added
-- **New "Export" tab: a review-then-publish hub, and the home of the download (ADR-103).** A dedicated tab (after Generalization) consolidates what the validation/generalization stages produced and now hosts the DwC-A download itself, so reviewing and publishing happen in one place. The **"Baixar Pacote .ZIP" button** sits prominently top-right; when the dataset is not yet publishable it goes **grey and inert** (never a green button beside a red error) and the actionable CTA appears **inside the blocked banner** — **"Corrigir termos faltantes →"** (jumps to Mapping) or **"Adicionar justificativa →"** (jumps to Generalization). The summary is laid out as a **two-column report** (a wider main column for the readiness and generalized-species blocks, a narrower side column for corrections and files; it collapses to one column and the page scrolls rather than squeezing content). It shows: a **health-score ring** ("X% ready to publish") as the hero of the readiness card, with record/term counts as quiet supporting text and per-term chips (approved terms are neutral with a green check so the orange "missing" chip stands out); a **high-contrast severity banner** (red when blocked — missing required terms and/or a pending generalization justification; amber when no `occurrenceID` is mapped; green when ready); **applied corrections** (names corrected/confirmed, coordinates fixed, countries filled — cards dim to 45% opacity when their count is zero); **generalized species** (each with a standardized threat badge reusing the Names/Generalization palette — VU gold, EN orange, CR red — and an info-tooltip explaining the MMA-category and generalization rules); and the **bundle files grouped** into the *Darwin Core Archive (IPT)* core trio (occurrence.txt, meta.xml, eml.xml — standard names kept) and *auxiliary files*. Auxiliary files are now **named after the dataset with hyphens** (e.g. `meu-data-set-occurrences.xlsx`, `meu-data-set-mapping-guide.txt`, `meu-data-set-sensitive-coords.csv`) and the archive itself becomes `<dataset>-dwc-archive.zip`, via a shared pure `export_bundle_filenames()` so the summary and the actual download never drift. The summary is computed by a pure `build_export_summary()` over the existing validation payloads — no new export logic.
+- **export:** Add a review-then-publish tab that hosts the DwC-A download, ADR-103 ([#25](https://github.com/rogerio-onza/saira/pull/25))
+- **generalization:** Add a per-species assessment tab driven by Chapman's Table 5, ADR-100 ([#22](https://github.com/rogerio-onza/saira/pull/22))
 
 ### Changed
-- **Preview is now read-only; the download/export flow moved to the Export tab (ADR-103).** The full export subsystem (term validation → confirmation modal → animated loading modal → DwC-A bundle assembly) was relocated verbatim out of Preview, so Preview only renders the mapped-data table and Export owns publishing. The animated download experience is unchanged.
-- **Name validation: providers you have downloaded are now pre-selected on app open.** The provider default was hard-coded to GBIF-only; it is now GBIF (always, priority 1) plus any Brazilian provider (Flora BR / Fauna BR) whose dataset is already in the on-disk cache (`tools::R_user_dir`). The cache is the persistence, so your last download survives a restart instead of being silently dropped. With nothing downloaded the default is unchanged (GBIF-only).
-- **Name validation: provider selection cards adopt the Generalization-tab card style.** Selected provider cards now use the same accent border + cyan→navy gradient (with a 1px inset ring) as the Generalization cards, so it is unmistakable which providers are active; the priority-1 card (GBIF) keeps a teal ring to mark the cascade lead. Card dimensions/padding are unchanged.
-- **Coordinate Validation: the quick/complete profile choice was removed — validation always runs the complete profile.** The radio toggle (and its i18n/CSS) is gone; every run now performs the four CoordinateCleaner reference checks (capital, centroid, GBIF HQ, biological institution). One less decision for the user, and no record silently skips the reference scan.
-- **Coordinate Validation: filter pills now match the map-legend colours.** The "Referência" pill shared the same navy as "Mar" (both `pill-info`); it now uses the legend's swapped/purple (`--coord-swapped`). "Todas" became a neutral muted chip and "Problemas" the accent, so all six pills are visually distinct when selected.
-- **Coordinate Validation: accepted corrections (transposed / country-fill / swap+fill) now reflect across the whole tab — map, table and problem counts — not only at export and generalization.** A corrected record moves to its published location and is re-tagged **"Corrigida"** (a distinct teal marker, table badge and legend key); it drops out of the "mar"/"problemas" counts but stays visible so you watch it move from sea to land. Country fills update the displayed `country`. Matching is by `occurrenceID` captured at validation time, so it is robust to later reordering. Previously the validation map/table/counts kept showing the flagged original until export.
-- **Generalized-coordinate uncertainty now follows the GBIF Georeferencing Best Practices point-radius method (ADR-101).** `coordinateUncertaintyInMeters` on masked rows was the cell *edge* length (`ceil(g × 111320)`, a flat factor) — which **over-stated the real radius by ~41–50%** and ignored longitude convergence. It is now the **geodesic distance from the published cell centre to its furthest corner** (Chapman & Wieczorek 2020 §2.3.4; Quick Reference Guide §2.3.3), latitude-aware (e.g. Category 2 / 0.1° ≈ **7,863 m** at the equator, **7,356 m** at −30°, vs. the old 11,132 m), **combined additively** with any original record uncertainty (§3.4.7: combine sources, don't take the max). Each masked record now also carries the cell as a **`footprintWKT` polygon** (+ `footprintSRS` = `EPSG:4326`) — the Best Practices "ideal" representation of a grid cell — instead of having `footprintWKT` scrubbed. The Generalization map gains the **point-radius uncertainty circle** (dashed, circumscribing the cell square) — the honest GBIF view, closing Chapman's Figure 2 (square = cell, circle = uncertainty). The snapping rule (`round` to the nearest grid vertex = the cell centre) is unchanged.
-- **Sensitive-coordinate masking is now a per-species assessment driven by Chapman's decision table, in a dedicated "Generalization" tab with a purpose-built map guardrail (ADR-100).** The free choice of a single global generalization level (the four-card grid, ADR-099) is replaced by Chapman (2020) **Table 5** — a yes/no decision cascade (**capped at Category 2**) that *derives* each species' category instead of letting the publisher guess one. To keep this from becoming hundreds of questions, the detected sensitive species are **grouped by their MMA red-list status** (CR / EN / VU / CR (PEX), plus an "Other" bucket for researcher-flagged taxa): the user answers **one cascade per group present** (at most five) and every species inherits its group's level, with a collapsed **per-species exceptions** editor to override individual taxa. The assessment **moved out of the Preview tab into its own stage** (third item in the Validation menu, after Names and Coordinates) — keeping coordinate quality (QA) and the sensitive-release decision (editorial) as separate, uncluttered tasks. Step 1 (publish vs. assess) and the off-by-default behaviour are unchanged; **unassessed** sensitive species are published as-held with an "X of Y assessed" warning. The masking engine applies a **per-species grid** (`mask_sensitive_coordinates()` accepts a `scientificName → tier` map; a single string still works), and each record's `dataGeneralizations` carries its Chapman category, **reason** (statements 4c–4f), and a **custodian justification** typed in the panel — **mandatory** whenever any record is generalized to Category 1, 2 or 3 (the export is blocked until it's filled), optional only for Category 4 (~100 m) or publish-as-held. **Category 1 (~111 km) is removed from the cascade** entirely — it lands points in a neighbouring country and Chapman reserves it for low-mobility/endemic taxa — and is reachable only as a deliberate per-species exception. A dataset-level **sensitivity review date** defaults to **4 years** (within Chapman's 2–5 year window).
-- **The new tab makes the masking displacement legible (the over-masking guardrail).** A purpose-built map draws each sensitive record as a **high-contrast "real location" marker** and its **published location as the actual grid cell** — a translucent box, big for ~11 km and small for ~1 km — that **turns red when the cell leaves the country of origin**, with a loud border-crossing alert (a jaguar at an aggressive tier visibly blurs across the river into Argentina). This replaces the earlier sharp "generalized dot", which misread as the species *moving into* whatever town sat at that point. The stage is laid out as **two columns — `Decide` on the left, `Consequence` on the right** — where the **per-species result sits directly above the map** so *answer → category → spatial outcome* reads as one object (the result and map are the same fact in two encodings). Each result row is an **MMA-threat pill colour-coded by category** (VU gold → EN orange → CR red → CR (PEX) maroon, each now distinct) → its resulting `Categoria N · ~X km`. The publish/assess choice is **two colour-coded strategy cards** (green "publish originals" / accent "assess sensitivity"). Chapman's scale stays **in evidence as a slim category-scale strip under the map** that doubles as the map **legend** and the **what-if preview** — each chip carries its category colour and fills with it when used as a filter (click a category to project it on the map) — with the full descriptive Chapman table fixed just below it. Group assessment shows a "X of Y groups assessed" progress line, the open group is highlighted, and a single "how the cascade works" explainer replaces always-on legalese. The map reflects the *published* point (it applies the same coordinate corrections the export does). Zero new `!important` (CSS bundle stays at 11). The **Coordinate Validation tab keeps its full QA flow** (filter pills, full diagnostics table).
-- **Help tab reworked from explanatory essays into a compact workflow guide.** The four accordion sections (Darwin Core, FAQ, accepted formats, multi-value separator) and the live keyword search are replaced by a five-step **workflow stepper** — Upload → Map → Validate → Generalize → Export — each one line on what the stage does, carrying the same navbar icon as the tab it maps to. The four sidebar cards (author/maintainer, bug reporting, useful links, built-with) are unchanged. The stepper card is flat (no drop shadow). The now-unused accordion script (`help-accordion.js`) and ~40 essay i18n keys were removed; the CSS bundle stays at 11 `!important`.
+- **preview:** Make Preview read-only, with export moved to its own tab, ADR-103 ([#25](https://github.com/rogerio-onza/saira/pull/25))
+- **generalization:** Compute uncertainty by the GBIF point-radius method, ADR-101 ([#22](https://github.com/rogerio-onza/saira/pull/22))
+- **names:** Pre-select providers already downloaded to the on-disk cache ([#24](https://github.com/rogerio-onza/saira/pull/24))
+- **names:** Adopt the Generalization card style for provider selection ([#24](https://github.com/rogerio-onza/saira/pull/24))
+- **coords:** Always run the complete profile, dropping the quick/complete choice ([#25](https://github.com/rogerio-onza/saira/pull/25))
+- **coords:** Match the filter pills to the map-legend colours ([#25](https://github.com/rogerio-onza/saira/pull/25))
+- **coords:** Reflect accepted corrections across the map, table and counts ([#23](https://github.com/rogerio-onza/saira/pull/23))
+- **help:** Replace the accordion essays with a five-step workflow stepper ([#26](https://github.com/rogerio-onza/saira/pull/26))
 
 ### Fixed
-- **Generalization map: a coordinate corrected on the Coordinates tab now updates the "Origem" marker reliably.** The `gen_map` output was suspended while its tab was hidden, so the `leafletProxy` repaint triggered by applying a correction on the Coordinates tab was dropped — leaving the point in the sea until a full re-render. The map output is now kept live (`suspendWhenHidden = FALSE`), matching the established pattern elsewhere in the app.
-- **Coordinate Validation map no longer empties when switching to the "Todas" filter after applying a correction.** The map-container `renderUI` had a data dependency that recreated the leaflet widget on every correction; the proxy repaint then landed on a half-recreated map and the canvas failed to paint the larger batch. The container now depends only on the validation result, so the widget stays stable and all updates flow through the proxy.
+- **generalization:** Keep the map live so a correction repaints the origin marker ([#23](https://github.com/rogerio-onza/saira/pull/23))
+- **coords:** Keep the map widget stable so the "Todas" filter does not empty it ([#23](https://github.com/rogerio-onza/saira/pull/23))
 
 ## [0.7.0] - 2026-06-09
 
 ### Changed
-- **Sensitive-coordinate masking panel (Preview tab) reworked into a two-step decision (ADR-099).** The flat five-card grid that gave the four masking levels ~80% of the panel — framing the choice as "which level?" — is replaced by progressive disclosure: Step 1 is a binary choice between **Publish original coordinates** (the primary, pre-selected card, now carrying the "Recommended" badge) and **Generalize coordinates (optional)**; the four generalization levels appear (via `conditionalPanel`) only when the user opts to generalize. Level cards now lead with the **spatial result** (Local area ~100 m, City/District ~1 km, State/Province ~11 km, Country/Region ~111 km) instead of intensity words (Extreme/High/Medium/Low), with the Chapman category demoted to a small "Cat. N" reference tag and the formal intensity names kept only in the reference table. Levels are ordered least→most destructive with a left-to-right cost axis; the two aggressive tiers are colour-flagged and trigger a graduated warning below the grid. Generalizing pre-selects City/District (~1 km). The intro line bolds the "MMA list" (trigger) and "precise data has greater scientific value" (takeaway), and the Chapman reference table gains a Spatial-result column, a green→red cost swatch per level and a tinted "no masking" baseline row. The masking engine, the off-by-default behaviour and the export bundle are unchanged. Zero new `!important` (bundle stays at 11).
-- **Help site (`website/`): landing page polish + full tutorial rewrite (PT-BR/EN).** The landing hero gets a denser floating-node animation and a single-line subtitle; the provisional blue-dot logo is removed (navbar brand mark and favicon, now an italic "S"); "Ver no GitHub" buttons become "Download". The "O que é" copy is tightened and the Features section is rebuilt from six generic steps into **three strong, concrete highlights** (import → validate → export) with before→after proof chips. The six tutorials (and their English mirrors) are expanded to cover the app's real features — encoding/separator detection, Wildlife Insights / Camtrap DP ingestion, mapping templates and the `basisOfRecord` assistant, the three name-validation providers (Flora do Brasil, Fauna do Brasil, GBIF), the transposed/swap/country-fill coordinate corrections, sensitive-species generalization and the DwC-A/EML export pipeline. The tutorial content column widens from 820px to 960px, and decorative em-dashes are removed from body copy across tutorials, FAQ and glossary.
-- **README rewritten for non-R users, bilingual.** The README now leads with a plain-language Portuguese (PT-BR) section explaining what Saíra does, a 4-step "how it works" table, and a beginner-oriented "Primeiros passos" that walks a non-programmer through installing R + RStudio, pasting the install block, and launching the app — followed by a full English (EN-US) mirror of every section. Developer/clone/test instructions moved to a secondary "For developers" section. No visual assets added.
-- **License changed from MIT to GPL-3.** `DESCRIPTION` now declares `License: GPL-3` (matching `bdc`); the MIT `LICENSE` stub is removed and `LICENSE.md` carries the full GNU GPL v3.0 text. `CONTRIBUTING.md`, `README.md`, and `docs/architecture.md` updated accordingly. The maintainer is the sole copyright holder, so the relicense is clean.
-- **Help site: install/upload tutorials corrected to match the app, with real screenshots.** Tutorial 01 gains a step-by-step install walkthrough (R from CRAN, RStudio, and — made explicit — Rtools on Windows for the from-source GitHub install) using captured screenshots, plus direct CRAN/Posit links; the install snippet drops the `remotes` fallback in favour of `pak` alone and the section now follows the prerequisites narratively ("now that R is installed…"). Tutorial 02 is brought in line with what the upload module actually does: Excel/`.xlsx` (unsupported) removed from the formats table and intro; the steps no longer claim a row preview or encoding/separator/sheet controls (the app auto-detects and shows only a row/column/size summary); the sample-CSV download is promoted to a prominent callout; and the encoding tip shows real mojibake (`SÃ£o Paulo`) in inline code instead of an HTML entity that rendered as correct text. Tutorial figures now display at natural size (no upscaling blur).
-- **Help site: mapping tutorial (03) corrected to match the app, with real screenshots, and the sample dataset enriched.** The "final decision is always yours" message becomes a highlighted callout; seven real screenshots are wired in (Auto-map button, a SUGGESTED card pair, Add-term button + dialog, the basisOfRecord source-column selection and the per-value assistant). The fabricated "mark column as ignored" action is removed (the app has no such control — unmapped columns are simply appended to the right on export); the basisOfRecord step is rewritten as a per-value mapping from a source column (not a whole-batch constant); and the example-correspondence table drops the inaccurate `municipio → municipality` pair. The sample `ocorrencias-exemplo.csv` is rewritten from 7 to 18 columns (PT headers that the auto-mapper recognises) and 6 to 12 rows, adding a `tipo_de_registro` column that drives the basisOfRecord assistant plus deliberate imperfections (one swapped coordinate, one blank country, one missing coordinate); verified end-to-end — 17/18 columns receive auto-map suggestions. The file is now saved with a UTF-8 BOM so it opens with correct accents in Excel.
-- **Help site: mapping tutorial (03) overview + templates section corrected (PT-BR/EN).** A real first-open screenshot of the Mapping tab now opens the "Visão geral" section (replacing a placeholder whose caption described UI that does not exist), and the "don't map two columns to the same term" warning moves up into the Auto-mapping section, where the conflict actually arises. The Templates section is rewritten to match how templates really work — there is no manual "save template" action: the `mapping_guide_*.txt` is bundled into the export `.zip` when you download the standardized package, then reused (by you or a colleague) via **Import template** — and the import button + dialog screenshots are wired in. The export tutorial (06) gains a matching note that the `.zip` carries the reusable template, cross-linked to tutorial 03. Figures are renumbered 1–9 across the page.
-- **Help site: name-validation tutorial (04) rewritten to match the app (PT-BR/EN).** The previous content described a non-existent fuzzy-matching engine ("scores similarity", an "Exact (AUTO)" / "Suggestion (SUGGESTED)" status that proposed close-spelling corrections automatically). It is replaced with the real flow: the cascade order when multiple databases are selected (Flora do Brasil → Fauna do Brasil → GBIF, all via `taxadb`), the two normalization toggles ("Remove authors" / "Ignore sp., cf., aff., nr."), the actual statuses (Accepted, Synonym, Ambiguous, Not found), and manual name correction through the review modal (confirm-as-is vs. edit-with-reason, reapplied to all identical names). A new **Threatened species (MMA list)** section documents the bundled national list — sensitivity flagging in the report with the threat category (VU/EN/CR/CR (PEX)), cited as **Portaria MMA nº 148/2022** with the official DOU link — including the per-taxon **mark/unmark** control (a custodian decision: unmark a listed species you judge not sensitive in your region, or mark one the list does not cover), and cross-links to the export tutorial (06), where coordinate generalization actually happens; tutorial 06 and both tutorial indexes get matching cross-links. Seven real screenshots are wired in (provider/normalization column, Processed Names panel, Name Report table, the confirm and edit review modals, the sensitivity flag in the report, and the mark/unmark dialog).
-- **Help site: coordinate-validation tutorial (05) rewritten to match the app (PT-BR/EN).** The previous content under-described the feature: it listed only four problem types (one of them, "country-incompatible", not a real standalone diagnostic) and invented a step where missing coordinates could be "reviewed from the locality" (no such control exists). It is replaced with the real flow: the column-mapping gate (`decimalLatitude`/`decimalLongitude`/`country` must be mapped before the **Validate Coordinates** button enables), the **Profile** selector (Complete vs. Fast, where Fast skips the capital/centroid/GBIF-HQ/institution reference checks), the full diagnostic taxonomy (OK, Missing coordinate, Out of bounds, Possible swap, At sea, Zero/Equal, All identical, Reference hotspot), and the results UI — filter pills (All/Problems/Invalid/Sea/Zero-Equal/Reference), the Geographic Distribution map with its colour legend, and the Coordinate Diagnostics table (Row, Diagnosis, Latitude, Longitude, Country, ISO3). The assisted-correction section is kept and tightened (transposed/sign-flip correction tested against the informed country with the ~22 km border buffer, country-fill from coordinates, swap+fill for sea points with blank country), now stating that corrections are applied on export — not in the preview — and that originals are preserved in `verbatimLatitude`/`verbatimLongitude` only when the template provides those columns. The sea-test caveat (simplified coastline → verify visually) is added as a callout.
-- **Help site: coordinate-validation tutorial (05) visual polish (PT-BR/EN).** The five screenshots are now captured and wired in (no more placeholders). The diagnostic taxonomy and the map legend become styled `maptable` tables with a colour swatch per category that reuses the site's semantic tokens — OK/`--success`, Out of bounds/`--error`, Zero·Equal/`--warning`, At sea/`--info` — so the swatches read as the same family as the callouts; four categories without an existing token (Possible swap, Reference hotspot, All identical, Missing coordinate) get new light/dark `--coord-*` tokens added to both theme files. This also corrects the legend (At sea is navy, Reference is violet — not blue/gray). The word "pill" is dropped (the controls are now just "Filters"), the three assisted corrections move to a numbered-card layout (`.fix-steps`), and the prose is tightened throughout.
+- **generalization:** Rework masking into a two-step decision, ADR-099 ([#21](https://github.com/rogerio-onza/saira/pull/21))
+- **site:** Publish the Quarto help site (PT + EN) on GitHub Pages ([#14](https://github.com/rogerio-onza/saira/pull/14))
+- **site:** Polish the landing page and rewrite the tutorials ([#15](https://github.com/rogerio-onza/saira/pull/15))
+- **site:** Correct the install and upload tutorials with real screenshots ([#16](https://github.com/rogerio-onza/saira/pull/16))
+- **site:** Correct the mapping tutorial and enrich the sample dataset ([#17](https://github.com/rogerio-onza/saira/pull/17))
+- **site:** Rewrite the name-validation tutorial to match the app ([#19](https://github.com/rogerio-onza/saira/pull/19))
+- **site:** Rewrite the coordinate-validation tutorial to match the app ([#20](https://github.com/rogerio-onza/saira/pull/20))
+- **docs:** Rewrite the README for non-R users (PT-BR + EN-US) ([#13](https://github.com/rogerio-onza/saira/pull/13))
+- **license:** Change from MIT to GPL-3 ([#13](https://github.com/rogerio-onza/saira/pull/13))
 
 ### Fixed
-- **Help site: callouts now show a distinct tinted background per type.** The per-type `--cc` colour was declared on `.callout-tip` / `.callout-warning` / … (specificity 0,1,0) but lost to the base `.callout.callout-style-default { --cc: … }` (0,2,0), so every callout fell back to the default teal and only the title/icon colour varied. Raising the per-type selectors to `.callout.callout-<type>` lets the semantic colour win, so tip/warning/important/note backgrounds read green/amber/red/teal as intended (and the temporary left-accent border is dropped).
-- **Help site navbar no longer scatters its items, and the dark-mode theme toggle shows the moon.** Quarto's stock theme adds two auto-margins (`.ms-auto` on the nav list and `margin-left:auto` on `#quarto-search`) and a child-combinator rule that zeroes the brand's push-right margin, spreading the brand, links, search and toggles across the bar. Matching that `(0,3,0)` specificity and neutralising the stray auto-margins groups the nav links, search and theme/language toggles together on the right, with the brand on the left. Separately, `theme-dark.scss` imported `_saira-rules.scss` *after* its sun/moon override, so the shared default (sun visible) won — the `@import` now precedes the override so dark mode correctly shows the moon icon.
+- **site:** Give each callout type its own tinted background ([#16](https://github.com/rogerio-onza/saira/pull/16))
+- **site:** Group the navbar items and show the moon in dark mode ([#15](https://github.com/rogerio-onza/saira/pull/15))
 
 ## [0.6.0] - 2026-06-04
 
 ### Added
-- **Transposed-coordinate correction in the coordinate validation tab.** After validation, Saira flags records whose latitude/longitude are swapped or sign-flipped and, when a transformation makes the point fall inside the informed country, offers a one-click "Correct transposed coordinates" action (preview of verbatim → corrected). Corrections are applied at export and the originals are preserved in `verbatimLatitude`/`verbatimLongitude`. Reimplements the core of `bdc::bdc_coordinates_transposed()` on Saira's bundled Natural Earth country layer (no `bdc` dependency); engine in `coords_transposed_corrections()` / `apply_coords_correction_payload()`.
-- **Country-from-coordinates fill in the coordinate validation tab.** After validation, Saira flags records with a blank `country` but valid coordinates and offers a one-click "Fill country from coordinates" action that derives the country from a point-in-polygon lookup (no value for points in the sea; existing country values are never overwritten). Applied at export. Reimplements the core of `bdc::bdc_country_from_coordinates()` on the bundled Natural Earth layer (no `bdc` dependency); engine in `coords_country_from_coordinates()` / `apply_country_fill_payload()`.
-- **Combined "swap lat/lon + fill country" action** for the hard case where `country` is blank *and* the verbatim point falls in the sea (a strong lat/lon-swap signal that neither the transposed check — no country to aim at — nor the plain country fill — point at sea — can resolve alone). Only the lat/lon swap is tried (no sign flips), so the result is unambiguous: when the swapped point lands in exactly one country, the card fixes the coordinates and fills that country together. Engine in `coords_swap_and_fill()`.
-- **Mapping guide v2 + faithful "Import template" restore.** The exported `mapping_guide_<date>.txt` is now `# saira:mapping:v2`: mappings grouped by DwC class, a dedicated **constants** section (`= value -> term`) capturing typed/selected values (`datasetName`, `license`, `language`), a separator legend, coverage stats, and a `saira_version` line. Importing the `.txt` via the Mapping sidebar's **Import template** button now rebuilds the exact mapping in the cards — multi-column concatenations and constants included — by matching the guide's source columns to the loaded dataset, and still seeds personal aliases for cross-dataset auto-mapping. The parser reads both v1 and v2.
-- **Mapping: `taxonRank` and `specificEpithet` lock when `scientificName` is mapped.** These two terms are inferred from `scientificName` at export (`build_processed_mapping_df`), so once `scientificName` is mapped (manually or by auto-mapping) their cards now show a locked notice (`fa-dna` icon + "auto-inferred from scientificName") instead of a column selector, mirroring the `occurrenceID` UUID lock. New i18n key `taxon_auto_derived` (PT/EN). `genus` is also inferred but remains mappable.
+- **coords:** Correct transposed and sign-flipped coordinates in one click ([#10](https://github.com/rogerio-onza/saira/pull/10))
+- **coords:** Fill a blank country from the coordinates ([#11](https://github.com/rogerio-onza/saira/pull/11))
+- **coords:** Combine swap and country fill for a sea point with a blank country ([#11](https://github.com/rogerio-onza/saira/pull/11))
+- **mapping:** Restore a template faithfully with the v2 mapping guide ([#8](https://github.com/rogerio-onza/saira/pull/8))
+- **mapping:** Lock `taxonRank` and `specificEpithet` when `scientificName` is mapped ([#7](https://github.com/rogerio-onza/saira/pull/7))
 
 ### Changed
-- **Default column-mapping term set is now the "Rede Felinos do Brasil" occurrence template.** `inst/extdata/dwc_terms.rds` is rebuilt from the template's 51 terms (xlsx order; typos `decimaLatitude` and trailing-space `family ` corrected) plus 13 curated extras kept in the default — `year`/`month`/`day`, `catalogNumber`, `collectionCode`, `taxonRank`, `kingdom`, `phylum`, `scientificNameAuthorship`, `rightsHolder`, `verbatimLatitude`/`verbatimLongitude`, `fieldNotes` — 64 terms total. Four niche terms (`disposition`, `preparations`, `infraspecificEpithet`, `verbatimIdentification`) drop from the default but remain available via "Add term". Term classes now follow TDWG so the by-class UI groups coherently (e.g. `eventDate`, `year`/`month`/`day` and sampling terms under Event); `dwc_full_catalog.rds` is re-ordered to keep base terms first. Reproducible via `data-raw/build_dwc_terms.R`.
+- **dwc:** Make the Rede Felinos occurrence template the default term set, 64 terms ([#9](https://github.com/rogerio-onza/saira/pull/9))
 
 ### Fixed
-- **Mapping guide: concatenated columns no longer collapse to the last one on re-import.** A composite (`year + month + day -> eventDate`) was previously split into competing 1:1 aliases, so auto-map kept only one column. The new faithful restore preserves the concatenation; `import_mapping_guide_to_aliases()` now skips constant rows and the guide parser is robust to column names containing `-`.
-- **Mapping: free-text `datasetName` no longer re-renders while typing.** `is_field_mapped()` read `input$custom_datasetName` reactively inside the `mapping_ui` renderUI, so the debounced text value arriving mid-typing invalidated the whole UI and blurred the field. That single free-text read is now isolated; the checkbox/date custom inputs (`license`, `language`, `modified`) stay reactive so their "mapped" border still updates live on toggle.
-- **Mapping: category headers no longer hide behind the sticky class pill bar.** Added `scroll-margin-top` to `.category-header` (the scroll-to-class anchors) so `scrollIntoView` (triggered by the "Todos"/category pills) lands the header below the sticky `.mapping-class-pillbar` instead of behind it.
-- **Upload: a DwC-terms load failure now surfaces as a warning** instead of a silent `message()` in the `get_dwc_terms()` error handler (`mod_upload`), per the project's server-visible-problem convention.
+- **mapping:** Keep a concatenation intact when a guide is re-imported ([#8](https://github.com/rogerio-onza/saira/pull/8))
+- **mapping:** Stop the grid re-rendering while you type in `datasetName` ([#6](https://github.com/rogerio-onza/saira/pull/6))
+- **mapping:** Offset the category headers so they clear the sticky pill bar ([#6](https://github.com/rogerio-onza/saira/pull/6))
+- **upload:** Surface a DwC-terms load failure as a warning ([#6](https://github.com/rogerio-onza/saira/pull/6))
 
 ## [0.5.0] - 2026-05-25
 
 ### Added
-- **Offline-first UI**: Source Serif 4 and Space Mono web fonts are now vendored at `inst/app/www/vendor/fonts/` (latin + latin-ext subsets only — 8 woff2 files, ~440KB). FontAwesome 6.5.1 is vendored at `inst/app/www/vendor/fontawesome/` (CSS + 4 woff2 files; TTF fallbacks dropped since every modern browser supports woff2 — ~310KB). Saira now renders with full typography and icons without any internet connection. Combined vendor footprint: ~976KB.
-- New test `test-app-ui-fonts.R` asserts the UI references local paths and contains zero CDN references (offline-first guardrail).
+- **ui:** Vendor the fonts and FontAwesome so the app renders with no internet connection
+- **tests:** Assert the UI references local paths and no CDN
 
 ### Changed
-- `R/app_ui.R`: removed all `<link>` references to `fonts.googleapis.com`, `cdnjs.cloudflare.com`, and the corresponding `<link rel="preconnect">` hints. Replaced with local stylesheet links to `www/vendor/fonts/source-fonts.css` and `www/vendor/fontawesome/css/all.min.css`.
-- `DESCRIPTION` Imports: `shiny (>= 1.7.0)` bumped to `shiny (>= 1.8.1)` so the package can adopt `shiny::ExtendedTask` in a follow-up PR. renv-pinned environments are unaffected.
-- Google Fonts CSS rewritten to use relative filenames (was `https://fonts.gstatic.com/...`); FontAwesome CSS stripped of `.ttf` fallback `url()` clauses to match the trimmed webfonts directory.
-
-### Notes
-- **ExtendedTask async migration deferred** to a follow-up PR. The offline-first asset bundling is the bigger user-facing benefit (the app works in air-gapped / low-bandwidth juror environments); wrapping the export and `validate_coords` handlers in `ExtendedTask` is a substantive module refactor that warrants its own focused PR. The Shiny version bump in this PR enables that work without forcing a dependency change later.
-- Saira loads ~976KB of vendor assets on the first visit, then 0KB on subsequent visits (browser cache + the v0.5.0 cache-buster from PR-1). The previous CDN approach was ~0KB to ship but ~1MB+ per first visit from third-party origins.
+- **build:** Bump `shiny` to >= 1.8.1 to allow `ExtendedTask` in a follow-up
 
 ## [0.4.1] - 2026-05-25
 
