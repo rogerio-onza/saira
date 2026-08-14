@@ -2,6 +2,19 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.10.1</span>
+    <time class="release-date">2026-08-14</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>The Fauna BR download works again.</strong> The Catálogo Taxonômico da Fauna do Brasil changed its data format once more, and states of occurrence are populated again.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>The MMA threat status is no longer written onto records from other countries.</strong> The Portaria list is national; a jaguar recorded in Peru left the export claiming Brazilian legal status.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>The <code>occurrenceID</code> card lets you point at the column that already carries your identifiers</strong>, and warns when that column repeats a value.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Day, month and year in separate columns now compose one ISO 8601 date.</strong> <code>eventDate</code> used to come out as <code>12 | 2 | 1809</code> instead of <code>1809-02-12</code>.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.10.0</span>
     <time class="release-date">2026-08-04</time>
   </header>

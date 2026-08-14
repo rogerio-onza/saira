@@ -2,6 +2,19 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.10.1</span>
+    <time class="release-date">2026-08-14</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>O download do Fauna BR voltou a funcionar.</strong> O Catálogo Taxonômico da Fauna do Brasil mudou o formato dos dados de novo, e os estados de ocorrência voltaram a vir preenchidos.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>O status de ameaça do MMA não é mais gravado em registros de outros países.</strong> A lista da Portaria é nacional; uma onça registrada no Peru saía do export alegando status legal brasileiro.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>O card de <code>occurrenceID</code> deixa você apontar a coluna que já carrega seus identificadores</strong>, e avisa quando ela repete um valor.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Dia, mês e ano em colunas separadas agora formam uma data ISO 8601.</strong> Antes o <code>eventDate</code> saía como <code>12 | 2 | 1809</code> em vez de <code>1809-02-12</code>.</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.10.0</span>
     <time class="release-date">2026-08-04</time>
   </header>

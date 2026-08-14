@@ -46,7 +46,7 @@ At the top, an indicator says whether the dataset is **ready to publish** (green
 
 ::: {.callout-warning}
 ## No occurrenceID mapped
-If you did not map an <span class="term">occurrenceID</span>, Saíra warns you: the IPT/GBIF then generate unstable identifiers on each publish. Export still works (Saíra generates a UUID), but the recommendation is to **map a stable occurrenceID** so each record keeps the same identifier over time.
+If you did not map an <span class="term">occurrenceID</span>, Saíra warns you: the IPT/GBIF then generate unstable identifiers on each publish. Export still works, and the identifiers Saíra generates are derived from the row content, so re-uploading the same spreadsheet reproduces them. Even so, the recommendation is to **map the column that already carries your identifiers**: Saíra keeps the ones you have and fills only the blank rows.
 :::
 
 ### Applied corrections
@@ -68,7 +68,7 @@ When generating the package, Saíra automatically standardizes the dataset so it
 
 - **eventDate** converted to ISO format (`YYYY-MM-DD`).
 - **Coordinates** with the decimal separator normalized (comma becomes dot).
-- **occurrenceID** generated when missing, to guarantee a unique identifier per record.
+- **occurrenceID** derived from the row content when missing, to guarantee a unique, stable identifier per record.
 - **Licenses** abbreviated to the canonical URL (for example, the matching Creative Commons URL).
 - **Columns reordered** into the canonical Darwin Core sequence, with unmapped columns appended on the right, preserving their original names.
 

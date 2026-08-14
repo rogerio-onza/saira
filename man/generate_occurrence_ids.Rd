@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_export.R
 \name{generate_occurrence_ids}
 \alias{generate_occurrence_ids}
-\title{Generate occurrenceIDs with deterministic v5 or random v4 strategy}
+\title{Populate `occurrenceID`, preserving what the data already carries}
 \usage{
 generate_occurrence_ids(df)
 }
@@ -10,23 +10,16 @@ generate_occurrence_ids(df)
 \item{df}{Data frame.}
 }
 \value{
-Data frame with `occurrenceID` populated. Carries `id_strategy`
-  attribute.
+Data frame with `occurrenceID` populated.
 }
 \description{
-Strategy resolution:
-- Rows with a user-supplied `occurrenceID` are preserved verbatim.
-- For rows missing `occurrenceID`: if the data has `institutionCode` AND one
-  of `catalogNumber` / `eventID` / `recordNumber` (the "anchor"), a
-  deterministic UUID v5 is generated via `uuid::UUIDfromName()` using the
-  RFC 4122 URL namespace plus `saira-occurrence:<institutionCode>|<anchor>`
-  as the name. The same anchor combination always produces the same UUID
-  across machines and re-exports.
-- Otherwise, falls back to random UUID v4 via `ids::uuid()`.
+Thin wrapper over `resolve_occurrence_ids()`, which holds the single rule:
+an identifier the row already carries wins, and Saira derives one from the
+row's own content for the gaps. Kept because `process_for_export()` is also
+called directly (tests, `build_dwca_bundle()`) on frames that never passed
+through the mapping stage.
 }
 \details{
-The returned data frame carries an `id_strategy` attribute documenting which
-path was used: `"user_supplied"`, `"stable_v5"`, `"stable_v5_with_random_fallback"`,
-or `"random_v4"`. Downstream consumers (mapping_guide.txt, export form
-banner) read this attribute.
+The returned data frame carries `id_strategy` and `id_counts` attributes
+documenting what happened; the mapping guide reports them.
 }
