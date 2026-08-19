@@ -307,3 +307,86 @@ testthat::test_that("coords correction payload moves the origin coordinate react
         }
     )
 })
+
+testthat::test_that("a panel re-render keeps the generalization decision (issue #110)", {
+    local_sensitive_fixture(c("Panthera onca", "Leopardus pardalis"), category = "EN")
+    df <- sample_occurrence_df()
+    data_rv <- shiny::reactiveVal(df)
+
+    shiny::testServer(
+        saira:::mod_sensitive_coords_server,
+        args = list(
+            data_r = shiny::reactive(data_rv()),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(
+                sensitive_mode = "generalize",
+                q43_en = "yes",
+                sensitive_justification = "Poaching risk",
+                sensitive_review_date = as.Date("2029-01-15")
+            )
+            session$flushReact()
+            before <- as.character(output$assessment_panel$html)
+            testthat::expect_no_match(before, "Leopardus pardalis", fixed = TRUE)
+
+            # Any Mapping edit hands this module a new mapped frame, which
+            # invalidates the panel. The recreated inputs used to echo their
+            # hardcoded defaults back, dropping the decision from the export.
+            data_rv(rbind(df, data.frame(
+                scientificName = "Leopardus pardalis",
+                decimalLatitude = "-25.4", decimalLongitude = "-49.2",
+                stringsAsFactors = FALSE
+            )))
+            session$flushReact()
+            after <- as.character(output$assessment_panel$html)
+
+            # The panel really did re-render.
+            testthat::expect_match(after, "Leopardus pardalis", fixed = TRUE)
+            # ... and every decision input came back with the user's value.
+            testthat::expect_match(
+                after, '<input type="radio" name="[^"]*sensitive_mode" value="generalize" checked'
+            )
+            testthat::expect_no_match(
+                after, '<input type="radio" name="[^"]*sensitive_mode" value="publish" checked'
+            )
+            testthat::expect_match(after, "Poaching risk", fixed = TRUE)
+            testthat::expect_match(after, "2029-01-15", fixed = TRUE)
+            testthat::expect_match(
+                after, '<input type="radio" name="[^"]*q43_en" value="yes" checked'
+            )
+        }
+    )
+})
+
+testthat::test_that("upstream reset clears the mirrored decision inputs", {
+    local_sensitive_fixture("Panthera onca", category = "EN")
+    df <- sample_occurrence_df()
+    signal <- shiny::reactiveVal(0L)
+
+    shiny::testServer(
+        saira:::mod_sensitive_coords_server,
+        args = list(
+            data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en"),
+            reset_signal_r = signal
+        ),
+        {
+            session$setInputs(
+                sensitive_mode = "generalize",
+                sensitive_justification = "Poaching risk",
+                exc_species = "Panthera onca"
+            )
+            session$flushReact()
+            testthat::expect_identical(mode_rv(), "generalize")
+
+            signal(1L)
+            session$flushReact()
+
+            testthat::expect_identical(mode_rv(), "publish")
+            testthat::expect_identical(justification_rv(), "")
+            testthat::expect_identical(exc_species_rv(), "")
+            testthat::expect_identical(review_date_rv(), saira:::default_review_date())
+        }
+    )
+})
