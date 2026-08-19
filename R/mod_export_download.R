@@ -567,7 +567,8 @@ mount_export_download <- function(input, output, session, lang_r,
                         full_data <- process_for_export_with_unmapped(
                             review_ready,
                             raw_data = raw_df,
-                            map_values = mv
+                            map_values = mv,
+                            overridden_terms = overridden_mapping_terms(cv)
                         )
 
                         # Generalize coordinates of sensitive/threatened species

@@ -2971,6 +2971,32 @@ detect_duplicate_source_mappings <- function(map_values, exclude = character(0))
     stats::setNames(lapply(dup_cols, function(col) tms[cols == col]), dup_cols)
 }
 
+#' Terms whose fixed value overrode a mapped source column
+#'
+#' `build_processed_mapping_df()` lets an enabled fixed value win over a column
+#' mapping and then never reads the column. Naming those terms in one place is
+#' what lets the export hand the orphaned column back at the end of the CSV,
+#' and the mapping guide report it as unused instead of published.
+#'
+#' @param constant_values Named list of fixed values keyed by DwC term, as
+#'   `custom_values_r` returns it (`constant_value_terms()` plus `datasetName`,
+#'   `license`, `language` and `modified`).
+#' @return Character vector of DwC term names, possibly empty.
+#' @noRd
+overridden_mapping_terms <- function(constant_values = list()) {
+    if (!is.list(constant_values) || length(constant_values) == 0L) {
+        return(character(0))
+    }
+    filled <- vapply(constant_values, function(v) {
+        if (is.null(v) || length(v) == 0L) {
+            return(FALSE)
+        }
+        v <- trimws(as.character(v)[[1]])
+        !is.na(v) && nzchar(v)
+    }, logical(1))
+    unique(names(constant_values)[filled])
+}
+
 build_processed_mapping_df <- function(
   df,
   dwc_terms,
@@ -3025,6 +3051,10 @@ build_processed_mapping_df <- function(
             }
         }
 
+        # modified/license/language, like datasetName above: the fixed value
+        # wins, and `next` belongs INSIDE the branch that consumed it. Outside,
+        # a column mapped to one of these was read by nobody and dropped by the
+        # unmapped-column tail as well -- it left the export entirely.
         if (term == "modified") {
             if (isTRUE(modified_use_today)) {
                 # Date only (no time/zone), matching the manual date-picker path
@@ -3032,28 +3062,29 @@ build_processed_mapping_df <- function(
                 date_str <- format(now_utc, "%Y-%m-%d", tz = "UTC")
                 df_final[[term]] <- rep(date_str, nrow(df))
                 selected_terms <- c(selected_terms, term)
+                next
             } else if (!is.null(custom_modified_date)) {
                 date_str <- format(as.Date(custom_modified_date), "%Y-%m-%d")
                 df_final[[term]] <- rep(date_str, nrow(df))
                 selected_terms <- c(selected_terms, term)
+                next
             }
-            next
         }
 
         if (term == "license") {
             if (!is.null(custom_license) && length(custom_license) > 0) {
                 df_final[[term]] <- rep(custom_license[[1]], nrow(df))
                 selected_terms <- c(selected_terms, term)
+                next
             }
-            next
         }
 
         if (term == "language") {
             if (!is.null(custom_language) && length(custom_language) > 0) {
                 df_final[[term]] <- rep(custom_language[[1]], nrow(df))
                 selected_terms <- c(selected_terms, term)
+                next
             }
-            next
         }
 
         # Generalized fixed values (constant_value_terms allowlist): a single

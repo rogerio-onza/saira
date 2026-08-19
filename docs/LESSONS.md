@@ -122,6 +122,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Ao adicionar novas labels de tabela/filtros em modulo bilingue, atualizar a suite de i18n no mesmo ciclo** previne regressao silenciosa de traducao.
 
 ## DwC / Dados de Biodiversidade
+- **"Coluna selecionada" nao e "coluna consumida", e derivar uma da outra perde dado** (issue #98). `build_processed_mapping_df()` deixa o valor fixo vencer o mapeamento e da `next` sem ler a coluna, mas `unmapped_raw_columns()` calculava `used_sources` a partir do que estava **selecionado** em `map_values`. A coluna caia entre as duas etapas: nao virava termo DwC (o valor fixo venceu) nem voltava no fim do CSV (contava como usada). O guia de mapeamento tinha uma **terceira** copia da mesma regra e imprimia `Municipio -> country` junto com `="Brasil" -> country`. Regra: quando um passo pode **recusar** uma entrada, quem calcula "o que sobrou" tem que ler a decisao daquele passo, nunca reconstruir a regra por conta propria — aqui, `overridden_mapping_terms()` como fonte unica. Forma irma no mesmo bug: `modified`/`license`/`language` davam `next` **fora** do `if`, entao a coluna mapeada sumia mesmo sem valor fixo nenhum; `datasetName` estava certo desde sempre porque o `next` dele era dentro do `if`.
 
 - **Separador de entrada**: `;` (padrao brasileiro). Virgula NAO eh delimitador de tokens.
 - **Separador de saida DwC**: ` | ` (pipe com espacos).

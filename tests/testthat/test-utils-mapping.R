@@ -1654,3 +1654,40 @@ test_that("Rostrum scores occurrenceID instead of leaving it manual-only", {
         expect_identical(manual$reason, "manual_only_term")
     }
 })
+
+testthat::test_that("modified/license/language consume their mapped column when no fixed value is set", {
+    raw <- data.frame(
+        Especie = "Panthera onca", Licenca = "CC0", Idioma = "pt",
+        Atualizado = "2024-01-01", stringsAsFactors = FALSE
+    )
+    dwc <- list(
+        list(term = "occurrenceID"), list(term = "scientificName"),
+        list(term = "license"), list(term = "language"), list(term = "modified"),
+        list(term = "genus"), list(term = "specificEpithet"), list(term = "taxonRank")
+    )
+    map_values <- list(
+        scientificName = "Especie", license = "Licenca",
+        language = "Idioma", modified = "Atualizado"
+    )
+
+    # These three used to `next` unconditionally, so the mapped column was read
+    # by nobody and dropped by the unmapped-column tail as well (issue #98).
+    res <- build_processed_mapping_df(
+        df = raw, dwc_terms = dwc, map_values = map_values,
+        occurrence_ids = "id1"
+    )
+    testthat::expect_identical(res$data$license, "CC0")
+    testthat::expect_identical(res$data$language, "pt")
+    testthat::expect_identical(res$data$modified, "2024-01-01")
+
+    # A fixed value still wins over the column.
+    res2 <- build_processed_mapping_df(
+        df = raw, dwc_terms = dwc, map_values = map_values,
+        occurrence_ids = "id1",
+        custom_license = "CC-BY", custom_language = "en",
+        modified_use_today = TRUE, now_utc = as.POSIXct("2026-02-14 10:11:12", tz = "UTC")
+    )
+    testthat::expect_identical(res2$data$license, "CC-BY")
+    testthat::expect_identical(res2$data$language, "en")
+    testthat::expect_identical(res2$data$modified, "2026-02-14")
+})
