@@ -6,10 +6,10 @@
     <time class="release-date">2026-08-14</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>The Fauna BR download works again.</strong> The Catálogo Taxonômico da Fauna do Brasil changed its data format once more, and states of occurrence are populated again.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>The MMA threat status is no longer written onto records from other countries.</strong> The Portaria list is national; a jaguar recorded in Peru left the export claiming Brazilian legal status.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>The <code>occurrenceID</code> card lets you point at the column that already carries your identifiers</strong>, and warns when that column repeats a value.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Day, month and year in separate columns now compose one ISO 8601 date.</strong> <code>eventDate</code> used to come out as <code>12 | 2 | 1809</code> instead of <code>1809-02-12</code>.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong><code>occurrenceID</code></strong>: a card to pick the identifier column, with a warning on repeated values</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Fauna BR</strong>: the download works again, with states of occurrence populated</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>MMA threat status</strong>: applied only to records in Brazil</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>eventDate</code></strong>: day, month and year in separate columns compose an ISO 8601 date</span></li>
   </ul>
 </section>
 
@@ -19,10 +19,10 @@
     <time class="release-date">2026-08-04</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The mapping screen was reworked.</strong> It fits three columns of cards, and the class pills show where work is still pending.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>A list view shows all 66 terms at once</strong>, with the source column and an example value side by side.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping no longer freezes on a large spreadsheet.</strong> Picking a column responds immediately again.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Saíra remembers a column name when you export</strong>, not on every selection you are still trying out.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Mapping</strong>: a list view with all 66 terms, source column and example value</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Mapping</strong>: three columns of cards and class pills showing the pending work</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Aliases</strong>: a column name is learned on export, not on every selection</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping</strong>: picking a column no longer freezes on a large spreadsheet</span></li>
   </ul>
 </section>
 
@@ -32,10 +32,10 @@
     <time class="release-date">2026-07-30</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The app starts about 5x faster.</strong> The geographic layer used by the coordinate checks now loads only when you validate coordinates.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Column mapping is much faster on a large spreadsheet.</strong> Assembling <code>eventDate</code> from several columns is now effectively instant.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The progress bar no longer slows down the name validation.</strong> Only the bar repaints on each step now, instead of the whole panel.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Switching the language no longer turns the name-validation options back on.</strong> Turning off "remove authors" or "ignore qualifiers" now survives the switch.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Startup</strong>: the app opens about 5x faster</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Mapping</strong>: assembling <code>eventDate</code> from several columns is now instant</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Name validation</strong>: the progress bar no longer slows the validation down</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Language</strong>: the name-validation options survive a switch</span></li>
   </ul>
 </section>
 
@@ -45,7 +45,7 @@
     <time class="release-date">2026-07-29</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Maintenance release, with no changes to the app.</strong> The cleanup is internal: packaging and documentation warnings, plus the linter configuration.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Maintenance</strong>: no changes to the app, only packaging, documentation and lint cleanup</span></li>
   </ul>
 </section>
 
@@ -55,10 +55,10 @@
     <time class="release-date">2026-07-29</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong><code>establishmentMeans</code> and <code>degreeOfEstablishment</code> can now be filled for a whole spreadsheet.</strong> An assistant asks for both values once per species, using the TDWG vocabulary.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Name validation flags invasive alien species.</strong> The Instituto Hórus list (483 taxa) is bundled with the app, so the check is local and instant.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>The <code>dynamicProperties</code> card shows the JSON it will generate</strong>, assembled for the first row and refreshed on every key edit.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Switching the interface language no longer wipes your mapping.</strong> Changing between Portuguese and English re-read the file, and the app treated that as a new upload.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong><code>establishmentMeans</code> and <code>degreeOfEstablishment</code></strong>: an assistant fills both per species, using the TDWG vocabulary</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Name validation</strong>: invasive alien species flagged against the bundled Instituto Hórus list (483 taxa)</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong><code>dynamicProperties</code></strong>: the card shows the JSON it will generate</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Language</strong>: switching language no longer wipes the mapping</span></li>
   </ul>
 </section>
 
@@ -68,10 +68,10 @@
     <time class="release-date">2026-07-01</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Darwin Core vocabulary synced with TDWG: 217 to 262 terms</strong>, each new term with a Portuguese definition in the Wiki and in "Add term".</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>The license chosen in the mapping is now reflected in the exported EML</strong>, as CC0 1.0, CC-BY 4.0 or CC-BY-NC 4.0.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>A manually added term shows up in the mapping again</strong>, with the page scrolling to the newly created card.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>In the Preview, the Darwin Core header stays fixed while you scroll the rows</strong>, keeping the term names visible.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Darwin Core vocabulary</strong>: synced with TDWG, from 217 to 262 terms</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>EML</strong>: the license chosen in the mapping is reflected in the export</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping</strong>: a manually added term shows up again</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Preview</strong>: the Darwin Core header stays fixed while the rows scroll</span></li>
   </ul>
 </section>
 
@@ -81,10 +81,10 @@
     <time class="release-date">2026-06-25</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>The Help tab is now a resource hub</strong>: tutorials, useful links, GitHub issues, the GBIF best-practice PDFs and a condensed FAQ.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping responds instantly.</strong> Picking a column or choosing a license no longer freezes the screen for seconds.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>modified</code> is written as a plain date</strong> when "use today's date" is checked: no time and no timezone.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>eventDate</code> and <code>dateIdentified</code> show in ISO 8601 in the preview</strong>, and unpadded dates (<code>2/9/2021</code>) now convert.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Help</strong>: the tab is now a hub of tutorials, links, issues, GBIF PDFs and a FAQ</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping</strong>: picking a column or a license no longer freezes the screen</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>modified</code></strong>: with "use today's date", written as a plain date, no time or timezone</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>eventDate</code> and <code>dateIdentified</code></strong>: shown in ISO 8601, and unpadded dates convert</span></li>
   </ul>
 </section>
 
@@ -94,7 +94,7 @@
     <time class="release-date">2026-06-22</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Tab-separated (<code>.tsv</code>) files are now accepted on upload.</strong> The reader already detected the delimiter, but the file-picker filter and validation only allowed <code>.csv</code>/<code>.txt</code>; now <code>.tsv</code> is offered in the picker and passes validation.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Upload</strong>: <code>.tsv</code> files are accepted in the picker and in validation</span></li>
   </ul>
 </section>
 
@@ -104,10 +104,10 @@
     <time class="release-date">2026-06-20</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Automatic conservation status on export</strong>: <code>dynamicProperties</code> carries the MMA threat category and, with GBIF, the global IUCN category.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Fixed value for more dataset-level terms</strong>: <code>rightsHolder</code>, <code>institutionCode</code>, <code>collectionCode</code>, <code>country</code>, <code>references</code>, <code>bibliographicCitation</code> and <code>geodeticDatum</code>.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Coordinate generalization is now fully Chapman 2020-compliant</strong>: it never rounds to a finer precision than the data already has.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Camtrap DP packages now map cleanly</strong>: empty columns dropped, auto-mapped values preserved, and <strong>AUTO</strong> badges on Darwin Core terms.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Export</strong>: <code>dynamicProperties</code> carries the MMA threat category and the global IUCN one</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Fixed value</strong>: <code>rightsHolder</code>, <code>institutionCode</code>, <code>collectionCode</code>, <code>country</code>, <code>references</code>, <code>bibliographicCitation</code> and <code>geodeticDatum</code></span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Generalization</strong>: fully Chapman 2020, never rounding beyond the data's precision</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Camtrap DP</strong>: empty columns dropped and auto-mapped values preserved</span></li>
   </ul>
 </section>
 
@@ -117,7 +117,7 @@
     <time class="release-date">2026-06-19</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text">In <strong>name validation</strong>, the report table now <strong>scrolls</strong> and <strong>pagination is reachable</strong> with more than 10 names; previously the 10th row and the controls were clipped.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Name validation</strong>: the report table scrolls and pagination is reachable</span></li>
   </ul>
 </section>
 
@@ -127,7 +127,7 @@
     <time class="release-date">2026-06-18</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>National threatened-fauna list updated to the 2026 ordinances</strong>: terrestrial fauna from Portaria MMA nº 1.704/2026 and aquatic fauna (fish and invertebrates) from Portaria GM/MMA nº 1.667/2026. Flora still follows Portaria MMA nº 148/2022.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>MMA list</strong>: threatened fauna updated to ordinances 1.704/2026 and 1.667/2026</span></li>
   </ul>
 </section>
 
@@ -137,8 +137,8 @@
     <time class="release-date">2026-06-16</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text">A new <strong>Technologies and credits</strong> page (PT and EN) gathering, in one place, every R package Saíra uses, the bundled public data and its provenance, and method credits.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Cookieless analytics</strong> (Umami) on the site, to monitor visits without collecting personal data.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Site</strong>: a new Technologies and credits page, with R packages, bundled data and sources</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Site</strong>: cookieless analytics (Umami)</span></li>
   </ul>
 </section>
 
@@ -148,9 +148,9 @@
     <time class="release-date">2026-06-16</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text">A new <strong>Releases</strong> page with each version's highlights, and a <strong>version badge</strong> in the navbar.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text">A <strong>Saíra-pintor</strong> photo on the home page and <strong>English screenshots</strong> in the EN tutorials; click any screenshot to <strong>zoom in</strong>.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text">The site now leads with <strong>SiBBr</strong> ahead of GBIF, foregrounding the Brazilian platform.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Site</strong>: a Releases page with each version's highlights and a version badge in the navbar</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Site</strong>: a Saíra-pintor photo on the home page and English screenshots in the EN tutorials</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Site</strong>: SiBBr now comes ahead of GBIF</span></li>
   </ul>
 </section>
 
@@ -160,8 +160,8 @@
     <time class="release-date">2026-06-16</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text">A dedicated <strong>sensitive-species generalization</strong> tutorial on the help site (PT and EN).</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text">Resetting the mapping or re-uploading a file in the same session now <strong>clears the downstream tabs</strong> (Names, Coordinates and Generalization), so stale decisions from the previous dataset no longer linger.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Site</strong>: a dedicated sensitive-species generalization tutorial (PT and EN)</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping</strong>: resetting or re-uploading a file clears the downstream tabs</span></li>
   </ul>
 </section>
 
@@ -171,10 +171,10 @@
     <time class="release-date">2026-06-15</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text">The <strong>Generalization</strong> tab now scrolls in full and the species list can be <strong>filtered by threat level</strong> (VU, EN, CR…).</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text">Uploads that already carry an <code>occurrenceID</code> now <strong>keep the identifier</strong> instead of getting a random UUID, preserving camera-trap IDs and provenance.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text">Large camera-trap datasets <strong>no longer freeze</strong> the generalization map or the mapping step (performance fixes).</span></li>
-    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Wildlife Insights</strong> timestamps no longer falsely claim a UTC timezone.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Generalization</strong>: the tab scrolls in full and the list filters by threat level</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong><code>occurrenceID</code></strong>: uploads that already carry the identifier keep it</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Performance</strong>: large camera-trap datasets no longer freeze the map</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Wildlife Insights</strong>: timestamps no longer claim a false UTC timezone</span></li>
   </ul>
 </section>
 
@@ -184,9 +184,9 @@
     <time class="release-date">2026-06-14</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text">A new <strong>Export</strong> tab: a review-then-publish hub with a <strong>readiness</strong> indicator ("X% ready to publish") and the Darwin Core Archive download.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text">Sensitive-coordinate masking became a <strong>per-species assessment</strong>, driven by Chapman's decision table, in a dedicated <strong>Generalization</strong> tab.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text">Coordinate corrections now <strong>reflect across the whole tab</strong> (map, table and counts), not only at export.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Export</strong>: a new review-and-publish tab, with a readiness indicator and the DwC-A download</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Generalization</strong>: its own tab, with a per-species assessment from Chapman's table</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Coordinates</strong>: corrections reflect in the map, the table and the counts</span></li>
   </ul>
 </section>
 
@@ -196,9 +196,9 @@
     <time class="release-date">2026-06-09</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text">Sensitive-coordinate masking reworked into a <strong>two-step decision</strong> (publish the original vs. generalize).</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text">Help site rewritten: a polished landing page and <strong>full tutorials</strong> reworked in PT and EN.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text">License changed from <strong>MIT to GPL-3</strong>.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Generalization</strong>: masking reworked into a two-step decision</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Site</strong>: a polished landing page and tutorials rewritten in PT and EN</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>License</strong>: from MIT to GPL-3</span></li>
   </ul>
 </section>
 
@@ -208,9 +208,9 @@
     <time class="release-date">2026-06-04</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Transposed-coordinate correction</strong>: a one-click fix when latitude/longitude are swapped or sign-flipped.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Fill country from coordinates</strong>: derive a blank country from the point on the map.</span></li>
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Mapping templates v2</strong>: export a reusable guide and restore it faithfully via <strong>Import template</strong>.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Coordinates</strong>: a one-click fix for swapped or sign-flipped latitude/longitude</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Coordinates</strong>: fill a blank country from the point on the map</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Mapping templates</strong>: export a reusable guide and restore it via Import template</span></li>
   </ul>
 </section>
 
@@ -220,6 +220,6 @@
     <time class="release-date">2026-05-25</time>
   </header>
   <ul class="release-changes">
-    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Offline-first</strong>: fonts and icons are now bundled, so Saíra renders with full typography and icons <strong>with no internet connection</strong>.</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Offline-first</strong>: bundled fonts and icons, Saíra runs with no connection</span></li>
   </ul>
 </section>
