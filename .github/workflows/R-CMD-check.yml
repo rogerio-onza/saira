@@ -43,7 +43,22 @@ jobs:
       # action install into the standard library and cache it normally.
       RENV_CONFIG_AUTOLOADER_ENABLED: false
     steps:
-      - uses: actions/checkout@v4
+      # The runner resolves apt through a mirrorlist with
+      # azure.archive.ubuntu.com first and archive.ubuntu.com behind it. When
+      # the Azure mirror stops answering, apt spends its full default timeout
+      # and three retries on every index and every package before failing over,
+      # which is what turned a ~6-minute job into 45 on 2026-08-19. Capping the
+      # wait makes the fallback immediate. On a healthy mirror these limits are
+      # never reached, so a good run is unaffected.
+      - name: Fail over fast when an apt mirror stops answering
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-fast-failover >/dev/null <<'CONF'
+          Acquire::http::Timeout "15";
+          Acquire::https::Timeout "15";
+          Acquire::Retries "1";
+          CONF
+
+      - uses: actions/checkout@v7
 
       - uses: r-lib/actions/setup-pandoc@v2
 
