@@ -295,7 +295,8 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             # dropdown, so warning that GBIF would ignore it was simply false.
             unmapped_cols <- unmapped_raw_columns(
                 call_r(raw_data_r), call_r(map_values_r),
-                exclude = names(call_r(mapped_data_r))
+                exclude = names(call_r(mapped_data_r)),
+                overridden_terms = overridden_mapping_terms(call_r(custom_values_r))
             )
             unmapped_notice <- if (length(unmapped_cols) > 0L) {
                 shiny::div(

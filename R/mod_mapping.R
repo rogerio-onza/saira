@@ -2863,6 +2863,16 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             if (!is.null(lng) && length(lng) > 0 && nzchar(lng[[1]])) {
                 vals$language <- as.character(lng[[1]])
             }
+            # `modified` has its own card inputs rather than an entry in the
+            # fixed-value allowlist, and the branches here mirror the ones
+            # build_processed_mapping_df() applies. Without it the export and
+            # the guide cannot tell that a column mapped to `modified` was
+            # overridden, and the column falls out of the file.
+            if (isTRUE(input$modified_use_today)) {
+                vals$modified <- format(Sys.time(), "%Y-%m-%d", tz = "UTC")
+            } else if (!is.null(input$custom_modified_date)) {
+                vals$modified <- format(as.Date(input$custom_modified_date), "%Y-%m-%d")
+            }
             c(vals, collect_constant_values())
         })
 

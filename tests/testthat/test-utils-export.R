@@ -1122,3 +1122,65 @@ testthat::test_that("a raw column already in the export is not reported as dropp
         "anotacoes"
     )
 })
+
+# Issue #98: a column mapped to a term that also carries a fixed value fell
+# between two steps -- the builder skipped it, then the tail excluded it as
+# "used" -- and left the export entirely.
+
+testthat::test_that("a column overridden by a fixed value comes back as an extra column", {
+    raw <- data.frame(
+        Especie = c("Panthera onca", "Puma concolor"),
+        Municipio = c("Curitiba", "Blumenau"),
+        Notas = c("a", "b"),
+        stringsAsFactors = FALSE
+    )
+    dwc <- list(
+        list(term = "occurrenceID"), list(term = "scientificName"),
+        list(term = "country"), list(term = "genus"),
+        list(term = "specificEpithet"), list(term = "taxonRank")
+    )
+    map_values <- list(scientificName = "Especie", country = "Municipio")
+    constants <- list(country = "Brasil")
+
+    res <- build_processed_mapping_df(
+        df = raw, dwc_terms = dwc, map_values = map_values,
+        occurrence_ids = c("id1", "id2"), constant_values = constants
+    )
+    overridden <- overridden_mapping_terms(constants)
+    testthat::expect_identical(overridden, "country")
+
+    out <- process_for_export_with_unmapped(
+        res$data, raw_data = raw, map_values = map_values,
+        overridden_terms = overridden
+    )
+    # The fixed value still wins for the DwC term ...
+    testthat::expect_identical(out$country, c("Brasil", "Brasil"))
+    # ... and the orphaned column is preserved, like any unmapped column.
+    testthat::expect_true("Municipio" %in% names(out))
+    testthat::expect_identical(out$Municipio, c("Curitiba", "Blumenau"))
+    testthat::expect_true("Notas" %in% names(out))
+})
+
+testthat::test_that("the mapping guide reports an overridden column as unused, not mapped", {
+    raw <- data.frame(
+        Especie = "Panthera onca", Municipio = "Curitiba",
+        stringsAsFactors = FALSE
+    )
+    guide <- build_mapping_guide_txt(
+        list(scientificName = "Especie", country = "Municipio"),
+        raw, lang = "pt", constants = list(country = "Brasil")
+    )
+    testthat::expect_false(any(grepl("Municipio\\s+->\\s+country", guide)))
+    testthat::expect_true(any(grepl('="Brasil"\\s+->\\s+country', guide)))
+    testthat::expect_true(any(grepl("^#     - Municipio$", guide)))
+})
+
+testthat::test_that("overridden_mapping_terms names only the terms with a filled value", {
+    testthat::expect_identical(overridden_mapping_terms(list()), character(0))
+    testthat::expect_identical(overridden_mapping_terms(NULL), character(0))
+    testthat::expect_identical(
+        overridden_mapping_terms(list(country = "  ", rightsHolder = "UFRJ",
+                                      references = NULL, license = character(0))),
+        "rightsHolder"
+    )
+})

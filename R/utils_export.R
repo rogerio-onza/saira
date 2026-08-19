@@ -323,11 +323,22 @@ process_for_export <- function(df) {
 #' @param raw_data Data frame with the original uploaded columns.
 #' @param map_values Named list keyed by DwC term, values are source columns.
 #' @param exclude Character vector of column names already in the export.
+#' @param overridden_terms Character vector of terms whose fixed value won over
+#'   their column mapping (`overridden_mapping_terms()`). Their source column
+#'   was never read, so it is unused and belongs in the tail of the CSV.
 #' @return Character vector of column names, possibly empty.
 #' @export
-unmapped_raw_columns <- function(raw_data, map_values, exclude = character(0)) {
+unmapped_raw_columns <- function(raw_data, map_values, exclude = character(0),
+                                 overridden_terms = character(0)) {
     if (!is.data.frame(raw_data) || ncol(raw_data) == 0L || !is.list(map_values)) {
         return(character(0))
+    }
+
+    # A selected column is not a consumed column. Counting the selection is what
+    # made a column mapped to a term with a fixed value fall between the two
+    # steps: skipped by the builder, then excluded from the tail as "used".
+    if (length(overridden_terms) > 0L) {
+        map_values <- map_values[setdiff(names(map_values), overridden_terms)]
     }
 
     used_sources <- unique(unlist(
@@ -355,13 +366,17 @@ unmapped_raw_columns <- function(raw_data, map_values, exclude = character(0)) {
 #' @param raw_data Data frame with original uploaded columns.
 #' @param map_values Named list keyed by DwC term, values are char vectors of
 #'   source column names.
+#' @param overridden_terms Character vector of terms whose fixed value won over
+#'   their column mapping (`overridden_mapping_terms()`).
 #' @return Data frame: process_for_export(df_processed) + tail of unused raw cols.
 #' @export
-process_for_export_with_unmapped <- function(df_processed, raw_data, map_values) {
+process_for_export_with_unmapped <- function(df_processed, raw_data, map_values,
+                                             overridden_terms = character(0)) {
     out <- process_for_export(df_processed)
     id_strategy <- attr(out, "id_strategy")
 
-    extra_cols <- unmapped_raw_columns(raw_data, map_values, exclude = names(out))
+    extra_cols <- unmapped_raw_columns(raw_data, map_values, exclude = names(out),
+                                       overridden_terms = overridden_terms)
     if (length(extra_cols) == 0L) return(out)
 
     extras <- raw_data[, extra_cols, drop = FALSE]
@@ -445,10 +460,15 @@ build_mapping_guide_txt <- function(map_values,
     if (!is.data.frame(raw_data)) raw_data <- data.frame()
     if (!is.list(constants)) constants <- list()
 
+    # A term whose fixed value won never read its column, so the guide must not
+    # claim the column is published under that term -- it lands in the unused
+    # section instead, matching what the CSV actually carries.
+    overridden <- overridden_mapping_terms(constants)
+
     # Column mappings: one entry per mapped term (concatenations joined " + ").
     pairs <- list()
     used_sources <- character(0)
-    for (term in names(map_values)) {
+    for (term in setdiff(names(map_values), overridden)) {
         cols <- as.character(unlist(map_values[[term]], recursive = TRUE, use.names = FALSE))
         cols <- cols[!is.na(cols)]
         cols <- trimws(cols)
