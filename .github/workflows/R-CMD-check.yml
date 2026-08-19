@@ -8,10 +8,24 @@ on:
 
 permissions: read-all
 
+# A second push to a PR leaves the first run alive and both compete for the
+# same apt mirror. Pushes to main are never cancelled: main's run is the one
+# that publishes the dependency cache every PR restores from.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
     name: ${{ matrix.config.os }} (R ${{ matrix.config.r }})
+    # A healthy run is ~6 min: the R library comes from the cache and R CMD
+    # check itself takes under 4. The variable cost is the system-requirements
+    # layer, which setup-r-dependencies installs with apt on every run and no
+    # cache covers. When the runner's Ubuntu mirror degrades it collapses to
+    # tens of kB/s -- on 2026-08-19 one run spent 58 min on `Fetched 117 MB`
+    # after a clean cache hit. Fail at 45 and re-run rather than burn two hours.
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
