@@ -338,10 +338,28 @@ unmapped_raw_columns <- function(raw_data, map_values, exclude = character(0),
     # made a column mapped to a term with a fixed value fall between the two
     # steps: skipped by the builder, then excluded from the tail as "used".
     if (length(overridden_terms) > 0L) {
+        overridden <- intersect(names(map_values), overridden_terms)
+        # A rescued column can be named after the very term that overrode it
+        # (a `country` column mapped to `country`). The caller put that term in
+        # `exclude` because the export carries it, so leaving it there would
+        # drop the raw values a second time, one step further down.
+        exclude <- setdiff(exclude, map_value_sources(map_values[overridden]))
         map_values <- map_values[setdiff(names(map_values), overridden_terms)]
     }
 
-    used_sources <- unique(unlist(
+    setdiff(setdiff(names(raw_data), map_value_sources(map_values)), exclude)
+}
+
+#' Source column names a mapping selection points at
+#'
+#' Flattens one or more `map_values` entries (concatenations included) into the
+#' unique, trimmed column names they draw from.
+#'
+#' @param map_values Named list keyed by DwC term, values are source columns.
+#' @return Character vector of column names, possibly empty.
+#' @noRd
+map_value_sources <- function(map_values) {
+    out <- unique(unlist(
         lapply(map_values, function(v) {
             chr <- as.character(unlist(v, recursive = TRUE, use.names = FALSE))
             chr <- chr[!is.na(chr)]
@@ -350,8 +368,7 @@ unmapped_raw_columns <- function(raw_data, map_values, exclude = character(0),
         }),
         use.names = FALSE
     ))
-
-    setdiff(setdiff(names(raw_data), used_sources), exclude)
+    if (is.null(out)) character(0) else out
 }
 
 #' Append non-mapped raw columns to processed export
@@ -380,6 +397,13 @@ process_for_export_with_unmapped <- function(df_processed, raw_data, map_values,
     if (length(extra_cols) == 0L) return(out)
 
     extras <- raw_data[, extra_cols, drop = FALSE]
+    # A rescued column can carry the same name as the DwC term whose fixed
+    # value replaced it. Both belong in the file, so the raw one takes an
+    # `_original` suffix rather than a duplicate header the IPT cannot read.
+    clash <- names(extras) %in% names(out)
+    names(extras)[clash] <- paste0(names(extras)[clash], "_original")
+    unique_names <- make.unique(c(names(out), names(extras)), sep = "_")
+    names(extras) <- unique_names[-seq_along(names(out))]
     combined <- cbind(out, extras)
     attr(combined, "id_strategy") <- id_strategy
     combined
@@ -480,9 +504,12 @@ build_mapping_guide_txt <- function(map_values,
     }
     used_sources <- unique(used_sources)
 
-    # Constants: typed/selected literal values applied to every row.
+    # Constants: typed/selected literal values applied to every row. `modified`
+    # is left out: the card always holds a date, so serializing it would stamp
+    # the export day into a dataset-independent template and restore a stale
+    # date on the next import.
     const_pairs <- list()
-    for (term in names(constants)) {
+    for (term in setdiff(names(constants), "modified")) {
         val <- constants[[term]]
         if (is.null(val) || length(val) == 0L) next
         val <- trimws(as.character(val)[[1]])

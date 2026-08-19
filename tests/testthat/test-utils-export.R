@@ -1184,3 +1184,45 @@ testthat::test_that("overridden_mapping_terms names only the terms with a filled
         "rightsHolder"
     )
 })
+
+testthat::test_that("a rescued column named after its own term keeps its values", {
+    raw <- data.frame(
+        Especie = c("Panthera onca", "Puma concolor"),
+        country = c("BR", "AR"),
+        stringsAsFactors = FALSE
+    )
+    dwc <- list(
+        list(term = "occurrenceID"), list(term = "scientificName"),
+        list(term = "country"), list(term = "genus"),
+        list(term = "specificEpithet"), list(term = "taxonRank")
+    )
+    map_values <- list(scientificName = "Especie", country = "country")
+    constants <- list(country = "Brasil")
+
+    res <- build_processed_mapping_df(
+        df = raw, dwc_terms = dwc, map_values = map_values,
+        occurrence_ids = c("id1", "id2"), constant_values = constants
+    )
+    out <- process_for_export_with_unmapped(
+        res$data, raw_data = raw, map_values = map_values,
+        overridden_terms = overridden_mapping_terms(constants)
+    )
+    # The DwC term carries the fixed value, the raw column carries its own
+    # values under a suffixed name -- no duplicate header.
+    testthat::expect_identical(out$country, c("Brasil", "Brasil"))
+    testthat::expect_identical(out$country_original, c("BR", "AR"))
+    testthat::expect_identical(anyDuplicated(names(out)), 0L)
+})
+
+testthat::test_that("the mapping guide does not stamp the export date as a constant", {
+    raw <- data.frame(Especie = "Panthera onca", stringsAsFactors = FALSE)
+    guide <- build_mapping_guide_txt(
+        list(scientificName = "Especie"), raw, lang = "en",
+        constants = list(modified = "2026-08-19", rightsHolder = "UFRJ")
+    )
+    # The `modified` card always holds a date, so serializing it would put the
+    # export day into a template meant to be dataset-independent.
+    testthat::expect_false(any(grepl("-> modified", guide, fixed = TRUE)))
+    testthat::expect_true(any(grepl('="UFRJ"\\s+->\\s+rightsHolder', guide)))
+    testthat::expect_true(any(grepl("1 constant", guide, fixed = TRUE)))
+})
