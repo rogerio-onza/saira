@@ -4,7 +4,12 @@
 \alias{unmapped_raw_columns}
 \title{Raw columns no DwC term draws from}
 \usage{
-unmapped_raw_columns(raw_data, map_values, exclude = character(0))
+unmapped_raw_columns(
+  raw_data,
+  map_values,
+  exclude = character(0),
+  overridden_terms = character(0)
+)
 }
 \arguments{
 \item{raw_data}{Data frame with the original uploaded columns.}
@@ -12,6 +17,10 @@ unmapped_raw_columns(raw_data, map_values, exclude = character(0))
 \item{map_values}{Named list keyed by DwC term, values are source columns.}
 
 \item{exclude}{Character vector of column names already in the export.}
+
+\item{overridden_terms}{Character vector of terms whose fixed value won over
+their column mapping (`overridden_mapping_terms()`). Their source column
+was never read, so it is unused and belongs in the tail of the CSV.}
 }
 \value{
 Character vector of column names, possibly empty.

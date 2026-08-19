@@ -4,7 +4,12 @@
 \alias{process_for_export_with_unmapped}
 \title{Append non-mapped raw columns to processed export}
 \usage{
-process_for_export_with_unmapped(df_processed, raw_data, map_values)
+process_for_export_with_unmapped(
+  df_processed,
+  raw_data,
+  map_values,
+  overridden_terms = character(0)
+)
 }
 \arguments{
 \item{df_processed}{Data frame already produced by build_processed_mapping_df()
@@ -14,6 +19,9 @@ process_for_export_with_unmapped(df_processed, raw_data, map_values)
 
 \item{map_values}{Named list keyed by DwC term, values are char vectors of
 source column names.}
+
+\item{overridden_terms}{Character vector of terms whose fixed value won over
+their column mapping (`overridden_mapping_terms()`).}
 }
 \value{
 Data frame: process_for_export(df_processed) + tail of unused raw cols.

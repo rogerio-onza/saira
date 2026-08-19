@@ -3095,8 +3095,8 @@ build_processed_mapping_df <- function(
             if (!is.null(value) && nzchar(trimws(value))) {
                 df_final[[term]] <- rep(trimws(value), nrow(df))
                 selected_terms <- c(selected_terms, term)
+                next
             }
-            next
         }
 
         # The two establishment terms can be filled by the per-species

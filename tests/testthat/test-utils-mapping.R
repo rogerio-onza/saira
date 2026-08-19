@@ -1691,3 +1691,23 @@ testthat::test_that("modified/license/language consume their mapped column when 
     testthat::expect_identical(res2$data$language, "en")
     testthat::expect_identical(res2$data$modified, "2026-02-14")
 })
+
+testthat::test_that("a blank fixed value leaves the mapped column in place", {
+    raw <- data.frame(
+        Especie = "Panthera onca", Municipio = "Curitiba",
+        stringsAsFactors = FALSE
+    )
+    dwc <- list(
+        list(term = "occurrenceID"), list(term = "scientificName"),
+        list(term = "country"), list(term = "genus"),
+        list(term = "specificEpithet"), list(term = "taxonRank")
+    )
+    # Same shape as the modified/license/language fix: `next` must run only in
+    # the branch that consumed the fixed value.
+    res <- build_processed_mapping_df(
+        df = raw, dwc_terms = dwc,
+        map_values = list(scientificName = "Especie", country = "Municipio"),
+        occurrence_ids = "id1", constant_values = list(country = "  ")
+    )
+    testthat::expect_identical(res$data$country, "Curitiba")
+})

@@ -9,6 +9,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - **export:** Keep a column at the end of the CSV when a fixed value overrides its mapping ([#98](https://github.com/rogerio-onza/saira/issues/98))
+- **mapping:** Restore a fixed value when you import a mapping guide
 - **generalization:** Keep the generalization decision when a Mapping edit re-renders the assessment panel ([#110](https://github.com/rogerio-onza/saira/issues/110))
 
 ## [0.10.1] - 2026-08-14

@@ -5,6 +5,14 @@
 #
 # These tests require shinytest2 and a Chromium-based browser.
 # Set CHROMOTE_CHROME in .Renviron to point to your browser executable.
+#
+# Two gates guard this file, and both have to be open:
+#
+#   RUN_E2E=true NOT_CRAN=true Rscript -e "pkgload::load_all('.'); \
+#     testthat::test_file('tests/testthat/test-e2e-flows.R')"
+#
+# devtools::test() sets NOT_CRAN itself, testthat::test_file() does not, so
+# RUN_E2E alone leaves every test skipped with the reason "On CRAN".
 
 testthat::skip_if_not_installed("shinytest2")
 if (!identical(Sys.getenv("RUN_E2E"), "true")) {
@@ -201,4 +209,74 @@ testthat::test_that("E2E: Language switch PT -> EN -> PT without error (Flow 5)"
     testthat::expect_true(nzchar(nav_pt_final))
     testthat::expect_false(identical(nav_pt_initial, nav_en))
     testthat::expect_equal(nav_pt_initial, nav_pt_final)
+})
+
+# --- Flow 6: mapping-guide import restores a fixed value ---
+#
+# The one step no unit test reaches. testServer has no browser, so it can only
+# record the two update calls the import sends; whether the card comes back
+# with the checkbox on and the value filled is a client-side question. The
+# import also rebuilds the whole card grid in the same flush, and that render
+# reads the checkbox with isolate() -- exactly the race this asserts against.
+
+testthat::test_that("E2E: importing a guide restores a fixed value into the card", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+
+    app$wait_for_idle(timeout = 10000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("scientificName,Municipio",
+          "Panthera onca,Curitiba",
+          "Leopardus pardalis,Blumenau"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+
+    # The guide an export writes for `Municipio -> country` overridden by the
+    # fixed value "Brasil": the constant line, no column line (issue #98).
+    guide_path <- tempfile(fileext = ".txt")
+    writeLines(
+        build_mapping_guide_txt(
+            list(scientificName = "scientificName", country = "Municipio"),
+            data.frame(scientificName = "x", Municipio = "y",
+                       stringsAsFactors = FALSE),
+            lang = "en", constants = list(country = "Brasil")
+        ),
+        guide_path,
+        useBytes = TRUE
+    )
+    on.exit(unlink(guide_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+
+    app$click(selector = "a[data-value='mapping']")
+    app$wait_for_idle(timeout = 10000)
+
+    app$click(selector = "#mapping-import_template")
+    app$wait_for_idle(timeout = 5000)
+    app$upload_file(`mapping-import_template_file` = guide_path)
+    app$wait_for_idle(timeout = 5000)
+    app$click(selector = "#mapping-confirm_import_template")
+    app$wait_for_idle(timeout = 20000)
+
+    vals <- app$get_values(input = c("mapping-usecustom_country",
+                                     "mapping-custom_country"))
+    testthat::expect_true(isTRUE(vals$input[["mapping-usecustom_country"]]))
+    testthat::expect_equal(vals$input[["mapping-custom_country"]], "Brasil")
+
+    # The value input sits in a conditionalPanel keyed on the checkbox, so a
+    # restored value the user cannot see would still fail here.
+    testthat::expect_true(
+        app$get_js("$('#mapping-custom_country').is(':visible')")
+    )
 })

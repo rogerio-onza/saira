@@ -1736,3 +1736,61 @@ testthat::test_that("picking a column writes no alias, exporting writes the fina
     testthat::expect_identical(rows$dwc_term, c("basisOfRecord", "scientificName"))
     testthat::expect_identical(rows$col_name_norm, c("tipo registro", "especie"))
 })
+
+# Regression: a term overridden by a fixed value is written to the guide as a
+# constant and no longer as a column mapping, so the import had to learn to
+# restore the constant_value_terms() allowlist too. Without it the term was
+# restored nowhere and left the next export (issue #98 follow-up).
+testthat::test_that("importing a mapping guide restores an allowlist fixed value", {
+    withr::local_envvar(c(
+        SAIRA_DATA_DIR = withr::local_tempdir(),
+        SAIRA_USER = paste0("test_isolation_", as.integer(Sys.time()))
+    ))
+
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        Municipio = c("Curitiba", "Blumenau"),
+        stringsAsFactors = FALSE
+    )
+    guide <- build_mapping_guide_txt(
+        list(scientificName = "scientificName", country = "Municipio"),
+        df, lang = "en", constants = list(country = "Brasil")
+    )
+    guide_path <- withr::local_tempfile(fileext = ".txt")
+    writeLines(guide, guide_path)
+
+    # testServer has no client to echo an update back into `input`, so the two
+    # update calls are recorded instead.
+    updates <- new.env(parent = emptyenv())
+    recorder <- function(session, inputId, ..., value = NULL) {
+        assign(inputId, value, envir = updates)
+        invisible(NULL)
+    }
+
+    testthat::with_mocked_bindings(
+        updateTextInput = recorder,
+        updateCheckboxInput = recorder,
+        .package = "shiny",
+        {
+            shiny::testServer(
+                mod_mapping_server,
+                args = list(
+                    raw_data_r = shiny::reactive(df),
+                    lang_r = shiny::reactive("en")
+                ),
+                {
+                    session$flushReact()
+                    session$setInputs(import_template_file = list(
+                        name = "guide.txt", size = 1L,
+                        type = "text/plain", datapath = guide_path
+                    ))
+                    session$setInputs(confirm_import_template = 1)
+                    session$flushReact()
+                }
+            )
+        }
+    )
+
+    testthat::expect_true(isTRUE(get0("usecustom_country", envir = updates)))
+    testthat::expect_identical(get0("custom_country", envir = updates), "Brasil")
+})

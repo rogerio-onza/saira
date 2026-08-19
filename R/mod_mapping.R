@@ -1830,6 +1830,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             if (!is.null(consts$language)) {
                 shiny::updateCheckboxGroupInput(session, "custom_language", selected = consts$language)
             }
+            # Fixed values from the constant_value_terms() allowlist. A term
+            # overridden by one is written to the guide as a constant and no
+            # longer as a column mapping, so without this the import restores
+            # it nowhere and the term leaves the next export.
+            for (term in intersect(names(consts), constant_value_terms())) {
+                shiny::updateCheckboxInput(session, paste0("usecustom_", term), value = TRUE)
+                shiny::updateTextInput(session, paste0("custom_", term), value = consts[[term]])
+            }
 
             # Seed personal aliases for cross-dataset auto-mapping (ADR-087);
             # non-fatal if it fails (the faithful restore already happened).
