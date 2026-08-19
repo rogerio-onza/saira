@@ -46,6 +46,16 @@ mod_sensitive_coords_ui <- function(id) {
     )
 }
 
+# Default "review by" date offered for a generalization decision: Chapman
+# recommends revisiting it within 2-5 years, and this is the midpoint.
+default_review_date <- function() Sys.Date() + 1460
+
+# Keep a saved dropdown value only while it is still on offer: a new dataset
+# retires the species the user had open in the exception editor.
+restore_choice <- function(saved, choices) {
+    if (length(saved) == 1L && !is.na(saved) && saved %in% choices) saved else ""
+}
+
 #' Sensitive Coordinates (Generalization) Module Server
 #'
 #' @param id Module ID
@@ -149,6 +159,34 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
         # crpex/cr/en/vu/other). Lets the user narrow a long result list to a
         # single MMA group. Reset to "all" whenever the detected set changes.
         result_filter_rv <- shiny::reactiveVal("all")
+        # Decision inputs mirrored server-side. The assessment panel is a
+        # renderUI that recreates them, and every Mapping edit invalidates the
+        # mapped frame this panel reads, so a tab switch was enough to re-render
+        # it. The recreated inputs echoed their hardcoded defaults back and the
+        # mode silently fell to "publish" -- the export then published exact
+        # coordinates for sensitive species with no warning. Restoring from
+        # these (not from `input`, which the reset handler clears one flush
+        # later) is what keeps the decision. Same hazard as ADR-098.
+        mode_rv <- shiny::reactiveVal("publish")
+        justification_rv <- shiny::reactiveVal("")
+        review_date_rv <- shiny::reactiveVal(default_review_date())
+        exc_species_rv <- shiny::reactiveVal("")
+
+        shiny::observeEvent(input$sensitive_mode, {
+            m <- as.character(input$sensitive_mode)
+            if (length(m) == 1L && nzchar(m)) mode_rv(m)
+        })
+        shiny::observeEvent(input$sensitive_justification, {
+            justification_rv(input$sensitive_justification %||% "")
+        }, ignoreNULL = FALSE)
+        shiny::observeEvent(input$sensitive_review_date, {
+            d <- input$sensitive_review_date
+            review_date_rv(if (length(d) == 1L && !is.na(d)) d else default_review_date())
+        })
+        shiny::observeEvent(input$exc_species, {
+            sp <- as.character(input$exc_species %||% "")
+            exc_species_rv(if (length(sp) == 1L) sp else "")
+        }, ignoreNULL = FALSE)
 
         # Detected sensitive species (>= 1 record with coordinates), grouped by
         # MMA threat status. Sourced from the corrected data already in hand.
@@ -232,7 +270,10 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
         })
 
         # ---- Cascade -> tier wiring ---------------------------------------
-        lapply(sensitive_codes, function(cc) {
+        # "exc" is the per-species exception cascade. Its answers ride the same
+        # persistence so the exception editor survives a re-render, but it never
+        # defines a group tier.
+        lapply(c(sensitive_codes, "exc"), function(cc) {
             shiny::observe({
                 a3 <- input[[paste0("q43_", cc)]]
                 a4 <- input[[paste0("q44_", cc)]]
@@ -251,6 +292,8 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 ans[[paste0("q44_", cc)]] <- a4
                 ans[[paste0("q45_", cc)]] <- a5
                 group_answers_rv(ans)
+
+                if (identical(cc, "exc")) return(invisible(NULL))
 
                 t <- determine_tier(a3, a4, a5)
                 gl <- group_levels_rv()
@@ -488,7 +531,8 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     class = "sp-exc-body",
                     shiny::selectizeInput(
                         ns("exc_species"), label = NULL,
-                        choices = c("", ov$scientificName), selected = "",
+                        choices = c("", ov$scientificName),
+                        selected = restore_choice(shiny::isolate(exc_species_rv()), ov$scientificName),
                         options = list(placeholder = tr("sensitive_exc_prompt", lang))
                     ),
                     shiny::conditionalPanel(
@@ -520,6 +564,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     shiny::uiOutput(ns("justification_prompt")),
                     shiny::textAreaInput(
                         ns("sensitive_justification"), label = NULL,
+                        value = shiny::isolate(justification_rv()),
                         placeholder = tr("sensitive_justification_placeholder", lang),
                         rows = 2, width = "100%"
                     ),
@@ -529,7 +574,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     class = "sp-review-date",
                     shiny::dateInput(ns("sensitive_review_date"),
                                      label = tr("sensitive_review_date_label", lang),
-                                     value = Sys.Date() + 1460)
+                                     value = shiny::isolate(review_date_rv()))
                 )
             )
 
@@ -557,7 +602,8 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                             mode_card("sensitive_assess_mode_title",
                                       "sensitive_assess_mode_desc", FALSE)
                         ),
-                        choiceValues = c("publish", "generalize"), selected = "publish"
+                        choiceValues = c("publish", "generalize"),
+                        selected = shiny::isolate(mode_rv())
                     )
                 ),
                 shiny::conditionalPanel(
@@ -1207,9 +1253,13 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 group_answers_rv(list())
                 result_filter_rv("all")
                 map_fitted_sig_rv(NULL)
+                mode_rv("publish")
+                justification_rv("")
+                review_date_rv(default_review_date())
+                exc_species_rv("")
                 shiny::updateRadioButtons(session, "sensitive_mode", selected = "publish")
                 shiny::updateTextAreaInput(session, "sensitive_justification", value = "")
-                shiny::updateDateInput(session, "sensitive_review_date", value = Sys.Date() + 1460)
+                shiny::updateDateInput(session, "sensitive_review_date", value = default_review_date())
             }, ignoreInit = TRUE)
         }
 

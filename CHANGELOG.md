@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **generalization:** Keep the generalization decision when a Mapping edit re-renders the assessment panel ([#110](https://github.com/rogerio-onza/saira/issues/110))
+
 ## [0.10.1] - 2026-08-14
 
 ### Added
