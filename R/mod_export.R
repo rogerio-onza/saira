@@ -71,8 +71,15 @@ mod_export_ui <- function(id) {
 #' @param map_values_r Optional reactive with the current mapping list.
 #' @param custom_values_r Optional reactive with typed constants (`datasetName`,
 #'   `license`, `language`); the dataset name names the auxiliary bundle files.
+#' @param establishment_dropped_r Optional reactive, named by DwC term, with the
+#'   `establishment_dropped_values()` frame for each mapped establishment term
+#'   whose column carried values outside the controlled vocabulary.
+#' @param occurrence_id_info_r Optional reactive with the identifier strategy and
+#'   counts from `resolve_occurrence_ids()`.
 #' @param on_navigate Optional callback `function(tab)` to switch the top-level
 #'   navbar (used by the "fix missing terms" banner action).
+#' @param on_export_success Optional callback fired after a successful export,
+#'   used to signal the mapping module to learn its aliases (ADR-115).
 #' @return invisible NULL.
 #' @export
 mod_export_server <- function(id, mapped_data_r, lang_r,
@@ -86,6 +93,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                               raw_data_r = NULL,
                               map_values_r = NULL,
                               custom_values_r = NULL,
+                              establishment_dropped_r = NULL,
                               occurrence_id_info_r = NULL,
                               on_navigate = NULL,
                               on_export_success = NULL) {
@@ -316,6 +324,38 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 )
             }
 
+            # A value the publisher wrote that is outside the TDWG vocabulary
+            # leaves its row blank rather than travelling to GBIF as free text.
+            # Name it here, with the row count, next to the button that opens
+            # the assistant where the translation is made.
+            dropped <- call_r(establishment_dropped_r)
+            establishment_notice <- if (is.list(dropped) && length(dropped) > 0L) {
+                shiny::div(
+                    class = "export-banner export-banner--warning",
+                    shiny::icon("triangle-exclamation"),
+                    shiny::div(
+                        class = "export-banner-body",
+                        lapply(names(dropped), function(term) {
+                            entries <- dropped[[term]]
+                            shiny::tagList(
+                                shiny::p(
+                                    class = "mb-0",
+                                    sprintf(
+                                        tr("export_establishment_dropped", lang),
+                                        nrow(entries), term,
+                                        sum(entries$n_records)
+                                    )
+                                ),
+                                shiny::tags$code(paste(
+                                    sprintf("%s (%d)", entries$raw, entries$n_records),
+                                    collapse = ", "
+                                ))
+                            )
+                        })
+                    )
+                )
+            }
+
             # --- Readiness: counts + per-term presence chips ----------------
             term_chips <- lapply(seq_len(nrow(s$readiness)), function(i) {
                 term <- s$readiness$term[i]
@@ -396,6 +436,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             shiny::tagList(
                 banner,
                 unmapped_notice,
+                establishment_notice,
                 shiny::div(
                     class = "export-summary",
                     readiness_card,

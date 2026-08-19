@@ -392,6 +392,32 @@ map_establishment_values <- function(species_values, establishment_map = NULL,
 # export pipeline and the mapping card's sample line so both show the same
 # thing. `species_values` NULL (scientificName not mapped) means the assistant
 # contributes nothing.
+# Key used to recognize a controlled term written in another shape. Case and
+# punctuation are ignored, so "native endemic" and "Native-Endemic" both reach
+# `nativeEndemic`. Nothing is translated: "Nativo" is not the vocabulary and
+# gets no key that matches.
+establishment_vocab_key <- function(values) {
+    chr <- tolower(as.character(values))
+    chr[is.na(values)] <- ""
+    translit <- iconv(chr, to = "ASCII//TRANSLIT")
+    chr[!is.na(translit)] <- translit[!is.na(translit)]
+    gsub("[^a-z0-9]", "", chr)
+}
+
+# The controlled term each value already is, or "" for a value outside the
+# vocabulary. `field` is "means" or "degree".
+canonical_establishment_values <- function(values, field = "means") {
+    allowed <- if (identical(field, "degree")) {
+        get_degree_of_establishment_terms()
+    } else {
+        get_establishment_means_terms()
+    }
+    idx <- match(establishment_vocab_key(values), establishment_vocab_key(allowed))
+    out <- allowed[idx]
+    out[is.na(out)] <- ""
+    out
+}
+
 build_establishment_term_value <- function(term, df, user_cols = NULL,
                                            species_values = NULL,
                                            establishment_map = NULL,
@@ -406,9 +432,59 @@ build_establishment_term_value <- function(term, df, user_cols = NULL,
     column_values <- if (has_selected_value(user_cols)) {
         build_term_value(term = term, df = df, user_cols = user_cols, out_sep = out_sep)$values
     } else {
-        rep(NA_character_, n)
+        rep("", n)
     }
-    fill_missing_character_values(column_values, assistant_values)
+
+    # Precedence, per row: a column value that already IS the controlled term
+    # wins, then the assistant's answer, then blank. What must never happen is
+    # the third case the old code allowed -- a column value outside the
+    # vocabulary published verbatim, which put free text like "Domestico" into
+    # a term GBIF reads against a fixed list. Those rows come back from
+    # establishment_dropped_values() so the export screen can name them.
+    out <- canonical_establishment_values(column_values, field = field)
+    blank <- !nzchar(out)
+    out[blank] <- assistant_values[blank]
+    out[is.na(out)] <- ""
+    out
+}
+
+# Column values that reach neither the vocabulary nor an assistant answer, so
+# the export leaves their rows blank. One row per distinct value, ordered by
+# how much data it covers, for the export screen to report.
+establishment_dropped_values <- function(term, df, user_cols = NULL,
+                                         species_values = NULL,
+                                         establishment_map = NULL,
+                                         out_sep = " | ") {
+    empty <- data.frame(
+        raw = character(0), n_records = integer(0), stringsAsFactors = FALSE
+    )
+    if (!is.data.frame(df) || nrow(df) == 0L || !has_selected_value(user_cols)) {
+        return(empty)
+    }
+
+    column_values <- build_term_value(
+        term = term, df = df, user_cols = user_cols, out_sep = out_sep
+    )$values
+    published <- build_establishment_term_value(
+        term = term, df = df, user_cols = user_cols,
+        species_values = species_values, establishment_map = establishment_map,
+        out_sep = out_sep
+    )
+
+    raw_chr <- trimws(as.character(column_values))
+    raw_chr[is.na(column_values)] <- ""
+    lost <- nzchar(raw_chr) & !nzchar(published)
+    if (!any(lost)) {
+        return(empty)
+    }
+
+    tab <- table(raw_chr[lost])
+    out <- data.frame(
+        raw = names(tab),
+        n_records = as.integer(tab),
+        stringsAsFactors = FALSE
+    )
+    out[order(-out$n_records, out$raw), , drop = FALSE]
 }
 
 # How many species have an answer for one of the two fields. Drives the card's

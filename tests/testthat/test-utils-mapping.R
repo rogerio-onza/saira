@@ -1711,3 +1711,65 @@ testthat::test_that("a blank fixed value leaves the mapped column in place", {
     )
     testthat::expect_identical(res$data$country, "Curitiba")
 })
+
+# A mapped establishmentMeans column used to reach the CSV verbatim, so free
+# text like "Domestico" was published into a term GBIF reads against the TDWG
+# controlled vocabulary.
+
+testthat::test_that("establishment precedence is vocabulary column, then assistant, then blank", {
+    df <- data.frame(
+        Especie = c("Sus scrofa", "Panthera onca", "Rattus rattus", "Canis lupus", "Bos taurus"),
+        Origem = c("", "Nativo", "introduced", "native endemic", "Doméstico"),
+        stringsAsFactors = FALSE
+    )
+    emap <- list(
+        means = stats::setNames("introduced", normalize_species_keys("Sus scrofa")),
+        degree = stats::setNames(character(0), character(0))
+    )
+
+    out <- build_establishment_term_value(
+        term = "establishmentMeans", df = df, user_cols = "Origem",
+        species_values = df$Especie, establishment_map = emap
+    )
+
+    testthat::expect_identical(out[[1]], "introduced")   # blank column, assistant fills
+    testthat::expect_identical(out[[2]], "")             # "Nativo" is not the vocabulary
+    testthat::expect_identical(out[[3]], "introduced")   # column already speaks it
+    testthat::expect_identical(out[[4]], "nativeEndemic") # case/punctuation only
+    testthat::expect_identical(out[[5]], "")             # "Doméstico", no assistant answer
+})
+
+testthat::test_that("establishment_dropped_values reports what the export left blank", {
+    df <- data.frame(
+        Especie = c("Bos taurus", "Bos taurus", "Panthera onca", "Rattus rattus"),
+        Origem = c("Doméstico", "Doméstico", "Nativo", "introduced"),
+        stringsAsFactors = FALSE
+    )
+    dropped <- establishment_dropped_values(
+        term = "establishmentMeans", df = df, user_cols = "Origem",
+        species_values = df$Especie, establishment_map = NULL
+    )
+    # Ordered by how much data each value covers, and a value the vocabulary
+    # accepted is never reported.
+    testthat::expect_identical(dropped$raw, c("Doméstico", "Nativo"))
+    testthat::expect_identical(dropped$n_records, c(2L, 1L))
+
+    testthat::expect_identical(
+        nrow(establishment_dropped_values(
+            term = "establishmentMeans", df = df, user_cols = NULL,
+            species_values = df$Especie
+        )),
+        0L
+    )
+})
+
+testthat::test_that("each establishment term is checked against its own vocabulary", {
+    df <- data.frame(Valor = c("captive", "introduced"), stringsAsFactors = FALSE)
+
+    means <- build_establishment_term_value("establishmentMeans", df, "Valor")
+    degree <- build_establishment_term_value("degreeOfEstablishment", df, "Valor")
+
+    # "captive" is degreeOfEstablishment only, "introduced" establishmentMeans only.
+    testthat::expect_identical(means, c("", "introduced"))
+    testthat::expect_identical(degree, c("captive", ""))
+})
