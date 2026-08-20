@@ -15,6 +15,22 @@
 
 RELEASES = [
     {
+        "version": "0.10.2",
+        "date": "2026-08-20",
+        "pt": [
+            ("fixed", "**`establishmentMeans` e `degreeOfEstablishment`**: a exportação publica apenas os termos do vocabulário Darwin Core"),
+            ("fixed", "**Exportação**: a coluna continua no CSV quando um valor fixo sobrescreve o mapeamento"),
+            ("fixed", "**Mapeamento**: importar um guia restaura os valores fixos"),
+            ("fixed", "**Generalização**: a decisão sobrevive a uma edição no Mapeamento"),
+        ],
+        "en": [
+            ("fixed", "**`establishmentMeans` and `degreeOfEstablishment`**: the export publishes only Darwin Core controlled terms"),
+            ("fixed", "**Export**: a column keeps its place in the CSV when a fixed value overrides its mapping"),
+            ("fixed", "**Mapping**: importing a guide restores the fixed values"),
+            ("fixed", "**Generalization**: the decision survives an edit in Mapping"),
+        ],
+    },
+    {
         "version": "0.10.1",
         "date": "2026-08-14",
         "pt": [
