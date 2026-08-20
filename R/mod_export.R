@@ -356,6 +356,35 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 )
             }
 
+            # A well-formed date can still be wrong: "2098" passes every format
+            # check and only a human knows it was meant to be "2008". Name the
+            # rows here, where the publisher can still fix them at the source.
+            di <- s$date_issues
+            date_notice <- if (is.list(di) && di$count > 0L) {
+                shiny::div(
+                    class = "export-banner export-banner--warning",
+                    shiny::icon("triangle-exclamation"),
+                    shiny::div(
+                        class = "export-banner-body",
+                        shiny::strong(tr("export_date_range_title", lang)),
+                        shiny::p(
+                            class = "mb-0",
+                            sprintf(
+                                tr("export_date_range_body", lang),
+                                di$count, di$min_year, di$max_year
+                            )
+                        ),
+                        shiny::tags$code(paste(
+                            sprintf(
+                                tr("export_date_range_row", lang),
+                                di$sample$row, di$sample$column, di$sample$value
+                            ),
+                            collapse = ", "
+                        ))
+                    )
+                )
+            }
+
             # --- Readiness: counts + per-term presence chips ----------------
             term_chips <- lapply(seq_len(nrow(s$readiness)), function(i) {
                 term <- s$readiness$term[i]
@@ -435,6 +464,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
 
             shiny::tagList(
                 banner,
+                date_notice,
                 unmapped_notice,
                 establishment_notice,
                 shiny::div(

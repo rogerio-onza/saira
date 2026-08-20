@@ -187,3 +187,76 @@ testthat::test_that("parse_dates_to_iso handles factors and empty inputs", {
     out_empty <- parse_dates_to_iso(character())
     testthat::expect_identical(out_empty, character())
 })
+
+testthat::test_that("parse_dates_to_iso normalises year-first, month-year and dates carrying a time", {
+    input <- c(
+        "2023/12/25",
+        "2023.12.25",
+        "25/12/2023 14:30",
+        "25/12/2023 9:05:30",
+        "2023-12-25T10:00:00Z",
+        "12/2023",
+        "2023/12",
+        "13/2023"
+    )
+
+    expected <- c(
+        "2023-12-25",
+        "2023-12-25",
+        "2023-12-25T14:30",
+        "2023-12-25T09:05:30",
+        "2023-12-25T10:00:00Z",
+        "2023-12",
+        "2023-12",
+        NA_character_
+    )
+
+    testthat::expect_identical(parse_dates_to_iso(input), expected)
+})
+
+testthat::test_that("parse_dates_to_iso keeps the day-first vote when the column carries times", {
+    # 25 > 12 proves day-first, and the vote has to survive the time suffix.
+    input <- c("25/12/2023 08:00", "05/06/2023 08:00")
+    testthat::expect_identical(
+        parse_dates_to_iso(input),
+        c("2023-12-25T08:00", "2023-06-05T08:00")
+    )
+})
+
+testthat::test_that("date_year_issues flags future and ancient years without touching valid ones", {
+    df <- data.frame(
+        eventDate = c("2023-12-25", "2098-05-01", "1450-01-01", "20231225"),
+        modified = rep("2024-01-01", 4),
+        year = c("2023", "2098", "1450", "2023"),
+        stringsAsFactors = FALSE
+    )
+
+    issues <- saira:::date_year_issues(df, max_year = 2026L)
+
+    testthat::expect_identical(issues$count, 4L)
+    testthat::expect_identical(issues$future_count, 2L)
+    testthat::expect_identical(issues$ancient_count, 2L)
+    testthat::expect_setequal(issues$columns, c("eventDate", "year"))
+    testthat::expect_identical(issues$sample$row, c(2L, 2L, 3L, 3L))
+    testthat::expect_true(all(issues$sample$value %in% c("2098-05-01", "2098", "1450-01-01", "1450")))
+})
+
+testthat::test_that("date_year_issues reads both halves of an interval and ignores clean frames", {
+    df <- data.frame(
+        eventDate = c("2010-01/2098-03", "2010-01/2012-03"),
+        stringsAsFactors = FALSE
+    )
+    issues <- saira:::date_year_issues(df, max_year = 2026L)
+    testthat::expect_identical(issues$count, 1L)
+    testthat::expect_identical(issues$sample$row, 1L)
+
+    clean <- saira:::date_year_issues(
+        data.frame(eventDate = c("2024-01-01", ""), stringsAsFactors = FALSE),
+        max_year = 2026L
+    )
+    testthat::expect_identical(clean$count, 0L)
+    testthat::expect_identical(nrow(clean$sample), 0L)
+
+    no_cols <- saira:::date_year_issues(data.frame(x = 1:3))
+    testthat::expect_identical(no_cols$count, 0L)
+})

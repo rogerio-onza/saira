@@ -2808,7 +2808,7 @@ build_term_value <- function(
     # preview matches what the export pipeline emits via fix_dates_to_iso().
     # Unparseable values (already-correct intervals "YYYY-MM/YYYY-MM", partial
     # dates like "2026", or invalid text) keep their raw value.
-    if (term %in% c("eventDate", "dateIdentified")) {
+    if (term %in% c("eventDate", "dateIdentified", "modified")) {
         parsed <- parse_dates_to_iso(values)
         keep_raw <- is.na(parsed) & !is.na(values) & nzchar(values)
         parsed[keep_raw] <- values[keep_raw]

@@ -280,3 +280,77 @@ testthat::test_that("E2E: importing a guide restores a fixed value into the card
         app$get_js("$('#mapping-custom_country').is(':visible')")
     )
 })
+
+# --- Flow 7: slash dates and an impossible year ---
+#
+# The bug this guards against was reported from a real export: dates left the
+# app with the separator the spreadsheet used ("2023/12/25", "25/12/2023 14:30")
+# instead of the ISO hyphen, and a year typo (2098) reached the ZIP with nothing
+# on screen to warn about it. Only a browser run covers the whole path, since
+# the export the user gets is written by the download handler, not by the pure
+# pipeline the unit tests call.
+
+testthat::test_that("E2E: slash dates export as ISO and an out-of-range year is flagged", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+
+    app$wait_for_idle(timeout = 10000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("scientificName,decimalLatitude,decimalLongitude,basisOfRecord,eventDate",
+          "Panthera onca,-10.5,-55.2,HumanObservation,25/12/2023",
+          "Leopardus pardalis,-11.3,-54.8,HumanObservation,2023/11/02",
+          "Puma concolor,-12.1,-53.4,HumanObservation,25/12/2023 14:30",
+          "Chrysocyon brachyurus,-13.2,-52.7,HumanObservation,01/05/2098"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+
+    app$click(selector = "a[data-value='mapping']")
+    app$wait_for_idle(timeout = 10000)
+    app$click(selector = "#mapping-auto_map")
+    app$wait_for_idle(timeout = 20000)
+
+    app$click(selector = "a[data-value='export']")
+    app$wait_for_idle(timeout = 15000)
+
+    # The out-of-range year is named on screen, with its row.
+    summary_html <- app$get_html("#export-summary")
+    testthat::expect_true(grepl("2098", summary_html, fixed = TRUE))
+    testthat::expect_true(grepl("eventDate", summary_html, fixed = TRUE))
+
+    # ... and the export is not blocked by it.
+    zip_path <- app$get_download("export-download_real")
+    on.exit(unlink(zip_path), add = TRUE)
+
+    unzip_dir <- tempfile()
+    dir.create(unzip_dir)
+    on.exit(unlink(unzip_dir, recursive = TRUE), add = TRUE)
+    utils::unzip(zip_path, exdir = unzip_dir)
+
+    occurrence_path <- list.files(
+        unzip_dir, pattern = "^occurrence\\.txt$", recursive = TRUE, full.names = TRUE
+    )
+    testthat::expect_length(occurrence_path, 1L)
+
+    occurrence <- utils::read.csv(
+        occurrence_path[[1]], sep = ",", colClasses = "character", encoding = "UTF-8"
+    )
+    testthat::expect_true("eventDate" %in% names(occurrence))
+    testthat::expect_false(any(grepl("/", occurrence$eventDate, fixed = TRUE)))
+    testthat::expect_setequal(
+        occurrence$eventDate,
+        c("2023-12-25", "2023-11-02", "2023-12-25T14:30", "2098-05-01")
+    )
+})

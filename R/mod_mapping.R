@@ -233,6 +233,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         rv <- shiny::reactiveValues(
             eventdate_parse_failures = 0L,
             last_eventdate_warn_count = NA_integer_,
+            date_year_issues = NULL,
+            last_date_year_warn_count = NA_integer_,
             map_values = list(),
             map_meta = list(),
             extra_terms = character(0),
@@ -1188,6 +1190,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 rm(list = ls(id_cache, all.names = TRUE), envir = id_cache)
                 rv$eventdate_parse_failures <- 0L
                 rv$last_eventdate_warn_count <- NA_integer_
+                rv$date_year_issues <- NULL
+                rv$last_date_year_warn_count <- NA_integer_
                 rv$programmatic_terms <- character(0)
                 rv$ambiguity_queue <- list()
                 rv$rostrum_decisions <- NULL
@@ -1499,6 +1503,30 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         duration = 7
                     )
                     rv$last_eventdate_warn_count <- current_count
+                }
+            },
+            ignoreInit = TRUE
+        )
+
+        shiny::observeEvent(rv$date_year_issues,
+            {
+                issues <- rv$date_year_issues
+
+                if (is.null(issues) || issues$count <= 0L) {
+                    rv$last_date_year_warn_count <- NA_integer_
+                    return()
+                }
+
+                if (!identical(rv$last_date_year_warn_count, issues$count)) {
+                    shiny::showNotification(
+                        sprintf(
+                            tr("notif_date_year_warning", lang_r()),
+                            issues$count, issues$min_year, issues$max_year
+                        ),
+                        type = "warning",
+                        duration = 7
+                    )
+                    rv$last_date_year_warn_count <- issues$count
                 }
             },
             ignoreInit = TRUE
@@ -2674,6 +2702,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             if (!identical(rv$eventdate_parse_failures, processed_result$eventdate_failure_count)) {
                 rv$eventdate_parse_failures <- processed_result$eventdate_failure_count
+            }
+
+            # A year outside the plausible range survives every format fix, so
+            # the count is taken here, on the full mapped frame the export ships.
+            issues <- date_year_issues(processed_result$data)
+            if (!identical(rv$date_year_issues, issues)) {
+                rv$date_year_issues <- issues
             }
 
             processed_result$data

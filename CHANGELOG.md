@@ -7,6 +7,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **export:** Warn on the export screen and in Mapping when a date carries a year outside 1600 and the current year
+
+### Fixed
+- **dates:** Convert `YYYY/MM/DD`, `MM/YYYY` and dates carrying a time to ISO 8601, instead of publishing the spreadsheet separator
+- **dates:** Normalize `modified` in the Mapping preview, so it matches what the export writes
+
+### Changed
+- **demo:** Add a `data_registro` column mixing date formats, and two rows with an impossible year, to the demo spreadsheet
+
 ## [0.10.2] - 2026-08-20
 
 ### Fixed
