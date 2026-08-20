@@ -659,6 +659,10 @@
     "pt": "%d coluna(s) não mapeada(s) seguem no arquivo, mas fora do meta.xml: o GBIF vai ignorá-las. Mapeie para um termo DwC ou inclua em dynamicProperties para publicá-las.",
     "en": "%d unmapped column(s) stay in the file but outside meta.xml, so GBIF will ignore them. Map them to a DwC term or add them to dynamicProperties to publish them."
   },
+  "export_establishment_dropped": {
+    "pt": "%d valor(es) da sua coluna de %s estão fora do vocabulário controlado do Darwin Core e ficaram vazios em %d registro(s). Traduza cada um no assistente do card.",
+    "en": "%d value(s) from your %s column are outside the Darwin Core controlled vocabulary and were left blank in %d record(s). Translate each one in the card's assistant."
+  },
   "taxon_auto_derived": {
     "pt": "Inferido automaticamente a partir do scientificName",
     "en": "Auto-inferred from scientificName"

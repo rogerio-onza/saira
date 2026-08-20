@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- **export:** Publish only Darwin Core controlled terms for `establishmentMeans` and `degreeOfEstablishment`
 - **export:** Keep a column at the end of the CSV when a fixed value overrides its mapping ([#98](https://github.com/rogerio-onza/saira/issues/98))
 - **mapping:** Restore a fixed value when you import a mapping guide ([#113](https://github.com/rogerio-onza/saira/pull/113))
 - **generalization:** Keep the generalization decision when a Mapping edit re-renders the assessment panel ([#110](https://github.com/rogerio-onza/saira/issues/110))

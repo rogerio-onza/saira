@@ -18,6 +18,7 @@ mod_export_server(
   raw_data_r = NULL,
   map_values_r = NULL,
   custom_values_r = NULL,
+  establishment_dropped_r = NULL,
   occurrence_id_info_r = NULL,
   on_navigate = NULL,
   on_export_success = NULL
@@ -50,8 +51,18 @@ selection (`include_mma`, `include_iucn`, `taxon_keys`).}
 \item{custom_values_r}{Optional reactive with typed constants (`datasetName`,
 `license`, `language`); the dataset name names the auxiliary bundle files.}
 
+\item{establishment_dropped_r}{Optional reactive, named by DwC term, with the
+`establishment_dropped_values()` frame for each mapped establishment term
+whose column carried values outside the controlled vocabulary.}
+
+\item{occurrence_id_info_r}{Optional reactive with the identifier strategy and
+counts from `resolve_occurrence_ids()`.}
+
 \item{on_navigate}{Optional callback `function(tab)` to switch the top-level
 navbar (used by the "fix missing terms" banner action).}
+
+\item{on_export_success}{Optional callback fired after a successful export,
+used to signal the mapping module to learn its aliases (ADR-115).}
 }
 \value{
 invisible NULL.

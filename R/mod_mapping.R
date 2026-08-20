@@ -2884,6 +2884,34 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             c(vals, collect_constant_values())
         })
 
+        # Column values a mapped establishment term could not publish: outside
+        # the TDWG vocabulary, with no assistant answer behind them. Those rows
+        # go out blank, so the export screen names the values and the row count
+        # instead of letting the loss pass in silence.
+        establishment_dropped_r <- shiny::reactive({
+            df <- raw_data_r()
+            if (!is.data.frame(df) || nrow(df) == 0L) {
+                return(list())
+            }
+            species <- get_establishment_species()
+            if (length(species) != nrow(df)) {
+                species <- NULL
+            }
+            out <- list()
+            for (term in establishment_terms) {
+                cols <- sanitize_map_selection(term, rv$map_values[[term]])
+                if (!has_selected_value(cols)) next
+                dropped <- establishment_dropped_values(
+                    term = term, df = df, user_cols = cols,
+                    species_values = species,
+                    establishment_map = rv$establishment_map,
+                    out_sep = " | "
+                )
+                if (nrow(dropped) > 0L) out[[term]] <- dropped
+            }
+            out
+        })
+
         # New Rostrum slots (Onda 2): rostrum_decisions_r, rostrum_explain_r,
         #   rostrum_run_stats_r.
         return(list(
@@ -2898,6 +2926,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             map_values_r                = shiny::reactive(rv$map_values),
             occurrence_id_info_r        = occurrence_id_info_r,
             custom_values_r             = custom_values_r,
+            establishment_dropped_r     = establishment_dropped_r,
             reset_signal_r              = shiny::reactive(rv$downstream_reset)
         ))
     })
