@@ -2,6 +2,19 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.10.2</span>
+    <time class="release-date">2026-08-20</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong><code>establishmentMeans</code> e <code>degreeOfEstablishment</code></strong>: a exportação publica apenas os termos do vocabulário Darwin Core</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Exportação</strong>: a coluna continua no CSV quando um valor fixo sobrescreve o mapeamento</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Mapeamento</strong>: importar um guia restaura os valores fixos</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Generalização</strong>: a decisão sobrevive a uma edição no Mapeamento</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.10.1</span>
     <time class="release-date">2026-08-14</time>
   </header>

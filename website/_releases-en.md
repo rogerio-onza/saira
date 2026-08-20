@@ -2,6 +2,19 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.10.2</span>
+    <time class="release-date">2026-08-20</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>establishmentMeans</code> and <code>degreeOfEstablishment</code></strong>: the export publishes only Darwin Core controlled terms</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Export</strong>: a column keeps its place in the CSV when a fixed value overrides its mapping</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping</strong>: importing a guide restores the fixed values</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Generalization</strong>: the decision survives an edit in Mapping</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.10.1</span>
     <time class="release-date">2026-08-14</time>
   </header>
