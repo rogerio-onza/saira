@@ -7,6 +7,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.10.3] - 2026-08-21
+
 ### Added
 - **export:** Warn on the export screen and in Mapping when a date carries a year outside 1600 and the current year ([#118](https://github.com/rogerio-onza/saira/pull/118))
 

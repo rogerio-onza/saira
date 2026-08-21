@@ -2,6 +2,18 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.10.3</span>
+    <time class="release-date">2026-08-21</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Dates</strong>: every date is published in ISO 8601, whatever separator the spreadsheet used</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong><code>eventDate</code></strong>: day, month and year for each end compose an ISO 8601 interval</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Dates</strong>: a warning in Mapping and Export when the year falls outside 1600 and the current year</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.10.2</span>
     <time class="release-date">2026-08-20</time>
   </header>

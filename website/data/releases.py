@@ -15,6 +15,20 @@
 
 RELEASES = [
     {
+        "version": "0.10.3",
+        "date": "2026-08-21",
+        "pt": [
+            ("fixed", "**Datas**: toda data é publicada em ISO 8601, qualquer que seja o separador digitado na planilha"),
+            ("fixed", "**`eventDate`**: dia, mês e ano de início e fim formam um intervalo ISO 8601"),
+            ("added", "**Datas**: aviso no Mapeamento e na Exportação quando o ano está fora de 1600 e o ano atual"),
+        ],
+        "en": [
+            ("fixed", "**Dates**: every date is published in ISO 8601, whatever separator the spreadsheet used"),
+            ("fixed", "**`eventDate`**: day, month and year for each end compose an ISO 8601 interval"),
+            ("added", "**Dates**: a warning in Mapping and Export when the year falls outside 1600 and the current year"),
+        ],
+    },
+    {
         "version": "0.10.2",
         "date": "2026-08-20",
         "pt": [
