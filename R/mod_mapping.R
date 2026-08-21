@@ -233,6 +233,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         rv <- shiny::reactiveValues(
             eventdate_parse_failures = 0L,
             last_eventdate_warn_count = NA_integer_,
+            last_date_year_warn_count = NA_integer_,
             map_values = list(),
             map_meta = list(),
             extra_terms = character(0),
@@ -1188,6 +1189,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 rm(list = ls(id_cache, all.names = TRUE), envir = id_cache)
                 rv$eventdate_parse_failures <- 0L
                 rv$last_eventdate_warn_count <- NA_integer_
+                rv$last_date_year_warn_count <- NA_integer_
                 rv$programmatic_terms <- character(0)
                 rv$ambiguity_queue <- list()
                 rv$rostrum_decisions <- NULL
@@ -2825,6 +2827,74 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 stringsAsFactors = FALSE
             )
         })
+
+        # Lightweight year check for the date terms. `processed_data` is lazy --
+        # nothing evaluates it while the user is still on the Mapping tab, which
+        # is why this warning used to appear only on arriving at Export. The year
+        # is legible in the raw column whatever format it is written in, so the
+        # mapping pipeline is not needed to find it: the columns picked for one
+        # term are pasted into a single probe column named after that term, which
+        # keeps the count identical to the one the export screen reports.
+        # Cache key: the picked date columns plus the shape of the upload. The
+        # check costs ~0.2s on a 100k-row upload, and rv$map_values invalidates
+        # on every column pick, so without this the Mapping tab would pay it per
+        # click for a result that only changes when one of these changes
+        # (ADR-116). Session-scoped: the key is not the data itself.
+        date_year_gate_key <- function() {
+            raw <- safe_raw_data_for_gate()
+            list(
+                rv$map_values[c("eventDate", "dateIdentified", "modified")],
+                dim(raw),
+                names(raw)
+            )
+        }
+
+        date_year_gate_r <- shiny::reactive({
+            raw <- safe_raw_data_for_gate()
+            if (is.null(raw) || !is.data.frame(raw) || nrow(raw) == 0L) {
+                return(NULL)
+            }
+
+            probe <- list()
+            for (term in c("eventDate", "dateIdentified", "modified")) {
+                sel <- sanitize_map_selection(term, rv$map_values[[term]])
+                if (!has_selected_value(sel)) next
+                cols <- intersect(as.character(sel), names(raw))
+                if (!length(cols)) next
+                parts <- lapply(cols, function(col) as.character(raw[[col]]))
+                probe[[term]] <- do.call(paste, c(parts, list(sep = " ")))
+            }
+
+            if (!length(probe)) {
+                return(NULL)
+            }
+
+            date_year_issues(as.data.frame(probe, stringsAsFactors = FALSE))
+        }) |> shiny::bindCache(date_year_gate_key(), cache = "session")
+
+        shiny::observeEvent(date_year_gate_r(),
+            {
+                issues <- date_year_gate_r()
+
+                if (is.null(issues) || issues$count <= 0L) {
+                    rv$last_date_year_warn_count <- NA_integer_
+                    return()
+                }
+
+                if (!identical(rv$last_date_year_warn_count, issues$count)) {
+                    shiny::showNotification(
+                        sprintf(
+                            tr("notif_date_year_warning", lang_r()),
+                            issues$count, issues$min_year, issues$max_year
+                        ),
+                        type = "warning",
+                        duration = 7
+                    )
+                    rv$last_date_year_warn_count <- issues$count
+                }
+            },
+            ignoreInit = TRUE
+        )
 
         # Lightweight mapped preview (first 100 raw rows only)
         preview_processed_data <- shiny::reactive({

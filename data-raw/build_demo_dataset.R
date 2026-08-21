@@ -21,7 +21,7 @@ demo_path <- "website/assets/exemplo/ocorrencias-demo.csv"
 # curated edge cases appended at the bottom.
 n_base <- 1075L
 
-added_cols <- c("dia_inicio", "dia_fim", "codigo_pais")
+added_cols <- c("dia_inicio", "dia_fim", "codigo_pais", "data_registro")
 
 base <- utils::read.csv(
     demo_path,
@@ -66,6 +66,47 @@ base$pais[sample.int(n, 30L)] <- "BRASIL"
 # already present in the base data keep the duplicate warning reachable.
 base$numero_tombo[sample.int(n, 28L)] <- ""
 
+# --- Single date column ------------------------------------------------------
+# The dia/mes/ano trio above covers the composition path. This column covers the
+# other one: a date the spreadsheet already carries as text, in the mixture of
+# conventions a file passed between collectors really has. Every form here must
+# reach the export as ISO 8601 -- hyphens, never the separator that was typed --
+# which is what `parse_dates_to_iso()` guarantees. The blocks are placed after
+# every sample() above so the draws those make do not shift.
+compose_demo_date <- function(day, month, year) {
+    out <- rep("", length(year))
+    has_year <- nzchar(year)
+    has_month <- has_year & nzchar(month)
+    has_day <- has_month & nzchar(day)
+    out[has_year] <- year[has_year]
+    out[has_month] <- sprintf("%s/%s", month[has_month], year[has_month])
+    out[has_day] <- sprintf("%s/%s/%s", day[has_day], month[has_day], year[has_day])
+    out
+}
+base$data_registro <- compose_demo_date(
+    base$dia_inicio, base$mes_inicio, base$ano_inicio
+)
+
+# A camera trap and a GPS write the hour next to the date. The export keeps it
+# as `YYYY-MM-DDTHH:MM` rather than dropping the time the collector recorded.
+dated <- which(nzchar(base$dia_inicio))
+with_time <- sample(dated, 40L)
+base$data_registro[with_time] <- sprintf(
+    "%s %02d:%02d",
+    base$data_registro[with_time],
+    sample.int(23L, 40L, replace = TRUE),
+    sample.int(59L, 40L, replace = TRUE)
+)
+
+# Rows a second collector typed year-first. One column holding two conventions
+# is the everyday state of a shared spreadsheet, and both have to normalise.
+year_first <- sample(setdiff(dated, with_time), 25L)
+base$data_registro[year_first] <- sprintf(
+    "%s/%s/%s",
+    base$ano_inicio[year_first], base$mes_inicio[year_first],
+    base$dia_inicio[year_first]
+)
+
 # --- Curated edge cases ------------------------------------------------------
 # One row per behaviour that the real-occurrence base never reaches.
 
@@ -75,6 +116,7 @@ row_tpl <- function(taxon = list(), ...) {
         numero_tombo = "", especie = "", autoria = "", familia = "",
         genero = "", nome_comum = "", dia_inicio = "15", mes_inicio = "06",
         ano_inicio = "2023", dia_fim = "15", mes_fim = "06", ano_fim = "2023",
+        data_registro = "15/06/2023",
         coletor = "R. Nunes", determinador = "R. Nunes",
         tipo_de_registro = "Observação", pais = "Brasil",
         codigo_pais = "BR", estado = "", municipio = "", localidade = "",
@@ -281,16 +323,35 @@ cases <- list(
     # Dates: a day without a month, and a month without a year. Neither
     # composes, so both keep the generic collapse instead of an invented date.
     row_tpl(onca, numero_tombo = "MN-9000027", dia_inicio = "07",
-            mes_inicio = "", dia_fim = "07", mes_fim = "",
+            mes_inicio = "", dia_fim = "07", mes_fim = "", data_registro = "",
             estado = "Goiás", municipio = "Alto Paraíso de Goiás",
             localidade = "PARNA da Chapada dos Veadeiros",
             latitude = "-14.13000", longitude = "-47.52000",
             ambiente = "Cerrado"),
     row_tpl(anta, numero_tombo = "MN-9000028", ano_inicio = "",
-            ano_fim = "", estado = "Maranhão", municipio = "Barreirinhas",
+            ano_fim = "", data_registro = "",
+            estado = "Maranhão", municipio = "Barreirinhas",
             localidade = "PARNA dos Lençóis Maranhenses",
             latitude = "-2.75000", longitude = "-42.83000",
-            ambiente = "Restinga")
+            ambiente = "Restinga"),
+
+    # Dates: a year that cannot be right, reaching the year check through both
+    # paths -- the typed column and the dia/mes/ano trio. A future year is a
+    # typo for a year in the past; one before 1600 predates any occurrence
+    # record. Both are reported on the export screen and neither blocks the
+    # download, since only the publisher knows what the date should have been.
+    row_tpl(onca, numero_tombo = "MN-9000029", dia_inicio = "01",
+            mes_inicio = "05", ano_inicio = "2098", dia_fim = "01",
+            mes_fim = "05", ano_fim = "2098", data_registro = "01/05/2098",
+            estado = "Mato Grosso", municipio = "Cáceres",
+            localidade = "ESEC Serra das Araras", latitude = "-15.66000",
+            longitude = "-57.23000", ambiente = "Cerrado"),
+    row_tpl(anta, numero_tombo = "MN-9000030", dia_inicio = "12",
+            mes_inicio = "03", ano_inicio = "1498", dia_fim = "12",
+            mes_fim = "03", ano_fim = "1498", data_registro = "1498/03/12",
+            estado = "Espírito Santo", municipio = "Linhares",
+            localidade = "REBIO de Sooretama", latitude = "-19.05000",
+            longitude = "-40.13000", ambiente = "Floresta de tabuleiro")
 )
 
 extra <- do.call(rbind, lapply(cases, function(x) {

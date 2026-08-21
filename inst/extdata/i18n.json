@@ -175,6 +175,18 @@
     "pt": "Atenção",
     "en": "Heads up"
   },
+  "export_date_range_title": {
+    "pt": "Datas com ano fora do intervalo esperado",
+    "en": "Dates with a year outside the expected range"
+  },
+  "export_date_range_body": {
+    "pt": "%d valor(es) de data têm ano fora de %d-%d. Corrija na planilha e recarregue o arquivo, ou remapeie a coluna de data. O download continua liberado.",
+    "en": "%d date value(s) carry a year outside %d-%d. Fix them in the spreadsheet and upload again, or remap the date column. The download stays available."
+  },
+  "export_date_range_row": {
+    "pt": "linha %d: %s = %s",
+    "en": "row %d: %s = %s"
+  },
   "export_warn_occid": {
     "pt": "Sem occurrenceID mapeado: o IPT/GBIF gera identificadores instáveis a cada publicação. Recomenda-se mapear um occurrenceID estável.",
     "en": "No occurrenceID mapped: IPT/GBIF generate unstable identifiers on each publish. Mapping a stable occurrenceID is recommended."
@@ -782,6 +794,10 @@
   "notif_eventdate_parse_warning": {
     "pt": "eventDate: %s linha(s) não puderam ser convertidas para YYYY-MM/YYYY-MM; o valor bruto foi mantido.",
     "en": "eventDate: %s row(s) could not be converted to YYYY-MM/YYYY-MM; raw value was kept."
+  },
+  "notif_date_year_warning": {
+    "pt": "%s valor(es) de data com ano fora de %s-%s. Confira antes de exportar.",
+    "en": "%s date value(s) carry a year outside %s-%s. Check them before exporting."
   },
   "badge_auto": {
     "pt": "AUTO",

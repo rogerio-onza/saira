@@ -48,6 +48,8 @@ needed_functions <- c(
     "format_epithet_token",
     "format_epithet_token_vec",
     "build_eventdate_interval",
+    "detect_eventdate_interval_dmy_roles",
+    "build_eventdate_interval_dmy",
     "extract_scientific_name_components",
     "fill_missing_character_values",
     "replace_na_with_blank",

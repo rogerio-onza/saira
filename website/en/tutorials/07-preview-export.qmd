@@ -66,7 +66,7 @@ If nothing was generalized, Saíra records: *no species will be generalized; coo
 
 When generating the package, Saíra automatically standardizes the dataset so it meets the repositories' expectations:
 
-- **eventDate** converted to ISO format (`YYYY-MM-DD`).
+- **Dates** converted to ISO format (`YYYY-MM-DD`), whatever separator the spreadsheet used. A date with no day comes out as `YYYY-MM`, and a date carrying a time as `YYYY-MM-DDThh:mm`. If the year falls outside 1600 and the current year, Saíra warns and names the rows: the error is a typo and only you know what the date should be. The warning does not block the export.
 - **Coordinates** with the decimal separator normalized (comma becomes dot).
 - **occurrenceID** derived from the row content when missing, to guarantee a unique, stable identifier per record.
 - **Licenses** abbreviated to the canonical URL (for example, the matching Creative Commons URL).

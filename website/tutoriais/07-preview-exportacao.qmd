@@ -66,7 +66,7 @@ Se nada foi generalizado, o Saíra registra: *nenhuma espécie será generalizad
 
 Ao gerar o pacote, o Saíra padroniza automaticamente o conjunto para que ele atenda às expectativas dos repositórios:
 
-- **eventDate** convertido para o formato ISO (`AAAA-MM-DD`).
+- **Datas** convertidas para o formato ISO (`AAAA-MM-DD`), qualquer que seja o separador digitado na planilha. Uma data sem dia sai como `AAAA-MM` e uma data com hora, como `AAAA-MM-DDThh:mm`. Se o ano estiver fora do intervalo entre 1600 e o ano atual, o Saíra avisa e mostra as linhas: o erro é de digitação e só você sabe qual era a data certa. O aviso não bloqueia a exportação.
 - **Coordenadas** com o separador decimal normalizado (vírgula vira ponto).
 - **occurrenceID** derivado do conteúdo da linha quando ausente, para garantir um identificador único e estável por registro.
 - **Licenças** abreviadas para a URL canônica (por exemplo, a URL da Creative Commons correspondente).

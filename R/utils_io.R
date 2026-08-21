@@ -191,6 +191,35 @@ detect_day_first <- function(date_chr) {
     FALSE
 }
 
+# A spreadsheet or a GPS logger writes the collection time next to the date
+# ("25/12/2023 14:30"), and only the date half needs normalising. Splitting the
+# time off here is what lets the day-first vote and every format spec below see
+# a bare date; the time half is re-attached with the ISO "T" separator, so an
+# hour the collector recorded is never dropped on the way to the export.
+.datetime_split_re <- paste0(
+    "^(.+?)[ T]([0-9]{1,2}:[0-9]{2}(:[0-9]{2})?)",
+    "[[:space:]]*(Z|[+-][0-9]{2}:?[0-9]{2})?$"
+)
+
+split_time_suffix <- function(x) {
+    has_time <- grepl(.datetime_split_re, x, perl = TRUE)
+    time_part <- rep("", length(x))
+
+    if (!any(has_time)) {
+        return(list(date = x, time = time_part))
+    }
+
+    with_time <- x[has_time]
+    date_part <- x
+    date_part[has_time] <- trimws(sub(.datetime_split_re, "\\1", with_time, perl = TRUE))
+    time_part[has_time] <- paste0(
+        sub("^([0-9]):", "0\\1:", sub(.datetime_split_re, "\\2", with_time, perl = TRUE)),
+        sub(.datetime_split_re, "\\4", with_time, perl = TRUE)
+    )
+
+    list(date = date_part, time = time_part)
+}
+
 #' Parse dates from various formats to ISO
 #'
 #' @param date_vector Character vector of dates
@@ -205,6 +234,10 @@ parse_dates_to_iso <- function(date_vector) {
         return(result)
     }
 
+    split <- split_time_suffix(trimws(date_chr))
+    date_chr <- split$date
+    time_suffix <- split$time
+
     # Disambiguate day-first (DD/MM) vs month-first (MM/DD) for slash/dash/dot
     # dates by voting over the whole column: a value whose first component is
     # > 12 proves day-first; one whose second component is > 12 proves
@@ -215,9 +248,12 @@ parse_dates_to_iso <- function(date_vector) {
     # Parse in batches by format to avoid element-wise loops.
     # Day/month accept 1-2 digits so unpadded inputs (e.g. 2/9/2021, exported by
     # spreadsheets) parse the same as zero-padded ones (02/09/2021).
+    # Year-first values are never ambiguous, so they carry no day-first vote.
     dm <- if (day_first) c("%d", "%m") else c("%m", "%d")
     format_specs <- list(
         list(regex = "^\\d{4}-\\d{1,2}-\\d{1,2}$", fmt = "%Y-%m-%d"), # 2023-12-25 (ISO)
+        list(regex = "^\\d{4}/\\d{1,2}/\\d{1,2}$", fmt = "%Y/%m/%d"),
+        list(regex = "^\\d{4}\\.\\d{1,2}\\.\\d{1,2}$", fmt = "%Y.%m.%d"),
         list(regex = "^\\d{1,2}/\\d{1,2}/\\d{4}$", fmt = sprintf("%s/%s/%%Y", dm[1], dm[2])),
         list(regex = "^\\d{1,2}-\\d{1,2}-\\d{4}$", fmt = sprintf("%s-%s-%%Y", dm[1], dm[2])),
         list(regex = "^\\d{1,2}\\.\\d{1,2}\\.\\d{4}$", fmt = sprintf("%s.%s.%%Y", dm[1], dm[2]))
@@ -278,5 +314,126 @@ parse_dates_to_iso <- function(date_vector) {
         }
     }
 
+    # Month and year with no day. Darwin Core accepts the reduced ISO form, so
+    # "12/2023" and "2023/12" become "2023-12" instead of reaching the export
+    # with the separator the spreadsheet happened to use.
+    idx <- which(remaining)
+    if (length(idx)) {
+        ym_candidates <- date_chr[idx]
+        my_re <- "^(\\d{1,2})[/.-](\\d{4})$"
+        ym_re <- "^(\\d{4})[/.-](\\d{1,2})$"
+        my_mask <- grepl(my_re, ym_candidates)
+        ym_mask <- !my_mask & grepl(ym_re, ym_candidates)
+
+        month <- rep(NA_integer_, length(ym_candidates))
+        year <- month
+        month[my_mask] <- as.integer(sub(my_re, "\\1", ym_candidates[my_mask]))
+        year[my_mask] <- as.integer(sub(my_re, "\\2", ym_candidates[my_mask]))
+        year[ym_mask] <- as.integer(sub(ym_re, "\\1", ym_candidates[ym_mask]))
+        month[ym_mask] <- as.integer(sub(ym_re, "\\2", ym_candidates[ym_mask]))
+
+        success <- !is.na(month) & !is.na(year) & month >= 1L & month <= 12L
+        if (any(success)) {
+            resolved_idx <- idx[success]
+            result[resolved_idx] <- sprintf("%04d-%02d", year[success], month[success])
+            remaining[resolved_idx] <- FALSE
+        }
+    }
+
+    with_time <- nzchar(time_suffix) & !is.na(result)
+    if (any(with_time)) {
+        result[with_time] <- paste0(result[with_time], "T", time_suffix[with_time])
+    }
+
     return(result)
+}
+
+#' Flag dates whose year is outside the plausible range
+#'
+#' A typo in a spreadsheet ("2098" for "2008") survives every format conversion:
+#' the value is a perfectly well-formed ISO date, so nothing downstream objects
+#' to it. This reports those cells so the publisher can fix them before the
+#' dataset reaches GBIF, which rejects a record dated in the future.
+#'
+#' Every standalone 4-digit run in the value counts as a year, so an interval
+#' ("2010-01/2098-03") is flagged on its second half too.
+#'
+#' @param df Data frame carrying Darwin Core columns.
+#' @param min_year Oldest plausible year. Default 1600, the GBIF convention for
+#'   an occurrence record.
+#' @param max_year Newest plausible year. Default: the current year.
+#' @param sample_n How many offending cells to report back.
+#' @return Named list: `count` (offending cells), `future_count`,
+#'   `ancient_count`, `columns`, `sample` (data frame `row`/`column`/`value`),
+#'   `min_year`, `max_year`.
+#' @noRd
+date_year_issues <- function(df, min_year = 1600L, max_year = NULL, sample_n = 5L) {
+    if (is.null(max_year)) {
+        max_year <- as.integer(format(Sys.Date(), "%Y"))
+    }
+
+    empty <- list(
+        count = 0L, future_count = 0L, ancient_count = 0L,
+        columns = character(0),
+        sample = data.frame(
+            row = integer(0), column = character(0), value = character(0),
+            stringsAsFactors = FALSE
+        ),
+        min_year = as.integer(min_year), max_year = as.integer(max_year)
+    )
+
+    if (!is.data.frame(df) || nrow(df) == 0L) {
+        return(empty)
+    }
+
+    cols <- intersect(c("eventDate", "dateIdentified", "modified", "year"), names(df))
+    if (!length(cols)) {
+        return(empty)
+    }
+
+    hits <- empty$sample
+    future_count <- 0L
+    ancient_count <- 0L
+
+    for (col in cols) {
+        values <- trimws(as.character(df[[col]]))
+        uniq <- unique(values)
+        # The lookarounds keep a compact "20231225" from being read as the year
+        # 2023 plus a bogus year 1225.
+        matches <- regmatches(uniq, gregexpr("(?<!\\d)\\d{4}(?!\\d)", uniq, perl = TRUE))
+        uniq_future <- vapply(matches, function(y) any(as.integer(y) > max_year), logical(1))
+        uniq_ancient <- vapply(matches, function(y) any(as.integer(y) < min_year), logical(1))
+
+        pos <- match(values, uniq)
+        is_future <- uniq_future[pos]
+        is_ancient <- uniq_ancient[pos]
+        bad <- is_future | is_ancient
+
+        if (any(bad)) {
+            future_count <- future_count + sum(is_future)
+            ancient_count <- ancient_count + sum(is_ancient)
+            rows <- which(bad)
+            hits <- rbind(hits, data.frame(
+                row = rows, column = col, value = values[rows],
+                stringsAsFactors = FALSE
+            ))
+        }
+    }
+
+    if (nrow(hits) == 0L) {
+        return(empty)
+    }
+
+    hits <- hits[order(hits$row, hits$column), , drop = FALSE]
+    rownames(hits) <- NULL
+
+    list(
+        count = nrow(hits),
+        future_count = as.integer(future_count),
+        ancient_count = as.integer(ancient_count),
+        columns = unique(hits$column),
+        sample = utils::head(hits, sample_n),
+        min_year = as.integer(min_year),
+        max_year = as.integer(max_year)
+    )
 }

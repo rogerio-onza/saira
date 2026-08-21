@@ -1773,3 +1773,74 @@ testthat::test_that("each establishment term is checked against its own vocabula
     testthat::expect_identical(means, c("", "introduced"))
     testthat::expect_identical(degree, c("captive", ""))
 })
+
+testthat::test_that("build_eventdate_interval_dmy composes an ISO interval from six columns", {
+    df <- data.frame(
+        dia_inicio = c("01", "22", "07", ""),
+        mes_inicio = c("03", "03", "07", "06"),
+        ano_inicio = c("2007", "2024", "2016", "2020"),
+        dia_fim = c("11", "22", "", ""),
+        mes_fim = c("05", "03", "09", "08"),
+        ano_fim = c("2008", "2024", "2016", "2020"),
+        stringsAsFactors = FALSE
+    )
+
+    out <- build_eventdate_interval_dmy(df = df, cols = names(df), fallback_raw = TRUE)
+
+    testthat::expect_identical(out$values[[1]], "2007-03-01/2008-05-11")
+    # Same date on both ends is one date, not a span of zero length.
+    testthat::expect_identical(out$values[[2]], "2024-03-22")
+    testthat::expect_identical(out$values[[3]], "2016-07-07/2016-09")
+    testthat::expect_identical(out$values[[4]], "2020-06/2020-08")
+    testthat::expect_identical(out$failure_count, 0L)
+})
+
+testthat::test_that("build_eventdate_interval_dmy keeps a single date when the end is blank", {
+    df <- data.frame(
+        dia_inicio = c("05", "05"),
+        mes_inicio = c("09", "foo"),
+        ano_inicio = c("2019", "2019"),
+        dia_fim = c("", ""),
+        mes_fim = c("", ""),
+        ano_fim = c("", ""),
+        stringsAsFactors = FALSE
+    )
+
+    out <- build_eventdate_interval_dmy(df = df, cols = names(df), fallback_raw = TRUE)
+
+    testthat::expect_identical(out$values[[1]], "2019-09-05")
+    testthat::expect_identical(out$values[[2]], "05 | foo | 2019")
+    testthat::expect_identical(out$failure_count, 1L)
+})
+
+testthat::test_that("build_eventdate_interval_dmy declines six columns that are not a date range", {
+    df <- data.frame(
+        a = "1", b = "2", c = "3", d = "4", e = "5", f = "6",
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_null(
+        build_eventdate_interval_dmy(df = df, cols = names(df), fallback_raw = TRUE)
+    )
+})
+
+testthat::test_that("build_processed_mapping_df routes six date columns to the interval", {
+    df <- data.frame(
+        especie = "Panthera onca",
+        dia_inicio = "01", mes_inicio = "03", ano_inicio = "2007",
+        dia_fim = "11", mes_fim = "05", ano_fim = "2008",
+        stringsAsFactors = FALSE
+    )
+
+    out <- build_processed_mapping_df(
+        df = df,
+        dwc_terms = get_dwc_terms_list(),
+        map_values = list(
+            scientificName = "especie",
+            eventDate = c("dia_inicio", "mes_inicio", "ano_inicio",
+                          "dia_fim", "mes_fim", "ano_fim")
+        ),
+        occurrence_ids = "occ1"
+    )
+
+    testthat::expect_identical(out$data$eventDate, "2007-03-01/2008-05-11")
+})

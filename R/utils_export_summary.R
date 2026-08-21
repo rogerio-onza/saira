@@ -26,6 +26,7 @@
 #'   `generalization` (data.frame `scientificName`/`category`/`tier`),
 #'   `readiness` (data.frame `term`/`present`), `readiness_pct`,
 #'   `missing_required`, `occurrence_id_present`, `justification_pending`,
+#'   `date_issues` (from `date_year_issues()`),
 #'   `all_required_present`, `export_blocked`, and `files`
 #'   (list `dwca` + `auxiliary`).
 #' @noRd
@@ -107,6 +108,11 @@ build_export_summary <- function(mapped_data,
     missing_required <- required[!present]
     occurrence_id_present <- term_present("occurrenceID")
 
+    # A year outside the plausible range is a typo the format conversion cannot
+    # catch, so it is reported here rather than blocking: a historical record
+    # can legitimately predate 1600, and only the publisher knows which is which.
+    date_issues <- date_year_issues(df)
+
     # Generalization to Category 1/2/3 needs a written justification; export is
     # blocked until it is provided (mirrors the download handler's hard gate).
     justification_pending <- is.list(gp) && isTRUE(gp$enabled) &&
@@ -132,6 +138,7 @@ build_export_summary <- function(mapped_data,
         missing_required = missing_required,
         occurrence_id_present = occurrence_id_present,
         justification_pending = justification_pending,
+        date_issues = date_issues,
         all_required_present = all_required_present,
         export_blocked = export_blocked,
         files = files

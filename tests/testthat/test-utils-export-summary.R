@@ -173,3 +173,18 @@ testthat::test_that("export_bundle_filenames keeps the DwC-A trio and renames au
     testthat::expect_equal(f2$slug, "saira")
     testthat::expect_null(f2$auxiliary[["sensitive_coords"]])
 })
+
+testthat::test_that("build_export_summary reports out-of-range years without blocking the export", {
+    df <- sample_mapped()
+    df$eventDate <- c("2098-05-01", "2024-02-02")
+
+    summary <- saira:::build_export_summary(df)
+
+    testthat::expect_identical(summary$date_issues$count, 1L)
+    testthat::expect_identical(summary$date_issues$future_count, 1L)
+    testthat::expect_identical(summary$date_issues$sample$column, "eventDate")
+    testthat::expect_false(summary$export_blocked)
+
+    clean <- saira:::build_export_summary(sample_mapped())
+    testthat::expect_identical(clean$date_issues$count, 0L)
+})

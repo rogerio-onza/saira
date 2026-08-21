@@ -2,6 +2,18 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.10.3</span>
+    <time class="release-date">2026-08-21</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Datas</strong>: toda data é publicada em ISO 8601, qualquer que seja o separador digitado na planilha</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong><code>eventDate</code></strong>: dia, mês e ano de início e fim formam um intervalo ISO 8601</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>Datas</strong>: aviso no Mapeamento e na Exportação quando o ano está fora de 1600 e o ano atual</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.10.2</span>
     <time class="release-date">2026-08-20</time>
   </header>

@@ -20,7 +20,7 @@ Cada **linha** deve ser uma ocorrência (um registro de um organismo em um lugar
 
 ::: {.callout-tip}
 ## Baixe a planilha de exemplo
-Para praticar esta e as próximas etapas, baixe [`ocorrencias-demo.csv`](../assets/exemplo/ocorrencias-demo.csv), o conjunto de demonstração do Saíra: 1.105 ocorrências de espécies brasileiras de vários biomas, propositalmente imperfeito. São 24 colunas para mapear, dia, mês e ano em colunas separadas, números de tombo faltando e repetidos, coordenadas trocadas e fora de faixa, registros de países vizinhos, espécies ameaçadas para a generalização e espécies exóticas invasoras. Cada etapa dos tutoriais tem algo para resolver nele.
+Para praticar esta e as próximas etapas, baixe [`ocorrencias-demo.csv`](../assets/exemplo/ocorrencias-demo.csv), o conjunto de demonstração do Saíra: 1.107 ocorrências de espécies brasileiras de vários biomas, propositalmente imperfeito. São 25 colunas para mapear, dia, mês e ano em colunas separadas, uma coluna de data com formatos misturados (com barra, com hora, só mês e ano) e dois anos impossíveis, números de tombo faltando e repetidos, coordenadas trocadas e fora de faixa, registros de países vizinhos, espécies ameaçadas para a generalização e espécies exóticas invasoras. Cada etapa dos tutoriais tem algo para resolver nele.
 :::
 
 Na aba **Upload**, arraste o arquivo para a área indicada ou clique para selecioná-lo.
