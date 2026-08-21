@@ -2575,6 +2575,102 @@ build_eventdate_from_parts <- function(df, cols, fallback_raw = TRUE) {
     )
 }
 
+# Role detection for an interval whose two ends each carry a day, month and year
+# ("dia_inicio, mes_inicio, ano_inicio, dia_fim, mes_fim, ano_fim"). It reads the
+# same start/end vocabulary as detect_eventdate_roles(), which resolves the
+# 4-column month/year interval, and is as strict as detect_eventdate_dmy_roles():
+# names only, no positional fallback, so an unrelated six-column pick keeps the
+# generic collapse instead of being read as a date range.
+detect_eventdate_interval_dmy_roles <- function(col_names) {
+    normalized_names <- normalize_for_matching(col_names)
+    used_env <- new.env(parent = emptyenv())
+    used_env$used <- rep(FALSE, length(normalized_names))
+
+    start_mask <- grepl("\\b(start|begin|initial|inicio|from)\\b", normalized_names)
+    end_mask <- grepl("\\b(end|final|fim|to)\\b", normalized_names)
+    day_mask <- grepl("\\b(day|dia|dd)\\b", normalized_names)
+    month_mask <- grepl("\\b(month|mo|mes)\\b", normalized_names)
+    year_mask <- grepl("\\b(year|yr|ano)\\b", normalized_names)
+
+    pick_first <- function(mask) {
+        idx <- which(mask & !used_env$used)
+        if (length(idx) == 0) {
+            return(NA_integer_)
+        }
+        used_env$used[[idx[1]]] <- TRUE
+        idx[1]
+    }
+
+    list(
+        start = list(
+            day = pick_first(start_mask & day_mask),
+            month = pick_first(start_mask & month_mask),
+            year = pick_first(start_mask & year_mask)
+        ),
+        end = list(
+            day = pick_first(end_mask & day_mask),
+            month = pick_first(end_mask & month_mask),
+            year = pick_first(end_mask & year_mask)
+        )
+    )
+}
+
+# Compose one ISO 8601 interval ("2007-03-01/2008-05-11") from the six columns a
+# collection uses to record a date range. Returns NULL -- meaning "not an
+# interval, treat it as any other multi-column term" -- unless all six columns
+# resolve to a distinct role. Each end is composed by the same Rostrum composer
+# the single-date path uses, so a day is validated against its month either way.
+build_eventdate_interval_dmy <- function(df, cols, fallback_raw = TRUE) {
+    roles <- detect_eventdate_interval_dmy_roles(cols)
+    resolved <- unlist(c(roles$start, roles$end), use.names = FALSE)
+
+    if (anyNA(resolved) || length(unique(resolved)) != length(cols)) {
+        return(NULL)
+    }
+
+    compose_end <- function(side) {
+        rostrum_compose_eventdate_values(
+            df = df,
+            source_columns = list(
+                year = cols[[side$year]],
+                month = cols[[side$month]],
+                day = cols[[side$day]]
+            )
+        )
+    }
+    start <- compose_end(roles$start)
+    end <- compose_end(roles$end)
+
+    # A range whose two ends are the same date is one date, not an interval --
+    # writing "2024-03-22/2024-03-22" would state a span the record never had.
+    # An end left blank is the same case: the collection recorded a single day.
+    both_valid <- start$valid_mask & end$valid_mask
+    is_range <- both_valid & start$values != end$values
+    start_only <- start$valid_mask & !end$has_any_input
+    end_only <- end$valid_mask & !start$has_any_input
+
+    result <- rep(NA_character_, nrow(df))
+    result[both_valid] <- start$values[both_valid]
+    result[is_range] <- paste0(start$values[is_range], "/", end$values[is_range])
+    result[start_only] <- start$values[start_only]
+    result[end_only] <- end$values[end_only]
+
+    has_any_input <- start$has_any_input | end$has_any_input
+    failed_rows <- has_any_input & is.na(result)
+
+    if (isTRUE(fallback_raw) && any(failed_rows)) {
+        raw_values <- collapse_mapped_values(df, cols, out_sep = " | ")
+        result[failed_rows] <- raw_values[failed_rows]
+    }
+
+    list(
+        values = result,
+        failed_rows = failed_rows,
+        failure_count = sum(failed_rows),
+        role_map = roles
+    )
+}
+
 # Month name lookup, hoisted to a file-level constant so it is allocated once per
 # session instead of once per call. It used to live inside parse_month_to_number(),
 # which meant a 40-element named vector was built for every row of the dataset.
@@ -2782,6 +2878,16 @@ build_term_value <- function(
         values <- map_occurrence_status_values(df[[user_cols[[1]]]])
     } else if (term == "dynamicProperties") {
         values <- build_dynamic_properties_json(df = df, cols = user_cols, keys = dyn_props_keys)
+    } else if (term == "eventDate" && length(user_cols) == 6) {
+        # Day, month and year for each end of a range. Falls through to the
+        # generic collapse when the six columns are not a date interval.
+        interval <- build_eventdate_interval_dmy(df = df, cols = user_cols, fallback_raw = TRUE)
+        if (is.null(interval)) {
+            values <- collapse_mapped_values(df = df, cols = user_cols, out_sep = out_sep)
+        } else {
+            values <- interval$values
+            failure_count <- interval$failure_count
+        }
     } else if (term == "eventDate" && length(user_cols) == 4) {
         event_result <- build_eventdate_interval(df = df, cols = user_cols, fallback_raw = TRUE)
         values <- event_result$values

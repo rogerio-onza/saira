@@ -8,14 +8,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- **export:** Warn on the export screen and in Mapping when a date carries a year outside 1600 and the current year
+- **export:** Warn on the export screen and in Mapping when a date carries a year outside 1600 and the current year ([#118](https://github.com/rogerio-onza/saira/pull/118))
 
 ### Fixed
-- **dates:** Convert `YYYY/MM/DD`, `MM/YYYY` and dates carrying a time to ISO 8601, instead of publishing the spreadsheet separator
-- **dates:** Normalize `modified` in the Mapping preview, so it matches what the export writes
+- **dates:** Convert `YYYY/MM/DD`, `MM/YYYY` and dates carrying a time to ISO 8601, instead of publishing the spreadsheet separator ([#118](https://github.com/rogerio-onza/saira/pull/118))
+- **dates:** Normalize `modified` in the Mapping preview, so it matches what the export writes ([#118](https://github.com/rogerio-onza/saira/pull/118))
+- **eventDate:** Compose an ISO 8601 interval from six date columns, instead of joining them with a pipe ([#118](https://github.com/rogerio-onza/saira/pull/118))
+- **mapping:** Warn about an out-of-range year while still on the Mapping tab, not only on reaching Export ([#118](https://github.com/rogerio-onza/saira/pull/118))
 
 ### Changed
-- **demo:** Add a `data_registro` column mixing date formats, and two rows with an impossible year, to the demo spreadsheet
+- **demo:** Add a `data_registro` column mixing date formats, and two rows with an impossible year, to the demo spreadsheet ([#118](https://github.com/rogerio-onza/saira/pull/118))
 
 ## [0.10.2] - 2026-08-20
 

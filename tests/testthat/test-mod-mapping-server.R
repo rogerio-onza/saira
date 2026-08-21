@@ -1795,3 +1795,62 @@ testthat::test_that("importing a mapping guide restores an allowlist fixed value
     testthat::expect_true(isTRUE(get0("usecustom_country", envir = updates)))
     testthat::expect_identical(get0("custom_country", envir = updates), "Brasil")
 })
+
+testthat::test_that("the year gate reads the raw columns, without the mapping pipeline", {
+    df <- data.frame(
+        especie = c("Panthera onca", "Tapirus terrestris", "Puma concolor"),
+        data_registro = c("22/03/2024", "01/05/2098", "1498/03/12"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            # Nothing mapped to a date term yet.
+            testthat::expect_null(date_year_gate_r())
+
+            rv$map_values$eventDate <- "data_registro"
+            session$flushReact()
+
+            issues <- date_year_gate_r()
+            testthat::expect_identical(issues$count, 2L)
+            testthat::expect_identical(issues$future_count, 1L)
+            testthat::expect_identical(issues$ancient_count, 1L)
+            testthat::expect_identical(issues$sample$row, c(2L, 3L))
+        }
+    )
+})
+
+testthat::test_that("the year gate reads a date split across day, month and year columns", {
+    df <- data.frame(
+        especie = c("Panthera onca", "Tapirus terrestris"),
+        dia_inicio = c("22", "01"),
+        mes_inicio = c("03", "05"),
+        ano_inicio = c("2024", "2098"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            # Let the auto-map settle first: it rewrites rv$map_values wholesale
+            # on the first flush, which would discard the selection below.
+            session$flushReact()
+            rv$map_values$eventDate <- c("dia_inicio", "mes_inicio", "ano_inicio")
+            session$flushReact()
+
+            issues <- date_year_gate_r()
+            testthat::expect_identical(issues$count, 1L)
+            testthat::expect_identical(issues$sample$row, 2L)
+        }
+    )
+})
