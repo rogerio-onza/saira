@@ -1932,3 +1932,109 @@ testthat::test_that("build_processed_mapping_df maps a header with a trailing sp
 
     testthat::expect_identical(res$data$family, c("Felidae", "Canidae"))
 })
+
+testthat::test_that("extract_scientific_name_components separates authorship from the name", {
+    parts <- extract_scientific_name_components(c(
+        "Panthera onca (Linnaeus, 1758)",   # parenthesised: genus changed since description
+        "Puma concolor Linnaeus, 1771",     # bare author
+        "Panthera onca subsp. palustris Mearns, 1901",
+        "Dasypus septemcinctus hybridus",   # trinomial, no author
+        "Panthera onca"
+    ))
+
+    testthat::expect_identical(
+        parts$scientificNameAuthorship,
+        c("(Linnaeus, 1758)", "Linnaeus, 1771", "Mearns, 1901", NA_character_, NA_character_)
+    )
+    testthat::expect_identical(
+        scientific_name_without_authorship(parts),
+        c("Panthera onca", "Puma concolor", "Panthera onca palustris",
+          "Dasypus septemcinctus hybridus", "Panthera onca")
+    )
+})
+
+testthat::test_that("capitalisation tells a bare author from an epithet", {
+    # An epithet and an author sit in the same position. A surname is capitalised
+    # with lowercase after it; a name shouted in caps is routine in spreadsheets
+    # and must stay a name (ADR-119, ADR-123).
+    parts <- extract_scientific_name_components(c(
+        "Panthera Oken, 1816",  # genus plus author, no species
+        "PANTHERA ONCA",        # all caps: still a binomial
+        "Panthera ONCA"
+    ))
+
+    testthat::expect_identical(parts$genus, c("Panthera", "Panthera", "Panthera"))
+    testthat::expect_identical(
+        parts$specificEpithet, c(NA_character_, "onca", "onca")
+    )
+    testthat::expect_identical(parts$taxonRank, c("genus", "species", "species"))
+    testthat::expect_identical(
+        parts$scientificNameAuthorship, c("Oken, 1816", NA_character_, NA_character_)
+    )
+})
+
+testthat::test_that("build_processed_mapping_df moves authorship out of scientificName", {
+    df <- data.frame(
+        sci = c("Panthera onca (Linnaeus, 1758)", "Dasypus septemcinctus hybridus"),
+        stringsAsFactors = FALSE
+    )
+    dwc <- list(
+        list(term = "scientificName", category = "Taxon", desc = "", sep = "", required = FALSE)
+    )
+
+    res <- build_processed_mapping_df(
+        df = df, dwc_terms = dwc,
+        map_values = list(scientificName = "sci"),
+        occurrence_ids = c("o1", "o2")
+    )
+
+    testthat::expect_identical(
+        res$data$scientificName, c("Panthera onca", "Dasypus septemcinctus hybridus")
+    )
+    # build_processed_mapping_df() blanks NA on the way out, as it does for
+    # every other term.
+    testthat::expect_identical(
+        res$data$scientificNameAuthorship, c("(Linnaeus, 1758)", "")
+    )
+})
+
+testthat::test_that("no authorship anywhere means no authorship column", {
+    # Same contract as infraspecificEpithet: the term rides on the non-missing
+    # filter, so a dataset without a single author does not ship (and meta.xml
+    # does not declare) an empty column.
+    df <- data.frame(sci = c("Panthera onca", "Puma concolor"), stringsAsFactors = FALSE)
+    dwc <- list(
+        list(term = "scientificName", category = "Taxon", desc = "", sep = "", required = FALSE)
+    )
+
+    res <- build_processed_mapping_df(
+        df = df, dwc_terms = dwc,
+        map_values = list(scientificName = "sci"),
+        occurrence_ids = c("o1", "o2")
+    )
+
+    testthat::expect_false("scientificNameAuthorship" %in% names(res$data))
+})
+
+testthat::test_that("a mapped authorship column wins over the parsed one", {
+    # Same contract as the other derived taxon terms: what the publisher mapped
+    # is not overwritten by what the parser inferred.
+    df <- data.frame(
+        sci = "Panthera onca (Linnaeus, 1758)",
+        auth = "Linnaeus",
+        stringsAsFactors = FALSE
+    )
+    dwc <- list(
+        list(term = "scientificName", category = "Taxon", desc = "", sep = "", required = FALSE),
+        list(term = "scientificNameAuthorship", category = "Taxon", desc = "", sep = "", required = FALSE)
+    )
+
+    res <- build_processed_mapping_df(
+        df = df, dwc_terms = dwc,
+        map_values = list(scientificName = "sci", scientificNameAuthorship = "auth"),
+        occurrence_ids = "o1"
+    )
+
+    testthat::expect_identical(res$data$scientificNameAuthorship, "Linnaeus")
+    testthat::expect_identical(res$data$scientificName, "Panthera onca")
+})

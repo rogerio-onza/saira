@@ -1998,13 +1998,46 @@ extract_scientific_name_components <- function(scientific_names) {
         genus = NA_character_,
         specificEpithet = NA_character_,
         infraspecificEpithet = NA_character_,
-        taxonRank = NA_character_
+        taxonRank = NA_character_,
+        scientificNameAuthorship = NA_character_
     )
+
+    # An epithet and a bare author occupy the same position ("Panthera onca" vs
+    # "Panthera Oken, 1816"), and format_epithet_token() cannot judge because it
+    # lowercases before validating (ADR-119). Capitalisation decides, but only
+    # where it carries information: a name shouted in caps ("PANTHERA ONCA") is
+    # routine in spreadsheets, so an all-caps token stays an epithet. A token
+    # capitalised the way a surname is - initial capital, lowercase after - is
+    # authorship.
+    looks_like_author <- function(token) {
+        grepl("^[A-Z]", token) && !identical(token, toupper(token))
+    }
+
+    # Whatever follows the name itself is the authorship: "(Linnaeus, 1758)" or
+    # a bare "Linnaeus, 1771". `start` is the first token the name did not
+    # consume, so this never has to recognise an author -- it only collects what
+    # the epithet rules already refused (ADR-119).
+    authorship_from <- function(tokens, start) {
+        if (length(tokens) < start) {
+            return(NA_character_)
+        }
+        rest <- trimws(paste(tokens[start:length(tokens)], collapse = " "))
+        if (!nzchar(rest)) NA_character_ else rest
+    }
 
     # Attach the infraspecific epithet when the tokens after the specific one
     # carry it, promoting the rank from species to subspecies/variety/form.
     with_infraspecific <- function(genus, specific, tokens, start) {
         infra <- extract_infraspecific_part(tokens, start)
+        # An infraspecific epithet consumes tokens; authorship is whatever sits
+        # after it. The marker form ("subsp. concolor") consumes two.
+        consumed <- if (is.null(infra)) {
+            0L
+        } else if (!is.na(match(tolower(tokens[[start]]), names(infraspecific_rank_markers())))) {
+            2L
+        } else {
+            1L
+        }
         list(
             genus = genus,
             specificEpithet = specific,
@@ -2013,7 +2046,8 @@ extract_scientific_name_components <- function(scientific_names) {
             } else {
                 infra$infraspecificEpithet
             },
-            taxonRank = if (is.null(infra)) "species" else infra$taxonRank
+            taxonRank = if (is.null(infra)) "species" else infra$taxonRank,
+            scientificNameAuthorship = authorship_from(tokens, start + consumed)
         )
     }
 
@@ -2041,33 +2075,45 @@ extract_scientific_name_components <- function(scientific_names) {
             return(blank_result)
         }
 
-        genus_only <- list(
-            genus = genus,
-            specificEpithet = NA_character_,
-            infraspecificEpithet = NA_character_,
-            taxonRank = "genus"
-        )
+        # `start` is the first token the genus did not account for, so a name
+        # given at genus rank still yields its author ("Panthera Oken, 1816").
+        genus_only <- function(start) {
+            list(
+                genus = genus,
+                specificEpithet = NA_character_,
+                infraspecificEpithet = NA_character_,
+                taxonRank = "genus",
+                scientificNameAuthorship = authorship_from(tokens, start)
+            )
+        }
 
         if (length(tokens) == 1) {
-            return(genus_only)
+            return(genus_only(2L))
         }
 
         second_lower <- tolower(tokens[[2]])
         if (second_lower %in% unknown_markers) {
-            return(genus_only)
+            # "Panthera sp." names no species, and the marker is not authorship.
+            return(genus_only(3L))
         }
 
         if (second_lower %in% qualifier_markers && length(tokens) >= 3) {
+            if (looks_like_author(tokens[[3]])) {
+                return(genus_only(3L))
+            }
             specific <- format_epithet_token(tokens[[3]])
             if (is.na(specific)) {
-                return(genus_only)
+                return(genus_only(3L))
             }
             return(with_infraspecific(genus, specific, tokens, 4L))
         }
 
+        if (looks_like_author(tokens[[2]])) {
+            return(genus_only(2L))
+        }
         specific <- format_epithet_token(tokens[[2]])
         if (is.na(specific)) {
-            return(genus_only)
+            return(genus_only(2L))
         }
 
         with_infraspecific(genus, specific, tokens, 3L)
@@ -2082,8 +2128,28 @@ extract_scientific_name_components <- function(scientific_names) {
         specificEpithet = pluck("specificEpithet"),
         infraspecificEpithet = pluck("infraspecificEpithet"),
         taxonRank = pluck("taxonRank"),
+        scientificNameAuthorship = pluck("scientificNameAuthorship"),
         stringsAsFactors = FALSE
     )
+}
+
+#' Rebuild the scientific name from its parsed parts, without authorship
+#'
+#' @param parts Data frame from `extract_scientific_name_components()`.
+#' @return Character vector, `NA` where no genus was recognised.
+#' @noRd
+scientific_name_without_authorship <- function(parts) {
+    if (!is.data.frame(parts) || nrow(parts) == 0L) {
+        return(character(0))
+    }
+
+    out <- rep(NA_character_, nrow(parts))
+    for (piece in list(parts$genus, parts$specificEpithet, parts$infraspecificEpithet)) {
+        p <- as.character(piece)
+        add <- !is.na(p) & nzchar(p)
+        out[add] <- ifelse(is.na(out[add]), p[add], paste(out[add], p[add]))
+    }
+    out
 }
 
 fill_missing_character_values <- function(existing_values, fallback_values) {
@@ -3374,6 +3440,26 @@ build_processed_mapping_df <- function(
                     scientific_parts[[derived]]
                 )
             }
+        }
+
+        # Authorship travels in its own term, and the name keeps only the taxon
+        # (ADR-123). A column the user mapped to the term wins, as with the
+        # other derived taxon terms. Only rows the parser actually resolved are
+        # rewritten: anything it could not read keeps its original value rather
+        # than being trimmed on a guess.
+        authorship <- scientific_parts$scientificNameAuthorship
+        if ("scientificNameAuthorship" %in% names(df_final)) {
+            df_final$scientificNameAuthorship <- fill_missing_character_values(
+                df_final$scientificNameAuthorship, authorship
+            )
+        } else {
+            df_final$scientificNameAuthorship <- authorship
+        }
+
+        stripped <- scientific_name_without_authorship(scientific_parts)
+        rewrite <- !is.na(stripped) & !is.na(authorship) & nzchar(authorship)
+        if (any(rewrite)) {
+            df_final$scientificName[rewrite] <- stripped[rewrite]
         }
     }
 
