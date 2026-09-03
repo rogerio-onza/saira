@@ -347,7 +347,25 @@ unmapped_raw_columns <- function(raw_data, map_values, exclude = character(0),
         map_values <- map_values[setdiff(names(map_values), overridden_terms)]
     }
 
-    setdiff(setdiff(names(raw_data), map_value_sources(map_values)), exclude)
+    left <- setdiff(setdiff(names(raw_data), map_value_sources(map_values)), exclude)
+    if (length(left) == 0L) {
+        return(left)
+    }
+
+    # A column with no value in any row is not data left behind. Reporting it
+    # buried the columns that do carry something: a spreadsheet exported from a
+    # fixed Occurrence template arrives with a dozen empty terms, and the export
+    # screen listed all of them as "GBIF will ignore these". Filtering here
+    # rather than in the warning keeps the single source this function exists to
+    # be (ADR-120), so the notice, the guide and the file still agree.
+    left[vapply(
+        left,
+        function(col) {
+            v <- raw_data[[col]]
+            any(!is.na(v) & nzchar(trimws(as.character(v))))
+        },
+        logical(1)
+    )]
 }
 
 #' Source column names a mapping selection points at
