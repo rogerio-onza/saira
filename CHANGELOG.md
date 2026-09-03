@@ -7,13 +7,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-09-03
+
 ### Added
-- **scientificName:** Move the authorship into `scientificNameAuthorship`, leaving the name itself, ADR-123
-- **coords:** Convert projected (UTM) coordinates to decimal degrees, with the zone confirmed by you, ADR-122
-- **coords:** Preserve the original UTM pair, zone and datum in the verbatim Darwin Core terms, ADR-122
+- **scientificName:** Move the authorship into `scientificNameAuthorship`, leaving the name itself, ADR-123 ([#124](https://github.com/rogerio-onza/saira/pull/124))
+- **coords:** Convert projected (UTM) coordinates to decimal degrees, with the zone confirmed by you, ADR-122 ([#120](https://github.com/rogerio-onza/saira/pull/120))
+- **coords:** Preserve the original UTM pair, zone and datum in the verbatim Darwin Core terms, ADR-122 ([#120](https://github.com/rogerio-onza/saira/pull/120))
 
 ### Fixed
-- **export:** Leave a column with no value in any row out of the unmapped-columns warning, ADR-120
+- **export:** Leave a column with no value in any row out of the unmapped-columns warning, ADR-120 ([#123](https://github.com/rogerio-onza/saira/pull/123))
 - **mapping:** Map a column whose header carries surrounding whitespace ([#119](https://github.com/rogerio-onza/saira/pull/119))
 - **mapping:** Drop a term whose mapped column is absent from the upload, instead of failing the build ([#119](https://github.com/rogerio-onza/saira/pull/119))
 

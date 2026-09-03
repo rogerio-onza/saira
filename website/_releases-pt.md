@@ -2,6 +2,19 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.11.0</span>
+    <time class="release-date">2026-09-03</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong>Coordenadas</strong>: coordenadas em UTM viram graus decimais, com a zona que você confirma no mapa</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Novo</span><span class="rel-text"><strong><code>scientificName</code></strong>: a autoria sai do nome e vai para <code>scientificNameAuthorship</code></span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Mapeamento</strong>: uma coluna cujo cabeçalho tem espaço sobrando volta a ser mapeada</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Exportação</strong>: o aviso de colunas não publicadas ignora as que estão vazias em todas as linhas</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.10.3</span>
     <time class="release-date">2026-08-21</time>
   </header>

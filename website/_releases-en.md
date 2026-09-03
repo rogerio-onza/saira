@@ -2,6 +2,19 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.11.0</span>
+    <time class="release-date">2026-09-03</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Coordinates</strong>: UTM coordinates convert to decimal degrees, with the zone you confirm on the map</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong><code>scientificName</code></strong>: the authorship moves out of the name into <code>scientificNameAuthorship</code></span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping</strong>: a column whose header carries a stray space maps again</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Export</strong>: the unpublished-columns warning ignores columns empty in every row</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.10.3</span>
     <time class="release-date">2026-08-21</time>
   </header>

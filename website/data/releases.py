@@ -15,6 +15,22 @@
 
 RELEASES = [
     {
+        "version": "0.11.0",
+        "date": "2026-09-03",
+        "pt": [
+            ("added", "**Coordenadas**: coordenadas em UTM viram graus decimais, com a zona que você confirma no mapa"),
+            ("added", "**`scientificName`**: a autoria sai do nome e vai para `scientificNameAuthorship`"),
+            ("fixed", "**Mapeamento**: uma coluna cujo cabeçalho tem espaço sobrando volta a ser mapeada"),
+            ("fixed", "**Exportação**: o aviso de colunas não publicadas ignora as que estão vazias em todas as linhas"),
+        ],
+        "en": [
+            ("added", "**Coordinates**: UTM coordinates convert to decimal degrees, with the zone you confirm on the map"),
+            ("added", "**`scientificName`**: the authorship moves out of the name into `scientificNameAuthorship`"),
+            ("fixed", "**Mapping**: a column whose header carries a stray space maps again"),
+            ("fixed", "**Export**: the unpublished-columns warning ignores columns empty in every row"),
+        ],
+    },
+    {
         "version": "0.10.3",
         "date": "2026-08-21",
         "pt": [
