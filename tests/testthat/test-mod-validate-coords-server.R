@@ -354,3 +354,62 @@ testthat::test_that("validate coords keeps running when loading modal fails", {
         }
     )
 })
+
+testthat::test_that("UTM conversion writes a corrections payload for the picked zone", {
+    # Easting filed under decimalLatitude, northing under decimalLongitude:
+    # the shape a spreadsheet produces when it publishes projected coordinates.
+    mapped_df <- data.frame(
+        occurrenceID = c("occ-1", "occ-2"),
+        decimalLatitude = c(574699, 578357),
+        decimalLongitude = c(7805441, 7800408),
+        country = c("Brasil", "Brasil"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            rv$validation_occ_ids <- mapped_df$occurrenceID
+            rv$utm_rows <- 1:2
+            rv$utm_axes <- coords_utm_assign_axes(
+                mapped_df$decimalLatitude, mapped_df$decimalLongitude
+            )
+            session$setInputs(utm_zone = "21", utm_datum = "SIRGAS2000")
+            session$flushReact()
+
+            converted <- utm_converted_r()
+            testthat::expect_identical(nrow(converted), 2L)
+            testthat::expect_identical(converted$occurrenceID, c("occ-1", "occ-2"))
+            testthat::expect_equal(converted$decimalLatitude[[1]], -19.84565, tolerance = 1e-4)
+            testthat::expect_equal(converted$decimalLongitude[[1]], -56.28660, tolerance = 1e-4)
+
+            session$setInputs(apply_utm = 1)
+            session$flushReact()
+
+            testthat::expect_true(isTRUE(rv$utm_applied))
+            payload <- rv$coords_corrections$corrections
+            testthat::expect_identical(nrow(payload), 2L)
+            testthat::expect_true(all(c("occurrenceID", "decimalLatitude", "decimalLongitude") %in% names(payload)))
+
+            # The projected pair and the picked system travel with the payload,
+            # so the original reading survives the overwrite (ADR-122). Axes go
+            # to the term they mean: the northing is the latitude, even though
+            # the upload filed it under decimalLongitude.
+            testthat::expect_identical(payload$verbatimLatitude, c("7805441", "7800408"))
+            testthat::expect_identical(payload$verbatimLongitude, c("574699", "578357"))
+            testthat::expect_identical(unique(payload$verbatimCoordinateSystem), "UTM zone 21S")
+            testthat::expect_identical(unique(payload$verbatimSRS), "EPSG:31981")
+
+            # Picking another zone moves the points six degrees of longitude.
+            session$setInputs(utm_zone = "22")
+            session$flushReact()
+            testthat::expect_equal(
+                utm_converted_r()$decimalLongitude[[1]], -50.28660, tolerance = 1e-4
+            )
+        }
+    )
+})

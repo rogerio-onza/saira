@@ -1320,11 +1320,28 @@ apply_coords_correction_payload <- function(df, payload = NULL) {
     # Preserve verbatim originals where the template provides the columns and
     # they are not already populated.
     for (vcol in c("verbatimLatitude", "verbatimLongitude")) {
-        if (vcol %in% names(df)) {
+        if (vcol %in% names(df) && !vcol %in% names(corr)) {
             src <- if (vcol == "verbatimLatitude") "decimalLatitude" else "decimalLongitude"
             blank <- is.na(df[[vcol]][idx]) | !nzchar(trimws(as.character(df[[vcol]][idx])))
             df[[vcol]][idx[blank]] <- as.character(df[[src]][idx[blank]])
         }
+    }
+
+    # A correction that changes the coordinate system (the UTM conversion) sends
+    # the verbatim values itself, with the zone and datum that produced them.
+    # Those columns are created when the upload lacks them: the projected pair
+    # is not recoverable once overwritten, so preserving it is part of the
+    # conversion rather than an optional extra (ADR-122).
+    for (vcol in c("verbatimLatitude", "verbatimLongitude",
+                   "verbatimCoordinateSystem", "verbatimSRS")) {
+        if (!vcol %in% names(corr)) next
+        supplied <- as.character(corr[[vcol]])
+        if (all(is.na(supplied))) next
+        if (!vcol %in% names(df)) {
+            df[[vcol]] <- NA_character_
+        }
+        keep_row <- !is.na(supplied)
+        df[[vcol]][idx[keep_row]] <- supplied[keep_row]
     }
 
     df$decimalLatitude[idx]  <- as.character(corr$decimalLatitude)

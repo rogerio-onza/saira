@@ -21,6 +21,7 @@ mod_validate_coords_ui <- function(id) {
                 shiny::div(
                     class = "col-12 col-lg-2 validate-coords-left",
                     shiny::uiOutput(ns("action_card")),
+                    shiny::uiOutput(ns("utm_panel")),
                     shiny::uiOutput(ns("transposed_panel")),
                     shiny::uiOutput(ns("swap_fill_panel")),
                     shiny::uiOutput(ns("country_panel"))
@@ -91,7 +92,11 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             country_fill_applied = FALSE,
             country_fills = NULL,         # country-fill payload applied at export
             swap_fill_table = NULL,       # blank-country sea points fixable by swap
-            swap_fill_applied = FALSE
+            swap_fill_applied = FALSE,
+            utm_rows = NULL,              # row indices carrying projected (UTM) pairs
+            utm_axes = NULL,              # resolved easting/northing for those rows
+            utm_candidates = NULL,        # ranked zone candidates, best first
+            utm_applied = FALSE
         )
 
         normalize_gate <- function(gate) {
@@ -911,6 +916,37 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     )
                 }
 
+                # Detect coordinates published in a projected system (UTM)
+                # rather than in degrees. They land in validity_bounds above,
+                # which is accurate but not actionable: the fix is a conversion,
+                # not an edit. The zone cannot be read off the numbers, so this
+                # only ranks candidates -- the user confirms one on the map.
+                rv$utm_applied <- FALSE
+                rv$utm_rows <- NULL
+                rv$utm_axes <- NULL
+                rv$utm_candidates <- NULL
+                utm_mask <- tryCatch(
+                    coords_is_projected_pair(df$decimalLatitude, df$decimalLongitude),
+                    error = function(e) logical(0)
+                )
+                if (any(utm_mask) && "occurrenceID" %in% names(df)) {
+                    ui <- which(utm_mask)
+                    axes <- coords_utm_assign_axes(
+                        df$decimalLatitude[ui], df$decimalLongitude[ui]
+                    )
+                    rv$utm_rows <- ui
+                    rv$utm_axes <- axes
+                    rv$utm_candidates <- tryCatch(
+                        coords_utm_zone_candidates(
+                            easting = axes$easting,
+                            northing = axes$northing,
+                            country_iso3 = result$country_iso3[ui],
+                            hemisphere = if (any(axes$northing > 0, na.rm = TRUE)) "S" else "N"
+                        ),
+                        error = function(e) NULL
+                    )
+                }
+
                 # Derive country for records missing it from valid coordinates.
                 rv$country_fill_applied <- FALSE
                 rv$country_fills <- NULL
@@ -1024,12 +1060,173 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             )
         })
 
+        # Projected-coordinate (UTM) conversion panel. Unlike the other cards
+        # this one cannot propose a single answer: the same easting/northing is
+        # valid in every zone, six degrees of longitude apart, so the user picks
+        # the zone and sees the result on the map before applying.
+        utm_selected_zone <- shiny::reactive({
+            z <- suppressWarnings(as.integer(input$utm_zone))
+            if (length(z) != 1L || is.na(z)) {
+                cand <- rv$utm_candidates
+                if (is.data.frame(cand) && nrow(cand) > 0L) {
+                    return(as.integer(cand$zone[[1]]))
+                }
+                return(NA_integer_)
+            }
+            z
+        })
+
+        utm_selected_datum <- shiny::reactive({
+            d <- input$utm_datum
+            if (is.null(d) || !nzchar(d)) coords_utm_default_datum() else as.character(d)
+        })
+
+        # Rows converted under the current zone/datum pick, ready to apply.
+        utm_converted_r <- shiny::reactive({
+            rows <- rv$utm_rows
+            axes <- rv$utm_axes
+            zone <- utm_selected_zone()
+            if (is.null(rows) || is.null(axes) || is.na(zone)) {
+                return(NULL)
+            }
+            occ <- rv$validation_occ_ids
+            if (is.null(occ) || length(occ) < max(rows)) {
+                return(NULL)
+            }
+            converted <- tryCatch(
+                coords_utm_to_wgs84(
+                    easting = axes$easting, northing = axes$northing,
+                    zone = zone,
+                    hemisphere = if (any(axes$northing > 0, na.rm = TRUE)) "S" else "N",
+                    datum = utm_selected_datum()
+                ),
+                error = function(e) NULL
+            )
+            if (is.null(converted)) {
+                return(NULL)
+            }
+            # The projected pair is the only record of what was published, and
+            # the conversion overwrites it. Preserve it under the verbatim terms
+            # along with the zone and datum the user confirmed, so the original
+            # reading stays reproducible. Axes go to the term they correspond to
+            # -- northing to latitude -- rather than to the column they happened
+            # to sit in, which in the reported upload was the wrong one.
+            label <- coords_utm_srs_label(
+                zone = zone,
+                hemisphere = if (any(axes$northing > 0, na.rm = TRUE)) "S" else "N",
+                datum = utm_selected_datum()
+            )
+
+            out <- data.frame(
+                occurrenceID = as.character(occ)[rows],
+                decimalLatitude = converted$decimalLatitude,
+                decimalLongitude = converted$decimalLongitude,
+                verbatimLatitude = as.character(axes$northing),
+                verbatimLongitude = as.character(axes$easting),
+                verbatimCoordinateSystem = if (is.null(label)) NA_character_ else label$system,
+                verbatimSRS = if (is.null(label)) NA_character_ else label$srs,
+                stringsAsFactors = FALSE
+            )
+            out[!is.na(out$decimalLatitude) & !is.na(out$decimalLongitude), , drop = FALSE]
+        })
+
+        output$utm_panel <- shiny::renderUI({
+            rows <- rv$utm_rows
+            if (is.null(rows) || !length(rows)) return(NULL)
+            lang <- lang_r()
+            n <- length(rows)
+            applied <- isTRUE(rv$utm_applied)
+            cand <- rv$utm_candidates
+            zones <- if (is.data.frame(cand) && nrow(cand) > 0L) {
+                as.integer(cand$zone)
+            } else {
+                # No country to score against: offer the zones the datum covers.
+                as.integer(coords_utm_datums()[[coords_utm_default_datum()]]$zones)
+            }
+            preview <- utm_converted_r()
+
+            datum_choices <- stats::setNames(
+                names(coords_utm_datums()),
+                vapply(coords_utm_datums(), function(x) x$label, character(1))
+            )
+
+            shiny::div(
+                class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
+                shiny::div(
+                    class = "coords-transposed-head",
+                    shiny::icon(if (applied) "circle-check" else "compass"),
+                    shiny::span(
+                        class = "coords-transposed-title",
+                        if (applied) {
+                            sprintf(tr("validate_coords_utm_applied", lang), n)
+                        } else {
+                            sprintf(tr("validate_coords_utm_found", lang), n)
+                        }
+                    )
+                ),
+                if (!applied) {
+                    shiny::tagList(
+                        shiny::p(class = "coords-transposed-more",
+                                 tr("validate_coords_utm_help", lang)),
+                        shiny::selectInput(
+                            ns("utm_zone"), tr("validate_coords_utm_zone", lang),
+                            choices = zones, selected = zones[[1]],
+                            width = "100%"
+                        ),
+                        shiny::selectInput(
+                            ns("utm_datum"), tr("validate_coords_utm_datum", lang),
+                            choices = datum_choices, selected = coords_utm_default_datum(),
+                            width = "100%"
+                        ),
+                        if (is.data.frame(cand) && nrow(cand) > 1L) {
+                            shiny::p(class = "coords-transposed-more",
+                                     sprintf(tr("validate_coords_utm_ambiguous", lang), nrow(cand)))
+                        },
+                        if (is.data.frame(preview) && nrow(preview) > 0L) {
+                            shiny::div(
+                                class = "coords-transposed-example",
+                                shiny::div(class = "coords-transposed-ex-arrow", sprintf(
+                                    "\u2192 (%.4f, %.4f)",
+                                    preview$decimalLatitude[[1]], preview$decimalLongitude[[1]]
+                                ))
+                            )
+                        } else {
+                            # An older datum covers fewer zones than SIRGAS 2000,
+                            # so a valid zone can become unreachable when the
+                            # datum changes. Say so instead of leaving the
+                            # button inert.
+                            shiny::p(class = "coords-transposed-more",
+                                     tr("validate_coords_utm_unavailable", lang))
+                        },
+                        shiny::actionButton(
+                            ns("apply_utm"),
+                            tr("validate_coords_utm_apply", lang),
+                            icon = shiny::icon("wand-magic-sparkles"),
+                            class = "btn btn-primary btn-sm w-100"
+                        )
+                    )
+                }
+            )
+        })
+
         # Payload merge helpers: the transposed, swap-fill and country cards act
         # on disjoint rows but two of them write coordinate/country payloads, so
         # we accumulate (dedupe by occurrenceID) instead of overwriting.
         merge_coords_corrections <- function(new_df) {
             cur <- rv$coords_corrections$corrections
-            merged <- if (is.null(cur)) new_df else rbind(cur, new_df)
+            # The UTM card carries verbatim columns the other cards do not, so
+            # the two payloads no longer share a column set. Align on the union
+            # before stacking; a card that never writes a column leaves it NA.
+            merged <- if (is.null(cur)) {
+                new_df
+            } else {
+                all_cols <- union(names(cur), names(new_df))
+                fill <- function(d) {
+                    for (cl in setdiff(all_cols, names(d))) d[[cl]] <- NA_character_
+                    d[, all_cols, drop = FALSE]
+                }
+                rbind(fill(cur), fill(new_df))
+            }
             merged <- merged[!duplicated(merged$occurrenceID, fromLast = TRUE), , drop = FALSE]
             rv$coords_corrections <- list(corrections = merged)
         }
@@ -1039,6 +1236,18 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             merged <- merged[!duplicated(merged$occurrenceID, fromLast = TRUE), , drop = FALSE]
             rv$country_fills <- list(country = merged)
         }
+
+        shiny::observeEvent(input$apply_utm, {
+            tbl <- utm_converted_r()
+            if (is.null(tbl) || nrow(tbl) == 0L) return(invisible(NULL))
+            merge_coords_corrections(tbl)
+            rv$utm_applied <- TRUE
+            notify_saira(
+                message = sprintf(tr("validate_coords_utm_applied", lang_r()), nrow(tbl)),
+                type = "message",
+                key = "coords_utm_applied"
+            )
+        }, ignoreInit = TRUE)
 
         shiny::observeEvent(input$apply_transposed, {
             tbl <- rv$transposed_table
@@ -1183,6 +1392,10 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rv$country_fills <- NULL
                 rv$swap_fill_table <- NULL
                 rv$swap_fill_applied <- FALSE
+                rv$utm_rows <- NULL
+                rv$utm_axes <- NULL
+                rv$utm_candidates <- NULL
+                rv$utm_applied <- FALSE
                 rv$starting <- FALSE
                 rv$running <- FALSE
                 rv$start_requested <- FALSE
