@@ -617,13 +617,16 @@ testthat::test_that("sanitize_map_selection and has_selected_value keep mapping 
     testthat::expect_false(has_selected_value(""))
     testthat::expect_true(has_selected_value(c("", "col_a")))
 
+    # Names are kept verbatim here; whitespace is reconciled against the real
+    # column names by resolve_selected_columns(). scientificName still collapses
+    # to a single column, and blank/NA entries still drop out.
     testthat::expect_identical(
         sanitize_map_selection("scientificName", c(" scientific_col ", "other_col")),
-        "scientific_col"
+        " scientific_col "
     )
     testthat::expect_identical(
         sanitize_map_selection("recordedBy", c(" col_a ", "", NA_character_, " col_b ")),
-        c("col_a", "col_b")
+        c(" col_a ", " col_b ")
     )
     testthat::expect_identical(sanitize_map_selection("recordedBy", NULL), "")
 })
@@ -1843,4 +1846,89 @@ testthat::test_that("build_processed_mapping_df routes six date columns to the i
     )
 
     testthat::expect_identical(out$data$eventDate, "2007-03-01/2008-05-11")
+})
+
+testthat::test_that("resolve_selected_columns forgives whitespace in either direction", {
+    available <- c("family ", "genus", "scientificName")
+
+    # Exact name wins.
+    testthat::expect_identical(
+        resolve_selected_columns("genus", available), "genus"
+    )
+    # Header carries the space, selection does not.
+    testthat::expect_identical(
+        resolve_selected_columns("family", available), "family "
+    )
+    # Selection carries the space, header does not.
+    testthat::expect_identical(
+        resolve_selected_columns("  genus  ", available), "genus"
+    )
+    # A name matching nothing is dropped, not passed through.
+    testthat::expect_identical(
+        resolve_selected_columns("ghost", available), character(0)
+    )
+    testthat::expect_identical(
+        resolve_selected_columns(c("genus", "ghost"), available), "genus"
+    )
+})
+
+testthat::test_that("sanitize_map_selection keeps a column name verbatim", {
+    # Blank-only selections still collapse, but a real name is never rewritten.
+    testthat::expect_identical(sanitize_map_selection("family", "family "), "family ")
+    testthat::expect_identical(sanitize_map_selection("family", "   "), "")
+    testthat::expect_identical(sanitize_map_selection("family", c("a ", "", " b")), c("a ", " b"))
+})
+
+testthat::test_that("build_processed_mapping_df drops a term whose column is absent", {
+    # Reading a column the frame does not carry yields NULL, which collapses to
+    # a zero-length vector. Assigning that aborted the whole build; the term is
+    # dropped instead, exactly like one the user never mapped.
+    df <- data.frame(
+        sci = c("Panthera onca", "Puma concolor"),
+        fam = c("Felidae", "Felidae"),
+        stringsAsFactors = FALSE
+    )
+    dwc <- list(
+        list(term = "scientificName", category = "Taxon", desc = "", sep = "", required = FALSE),
+        list(term = "family", category = "Taxon", desc = "", sep = "", required = FALSE),
+        list(term = "order", category = "Taxon", desc = "", sep = "", required = FALSE)
+    )
+
+    res <- build_processed_mapping_df(
+        df = df,
+        dwc_terms = dwc,
+        map_values = list(
+            scientificName = "sci",
+            family = "ghost_column",
+            order = c("fam", "missing_col")
+        ),
+        occurrence_ids = c("u1", "u2")
+    )
+
+    testthat::expect_identical(nrow(res$data), 2L)
+    testthat::expect_false("family" %in% names(res$data))
+    # A partially valid multi-column pick keeps the columns that do exist.
+    testthat::expect_identical(res$data$order, c("Felidae", "Felidae"))
+})
+
+testthat::test_that("build_processed_mapping_df maps a header with a trailing space", {
+    # The regression the user hit: a "family " header reached the build, the
+    # engine had trimmed the name, and the term was assigned character(0).
+    df <- data.frame(
+        `family ` = c("Felidae", "Canidae"),
+        check.names = FALSE,
+        stringsAsFactors = FALSE
+    )
+    dwc <- list(
+        list(term = "family", category = "Taxon", desc = "", sep = "", required = FALSE)
+    )
+
+    res <- build_processed_mapping_df(
+        df = df,
+        dwc_terms = dwc,
+        map_values = list(family = "family "),
+        occurrence_ids = c("u1", "u2")
+    )
+
+    testthat::expect_identical(res$data$family, c("Felidae", "Canidae"))
 })

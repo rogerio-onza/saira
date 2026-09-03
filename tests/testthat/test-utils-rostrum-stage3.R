@@ -297,3 +297,31 @@ testthat::test_that("term candidate resolution prefers higher completeness when 
     testthat::expect_identical(out$data$selected_col[[1]], "date_full")
     testthat::expect_false(identical(out$data$status[[1]], "AMBIGUO"))
 })
+
+testthat::test_that("stage 3 keeps a column name that carries a trailing space", {
+    # A spreadsheet header written as "family " is a real column name. Trimming
+    # it here produced a name absent from names(df), and the mapping build then
+    # aborted on a zero-length column.
+    stage2 <- make_stage3_row(
+        term = "family",
+        selected_col = "family ",
+        status = "AUTO",
+        reason = "exact_match",
+        final_score = 0.9,
+        applied = TRUE,
+        name_score = 1,
+        alternatives = list(
+            list(column_name = "family ", final_score = 0.9, name_score = 1, value_score = 0.8)
+        )
+    )
+    df <- data.frame(
+        `family ` = c("Felidae", "Felidae", "Canidae"),
+        check.names = FALSE,
+        stringsAsFactors = FALSE
+    )
+
+    out <- rostrum_stage3_resolve(stage2_data = stage2, df = df, options = rostrum_options())
+
+    testthat::expect_identical(out$data$selected_col[[1]], "family ")
+    testthat::expect_true(out$data$selected_col[[1]] %in% names(df))
+})
