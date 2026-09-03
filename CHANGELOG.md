@@ -7,6 +7,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **coords:** Convert projected (UTM) coordinates to decimal degrees, with the zone confirmed by you, ADR-122
+- **coords:** Preserve the original UTM pair, zone and datum in the verbatim Darwin Core terms, ADR-122
+
 ### Fixed
 - **mapping:** Map a column whose header carries surrounding whitespace (`family `). Rostrum stage 3 trimmed the name, so the mapping build aborted with `replacement has 0 rows`, which broke the preview and closed the app on Validate
 - **mapping:** Drop a term whose mapped column is absent from the upload, instead of aborting the whole build

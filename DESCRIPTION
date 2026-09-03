@@ -82,6 +82,7 @@ Collate:
     'utils_brproviders.R'
     'utils_camtrap.R'
     'utils_coords.R'
+    'utils_coords_utm.R'
     'utils_dwc.R'
     'utils_export.R'
     'utils_export_summary.R'
