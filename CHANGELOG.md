@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **coords:** Preserve the original UTM pair, zone and datum in the verbatim Darwin Core terms, ADR-122
 
 ### Fixed
+- **export:** Leave a column with no value in any row out of the unmapped-columns warning, ADR-120
 - **mapping:** Map a column whose header carries surrounding whitespace ([#119](https://github.com/rogerio-onza/saira/pull/119))
 - **mapping:** Drop a term whose mapped column is absent from the upload, instead of failing the build ([#119](https://github.com/rogerio-onza/saira/pull/119))
 

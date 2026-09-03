@@ -1226,3 +1226,44 @@ testthat::test_that("the mapping guide does not stamp the export date as a const
     testthat::expect_true(any(grepl('="UFRJ"\\s+->\\s+rightsHolder', guide)))
     testthat::expect_true(any(grepl("1 constant", guide, fixed = TRUE)))
 })
+
+testthat::test_that("unmapped_raw_columns ignores columns with no value in any row", {
+    # A spreadsheet exported from a fixed Occurrence template arrives with a
+    # dozen empty terms. Reporting them as data left behind buried the columns
+    # that actually carry something.
+    raw <- data.frame(
+        kept = c("a", "b"),
+        all_na = c(NA, NA),
+        all_blank = c("", "   "),
+        partial = c("", "x"),
+        stringsAsFactors = FALSE
+    )
+
+    testthat::expect_identical(
+        unmapped_raw_columns(raw, list(scientificName = "kept")),
+        c("partial")
+    )
+    # A column holding a value in even one row is still real data.
+    testthat::expect_true("partial" %in% unmapped_raw_columns(raw, list()))
+    testthat::expect_false("all_blank" %in% unmapped_raw_columns(raw, list()))
+    testthat::expect_false("all_na" %in% unmapped_raw_columns(raw, list()))
+    # A zero is a value, not a blank.
+    zero <- data.frame(z = c(0, 0), stringsAsFactors = FALSE)
+    testthat::expect_identical(unmapped_raw_columns(zero, list()), "z")
+})
+
+testthat::test_that("process_for_export_with_unmapped drops empty columns with the warning", {
+    # The notice, the guide and the file share one source (ADR-120), so an empty
+    # column filtered out of the warning must not reappear in the file.
+    processed <- data.frame(occurrenceID = c("o1", "o2"), stringsAsFactors = FALSE)
+    raw <- data.frame(
+        note = c("seen", "heard"),
+        empty = c("", ""),
+        stringsAsFactors = FALSE
+    )
+
+    out <- process_for_export_with_unmapped(processed, raw, list())
+
+    testthat::expect_true("note" %in% names(out))
+    testthat::expect_false("empty" %in% names(out))
+})
