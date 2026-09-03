@@ -34,6 +34,27 @@ has_selected_value <- function(value) {
     !is.null(value) && length(value) > 0 && any(value != "")
 }
 
+# Match a mapped selection to the columns the upload actually carries. An exact
+# name wins. A name that differs only by surrounding whitespace is accepted
+# next, in either direction: a spreadsheet header may carry a trailing space
+# ("family "), and a mapping guide may have picked up a stray one. A name that
+# matches nothing is dropped -- reading a missing column yields NULL, and the
+# zero-length vector that follows aborts the whole mapping build.
+resolve_selected_columns <- function(selection, available) {
+    if (!has_selected_value(selection)) {
+        return(character(0))
+    }
+
+    resolved <- as.character(selection)
+    unmatched <- !resolved %in% available
+    if (any(unmatched)) {
+        idx <- match(trimws(resolved[unmatched]), trimws(available))
+        resolved[unmatched] <- available[idx]
+    }
+
+    resolved[!is.na(resolved)]
+}
+
 sanitize_map_selection <- function(term, value) {
     if (is.null(value) || length(value) == 0) {
         return("")
@@ -41,8 +62,11 @@ sanitize_map_selection <- function(term, value) {
 
     value_chr <- as.character(value)
     value_chr <- value_chr[!is.na(value_chr)]
-    value_chr <- trimws(value_chr)
-    value_chr <- value_chr[nzchar(value_chr)]
+    # Trim decides what counts as blank, but the value is kept verbatim: a
+    # column name is a literal key into names(df), and a spreadsheet header may
+    # carry surrounding whitespace ("family "). resolve_selected_columns()
+    # forgives a whitespace difference later, against the real column names.
+    value_chr <- value_chr[nzchar(trimws(value_chr))]
 
     if (length(value_chr) == 0) {
         return("")
@@ -3301,6 +3325,14 @@ build_processed_mapping_df <- function(
         }
 
         user_cols <- sanitize_map_selection(term, map_values[[term]])
+        if (!has_selected_value(user_cols)) {
+            next
+        }
+
+        # Resolve the selection against the real column names before reading
+        # anything. A term left unresolved is treated as unmapped, exactly like
+        # one the user never picked.
+        user_cols <- resolve_selected_columns(user_cols, names(df))
         if (!has_selected_value(user_cols)) {
             next
         }

@@ -75,7 +75,10 @@ rostrum_selected_column <- function(decision_df, term) {
         return(NA_character_)
     }
 
-    trimws(selected)
+    # Returned verbatim: the column name is a literal key into names(df), and a
+    # spreadsheet header may legitimately carry surrounding whitespace
+    # ("family "). Trimming it produces a name the data frame does not carry.
+    selected
 }
 
 rostrum_parse_manual_overrides <- function(manual_overrides) {
@@ -678,11 +681,13 @@ rostrum_type_match_score <- function(term, numeric_ratio) {
 }
 
 rostrum_candidates_from_row <- function(row_data) {
+    # Column names travel verbatim through stage 3. rostrum_is_blank_selection()
+    # already ignores surrounding whitespace when deciding "no selection", so
+    # trimming the value itself only broke headers that carry a real trailing
+    # space -- the name stopped matching names(df) further down the pipeline.
     selected_col <- as.character(row_data$selected_col[[1]])
     if (rostrum_is_blank_selection(selected_col)) {
         selected_col <- NA_character_
-    } else {
-        selected_col <- trimws(selected_col)
     }
 
     alternatives_json <- as.character(row_data$alternatives_json[[1]])
@@ -719,7 +724,7 @@ rostrum_candidates_from_row <- function(row_data) {
         }
 
         data.frame(
-            column_name = trimws(col_name),
+            column_name = col_name,
             final_score = as.numeric(score),
             name_score = as.numeric(name_score),
             value_score = as.numeric(value_score),
