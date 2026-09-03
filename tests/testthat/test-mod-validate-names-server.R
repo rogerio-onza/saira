@@ -784,3 +784,49 @@ testthat::test_that("config panel keeps the option switches across a language sw
         }
     )
 })
+
+testthat::test_that("a broken mapping pipeline reports instead of ending the session", {
+    # An untrapped error inside an observer ends the Shiny session, which is how
+    # a mapping defect closed the app on Validate instead of reporting itself.
+    failing_data_r <- shiny::reactive({
+        stop("replacement has 0 rows, data has 100")
+    })
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = failing_data_r,
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            rv$start_requested <- TRUE
+            testthat::expect_no_error(session$flushReact())
+
+            # The run is abandoned cleanly, leaving the tab usable.
+            testthat::expect_false(isTRUE(rv$starting))
+            testthat::expect_false(isTRUE(rv$running))
+            testthat::expect_identical(rv$last_run_status, "idle")
+        }
+    )
+})
+
+testthat::test_that("a silent req() upstream leaves the tab idle without an error", {
+    # req() upstream means "no data yet", not a failure: it must not surface as
+    # an error notification.
+    empty_data_r <- shiny::reactive({
+        shiny::req(NULL)
+    })
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = empty_data_r,
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            rv$start_requested <- TRUE
+            testthat::expect_no_error(session$flushReact())
+            testthat::expect_identical(rv$last_run_status, "idle")
+        }
+    )
+})

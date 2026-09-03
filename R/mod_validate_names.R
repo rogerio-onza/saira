@@ -1873,7 +1873,30 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 rv$start_requested <- FALSE
 
                 # Heavy normalization stays deferred until explicit validate click.
-                prep <- prepared_inputs()
+                #
+                # Guarded because this runs inside an observer: an untrapped
+                # error here ends the whole Shiny session, so a defect anywhere
+                # upstream in the mapping pipeline closed the app instead of
+                # reporting itself. `req()` upstream raises a silent error by
+                # design, which means "no data yet" and must stay silent.
+                prep <- tryCatch(
+                    prepared_inputs(),
+                    error = function(e) {
+                        if (inherits(e, "shiny.silent.error")) {
+                            return(NULL)
+                        }
+                        shiny::showNotification(
+                            sprintf(tr("validate_names_failed", lang_r()), as.character(e$message)),
+                            type = "error"
+                        )
+                        NULL
+                    }
+                )
+                if (is.null(prep)) {
+                    rv$starting <- FALSE
+                    rv$last_run_status <- "idle"
+                    return(invisible(NULL))
+                }
                 if (prep$valid_count == 0L) {
                     rv$starting <- FALSE
                     rv$last_run_status <- "idle"
