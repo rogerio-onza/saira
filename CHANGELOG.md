@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **scientificName:** Move the authorship into `scientificNameAuthorship`, leaving the name itself, ADR-123
 - **coords:** Convert projected (UTM) coordinates to decimal degrees, with the zone confirmed by you, ADR-122
 - **coords:** Preserve the original UTM pair, zone and datum in the verbatim Darwin Core terms, ADR-122
 
