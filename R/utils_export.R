@@ -537,6 +537,12 @@ build_mapping_guide_txt <- function(map_values,
 
     raw_cols <- names(raw_data)
     unmapped_cols <- setdiff(raw_cols, used_sources)
+    # ADR-120 makes unmapped_raw_columns() the single source for which columns
+    # the CSV actually carries, and it leaves out a column empty in every row.
+    # Listing that column under "kept at end of CSV" promised a column the file
+    # does not have, so the guide reads it from the same place the file does.
+    kept_cols <- unmapped_raw_columns(raw_data, map_values, overridden_terms = overridden)
+    empty_cols <- setdiff(unmapped_cols, kept_cols)
     mapped_terms <- c(
         vapply(pairs, function(p) p$term, character(1)),
         vapply(const_pairs, function(p) p$term, character(1))
@@ -575,6 +581,7 @@ build_mapping_guide_txt <- function(map_values,
             section_const= "#   constantes   (valor digitado/escolhido aplicado a todas as linhas)",
             section_miss = "#   termos DwC obrigatorios ainda nao mapeados",
             section_unmp = "#   colunas brutas nao usadas (mantidas no fim do CSV)",
+            unmp_empty   = "#     Vazias em todas as linhas, entao ficam fora do arquivo:",
             unmp_note_1  = "#     Estas colunas seguem no arquivo, mas NAO sao declaradas no meta.xml,",
             unmp_note_2  = "#     entao o GBIF vai ignora-las. Para publica-las, mapeie cada uma para",
             unmp_note_3  = "#     um termo DwC ou inclua o conteudo em dynamicProperties.",
@@ -596,6 +603,7 @@ build_mapping_guide_txt <- function(map_values,
             section_const= "#   constants   (typed/selected value applied to every row)",
             section_miss = "#   required DwC terms not yet mapped",
             section_unmp = "#   unused raw columns (kept at end of CSV)",
+            unmp_empty   = "#     Empty in every row, so they stay out of the file:",
             unmp_note_1  = "#     These columns stay in the file but are NOT declared in meta.xml,",
             unmp_note_2  = "#     so GBIF will ignore them. To publish them, map each one to a DwC",
             unmp_note_3  = "#     term or fold its content into dynamicProperties.",
@@ -673,16 +681,23 @@ build_mapping_guide_txt <- function(map_values,
     }
 
     out <- c(out, "#", L$section_unmp)
-    if (length(unmapped_cols) == 0L) {
+    if (length(kept_cols) == 0L) {
         out <- c(out, paste0("#     ", L$none))
     } else {
-        for (col in unmapped_cols) {
+        for (col in kept_cols) {
             out <- c(out, paste0("#     - ", col))
         }
         # Preserving the columns in the CSV is only half the promise: GBIF reads
         # meta.xml, and an undeclared column is invisible in the published
         # dataset. Say so here rather than letting the file imply otherwise.
         out <- c(out, "#", L$unmp_note_1, L$unmp_note_2, L$unmp_note_3)
+    }
+    # An empty column is still one of the n_cols_unmapped counted in the header.
+    # Naming it keeps that arithmetic legible and tells the reader why it is
+    # absent, instead of dropping it from the guide without a word.
+    if (length(empty_cols) > 0L) {
+        out <- c(out, "#", L$unmp_empty,
+                 paste0("#       ", paste(empty_cols, collapse = ", ")))
     }
 
     if (!is.na(id_strategy) && nzchar(id_strategy)) {

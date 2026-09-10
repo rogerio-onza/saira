@@ -595,6 +595,49 @@ testthat::test_that("build_mapping_guide_txt emits magic header, mapping pairs, 
     testthat::expect_false(any(grepl("-15.5", out, fixed = TRUE)))
 })
 
+testthat::test_that("build_mapping_guide_txt lists only the columns the CSV keeps", {
+    # An unmapped column empty in every row never reaches the file: it is
+    # filtered by unmapped_raw_columns() (ADR-120). Announcing it as kept
+    # promised a column the export does not carry.
+    raw <- data.frame(
+        especie = c("Panthera onca", "Tapirus terrestris"),
+        notas   = c("foo", "bar"),
+        vazia   = c("", NA_character_),
+        stringsAsFactors = FALSE
+    )
+
+    out <- build_mapping_guide_txt(list(scientificName = "especie"), raw, lang = "pt")
+    kept_block <- out[seq(which(grepl("colunas brutas nao usadas", out)), length(out))]
+
+    testthat::expect_true(any(grepl("^#\\s+- notas$", kept_block)))
+    testthat::expect_false(any(grepl("^#\\s+- vazia$", kept_block)))
+})
+
+testthat::test_that("build_mapping_guide_txt names the empty columns it leaves out", {
+    raw <- data.frame(
+        especie = "Panthera onca",
+        notas   = "foo",
+        vazia   = "",
+        stringsAsFactors = FALSE
+    )
+
+    pt <- build_mapping_guide_txt(list(scientificName = "especie"), raw, lang = "pt")
+    en <- build_mapping_guide_txt(list(scientificName = "especie"), raw, lang = "en")
+
+    testthat::expect_true(any(grepl("Vazias em todas as linhas", pt, fixed = TRUE)))
+    testthat::expect_true(any(grepl("Empty in every row", en, fixed = TRUE)))
+    testthat::expect_true(any(grepl("^#\\s+vazia$", pt)))
+    testthat::expect_true(any(grepl("^#\\s+vazia$", en)))
+})
+
+testthat::test_that("build_mapping_guide_txt omits the empty-column line when there is none", {
+    out <- build_mapping_guide_txt(list(scientificName = "especie"),
+                                   data.frame(especie = "x", notas = "foo"),
+                                   lang = "pt")
+
+    testthat::expect_false(any(grepl("Vazias em todas as linhas", out, fixed = TRUE)))
+})
+
 testthat::test_that("build_mapping_guide_txt switches PT/EN labels", {
     pt <- build_mapping_guide_txt(list(scientificName = "especie"),
                                   data.frame(especie = "x"), lang = "pt")
