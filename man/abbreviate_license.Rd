@@ -10,9 +10,10 @@ abbreviate_license(x)
 \item{x}{Character vector with license values}
 }
 \value{
-Character vector with known license URLs abbreviated
+Character vector with known licenses named
 }
 \description{
-Used by the on-screen preview only (ADR-008): the short token keeps the
-table readable. The published file gets the URI via `expand_license()`.
+Resolves any accepted spelling to the name in `cc_license_names()`. The
+preview and the published file both call this, so what the publisher reads
+on screen is what the file carries (ADR-125). Unknown values pass through.
 }

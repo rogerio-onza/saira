@@ -15,7 +15,11 @@ read_biodiversity_csv(file_path, encoding = NULL)
 Data frame
 }
 \description{
-Read biodiversity CSV file with encoding detection
+Every column is read as character. Type guessing reads only the first rows,
+so a column that starts empty or numeric and turns to prose further down
+loses those values to NA without an error (ADR-124). Saira standardizes text
+into Darwin Core, which has no numeric type, and the callers that need a
+number convert on their own.
 }
 \examples{
 \dontrun{

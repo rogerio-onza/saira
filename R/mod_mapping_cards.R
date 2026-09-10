@@ -178,12 +178,12 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 shiny::checkboxGroupInput(
                     ns("custom_license"),
                     NULL,
-                    # Values come from cc_license_uris() so the card, the
-                    # license column, the mapping guide and eml.xml all publish
-                    # the same string.
+                    # Label and value are the same string, from
+                    # cc_license_names(), so what the publisher reads on the
+                    # card is what the license column and the guide carry.
                     choices = stats::setNames(
-                        unname(cc_license_uris()),
-                        c("CC0 (Public Domain)", "CC-BY 4.0", "CC-BY-NC 4.0")
+                        unname(cc_license_names()),
+                        unname(cc_license_names())
                     ),
                     selected = if (!is.null(saved_license)) saved_license else character(0),
                     inline = FALSE,

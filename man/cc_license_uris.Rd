@@ -11,8 +11,6 @@ Named character vector keyed by short token.
 }
 \description{
 `http://` plus the `/legalcode` suffix is the machine-readable form GBIF
-documents and the IPT emits. Every place Saira writes a license -- the
-mapping card, the `license` data column, the mapping guide and the EML
-`<intellectualRights>` -- publishes the string from this one table, so a
-bundle can never disagree with itself the way it did before.
+documents and the IPT emits. Only the EML `<intellectualRights>` uses it,
+as the `<ulink url>` GBIF reads to register the dataset license.
 }

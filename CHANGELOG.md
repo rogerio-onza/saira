@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **export:** Write the license name the card shows, not the legalcode URL, ADR-125 ([#129](https://github.com/rogerio-onza/saira/pull/129))
+
 ### Fixed
 - **export:** List in the mapping guide only the unmapped columns the CSV keeps, ADR-120 ([#128](https://github.com/rogerio-onza/saira/pull/128))
 

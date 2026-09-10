@@ -81,6 +81,7 @@ Formato: ADR leve (Architecture Decision Record).
 - **Variantes tratadas**: com/sem `http(s)://`, com/sem `/legalcode`, com/sem `/` final.
 - **Consequencias**: Preview legivel e CSV mais limpo, sem perda de informacao.
 - **Superada em parte pela ADR-118 (2026-08-05)**: a abreviacao vale so no preview. `dcterms:license` e URI no Darwin Core, entao o arquivo publicado grava a URI canonica.
+- **Restaurada pela ADR-125 (2026-09-10)**: o arquivo publicado voltou a gravar o nome curto, agora com a grafia que o SiBBr pediu (`CC0`, `CC BY 4.0`, `CC BY-NC 4.0`). A URI ficou so no `<ulink url>` do EML.
 
 ---
 
@@ -2643,3 +2644,14 @@ Formato: ADR leve (Architecture Decision Record).
 - **Por que texto e o tipo certo**: a saida da Saira e Darwin Core, que nao tem tipo numerico -- o `occurrence.txt` e texto delimitado e o `.xlsx` ja forca `character` em toda celula (`write_xlsx_text_only`). Quem precisa de numero ja converte por conta propria: `as.numeric()` em `utils_coords.R`, e `as.numeric(gsub(",", ".", values))` na heuristica de valor do Rostrum, que ja esperava texto e ainda trata virgula decimal. Nenhum ponto do codigo ramifica em `is.numeric()` sobre dado de usuario.
 - **Alternativa rejeitada**: aumentar `guess_max`. Nao resolve: `LTR_ABD_10KM` traz `430` e `alarm calls of marmoset` na mesma coluna, e nenhum tipo numerico segura os dois. Amostrar mais linhas so move a linha em que o dado comeca a sumir.
 - **Consequencias**: `find_first_invalid_utf8_cell()` (ADR-079) passa a inspecionar toda coluna, e nao so as que o palpite deixou como `character` -- o retry de encoding fica mais abrangente. Na tabela de Preview, coluna de numero passa a ordenar como texto; antes isso ja valia para a maioria das colunas, porque o palpite era arbitrario.
+
+---
+
+## ADR-125: a licenca publicada e o nome que a pessoa escolheu, nao a URI
+
+- **Data**: 2026-09-10
+- **Status**: Aceito
+- **Contexto**: A ADR-008 abreviava a licenca no preview, e uma correcao posterior passou a gravar a URI canonica (`http://creativecommons.org/licenses/by/4.0/legalcode`) na coluna `license` do arquivo publicado, no card e no guia. O SiBBr, que recebe os conjuntos, pediu o texto da licenca como aparece na selecao da Saira: `CC0`, `CC BY 4.0`, `CC BY-NC 4.0`.
+- **Decisao**: `cc_license_names()` vira a fonte unica do que a pessoa le e do que o arquivo carrega -- card (rotulo e valor sao a mesma string), coluna `license`, preview e guia. `cc_license_uris()` continua existindo, mas so alimenta o `<ulink url>` do `<intellectualRights>` no `eml.xml`.
+- **Por que o EML nao muda**: e de la que o GBIF le a licenca do conjunto, e ali a URI e destino de link, nao valor exibido -- o `<citetitle>` ao lado ja mostra o nome. Trocar a URI por texto quebraria o reconhecimento da licenca no registro do conjunto.
+- **Consequencias**: `expand_license()` e `expand_license_column()` saem, porque expandir para URI era exatamente o comportamento removido. `abbreviate_license()` passa a devolver o nome canonico e e chamada tanto pelo preview quanto por `process_for_export()`, entao tela e arquivo nao podem mais divergir. `normalize_license_key()` passa a aceitar a forma com espaco (`CC BY 4.0`), senao o EML cairia no ramo verbatim ao receber o valor novo do card. O rotulo `CC0 (Public Domain)` perde o parenteses, para que rotulo e valor sejam a mesma string. Revoga a parte da ADR-008 que mandava a URI para o arquivo.
