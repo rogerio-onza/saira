@@ -2,6 +2,16 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.11.1</span>
+    <time class="release-date">2026-09-10</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Upload</strong>: toda coluna entra como texto, então nenhum valor se perde por não caber num tipo</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.11.0</span>
     <time class="release-date">2026-09-03</time>
   </header>
