@@ -5,6 +5,12 @@
 
 #' Read biodiversity CSV file with encoding detection
 #'
+#' Every column is read as character. Type guessing reads only the first rows,
+#' so a column that starts empty or numeric and turns to prose further down
+#' loses those values to NA without an error (ADR-124). Saira standardizes text
+#' into Darwin Core, which has no numeric type, and the callers that need a
+#' number convert on their own.
+#'
 #' @param file_path Path to CSV file
 #' @param encoding Optional encoding override
 #' @return Data frame
@@ -28,6 +34,7 @@ read_biodiversity_csv <- function(file_path, encoding = NULL) {
                 file_path,
                 delim = delimiter,
                 locale = readr::locale(encoding = enc),
+                col_types = readr::cols(.default = readr::col_character()),
                 show_col_types = FALSE,
                 name_repair = "unique"
             ),
@@ -36,6 +43,7 @@ read_biodiversity_csv <- function(file_path, encoding = NULL) {
                     file_path,
                     fileEncoding = enc,
                     sep = delimiter,
+                    colClasses = "character",
                     stringsAsFactors = FALSE
                 )
             }
