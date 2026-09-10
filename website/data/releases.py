@@ -15,6 +15,16 @@
 
 RELEASES = [
     {
+        "version": "0.11.1",
+        "date": "2026-09-10",
+        "pt": [
+            ("fixed", "**Upload**: toda coluna entra como texto, então nenhum valor se perde por não caber num tipo"),
+        ],
+        "en": [
+            ("fixed", "**Upload**: every column is read as text, so no value is lost for not fitting a type"),
+        ],
+    },
+    {
         "version": "0.11.0",
         "date": "2026-09-03",
         "pt": [
