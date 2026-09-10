@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+- **upload:** Read every column as text, so a value that a guessed type rejects is not dropped, ADR-124 ([#126](https://github.com/rogerio-onza/saira/pull/126))
+
 ## [0.11.0] - 2026-09-03
 
 ### Added

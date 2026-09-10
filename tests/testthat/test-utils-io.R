@@ -86,6 +86,47 @@ testthat::test_that("read_biodiversity_csv reads file and repairs duplicate name
     testthat::expect_equal(as.integer(out[[3]]), c(1L, 2L))
 })
 
+# Sparse measurement column: readr guesses a type from a sample of the rows,
+# and in a file this size the sample lands on the empty rows only. The guess
+# comes back logical, so "1" reaches the export as TRUE and every other value
+# as NA. Reproduces the loss reported on a 70k-row occurrence file (ADR-124).
+write_sparse_measures_file <- function(n_rows = 5000L, positions = c(1500L, 3000L, 4500L)) {
+    abundance <- rep("", n_rows)
+    density <- rep("", n_rows)
+    abundance[positions] <- c("1", "10.7", "7 individuals")
+    density[positions] <- c("0.711", "430", "2.29/Km2")
+    write_temp_text_file(c(
+        "SITE,LTR_ABD,LTR_DENS",
+        paste0("s", seq_len(n_rows), ",", abundance, ",", density)
+    ))
+}
+
+testthat::test_that("read_biodiversity_csv keeps sparse values a type guess would drop", {
+    positions <- c(1500L, 3000L, 4500L)
+    input_file <- write_sparse_measures_file(positions = positions)
+    on.exit(unlink(input_file), add = TRUE)
+
+    out <- read_biodiversity_csv(input_file)
+
+    testthat::expect_identical(
+        out$LTR_ABD[positions],
+        c("1", "10.7", "7 individuals")
+    )
+    testthat::expect_identical(
+        out$LTR_DENS[positions],
+        c("0.711", "430", "2.29/Km2")
+    )
+})
+
+testthat::test_that("read_biodiversity_csv reads every column as character", {
+    input_file <- write_sparse_measures_file()
+    on.exit(unlink(input_file), add = TRUE)
+
+    out <- read_biodiversity_csv(input_file)
+
+    testthat::expect_true(all(vapply(out, is.character, logical(1))))
+})
+
 testthat::test_that("parse_dates_to_iso parses supported formats and keeps invalid as NA", {
     input <- c(
         "2023-12-25",
