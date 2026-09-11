@@ -292,9 +292,10 @@ process_for_export <- function(df) {
     df <- add_occurrence_ids(df)
     id_strategy <- attr(df, "id_strategy")
 
-    # dcterms:license is a URI in Darwin Core, so the published file carries
-    # the full legalcode URL. The short label is a preview affordance only.
-    df <- expand_license_column(df)
+    # The published file carries the license name the publisher picked on the
+    # card, not the URI (ADR-125). The URI survives in the EML <ulink url>,
+    # which is where GBIF reads the dataset license from.
+    df <- abbreviate_license_column(df)
 
     # Populate geodeticDatum for rows with valid lat/lon (DwC GBIF expectation).
     df <- apply_geodetic_datum(df)
@@ -946,13 +947,28 @@ order_columns_dwc_canonical <- function(df) {
     df[, cols[ord], drop = FALSE]
 }
 
+#' Canonical names for the three Creative Commons licenses GBIF accepts
+#'
+#' The short name is what the publisher reads and what the bundle writes: the
+#' license card, the `license` data column, the mapping guide and the preview
+#' all take their string from this one table (ADR-125). The URI stays in
+#' `cc_license_uris()`, where it is a link target rather than a value.
+#'
+#' @return Named character vector keyed by short token.
+#' @export
+cc_license_names <- function() {
+    c(
+        "CC0" = "CC0",
+        "CC-BY" = "CC BY 4.0",
+        "CC-BY-NC" = "CC BY-NC 4.0"
+    )
+}
+
 #' Canonical URIs for the three Creative Commons licenses GBIF accepts
 #'
 #' `http://` plus the `/legalcode` suffix is the machine-readable form GBIF
-#' documents and the IPT emits. Every place Saira writes a license -- the
-#' mapping card, the `license` data column, the mapping guide and the EML
-#' `<intellectualRights>` -- publishes the string from this one table, so a
-#' bundle can never disagree with itself the way it did before.
+#' documents and the IPT emits. Only the EML `<intellectualRights>` uses it,
+#' as the `<ulink url>` GBIF reads to register the dataset license.
 #'
 #' @return Named character vector keyed by short token.
 #' @export
@@ -982,22 +998,23 @@ normalize_license_key <- function(x) {
     norm <- gsub("/+$", "", norm)
 
     out <- rep(NA_character_, length(norm))
-    out[norm %in% c("cc0", "cc0-1.0",
+    out[norm %in% c("cc0", "cc0-1.0", "cc0 1.0",
                     "creativecommons.org/publicdomain/zero/1.0")] <- "CC0"
-    out[norm %in% c("cc-by", "cc-by-4.0",
+    out[norm %in% c("cc-by", "cc-by-4.0", "cc by 4.0",
                     "creativecommons.org/licenses/by/4.0")] <- "CC-BY"
-    out[norm %in% c("cc-by-nc", "cc-by-nc-4.0",
+    out[norm %in% c("cc-by-nc", "cc-by-nc-4.0", "cc by-nc 4.0",
                     "creativecommons.org/licenses/by-nc/4.0")] <- "CC-BY-NC"
     out
 }
 
 #' Abbreviate Creative Commons license values
 #'
-#' Used by the on-screen preview only (ADR-008): the short token keeps the
-#' table readable. The published file gets the URI via `expand_license()`.
+#' Resolves any accepted spelling to the name in `cc_license_names()`. The
+#' preview and the published file both call this, so what the publisher reads
+#' on screen is what the file carries (ADR-125). Unknown values pass through.
 #'
 #' @param x Character vector with license values
-#' @return Character vector with known license URLs abbreviated
+#' @return Character vector with known licenses named
 #' @export
 abbreviate_license <- function(x) {
     x_chr <- as.character(x)
@@ -1005,26 +1022,7 @@ abbreviate_license <- function(x) {
     known <- !is.na(key)
 
     out <- x_chr
-    out[known] <- key[known]
-    return(out)
-}
-
-#' Expand Creative Commons license values to their canonical URI
-#'
-#' Inverse of `abbreviate_license()`. `dcterms:license` is a URI in Darwin
-#' Core, so the published `occurrence.txt` carries the full legalcode URL
-#' rather than the short label. Unknown values pass through untouched.
-#'
-#' @param x Character vector with license values
-#' @return Character vector with known licenses expanded to their URI
-#' @export
-expand_license <- function(x) {
-    x_chr <- as.character(x)
-    key <- normalize_license_key(x_chr)
-    known <- !is.na(key)
-
-    out <- x_chr
-    out[known] <- unname(cc_license_uris()[key[known]])
+    out[known] <- unname(cc_license_names()[key[known]])
     return(out)
 }
 
@@ -1040,21 +1038,6 @@ abbreviate_license_column <- function(df, col = "license") {
     }
 
     df[[col]] <- abbreviate_license(df[[col]])
-    return(df)
-}
-
-#' Expand the license column in a data frame to canonical URIs
-#'
-#' @param df Data frame
-#' @param col Column name to expand (default: "license")
-#' @return Data frame with expanded license values when column exists
-#' @export
-expand_license_column <- function(df, col = "license") {
-    if (!(col %in% names(df))) {
-        return(df)
-    }
-
-    df[[col]] <- expand_license(df[[col]])
     return(df)
 }
 

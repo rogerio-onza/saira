@@ -26,11 +26,11 @@ testthat::test_that("abbreviate_license normalizes known values and preserves un
         "CC0",
         "CC0",
         "CC0",
-        "CC-BY",
-        "CC-BY",
-        "CC-BY",
-        "CC-BY-NC",
-        "CC-BY-NC",
+        "CC BY 4.0",
+        "CC BY 4.0",
+        "CC BY 4.0",
+        "CC BY-NC 4.0",
+        "CC BY-NC 4.0",
         "custom-license",
         NA_character_
     )
@@ -46,7 +46,7 @@ testthat::test_that("abbreviate_license_column handles missing and existing colu
 
     testthat::expect_identical(abbreviate_license_column(no_license), no_license)
     out <- abbreviate_license_column(with_license)
-    testthat::expect_identical(out$license, c("CC-BY", "custom-license"))
+    testthat::expect_identical(out$license, c("CC BY 4.0", "custom-license"))
 })
 
 testthat::test_that("clean_coordinate_separators converts decimal comma and invalids to NA", {
@@ -239,13 +239,13 @@ testthat::test_that("process_for_export keeps date semantics and runs full pipel
     testthat::expect_equal(out$decimalLongitude, c(-46.63, -43.17, NA_real_))
     testthat::expect_false(any(is.na(out$occurrenceID) | out$occurrenceID == ""))
     testthat::expect_identical(out$occurrenceID[3], "existing-id")
-    # dcterms:license is a URI in Darwin Core, so the published file carries the
-    # canonical legalcode URL; the short label is a preview affordance only.
+    # The published file carries the license name from the card (ADR-125); the
+    # URI stays in the EML <ulink url>, where GBIF reads it.
     testthat::expect_identical(
         out$license,
         c(
-            unname(cc_license_uris()[["CC0"]]),
-            unname(cc_license_uris()[["CC-BY"]]),
+            unname(cc_license_names()[["CC0"]]),
+            unname(cc_license_names()[["CC-BY"]]),
             "custom-license"
         )
     )
@@ -1029,53 +1029,53 @@ test_that("the class override does not disturb terms it does not name", {
     expect_equal(ordered, c("occurrenceID", "scientificName", "taxonRemarks"))
 })
 
-# License: the published file carries a URI ------------------------------
+# License: the published file carries the short name ---------------------
 
-testthat::test_that("expand_license accepts every spelling and emits the canonical URI", {
-    uris <- cc_license_uris()
+testthat::test_that("abbreviate_license accepts every spelling and emits the canonical name", {
+    names_tbl <- cc_license_names()
 
     testthat::expect_identical(
-        expand_license(c(
-            "CC-BY", "cc-by-4.0",
+        abbreviate_license(c(
+            "CC-BY", "cc-by-4.0", "CC BY 4.0",
             "https://creativecommons.org/licenses/by/4.0/legalcode",
             "http://creativecommons.org/licenses/by/4.0/"
         )),
-        rep(unname(uris[["CC-BY"]]), 4L)
+        rep(unname(names_tbl[["CC-BY"]]), 5L)
     )
-    testthat::expect_identical(expand_license("CC0"), unname(uris[["CC0"]]))
+    testthat::expect_identical(abbreviate_license("CC0"), unname(names_tbl[["CC0"]]))
     testthat::expect_identical(
-        expand_license("https://creativecommons.org/licenses/by-nc/4.0/"),
-        unname(uris[["CC-BY-NC"]])
+        abbreviate_license("https://creativecommons.org/licenses/by-nc/4.0/"),
+        unname(names_tbl[["CC-BY-NC"]])
     )
 })
 
-testthat::test_that("expand_license leaves unknown licenses untouched", {
+testthat::test_that("abbreviate_license leaves unknown licenses untouched", {
     testthat::expect_identical(
-        expand_license(c("Licenca Institucional XYZ", NA_character_)),
+        abbreviate_license(c("Licenca Institucional XYZ", NA_character_)),
         c("Licenca Institucional XYZ", NA_character_)
     )
 })
 
-testthat::test_that("abbreviate_license still shortens, for the preview", {
-    # ADR-008 keeps the short token on screen; only the published file changed.
-    testthat::expect_identical(
-        abbreviate_license(unname(cc_license_uris())),
-        c("CC0", "CC-BY", "CC-BY-NC")
-    )
+testthat::test_that("no published license value is a URL", {
+    # SiBBr asked for the name the card shows, not the legalcode URL (ADR-125).
+    out <- abbreviate_license(unname(cc_license_uris()))
+
+    testthat::expect_identical(out, c("CC0", "CC BY 4.0", "CC BY-NC 4.0"))
+    testthat::expect_false(any(grepl("http", out, fixed = TRUE)))
 })
 
 testthat::test_that("the license column, the guide and the EML agree on one string", {
-    # The bundle used to disagree with itself: the column said "CC-BY", the
-    # guide said https://...legalcode and the EML said http://...legalcode.
+    # The column, the guide and the card carry the name; the EML keeps the URI
+    # in its <ulink url>, which is where GBIF reads the dataset license.
     for (token in c("CC0", "CC-BY", "CC-BY-NC")) {
-        col <- expand_license_column(
+        col <- abbreviate_license_column(
             data.frame(license = token, stringsAsFactors = FALSE)
         )$license
         eml <- build_intellectual_rights_xml(col)
         url <- regmatches(eml, regexpr('(?<=url=")[^"]+', eml, perl = TRUE))
 
-        testthat::expect_identical(col, unname(cc_license_uris()[[token]]))
-        testthat::expect_identical(url, col)
+        testthat::expect_identical(col, unname(cc_license_names()[[token]]))
+        testthat::expect_identical(url, unname(cc_license_uris()[[token]]))
     }
 })
 
