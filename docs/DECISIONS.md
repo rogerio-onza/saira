@@ -2590,6 +2590,7 @@ Formato: ADR leve (Architecture Decision Record).
   - Dobrar as colunas em `dynamicProperties` automaticamente - rejeitado nesta rodada: publica de fato, mas muda o significado de um termo que hoje carrega status de conservacao (ADR-086/107) sem o usuario pedir.
   - Declarar as extras sob namespace proprio (`.../terms/<coluna>`) - rejeitado: o `meta.xml` passaria a bater com o numero de colunas, mas o GBIF continua sem interpretar termo desconhecido, entao o ganho seria cosmetico.
 - **Consequencias**: `unmapped_raw_columns()` passa a ser a fonte unica, usada pelo guia, pela tela de exportacao e por `process_for_export_with_unmapped()`, para que as tres nao divirjam sobre quais colunas estao em questao.
+- **Emenda (2026-09-10)**: o guia nunca chegou a usar a fonte unica -- `build_mapping_guide_txt()` montava a lista com um `setdiff` proprio e ignorava o filtro de coluna vazia, entao anunciava como "mantida no fim do CSV" uma coluna que o arquivo nao carrega. Agora ele le de `unmapped_raw_columns()`, como a ADR ja mandava. A coluna vazia nao some sem explicacao: ela continua contada em `n_cols_unmapped` no cabecalho e ganha uma linha propria dizendo por que ficou de fora.
 
 ## ADR-121: status MMA e nacional -- so vai para registros que resolvem para o Brasil
 
