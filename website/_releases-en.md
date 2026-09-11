@@ -2,6 +2,17 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.11.2</span>
+    <time class="release-date">2026-09-11</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>License</strong>: the file publishes the license name (<code>CC BY 4.0</code>), not the legalcode URL</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Fixed</span><span class="rel-text"><strong>Mapping guide</strong>: lists only the unmapped columns the CSV actually carries</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.11.1</span>
     <time class="release-date">2026-09-10</time>
   </header>

@@ -2,6 +2,17 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v0.11.2</span>
+    <time class="release-date">2026-09-11</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-changed">Mudou</span><span class="rel-text"><strong>Licença</strong>: o arquivo publica o nome da licença (<code>CC BY 4.0</code>), não a URL do texto legal</span></li>
+    <li class="rel-item"><span class="rel-tag rel-fixed">Corrigido</span><span class="rel-text"><strong>Guia de mapeamento</strong>: lista só as colunas não mapeadas que o CSV realmente carrega</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.11.1</span>
     <time class="release-date">2026-09-10</time>
   </header>

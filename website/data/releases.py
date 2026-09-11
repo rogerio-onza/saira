@@ -15,6 +15,18 @@
 
 RELEASES = [
     {
+        "version": "0.11.2",
+        "date": "2026-09-11",
+        "pt": [
+            ("changed", "**Licença**: o arquivo publica o nome da licença (`CC BY 4.0`), não a URL do texto legal"),
+            ("fixed", "**Guia de mapeamento**: lista só as colunas não mapeadas que o CSV realmente carrega"),
+        ],
+        "en": [
+            ("changed", "**License**: the file publishes the license name (`CC BY 4.0`), not the legalcode URL"),
+            ("fixed", "**Mapping guide**: lists only the unmapped columns the CSV actually carries"),
+        ],
+    },
+    {
         "version": "0.11.1",
         "date": "2026-09-10",
         "pt": [
