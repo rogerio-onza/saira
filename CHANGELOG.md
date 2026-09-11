@@ -7,6 +7,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [0.11.2] - 2026-09-11
+
 ### Changed
 - **export:** Write the license name the card shows, not the legalcode URL, ADR-125 ([#129](https://github.com/rogerio-onza/saira/pull/129))
 
