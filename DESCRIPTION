@@ -47,7 +47,7 @@ Suggests:
     shinytest2 (>= 0.3.0),
     rnaturalearthhires (>= 1.0.0),
     camtrapdp (>= 0.5.0),
-    httr2 (>= 1.0.0),
+    httr2 (>= 1.1.1),
     devtools,
     future,
     furrr,

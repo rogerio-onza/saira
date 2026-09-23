@@ -7,6 +7,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126
+
 ### Fixed
 - **tests:** Pin the name validation batch test to GBIF so a local Fauna BR cache does not exhaust memory
 
