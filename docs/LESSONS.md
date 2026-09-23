@@ -296,6 +296,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Gate por env var e mais explicito que `skip_if_not_installed` para suites custosas**: `if (!identical(Sys.getenv("RUN_E2E"), "true")) skip(...)` garante que E2E nunca roda acidentalmente em `devtools::test()` mesmo com `shinytest2` instalado.
 - **`AppDriver$new(app = shinyApp(ui, server))` e mais robusto que `app_dir`**: elimina dependencia de `app.R`/`server.R` existirem no diretorio raiz, instavel em ambientes de check.
 - **Evitar `withr` em scripts de release gate**: `Sys.setenv()`/`Sys.unsetenv()` sao base R e nao exigem declaracao em DESCRIPTION; `withr::with_envvar()` quebraria o script em ambientes sem o pacote instalado.
+- **A funcao passada ao `AppDriver` leva o arquivo de teste inteiro ao processo do app** (2026-09-22). O `testthat` guarda as referencias de fonte, entao `build_e2e_app` carregava todo o `test-e2e-flows.R`. Com Chrome 151 e shinytest2 0.5.1, a pagina recarregava na partida, o `AppDriver` perdia o script de rastreamento e 7 de 8 fluxos falhavam em `main`. O mesmo fluxo sozinho num arquivo passava, e voltava a falhar com 600 linhas de comentario no fim. `utils::removeSource()` na funcao faz os 9 fluxos passarem. O mecanismo nao foi identificado. Timeout maior e flags do Chrome nao resolveram: comparar o fluxo isolado com o arquivo inteiro achou a causa.
 
 ## Rostrum / Ondas 0-1
 

@@ -390,3 +390,33 @@ testthat::test_that("upstream reset clears the mirrored decision inputs", {
         }
     )
 })
+
+testthat::test_that("the map overlay stays empty while the tab is hidden (ADR-114)", {
+    # The overlay feeds an observer, and observers ignore tab visibility. The
+    # gate inside gen_overlay_data_r() is what keeps a mapping edit made on
+    # another tab from rebuilding the full mapped frame for this map.
+    local_sensitive_fixture("Panthera onca", category = "EN")
+    df <- sample_occurrence_df()
+    active <- shiny::reactiveVal(FALSE)
+
+    shiny::testServer(
+        saira:::mod_sensitive_coords_server,
+        args = list(
+            data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en"),
+            active_r = active
+        ),
+        {
+            session$flushReact()
+            session$elapse(400)
+            testthat::expect_null(gen_overlay_data_r())
+
+            active(TRUE)
+            session$flushReact()
+            session$elapse(400)
+            overlay <- gen_overlay_data_r()
+            testthat::expect_false(is.null(overlay))
+            testthat::expect_true("Panthera onca" %in% overlay$ov$scientificName)
+        }
+    )
+})

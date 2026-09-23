@@ -8,10 +8,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
-- **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126
+- **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
-- **tests:** Pin the name validation batch test to GBIF so a local Fauna BR cache does not exhaust memory
+- **tests:** Pin the name validation batch test to GBIF so a local Fauna BR cache does not exhaust memory ([#131](https://github.com/rogerio-onza/saira/pull/131))
+
+### Tests
+- **build:** Guard the mapping reactivity fixes and run the full flow end to end in the release gate
 
 ## [0.11.2] - 2026-09-11
 
