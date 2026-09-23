@@ -2655,3 +2655,11 @@ Formato: ADR leve (Architecture Decision Record).
 - **Decisao**: `cc_license_names()` vira a fonte unica do que a pessoa le e do que o arquivo carrega -- card (rotulo e valor sao a mesma string), coluna `license`, preview e guia. `cc_license_uris()` continua existindo, mas so alimenta o `<ulink url>` do `<intellectualRights>` no `eml.xml`.
 - **Por que o EML nao muda**: e de la que o GBIF le a licenca do conjunto, e ali a URI e destino de link, nao valor exibido -- o `<citetitle>` ao lado ja mostra o nome. Trocar a URI por texto quebraria o reconhecimento da licenca no registro do conjunto.
 - **Consequencias**: `expand_license()` e `expand_license_column()` saem, porque expandir para URI era exatamente o comportamento removido. `abbreviate_license()` passa a devolver o nome canonico e e chamada tanto pelo preview quanto por `process_for_export()`, entao tela e arquivo nao podem mais divergir. `normalize_license_key()` passa a aceitar a forma com espaco (`CC BY 4.0`), senao o EML cairia no ramo verbatim ao receber o valor novo do card. O rotulo `CC0 (Public Domain)` perde o parenteses, para que rotulo e valor sejam a mesma string. Revoga a parte da ADR-008 que mandava a URI para o arquivo.
+
+## ADR-126: as consultas IUCN do export vao ao GBIF em paralelo
+
+- **Data**: 2026-09-23
+- **Status**: Aceito
+- **Contexto**: A ADR-107 consulta a categoria IUCN no GBIF durante o export, com um GET por taxon (`species/match` para nomes sem `taxonID`, depois `iucnRedListCategory` por chave), um de cada vez. No roadkill (451 nomes, 21.512 linhas) o download levou 240 s, 96% dele esperando a rede (`Rprof(event = "elapsed")`). A IUCN fica ligada por padrao, porque o GBIF vem pre-selecionado.
+- **Decisao**: `gbif_api_get_many()` troca os dois lacos por `httr2::req_perform_parallel()` com no maximo 10 requests ativos. Cada request tem `req_retry(max_tries = 3)`, para que um 429 do GBIF sob carga paralela nao vire `NA`. O resto da ADR-107 fica igual: mesmos endpoints e campos, memo por sessao, qualquer falha vira `NA`.
+- **Consequencias**: O mesmo calculo leva 36 s, com `dynamicProperties` identico nas 21.512 linhas. `httr2` em Suggests sobe para `>= 1.1.1`, a primeira versao em que o paralelo respeita `req_retry()`. `gbif_api_get()` sai, porque os dois chamadores passam a usar a versao em lote.
