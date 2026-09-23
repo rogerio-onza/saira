@@ -2663,3 +2663,12 @@ Formato: ADR leve (Architecture Decision Record).
 - **Contexto**: A ADR-107 consulta a categoria IUCN no GBIF durante o export, com um GET por taxon (`species/match` para nomes sem `taxonID`, depois `iucnRedListCategory` por chave), um de cada vez. No roadkill (451 nomes, 21.512 linhas) o download levou 240 s, 96% dele esperando a rede (`Rprof(event = "elapsed")`). A IUCN fica ligada por padrao, porque o GBIF vem pre-selecionado.
 - **Decisao**: `gbif_api_get_many()` troca os dois lacos por `httr2::req_perform_parallel()` com no maximo 10 requests ativos. Cada request tem `req_retry(max_tries = 3)`, para que um 429 do GBIF sob carga paralela nao vire `NA`. O resto da ADR-107 fica igual: mesmos endpoints e campos, memo por sessao, qualquer falha vira `NA`.
 - **Consequencias**: O mesmo calculo leva 36 s, com `dynamicProperties` identico nas 21.512 linhas. `httr2` em Suggests sobe para `>= 1.1.1`, a primeira versao em que o paralelo respeita `req_retry()`. `gbif_api_get()` sai, porque os dois chamadores passam a usar a versao em lote.
+
+## ADR-127: visual plano e leve -- sem sombra, sem gradiente, bordas neutras
+
+- **Data**: 2026-09-23
+- **Status**: Aceito
+- **Contexto**: O redesign do marco 1 segue o mockup Inicio B: visual plano, cantos arredondados, bordas claras. O CSS tinha 11 tokens de sombra e cerca de 25 sombras fixas, 14 gradientes, 49 raios em pixel fixo e bordas num azul translucido que tinge o bege. O `--text-muted` (`#6c757d`) dava 4,2:1 sobre `--bg-main`, abaixo do AA.
+- **Decisao**: Todo token `--shadow-*` vale `none`, e as sombras fixas viram `none`. Os aneis de foco e os aneis `inset` de selecao ficam. Os gradientes decorativos viram cor solida, e o card selecionado usa o novo `--selected-bg`. Tres gradientes ficam porque carregam funcao: a escala de gravidade da Generalizacao, as listras do upload ativo e a camada solida do aviso de duplicata. As bordas passam a `#EFEDE6`, `#E6E4DC` e `#D9D6CC`. O raio usa so tokens, com o novo `--radius-xl: 14px` para paineis. O `--text-muted` passa a `#5F6570` (5,3:1).
+- **Consequencias**: Um card mostra o limite pela borda de 1px e pelo branco sobre o bege. Nova sombra pede um novo ADR. O efeito de elevacao no hover (`--lift-*`) fica fora deste ADR.
+

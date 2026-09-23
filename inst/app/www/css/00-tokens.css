@@ -7,7 +7,7 @@
   --bg-main: #f4f3ee;
   --bg-card: #ffffff;
   --text-primary: #1c1c26;
-  --text-muted: #6c757d;
+  --text-muted: #5f6570; /* AA on --bg-main: 5.3:1 (#6c757d gave 4.2:1) */
 
   /* Bird Palette */
   --primary: #38cff6;
@@ -45,16 +45,18 @@
   --color-badge-ambiguous: #e67e22;
   --color-badge-template: #8e44ad;
 
-  /* Borders */
-  --border-light: rgba(40, 51, 172, 0.08);
-  --border-default: rgba(40, 51, 172, 0.18);
-  --border-strong: rgba(40, 51, 172, 0.35);
-  --border: rgba(40, 51, 172, 0.18);
+  /* Borders: warm neutrals that sit on --bg-main (ADR-127). */
+  --border-light: #efede6;
+  --border-default: #e6e4dc;
+  --border-strong: #d9d6cc;
+  --border: var(--border-default);
 
   /* Backgrounds */
   --overlay: rgba(28, 28, 38, 0.5);
   --hover-bg: rgba(40, 51, 172, 0.07);
   --active-bg: rgba(40, 51, 172, 0.13);
+  /* Flat fill for a selected card or an active drop target. */
+  --selected-bg: rgba(56, 207, 246, 0.12);
 
   /* Typography */
   --font-serif: 'Source Serif 4', Georgia, serif;
@@ -97,20 +99,22 @@
   --radius-sm: 4px;
   --radius: 8px;
   --radius-lg: 12px;
+  --radius-xl: 14px;
   --radius-full: 9999px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 4px rgba(28, 28, 38, 0.05);
-  --shadow: 0 2px 8px rgba(28, 28, 38, 0.08);
-  --shadow-md: 0 4px 12px rgba(28, 28, 38, 0.1);
-  --shadow-hover: 0 4px 16px rgba(28, 28, 38, 0.12);
-  --shadow-lg: 0 8px 24px rgba(28, 28, 38, 0.15);
-  --shadow-primary: 0 2px 6px rgba(56, 207, 246, 0.35);
-  --shadow-primary-hover: 0 4px 12px rgba(56, 207, 246, 0.45);
-  --shadow-success: 0 2px 6px rgba(0, 168, 107, 0.3);
-  --shadow-error: 0 2px 6px rgba(192, 57, 43, 0.3);
-  --shadow-accent: 0 2px 4px rgba(40, 51, 172, 0.3);
-  --shadow-accent-hover: 0 4px 8px rgba(40, 51, 172, 0.4);
+  /* Shadows: the design is flat (ADR-127). The tokens stay so a rule can
+     name its intent, but every one resolves to none. Focus rings stay. */
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-hover: none;
+  --shadow-lg: none;
+  --shadow-primary: none;
+  --shadow-primary-hover: none;
+  --shadow-success: none;
+  --shadow-error: none;
+  --shadow-accent: none;
+  --shadow-accent-hover: none;
 
   /* Focus Rings */
   --focus-ring-primary: 0 0 0 3px rgba(56, 207, 246, 0.25);

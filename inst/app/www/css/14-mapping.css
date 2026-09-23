@@ -12,7 +12,7 @@
 
 /* Category headers */
 .category-header {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--text-primary) 100%);
+  background: var(--accent);
   color: #ffffff;
   padding: var(--space-3) var(--space-5);
   margin: var(--space-6) 0 var(--space-3) 0;
@@ -745,8 +745,8 @@
 }
 
 .modal.automap-loading-host .modal-content {
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-xl);
+  box-shadow: none;
   border: 1px solid var(--border-light);
 }
 
@@ -799,7 +799,7 @@
   height: 100%;
   width: 0;
   border-radius: var(--radius-full);
-  background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+  background: var(--primary);
   transition: width 0.24s ease;
 }
 
@@ -919,7 +919,7 @@
 .bor-assistant-progress-bar {
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+  background: var(--primary);
   transition: width 0.2s ease;
 }
 

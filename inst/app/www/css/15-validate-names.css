@@ -912,8 +912,8 @@
   flex: 0 0 clamp(340px, 22vw, 420px);
   background: #ffffff;
   border: 1px solid rgba(40, 51, 172, 0.18);
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(28, 28, 38, 0.05);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
   margin: 0;
   padding: 0;
   overflow-y: auto;
@@ -935,7 +935,7 @@
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #6c757d;
+  color: var(--text-muted);
   margin-bottom: 0.55rem;
 }
 
@@ -951,7 +951,7 @@
   margin: 0;
   text-align: left;
   border: 1px solid rgba(40, 51, 172, 0.18);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 0.5rem 0.65rem;
   background: #f4f3ee;
   color: var(--text-primary);
@@ -966,19 +966,19 @@
 }
 
 /* Selected state mirrors the Generalization cards (17-sensitive-panel.css):
-   accent border + cyan->navy gradient + a 1px inset ring so selection reads
+   accent border + a flat tint + a 1px inset ring so selection reads
    clearly. Card dimensions/padding are unchanged. */
 .vn-provider-card.is-selected {
   border-color: var(--accent);
-  background: linear-gradient(180deg, rgba(56, 207, 246, 0.16) 0%, rgba(40, 51, 172, 0.06) 100%);
+  background: var(--selected-bg);
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 /* Priority-1 (the cascade's first provider, GBIF) keeps the same selected
-   gradient but a teal ring to mark it as the lead provider. */
+   tint but a teal ring to mark it as the lead provider. */
 .vn-provider-card.is-priority-1 {
   border-color: var(--primary-dark);
-  background: linear-gradient(180deg, rgba(56, 207, 246, 0.16) 0%, rgba(40, 51, 172, 0.06) 100%);
+  background: var(--selected-bg);
   box-shadow: inset 0 0 0 1px var(--primary-dark);
 }
 
@@ -997,7 +997,7 @@
 .vn-provider-icon-wrap {
   width: 26px;
   height: 26px;
-  border-radius: 7px;
+  border-radius: var(--radius);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1073,7 +1073,7 @@
 .vn-toggle-item .bslib-input-switch .form-check-input {
   width: 32px;
   height: 20px;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   border-color: rgba(40, 51, 172, 0.18);
   background-color: rgba(40, 51, 172, 0.18);
   box-shadow: none;
@@ -1106,22 +1106,22 @@
   color: #1c1c26;
   font-family: var(--font-mono);
   font-size: var(--text-sm);
-  border-radius: 8px;
+  border-radius: var(--radius);
   border: 1px solid transparent;
   padding: 0.65rem;
-  box-shadow: 0 2px 6px rgba(56, 207, 246, 0.35);
+  box-shadow: none;
   transition: var(--transition-fast);
 }
 
 .vn-run-btn:hover:not(:disabled) {
   background: #16b3bd;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(56, 207, 246, 0.45);
+  box-shadow: none;
 }
 
 .vn-cancel-btn.btn,
 .vn-cancel-btn.action-button {
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
 }
@@ -1136,7 +1136,7 @@
 .vn-mini-stat {
   background: #f4f3ee;
   border: 1px solid rgba(40, 51, 172, 0.08);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 0.35rem 0.4rem;
   text-align: center;
 }
@@ -1183,7 +1183,7 @@
   margin-top: 0.28rem;
   height: 5px;
   background: rgba(40, 51, 172, 0.08);
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 
@@ -1216,8 +1216,8 @@
   flex: 1 1 auto;
   background: #ffffff;
   border: 1px solid rgba(40, 51, 172, 0.18);
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(28, 28, 38, 0.05);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1247,7 +1247,7 @@
 .vn-stream-pill.action-button {
   margin: 0;
   border: 1px solid rgba(40, 51, 172, 0.18);
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   padding: 3px 10px;
   background: #f4f3ee;
   color: var(--text-muted);
@@ -1293,7 +1293,7 @@
 }
 
 .vn-pill-count {
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   padding: 0 0.32rem;
   background: rgba(255, 255, 255, 0.2);
 }
@@ -1312,7 +1312,7 @@
 
 .vn-stream-item {
   border: 1px solid rgba(40, 51, 172, 0.08);
-  border-radius: 8px;
+  border-radius: var(--radius);
   padding: 0.6rem 0.75rem;
   background: #ffffff;
   display: flex;
@@ -1324,7 +1324,7 @@
 
 .vn-stream-item:hover {
   border-color: rgba(40, 51, 172, 0.18);
-  box-shadow: 0 1px 4px rgba(28, 28, 38, 0.08);
+  box-shadow: none;
 }
 
 .vn-stream-item-actions {
@@ -1769,8 +1769,8 @@ body.vn-review-open .modal-backdrop.show {
   flex-direction: column;
   overflow: hidden;
   border: 1px solid rgba(40, 51, 172, 0.18);
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(28, 28, 38, 0.05);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
 }
 
 .vn-report-statbar {
@@ -1857,7 +1857,7 @@ body.vn-review-open .modal-backdrop.show {
 .vn-report-select {
   background: #f4f3ee;
   border: 1px solid rgba(40, 51, 172, 0.18);
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   color: #1c1c26;
@@ -2059,7 +2059,7 @@ body.vn-review-open .modal-backdrop.show {
   min-width: 26px;
   padding: 0 0.45rem;
   border: 1px solid rgba(40, 51, 172, 0.18);
-  border-radius: 8px;
+  border-radius: var(--radius);
   background: #f4f3ee;
   color: #2833ac;
   font-family: var(--font-mono);
@@ -2093,7 +2093,7 @@ body.vn-review-open .modal-backdrop.show {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
+  border-radius: var(--radius-full);
   padding: 0.12rem 0.5rem;
   border: 1px solid transparent;
   font-family: var(--font-mono);
@@ -2149,7 +2149,7 @@ body.vn-review-open .modal-backdrop.show {
   .vn-config-panel {
     max-height: none;
     border: 1px solid rgba(40, 51, 172, 0.18);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
   }
 
   .vn-stream-panel {

@@ -2,7 +2,7 @@
 
 > **Background:** `#f4f3ee` (warm beige) — non-negotiable  
 > **Palette:** *Tangara fastuosa* + estados semânticos com personalidade  
-> **Version:** 4.3 — tipografia atualizada (Spectral → Source Serif 4) + auditoria de contraste
+> **Version:** 5.0 — visual plano e leve (ADR-127): sem sombra, sem gradiente, bordas neutras quentes
 
 ---
 
@@ -61,7 +61,7 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 --bg-main:       #f4f3ee;   /* NON-NEGOTIABLE */
 --bg-card:       #ffffff;   /* NON-NEGOTIABLE */
 --text-primary:  #1C1C26;   /* Cauda */
---text-muted:    #6c757d;
+--text-muted:    #5F6570;   /* 5.3:1 sobre o bege */
 
 /* ── Brand — do pássaro ── */
 --primary:       #38CFF6;   /* Peito */
@@ -87,20 +87,28 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 --info-border:    rgba(37, 38, 89, 0.20);
 
 /* ── Borders ── */
---border-light:   rgba(40, 51, 172, 0.08);
---border-default: rgba(40, 51, 172, 0.18);
---border-strong:  rgba(40, 51, 172, 0.35);
---border:         rgba(40, 51, 172, 0.18);
+--border-light:   #EFEDE6;
+--border-default: #E6E4DC;
+--border-strong:  #D9D6CC;
+--border:         var(--border-default);
+--warning-border-strong: rgba(255, 162, 4, 0.55);
+--error-border-strong:   rgba(192, 57, 43, 0.50);
 
 /* ── Backgrounds ── */
 --overlay:    rgba(28, 28, 38, 0.50);
 --hover-bg:   rgba(40, 51, 172, 0.07);
 --active-bg:  rgba(40, 51, 172, 0.13);
+--selected-bg: rgba(56, 207, 246, 0.12);  /* card selecionado, alvo de drop */
 
 /* ── Coordinate validation ── */
 --coord-ok:      #00A86B;
 --coord-missing: rgba(28, 28, 38, 0.35);
---coord-swapped: #8b5cf6;
+--coord-swapped:   #6D28D9;
+--coord-corrected: #0E7C86;
+
+/* ── Mapping badges ── */
+--color-badge-ambiguous: #E67E22;
+--color-badge-template:  #8E44AD;
 ```
 
 ---
@@ -201,26 +209,21 @@ code, .data-cell, .coord-value {
 --space-4: 1rem;     --space-5: 1.25rem;  --space-6: 1.5rem;
 --space-8: 2rem;     --space-10: 2.5rem;  --space-12: 3rem;
 
---radius-sm: 4px;  --radius: 8px;  --radius-lg: 12px;  --radius-full: 9999px;
+--radius-sm: 4px;  --radius: 8px;  --radius-lg: 12px;  --radius-xl: 14px;  --radius-full: 9999px;
+```
+
+Controles 8px, cards 12px, painéis 14px, pílulas e chips `--radius-full`. Não use número fixo: `50%` só para círculo.
+
+```css
 ```
 
 ---
 
 ## 💫 Shadows & Focus Rings
 
-```css
---shadow-sm:            0 1px 4px  rgba(28,28,38,0.05);
---shadow:               0 2px 8px  rgba(28,28,38,0.08);
---shadow-md:            0 4px 12px rgba(28,28,38,0.10);
---shadow-hover:         0 4px 16px rgba(28,28,38,0.12);
---shadow-lg:            0 8px 24px rgba(28,28,38,0.15);
---shadow-primary:       0 2px 6px  rgba(56,207,246,0.35);
---shadow-primary-hover: 0 4px 12px rgba(56,207,246,0.45);
---shadow-success:       0 2px 6px  rgba(0,168,107,0.30);
---shadow-error:         0 2px 6px  rgba(192,57,43,0.30);
---shadow-accent:        0 2px 4px  rgba(40,51,172,0.30);
---shadow-accent-hover:  0 4px 8px  rgba(40,51,172,0.40);
+O visual é plano (ADR-127). Todo token `--shadow-*` vale `none`: nenhum card, botão, modal ou menu tem sombra. Um card mostra o limite com a borda de 1px e o fundo branco sobre o bege. Um estado selecionado usa `--selected-bg` e um anel `inset 0 0 0 1px`. Os anéis de foco ficam.
 
+```css
 --focus-ring-primary: 0 0 0 3px rgba(56,207,246,0.25);
 --focus-ring-accent:  0 0 0 3px rgba(40,51,172,0.22);
 --focus-ring-success: 0 0 0 3px rgba(0,168,107,0.22);
@@ -304,10 +307,10 @@ code, .data-cell, .coord-value {
 ### Alerts
 
 ```css
-.alert-success → success-bg / border-left: --success / title: #007A4D
-.alert-warning → warning-bg / border-left: --warning / title: #C07800
-.alert-error   → error-bg   / border-left: --error   / title: #C0392B
-.alert-info    → info-bg    / border-left: --info    / title: #252659
+.alert-success → success-bg / border: 1px --success-border / title: #007A4D
+.alert-warning → warning-bg / border: 1px --warning-border / title: #C07800
+.alert-error   → error-bg   / border: 1px --error-border   / title: #C0392B
+.alert-info    → info-bg    / border: 1px --info-border    / title: #252659
 ```
 
 ### Forms
@@ -375,6 +378,9 @@ label, .input-label { font-family: var(--font-mono); font-size: var(--text-sm); 
 | `#ffffff` on `#C0392B` | white on error | **5.44:1** | ✅ AA |
 | `#252659` on `#f4f3ee` | info on bg | **12.6:1** | ✅ AAA |
 | `#38CFF6` on `#f4f3ee` | primary on bg | **1.65:1** | ❌ NUNCA como texto |
+| `#5F6570` on `#f4f3ee` | text-muted on bg | **5.28:1** | ✅ AA |
+| `#5F6570` on `#ffffff` | text-muted on card | **5.86:1** | ✅ AA |
+| `#6D28D9` on `#f4f3ee` | coord-swapped on bg | **6.4:1** | ✅ AA |
 
 ---
 
@@ -384,11 +390,9 @@ As cores abaixo são fiéis ao saíra e **não devem ser alteradas**. Os conflit
 
 | Cor | Uso pretendido | Ratio real | Problema | Decisão sugerida |
 |---|---|---|---|---|
-| `#6c757d` (text-muted) on `#f4f3ee` | Texto secundário | **4.22:1** | Falha AA (mínimo 4.5:1) | Usar apenas para texto não-essencial (decorativo, metadata) ou aumentar tamanho para 18px+ (AA large = 3:1) |
 | `#00A86B` (success) on `#f4f3ee` | Texto de status | **2.77:1** | Falha AA e AAA | Usar `#00A86B` **apenas como fundo/ícone/borda** — nunca como texto. Para texto, o token `#007A4D` (já no doc em badges) tem 4.86:1 ✅ |
 | `#ffffff` on `#00A86B` (btn-success) | Texto branco no botão | **3.08:1** | Falha AA — o doc afirma 4.7:1, mas o valor real é 3.08:1 | Usar texto `#1C1C26` no lugar de branco (contraste 4.43:1 ✅ AA), ou aceitar o desvio em botões grandes |
 | `#C07800` (warning dark) on `#f4f3ee` | Texto em badges warning | **3.19:1** | Falha AA | Usar apenas em badges grandes (18px+) onde AA large (3:1) se aplica, ou escurecer só nesse contexto de uso |
-| `#8b5cf6` (coord-swapped) on `#f4f3ee` | Label de coordenada | **3.81:1** | Falha AA | Cor não vem do pássaro — pode ser ajustada sem conflito de identidade. `#6d28d9` tem 6.4:1 ✅ |
 
 > **Nota sobre `btn-success`:** O valor `4.7:1` documentado na seção anterior está incorreto. O contraste real de `#ffffff` sobre `#00A86B` é **3.08:1**, abaixo do mínimo AA. O único conflito de identidade visual entre os problemas listados acima é o `btn-success` — os demais ou têm workarounds contextuais ou (no caso do `coord-swapped`) envolvem uma cor que não é do pássaro.
 
@@ -405,6 +409,7 @@ As cores abaixo são fiéis ao saíra e **não devem ser alteradas**. Os conflit
 7. ❌ **Não usar Source Serif 4 sem `font-optical-sizing: auto`** — perde o benefício do eixo óptico variável
 8. ❌ **Não usar Source Serif 4 em labels de input ou dados tabulares** — usar Space Mono nesses contextos
 9. ❌ **Não importar pesos tipográficos não-utilizados** — impacta performance de carregamento no Shiny
+10. ❌ **Não usar sombra, gradiente decorativo nem borda lateral grossa** — ADR-127, ADR-040
 
 ---
 

@@ -112,7 +112,7 @@
   min-height: 190px;
   padding: var(--space-4);
   border: 2px dashed var(--border-default);
-  background: linear-gradient(140deg, rgba(40, 51, 172, 0.02), rgba(56, 207, 246, 0.08));
+  background: var(--bg-card);
   overflow: visible;
   display: flex;
   align-items: center;
@@ -208,13 +208,13 @@
 
 .upload-dropzone.is-dragover {
   border-color: var(--primary);
-  background: linear-gradient(140deg, rgba(56, 207, 246, 0.14), rgba(40, 51, 172, 0.07));
+  background: var(--selected-bg);
   box-shadow: var(--focus-ring-primary);
 }
 
 .upload-dropzone.has-file {
   border-color: var(--success-border);
-  background: linear-gradient(140deg, rgba(0, 168, 107, 0.08), rgba(56, 207, 246, 0.08));
+  background: var(--success-bg);
 }
 
 .upload-dropzone-copy {
@@ -299,7 +299,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: var(--radius);
   min-height: 40px;
 }
 
@@ -387,7 +387,7 @@
   align-items: flex-start;
   gap: 10px;
   padding: 10px 14px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
   border: 1px solid transparent;
@@ -407,7 +407,7 @@
 .upload-info-chip--neutral {
   background: rgba(40, 51, 172, 0.04);
   border-color: rgba(40, 51, 172, 0.08);
-  color: #6c757d;
+  color: var(--text-muted);
 }
 
 .upload-info-chip--privacy {
@@ -433,7 +433,7 @@
 .homepage-container .stats-container .stat-box {
   background: #f4f3ee;
   border: 1.5px solid rgba(40, 51, 172, 0.08);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 16px 12px;
   text-align: center;
   transition: all 0.2s ease;
@@ -444,7 +444,7 @@
   border-color: rgba(40, 51, 172, 0.18);
   background: rgba(40, 51, 172, 0.07);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(28, 28, 38, 0.13);
+  box-shadow: none;
 }
 
 .homepage-container .stats-container .stat-box .stat-value {
@@ -460,7 +460,7 @@
 .homepage-container .stats-container .stat-box .stat-label {
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
-  color: #6c757d;
+  color: var(--text-muted);
   margin-top: 5px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -535,7 +535,7 @@
   left: calc(50% + 20px);
   right: calc(-50% + 20px);
   height: 2px;
-  background: linear-gradient(90deg, #38CFF6 0%, rgba(56, 207, 246, 0.2) 100%);
+  background: var(--border-strong);
   z-index: 0;
   pointer-events: none;
 }
@@ -560,7 +560,7 @@
   background: #38CFF6;
   border-color: #38CFF6;
   color: #1C1C26;
-  box-shadow: 0 2px 6px rgba(56, 207, 246, 0.35);
+  box-shadow: none;
 }
 
 .step-label {
@@ -575,7 +575,7 @@
 
 .step-sublabel {
   font-size: var(--text-xs);
-  color: #6c757d;
+  color: var(--text-muted);
   margin-top: 3px;
   line-height: var(--leading-normal);
   max-width: 80px;

@@ -43,21 +43,20 @@
   font-style: italic;
 }
 
-/* Version badge — mirrors the website navbar pill (Tangara plumage gradient:
-   cyan -> teal -> green). Sits in the navbar item row beside the language
-   selector so users can confirm at a glance which version they run; pairs with
+/* Version badge: a flat cyan pill (ADR-127). Sits in the navbar item row
+   beside the language selector so users can confirm at a glance which version they run; pairs with
    the stale-session warning (saira_session_is_stale). align-self:center keeps it
    on the shared horizontal baseline of the other navbar items. Dark text keeps
-   AA contrast over the light/medium gradient; box-shadow:none keeps cards flat. */
+   AA contrast over the cyan fill. */
 .navbar .ver-badge {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   color: var(--text-primary);
-  background: linear-gradient(120deg, var(--primary) 0%, var(--primary-hover) 45%, var(--success) 100%);
+  background: var(--primary);
   border: 1px solid transparent;
-  border-radius: 100px;
+  border-radius: var(--radius-full);
   padding: 0.14em 0.72em;
   text-decoration: none;
   display: inline-flex;
