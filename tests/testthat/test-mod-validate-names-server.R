@@ -462,6 +462,13 @@ testthat::test_that("module stream state grows incrementally per processed batch
         scientificName = paste("Species", seq_len(250)),
         stringsAsFactors = FALSE
     )
+    # Pin the default provider set to GBIF-only (no BR cache). With a real
+    # Fauna BR cache, the 250 fake names reach the fuzzy matcher and the test
+    # runs out of memory.
+    testthat::local_mocked_bindings(
+        brprovider_data_available = function(provider_id) FALSE,
+        .package = "saira"
+    )
 
     testthat::with_mocked_bindings(
         init_taxadb_provider = function(provider) list(provider = provider),
