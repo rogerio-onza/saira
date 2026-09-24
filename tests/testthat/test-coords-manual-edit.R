@@ -114,3 +114,36 @@ testthat::test_that("revalidate_coord_rows keeps the row index of the full resul
     testthat::expect_false(res$valid[[2]])
     testthat::expect_identical(nrow(revalidate_coord_rows(rows[0, ], integer(0))), 0L)
 })
+
+testthat::test_that("apply_manual_coord_edits_to_result shows the edited point and its new diagnosis", {
+    res <- data.frame(
+        .row_index = 1:3, lat_num = c(-10, 20, -30), lon_num = c(-50, -40, -60),
+        diagnostic = c("ok", "sea", "sea"), diagnostic_family = c("ok", "sea", "sea"),
+        valid = c(TRUE, FALSE, FALSE), stringsAsFactors = FALSE
+    )
+    edits <- data.frame(
+        occurrenceID = c("b", "c"), row_index = c(2L, 3L),
+        decimalLatitude = c("-20", "-31"), decimalLongitude = c("-45", "-35"),
+        diagnostic = c("ok", "sea"), diagnostic_family = c("ok", "sea"), valid = c(TRUE, FALSE),
+        stringsAsFactors = FALSE
+    )
+
+    out <- apply_manual_coord_edits_to_result(res, edits)
+
+    testthat::expect_identical(out$edited, c(FALSE, TRUE, TRUE))
+    testthat::expect_identical(out$lat_num, c(-10, -20, -31))
+    # A point that now passes reads as corrected; one still at sea keeps its problem.
+    testthat::expect_identical(out$diagnostic_family, c("ok", "corrected", "sea"))
+    testthat::expect_identical(out$valid, c(TRUE, TRUE, FALSE))
+    testthat::expect_identical(apply_manual_coord_edits_to_result(res, NULL)$edited, rep(FALSE, 3))
+})
+
+testthat::test_that("build_leaflet_data keeps only edited rows under the edited filter", {
+    res <- data.frame(
+        .row_index = 1:2, lat_num = c(-10, -20), lon_num = c(-50, -45),
+        diagnostic = c("ok", "corrected"), diagnostic_family = c("ok", "corrected"),
+        edited = c(FALSE, TRUE), stringsAsFactors = FALSE
+    )
+    testthat::expect_identical(build_leaflet_data(res, filter = "edited")$.row_index, 2L)
+    testthat::expect_identical(nrow(build_leaflet_data(res, filter = "all")), 2L)
+})

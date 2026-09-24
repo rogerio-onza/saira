@@ -4773,6 +4773,39 @@ table.dataTable tbody tr.validate-invalid td {
   border: 1px solid var(--border-light);
 }
 
+/* Manual coordinate edit (ADR-129): the Edited badge, the undo link, the hint
+   above the table and the two cells that take a double-click. */
+.coord-issue-badge-edited {
+  background: var(--badge-edited-bg);
+  color: var(--badge-edited-fg);
+  border: 1px solid transparent;
+}
+
+.coords-edit-undo {
+  margin-left: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--step-active);
+  white-space: nowrap;
+}
+
+.coords-edit-hint {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.validate-results-table td:nth-child(3),
+.validate-results-table td:nth-child(4) {
+  cursor: text;
+}
+
+.pill-edited.active {
+  background: var(--badge-edited-bg);
+  border-color: var(--badge-edited-fg);
+  color: var(--badge-edited-fg);
+}
+
 .stream-filter-pills,
 .coords-filter-pills {
   display: flex;

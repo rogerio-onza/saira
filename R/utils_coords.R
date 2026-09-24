@@ -1468,6 +1468,44 @@ revalidate_coord_rows <- function(df, row_index,
     res
 }
 
+#' Overlay manual coordinate edits onto a validation result
+#'
+#' Runs after \code{apply_coord_corrections_to_result()}, so a manual edit wins
+#' over an automatic correction of the same row. A point that passes its
+#' revalidation reads as \code{"corrected"}; one that still fails shows the new
+#' problem, so the person sees at once whether the fix worked.
+#'
+#' @param res Validation result (after the automatic corrections).
+#' @param edits data.frame with \code{row_index}, \code{decimalLatitude},
+#'   \code{decimalLongitude}, \code{diagnostic}, \code{diagnostic_family} and
+#'   \code{valid}, or NULL.
+#' @return \code{res} with a logical \code{edited} column.
+#' @noRd
+apply_manual_coord_edits_to_result <- function(res, edits = NULL) {
+    if (!is.data.frame(res) || nrow(res) == 0L) return(res)
+    res$edited <- FALSE
+    if (!is.data.frame(edits) || nrow(edits) == 0L || !".row_index" %in% names(res)) {
+        return(res)
+    }
+    pos <- match(as.integer(edits$row_index), res$.row_index)
+    ok <- !is.na(pos)
+    if (!any(ok)) return(res)
+    p <- pos[ok]
+    e <- edits[ok, , drop = FALSE]
+    passes <- as.character(e$diagnostic_family) %in% "ok"
+    res$lat_num[p] <- suppressWarnings(as.numeric(e$decimalLatitude))
+    res$lon_num[p] <- suppressWarnings(as.numeric(e$decimalLongitude))
+    if ("diagnostic" %in% names(res)) {
+        res$diagnostic[p] <- ifelse(passes, "corrected", as.character(e$diagnostic))
+    }
+    if ("diagnostic_family" %in% names(res)) {
+        res$diagnostic_family[p] <- ifelse(passes, "corrected", as.character(e$diagnostic_family))
+    }
+    if ("valid" %in% names(res)) res$valid[p] <- passes
+    res$edited[p] <- TRUE
+    res
+}
+
 #' Drop manual edits whose occurrenceID left the data
 #'
 #' A new validation can run on different data (a new mapping, a new upload of
@@ -2023,7 +2061,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
 
     if (all(c(".row_index", "lat_num", "lon_num", "diagnostic", "diagnostic_family") %in% names(coords_result_df))) {
         filter_key <- as.character(if (is.null(filter)) "all" else filter)
-        allowed_filters <- c("all", "problems", "validity", "sea", "zero_equal", "reference")
+        allowed_filters <- c("all", "problems", "validity", "sea", "zero_equal", "reference", "edited")
         if (!(filter_key %in% allowed_filters)) {
             filter_key <- "all"
         }
@@ -2040,6 +2078,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             sea = fam == "sea",
             zero_equal = fam == "zero_equal",
             reference = fam == "reference",
+            edited = if ("edited" %in% names(coords_result_df)) coords_result_df$edited %in% TRUE else rep(FALSE, nrow(coords_result_df)),
             rep(TRUE, nrow(coords_result_df))
         )
 

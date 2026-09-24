@@ -44,7 +44,16 @@ mod_validate_coords_ui <- function(id) {
                     )
                 )
             )
-        )
+        ),
+        # The undo link lives inside re-rendered table cells, so one delegated
+        # handler serves every row (same pattern as the names review links).
+        shiny::tags$script(shiny::HTML(sprintf(
+            "$(document).on('click', '.coords-edit-undo', function(e) {
+               e.preventDefault();
+               Shiny.setInputValue('%s', parseInt(this.dataset.row, 10), {priority: 'event'});
+             });",
+            ns("undo_edit")
+        )))
     )
 }
 
@@ -75,8 +84,13 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             shiny::showNotification(ui = message, type = type, duration = duration, id = notification_id)
         }
 
-        coord_filter_values <- c("all", "problems", "validity", "sea", "zero_equal", "reference")
+        coord_filter_values <- c("all", "problems", "validity", "sea", "zero_equal", "reference", "edited")
         coord_validation_r <- shiny::reactiveVal(NULL)
+        # Coordinates fixed by hand in the table, one row per record (ADR-129):
+        # occurrenceID, row_index, the new decimalLatitude/decimalLongitude and
+        # the diagnosis of the revalidated point. Kept apart from
+        # rv$coords_corrections so validating again does not erase them.
+        manual_edits_rv <- shiny::reactiveVal(NULL)
 
         rv <- shiny::reactiveValues(
             starting = FALSE,
@@ -210,12 +224,13 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             if (is.null(res)) {
                 return(res)
             }
-            apply_coord_corrections_to_result(
+            res <- apply_coord_corrections_to_result(
                 res,
                 coords_corrections = rv$coords_corrections,
                 country_fills = rv$country_fills,
                 occ_ids = rv$validation_occ_ids
             )
+            apply_manual_coord_edits_to_result(res, manual_edits_rv())
         })
 
         filtered_result_r <- shiny::reactive({
@@ -236,6 +251,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 sea = fam == "sea",
                 zero_equal = fam == "zero_equal",
                 reference = fam == "reference",
+                edited = res$edited %in% TRUE,
                 rep(TRUE, nrow(res))
             )
 
@@ -253,7 +269,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     validity = 0L,
                     sea = 0L,
                     zero_equal = 0L,
-                    reference = 0L
+                    reference = 0L,
+                    edited = 0L
                 ))
             }
 
@@ -264,14 +281,12 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 validity = as.integer(counts$validity %||% 0L),
                 sea = as.integer(counts$sea %||% 0L),
                 zero_equal = as.integer(counts$zero_equal %||% 0L),
-                reference = as.integer(counts$reference %||% 0L)
+                reference = as.integer(counts$reference %||% 0L),
+                edited = sum(res$edited %in% TRUE)
             )
         })
 
-        map_data_r <- shiny::reactive({
-            res <- effective_validation_r()
-            shiny::req(res)
-
+        map_labels <- function() {
             label_keys <- c(
                 ok = "validate_coords_diag_ok",
                 validity_missing = "validate_coords_diag_validity_missing",
@@ -280,7 +295,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 sea = "validate_coords_diag_sea",
                 zero_equal = "validate_coords_diag_zero_equal",
                 identical_all = "validate_coords_diag_identical_all",
-                reference = "validate_coords_diag_reference"
+                reference = "validate_coords_diag_reference",
+                corrected = "validate_coords_diag_corrected"
             )
             issue_labels <- vapply(label_keys, function(k) tr(k, lang_r()), FUN.VALUE = character(1))
             popup_labels <- list(
@@ -289,12 +305,18 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 lat = tr("validate_coords_col_lat", lang_r()),
                 lon = tr("validate_coords_col_lon", lang_r())
             )
+            list(issue = issue_labels, popup = popup_labels)
+        }
 
+        map_data_r <- shiny::reactive({
+            res <- effective_validation_r()
+            shiny::req(res)
+            labels <- map_labels()
             build_leaflet_data(
                 coords_result_df = res,
                 filter = active_filter(),
-                issue_labels = issue_labels,
-                popup_labels = popup_labels
+                issue_labels = labels$issue,
+                popup_labels = labels$popup
             )
         })
 
@@ -467,6 +489,11 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 list(key = "zero_equal", class = "pill-warning", label_key = "validate_coords_filter_zero_equal"),
                 list(key = "reference", class = "pill-reference", label_key = "validate_coords_filter_reference")
             )
+            if (isTRUE(counts[["edited"]] > 0L)) {
+                pill_defs <- c(pill_defs, list(
+                    list(key = "edited", class = "pill-edited", label_key = "validate_coords_filter_edited")
+                ))
+            }
 
             shiny::div(
                 class = "coords-filter-pills",
@@ -546,7 +573,9 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 return(NULL)
             }
 
-            filtered <- filtered_result_r()
+            # table_base_r(), not filtered_result_r(): an edit must not rebuild
+            # this container, or the table would lose its page (ADR-129).
+            filtered <- table_base_r()
             table_body <- if (!is.data.frame(filtered) || nrow(filtered) == 0L) {
                 shiny::div(
                     class = "alert alert-info mb-0",
@@ -555,7 +584,10 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     tr("validate_coords_datatable_zero_records", lang_r())
                 )
             } else {
-                shiny::div(class = "saira-table-shell", DT::dataTableOutput(ns("issues_table")))
+                shiny::tagList(
+                    shiny::p(class = "coords-edit-hint", tr("validate_coords_table_edit_hint", lang_r())),
+                    shiny::div(class = "saira-table-shell", DT::dataTableOutput(ns("issues_table")))
+                )
             }
 
             bslib::card(
@@ -593,10 +625,20 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             leaflet::setView(map = map_obj, lng = 0, lat = 0, zoom = 2)
         })
 
+        # Markers travel through a proxy, and Leaflet drops a proxy call made
+        # before the widget exists, which left the map empty after each run
+        # until a filter was clicked. The map reports its bounds once drawn,
+        # so that first report marks it ready and triggers the first draw.
+        map_ready <- shiny::reactiveVal(FALSE)
+        shiny::observeEvent(input$coords_map_bounds, map_ready(TRUE), ignoreInit = TRUE)
+        shiny::observeEvent(coord_validation_r(), {
+            if (is.null(coord_validation_r())) map_ready(FALSE)
+        }, ignoreNULL = FALSE)
+
         shiny::bindEvent(
             shiny::observe({
                 res <- coord_validation_r()
-                shiny::req(res)
+                shiny::req(res, map_ready())
                 map_df <- map_data_r()
 
                 proxy <- leaflet::leafletProxy(ns("coords_map"))
@@ -618,7 +660,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     color = ~color,
                     fillColor = ~color,
                     fillOpacity = 0.85,
-                    popup = ~popup_html
+                    popup = ~popup_html,
+                    layerId = ~paste0("r", .row_index)
                 )
 
                 lon_values <- suppressWarnings(as.numeric(map_df$lon_num))
@@ -653,9 +696,33 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     lat2 = lat_max
                 )
             }),
-            effective_validation_r(),
-            active_filter()
+            # Not effective_validation_r(): a manual edit moves its own marker
+            # (refresh_marker below) and must not redraw or re-zoom the map.
+            coord_validation_r(),
+            rv$coords_corrections,
+            rv$country_fills,
+            active_filter(),
+            map_ready()
         )
+
+        refresh_marker <- function(row_index) {
+            eff <- shiny::isolate(effective_validation_r())
+            if (!is.data.frame(eff)) return(invisible(NULL))
+            proxy <- leaflet::leafletProxy(ns("coords_map"))
+            leaflet::removeMarker(proxy, layerId = paste0("r", row_index))
+            labels <- shiny::isolate(map_labels())
+            md <- build_leaflet_data(
+                eff[eff$.row_index %in% row_index, , drop = FALSE],
+                filter = "all", issue_labels = labels$issue, popup_labels = labels$popup
+            )
+            if (nrow(md) == 0L) return(invisible(NULL))
+            leaflet::addCircleMarkers(
+                map = proxy, data = md, lat = ~lat_num, lng = ~lon_num,
+                radius = 6, stroke = TRUE, weight = 1, color = ~color,
+                fillColor = ~color, fillOpacity = 0.85, popup = ~popup_html,
+                layerId = ~paste0("r", .row_index)
+            )
+        }
 
         diag_label_key <- function(diag) {
             switch(as.character(diag),
@@ -686,10 +753,9 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             "coord-issue-badge-warning"
         }
 
-        output$issues_table <- DT::renderDataTable({
-            res <- filtered_result_r()
-            shiny::req(res, nrow(res) > 0L)
-
+        # One row per record: badge, point, country. Built for the first render
+        # and again for each proxy update after a manual edit.
+        build_issues_table_df <- function(res) {
             diag <- as.character(res$diagnostic)
             diag[is.na(diag) | !nzchar(diag)] <- "validity_bounds"
             fam <- as.character(res$diagnostic_family)
@@ -707,6 +773,15 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             labels <- unname(label_map[diag])
             classes <- unname(class_map[fam])
             badges <- paste0("<span class=\"coord-issue-badge ", classes, "\">", labels, "</span>")
+            edited <- if ("edited" %in% names(res)) res$edited %in% TRUE else rep(FALSE, nrow(res))
+            if (any(edited)) {
+                badges[edited] <- paste0(
+                    "<span class=\"coord-issue-badge coord-issue-badge-edited\">",
+                    tr("validate_coords_edit_badge", lang_r()), "</span> ", badges[edited],
+                    " <a href=\"#\" class=\"coords-edit-undo\" data-row=\"", res$.row_index[edited], "\">",
+                    tr("validate_coords_edit_undo", lang_r()), "</a>"
+                )
+            }
 
             lat_display <- ifelse(is.na(res$lat_num), "", format(round(res$lat_num, 6), trim = TRUE))
             lon_display <- ifelse(is.na(res$lon_num), "", format(round(res$lon_num, 6), trim = TRUE))
@@ -729,6 +804,37 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 tr("validate_coords_col_country", lang_r()),
                 tr("validate_coords_col_iso3", lang_r())
             )
+            table_df
+        }
+
+        # The rows the table shows. It changes with a new validation, a filter
+        # or a bulk correction, never with a manual edit: an edit patches the
+        # rendered rows through the proxy, so the page, the sort order and the
+        # search stay where the person left them (ADR-129).
+        table_base_r <- shiny::reactive({
+            coord_validation_r()
+            active_filter()
+            rv$coords_corrections
+            rv$country_fills
+            shiny::isolate(filtered_result_r())
+        })
+        table_proxy <- DT::dataTableProxy("issues_table")
+
+        refresh_table_rows <- function() {
+            base <- shiny::isolate(table_base_r())
+            eff <- shiny::isolate(effective_validation_r())
+            if (!is.data.frame(base) || nrow(base) == 0L || !is.data.frame(eff)) {
+                return(invisible(NULL))
+            }
+            rows <- eff[match(base$.row_index, eff$.row_index), , drop = FALSE]
+            DT::replaceData(table_proxy, build_issues_table_df(rows),
+                            resetPaging = FALSE, rownames = FALSE)
+        }
+
+        output$issues_table <- DT::renderDataTable({
+            res <- table_base_r()
+            shiny::req(res, nrow(res) > 0L)
+            table_df <- build_issues_table_df(res)
 
             DT::datatable(
                 table_df,
@@ -753,9 +859,104 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 ),
                 class = "display compact validate-results-table",
                 rownames = FALSE,
-                escape = FALSE
+                escape = FALSE,
+                # Only latitude (column 2) and longitude (column 3) take an edit.
+                editable = list(target = "cell", disable = list(columns = c(0L, 1L, 4L, 5L)))
             )
         })
+
+        # A double-clicked latitude or longitude, typed and confirmed with
+        # Enter. The value is checked, the point revalidated, and the edit
+        # stored by occurrenceID.
+        shiny::observeEvent(input$issues_table_cell_edit, {
+            info <- input$issues_table_cell_edit
+            base <- table_base_r()
+            row_pos <- suppressWarnings(as.integer(info$row))
+            if (!is.data.frame(base) || length(row_pos) != 1L || is.na(row_pos) ||
+                    row_pos < 1L || row_pos > nrow(base)) {
+                return(invisible(NULL))
+            }
+            axis <- if (identical(as.integer(info$col), 2L)) "lat" else if (identical(as.integer(info$col), 3L)) "lon" else NA
+            if (is.na(axis)) return(invisible(NULL))
+
+            row_index <- base$.row_index[[row_pos]]
+            occ_ids <- rv$validation_occ_ids
+            occ <- if (length(occ_ids) >= row_index) occ_ids[[row_index]] else NA_character_
+            if (!isTRUE(coords_edit_allowed(occ_ids)[row_index])) {
+                notify_saira(tr("validate_coords_edit_blocked_id", lang_r()), type = "warning", key = "coords_edit")
+                refresh_table_rows()
+                return(invisible(NULL))
+            }
+
+            parsed <- parse_coord_edit(info$value, axis)
+            if (!is.null(parsed$error)) {
+                notify_saira(tr(parsed$error, lang_r()), type = "error", key = "coords_edit")
+                refresh_table_rows()
+                return(invisible(NULL))
+            }
+
+            eff <- effective_validation_r()
+            current <- eff[match(row_index, eff$.row_index), , drop = FALSE]
+            lat_new <- if (axis == "lat") parsed$value else current$lat_num[[1]]
+            lon_new <- if (axis == "lon") parsed$value else current$lon_num[[1]]
+
+            df <- mapped_data_r()
+            row_df <- df[row_index, c("decimalLatitude", "decimalLongitude", "country"), drop = FALSE]
+            row_df$decimalLatitude <- as.character(lat_new)
+            row_df$decimalLongitude <- as.character(lon_new)
+            reval <- tryCatch(
+                revalidate_coord_rows(row_df, row_index = row_index, profile = "complete"),
+                error = function(e) NULL
+            )
+            if (!is.data.frame(reval) || nrow(reval) != 1L) {
+                notify_saira(tr("validate_coords_edit_failed", lang_r()), type = "error", key = "coords_edit")
+                refresh_table_rows()
+                return(invisible(NULL))
+            }
+
+            new_row <- data.frame(
+                occurrenceID = as.character(occ),
+                row_index = as.integer(row_index),
+                decimalLatitude = as.character(lat_new),
+                decimalLongitude = as.character(lon_new),
+                diagnostic = as.character(reval$diagnostic[[1]]),
+                diagnostic_family = as.character(reval$diagnostic_family[[1]]),
+                valid = isTRUE(reval$valid[[1]]),
+                stringsAsFactors = FALSE
+            )
+            edits <- manual_edits_rv()
+            edits <- if (is.data.frame(edits)) {
+                rbind(edits[edits$row_index != row_index, , drop = FALSE], new_row)
+            } else {
+                new_row
+            }
+            manual_edits_rv(edits)
+            refresh_table_rows()
+            refresh_marker(row_index)
+
+            if (identical(new_row$diagnostic_family, "ok")) {
+                notify_saira(tr("validate_coords_edit_saved_ok", lang_r()), type = "message", key = "coords_edit")
+            } else {
+                notify_saira(
+                    sprintf(tr("validate_coords_edit_saved_issue", lang_r()),
+                            tr(diag_label_key(new_row$diagnostic), lang_r())),
+                    type = "warning", key = "coords_edit"
+                )
+            }
+        }, ignoreInit = TRUE)
+
+        shiny::observeEvent(input$undo_edit, {
+            row_index <- suppressWarnings(as.integer(input$undo_edit))
+            edits <- manual_edits_rv()
+            if (!is.data.frame(edits) || is.na(row_index) || !row_index %in% edits$row_index) {
+                return(invisible(NULL))
+            }
+            edits <- edits[edits$row_index != row_index, , drop = FALSE]
+            manual_edits_rv(if (nrow(edits) == 0L) NULL else edits)
+            refresh_table_rows()
+            refresh_marker(row_index)
+            notify_saira(tr("validate_coords_edit_undone", lang_r()), type = "message", key = "coords_edit")
+        }, ignoreInit = TRUE)
 
         shiny::observeEvent(input$validate,
             {
@@ -876,6 +1077,21 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     as.character(df$occurrenceID)
                 } else {
                     character(0)
+                }
+
+                # Manual edits survive a new validation. The row of each is
+                # looked up again by occurrenceID, and an edit whose record
+                # left the data is dropped with a notice.
+                kept <- drop_orphan_coord_edits(manual_edits_rv(), rv$validation_occ_ids)
+                if (is.data.frame(kept$edits)) {
+                    kept$edits$row_index <- match(kept$edits$occurrenceID, rv$validation_occ_ids)
+                }
+                manual_edits_rv(kept$edits)
+                if (kept$dropped > 0L) {
+                    notify_saira(
+                        sprintf(tr("validate_coords_edit_orphans", lang_r()), kept$dropped),
+                        type = "warning", key = "coords_edit_orphans"
+                    )
                 }
 
                 # Detect transposed / sign-flipped coordinates correctable
@@ -1396,6 +1612,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rv$utm_axes <- NULL
                 rv$utm_candidates <- NULL
                 rv$utm_applied <- FALSE
+                manual_edits_rv(NULL)
                 rv$starting <- FALSE
                 rv$running <- FALSE
                 rv$start_requested <- FALSE
@@ -1406,7 +1623,17 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
         result_r <- shiny::reactive(coord_validation_r())
         attr(result_r, "filtered_data") <- filtered_result_r
         attr(result_r, "active_filter") <- active_filter
-        attr(result_r, "coords_correction_payload") <- shiny::reactive(rv$coords_corrections)
+        # Generalization, Export and the summary read this one payload, so the
+        # manual edits reach them with no change in app_server.R (ADR-129).
+        attr(result_r, "coords_correction_payload") <- shiny::reactive({
+            edits <- manual_edits_rv()
+            manual <- if (is.data.frame(edits)) {
+                edits[, c("occurrenceID", "decimalLatitude", "decimalLongitude"), drop = FALSE]
+            } else {
+                NULL
+            }
+            merge_manual_coord_edits(rv$coords_corrections, manual)
+        })
         attr(result_r, "country_fill_payload") <- shiny::reactive(rv$country_fills)
         return(result_r)
     })

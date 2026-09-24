@@ -2731,6 +2731,46 @@
     "pt": "Diagnóstico de Coordenadas",
     "en": "Coordinate Diagnostics"
   },
+  "validate_coords_filter_edited": {
+    "pt": "Editadas",
+    "en": "Edited"
+  },
+  "validate_coords_table_edit_hint": {
+    "pt": "Clique duas vezes numa latitude ou longitude para corrigir. Enter salva.",
+    "en": "Double-click a latitude or longitude to fix it. Enter saves."
+  },
+  "validate_coords_edit_badge": {
+    "pt": "Editada",
+    "en": "Edited"
+  },
+  "validate_coords_edit_undo": {
+    "pt": "Desfazer",
+    "en": "Undo"
+  },
+  "validate_coords_edit_blocked_id": {
+    "pt": "Esta linha não pode ser editada: o occurrenceID está vazio ou repetido.",
+    "en": "This row cannot be edited: its occurrenceID is empty or repeated."
+  },
+  "validate_coords_edit_failed": {
+    "pt": "Não foi possível validar o novo ponto. O valor não foi salvo.",
+    "en": "The new point could not be validated. The value was not saved."
+  },
+  "validate_coords_edit_saved_ok": {
+    "pt": "Coordenada corrigida. O ponto passou na validação.",
+    "en": "Coordinate fixed. The point passed validation."
+  },
+  "validate_coords_edit_saved_issue": {
+    "pt": "Coordenada salva, mas o ponto ainda tem um problema: %s.",
+    "en": "Coordinate saved, but the point still has a problem: %s."
+  },
+  "validate_coords_edit_undone": {
+    "pt": "Edição desfeita. A coordenada original voltou.",
+    "en": "Edit undone. The original coordinate is back."
+  },
+  "validate_coords_edit_orphans": {
+    "pt": "%d correção(ões) manual(is) descartada(s): o registro não está mais nos dados.",
+    "en": "%d manual fix(es) dropped: the record is no longer in the data."
+  },
   "validate_coords_edit_error_empty": {
     "pt": "Digite um valor.",
     "en": "Type a value."
