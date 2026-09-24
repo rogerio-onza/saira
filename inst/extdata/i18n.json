@@ -2263,6 +2263,66 @@
     "pt": "Saiu do país",
     "en": "Left country"
   },
+  "sc_mode_summary": {
+    "pt": "%s registros de %s espécies sensíveis",
+    "en": "%s records of %s sensitive species"
+  },
+  "sc_matrix_title": {
+    "pt": "Tabela de decisão",
+    "en": "Decision table"
+  },
+  "sc_matrix_hint": {
+    "pt": "O primeiro Sim define a grade",
+    "en": "The first Yes sets the grid"
+  },
+  "sc_matrix_col_group": {
+    "pt": "Grupo",
+    "en": "Group"
+  },
+  "sc_matrix_col_species": {
+    "pt": "Espécies",
+    "en": "Species"
+  },
+  "sc_matrix_col_result": {
+    "pt": "Resultado",
+    "en": "Result"
+  },
+  "sc_matrix_q43_head": {
+    "pt": "4.3 · ~11 km",
+    "en": "4.3 · ~11 km"
+  },
+  "sc_matrix_q43_short": {
+    "pt": "perturbação ou exploração?",
+    "en": "disturbance or exploitation?"
+  },
+  "sc_matrix_q44_head": {
+    "pt": "4.4 · ~1 km",
+    "en": "4.4 · ~1 km"
+  },
+  "sc_matrix_q44_short": {
+    "pt": "coleta ou dano deliberado?",
+    "en": "collection or deliberate damage?"
+  },
+  "sc_matrix_q45_head": {
+    "pt": "4.5 · ~100 m",
+    "en": "4.5 · ~100 m"
+  },
+  "sc_matrix_q45_short": {
+    "pt": "ameaça baixa a média?",
+    "en": "low to medium threat?"
+  },
+  "sc_legend_pending": {
+    "pt": "Aguardando decisão",
+    "en": "Awaiting a decision"
+  },
+  "sc_about_text": {
+    "pt": "A tabela vem de Chapman (2020), o guia do GBIF para publicar dados de espécies sensíveis. Responda às perguntas de cada grupo na ordem. O primeiro Sim define a grade: a coordenada publicada é arredondada para 0,1° (~11 km), 0,01° (~1 km) ou 0,001° (~100 m). Se as três respostas forem Não, as coordenadas saem como estão.",
+    "en": "The table comes from Chapman (2020), the GBIF guide to publishing sensitive species data. Answer each group's questions in order. The first Yes sets the grid: the published coordinate is rounded to 0.1° (~11 km), 0.01° (~1 km) or 0.001° (~100 m). If all three answers are No, the coordinates are published as they are."
+  },
+  "sc_about_ref": {
+    "pt": "Chapman, A. D. (2020). Current Best Practices for Generalizing Sensitive Species Occurrence Data. GBIF Secretariat. doi:10.15468/doc-5jp4-5g10",
+    "en": "Chapman, A. D. (2020). Current Best Practices for Generalizing Sensitive Species Occurrence Data. GBIF Secretariat. doi:10.15468/doc-5jp4-5g10"
+  },
   "sc_legend_real": {
     "pt": "Origem",
     "en": "Origin"

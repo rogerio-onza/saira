@@ -43,7 +43,6 @@ testthat::test_that("upstream reset signal clears the generalization determinati
             group_levels_rv(list(cr = "high"))
             species_overrides_rv(list("Panthera onca" = "extreme"))
             preview_tier_rv("high")
-            result_filter_rv("cr")
             session$flushReact()
 
             signal(1L)
@@ -52,7 +51,6 @@ testthat::test_that("upstream reset signal clears the generalization determinati
             testthat::expect_length(group_levels_rv(), 0L)
             testthat::expect_length(species_overrides_rv(), 0L)
             testthat::expect_null(preview_tier_rv())
-            testthat::expect_identical(result_filter_rv(), "all")
         }
     )
 })
@@ -192,7 +190,7 @@ testthat::test_that("a per-species exception overrides the group then clears bac
     )
 })
 
-testthat::test_that("threat-level filter narrows the result list to one group", {
+testthat::test_that("the decision table has one row per threat group and a neutral result chip", {
     local_sensitive_fixture(
         c("Panthera onca", "Leopardus wiedii"),
         category = c("EN", "VU")
@@ -212,28 +210,17 @@ testthat::test_that("threat-level filter narrows the result list to one group", 
         {
             session$setInputs(sensitive_mode = "generalize")
             session$flushReact()
+            html <- paste(output$assessment_panel$html, collapse = " ")
+            # One row per group, each with its three cascade questions.
+            testthat::expect_match(html, "q43_en", fixed = TRUE)
+            testthat::expect_match(html, "q45_vu", fixed = TRUE)
+            # The species of a row ride in the count cell's tooltip.
+            testthat::expect_match(html, 'title="Panthera onca"', fixed = TRUE)
 
-            # Default: filter is "all" and both groups' species are listed.
-            testthat::expect_identical(result_filter_rv(), "all")
-            html_all <- paste(output$result_card$html, collapse = " ")
-            testthat::expect_true(grepl("Panthera onca", html_all))
-            testthat::expect_true(grepl("Leopardus wiedii", html_all))
-
-            # Filter to VU: only the VU species remains in the result list.
-            session$setInputs(rfilter_vu = 1)
+            session$setInputs(q43_en = "yes")
             session$flushReact()
-            testthat::expect_identical(result_filter_rv(), "vu")
-            html_vu <- paste(output$result_card$html, collapse = " ")
-            testthat::expect_true(grepl("Leopardus wiedii", html_vu))
-            testthat::expect_false(grepl("Panthera onca", html_vu))
-
-            # Back to all restores both.
-            session$setInputs(rfilter_all = 1)
-            session$flushReact()
-            testthat::expect_identical(result_filter_rv(), "all")
-            html_back <- paste(output$result_card$html, collapse = " ")
-            testthat::expect_true(grepl("Panthera onca", html_back))
-            testthat::expect_true(grepl("Leopardus wiedii", html_back))
+            badge <- paste(output$group_badge_en$html, collapse = " ")
+            testthat::expect_match(badge, "sc-level-chip sc-level-chip--high", fixed = TRUE)
         }
     )
 })

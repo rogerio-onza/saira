@@ -19,32 +19,35 @@ mod_sensitive_coords_ui <- function(id) {
     shiny::tagList(
         shiny::div(
             class = "container-fluid sensitive-coords-page",
-            shiny::uiOutput(ns("title")),
-            shiny::uiOutput(ns("subtitle")),
             shiny::uiOutput(ns("precision_lock_alert")),
             shiny::uiOutput(ns("border_alert")),
-            # One screen, two jobs: DECIDE on the left, SEE the consequence
-            # (per-species result stacked directly over the hero map) on the right.
+            # One screen, two jobs: DECIDE on the left, SEE the consequence on
+            # the map on the right (ADR-132).
             shiny::div(
-                class = "row g-3 sc-layout",
+                class = "sc-layout",
                 shiny::div(
-                    class = "col-12 col-lg-5 sc-decide-col",
+                    class = "sc-decide-col",
                     shiny::uiOutput(ns("assessment_panel"))
                 ),
                 shiny::div(
-                    class = "col-12 col-lg-7 sc-consequence-col",
-                    shiny::uiOutput(ns("result_card")),
+                    class = "sc-consequence-col sc-card",
                     shiny::div(
                         class = "sc-map-container",
-                        leaflet::leafletOutput(ns("gen_map"), height = "380px")
+                        leaflet::leafletOutput(ns("gen_map"), height = "100%")
                     ),
-                    shiny::uiOutput(ns("scale_strip")),
-                    shiny::uiOutput(ns("chapman_table"))
+                    shiny::uiOutput(ns("map_legend"))
                 )
             )
         )
     )
 }
+
+# Point fill per MMA threat group: the border colour of the group's pill, so
+# the map and the table read the same (ADR-132). A dark stroke keeps the light
+# fills (VU) visible on the land and the sea.
+sensitive_threat_colors <- c(
+    crpex = "#a33b57", cr = "#c0392b", en = "#e6873c", vu = "#e6c84d", other = "#9aa0a6"
+)
 
 # Default "review by" date offered for a generalization decision: Chapman
 # recommends revisiting it within 2-5 years, and this is the midpoint.
@@ -89,13 +92,6 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             if (is.null(active_r) || !shiny::is.reactive(active_r)) return(TRUE)
             isTRUE(tryCatch(active_r(), error = function(e) TRUE))
         }
-
-        output$title <- shiny::renderUI({
-            shiny::h3(class = "sensitive-coords-title", tr("sensitive_coords_title", lang_r()))
-        })
-        output$subtitle <- shiny::renderUI({
-            shiny::p(class = "sensitive-coords-subtitle", tr("sensitive_coords_subtitle", lang_r()))
-        })
 
         # Effective data: apply the same corrections the export applies, so the
         # generalization preview shows the *published* coordinate, not the raw one.
@@ -155,10 +151,6 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
         # the user's marks (the recreated radios read back as NULL). Same input-
         # recreation hazard as ADR-098.
         group_answers_rv <- shiny::reactiveVal(list())
-        # Threat-level filter for the result list ("all" or a threat code:
-        # crpex/cr/en/vu/other). Lets the user narrow a long result list to a
-        # single MMA group. Reset to "all" whenever the detected set changes.
-        result_filter_rv <- shiny::reactiveVal("all")
         # Decision inputs mirrored server-side. The assessment panel is a
         # renderUI that recreates them, and every Mapping edit invalidates the
         # mapped frame this panel reads, so a tab switch was enough to re-render
@@ -387,6 +379,16 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             shiny::span(class = paste0("sp-cat-pill sp-cat-pill--", code), label)
         }
 
+        # Chapman category chip: neutral, with a square that grows with the
+        # grid. Colour stays reserved for the official threat status (ADR-132).
+        level_chip <- function(tier, lang, extra_class = NULL) {
+            shiny::span(
+                class = paste("sc-level-chip", paste0("sc-level-chip--", tier), extra_class),
+                shiny::span(class = "sc-level-glyph", `aria-hidden` = "true"),
+                level_compact(tier, lang)
+            )
+        }
+
         gen_popup <- function(row, lang, crosses, col) {
             country_line <- if (!is.na(row$country_orig) || !is.na(row$country_gen)) {
                 paste0("<br>", htmltools::htmlEscape(row$country_orig %||% "?"),
@@ -421,10 +423,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                         tr("sensitive_not_assessed", lang)
                     ))
                 }
-                shiny::span(
-                    class = paste0("sp-group-badge sp-group-badge--", t),
-                    badge_for_tier(t, lang)
-                )
+                level_chip(t, lang)
             })
         })
 
@@ -442,6 +441,8 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
         })
 
         # ---- Assessment panel (static structure; nested outputs stay live) -
+        # Chapman's Table 5 as one decision table: a row per threat group, a
+        # column per question, the resulting grid on the right (ADR-132).
         output$assessment_panel <- shiny::renderUI({
             lang <- lang_r()
             ov <- sensitive_species_overview()
@@ -461,14 +462,30 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 # very inputs we are reading -- the ADR-098 loop).
                 prev_ans <- shiny::isolate(group_answers_rv())[[id]]
                 shiny::radioButtons(
-                    ns(id), label = tr(qkey, lang),
+                    ns(id),
+                    label = shiny::tags$span(class = "visually-hidden", tr(qkey, lang)),
                     choiceNames = list(tr("sensitive_q_yes", lang), tr("sensitive_q_no", lang)),
                     choiceValues = c("yes", "no"),
                     selected = if (is.null(prev_ans)) character(0) else prev_ans,
                     inline = TRUE
                 )
             }
-            cascade_ui <- function(cc) {
+            # A question is asked only while every earlier one is "no"; the
+            # first "yes" sets the grid, so later cells show a dash.
+            cascade_cell <- function(cc, q) {
+                id <- paste0("q4", q, "_", cc)
+                if (q == 3L) return(shiny::tags$td(class = "sc-matrix-cell", yn_radio(id, "sensitive_q_4_3")))
+                open_cond <- paste(sprintf("input.q4%d_%s == 'no'", seq(3L, q - 1L), cc), collapse = " && ")
+                shiny::tags$td(
+                    class = "sc-matrix-cell",
+                    shiny::conditionalPanel(open_cond, ns = ns, yn_radio(id, paste0("sensitive_q_4_", q))),
+                    shiny::conditionalPanel(paste0("!(", open_cond, ")"), ns = ns,
+                                            shiny::span(class = "sc-matrix-skip", "—"))
+                )
+            }
+            # The exception editor keeps the stacked cascade: it answers for
+            # one species, not a row of the table.
+            cascade_stack <- function(cc) {
                 cond <- function(q) sprintf("input.q4%d_%s == 'no'", q, cc)
                 shiny::div(
                     class = "sp-cascade",
@@ -482,50 +499,44 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 )
             }
 
-            # The two publication strategies, each a rich card (the colored
-            # publish/generalize cards the user wants back). Reuses .sp-mode-radio.
-            mode_card <- function(title_key, desc_key, recommended) {
-                shiny::tagList(
-                    shiny::div(
-                        class = "sp-mode-head",
-                        shiny::span(class = "sp-mode-title", tr(title_key, lang)),
-                        if (recommended) {
-                            shiny::span(class = "sp-mode-badge",
-                                        tr("sensitive_mode_recommended_badge", lang))
-                        }
-                    ),
-                    shiny::div(class = "sp-mode-desc", tr(desc_key, lang))
-                )
-            }
-
             code_order <- c("crpex", "cr", "en", "vu", "other")
             present <- code_order[code_order %in% ov$code]
-            group_blocks <- lapply(seq_along(present), function(i) {
-                cc <- present[i]
+            matrix_rows <- lapply(present, function(cc) {
                 sub <- ov[ov$code == cc, , drop = FALSE]
                 label <- if (identical(cc, "other")) tr("sensitive_group_other", lang) else sub$category[1]
-                shiny::tags$details(
-                    class = "sp-group", name = "sc-groups",
-                    open = if (i == 1L) NA else NULL,
-                    shiny::tags$summary(
-                        class = "sp-group-head",
-                        shiny::span(class = paste0("sp-cat-pill sp-cat-pill--", cc), label),
-                        shiny::span(class = "sp-group-count",
-                                    sprintf(tr("sensitive_group_species_count", lang), nrow(sub))),
-                        shiny::uiOutput(ns(paste0("group_badge_", cc)), inline = TRUE)
+                shiny::tags$tr(
+                    shiny::tags$td(class = "sc-matrix-group", threat_pill(cc, label)),
+                    shiny::tags$td(
+                        class = "sc-matrix-count",
+                        # The species of the row, on hover.
+                        title = paste(sub$scientificName, collapse = ", "),
+                        sprintf(tr("sensitive_group_species_count", lang), nrow(sub))
                     ),
-                    cascade_ui(cc),
-                    shiny::tags$details(
-                        class = "sp-group-species",
-                        shiny::tags$summary(tr("sensitive_group_species_list", lang)),
-                        shiny::tags$ul(class = "sp-species-list",
-                            lapply(sub$scientificName, function(s) shiny::tags$li(shiny::tags$em(s))))
-                    )
+                    cascade_cell(cc, 3L), cascade_cell(cc, 4L), cascade_cell(cc, 5L),
+                    shiny::tags$td(class = "sc-matrix-result",
+                                   shiny::uiOutput(ns(paste0("group_badge_", cc)), inline = TRUE))
                 )
             })
+            q_head <- function(q) {
+                shiny::tags$th(
+                    title = tr(paste0("sensitive_q_4_", q), lang),
+                    shiny::span(class = "sc-matrix-q", tr(paste0("sc_matrix_q4", q, "_head"), lang)),
+                    shiny::span(class = "sc-matrix-q-short", tr(paste0("sc_matrix_q4", q, "_short"), lang))
+                )
+            }
+            decision_table <- shiny::tags$table(
+                class = "sc-matrix",
+                shiny::tags$thead(shiny::tags$tr(
+                    shiny::tags$th(tr("sc_matrix_col_group", lang)),
+                    shiny::tags$th(tr("sc_matrix_col_species", lang)),
+                    q_head(3L), q_head(4L), q_head(5L),
+                    shiny::tags$th(tr("sc_matrix_col_result", lang))
+                )),
+                shiny::tags$tbody(matrix_rows)
+            )
 
             exceptions_block <- shiny::tags$details(
-                class = "sp-exceptions",
+                class = "sp-exceptions sc-card",
                 shiny::tags$summary(tr("sensitive_group_exceptions", lang)),
                 shiny::div(
                     class = "sp-exc-body",
@@ -537,7 +548,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     ),
                     shiny::conditionalPanel(
                         "input.exc_species != ''", ns = ns,
-                        cascade_ui("exc"),
+                        cascade_stack("exc"),
                         shiny::actionButton(ns("exc_apply"), tr("sensitive_exc_apply", lang),
                                             class = "btn btn-sm btn-secondary"),
                         shiny::div(
@@ -553,243 +564,91 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             )
 
             confirm_block <- shiny::div(
-                class = "sc-confirm",
-                shiny::h6(class = "sc-confirm-title", ph_icon("circle-check"), " ",
-                          tr("sc_confirm_title", lang)),
+                class = "sc-confirm sc-card",
                 shiny::div(
-                    class = "sp-justification",
-                    shiny::tags$label(`for` = ns("sensitive_justification"),
-                                      class = "sp-justification-label",
-                                      tr("sensitive_justification_label", lang)),
-                    shiny::uiOutput(ns("justification_prompt")),
-                    shiny::textAreaInput(
-                        ns("sensitive_justification"), label = NULL,
-                        value = shiny::isolate(justification_rv()),
-                        placeholder = tr("sensitive_justification_placeholder", lang),
-                        rows = 2, width = "100%"
+                    class = "sc-confirm-row",
+                    shiny::div(
+                        class = "sp-justification",
+                        shiny::tags$label(`for` = ns("sensitive_justification"),
+                                          class = "sp-justification-label",
+                                          tr("sensitive_justification_label", lang)),
+                        shiny::textAreaInput(
+                            ns("sensitive_justification"), label = NULL,
+                            value = shiny::isolate(justification_rv()),
+                            placeholder = tr("sensitive_justification_placeholder", lang),
+                            rows = 1, width = "100%"
+                        )
                     ),
-                    shiny::uiOutput(ns("justification_warn"))
+                    shiny::div(
+                        class = "sp-review-date",
+                        shiny::dateInput(ns("sensitive_review_date"),
+                                         label = tr("sensitive_review_date_label", lang),
+                                         value = shiny::isolate(review_date_rv()))
+                    )
                 ),
-                shiny::div(
-                    class = "sp-review-date",
-                    shiny::dateInput(ns("sensitive_review_date"),
-                                     label = tr("sensitive_review_date_label", lang),
-                                     value = shiny::isolate(review_date_rv()))
-                )
+                shiny::uiOutput(ns("justification_prompt")),
+                shiny::uiOutput(ns("justification_warn"))
             )
+
+            mode_label <- function(title_key, recommended) {
+                shiny::tagList(
+                    tr(title_key, lang),
+                    if (recommended) shiny::span(class = "sp-mode-badge", tr("sensitive_mode_recommended_badge", lang))
+                )
+            }
 
             shiny::div(
                 class = "sensitive-panel sc-assess",
                 shiny::div(
-                    class = "sp-header",
-                    shiny::h5(
-                        class = "sp-title",
-                        ph_icon("shield-halved", class = "sp-title-icon"),
-                        tr("sensitive_panel_title", lang)
-                    ),
-                    shiny::span(class = "sp-count-chip",
-                                sprintf(tr("sensitive_panel_records_chip", lang), n))
-                ),
-                shiny::p(class = "sp-lead", shiny::HTML(sprintf(tr("sensitive_panel_intro", lang), n))),
-                shiny::div(class = "sp-step-question", tr("sensitive_step_question", lang)),
-                shiny::div(
-                    class = "sp-mode-radio",
-                    shiny::radioButtons(
-                        ns("sensitive_mode"), label = NULL,
-                        choiceNames = list(
-                            mode_card("sensitive_mode_publish_title",
-                                      "sensitive_mode_publish_desc", TRUE),
-                            mode_card("sensitive_assess_mode_title",
-                                      "sensitive_assess_mode_desc", FALSE)
-                        ),
-                        choiceValues = c("publish", "generalize"),
-                        selected = shiny::isolate(mode_rv())
+                    class = "sc-mode-card sc-card",
+                    shiny::span(class = "sc-mode-summary",
+                                sprintf(tr("sc_mode_summary", lang), n, nrow(ov))),
+                    shiny::div(
+                        class = "sp-mode-radio",
+                        shiny::radioButtons(
+                            ns("sensitive_mode"),
+                            label = shiny::tags$span(class = "visually-hidden", tr("sensitive_step_question", lang)),
+                            choiceNames = list(
+                                mode_label("sensitive_mode_publish_title", TRUE),
+                                mode_label("sensitive_assess_mode_title", FALSE)
+                            ),
+                            choiceValues = c("publish", "generalize"),
+                            selected = shiny::isolate(mode_rv()),
+                            inline = TRUE
+                        )
                     )
                 ),
                 shiny::conditionalPanel(
                     condition = "input.sensitive_mode == 'generalize'", ns = ns,
                     shiny::div(
-                        class = "sp-level-block",
-                        shiny::div(class = "sp-level-prompt", tr("sensitive_assess_prompt", lang)),
+                        class = "sc-matrix-card sc-card",
                         shiny::div(
-                            class = "sc-assess-meta",
-                            shiny::uiOutput(ns("groups_progress")),
-                            bslib::popover(
-                                shiny::tags$button(
-                                    type = "button",
-                                    class = "btn btn-link btn-sm sc-cascade-help",
-                                    ph_icon("circle-question"), " ",
-                                    tr("sc_cascade_help_link", lang)
-                                ),
-                                title = tr("sc_cascade_help_title", lang),
-                                shiny::HTML(tr("sc_cascade_help_body", lang)),
-                                placement = "right"
-                            )
+                            class = "sc-matrix-head",
+                            shiny::h2(class = "sc-matrix-title", tr("sc_matrix_title", lang)),
+                            shiny::span(class = "sc-matrix-hint", tr("sc_matrix_hint", lang))
                         ),
-                        shiny::div(class = "sp-groups sc-groups", group_blocks),
-                        shiny::uiOutput(ns("cat1_alert")),
-                        exceptions_block,
-                        confirm_block
+                        decision_table,
+                        shiny::uiOutput(ns("scale_strip"))
+                    ),
+                    shiny::uiOutput(ns("cat1_alert")),
+                    exceptions_block,
+                    confirm_block,
+                    shiny::div(
+                        class = "sc-about",
+                        ph_icon("book-open"),
+                        shiny::div(
+                            shiny::p(class = "sc-about-text", tr("sc_about_text", lang)),
+                            shiny::tags$a(
+                                class = "sc-about-ref",
+                                href = "https://doi.org/10.15468/doc-5jp4-5g10",
+                                target = "_blank", rel = "noopener",
+                                tr("sc_about_ref", lang)
+                            )
+                        )
                     )
                 )
             )
         })
-
-        # ---- Result card (live) -------------------------------------------
-        output$result_card <- shiny::renderUI({
-            ov <- sensitive_species_overview()
-            if (is.null(ov)) return(NULL)
-            lang <- lang_r()
-            n <- sensitive_overview()
-            mode <- input$sensitive_mode %||% "publish"
-            if (!identical(mode, "generalize")) {
-                return(shiny::div(
-                    class = "sc-result sc-result--publish",
-                    shiny::div(class = "sc-result-head", tr("sc_result_title", lang)),
-                    shiny::div(
-                        class = "sc-result-state sc-result-state--publish",
-                        ph_icon("circle-check"), " ", tr("sc_result_publish_state", lang)
-                    ),
-                    shiny::div(class = "sc-result-line", sprintf(tr("sc_result_records", lang), n))
-                ))
-            }
-            levels <- species_levels_r()
-            gl <- group_levels_rv()
-            ovr <- species_overrides_rv()
-
-            # Threat-level filter: when more than one MMA group is present, offer
-            # chips so a long list can be narrowed to a single group. A filter for
-            # a no-longer-present group falls back to "all".
-            code_order <- c("crpex", "cr", "en", "vu", "other")
-            present_codes <- code_order[code_order %in% ov$code]
-            active_filter <- result_filter_rv()
-            if (!identical(active_filter, "all") && !active_filter %in% present_codes) {
-                active_filter <- "all"
-            }
-            ov_view <- if (identical(active_filter, "all")) {
-                ov
-            } else {
-                ov[ov$code == active_filter, , drop = FALSE]
-            }
-
-            code_label <- function(cc) {
-                if (identical(cc, "other")) {
-                    tr("sensitive_group_other", lang)
-                } else {
-                    ov$category[match(cc, ov$code)]
-                }
-            }
-            filter_chips <- if (length(present_codes) > 1L) {
-                all_cls <- "sc-rfilter-chip"
-                if (identical(active_filter, "all")) {
-                    all_cls <- paste(all_cls, "sc-rfilter-chip--active")
-                }
-                chips <- c(
-                    list(shiny::actionButton(
-                        ns("rfilter_all"), tr("sc_result_filter_all", lang), class = all_cls
-                    )),
-                    lapply(present_codes, function(cc) {
-                        cls <- paste0("sc-rfilter-chip sc-rfilter-chip--", cc)
-                        if (identical(active_filter, cc)) {
-                            cls <- paste(cls, "sc-rfilter-chip--active")
-                        }
-                        shiny::actionButton(
-                            ns(paste0("rfilter_", cc)), code_label(cc), class = cls
-                        )
-                    })
-                )
-                shiny::div(
-                    class = "sc-result-filter", role = "group",
-                    `aria-label` = tr("sc_result_filter_label", lang),
-                    chips
-                )
-            }
-
-            # One row per detected sensitive species: threat pill + name -> outcome.
-            rows <- lapply(seq_len(nrow(ov_view)), function(i) {
-                sp <- ov_view$scientificName[i]
-                assessed <- !is.null(ovr[[sp]]) || !is.null(gl[[ov_view$code[i]]])
-                tier <- unname(levels[[sp]])
-                outcome <- if (!assessed) {
-                    shiny::span(class = "sc-sp-outcome sc-sp-outcome--pending",
-                                tr("sc_result_unassessed_row", lang))
-                } else if (identical(tier, "not_sensitive")) {
-                    shiny::span(class = "sc-sp-outcome sc-sp-outcome--publish",
-                                tr("sc_result_publish_row", lang))
-                } else {
-                    shiny::span(class = paste0("sc-sp-outcome sc-sp-outcome--", tier),
-                                level_compact(tier, lang))
-                }
-                shiny::div(
-                    class = "sc-sp-row",
-                    threat_pill(ov_view$code[i], ov_view$category[i]),
-                    shiny::span(class = "sc-sp-name", shiny::tags$em(sp)),
-                    shiny::span(class = "sc-sp-arrow", "\u2192"),
-                    outcome
-                )
-            })
-            prev <- actual_preview_r()
-            cr <- if (is.data.frame(prev)) prev$crosses else logical(0)
-            n_cross <- sum(!is.na(cr) & cr)
-            assessed_vec <- vapply(seq_len(nrow(ov)), function(i) {
-                !is.null(ovr[[ov$scientificName[i]]]) || !is.null(gl[[ov$code[i]]])
-            }, logical(1))
-            n_assessed <- sum(assessed_vec)
-            n_total <- nrow(ov)
-            shiny::div(
-                class = "sc-result sc-result--generalize",
-                shiny::div(class = "sc-result-head", tr("sc_result_title", lang)),
-                filter_chips,
-                shiny::div(class = "sc-sp-list", rows),
-                shiny::div(
-                    class = "sc-result-foot",
-                    shiny::div(
-                        class = if (n_cross > 0L) "sc-result-cross sc-result-cross--danger" else "sc-result-cross",
-                        ph_icon(if (n_cross > 0L) "triangle-exclamation" else "circle-check"), " ",
-                        if (n_cross > 0L) sprintf(tr("sc_result_crossing", lang), n_cross) else tr("sc_result_no_crossing", lang)
-                    ),
-                    shiny::div(class = "sc-result-assessed",
-                               sprintf(tr("sensitive_species_assessed_count", lang), n_assessed, n_total)),
-                    if (justification_missing_r()) {
-                        shiny::div(class = "sc-just-warn",
-                                   ph_icon("triangle-exclamation"), " ",
-                                   tr("sc_result_needs_justification", lang))
-                    }
-                )
-            )
-        })
-
-        # Threat-level filter chips drive result_filter_rv. The codes are a
-        # fixed known set, so observers are registered up front.
-        for (code in c("all", "vu", "en", "cr", "crpex", "other")) {
-            local({
-                cc <- code
-                shiny::observeEvent(input[[paste0("rfilter_", cc)]], {
-                    result_filter_rv(cc)
-                }, ignoreInit = TRUE)
-            })
-        }
-
-        # Reset the filter whenever the detected set of sensitive species changes
-        # (a new upload), so a stale group filter never hides the new list.
-        # Gated like the map path: observeEvent evaluates its event expression
-        # eagerly, so an ungated sensitive_species_overview() here rebuilt the
-        # whole mapped frame on every mapping edit, from any tab. Returning NULL
-        # while hidden is enough because ignoreNULL is on by default; opening the
-        # tab re-evaluates and resets the filter then, which is when it matters.
-        shiny::observeEvent(
-            {
-                if (!is_active()) {
-                    NULL
-                } else {
-                    sensitive_species_overview()
-                }
-            },
-            {
-                result_filter_rv("all")
-            },
-            ignoreInit = TRUE
-        )
 
         # Live "justification required" hint under the field.
         output$justification_warn <- shiny::renderUI({
@@ -812,26 +671,11 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 class = "sc-just-prompt",
                 lapply(tiers, function(t) {
                     shiny::tags$li(
-                        shiny::span(class = paste0("sc-just-dot sp-grid-swatch sp-grid-swatch--", t)),
+                        shiny::span(class = paste0("sc-just-dot sc-level-chip--", t),
+                                    shiny::span(class = "sc-level-glyph", `aria-hidden` = "true")),
                         tr(paste0("sensitive_just_prompt_", t), lang)
                     )
                 })
-            )
-        })
-
-        # Group-assessment progress ("X de Y grupos avaliados"), shown above the
-        # accordion. A separate output so answering a cascade does not re-render
-        # (and collapse) the whole assessment panel.
-        output$groups_progress <- shiny::renderUI({
-            if (!identical(input$sensitive_mode %||% "publish", "generalize")) return(NULL)
-            ov <- sensitive_species_overview()
-            if (is.null(ov)) return(NULL)
-            gl <- group_levels_rv()
-            present <- unique(ov$code)
-            n_assessed <- sum(vapply(present, function(cc) !is.null(gl[[cc]]), logical(1)))
-            shiny::span(
-                class = "sc-groups-progress",
-                sprintf(tr("sc_groups_progress", lang_r()), n_assessed, length(present))
             )
         })
 
@@ -924,10 +768,9 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             )
         })
 
-        # ---- Scale strip under the map ------------------------------------
-        # Ascending category chips (the what-if preview) + the map legend. Each
-        # chip carries its category colour (dot), and the active what-if chip
-        # fills with that colour so "answer -> category -> map" stays coupled.
+        # ---- Grid chips under the decision table ----------------------------
+        # The what-if preview: a click draws every sensitive point at that
+        # category until "Show actual decision".
         output$scale_strip <- shiny::renderUI({
             ov <- sensitive_species_overview()
             if (is.null(ov)) return(NULL)
@@ -937,40 +780,15 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
 
             tiers <- c("low", "medium", "high", "extreme")
             chips <- lapply(tiers, function(t) {
-                is_cat1 <- identical(t, "extreme")
-                label <- shiny::tagList(
-                    shiny::span(class = paste0("sc-scale-dot sp-grid-swatch sp-grid-swatch--", t)),
-                    if (is_cat1) shiny::tagList(ph_icon("triangle-exclamation"), " "),
-                    level_compact(t, lang)
-                )
-                cls <- paste0("sc-scale-chip sc-scale-chip--", t)
-                if (identical(active, t)) cls <- paste0(cls, " sc-scale-chip--active")
+                chip <- level_chip(t, lang)
+                cls <- "sc-scale-chip"
+                if (identical(active, t)) cls <- paste(cls, "sc-scale-chip--active")
                 if (is_gen) {
-                    shiny::actionButton(ns(paste0("ladder_", t)), label, class = cls)
+                    shiny::actionButton(ns(paste0("ladder_", t)), chip, class = cls)
                 } else {
-                    shiny::span(class = cls, label)
+                    shiny::span(class = cls, chip)
                 }
             })
-
-            legend_items <- if (is_gen) {
-                list(c("real", "sc_legend_real"),
-                     c("generalized", "sc_legend_generalized"),
-                     c("area", "sc_legend_area"),
-                     c("uncertainty", "sc_legend_uncertainty"),
-                     c("cross", "sc_legend_crosses"))
-            } else {
-                list(c("real", "sc_legend_real"))
-            }
-            legend <- shiny::div(
-                class = "sc-scale-legend",
-                lapply(legend_items, function(it) {
-                    shiny::span(
-                        class = "sc-legend-item",
-                        shiny::span(class = paste0("sc-legend-mark sc-legend-mark--", it[[1]])),
-                        tr(it[[2]], lang)
-                    )
-                })
-            )
 
             shiny::div(
                 class = "sc-scale",
@@ -983,56 +801,44 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                         shiny::actionLink(ns("ladder_actual"), tr("sc_ladder_actual", lang),
                                           class = "sc-ladder-actual")
                     }
-                ),
-                legend
+                )
             )
         })
 
-        # ---- Chapman reference table (fixed below the map) ----------------
-        # Kept in evidence as a fixed, elegant panel (not a popover); documents
-        # all four categories, with the Cat-1 row flagged "extreme cases only".
-        output$chapman_table <- shiny::renderUI({
-            if (is.null(sensitive_species_overview())) return(NULL)
+        # ---- Legend under the map ------------------------------------------
+        # Point fill = the MMA threat group, once the group has a decision;
+        # white while it waits. Cells are neutral, a dashed red one leaves the
+        # country (ADR-132).
+        output$map_legend <- shiny::renderUI({
+            ov <- sensitive_species_overview()
+            if (is.null(ov)) return(NULL)
             lang <- lang_r()
-            fmt_grid_cell <- function(level) {
-                g <- sensitive_generalization_grid(level)
-                if (is.na(g)) return(tr("sensitive_grid_unmasked", lang))
-                km <- round(g * 111.32, 1)
-                sprintf("%s\u00b0 (~%s km)", format(g, trim = TRUE, scientific = FALSE), format(km, trim = TRUE))
-            }
-            spatial_for <- function(level) {
-                if (identical(level, "not_sensitive")) return("\u2014")
-                tr(paste0("sensitive_card_impact_", level), lang)
-            }
-            table_rows <- lapply(sensitive_generalization_levels(), function(level) {
-                baseline <- identical(level, "not_sensitive")
-                is_cat1 <- identical(level, "extreme")
-                cls <- if (baseline) "sp-grid-row-baseline" else if (is_cat1) "sp-grid-row-cat1" else NULL
-                shiny::tags$tr(
-                    class = cls,
-                    shiny::tags$td(
-                        shiny::span(class = paste0("sp-grid-swatch sp-grid-swatch--", level)),
-                        tr(paste0("sensitive_gen_", level), lang),
-                        if (is_cat1) shiny::div(class = "sp-grid-cat1-note", tr("sensitive_table_cat1_note", lang))
-                    ),
-                    shiny::tags$td(class = "sp-grid-result", spatial_for(level)),
-                    shiny::tags$td(class = "sp-grid-value", fmt_grid_cell(level))
+            is_gen <- identical(input$sensitive_mode %||% "publish", "generalize")
+            code_order <- c("crpex", "cr", "en", "vu", "other")
+            present <- code_order[code_order %in% ov$code]
+            threat_items <- lapply(present, function(cc) {
+                label <- if (identical(cc, "other")) tr("sensitive_group_other", lang) else ov$category[match(cc, ov$code)]
+                shiny::span(
+                    class = "sc-legend-item",
+                    shiny::span(class = paste0("sc-legend-mark sc-legend-mark--threat-", cc)),
+                    label
                 )
             })
+            item <- function(mark, key) {
+                shiny::span(class = "sc-legend-item",
+                            shiny::span(class = paste0("sc-legend-mark sc-legend-mark--", mark)),
+                            tr(key, lang))
+            }
             shiny::div(
-                class = "sc-reference",
-                shiny::h6(class = "sc-reference-title", ph_icon("table-list"), " ",
-                          tr("sensitive_reference_title", lang)),
-                shiny::tags$table(
-                    class = "table table-sm sensitive-grid-table",
-                    shiny::tags$thead(shiny::tags$tr(
-                        shiny::tags$th(tr("sensitive_table_col_category", lang)),
-                        shiny::tags$th(tr("sensitive_table_col_result", lang)),
-                        shiny::tags$th(class = "sp-grid-value", tr("sensitive_table_col_grid", lang))
-                    )),
-                    shiny::tags$tbody(table_rows)
-                ),
-                shiny::p(class = "sc-reference-caption", tr("sensitive_table_caption", lang))
+                class = "sc-scale-legend",
+                threat_items,
+                if (is_gen) shiny::tagList(
+                    item("pending", "sc_legend_pending"),
+                    item("generalized", "sc_legend_generalized"),
+                    item("area", "sc_legend_area"),
+                    item("uncertainty", "sc_legend_uncertainty"),
+                    item("cross", "sc_legend_crosses")
+                )
             )
         })
 
@@ -1053,7 +859,27 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             )
             map_obj <- leaflet::hideGroup(map_obj, "Esri.WorldImagery")
             map_obj <- leaflet::setView(map_obj, lng = -52, lat = -15, zoom = 3)
-            leaflet_fill_world(map_obj)
+            map_obj <- leaflet_fill_world(map_obj)
+            # On the satellite tiles a dark stroke disappears, so the points
+            # switch to a white one there, new points included (ADR-132).
+            htmlwidgets::onRender(map_obj, "
+                function(el, x) {
+                    var map = this;
+                    var stroke = function() { return map._sairaSat ? '#ffffff' : '#1C1C26'; };
+                    var origin = function() { return map.layerManager && map.layerManager.getLayerGroup('orig_points'); };
+                    map.on('baselayerchange', function(e) {
+                        map._sairaSat = e.name === 'Esri.WorldImagery';
+                        var g = origin();
+                        if (g) g.eachLayer(function(l) { if (l.setStyle) l.setStyle({color: stroke()}); });
+                    });
+                    map.on('layeradd', function(e) {
+                        var g = origin();
+                        if (map._sairaSat && g && g.hasLayer(e.layer) && e.layer.setStyle) {
+                            e.layer.setStyle({color: stroke()});
+                        }
+                    });
+                }
+            ")
         })
         # Keep the map live while its tab is hidden so leafletProxy repaints
         # (e.g. an origin marker corrected on the Coords tab) are applied instead
@@ -1096,7 +922,18 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     error = function(e) NULL
                 )
             }
-            list(ov = ov, df = df, is_gen = is_gen, prev = prev, lang = lang_r())
+            # A point takes its threat colour once its species has a decision:
+            # a group answer, an exception, or "publish" for everything.
+            gl <- group_levels_rv()
+            ovr <- species_overrides_rv()
+            decided <- if (!is_gen) {
+                rep(TRUE, nrow(ov))
+            } else {
+                vapply(ov$code, function(cc) !is.null(gl[[cc]]), logical(1)) |
+                    ov$scientificName %in% names(ovr)
+            }
+            list(ov = ov, df = df, is_gen = is_gen, prev = prev, lang = lang_r(),
+                 decided = stats::setNames(unname(decided), ov$scientificName))
         }), 300)
 
         shiny::observe({
@@ -1136,7 +973,10 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
 
                         gu <- g_all[idx]
                         cu <- crosses_all[idx]
-                        col_u <- ifelse(cu, "#C0392B", "#FFA204")
+                        # Neutral cells: colour belongs to the threat groups on
+                        # the points. A cell that leaves the country is red and
+                        # dashed (ADR-132).
+                        col_u <- ifelse(cu, "#C0392B", "#1C1C26")
                         pop_u <- vapply(
                             idx,
                             function(i) gen_popup(
@@ -1162,8 +1002,9 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                             proxy,
                             lng1 = prev$gen_lon[idx] - gu / 2, lat1 = prev$gen_lat[idx] - gu / 2,
                             lng2 = prev$gen_lon[idx] + gu / 2, lat2 = prev$gen_lat[idx] + gu / 2,
-                            weight = 1.5, color = col_u, fillColor = col_u,
-                            fillOpacity = 0.18, opacity = 0.85,
+                            weight = ifelse(cu, 2, 1), color = col_u, fillColor = col_u,
+                            fillOpacity = 0.06, opacity = ifelse(cu, 0.95, 0.55),
+                            dashArray = ifelse(cu, "5,3", ""),
                             popup = pop_u, group = "gen_overlay"
                         )
                         # Point-radius uncertainty circles (centre -> furthest
@@ -1198,10 +1039,13 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             if (any(sel)) {
                 s_sci <- sci[sel]; s_lat <- lat[sel]; s_lon <- lon[sel]
                 keep <- !duplicated(paste(s_sci, s_lon, s_lat, sep = "|"))
+                k_sci <- s_sci[keep]
+                fill <- sensitive_threat_colors[ov$code[match(k_sci, ov$scientificName)]]
+                fill[is.na(fill) | !d$decided[k_sci]] <- "#ffffff"
                 leaflet::addCircleMarkers(
                     proxy, lng = s_lon[keep], lat = s_lat[keep],
-                    radius = 6, stroke = TRUE, weight = 3, color = "#1C1C26",
-                    fillColor = "#ffffff", fillOpacity = 0.95, opacity = 1,
+                    radius = 6, stroke = TRUE, weight = 2, color = "#1C1C26",
+                    fillColor = unname(fill), fillOpacity = 1, opacity = 1,
                     group = "orig_points",
                     popup = sprintf("<strong>%s</strong><br>%s",
                                     htmltools::htmlEscape(s_sci[keep]), tr("sc_popup_original", lang))
@@ -1253,7 +1097,6 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 species_overrides_rv(list())
                 preview_tier_rv(NULL)
                 group_answers_rv(list())
-                result_filter_rv("all")
                 map_fitted_sig_rv(NULL)
                 mode_rv("publish")
                 justification_rv("")
