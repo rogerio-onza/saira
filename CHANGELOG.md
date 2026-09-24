@@ -24,6 +24,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **basisOfRecord:** Convert mapped values without the assistant, recognize common Portuguese values, and block export on empty values
 - **names:** Keep the report counts readable when the table is tall
 - **coords:** Frame the Coordinates and Generalization maps on valid points only, with no grey bands, and count the points the map cannot draw
 - **coords:** Draw the map points right after validation, not only after a filter click

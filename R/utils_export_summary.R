@@ -25,7 +25,8 @@
 #'   (`names_corrected`/`names_confirmed`/`coord_fixes`/`country_fills`),
 #'   `generalization` (data.frame `scientificName`/`category`/`tier`),
 #'   `readiness` (data.frame `term`/`present`), `readiness_pct`,
-#'   `missing_required`, `occurrence_id_present`, `justification_pending`,
+#'   `missing_required`, `occurrence_id_present`, `bor_blank_count`,
+#'   `justification_pending`,
 #'   `date_issues` (from `date_year_issues()`),
 #'   `all_required_present`, `export_blocked`, and `files`
 #'   (list `dwca` + `auxiliary`).
@@ -108,6 +109,15 @@ build_export_summary <- function(mapped_data,
     missing_required <- required[!present]
     occurrence_id_present <- term_present("occurrenceID")
 
+    # GBIF needs basisOfRecord on every record. A mapped column can still hold
+    # values with no DwC term (e.g. "Coleta"), which the conversion leaves empty.
+    bor_blank_count <- if ("basisOfRecord" %in% missing_required) {
+        0L
+    } else {
+        bor <- as.character(df[["basisOfRecord"]])
+        sum(is.na(bor) | !nzchar(trimws(bor)))
+    }
+
     # A year outside the plausible range is a typo the format conversion cannot
     # catch, so it is reported here rather than blocking: a historical record
     # can legitimately predate 1600, and only the publisher knows which is which.
@@ -118,7 +128,7 @@ build_export_summary <- function(mapped_data,
     justification_pending <- is.list(gp) && isTRUE(gp$enabled) &&
         isTRUE(gp$needs_justification) &&
         !nzchar(trimws(gp$justification %||% ""))
-    export_blocked <- !all_required_present || justification_pending
+    export_blocked <- !all_required_present || bor_blank_count > 0L || justification_pending
 
     # --- Files the bundle will contain -------------------------------------
     # Single source of truth shared with the download handler. The real-coords
@@ -137,6 +147,7 @@ build_export_summary <- function(mapped_data,
         readiness_pct = readiness_pct,
         missing_required = missing_required,
         occurrence_id_present = occurrence_id_present,
+        bor_blank_count = bor_blank_count,
         justification_pending = justification_pending,
         date_issues = date_issues,
         all_required_present = all_required_present,

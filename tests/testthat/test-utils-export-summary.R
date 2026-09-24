@@ -153,6 +153,18 @@ testthat::test_that("build_export_summary blocks export when justification is pe
     testthat::expect_true(s$export_blocked)
 })
 
+testthat::test_that("build_export_summary blocks export when some basisOfRecord values are empty", {
+    df <- sample_mapped()
+    s_ok <- saira:::build_export_summary(mapped_data = df)
+    testthat::expect_identical(s_ok$bor_blank_count, 0L)
+
+    df$basisOfRecord[1] <- ""
+    s <- saira:::build_export_summary(mapped_data = df)
+    testthat::expect_true(s$all_required_present)
+    testthat::expect_identical(s$bor_blank_count, 1L)
+    testthat::expect_true(s$export_blocked)
+})
+
 testthat::test_that("slugify_dataset_name folds accents and collapses separators", {
     testthat::expect_equal(saira:::slugify_dataset_name("Meu Data Set"), "meu-data-set")
     testthat::expect_equal(saira:::slugify_dataset_name("Coleção de Aves — 2024"), "colecao-de-aves-2024")

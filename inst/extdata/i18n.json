@@ -167,6 +167,10 @@
     "pt": "Há espécies generalizadas sem a justificativa escrita exigida para as categorias 1–3.",
     "en": "Some generalized species lack the written justification required for categories 1–3."
   },
+  "export_blocked_bor_blank": {
+    "pt": "basisOfRecord vazio em %d registro(s): há valores sem termo DwC. Converta-os no assistente do card basisOfRecord.",
+    "en": "basisOfRecord is empty in %d record(s): some values have no DwC term. Convert them with the assistant on the basisOfRecord card."
+  },
   "export_warn_title": {
     "pt": "Atenção",
     "en": "Heads up"

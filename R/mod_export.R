@@ -163,6 +163,8 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             s <- summary_r()
             if (length(s$missing_required) > 0L) {
                 on_navigate("mapping", term = s$missing_required[1L])
+            } else if (isTRUE(s$bor_blank_count > 0L)) {
+                on_navigate("mapping", term = "basisOfRecord")
             } else {
                 on_navigate("sensitive_coords")
             }
@@ -246,12 +248,17 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                         shiny::tags$code(paste(s$missing_required, collapse = ", "))
                     )
                 }
+                if (isTRUE(s$bor_blank_count > 0L)) {
+                    reasons[[length(reasons) + 1L]] <- shiny::tags$li(
+                        sprintf(tr("export_blocked_bor_blank", lang), s$bor_blank_count)
+                    )
+                }
                 if (isTRUE(s$justification_pending)) {
                     reasons[[length(reasons) + 1L]] <- shiny::tags$li(
                         tr("export_blocked_justification", lang)
                     )
                 }
-                cta_label <- if (length(s$missing_required) > 0L) {
+                cta_label <- if (length(s$missing_required) > 0L || isTRUE(s$bor_blank_count > 0L)) {
                     tr("export_fix_terms_cta", lang)
                 } else {
                     tr("export_fix_justification_cta", lang)

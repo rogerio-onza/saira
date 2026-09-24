@@ -838,9 +838,42 @@ testthat::test_that("build_processed_mapping_df injects constant_values across a
 testthat::test_that("basisOfRecord helpers normalize and auto-suggest canonical terms", {
     testthat::expect_identical(normalize_basis_of_record_key("  HumanObservation  "), "humanobservation")
     testthat::expect_identical(normalize_basis_of_record_key(NA_character_), "")
-    testthat::expect_identical(auto_suggest_basis_of_record_term("humanobservation"), "HumanObservation")
-    testthat::expect_identical(auto_suggest_basis_of_record_term("HumanObservation"), "HumanObservation")
-    testthat::expect_identical(auto_suggest_basis_of_record_term("camera trap"), "")
+    testthat::expect_identical(
+        auto_suggest_basis_of_record_terms(c("humanobservation", "HumanObservation", "Human_Observation")),
+        rep("HumanObservation", 3L)
+    )
+})
+
+testthat::test_that("auto_suggest_basis_of_record_terms matches labels and common synonyms", {
+    raw <- c(
+        "Observação", "Observação em campo", "Espécime preservado",
+        "Material preservado (herbário)", "Armadilha fotográfica", "Amostra de tecido",
+        "Machine Observation", "Espécime Fóssil"
+    )
+    testthat::expect_identical(
+        auto_suggest_basis_of_record_terms(raw),
+        c("HumanObservation", "HumanObservation", "PreservedSpecimen", "PreservedSpecimen",
+          "MachineObservation", "MaterialSample", "MachineObservation", "FossilSpecimen")
+    )
+})
+
+testthat::test_that("auto_suggest_basis_of_record_terms leaves ambiguous and blank values empty", {
+    raw <- c("Coleta", "Registro fotográfico", "Unknown method", "", NA_character_)
+    testthat::expect_identical(auto_suggest_basis_of_record_terms(raw), rep("", 5L))
+})
+
+testthat::test_that("map_basis_of_record_values converts without the assistant and keeps its decisions", {
+    raw <- c("HumanObservation", "Observação", "Coleta", "Armadilha fotográfica")
+    testthat::expect_identical(
+        map_basis_of_record_values(raw, NULL),
+        c("HumanObservation", "HumanObservation", "", "MachineObservation")
+    )
+    # A saved decision wins over the suggestion, a skip ("") included.
+    decisions <- c("coleta" = "PreservedSpecimen", "armadilha fotográfica" = "")
+    testthat::expect_identical(
+        map_basis_of_record_values(raw, decisions),
+        c("HumanObservation", "HumanObservation", "PreservedSpecimen", "")
+    )
 })
 
 testthat::test_that("sanitize_basis_of_record_map filters invalid terms and keeps keys normalized", {
