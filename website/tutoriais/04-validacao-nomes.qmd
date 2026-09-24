@@ -13,7 +13,7 @@ Um mesmo táxon pode aparecer escrito de muitas formas: com erros de digitação
 
 ## Escolhendo a base de referência
 
-Na aba **Validação de nomes**, o Saíra oferece três bases taxonômicas. Marque uma ou mais, a mais adequada ao seu grupo:
+Na etapa **Nomes**, o Saíra oferece três bases taxonômicas. Marque uma ou mais, a mais adequada ao seu grupo:
 
 ```{=html}
 <table class="maptable">

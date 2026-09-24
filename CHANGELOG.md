@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+- **site:** Refresh ten tutorial screenshots in PT and EN and name the steps as the app does
 - **ui:** Flatten tables, buttons, alerts and filter pills, and darken state-colored text to pass AA contrast
 - **mapping:** Flatten the cards: light state fills, pastel status badges, a Required tag and a flat sidebar
 - **upload:** Redesign the home page: upload panel on the left, required columns with definitions on the right
