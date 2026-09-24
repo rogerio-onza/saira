@@ -333,3 +333,26 @@ test_that("stream_window still adds display_order when the column is absent", {
     expect_equal(out$query_name, c("c", "b"))
     expect_equal(out$display_order, c(3L, 2L))
 })
+
+testthat::test_that("provider_query_step mirrors the cascade order", {
+    br <- c("florabr", "faunabr")
+    testthat::expect_identical(provider_query_step("florabr", c("gbif", "florabr"), br), 1L)
+    testthat::expect_identical(provider_query_step("gbif", c("gbif", "florabr"), br), 2L)
+    testthat::expect_identical(provider_query_step("gbif", "gbif", br), 1L)
+    testthat::expect_true(is.na(provider_query_step("faunabr", c("gbif", "florabr"), br)))
+})
+
+testthat::test_that("conservation summary renders short tags with the sentence as tooltip", {
+    testthat::local_mocked_bindings(
+        sensitive_category_for = function(x) c("VU", NA_character_),
+        flag_invasive_species = function(x) c(FALSE, TRUE),
+        .package = "saira"
+    )
+    report <- data.frame(scientificName = c("Anodorhynchus hyacinthinus", "Pinus elliottii"))
+    html <- as.character(conservation_status_summary_ui(report, c("gbif", "florabr"), c("florabr", "faunabr"), "pt"))
+
+    testthat::expect_identical(lengths(regmatches(html, gregexpr("vn-conservation-tag", html, fixed = TRUE))), 3L)
+    testthat::expect_true(grepl(sprintf(tr("validate_names_conservation_tag_mma", "pt"), 1L), html, fixed = TRUE))
+    testthat::expect_true(grepl(sprintf(tr("validate_names_conservation_tag_invasive", "pt"), 1L), html, fixed = TRUE))
+    testthat::expect_true(grepl("title=", html, fixed = TRUE))
+})

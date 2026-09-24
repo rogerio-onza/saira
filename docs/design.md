@@ -223,10 +223,10 @@ code, .data-cell, .coord-value {
 --space-4: 1rem;     --space-5: 1.25rem;  --space-6: 1.5rem;
 --space-8: 2rem;     --space-10: 2.5rem;  --space-12: 3rem;
 
---radius-sm: 4px;  --radius: 8px;  --radius-lg: 12px;  --radius-xl: 14px;  --radius-full: 9999px;
+--radius-sm: 4px;  --radius: 8px;  --radius-lg: 12px;  --radius-xl: 14px;  --radius-full: 9999px;  --radius-chip: 6px;
 ```
 
-Controles 8px, cards 12px, painéis 14px, pílulas e chips `--radius-full`. Não use número fixo: `50%` só para círculo.
+Controles 8px, cards 12px, painéis 14px. Filtros e tags de status usam `--radius-chip` (6px, ADR-130); `--radius-full` fica para o selo de versão, interruptores e barras de progresso. Não use número fixo: `50%` só para círculo.
 
 ```css
 ```
@@ -356,7 +356,7 @@ label, .input-label { font-family: var(--font-mono); font-size: var(--text-sm); 
 --header-row-height:  56px;   /* marca, Wiki DwC, Ajuda, idioma, versão */
 --step-row-height:    48px;   /* etapas 1 a 7 */
 --app-header-height:  calc(56px + 48px + 2px);  /* 80px abaixo de 992px */
---step-active:        #0B7580;  /* etapa ativa, sublinhado de 2px, 5.4:1 */
+--step-active:        var(--accent);  /* azul da marca: etapa ativa, caixas marcadas, filtro Todos; 8.75:1 (ADR-130) */
 --navbar-brand-width: 7.5rem;
 ```
 
@@ -380,11 +380,18 @@ A etapa ativa usa cor e sublinhado, sem fundo. Abaixo de 992px, o menu recolhido
 .coord-issue-badge-warning → warning-bg / --warning   (#FFA204)
 .coord-issue-badge-missing → rgba(40,51,172,.06) / --text-muted
 
-/* Stream pills active */
-.stream-pill.active   → #2833AC, white text
-.pill-error.active    → #C0392B
-.pill-warning.active  → #FFA204, dark text
-.pill-info.active     → #252659
+/* Filter chips (ADR-130): label | count, --radius-chip, the color of what they filter */
+--pill-fg / --pill-bg per class: pill-problems, pill-error → missing red;
+  pill-warning → suggested amber; pill-info → --info; pill-success → auto green;
+  pill-invasive → --badge-invasive-*; pill-reference → --coord-swapped; pill-edited;
+  none (All) → --step-active
+count part → --pill-bg tint; active chip → --pill-bg fill, --pill-fg border, count filled --pill-fg
+
+/* Status tags (.vn-status-badge): no border, light fill, dark text */
+.badge-success → --badge-auto-*      .badge-warning → --badge-suggested-*
+.badge-error   → --state-missing-bg / --badge-missing-fg
+.badge-info    → --badge-assistant-* .badge-accent → --badge-alias-*
+.badge-muted   → --badge-manual-*     .badge-invasive → --badge-invasive-* (brown)
 ```
 
 ---

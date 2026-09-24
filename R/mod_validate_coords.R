@@ -483,7 +483,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             # (muted) and "problems" the primary accent, so the six are distinct.
             pill_defs <- list(
                 list(key = "all", class = "pill-muted", label_key = "validate_coords_filter_all"),
-                list(key = "problems", class = "", label_key = "validate_coords_filter_problems"),
+                list(key = "problems", class = "pill-problems", label_key = "validate_coords_filter_problems"),
                 list(key = "validity", class = "pill-error", label_key = "validate_coords_filter_validity"),
                 list(key = "sea", class = "pill-info", label_key = "validate_coords_filter_sea"),
                 list(key = "zero_equal", class = "pill-warning", label_key = "validate_coords_filter_zero_equal"),
@@ -504,10 +504,10 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     shiny::actionButton(
                         inputId = ns(paste0("coords_filter_", item$key)),
                         label = shiny::tagList(
-                            tr(item$label_key, lang_r()),
+                            shiny::tags$span(class = "pill-label", tr(item$label_key, lang_r())),
                             shiny::tags$span(class = "pill-count", count_value)
                         ),
-                        class = trimws(paste("stream-pill", item$class, if (is_active) "active" else ""))
+                        class = trimws(paste("stream-pill has-count", item$class, if (is_active) "active" else ""))
                     )
                 })
             )
@@ -515,15 +515,31 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
 
         output$map_note <- shiny::renderUI({
             map_df <- map_data_r()
-            if (is.data.frame(map_df) && nrow(map_df) > 0L) {
+            has_rows <- is.data.frame(map_df) && nrow(map_df) > 0L
+            hidden_n <- if (has_rows) sum(!coords_plottable(map_df$lat_num, map_df$lon_num)) else 0L
+            if (!has_rows) {
+                return(shiny::div(
+                    class = "alert alert-warning mb-0",
+                    shiny::icon("triangle-exclamation"),
+                    " ",
+                    tr("validate_coords_map_empty", lang_r())
+                ))
+            }
+            if (hidden_n == 0L) {
                 return(NULL)
             }
             shiny::div(
-                class = "alert alert-warning mb-0",
+                class = "coords-map-hidden-note",
                 shiny::icon("triangle-exclamation"),
-                " ",
-                tr("validate_coords_map_empty", lang_r())
+                shiny::span(sprintf(tr("validate_coords_map_hidden", lang_r()), hidden_n)),
+                if (!identical(active_filter(), "validity")) {
+                    shiny::actionLink(ns("map_show_hidden"), tr("validate_coords_map_hidden_link", lang_r()))
+                }
             )
+        })
+
+        shiny::observeEvent(input$map_show_hidden, {
+            rv$stream_filter <- "validity"
         })
 
         # NOTE: depend only on coord_validation_r() here. This renderUI hosts the
@@ -622,7 +638,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 options = leaflet::layersControlOptions(collapsed = FALSE)
             )
             map_obj <- leaflet::hideGroup(map_obj, "Esri.WorldImagery")
-            leaflet::setView(map = map_obj, lng = 0, lat = 0, zoom = 2)
+            map_obj <- leaflet::setView(map = map_obj, lng = 0, lat = 0, zoom = 2)
+            leaflet_fill_world(map_obj)
         })
 
         # Markers travel through a proxy, and Leaflet drops a proxy call made
@@ -648,6 +665,13 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     return(invisible(NULL))
                 }
 
+                # A point outside the valid range has no place on the map. The
+                # map note counts these rows, and the table lists them.
+                map_df <- map_df[coords_plottable(map_df$lat_num, map_df$lon_num), , drop = FALSE]
+                if (nrow(map_df) == 0L) {
+                    return(invisible(NULL))
+                }
+
                 marker_radius <- if (nrow(map_df) > 2000L) 4 else 6
                 leaflet::addCircleMarkers(
                     map = proxy,
@@ -664,37 +688,18 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     layerId = ~paste0("r", .row_index)
                 )
 
-                lon_values <- suppressWarnings(as.numeric(map_df$lon_num))
-                lat_values <- suppressWarnings(as.numeric(map_df$lat_num))
-                valid_bounds <- is.finite(lon_values) & is.finite(lat_values)
-                if (!any(valid_bounds)) {
-                    return(invisible(NULL))
-                }
-
-                lon_values <- lon_values[valid_bounds]
-                lat_values <- lat_values[valid_bounds]
-                lon_min <- min(lon_values)
-                lon_max <- max(lon_values)
-                lat_min <- min(lat_values)
-                lat_max <- max(lat_values)
-
-                if (isTRUE(all.equal(lon_min, lon_max)) && isTRUE(all.equal(lat_min, lat_max))) {
-                    leaflet::setView(
+                view <- coords_map_view(map_df$lat_num, map_df$lon_num)
+                if (identical(view$type, "point")) {
+                    leaflet::setView(map = proxy, lng = view$lng, lat = view$lat, zoom = 8)
+                } else if (identical(view$type, "bounds")) {
+                    leaflet::fitBounds(
                         map = proxy,
-                        lng = lon_min,
-                        lat = lat_min,
-                        zoom = 8
+                        lng1 = view$lng1,
+                        lat1 = view$lat1,
+                        lng2 = view$lng2,
+                        lat2 = view$lat2
                     )
-                    return(invisible(NULL))
                 }
-
-                leaflet::fitBounds(
-                    map = proxy,
-                    lng1 = lon_min,
-                    lat1 = lat_min,
-                    lng2 = lon_max,
-                    lat2 = lat_max
-                )
             }),
             # Not effective_validation_r(): a manual edit moves its own marker
             # (refresh_marker below) and must not redraw or re-zoom the map.

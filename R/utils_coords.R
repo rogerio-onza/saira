@@ -2033,6 +2033,63 @@ count_coords_issues <- function(result_df) {
     ))
 }
 
+#' Coordinates a web map can place
+#'
+#' A latitude beyond 90 or a longitude beyond 180 has no place on the map: the
+#' marker falls outside the world and pulls the view out to zoom 1.
+#' @param lat,lon Numeric (or coercible) vectors of equal length.
+#' @return Logical vector, TRUE where the point can be drawn.
+#' @noRd
+coords_plottable <- function(lat, lon) {
+    lat <- suppressWarnings(as.numeric(lat))
+    lon <- suppressWarnings(as.numeric(lon))
+    is.finite(lat) & is.finite(lon) & abs(lat) <= 90 & abs(lon) <= 180
+}
+
+#' Map view that frames the drawable points
+#'
+#' @param lat,lon Numeric vectors of equal length.
+#' @return NULL when no point can be drawn, `list(type = "point", lng, lat)`
+#'   for one location, or `list(type = "bounds", lng1, lat1, lng2, lat2)`.
+#' @noRd
+coords_map_view <- function(lat, lon) {
+    keep <- coords_plottable(lat, lon)
+    if (!any(keep)) {
+        return(NULL)
+    }
+    # Web Mercator stops near 85 degrees, so a pole point cannot widen the view.
+    lat <- pmin(pmax(as.numeric(lat[keep]), -85), 85)
+    lon <- as.numeric(lon[keep])
+    if (isTRUE(all.equal(min(lon), max(lon))) && isTRUE(all.equal(min(lat), max(lat)))) {
+        return(list(type = "point", lng = lon[[1]], lat = lat[[1]]))
+    }
+    list(type = "bounds", lng1 = min(lon), lat1 = min(lat), lng2 = max(lon), lat2 = max(lat))
+}
+
+#' Keep a no-wrap Leaflet map filled by the world
+#'
+#' The tiles do not wrap, so a zoom whose world is narrower than the map
+#' leaves grey bands. This bounds the view to the world and sets the minimum
+#' zoom to the first one whose world fills the map width (256 px per tile).
+#' @param map_obj A `leaflet::leaflet()` widget.
+#' @return The widget.
+#' @noRd
+leaflet_fill_world <- function(map_obj) {
+    map_obj <- leaflet::setMaxBounds(map_obj, -180, -85, 180, 85)
+    htmlwidgets::onRender(map_obj, "
+        function(el, x) {
+            var map = this;
+            map.options.maxBoundsViscosity = 1;
+            function fillWorld() {
+                var width = map.getSize().x;
+                if (width > 0) map.setMinZoom(Math.max(1, Math.ceil(Math.log2(width / 256))));
+            }
+            fillWorld();
+            map.on('resize', fillWorld);
+        }
+    ")
+}
+
 build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = NULL, popup_labels = NULL) {
     empty <- data.frame(
         .row_index = integer(0),

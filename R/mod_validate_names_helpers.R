@@ -188,6 +188,22 @@ stream_filter_after_completion <- function(report_df) {
     "problems"
 }
 
+#' Cascade step at which a provider is queried
+#'
+#' Mirrors the reorder in `init_taxadb_run_state()`: the Brazilian providers
+#' answer first, and GBIF receives only the names they did not find.
+#' @param provider_id Provider id.
+#' @param selected Character vector of selected provider ids.
+#' @param br_ids Character vector of Brazilian provider ids.
+#' @return Integer step (1 or 2), or NA when the provider is not selected.
+#' @noRd
+provider_query_step <- function(provider_id, selected, br_ids) {
+    if (!(provider_id %in% selected)) {
+        return(NA_integer_)
+    }
+    if (provider_id %in% br_ids || !any(br_ids %in% selected)) 1L else 2L
+}
+
 # ---------------------------------------------------------------------------
 # Status classification
 # ---------------------------------------------------------------------------
@@ -453,30 +469,39 @@ conservation_status_summary_ui <- function(report, selected, br_provider_ids, la
         return(NULL)
     }
 
+    # Each fact is a short tag. The full sentence stays in the tooltip.
+    fact_tag <- function(n, tag_key, sentence_key, badge_class) {
+        shiny::tags$span(
+            class = paste("vn-status-badge vn-conservation-tag", badge_class),
+            title = sprintf(tr(sentence_key, lang), n),
+            sprintf(tr(tag_key, lang), n)
+        )
+    }
+
     lines <- list()
     if (include_mma) {
         mma_n <- sum(!is.na(sensitive_category_for(name_col)))
         if (mma_n > 0L) {
-            lines[[length(lines) + 1L]] <- shiny::tags$span(
-                class = "vn-conservation-line",
-                sprintf(tr("validate_names_conservation_summary_mma", lang), mma_n)
+            lines[[length(lines) + 1L]] <- fact_tag(
+                mma_n, "validate_names_conservation_tag_mma",
+                "validate_names_conservation_summary_mma", "badge-warning"
             )
         }
     }
     if (include_iucn) {
         iucn_n <- sum(!is.na(name_col) & nzchar(trimws(name_col)))
         if (iucn_n > 0L) {
-            lines[[length(lines) + 1L]] <- shiny::tags$span(
-                class = "vn-conservation-line",
-                sprintf(tr("validate_names_conservation_summary_iucn", lang), iucn_n)
+            lines[[length(lines) + 1L]] <- fact_tag(
+                iucn_n, "validate_names_conservation_tag_iucn",
+                "validate_names_conservation_summary_iucn", "badge-accent"
             )
         }
     }
     invasive_n <- sum(flag_invasive_species(name_col))
     if (invasive_n > 0L) {
-        lines[[length(lines) + 1L]] <- shiny::tags$span(
-            class = "vn-conservation-line",
-            sprintf(tr("validate_names_conservation_summary_invasive", lang), invasive_n)
+        lines[[length(lines) + 1L]] <- fact_tag(
+            invasive_n, "validate_names_conservation_tag_invasive",
+            "validate_names_conservation_summary_invasive", "badge-invasive"
         )
     }
     if (length(lines) == 0L) {

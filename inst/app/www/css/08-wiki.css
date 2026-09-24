@@ -51,7 +51,7 @@
   font-weight: var(--weight-semibold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #0e8a95;
+  color: var(--accent);
   margin-bottom: 6px;
 }
 
@@ -86,7 +86,7 @@
 }
 
 .wiki-header-link {
-  color: #0e8a95;
+  color: var(--accent);
   font-weight: var(--weight-medium);
   text-decoration: none;
   border-bottom: 1px solid rgba(14, 138, 149, 0.3);
@@ -95,8 +95,8 @@
 
 .wiki-header-link:hover,
 .wiki-header-link:focus {
-  color: #0e8a95;
-  border-bottom-color: #0e8a95;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
   text-decoration: none;
 }
 
@@ -272,7 +272,7 @@
   align-items: center;
   gap: 5px;
   padding: 5px 13px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
@@ -340,7 +340,7 @@
 }
 
 .wiki-filter-pill[data-filter="MaterialSample"] .wiki-filter-pill-dot {
-  background: #0e8a95;
+  background: var(--accent);
 }
 
 .wiki-filter-pill[data-filter="MeasurementOrFact"] .wiki-filter-pill-dot {
@@ -411,8 +411,8 @@
 }
 
 .wiki-filter-pill[data-filter="MaterialSample"].active {
-  background: #0e8a95;
-  border-color: #0e8a95;
+  background: var(--accent);
+  border-color: var(--accent);
   color: #ffffff;
 }
 
@@ -527,8 +527,8 @@
 
 .wiki-term-link:hover,
 .wiki-term-link:focus {
-  color: #0e8a95;
-  border-bottom-color: #0e8a95;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
   text-decoration: none;
 }
 
@@ -540,13 +540,13 @@
   font-weight: var(--weight-semibold);
   letter-spacing: 0.04em;
   padding: 3px 9px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   white-space: nowrap;
 }
 
 .wiki-class-badge--record-level {
   background: rgba(56, 207, 246, 0.12);
-  color: #0e8a95;
+  color: var(--accent);
   border: 1px solid rgba(56, 207, 246, 0.3);
 }
 
@@ -595,7 +595,7 @@
 
 .wiki-class-badge--materialsample {
   background: rgba(14, 138, 149, 0.10);
-  color: #0e8a95;
+  color: var(--accent);
   border: 1px solid rgba(14, 138, 149, 0.25);
 }
 
@@ -642,7 +642,7 @@
   gap: 4px;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   line-height: 1;
   white-space: nowrap;
 }

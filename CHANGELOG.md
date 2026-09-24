@@ -11,6 +11,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **coords:** Fix a latitude or longitude directly in the coordinates table, with revalidation and undo, ADR-129
 
 ### Changed
+- **names:** GBIF is always on; providers and options are one checklist that shows the query order, ADR-130
+- **ui:** Square filter chips in the color of what they filter, borderless status tags, invasive species in brown; center the step row and group Wiki, Help, language and version on the right; selection states use the brand blue
+- **names:** Remove the percentage bar; the run shows only its current phase
 - **site:** Explain the in-table coordinate fix in the coordinate tutorial, in PT and EN
 - **site:** Refresh ten tutorial screenshots in PT and EN and name the steps as the app does
 - **ui:** Flatten tables, buttons, alerts and filter pills, and darken state-colored text to pass AA contrast
@@ -21,6 +24,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **names:** Keep the report counts readable when the table is tall
+- **coords:** Frame the Coordinates and Generalization maps on valid points only, with no grey bands, and count the points the map cannot draw
 - **coords:** Draw the map points right after validation, not only after a filter click
 - **coords:** Keep the original of a transposed fix in verbatimLatitude/Longitude when the same export converts UTM points
 - **tests:** Pin the name validation batch test to GBIF so a local Fauna BR cache does not exhaust memory ([#131](https://github.com/rogerio-onza/saira/pull/131))

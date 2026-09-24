@@ -72,6 +72,8 @@
   --badge-edited-bg: #e1eef8;
   --badge-edited-fg: #1f5585;
   --badge-missing-fg: #9b2c20;
+  --badge-invasive-bg: #f5e8dc;
+  --badge-invasive-fg: #8c4a00; /* invasive species: brown, never the not-found red */
 
   /* Borders: warm neutrals that sit on --bg-main (ADR-127). */
   --border-light: #efede6;
@@ -84,7 +86,7 @@
   --hover-bg: rgba(40, 51, 172, 0.07);
   --active-bg: rgba(40, 51, 172, 0.13);
   /* Flat fill for a selected card or an active drop target. */
-  --selected-bg: rgba(56, 207, 246, 0.12);
+  --selected-bg: rgba(40, 51, 172, 0.1); /* brand blue tint, between hover and active */
 
   /* Typography */
   --font-serif: 'Source Serif 4', Georgia, serif;
@@ -129,6 +131,7 @@
   --radius-lg: 12px;
   --radius-xl: 14px;
   --radius-full: 9999px;
+  --radius-chip: 6px; /* filter chips and status tags (ADR-130) */
 
   /* Shadows: the design is flat (ADR-127). The tokens stay so a rule can
      name its intent, but every one resolves to none. Focus rings stay. */
@@ -166,7 +169,7 @@
   --header-row-height: 56px;
   --step-row-height: 48px;
   --app-header-height: calc(var(--header-row-height) + var(--step-row-height) + 2px);
-  --step-active: #0b7580; /* 5.4:1 on white */
+  --step-active: var(--accent); /* brand blue: selection color, 8.75:1 on --bg-main */
   --navbar-brand-width: 7.5rem;
   --navbar-link-color: #2833ac;
   --navbar-link-hover-bg: var(--hover-bg);
@@ -469,15 +472,20 @@ label,
   border: 1px solid var(--border-default);
   border-radius: var(--radius);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  padding: 0.5rem 2.5rem 0.5rem 0.95rem;
-  min-width: 150px;
-  min-height: 2.4rem;
+  font-size: var(--text-xs);
+  padding: 0.3rem 1.8rem 0.3rem 0.6rem;
+  min-width: 4.25rem;
+  min-height: 2rem;
   line-height: 1.2;
   margin: 0;
   display: block;
-  background-position: right 0.75rem center;
-  background-size: 0.7rem 0.55rem;
+  /* The select renders without Bootstrap's arrow, so draw one. */
+  appearance: none;
+  background-color: var(--bg-card);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3e%3cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235f6570' stroke-width='1.6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.55rem center;
+  background-size: 0.6rem 0.5rem;
 }
 
 /* -- Nav link styling (high specificity to beat bslib) -- */
@@ -570,6 +578,9 @@ label,
   .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav {
     flex-wrap: wrap;
     align-items: stretch;
+    /* Centers the step row. Row 1 is full: the nav spacer's auto margin
+       takes its free space, so this rule does not move it. */
+    justify-content: center;
     gap: 0;
     width: 100%;
     /* Bootstrap sets the side padding of the links from this variable, with a
@@ -585,7 +596,12 @@ label,
     align-items: stretch;
   }
 
-  /* Row 1 */
+  /* Row 1. The language and version items keep a gap from their left
+     neighbor: the list's li rule zeroes their margin. */
+  .bslib-page-navbar .navbar .navbar-nav > li.bslib-nav-item {
+    padding-left: var(--space-3);
+  }
+
   .bslib-page-navbar .navbar .navbar-nav > li:has(> .nav-link[data-value="wiki"]),
   .bslib-page-navbar .navbar .navbar-nav > li:has(> .nav-link[data-value="help"]),
   .bslib-page-navbar .navbar .navbar-nav > .bslib-nav-spacer,
@@ -965,7 +981,7 @@ label,
   font-weight: var(--weight-semibold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #0e8a95;
+  color: var(--accent);
   margin-bottom: 6px;
 }
 
@@ -1000,7 +1016,7 @@ label,
 }
 
 .wiki-header-link {
-  color: #0e8a95;
+  color: var(--accent);
   font-weight: var(--weight-medium);
   text-decoration: none;
   border-bottom: 1px solid rgba(14, 138, 149, 0.3);
@@ -1009,8 +1025,8 @@ label,
 
 .wiki-header-link:hover,
 .wiki-header-link:focus {
-  color: #0e8a95;
-  border-bottom-color: #0e8a95;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
   text-decoration: none;
 }
 
@@ -1186,7 +1202,7 @@ label,
   align-items: center;
   gap: 5px;
   padding: 5px 13px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
@@ -1254,7 +1270,7 @@ label,
 }
 
 .wiki-filter-pill[data-filter="MaterialSample"] .wiki-filter-pill-dot {
-  background: #0e8a95;
+  background: var(--accent);
 }
 
 .wiki-filter-pill[data-filter="MeasurementOrFact"] .wiki-filter-pill-dot {
@@ -1325,8 +1341,8 @@ label,
 }
 
 .wiki-filter-pill[data-filter="MaterialSample"].active {
-  background: #0e8a95;
-  border-color: #0e8a95;
+  background: var(--accent);
+  border-color: var(--accent);
   color: #ffffff;
 }
 
@@ -1441,8 +1457,8 @@ label,
 
 .wiki-term-link:hover,
 .wiki-term-link:focus {
-  color: #0e8a95;
-  border-bottom-color: #0e8a95;
+  color: var(--accent);
+  border-bottom-color: var(--accent);
   text-decoration: none;
 }
 
@@ -1454,13 +1470,13 @@ label,
   font-weight: var(--weight-semibold);
   letter-spacing: 0.04em;
   padding: 3px 9px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   white-space: nowrap;
 }
 
 .wiki-class-badge--record-level {
   background: rgba(56, 207, 246, 0.12);
-  color: #0e8a95;
+  color: var(--accent);
   border: 1px solid rgba(56, 207, 246, 0.3);
 }
 
@@ -1509,7 +1525,7 @@ label,
 
 .wiki-class-badge--materialsample {
   background: rgba(14, 138, 149, 0.10);
-  color: #0e8a95;
+  color: var(--accent);
   border: 1px solid rgba(14, 138, 149, 0.25);
 }
 
@@ -1556,7 +1572,7 @@ label,
   gap: 4px;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   line-height: 1;
   white-space: nowrap;
 }
@@ -2121,14 +2137,6 @@ table.dataTable tbody tr.validate-invalid td {
   .navbar .nav-link,
   .navbar .dropdown-toggle {
     padding: var(--space-2) var(--space-3);
-  }
-
-  .navbar .nav-item .form-select,
-  .navbar .nav-item .shiny-input-select,
-  .navbar #lang_switch {
-    min-width: 130px;
-    padding: 0.45rem 2.2rem 0.45rem 0.8rem;
-    background-position: right 0.65rem center;
   }
 }
 
@@ -2788,7 +2796,7 @@ table.dataTable tbody tr.validate-invalid td {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   padding: 2px 10px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   white-space: nowrap;
   letter-spacing: 0.02em;
 }
@@ -3047,7 +3055,7 @@ table.dataTable tbody tr.validate-invalid td {
   font-size: 0.7rem;
   color: var(--text-muted);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   padding: 0 var(--space-2);
   white-space: nowrap;
 }
@@ -3062,7 +3070,7 @@ table.dataTable tbody tr.validate-invalid td {
   font-size: 0.7rem;
   letter-spacing: 0.02em;
   padding: 0.15rem 0.55rem;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
 }
 
 .field-status-badge--auto { background-color: var(--badge-auto-bg); color: var(--badge-auto-fg); }
@@ -3597,7 +3605,7 @@ table.dataTable tbody tr.validate-invalid td {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   padding: 0.25rem 0.6rem;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
 }
 
 .mapping-required-chip.is-mapped {
@@ -4310,7 +4318,7 @@ table.dataTable tbody tr.validate-invalid td {
 .provider-badge {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   padding: 2px 8px;
   white-space: nowrap;
 }
@@ -4665,6 +4673,28 @@ table.dataTable tbody tr.validate-invalid td {
   width: 100%;
 }
 
+/* Rows the map cannot place (out of range), with a link to them in the table. */
+.coords-map-hidden-note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--state-attention-border);
+  border-radius: var(--radius);
+  background: var(--state-attention-bg);
+  color: var(--warning-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.coords-map-hidden-note a {
+  color: var(--accent);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .coords-map-legend {
   display: flex;
   flex-wrap: wrap;
@@ -4735,7 +4765,7 @@ table.dataTable tbody tr.validate-invalid td {
 
 .coord-issue-badge {
   display: inline-block;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   padding: 0.15rem 0.55rem;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
@@ -4800,12 +4830,6 @@ table.dataTable tbody tr.validate-invalid td {
   cursor: text;
 }
 
-.pill-edited.active {
-  background: var(--badge-edited-bg);
-  border-color: var(--badge-edited-fg);
-  color: var(--badge-edited-fg);
-}
-
 .stream-filter-pills,
 .coords-filter-pills {
   display: flex;
@@ -4837,7 +4861,7 @@ table.dataTable tbody tr.validate-invalid td {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   padding: 0.2rem 0.65rem;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   border: 1px solid var(--border-default);
   background: var(--bg-card);
   color: var(--accent);
@@ -4865,45 +4889,94 @@ table.dataTable tbody tr.validate-invalid td {
   font-weight: 700;
 }
 
-.stream-pill .pill-count {
-  background: var(--bg-main);
-  border-radius: var(--radius-full);
-  padding: 0 0.35rem;
-  font-size: var(--text-xs);
+/* Filter chips with a count (ADR-130): the label and the count are two parts
+   of one chip. Each chip carries the color of what it filters, the same as
+   its tag: the count part is tinted, and the active chip is outlined and its
+   count filled. "All" stays teal. */
+.stream-pill.has-count,
+.vn-stream-pill.btn,
+.vn-stream-pill.action-button {
+  --pill-fg: var(--step-active);
+  --pill-bg: var(--selected-bg);
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  align-items: stretch;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
 }
 
-.stream-pill.active .pill-count {
-  background: var(--bg-card);
+.stream-pill.pill-problems,
+.stream-pill.pill-error,
+.vn-stream-pill.pill-problems,
+.vn-stream-pill.pill-error {
+  --pill-fg: var(--badge-missing-fg);
+  --pill-bg: var(--state-missing-bg);
 }
 
-.pill-error.active {
-  background: var(--error-bg);
-  border-color: var(--error-border-strong);
-  color: var(--error-text);
+.stream-pill.pill-warning,
+.vn-stream-pill.pill-warning {
+  --pill-fg: var(--badge-suggested-fg);
+  --pill-bg: var(--badge-suggested-bg);
 }
 
-.pill-warning.active {
-  background: var(--warning-bg);
-  border-color: var(--warning-border-strong);
-  color: var(--warning-text);
+.stream-pill.pill-info,
+.vn-stream-pill.pill-info {
+  --pill-fg: var(--info);
+  --pill-bg: var(--badge-assistant-bg);
 }
 
-.pill-info.active {
-  background: var(--info-bg);
-  border-color: var(--info);
-  color: var(--info);
+.stream-pill.pill-success,
+.vn-stream-pill.pill-success {
+  --pill-fg: var(--badge-auto-fg);
+  --pill-bg: var(--badge-auto-bg);
 }
 
-.pill-muted.active {
-  background: var(--text-muted);
-  border-color: var(--text-muted);
+.stream-pill.pill-invasive,
+.vn-stream-pill.pill-invasive {
+  --pill-fg: var(--badge-invasive-fg);
+  --pill-bg: var(--badge-invasive-bg);
 }
 
-/* Reference pill: match the map legend's "reference" dot (--coord-swapped),
-   distinct from the sea pill which shares --info with the legend's sea dot. */
-.pill-reference.active {
-  background: var(--coord-swapped);
-  border-color: var(--coord-swapped);
+.stream-pill.pill-reference,
+.vn-stream-pill.pill-reference {
+  --pill-fg: var(--coord-swapped);
+  --pill-bg: var(--badge-template-bg);
+}
+
+.stream-pill.pill-edited,
+.vn-stream-pill.pill-edited {
+  --pill-fg: var(--badge-edited-fg);
+  --pill-bg: var(--badge-edited-bg);
+}
+
+.pill-label,
+.vn-pill-label {
+  padding: 0.35rem 0.75rem;
+}
+
+.pill-count,
+.vn-pill-count {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.55rem;
+  background: var(--pill-bg);
+  border-left: 1px solid var(--border-default);
+  color: var(--pill-fg);
+  font-weight: 700;
+}
+
+.stream-pill.has-count.active,
+.vn-stream-pill.btn.is-active {
+  background: var(--pill-bg);
+  border-color: var(--pill-fg);
+  color: var(--pill-fg);
+}
+
+.stream-pill.active .pill-count,
+.vn-stream-pill.is-active .vn-pill-count {
+  background: var(--pill-fg);
+  border-left-color: var(--pill-fg);
   color: #ffffff;
 }
 
@@ -5033,7 +5106,7 @@ table.dataTable tbody tr.validate-invalid td {
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   padding: 0.15rem 0.55rem;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   white-space: nowrap;
   display: inline-block;
 }
@@ -5171,106 +5244,154 @@ table.dataTable tbody tr.validate-invalid td {
   margin-bottom: 0.55rem;
 }
 
-.vn-provider-list {
+/* Providers and options share one list box (ADR-130): a bordered box with one
+   row per item, a checkbox and a status on the right. */
+.vn-check-list {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-card);
 }
 
-.vn-provider-card.action-button,
-.vn-provider-card.btn-default {
+.vn-check-row {
   width: 100%;
   margin: 0;
-  text-align: left;
-  border: 1px solid rgba(40, 51, 172, 0.18);
-  border-radius: var(--radius);
-  padding: 0.5rem 0.65rem;
-  background: #f4f3ee;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-top: 1px solid var(--border-light);
+  border-radius: 0;
+  background: var(--bg-card);
   color: var(--text-primary);
-  cursor: pointer;
-  box-shadow: none;
-  transition: var(--transition-fast);
-}
-
-.vn-provider-card:hover:not(:disabled) {
-  border-color: var(--accent);
-  background: rgba(40, 51, 172, 0.07);
-}
-
-/* Selected state mirrors the Generalization cards (17-sensitive-panel.css):
-   accent border + a flat tint + a 1px inset ring so selection reads
-   clearly. Card dimensions/padding are unchanged. */
-.vn-provider-card.is-selected {
-  border-color: var(--step-active);
-  background: var(--selected-bg);
+  text-align: left;
   box-shadow: none;
 }
 
-/* Priority-1 (the cascade's first provider, GBIF) keeps the same selected
-   tint but a teal ring to mark it as the lead provider. */
-.vn-provider-card.is-priority-1 {
-  border-color: var(--step-active);
-  background: var(--selected-bg);
-  box-shadow: none;
+.vn-check-row:first-child {
+  border-top: 0;
 }
 
-.vn-provider-card.is-disabled {
+.vn-check-row.action-button:hover:not(:disabled),
+.vn-check-row.action-button:focus,
+.vn-check-row.action-button:active {
+  background: var(--hover-bg);
+  border-top-color: var(--border-light);
+  color: var(--text-primary);
+}
+
+.vn-check-row.is-disabled {
   opacity: 0.72;
   cursor: default;
 }
 
-.vn-provider-card-content {
+.vn-check-row-content {
   display: grid;
-  grid-template-columns: 26px 1fr auto;
-  gap: 0.55rem;
+  grid-template-columns: 0.9rem 16px minmax(0, 1fr);
+  gap: var(--space-2);
   align-items: center;
 }
 
-.vn-provider-icon-wrap {
-  width: 26px;
-  height: 26px;
-  border-radius: var(--radius);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(40, 51, 172, 0.08);
-  color: var(--accent);
-  flex-shrink: 0;
+.vn-check-step {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
 }
 
-.vn-provider-icon {
-  font-size: var(--text-sm);
+.vn-check-box {
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
 }
 
-.vn-provider-text-wrap {
+.vn-check-row.is-selected .vn-check-box {
+  background: var(--step-active);
+  border-color: var(--step-active);
+}
+
+/* The locked provider (GBIF) is always selected and cannot be clicked. */
+.vn-check-row.is-locked .vn-check-box {
+  background: #a9addf;
+  border-color: #a9addf;
+}
+
+.vn-check-row.is-selected .vn-check-box::after {
+  content: "";
+  position: absolute;
+  left: 4.5px;
+  top: 1.5px;
+  width: 5px;
+  height: 9px;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.vn-check-text {
   min-width: 0;
 }
 
-.vn-provider-name {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--text-primary);
-  line-height: 1.2;
+/* Name and status share the first line, so the description gets the width. */
+.vn-check-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: 0.1rem;
 }
 
-.vn-provider-desc {
+.vn-check-name {
   display: block;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.vn-check-desc {
+  display: block;
+  margin: 0;
   font-family: var(--font-serif);
-  font-weight: var(--weight-medium);
   font-size: var(--text-xs);
   color: var(--text-muted);
   line-height: var(--leading-tight);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.vn-provider-badges {
+/* Option rows: a native checkbox, tinted like the provider boxes. */
+.vn-option-row .form-group {
+  margin-bottom: 0.1rem;
+}
+
+.vn-option-row .checkbox label {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.18rem;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.vn-option-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--step-active);
+}
+
+/* bslib paints a checked box in the primary cyan with a dark check drawn
+   for that cyan; match the provider boxes: blue fill, white check. */
+.vn-option-row input[type="checkbox"]:checked {
+  background-color: var(--step-active);
+  border-color: var(--step-active);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
+}
+
+.vn-option-row .vn-check-desc {
+  padding-left: calc(16px + var(--space-2));
 }
 
 .vn-provider-note,
@@ -5290,46 +5411,6 @@ table.dataTable tbody tr.validate-invalid td {
   font-size: var(--text-xs);
   line-height: 1;
   margin-top: 1px;
-}
-
-.vn-toggle-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.vn-toggle-item .bslib-input-switch {
-  margin-bottom: 0.08rem;
-}
-
-.vn-toggle-item .bslib-input-switch .form-check-input {
-  width: 32px;
-  height: 20px;
-  border-radius: var(--radius-full);
-  border-color: rgba(40, 51, 172, 0.18);
-  background-color: rgba(40, 51, 172, 0.18);
-  box-shadow: none;
-  transition: var(--transition-fast);
-}
-
-.vn-toggle-item .bslib-input-switch .form-check-input:checked {
-  background-color: #0e8a95;
-  border-color: #0e8a95;
-}
-
-.vn-toggle-item .bslib-input-switch .form-check-label {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: #1c1c26;
-}
-
-.vn-toggle-desc {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: var(--weight-medium);
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  line-height: var(--leading-normal);
 }
 
 .vn-run-btn.btn,
@@ -5389,53 +5470,6 @@ table.dataTable tbody tr.validate-invalid td {
   color: var(--text-muted);
 }
 
-.vn-progress-block {
-  margin-top: 0.55rem;
-}
-
-.vn-progress-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-
-.vn-progress-title {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-}
-
-.vn-progress-percent {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: #0e8a95;
-}
-
-.vn-progress-track {
-  margin-top: 0.28rem;
-  height: 5px;
-  background: rgba(40, 51, 172, 0.08);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-
-.vn-progress-fill {
-  height: 100%;
-  background: #38cff6;
-  transition: width 0.4s ease;
-}
-
-.vn-progress-meta {
-  margin-top: 0.35rem;
-}
-
-.vn-progress-meta-line {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  line-height: var(--leading-normal);
-}
-
 .vn-action-helper {
   margin-top: 0.45rem;
   font-family: var(--font-mono);
@@ -5478,57 +5512,21 @@ table.dataTable tbody tr.validate-invalid td {
 .vn-stream-pill.btn,
 .vn-stream-pill.action-button {
   margin: 0;
-  border: 1px solid rgba(40, 51, 172, 0.18);
-  border-radius: var(--radius-full);
-  padding: 3px 10px;
-  background: #f4f3ee;
-  color: var(--text-muted);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-chip);
+  background: var(--bg-card);
+  color: var(--text-primary);
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
   display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
   box-shadow: none;
 }
 
 .vn-stream-pill:hover:not(:disabled):not(.is-active) {
-  background: rgba(40, 51, 172, 0.07);
+  background: var(--hover-bg);
 }
 
 .vn-stream-pill.is-active {
-  background: var(--selected-bg);
-  color: var(--step-active);
-  border-color: var(--step-active);
   font-weight: 700;
-}
-
-.vn-stream-pill.pill-error.is-active {
-  background: #c0392b;
-  border-color: #c0392b;
-}
-
-.vn-stream-pill.pill-warning.is-active {
-  background: #ffa204;
-  border-color: #ffa204;
-  color: #1c1c26;
-}
-
-.vn-stream-pill.pill-info.is-active {
-  background: #252659;
-  border-color: #252659;
-}
-
-/* Invasive-species filter. Deliberately not the red of pill-error (which means
-   "not found" here): this pill is not an error, it is a species-list fact. */
-.vn-stream-pill.pill-invasive.is-active {
-  background: #8c4a00;
-  border-color: #8c4a00;
-}
-
-.vn-pill-count {
-  border-radius: var(--radius-full);
-  padding: 0 0.32rem;
-  background: var(--bg-main);
 }
 
 .vn-stream-body {
@@ -5674,25 +5672,6 @@ table.dataTable tbody tr.validate-invalid td {
   border-radius: 50%;
   background: rgba(40, 51, 172, 0.45);
   display: inline-block;
-}
-
-.vn-stream-item-not-found {
-  background: rgba(192, 57, 43, 0.1);
-  border-color: rgba(192, 57, 43, 0.25);
-}
-
-.vn-stream-item-ambiguous {
-  background: rgba(255, 162, 4, 0.1);
-  border-color: rgba(255, 162, 4, 0.25);
-}
-
-.vn-stream-item-synonym {
-  background: rgba(37, 38, 89, 0.1);
-  border-color: rgba(37, 38, 89, 0.2);
-}
-
-.vn-stream-item-ignored {
-  background: #ffffff;
 }
 
 .vn-stream-empty {
@@ -5966,8 +5945,8 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 /* Invasive-alien-species badge, stacked under the sensitive pill in the
-   scientificName cell. Only the spacing is set: the badge itself reuses
-   .vn-status-badge + .badge-error, like every other pill in this table. */
+   scientificName cell. Only the spacing is set: the badge itself is
+   .vn-status-badge + .badge-invasive, the color of the Invasive filter. */
 .vn-cell-invasive {
   margin-top: var(--space-1);
 }
@@ -6006,21 +5985,27 @@ body.vn-review-open .modal-backdrop.show {
   box-shadow: none;
 }
 
+/* The panel is a flex column that clips: without flex-shrink: 0 a tall
+   table squeezes these blocks and their text overlaps (ADR-130). */
+.vn-report-statbar,
+.vn-conservation-summary,
+.vn-report-header {
+  flex-shrink: 0;
+}
+
 .vn-report-statbar {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-bottom: 1px solid rgba(40, 51, 172, 0.08);
-  overflow: hidden;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-2);
 }
 
 .vn-report-statcell {
-  padding: 0.6rem 0.5rem;
+  padding: var(--space-2);
   text-align: center;
-  border-right: 1px solid rgba(40, 51, 172, 0.08);
-}
-
-.vn-report-statcell:last-child {
-  border-right: 0;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
 }
 
 .vn-report-statvalue {
@@ -6030,19 +6015,19 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .vn-report-statvalue-valid {
-  color: #00a86b;
+  color: var(--success-text);
 }
 
 .vn-report-statvalue-invalid {
-  color: #c0392b;
+  color: var(--error-text);
 }
 
 .vn-report-statvalue-unresolved {
-  color: #ffa204;
+  color: var(--warning-text);
 }
 
 .vn-report-statlabel {
-  margin-top: 2px;
+  margin-top: var(--space-1);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   text-transform: uppercase;
@@ -6052,19 +6037,14 @@ body.vn-review-open .modal-backdrop.show {
 
 .vn-conservation-summary {
   display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  padding: 0.7rem 1rem;
-  border-top: 1px solid rgba(40, 51, 172, 0.08);
-  border-bottom: 1px solid rgba(40, 51, 172, 0.08);
-  background: rgba(40, 51, 172, 0.03);
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  padding: 0 var(--space-4) var(--space-3);
+  border-bottom: 1px solid var(--border-light);
 }
 
-.vn-conservation-line {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  line-height: var(--leading-normal);
-  color: var(--text-muted);
+.vn-conservation-tag {
+  cursor: help;
 }
 
 .vn-report-header {
@@ -6323,11 +6303,13 @@ body.vn-review-open .modal-backdrop.show {
   cursor: default;
 }
 
+/* Status tags (ADR-130): square corners, a light fill and dark text, no
+   border. The same tokens as the mapping badges keep the text AA. */
 .vn-status-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   padding: 0.12rem 0.5rem;
   border: 1px solid transparent;
   font-family: var(--font-mono);
@@ -6337,33 +6319,38 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .badge-success {
-  background: var(--success-bg);
-  color: #007a4d;
-  border-color: var(--success-border);
+  background: var(--badge-auto-bg);
+  color: var(--badge-auto-fg);
 }
 
 .badge-warning {
-  background: var(--warning-bg);
-  color: #c07800;
-  border-color: var(--warning-border);
+  background: var(--badge-suggested-bg);
+  color: var(--badge-suggested-fg);
 }
 
 .badge-error {
-  background: var(--error-bg);
-  color: #c0392b;
-  border-color: var(--error-border);
+  background: var(--state-missing-bg);
+  color: var(--badge-missing-fg);
 }
 
 .badge-info {
-  background: var(--info-bg);
-  color: #252659;
-  border-color: var(--info-border);
+  background: var(--badge-assistant-bg);
+  color: var(--badge-assistant-fg);
+}
+
+.badge-accent {
+  background: var(--badge-alias-bg);
+  color: var(--badge-alias-fg);
 }
 
 .badge-muted {
-  background: rgba(40, 51, 172, 0.06);
-  color: var(--text-muted);
-  border-color: var(--border-light);
+  background: var(--badge-manual-bg);
+  color: var(--badge-manual-fg);
+}
+
+.badge-invasive {
+  background: var(--badge-invasive-bg);
+  color: var(--badge-invasive-fg);
 }
 
 @media (max-width: 991.98px) {
@@ -6449,7 +6436,7 @@ body.vn-review-open .modal-backdrop.show {
   font-weight: var(--weight-semibold);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #0e8a95;
+  color: var(--accent);
   margin-bottom: 6px;
 }
 
@@ -6802,7 +6789,7 @@ body.vn-review-open .modal-backdrop.show {
   padding: 3px 9px;
   border-radius: var(--radius-full);
   background: rgba(56, 207, 246, 0.12);
-  color: #0e8a95;
+  color: var(--accent);
   border: 1px solid rgba(56, 207, 246, 0.3);
 }
 
@@ -7093,7 +7080,7 @@ body.vn-review-open .modal-backdrop.show {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     background: rgba(56, 207, 246, 0.12);
     color: var(--accent);
     letter-spacing: 0.02em;
@@ -7221,7 +7208,7 @@ body.vn-review-open .modal-backdrop.show {
     text-transform: uppercase;
     letter-spacing: 0.06em;
     padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     background: var(--success-bg);
     color: var(--success-text);
     border: 1px solid var(--success-border);
@@ -7406,7 +7393,7 @@ body.vn-review-open .modal-backdrop.show {
     letter-spacing: 0.04em;
     text-transform: uppercase;
     padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     border: 1px solid var(--border-default);
     white-space: nowrap;
 }
@@ -7456,7 +7443,7 @@ body.vn-review-open .modal-backdrop.show {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     border: 1px solid var(--border-default);
     background: var(--bg-main);
     color: var(--text-muted);
@@ -7579,7 +7566,7 @@ body.vn-review-open .modal-backdrop.show {
     color: var(--text-primary);
     background: var(--bg-main);
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     padding: 1px var(--space-2);
 }
 
@@ -7926,7 +7913,7 @@ body.vn-review-open .modal-backdrop.show {
     font-weight: var(--weight-semibold);
     letter-spacing: 0.04em;
     padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     border: 1px solid var(--border-default);
     background: var(--bg-card);
     color: var(--text-muted);
@@ -8256,7 +8243,7 @@ body.vn-review-open .modal-backdrop.show {
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     border: 1px solid var(--border-default);
     background: var(--bg-card);
     color: var(--text-primary);
@@ -8600,7 +8587,7 @@ button.sc-scale-chip:hover {
   gap: 0.3rem;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   padding: 0.2rem 0.6rem;
   border: 1px solid var(--border-default);
 }

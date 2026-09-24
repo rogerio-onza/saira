@@ -62,7 +62,7 @@
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     background: rgba(56, 207, 246, 0.12);
     color: var(--accent);
     letter-spacing: 0.02em;
@@ -190,7 +190,7 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     background: var(--success-bg);
     color: var(--success-text);
     border: 1px solid var(--success-border);
@@ -375,7 +375,7 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
     padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     border: 1px solid var(--border-default);
     white-space: nowrap;
 }
@@ -425,7 +425,7 @@
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     border: 1px solid var(--border-default);
     background: var(--bg-main);
     color: var(--text-muted);
@@ -548,7 +548,7 @@
     color: var(--text-primary);
     background: var(--bg-main);
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     padding: 1px var(--space-2);
 }
 
@@ -895,7 +895,7 @@
     font-weight: var(--weight-semibold);
     letter-spacing: 0.04em;
     padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     border: 1px solid var(--border-default);
     background: var(--bg-card);
     color: var(--text-muted);
@@ -1225,7 +1225,7 @@
     font-family: var(--font-mono);
     font-size: var(--text-xs);
     padding: 2px var(--space-2);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-chip);
     border: 1px solid var(--border-default);
     background: var(--bg-card);
     color: var(--text-primary);

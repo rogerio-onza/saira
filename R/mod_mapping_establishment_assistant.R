@@ -166,7 +166,7 @@ setup_establishment_assistant <- function(
                             ),
                             if (isTRUE(entries$invasive[[i]])) {
                                 shiny::span(
-                                    class = "vn-status-badge badge-error est-assistant-invasive",
+                                    class = "vn-status-badge badge-invasive est-assistant-invasive",
                                     tr("est_assistant_invasive_hint", lang_r())
                                 )
                             }

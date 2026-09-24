@@ -1052,7 +1052,8 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 options = leaflet::layersControlOptions(collapsed = FALSE)
             )
             map_obj <- leaflet::hideGroup(map_obj, "Esri.WorldImagery")
-            leaflet::setView(map_obj, lng = -52, lat = -15, zoom = 3)
+            map_obj <- leaflet::setView(map_obj, lng = -52, lat = -15, zoom = 3)
+            leaflet_fill_world(map_obj)
         })
         # Keep the map live while its tab is hidden so leafletProxy repaints
         # (e.g. an origin marker corrected on the Coords tab) are applied instead
@@ -1115,7 +1116,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     tier_u <- unique(prev$tier)
                     g_all <- vapply(tier_u, sensitive_generalization_grid, numeric(1), USE.NAMES = FALSE)[match(prev$tier, tier_u)]
                     crosses_all <- !is.na(prev$crosses) & prev$crosses
-                    has_cell <- !is.na(g_all) & g_all > 0
+                    has_cell <- !is.na(g_all) & g_all > 0 & coords_plottable(prev$lat, prev$lon)
                     # Camera-trap data stacks thousands of records on a handful of
                     # camera coordinates, so the same cell/connector/circle is
                     # drawn over and over. Collapse to unique (origin, cell, tier,
@@ -1191,7 +1192,9 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             sci <- as.character(df$scientificName)
             lat <- suppressWarnings(as.numeric(df$decimalLatitude))
             lon <- suppressWarnings(as.numeric(df$decimalLongitude))
-            sel <- sci %in% ov$scientificName & !is.na(lat) & !is.na(lon)
+            # A point outside the valid range has no place on the map; the
+            # Coordinates tab lists it.
+            sel <- sci %in% ov$scientificName & coords_plottable(lat, lon)
             if (any(sel)) {
                 s_sci <- sci[sel]; s_lat <- lat[sel]; s_lon <- lon[sel]
                 keep <- !duplicated(paste(s_sci, s_lon, s_lat, sep = "|"))
@@ -1225,18 +1228,17 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             sci <- as.character(df$scientificName)
             lat <- suppressWarnings(as.numeric(df$decimalLatitude))
             lon <- suppressWarnings(as.numeric(df$decimalLongitude))
-            sel <- sci %in% ov$scientificName & !is.na(lat) & !is.na(lon)
+            sel <- sci %in% ov$scientificName & coords_plottable(lat, lon)
             if (!any(sel)) return(invisible(NULL))
             sig <- paste0(sprintf("%.6f,%.6f", lon[sel], lat[sel]), collapse = ";")
             if (identical(sig, map_fitted_sig_rv())) return(invisible(NULL))
             map_fitted_sig_rv(sig)
             proxy <- leaflet::leafletProxy(ns("gen_map"))
-            rng_lon <- range(lon[sel])
-            rng_lat <- range(lat[sel])
-            if (diff(rng_lon) < 1e-6 && diff(rng_lat) < 1e-6) {
-                leaflet::setView(proxy, lng = rng_lon[1], lat = rng_lat[1], zoom = 8)
+            view <- coords_map_view(lat[sel], lon[sel])
+            if (identical(view$type, "point")) {
+                leaflet::setView(proxy, lng = view$lng, lat = view$lat, zoom = 8)
             } else {
-                leaflet::fitBounds(proxy, rng_lon[1], rng_lat[1], rng_lon[2], rng_lat[2])
+                leaflet::fitBounds(proxy, view$lng1, view$lat1, view$lng2, view$lat2)
             }
             invisible(NULL)
         })

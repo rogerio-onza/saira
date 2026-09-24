@@ -172,19 +172,19 @@ testthat::test_that("custom.css enforces navbar spacing and language dropdown gu
 
     testthat::expect_true(
         grepl("\\.navbar\\s+#lang_switch", css_text, perl = TRUE) &&
-            grepl("min-width:\\s*150px;", css_text, perl = TRUE),
-        info = "Language select should have min-width 150px"
+            grepl("min-width:\\s*4\\.25rem;", css_text, perl = TRUE),
+        info = "Language select keeps a compact min-width for the PT/EN codes"
     )
 
     testthat::expect_true(
         grepl("\\.navbar\\s+#lang_switch", css_text, perl = TRUE) &&
-            grepl("padding:\\s*0\\.5rem\\s+2\\.5rem\\s+0\\.5rem\\s+0\\.95rem;", css_text, perl = TRUE),
-        info = "Language select should have increased right padding"
+            grepl("padding:\\s*0\\.3rem\\s+1\\.8rem\\s+0\\.3rem\\s+0\\.6rem;", css_text, perl = TRUE),
+        info = "Language select keeps right padding for the arrow"
     )
 
     testthat::expect_true(
         grepl("\\.navbar\\s+#lang_switch", css_text, perl = TRUE) &&
-            grepl("background-position:\\s*right\\s+0\\.75rem\\s+center;", css_text, perl = TRUE),
+            grepl("background-position:\\s*right\\s+0\\.55rem\\s+center;", css_text, perl = TRUE),
         info = "Language select should keep explicit arrow position"
     )
 

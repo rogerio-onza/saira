@@ -71,6 +71,8 @@
   --badge-edited-bg: #e1eef8;
   --badge-edited-fg: #1f5585;
   --badge-missing-fg: #9b2c20;
+  --badge-invasive-bg: #f5e8dc;
+  --badge-invasive-fg: #8c4a00; /* invasive species: brown, never the not-found red */
 
   /* Borders: warm neutrals that sit on --bg-main (ADR-127). */
   --border-light: #efede6;
@@ -83,7 +85,7 @@
   --hover-bg: rgba(40, 51, 172, 0.07);
   --active-bg: rgba(40, 51, 172, 0.13);
   /* Flat fill for a selected card or an active drop target. */
-  --selected-bg: rgba(56, 207, 246, 0.12);
+  --selected-bg: rgba(40, 51, 172, 0.1); /* brand blue tint, between hover and active */
 
   /* Typography */
   --font-serif: 'Source Serif 4', Georgia, serif;
@@ -128,6 +130,7 @@
   --radius-lg: 12px;
   --radius-xl: 14px;
   --radius-full: 9999px;
+  --radius-chip: 6px; /* filter chips and status tags (ADR-130) */
 
   /* Shadows: the design is flat (ADR-127). The tokens stay so a rule can
      name its intent, but every one resolves to none. Focus rings stay. */
@@ -165,7 +168,7 @@
   --header-row-height: 56px;
   --step-row-height: 48px;
   --app-header-height: calc(var(--header-row-height) + var(--step-row-height) + 2px);
-  --step-active: #0b7580; /* 5.4:1 on white */
+  --step-active: var(--accent); /* brand blue: selection color, 8.75:1 on --bg-main */
   --navbar-brand-width: 7.5rem;
   --navbar-link-color: #2833ac;
   --navbar-link-hover-bg: var(--hover-bg);

@@ -593,7 +593,7 @@
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   padding: 2px 10px;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-chip);
   white-space: nowrap;
   letter-spacing: 0.02em;
 }

@@ -167,15 +167,20 @@
   border: 1px solid var(--border-default);
   border-radius: var(--radius);
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
-  padding: 0.5rem 2.5rem 0.5rem 0.95rem;
-  min-width: 150px;
-  min-height: 2.4rem;
+  font-size: var(--text-xs);
+  padding: 0.3rem 1.8rem 0.3rem 0.6rem;
+  min-width: 4.25rem;
+  min-height: 2rem;
   line-height: 1.2;
   margin: 0;
   display: block;
-  background-position: right 0.75rem center;
-  background-size: 0.7rem 0.55rem;
+  /* The select renders without Bootstrap's arrow, so draw one. */
+  appearance: none;
+  background-color: var(--bg-card);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3e%3cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235f6570' stroke-width='1.6'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 0.55rem center;
+  background-size: 0.6rem 0.5rem;
 }
 
 /* -- Nav link styling (high specificity to beat bslib) -- */
@@ -268,6 +273,9 @@
   .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav {
     flex-wrap: wrap;
     align-items: stretch;
+    /* Centers the step row. Row 1 is full: the nav spacer's auto margin
+       takes its free space, so this rule does not move it. */
+    justify-content: center;
     gap: 0;
     width: 100%;
     /* Bootstrap sets the side padding of the links from this variable, with a
@@ -283,7 +291,12 @@
     align-items: stretch;
   }
 
-  /* Row 1 */
+  /* Row 1. The language and version items keep a gap from their left
+     neighbor: the list's li rule zeroes their margin. */
+  .bslib-page-navbar .navbar .navbar-nav > li.bslib-nav-item {
+    padding-left: var(--space-3);
+  }
+
   .bslib-page-navbar .navbar .navbar-nav > li:has(> .nav-link[data-value="wiki"]),
   .bslib-page-navbar .navbar .navbar-nav > li:has(> .nav-link[data-value="help"]),
   .bslib-page-navbar .navbar .navbar-nav > .bslib-nav-spacer,

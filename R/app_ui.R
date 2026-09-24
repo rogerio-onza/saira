@@ -143,7 +143,11 @@ app_ui <- function() {
                 mod_export_ui("export")
             ),
 
-            # Reference tabs: shown on the first header row, beside the brand.
+            # Spacer pushes the reference tabs, the language selector and the
+            # version badge to the right of the first header row.
+            bslib::nav_spacer(),
+
+            # Reference tabs: first header row, right side.
             # Tab: Wiki
             bslib::nav_panel(
                 title = shiny::tags$span(
@@ -166,17 +170,16 @@ app_ui <- function() {
                 mod_help_ui("help")
             ),
 
-            # Spacer pushes the language selector and version badge to the right
-            bslib::nav_spacer(),
-
             # Language selector
             bslib::nav_item(
                 shiny::selectInput(
                     inputId = "lang_switch",
                     label = shiny::tags$span(tr("a11y_lang_switch_label", "pt"), class = "visually-hidden"),
-                    choices = c("Portugu\u00EAs" = "pt", "English" = "en"),
+                    # Short codes keep the header row compact; the hidden label
+                    # names the control for screen readers.
+                    choices = c("PT" = "pt", "EN" = "en"),
                     selected = "pt",
-                    width = "150px",
+                    width = "auto",
                     selectize = FALSE
                 )
             ),
