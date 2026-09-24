@@ -2731,6 +2731,22 @@
     "pt": "Diagnóstico de Coordenadas",
     "en": "Coordinate Diagnostics"
   },
+  "validate_coords_edit_error_empty": {
+    "pt": "Digite um valor.",
+    "en": "Type a value."
+  },
+  "validate_coords_edit_error_number": {
+    "pt": "Use um número em graus decimais, como -15,8.",
+    "en": "Use a number in decimal degrees, such as -15.8."
+  },
+  "validate_coords_edit_error_range_lat": {
+    "pt": "A latitude vai de -90 a 90.",
+    "en": "Latitude goes from -90 to 90."
+  },
+  "validate_coords_edit_error_range_lon": {
+    "pt": "A longitude vai de -180 a 180.",
+    "en": "Longitude goes from -180 to 180."
+  },
   "validate_coords_col_lat": {
     "pt": "Latitude",
     "en": "Latitude"

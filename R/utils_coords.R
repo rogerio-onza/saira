@@ -1318,13 +1318,17 @@ apply_coords_correction_payload <- function(df, payload = NULL) {
     if (length(idx) == 0L) return(df)
 
     # Preserve verbatim originals where the template provides the columns and
-    # they are not already populated.
+    # they are not already populated. Decided row by row: a payload that mixes
+    # a UTM conversion (which sends its own verbatim values) with a transposed
+    # or manual fix (which does not) must still keep the originals of the
+    # second kind.
     for (vcol in c("verbatimLatitude", "verbatimLongitude")) {
-        if (vcol %in% names(df) && !vcol %in% names(corr)) {
-            src <- if (vcol == "verbatimLatitude") "decimalLatitude" else "decimalLongitude"
-            blank <- is.na(df[[vcol]][idx]) | !nzchar(trimws(as.character(df[[vcol]][idx])))
-            df[[vcol]][idx[blank]] <- as.character(df[[src]][idx[blank]])
-        }
+        if (!vcol %in% names(df)) next
+        src <- if (vcol == "verbatimLatitude") "decimalLatitude" else "decimalLongitude"
+        supplied <- if (vcol %in% names(corr)) !is.na(corr[[vcol]]) else rep(FALSE, length(idx))
+        blank <- is.na(df[[vcol]][idx]) | !nzchar(trimws(as.character(df[[vcol]][idx])))
+        take <- blank & !supplied
+        df[[vcol]][idx[take]] <- as.character(df[[src]][idx[take]])
     }
 
     # A correction that changes the coordinate system (the UTM conversion) sends
@@ -1347,6 +1351,142 @@ apply_coords_correction_payload <- function(df, payload = NULL) {
     df$decimalLatitude[idx]  <- as.character(corr$decimalLatitude)
     df$decimalLongitude[idx] <- as.character(corr$decimalLongitude)
     df
+}
+
+#' Parse one coordinate typed into the coordinates table
+#'
+#' Accepts a decimal comma, like the validation itself (\code{as_coord_numeric()}).
+#'
+#' @param value Raw cell text.
+#' @param axis \code{"lat"} or \code{"lon"}.
+#' @return List with \code{value} (the number, or \code{NA}) and \code{error}
+#'   (\code{NULL}, or the i18n key that explains why the value was refused).
+#' @noRd
+parse_coord_edit <- function(value, axis = c("lat", "lon")) {
+    axis <- match.arg(axis)
+    raw <- if (length(value) == 0L) NA_character_ else trimws(as.character(value[[1]]))
+    if (is.na(raw) || !nzchar(raw)) {
+        return(list(value = NA_real_, error = "validate_coords_edit_error_empty"))
+    }
+    num <- as_coord_numeric(raw)$num[[1]]
+    if (is.na(num)) {
+        return(list(value = NA_real_, error = "validate_coords_edit_error_number"))
+    }
+    limit <- if (axis == "lat") 90 else 180
+    if (abs(num) > limit) {
+        return(list(value = NA_real_, error = paste0("validate_coords_edit_error_range_", axis)))
+    }
+    list(value = num, error = NULL)
+}
+
+#' Which rows of the coordinates table can be edited by hand
+#'
+#' An edit is stored by occurrenceID, so a row without one, or with one that
+#' repeats, cannot be told apart from its twins and stays read-only.
+#'
+#' @param occ_ids occurrenceID of each row.
+#' @return Logical vector, one value per row.
+#' @noRd
+coords_edit_allowed <- function(occ_ids) {
+    ids <- as.character(occ_ids)
+    present <- !is.na(ids) & nzchar(trimws(ids))
+    present & !(ids %in% ids[present & duplicated(ids)])
+}
+
+#' Merge manual coordinate edits into the automatic correction payload
+#'
+#' A manual edit replaces the automatic correction of the same occurrenceID.
+#' The row keeps the verbatim columns the automatic correction sent (a UTM
+#' conversion sends the projected pair), since those still describe the
+#' original record.
+#'
+#' @param auto Payload list with \code{corrections}, or \code{NULL}.
+#' @param manual data.frame with \code{occurrenceID}, \code{decimalLatitude} and
+#'   \code{decimalLongitude}, or \code{NULL}.
+#' @return A payload list with \code{corrections}; \code{auto} unchanged when
+#'   there is no manual edit.
+#' @noRd
+merge_manual_coord_edits <- function(auto = NULL, manual = NULL) {
+    if (!is.data.frame(manual) || nrow(manual) == 0L) return(auto)
+    man <- data.frame(
+        occurrenceID = as.character(manual$occurrenceID),
+        decimalLatitude = as.character(manual$decimalLatitude),
+        decimalLongitude = as.character(manual$decimalLongitude),
+        stringsAsFactors = FALSE
+    )
+    man <- man[!duplicated(man$occurrenceID, fromLast = TRUE), , drop = FALSE]
+
+    auto_df <- if (is.list(auto) && is.data.frame(auto$corrections)) auto$corrections else NULL
+    if (is.null(auto_df) || nrow(auto_df) == 0L) {
+        out <- man
+    } else {
+        out <- auto_df
+        for (cl in c("occurrenceID", "decimalLatitude", "decimalLongitude")) {
+            out[[cl]] <- as.character(out[[cl]])
+        }
+        pos <- match(man$occurrenceID, out$occurrenceID)
+        hit <- !is.na(pos)
+        out$decimalLatitude[pos[hit]] <- man$decimalLatitude[hit]
+        out$decimalLongitude[pos[hit]] <- man$decimalLongitude[hit]
+        extra <- man[!hit, , drop = FALSE]
+        if (nrow(extra) > 0L) {
+            for (cl in setdiff(names(out), names(extra))) extra[[cl]] <- NA_character_
+            out <- rbind(out, extra[, names(out), drop = FALSE])
+        }
+    }
+    rownames(out) <- NULL
+
+    payload <- if (is.list(auto)) auto else list()
+    payload$corrections <- out
+    payload
+}
+
+#' Revalidate the rows a person edited by hand
+#'
+#' Runs the same engine as the full validation, on the edited rows only. One
+#' warm row costs about 0.3 to 0.75 s, most of it in the sea test (0.38 s) and
+#' the reference tests (0.29 s). A range-and-sea check would still cost about
+#' 0.4 s and drop the reference flags, so the full engine is used (ADR-129).
+#'
+#' @param df data.frame with the edited rows, their coordinates already
+#'   replaced by the edit.
+#' @param row_index \code{.row_index} of each row in the full result.
+#' @param lat_col,lon_col,country_col Column names.
+#' @param profile Validation profile.
+#' @return \code{validate_coords_cc_df()} result with \code{.row_index} set to
+#'   \code{row_index}.
+#' @noRd
+revalidate_coord_rows <- function(df, row_index,
+                                  lat_col = "decimalLatitude",
+                                  lon_col = "decimalLongitude",
+                                  country_col = "country",
+                                  profile = "complete") {
+    stopifnot(is.data.frame(df), length(row_index) == nrow(df))
+    if (nrow(df) == 0L) return(coords_empty_cc_result())
+    res <- validate_coords_cc_df(df, lat_col, lon_col, country_col, profile = profile)
+    res$.row_index <- as.integer(row_index)
+    res
+}
+
+#' Drop manual edits whose occurrenceID left the data
+#'
+#' A new validation can run on different data (a new mapping, a new upload of
+#' the same file). An edit whose occurrenceID is gone would never be applied,
+#' so it is dropped and counted for a notice.
+#'
+#' @param edits data.frame of manual edits with \code{occurrenceID}, or NULL.
+#' @param occ_ids occurrenceIDs present in the new validation.
+#' @return List with \code{edits} (the kept rows, or NULL) and \code{dropped}.
+#' @noRd
+drop_orphan_coord_edits <- function(edits, occ_ids) {
+    if (!is.data.frame(edits) || nrow(edits) == 0L) {
+        return(list(edits = NULL, dropped = 0L))
+    }
+    keep <- as.character(edits$occurrenceID) %in% as.character(occ_ids)
+    list(
+        edits = if (any(keep)) edits[keep, , drop = FALSE] else NULL,
+        dropped = as.integer(sum(!keep))
+    )
 }
 
 #' Match filled country names to the casing the column already uses
