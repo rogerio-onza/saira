@@ -194,12 +194,12 @@ testthat::test_that("custom.css enforces navbar spacing and language dropdown gu
     )
 })
 
-testthat::test_that("custom.css keeps validate-names tri-column workspace contracts", {
+testthat::test_that("custom.css keeps validate-names toolbar and workspace contracts", {
     css_path <- resolve_css_path()
     css_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
 
     testthat::expect_true(
-        grepl("--validate-names-header-offset:\\s*calc\\(var\\(--app-header-height\\)\\s*\\+\\s*86px\\);", css_text, perl = TRUE),
+        grepl("--validate-names-header-offset:\\s*calc\\(var\\(--app-header-height\\)\\s*\\+\\s*9rem\\);", css_text, perl = TRUE),
         info = "Missing validate-names header offset token"
     )
 
@@ -209,10 +209,11 @@ testthat::test_that("custom.css keeps validate-names tri-column workspace contra
         info = "Validate-names workspace must use viewport-height contract"
     )
 
+    # ADR-132: providers, options and the run button form a centered toolbar
+    # above the two result columns.
     testthat::expect_true(
-        grepl("\\.vn-config-panel\\s*\\{", css_text, perl = TRUE) &&
-            grepl("width:\\s*clamp\\(340px,\\s*22vw,\\s*420px\\);", css_text, perl = TRUE),
-        info = "Config panel must keep responsive clamp width (340px, 22vw, 420px)"
+        grepl("\\.vn-config-panel\\s*\\{[^}]*display:\\s*flex;[^}]*justify-content:\\s*center;", css_text, perl = TRUE),
+        info = "Config panel must be a centered flex toolbar"
     )
 
     testthat::expect_true(

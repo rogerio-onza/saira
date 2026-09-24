@@ -1440,8 +1440,8 @@
     "en": "Validate Names"
   },
   "validate_names_run_cta": {
-    "pt": "▶ Validar Nomes",
-    "en": "▶ Validate Names"
+    "pt": "Validar Nomes",
+    "en": "Validate Names"
   },
   "validate_names_run_running": {
     "pt": "Validando nomes...",
@@ -2420,8 +2420,8 @@
     "en": "Confirm"
   },
   "validate_names_review_back": {
-    "pt": "← Voltar",
-    "en": "← Back"
+    "pt": "Voltar",
+    "en": "Back"
   },
   "validate_names_review_edit_label": {
     "pt": "Correção do nome",

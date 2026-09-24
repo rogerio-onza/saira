@@ -17,11 +17,11 @@ mod_validate_names_ui <- function(id) {
     shiny::tagList(
         shiny::div(
             class = "container-fluid validate-names-page",
-            shiny::uiOutput(ns("title")),
-            shiny::uiOutput(ns("subtitle")),
+            # Providers, options and the run button in one bar on top, as on
+            # the Coordinates page (ADR-132).
+            shiny::uiOutput(ns("config_panel")),
             shiny::div(
                 class = "validate-names-workspace",
-                shiny::uiOutput(ns("config_panel")),
                 shiny::uiOutput(ns("stream_panel")),
                 shiny::uiOutput(ns("report_panel"))
             ),
@@ -469,10 +469,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             list(status = "ok")
         })
 
-        active_options_count <- shiny::reactive({
-            sum(c(isTRUE(input$remove_authors %||% TRUE), isTRUE(input$ignore_qualifiers %||% TRUE)))
-        })
-
         can_run_validation <- shiny::reactive({
             prep <- quick_inputs()
             length(rv$selected_providers) > 0L && identical(prep$status, "ok") && !isTRUE(rv$running) && !isTRUE(rv$starting)
@@ -732,6 +728,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                             shiny::actionButton(
                                 ns("review_back_to_confirm"),
                                 label = tr("validate_names_review_back", lang_r()),
+                                icon = ph_icon("arrow-left"),
                                 class = "btn btn-secondary vn-review-back-btn"
                             )
                         ),
@@ -1092,18 +1089,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             ignoreInit = TRUE
         )
 
-        output$title <- shiny::renderUI({
-            shiny::h3(
-                ph_icon("microscope", class = "me-2"),
-                tr("validate_names_title", lang_r()),
-                class = "text-mono mb-2"
-            )
-        })
-
-        output$subtitle <- shiny::renderUI({
-            shiny::p(tr("validate_names_subtitle", lang_r()), class = "text-accent mb-4")
-        })
-
         output$config_panel <- shiny::renderUI({
             selected <- as.character(rv$selected_providers)
             selected <- selected[!is.na(selected) & nzchar(selected)]
@@ -1133,7 +1118,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     ""
                 }
             } else {
-                tr("validate_names_action_ready", lang_r())
+                ""
             }
 
             shiny::div(
@@ -1162,8 +1147,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                                         class = "vn-check-head",
                                         shiny::span(class = "vn-check-name", item$short),
                                         status_ui
-                                    ),
-                                    shiny::span(class = "vn-check-desc", tr(item$desc_key, lang_r()))
+                                    )
                                 )
                             )
                             row_class <- trimws(paste(
@@ -1185,15 +1169,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                                 )
                             }
                         })
-                    ),
-                    shiny::div(
-                        class = "vn-provider-note",
-                        shiny::span(class = "vn-note-icon", shiny::HTML("&#8505;")),
-                        if (any(c("florabr", "faunabr") %in% selected)) {
-                            tr("validate_names_cascade_br_notice", lang_r())
-                        } else {
-                            tr("validate_names_priority_notice", lang_r())
-                        }
                     ),
                     {
                         in_progress <- br_provider_ids[vapply(
@@ -1236,8 +1211,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                                 ns("remove_authors"),
                                 tr("validate_names_remove_authors", lang_r()),
                                 value = isTRUE(shiny::isolate(input$remove_authors) %||% TRUE)
-                            ),
-                            shiny::p(tr("validate_names_remove_authors_desc", lang_r()), class = "vn-check-desc")
+                            )
                         ),
                         shiny::div(
                             class = "vn-check-row vn-option-row",
@@ -1245,14 +1219,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                                 ns("ignore_qualifiers"),
                                 tr("validate_names_ignore_qualifiers", lang_r()),
                                 value = isTRUE(shiny::isolate(input$ignore_qualifiers) %||% TRUE)
-                            ),
-                            shiny::p(tr("validate_names_ignore_qualifiers_desc", lang_r()), class = "vn-check-desc")
+                            )
                         )
-                    ),
-                    shiny::div(
-                        class = "vn-options-note",
-                        shiny::span(class = "vn-note-icon", shiny::HTML("&#11015;")),
-                        tr("validate_names_download_notice", lang_r())
                     )
                 ),
                 shiny::div(
@@ -1260,7 +1228,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     shiny::actionButton(
                         inputId = ns("validate"),
                         label = run_label,
-                        class = "vn-run-btn w-100",
+                        icon = if (is_busy) ph_icon("spinner", class = "ph-spin") else ph_icon("play"),
+                        class = "vn-run-btn",
                         disabled = !can_run
                     ),
                     if (isTRUE(rv$running)) {
@@ -1268,25 +1237,12 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                             inputId = ns("cancel_validation"),
                             label = tr("validate_names_cancel", lang_r()),
                             icon = ph_icon("stop"),
-                            class = "vn-cancel-btn w-100 mt-2",
+                            class = "vn-cancel-btn",
                             disabled = isTRUE(rv$abort_requested)
                         )
                     },
-                    shiny::div(
-                        class = "vn-mini-stats",
-                        shiny::div(
-                            class = "vn-mini-stat",
-                            shiny::div(class = "vn-mini-stat-value", as.integer(length(selected))),
-                            shiny::div(class = "vn-mini-stat-label", tr("validate_names_action_metric_providers", lang_r()))
-                        ),
-                        shiny::div(
-                            class = "vn-mini-stat",
-                            shiny::div(class = "vn-mini-stat-value", as.integer(active_options_count())),
-                            shiny::div(class = "vn-mini-stat-label", tr("validate_names_action_metric_options", lang_r()))
-                        )
-                    ),
                     shiny::uiOutput(ns("run_phase")),
-                    shiny::div(class = "vn-action-helper", helper_text)
+                    if (nzchar(helper_text)) shiny::div(class = "vn-action-helper", helper_text)
                 )
             )
         })

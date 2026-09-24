@@ -190,7 +190,8 @@
   --lift-sm: none;
   --lift-base: none;
   --lift-lg: none;
-  --validate-names-header-offset: calc(var(--app-header-height) + 86px);
+  /* Header, the names toolbar and the page padding (ADR-132). */
+  --validate-names-header-offset: calc(var(--app-header-height) + 9rem);
 }
 
 /* From 1360px the steps and the tools share one row (ADR-132). The tools
