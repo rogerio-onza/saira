@@ -56,8 +56,8 @@
   color: var(--text-primary);
   background: transparent;
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-full);
-  padding: 0.14em 0.72em;
+  border-radius: var(--radius-chip);
+  padding: 0.14em 0.6em;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -356,5 +356,82 @@
 @media (min-width: 992px) and (max-width: 1199.98px) {
   .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav {
     --bs-navbar-nav-link-padding-x: var(--space-3);
+  }
+}
+
+/* -- Wiki and Help: icon + word (ADR-132) -- */
+.navbar .nav-tool .ph {
+  font-size: 1.15rem;
+}
+
+.navbar .nav-tool .nav-title-static,
+.navbar .nav-tool .nav-title-dynamic > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* -- Single-row header from 1360px (ADR-132) --
+   Brand, steps and tools share one row. The empty first item takes the tools'
+   width on the left, and it and the spacer grow by the same share, so the
+   steps stay in the true center. */
+@media (min-width: 1360px) {
+  .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav {
+    flex-wrap: nowrap;
+    --bs-navbar-nav-link-padding-x: var(--space-2);
+  }
+
+  .bslib-page-navbar .navbar .navbar-nav > li.nav-item {
+    order: 1;
+    height: var(--header-row-height);
+  }
+
+  .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav::before {
+    flex: 1 0 var(--header-tools-width);
+  }
+
+  .bslib-page-navbar .navbar .navbar-nav > .bslib-nav-spacer {
+    order: 2;
+    flex: 1 0 0;
+  }
+
+  .bslib-page-navbar .navbar .navbar-nav > li:has(> .nav-link[data-value="wiki"]),
+  .bslib-page-navbar .navbar .navbar-nav > li:has(> .nav-link[data-value="help"]),
+  .bslib-page-navbar .navbar .navbar-nav > li.bslib-nav-item {
+    order: 3;
+  }
+
+  .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav::after {
+    display: none;
+  }
+
+  /* Bootstrap pads the links from this variable (see the two-row rules). */
+  .bslib-page-navbar .navbar .navbar-nav > li:has(> .nav-link[data-value="wiki"]),
+  .bslib-page-navbar .navbar .navbar-nav > li:has(> .nav-link[data-value="help"]) {
+    --bs-navbar-nav-link-padding-x: var(--space-2);
+  }
+}
+
+/* From 1440px the row has room for the regular step padding. */
+@media (min-width: 1440px) {
+  .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav {
+    --bs-navbar-nav-link-padding-x: var(--space-3);
+  }
+}
+
+/* Between 1360 and 1679px the row has no room for the words: icon only. The
+   word stays for screen readers, and the tab keeps it as a tooltip. */
+@media (min-width: 1360px) and (max-width: 1679.98px) {
+  .navbar .nav-tool .nav-tool-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .bslib-page-navbar .navbar .navbar-nav > li.bslib-nav-item {
+    padding-left: var(--space-2);
   }
 }

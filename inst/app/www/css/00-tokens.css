@@ -170,6 +170,9 @@
   --app-header-height: calc(var(--header-row-height) + var(--step-row-height) + 2px);
   --step-active: var(--accent); /* brand blue: selection color, 8.75:1 on --bg-main */
   --navbar-brand-width: 7.5rem;
+  /* Width kept on the left of the single-row header so the steps sit in the
+     true center: the tools on the right take about this much (ADR-132). */
+  --header-tools-width: 14.625rem;
   --navbar-link-color: #2833ac;
   --navbar-link-hover-bg: var(--hover-bg);
   --navbar-link-active-bg: #38cff6;
@@ -188,6 +191,20 @@
   --lift-base: none;
   --lift-lg: none;
   --validate-names-header-offset: calc(var(--app-header-height) + 86px);
+}
+
+/* From 1360px the steps and the tools share one row (ADR-132). The tools
+   show icons only up to 1679px, and icon + word from 1680px. */
+@media (min-width: 1360px) {
+  :root {
+    --app-header-height: calc(var(--header-row-height) + 1px);
+  }
+}
+
+@media (min-width: 1680px) {
+  :root {
+    --header-tools-width: 22.375rem;
+  }
 }
 
 /* Below 992px the header is the one-row collapsed navbar. */

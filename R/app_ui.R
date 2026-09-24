@@ -151,12 +151,17 @@ app_ui <- function() {
             # version badge to the right of the first header row.
             bslib::nav_spacer(),
 
-            # Reference tabs: first header row, right side.
+            # Reference tabs: icon + word, right side of the header. The word
+            # hides where the single-row header has no room for it (ADR-132).
             # Tab: Wiki
             bslib::nav_panel(
                 title = shiny::tags$span(
-                    class = "nav-title-container",
-                    shiny::tags$span(tr("nav_wiki", "pt"), class = "nav-title-static"),
+                    class = "nav-title-container nav-tool",
+                    shiny::tags$span(
+                        class = "nav-title-static",
+                        ph_icon("book-open"),
+                        shiny::tags$span(tr("nav_wiki", "pt"), class = "nav-tool-label")
+                    ),
                     shiny::uiOutput("nav_wiki_title", class = "nav-title-dynamic", inline = TRUE)
                 ),
                 value = "wiki",
@@ -166,8 +171,12 @@ app_ui <- function() {
             # Tab: Help
             bslib::nav_panel(
                 title = shiny::tags$span(
-                    class = "nav-title-container",
-                    shiny::tags$span(tr("nav_help", "pt"), class = "nav-title-static"),
+                    class = "nav-title-container nav-tool",
+                    shiny::tags$span(
+                        class = "nav-title-static",
+                        ph_icon("circle-question"),
+                        shiny::tags$span(tr("nav_help", "pt"), class = "nav-tool-label")
+                    ),
                     shiny::uiOutput("nav_help_title", class = "nav-title-dynamic", inline = TRUE)
                 ),
                 value = "help",
