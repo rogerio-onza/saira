@@ -430,58 +430,6 @@
 }
 
 /* =============================================================================
-   HOMEPAGE: FINANCING LOGOS
-   ============================================================================= */
-
-.financing-logos {
-  padding: var(--space-4);
-  background-color: var(--bg-main);
-  border-radius: var(--radius);
-}
-
-.logo-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-6);
-  flex-wrap: wrap;
-}
-
-.logo-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition-base);
-}
-
-.logo-item:hover {
-  transform: scale(1.05);
-}
-
-.logo-item img {
-  max-height: 50px;
-  width: auto;
-  object-fit: contain;
-  filter: grayscale(20%);
-  transition: var(--transition-base);
-}
-
-.logo-item:hover img {
-  filter: grayscale(0%);
-}
-
-/* Round logo (Observatorio) - larger to balance */
-.logo-round img {
-  max-height: 60px;
-  border-radius: var(--radius-full);
-}
-
-/* Rectangular logos */
-.logo-rect img {
-  max-height: 40px;
-}
-
-/* =============================================================================
    RESPONSIVE: HOMEPAGE
    ============================================================================= */
 
@@ -492,18 +440,6 @@
 
   .home-upload-panel {
     padding: var(--space-6);
-  }
-
-  .logo-row {
-    gap: var(--space-4);
-  }
-
-  .logo-item img {
-    max-height: 40px;
-  }
-
-  .logo-round img {
-    max-height: 50px;
   }
 }
 

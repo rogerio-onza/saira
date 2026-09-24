@@ -50,11 +50,18 @@ build_app <- local({
     root <- normalizePath(".", winslash = "/", mustWork = TRUE)
     utils::removeSource(function() {
         pkgload::load_all(root, export_all = FALSE, quiet = TRUE)
-        # run_app() sets this limit. Without it, Shiny refuses the 11 MB CSV (5 MB default).
-        options(shiny.maxRequestSize = 500 * 1024^2)
-        shiny::shinyApp(app_ui(), app_server)
+        # run_app() registers www and the 500 MB upload limit the 11 MB CSV needs.
+        run_app()
     })
 })
+
+# Chrome throttles the timers of a long-lived page; see test-e2e-flows.R.
+chromote::set_chrome_args(c(
+    chromote::default_chrome_args(),
+    "--disable-background-timer-throttling",
+    "--disable-renderer-backgrounding",
+    "--disable-backgrounding-occluded-windows"
+))
 
 app <- shinytest2::AppDriver$new(
     app_dir = build_app,

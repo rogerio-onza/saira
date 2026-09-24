@@ -15,19 +15,16 @@ A validação de coordenadas só roda quando três termos do Darwin Core estão 
 - <span class="term">decimalLongitude</span>
 - <span class="term">country</span>
 
-O painel da esquerda mostra a coluna associada a cada termo. Enquanto algum faltar, o botão **Validar Coordenadas** fica desabilitado.
+A barra no topo da tela mostra a coluna associada a cada termo. Enquanto algum faltar, o botão **Validar Coordenadas** fica desabilitado.
 
-Antes de rodar, escolha o **Perfil**:
-
-- **Completo**: roda todos os testes, incluindo a detecção de *referências sensíveis* (pontos suspeitos sobre capitais, centróides de país, sede do GBIF e instituições de biodiversidade).
-- **Rápido**: pula os testes de referência; útil para uma primeira passada em bases grandes.
+A validação roda sempre todos os testes, incluindo a detecção de *referências sensíveis* (pontos suspeitos sobre capitais, centróides de país, sede do GBIF e instituições de biodiversidade).
 
 Clique em **Validar Coordenadas**. A validação é disparada por você, não a cada mudança nos dados.
 
 ```{=html}
 <figure class="shot">
-  <img src="../assets/img/9-painel-validação.png" alt="Painel da esquerda da validação de coordenadas: status das colunas mapeadas (latitude, longitude, country), o seletor de Perfil Completo/Rápido e o botão Validar Coordenadas">
-  <figcaption><b>Figura 1.</b> Painel da esquerda: status das colunas mapeadas (latitude, longitude, country), o seletor de Perfil (Completo / Rápido) e o botão Validar Coordenadas.</figcaption>
+  <img src="../assets/img/9-painel-validação.png" alt="Barra da validação de coordenadas: status das colunas mapeadas (latitude, longitude, country) e o botão Validar Coordenadas">
+  <figcaption><b>Figura 1.</b> Barra no topo: status das colunas mapeadas (latitude, longitude, country) e o botão Validar Coordenadas.</figcaption>
 </figure>
 ```
 

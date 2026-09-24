@@ -15,19 +15,16 @@ Coordinate validation only runs once three Darwin Core terms are mapped (see **[
 - <span class="term">decimalLongitude</span>
 - <span class="term">country</span>
 
-The left panel shows the column associated with each term. While any is missing, the **Validate Coordinates** button stays disabled.
+The bar at the top of the screen shows the column associated with each term. While any is missing, the **Validate Coordinates** button stays disabled.
 
-Before running, choose the **Profile**:
-
-- **Complete**: runs every test, including the detection of *reference hotspots* (suspicious points on capitals, country centroids, the GBIF HQ and biodiversity institutions).
-- **Fast**: skips the reference tests; handy for a first pass over large datasets.
+Validation always runs every test, including the detection of *reference hotspots* (suspicious points on capitals, country centroids, the GBIF HQ and biodiversity institutions).
 
 Click **Validate Coordinates**. Validation is triggered by you, not on every change to the data.
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/9-painel-validação-EN.png" alt="Left panel of coordinate validation: status of the mapped columns (latitude, longitude, country), the Complete/Fast Profile selector and the Validate Coordinates button">
-  <figcaption><b>Figure 1.</b> Left panel: status of the mapped columns (latitude, longitude, country), the Profile selector (Complete / Fast) and the Validate Coordinates button.</figcaption>
+  <img src="../../assets/img/9-painel-validação-EN.png" alt="Coordinate validation bar: status of the mapped columns (latitude, longitude, country) and the Validate Coordinates button">
+  <figcaption><b>Figure 1.</b> Top bar: status of the mapped columns (latitude, longitude, country) and the Validate Coordinates button.</figcaption>
 </figure>
 ```
 

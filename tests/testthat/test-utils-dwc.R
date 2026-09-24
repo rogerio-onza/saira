@@ -483,3 +483,18 @@ testthat::test_that("required_mapping_terms is the readiness strip's term set", 
 testthat::test_that("wide_card_terms only spans terms that need the extra track", {
     testthat::expect_identical(wide_card_terms(), "dynamicProperties")
 })
+
+testthat::test_that("Portuguese term definitions keep their accents", {
+    # Words that only appear without accents when a definition was typed in
+    # ASCII by mistake (occurrenceStatus shipped that way).
+    unaccented <- c(
+        "declaracao", "presenca", "ausencia", "informacao", "descricao",
+        "localizacao", "especie", "numero", "ocorrencia", "identificacao", "colecao"
+    )
+    pattern <- paste0("\\b(", paste(unaccented, collapse = "|"), ")\\b")
+    for (file in c("dwc_terms.rds", "dwc_full_catalog.rds")) {
+        terms <- readRDS(testthat::test_path("..", "..", "inst", "extdata", file))
+        hits <- terms$term[grepl(pattern, tolower(terms$definition_pt))]
+        testthat::expect_identical(hits, character(0), info = file)
+    }
+})

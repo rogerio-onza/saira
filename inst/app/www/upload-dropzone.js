@@ -126,6 +126,28 @@
     });
   }
 
+  // Shiny writes "Upload complete" in English into the progress bar, with no
+  // option to translate it. The server sends the label in the current
+  // language, and the page swaps the text whenever Shiny writes it.
+  var uploadCompleteLabel = null;
+
+  function localizeUploadProgress() {
+    if (!uploadCompleteLabel) return;
+    var bars = document.querySelectorAll(".shiny-file-input-progress .progress-bar");
+    Array.prototype.forEach.call(bars, function (bar) {
+      if (bar.textContent === "Upload complete") bar.textContent = uploadCompleteLabel;
+    });
+  }
+
+  function registerUploadLabelHandler() {
+    if (!window.Shiny || window.__sairaUploadLabelHandler) return;
+    window.__sairaUploadLabelHandler = true;
+    window.Shiny.addCustomMessageHandler("saira-upload-complete-label", function (msg) {
+      uploadCompleteLabel = msg && msg.label ? msg.label : null;
+      localizeUploadProgress();
+    });
+  }
+
   function bindAllDropzones() {
     var dropzones = document.querySelectorAll(".upload-dropzone");
     Array.prototype.forEach.call(dropzones, bindDropzone);
@@ -133,10 +155,12 @@
 
   function init() {
     bindAllDropzones();
+    registerUploadLabelHandler();
 
     if (!window.__finchUploadDropzoneObserver && document.body) {
       window.__finchUploadDropzoneObserver = new MutationObserver(function () {
         bindAllDropzones();
+        localizeUploadProgress();
       });
 
       window.__finchUploadDropzoneObserver.observe(document.body, {

@@ -11,6 +11,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **coords:** Fix a latitude or longitude directly in the coordinates table, with revalidation and undo, ADR-129
 
 ### Changed
+- **ui:** Put the header in one row from 1360px and switch the icons to Phosphor, ADR-132
+- **upload:** Use one upload panel across the home page, with the format tips below it, ADR-132
+- **mapping:** Filter cards by All, Mapped or Pending in the panel header; color the Required tag by state, ADR-132
+- **mapping:** Build the card grid in the background after an upload, so the tab opens ready, ADR-132
+- **coords:** Move the column check, the run button and the fixes to a bar on top, ADR-132
+- **names:** Move providers, options and the run button to a bar on top, ADR-132
+- **generalization:** Answer Chapman's Table 5 as one decision table; color map points by threat group, ADR-132
+- **export:** Show numbers, pending items with their fix, the IPT next step and a fixed download bar, ADR-132
 - **names:** GBIF is always on; providers and options are one checklist that shows the query order, ADR-130
 - **ui:** Square filter chips in the color of what they filter, borderless status tags, invasive species in brown; center the step row and group Wiki, Help, language and version on the right; selection states use the brand blue
 - **names:** Remove the percentage bar; the run shows only its current phase
@@ -24,7 +32,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
-- **basisOfRecord:** Convert mapped values without the assistant, recognize common Portuguese values, and block export on empty values
+- **basisOfRecord:** Convert mapped values without the assistant, recognize common Portuguese values, and block export on empty values, ADR-131
+- **upload:** Show "Upload complete" in the current language
+- **mapping:** Count alias and template matches in the auto-map notice and drop the internal "V1" label
+- **occurrenceStatus:** Restore the accents of the Portuguese definition
+- **coords:** Speed up the sea check on large datasets, with the same result
+- **mapping:** Speed up automatic mapping when many terms share the same column
+- **site:** Drop the removed Profile selector from the coordinate tutorial, in PT and EN
 - **names:** Keep the report counts readable when the table is tall
 - **coords:** Frame the Coordinates and Generalization maps on valid points only, with no grey bands, and count the points the map cannot draw
 - **coords:** Draw the map points right after validation, not only after a filter click
@@ -32,6 +46,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **tests:** Pin the name validation batch test to GBIF so a local Fauna BR cache does not exhaust memory ([#131](https://github.com/rogerio-onza/saira/pull/131))
 
 ### Tests
+- **build:** Serve the E2E app through run_app() and keep Chrome timers unthrottled in long runs
 - **build:** Guard the mapping reactivity fixes and run the full flow end to end in the release gate
 
 ## [0.11.2] - 2026-09-11

@@ -19,9 +19,19 @@ if (!identical(Sys.getenv("RUN_E2E"), "true")) {
     testthat::skip("E2E suite ignorada em check rotineiro. Use RUN_E2E=true para rodar.")
 }
 app_root <- normalizePath(testthat::test_path("../../"), winslash = "/", mustWork = TRUE)
+# One Chrome serves every flow, and after a few minutes it throttled the
+# timers of the page, so Shiny missed the 10 s "stable" window in late flows.
+chromote::set_chrome_args(c(
+    chromote::default_chrome_args(),
+    "--disable-background-timer-throttling",
+    "--disable-renderer-backgrounding",
+    "--disable-backgrounding-occluded-windows"
+))
 build_e2e_app <- function() {
     pkgload::load_all(app_root, export_all = FALSE, quiet = TRUE)
-    shiny::shinyApp(app_ui(), app_server)
+    # run_app() registers www (custom.css, upload-dropzone.js) and the 500 MB
+    # upload limit; a bare shinyApp() served the pages without them.
+    run_app()
 }
 # AppDriver sends this function to the app process. testthat keeps source
 # references, so the function carries the text of this whole file with it.

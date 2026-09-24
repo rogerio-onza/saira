@@ -2286,7 +2286,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             rv$ambiguity_queue <- list()
 
             shiny::showNotification(
-                sprintf(tr("notif_auto_mapping_v1", lang_r()), mapped_n, 0L),
+                sprintf(tr("notif_auto_mapping_done", lang_r()), mapped_n, 0L, mapped_n, 0L),
                 type = "message",
                 duration = 6
             )
@@ -2308,6 +2308,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             auto_count <- 0L
             suggested_count <- 0L
+            learned_count <- 0L
 
             tryCatch(
                 {
@@ -2392,6 +2393,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                                 auto_count <- auto_count + 1L
                             } else if (identical(effective_status, "SUGERIDO")) {
                                 suggested_count <- suggested_count + 1L
+                            } else if (effective_status %in% c("ALIAS", "TEMPLATE")) {
+                                learned_count <- learned_count + 1L
                             }
                         }
 
@@ -2421,7 +2424,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     }
 
                     shiny::showNotification(
-                        sprintf(tr("notif_auto_mapping_v1", lang_r()), auto_count, suggested_count),
+                        sprintf(
+                            tr("notif_auto_mapping_done", lang_r()),
+                            learned_count + auto_count + suggested_count,
+                            learned_count, auto_count, suggested_count
+                        ),
                         type = "message",
                         duration = 6
                     )

@@ -480,7 +480,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     class = "sc-matrix-cell",
                     shiny::conditionalPanel(open_cond, ns = ns, yn_radio(id, paste0("sensitive_q_4_", q))),
                     shiny::conditionalPanel(paste0("!(", open_cond, ")"), ns = ns,
-                                            shiny::span(class = "sc-matrix-skip", "—"))
+                                            shiny::span(class = "sc-matrix-skip", "\u2014"))
                 )
             }
             # The exception editor keeps the stacked cascade: it answers for

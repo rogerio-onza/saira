@@ -192,6 +192,15 @@ mod_upload_server <- function(id, lang_r) {
             )
         })
 
+        # Label for Shiny's own progress bar, which writes "Upload complete"
+        # in English (upload-dropzone.js swaps it).
+        shiny::observe({
+            session$sendCustomMessage(
+                "saira-upload-complete-label",
+                list(label = tr("upload_complete_label", lang_r()))
+            )
+        })
+
         # Notes under the dropzone: what the page needs to say before an upload.
         # The format hints follow the selected mode.
         output$upload_notes <- shiny::renderUI({

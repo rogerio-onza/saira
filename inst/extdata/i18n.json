@@ -779,13 +779,13 @@
     "pt": "Auto-mapeamento concluído!",
     "en": "Auto-mapping completed!"
   },
-  "notif_auto_mapping_v1": {
-    "pt": "Auto-map V1 concluído: %s AUTO, %s SUGERIDO.",
-    "en": "Auto-map V1 completed: %s AUTO, %s SUGGESTED."
+  "notif_auto_mapping_done": {
+    "pt": "Auto-mapear concluído: %s termos mapeados (%s por alias ou modelo, %s automáticos, %s para revisar).",
+    "en": "Auto-map done: %s terms mapped (%s from aliases or a template, %s automatic, %s to review)."
   },
   "notif_auto_mapping_v1_error": {
-    "pt": "Falha no auto-map V1: %s",
-    "en": "Auto-map V1 failed: %s"
+    "pt": "Falha no Auto-mapear: %s",
+    "en": "Auto-map failed: %s"
   },
   "modal_reset_title": {
     "pt": "Confirmar Reset",
@@ -3886,6 +3886,10 @@
   "home_required_hint": {
     "pt": "O Saíra procura estes termos no seu arquivo.",
     "en": "Saíra looks for these terms in your file."
+  },
+  "upload_complete_label": {
+    "pt": "Envio concluído",
+    "en": "Upload complete"
   },
   "home_camtrap_files_note": {
     "pt": "Camtrap DP: datapackage.json, deployments.csv e observations.csv (media.csv é opcional). Wildlife Insights: deployments.csv, projects.csv e images_*.csv.",
