@@ -126,7 +126,31 @@ Havendo candidatos, painéis aparecem à esquerda. Cada um mostra a contagem e u
 </figure>
 ```
 
-**Registros sem coordenada** ficam marcados como *Coordenada ausente*. O Saíra não inventa um ponto a partir do texto da localidade: esses registros ficam a seu critério. Mantenha-os sem georreferenciamento de forma consciente, ou preencha as coordenadas antes do upload.
+## Corrigir uma coordenada na tabela
+
+Quando nenhum painel cobre o erro, corrija o ponto na própria tabela **Diagnóstico de Coordenadas**, sem voltar à planilha:
+
+```{=html}
+<ol class="fix-steps">
+  <li><strong>Clique duas vezes na latitude ou na longitude.</strong>
+    <p>A célula vira um campo. Digite o valor em graus decimais, com vírgula ou ponto (<code>-15,8</code> ou <code>-15.8</code>). Enter salva.</p></li>
+  <li><strong>Veja o novo diagnóstico.</strong>
+    <p>O Saíra valida o ponto de novo, com os mesmos testes. Se ele passa, a linha fica <em>Editada</em> e <em>Corrigida</em>. Se ainda falha (por exemplo, continua no mar), a linha mostra o problema novo. O marcador se move no mapa.</p></li>
+  <li><strong>Desfaça se precisar.</strong>
+    <p>O link <strong>Desfazer</strong> da linha devolve a coordenada original. O filtro <strong>Editadas</strong> mostra só as linhas que você corrigiu.</p></li>
+</ol>
+```
+
+```{=html}
+<figure class="shot">
+  <img src="../assets/img/9.5-editar-coordenada-tabela.png" alt="Tabela Diagnóstico de Coordenadas com a primeira linha editada: selos Editada e Corrigida, o link Desfazer e a nova longitude">
+  <figcaption><b>Figura 6.</b> Uma linha corrigida na tabela: selos <em>Editada</em> e <em>Corrigida</em>, o link Desfazer e o novo valor.</figcaption>
+</figure>
+```
+
+A correção manual segue as regras das assistidas: entra na exportação, e o valor original vai para <span class="term">verbatimLatitude</span> e <span class="term">verbatimLongitude</span> quando essas colunas estão vazias. Validar de novo não apaga as correções manuais. Uma linha sem <span class="term">occurrenceID</span> único não pode ser editada.
+
+**Registros sem coordenada** ficam marcados como *Coordenada ausente*. O Saíra não inventa um ponto a partir do texto da localidade: esses registros ficam a seu critério. Mantenha-os sem georreferenciamento de forma consciente, ou digite as duas coordenadas na tabela.
 
 ::: {.callout-tip}
 ## Datum e precisão

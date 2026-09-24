@@ -11,6 +11,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **coords:** Fix a latitude or longitude directly in the coordinates table, with revalidation and undo, ADR-129
 
 ### Changed
+- **site:** Explain the in-table coordinate fix in the coordinate tutorial, in PT and EN
 - **site:** Refresh ten tutorial screenshots in PT and EN and name the steps as the app does
 - **ui:** Flatten tables, buttons, alerts and filter pills, and darken state-colored text to pass AA contrast
 - **mapping:** Flatten the cards: light state fills, pastel status badges, a Required tag and a flat sidebar
