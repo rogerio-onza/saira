@@ -642,6 +642,20 @@ field_state_class <- function(term, is_mapped, meta, required_terms) {
     NULL
 }
 
+#' Whether a card passes the All / Mapped / Pending filter
+#'
+#' @param mode "all", "mapped" or "pending"
+#' @param is_mapped logical, the card's mapped state
+#' @return logical
+#' @noRd
+keep_by_mapped_filter <- function(mode, is_mapped) {
+    switch(mode %||% "all",
+        mapped = isTRUE(is_mapped),
+        pending = !isTRUE(is_mapped),
+        TRUE
+    )
+}
+
 #' Determine if a mapping field is considered mapped
 #'
 #' @param term DwC term name

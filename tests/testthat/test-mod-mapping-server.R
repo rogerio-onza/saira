@@ -819,7 +819,7 @@ testthat::test_that("class pills are pure navigation anchors — all sections al
     )
 })
 
-testthat::test_that("required-fields strip reflects live mapped status", {
+testthat::test_that("All / Mapped / Pending filter keeps the matching cards", {
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis"),
         stringsAsFactors = FALSE
@@ -833,36 +833,23 @@ testthat::test_that("required-fields strip reflects live mapped status", {
         ),
         {
             session$flushReact()
+            grid_all <- paste(output$mapping_ui$html, collapse = " ")
+            # occurrenceID is auto-UUID -> mapped; scientificName is not mapped.
+            testthat::expect_true(grepl("fieldcard_occurrenceID", grid_all, fixed = TRUE))
+            testthat::expect_true(grepl("fieldcard_scientificName", grid_all, fixed = TRUE))
+            testthat::expect_true(grepl("field-required-tag", grid_all, fixed = TRUE))
 
-            strip_before <- paste(output$required_fields_strip$html, collapse = " ")
-            for (term in c(
-                "scientificName", "eventDate", "decimalLatitude",
-                "decimalLongitude", "basisOfRecord", "occurrenceID"
-            )) {
-                testthat::expect_true(grepl(term, strip_before, fixed = TRUE))
-            }
-            # occurrenceID is auto-UUID -> always mapped.
-            testthat::expect_true(grepl(
-                "mapping-required-chip is-mapped", strip_before,
-                fixed = TRUE
-            ))
-            # scientificName not mapped yet -> a missing chip exists.
-            testthat::expect_true(grepl(
-                "mapping-required-chip is-missing", strip_before,
-                fixed = TRUE
-            ))
-
-            session$setInputs(map_scientificName = "scientificName")
+            session$setInputs(mapped_filter = "pending")
             session$flushReact()
+            grid_pending <- paste(output$mapping_ui$html, collapse = " ")
+            testthat::expect_false(grepl("fieldcard_occurrenceID", grid_pending, fixed = TRUE))
+            testthat::expect_true(grepl("fieldcard_scientificName", grid_pending, fixed = TRUE))
 
-            strip_after <- paste(output$required_fields_strip$html, collapse = " ")
-            sci_idx <- regexpr("scientificName", strip_after, fixed = TRUE)
-            chip_open <- regexpr(
-                "mapping-required-chip is-mapped",
-                substr(strip_after, 1, sci_idx[1]),
-                fixed = TRUE
-            )
-            testthat::expect_true(chip_open[1] > 0)
+            session$setInputs(mapped_filter = "mapped")
+            session$flushReact()
+            grid_mapped <- paste(output$mapping_ui$html, collapse = " ")
+            testthat::expect_true(grepl("fieldcard_occurrenceID", grid_mapped, fixed = TRUE))
+            testthat::expect_false(grepl("fieldcard_scientificName", grid_mapped, fixed = TRUE))
         }
     )
 })

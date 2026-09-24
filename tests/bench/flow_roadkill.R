@@ -129,8 +129,8 @@ timed("iv. type fixed value", set_input(`mapping-custom_country` = "Brasil"))
 note_last(grid_note())
 
 # v. Rebuilds that are expected: the mapped-only filter and the list view.
-timed("v. only mapped on", set_input(`mapping-show_only_mapped` = TRUE))
-timed("v. only mapped off", set_input(`mapping-show_only_mapped` = FALSE))
+timed("v. only mapped on", set_input(`mapping-mapped_filter` = "mapped"))
+timed("v. only mapped off", set_input(`mapping-mapped_filter` = "all"))
 timed("v. list view", set_input(`mapping-view_mode` = "list"))
 timed("v. cards view", set_input(`mapping-view_mode` = "cards"))
 

@@ -311,6 +311,22 @@
     "pt": "Resetar",
     "en": "Reset"
   },
+  "mapping_filter_label": {
+    "pt": "Mostrar termos",
+    "en": "Show terms"
+  },
+  "mapping_filter_all": {
+    "pt": "Todos",
+    "en": "All"
+  },
+  "mapping_filter_mapped": {
+    "pt": "Mapeados",
+    "en": "Mapped"
+  },
+  "mapping_filter_pending": {
+    "pt": "Pendentes",
+    "en": "Pending"
+  },
   "filter_mapped_only": {
     "pt": "Mostrar apenas mapeados",
     "en": "Show mapped only"

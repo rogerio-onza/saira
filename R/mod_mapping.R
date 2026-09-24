@@ -16,8 +16,6 @@ mod_mapping_ui <- function(id) {
         sidebar = bslib::sidebar(
             width = 280,
             class = "mapping-sidebar",
-            shiny::uiOutput(ns("required_fields_strip")),
-            shiny::hr(),
             shiny::uiOutput(ns("sidebar_actions_label")),
             shiny::actionButton(
                 ns("auto_map"),
@@ -45,20 +43,15 @@ mod_mapping_ui <- function(id) {
             ),
             shiny::hr(),
             shiny::uiOutput(ns("sidebar_view_label")),
-            shiny::uiOutput(ns("view_mode_control")),
-            shiny::hr(),
-            shiny::uiOutput(ns("sidebar_filters_label")),
-            shiny::checkboxInput(
-                ns("show_only_mapped"),
-                shiny::uiOutput(ns("filter_mapped_label"), inline = TRUE),
-                value = FALSE
-            )
+            shiny::uiOutput(ns("view_mode_control"))
         ),
 
         # Main content
         bslib::card(
             bslib::card_header(
-                shiny::uiOutput(ns("card_title"))
+                class = "mapping-card-header",
+                shiny::uiOutput(ns("card_title")),
+                shiny::uiOutput(ns("mapped_filter_control"))
             ),
             bslib::card_body(
                 min_height = "70vh",
@@ -994,10 +987,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             shiny::tags$label(tr("mapping_sidebar_actions", lang_r()), class = "form-label")
         })
 
-        output$sidebar_filters_label <- shiny::renderUI({
-            shiny::tags$label(tr("mapping_sidebar_filters", lang_r()), class = "form-label")
-        })
-
         output$sidebar_view_label <- shiny::renderUI({
             shiny::tags$label(tr("mapping_sidebar_view", lang_r()), class = "form-label")
         })
@@ -1022,73 +1011,27 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             )
         })
 
-        output$filter_mapped_label <- shiny::renderUI({
-            tr("filter_mapped_only", lang_r())
+        # All / Mapped / Pending: filters the cards and the list. It sits in the
+        # panel header because it acts on the whole panel (ADR-132).
+        output$mapped_filter_control <- shiny::renderUI({
+            shiny::radioButtons(
+                ns("mapped_filter"),
+                label = shiny::tags$span(tr("mapping_filter_label", lang_r()), class = "visually-hidden"),
+                choices = stats::setNames(
+                    c("all", "mapped", "pending"),
+                    c(
+                        tr("mapping_filter_all", lang_r()),
+                        tr("mapping_filter_mapped", lang_r()),
+                        tr("mapping_filter_pending", lang_r())
+                    )
+                ),
+                selected = shiny::isolate(input$mapped_filter %||% "all"),
+                inline = TRUE
+            )
         })
 
         output$card_title <- shiny::renderUI({
             tr("mapping_title", lang_r())
-        })
-
-        # Live required-fields status pills in the sidebar (mapped-based, reactive
-        # on every mapping change). occurrenceID is auto-UUID -> is_field_mapped()
-        # already returns TRUE for it.
-        output$required_fields_strip <- shiny::renderUI({
-            mapped_flags <- vapply(required_fields_strip, function(term) {
-                current_val <- rv$map_values[[term]]
-                if (is.null(current_val)) {
-                    current_val <- input[[paste0("map_", term)]]
-                }
-                current_val <- sanitize_map_selection(term, current_val)
-                is_field_mapped(term, current_val, input)
-            }, FUN.VALUE = logical(1))
-
-            chips <- lapply(required_fields_strip, function(term) {
-                mapped <- mapped_flags[[term]]
-                status_label <- if (mapped) {
-                    tr("preview_readiness_present", lang_r())
-                } else {
-                    tr("preview_readiness_missing", lang_r())
-                }
-                shiny::span(
-                    class = paste(
-                        "mapping-required-chip",
-                        if (mapped) "is-mapped" else "is-missing"
-                    ),
-                    title = status_label,
-                    `aria-label` = paste(term, status_label),
-                    shiny::tags$i(
-                        class = if (mapped) {
-                            "ph ph-check-circle"
-                        } else {
-                            "ph ph-x-circle"
-                        }
-                    ),
-                    term
-                )
-            })
-
-            n_total <- length(required_fields_strip)
-            n_mapped <- sum(mapped_flags)
-
-            shiny::div(
-                class = "mapping-required-sidebar",
-                shiny::div(
-                    class = "mapping-required-header",
-                    shiny::tags$span(
-                        class = "mapping-required-strip-label",
-                        tr("preview_readiness_title", lang_r())
-                    ),
-                    shiny::tags$span(
-                        class = paste(
-                            "mapping-required-count",
-                            if (n_mapped == n_total) "is-complete" else ""
-                        ),
-                        paste0(n_mapped, "/", n_total)
-                    )
-                ),
-                chips
-            )
         })
 
         output$no_file_msg <- shiny::renderUI({
@@ -1988,7 +1931,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # List view: one read-only row per term, grouped by class, for reviewing
         # what auto-mapping decided. Reads rv$map_values rather than the map_
         # inputs, which are not on the page while this view is rendered.
-        build_mapping_list <- function(lang, show_only_mapped, scientificname_mapped) {
+        build_mapping_list <- function(lang, mapped_filter, scientificname_mapped) {
             fields_to_show <- dwc_all()
             categories <- unique(vapply(
                 fields_to_show, function(x) x$category, FUN.VALUE = character(1)
@@ -2019,7 +1962,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         is_mapped <- card_state$is_mapped
                         field_meta <- card_state$meta
 
-                        if (show_only_mapped && !is_mapped) {
+                        if (!keep_by_mapped_filter(mapped_filter, is_mapped)) {
                             return(NULL)
                         }
 
@@ -2089,7 +2032,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             # The grid (50 selectize inputs) is expensive to rebuild, so it is
             # rendered only on a real structural change: a new upload, a language
-            # switch, the show-only-mapped toggle, a change to the active term set
+            # switch, the All/Mapped/Pending filter, a change to the active term set
             # (Add-term modal, template import, reset), or when scientificName's
             # mapped-state flips (which locks/unlocks taxonRank/specificEpithet).
             # These are the only reactive dependencies. Everything else --
@@ -2097,7 +2040,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # isolate() below, so selecting a column updates just that card via
             # its carddyn_<term> output and push_card_state(), never the grid.
             lang <- lang_r()
-            show_only_mapped <- isTRUE(input$show_only_mapped)
+            mapped_filter <- input$mapped_filter %||% "all"
             scientificname_mapped <- isTRUE(rv$scientificname_mapped)
             # Structural dependency: adding/removing terms must rebuild the grid
             # so the new card actually appears. dwc_all() carries rv$extra_terms
@@ -2110,7 +2053,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # track the mapping reactively and always show what is currently
             # mapped. The dependency is only registered when this branch runs.
             if (identical(input$view_mode, "list")) {
-                return(build_mapping_list(lang, show_only_mapped, scientificname_mapped))
+                return(build_mapping_list(lang, mapped_filter, scientificname_mapped))
             }
 
             shiny::isolate({
@@ -2160,8 +2103,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                                     field_meta <- card_state$meta
                                     badge_info <- build_badge_info(field_meta)
 
-                                    # Apply "show only mapped" filter
-                                    if (show_only_mapped && !is_mapped) {
+                                    if (!keep_by_mapped_filter(mapped_filter, is_mapped)) {
                                         return(NULL)
                                     }
 

@@ -157,11 +157,27 @@
   flex-shrink: 0;
   font-family: var(--font-mono);
   font-size: 0.7rem;
+  font-weight: 700;
   color: var(--text-muted);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-chip);
   padding: 0 var(--space-2);
   white-space: nowrap;
+}
+
+/* The Required tag carries the term's state: green once mapped, red while
+   missing. It follows the card's state classes, which the server toggles in
+   place, so it needs no re-render (ADR-132). */
+.field-card.field-mapped .field-required-tag {
+  color: var(--badge-auto-fg);
+  background: var(--badge-auto-bg);
+  border-color: var(--state-mapped-border);
+}
+
+.field-card.field-required-missing .field-required-tag {
+  color: var(--badge-missing-fg);
+  background: var(--state-missing-bg);
+  border-color: var(--state-missing-border);
 }
 
 /* Status badges: one pastel pill per status. Own modifiers, not Bootstrap's
@@ -438,17 +454,6 @@
   color: #ffffff;
 }
 
-/* Required-fields status pills in the sidebar */
-.mapping-required-sidebar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
-.mapping-required-sidebar > .mapping-required-header {
-  flex-basis: 100%;
-}
-
 /* Select input styling in mapping cards */
 .field-card .selectize-input {
   border: 1px solid var(--border-strong);
@@ -521,7 +526,7 @@
 /* Mapping sidebar filter labels */
 .mapping-sidebar .form-label {
   font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -548,8 +553,8 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  font-size: var(--text-sm);
-  min-height: 40px;
+  font-size: var(--text-base-sm);
+  min-height: 44px;
   padding: 0 var(--space-3);
 }
 
@@ -668,58 +673,6 @@
   border-color: var(--step-active);
   background: var(--bg-card);
   transform: none;
-}
-
-.mapping-required-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
-}
-
-.mapping-required-strip-label {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  color: var(--text-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.mapping-required-count {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: 700;
-  padding: 0.1rem 0.6rem;
-  border-radius: var(--radius-full);
-  background: var(--state-missing-bg);
-  color: var(--badge-missing-fg);
-}
-
-.mapping-required-count.is-complete {
-  background: var(--badge-auto-bg);
-  color: var(--badge-auto-fg);
-}
-
-.mapping-required-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  padding: 0.25rem 0.6rem;
-  border-radius: var(--radius-chip);
-}
-
-.mapping-required-chip.is-mapped {
-  background: var(--badge-auto-bg);
-  color: var(--badge-auto-fg);
-}
-
-.mapping-required-chip.is-missing {
-  background: var(--state-missing-bg);
-  color: var(--badge-missing-fg);
 }
 
 /* One-line sample preview inside a mapped field card */
@@ -1304,4 +1257,56 @@
 .mapping-dup-list {
   margin: var(--space-1) 0 0;
   padding-left: var(--space-4);
+}
+
+
+/* Panel header: title on the left, All / Mapped / Pending on the right. */
+.mapping-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.mapping-card-header .shiny-input-container {
+  width: auto;
+  margin: 0;
+}
+
+.mapping-card-header .shiny-options-group {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-main);
+  border-radius: var(--radius);
+}
+
+.mapping-card-header .radio-inline {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.mapping-card-header .radio-inline input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mapping-card-header .radio-inline:has(input:checked) {
+  background: var(--bg-card);
+  border-color: var(--border-default);
+  color: var(--step-active);
+  font-weight: 700;
+}
+
+.mapping-card-header .radio-inline:has(input:focus-visible) {
+  box-shadow: var(--focus-ring-primary);
 }
