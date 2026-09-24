@@ -42,9 +42,30 @@
   --coord-swapped: #6d28d9;
   --coord-corrected: #0e7c86;
 
-  /* Mapping Badges */
-  --color-badge-ambiguous: #e67e22;
-  --color-badge-template: #8e44ad;
+  /* Mapping card states and status badges (ADR-127): light fills, 1px borders,
+     dark text on each pastel for AA contrast. */
+  --state-mapped-border: #a9d8c4;
+  --state-attention-bg: #fffaf0;
+  --state-attention-border: #efc98a;
+  --state-missing-bg: #fdf3f1;
+  --state-missing-border: #e3a69d;
+  --badge-auto-bg: #e2f4ec;
+  --badge-auto-fg: #0b6b47;
+  --badge-suggested-bg: #fff1d6;
+  --badge-suggested-fg: #7a4d00;
+  --badge-alias-bg: #e7e9fa;
+  --badge-alias-fg: #2833ac;
+  --badge-manual-bg: #f1f0ea;
+  --badge-manual-fg: #5f6570;
+  --badge-ambiguous-bg: #fde6d6;
+  --badge-ambiguous-fg: #8a3f0a;
+  --badge-template-bg: #f1e4f7;
+  --badge-template-fg: #6b2d86;
+  --badge-assistant-bg: #e6e9ef;
+  --badge-assistant-fg: #3d4656;
+  --badge-edited-bg: #e1eef8;
+  --badge-edited-fg: #1f5585;
+  --badge-missing-fg: #9b2c20;
 
   /* Borders: warm neutrals that sit on --bg-main (ADR-127). */
   --border-light: #efede6;

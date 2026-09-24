@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+- **mapping:** Flatten the cards: light state fills, pastel status badges, a Required tag and a flat sidebar
 - **upload:** Redesign the home page: upload panel on the left, required columns with definitions on the right
 - **ui:** Replace the tab bar with a two-row header and numbered steps, ADR-128
 - **ui:** Drop shadows and gradients, use warm neutral borders and a darker muted text for AA contrast, ADR-127

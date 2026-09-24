@@ -28,7 +28,7 @@ mod_mapping_ui <- function(id) {
             shiny::actionButton(
                 ns("reset_mapping"),
                 shiny::uiOutput(ns("btn_reset_label"), inline = TRUE),
-                class = "btn-warning w-100 mb-2",
+                class = "btn-outline-secondary w-100 mb-2",
                 icon = shiny::icon("rotate-left", class = "fa-solid")
             ),
             shiny::actionButton(
@@ -415,17 +415,19 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             }
 
             status <- toupper(as.character(meta$status)[1])
-            badge_class <- switch(status,
-                AUTO = "badge field-status-badge bg-success",
-                SUGERIDO = "badge field-status-badge bg-warning",
-                AMBIGUO = "badge field-status-badge badge-ambiguous",
-                EDITADO = "badge field-status-badge bg-info",
-                ALIAS = "badge field-status-badge bg-primary",
-                TEMPLATE = "badge field-status-badge badge-template",
-                ASSISTENTE = "badge field-status-badge badge-assistant",
-                MANUAL = "badge field-status-badge bg-light text-muted border",
-                "badge field-status-badge bg-light text-muted border"
+            # Own modifiers rather than Bootstrap's bg-* utilities, which carry
+            # an important flag and would pin the old saturated colors (ADR-127).
+            badge_modifier <- switch(status,
+                AUTO = "auto",
+                SUGERIDO = "suggested",
+                AMBIGUO = "ambiguous",
+                EDITADO = "edited",
+                ALIAS = "alias",
+                TEMPLATE = "template",
+                ASSISTENTE = "assistant",
+                "manual"
             )
+            badge_class <- paste0("badge field-status-badge field-status-badge--", badge_modifier)
 
             badge_label <- switch(status,
                 AUTO = tr("rostrum_badge_auto", lang_r()),
@@ -2171,6 +2173,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                                         ns = ns, lang_r = lang,
                                         input = input, cat_class = cat_class,
                                         scientificname_mapped = scientificname_mapped,
+                                        required = term %in% required_fields_strip,
                                         state_class = field_state_class(
                                             term, is_mapped, field_meta,
                                             required_fields_strip

@@ -107,9 +107,23 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 --coord-corrected: #0E7C86;
 
 /* ── Mapping badges ── */
---color-badge-ambiguous: #E67E22;
---color-badge-template:  #8E44AD;
+/* Estados do card (fundo claro + borda de 1px) */
+--state-mapped-border:    #A9D8C4;
+--state-attention-bg:     #FFFAF0;  --state-attention-border: #EFC98A;
+--state-missing-bg:       #FDF3F1;  --state-missing-border:   #E3A69D;
+
+/* Badges de status: pílula pastel, texto escuro (AA 5.1:1 ou mais) */
+--badge-auto-*       #E2F4EC / #0B6B47
+--badge-suggested-*  #FFF1D6 / #7A4D00
+--badge-alias-*      #E7E9FA / #2833AC
+--badge-manual-*     #F1F0EA / #5F6570
+--badge-ambiguous-*  #FDE6D6 / #8A3F0A
+--badge-template-*   #F1E4F7 / #6B2D86
+--badge-assistant-*  #E6E9EF / #3D4656
+--badge-edited-*     #E1EEF8 / #1F5585
 ```
+
+Os badges do mapeamento usam `field-status-badge--<status>`, nunca `bg-*` do Bootstrap: esses utilitários forçam a cor.
 
 ---
 

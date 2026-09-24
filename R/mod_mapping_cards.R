@@ -17,13 +17,15 @@
 #' @param cat_class CSS class for the category
 #' @param scientificname_mapped Logical; when TRUE, taxonRank and specificEpithet
 #'   are locked because they are derived from scientificName.
+#' @param required Logical; when TRUE the card shows a "Required" tag. The value
+#'   is fixed per term, so the per-card update path never has to change it.
 #'
 #'   Selection-dependent content (the source sample, the basisOfRecord assistant
 #'   button, and the dynamicProperties key inputs) is rendered into a per-term
 #'   `carddyn_<term>` uiOutput slot, so picking a column updates only that card
 #'   instead of rebuilding the whole 50-selectize grid (see mod_mapping.R).
 #' @noRd
-build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL) {
+build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL, required = FALSE) {
     term <- item$term
 
     # taxonRank/specificEpithet/infraspecificEpithet are inferred from
@@ -72,6 +74,9 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                         item$desc,
                         placement = "right"
                     )
+                },
+                if (isTRUE(required)) {
+                    shiny::tags$span(class = "field-required-tag", tr("mapping_required", lang_r))
                 }
             ),
             if (!is.null(badge_info) && term != "occurrenceID" && !locked_taxon) {
