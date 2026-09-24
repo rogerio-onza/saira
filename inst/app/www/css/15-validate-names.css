@@ -36,7 +36,7 @@
   transition: var(--transition-base);
 }
 
-.provider-card .fa-icon,
+.provider-card .ph,
 .provider-card i {
   margin-right: var(--space-2);
 }

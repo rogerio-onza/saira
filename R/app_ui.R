@@ -20,7 +20,11 @@ app_ui <- function() {
             ),
             shiny::tags$link(
                 rel = "stylesheet",
-                href = paste0("www/vendor/fontawesome/css/all.min.css?v=", css_version)
+                href = paste0("www/vendor/phosphor/regular/style.css?v=", css_version)
+            ),
+            shiny::tags$link(
+                rel = "stylesheet",
+                href = paste0("www/vendor/phosphor/light/style.css?v=", css_version)
             ),
             shiny::tags$link(
                 rel = "stylesheet",

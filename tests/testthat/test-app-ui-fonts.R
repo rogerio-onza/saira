@@ -10,8 +10,8 @@ testthat::test_that("app_ui references local vendored fonts and cache-busted cus
         info = "Missing local Source Serif 4 / Space Mono CSS link in app_ui output"
     )
     testthat::expect_true(
-        grepl("www/vendor/fontawesome/css/all\\.min\\.css", body_text, perl = TRUE),
-        info = "Missing local FontAwesome CSS link in app_ui output"
+        grepl("www/vendor/phosphor/regular/style\\.css", body_text, perl = TRUE),
+        info = "Missing local Phosphor icon CSS link in app_ui output"
     )
     testthat::expect_false(
         grepl("fonts\\.googleapis\\.com|cdnjs\\.cloudflare\\.com|unpkg\\.com", body_text, perl = TRUE),

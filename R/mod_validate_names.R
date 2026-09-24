@@ -809,7 +809,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         class = trimws(paste("vn-review-header", ctx$header_class)),
                         shiny::div(
                             class = "vn-review-header-icon",
-                            status_style_map(target$status_key)$icon_symbol
+                            ph_icon(status_style_map(target$status_key)$icon)
                         ),
                         shiny::div(
                             class = "vn-review-header-text",
@@ -844,6 +844,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         shiny::actionButton(
                             ns("review_switch_to_edit"),
                             label = tr("validate_names_review_switch_to_edit", lang_r()),
+                            icon = ph_icon("pencil-simple"),
                             class = "btn btn-secondary vn-review-edit-btn"
                         )
                     ),
@@ -1093,7 +1094,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
 
         output$title <- shiny::renderUI({
             shiny::h3(
-                shiny::icon("microscope", class = "me-2"),
+                ph_icon("microscope", class = "me-2"),
                 tr("validate_names_title", lang_r()),
                 class = "text-mono mb-2"
             )
@@ -1266,7 +1267,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         shiny::actionButton(
                             inputId = ns("cancel_validation"),
                             label = tr("validate_names_cancel", lang_r()),
-                            icon = shiny::icon("stop"),
+                            icon = ph_icon("stop"),
                             class = "vn-cancel-btn w-100 mt-2",
                             disabled = isTRUE(rv$abort_requested)
                         )
@@ -1302,7 +1303,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             }
             shiny::div(
                 class = "vn-progress-phrase-row",
-                shiny::icon(vn_phase_icon(state), class = "fa-solid vn-progress-phrase-icon"),
+                ph_icon(vn_phase_icon(state), class = "vn-progress-phrase-icon"),
                 shiny::span(class = "vn-progress-phrase-text", vn_phase_text(state, lang_r()))
             )
         })
@@ -1362,7 +1363,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             } else if (isTRUE(all_resolved)) {
                 shiny::div(
                     class = "vn-review-empty-state",
-                    shiny::div(class = "vn-review-empty-icon", shiny::icon("party-horn", class = "fa-solid")),
+                    shiny::div(class = "vn-review-empty-icon", ph_icon("party-horn")),
                     shiny::div(class = "vn-review-empty-title", tr("validate_names_review_empty_title", lang_r())),
                     shiny::div(class = "vn-review-empty-message", tr("validate_names_review_empty_message", lang_r())),
                     shiny::actionButton(
@@ -1390,7 +1391,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         is_exiting <- query_name %in% exiting_keys
                         shiny::div(
                             class = trimws(paste("vn-stream-item", style$item_class, if (isTRUE(is_exiting)) "vn-review-item-exit" else "")),
-                            shiny::span(class = trimws(paste("vn-stream-status-icon", paste0("vn-stream-status-icon-", style$key))), style$icon_symbol),
+                            shiny::span(class = trimws(paste("vn-stream-status-icon", paste0("vn-stream-status-icon-", style$key))), ph_icon(style$icon)),
                             shiny::div(
                                 class = "vn-stream-item-main",
                                 shiny::div(class = "vn-stream-item-name", row$query_name[[1]]),
@@ -1412,6 +1413,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                                             ns("open_review_target"),
                                             jsonlite::toJSON(query_name, auto_unbox = TRUE)
                                         ),
+                                        ph_icon("pencil-simple"),
                                         tr("validate_names_review_action", lang_r())
                                     )
                                 },

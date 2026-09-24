@@ -56,7 +56,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
             if (is.null(df) || !is.data.frame(df) || ncol(df) == 0L || nrow(df) == 0L) {
                 shiny::div(
                     class = "preview-empty-state",
-                    shiny::icon("table", class = "fa-3x"),
+                    ph_icon("table", class = "ph-3x"),
                     shiny::h4(tr("preview_no_data_title", lang_r())),
                     shiny::p(tr("preview_no_data", lang_r()))
                 )

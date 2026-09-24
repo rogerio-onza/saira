@@ -78,7 +78,7 @@
   font-weight: var(--weight-semibold);
 }
 
-.export-banner > .fa,
+.export-banner > .ph,
 .export-banner > svg {
   margin-top: 0.15rem;
   flex: 0 0 auto;

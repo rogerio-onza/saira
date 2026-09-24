@@ -98,7 +98,7 @@ help_link_item <- function(link_item, lang) {
         shiny::tags$span(class = "help-link-text", link_item$label),
         shiny::tags$span(
             class = "help-link-arrow",
-            shiny::tags$i(class = "fa-solid fa-arrow-up-right-from-square", `aria-hidden` = "true")
+            shiny::tags$i(class = "ph ph-arrow-square-out", `aria-hidden` = "true")
         )
     )
 }
@@ -108,7 +108,7 @@ help_tutorials_card <- function(lang) {
         class = "help-resource-card help-tutorials-card",
         shiny::div(
             class = "help-resource-head",
-            shiny::tags$i(class = "fa-solid fa-graduation-cap", `aria-hidden` = "true"),
+            shiny::tags$i(class = "ph ph-graduation-cap", `aria-hidden` = "true"),
             shiny::tags$h2(class = "help-resource-title", tr("help_tutorials_title", lang))
         ),
         shiny::p(class = "help-resource-body", tr("help_tutorials_body", lang)),
@@ -117,7 +117,7 @@ help_tutorials_card <- function(lang) {
             class = "help-tutorials-button",
             target = "_blank",
             rel = "noopener noreferrer",
-            shiny::tags$i(class = "fa-solid fa-arrow-up-right-from-square", `aria-hidden` = "true"),
+            shiny::tags$i(class = "ph ph-arrow-square-out", `aria-hidden` = "true"),
             tr("help_tutorials_link", lang)
         )
     )
@@ -128,25 +128,25 @@ help_links_card <- function(lang) {
         list(
             label = tr("help_links_dwc", lang),
             href = "https://dwc.tdwg.org/terms/",
-            icon = "fa-solid fa-book-open",
+            icon = "ph ph-book-open",
             theme = "dwc"
         ),
         list(
             label = tr("help_links_sibbr", lang),
             href = "https://sibbr.gov.br/",
-            icon = "fa-solid fa-leaf",
+            icon = "ph ph-leaf",
             theme = "sibbr"
         ),
         list(
             label = tr("help_links_gbif", lang),
             href = "https://www.gbif.org/darwin-core",
-            icon = "fa-solid fa-globe",
+            icon = "ph ph-globe",
             theme = "gbif"
         ),
         list(
             label = tr("help_links_issues", lang),
             href = "https://github.com/rogerio-onza/saira/issues",
-            icon = "fa-brands fa-github",
+            icon = "ph ph-github-logo",
             theme = "issues"
         )
     )
@@ -155,7 +155,7 @@ help_links_card <- function(lang) {
         class = "help-resource-card help-links-card",
         shiny::div(
             class = "help-resource-head",
-            shiny::tags$i(class = "fa-solid fa-up-right-from-square", `aria-hidden` = "true"),
+            shiny::tags$i(class = "ph ph-arrow-square-out", `aria-hidden` = "true"),
             shiny::tags$h2(class = "help-resource-title", tr("help_links_title", lang))
         ),
         shiny::div(
@@ -188,7 +188,7 @@ help_refs_card <- function(lang) {
         class = "help-resource-card help-refs-card",
         shiny::div(
             class = "help-resource-head",
-            shiny::tags$i(class = "fa-solid fa-file-pdf", `aria-hidden` = "true"),
+            shiny::tags$i(class = "ph ph-file-pdf", `aria-hidden` = "true"),
             shiny::tags$h2(class = "help-resource-title", tr("help_refs_title", lang))
         ),
         shiny::p(class = "help-resource-subtitle", tr("help_refs_subtitle", lang)),
@@ -202,14 +202,14 @@ help_refs_card <- function(lang) {
                     rel = "noopener noreferrer",
                     shiny::tags$span(
                         class = "help-ref-icon",
-                        shiny::tags$i(class = "fa-solid fa-file-pdf", `aria-hidden` = "true")
+                        shiny::tags$i(class = "ph ph-file-pdf", `aria-hidden` = "true")
                     ),
                     shiny::tags$span(
                         class = "help-ref-text",
                         shiny::tags$span(class = "help-ref-title", ref$title),
                         shiny::tags$span(class = "help-ref-authors", ref$authors)
                     ),
-                    shiny::tags$i(class = "fa-solid fa-arrow-up-right-from-square help-ref-arrow", `aria-hidden` = "true")
+                    shiny::tags$i(class = "ph ph-arrow-square-out help-ref-arrow", `aria-hidden` = "true")
                 )
             })
         )
@@ -228,7 +228,7 @@ help_faq_card <- function(lang) {
         class = "help-resource-card help-faq-card",
         shiny::div(
             class = "help-resource-head",
-            shiny::tags$i(class = "fa-solid fa-circle-question", `aria-hidden` = "true"),
+            shiny::tags$i(class = "ph ph-question", `aria-hidden` = "true"),
             shiny::tags$h2(class = "help-resource-title", tr("help_faq", lang))
         ),
         shiny::p(class = "help-resource-subtitle", tr("help_faq_subtitle", lang)),
@@ -237,7 +237,7 @@ help_faq_card <- function(lang) {
             shiny::tags$summary(
                 class = "help-faq-summary",
                 shiny::tags$span(tr("help_faq_toggle", lang)),
-                shiny::tags$i(class = "fa-solid fa-chevron-down help-faq-chevron", `aria-hidden` = "true")
+                shiny::tags$i(class = "ph ph-caret-down help-faq-chevron", `aria-hidden` = "true")
             ),
             shiny::div(
                 class = "help-faq-list",
@@ -247,7 +247,7 @@ help_faq_card <- function(lang) {
                         shiny::tags$summary(
                             class = "help-faq-question",
                             shiny::tags$span(item$q),
-                            shiny::tags$i(class = "fa-solid fa-chevron-down help-faq-chevron", `aria-hidden` = "true")
+                            shiny::tags$i(class = "ph ph-caret-down help-faq-chevron", `aria-hidden` = "true")
                         ),
                         shiny::div(class = "help-faq-answer", item$a)
                     )
@@ -259,7 +259,7 @@ help_faq_card <- function(lang) {
                 target = "_blank",
                 rel = "noopener noreferrer",
                 tr("help_faq_view_all", lang),
-                shiny::tags$i(class = "fa-solid fa-arrow-up-right-from-square", `aria-hidden` = "true")
+                shiny::tags$i(class = "ph ph-arrow-square-out", `aria-hidden` = "true")
             )
         )
     )
@@ -292,7 +292,7 @@ help_sidebar_author_card <- function(lang, author_meta) {
             class = "help-author-body",
             shiny::div(
                 class = "help-author-contact-item",
-                shiny::tags$i(class = "fa-solid fa-envelope", `aria-hidden` = "true"),
+                shiny::tags$i(class = "ph ph-envelope", `aria-hidden` = "true"),
                 shiny::tags$span(tr("help_author_contact_email", lang)),
                 shiny::tags$a(
                     href = paste0("mailto:", author_meta$email),
@@ -301,7 +301,7 @@ help_sidebar_author_card <- function(lang, author_meta) {
             ),
             shiny::div(
                 class = "help-author-contact-item",
-                shiny::tags$i(class = "fa-brands fa-github", `aria-hidden` = "true"),
+                shiny::tags$i(class = "ph ph-github-logo", `aria-hidden` = "true"),
                 shiny::tags$span(tr("help_author_contact_repository", lang)),
                 shiny::tags$a(
                     href = author_meta$github_repo,
@@ -327,7 +327,7 @@ help_sidebar_bug_card <- function(lang) {
             class = "help-bug-card-header",
             shiny::div(
                 class = "help-bug-icon-wrap",
-                shiny::tags$i(class = "fa-solid fa-bug", `aria-hidden` = "true")
+                shiny::tags$i(class = "ph ph-bug", `aria-hidden` = "true")
             ),
             shiny::div(class = "help-bug-title", tr("help_bug_title", lang))
         ),

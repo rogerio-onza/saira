@@ -23,25 +23,25 @@ mod_mapping_ui <- function(id) {
                 ns("auto_map"),
                 shiny::uiOutput(ns("btn_auto_map_label"), inline = TRUE),
                 class = "btn-primary w-100 mb-2",
-                icon = shiny::icon("wand-magic-sparkles")
+                icon = ph_icon("wand-magic-sparkles")
             ),
             shiny::actionButton(
                 ns("reset_mapping"),
                 shiny::uiOutput(ns("btn_reset_label"), inline = TRUE),
                 class = "btn-outline-secondary w-100 mb-2",
-                icon = shiny::icon("rotate-left", class = "fa-solid")
+                icon = ph_icon("rotate-left")
             ),
             shiny::actionButton(
                 ns("add_term"),
                 shiny::uiOutput(ns("btn_add_term_label"), inline = TRUE),
                 class = "btn-outline-secondary w-100 mb-2",
-                icon = shiny::icon("plus")
+                icon = ph_icon("plus")
             ),
             shiny::actionButton(
                 ns("import_template"),
                 shiny::uiOutput(ns("btn_import_template_label"), inline = TRUE),
                 class = "btn-outline-secondary w-100 mb-2",
-                icon = shiny::icon("file-import")
+                icon = ph_icon("file-import")
             ),
             shiny::hr(),
             shiny::uiOutput(ns("sidebar_view_label")),
@@ -75,7 +75,7 @@ mod_mapping_ui <- function(id) {
                     condition = paste0("!output['", ns("file_uploaded"), "']"),
                     shiny::div(
                         class = "mapping-empty-state",
-                        shiny::icon("upload", class = "mapping-empty-icon"),
+                        ph_icon("upload", class = "mapping-empty-icon"),
                         shiny::h4(shiny::uiOutput(ns("no_file_msg"))),
                         shiny::p(shiny::uiOutput(ns("upload_first_msg")))
                     )
@@ -1059,9 +1059,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     `aria-label` = paste(term, status_label),
                     shiny::tags$i(
                         class = if (mapped) {
-                            "fa-solid fa-circle-check"
+                            "ph ph-check-circle"
                         } else {
-                            "fa-solid fa-circle-xmark"
+                            "ph ph-x-circle"
                         }
                     ),
                     term
@@ -1523,7 +1523,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     ns("class_pill_all"),
                     tr("mapping_pill_all", lang_r()),
                     class = "stream-pill",
-                    icon = shiny::icon("arrows-up-to-line")
+                    icon = ph_icon("arrows-up-to-line")
                 ),
                 lapply(cats, function(cat) {
                     shiny::actionButton(
@@ -1548,7 +1548,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         )
                     ),
                     class = "stream-pill next-pending-pill is-idle",
-                    icon = shiny::icon("arrow-right")
+                    icon = ph_icon("arrow-right")
                 )
             )
         })
@@ -1730,7 +1730,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     inputId = ns("import_template_file"),
                     label = tr("modal_import_template_label", lang_r()),
                     accept = c(".txt", "text/plain"),
-                    buttonLabel = shiny::icon("upload", class = "fa-solid"),
+                    buttonLabel = ph_icon("upload"),
                     placeholder = ""
                 ),
                 footer = shiny::tagList(
@@ -1978,7 +1978,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             shiny::div(
                 class = "alert alert-warning mapping-dup-warning",
                 shiny::div(
-                    shiny::icon("triangle-exclamation"), " ",
+                    ph_icon("triangle-exclamation"), " ",
                     tr("mapping_dup_source_warning", lang)
                 ),
                 shiny::tags$ul(class = "mapping-dup-list", rows)
@@ -2654,7 +2654,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             shiny::div(
                 class = alert_class,
                 style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
-                shiny::icon(if (dup > 0L) "triangle-exclamation" else "info-circle"),
+                ph_icon(if (dup > 0L) "triangle-exclamation" else "info-circle"),
                 " ",
                 paste(unlist(lines), collapse = " "),
                 if (dup > 0L) {

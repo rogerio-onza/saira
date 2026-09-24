@@ -339,7 +339,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
 
         output$title <- shiny::renderUI({
             shiny::h3(
-                shiny::icon("map-marker-alt", class = "me-2"),
+                ph_icon("map-marker-alt", class = "me-2"),
                 tr("validate_coords_title", lang_r()),
                 class = "text-mono mb-2"
             )
@@ -387,7 +387,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 bslib::card_header(
                     shiny::div(
                         class = "validate-card-title",
-                        shiny::icon("gear", class = "me-2"),
+                        ph_icon("gear", class = "me-2"),
                         tr("validate_coords_action_card_title", lang_r())
                     )
                 ),
@@ -413,7 +413,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     shiny::actionButton(
                         inputId = ns("validate"),
                         label = run_label,
-                        icon = shiny::icon(if (is_busy) "spinner" else "play", class = if (is_busy) "fa-spin" else ""),
+                        icon = ph_icon(if (is_busy) "spinner" else "play", class = if (is_busy) "ph-spin" else ""),
                         class = "btn-primary w-100",
                         disabled = !isTRUE(can_run_validation())
                     ),
@@ -432,7 +432,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 class = "validate-pre-right",
                 shiny::div(
                     class = "validate-ready-hint",
-                    shiny::icon("circle-info"),
+                    ph_icon("circle-info"),
                     shiny::div(
                         shiny::p(
                             class = "mb-0",
@@ -458,7 +458,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 bslib::card_body(
                     shiny::div(
                         class = "validation-progress-empty",
-                        shiny::icon("spinner", class = "me-2 fa-spin"),
+                        ph_icon("spinner", class = "me-2 ph-spin"),
                         tr("validate_coords_run_running", lang_r())
                     )
                 )
@@ -520,7 +520,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             if (!has_rows) {
                 return(shiny::div(
                     class = "alert alert-warning mb-0",
-                    shiny::icon("triangle-exclamation"),
+                    ph_icon("triangle-exclamation"),
                     " ",
                     tr("validate_coords_map_empty", lang_r())
                 ))
@@ -530,7 +530,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             }
             shiny::div(
                 class = "coords-map-hidden-note",
-                shiny::icon("triangle-exclamation"),
+                ph_icon("triangle-exclamation"),
                 shiny::span(sprintf(tr("validate_coords_map_hidden", lang_r()), hidden_n)),
                 if (!identical(active_filter(), "validity")) {
                     shiny::actionLink(ns("map_show_hidden"), tr("validate_coords_map_hidden_link", lang_r()))
@@ -554,7 +554,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             bslib::card(
                 class = "validate-coords-card mb-3 validate-coords-map-card",
                 bslib::card_header(
-                    shiny::div(class = "validate-card-title", shiny::icon("earth-americas", class = "me-2"), tr("validate_coords_map_title", lang_r()))
+                    shiny::div(class = "validate-card-title", ph_icon("earth-americas", class = "me-2"), tr("validate_coords_map_title", lang_r()))
                 ),
                 bslib::card_body(
                     shiny::p(class = "coords-map-subtitle", tr("validate_coords_map_subtitle", lang_r())),
@@ -576,7 +576,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     ),
                     shiny::div(
                         class = "alert alert-warning coords-sea-precision-note mb-0 mt-2",
-                        shiny::icon("triangle-exclamation", class = "me-1"),
+                        ph_icon("triangle-exclamation", class = "me-1"),
                         tr("validate_coords_sea_precision_note", lang_r())
                     )
                 )
@@ -595,7 +595,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             table_body <- if (!is.data.frame(filtered) || nrow(filtered) == 0L) {
                 shiny::div(
                     class = "alert alert-info mb-0",
-                    shiny::icon("filter"),
+                    ph_icon("filter"),
                     " ",
                     tr("validate_coords_datatable_zero_records", lang_r())
                 )
@@ -609,7 +609,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             bslib::card(
                 class = "validate-coords-card mb-3 validate-coords-table-card",
                 bslib::card_header(
-                    shiny::div(class = "validate-card-title", shiny::icon("table", class = "me-2"), tr("validate_coords_table_title", lang_r()))
+                    shiny::div(class = "validate-card-title", ph_icon("table", class = "me-2"), tr("validate_coords_table_title", lang_r()))
                 ),
                 bslib::card_body(table_body)
             )
@@ -1248,7 +1248,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
                 shiny::div(
                     class = "coords-transposed-head",
-                    shiny::icon(if (applied) "circle-check" else "right-left"),
+                    ph_icon(if (applied) "circle-check" else "right-left"),
                     shiny::span(
                         class = "coords-transposed-title",
                         if (applied) {
@@ -1274,7 +1274,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     shiny::actionButton(
                         ns("apply_transposed"),
                         tr("validate_coords_transposed_apply", lang_r()),
-                        icon = shiny::icon("wand-magic-sparkles"),
+                        icon = ph_icon("wand-magic-sparkles"),
                         class = "btn btn-primary btn-sm w-100"
                     )
                 }
@@ -1375,7 +1375,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
                 shiny::div(
                     class = "coords-transposed-head",
-                    shiny::icon(if (applied) "circle-check" else "compass"),
+                    ph_icon(if (applied) "circle-check" else "compass"),
                     shiny::span(
                         class = "coords-transposed-title",
                         if (applied) {
@@ -1422,7 +1422,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                         shiny::actionButton(
                             ns("apply_utm"),
                             tr("validate_coords_utm_apply", lang),
-                            icon = shiny::icon("wand-magic-sparkles"),
+                            icon = ph_icon("wand-magic-sparkles"),
                             class = "btn btn-primary btn-sm w-100"
                         )
                     )
@@ -1496,7 +1496,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
                 shiny::div(
                     class = "coords-transposed-head",
-                    shiny::icon(if (applied) "circle-check" else "right-left"),
+                    ph_icon(if (applied) "circle-check" else "right-left"),
                     shiny::span(
                         class = "coords-transposed-title",
                         if (applied) {
@@ -1521,7 +1521,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     shiny::actionButton(
                         ns("apply_swap_fill"),
                         tr("validate_coords_swapfill_apply", lang_r()),
-                        icon = shiny::icon("wand-magic-sparkles"),
+                        icon = ph_icon("wand-magic-sparkles"),
                         class = "btn btn-primary btn-sm w-100"
                     )
                 }
@@ -1555,7 +1555,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
                 shiny::div(
                     class = "coords-transposed-head",
-                    shiny::icon(if (applied) "circle-check" else "earth-americas"),
+                    ph_icon(if (applied) "circle-check" else "earth-americas"),
                     shiny::span(
                         class = "coords-transposed-title",
                         if (applied) {
@@ -1578,7 +1578,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     shiny::actionButton(
                         ns("apply_country_fill"),
                         tr("validate_coords_country_apply", lang_r()),
-                        icon = shiny::icon("wand-magic-sparkles"),
+                        icon = ph_icon("wand-magic-sparkles"),
                         class = "btn btn-primary btn-sm w-100"
                     )
                 }

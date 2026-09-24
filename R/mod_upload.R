@@ -47,7 +47,7 @@ mod_upload_ui <- function(id) {
                     class = "upload-mode-tab",
                     `data-mode` = "csv",
                     `aria-controls` = ns("upload_mode"),
-                    shiny::icon("file-csv", class = "fa-solid"),
+                    ph_icon("file-csv"),
                     shiny::tags$span(
                         class = "upload-mode-tab-title",
                         shiny::uiOutput(ns("mode_csv_title"), inline = TRUE)
@@ -58,7 +58,7 @@ mod_upload_ui <- function(id) {
                     class = "upload-mode-tab",
                     `data-mode` = "camtrap",
                     `aria-controls` = ns("upload_mode"),
-                    shiny::icon("box-archive", class = "fa-solid"),
+                    ph_icon("box-archive"),
                     shiny::tags$span(
                         class = "upload-mode-tab-title",
                         shiny::uiOutput(ns("mode_camtrap_title"), inline = TRUE)
@@ -98,7 +98,7 @@ mod_upload_ui <- function(id) {
                     class = "upload-dropzone",
                     shiny::div(
                         class = "upload-dropzone-copy",
-                        shiny::icon("arrow-up-from-bracket", class = "fa-solid upload-dropzone-icon"),
+                        ph_icon("arrow-up-from-bracket", class = "upload-dropzone-icon", weight = "light"),
                         shiny::div(
                             class = "upload-dropzone-hint",
                             shiny::uiOutput(ns("dropzone_hint_text"), inline = TRUE)
@@ -119,7 +119,7 @@ mod_upload_ui <- function(id) {
                             ".tsv", "text/tab-separated-values",
                             ".txt", "text/plain"
                         ),
-                        buttonLabel = shiny::icon("upload", class = "fa-solid"),
+                        buttonLabel = ph_icon("upload"),
                         placeholder = ""
                     )
                 )
@@ -128,12 +128,12 @@ mod_upload_ui <- function(id) {
                 class = "home-upload-notes",
                 shiny::div(
                     class = "home-upload-note",
-                    shiny::icon("code", class = "fa-solid"),
+                    ph_icon("code"),
                     shiny::uiOutput(ns("encoding_text"), inline = TRUE)
                 ),
                 shiny::div(
                     class = "home-upload-note",
-                    shiny::icon("lock", class = "fa-solid"),
+                    ph_icon("lock"),
                     shiny::uiOutput(ns("privacy_text"), inline = TRUE)
                 )
             ),

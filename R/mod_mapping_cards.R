@@ -101,7 +101,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
             shiny::div(
                 class = "alert alert-info",
                 style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
-                shiny::icon("dna"),
+                ph_icon("dna"),
                 " ", tr("taxon_auto_derived", lang_r)
             )
         } else if (term == "occurrenceID") {
@@ -354,7 +354,7 @@ build_constant_value_input <- function(term, ns, lang_r, input) {
             ns = ns,
             shiny::div(
                 class = "field-allrows-note",
-                shiny::icon("info-circle"),
+                ph_icon("info-circle"),
                 " ", tr("mapping_fills_every_row", lang_r)
             ),
             shiny::textInput(
@@ -387,7 +387,7 @@ build_basis_assistant_button <- function(current_val, ns, lang_r) {
         ns("open_basis_of_record_assistant"),
         tr("bor_assistant_button", lang_r),
         class = "btn btn-outline-primary btn-sm w-100 mt-2",
-        icon = shiny::icon("list-check")
+        icon = ph_icon("list-check")
     )
 }
 
@@ -408,7 +408,7 @@ build_establishment_assistant_button <- function(ns, lang_r) {
         ns("open_establishment_assistant"),
         tr("est_assistant_button", lang_r),
         class = "btn btn-outline-primary btn-sm w-100 mt-2",
-        icon = shiny::icon("seedling")
+        icon = ph_icon("seedling")
     )
 }
 
@@ -422,7 +422,7 @@ build_establishment_assistant_button <- function(ns, lang_r) {
 build_establishment_degree_hint <- function(ns, lang_r) {
     shiny::div(
         class = "alert alert-info est-degree-hint",
-        shiny::icon("link"),
+        ph_icon("link"),
         " ",
         tr("est_degree_card_hint", lang_r),
         " ",
@@ -450,7 +450,7 @@ build_establishment_status_note <- function(answered, missing_degree, lang_r) {
         if (answered > 0L) {
             shiny::div(
                 class = "est-card-status-line",
-                shiny::icon("wand-magic-sparkles"),
+                ph_icon("wand-magic-sparkles"),
                 " ",
                 sprintf(tr("est_card_filled_by_assistant", lang_r), answered)
             )

@@ -93,7 +93,7 @@ mount_export_download <- function(input, output, session, lang_r,
                             statusEl.textContent = payload.status_text;
                         }
                         if (phraseIconEl && payload.final_icon) {
-                            phraseIconEl.className = 'fa-solid fa-' + payload.final_icon + ' automap-loading-phrase-icon';
+                            phraseIconEl.className = 'ph ph-' + payload.final_icon + ' automap-loading-phrase-icon';
                         }
                         if (phraseTextEl && payload.final_phrase) {
                             phraseTextEl.textContent = payload.final_phrase;
@@ -135,7 +135,7 @@ mount_export_download <- function(input, output, session, lang_r,
                 shiny::actionButton(
                     inputId = ns("download_trigger"),
                     label = shiny::tagList(
-                        shiny::icon("file-zipper"),
+                        ph_icon("file-zipper"),
                         " ",
                         tr("export_download_zip", lang_r())
                     ),
@@ -221,7 +221,7 @@ mount_export_download <- function(input, output, session, lang_r,
             if (length(validation_result$warning_missing) > 0L) {
                 body_blocks[[length(body_blocks) + 1L]] <- shiny::p(
                     class = "text-accent mb-0",
-                    shiny::icon("info-circle"),
+                    ph_icon("info-circle"),
                     " ",
                     tr("preview_download_validation_warning", lang_r())
                 )
@@ -253,14 +253,14 @@ mount_export_download <- function(input, output, session, lang_r,
                     ),
                     shiny::p(
                         class = "preview-export-confirm-warning mb-0",
-                        shiny::icon("triangle-exclamation"),
+                        ph_icon("triangle-exclamation"),
                         " ",
                         tr("preview_download_confirm_warning", lang_r())
                     ),
                     if (length(validation_result$warning_missing) > 0L) {
                         shiny::p(
                             class = "text-accent mt-2 mb-0",
-                            shiny::icon("info-circle"),
+                            ph_icon("info-circle"),
                             " ",
                             tr("preview_download_validation_warning", lang_r())
                         )
@@ -312,8 +312,8 @@ mount_export_download <- function(input, output, session, lang_r,
                     var applyPhrase = function (index) {
                         var item = items[index];
                         if (!item) { return; }
-                        var nextIcon = item.getAttribute('data-icon') || 'gears';
-                        iconEl.className = 'fa-solid fa-' + nextIcon + ' automap-loading-phrase-icon';
+                        var nextIcon = item.getAttribute('data-icon') || 'gear-six';
+                        iconEl.className = 'ph ph-' + nextIcon + ' automap-loading-phrase-icon';
                         textEl.textContent = item.textContent || '';
                     };
 
@@ -382,7 +382,7 @@ mount_export_download <- function(input, output, session, lang_r,
                     class = "automap-loading-modal preview-export-loading-modal",
                     shiny::div(
                         class = "automap-loading-brand-row",
-                        shiny::icon("dove", class = "fa-solid automap-loading-brand-icon")
+                        ph_icon("dove", class = "automap-loading-brand-icon")
                     ),
                     shiny::div(
                         class = "automap-loading-title",
@@ -407,10 +407,10 @@ mount_export_download <- function(input, output, session, lang_r,
                         class = "automap-loading-phrase",
                         shiny::div(
                             class = "automap-loading-phrase-row",
-                            shiny::icon(
+                            ph_icon(
                                 first_spec$icon,
                                 id = ns("preview_export_phrase_icon"),
-                                class = "fa-solid automap-loading-phrase-icon"
+                                class = "automap-loading-phrase-icon"
                             ),
                             shiny::span(
                                 tr(first_spec$key, lang_r()),
@@ -423,7 +423,7 @@ mount_export_download <- function(input, output, session, lang_r,
                             lapply(loading_phrase_specs, function(spec) {
                                 shiny::span(
                                     class = "automap-loading-phrase-item",
-                                    `data-icon` = spec$icon,
+                                    `data-icon` = ph_icon_name(spec$icon),
                                     tr(spec$key, lang_r())
                                 )
                             })
@@ -503,7 +503,7 @@ mount_export_download <- function(input, output, session, lang_r,
                     modal_root_id = ns("preview_export_phrase_pool"),
                     timer_key = ns("preview_export_phrase_timer"),
                     status_text = status_100,
-                    final_icon = "download",
+                    final_icon = ph_icon_name("download"),
                     final_phrase = tr("preview_export_phrase_10", lang_r()),
                     delay_ms = 320
                 )
@@ -747,7 +747,7 @@ mount_export_download <- function(input, output, session, lang_r,
                     },
                     error = function(e) {
                         fail_payload <- finish_payload
-                        fail_payload$final_icon <- "triangle-exclamation"
+                        fail_payload$final_icon <- ph_icon_name("triangle-exclamation")
                         fail_payload$final_phrase <- tr("preview_export_failed_phrase", lang_r())
                         session$sendCustomMessage(download_finish_channel, fail_payload)
                         shiny::showNotification(

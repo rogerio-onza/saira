@@ -16,7 +16,7 @@ upload_csv_requirements_ui <- function(required_terms, lang) {
     if (!is.data.frame(required_terms) || nrow(required_terms) == 0L) {
         return(shiny::div(
             class = "alert alert-warning",
-            shiny::icon("exclamation-triangle"),
+            ph_icon("exclamation-triangle"),
             " ",
             tr("dwc_required_empty", lang)
         ))
@@ -78,7 +78,7 @@ upload_camtrap_requirements_ui <- function(lang) {
             class = "upload-file-row",
             shiny::div(
                 class = "upload-file-row-icon",
-                shiny::icon("file-lines", class = "fa-regular")
+                ph_icon("file-lines")
             ),
             shiny::div(
                 class = "upload-file-row-name-cell",
@@ -94,7 +94,7 @@ upload_camtrap_requirements_ui <- function(lang) {
             class = "upload-file-list-group",
             shiny::div(
                 class = "upload-file-list-group-label",
-                shiny::icon("box-archive", class = "fa-solid"),
+                ph_icon("box-archive"),
                 " ",
                 tr(label_key, lang)
             ),

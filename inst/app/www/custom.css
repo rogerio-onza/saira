@@ -1995,6 +1995,33 @@ label,
    UTILITY CLASSES
    ============================================================================= */
 
+/* Phosphor icons: an inline box on the text baseline, as the old icon font had. */
+.ph,
+.ph-light {
+  display: inline-block;
+  vertical-align: -0.125em;
+}
+
+.ph-3x {
+  font-size: 3em;
+}
+
+.ph-spin {
+  animation: ph-spin 1s linear infinite;
+}
+
+@keyframes ph-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-spin {
+    animation: none;
+  }
+}
+
 .text-mono {
   font-family: var(--font-mono);
 }
@@ -4239,7 +4266,7 @@ table.dataTable tbody tr.validate-invalid td {
   transition: var(--transition-base);
 }
 
-.provider-card .fa-icon,
+.provider-card .ph,
 .provider-card i {
   margin-right: var(--space-2);
 }
@@ -8476,7 +8503,7 @@ button.sc-scale-chip:hover {
   font-weight: var(--weight-semibold);
 }
 
-.export-banner > .fa,
+.export-banner > .ph,
 .export-banner > svg {
   margin-top: 0.15rem;
   flex: 0 0 auto;

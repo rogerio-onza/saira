@@ -2348,8 +2348,8 @@
     "en": "Save"
   },
   "validate_names_review_action": {
-    "pt": "✎ Revisar",
-    "en": "✎ Review"
+    "pt": "Revisar",
+    "en": "Review"
   },
   "validate_names_review_problem_not_found": {
     "pt": "Não encontrado",
@@ -2396,8 +2396,8 @@
     "en": "This name will be exported exactly as entered"
   },
   "validate_names_review_switch_to_edit": {
-    "pt": "✎ Não, quero corrigir o nome",
-    "en": "✎ No, I want to correct the name"
+    "pt": "Não, quero corrigir o nome",
+    "en": "No, I want to correct the name"
   },
   "validate_names_review_confirm_btn": {
     "pt": "Confirmar",

@@ -193,7 +193,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 class = "export-info-tip",
                 `data-bs-toggle` = "tooltip",
                 title = text,
-                shiny::icon("circle-info")
+                ph_icon("circle-info")
             )
         }
 
@@ -211,7 +211,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 bslib::card_header(
                     shiny::div(
                         class = "export-card-title",
-                        shiny::icon(icon, class = "me-2"), title
+                        ph_icon(icon, class = "me-2"), title
                     )
                 ),
                 bslib::card_body(body)
@@ -235,7 +235,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             if (is.null(s) || !is.list(s) || s$record_count == 0L) {
                 return(shiny::div(
                     class = "alert alert-info export-empty",
-                    shiny::icon("circle-info"), " ", tr("export_empty", lang)
+                    ph_icon("circle-info"), " ", tr("export_empty", lang)
                 ))
             }
 
@@ -265,7 +265,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 }
                 shiny::div(
                     class = "export-banner export-banner--danger",
-                    shiny::icon("triangle-exclamation"),
+                    ph_icon("triangle-exclamation"),
                     shiny::div(
                         class = "export-banner-body",
                         shiny::strong(tr("export_blocked_title", lang)),
@@ -273,14 +273,14 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     ),
                     shiny::actionButton(
                         ns("go_fix_terms"),
-                        label = shiny::tagList(cta_label, " ", shiny::icon("arrow-right")),
+                        label = shiny::tagList(cta_label, " ", ph_icon("arrow-right")),
                         class = "btn btn-success export-banner-action"
                     )
                 )
             } else if (!isTRUE(s$occurrence_id_present)) {
                 shiny::div(
                     class = "export-banner export-banner--warning",
-                    shiny::icon("circle-info"),
+                    ph_icon("circle-info"),
                     shiny::div(
                         class = "export-banner-body",
                         shiny::strong(tr("export_warn_title", lang)),
@@ -290,7 +290,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             } else {
                 shiny::div(
                     class = "export-banner export-banner--ok",
-                    shiny::icon("circle-check"),
+                    ph_icon("circle-check"),
                     shiny::div(
                         class = "export-banner-body",
                         shiny::strong(tr("export_ready_title", lang))
@@ -316,7 +316,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             unmapped_notice <- if (length(unmapped_cols) > 0L) {
                 shiny::div(
                     class = "export-banner export-banner--warning",
-                    shiny::icon("circle-info"),
+                    ph_icon("circle-info"),
                     shiny::div(
                         class = "export-banner-body",
                         shiny::p(
@@ -339,7 +339,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             establishment_notice <- if (is.list(dropped) && length(dropped) > 0L) {
                 shiny::div(
                     class = "export-banner export-banner--warning",
-                    shiny::icon("triangle-exclamation"),
+                    ph_icon("triangle-exclamation"),
                     shiny::div(
                         class = "export-banner-body",
                         lapply(names(dropped), function(term) {
@@ -370,7 +370,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             date_notice <- if (is.list(di) && di$count > 0L) {
                 shiny::div(
                     class = "export-banner export-banner--warning",
-                    shiny::icon("triangle-exclamation"),
+                    ph_icon("triangle-exclamation"),
                     shiny::div(
                         class = "export-banner-body",
                         shiny::strong(tr("export_date_range_title", lang)),
@@ -398,7 +398,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 ok <- isTRUE(s$readiness$present[i])
                 shiny::span(
                     class = paste("export-term-chip", if (ok) "is-present" else "is-missing"),
-                    shiny::icon(if (ok) "circle-check" else "circle-xmark"),
+                    ph_icon(if (ok) "circle-check" else "circle-xmark"),
                     " ", term
                 )
             })

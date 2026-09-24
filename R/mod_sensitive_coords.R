@@ -448,7 +448,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             if (is.null(ov)) {
                 return(shiny::div(
                     class = "sensitive-panel sc-empty",
-                    shiny::div(class = "sc-empty-icon", shiny::icon("shield-halved")),
+                    shiny::div(class = "sc-empty-icon", ph_icon("shield-halved")),
                     shiny::h5(class = "sc-empty-title", tr("sc_empty_title", lang)),
                     shiny::p(class = "sc-empty-desc", tr("sc_empty_desc", lang))
                 ))
@@ -554,7 +554,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
 
             confirm_block <- shiny::div(
                 class = "sc-confirm",
-                shiny::h6(class = "sc-confirm-title", shiny::icon("circle-check"), " ",
+                shiny::h6(class = "sc-confirm-title", ph_icon("circle-check"), " ",
                           tr("sc_confirm_title", lang)),
                 shiny::div(
                     class = "sp-justification",
@@ -584,7 +584,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     class = "sp-header",
                     shiny::h5(
                         class = "sp-title",
-                        shiny::icon("shield-halved", class = "sp-title-icon"),
+                        ph_icon("shield-halved", class = "sp-title-icon"),
                         tr("sensitive_panel_title", lang)
                     ),
                     shiny::span(class = "sp-count-chip",
@@ -618,7 +618,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                                 shiny::tags$button(
                                     type = "button",
                                     class = "btn btn-link btn-sm sc-cascade-help",
-                                    shiny::icon("circle-question"), " ",
+                                    ph_icon("circle-question"), " ",
                                     tr("sc_cascade_help_link", lang)
                                 ),
                                 title = tr("sc_cascade_help_title", lang),
@@ -648,7 +648,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     shiny::div(class = "sc-result-head", tr("sc_result_title", lang)),
                     shiny::div(
                         class = "sc-result-state sc-result-state--publish",
-                        shiny::icon("circle-check"), " ", tr("sc_result_publish_state", lang)
+                        ph_icon("circle-check"), " ", tr("sc_result_publish_state", lang)
                     ),
                     shiny::div(class = "sc-result-line", sprintf(tr("sc_result_records", lang), n))
                 ))
@@ -745,14 +745,14 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     class = "sc-result-foot",
                     shiny::div(
                         class = if (n_cross > 0L) "sc-result-cross sc-result-cross--danger" else "sc-result-cross",
-                        shiny::icon(if (n_cross > 0L) "triangle-exclamation" else "circle-check"), " ",
+                        ph_icon(if (n_cross > 0L) "triangle-exclamation" else "circle-check"), " ",
                         if (n_cross > 0L) sprintf(tr("sc_result_crossing", lang), n_cross) else tr("sc_result_no_crossing", lang)
                     ),
                     shiny::div(class = "sc-result-assessed",
                                sprintf(tr("sensitive_species_assessed_count", lang), n_assessed, n_total)),
                     if (justification_missing_r()) {
                         shiny::div(class = "sc-just-warn",
-                                   shiny::icon("triangle-exclamation"), " ",
+                                   ph_icon("triangle-exclamation"), " ",
                                    tr("sc_result_needs_justification", lang))
                     }
                 )
@@ -796,7 +796,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             if (!justification_missing_r()) return(NULL)
             shiny::div(
                 class = "sc-just-warn",
-                shiny::icon("triangle-exclamation"), " ",
+                ph_icon("triangle-exclamation"), " ",
                 tr("sc_result_needs_justification", lang_r())
             )
         })
@@ -843,7 +843,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             lang <- lang_r()
             shiny::div(
                 class = "sp-level-warning sp-level-warning--extreme sc-cat1-alert",
-                shiny::icon("triangle-exclamation"), " ",
+                ph_icon("triangle-exclamation"), " ",
                 shiny::span(class = "sc-cat1-title", tr("sensitive_cat1_alert", lang)),
                 shiny::div(class = "sp-cat1-note", tr("sensitive_cat1_alert_note", lang))
             )
@@ -865,7 +865,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             lang <- lang_r()
             shiny::div(
                 class = "sc-precision-lock-alert",
-                shiny::icon("lock"), " ",
+                ph_icon("lock"), " ",
                 shiny::span(
                     class = "sc-precision-lock-text",
                     sprintf(tr("sc_precision_lock_desc", lang), n_locked)
@@ -915,12 +915,12 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 class = "sc-border-alert",
                 shiny::div(
                     class = "sc-border-alert-head",
-                    shiny::icon("triangle-exclamation"), " ",
+                    ph_icon("triangle-exclamation"), " ",
                     shiny::span(class = "sc-border-alert-title", tr("sc_border_alert_title", lang))
                 ),
                 shiny::div(class = "sc-border-alert-desc", sprintf(tr("sc_border_alert_desc", lang), n_cross)),
                 shiny::tags$ul(class = "sc-border-alert-list", items),
-                shiny::div(class = "sc-border-alert-rec", shiny::icon("lightbulb"), " ", recommendation)
+                shiny::div(class = "sc-border-alert-rec", ph_icon("lightbulb"), " ", recommendation)
             )
         })
 
@@ -940,7 +940,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 is_cat1 <- identical(t, "extreme")
                 label <- shiny::tagList(
                     shiny::span(class = paste0("sc-scale-dot sp-grid-swatch sp-grid-swatch--", t)),
-                    if (is_cat1) shiny::tagList(shiny::icon("triangle-exclamation"), " "),
+                    if (is_cat1) shiny::tagList(ph_icon("triangle-exclamation"), " "),
                     level_compact(t, lang)
                 )
                 cls <- paste0("sc-scale-chip sc-scale-chip--", t)
@@ -1021,7 +1021,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             })
             shiny::div(
                 class = "sc-reference",
-                shiny::h6(class = "sc-reference-title", shiny::icon("table-list"), " ",
+                shiny::h6(class = "sc-reference-title", ph_icon("table-list"), " ",
                           tr("sensitive_reference_title", lang)),
                 shiny::tags$table(
                     class = "table table-sm sensitive-grid-table",

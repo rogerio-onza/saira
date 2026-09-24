@@ -210,7 +210,7 @@ provider_query_step <- function(provider_id, selected, br_ids) {
 
 #' Map validation status to style attributes
 #' @param status_value Status value string
-#' @return Named list with key, icon_symbol, label_key, item_class, badge_class, row_class
+#' @return Named list with key, icon_symbol, icon (Phosphor name), label_key, item_class, badge_class, row_class
 #' @noRd
 status_style_map <- function(status_value) {
     status_key <- as.character(status_value)
@@ -220,6 +220,7 @@ status_style_map <- function(status_value) {
         return(list(
             key = "accepted",
             icon_symbol = "\u2713",
+            icon = "check",
             label_key = "validate_names_stream_status_accepted",
             item_class = "vn-stream-item-accepted",
             badge_class = "badge-success",
@@ -230,6 +231,7 @@ status_style_map <- function(status_value) {
         return(list(
             key = "synonym",
             icon_symbol = "\u21C4",
+            icon = "arrows-left-right",
             label_key = "validate_names_stream_status_synonym",
             item_class = "vn-stream-item-synonym",
             badge_class = "badge-info",
@@ -240,6 +242,7 @@ status_style_map <- function(status_value) {
         return(list(
             key = "ambiguous",
             icon_symbol = "?",
+            icon = "question",
             label_key = "validate_names_stream_status_ambiguous",
             item_class = "vn-stream-item-ambiguous",
             badge_class = "badge-warning",
@@ -250,6 +253,7 @@ status_style_map <- function(status_value) {
         return(list(
             key = "ignored",
             icon_symbol = "\u2014",
+            icon = "minus",
             label_key = "validate_names_stream_status_ignored",
             item_class = "vn-stream-item-ignored",
             badge_class = "badge-muted",
@@ -259,6 +263,7 @@ status_style_map <- function(status_value) {
     list(
         key = "not_found",
         icon_symbol = "\u2715",
+        icon = "x",
         label_key = "validate_names_stream_status_not_found",
         item_class = "vn-stream-item-not-found",
         badge_class = "badge-error",
