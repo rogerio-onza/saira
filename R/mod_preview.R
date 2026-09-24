@@ -136,10 +136,10 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
                     # header row (the DwC term names) stays visible while scrolling
                     # rows. The preview tab is taken out of the page-scroll
                     # override (12-overrides.css), so only the table body scrolls.
-                    # The offset reserves room for the navbar, title/subtitle and
-                    # the DT search/info/pagination controls; tune it if the
-                    # surrounding layout changes.
-                    scrollY = "calc(100vh - 20rem)",
+                    # The offset reserves room for the header (--app-header-height,
+                    # ADR-128), title/subtitle and the DT search/info/pagination
+                    # controls. Tune the 240px if that layout changes.
+                    scrollY = "calc(100vh - var(--app-header-height) - 240px)",
                     scrollCollapse = TRUE,
                     autoWidth = FALSE,
                     columnDefs = column_defs,

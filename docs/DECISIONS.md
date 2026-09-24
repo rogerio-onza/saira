@@ -2672,3 +2672,11 @@ Formato: ADR leve (Architecture Decision Record).
 - **Decisao**: Todo token `--shadow-*` vale `none`, e as sombras fixas viram `none`. Os aneis de foco e os aneis `inset` de selecao ficam. Os gradientes decorativos viram cor solida, e o card selecionado usa o novo `--selected-bg`. Tres gradientes ficam porque carregam funcao: a escala de gravidade da Generalizacao, as listras do upload ativo e a camada solida do aviso de duplicata. As bordas passam a `#EFEDE6`, `#E6E4DC` e `#D9D6CC`. O raio usa so tokens, com o novo `--radius-xl: 14px` para paineis. O `--text-muted` passa a `#5F6570` (5,3:1).
 - **Consequencias**: Um card mostra o limite pela borda de 1px e pelo branco sobre o bege. Nova sombra pede um novo ADR. O efeito de elevacao no hover (`--lift-*`) fica fora deste ADR.
 
+## ADR-128: cabecalho em duas linhas com etapas numeradas
+
+- **Data**: 2026-09-23
+- **Status**: Aceito
+- **Contexto**: A navbar tinha sete abas com icone e um menu "Validacao" que escondia Nomes, Coordenadas e Generalizacao. Abaixo de 1920px ela quebrava em duas linhas soltas (110px a 122px), com o seletor de idioma sozinho embaixo. Os deslocamentos de pagina (Pre-visualizacao, Nomes, Mapeamento) eram numeros fixos que so batiam com uma altura.
+- **Decisao**: Seguir o mockup Inicio B. A partir de 992px, a linha 1 tem a marca, Wiki DwC, Ajuda, idioma e versao, e a linha 2 tem as etapas de 1 a 7, sem icone, com o numero em markup estatico. A ativa tem cor `--step-active` e sublinhado. O menu "Validacao" sai, e os valores das abas nao mudam. O layout e so CSS: a lista do bslib quebra em duas linhas com `order` e um `::after`, e a marca fica sobre o inicio da linha 1. O padding lateral dos links vem de `--bs-navbar-nav-link-padding-x`, porque uma regra do Bootstrap com cadeia de `:not()` vence qualquer seletor nosso. `--app-header-height` (106px, ou 80px abaixo de 992px) substitui os numeros fixos, calibrados para a navbar de uma linha.
+- **Consequencias**: O cabecalho tem a mesma altura em qualquer largura de desktop. O `!important` cai de 11 para 9 (o do dropdown e o do padding dos links saem). Abaixo de 992px, o menu recolhido continua como antes. Um novo deslocamento de pagina deve partir de `--app-header-height`.
+

@@ -336,8 +336,17 @@ label, .input-label { font-family: var(--font-mono); font-size: var(--text-sm); 
 --navbar-link-color:       #2833AC;    /* azul-violeta */
 --navbar-link-hover-bg:    var(--hover-bg);
 --navbar-link-active-bg:   #38CFF6;   /* ciano peito */
---navbar-link-active-text: #1C1C26;   /* contraste 8.1:1 ✅ */
+--navbar-link-active-text: #1C1C26;   /* contraste 8.1:1 ✅ (menu recolhido) */
+
+/* Cabeçalho em duas linhas a partir de 992px (ADR-128) */
+--header-row-height:  56px;   /* marca, Wiki DwC, Ajuda, idioma, versão */
+--step-row-height:    48px;   /* etapas 1 a 7 */
+--app-header-height:  calc(56px + 48px + 2px);  /* 80px abaixo de 992px */
+--step-active:        #0B7580;  /* etapa ativa, sublinhado de 2px, 5.4:1 */
+--navbar-brand-width: 7.5rem;
 ```
+
+A etapa ativa usa cor e sublinhado, sem fundo. Abaixo de 992px, o menu recolhido mantém o fundo ciano na aba ativa. Todo deslocamento de página que desconta o cabeçalho usa `--app-header-height`, nunca um número fixo.
 
 ---
 

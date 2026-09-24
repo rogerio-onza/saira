@@ -155,14 +155,19 @@ testthat::test_that("custom.css enforces navbar spacing and language dropdown gu
 
     testthat::expect_true(
         grepl("\\.navbar\\s+\\.navbar-nav>li>a", css_text, perl = TRUE) &&
-            grepl("padding:\\s*0\\.64rem\\s+1\\.3rem\\s*!important;", css_text, perl = TRUE),
+            grepl("padding:\\s*0\\.64rem\\s+1\\.3rem;", css_text, perl = TRUE),
         info = "Navbar links should use 0.64rem 1.3rem padding"
     )
 
+    # ADR-128: two-row header from 992px, and page offsets derive from its height.
     testthat::expect_true(
-        grepl("\\.navbar\\s+\\.navbar-nav>li\\.dropdown>a\\.dropdown-toggle", css_text, perl = TRUE) &&
-            grepl("padding:\\s*0\\.64rem\\s+1\\.3rem\\s*!important;", css_text, perl = TRUE),
-        info = "Navbar dropdown toggle should use 0.64rem 1.3rem padding"
+        grepl("--app-header-height:\\s*calc\\(", css_text, perl = TRUE),
+        info = "Missing --app-header-height token"
+    )
+
+    testthat::expect_true(
+        grepl("\\.navbar-collapse\\s*>\\s*\\.navbar-nav::after\\s*\\{[^}]*order:\\s*2;", css_text, perl = TRUE),
+        info = "The navbar list must break its two rows with ::after (order 2)"
     )
 
     testthat::expect_true(
@@ -194,7 +199,7 @@ testthat::test_that("custom.css keeps validate-names tri-column workspace contra
     css_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
 
     testthat::expect_true(
-        grepl("--validate-names-header-offset:\\s*166px;", css_text, perl = TRUE),
+        grepl("--validate-names-header-offset:\\s*calc\\(var\\(--app-header-height\\)\\s*\\+\\s*86px\\);", css_text, perl = TRUE),
         info = "Missing validate-names header offset token"
     )
 

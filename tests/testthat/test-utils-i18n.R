@@ -8,7 +8,7 @@ testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
 
     required_keys <- c(
         "nav_home",
-        "nav_validate",
+        "nav_validate_names",
         "mapping_dataset_placeholder",
         "mapping_separator_placeholder",
         "preview_datatable_search",
@@ -230,7 +230,7 @@ testthat::test_that("tr resolves onda 2 keys in pt and en", {
 
     keys <- c(
         "nav_home",
-        "nav_validate",
+        "nav_validate_names",
         "mapping_dataset_placeholder",
         "preview_datatable_length_menu",
         "preview_stats_total_rows",
@@ -298,7 +298,7 @@ testthat::test_that("pt-en alternation yields distinct navigation labels", {
     tr_fn <- saira:::tr
 
     testthat::expect_false(identical(tr_fn("nav_home", "pt"), tr_fn("nav_home", "en")))
-    testthat::expect_false(identical(tr_fn("nav_validate", "pt"), tr_fn("nav_validate", "en")))
+    testthat::expect_false(identical(tr_fn("nav_validate_names", "pt"), tr_fn("nav_validate_names", "en")))
     testthat::expect_false(identical(tr_fn("validate_names_all_valid", "pt"), tr_fn("validate_names_all_valid", "en")))
     testthat::expect_false(identical(tr_fn("validate_coords_all_valid", "pt"), tr_fn("validate_coords_all_valid", "en")))
 })

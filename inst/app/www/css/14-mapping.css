@@ -4,7 +4,7 @@
 
 /* Scrollable container for mapping cards */
 .mapping-scroll-container {
-  max-height: calc(100vh - 200px);
+  max-height: calc(100vh - var(--app-header-height) - 120px);
   overflow-y: auto;
   padding-right: 15px;
   scrollbar-gutter: stable;

@@ -43,10 +43,6 @@ app_server <- function(input, output, session) {
         tr("nav_preview", lang_r())
     })
 
-    output$nav_validate_title <- shiny::renderUI({
-        tr("nav_validate", lang_r())
-    })
-
     output$nav_validate_names_title <- shiny::renderUI({
         tr("nav_validate_names", lang_r())
     })

@@ -133,7 +133,13 @@
   --input-bg-disabled: rgba(40, 51, 172, 0.05);
   --input-text-disabled: rgba(28, 28, 38, 0.35);
 
-  /* Navbar */
+  /* Navbar: two rows from 992px (ADR-128). The header height adds the two
+     rows and their 1px borders. Page offsets derive from it. */
+  --header-row-height: 56px;
+  --step-row-height: 48px;
+  --app-header-height: calc(var(--header-row-height) + var(--step-row-height) + 2px);
+  --step-active: #0b7580; /* 5.4:1 on white */
+  --navbar-brand-width: 7.5rem;
   --navbar-link-color: #2833ac;
   --navbar-link-hover-bg: var(--hover-bg);
   --navbar-link-active-bg: #38cff6;
@@ -149,6 +155,12 @@
   --lift-sm: translateY(-1px);
   --lift-base: translateY(-2px);
   --lift-lg: translateY(-4px);
-  --validate-names-header-offset: 166px;
+  --validate-names-header-offset: calc(var(--app-header-height) + 86px);
 }
 
+/* Below 992px the header is the one-row collapsed navbar. */
+@media (max-width: 991.98px) {
+  :root {
+    --app-header-height: 80px;
+  }
+}
