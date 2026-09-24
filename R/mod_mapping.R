@@ -1047,6 +1047,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             !is.null(raw_data_r())
         })
         shiny::outputOptions(output, "file_uploaded", suspendWhenHidden = FALSE)
+        # The grid reads these two inputs. Rendered only on the visible tab,
+        # their first value arrived after the tab opened and rebuilt the grid a
+        # second time; rendered in the background they are set before it.
+        shiny::outputOptions(output, "view_mode_control", suspendWhenHidden = FALSE)
+        shiny::outputOptions(output, "mapped_filter_control", suspendWhenHidden = FALSE)
 
         # BasisOfRecord assistant (delegated to mod_mapping_basis_assistant.R)
         setup_basis_of_record_assistant(
@@ -2025,9 +2030,30 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             )
         })
 
+        # Build the card grid once per upload in the background, one flush after
+        # the upload is on screen: the Home page does not wait for it, and the
+        # Mapping tab opens with the cards already there. Shiny suspends hidden
+        # outputs, so the grid is resumed for that one render and suspended
+        # again afterwards; a hidden tab then costs nothing, as before (ADR-114).
+        grid_prewarm <- shiny::reactiveVal(FALSE)
+        shiny::observeEvent(raw_data_r(), {
+            session$onFlushed(function() {
+                grid_prewarm(TRUE)
+                shiny::outputOptions(output, "mapping_ui", suspendWhenHidden = FALSE)
+            }, once = TRUE)
+        }, ignoreInit = FALSE)
+        end_grid_prewarm <- function() {
+            if (!shiny::isolate(grid_prewarm())) return(invisible(NULL))
+            session$onFlushed(function() {
+                grid_prewarm(FALSE)
+                shiny::outputOptions(output, "mapping_ui", suspendWhenHidden = TRUE)
+            }, once = TRUE)
+        }
+
         # Mapping UI generation (card builder delegated to mod_mapping_cards.R).
         # All category sections always render so scroll-anchors are always in DOM.
         output$mapping_ui <- shiny::renderUI({
+            on.exit(end_grid_prewarm(), add = TRUE)
             shiny::req(raw_data_r())
 
             # The grid (50 selectize inputs) is expensive to rebuild, so it is
