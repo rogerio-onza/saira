@@ -48,12 +48,10 @@ testthat::test_that("mod_upload_server renders UI outputs in EN", {
         ),
         {
             session$flushReact()
-            testthat::expect_true(!is.null(output$data_title))
             testthat::expect_true(!is.null(output$dropzone_hint_text))
             testthat::expect_true(!is.null(output$encoding_text))
             testthat::expect_true(!is.null(output$privacy_text))
-            testthat::expect_true(!is.null(output$welcome_header))
-            testthat::expect_true(!is.null(output$welcome_description))
+            testthat::expect_true(!is.null(output$home_header))
             # ADR-097: mode tab strip outputs
             testthat::expect_true(!is.null(output$mode_csv_title))
             testthat::expect_true(!is.null(output$mode_camtrap_title))
@@ -71,7 +69,7 @@ testthat::test_that("mod_upload_server renders DwC chips by default (CSV mode)",
         {
             session$flushReact()
             html <- output$dwc_required$html
-            testthat::expect_true(grepl("dwc-inline-groups", html))
+            testthat::expect_true(grepl("home-term-list", html))
             testthat::expect_false(grepl("upload-file-list", html))
             testthat::expect_true(grepl("format-requirements", html))
         }
@@ -89,7 +87,7 @@ testthat::test_that("mod_upload_server renders Camtrap file rows when mode is ca
             session$flushReact()
             html <- output$dwc_required$html
             testthat::expect_true(grepl("upload-file-list", html))
-            testthat::expect_false(grepl("dwc-inline-groups", html))
+            testthat::expect_false(grepl("home-term-list", html))
             testthat::expect_true(grepl("datapackage.json", html))
         }
     )
@@ -135,8 +133,7 @@ testthat::test_that("mod_upload_server renders UI outputs in PT", {
         ),
         {
             session$flushReact()
-            testthat::expect_true(!is.null(output$data_title))
-            testthat::expect_true(!is.null(output$welcome_header))
+            testthat::expect_true(!is.null(output$home_header))
             testthat::expect_true(!is.null(output$dwc_required))
         }
     )

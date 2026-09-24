@@ -17,17 +17,15 @@ sample_required_terms <- function() {
     )
 }
 
-testthat::test_that("upload_csv_requirements_ui groups terms by 4 DwC classes (PT)", {
+testthat::test_that("upload_csv_requirements_ui lists each term with its definition (PT)", {
     tag <- upload_csv_requirements_ui(sample_required_terms(), "pt")
     html <- as.character(tag)
 
-    testthat::expect_true(grepl("dwc-inline-groups", html))
-    testthat::expect_true(grepl("dwc-group-badge--record-level", html))
-    testthat::expect_true(grepl("dwc-group-badge--occurrence", html))
-    testthat::expect_true(grepl("dwc-group-badge--taxon", html))
-    testthat::expect_true(grepl("dwc-group-badge--location", html))
+    testthat::expect_true(grepl("home-term-list", html))
+    testthat::expect_equal(lengths(regmatches(html, gregexpr("home-term-row", html))), 6L)
     testthat::expect_true(grepl("scientificName", html))
-    testthat::expect_true(grepl("decimalLatitude", html))
+    testthat::expect_true(grepl("nome cientifico", html))
+    testthat::expect_true(grepl("home-wiki-link", html))
 })
 
 testthat::test_that("upload_csv_requirements_ui swaps definitions per language", {

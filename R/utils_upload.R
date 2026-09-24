@@ -6,10 +6,11 @@
 
 #' Build the CSV mode "format requirements" body
 #'
-#' @param required_terms Data frame with columns `term`, `class`,
+#' @param required_terms Data frame with columns `term`,
 #'   `definition_pt`, `definition_en` filtered to the required DwC terms.
 #' @param lang Language code, "pt" or "en".
-#' @return A `shiny.tag` representing the colored DwC term groups.
+#' @return A `shiny.tag` with one row per term (name and definition) and the
+#'   upload tips.
 #' @keywords internal
 upload_csv_requirements_ui <- function(required_terms, lang) {
     if (!is.data.frame(required_terms) || nrow(required_terms) == 0L) {
@@ -21,69 +22,31 @@ upload_csv_requirements_ui <- function(required_terms, lang) {
         ))
     }
 
-    class_labels <- c(
-        "Record-level" = tr("class_record", lang),
-        "Occurrence" = tr("class_occurrence", lang),
-        "Location" = tr("class_location", lang),
-        "Taxon" = tr("class_taxon", lang)
-    )
-    category_order <- c("Record-level", "Occurrence", "Taxon", "Location")
-    class_fallback <- c(
-        "scientificName" = "Taxon",
-        "eventDate" = "Occurrence",
-        "decimalLatitude" = "Location",
-        "decimalLongitude" = "Location",
-        "basisOfRecord" = "Record-level",
-        "occurrenceID" = "Occurrence"
-    )
+    definitions <- if (lang == "pt") required_terms$definition_pt else required_terms$definition_en
+    definitions[is.na(definitions)] <- ""
 
-    view <- required_terms
-    fallback_classes <- unname(class_fallback[view$term])
-    invalid_class <- !view$class %in% names(class_labels)
-    view$class[invalid_class] <- fallback_classes[invalid_class]
-    view$class[is.na(view$class)] <- "Record-level"
-    categories_available <- category_order[category_order %in% unique(view$class)]
-
-    groups_ui <- lapply(categories_available, function(category_name) {
-        category_label <- class_labels[[category_name]]
-        group_df <- view[view$class == category_name, , drop = FALSE]
-        category_slug <- switch(
-            category_name,
-            "Record-level" = "record-level",
-            "Occurrence" = "occurrence",
-            "Taxon" = "taxon",
-            "Location" = "location",
-            "record-level"
-        )
-
-        chips_ui <- lapply(seq_len(nrow(group_df)), function(i) {
-            term <- group_df$term[i]
-            definition <- if (lang == "pt") group_df$definition_pt[i] else group_df$definition_en[i]
-            shiny::tags$span(
-                class = "dwc-term-chip",
-                title = if (is.na(definition)) "" else definition,
-                term
-            )
-        })
-
+    rows_ui <- lapply(seq_len(nrow(required_terms)), function(i) {
         shiny::div(
-            class = paste("dwc-inline-group", paste0("dwc-inline-group--", category_slug)),
-            shiny::div(
-                class = paste("dwc-inline-group-label", paste0("dwc-group-badge--", category_slug)),
-                category_label
-            ),
-            shiny::div(class = "dwc-term-chip-list", chips_ui)
+            class = "home-term-row",
+            shiny::tags$span(class = "home-term-name", required_terms$term[i]),
+            shiny::tags$span(class = "home-term-def", definitions[i])
         )
     })
 
     shiny::tagList(
-        shiny::tags$p(
-            tr("dwc_required_hint", lang),
-            class = "dwc-required-hint"
-        ),
+        shiny::tags$p(tr("home_required_hint", lang), class = "home-aside-hint"),
+        shiny::div(class = "home-term-list", rows_ui),
         shiny::div(
-            class = "dwc-inline-groups",
-            groups_ui
+            class = "home-aside-notes",
+            shiny::tags$p(tr("upload_recommendation", lang)),
+            shiny::tags$p(tr("home_guide_tip", lang)),
+            # The navbar tab owns the navigation, so the link clicks it.
+            shiny::tags$a(
+                href = "#",
+                class = "home-wiki-link",
+                onclick = "document.querySelector('#main_nav a[data-value=\"wiki\"]').click(); return false;",
+                tr("home_wiki_link", lang)
+            )
         )
     )
 }

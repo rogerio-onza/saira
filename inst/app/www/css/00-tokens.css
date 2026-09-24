@@ -6,6 +6,7 @@
   /* Base */
   --bg-main: #f4f3ee;
   --bg-card: #ffffff;
+  --bg-subtle: #faf9f5; /* sunken surface inside a white panel, e.g. the dropzone */
   --text-primary: #1c1c26;
   --text-muted: #5f6570; /* AA on --bg-main: 5.3:1 (#6c757d gave 4.2:1) */
 

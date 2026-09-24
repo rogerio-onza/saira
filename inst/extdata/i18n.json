@@ -3487,10 +3487,6 @@
     "pt": "Sem pendências nesta classe",
     "en": "No pending items in this class"
   },
-  "upload_data_title": {
-    "pt": "Dados",
-    "en": "Data"
-  },
   "upload_max_size": {
     "pt": "Tamanho máximo de arquivo: 500 MB",
     "en": "Maximum file size: 500 MB"
@@ -3619,57 +3615,33 @@
     "pt": "%d linha(s) pularam o mascaramento (coordinateUncertaintyInMeters ≥ 1000 m, já generalizadas pelo publisher).",
     "en": "%d row(s) skipped masking (coordinateUncertaintyInMeters ≥ 1000 m, already generalized by the publisher)."
   },
+  "home_title": {
+    "pt": "Envie a planilha para começar",
+    "en": "Upload your spreadsheet to start"
+  },
+  "home_required_title": {
+    "pt": "Colunas obrigatórias",
+    "en": "Required columns"
+  },
+  "home_required_hint": {
+    "pt": "O Saíra procura estes termos no seu arquivo.",
+    "en": "Saíra looks for these terms in your file."
+  },
+  "home_guide_tip": {
+    "pt": "Tem um guia de mapeamento do Saíra? Envie-o no mesmo campo para importar os aliases.",
+    "en": "Have a Saíra mapping guide? Upload it in the same field to import its aliases."
+  },
+  "home_wiki_link": {
+    "pt": "Ver todos os termos na Wiki DwC",
+    "en": "See every term in the DwC Wiki"
+  },
   "welcome_eyebrow": {
     "pt": "Padronizador Darwin Core",
     "en": "Darwin Core Standardizer"
   },
-  "welcome_title_prefix": {
-    "pt": "Bem-vindo ao",
-    "en": "Welcome to"
-  },
   "welcome_title": {
     "pt": "Bem-vindo ao Saíra!",
     "en": "Welcome to Saíra!"
-  },
-  "welcome_description": {
-    "pt": "O Saíra é uma ferramenta para padronização de dados de biodiversidade segundo o padrão Darwin Core (DwC). Carregue seus dados, mapeie as colunas, valide e exporte em formato DwC.",
-    "en": "Saíra is a tool for standardizing biodiversity data according to the Darwin Core (DwC) standard. Upload your data, map columns, validate and export in DwC format."
-  },
-  "workflow_title": {
-    "pt": "Como funciona",
-    "en": "How it works"
-  },
-  "workflow_step1": {
-    "pt": "Upload",
-    "en": "Upload"
-  },
-  "workflow_step1_desc": {
-    "pt": "Carregue seu arquivo CSV",
-    "en": "Load your CSV file"
-  },
-  "workflow_step2": {
-    "pt": "Mapeamento",
-    "en": "Mapping"
-  },
-  "workflow_step2_desc": {
-    "pt": "Associe colunas ao DwC",
-    "en": "Map columns to DwC"
-  },
-  "workflow_step3": {
-    "pt": "Validação",
-    "en": "Validation"
-  },
-  "workflow_step3_desc": {
-    "pt": "Verifique os dados",
-    "en": "Check your data"
-  },
-  "workflow_step4": {
-    "pt": "Exportar",
-    "en": "Export"
-  },
-  "workflow_step4_desc": {
-    "pt": "Baixe o CSV padronizado",
-    "en": "Download standardized CSV"
   },
   "financing_title": {
     "pt": "Financiamento",
@@ -3718,10 +3690,6 @@
   "dwc_required_title": {
     "pt": "Campos obrigatórios do DwC",
     "en": "Required DwC Fields"
-  },
-  "dwc_required_hint": {
-    "pt": "Passe o mouse para ver a definição de cada termo.",
-    "en": "Hover to see each term's definition."
   },
   "dwc_required_empty": {
     "pt": "Nenhum campo obrigatório encontrado.",
