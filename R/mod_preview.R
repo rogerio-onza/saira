@@ -14,10 +14,6 @@ mod_preview_ui <- function(id) {
     shiny::tagList(
         shiny::div(
             class = "container-fluid preview-page",
-            shiny::uiOutput(ns("title")),
-            shiny::uiOutput(ns("subtitle")),
-
-            # Data table
             shiny::uiOutput(ns("table_or_message"))
         )
     )
@@ -38,14 +34,6 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
-        output$title <- shiny::renderUI({
-            shiny::h3(tr("preview_title", lang_r()), class = "text-mono")
-        })
-
-        output$subtitle <- shiny::renderUI({
-            shiny::p(tr("preview_subtitle", lang_r()), class = "text-accent")
-        })
-
         preview_data <- shiny::reactive({
             shiny::req(mapped_data_r())
             prepare_preview_data(mapped_data_r(), max_rows = 100L)
@@ -61,8 +49,15 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
                     shiny::p(tr("preview_no_data", lang_r()))
                 )
             } else {
+                # The title shares the row of the DT length and search controls,
+                # so the table gets the height the page header used to take.
                 shiny::div(
                     class = "preview-table-shell saira-table-shell",
+                    shiny::div(
+                        class = "preview-card-head",
+                        shiny::h2(class = "preview-card-title", tr("preview_title", lang_r())),
+                        shiny::span(class = "preview-card-subtitle", tr("preview_subtitle", lang_r()))
+                    ),
                     DT::dataTableOutput(ns("datatable"))
                 )
             }
@@ -129,17 +124,19 @@ mod_preview_server <- function(id, mapped_data_r, lang_r) {
             DT::datatable(
                 preview_df,
                 options = list(
-                    pageLength = 10,
-                    lengthMenu = c(10, 25, 50, 100),
+                    pageLength = 15,
+                    lengthMenu = c(15, 25, 50, 100),
+                    # Search first: both controls float right, next to the title.
+                    dom = "flrtip",
                     scrollX = TRUE,
                     # Frozen DwC header: the table owns its vertical scroll so the
                     # header row (the DwC term names) stays visible while scrolling
                     # rows. The preview tab is taken out of the page-scroll
                     # override (12-overrides.css), so only the table body scrolls.
                     # The offset reserves room for the header (--app-header-height,
-                    # ADR-128), title/subtitle and the DT search/info/pagination
-                    # controls. Tune the 240px if that layout changes.
-                    scrollY = "calc(100vh - var(--app-header-height) - 240px)",
+                    # ADR-128), the title row with the DT search and the info/pagination
+                    # row. Tune the 170px if that layout changes.
+                    scrollY = "calc(100vh - var(--app-header-height) - 170px)",
                     scrollCollapse = TRUE,
                     autoWidth = FALSE,
                     columnDefs = column_defs,

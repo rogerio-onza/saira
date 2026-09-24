@@ -474,12 +474,14 @@ conservation_status_summary_ui <- function(report, selected, br_provider_ids, la
         return(NULL)
     }
 
-    # Each fact is a short tag. The full sentence stays in the tooltip.
-    fact_tag <- function(n, tag_key, sentence_key, badge_class) {
+    # Each fact is a label and its count, like the stream filter pills. The
+    # full sentence stays in the tooltip.
+    fact_tag <- function(n, label_key, sentence_key, kind, icon) {
         shiny::tags$span(
-            class = paste("vn-status-badge vn-conservation-tag", badge_class),
+            class = paste("vn-conservation-tag", kind),
             title = sprintf(tr(sentence_key, lang), n),
-            sprintf(tr(tag_key, lang), n)
+            shiny::tags$span(class = "vn-conservation-tag-label", ph_icon(icon), tr(label_key, lang)),
+            shiny::tags$span(class = "vn-conservation-tag-count", n)
         )
     }
 
@@ -488,8 +490,8 @@ conservation_status_summary_ui <- function(report, selected, br_provider_ids, la
         mma_n <- sum(!is.na(sensitive_category_for(name_col)))
         if (mma_n > 0L) {
             lines[[length(lines) + 1L]] <- fact_tag(
-                mma_n, "validate_names_conservation_tag_mma",
-                "validate_names_conservation_summary_mma", "badge-warning"
+                mma_n, "validate_names_conservation_label_mma",
+                "validate_names_conservation_summary_mma", "is-mma", "shield-warning"
             )
         }
     }
@@ -497,16 +499,16 @@ conservation_status_summary_ui <- function(report, selected, br_provider_ids, la
         iucn_n <- sum(!is.na(name_col) & nzchar(trimws(name_col)))
         if (iucn_n > 0L) {
             lines[[length(lines) + 1L]] <- fact_tag(
-                iucn_n, "validate_names_conservation_tag_iucn",
-                "validate_names_conservation_summary_iucn", "badge-accent"
+                iucn_n, "validate_names_conservation_label_iucn",
+                "validate_names_conservation_summary_iucn", "is-iucn", "globe-hemisphere-west"
             )
         }
     }
     invasive_n <- sum(flag_invasive_species(name_col))
     if (invasive_n > 0L) {
         lines[[length(lines) + 1L]] <- fact_tag(
-            invasive_n, "validate_names_conservation_tag_invasive",
-            "validate_names_conservation_summary_invasive", "badge-invasive"
+            invasive_n, "validate_names_conservation_label_invasive",
+            "validate_names_conservation_summary_invasive", "is-invasive", "arrow-square-in"
         )
     }
     if (length(lines) == 0L) {

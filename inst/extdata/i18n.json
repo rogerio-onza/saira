@@ -119,9 +119,9 @@
     "pt": "Local (~100 m)",
     "en": "Local (~100 m)"
   },
-  "export_section_files": {
-    "pt": "Arquivos do pacote",
-    "en": "Bundle files"
+  "export_section_package": {
+    "pt": "Pacote",
+    "en": "Package"
   },
   "export_files_hint": {
     "pt": "O download gera um .zip com estes arquivos:",
@@ -166,6 +166,10 @@
   "export_kpi_corrections_sub": {
     "pt": "%d nomes · %d coordenadas · %d países",
     "en": "%d names · %d coordinates · %d countries"
+  },
+  "export_kpi_corrections_line": {
+    "pt": "Correções: %s",
+    "en": "Corrections: %s"
   },
   "export_kpi_generalized": {
     "pt": "Generalizadas",
@@ -1775,29 +1779,17 @@
     "pt": "Baixando base de dados %s (pode demorar alguns minutos)...",
     "en": "Downloading %s database (may take a few minutes)..."
   },
-  "validate_names_valid": {
-    "pt": "Válidos",
-    "en": "Valid"
+  "validate_names_conservation_label_mma": {
+    "pt": "Lista MMA",
+    "en": "MMA list"
   },
-  "validate_names_invalid": {
-    "pt": "Inválidos",
-    "en": "Invalid"
+  "validate_names_conservation_label_iucn": {
+    "pt": "IUCN no export",
+    "en": "IUCN on export"
   },
-  "validate_names_unresolved": {
-    "pt": "Não resolvidos",
-    "en": "Unresolved"
-  },
-  "validate_names_conservation_tag_mma": {
-    "pt": "%d na lista MMA",
-    "en": "%d on the MMA list"
-  },
-  "validate_names_conservation_tag_iucn": {
-    "pt": "%d com IUCN no export",
-    "en": "%d with IUCN on export"
-  },
-  "validate_names_conservation_tag_invasive": {
-    "pt": "%d invasoras",
-    "en": "%d invasive"
+  "validate_names_conservation_label_invasive": {
+    "pt": "Invasoras",
+    "en": "Invasive"
   },
   "validate_names_conservation_summary_invasive": {
     "pt": "%d registro(s) de espécie exótica invasora (Instituto Hórus, 2023).",
@@ -2096,8 +2088,8 @@
     "en": "Publish original coordinates"
   },
   "sensitive_mode_publish_desc": {
-    "pt": "Mantém a precisão total dos registros.",
-    "en": "Keeps the full precision of the records."
+    "pt": "O GBIF recebe a coordenada exata. Serve quando a espécie não corre risco com a localização pública.",
+    "en": "GBIF receives the exact coordinate. Use it when a public location puts the species at no risk."
   },
   "sensitive_mode_recommended_badge": {
     "pt": "Recomendado",
@@ -2140,8 +2132,8 @@
     "en": "Assess sensitivity"
   },
   "sensitive_assess_mode_desc": {
-    "pt": "Responda a tabela de decisão do Chapman para determinar o nível de cada grupo — sem escolher no chute.",
-    "en": "Answer Chapman's decision table to determine each group's level — no guessing."
+    "pt": "Responda à tabela de Chapman por grupo de ameaça. A coordenada sai arredondada para a grade escolhida.",
+    "en": "Answer the Chapman table for each threat group. The coordinate is rounded to the chosen grid."
   },
   "sensitive_q_yes": {
     "pt": "Sim",
@@ -2222,10 +2214,6 @@
   "sensitive_exc_apply": {
     "pt": "Aplicar exceção",
     "en": "Apply exception"
-  },
-  "sensitive_clear_overrides": {
-    "pt": "Limpar exceções",
-    "en": "Clear exceptions"
   },
   "sensitive_cat1_alert": {
     "pt": "Os dados só podem ser fornecidos sob condições estritas de licença ou como presença em uma região ampla, como uma bacia hidrográfica, município ou região biogeográfica.",
@@ -2312,12 +2300,12 @@
     "en": "Confirm decision"
   },
   "sc_ladder_title": {
-    "pt": "Pré-visualizar categoria no mapa",
-    "en": "Preview a category on the map"
+    "pt": "Mapa mostra",
+    "en": "Map shows"
   },
   "sc_ladder_actual": {
-    "pt": "Mostrar decisão real",
-    "en": "Show actual decision"
+    "pt": "Decisão atual",
+    "en": "Current decision"
   },
   "sc_popup_original": {
     "pt": "Origem",
@@ -2455,13 +2443,25 @@
     "pt": "A avaliação vai até a Categoria 2. A Categoria 1 (~111 km) existe só para casos extremos — veja a tabela ao lado.",
     "en": "The assessment goes up to Category 2. Category 1 (~111 km) exists only for extreme cases — see the table."
   },
-  "sensitive_exc_cat1_btn": {
-    "pt": "Aplicar Categoria 1 (extremo)",
-    "en": "Apply Category 1 (extreme)"
-  },
   "sensitive_exc_cat1_note": {
     "pt": "Só para espécies de baixa mobilidade / endêmicas. Exige justificativa.",
     "en": "Only for low-mobility / endemic species. Requires a justification."
+  },
+  "sensitive_exc_cat1_check": {
+    "pt": "Usar Categoria 1 (extremo)",
+    "en": "Use Category 1 (extreme)"
+  },
+  "sensitive_exc_hint": {
+    "pt": "A espécie escolhida sai do grupo e segue a própria resposta",
+    "en": "The chosen species leaves its group and follows its own answers"
+  },
+  "sensitive_exc_col_species": {
+    "pt": "Espécie",
+    "en": "Species"
+  },
+  "sensitive_exc_remove": {
+    "pt": "remover",
+    "en": "remove"
   },
   "sensitive_reference_title": {
     "pt": "Categorias de generalização (Chapman 2020)",
@@ -3014,6 +3014,10 @@
   "validate_coords_popup_issue": {
     "pt": "Issue",
     "en": "Issue"
+  },
+  "validate_coords_popup_show_row": {
+    "pt": "Mostrar na tabela",
+    "en": "Show in table"
   },
   "validate_coords_status_country": {
     "pt": "Country",

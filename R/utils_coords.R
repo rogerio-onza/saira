@@ -2112,7 +2112,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
         return(empty)
     }
 
-    popup_defaults <- list(row = "Row", issue = "Issue", lat = "Lat", lon = "Lon")
+    popup_defaults <- list(row = "Row", issue = "Issue", lat = "Lat", lon = "Lon", show_row = "Show in table")
     if (is.list(popup_labels) && length(popup_labels) > 0L) {
         for (nm in names(popup_labels)) {
             if (is.character(nm) && nzchar(nm) && nm %in% names(popup_defaults)) {
@@ -2208,7 +2208,10 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             "<br><b>", popup_defaults$lat, ":</b> ", lat_text,
             " <b>", popup_defaults$lon, ":</b> ", lon_text,
             "<br><b>", popup_defaults$issue, ":</b> ",
-            "<span class=\"coord-issue-badge ", badge_class, "\">", diag_label, "</span>"
+            "<span class=\"coord-issue-badge ", badge_class, "\">", diag_label, "</span>",
+            # The module script pages the table to this row and marks it.
+            "<br><button type=\"button\" class=\"coords-show-row\" data-row=\"", out$.row_index, "\">",
+            popup_defaults$show_row, "</button>"
         )
 
         return(data.frame(

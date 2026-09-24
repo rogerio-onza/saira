@@ -176,13 +176,13 @@ testthat::test_that("a per-species exception overrides the group then clears bac
 
             # Explicit Category-1 escape hatch -> extreme (the only path to extreme;
             # the capped cascade never yields it).
-            session$setInputs(exc_apply_cat1 = 1)
+            session$setInputs(exc_cat1 = TRUE, exc_apply = 2)
             session$flushReact()
             testthat::expect_identical(species_overrides_rv()[["Panthera onca"]], "extreme")
             testthat::expect_identical(unname(species_levels_r()[["Panthera onca"]]), "extreme")
 
-            # Clearing the override falls back to the group tier.
-            session$setInputs(exc_clear = 1)
+            # Removing the override falls back to the group tier.
+            session$setInputs(exc_remove = "Panthera onca")
             session$flushReact()
             testthat::expect_length(species_overrides_rv(), 0L)
             testthat::expect_identical(unname(species_levels_r()[["Panthera onca"]]), "high")

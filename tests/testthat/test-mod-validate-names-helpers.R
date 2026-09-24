@@ -351,8 +351,8 @@ testthat::test_that("conservation summary renders short tags with the sentence a
     report <- data.frame(scientificName = c("Anodorhynchus hyacinthinus", "Pinus elliottii"))
     html <- as.character(conservation_status_summary_ui(report, c("gbif", "florabr"), c("florabr", "faunabr"), "pt"))
 
-    testthat::expect_identical(lengths(regmatches(html, gregexpr("vn-conservation-tag", html, fixed = TRUE))), 3L)
-    testthat::expect_true(grepl(sprintf(tr("validate_names_conservation_tag_mma", "pt"), 1L), html, fixed = TRUE))
-    testthat::expect_true(grepl(sprintf(tr("validate_names_conservation_tag_invasive", "pt"), 1L), html, fixed = TRUE))
+    testthat::expect_identical(lengths(regmatches(html, gregexpr("class=\"vn-conservation-tag ", html, fixed = TRUE))), 3L)
+    testthat::expect_true(grepl(tr("validate_names_conservation_label_mma", "pt"), html, fixed = TRUE))
+    testthat::expect_true(grepl(tr("validate_names_conservation_label_invasive", "pt"), html, fixed = TRUE))
     testthat::expect_true(grepl("title=", html, fixed = TRUE))
 })

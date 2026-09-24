@@ -15,10 +15,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **upload:** Use one upload panel across the home page, with the format tips below it, ADR-132
 - **mapping:** Filter cards by All, Mapped or Pending in the panel header; color the Required tag by state, ADR-132
 - **mapping:** Build the card grid in the background after an upload, so the tab opens ready, ADR-132
-- **coords:** Move the column check, the run button and the fixes to a bar on top, ADR-132
-- **names:** Move providers, options and the run button to a bar on top, ADR-132
-- **generalization:** Answer Chapman's Table 5 as one decision table; color map points by threat group, ADR-132
-- **export:** Show numbers, pending items with their fix, the IPT next step and a fixed download bar, ADR-132
+- **coords:** Move the column check, the run button and the fixes to a bar on top; UTM pairs get a band of their own; "Show in table" in a point popup opens the row in the table, ADR-132
+- **names:** Move providers, options and the run button to a full-width bar on top; drop the three report counters; bigger MMA, IUCN and invasive pills, ADR-132
+- **generalization:** Answer Chapman's Table 5 as one decision table; color map points by threat group; mode as two option cards; a species exception is one row of the same table, ADR-132
+- **export:** Show pending items with their fix beside one package card (numbers, files, IPT next step), both the same height, and a fixed download bar, ADR-132
+- **preview:** Put the title inside the table card and show 15 rows, ADR-132
 - **names:** GBIF is always on; providers and options are one checklist that shows the query order, ADR-130
 - **ui:** Square filter chips in the color of what they filter, borderless status tags, invasive species in brown; center the step row and group Wiki, Help, language and version on the right; selection states use the brand blue
 - **names:** Remove the percentage bar; the run shows only its current phase

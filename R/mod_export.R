@@ -221,32 +221,44 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             # --- Numbers ------------------------------------------------------
             cc <- s$corrections
             gen <- s$generalization
+            fmt_n <- function(value) {
+                if (identical(lang, "pt")) {
+                    format(value, big.mark = ".", decimal.mark = ",")
+                } else {
+                    format(value, big.mark = ",", decimal.mark = ".")
+                }
+            }
+            # The numbers sit in a strip inside the package card (round 5,
+            # option C). Each detail line rides in the cell tooltip; records
+            # and corrections also get a line under the strip.
             kpi <- function(value, label, sub) {
                 shiny::div(
                     class = "export-kpi",
-                    shiny::div(class = "export-kpi-value",
-                               if (identical(lang, "pt")) {
-                                   format(value, big.mark = ".", decimal.mark = ",")
-                               } else {
-                                   format(value, big.mark = ",", decimal.mark = ".")
-                               }),
-                    shiny::div(class = "export-kpi-label", label),
-                    shiny::div(class = "export-kpi-sub", sub)
+                    title = sub,
+                    shiny::div(class = "export-kpi-value", fmt_n(value)),
+                    shiny::div(class = "export-kpi-label", label)
                 )
             }
             n_aux <- length(s$files$auxiliary)
-            kpis <- shiny::div(
-                class = "export-kpis",
-                kpi(s$record_count, tr("export_kpi_records", lang),
-                    sprintf(tr("export_kpi_records_sub", lang), s$term_count)),
-                kpi(cc$names_corrected + cc$names_confirmed + cc$coord_fixes + cc$country_fills,
-                    tr("export_kpi_corrections", lang),
-                    sprintf(tr("export_kpi_corrections_sub", lang),
-                            cc$names_corrected + cc$names_confirmed, cc$coord_fixes, cc$country_fills)),
-                kpi(nrow(gen), tr("export_kpi_generalized", lang),
-                    if (nrow(gen) == 0L) tr("export_gen_none_short", lang) else tr("export_kpi_generalized_sub", lang)),
-                kpi(length(s$files$dwca) + n_aux, tr("export_kpi_files", lang),
-                    sprintf(tr("export_kpi_files_sub", lang), length(s$files$dwca), n_aux))
+            n_fix <- cc$names_corrected + cc$names_confirmed + cc$coord_fixes + cc$country_fills
+            records_sub <- sprintf(tr("export_kpi_records_sub", lang), s$term_count)
+            fixes_sub <- sprintf(tr("export_kpi_corrections_sub", lang),
+                                 cc$names_corrected + cc$names_confirmed, cc$coord_fixes, cc$country_fills)
+            kpis <- shiny::tagList(
+                shiny::div(
+                    class = "export-kpis",
+                    kpi(s$record_count, tr("export_kpi_records", lang), records_sub),
+                    kpi(n_fix, tr("export_kpi_corrections", lang), fixes_sub),
+                    kpi(nrow(gen), tr("export_kpi_generalized", lang),
+                        if (nrow(gen) == 0L) tr("export_gen_none_short", lang) else tr("export_kpi_generalized_sub", lang)),
+                    kpi(length(s$files$dwca) + n_aux, tr("export_kpi_files", lang),
+                        sprintf(tr("export_kpi_files_sub", lang), length(s$files$dwca), n_aux))
+                ),
+                shiny::div(
+                    class = "export-kpi-sub",
+                    shiny::span(records_sub),
+                    shiny::span(sprintf(tr("export_kpi_corrections_line", lang), fixes_sub))
+                )
             )
 
             # --- Pending items: one row each, with the step that fixes it ------
@@ -368,7 +380,8 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             # --- Files, and what to do with them next -------------------------
             files_card <- shiny::div(
                 class = "export-card export-files",
-                shiny::h2(class = "export-card-title", tr("export_section_files", lang)),
+                shiny::h2(class = "export-card-title", tr("export_section_package", lang)),
+                kpis,
                 file_group(tr("export_section_files_dwca", lang), s$files$dwca),
                 file_group(tr("export_section_files_aux", lang), unname(s$files$auxiliary)),
                 shiny::div(
@@ -379,12 +392,14 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 )
             )
 
+            # Pending items and the package share the first grid row, so both
+            # cards end at the same line whatever their content.
             shiny::tagList(
-                kpis,
                 shiny::div(
                     class = "export-summary",
-                    shiny::div(class = "export-summary-main", pending_card, gen_card),
-                    files_card
+                    pending_card,
+                    files_card,
+                    if (!is.null(gen_card)) shiny::div(class = "export-summary-gen", gen_card)
                 ),
                 shiny::tags$script(shiny::HTML(
                     "(function(){if(window.bootstrap&&bootstrap.Tooltip){document.querySelectorAll('.export-info-tip[data-bs-toggle=\"tooltip\"]').forEach(function(el){if(!el.__tipInit){el.__tipInit=true;new bootstrap.Tooltip(el);}});}})();"

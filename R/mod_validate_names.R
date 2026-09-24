@@ -585,23 +585,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             input$ignore_qualifiers
         )
 
-        report_status_counts <- function(report_df) {
-            out <- c(valid = 0L, invalid = 0L, unresolved = 0L, total = 0L)
-            if (!is.data.frame(report_df) || nrow(report_df) == 0L) {
-                return(out)
-            }
-
-            status_vec <- normalize_status_vec(report_df$validation_status)
-            reviewed_vec <- if ("manual_review" %in% names(report_df)) as.logical(report_df$manual_review) else rep(FALSE, length(status_vec))
-            reviewed_vec[is.na(reviewed_vec)] <- FALSE
-            out[["total"]] <- as.integer(length(status_vec))
-            out[["valid"]] <- as.integer(sum(status_vec == "accepted" | reviewed_vec, na.rm = TRUE))
-            out[["invalid"]] <- as.integer(sum(status_vec == "ignored", na.rm = TRUE))
-            out[["unresolved"]] <- as.integer(sum(status_vec %in% problem_status_values & !reviewed_vec, na.rm = TRUE))
-            out
-        }
-
-
         shiny::observe({
             exiting <- rv$exiting_reviews
             if (!is.data.frame(exiting) || nrow(exiting) == 0L) {
@@ -1397,28 +1380,9 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         output$report_panel <- shiny::renderUI({
             report <- effective_report()
             has_report <- is.data.frame(report) && nrow(report) > 0L
-            counts <- report_status_counts(report)
 
             shiny::div(
                 class = "vn-report-panel",
-                shiny::div(
-                    class = "vn-report-statbar",
-                    shiny::div(
-                        class = "vn-report-statcell",
-                        shiny::div(class = "vn-report-statvalue vn-report-statvalue-valid", as.integer(counts[["valid"]])),
-                        shiny::div(class = "vn-report-statlabel", tr("validate_names_valid", lang_r()))
-                    ),
-                    shiny::div(
-                        class = "vn-report-statcell",
-                        shiny::div(class = "vn-report-statvalue vn-report-statvalue-invalid", as.integer(counts[["invalid"]])),
-                        shiny::div(class = "vn-report-statlabel", tr("validate_names_invalid", lang_r()))
-                    ),
-                    shiny::div(
-                        class = "vn-report-statcell",
-                        shiny::div(class = "vn-report-statvalue vn-report-statvalue-unresolved", as.integer(counts[["unresolved"]])),
-                        shiny::div(class = "vn-report-statlabel", tr("validate_names_unresolved", lang_r()))
-                    )
-                ),
                 if (has_report) conservation_status_summary_ui(report, as.character(rv$selected_providers), br_provider_ids, lang_r()),
                 shiny::div(
                     class = "vn-report-header",

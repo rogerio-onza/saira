@@ -292,3 +292,52 @@
   }
 }
 
+
+/* Title inside the table card, on the row of the DT search and length
+   controls (round 5, option B). Both controls float right (dom "flrtip"). */
+.preview-table-shell {
+  position: relative;
+}
+
+.preview-card-head {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  height: 34px;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  max-width: calc(100% - 34rem);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.preview-card-title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: 34px;
+}
+
+.preview-card-subtitle {
+  font-family: var(--font-serif);
+  font-size: var(--text-base);
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-table-shell .dataTables_wrapper .dataTables_length,
+.preview-table-shell .dataTables_wrapper .dataTables_filter {
+  float: right;
+  margin-left: var(--space-4);
+}
+
+@media (max-width: 991.98px) {
+  .preview-card-head {
+    position: static;
+    max-width: none;
+    margin-bottom: var(--space-2);
+  }
+}

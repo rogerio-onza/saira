@@ -184,31 +184,6 @@ testthat::test_that("completed validation defaults stream filter to problems", {
     )
 })
 
-testthat::test_that("report status counts classify valid, invalid and unresolved buckets", {
-    mapped_df <- data.frame(scientificName = c("Puma concolor"), stringsAsFactors = FALSE)
-
-    shiny::testServer(
-        mod_validate_names_server,
-        args = list(
-            mapped_data_r = shiny::reactive(mapped_df),
-            lang_r = shiny::reactive("en")
-        ),
-        {
-            mock_report <- data.frame(
-                scientificName = c("A", "B", "C", "D", "E"),
-                validation_status = c("accepted", "synonym", "ignored", "not_found", "ambiguous"),
-                stringsAsFactors = FALSE
-            )
-
-            counts <- report_status_counts(mock_report)
-            testthat::expect_identical(as.integer(counts[["valid"]]), 1L)
-            testthat::expect_identical(as.integer(counts[["invalid"]]), 1L)
-            testthat::expect_identical(as.integer(counts[["unresolved"]]), 3L)
-            testthat::expect_identical(as.integer(counts[["total"]]), 5L)
-        }
-    )
-})
-
 testthat::test_that("manual confirm review decrements unresolved and problem filter counts", {
     mapped_df <- data.frame(scientificName = c("A", "B"), stringsAsFactors = FALSE)
 
@@ -241,17 +216,6 @@ testthat::test_that("manual confirm review decrements unresolved and problem fil
 
             after_counts <- stream_filter_counts(rv$stream_df, reviewed_keys = reviewed_query_keys())
             testthat::expect_identical(as.integer(after_counts[["problems"]]), 0L)
-
-            report_df <- data.frame(
-                scientificName = c("A", "B"),
-                query_name = c("A", "B"),
-                validation_status = c("accepted", "not_found"),
-                stringsAsFactors = FALSE
-            )
-            counts <- report_status_counts(within(report_df, {
-                manual_review <- c(FALSE, TRUE)
-            }))
-            testthat::expect_identical(as.integer(counts[["unresolved"]]), 0L)
         }
     )
 })

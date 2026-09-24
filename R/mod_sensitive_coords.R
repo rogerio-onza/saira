@@ -38,7 +38,16 @@ mod_sensitive_coords_ui <- function(id) {
                     shiny::uiOutput(ns("map_legend"))
                 )
             )
-        )
+        ),
+        # The remove links live in a re-rendered list, so one delegated
+        # handler serves every row (same pattern as the coordinates undo).
+        shiny::tags$script(shiny::HTML(sprintf(
+            "$(document).on('click', '.sp-override-remove', function(e) {
+               e.preventDefault();
+               Shiny.setInputValue('%s', this.dataset.species, {priority: 'event'});
+             });",
+            ns("exc_remove")
+        )))
     )
 }
 
@@ -298,30 +307,29 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             })
         })
 
-        # Per-species exception via the (capped) cascade.
+        # The tier the exception row gives, NA while it is unanswered. The
+        # Category 1 box is the only path to extreme, reserved for low-mobility
+        # or endemic taxa and gated by the mandatory justification at export.
+        exc_tier_r <- shiny::reactive({
+            if (isTRUE(input$exc_cat1)) return("extreme")
+            determine_tier(input$q43_exc, input$q44_exc, input$q45_exc)
+        })
+
+        # Per-species exception: one row of the decision table.
         shiny::observeEvent(input$exc_apply, {
             sp <- input$exc_species
             if (is.null(sp) || !nzchar(sp)) return()
-            t <- determine_tier(input$q43_exc, input$q44_exc, input$q45_exc)
+            t <- exc_tier_r()
             if (is.na(t)) return()
             ovr <- species_overrides_rv()
             ovr[[sp]] <- t
             species_overrides_rv(ovr)
             shiny::showNotification(tr("sensitive_saved_toast", lang_r()))
         })
-        # Explicit Category-1 (extreme) escape hatch -- only path to extreme,
-        # reserved for low-mobility / endemic taxa and gated by the mandatory
-        # justification at export.
-        shiny::observeEvent(input$exc_apply_cat1, {
-            sp <- input$exc_species
-            if (is.null(sp) || !nzchar(sp)) return()
+        shiny::observeEvent(input$exc_remove, {
             ovr <- species_overrides_rv()
-            ovr[[sp]] <- "extreme"
+            ovr[[as.character(input$exc_remove)]] <- NULL
             species_overrides_rv(ovr)
-            shiny::showNotification(tr("sensitive_saved_toast", lang_r()))
-        })
-        shiny::observeEvent(input$exc_clear, {
-            species_overrides_rv(list())
         })
 
         # ---- Click-preview ladder (what-if) -------------------------------
@@ -379,12 +387,11 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             shiny::span(class = paste0("sp-cat-pill sp-cat-pill--", code), label)
         }
 
-        # Chapman category chip: neutral, with a square that grows with the
-        # grid. Colour stays reserved for the official threat status (ADR-132).
+        # Chapman category chip: neutral text. Colour stays reserved for the
+        # official threat status (ADR-132).
         level_chip <- function(tier, lang, extra_class = NULL) {
             shiny::span(
                 class = paste("sc-level-chip", paste0("sc-level-chip--", tier), extra_class),
-                shiny::span(class = "sc-level-glyph", `aria-hidden` = "true"),
                 level_compact(tier, lang)
             )
         }
@@ -431,13 +438,29 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             ovr <- species_overrides_rv()
             lang <- lang_r()
             if (length(ovr) == 0L) return(NULL)
+            ov <- sensitive_species_overview()
             items <- lapply(names(ovr), function(s) {
-                shiny::tags$li(shiny::tags$em(s), " \u2014 ", badge_for_tier(ovr[[s]], lang))
+                code <- if (is.null(ov)) NA_character_ else ov$code[match(s, ov$scientificName)]
+                cat_label <- if (is.null(ov)) NA_character_ else ov$category[match(s, ov$scientificName)]
+                shiny::tags$li(
+                    if (!is.na(code)) threat_pill(code, cat_label),
+                    shiny::tags$em(s),
+                    shiny::span(class = "sp-override-spacer"),
+                    level_chip(ovr[[s]], lang),
+                    shiny::tags$a(href = "#", class = "sp-override-remove", `data-species` = s,
+                                  tr("sensitive_exc_remove", lang))
+                )
             })
-            shiny::tagList(
-                shiny::tags$ul(class = "sp-override-list", items),
-                shiny::actionLink(ns("exc_clear"), tr("sensitive_clear_overrides", lang))
-            )
+            shiny::tags$ul(class = "sp-override-list", items)
+        })
+
+        output$exc_result <- shiny::renderUI({
+            t <- exc_tier_r()
+            if (is.na(t)) {
+                return(shiny::span(class = "sp-group-badge sp-group-badge--none",
+                                   tr("sensitive_not_assessed", lang_r())))
+            }
+            level_chip(t, lang_r())
         })
 
         # ---- Assessment panel (static structure; nested outputs stay live) -
@@ -483,22 +506,6 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                                             shiny::span(class = "sc-matrix-skip", "\u2014"))
                 )
             }
-            # The exception editor keeps the stacked cascade: it answers for
-            # one species, not a row of the table.
-            cascade_stack <- function(cc) {
-                cond <- function(q) sprintf("input.q4%d_%s == 'no'", q, cc)
-                shiny::div(
-                    class = "sp-cascade",
-                    yn_radio(paste0("q43_", cc), "sensitive_q_4_3"),
-                    shiny::conditionalPanel(cond(3), ns = ns,
-                        yn_radio(paste0("q44_", cc), "sensitive_q_4_4"),
-                        shiny::conditionalPanel(cond(4), ns = ns,
-                            yn_radio(paste0("q45_", cc), "sensitive_q_4_5")
-                        )
-                    )
-                )
-            }
-
             code_order <- c("crpex", "cr", "en", "vu", "other")
             present <- code_order[code_order %in% ov$code]
             matrix_rows <- lapply(present, function(cc) {
@@ -535,32 +542,45 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 shiny::tags$tbody(matrix_rows)
             )
 
-            exceptions_block <- shiny::tags$details(
+            # An exception is one more row of the decision table, for one
+            # species, under the same question headers (round 5, option A).
+            exceptions_block <- shiny::div(
                 class = "sp-exceptions sc-card",
-                shiny::tags$summary(tr("sensitive_group_exceptions", lang)),
                 shiny::div(
-                    class = "sp-exc-body",
-                    shiny::selectizeInput(
-                        ns("exc_species"), label = NULL,
-                        choices = c("", ov$scientificName),
-                        selected = restore_choice(shiny::isolate(exc_species_rv()), ov$scientificName),
-                        options = list(placeholder = tr("sensitive_exc_prompt", lang))
-                    ),
-                    shiny::conditionalPanel(
-                        "input.exc_species != ''", ns = ns,
-                        cascade_stack("exc"),
-                        shiny::actionButton(ns("exc_apply"), tr("sensitive_exc_apply", lang),
-                                            class = "btn btn-sm btn-secondary"),
-                        shiny::div(
-                            class = "sc-exc-cat1",
-                            shiny::actionButton(ns("exc_apply_cat1"),
-                                                tr("sensitive_exc_cat1_btn", lang),
-                                                class = "btn btn-sm sc-exc-cat1-btn"),
-                            shiny::span(class = "sc-exc-cat1-note", tr("sensitive_exc_cat1_note", lang))
-                        )
-                    ),
-                    shiny::uiOutput(ns("sensitive_overrides_list"))
-                )
+                    class = "sc-matrix-head",
+                    shiny::h3(class = "sp-exceptions-title", tr("sensitive_group_exceptions", lang)),
+                    shiny::span(class = "sc-matrix-hint", tr("sensitive_exc_hint", lang))
+                ),
+                shiny::tags$table(
+                    class = "sc-matrix sp-exc-matrix",
+                    shiny::tags$thead(shiny::tags$tr(
+                        shiny::tags$th(tr("sensitive_exc_col_species", lang)),
+                        q_head(3L), q_head(4L), q_head(5L),
+                        shiny::tags$th(tr("sc_matrix_col_result", lang))
+                    )),
+                    shiny::tags$tbody(shiny::tags$tr(
+                        shiny::tags$td(
+                            class = "sp-exc-species",
+                            shiny::selectizeInput(
+                                ns("exc_species"), label = NULL,
+                                choices = c("", ov$scientificName),
+                                selected = restore_choice(shiny::isolate(exc_species_rv()), ov$scientificName),
+                                options = list(placeholder = tr("sensitive_exc_prompt", lang))
+                            )
+                        ),
+                        cascade_cell("exc", 3L), cascade_cell("exc", 4L), cascade_cell("exc", 5L),
+                        shiny::tags$td(class = "sc-matrix-result",
+                                       shiny::uiOutput(ns("exc_result"), inline = TRUE))
+                    ))
+                ),
+                shiny::div(
+                    class = "sp-exc-actions",
+                    shiny::actionButton(ns("exc_apply"), tr("sensitive_exc_apply", lang),
+                                        icon = ph_icon("check"), class = "btn btn-sm sp-exc-apply"),
+                    shiny::checkboxInput(ns("exc_cat1"), tr("sensitive_exc_cat1_check", lang), value = FALSE),
+                    shiny::span(class = "sc-exc-cat1-note", tr("sensitive_exc_cat1_note", lang))
+                ),
+                shiny::uiOutput(ns("sensitive_overrides_list"))
             )
 
             confirm_block <- shiny::div(
@@ -590,10 +610,15 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 shiny::uiOutput(ns("justification_warn"))
             )
 
-            mode_label <- function(title_key, recommended) {
+            # Each mode is a card: title, badge and one line on what it does.
+            mode_label <- function(title_key, desc_key, recommended) {
                 shiny::tagList(
-                    tr(title_key, lang),
-                    if (recommended) shiny::span(class = "sp-mode-badge", tr("sensitive_mode_recommended_badge", lang))
+                    shiny::span(
+                        class = "sp-mode-head",
+                        shiny::span(class = "sp-mode-title", tr(title_key, lang)),
+                        if (recommended) shiny::span(class = "sp-mode-badge", tr("sensitive_mode_recommended_badge", lang))
+                    ),
+                    shiny::span(class = "sp-mode-desc", tr(desc_key, lang))
                 )
             }
 
@@ -609,8 +634,8 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                             ns("sensitive_mode"),
                             label = shiny::tags$span(class = "visually-hidden", tr("sensitive_step_question", lang)),
                             choiceNames = list(
-                                mode_label("sensitive_mode_publish_title", TRUE),
-                                mode_label("sensitive_assess_mode_title", FALSE)
+                                mode_label("sensitive_mode_publish_title", "sensitive_mode_publish_desc", TRUE),
+                                mode_label("sensitive_assess_mode_title", "sensitive_assess_mode_desc", FALSE)
                             ),
                             choiceValues = c("publish", "generalize"),
                             selected = shiny::isolate(mode_rv()),
@@ -670,11 +695,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             shiny::tags$ul(
                 class = "sc-just-prompt",
                 lapply(tiers, function(t) {
-                    shiny::tags$li(
-                        shiny::span(class = paste0("sc-just-dot sc-level-chip--", t),
-                                    shiny::span(class = "sc-level-glyph", `aria-hidden` = "true")),
-                        tr(paste0("sensitive_just_prompt_", t), lang)
-                    )
+                    shiny::tags$li(tr(paste0("sensitive_just_prompt_", t), lang))
                 })
             )
         })
@@ -779,6 +800,14 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             active <- preview_tier_rv()
 
             tiers <- c("low", "medium", "high", "extreme")
+            # "Current decision" is the first option of the same control, so
+            # the way back from a what-if preview is always visible.
+            actual_chip <- if (is_gen) {
+                shiny::actionButton(
+                    ns("ladder_actual"), tr("sc_ladder_actual", lang),
+                    class = paste("sc-scale-chip sc-scale-chip--actual", if (is.null(active)) "sc-scale-chip--active")
+                )
+            }
             chips <- lapply(tiers, function(t) {
                 chip <- level_chip(t, lang)
                 cls <- "sc-scale-chip"
@@ -796,11 +825,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     class = "sc-scale-row",
                     shiny::span(class = "sc-scale-label",
                                 if (is_gen) tr("sc_ladder_title", lang) else tr("sc_scale_title", lang)),
-                    shiny::div(class = "sc-scale-chips", chips),
-                    if (is_gen) {
-                        shiny::actionLink(ns("ladder_actual"), tr("sc_ladder_actual", lang),
-                                          class = "sc-ladder-actual")
-                    }
+                    shiny::div(class = "sc-scale-chips", actual_chip, chips)
                 )
             )
         })

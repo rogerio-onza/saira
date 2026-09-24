@@ -19,11 +19,11 @@ mod_validate_coords_ui <- function(id) {
             shiny::div(
                 class = "validate-coords-toolbar",
                 shiny::uiOutput(ns("action_card")),
-                shiny::uiOutput(ns("utm_panel")),
                 shiny::uiOutput(ns("transposed_panel")),
                 shiny::uiOutput(ns("swap_fill_panel")),
                 shiny::uiOutput(ns("country_panel"))
             ),
+            shiny::uiOutput(ns("utm_panel")),
             shiny::div(
                 class = "validate-coords-layout",
                 shiny::div(
@@ -53,6 +53,22 @@ mod_validate_coords_ui <- function(id) {
                Shiny.setInputValue('%s', parseInt(this.dataset.row, 10), {priority: 'event'});
              });",
             ns("undo_edit")
+        ))),
+        # "Show in table" in a map popup sends the row to the server, which
+        # pages the table to it (the table is server-side, so the browser only
+        # holds the current page). A capture listener: Leaflet stops click
+        # propagation out of popups.
+        shiny::tags$script(shiny::HTML(sprintf(
+            "document.addEventListener('click', function(e) {
+               var btn = e.target.closest && e.target.closest('.coords-show-row');
+               if (!btn) return;
+               e.preventDefault();
+               // The page length lives in the browser; send it along.
+               var tbl = $('#%s .dataTables_scrollBody table')[0] || $('#%s table.dataTable')[0];
+               var len = tbl && $.fn.dataTable.isDataTable(tbl) ? $(tbl).DataTable().page.len() : 10;
+               Shiny.setInputValue('%s', {row: parseInt(btn.dataset.row, 10), len: len}, {priority: 'event'});
+             }, true);",
+            ns("issues_table"), ns("issues_table"), ns("locate_row")
         )))
     )
 }
@@ -318,7 +334,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 row = tr("validate_coords_popup_row", lang_r()),
                 issue = tr("validate_coords_popup_issue", lang_r()),
                 lat = tr("validate_coords_col_lat", lang_r()),
-                lon = tr("validate_coords_col_lon", lang_r())
+                lon = tr("validate_coords_col_lon", lang_r()),
+                show_row = tr("validate_coords_popup_show_row", lang_r())
             )
             list(issue = issue_labels, popup = popup_labels)
         }
@@ -857,10 +874,30 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 class = "display compact validate-results-table",
                 rownames = FALSE,
                 escape = FALSE,
+                # One selected row: the one a map popup pointed at.
+                selection = "single",
                 # Only latitude (column 2) and longitude (column 3) take an edit.
                 editable = list(target = "cell", disable = list(columns = c(0L, 1L, 4L, 5L)))
             )
         })
+
+        # "Show in table": select the row and open its page. The page comes
+        # from the order and search the table shows now; a search that hides
+        # the row is cleared first.
+        shiny::observeEvent(input$locate_row, {
+            base <- table_base_r()
+            i <- match(as.integer(input$locate_row$row), base$.row_index)
+            if (is.na(i)) return(invisible(NULL))
+            shown <- input$issues_table_rows_all
+            if (!i %in% shown) {
+                DT::updateSearch(table_proxy, keywords = list(global = ""))
+                shown <- seq_len(nrow(base))
+            }
+            per_page <- suppressWarnings(as.integer(input$locate_row$len))
+            if (length(per_page) != 1L || is.na(per_page) || per_page < 1L) per_page <- 10L
+            DT::selectRows(table_proxy, i)
+            DT::selectPage(table_proxy, ceiling(match(i, shown) / per_page))
+        }, ignoreInit = TRUE)
 
         # A double-clicked latitude or longitude, typed and confirmed with
         # Enter. The value is checked, the point revalidated, and the edit
@@ -1336,70 +1373,75 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 # No country to score against: offer the zones the datum covers.
                 as.integer(coords_utm_datums()[[coords_utm_default_datum()]]$zones)
             }
-            preview <- utm_converted_r()
 
             datum_choices <- stats::setNames(
                 names(coords_utm_datums()),
                 vapply(coords_utm_datums(), function(x) x$label, character(1))
             )
 
+            # A band of its own under the toolbar (round 5): the zone and datum
+            # pickers do not fit a toolbar chip. It shows only when some rows
+            # carry projected (UTM) pairs; everything exported is WGS84.
+            if (applied) {
+                return(shiny::div(
+                    class = "coords-utm-band is-applied",
+                    ph_icon("circle-check"),
+                    shiny::span(class = "coords-utm-title", sprintf(tr("validate_coords_utm_applied", lang), n))
+                ))
+            }
+            # Keep the pick across a language switch, not across a new upload.
+            zone_sel <- shiny::isolate(input$utm_zone)
+            if (!isTRUE(as.integer(zone_sel) %in% zones)) zone_sel <- zones[[1]]
+            datum_sel <- shiny::isolate(input$utm_datum)
+            if (!isTRUE(datum_sel %in% datum_choices)) datum_sel <- coords_utm_default_datum()
+            help <- tr("validate_coords_utm_help", lang)
+            if (is.data.frame(cand) && nrow(cand) > 1L) {
+                help <- paste(help, sprintf(tr("validate_coords_utm_ambiguous", lang), nrow(cand)))
+            }
             shiny::div(
-                class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
-                shiny::div(
-                    class = "coords-transposed-head",
-                    ph_icon(if (applied) "circle-check" else "compass"),
-                    shiny::span(
-                        class = "coords-transposed-title",
-                        if (applied) {
-                            sprintf(tr("validate_coords_utm_applied", lang), n)
-                        } else {
-                            sprintf(tr("validate_coords_utm_found", lang), n)
-                        }
-                    )
+                class = "coords-utm-band",
+                ph_icon("compass"),
+                shiny::span(class = "coords-utm-title", sprintf(tr("validate_coords_utm_found", lang), n)),
+                shiny::span(class = "coords-utm-help", title = help, `aria-label` = help, ph_icon("circle-info")),
+                shiny::span(class = "coords-utm-spacer"),
+                # isolate(): this output must not depend on the pickers it
+                # creates, or each pick would rebuild them.
+                shiny::selectInput(
+                    ns("utm_zone"), tr("validate_coords_utm_zone", lang),
+                    choices = zones,
+                    selected = zone_sel,
+                    selectize = FALSE
                 ),
-                if (!applied) {
-                    shiny::tagList(
-                        shiny::p(class = "coords-transposed-more",
-                                 tr("validate_coords_utm_help", lang)),
-                        shiny::selectInput(
-                            ns("utm_zone"), tr("validate_coords_utm_zone", lang),
-                            choices = zones, selected = zones[[1]],
-                            width = "100%"
-                        ),
-                        shiny::selectInput(
-                            ns("utm_datum"), tr("validate_coords_utm_datum", lang),
-                            choices = datum_choices, selected = coords_utm_default_datum(),
-                            width = "100%"
-                        ),
-                        if (is.data.frame(cand) && nrow(cand) > 1L) {
-                            shiny::p(class = "coords-transposed-more",
-                                     sprintf(tr("validate_coords_utm_ambiguous", lang), nrow(cand)))
-                        },
-                        if (is.data.frame(preview) && nrow(preview) > 0L) {
-                            shiny::div(
-                                class = "coords-transposed-example",
-                                shiny::div(class = "coords-transposed-ex-arrow", sprintf(
-                                    "\u2192 (%.4f, %.4f)",
-                                    preview$decimalLatitude[[1]], preview$decimalLongitude[[1]]
-                                ))
-                            )
-                        } else {
-                            # An older datum covers fewer zones than SIRGAS 2000,
-                            # so a valid zone can become unreachable when the
-                            # datum changes. Say so instead of leaving the
-                            # button inert.
-                            shiny::p(class = "coords-transposed-more",
-                                     tr("validate_coords_utm_unavailable", lang))
-                        },
-                        shiny::actionButton(
-                            ns("apply_utm"),
-                            tr("validate_coords_utm_apply", lang),
-                            icon = ph_icon("wand-magic-sparkles"),
-                            class = "btn btn-primary btn-sm"
-                        )
-                    )
-                }
+                shiny::selectInput(
+                    ns("utm_datum"), tr("validate_coords_utm_datum", lang),
+                    choices = datum_choices,
+                    selected = datum_sel,
+                    selectize = FALSE
+                ),
+                shiny::uiOutput(ns("utm_preview"), inline = TRUE),
+                shiny::actionButton(
+                    ns("apply_utm"),
+                    tr("validate_coords_utm_apply", lang),
+                    icon = ph_icon("wand-magic-sparkles"),
+                    class = "btn btn-primary btn-sm"
+                )
             )
+        })
+
+        output$utm_preview <- shiny::renderUI({
+            preview <- utm_converted_r()
+            if (is.data.frame(preview) && nrow(preview) > 0L) {
+                shiny::span(class = "coords-utm-preview", sprintf(
+                    "\u2192 (%.4f, %.4f)",
+                    preview$decimalLatitude[[1]], preview$decimalLongitude[[1]]
+                ))
+            } else {
+                # An older datum covers fewer zones than SIRGAS 2000, so a valid
+                # zone can become unreachable when the datum changes. Say so
+                # instead of leaving the button inert.
+                shiny::span(class = "coords-utm-preview is-unavailable",
+                            tr("validate_coords_utm_unavailable", lang_r()))
+            }
         })
 
         # Payload merge helpers: the transposed, swap-fill and country cards act
