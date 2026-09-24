@@ -3695,6 +3695,10 @@
     "pt": "O Saíra procura estes termos no seu arquivo.",
     "en": "Saíra looks for these terms in your file."
   },
+  "home_camtrap_files_note": {
+    "pt": "Camtrap DP: datapackage.json, deployments.csv e observations.csv (media.csv é opcional). Wildlife Insights: deployments.csv, projects.csv e images_*.csv.",
+    "en": "Camtrap DP: datapackage.json, deployments.csv and observations.csv (media.csv is optional). Wildlife Insights: deployments.csv, projects.csv and images_*.csv."
+  },
   "home_guide_tip": {
     "pt": "Tem um guia de mapeamento do Saíra? Envie-o no mesmo campo para importar os aliases.",
     "en": "Have a Saíra mapping guide? Upload it in the same field to import its aliases."

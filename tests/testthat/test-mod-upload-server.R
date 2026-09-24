@@ -49,8 +49,7 @@ testthat::test_that("mod_upload_server renders UI outputs in EN", {
         {
             session$flushReact()
             testthat::expect_true(!is.null(output$dropzone_hint_text))
-            testthat::expect_true(!is.null(output$encoding_text))
-            testthat::expect_true(!is.null(output$privacy_text))
+            testthat::expect_true(!is.null(output$upload_notes))
             testthat::expect_true(!is.null(output$home_header))
             # ADR-097: mode tab strip outputs
             testthat::expect_true(!is.null(output$mode_csv_title))
@@ -60,7 +59,7 @@ testthat::test_that("mod_upload_server renders UI outputs in EN", {
     )
 })
 
-testthat::test_that("mod_upload_server renders DwC chips by default (CSV mode)", {
+testthat::test_that("mod_upload_server shows the CSV notes by default", {
     shiny::testServer(
         mod_upload_server,
         args = list(
@@ -68,15 +67,15 @@ testthat::test_that("mod_upload_server renders DwC chips by default (CSV mode)",
         ),
         {
             session$flushReact()
-            html <- output$dwc_required$html
-            testthat::expect_true(grepl("home-term-list", html))
-            testthat::expect_false(grepl("upload-file-list", html))
-            testthat::expect_true(grepl("format-requirements", html))
+            html <- output$upload_notes$html
+            testthat::expect_true(grepl("item separator", html, fixed = TRUE))
+            testthat::expect_true(grepl("mapping guide", html, fixed = TRUE))
+            testthat::expect_false(grepl("datapackage.json", html, fixed = TRUE))
         }
     )
 })
 
-testthat::test_that("mod_upload_server renders Camtrap file rows when mode is camtrap", {
+testthat::test_that("mod_upload_server shows the expected Camtrap files in camtrap mode", {
     shiny::testServer(
         mod_upload_server,
         args = list(
@@ -85,10 +84,9 @@ testthat::test_that("mod_upload_server renders Camtrap file rows when mode is ca
         {
             session$setInputs(upload_mode = "camtrap")
             session$flushReact()
-            html <- output$dwc_required$html
-            testthat::expect_true(grepl("upload-file-list", html))
-            testthat::expect_false(grepl("home-term-list", html))
-            testthat::expect_true(grepl("datapackage.json", html))
+            html <- output$upload_notes$html
+            testthat::expect_true(grepl("datapackage.json", html, fixed = TRUE))
+            testthat::expect_false(grepl("item separator", html, fixed = TRUE))
         }
     )
 })
@@ -134,7 +132,7 @@ testthat::test_that("mod_upload_server renders UI outputs in PT", {
         {
             session$flushReact()
             testthat::expect_true(!is.null(output$home_header))
-            testthat::expect_true(!is.null(output$dwc_required))
+            testthat::expect_true(!is.null(output$upload_notes))
         }
     )
 })

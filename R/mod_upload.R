@@ -1,7 +1,7 @@
 # Title: Upload Module
 # Author: Rogerio Nunes Oliveira
 # Date: 2026-02-08
-# Version: 2.0 - Two-column layout with welcome and financing
+# Version: 3.0 - One upload panel across the page
 
 #' Upload Module UI
 #'
@@ -11,7 +11,7 @@
 mod_upload_ui <- function(id) {
     ns <- shiny::NS(id)
 
-    # Home B: the upload panel on the left, the required columns on the right.
+    # Home: one upload panel across the page (ADR-132).
     shiny::div(
         class = "container-fluid homepage-container home-b",
         shiny::tags$section(
@@ -124,26 +124,10 @@ mod_upload_ui <- function(id) {
                     )
                 )
             ),
-            shiny::div(
-                class = "home-upload-notes",
-                shiny::div(
-                    class = "home-upload-note",
-                    ph_icon("code"),
-                    shiny::uiOutput(ns("encoding_text"), inline = TRUE)
-                ),
-                shiny::div(
-                    class = "home-upload-note",
-                    ph_icon("lock"),
-                    shiny::uiOutput(ns("privacy_text"), inline = TRUE)
-                )
-            ),
+            shiny::uiOutput(ns("upload_notes"), class = "home-upload-notes"),
 
             # Stats after upload
             shiny::uiOutput(ns("stats"))
-        ),
-        shiny::tags$aside(
-            class = "home-panel home-requirements-panel",
-            shiny::uiOutput(ns("dwc_required"))
         )
     )
 }
@@ -161,14 +145,6 @@ mod_upload_server <- function(id, lang_r) {
         # Load dependencies
 
         # Column 1: Data Section UI
-        output$upload_btn_text <- shiny::renderUI({
-            shiny::tags$span(tr("upload_btn_label", lang_r()))
-        })
-
-        output$file_placeholder_text <- shiny::renderUI({
-            shiny::tags$span(tr("upload_no_file", lang_r()))
-        })
-
         output$mode_csv_title <- shiny::renderUI({
             shiny::tags$span(tr("upload_mode_csv_title", lang_r()))
         })
@@ -208,14 +184,6 @@ mod_upload_server <- function(id, lang_r) {
             shiny::tags$span(tr("upload_max_size", lang_r()))
         })
 
-        output$encoding_text <- shiny::renderUI({
-            shiny::tags$span(tr("upload_encoding_info", lang_r()))
-        })
-
-        output$privacy_text <- shiny::renderUI({
-            shiny::tags$span(tr("upload_privacy_alert", lang_r()))
-        })
-
         output$home_header <- shiny::renderUI({
             shiny::div(
                 class = "home-header",
@@ -224,63 +192,23 @@ mod_upload_server <- function(id, lang_r) {
             )
         })
 
-        # Required DwC fields aligned with preview readiness checklist
-        required_fields <- c(
-            "scientificName",
-            "eventDate",
-            "decimalLatitude",
-            "decimalLongitude",
-            "basisOfRecord",
-            "occurrenceID"
-        )
-        class_fallback <- c(
-            "scientificName" = "Taxon",
-            "eventDate" = "Occurrence",
-            "decimalLatitude" = "Location",
-            "decimalLongitude" = "Location",
-            "basisOfRecord" = "Record-level",
-            "occurrenceID" = "Occurrence"
-        )
-        category_order <- c("Record-level", "Occurrence", "Taxon", "Location")
-        required_terms_all <- tryCatch(
-            get_dwc_terms(),
-            error = function(e) {
-                warning("[Sa\u00EDra] Failed to load DwC terms: ", e$message)
-                data.frame(
-                    term = character(0),
-                    class = character(0),
-                    required = logical(0),
-                    definition_pt = character(0),
-                    definition_en = character(0),
-                    stringsAsFactors = FALSE
+        # Notes under the dropzone: what the page needs to say before an upload.
+        # The format hints follow the selected mode.
+        output$upload_notes <- shiny::renderUI({
+            lang <- lang_r()
+            note <- function(icon, text) {
+                shiny::div(class = "home-upload-note", ph_icon(icon), shiny::tags$span(text))
+            }
+            format_notes <- if (identical(input$upload_mode %||% "csv", "camtrap")) {
+                list(note("box-archive", tr("home_camtrap_files_note", lang)))
+            } else {
+                list(
+                    note("code", tr("upload_encoding_info", lang)),
+                    note("table-list", tr("upload_recommendation", lang)),
+                    note("file-import", tr("home_guide_tip", lang))
                 )
             }
-        )
-        required_terms <- required_terms_all[required_terms_all$term %in% required_fields, , drop = FALSE]
-        required_terms <- required_terms[match(required_fields, required_terms$term), , drop = FALSE]
-        required_terms <- required_terms[!is.na(required_terms$term), , drop = FALSE]
-
-        # ADR-097: unified scaffold — persistent header plus body that
-        # crossfades between CSV (DwC term chips) and Camtrap (file rows).
-        output$dwc_required <- shiny::renderUI({
-            lang <- lang_r()
-            mode <- input$upload_mode %||% "csv"
-            body <- if (identical(mode, "camtrap")) {
-                upload_camtrap_requirements_ui(lang)
-            } else {
-                upload_csv_requirements_ui(required_terms, lang)
-            }
-            title_key <- if (identical(mode, "camtrap")) {
-                "upload_format_requirements_title"
-            } else {
-                "home_required_title"
-            }
-            shiny::div(
-                class = "format-requirements",
-                `data-mode` = mode,
-                shiny::tags$h2(class = "format-requirements-title", tr(title_key, lang)),
-                shiny::div(class = "format-requirements-body", body)
-            )
+            shiny::tagList(format_notes, note("lock", tr("upload_privacy_alert", lang)))
         })
 
         # ADR-087: classify the upload as data CSV or Saira mapping guide.

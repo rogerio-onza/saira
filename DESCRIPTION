@@ -88,6 +88,7 @@ Collate:
     'utils_export.R'
     'utils_export_summary.R'
     'utils_i18n.R'
+    'utils_icons.R'
     'utils_invasive.R'
     'utils_io.R'
     'utils_mapping.R'
@@ -99,5 +100,4 @@ Collate:
     'utils_sensitive.R'
     'utils_taxadb.R'
     'utils_threat_status.R'
-    'utils_upload.R'
     'utils_version.R'
