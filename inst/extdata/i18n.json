@@ -151,6 +151,86 @@
     "pt": "Adicionar justificativa",
     "en": "Add justification"
   },
+  "export_kpi_records": {
+    "pt": "Registros",
+    "en": "Records"
+  },
+  "export_kpi_records_sub": {
+    "pt": "%d termos DwC",
+    "en": "%d DwC terms"
+  },
+  "export_kpi_corrections": {
+    "pt": "Correções",
+    "en": "Corrections"
+  },
+  "export_kpi_corrections_sub": {
+    "pt": "%d nomes · %d coordenadas · %d países",
+    "en": "%d names · %d coordinates · %d countries"
+  },
+  "export_kpi_generalized": {
+    "pt": "Generalizadas",
+    "en": "Generalized"
+  },
+  "export_kpi_generalized_sub": {
+    "pt": "espécies com coordenada generalizada",
+    "en": "species with generalized coordinates"
+  },
+  "export_gen_none_short": {
+    "pt": "Coordenadas publicadas como estão",
+    "en": "Coordinates published as they are"
+  },
+  "export_kpi_files": {
+    "pt": "Arquivos",
+    "en": "Files"
+  },
+  "export_kpi_files_sub": {
+    "pt": "%d do DwC-A + %d auxiliares",
+    "en": "%d DwC-A + %d auxiliary"
+  },
+  "export_pending_title": {
+    "pt": "Pendências",
+    "en": "To review"
+  },
+  "export_nothing_pending": {
+    "pt": "Nenhuma pendência. O pacote está pronto.",
+    "en": "Nothing to review. The package is ready."
+  },
+  "export_sev_block": {
+    "pt": "Bloqueia",
+    "en": "Blocks"
+  },
+  "export_sev_warn": {
+    "pt": "Aviso",
+    "en": "Warning"
+  },
+  "export_sev_info": {
+    "pt": "Info",
+    "en": "Info"
+  },
+  "export_action_mapping": {
+    "pt": "Abrir mapeamento",
+    "en": "Open mapping"
+  },
+  "export_action_preview": {
+    "pt": "Ver na prévia",
+    "en": "See in preview"
+  },
+  "export_ipt_title": {
+    "pt": "Próximo passo: o IPT.",
+    "en": "Next step: the IPT."
+  },
+  "export_ipt_body": {
+    "pt": "Envie o .zip ao IPT e complete lá os metadados (título, resumo, contatos, cobertura). O Saíra não publica no GBIF.",
+    "en": "Upload the .zip to the IPT and complete the metadata there (title, abstract, contacts, coverage). Saíra does not publish to GBIF."
+  },
+  "export_bar_blocked": {
+    "pt": "%d pendência(s) bloqueiam o download",
+    "en": "%d item(s) block the download"
+  },
+  "export_bar_ready": {
+    "pt": "Pronto para baixar",
+    "en": "Ready to download"
+  },
   "export_ready_title": {
     "pt": "Pronto para exportar",
     "en": "Ready to export"
