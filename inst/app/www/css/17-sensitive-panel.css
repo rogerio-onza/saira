@@ -192,7 +192,7 @@
     padding: 2px var(--space-2);
     border-radius: var(--radius-full);
     background: var(--success-bg);
-    color: var(--success);
+    color: var(--success-text);
     border: 1px solid var(--success-border);
     white-space: nowrap;
 }
@@ -306,7 +306,7 @@
 
 /* Cost cue on the aggressive tiers (3rd = State, 4th = Country). */
 .sensitive-panel .sp-level-radio .radio:nth-child(3) .sp-card-scale {
-    color: var(--warning);
+    color: var(--warning-text);
 }
 
 .sensitive-panel .sp-level-radio .radio:nth-child(4) .sp-card-scale {
@@ -433,7 +433,7 @@
 
 .sensitive-panel .sp-group-badge--low {
     background: var(--success-bg);
-    color: var(--success);
+    color: var(--success-text);
     border-color: var(--success-border);
 }
 
@@ -704,7 +704,7 @@
 }
 
 .sensitive-grid-table tbody tr:nth-child(even) td {
-    background: rgba(40, 51, 172, 0.025);
+    background: transparent;
 }
 
 /* Cost swatch (green -> red) prefixing each Chapman level. */
@@ -755,7 +755,7 @@
 }
 
 .sensitive-grid-table .sp-grid-row-baseline .sp-grid-value {
-    color: var(--success);
+    color: var(--success-text);
     font-family: var(--font-serif);
     font-size: var(--text-sm);
     font-weight: var(--weight-medium);
@@ -872,7 +872,7 @@
 }
 
 .sc-result-state--publish {
-    color: var(--success);
+    color: var(--success-text);
 }
 
 .sc-result-line {
@@ -979,8 +979,8 @@
 .sc-sp-outcome--extreme { color: var(--error); }
 .sc-sp-outcome--high    { color: #8a3d00; }
 .sc-sp-outcome--medium  { color: var(--primary); }
-.sc-sp-outcome--low     { color: var(--success); }
-.sc-sp-outcome--publish { color: var(--success); }
+.sc-sp-outcome--low     { color: var(--success-text); }
+.sc-sp-outcome--publish { color: var(--success-text); }
 .sc-sp-outcome--pending { color: var(--text-muted); font-weight: var(--weight-regular); }
 
 .sc-result-foot {
@@ -998,7 +998,7 @@
     gap: var(--space-1);
     font-size: var(--text-sm);
     font-weight: var(--weight-medium);
-    color: var(--success);
+    color: var(--success-text);
 }
 
 .sc-result-cross--danger {
@@ -1062,8 +1062,7 @@
 /* Loud border-crossing alert ------------------------------------------ */
 .sc-border-alert {
     background: var(--error-bg);
-    border: 1px solid var(--error-border);
-    border-left: 4px solid var(--error);
+    border: 1px solid var(--error-border-strong);
     border-radius: var(--radius);
     padding: var(--space-3) var(--space-4);
     margin-bottom: var(--space-4);
@@ -1254,7 +1253,7 @@ button.sc-scale-chip:hover {
 .sc-scale-chip--low.sc-scale-chip--active {
     background: var(--success-bg);
     border-color: var(--success);
-    color: var(--success);
+    color: var(--success-text);
 }
 
 .sc-scale-chip--medium.sc-scale-chip--active {

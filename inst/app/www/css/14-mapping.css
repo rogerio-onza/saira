@@ -553,19 +553,6 @@
   padding: 0 var(--space-3);
 }
 
-/* The global .btn drops borders; an outlined button needs its 1px back. */
-.mapping-sidebar .btn-outline-secondary {
-  border: 1px solid var(--border-strong);
-  background: var(--bg-card);
-  color: var(--text-primary);
-}
-
-.mapping-sidebar .btn-outline-secondary:hover,
-.mapping-sidebar .btn-outline-secondary:focus-visible {
-  border-color: var(--step-active);
-  background: var(--bg-card);
-  color: var(--step-active);
-}
 
 /* Cards | List: a segmented control over the native radios. */
 .mapping-sidebar .shiny-input-radiogroup .shiny-options-group {
@@ -1022,11 +1009,11 @@
   position: sticky;
   top: 0;
   z-index: 3;
-  background: var(--accent);
+  background: var(--bg-subtle);
   background-clip: padding-box;
-  box-shadow: 0 1px 0 var(--border-strong);
-  border-bottom: 1px solid var(--border-strong);
-  color: #ffffff;
+  box-shadow: 0 1px 0 var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+  color: var(--text-primary);
 }
 
 .bor-assistant-table> :not(caption)>*>* {
@@ -1075,9 +1062,9 @@
 }
 
 .bor-assistant-preview-table thead th {
-  background: var(--accent);
-  color: #ffffff;
-  border-bottom: 1px solid var(--border-strong);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-default);
 }
 
 .bor-assistant-preview-table td,
@@ -1092,7 +1079,7 @@
 
 .bor-assistant-unmapped-count {
   font-size: var(--text-sm);
-  color: var(--warning);
+  color: var(--warning-text);
   font-weight: var(--weight-medium);
 }
 
@@ -1140,18 +1127,18 @@
 }
 
 .est-card-status-line {
-  color: var(--success);
+  color: var(--success-text);
   font-weight: var(--weight-medium);
 }
 
 .est-card-status-pending {
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .est-assistant-pair-warning {
   margin-top: var(--space-2);
   font-size: var(--text-sm);
-  color: var(--warning);
+  color: var(--warning-text);
   font-weight: var(--weight-medium);
 }
 

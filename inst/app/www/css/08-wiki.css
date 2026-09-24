@@ -356,9 +356,9 @@
 }
 
 .wiki-filter-pill[data-filter=""].active {
-  background: #2833ac;
-  border-color: #2833ac;
-  color: #ffffff;
+  background: var(--selected-bg);
+  border-color: var(--step-active);
+  color: var(--step-active);
 }
 
 .wiki-filter-pill[data-filter="Record-level"].active {
@@ -435,18 +435,18 @@
 }
 
 .wiki-table.saira-table-shell table.dataTable thead th {
-  background: #2833ac;
+  background: var(--bg-subtle);
   padding: 13px 18px;
   font-family: var(--font-mono);
-  font-size: var(--text-md);
-  font-weight: var(--weight-semibold);
+  font-size: var(--text-sm);
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #ffffff;
+  color: var(--text-primary);
   text-align: left;
   white-space: nowrap;
-  border-bottom: none;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-default);
+  border-right: 0;
 }
 
 .wiki-table.saira-table-shell table.dataTable thead th:last-child {
@@ -500,7 +500,7 @@
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody tr:nth-child(even) td {
-  background: rgba(40, 51, 172, 0.02);
+  background: transparent;
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody tr:hover td {

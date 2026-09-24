@@ -108,7 +108,7 @@
 .export-banner--ok {
   background: var(--success-bg);
   border-color: var(--success-border);
-  color: var(--coord-ok);
+  color: var(--success-text);
 }
 
 /* Report layout: a two-column grid so the cards line up in aligned rows
@@ -208,7 +208,7 @@
 
 .export-term-chip.is-missing {
   background: var(--warning-bg);
-  color: var(--warning);
+  color: var(--warning-text);
   border-color: var(--warning-border);
   font-weight: var(--weight-semibold);
 }

@@ -414,7 +414,7 @@
 .homepage-container .stats-container .stat-box:hover {
   border-color: rgba(40, 51, 172, 0.18);
   background: rgba(40, 51, 172, 0.07);
-  transform: translateY(-2px);
+  transform: var(--lift-base);
   box-shadow: none;
 }
 
@@ -600,7 +600,7 @@
 
 .upload-file-row-badge.is-required {
   background: var(--success-bg);
-  color: var(--success);
+  color: var(--success-text);
 }
 
 .upload-file-row-badge.is-optional {

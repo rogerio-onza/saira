@@ -2,40 +2,41 @@
    ALERTS & NOTIFICATIONS
    ============================================================================= */
 
+/* Severity reads from the tint, the icon and a full 1px border, never from a
+   side bar (ADR-040). Text uses the dark variant of each state for AA. */
 .alert {
   border-radius: var(--radius);
-  border: none;
-  padding: var(--space-4);
+  border: 1px solid transparent;
+  padding: var(--space-3) var(--space-4);
   font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-regular);
 }
 
-/* Bold text in all notifications */
 .shiny-notification {
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-regular);
 }
 
 .alert-success {
   background-color: var(--success-bg);
-  color: var(--success);
+  color: var(--success-text);
   border: 1px solid var(--success-border);
 }
 
 .alert-warning {
   background-color: var(--warning-bg);
-  color: var(--warning);
+  color: var(--warning-text);
   border: 1px solid var(--warning-border);
 }
 
 .alert-danger {
   background-color: var(--error-bg);
-  color: var(--error);
+  color: var(--error-text);
   border: 1px solid var(--error-border);
 }
 
 .alert-error {
   background-color: var(--error-bg);
-  color: var(--error);
+  color: var(--error-text);
   border: 1px solid var(--error-border);
 }
 

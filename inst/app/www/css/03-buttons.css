@@ -16,7 +16,7 @@
 .btn-primary {
   background-color: var(--primary);
   color: var(--text-primary);
-  box-shadow: var(--shadow-primary);
+  box-shadow: none;
 }
 
 .btn-primary:hover {
@@ -34,17 +34,23 @@
   transform: translateY(0);
 }
 
+/* Outlined buttons: 1px neutral border, a colored border on hover, no fill
+   inversion. .btn drops borders, so these put their 1px back. */
 .btn-secondary,
-.btn-outline-primary {
-  background-color: transparent;
-  border: 2px solid var(--accent);
-  color: var(--accent);
+.btn-outline-primary,
+.btn-outline-secondary {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover,
-.btn-outline-primary:hover {
-  background-color: var(--accent);
-  color: var(--bg-card);
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus-visible {
+  background-color: var(--bg-card);
+  border-color: var(--step-active);
+  color: var(--step-active);
 }
 
 .btn-success {

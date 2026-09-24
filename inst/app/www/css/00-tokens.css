@@ -33,6 +33,11 @@
      the mapping cards, where the 0.25 alpha reads as no border at all. */
   --warning-border-strong: rgba(255, 162, 4, 0.55);
   --error-border-strong: rgba(192, 57, 43, 0.5);
+  /* Text on a semantic tint. The saturated state colors fail AA as text on
+     their own tint (success 2.8:1, warning 1.9:1), so text uses these. */
+  --success-text: #0b6b47;
+  --warning-text: #7a4d00;
+  --error-text: #9b2c20;
   --info-bg: rgba(37, 38, 89, 0.1);
   --info-border: rgba(37, 38, 89, 0.2);
 
@@ -174,9 +179,11 @@
   --transition-colors: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
   --transition-transform: transform 0.2s ease;
   --transition-shadow: box-shadow 0.2s ease;
-  --lift-sm: translateY(-1px);
-  --lift-base: translateY(-2px);
-  --lift-lg: translateY(-4px);
+  /* Flat design (ADR-127): nothing lifts on hover. The tokens stay so a rule
+     still names its intent. */
+  --lift-sm: none;
+  --lift-base: none;
+  --lift-lg: none;
   --validate-names-header-offset: calc(var(--app-header-height) + 86px);
 }
 

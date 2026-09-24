@@ -91,7 +91,7 @@
 }
 
 .stat-box-warn .stat-value {
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .stat-box-muted .stat-value {

@@ -2670,7 +2670,8 @@ Formato: ADR leve (Architecture Decision Record).
 - **Status**: Aceito
 - **Contexto**: O redesign do marco 1 segue o mockup Inicio B: visual plano, cantos arredondados, bordas claras. O CSS tinha 11 tokens de sombra e cerca de 25 sombras fixas, 14 gradientes, 49 raios em pixel fixo e bordas num azul translucido que tinge o bege. O `--text-muted` (`#6c757d`) dava 4,2:1 sobre `--bg-main`, abaixo do AA.
 - **Decisao**: Todo token `--shadow-*` vale `none`, e as sombras fixas viram `none`. Os aneis de foco e os aneis `inset` de selecao ficam. Os gradientes decorativos viram cor solida, e o card selecionado usa o novo `--selected-bg`. Tres gradientes ficam porque carregam funcao: a escala de gravidade da Generalizacao, as listras do upload ativo e a camada solida do aviso de duplicata. As bordas passam a `#EFEDE6`, `#E6E4DC` e `#D9D6CC`. O raio usa so tokens, com o novo `--radius-xl: 14px` para paineis. O `--text-muted` passa a `#5F6570` (5,3:1).
-- **Consequencias**: Um card mostra o limite pela borda de 1px e pelo branco sobre o bege. Nova sombra pede um novo ADR. O efeito de elevacao no hover (`--lift-*`) fica fora deste ADR.
+- **Consequencias**: Um card mostra o limite pela borda de 1px e pelo branco sobre o bege. Nova sombra pede um novo ADR.
+- **Atualizacao (redesign das telas de dados)**: `--lift-*` tambem vale `none`: nada sobe no hover. Texto sobre a cor de um estado usa `--success-text`, `--warning-text` e `--error-text`, porque `--success` (3,0:1) e `--warning` (1,9:1) falham no AA como texto. Tabelas tem cabecalho claro e so linhas horizontais.
 
 ## ADR-128: cabecalho em duas linhas com etapas numeradas
 
