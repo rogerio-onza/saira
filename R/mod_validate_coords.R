@@ -14,20 +14,20 @@ mod_validate_coords_ui <- function(id) {
     shiny::tagList(
         shiny::div(
             class = "container-fluid validate-coords-page",
-            shiny::uiOutput(ns("title")),
-            shiny::uiOutput(ns("subtitle")),
+            # One toolbar on top holds the column check, the run button and the
+            # fixes, so the map and the table get the full width (ADR-132).
             shiny::div(
-                class = "row g-4 validate-coords-layout",
+                class = "validate-coords-toolbar",
+                shiny::uiOutput(ns("action_card")),
+                shiny::uiOutput(ns("utm_panel")),
+                shiny::uiOutput(ns("transposed_panel")),
+                shiny::uiOutput(ns("swap_fill_panel")),
+                shiny::uiOutput(ns("country_panel"))
+            ),
+            shiny::div(
+                class = "validate-coords-layout",
                 shiny::div(
-                    class = "col-12 col-lg-2 validate-coords-left",
-                    shiny::uiOutput(ns("action_card")),
-                    shiny::uiOutput(ns("utm_panel")),
-                    shiny::uiOutput(ns("transposed_panel")),
-                    shiny::uiOutput(ns("swap_fill_panel")),
-                    shiny::uiOutput(ns("country_panel"))
-                ),
-                shiny::div(
-                    class = "col-12 col-lg-10 validate-coords-right",
+                    class = "validate-coords-right",
                     shiny::uiOutput(ns("pre_right_hint")),
                     shiny::uiOutput(ns("progress_panel")),
                     shiny::uiOutput(ns("filter_pills")),
@@ -54,6 +54,21 @@ mod_validate_coords_ui <- function(id) {
              });",
             ns("undo_edit")
         )))
+    )
+}
+
+#' One fix in the coordinates toolbar: icon, short label and action
+#'
+#' The full sentence and an example ride in the tooltip, so the fixes fit the
+#' toolbar row (ADR-132).
+#' @noRd
+coords_fix_chip <- function(applied, icon, label, detail, button) {
+    shiny::div(
+        class = paste("coords-transposed-card coords-fix-chip", if (applied) "is-applied" else ""),
+        title = detail,
+        ph_icon(if (applied) "circle-check" else icon),
+        shiny::span(class = "coords-transposed-title", label),
+        if (!applied) button
     )
 }
 
@@ -337,18 +352,6 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             identical(gate$status, "ok") && !isTRUE(rv$running) && !isTRUE(rv$starting)
         })
 
-        output$title <- shiny::renderUI({
-            shiny::h3(
-                ph_icon("map-marker-alt", class = "me-2"),
-                tr("validate_coords_title", lang_r()),
-                class = "text-mono mb-2"
-            )
-        })
-
-        output$subtitle <- shiny::renderUI({
-            shiny::p(tr("validate_coords_subtitle", lang_r()), class = "text-accent mb-4")
-        })
-
         output$action_card <- shiny::renderUI({
             gate <- quick_gate()
             is_busy <- isTRUE(rv$running) || isTRUE(rv$starting)
@@ -382,16 +385,10 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 ""
             )
 
-            bslib::card(
-                class = "validate-coords-card mb-3",
-                bslib::card_header(
-                    shiny::div(
-                        class = "validate-card-title",
-                        ph_icon("gear", class = "me-2"),
-                        tr("validate_coords_action_card_title", lang_r())
-                    )
-                ),
-                bslib::card_body(
+            shiny::div(
+                class = "coords-toolbar-config",
+                shiny::div(
+                    class = "coords-toolbar-config-row",
                     shiny::div(
                         class = "coords-gate-list",
                         shiny::div(
@@ -414,13 +411,13 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                         inputId = ns("validate"),
                         label = run_label,
                         icon = ph_icon(if (is_busy) "spinner" else "play", class = if (is_busy) "ph-spin" else ""),
-                        class = "btn-primary w-100",
+                        class = "btn-primary",
                         disabled = !isTRUE(can_run_validation())
-                    ),
-                    if (nzchar(helper_text)) {
-                        shiny::div(class = "validate-action-help mt-3", helper_text)
-                    }
-                )
+                    )
+                ),
+                if (nzchar(helper_text)) {
+                    shiny::div(class = "validate-action-help", helper_text)
+                }
             )
         })
 
@@ -551,34 +548,31 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 return(NULL)
             }
 
+            info_icon <- function(text) {
+                shiny::tags$span(
+                    class = "coords-map-legend-info", title = text, tabindex = "0",
+                    `aria-label` = text, ph_icon("circle-info")
+                )
+            }
             bslib::card(
-                class = "validate-coords-card mb-3 validate-coords-map-card",
-                bslib::card_header(
-                    shiny::div(class = "validate-card-title", ph_icon("earth-americas", class = "me-2"), tr("validate_coords_map_title", lang_r()))
-                ),
+                class = "validate-coords-card validate-coords-map-card",
+                `aria-label` = tr("validate_coords_map_title", lang_r()),
                 bslib::card_body(
-                    shiny::p(class = "coords-map-subtitle", tr("validate_coords_map_subtitle", lang_r())),
-                    shiny::div(class = "coords-map-container", leaflet::leafletOutput(ns("coords_map"), height = "560px")),
-                    shiny::uiOutput(ns("map_note")),
                     shiny::div(
+                        class = "coords-map-container",
+                        leaflet::leafletOutput(ns("coords_map"), height = "100%"),
+                        shiny::div(
                         class = "coords-map-legend",
                         shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-ok"), shiny::span(tr("validate_coords_map_legend_ok", lang_r()))),
                         shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-validity"), shiny::span(tr("validate_coords_map_legend_validity", lang_r()))),
                         shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-sea"), shiny::span(tr("validate_coords_map_legend_sea", lang_r()))),
                         shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-zero-equal"), shiny::span(tr("validate_coords_map_legend_zero_equal", lang_r()))),
-                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-reference"), shiny::span(tr("validate_coords_map_legend_reference", lang_r()))),
-                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-corrected"), shiny::span(tr("validate_coords_map_legend_corrected", lang_r())))
+                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-reference"), shiny::span(tr("validate_coords_map_legend_reference", lang_r())), info_icon(tr("validate_coords_map_legend_reference_note", lang_r()))),
+                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-corrected"), shiny::span(tr("validate_coords_map_legend_corrected", lang_r()))),
+                        info_icon(tr("validate_coords_sea_precision_note", lang_r()))
+                        )
                     ),
-                    shiny::div(
-                        class = "coords-reference-note",
-                        shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-reference coords-reference-note-dot"),
-                        tr("validate_coords_map_legend_reference_note", lang_r())
-                    ),
-                    shiny::div(
-                        class = "alert alert-warning coords-sea-precision-note mb-0 mt-2",
-                        ph_icon("triangle-exclamation", class = "me-1"),
-                        tr("validate_coords_sea_precision_note", lang_r())
-                    )
+                    shiny::uiOutput(ns("map_note"))
                 )
             )
         })
@@ -607,10 +601,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             }
 
             bslib::card(
-                class = "validate-coords-card mb-3 validate-coords-table-card",
-                bslib::card_header(
-                    shiny::div(class = "validate-card-title", ph_icon("table", class = "me-2"), tr("validate_coords_table_title", lang_r()))
-                ),
+                class = "validate-coords-card validate-coords-table-card",
+                `aria-label` = tr("validate_coords_table_title", lang_r()),
                 bslib::card_body(table_body)
             )
         })
@@ -1244,40 +1236,20 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             applied <- isTRUE(rv$transposed_applied)
             ex <- tbl[1, ]
 
-            shiny::div(
-                class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
-                shiny::div(
-                    class = "coords-transposed-head",
-                    ph_icon(if (applied) "circle-check" else "right-left"),
-                    shiny::span(
-                        class = "coords-transposed-title",
-                        if (applied) {
-                            sprintf(tr("validate_coords_transposed_applied", lang_r()), n)
-                        } else {
-                            sprintf(tr("validate_coords_transposed_found", lang_r()), n)
-                        }
-                    )
-                ),
-                # One compact, stacked example (fits the narrow left column).
-                shiny::div(
-                    class = "coords-transposed-example",
-                    shiny::div(class = "coords-transposed-ex-country", ex$country),
-                    shiny::div(sprintf("(%.2f, %.2f)", ex$lat_old, ex$lon_old)),
-                    shiny::div(class = "coords-transposed-ex-arrow",
-                               sprintf("\u2192 (%.2f, %.2f)", ex$decimalLatitude, ex$decimalLongitude))
-                ),
-                if (n > 1L) {
-                    shiny::p(class = "coords-transposed-more",
-                             sprintf(tr("validate_coords_transposed_more", lang_r()), n - 1L))
-                },
-                if (!applied) {
-                    shiny::actionButton(
-                        ns("apply_transposed"),
-                        tr("validate_coords_transposed_apply", lang_r()),
-                        icon = ph_icon("wand-magic-sparkles"),
-                        class = "btn btn-primary btn-sm w-100"
-                    )
-                }
+            lang <- lang_r()
+            detail <- paste0(
+                sprintf(tr(if (applied) "validate_coords_transposed_applied" else "validate_coords_transposed_found", lang), n),
+                " \u00b7 ", sprintf("%s (%.2f, %.2f) \u2192 (%.2f, %.2f)", ex$country, ex$lat_old, ex$lon_old, ex$decimalLatitude, ex$decimalLongitude),
+                if (n > 1L) paste0(" \u00b7 ", sprintf(tr("validate_coords_transposed_more", lang), n - 1L)) else ""
+            )
+            coords_fix_chip(
+                applied = applied, icon = "right-left", detail = detail,
+                label = sprintf(tr(if (applied) "validate_coords_transposed_short_applied" else "validate_coords_transposed_short", lang), n),
+                button = shiny::actionButton(
+                    ns("apply_transposed"), tr("validate_coords_fix_btn_transposed", lang),
+                    icon = ph_icon("wand-magic-sparkles"),
+                    class = "btn btn-primary btn-sm"
+                )
             )
         })
 
@@ -1423,7 +1395,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                             ns("apply_utm"),
                             tr("validate_coords_utm_apply", lang),
                             icon = ph_icon("wand-magic-sparkles"),
-                            class = "btn btn-primary btn-sm w-100"
+                            class = "btn btn-primary btn-sm"
                         )
                     )
                 }
@@ -1492,39 +1464,20 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             applied <- isTRUE(rv$swap_fill_applied)
             ex <- tbl[1, ]
 
-            shiny::div(
-                class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
-                shiny::div(
-                    class = "coords-transposed-head",
-                    ph_icon(if (applied) "circle-check" else "right-left"),
-                    shiny::span(
-                        class = "coords-transposed-title",
-                        if (applied) {
-                            sprintf(tr("validate_coords_swapfill_applied", lang_r()), n)
-                        } else {
-                            sprintf(tr("validate_coords_swapfill_found", lang_r()), n)
-                        }
-                    )
-                ),
-                shiny::div(
-                    class = "coords-transposed-example",
-                    shiny::div(sprintf("(%.2f, %.2f)", ex$lat_old, ex$lon_old)),
-                    shiny::div(class = "coords-transposed-ex-arrow",
-                               sprintf("\u2192 (%.2f, %.2f) \u00b7 %s",
-                                       ex$decimalLatitude, ex$decimalLongitude, ex$country))
-                ),
-                if (n > 1L) {
-                    shiny::p(class = "coords-transposed-more",
-                             sprintf(tr("validate_coords_transposed_more", lang_r()), n - 1L))
-                },
-                if (!applied) {
-                    shiny::actionButton(
-                        ns("apply_swap_fill"),
-                        tr("validate_coords_swapfill_apply", lang_r()),
-                        icon = ph_icon("wand-magic-sparkles"),
-                        class = "btn btn-primary btn-sm w-100"
-                    )
-                }
+            lang <- lang_r()
+            detail <- paste0(
+                sprintf(tr(if (applied) "validate_coords_swapfill_applied" else "validate_coords_swapfill_found", lang), n),
+                " \u00b7 ", sprintf("(%.2f, %.2f) \u2192 (%.2f, %.2f) %s", ex$lat_old, ex$lon_old, ex$decimalLatitude, ex$decimalLongitude, ex$country),
+                if (n > 1L) paste0(" \u00b7 ", sprintf(tr("validate_coords_transposed_more", lang), n - 1L)) else ""
+            )
+            coords_fix_chip(
+                applied = applied, icon = "right-left", detail = detail,
+                label = sprintf(tr(if (applied) "validate_coords_swapfill_short_applied" else "validate_coords_swapfill_short", lang), n),
+                button = shiny::actionButton(
+                    ns("apply_swap_fill"), tr("validate_coords_fix_btn_swapfill", lang),
+                    icon = ph_icon("wand-magic-sparkles"),
+                    class = "btn btn-primary btn-sm"
+                )
             )
         })
 
@@ -1551,37 +1504,20 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             applied <- isTRUE(rv$country_fill_applied)
             ex <- tbl[1, ]
 
-            shiny::div(
-                class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
-                shiny::div(
-                    class = "coords-transposed-head",
-                    ph_icon(if (applied) "circle-check" else "earth-americas"),
-                    shiny::span(
-                        class = "coords-transposed-title",
-                        if (applied) {
-                            sprintf(tr("validate_coords_country_filled", lang_r()), n)
-                        } else {
-                            sprintf(tr("validate_coords_country_found", lang_r()), n)
-                        }
-                    )
-                ),
-                shiny::div(
-                    class = "coords-transposed-example",
-                    shiny::div(sprintf("(%.2f, %.2f)", ex$lat, ex$lon)),
-                    shiny::div(class = "coords-transposed-ex-arrow", sprintf("\u2192 %s", ex$country))
-                ),
-                if (n > 1L) {
-                    shiny::p(class = "coords-transposed-more",
-                             sprintf(tr("validate_coords_transposed_more", lang_r()), n - 1L))
-                },
-                if (!applied) {
-                    shiny::actionButton(
-                        ns("apply_country_fill"),
-                        tr("validate_coords_country_apply", lang_r()),
-                        icon = ph_icon("wand-magic-sparkles"),
-                        class = "btn btn-primary btn-sm w-100"
-                    )
-                }
+            lang <- lang_r()
+            detail <- paste0(
+                sprintf(tr(if (applied) "validate_coords_country_filled" else "validate_coords_country_found", lang), n),
+                " \u00b7 ", sprintf("(%.2f, %.2f) \u2192 %s", ex$lat, ex$lon, ex$country),
+                if (n > 1L) paste0(" \u00b7 ", sprintf(tr("validate_coords_transposed_more", lang), n - 1L)) else ""
+            )
+            coords_fix_chip(
+                applied = applied, icon = "earth-americas", detail = detail,
+                label = sprintf(tr(if (applied) "validate_coords_country_short_applied" else "validate_coords_country_short", lang), n),
+                button = shiny::actionButton(
+                    ns("apply_country_fill"), tr("validate_coords_fix_btn_country", lang),
+                    icon = ph_icon("wand-magic-sparkles"),
+                    class = "btn btn-primary btn-sm"
+                )
             )
         })
 

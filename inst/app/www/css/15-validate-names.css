@@ -303,21 +303,90 @@
   padding-right: 0;
 }
 
-.validate-coords-layout {
-  align-items: flex-start;
+/* Top toolbar: column check, run button and fixes in one row (ADR-132). */
+/* No gap and no hiding of the empty outputs: Shiny never renders an output it
+   sees as hidden. Each piece spaces itself with a right margin instead. */
+.validate-coords-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  row-gap: var(--space-3);
+  margin-bottom: var(--space-3);
 }
 
-.validate-coords-left {
-  align-self: flex-start;
+.validate-coords-toolbar .coords-toolbar-config,
+.validate-coords-toolbar .coords-transposed-card {
+  margin-right: var(--space-3);
 }
 
-@media (min-width: 992px) {
-  .validate-coords-left {
-    position: sticky;
-    top: 1rem;
-    max-height: calc(100vh - 2rem);
-    overflow-y: auto;
-  }
+.coords-toolbar-config {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+.coords-toolbar-config-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.coords-toolbar-config .coords-gate-list {
+  flex-direction: row;
+  gap: var(--space-5);
+}
+
+.coords-toolbar-config .coords-gate-item {
+  padding: 0;
+  border-bottom: 0;
+  gap: var(--space-2);
+}
+
+.validate-coords-toolbar .coords-transposed-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  max-width: 36rem;
+  margin-bottom: 0;
+  padding: var(--space-2) var(--space-3);
+  border-color: var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+.validate-coords-toolbar .btn {
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.validate-coords-toolbar .coords-fix-chip {
+  flex-wrap: nowrap;
+  cursor: help;
+}
+
+.validate-coords-toolbar .coords-fix-chip .coords-transposed-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.validate-coords-toolbar .coords-transposed-head,
+.validate-coords-toolbar .coords-transposed-example,
+.validate-coords-toolbar .coords-transposed-more {
+  margin: 0;
+}
+
+.validate-coords-toolbar .coords-transposed-example {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
 }
 
 .validate-coords-card {
@@ -399,12 +468,6 @@
   color: var(--text-muted);
 }
 
-.coords-map-subtitle {
-  margin-bottom: var(--space-2);
-  font-size: var(--text-sm);
-  color: var(--accent);
-}
-
 /* Transposed-coordinate correction panel */
 .coords-transposed-card {
   border: 1px solid var(--border-light);
@@ -457,7 +520,12 @@
   margin-bottom: var(--space-2);
 }
 
+/* The map fills the height the toolbar and the filters leave, so the page
+   fits a 900px screen without scrolling (ADR-132). */
 .coords-map-container {
+  position: relative;
+  height: calc(100vh - var(--app-header-height) - 18.75rem);
+  min-height: 320px;
   border: 1px solid var(--border-light);
   border-radius: var(--radius);
   overflow: hidden;
@@ -465,8 +533,7 @@
 }
 
 .coords-map-container .leaflet-container {
-  height: 560px;
-  min-height: 280px;
+  height: 100%;
   width: 100%;
 }
 
@@ -492,11 +559,27 @@
   white-space: nowrap;
 }
 
+/* The legend sits over the map, bottom left, above the tiles. */
 .coords-map-legend {
+  position: absolute;
+  left: var(--space-3);
+  bottom: var(--space-3);
+  z-index: 800;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
-  margin-top: var(--space-3);
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  max-width: calc(100% - 8rem);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+}
+
+.coords-map-legend-info {
+  display: inline-flex;
+  color: var(--text-muted);
+  cursor: help;
 }
 
 .coords-map-legend-item {
@@ -537,20 +620,6 @@
 
 .coords-map-legend-dot-corrected {
   background: var(--coord-corrected);
-}
-
-.coords-reference-note {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: var(--text-xs, 0.75rem);
-  color: var(--text-muted);
-  margin-top: var(--space-2, 0.5rem);
-  line-height: var(--leading-normal);
-}
-
-.coords-reference-note-dot {
-  flex-shrink: 0;
 }
 
 .coords-cluster-note {

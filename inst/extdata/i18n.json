@@ -2927,6 +2927,42 @@
     "pt": "Possível inversão",
     "en": "Possible swap"
   },
+  "validate_coords_transposed_short": {
+    "pt": "%d transpostas",
+    "en": "%d transposed"
+  },
+  "validate_coords_transposed_short_applied": {
+    "pt": "%d transpostas corrigidas",
+    "en": "%d transposed, fixed"
+  },
+  "validate_coords_swapfill_short": {
+    "pt": "%d no mar sem país",
+    "en": "%d at sea, no country"
+  },
+  "validate_coords_swapfill_short_applied": {
+    "pt": "%d trocadas e preenchidas",
+    "en": "%d swapped and filled"
+  },
+  "validate_coords_country_short": {
+    "pt": "%d países faltando",
+    "en": "%d countries missing"
+  },
+  "validate_coords_country_short_applied": {
+    "pt": "%d países preenchidos",
+    "en": "%d countries filled"
+  },
+  "validate_coords_fix_btn_transposed": {
+    "pt": "Corrigir",
+    "en": "Fix"
+  },
+  "validate_coords_fix_btn_swapfill": {
+    "pt": "Trocar",
+    "en": "Swap"
+  },
+  "validate_coords_fix_btn_country": {
+    "pt": "Preencher",
+    "en": "Fill"
+  },
   "validate_coords_transposed_found": {
     "pt": "%d coordenada(s) transposta(s) detectada(s) e corrigível(eis)",
     "en": "%d transposed coordinate(s) detected and correctable"
