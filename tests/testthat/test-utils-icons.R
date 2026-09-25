@@ -1,7 +1,9 @@
 # Title: Tests for the Phosphor icon helpers
 
 phosphor_classes <- function(weight = "regular") {
-    css_path <- testthat::test_path("..", "..", "inst", "app", "www", "vendor", "phosphor", weight, "style.css")
+    # system.file() also resolves under R CMD check, where the tests run
+    # against the installed package and inst/ is not next to them.
+    css_path <- system.file("app", "www", "vendor", "phosphor", weight, "style.css", package = "saira")
     prefix <- if (identical(weight, "light")) "ph-light" else "ph"
     css <- readLines(css_path, warn = FALSE)
     m <- regmatches(css, regexpr(sprintf("^\\.%s\\.ph-[a-z0-9-]+(?=:before)", prefix), css, perl = TRUE))
@@ -16,6 +18,10 @@ testthat::test_that("every translated icon name exists in the vendored Phosphor 
 
 testthat::test_that("every literal icon name in the R sources resolves to a Phosphor icon", {
     r_dir <- testthat::test_path("..", "..", "R")
+    testthat::skip_if_not(
+        dir.exists(r_dir),
+        "R/ sources unavailable (running against an installed package)"
+    )
     src <- unlist(lapply(list.files(r_dir, pattern = "\\.R$", full.names = TRUE), readLines, warn = FALSE))
     literal <- unlist(regmatches(src, gregexpr("ph_icon(_name)?\\(\"[a-z0-9-]+\"", src)))
     literal <- sub("^ph_icon(_name)?\\(\"", "", sub("\"$", "", literal))
