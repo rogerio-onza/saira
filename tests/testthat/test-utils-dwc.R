@@ -493,7 +493,7 @@ testthat::test_that("Portuguese term definitions keep their accents", {
     )
     pattern <- paste0("\\b(", paste(unaccented, collapse = "|"), ")\\b")
     for (file in c("dwc_terms.rds", "dwc_full_catalog.rds")) {
-        terms <- readRDS(testthat::test_path("..", "..", "inst", "extdata", file))
+        terms <- readRDS(system.file("extdata", file, package = "saira"))
         hits <- terms$term[grepl(pattern, tolower(terms$definition_pt))]
         testthat::expect_identical(hits, character(0), info = file)
     }
