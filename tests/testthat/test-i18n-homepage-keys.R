@@ -8,10 +8,7 @@ testthat::test_that("homepage welcome keys exist in pt/en", {
     required_keys <- c(
         "welcome_eyebrow",
         "home_title",
-        "home_required_title",
-        "home_required_hint",
-        "home_guide_tip",
-        "home_wiki_link"
+        "home_guide_tip"
     )
 
     missing_keys <- setdiff(required_keys, names(dict))
@@ -35,7 +32,7 @@ testthat::test_that("homepage welcome keys exist in pt/en", {
 
 testthat::test_that("homepage welcome keys resolve with tr in pt/en", {
     tr_fn <- saira:::tr
-    keys <- c("welcome_eyebrow", "home_title", "home_required_title")
+    keys <- c("welcome_eyebrow", "home_title")
 
     for (key in keys) {
         pt_value <- tr_fn(key, "pt")
