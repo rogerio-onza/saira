@@ -1663,16 +1663,46 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         shiny::observeEvent(input$import_template, {
             shiny::showModal(shiny::modalDialog(
                 title = tr("modal_import_template_title", lang_r()),
-                shiny::p(
-                    class = "mb-3",
-                    tr("modal_import_template_help", lang_r())
-                ),
-                shiny::fileInput(
-                    inputId = ns("import_template_file"),
-                    label = tr("modal_import_template_label", lang_r()),
-                    accept = c(".txt", "text/plain"),
-                    buttonLabel = ph_icon("upload"),
-                    placeholder = ""
+                # Same dropzone and progress row as the Home upload
+                # (upload-dropzone.js binds any .upload-dropzone).
+                shiny::div(
+                    class = "import-template-modal",
+                    shiny::p(
+                        class = "import-template-help",
+                        tr("modal_import_template_help", lang_r())
+                    ),
+                    shiny::div(
+                        class = "upload-section",
+                        shiny::div(
+                            class = "upload-dropzone import-template-dropzone",
+                            shiny::div(
+                                class = "upload-dropzone-copy",
+                                ph_icon("file-import", class = "upload-dropzone-icon", weight = "light"),
+                                shiny::div(
+                                    class = "upload-dropzone-hint upload-dropzone-when-empty",
+                                    tr("modal_import_template_dropzone_hint", lang_r())
+                                ),
+                                shiny::div(class = "upload-dropzone-filename upload-dropzone-when-file"),
+                                shiny::div(
+                                    class = "upload-dropzone-max-size upload-dropzone-when-file",
+                                    tr("modal_import_template_replace_hint", lang_r())
+                                )
+                            )
+                        ),
+                        shiny::div(
+                            class = "upload-native-input",
+                            shiny::fileInput(
+                                inputId = ns("import_template_file"),
+                                label = shiny::tags$span(
+                                    tr("modal_import_template_label", lang_r()),
+                                    class = "visually-hidden"
+                                ),
+                                accept = c(".txt", "text/plain"),
+                                buttonLabel = ph_icon("upload"),
+                                placeholder = ""
+                            )
+                        )
+                    )
                 ),
                 footer = shiny::tagList(
                     shiny::modalButton(tr("btn_cancel", lang_r())),
@@ -1795,7 +1825,19 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             )
 
             n_terms <- length(plan$applied_terms)
-            msg <- sprintf(tr("modal_import_template_restored", lang_r()), n_terms)
+            msg <- if (n_terms == 0L) {
+                tr("modal_import_template_none_applied", lang_r())
+            } else {
+                sprintf(tr("modal_import_template_restored", lang_r()), n_terms)
+            }
+            # Green only when every template column was found.
+            notif_type <- if (n_terms == 0L) {
+                "error"
+            } else if (length(plan$missing_columns) > 0L) {
+                "warning"
+            } else {
+                "message"
+            }
             if (length(plan$missing_columns) > 0L) {
                 msg <- paste0(msg, " ", sprintf(
                     tr("modal_import_template_missing_cols", lang_r()),
@@ -1811,7 +1853,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             session$onFlushed(function() {
                 hide_mapping_loading_modal(session)
                 shiny::showNotification(
-                    msg, type = "message", duration = 10, session = session
+                    msg, type = notif_type, duration = 10, session = session
                 )
             }, once = TRUE)
             handed_to_flush <- TRUE

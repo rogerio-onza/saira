@@ -42,6 +42,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Count alias and template matches in the auto-map notice and drop the internal "V1" label
 - **occurrenceStatus:** Restore the accents of the Portuguese definition
 - **coords:** Speed up the sea check on large datasets, with the same result
+- **mapping:** Show a template import that matched no column as an error, and a partial match as a warning
+- **ui:** Make links inside alert boxes readable
+- **mapping:** Give the template import modal the Home dropzone and a readable progress bar
 - **mapping:** Speed up automatic mapping when many terms share the same column
 - **site:** Drop the removed Profile selector from the coordinate tutorial, in PT and EN
 - **names:** Keep the report counts readable when the table is tall

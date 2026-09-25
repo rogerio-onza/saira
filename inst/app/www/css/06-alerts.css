@@ -16,6 +16,13 @@
   font-weight: var(--weight-regular);
 }
 
+/* Bootstrap paints links in the theme primary (#38CFF6), which disappears on
+   every alert tint. The link takes the alert's AA text color instead. */
+.alert a:not(.btn) {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .alert-success {
   background-color: var(--success-bg);
   color: var(--success-text);
