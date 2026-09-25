@@ -19,10 +19,6 @@
     "pt": "Início",
     "en": "Home"
   },
-  "nav_upload": {
-    "pt": "Upload",
-    "en": "Upload"
-  },
   "nav_mapping": {
     "pt": "Mapeamento",
     "en": "Mapping"
@@ -47,41 +43,9 @@
     "pt": "Exportação",
     "en": "Export"
   },
-  "export_title": {
-    "pt": "Revisão para publicação",
-    "en": "Review before publishing"
-  },
-  "export_subtitle": {
-    "pt": "Confira o que foi corrigido, quais espécies serão generalizadas e quais arquivos serão exportados antes de baixar o pacote.",
-    "en": "Check what was corrected, which species will be generalized and which files the bundle will contain before you download it."
-  },
   "export_empty": {
     "pt": "Mapeie seus dados primeiro — o resumo de exportação aparece quando houver dados mapeados.",
     "en": "Map your data first — the export summary appears once there is mapped data."
-  },
-  "export_section_readiness": {
-    "pt": "Prontidão para exportar",
-    "en": "Export readiness"
-  },
-  "export_section_corrections": {
-    "pt": "Correções aplicadas",
-    "en": "Applied corrections"
-  },
-  "export_names_corrected": {
-    "pt": "Nomes corrigidos",
-    "en": "Names corrected"
-  },
-  "export_names_confirmed": {
-    "pt": "Nomes confirmados",
-    "en": "Names confirmed"
-  },
-  "export_coord_fixes": {
-    "pt": "Coordenadas corrigidas",
-    "en": "Coordinates fixed"
-  },
-  "export_country_fills": {
-    "pt": "Países preenchidos",
-    "en": "Countries filled"
   },
   "export_section_generalization": {
     "pt": "Espécies generalizadas",
@@ -98,10 +62,6 @@
   "export_gen_tier": {
     "pt": "Generalização",
     "en": "Generalization"
-  },
-  "export_gen_none": {
-    "pt": "Nenhuma espécie será generalizada — as coordenadas serão publicadas como estão.",
-    "en": "No species will be generalized — coordinates will be published as held."
   },
   "export_tier_extreme": {
     "pt": "País (~111 km)",
@@ -123,10 +83,6 @@
     "pt": "Pacote",
     "en": "Package"
   },
-  "export_files_hint": {
-    "pt": "O download gera um .zip com estes arquivos:",
-    "en": "The download produces a .zip with these files:"
-  },
   "export_section_files_dwca": {
     "pt": "Darwin Core Archive (IPT)",
     "en": "Darwin Core Archive (IPT)"
@@ -138,10 +94,6 @@
   "export_download_zip": {
     "pt": "Baixar Pacote .ZIP",
     "en": "Download .ZIP Bundle"
-  },
-  "export_counts": {
-    "pt": "%d registros · %d termos DwC",
-    "en": "%d records · %d DwC terms"
   },
   "export_fix_terms_cta": {
     "pt": "Corrigir termos faltantes",
@@ -235,14 +187,6 @@
     "pt": "Pronto para baixar",
     "en": "Ready to download"
   },
-  "export_ready_title": {
-    "pt": "Pronto para exportar",
-    "en": "Ready to export"
-  },
-  "export_blocked_title": {
-    "pt": "Exportação bloqueada",
-    "en": "Export blocked"
-  },
   "export_blocked_missing": {
     "pt": "Termos obrigatórios faltando:",
     "en": "Required terms missing:"
@@ -254,10 +198,6 @@
   "export_blocked_bor_blank": {
     "pt": "basisOfRecord vazio em %d registro(s): há valores sem termo DwC. Converta-os no assistente do card basisOfRecord.",
     "en": "basisOfRecord is empty in %d record(s): some values have no DwC term. Convert them with the assistant on the basisOfRecord card."
-  },
-  "export_warn_title": {
-    "pt": "Atenção",
-    "en": "Heads up"
   },
   "export_date_range_title": {
     "pt": "Datas com ano fora do intervalo esperado",
@@ -291,10 +231,6 @@
     "pt": "Ajuda",
     "en": "Help"
   },
-  "lang_select": {
-    "pt": "Idioma",
-    "en": "Language"
-  },
   "lang_pt": {
     "pt": "Português",
     "en": "Portuguese"
@@ -306,22 +242,6 @@
   "a11y_lang_switch_label": {
     "pt": "Selecionar idioma da interface",
     "en": "Select interface language"
-  },
-  "upload_title": {
-    "pt": "Carregar Dados",
-    "en": "Upload Data"
-  },
-  "upload_subtitle": {
-    "pt": "Selecione um arquivo CSV ou TSV com seus dados de biodiversidade",
-    "en": "Select a CSV or TSV file with your biodiversity data"
-  },
-  "upload_button": {
-    "pt": "Selecionar arquivo CSV ou TSV",
-    "en": "Select CSV or TSV file"
-  },
-  "upload_success": {
-    "pt": "Arquivo carregado com sucesso!",
-    "en": "File uploaded successfully!"
   },
   "upload_stats_rows": {
     "pt": "Registros",
@@ -339,53 +259,17 @@
     "pt": "Mapeamento de Colunas",
     "en": "Column Mapping"
   },
-  "mapping_subtitle": {
-    "pt": "Associe suas colunas aos termos Darwin Core",
-    "en": "Map your columns to Darwin Core terms"
-  },
-  "mapping_source": {
-    "pt": "Coluna Original",
-    "en": "Source Column"
-  },
-  "mapping_target": {
-    "pt": "Termo DwC",
-    "en": "DwC Term"
-  },
-  "mapping_auto": {
-    "pt": "Auto-mapear",
-    "en": "Auto-map"
-  },
-  "mapping_clear": {
-    "pt": "Limpar",
-    "en": "Clear"
-  },
-  "mapping_unmapped": {
-    "pt": "-- Não mapeado --",
-    "en": "-- Not mapped --"
-  },
   "mapping_dup_source_warning": {
     "pt": "Mesma coluna em mais de um termo Darwin Core — confira se é intencional:",
     "en": "Same source column in more than one Darwin Core term — check it's intentional:"
-  },
-  "mapping_sidebar_title": {
-    "pt": "Ferramentas",
-    "en": "Tools"
   },
   "mapping_sidebar_actions": {
     "pt": "Ações",
     "en": "Actions"
   },
-  "mapping_sidebar_filters": {
-    "pt": "Filtros",
-    "en": "Filters"
-  },
   "mapping_required": {
     "pt": "Obrigatório",
     "en": "Required"
-  },
-  "mapping_optional": {
-    "pt": "Opcional",
-    "en": "Optional"
   },
   "btn_auto_mapping": {
     "pt": "Auto-mapear",
@@ -411,18 +295,6 @@
     "pt": "Pendentes",
     "en": "Pending"
   },
-  "filter_mapped_only": {
-    "pt": "Mostrar apenas mapeados",
-    "en": "Show mapped only"
-  },
-  "filter_categories": {
-    "pt": "Filtrar por categoria",
-    "en": "Filter by category"
-  },
-  "filter_select_all": {
-    "pt": "Selecionar todos",
-    "en": "Select all"
-  },
   "mapping_card_sample_prefix": {
     "pt": "ex.:",
     "en": "e.g.:"
@@ -430,14 +302,6 @@
   "mapping_card_sample_empty": {
     "pt": "coluna mapeada, sem valores nas primeiras 200 linhas",
     "en": "column mapped, no values in the first 200 rows"
-  },
-  "toggle_automap_v1_label": {
-    "pt": "Rostrum (beta)",
-    "en": "Rostrum (beta)"
-  },
-  "toggle_automap_v1_help": {
-    "pt": "Motor proprietário para mapear colunas da planilha aos termos DwC.",
-    "en": "Proprietary engine to map spreadsheet columns to DwC terms."
   },
   "est_degree_card_hint": {
     "pt": "Preenchido junto com establishmentMeans.",
@@ -591,10 +455,6 @@
     "pt": "Linhas não mapeadas (valor bruto não vazio): %s",
     "en": "Unmapped rows (non-empty raw value): %s"
   },
-  "bor_assistant_page": {
-    "pt": "Página %s de %s",
-    "en": "Page %s of %s"
-  },
   "bor_assistant_prev": {
     "pt": "Anterior",
     "en": "Previous"
@@ -610,70 +470,6 @@
   "bor_assistant_open_error": {
     "pt": "Falha ao abrir o assistente basisOfRecord: %s",
     "en": "Failed to open basisOfRecord assistant: %s"
-  },
-  "bor_vocab_preservedspecimen": {
-    "pt": "Espécime Preservado",
-    "en": "Preserved Specimen"
-  },
-  "bor_vocab_fossilspecimen": {
-    "pt": "Espécime Fóssil",
-    "en": "Fossil Specimen"
-  },
-  "bor_vocab_livingspecimen": {
-    "pt": "Espécime Vivo",
-    "en": "Living Specimen"
-  },
-  "bor_vocab_humanobservation": {
-    "pt": "Observação por Humano",
-    "en": "Human Observation"
-  },
-  "bor_vocab_machineobservation": {
-    "pt": "Observação por Máquina",
-    "en": "Machine Observation"
-  },
-  "bor_vocab_materialsample": {
-    "pt": "Amostra",
-    "en": "Material Sample"
-  },
-  "bor_vocab_materialcitation": {
-    "pt": "Citação de Material",
-    "en": "Material Citation"
-  },
-  "bor_vocab_occurrence": {
-    "pt": "Ocorrência",
-    "en": "Occurrence"
-  },
-  "bor_desc_preservedspecimen": {
-    "pt": "Espécime preservado em coleção biológica.",
-    "en": "Specimen preserved in a biological collection."
-  },
-  "bor_desc_fossilspecimen": {
-    "pt": "Espécime preservado que é fóssil.",
-    "en": "Preserved specimen that is a fossil."
-  },
-  "bor_desc_livingspecimen": {
-    "pt": "Espécime atualmente vivo.",
-    "en": "Specimen that is currently alive."
-  },
-  "bor_desc_humanobservation": {
-    "pt": "Observação direta realizada por pessoa.",
-    "en": "Direct observation performed by a person."
-  },
-  "bor_desc_machineobservation": {
-    "pt": "Observação gerada por câmera, sensor ou gravador.",
-    "en": "Observation produced by camera, sensor, or recorder."
-  },
-  "bor_desc_materialsample": {
-    "pt": "Resultado físico obtido em evento de amostragem.",
-    "en": "Physical result obtained from a sampling event."
-  },
-  "bor_desc_materialcitation": {
-    "pt": "Referência a material citado em publicações.",
-    "en": "Reference to material cited in publications."
-  },
-  "bor_desc_occurrence": {
-    "pt": "Registro de existência de organismo em lugar e tempo.",
-    "en": "Record of organism existence at place and time."
   },
   "loading_automap_title": {
     "pt": "Rostrum em andamento",
@@ -746,14 +542,6 @@
   "upload_csv_to_start": {
     "pt": "Faça upload de um CSV para começar",
     "en": "Upload a CSV to start"
-  },
-  "uuid_auto_generated": {
-    "pt": "UUID será gerado automaticamente",
-    "en": "UUID will be auto-generated"
-  },
-  "occurrence_id_preserved": {
-    "pt": "IDs de ocorrência existentes preservados; linhas em branco recebem um UUID",
-    "en": "Existing occurrence IDs preserved; blank rows get a UUID"
   },
   "occurrence_id_status_preserved": {
     "pt": "%d de %d identificadores vieram do seu dado e serão preservados.",
@@ -835,10 +623,6 @@
     "pt": "Esse arquivo não é um modelo Saíra (cabeçalho '# saira:mapping:v1' ausente).",
     "en": "This file is not a Saíra template (missing '# saira:mapping:v1' header)."
   },
-  "modal_import_template_success": {
-    "pt": "%d alias(es) salvo(s) no Rostrum local. Próximas planilhas com colunas de mesmo nome serão auto-mapeadas.",
-    "en": "%d alias(es) saved to local Rostrum. Future spreadsheets with the same column names will auto-map."
-  },
   "modal_import_template_restored": {
     "pt": "Mapeamento restaurado: %d termo(s) aplicado(s) a partir do modelo.",
     "en": "Mapping restored: %d term(s) applied from the template."
@@ -899,29 +683,9 @@
     "pt": "%s valor(es) de data com ano fora de %s-%s. Confira antes de exportar.",
     "en": "%s date value(s) carry a year outside %s-%s. Check them before exporting."
   },
-  "badge_auto": {
-    "pt": "AUTO",
-    "en": "AUTO"
-  },
-  "badge_suggested": {
-    "pt": "SUGERIDO",
-    "en": "SUGGESTED"
-  },
   "badge_edited": {
     "pt": "EDITADO",
     "en": "EDITED"
-  },
-  "badge_manual": {
-    "pt": "MANUAL",
-    "en": "MANUAL"
-  },
-  "badge_reason_exact_match": {
-    "pt": "Match exato",
-    "en": "Exact match"
-  },
-  "badge_reason_known_synonym": {
-    "pt": "Sinônimo conhecido",
-    "en": "Known synonym"
   },
   "badge_reason_content_validated": {
     "pt": "Validado por conteúdo",
@@ -942,10 +706,6 @@
   "badge_reason_temporal_manual_only": {
     "pt": "Termo temporal mantido manual",
     "en": "Temporal term kept manual"
-  },
-  "badge_reason_conflict_lost": {
-    "pt": "Conflito com candidato mais forte",
-    "en": "Conflict lost to stronger candidate"
   },
   "badge_reason_empty_column": {
     "pt": "Coluna sem valores",
@@ -1035,22 +795,6 @@
     "pt": "TEMPLATE",
     "en": "TEMPLATE"
   },
-  "rostrum_explain_name_score": {
-    "pt": "Score de nome",
-    "en": "Name score"
-  },
-  "rostrum_explain_value_score": {
-    "pt": "Score de conte\u00fado",
-    "en": "Value score"
-  },
-  "rostrum_explain_penalty": {
-    "pt": "Penalidade",
-    "en": "Penalty"
-  },
-  "rostrum_explain_alternatives": {
-    "pt": "Alternativas",
-    "en": "Alternatives"
-  },
   "rostrum_ambiguity_title": {
     "pt": "Resolver ambiguidade: %s",
     "en": "Resolve ambiguity: %s"
@@ -1079,22 +823,6 @@
     "pt": "Stage 3 falhou. Resultados anteriores foram preservados.",
     "en": "Stage 3 failed. Previous stage results were preserved."
   },
-  "rostrum_reason_composed_scientific_name": {
-    "pt": "Composto de G\u00eanero e Ep\u00edteto",
-    "en": "Composed from Genus and Specific Epithet"
-  },
-  "rostrum_reason_composed_eventdate_ymd": {
-    "pt": "Data composta (Ano-M\u00eas-Dia)",
-    "en": "Composed date (Year-Month-Day)"
-  },
-  "rostrum_reason_composed_eventdate_partial": {
-    "pt": "Data parcial composta",
-    "en": "Partial composed date"
-  },
-  "rostrum_reason_fallback_verbatim_from_primary": {
-    "pt": "Fallback verbatim do termo principal",
-    "en": "Verbatim fallback from primary term"
-  },
   "field_or_type_value": {
     "pt": "Ou digite/cole um valor fixo:",
     "en": "Or type/paste a fixed value:"
@@ -1114,10 +842,6 @@
   "field_choose_language": {
     "pt": "Escolha o idioma dos dados:",
     "en": "Choose the data language:"
-  },
-  "field_map_column": {
-    "pt": "Mapear coluna do CSV:",
-    "en": "Map CSV column:"
   },
   "mapping_dataset_placeholder": {
     "pt": "Ex: Meu Dataset de Biodiversidade",
@@ -1178,46 +902,6 @@
   "preview_subtitle": {
     "pt": "Visualize os primeiros 100 registros mapeados",
     "en": "View the first 100 mapped records"
-  },
-  "preview_stats_total_rows": {
-    "pt": "Registros",
-    "en": "Records"
-  },
-  "preview_stats_with_coords": {
-    "pt": "Com Coordenadas",
-    "en": "With Coordinates"
-  },
-  "preview_stats_with_date": {
-    "pt": "Com Data",
-    "en": "With Date"
-  },
-  "preview_stats_unique_ids": {
-    "pt": "IDs Únicos",
-    "en": "Unique IDs"
-  },
-  "preview_stats_duplicates": {
-    "pt": "%s duplicatas",
-    "en": "%s duplicates"
-  },
-  "preview_readiness_title": {
-    "pt": "Campos obrigatórios",
-    "en": "Required fields"
-  },
-  "preview_readiness_present": {
-    "pt": "presente",
-    "en": "present"
-  },
-  "preview_readiness_missing": {
-    "pt": "ausente",
-    "en": "missing"
-  },
-  "preview_download": {
-    "pt": "Baixar CSV Completo",
-    "en": "Download Complete CSV"
-  },
-  "preview_exporting": {
-    "pt": "Exportando dados...",
-    "en": "Exporting data..."
   },
   "preview_download_validation_title": {
     "pt": "Não foi possível iniciar o download",
@@ -1399,18 +1083,6 @@
     "pt": "Anterior",
     "en": "Previous"
   },
-  "validate_names_title": {
-    "pt": "Validação Taxonômica",
-    "en": "Taxonomic Validation"
-  },
-  "validate_names_subtitle": {
-    "pt": "Verifique se os nomes científicos estão corretos",
-    "en": "Check if scientific names are correct"
-  },
-  "validate_names_providers": {
-    "pt": "Provedores (ordem = prioridade)",
-    "en": "Providers (order = priority)"
-  },
   "validate_names_providers_card_title": {
     "pt": "Provedores de Dados",
     "en": "Data Providers"
@@ -1439,21 +1111,9 @@
     "pt": "Cobertura global para nomes taxon\u00f4micos e sin\u00f4nimos.",
     "en": "Global coverage for taxonomic names and synonyms."
   },
-  "validate_names_br_downloading": {
-    "pt": "Baixando dados de %s...",
-    "en": "Downloading %s data..."
-  },
-  "validate_names_br_download_failed": {
-    "pt": "Falha ao baixar dados de %s.",
-    "en": "Failed to download %s data."
-  },
   "validate_names_br_not_installed": {
     "pt": "Pacote '%s' n\u00e3o est\u00e1 instalado.",
     "en": "Package '%s' is not installed."
-  },
-  "validate_names_cascade_br_notice": {
-    "pt": "Provedores brasileiros consultados primeiro. Nomes n\u00e3o encontrados v\u00e3o automaticamente para GBIF.",
-    "en": "Brazilian providers queried first. Names not found go automatically to GBIF."
   },
   "validate_names_provider_always_on": {
     "pt": "Sempre ativo",
@@ -1483,14 +1143,6 @@
     "pt": "Falha ao atualizar %s em background.",
     "en": "%s background update failed."
   },
-  "validate_names_providers_placeholder": {
-    "pt": "Selecione um ou mais provedores",
-    "en": "Select one or more providers"
-  },
-  "validate_names_priority_reset_notice": {
-    "pt": "Clique em um card selecionado para remover e clique novamente para recolocar no fim da fila de prioridade.",
-    "en": "Click a selected card to remove it, then click again to append it at the end of the priority queue."
-  },
   "validate_names_options_card_title": {
     "pt": "Opções de Validação",
     "en": "Validation Options"
@@ -1499,29 +1151,9 @@
     "pt": "Remover autores",
     "en": "Remove authors"
   },
-  "validate_names_remove_authors_desc": {
-    "pt": "Remove autoria e ano para melhorar comparação entre provedores.",
-    "en": "Removes authorship and year to improve cross-provider matching."
-  },
   "validate_names_ignore_qualifiers": {
     "pt": "Ignorar sp., cf., aff., nr.",
     "en": "Ignore sp., cf., aff., nr."
-  },
-  "validate_names_ignore_qualifiers_desc": {
-    "pt": "Ignora qualificadores não taxonômicos durante a normalização.",
-    "en": "Ignores non-taxonomic qualifiers during normalization."
-  },
-  "validate_names_download_notice": {
-    "pt": "O banco do provedor será baixado automaticamente no primeiro uso.",
-    "en": "Provider databases are downloaded automatically on first use."
-  },
-  "validate_names_priority_notice": {
-    "pt": "O primeiro provedor que retornar resultado ser\u00e1 usado como veredito.",
-    "en": "The first provider with a match defines the verdict."
-  },
-  "validate_names_run": {
-    "pt": "Validar Nomes",
-    "en": "Validate Names"
   },
   "validate_names_run_cta": {
     "pt": "Validar Nomes",
@@ -1543,34 +1175,6 @@
     "pt": "Validação cancelada. Os nomes restantes foram marcados como não encontrados.",
     "en": "Validation cancelled. Remaining names were marked as not found."
   },
-  "validate_names_action_card_title": {
-    "pt": "Ação",
-    "en": "Action"
-  },
-  "validate_names_action_metric_providers": {
-    "pt": "Provedores selecionados",
-    "en": "Selected providers"
-  },
-  "validate_names_action_metric_unique": {
-    "pt": "Nomes únicos",
-    "en": "Unique names"
-  },
-  "validate_names_action_metric_options": {
-    "pt": "Opções ativas",
-    "en": "Active options"
-  },
-  "validate_names_action_ready": {
-    "pt": "Pronto para iniciar validação incremental por lotes.",
-    "en": "Ready to start incremental batch validation."
-  },
-  "validate_names_ready_hint_title": {
-    "pt": "Pronto para validar",
-    "en": "Ready to validate"
-  },
-  "validate_names_ready_hint_body": {
-    "pt": "Selecione os provedores, configure as opções e clique em Validar Nomes. Os resultados aparecerão aqui em tempo real.",
-    "en": "Select providers, configure options, and click Validate Names. Results will appear here in real time."
-  },
   "validate_names_no_data": {
     "pt": "Carregue e mapeie dados antes de validar.",
     "en": "No mapped data available for validation."
@@ -1583,49 +1187,9 @@
     "pt": "erro desconhecido",
     "en": "unknown error"
   },
-  "validate_names_progress_title": {
-    "pt": "Progresso da Validação",
-    "en": "Validation Progress"
-  },
   "validate_names_progress_status_running": {
     "pt": "Executando",
     "en": "Running"
-  },
-  "validate_names_progress_status_cancelled": {
-    "pt": "Cancelado",
-    "en": "Cancelled"
-  },
-  "validate_names_progress_status_failed": {
-    "pt": "Falhou",
-    "en": "Failed"
-  },
-  "validate_names_progress_status_done": {
-    "pt": "Concluído",
-    "en": "Done"
-  },
-  "validate_names_progress_counter": {
-    "pt": "%d de %d nomes únicos resolvidos",
-    "en": "%d of %d unique names resolved"
-  },
-  "validate_names_progress_phase_label": {
-    "pt": "Fase",
-    "en": "Phase"
-  },
-  "validate_names_progress_provider_label": {
-    "pt": "Provedor",
-    "en": "Provider"
-  },
-  "validate_names_progress_batch_label": {
-    "pt": "Lote",
-    "en": "Batch"
-  },
-  "validate_names_progress_meta_line1": {
-    "pt": "Fase: %s | Lote %s",
-    "en": "Phase: %s | Batch %s"
-  },
-  "validate_names_progress_meta_line2": {
-    "pt": "Provedor: %s | %d de %d nomes",
-    "en": "Provider: %s | %d of %d names"
   },
   "validate_names_progress_phase_prepare": {
     "pt": "Preparando nomes",
@@ -1655,17 +1219,9 @@
     "pt": "Falha na validação",
     "en": "Validation failed"
   },
-  "validate_names_provider_failed_stream_title": {
-    "pt": "Falhas de provedor",
-    "en": "Provider failures"
-  },
   "validate_names_provider_failed_stream_item": {
     "pt": "%s falhou após %d nomes (%s).",
     "en": "%s failed after %d names (%s)."
-  },
-  "validate_names_stream_title": {
-    "pt": "Nomes Processados",
-    "en": "Processed Names Stream"
   },
   "validate_names_stream_panel_title": {
     "pt": "Nomes Processados",
@@ -1703,10 +1259,6 @@
     "pt": "Sinônimos",
     "en": "Synonyms"
   },
-  "validate_names_stream_filter_ignored": {
-    "pt": "Ignorados",
-    "en": "Ignored"
-  },
   "validate_names_stream_filter_invasive": {
     "pt": "Invasoras",
     "en": "Invasive"
@@ -1714,10 +1266,6 @@
   "validate_names_stream_filter_accepted": {
     "pt": "Aceitos",
     "en": "Accepted"
-  },
-  "validate_names_stream_window_note": {
-    "pt": "Mostrando %d itens recentes (janela máxima de %d).",
-    "en": "Showing %d recent items (window capped at %d)."
   },
   "validate_names_stream_status_accepted": {
     "pt": "Aceito",
@@ -1738,38 +1286,6 @@
   "validate_names_stream_status_not_found": {
     "pt": "Não encontrado",
     "en": "Not found"
-  },
-  "validate_names_loading_title": {
-    "pt": "Validação taxonômica em andamento",
-    "en": "Taxonomic validation in progress"
-  },
-  "validate_names_loading_status": {
-    "pt": "Validando nomes... %s%%",
-    "en": "Validating names... %s%%"
-  },
-  "validate_names_loading_phase_prepare": {
-    "pt": "Preparando nomes e removendo duplicatas.",
-    "en": "Preparing names and removing duplicates."
-  },
-  "validate_names_loading_phase_provider": {
-    "pt": "Consultando provedor: %s",
-    "en": "Querying provider: %s"
-  },
-  "validate_names_loading_phase_consolidate": {
-    "pt": "Consolidando resultados taxonômicos.",
-    "en": "Consolidating taxonomic results."
-  },
-  "validate_names_loading_phase_finalize": {
-    "pt": "Finalizando validação.",
-    "en": "Finalizing validation."
-  },
-  "validate_names_loading_phase_done": {
-    "pt": "Validação concluída.",
-    "en": "Validation completed."
-  },
-  "validate_names_loading_phase_failed": {
-    "pt": "Falha durante validação.",
-    "en": "Validation failed."
   },
   "validate_names_loading_provider_unknown": {
     "pt": "Provedor",
@@ -1803,34 +1319,6 @@
     "pt": "Status IUCN (GBIF) será consultado para %d registro(s) no export.",
     "en": "IUCN (GBIF) conservation status will be looked up for %d record(s) on export."
   },
-  "validate_names_accepted": {
-    "pt": "Aceitos",
-    "en": "Accepted"
-  },
-  "validate_names_synonym": {
-    "pt": "Sinônimos",
-    "en": "Synonyms"
-  },
-  "validate_names_not_found": {
-    "pt": "Não encontrados",
-    "en": "Not found"
-  },
-  "validate_names_ambiguous": {
-    "pt": "Ambíguos / Não resolvidos",
-    "en": "Ambiguous / Unresolved"
-  },
-  "validate_names_invalid_ignored": {
-    "pt": "Inválidos / Ignorados",
-    "en": "Invalid / Ignored"
-  },
-  "validate_names_total": {
-    "pt": "Total: %d nomes únicos",
-    "en": "Total: %d unique names"
-  },
-  "validate_names_download_report": {
-    "pt": "Baixar relatório",
-    "en": "Download report"
-  },
   "validate_names_missing_scientific_name": {
     "pt": "Coluna 'scientificName' não encontrada. Mapeie primeiro.",
     "en": "'scientificName' column not found. Map it first."
@@ -1842,26 +1330,6 @@
   "validate_names_failed": {
     "pt": "Falha ao validar nomes: %s",
     "en": "Failed to validate names: %s"
-  },
-  "validate_names_unique_notice": {
-    "pt": "Relatório consolidado por nomes científicos únicos.",
-    "en": "Report consolidated by unique scientific names."
-  },
-  "validate_names_provider_used_summary": {
-    "pt": "Provedores consultados: %s",
-    "en": "Providers queried: %s"
-  },
-  "validate_names_provider_none_summary": {
-    "pt": "Nenhum provedor foi consultado (sem nomes válidos após limpeza).",
-    "en": "No provider was queried (no valid names after cleanup)."
-  },
-  "validate_names_provider_failed_warning": {
-    "pt": "Alguns provedores falharam e foram ignorados: %s",
-    "en": "Some providers failed and were skipped: %s"
-  },
-  "validate_names_all_valid": {
-    "pt": "Todos os nomes são válidos!",
-    "en": "All names are valid!"
   },
   "validate_names_report_title": {
     "pt": "⊞ Relatório de Nomes",
@@ -1887,21 +1355,9 @@
     "pt": "Status",
     "en": "Status"
   },
-  "validate_names_table_col_provider": {
-    "pt": "Provedor",
-    "en": "Provider"
-  },
   "validate_names_table_col_taxonomic_status": {
     "pt": "Status Taxonômico",
     "en": "Taxonomic Status"
-  },
-  "validate_names_table_col_query_name": {
-    "pt": "Nome Consultado",
-    "en": "Queried Name"
-  },
-  "validate_names_table_col_input_name": {
-    "pt": "Nome Original",
-    "en": "Original Name"
   },
   "validate_names_status_badge_accepted": {
     "pt": "Aceito",
@@ -1951,10 +1407,6 @@
     "pt": "Arquivo privado — coordenadas reais das espécies sensíveis. Não publicar no IPT/GBIF; uso exclusivo de controle do pesquisador.",
     "en": "Private file — real coordinates of the sensitive species. Do not publish to IPT/GBIF; for the researcher's own control only."
   },
-  "validate_names_table_col_sensitive": {
-    "pt": "Sensível",
-    "en": "Sensitive"
-  },
   "sensitive_mark_label": {
     "pt": "marcar",
     "en": "mark"
@@ -1987,57 +1439,9 @@
     "pt": "Mascaramento de coordenadas (espécies sensíveis)",
     "en": "Coordinate masking (sensitive species)"
   },
-  "sensitive_panel_records": {
-    "pt": "%s registro(s) de espécie sensível detectado(s).",
-    "en": "%s sensitive-species record(s) detected."
-  },
-  "sensitive_generalization_label": {
-    "pt": "Nível de generalização (Chapman 2020)",
-    "en": "Generalization level (Chapman 2020)"
-  },
-  "sensitive_gen_extreme": {
-    "pt": "Categoria 1 — Extrema (1°)",
-    "en": "Category 1 — Extreme (1°)"
-  },
-  "sensitive_gen_high": {
-    "pt": "Categoria 2 — Alta (0.1°)",
-    "en": "Category 2 — High (0.1°)"
-  },
-  "sensitive_gen_medium": {
-    "pt": "Categoria 3 — Média (0.01°)",
-    "en": "Category 3 — Medium (0.01°)"
-  },
-  "sensitive_gen_low": {
-    "pt": "Categoria 4 — Baixa (0.001°)",
-    "en": "Category 4 — Low (0.001°)"
-  },
   "sensitive_gen_not_sensitive": {
     "pt": "Não sensível — publicar sem mascaramento",
     "en": "Not sensitive — publish unmasked"
-  },
-  "sensitive_grid_unmasked": {
-    "pt": "sem mascaramento",
-    "en": "unmasked"
-  },
-  "sensitive_table_caption": {
-    "pt": "Níveis de generalização (Tabela 7, Chapman 2020 / GBIF)",
-    "en": "Generalization levels (Table 7, Chapman 2020 / GBIF)"
-  },
-  "sensitive_table_col_category": {
-    "pt": "Nível",
-    "en": "Level"
-  },
-  "sensitive_table_col_grid": {
-    "pt": "Grade aplicada",
-    "en": "Generalization grid"
-  },
-  "sensitive_table_col_result": {
-    "pt": "Resultado espacial",
-    "en": "Spatial result"
-  },
-  "sensitive_panel_records_chip": {
-    "pt": "%s registro(s)",
-    "en": "%s record(s)"
   },
   "sensitive_card_num_extreme": {
     "pt": "Categoria 1",
@@ -2071,14 +1475,6 @@
     "pt": "Área local",
     "en": "Local area"
   },
-  "sensitive_disclosure_title": {
-    "pt": "Sobre a generalização (Chapman 2020 / GBIF)",
-    "en": "About generalization (Chapman 2020 / GBIF)"
-  },
-  "sensitive_panel_intro": {
-    "pt": "Detectamos <strong>%s</strong> registro(s) de espécies na <span class=\"sp-hl-mma\">lista nacional de ameaçadas (MMA)</span>. Na maioria dos casos, as coordenadas originais devem ser publicadas sem alteração — <span class=\"sp-hl-precise\">dados precisos têm maior valor científico</span>.",
-    "en": "We detected <strong>%s</strong> record(s) of species on the <span class=\"sp-hl-mma\">national threatened list (MMA)</span>. In most cases the original coordinates should be published unchanged — <span class=\"sp-hl-precise\">precise data has greater scientific value</span>."
-  },
   "sensitive_step_question": {
     "pt": "Estes registros precisam ser generalizados?",
     "en": "Do these records need to be generalized?"
@@ -2094,34 +1490,6 @@
   "sensitive_mode_recommended_badge": {
     "pt": "Recomendado",
     "en": "Recommended"
-  },
-  "sensitive_mode_generalize_title": {
-    "pt": "Generalizar coordenadas (opcional)",
-    "en": "Generalize coordinates (optional)"
-  },
-  "sensitive_mode_generalize_desc": {
-    "pt": "Apenas quando há risco real de coleta ou perseguição.",
-    "en": "Only when there is a real risk of collection or persecution."
-  },
-  "sensitive_level_prompt": {
-    "pt": "Escolha a menor generalização que protege a espécie:",
-    "en": "Choose the smallest generalization that protects the species:"
-  },
-  "sensitive_axis_low": {
-    "pt": "menor perda de precisão",
-    "en": "less precision lost"
-  },
-  "sensitive_axis_high": {
-    "pt": "maior perda de precisão",
-    "en": "more precision lost"
-  },
-  "sensitive_warn_high": {
-    "pt": "Você selecionou Estado / Província (~11 km). A localidade exata é perdida; o registro ainda situa a espécie na região. Confirme que esse nível de proteção é necessário.",
-    "en": "You selected State / Province (~11 km). The exact locality is lost; the record still places the species within the region. Confirm this level of protection is necessary."
-  },
-  "sensitive_warn_extreme": {
-    "pt": "Você selecionou País / Região (~111 km). Nesta escala o registro perde quase todo o valor para análise espacial e modelagem de distribuição. Use apenas em casos extremos e justificados.",
-    "en": "You selected Country / Region (~111 km). At this scale the record loses almost all value for spatial analysis and distribution modeling. Use only in extreme, justified cases."
   },
   "sensitive_saved_toast": {
     "pt": "Sensibilidade atualizada para esta espécie.",
@@ -2167,17 +1535,9 @@
     "pt": "Exceções por espécie",
     "en": "Per-species exceptions"
   },
-  "sensitive_species_assessed_count": {
-    "pt": "%s de %s espécies avaliadas",
-    "en": "%s of %s species assessed"
-  },
   "sensitive_not_assessed": {
     "pt": "não avaliado",
     "en": "not assessed"
-  },
-  "sensitive_unassessed_warning": {
-    "pt": "%s espécie(s) ainda não avaliada(s) — serão publicadas sem generalização.",
-    "en": "%s species not yet assessed — they will be published without generalization."
   },
   "sensitive_reason_cat1": {
     "pt": "mesmo a localidade geral poderia ameaçar esta espécie distintiva, de alta importância biológica e sob alta ameaça (Chapman 2020, Categoria 1).",
@@ -2198,10 +1558,6 @@
   "sensitive_review_date_label": {
     "pt": "Data de revisão (Chapman: 2–5 anos)",
     "en": "Review date (Chapman: 2–5 years)"
-  },
-  "sensitive_assess_prompt": {
-    "pt": "Avalie cada grupo de ameaça respondendo à tabela de decisão do Chapman. As espécies do grupo herdam o nível determinado.",
-    "en": "Assess each threat group by answering Chapman's decision table. The group's species inherit the level it determines."
   },
   "sensitive_group_other": {
     "pt": "Outras (marcadas pelo pesquisador)",
@@ -2247,18 +1603,6 @@
     "pt": "Saiu do país de origem",
     "en": "Left the country of origin"
   },
-  "sensitive_coords_title": {
-    "pt": "Generalização de espécies sensíveis",
-    "en": "Sensitive Species Generalization"
-  },
-  "sensitive_coords_subtitle": {
-    "pt": "Avalie a sensibilidade pela Tabela 5 de Chapman (2020) e veja no mapa onde cada ponto será publicado.",
-    "en": "Assess sensitivity with Chapman (2020) Table 5 and see on the map where each point will be published."
-  },
-  "sensitive_group_species_list": {
-    "pt": "Espécies",
-    "en": "Species"
-  },
   "sc_empty_title": {
     "pt": "Nenhuma espécie sensível detectada",
     "en": "No sensitive species detected"
@@ -2266,38 +1610,6 @@
   "sc_empty_desc": {
     "pt": "Marque espécies sensíveis na aba Validação de Nomes para avaliá-las aqui. Nada a generalizar no momento.",
     "en": "Mark sensitive species in the Name Validation tab to assess them here. Nothing to generalize right now."
-  },
-  "sc_result_title": {
-    "pt": "Resultado",
-    "en": "Result"
-  },
-  "sc_result_filter_all": {
-    "pt": "Todas",
-    "en": "All"
-  },
-  "sc_result_filter_label": {
-    "pt": "Filtrar resultados por nível de ameaça",
-    "en": "Filter results by threat level"
-  },
-  "sc_result_publish_state": {
-    "pt": "Publicando coordenadas originais",
-    "en": "Publishing original coordinates"
-  },
-  "sc_result_records": {
-    "pt": "%d registros sensíveis",
-    "en": "%d sensitive records"
-  },
-  "sc_result_crossing": {
-    "pt": "%d cruzam a fronteira",
-    "en": "%d cross the border"
-  },
-  "sc_result_no_crossing": {
-    "pt": "Nenhum ponto sai do país de origem",
-    "en": "No point leaves its country"
-  },
-  "sc_confirm_title": {
-    "pt": "Confirmar decisão",
-    "en": "Confirm decision"
   },
   "sc_ladder_title": {
     "pt": "Mapa mostra",
@@ -2322,10 +1634,6 @@
   "sc_legend_generalized": {
     "pt": "Coordenada generalizada",
     "en": "Generalized coordinate"
-  },
-  "sc_legend_shift": {
-    "pt": "Deslocamento",
-    "en": "Displacement"
   },
   "sc_legend_crosses": {
     "pt": "Saiu do país",
@@ -2391,10 +1699,6 @@
     "pt": "Chapman, A. D. (2020). Current Best Practices for Generalizing Sensitive Species Occurrence Data. GBIF Secretariat. doi:10.15468/doc-5jp4-5g10",
     "en": "Chapman, A. D. (2020). Current Best Practices for Generalizing Sensitive Species Occurrence Data. GBIF Secretariat. doi:10.15468/doc-5jp4-5g10"
   },
-  "sc_legend_real": {
-    "pt": "Origem",
-    "en": "Origin"
-  },
   "sc_legend_area": {
     "pt": "Área de generalização",
     "en": "Generalization area"
@@ -2403,14 +1707,6 @@
     "pt": "Incerteza (raio)",
     "en": "Uncertainty (radius)"
   },
-  "sc_result_publish_row": {
-    "pt": "publicar original",
-    "en": "publish original"
-  },
-  "sc_result_unassessed_row": {
-    "pt": "não avaliado",
-    "en": "not assessed"
-  },
   "sc_result_needs_justification": {
     "pt": "Justificativa obrigatória para Categoria 1, 2 e 3",
     "en": "Justification required for Categories 1, 2 and 3"
@@ -2418,30 +1714,6 @@
   "sc_scale_title": {
     "pt": "Escala de generalização (Chapman)",
     "en": "Generalization scale (Chapman)"
-  },
-  "sc_scale_table_link": {
-    "pt": "Tabela completa",
-    "en": "Full table"
-  },
-  "sc_groups_progress": {
-    "pt": "%s de %s grupos avaliados",
-    "en": "%s of %s groups assessed"
-  },
-  "sc_cascade_help_link": {
-    "pt": "Como funciona a cascata",
-    "en": "How the cascade works"
-  },
-  "sc_cascade_help_title": {
-    "pt": "Cascata de decisão (Chapman)",
-    "en": "Decision cascade (Chapman)"
-  },
-  "sc_cascade_help_body": {
-    "pt": "<p>Responda à tabela do Chapman para cada grupo. A primeira resposta <strong>Sim</strong> define a categoria:</p><ul><li>4.3 &rarr; Categoria 2 (~11 km)</li><li>4.4 &rarr; Categoria 3 (~1 km)</li><li>4.5 &rarr; Categoria 4 (~100 m)</li></ul><p>Tudo <strong>Não</strong> &rarr; publicar sem mascaramento. A Categoria 1 (~111 km) é só por exceção, em casos extremos.</p>",
-    "en": "<p>Answer Chapman's table for each group. The first <strong>Yes</strong> sets the category:</p><ul><li>4.3 &rarr; Category 2 (~11 km)</li><li>4.4 &rarr; Category 3 (~1 km)</li><li>4.5 &rarr; Category 4 (~100 m)</li></ul><p>All <strong>No</strong> &rarr; publish unmasked. Category 1 (~111 km) is exception-only, for extreme cases.</p>"
-  },
-  "sensitive_cat1_lead": {
-    "pt": "A avaliação vai até a Categoria 2. A Categoria 1 (~111 km) existe só para casos extremos — veja a tabela ao lado.",
-    "en": "The assessment goes up to Category 2. Category 1 (~111 km) exists only for extreme cases — see the table."
   },
   "sensitive_exc_cat1_note": {
     "pt": "Só para espécies de baixa mobilidade / endêmicas. Exige justificativa.",
@@ -2462,14 +1734,6 @@
   "sensitive_exc_remove": {
     "pt": "remover",
     "en": "remove"
-  },
-  "sensitive_reference_title": {
-    "pt": "Categorias de generalização (Chapman 2020)",
-    "en": "Generalization categories (Chapman 2020)"
-  },
-  "sensitive_table_cat1_note": {
-    "pt": "Resolução de ecorregião ou país (~111 km). Use só em casos extremos de ameaça em âmbito local ou regional — não para mascarar localidades já conhecidas pela comunidade.",
-    "en": "Ecoregion or country resolution (~111 km). Use only for extreme cases of local or regional threat — not to mask localities the community already knows."
   },
   "sc_border_alert_title": {
     "pt": "Atenção: a generalização cruza fronteira",
@@ -2647,37 +1911,9 @@
     "pt": "Anterior",
     "en": "Previous"
   },
-  "validate_coords_title": {
-    "pt": "Validação de Coordenadas",
-    "en": "Coordinate Validation"
-  },
-  "validate_coords_subtitle": {
-    "pt": "Verifique se as coordenadas estão no formato correto",
-    "en": "Check if coordinates are in the correct format"
-  },
   "validate_coords_run": {
     "pt": "Validar Coordenadas",
     "en": "Validate Coordinates"
-  },
-  "validate_coords_valid": {
-    "pt": "Válidas",
-    "en": "Valid"
-  },
-  "validate_coords_invalid": {
-    "pt": "Inválidas",
-    "en": "Invalid"
-  },
-  "validate_coords_missing": {
-    "pt": "Ausentes",
-    "en": "Missing"
-  },
-  "validate_coords_missing_columns": {
-    "pt": "Colunas 'decimalLatitude' e/ou 'decimalLongitude' não encontradas.",
-    "en": "'decimalLatitude' and/or 'decimalLongitude' columns not found."
-  },
-  "validate_coords_all_valid": {
-    "pt": "Todas as coordenadas são válidas!",
-    "en": "All coordinates are valid!"
   },
   "validate_coords_datatable_search": {
     "pt": "Buscar:",
@@ -2715,10 +1951,6 @@
     "pt": "Anterior",
     "en": "Previous"
   },
-  "validate_coords_action_card_title": {
-    "pt": "Configurar Validação",
-    "en": "Configure Validation"
-  },
   "validate_coords_status_lat": {
     "pt": "Latitude",
     "en": "Latitude"
@@ -2739,10 +1971,6 @@
     "pt": "Validando...",
     "en": "Validating..."
   },
-  "validate_coords_action_ready": {
-    "pt": "Pronto para validar. Clique em Validar Coordenadas.",
-    "en": "Ready to validate. Click Validate Coordinates."
-  },
   "validate_coords_no_data": {
     "pt": "Nenhum dado mapeado disponível para validar.",
     "en": "No mapped data available for validation."
@@ -2754,14 +1982,6 @@
   "validate_coords_lon_missing": {
     "pt": "Longitude não mapeada. Mapeie decimalLongitude antes de validar.",
     "en": "Longitude not mapped. Map decimalLongitude before validating."
-  },
-  "validate_coords_pre_hint_title": {
-    "pt": "Configure e valide",
-    "en": "Configure and validate"
-  },
-  "validate_coords_pre_hint_body": {
-    "pt": "Mapeie decimalLatitude, decimalLongitude e country na aba Mapeamento, depois clique em Validar.",
-    "en": "Map decimalLatitude, decimalLongitude and country in the Mapping tab, then click Validate."
   },
   "validate_coords_pre_hint_prefix": {
     "pt": "Mapeie ",
@@ -2782,22 +2002,6 @@
   "validate_coords_loading_status": {
     "pt": "Analisando... %s%%",
     "en": "Analyzing... %s%%"
-  },
-  "validate_coords_loading_phase_prepare": {
-    "pt": "Preparando dados",
-    "en": "Preparing data"
-  },
-  "validate_coords_loading_phase_validate": {
-    "pt": "Validando coordenadas",
-    "en": "Validating coordinates"
-  },
-  "validate_coords_loading_phase_map": {
-    "pt": "Gerando mapa",
-    "en": "Generating map"
-  },
-  "validate_coords_loading_phase_finalize": {
-    "pt": "Finalizando",
-    "en": "Finalizing"
   },
   "loading_coords_phrase_1": {
     "pt": "Interrogando coordenadas com latitude zero e suspeitas de falsidade.",
@@ -2823,10 +2027,6 @@
     "pt": "%s valor(es) não puderam ser convertidos para número e foram tratados como ausentes.",
     "en": "%s value(s) could not be converted to numbers and were treated as missing."
   },
-  "validate_coords_warnings": {
-    "pt": "Avisos",
-    "en": "Warnings"
-  },
   "validate_coords_filter_all": {
     "pt": "Todos",
     "en": "All"
@@ -2834,26 +2034,6 @@
   "validate_coords_filter_problems": {
     "pt": "Problemas",
     "en": "Problems"
-  },
-  "validate_coords_filter_missing": {
-    "pt": "Ausentes",
-    "en": "Missing"
-  },
-  "validate_coords_filter_lat": {
-    "pt": "Lat inválida",
-    "en": "Invalid Lat"
-  },
-  "validate_coords_filter_lon": {
-    "pt": "Lon inválida",
-    "en": "Invalid Lon"
-  },
-  "validate_coords_zero_zero": {
-    "pt": "Zero-Zero",
-    "en": "Zero-Zero"
-  },
-  "validate_coords_filter_swapped": {
-    "pt": "Invertidas",
-    "en": "Swapped"
   },
   "validate_coords_badge_missing": {
     "pt": "ausente",
@@ -2959,10 +2139,6 @@
     "pt": "Distribuição Geográfica",
     "en": "Geographic Distribution"
   },
-  "validate_coords_map_subtitle": {
-    "pt": "Pontos coloridos por tipo de issue. Clique em um ponto para ver detalhes.",
-    "en": "Points colored by issue type. Click a point to see details."
-  },
   "validate_coords_map_hidden": {
     "pt": "%d registro(s) com coordenada fora do intervalo válido não aparecem no mapa.",
     "en": "%d record(s) with a coordinate outside the valid range do not show on the map."
@@ -2978,34 +2154,6 @@
   "validate_coords_map_legend_ok": {
     "pt": "Válida",
     "en": "Valid"
-  },
-  "validate_coords_map_legend_error": {
-    "pt": "Inválida",
-    "en": "Invalid"
-  },
-  "validate_coords_map_legend_warning": {
-    "pt": "Aviso",
-    "en": "Warning"
-  },
-  "validate_coords_map_legend_zero_zero": {
-    "pt": "Zero-Zero",
-    "en": "Zero-Zero"
-  },
-  "validate_coords_map_legend_swapped": {
-    "pt": "Posic. Invertida",
-    "en": "Swapped"
-  },
-  "validate_coords_map_legend_identical": {
-    "pt": "Idênticas",
-    "en": "Identical"
-  },
-  "validate_coords_map_legend_missing": {
-    "pt": "Ausente",
-    "en": "Missing"
-  },
-  "validate_coords_map_legend_cluster_note": {
-    "pt": "Clusters com muitos pontos usam cores automáticas (verde→laranja) e não indicam o tipo de coordenada.",
-    "en": "Clusters with many points use automatic colors (green→orange) and do not indicate the coordinate type."
   },
   "validate_coords_popup_row": {
     "pt": "Linha",
@@ -3115,10 +2263,6 @@
     "pt": "%d coordenada(s) transposta(s) corrigida(s) — já vale na generalização e exportação",
     "en": "%d transposed coordinate(s) corrected — effective now in generalization & export"
   },
-  "validate_coords_transposed_apply": {
-    "pt": "Corrigir coordenadas transpostas",
-    "en": "Correct transposed coordinates"
-  },
   "validate_coords_utm_found": {
     "pt": "%d registro(s) com coordenadas projetadas (UTM), n\u00e3o em graus",
     "en": "%d record(s) carry projected (UTM) coordinates, not degrees"
@@ -3159,10 +2303,6 @@
     "pt": "%d país(es) preenchido(s) pelas coordenadas — já vale na generalização e exportação",
     "en": "%d country value(s) filled from coordinates — effective now in generalization & export"
   },
-  "validate_coords_country_apply": {
-    "pt": "Preencher país pelas coordenadas",
-    "en": "Fill country from coordinates"
-  },
   "validate_coords_swapfill_found": {
     "pt": "%d ponto(s) no mar + país vazio — corrigível(eis) por troca lat/lon",
     "en": "%d point(s) at sea + blank country — fixable by lat/lon swap"
@@ -3170,10 +2310,6 @@
   "validate_coords_swapfill_applied": {
     "pt": "%d corrigido(s): lat/lon trocadas + país preenchido — já vale na generalização e exportação",
     "en": "%d fixed: lat/lon swapped + country filled — effective now in generalization & export"
-  },
-  "validate_coords_swapfill_apply": {
-    "pt": "Trocar lat/lon e preencher país",
-    "en": "Swap lat/lon and fill country"
   },
   "validate_coords_transposed_more": {
     "pt": "+%d outra(s)",
@@ -3234,10 +2370,6 @@
   "wiki_subtitle": {
     "pt": "Consulte a documentação oficial dos termos DwC do",
     "en": "Check the official documentation of DwC terms from"
-  },
-  "wiki_search": {
-    "pt": "Buscar termo...",
-    "en": "Search term..."
   },
   "wiki_search_placeholder": {
     "pt": "Buscar termo, definição ou exemplo...",
@@ -3335,10 +2467,6 @@
     "pt": "Definição",
     "en": "Definition"
   },
-  "wiki_example": {
-    "pt": "Exemplo",
-    "en": "Example"
-  },
   "wiki_required": {
     "pt": "Obrigatório",
     "en": "Required"
@@ -3350,14 +2478,6 @@
   "wiki_required_badge_optional": {
     "pt": "opcional",
     "en": "optional"
-  },
-  "help_title": {
-    "pt": "Ajuda",
-    "en": "Help"
-  },
-  "help_subtitle": {
-    "pt": "Tutorial e FAQ",
-    "en": "Tutorial and FAQ"
   },
   "help_header_eyebrow": {
     "pt": "Tutorial · FAQ · Documentação",
@@ -3423,10 +2543,6 @@
     "pt": "GBIF",
     "en": "GBIF"
   },
-  "help_links_ala": {
-    "pt": "Atlas of Living Australia",
-    "en": "Atlas of Living Australia"
-  },
   "a11y_help_external_link": {
     "pt": "Abrir link externo",
     "en": "Open external link"
@@ -3438,10 +2554,6 @@
   "help_stack_subtitle": {
     "pt": "Pacotes de R que tornam o Saíra possível.",
     "en": "R packages that make Saíra possible."
-  },
-  "help_resources_title": {
-    "pt": "Recursos",
-    "en": "Resources"
   },
   "help_tutorials_title": {
     "pt": "Tutoriais",
@@ -3531,10 +2643,6 @@
     "pt": "Um Darwin Core Archive (DwC-A): um pacote .zip com occurrence.txt, meta.xml e eml.xml, pronto para publicação. No mesmo .zip vão também um espelho em Excel (.xlsx) e o modelo de mapeamento reutilizável.",
     "en": "A Darwin Core Archive (DwC-A): a .zip with occurrence.txt, meta.xml and eml.xml, ready to publish. The same .zip also carries an Excel mirror (.xlsx) and the reusable mapping template."
   },
-  "err_no_file": {
-    "pt": "Por favor, selecione um arquivo.",
-    "en": "Please select a file."
-  },
   "err_invalid_format": {
     "pt": "Formato inválido. Apenas arquivos CSV ou TSV são aceitos.",
     "en": "Invalid format. Only CSV or TSV files are accepted."
@@ -3543,25 +2651,9 @@
     "pt": "Falha ao ler o arquivo. Verifique o formato.",
     "en": "Failed to read file. Check the format."
   },
-  "err_empty_data": {
-    "pt": "O arquivo está vazio ou não contém dados válidos.",
-    "en": "File is empty or contains no valid data."
-  },
-  "err_no_mapping": {
-    "pt": "Nenhuma coluna foi mapeada ainda.",
-    "en": "No columns have been mapped yet."
-  },
-  "err_coord_range": {
-    "pt": "Coordenadas fora do intervalo válido (Lat: -90 a 90, Lon: -180 a 180)",
-    "en": "Coordinates out of valid range (Lat: -90 to 90, Lon: -180 to 180)"
-  },
   "success_upload": {
     "pt": "Arquivo carregado com sucesso!",
     "en": "File uploaded successfully!"
-  },
-  "success_mapping": {
-    "pt": "Mapeamento aplicado!",
-    "en": "Mapping applied!"
   },
   "success_download": {
     "pt": "Download iniciado!",
@@ -3574,10 +2666,6 @@
   "confirm": {
     "pt": "Confirmar",
     "en": "Confirm"
-  },
-  "cancel": {
-    "pt": "Cancelar",
-    "en": "Cancel"
   },
   "save": {
     "pt": "Salvar",
@@ -3594,14 +2682,6 @@
   "no": {
     "pt": "Não",
     "en": "No"
-  },
-  "back": {
-    "pt": "Voltar",
-    "en": "Back"
-  },
-  "next_btn": {
-    "pt": "Próximo",
-    "en": "Next"
   },
   "class_record": {
     "pt": "Record-level",
@@ -3759,14 +2839,6 @@
     "pt": "Encodings suportados: UTF-8, Latin-1 (ISO-8859-1)",
     "en": "Supported encodings: UTF-8, Latin-1 (ISO-8859-1)"
   },
-  "upload_no_file": {
-    "pt": "Nenhum arquivo selecionado",
-    "en": "No file selected"
-  },
-  "upload_dropzone_hint": {
-    "pt": "Arraste e solte seu arquivo CSV aqui ou clique para selecionar.",
-    "en": "Drag and drop your CSV file here or click to select."
-  },
   "upload_dropzone_cta": {
     "pt": "Arraste e solte seu arquivo CSV aqui ou clique para selecionar.",
     "en": "Drag and drop your CSV file here or click to select."
@@ -3774,10 +2846,6 @@
   "a11y_upload_file_label": {
     "pt": "Selecionar arquivo CSV para upload",
     "en": "Select CSV file for upload"
-  },
-  "upload_btn_label": {
-    "pt": "Enviar",
-    "en": "Upload"
   },
   "upload_privacy_alert": {
     "pt": "Privacidade: Todos os seus dados são processados localmente, nenhum dado é enviado à internet.",
@@ -3798,46 +2866,6 @@
   "upload_mode_tabs_a11y_label": {
     "pt": "Selecione o formato de upload",
     "en": "Select upload format"
-  },
-  "upload_format_requirements_title": {
-    "pt": "Requisitos do formato selecionado",
-    "en": "Selected format requirements"
-  },
-  "upload_camtrap_badge_required": {
-    "pt": "obrigatório",
-    "en": "required"
-  },
-  "upload_camtrap_badge_optional": {
-    "pt": "opcional",
-    "en": "optional"
-  },
-  "upload_camtrap_file_descriptor": {
-    "pt": "Descriptor Frictionless do pacote",
-    "en": "Frictionless package descriptor"
-  },
-  "upload_camtrap_file_deployments": {
-    "pt": "Estações de monitoramento",
-    "en": "Camera deployments"
-  },
-  "upload_camtrap_file_observations": {
-    "pt": "Observações por evento",
-    "en": "Per-event observations"
-  },
-  "upload_camtrap_file_media": {
-    "pt": "Metadados de imagens/vídeos",
-    "en": "Image/video metadata"
-  },
-  "upload_camtrap_file_wi_projects": {
-    "pt": "Metadados do projeto WI",
-    "en": "WI project metadata"
-  },
-  "upload_camtrap_file_wi_images": {
-    "pt": "Identificações por imagem (WI)",
-    "en": "Per-image identifications (WI)"
-  },
-  "upload_camtrap_file_wi_cameras": {
-    "pt": "Cadastro de câmeras",
-    "en": "Camera registry"
   },
   "a11y_mode_changed": {
     "pt": "Formato alterado para %s",
@@ -3875,21 +2903,9 @@
     "pt": "O arquivo foi lido mas nenhuma ocorrência foi extraída. Verifique se contém imagens identificadas como animais (não-vazias, não-humanos).",
     "en": "The file was read but no occurrences were extracted. Check that it contains images identified as animals (non-blank, non-human)."
   },
-  "sensitive_skipped_already_masked": {
-    "pt": "%d linha(s) pularam o mascaramento (coordinateUncertaintyInMeters ≥ 1000 m, já generalizadas pelo publisher).",
-    "en": "%d row(s) skipped masking (coordinateUncertaintyInMeters ≥ 1000 m, already generalized by the publisher)."
-  },
   "home_title": {
     "pt": "Envie a planilha para começar",
     "en": "Upload your spreadsheet to start"
-  },
-  "home_required_title": {
-    "pt": "Colunas obrigatórias",
-    "en": "Required columns"
-  },
-  "home_required_hint": {
-    "pt": "O Saíra procura estes termos no seu arquivo.",
-    "en": "Saíra looks for these terms in your file."
   },
   "upload_complete_label": {
     "pt": "Envio concluído",
@@ -3903,21 +2919,9 @@
     "pt": "Tem um guia de mapeamento do Saíra? Envie-o no mesmo campo para importar os aliases.",
     "en": "Have a Saíra mapping guide? Upload it in the same field to import its aliases."
   },
-  "home_wiki_link": {
-    "pt": "Ver todos os termos na Wiki DwC",
-    "en": "See every term in the DwC Wiki"
-  },
   "welcome_eyebrow": {
     "pt": "Padronizador Darwin Core",
     "en": "Darwin Core Standardizer"
-  },
-  "welcome_title": {
-    "pt": "Bem-vindo ao Saíra!",
-    "en": "Welcome to Saíra!"
-  },
-  "financing_title": {
-    "pt": "Financiamento",
-    "en": "Funding"
   },
   "data_quality_title": {
     "pt": "Qualidade dos Dados",
@@ -3958,13 +2962,5 @@
   "data_quality_high_missing": {
     "pt": "Colunas com >50% ausentes",
     "en": "Columns with >50% missing"
-  },
-  "dwc_required_title": {
-    "pt": "Campos obrigatórios do DwC",
-    "en": "Required DwC Fields"
-  },
-  "dwc_required_empty": {
-    "pt": "Nenhum campo obrigatório encontrado.",
-    "en": "No required fields found."
   }
 }
