@@ -2616,8 +2616,8 @@
     "en": "Which spreadsheet formats does Saíra accept?"
   },
   "help_faq_a3": {
-    "pt": "CSV (.csv, .tsv, .txt), com detecção automática de codificação e separador. Também aceita pacotes de armadilha fotográfica (.zip): Camtrap DP e exportações do Wildlife Insights.",
-    "en": "CSV (.csv, .tsv, .txt), with automatic encoding and delimiter detection. It also accepts camera-trap packages (.zip): Camtrap DP and Wildlife Insights exports."
+    "pt": "CSV (.csv, .tsv, .txt), com detecção automática de codificação e separador, e Excel (.xlsx), lido da primeira aba. Também aceita pacotes de armadilha fotográfica (.zip): Camtrap DP e exportações do Wildlife Insights.",
+    "en": "CSV (.csv, .tsv, .txt), with automatic encoding and delimiter detection, and Excel (.xlsx), read from the first sheet. It also accepts camera-trap packages (.zip): Camtrap DP and Wildlife Insights exports."
   },
   "help_faq_q4": {
     "pt": "O Saíra corrige automaticamente os nomes científicos?",
@@ -2644,8 +2644,8 @@
     "en": "A Darwin Core Archive (DwC-A): a .zip with occurrence.txt, meta.xml and eml.xml, ready to publish. The same .zip also carries an Excel mirror (.xlsx) and the reusable mapping template."
   },
   "err_invalid_format": {
-    "pt": "Formato inválido. Apenas arquivos CSV ou TSV são aceitos.",
-    "en": "Invalid format. Only CSV or TSV files are accepted."
+    "pt": "Formato inválido. Aceitamos arquivos CSV, TSV, TXT ou Excel (.xlsx).",
+    "en": "Invalid format. Accepted files: CSV, TSV, TXT or Excel (.xlsx)."
   },
   "err_read_failed": {
     "pt": "Falha ao ler o arquivo. Verifique o formato.",
@@ -2840,12 +2840,12 @@
     "en": "Supported encodings: UTF-8, Latin-1 (ISO-8859-1)"
   },
   "upload_dropzone_cta": {
-    "pt": "Arraste e solte seu arquivo CSV aqui ou clique para selecionar.",
-    "en": "Drag and drop your CSV file here or click to select."
+    "pt": "Arraste e solte seu arquivo CSV, TXT ou Excel (.xlsx) aqui ou clique para selecionar.",
+    "en": "Drag and drop your CSV, TXT or Excel (.xlsx) file here or click to select."
   },
   "a11y_upload_file_label": {
-    "pt": "Selecionar arquivo CSV para upload",
-    "en": "Select CSV file for upload"
+    "pt": "Selecionar arquivo CSV, TXT ou Excel para upload",
+    "en": "Select CSV, TXT or Excel file for upload"
   },
   "upload_privacy_alert": {
     "pt": "Privacidade: Todos os seus dados são processados localmente, nenhum dado é enviado à internet.",

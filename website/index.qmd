@@ -79,7 +79,7 @@ anchor-sections: false
         <div class="flow-body">
           <span class="flow-num">01</span>
           <h3>Importe qualquer planilha</h3>
-          <p>CSV, TSV ou TXT, incluindo dados de armadilhas fotográficas. O Saíra detecta sozinho a codificação e o separador e prepara a planilha para o mapeamento.</p>
+          <p>CSV, TSV, TXT ou Excel, incluindo dados de armadilhas fotográficas. O Saíra detecta sozinho a codificação e o separador e prepara a planilha para o mapeamento.</p>
           <div class="proof">
             <span class="proof-in">acentuação quebrada · sep ";"</span>
             <span class="proof-arrow">→</span>

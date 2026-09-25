@@ -69,7 +69,7 @@ Yes. The workflow is flexible: you can remap a field, reload the spreadsheet or 
 ### Which spreadsheet formats does Saíra accept?
 
 ::: {.faq-card}
-CSV (`.csv`, `.tsv`, `.txt`), with automatic encoding and separator detection. It also accepts **camera-trap** packages (`.zip`): Camtrap DP and Wildlife Insights exports. Details in [Importing your data](tutorials/02-upload.qmd).
+CSV (`.csv`, `.tsv`, `.txt`), with automatic encoding and separator detection, and Excel (`.xlsx`), read from the first sheet. It also accepts **camera-trap** packages (`.zip`): Camtrap DP and Wildlife Insights exports. Details in [Importing your data](tutorials/02-upload.qmd).
 :::
 
 ### Can I set a fixed value for the whole dataset?

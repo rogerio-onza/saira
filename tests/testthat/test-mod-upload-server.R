@@ -263,6 +263,36 @@ testthat::test_that("mod_upload_server reads tab-delimited TSV", {
     )
 })
 
+testthat::test_that("mod_upload_server reads .txt and .xlsx data and rejects other formats", {
+    txt_path <- tempfile(fileext = ".txt")
+    xlsx_path <- tempfile(fileext = ".xlsx")
+    pdf_path <- tempfile(fileext = ".pdf")
+    on.exit(unlink(c(txt_path, xlsx_path, pdf_path)), add = TRUE)
+    writeLines(c("scientificName\tdecimalLatitude", "Panthera onca\t-10.5"), txt_path)
+    writexl::write_xlsx(data.frame(scientificName = "Panthera onca"), xlsx_path)
+    writeLines("%PDF-1.4", pdf_path)
+
+    upload <- function(path, name) {
+        list(name = name, size = file.info(path)$size, type = "", datapath = path)
+    }
+
+    shiny::testServer(
+        mod_upload_server,
+        args = list(lang_r = shiny::reactive("en")),
+        {
+            session$setInputs(file = upload(txt_path, "occurrence.txt"))
+            testthat::expect_identical(session$getReturned()()$scientificName, "Panthera onca")
+
+            session$setInputs(file = upload(xlsx_path, "planilha.xlsx"))
+            testthat::expect_identical(session$getReturned()()$scientificName, "Panthera onca")
+
+            session$setInputs(file = upload(pdf_path, "report.pdf"))
+            testthat::expect_error(session$getReturned()(), regexp = "Invalid format")
+            testthat::expect_match(output$stats$html, "alert-danger")
+        }
+    )
+})
+
 # Language switch must not re-read the upload (ADR-112) -------------------
 #
 # raw_data() used to read lang_r() directly for its notification wording, so a

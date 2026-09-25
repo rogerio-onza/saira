@@ -289,6 +289,15 @@
   pointer-events: none;
 }
 
+/* Invalid file format: a red box under the dropzone, not grey hint text. */
+.upload-format-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  margin-bottom: 0;
+}
+
 /* Progress bar - Row 2: GREEN color for success */
 .upload-native-input .progress,
 .upload-native-input .shiny-file-input-progress,
