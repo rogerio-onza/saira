@@ -584,7 +584,7 @@ constant_value_terms <- function() {
 required_mapping_terms <- function() {
     c(
         "scientificName", "eventDate", "decimalLatitude",
-        "decimalLongitude", "basisOfRecord", "occurrenceID"
+        "decimalLongitude", "basisOfRecord", "occurrenceID", "license"
     )
 }
 

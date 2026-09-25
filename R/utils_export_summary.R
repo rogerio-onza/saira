@@ -90,7 +90,7 @@ build_export_summary <- function(mapped_data,
     # --- Readiness (required DwC terms present and non-empty) ---------------
     required <- c(
         "scientificName", "eventDate", "decimalLatitude",
-        "decimalLongitude", "basisOfRecord"
+        "decimalLongitude", "basisOfRecord", "license"
     )
     term_present <- function(term) {
         term %in% names(df) &&

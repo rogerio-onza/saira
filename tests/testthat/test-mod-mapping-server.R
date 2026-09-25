@@ -1656,6 +1656,47 @@ testthat::test_that("filling a required term clears its red state on the push", 
     )
 })
 
+# Unticking the last license box sends NULL, which observeEvent drops by
+# default, so the card stayed mapped after the clear.
+testthat::test_that("unticking the license puts its card back to required-missing", {
+    df <- data.frame(especie = c("Panthera onca"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            sent <- list()
+            real_session <- base::.subset2(session, "parent")
+            real_session$sendCustomMessage <- function(type, message) {
+                if (identical(type, "saira-toggle-field-mapped")) {
+                    sent[[length(sent) + 1L]] <<- message
+                }
+                invisible(NULL)
+            }
+            last_state <- function(term) {
+                id <- session$ns(paste0("fieldcard_", term))
+                hits <- Filter(function(m) identical(m$id, id), sent)
+                if (length(hits) == 0L) return(NULL)
+                hits[[length(hits)]]
+            }
+
+            session$flushReact()
+            session$setInputs(custom_license = "CC-BY 4.0")
+            session$flushReact()
+            testthat::expect_true(last_state("license")$mapped)
+            testthat::expect_identical(last_state("license")$state, "")
+
+            session$setInputs(custom_license = NULL)
+            session$flushReact()
+            testthat::expect_false(last_state("license")$mapped)
+            testthat::expect_identical(last_state("license")$state, "field-required-missing")
+        }
+    )
+})
+
 # Saira used to record an alias on every column pick, so cycling a card through
 # candidates left each rejected one behind as a learned mapping (the real store
 # had accumulated `id -> basisOfRecord`, `1 -> basisOfRecord` and friends this

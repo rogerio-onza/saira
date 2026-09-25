@@ -2505,7 +2505,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 set_custom_term_meta("license", has_value)
                 push_card_state("license")
             },
-            ignoreInit = TRUE
+            ignoreInit = TRUE,
+            # Unticking the last box sends NULL. With the default ignoreNULL
+            # the card kept its mapped state after the clear.
+            ignoreNULL = FALSE
         )
 
         # Enforce single-selection for language checkboxGroupInput
@@ -2522,7 +2525,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 set_custom_term_meta("language", has_value)
                 push_card_state("language")
             },
-            ignoreInit = TRUE
+            ignoreInit = TRUE,
+            # Unticking the last box sends NULL. With the default ignoreNULL
+            # the card kept its mapped state after the clear.
+            ignoreNULL = FALSE
         )
 
         # Track fixed-value edits for the constant-value allowlist (mirrors the
