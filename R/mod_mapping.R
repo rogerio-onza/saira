@@ -360,10 +360,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             if (is.na(key)) category_value else tr(key, lang_r())
         }
 
-        category_labels <- function() {
-            vapply(all_filter_categories(), category_label, FUN.VALUE = character(1))
-        }
-
 
         # Active DwC terms list: base 50 + any extras added in this session
         dwc_all <- shiny::reactive({
@@ -969,9 +965,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             rv$establishment_page <- 1L
             invisible(NULL)
         }
-
-        # Loading modal helpers (delegated to mod_mapping_loading.R)
-        loading_phrase_specs <- mapping_loading_phrase_specs()
 
 
         # Translated labels

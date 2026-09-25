@@ -619,35 +619,6 @@
   margin: 0;
 }
 
-.mapping-sidebar .rostrum-switch-block {
-  margin-bottom: 0;
-}
-
-.mapping-sidebar .rostrum-switch-block>.shiny-input-container {
-  margin-bottom: 0;
-}
-
-.mapping-sidebar .rostrum-switch-block .form-check.form-switch {
-  margin: 0;
-  padding-left: 0;
-  display: inline-flex;
-  align-items: center;
-  column-gap: var(--space-2);
-  min-height: 1.5rem;
-}
-
-.mapping-sidebar .rostrum-switch-block .form-check-input {
-  cursor: pointer;
-  float: none;
-  margin: 0;
-}
-
-.mapping-sidebar .rostrum-switch-block .form-check-label {
-  font-weight: var(--weight-medium);
-  color: var(--text-primary);
-  margin: 0;
-}
-
 /* Class pill bar: sticky visibility filter + scroll navigation */
 .mapping-class-pillbar {
   position: sticky;

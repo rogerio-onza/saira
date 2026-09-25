@@ -574,7 +574,6 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 /* Improve mono readability in compact coordinate diagnostics (< 0.85rem). */
 .coords-gate-value,
 .coord-issue-badge,
-.validation-status-badge,
 .validate-results-table td:first-child {
   letter-spacing: 0.01em;
   font-feature-settings: "tnum" 1;
@@ -1090,46 +1089,6 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   margin: 0 0 0 var(--space-5);
   color: var(--text-muted);
   font-size: var(--text-sm);
-}
-
-.validation-status-badge {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  font-weight: var(--weight-semibold);
-  padding: 0.15rem 0.55rem;
-  border-radius: var(--radius-chip);
-  white-space: nowrap;
-  display: inline-block;
-}
-
-.status-accepted {
-  background: var(--success-bg);
-  color: var(--success-text);
-  border: 1px solid var(--success-border);
-}
-
-.status-synonym {
-  background: var(--info-bg);
-  color: var(--info);
-  border: 1px solid var(--info-border);
-}
-
-.status-not-found {
-  background: var(--error-bg);
-  color: var(--error);
-  border: 1px solid var(--error-border);
-}
-
-.status-ambiguous {
-  background: var(--warning-bg);
-  color: var(--warning-text);
-  border: 1px solid var(--warning-border);
-}
-
-.status-ignored {
-  background: rgba(40, 51, 172, 0.06);
-  color: var(--text-muted);
-  border: 1px solid var(--border-light);
 }
 
 .validate-results-table td:first-child {
