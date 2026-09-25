@@ -1485,6 +1485,54 @@ testthat::test_that("importing a template seeds aliases through the module conne
     testthat::expect_identical(nrow(rows), 2L)
     testthat::expect_identical(rows$dwc_term, c("decimalLatitude", "scientificName"))
 })
+
+# A guide with an extra term re-runs the input-sync observer in the same flush
+# as the import. The inputs still hold their old empty values (the client has
+# not echoed the updates yet), and the observer wrote them back: the restored
+# mapping went blank until the echo, and the grid rendered twice.
+testthat::test_that("a guide import is not undone before the client echoes it", {
+    withr::local_envvar(c(SAIRA_USER = paste0("test_echo_", as.integer(Sys.time()))))
+    df <- data.frame(
+        especie = c("Panthera onca", "Leopardus pardalis"),
+        wkt = c("POINT (-55 -10)", "POINT (-54 -11)"),
+        stringsAsFactors = FALSE
+    )
+    guide <- build_mapping_guide_txt(
+        list(scientificName = "especie", footprintWKT = "wkt"),
+        df, lang = "en"
+    )
+    guide_path <- withr::local_tempfile(fileext = ".txt")
+    writeLines(guide, guide_path)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            # The cards rendered and the client echoed their empty selections.
+            session$setInputs(map_scientificName = "", map_decimalLatitude = "")
+            session$setInputs(import_template_file = list(
+                name = "guide.txt", size = 1L,
+                type = "text/plain", datapath = guide_path
+            ))
+            session$setInputs(confirm_import_template = 1)
+            session$flushReact()
+
+            testthat::expect_true("footprintWKT" %in% rv$extra_terms)
+            testthat::expect_identical(rv$map_values[["scientificName"]], "especie")
+            testthat::expect_true(isTRUE(rv$scientificname_mapped))
+
+            # The echo lands; later edits are the user's again.
+            session$setInputs(map_scientificName = "especie")
+            testthat::expect_identical(rv$map_values[["scientificName"]], "especie")
+            session$setInputs(map_scientificName = "")
+            testthat::expect_identical(rv$map_values[["scientificName"]], "")
+        }
+    )
+})
 # A fixed value on the country card fills the term for every row and overrides
 # any column mapping, so the coordinate gate has to accept it. It did not, which
 # blocked coordinate validation for the exact case the fixed value exists for: a

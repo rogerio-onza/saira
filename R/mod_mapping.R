@@ -567,6 +567,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # upload alongside preview_cache.
         rendered_map_inputs <- new.env(parent = emptyenv())
 
+        # The input value a map_<term> input held when code changed it through
+        # set_map_value(). Until the client echoes the update, the server still
+        # sees this old value, and the input-sync observer must not write it
+        # back over the new one. Non-reactive and reset per upload, like
+        # rendered_map_inputs.
+        pending_map_echo <- new.env(parent = emptyenv())
+
         # Tracks the inputs the occurrenceID vector was last built from, so the
         # ids are rebuilt when the user remaps occurrenceID and only then.
         # rv$map_values invalidates on every mapping edit, and minting
@@ -725,8 +732,12 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             rv$map_values[[term]] <- sanitized_value
 
             input_id <- paste0("map_", term)
-            if (isTRUE(update_input) && !is.null(input[[input_id]])) {
+            old_input <- shiny::isolate(input[[input_id]])
+            if (isTRUE(update_input) && !is.null(old_input)) {
                 rv$programmatic_terms <- unique(c(rv$programmatic_terms, term))
+                if (!identical(sanitize_map_selection(term, old_input), sanitized_value)) {
+                    pending_map_echo[[term]] <- old_input
+                }
                 shiny::updateSelectInput(session, input_id, selected = sanitized_value)
             }
         }
@@ -1145,6 +1156,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     list = ls(rendered_map_inputs, all.names = TRUE),
                     envir = rendered_map_inputs
                 )
+                rm(list = ls(pending_map_echo, all.names = TRUE), envir = pending_map_echo)
 
                 # Camtrap columns are Darwin Core terms already: queue the
                 # automatic mapping (run once the cards render). Non-camtrap
@@ -1223,6 +1235,17 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     rendered_map_inputs[[term]] <- TRUE
                 }
 
+                # Code set this term and the client has not echoed it yet: the
+                # input still holds the old value. Writing it back would undo the
+                # set (a guide import added terms, this observer re-ran, and
+                # every restored card went blank until the echo).
+                if (exists(term, envir = pending_map_echo, inherits = FALSE)) {
+                    if (identical(input_value, pending_map_echo[[term]])) {
+                        next
+                    }
+                    rm(list = term, envir = pending_map_echo)
+                }
+
                 sanitized <- sanitize_map_selection(term, input_value)
 
                 if (term %in% c("scientificName", "basisOfRecord") && length(input_value) > 1) {
@@ -1286,7 +1309,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             if (!identical(isTRUE(rv$scientificname_mapped), mapped)) {
                 rv$scientificname_mapped <- mapped
             }
-        })
+        # Ahead of output$mapping_ui in the flush: a guide import sets
+        # scientificName and adds terms at once, and the grid must see the flag
+        # already flipped, or it renders twice.
+        }, priority = 1)
 
         # Sync dynamicProperties per-column JSON key overrides.
         # Depends reactively on (a) selected columns and (b) each per-column
@@ -2200,6 +2226,19 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             "occurrenceID", "datasetName", "modified", "license", "language"
         )
         carddyn_created <- new.env(parent = emptyenv())
+        # One reactive slot per term. rv$map_values is a single value, so
+        # reading rv$map_values[[term]] depends on the whole list, and every pick
+        # or guide import re-rendered all ~60 of these outputs. reactiveValues
+        # skips a write of an identical value, so only the changed terms
+        # invalidate. Ahead of the outputs in the flush, so they read it fresh.
+        map_value_by_term <- shiny::reactiveValues()
+        shiny::observe({
+            mv <- rv$map_values
+            known <- names(shiny::isolate(shiny::reactiveValuesToList(map_value_by_term)))
+            for (term in union(names(mv), known)) {
+                map_value_by_term[[term]] <- mv[[term]]
+            }
+        }, priority = 1)
         make_carddyn_output <- function(term) {
             force(term)
             output[[paste0("carddyn_", term)]] <- shiny::renderUI({
@@ -2208,7 +2247,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 # sync observer fills rv$map_values one flush after the client
                 # echoes a selection, so reading rv alone leaves a freshly
                 # mapped card with no sample line.
-                current_val <- rv$map_values[[term]]
+                current_val <- map_value_by_term[[term]]
                 if (is.null(current_val)) {
                     current_val <- input[[paste0("map_", term)]]
                 }
