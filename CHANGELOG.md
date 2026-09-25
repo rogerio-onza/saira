@@ -13,6 +13,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - **mapping:** Make license a required term: its card shows as missing and export is blocked until a license is chosen
+- **mapping:** Import a mapping guide in about half the time and pick a column about three times faster: a pick re-renders only its own card
 - **ui:** Put the header in one row from 1360px and switch the icons to Phosphor, ADR-132
 - **upload:** Use one upload panel across the home page, with the format tips below it, ADR-132
 - **mapping:** Filter cards by All, Mapped or Pending in the panel header; color the Required tag by state, ADR-132
