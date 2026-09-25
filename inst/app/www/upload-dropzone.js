@@ -135,7 +135,11 @@
     if (!uploadCompleteLabel) return;
     var bars = document.querySelectorAll(".shiny-file-input-progress .progress-bar");
     Array.prototype.forEach.call(bars, function (bar) {
-      if (bar.textContent === "Upload complete") bar.textContent = uploadCompleteLabel;
+      // In English the label equals Shiny's text: writing it again would fire
+      // the MutationObserver below, which calls this again, without end.
+      if (bar.textContent === "Upload complete" && uploadCompleteLabel !== bar.textContent) {
+        bar.textContent = uploadCompleteLabel;
+      }
     });
   }
 

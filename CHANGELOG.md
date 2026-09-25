@@ -34,6 +34,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **upload:** Stop the browser tab from freezing after an upload in English
 - **basisOfRecord:** Convert mapped values without the assistant, recognize common Portuguese values, and block export on empty values, ADR-131
 - **upload:** Show "Upload complete" in the current language
 - **mapping:** Count alias and template matches in the auto-map notice and drop the internal "V1" label

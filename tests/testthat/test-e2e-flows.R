@@ -228,6 +228,35 @@ testthat::test_that("E2E: Language switch PT -> EN -> PT without error (Flow 5)"
     testthat::expect_equal(nav_pt_initial, nav_pt_final)
 })
 
+# In English the translated label is Shiny's own "Upload complete". The page
+# rewrote the same text, its MutationObserver saw the change and rewrote it
+# again, so the tab spun forever after an upload.
+testthat::test_that("E2E: an upload in English completes", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 10000)
+
+    app$set_inputs(lang_switch = "en")
+    app$wait_for_idle(timeout = 5000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(c("scientificName,decimalLatitude", "Panthera onca,-10.5"), csv_path)
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path, timeout_ = 15000)
+    label <- app$get_js(
+        "document.querySelector('.shiny-file-input-progress .progress-bar').textContent"
+    )
+    testthat::expect_identical(label, "Upload complete")
+})
+
 # --- Flow 6: mapping-guide import restores a fixed value ---
 #
 # The one step no unit test reaches. testServer has no browser, so it can only
