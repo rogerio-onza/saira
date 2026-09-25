@@ -30,6 +30,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **upload:** Redesign the home page: upload panel on the left, required columns with definitions on the right
 - **ui:** Replace the tab bar with a two-row header and numbered steps, ADR-128
 - **ui:** Drop shadows and gradients, use warm neutral borders and a darker muted text for AA contrast, ADR-127
+- **export:** Match the MMA threat list once per species, not once per row, so large datasets export faster
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed

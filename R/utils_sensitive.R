@@ -98,8 +98,11 @@ build_sensitive_match_keys <- function(names) {
     if (length(names) == 0L) {
         return(character(0))
     }
+    # A dataset repeats few species over many rows: normalize each name once.
+    names <- as.character(names)
+    uniq <- unique(names)
     canonical <- vapply(
-        as.character(names),
+        uniq,
         function(nm) {
             normalize_scientific_name(
                 nm,
@@ -110,7 +113,7 @@ build_sensitive_match_keys <- function(names) {
         FUN.VALUE = character(1),
         USE.NAMES = FALSE
     )
-    normalize_for_matching(canonical)
+    normalize_for_matching(canonical)[match(names, uniq)]
 }
 
 # MMA threat category for each resolved name, or NA when not on the list.
