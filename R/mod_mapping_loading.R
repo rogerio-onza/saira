@@ -34,15 +34,6 @@ mapping_import_phrase_specs <- function() {
     )
 }
 
-#' Get current loading phrase spec given index and specs
-#' @noRd
-get_current_loading_phrase_spec <- function(idx, specs) {
-    if (is.null(idx) || is.na(idx) || idx < 1 || idx > length(specs)) {
-        idx <- 1L
-    }
-    specs[[idx]]
-}
-
 #' Update automap loading progress and phrase index
 #' @noRd
 update_automap_loading <- function(rv, step, total_steps) {
