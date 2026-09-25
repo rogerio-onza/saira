@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **upload:** Accept Excel (.xlsx, first sheet) and plain-text (.txt) data files
 - **coords:** Fix a latitude or longitude directly in the coordinates table, with revalidation and undo, ADR-129
 
 ### Changed
@@ -37,6 +38,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **upload:** Stop the browser tab from freezing after an upload in English
 - **basisOfRecord:** Convert mapped values without the assistant, recognize common Portuguese values, and block export on empty values, ADR-131
 - **upload:** Show "Upload complete" in the current language
+- **upload:** Show an invalid file format in a red box
 - **mapping:** Count alias and template matches in the auto-map notice and drop the internal "V1" label
 - **occurrenceStatus:** Restore the accents of the Portuguese definition
 - **coords:** Speed up the sea check on large datasets, with the same result

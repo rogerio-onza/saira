@@ -79,7 +79,7 @@ anchor-sections: false
         <div class="flow-body">
           <span class="flow-num">01</span>
           <h3>Import any spreadsheet</h3>
-          <p>CSV, TSV or TXT, including camera-trap data. Saíra detects the encoding and separator on its own and gets the spreadsheet ready for mapping.</p>
+          <p>CSV, TSV, TXT or Excel, including camera-trap data. Saíra detects the encoding and separator on its own and gets the spreadsheet ready for mapping.</p>
           <div class="proof">
             <span class="proof-in">broken accents · sep ";"</span>
             <span class="proof-arrow">→</span>

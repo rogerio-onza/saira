@@ -117,7 +117,9 @@ mod_upload_ui <- function(id) {
                         accept = c(
                             ".csv", "text/csv",
                             ".tsv", "text/tab-separated-values",
-                            ".txt", "text/plain"
+                            ".txt", "text/plain",
+                            ".xlsx",
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         ),
                         buttonLabel = ph_icon("upload"),
                         placeholder = ""
@@ -234,11 +236,19 @@ mod_upload_server <- function(id, lang_r) {
                 if (!is_camtrap_dp_zip(input$file$datapath)) return("invalid")
                 return("camtrap_dp")
             }
+            if (ext == "xlsx") return("data")
             if (!ext %in% c("csv", "tsv", "txt")) return("invalid")
             if (is_saira_mapping_guide(input$file$datapath)) return("guide")
-            if (ext == "txt") return("invalid")  # .txt without magic = bogus
             "data"
         })
+
+        invalid_upload_msg_key <- function() {
+            if (identical(input$upload_mode %||% "csv", "camtrap")) {
+                "err_camtrap_invalid_zip"
+            } else {
+                "err_invalid_format"
+            }
+        }
 
         # File Upload Logic — only loads data for CSVs. Guides are handled
         # by the observers below (modal + alias import), and produce NULL
@@ -261,13 +271,8 @@ mod_upload_server <- function(id, lang_r) {
 
             kind <- file_kind()
             if (identical(kind, "invalid")) {
-                msg_key <- if (identical(input$upload_mode %||% "csv", "camtrap")) {
-                    "err_camtrap_invalid_zip"
-                } else {
-                    "err_invalid_format"
-                }
                 shiny::validate(
-                    shiny::need(FALSE, tr(msg_key, lang))
+                    shiny::need(FALSE, tr(invalid_upload_msg_key(), lang))
                 )
             }
             if (identical(kind, "guide")) {
@@ -311,7 +316,11 @@ mod_upload_server <- function(id, lang_r) {
 
             tryCatch(
                 {
-                    df <- read_biodiversity_csv(input$file$datapath)
+                    df <- if (identical(tolower(tools::file_ext(input$file$name)), "xlsx")) {
+                        read_biodiversity_xlsx(input$file$datapath)
+                    } else {
+                        read_biodiversity_csv(input$file$datapath)
+                    }
                     shiny::showNotification(
                         tr("success_upload", lang),
                         type = "message",
@@ -404,8 +413,18 @@ mod_upload_server <- function(id, lang_r) {
 
         # Display stats after upload
         output$stats <- shiny::renderUI({
-            shiny::req(raw_data())
             shiny::req(input$file)
+            # Without this the validate() in raw_data() shows the message as
+            # plain grey text, which reads as a hint and not as an error.
+            if (identical(file_kind(), "invalid")) {
+                return(shiny::div(
+                    class = "alert alert-danger upload-format-error",
+                    role = "alert",
+                    ph_icon("triangle-exclamation"),
+                    shiny::tags$span(tr(invalid_upload_msg_key(), lang_r()))
+                ))
+            }
+            shiny::req(raw_data())
 
             df <- raw_data()
 
