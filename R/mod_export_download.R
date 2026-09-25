@@ -31,7 +31,8 @@ mount_export_download <- function(input, output, session, lang_r,
             "eventDate",
             "decimalLatitude",
             "decimalLongitude",
-            "basisOfRecord"
+            "basisOfRecord",
+            "license"
         )
         warning_download_fields <- c("occurrenceID")
         download_click_channel <- paste0("preview-download-click-", ns("download_real"))

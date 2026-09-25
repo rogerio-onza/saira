@@ -8,6 +8,7 @@ complete_df <- function(n = 5) {
         decimalLatitude = rep("-23.5", n),
         decimalLongitude = rep("-46.6", n),
         basisOfRecord = rep("HumanObservation", n),
+        license = rep("CC-BY 4.0", n),
         stringsAsFactors = FALSE
     )
 }

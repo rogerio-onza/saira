@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **coords:** Fix a latitude or longitude directly in the coordinates table, with revalidation and undo, ADR-129
 
 ### Changed
+- **mapping:** Make license a required term: its card shows as missing and export is blocked until a license is chosen
 - **ui:** Put the header in one row from 1360px and switch the icons to Phosphor, ADR-132
 - **upload:** Use one upload panel across the home page, with the format tips below it, ADR-132
 - **mapping:** Filter cards by All, Mapped or Pending in the panel header; color the Required tag by state, ADR-132
@@ -48,6 +49,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Speed up automatic mapping when many terms share the same column
 - **site:** Drop the removed Profile selector from the coordinate tutorial, in PT and EN
 - **names:** Keep the report counts readable when the table is tall
+- **mapping:** Return the license and language cards to unmapped when their box is unticked
 - **coords:** Frame the Coordinates and Generalization maps on valid points only, with no grey bands, and count the points the map cannot draw
 - **coords:** Draw the map points right after validation, not only after a filter click
 - **coords:** Keep the original of a transposed fix in verbatimLatitude/Longitude when the same export converts UTM points

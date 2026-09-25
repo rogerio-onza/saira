@@ -475,7 +475,7 @@ testthat::test_that("dwc_card_hints falls back when the column is absent", {
 
 testthat::test_that("required_mapping_terms is the readiness strip's term set", {
     required <- required_mapping_terms()
-    testthat::expect_length(required, 6L)
+    testthat::expect_length(required, 7L)
     testthat::expect_true(all(required %in% names(get_dwc_terms_list("en"))))
     testthat::expect_false(anyDuplicated(required) > 0L)
 })
