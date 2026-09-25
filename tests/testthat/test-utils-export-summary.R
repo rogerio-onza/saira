@@ -22,6 +22,7 @@ sample_mapped <- function() {
         decimalLatitude = c("-27.17", "-23.5"),
         decimalLongitude = c("-53.9", "-46.6"),
         basisOfRecord = c("HumanObservation", "HumanObservation"),
+        license = c("CC-BY 4.0", "CC-BY 4.0"),
         stringsAsFactors = FALSE
     )
 }
@@ -84,7 +85,7 @@ testthat::test_that("build_export_summary aggregates corrections, generalization
     testthat::expect_false(s$export_blocked)
     testthat::expect_setequal(
         s$readiness$term,
-        c("scientificName", "eventDate", "decimalLatitude", "decimalLongitude", "basisOfRecord")
+        c("scientificName", "eventDate", "decimalLatitude", "decimalLongitude", "basisOfRecord", "license")
     )
 
     # Files: DwC-A core trio keeps standard names; auxiliary files are renamed
@@ -108,14 +109,14 @@ testthat::test_that("build_export_summary handles empty payloads and missing req
     testthat::expect_equal(s$corrections$country_fills, 0L)
     testthat::expect_equal(nrow(s$generalization), 0L)
 
-    # eventDate / decimalLongitude / basisOfRecord absent -> not all present,
-    # export is blocked, 2 of 5 required terms present -> 40%.
+    # eventDate / decimalLongitude / basisOfRecord / license absent -> not all
+    # present, export is blocked, 2 of 6 required terms present -> 33%.
     testthat::expect_false(s$all_required_present)
     testthat::expect_true(s$export_blocked)
-    testthat::expect_equal(s$readiness_pct, 40L)
+    testthat::expect_equal(s$readiness_pct, 33L)
     testthat::expect_setequal(
         s$missing_required,
-        c("eventDate", "decimalLongitude", "basisOfRecord")
+        c("eventDate", "decimalLongitude", "basisOfRecord", "license")
     )
     present_terms <- s$readiness$term[s$readiness$present]
     testthat::expect_true("scientificName" %in% present_terms)
@@ -124,6 +125,14 @@ testthat::test_that("build_export_summary handles empty payloads and missing req
     # No masking -> no real-coords CSV; fallback slug used (no dataset name).
     testthat::expect_null(s$files$auxiliary[["sensitive_coords"]])
     testthat::expect_equal(unname(s$files$auxiliary[["xlsx"]]), "saira-occurrences.xlsx")
+})
+
+testthat::test_that("build_export_summary blocks export until a license is chosen", {
+    df <- sample_mapped()
+    df$license <- NULL
+    s <- saira:::build_export_summary(mapped_data = df)
+    testthat::expect_identical(s$missing_required, "license")
+    testthat::expect_true(s$export_blocked)
 })
 
 testthat::test_that("build_export_summary excludes generalization when disabled", {
@@ -150,6 +159,18 @@ testthat::test_that("build_export_summary blocks export when justification is pe
     )
     testthat::expect_true(s$all_required_present)
     testthat::expect_true(s$justification_pending)
+    testthat::expect_true(s$export_blocked)
+})
+
+testthat::test_that("build_export_summary blocks export when some basisOfRecord values are empty", {
+    df <- sample_mapped()
+    s_ok <- saira:::build_export_summary(mapped_data = df)
+    testthat::expect_identical(s_ok$bor_blank_count, 0L)
+
+    df$basisOfRecord[1] <- ""
+    s <- saira:::build_export_summary(mapped_data = df)
+    testthat::expect_true(s$all_required_present)
+    testthat::expect_identical(s$bor_blank_count, 1L)
     testthat::expect_true(s$export_blocked)
 })
 

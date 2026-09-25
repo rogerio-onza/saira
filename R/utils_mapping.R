@@ -190,22 +190,65 @@ sanitize_basis_of_record_terms <- function(values) {
     ifelse(chr %in% allowed, chr, "")
 }
 
-auto_suggest_basis_of_record_term <- function(raw_value) {
-    if (is_blank_value(raw_value)) {
-        return("")
-    }
+# Common spreadsheet values that name one basisOfRecord term without doubt.
+# Keys are normalize_for_matching() output. Values that can mean more than one
+# term ("coleta", "registro fotografico") stay out: the assistant asks for them.
+basis_of_record_synonyms <- c(
+    "observacao" = "HumanObservation",
+    "observacao em campo" = "HumanObservation",
+    "observacao de campo" = "HumanObservation",
+    "observacao direta" = "HumanObservation",
+    "avistamento" = "HumanObservation",
+    "observation" = "HumanObservation",
+    "field observation" = "HumanObservation",
+    "armadilha fotografica" = "MachineObservation",
+    "camera trap" = "MachineObservation",
+    "especime preservado" = "PreservedSpecimen",
+    "material preservado" = "PreservedSpecimen",
+    "material preservado herbario" = "PreservedSpecimen",
+    "especime de herbario" = "PreservedSpecimen",
+    "especime de museu" = "PreservedSpecimen",
+    "exsicata" = "PreservedSpecimen",
+    "herbarium specimen" = "PreservedSpecimen",
+    "museum specimen" = "PreservedSpecimen",
+    "amostra de tecido" = "MaterialSample",
+    "tissue sample" = "MaterialSample",
+    "especime vivo" = "LivingSpecimen",
+    "fossil" = "FossilSpecimen"
+)
 
-    allowed_terms <- get_basis_of_record_terms()
-    term_match <- match(
-        tolower(trimws(as.character(raw_value)[[1]])),
-        tolower(allowed_terms)
+#' Suggest a basisOfRecord term for each raw value
+#'
+#' Matches, in order: the DwC term itself (case, space and underscore
+#' insensitive), its English or Portuguese label, then
+#' `basis_of_record_synonyms`. Accents do not matter. Vectorized.
+#'
+#' @param raw_values Character vector of raw spreadsheet values
+#' @return Character vector of the same length: a DwC term, or "" when no
+#'   match is certain
+#' @noRd
+auto_suggest_basis_of_record_terms <- function(raw_values) {
+    norm <- normalize_for_matching(raw_values)
+    norm[is.na(norm)] <- ""
+    out <- rep("", length(norm))
+
+    terms <- get_basis_of_record_terms()
+    labels_en <- vapply(basis_of_record_vocab_catalog, function(item) item$label_en, character(1))
+    labels_pt <- vapply(basis_of_record_vocab_catalog, function(item) item$label_pt, character(1))
+    lookup <- c(
+        stats::setNames(terms, gsub(" ", "", normalize_for_matching(terms), fixed = TRUE)),
+        stats::setNames(terms, normalize_for_matching(labels_en)),
+        stats::setNames(terms, normalize_for_matching(labels_pt)),
+        basis_of_record_synonyms
     )
 
-    if (is.na(term_match)) {
-        return("")
-    }
-
-    allowed_terms[[term_match]]
+    compact <- gsub(" ", "", norm, fixed = TRUE)
+    hit <- lookup[compact]
+    by_label <- is.na(hit)
+    hit[by_label] <- lookup[norm[by_label]]
+    found <- !is.na(hit) & nzchar(norm)
+    out[found] <- unname(hit[found])
+    out
 }
 
 sanitize_basis_of_record_map <- function(basis_of_record_map) {
@@ -266,15 +309,19 @@ map_basis_of_record_values <- function(raw_values, basis_of_record_map = NULL) {
     raw_chr[is.na(raw_values)] <- ""
     keys <- normalize_basis_of_record_keys(raw_chr)
 
-    if (is.null(basis_of_record_map) || length(basis_of_record_map) == 0) {
-        return(rep("", length(keys)))
-    }
-
+    # A value the assistant has a decision for keeps it, a skip ("") included.
+    # Any other value gets the automatic suggestion, so a mapped column converts
+    # without opening the assistant.
     clean_map <- sanitize_basis_of_record_map(basis_of_record_map)
     mapped <- unname(clean_map[keys])
-    mapped[is.na(mapped)] <- ""
-    mapped <- sanitize_basis_of_record_terms(mapped)
-    mapped
+    undecided <- is.na(mapped)
+    if (any(undecided)) {
+        # Suggest once per distinct value: a column has few, over many rows.
+        pending <- raw_chr[undecided]
+        distinct <- unique(pending)
+        mapped[undecided] <- auto_suggest_basis_of_record_terms(distinct)[match(pending, distinct)]
+    }
+    sanitize_basis_of_record_terms(mapped)
 }
 
 # ---------------------------------------------------------------------------
@@ -1082,77 +1129,6 @@ finalize_value_result <- function(result, sampled_n) {
         compatible_type = isTRUE(result$compatible_type),
         sampled_n = as.integer(sampled_n),
         valid_ratio = valid_ratio
-    )
-}
-
-compute_value_score <- function(values, term, name_score, max_sample_n = 1000L) {
-    values_chr <- as.character(values)
-    values_chr[is.na(values)] <- NA_character_
-    non_blank <- values_chr[!is.na(values_chr) & nzchar(trimws(values_chr))]
-
-    if (length(non_blank) == 0) {
-        return(list(
-            score = 0,
-            reason = "empty_column",
-            compatible_type = FALSE,
-            sampled_n = 0L,
-            valid_ratio = 0
-        ))
-    }
-
-    if (name_score < 0.45) {
-        return(list(
-            score = 0,
-            reason = "low_name_confidence",
-            compatible_type = TRUE,
-            sampled_n = 0L,
-            valid_ratio = 0
-        ))
-    }
-
-    sampled_values <- sample_values_for_scoring(
-        values = values_chr,
-        name_score = name_score,
-        max_sample_n = max_sample_n
-    )
-    if (length(sampled_values) == 0) {
-        return(list(
-            score = 0,
-            reason = "empty_column",
-            compatible_type = FALSE,
-            sampled_n = 0L,
-            valid_ratio = 0
-        ))
-    }
-
-    term_name <- as.character(term)
-
-    if (identical(term_name, "decimalLatitude")) {
-        lat_result <- validate_numeric_range(sampled_values, -90, 90)
-        return(finalize_value_result(lat_result, sampled_n = length(sampled_values)))
-    }
-
-    if (identical(term_name, "decimalLongitude")) {
-        lon_result <- validate_numeric_range(sampled_values, -180, 180)
-        return(finalize_value_result(lon_result, sampled_n = length(sampled_values)))
-    }
-
-    if (identical(term_name, "scientificName")) {
-        sn_result <- validate_scientific_name_pattern(sampled_values)
-        return(finalize_value_result(sn_result, sampled_n = length(sampled_values)))
-    }
-
-    if (identical(term_name, "individualCount")) {
-        count_result <- validate_individual_count(sampled_values)
-        return(finalize_value_result(count_result, sampled_n = length(sampled_values)))
-    }
-
-    list(
-        score = 0.80,
-        reason = "neutral_no_validator",
-        compatible_type = TRUE,
-        sampled_n = length(sampled_values),
-        valid_ratio = 0.80
     )
 }
 

@@ -27,7 +27,7 @@ needed_functions <- c(
     "sanitize_map_selection",
     "normalize_basis_of_record_key",
     "sanitize_basis_of_record_term",
-    "auto_suggest_basis_of_record_term",
+    "auto_suggest_basis_of_record_terms",
     "sanitize_basis_of_record_map",
     "extract_basis_of_record_unique_entries",
     "map_basis_of_record_values",
@@ -60,7 +60,6 @@ needed_functions <- c(
     "get_basis_of_record_term_choices",
     "is_valid_basis_of_record_term",
     "compute_name_score",
-    "compute_value_score",
     "run_rostrum_stage1",
     "mod_mapping_server"
 )

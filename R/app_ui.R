@@ -20,7 +20,11 @@ app_ui <- function() {
             ),
             shiny::tags$link(
                 rel = "stylesheet",
-                href = paste0("www/vendor/fontawesome/css/all.min.css?v=", css_version)
+                href = paste0("www/vendor/phosphor/regular/style.css?v=", css_version)
+            ),
+            shiny::tags$link(
+                rel = "stylesheet",
+                href = paste0("www/vendor/phosphor/light/style.css?v=", css_version)
             ),
             shiny::tags$link(
                 rel = "stylesheet",
@@ -57,16 +61,15 @@ app_ui <- function() {
                 code_font = bslib::font_collection("Space Mono", "monospace")
             ),
 
+            # Workflow steps: numbered, in order. The number is static markup, so a
+            # language switch only re-renders the title (ADR-128).
             # Tab: Home
             bslib::nav_panel(
                 title = shiny::tags$span(
-                    shiny::icon("home", class = "fa-solid"),
-                    " ",
-                    shiny::tags$span(
-                        class = "nav-title-container",
-                        shiny::tags$span(tr("nav_home", "pt"), class = "nav-title-static"),
-                        shiny::uiOutput("nav_upload_title", class = "nav-title-dynamic", inline = TRUE)
-                    )
+                    class = "nav-title-container",
+                    shiny::tags$span("1", class = "nav-step-num", `aria-hidden` = "true"),
+                    shiny::tags$span(tr("nav_home", "pt"), class = "nav-title-static"),
+                    shiny::uiOutput("nav_upload_title", class = "nav-title-dynamic", inline = TRUE)
                 ),
                 value = "upload",
                 mod_upload_ui("upload")
@@ -76,11 +79,11 @@ app_ui <- function() {
             bslib::nav_panel(
                 title = shiny::tags$span(
                     class = "nav-title-container",
+                    shiny::tags$span("2", class = "nav-step-num", `aria-hidden` = "true"),
                     shiny::tags$span(tr("nav_mapping", "pt"), class = "nav-title-static"),
                     shiny::uiOutput("nav_mapping_title", class = "nav-title-dynamic", inline = TRUE)
                 ),
                 value = "mapping",
-                icon = shiny::icon("arrows-alt", class = "fa-solid"),
                 mod_mapping_ui("mapping")
             ),
 
@@ -88,109 +91,108 @@ app_ui <- function() {
             bslib::nav_panel(
                 title = shiny::tags$span(
                     class = "nav-title-container",
+                    shiny::tags$span("3", class = "nav-step-num", `aria-hidden` = "true"),
                     shiny::tags$span(tr("nav_preview", "pt"), class = "nav-title-static"),
                     shiny::uiOutput("nav_preview_title", class = "nav-title-dynamic", inline = TRUE)
                 ),
                 value = "preview",
-                icon = shiny::icon("table", class = "fa-solid"),
                 mod_preview_ui("preview")
             ),
 
-            # Dropdown: Validation
-            bslib::nav_menu(
+            # Tab: Validate Names
+            bslib::nav_panel(
                 title = shiny::tags$span(
-                    shiny::icon("check-circle", class = "fa-solid"),
-                    shiny::tags$span(
-                        class = "nav-title-container",
-                        shiny::tags$span(tr("nav_validate", "pt"), class = "nav-title-static"),
-                        shiny::uiOutput("nav_validate_title", class = "nav-title-dynamic", inline = TRUE)
-                    )
+                    class = "nav-title-container",
+                    shiny::tags$span("4", class = "nav-step-num", `aria-hidden` = "true"),
+                    shiny::tags$span(tr("nav_validate_names", "pt"), class = "nav-title-static"),
+                    shiny::uiOutput("nav_validate_names_title", class = "nav-title-dynamic", inline = TRUE)
                 ),
+                value = "validate_names",
+                mod_validate_names_ui("validate_names")
+            ),
 
-                # Tab: Validate Names
-                bslib::nav_panel(
-                    title = shiny::tags$span(
-                        class = "nav-title-container",
-                        shiny::tags$span(tr("nav_validate_names", "pt"), class = "nav-title-static"),
-                        shiny::uiOutput("nav_validate_names_title", class = "nav-title-dynamic", inline = TRUE)
-                    ),
-                    value = "validate_names",
-                    icon = shiny::icon("dna", class = "fa-solid"),
-                    mod_validate_names_ui("validate_names")
+            # Tab: Validate Coords
+            bslib::nav_panel(
+                title = shiny::tags$span(
+                    class = "nav-title-container",
+                    shiny::tags$span("5", class = "nav-step-num", `aria-hidden` = "true"),
+                    shiny::tags$span(tr("nav_validate_coords", "pt"), class = "nav-title-static"),
+                    shiny::uiOutput("nav_validate_coords_title", class = "nav-title-dynamic", inline = TRUE)
                 ),
+                value = "validate_coords",
+                mod_validate_coords_ui("validate_coords")
+            ),
 
-                # Tab: Validate Coords
-                bslib::nav_panel(
-                    title = shiny::tags$span(
-                        class = "nav-title-container",
-                        shiny::tags$span(tr("nav_validate_coords", "pt"), class = "nav-title-static"),
-                        shiny::uiOutput("nav_validate_coords_title", class = "nav-title-dynamic", inline = TRUE)
-                    ),
-                    value = "validate_coords",
-                    icon = shiny::icon("map-marker-alt", class = "fa-solid"),
-                    mod_validate_coords_ui("validate_coords")
+            # Tab: Generalization (sensitive species)
+            bslib::nav_panel(
+                title = shiny::tags$span(
+                    class = "nav-title-container",
+                    shiny::tags$span("6", class = "nav-step-num", `aria-hidden` = "true"),
+                    shiny::tags$span(tr("nav_generalize", "pt"), class = "nav-title-static"),
+                    shiny::uiOutput("nav_generalize_title", class = "nav-title-dynamic", inline = TRUE)
                 ),
-
-                # Tab: Generalization (sensitive species)
-                bslib::nav_panel(
-                    title = shiny::tags$span(
-                        class = "nav-title-container",
-                        shiny::tags$span(tr("nav_generalize", "pt"), class = "nav-title-static"),
-                        shiny::uiOutput("nav_generalize_title", class = "nav-title-dynamic", inline = TRUE)
-                    ),
-                    value = "sensitive_coords",
-                    icon = shiny::icon("shield-halved", class = "fa-solid"),
-                    mod_sensitive_coords_ui("sensitive_coords")
-                )
+                value = "sensitive_coords",
+                mod_sensitive_coords_ui("sensitive_coords")
             ),
 
             # Tab: Export (review-before-publish summary; last workflow step)
             bslib::nav_panel(
                 title = shiny::tags$span(
                     class = "nav-title-container",
+                    shiny::tags$span("7", class = "nav-step-num", `aria-hidden` = "true"),
                     shiny::tags$span(tr("nav_export", "pt"), class = "nav-title-static"),
                     shiny::uiOutput("nav_export_title", class = "nav-title-dynamic", inline = TRUE)
                 ),
                 value = "export",
-                icon = shiny::icon("file-export", class = "fa-solid"),
                 mod_export_ui("export")
             ),
 
+            # Spacer pushes the reference tabs, the language selector and the
+            # version badge to the right of the first header row.
+            bslib::nav_spacer(),
+
+            # Reference tabs: icon + word, right side of the header. The word
+            # hides where the single-row header has no room for it (ADR-132).
             # Tab: Wiki
             bslib::nav_panel(
                 title = shiny::tags$span(
-                    class = "nav-title-container",
-                    shiny::tags$span(tr("nav_wiki", "pt"), class = "nav-title-static"),
+                    class = "nav-title-container nav-tool",
+                    shiny::tags$span(
+                        class = "nav-title-static",
+                        ph_icon("book-open"),
+                        shiny::tags$span(tr("nav_wiki", "pt"), class = "nav-tool-label")
+                    ),
                     shiny::uiOutput("nav_wiki_title", class = "nav-title-dynamic", inline = TRUE)
                 ),
                 value = "wiki",
-                icon = shiny::icon("book", class = "fa-solid"),
                 mod_wiki_ui("wiki")
             ),
 
             # Tab: Help
             bslib::nav_panel(
                 title = shiny::tags$span(
-                    class = "nav-title-container",
-                    shiny::tags$span(tr("nav_help", "pt"), class = "nav-title-static"),
+                    class = "nav-title-container nav-tool",
+                    shiny::tags$span(
+                        class = "nav-title-static",
+                        ph_icon("circle-question"),
+                        shiny::tags$span(tr("nav_help", "pt"), class = "nav-tool-label")
+                    ),
                     shiny::uiOutput("nav_help_title", class = "nav-title-dynamic", inline = TRUE)
                 ),
                 value = "help",
-                icon = shiny::icon("question-circle", class = "fa-solid"),
                 mod_help_ui("help")
             ),
-
-            # Spacer pushes the language selector and version badge to the right
-            bslib::nav_spacer(),
 
             # Language selector
             bslib::nav_item(
                 shiny::selectInput(
                     inputId = "lang_switch",
                     label = shiny::tags$span(tr("a11y_lang_switch_label", "pt"), class = "visually-hidden"),
-                    choices = c("Portugu\u00EAs" = "pt", "English" = "en"),
+                    # Short codes keep the header row compact; the hidden label
+                    # names the control for screen readers.
+                    choices = c("PT" = "pt", "EN" = "en"),
                     selected = "pt",
-                    width = "150px",
+                    width = "auto",
                     selectize = FALSE
                 )
             ),

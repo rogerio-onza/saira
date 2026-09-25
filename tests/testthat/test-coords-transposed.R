@@ -185,3 +185,28 @@ testthat::test_that("coords_transposed_corrections still resolves ISO3 when it i
     testthat::expect_identical(calls, 1L)
     testthat::expect_identical(out$informed_country, c("BRA", "BRA"))
 })
+
+testthat::test_that("a mixed payload keeps the original of each row that sends no verbatim value", {
+    # UTM rows send their own verbatim pair; a transposed or manual fix in the
+    # same payload sends NA there and must still keep the value it overwrites.
+    df <- data.frame(
+        occurrenceID = c("utm", "swap", "untouched"),
+        decimalLatitude  = c("7805441", "-47.9", "-10"),
+        decimalLongitude = c("574699", "-15.8", "-50"),
+        verbatimLatitude  = c("", "", ""),
+        verbatimLongitude = c("", "", ""),
+        stringsAsFactors = FALSE
+    )
+    corr <- data.frame(
+        occurrenceID = c("utm", "swap"),
+        decimalLatitude = c(-19.84565, -15.8), decimalLongitude = c(-56.2866, -47.9),
+        verbatimLatitude = c("7805441", NA), verbatimLongitude = c("574699", NA),
+        stringsAsFactors = FALSE
+    )
+
+    out <- apply_coords_correction_payload(df, list(corrections = corr))
+
+    testthat::expect_identical(out$verbatimLatitude, c("7805441", "-47.9", ""))
+    testthat::expect_identical(out$verbatimLongitude, c("574699", "-15.8", ""))
+    testthat::expect_identical(out$decimalLatitude, c("-19.84565", "-15.8", "-10"))
+})

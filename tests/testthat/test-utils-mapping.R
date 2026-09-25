@@ -51,6 +51,41 @@ testthat::test_that("collapse_mapped_values preserves token order and ignores co
     testthat::expect_identical(out[[3]], "X | Y")
 })
 
+# ADR-116 made collapse_mapped_values() work a column at a time. This is the
+# correctness half of that change, so it runs on every test pass, not only
+# under RUN_PERF like the timing half in test-performance-regression.R.
+testthat::test_that("multi-column collapse matches the per-row reference exactly", {
+    reference <- function(df, cols, out_sep = " | ") {
+        normalized <- lapply(cols, function(cn) {
+            saira:::normalize_semicolon_tokens(df[[cn]], out_sep = out_sep)
+        })
+        vapply(seq_len(nrow(df)), function(i) {
+            tokens <- character(0)
+            for (col_values in normalized) {
+                tokens <- c(tokens,
+                            saira:::split_output_tokens(col_values[[i]], out_sep = out_sep))
+            }
+            if (length(tokens) == 0) return(NA_character_)
+            paste(tokens, collapse = out_sep)
+        }, FUN.VALUE = character(1))
+    }
+
+    # Blank cells, NA, internal empty tokens, all-separator, semicolons, factors.
+    df <- data.frame(
+        a = c("x |  | y", " | ", NA, "p;q", "solo", "", "  "),
+        b = c("z", "w", NA, " ; ", NA, "", "v"),
+        c = c(NA, "k |  ", "m", "n", " | | ", "t", NA),
+        stringsAsFactors = FALSE
+    )
+    cols <- c("a", "b", "c")
+    testthat::expect_identical(collapse_mapped_values(df, cols), reference(df, cols))
+
+    fct <- data.frame(a = factor(c("u |  | v", NA)), b = factor(c("s", "r")))
+    testthat::expect_identical(
+        collapse_mapped_values(fct, c("a", "b")), reference(fct, c("a", "b"))
+    )
+})
+
 testthat::test_that("derive_dynprops_key normalizes accents and special chars", {
     testthat::expect_identical(saira:::derive_dynprops_key("Localidade"), "localidade")
     testthat::expect_identical(saira:::derive_dynprops_key("ÁreaProtegida"), "areaprotegida")
@@ -514,36 +549,6 @@ testthat::test_that("compute_name_score prioritizes exact match and synonyms", {
     testthat::expect_true(low_res$score <= 0.60)
 })
 
-testthat::test_that("compute_value_score validates coordinates and blocks incompatible type", {
-    lat_ok <- c("-12.1", "-23.5", "0.0", "45.9")
-    lat_bad <- c("abc", "texto", "sem numero", "x")
-
-    ok_res <- compute_value_score(lat_ok, term = "decimalLatitude", name_score = 1.0)
-    bad_res <- compute_value_score(lat_bad, term = "decimalLatitude", name_score = 1.0)
-
-    testthat::expect_true(ok_res$score >= 0.90)
-    testthat::expect_true(ok_res$compatible_type)
-
-    testthat::expect_true(bad_res$score <= 0.60)
-    testthat::expect_false(bad_res$compatible_type)
-})
-
-testthat::test_that("compute_value_score validates scientificName and individualCount", {
-    sn_ok <- c("Panthera onca", "Leopardus sp.", "Leopardus cf. pardalis")
-    sn_bad <- c("foo", "123", "???")
-
-    count_ok <- c("1", "2", "0", "9")
-    count_bad <- c("one", "-1", "3.7", "abc")
-
-    sn_ok_res <- compute_value_score(sn_ok, term = "scientificName", name_score = 1.0)
-    sn_bad_res <- compute_value_score(sn_bad, term = "scientificName", name_score = 1.0)
-    count_ok_res <- compute_value_score(count_ok, term = "individualCount", name_score = 1.0)
-    count_bad_res <- compute_value_score(count_bad, term = "individualCount", name_score = 1.0)
-
-    testthat::expect_true(sn_ok_res$score > sn_bad_res$score)
-    testthat::expect_true(count_ok_res$score > count_bad_res$score)
-})
-
 testthat::test_that("run_rostrum_stage1 excludes temporal inference except exact match", {
     syn <- data.frame(
         term = c("eventDate"),
@@ -803,9 +808,42 @@ testthat::test_that("build_processed_mapping_df injects constant_values across a
 testthat::test_that("basisOfRecord helpers normalize and auto-suggest canonical terms", {
     testthat::expect_identical(normalize_basis_of_record_key("  HumanObservation  "), "humanobservation")
     testthat::expect_identical(normalize_basis_of_record_key(NA_character_), "")
-    testthat::expect_identical(auto_suggest_basis_of_record_term("humanobservation"), "HumanObservation")
-    testthat::expect_identical(auto_suggest_basis_of_record_term("HumanObservation"), "HumanObservation")
-    testthat::expect_identical(auto_suggest_basis_of_record_term("camera trap"), "")
+    testthat::expect_identical(
+        auto_suggest_basis_of_record_terms(c("humanobservation", "HumanObservation", "Human_Observation")),
+        rep("HumanObservation", 3L)
+    )
+})
+
+testthat::test_that("auto_suggest_basis_of_record_terms matches labels and common synonyms", {
+    raw <- c(
+        "Observação", "Observação em campo", "Espécime preservado",
+        "Material preservado (herbário)", "Armadilha fotográfica", "Amostra de tecido",
+        "Machine Observation", "Espécime Fóssil"
+    )
+    testthat::expect_identical(
+        auto_suggest_basis_of_record_terms(raw),
+        c("HumanObservation", "HumanObservation", "PreservedSpecimen", "PreservedSpecimen",
+          "MachineObservation", "MaterialSample", "MachineObservation", "FossilSpecimen")
+    )
+})
+
+testthat::test_that("auto_suggest_basis_of_record_terms leaves ambiguous and blank values empty", {
+    raw <- c("Coleta", "Registro fotográfico", "Unknown method", "", NA_character_)
+    testthat::expect_identical(auto_suggest_basis_of_record_terms(raw), rep("", 5L))
+})
+
+testthat::test_that("map_basis_of_record_values converts without the assistant and keeps its decisions", {
+    raw <- c("HumanObservation", "Observação", "Coleta", "Armadilha fotográfica")
+    testthat::expect_identical(
+        map_basis_of_record_values(raw, NULL),
+        c("HumanObservation", "HumanObservation", "", "MachineObservation")
+    )
+    # A saved decision wins over the suggestion, a skip ("") included.
+    decisions <- c("coleta" = "PreservedSpecimen", "armadilha fotográfica" = "")
+    testthat::expect_identical(
+        map_basis_of_record_values(raw, decisions),
+        c("HumanObservation", "HumanObservation", "PreservedSpecimen", "")
+    )
 })
 
 testthat::test_that("sanitize_basis_of_record_map filters invalid terms and keeps keys normalized", {

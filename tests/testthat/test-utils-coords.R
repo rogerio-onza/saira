@@ -373,6 +373,21 @@ testthat::test_that("coords_points_in_coverage uses polygon coverage before bbox
     testthat::expect_identical(inside, c(TRUE, FALSE, FALSE))
 })
 
+testthat::test_that("coords_points_in_coverage agrees with terra::extract on the embedded Americas layer", {
+    coverage_ref <- coords_read_embedded_ne_land()$coverage_ref
+    testthat::skip_if(is.null(coverage_ref), "embedded Natural Earth layer not available")
+    set.seed(42)
+    x <- data.frame(
+        decimalLongitude = stats::runif(2000, -130, 10),
+        decimalLatitude = stats::runif(2000, -60, 40)
+    )
+    pts <- terra::vect(x, geom = c("decimalLongitude", "decimalLatitude"),
+                       crs = "+proj=longlat +datum=WGS84 +no_defs")
+    extracted <- terra::extract(coverage_ref, pts)
+    expected <- !is.na(extracted[!duplicated(extracted[, 1]), 2])
+    testthat::expect_identical(coords_points_in_coverage(x, coverage_ref = coverage_ref), expected)
+})
+
 testthat::test_that("coords_cc_sea_flagged splits embedded Americas and global fallback rows", {
     calls <- list()
 

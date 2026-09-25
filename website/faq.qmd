@@ -69,7 +69,7 @@ Sim. O fluxo é flexível: você pode remapear um campo, recarregar a planilha o
 ### Quais formatos de planilha o Saíra aceita?
 
 ::: {.faq-card}
-CSV (`.csv`, `.tsv`, `.txt`), com detecção automática de codificação e separador. Também aceita pacotes de **armadilha fotográfica** (`.zip`): Camtrap DP e exportações do Wildlife Insights. Detalhes em [Importando seus dados](tutoriais/02-upload.qmd).
+CSV (`.csv`, `.tsv`, `.txt`), com detecção automática de codificação e separador, e Excel (`.xlsx`), lido da primeira aba. Também aceita pacotes de **armadilha fotográfica** (`.zip`): Camtrap DP e exportações do Wildlife Insights. Detalhes em [Importando seus dados](tutoriais/02-upload.qmd).
 :::
 
 ### Posso definir um valor fixo para o conjunto todo?

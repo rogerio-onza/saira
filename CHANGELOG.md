@@ -7,11 +7,58 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **upload:** Accept Excel (.xlsx, first sheet) and plain-text (.txt) data files
+- **coords:** Fix a latitude or longitude directly in the coordinates table, with revalidation and undo, ADR-129
+
 ### Changed
-- **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126
+- **mapping:** Make license a required term: its card shows as missing and export is blocked until a license is chosen
+- **mapping:** Import a mapping guide in about half the time and pick a column about three times faster: a pick re-renders only its own card
+- **ui:** Put the header in one row from 1360px and switch the icons to Phosphor, ADR-132
+- **upload:** Use one upload panel across the home page, with the format tips below it, ADR-132
+- **mapping:** Filter cards by All, Mapped or Pending in the panel header; color the Required tag by state, ADR-132
+- **mapping:** Build the card grid in the background after an upload, so the tab opens ready, ADR-132
+- **coords:** Move the column check, the run button and the fixes to a bar on top; UTM pairs get a band of their own; "Show in table" in a point popup opens the row in the table, ADR-132
+- **names:** Move providers, options and the run button to a full-width bar on top; drop the three report counters; bigger MMA, IUCN and invasive pills, ADR-132
+- **generalization:** Answer Chapman's Table 5 as one decision table; color map points by threat group; mode as two option cards; a species exception is one row of the same table, ADR-132
+- **export:** Show pending items with their fix beside one package card (numbers, files, IPT next step), both the same height, and a fixed download bar, ADR-132
+- **preview:** Put the title inside the table card and show 15 rows, ADR-132
+- **names:** GBIF is always on; providers and options are one checklist that shows the query order, ADR-130
+- **ui:** Square filter chips in the color of what they filter, borderless status tags, invasive species in brown; center the step row and group Wiki, Help, language and version on the right; selection states use the brand blue
+- **names:** Remove the percentage bar; the run shows only its current phase
+- **site:** Explain the in-table coordinate fix in the coordinate tutorial, in PT and EN
+- **site:** Refresh ten tutorial screenshots in PT and EN and name the steps as the app does
+- **ui:** Flatten tables, buttons, alerts and filter pills, and darken state-colored text to pass AA contrast
+- **mapping:** Flatten the cards: light state fills, pastel status badges, a Required tag and a flat sidebar
+- **upload:** Redesign the home page: upload panel on the left, required columns with definitions on the right
+- **ui:** Replace the tab bar with a two-row header and numbered steps, ADR-128
+- **ui:** Drop shadows and gradients, use warm neutral borders and a darker muted text for AA contrast, ADR-127
+- **export:** Match the MMA threat list once per species, not once per row, so large datasets export faster
+- **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
-- **tests:** Pin the name validation batch test to GBIF so a local Fauna BR cache does not exhaust memory
+- **upload:** Stop the browser tab from freezing after an upload in English
+- **basisOfRecord:** Convert mapped values without the assistant, recognize common Portuguese values, and block export on empty values, ADR-131
+- **upload:** Show "Upload complete" in the current language
+- **upload:** Show an invalid file format in a red box
+- **mapping:** Count alias and template matches in the auto-map notice and drop the internal "V1" label
+- **occurrenceStatus:** Restore the accents of the Portuguese definition
+- **coords:** Speed up the sea check on large datasets, with the same result
+- **mapping:** Show a template import that matched no column as an error, and a partial match as a warning
+- **ui:** Make links inside alert boxes readable
+- **mapping:** Give the template import modal the Home dropzone and a readable progress bar
+- **mapping:** Speed up automatic mapping when many terms share the same column
+- **site:** Drop the removed Profile selector from the coordinate tutorial, in PT and EN
+- **names:** Keep the report counts readable when the table is tall
+- **mapping:** Return the license and language cards to unmapped when their box is unticked
+- **coords:** Frame the Coordinates and Generalization maps on valid points only, with no grey bands, and count the points the map cannot draw
+- **coords:** Draw the map points right after validation, not only after a filter click
+- **coords:** Keep the original of a transposed fix in verbatimLatitude/Longitude when the same export converts UTM points
+- **tests:** Pin the name validation batch test to GBIF so a local Fauna BR cache does not exhaust memory ([#131](https://github.com/rogerio-onza/saira/pull/131))
+
+### Tests
+- **build:** Serve the E2E app through run_app() and keep Chrome timers unthrottled in long runs
+- **build:** Guard the mapping reactivity fixes and run the full flow end to end in the release gate
 
 ## [0.11.2] - 2026-09-11
 

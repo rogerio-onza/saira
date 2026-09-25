@@ -2,6 +2,33 @@
    UTILITY CLASSES
    ============================================================================= */
 
+/* Phosphor icons: an inline box on the text baseline, as the old icon font had. */
+.ph,
+.ph-light {
+  display: inline-block;
+  vertical-align: -0.125em;
+}
+
+.ph-3x {
+  font-size: 3em;
+}
+
+.ph-spin {
+  animation: ph-spin 1s linear infinite;
+}
+
+@keyframes ph-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-spin {
+    animation: none;
+  }
+}
+
 .text-mono {
   font-family: var(--font-mono);
 }
@@ -91,7 +118,7 @@
 }
 
 .stat-box-warn .stat-value {
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .stat-box-muted .stat-value {

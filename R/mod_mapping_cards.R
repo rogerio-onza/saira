@@ -17,13 +17,15 @@
 #' @param cat_class CSS class for the category
 #' @param scientificname_mapped Logical; when TRUE, taxonRank and specificEpithet
 #'   are locked because they are derived from scientificName.
+#' @param required Logical; when TRUE the card shows a "Required" tag. The value
+#'   is fixed per term, so the per-card update path never has to change it.
 #'
 #'   Selection-dependent content (the source sample, the basisOfRecord assistant
 #'   button, and the dynamicProperties key inputs) is rendered into a per-term
 #'   `carddyn_<term>` uiOutput slot, so picking a column updates only that card
 #'   instead of rebuilding the whole 50-selectize grid (see mod_mapping.R).
 #' @noRd
-build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL) {
+build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL, required = FALSE) {
     term <- item$term
 
     # taxonRank/specificEpithet/infraspecificEpithet are inferred from
@@ -72,6 +74,9 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                         item$desc,
                         placement = "right"
                     )
+                },
+                if (isTRUE(required)) {
+                    shiny::tags$span(class = "field-required-tag", tr("mapping_required", lang_r))
                 }
             ),
             if (!is.null(badge_info) && term != "occurrenceID" && !locked_taxon) {
@@ -96,7 +101,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
             shiny::div(
                 class = "alert alert-info",
                 style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
-                shiny::icon("dna"),
+                ph_icon("dna"),
                 " ", tr("taxon_auto_derived", lang_r)
             )
         } else if (term == "occurrenceID") {
@@ -349,7 +354,7 @@ build_constant_value_input <- function(term, ns, lang_r, input) {
             ns = ns,
             shiny::div(
                 class = "field-allrows-note",
-                shiny::icon("info-circle"),
+                ph_icon("info-circle"),
                 " ", tr("mapping_fills_every_row", lang_r)
             ),
             shiny::textInput(
@@ -382,7 +387,7 @@ build_basis_assistant_button <- function(current_val, ns, lang_r) {
         ns("open_basis_of_record_assistant"),
         tr("bor_assistant_button", lang_r),
         class = "btn btn-outline-primary btn-sm w-100 mt-2",
-        icon = shiny::icon("list-check")
+        icon = ph_icon("list-check")
     )
 }
 
@@ -403,7 +408,7 @@ build_establishment_assistant_button <- function(ns, lang_r) {
         ns("open_establishment_assistant"),
         tr("est_assistant_button", lang_r),
         class = "btn btn-outline-primary btn-sm w-100 mt-2",
-        icon = shiny::icon("seedling")
+        icon = ph_icon("seedling")
     )
 }
 
@@ -417,7 +422,7 @@ build_establishment_assistant_button <- function(ns, lang_r) {
 build_establishment_degree_hint <- function(ns, lang_r) {
     shiny::div(
         class = "alert alert-info est-degree-hint",
-        shiny::icon("link"),
+        ph_icon("link"),
         " ",
         tr("est_degree_card_hint", lang_r),
         " ",
@@ -445,7 +450,7 @@ build_establishment_status_note <- function(answered, missing_degree, lang_r) {
         if (answered > 0L) {
             shiny::div(
                 class = "est-card-status-line",
-                shiny::icon("wand-magic-sparkles"),
+                ph_icon("wand-magic-sparkles"),
                 " ",
                 sprintf(tr("est_card_filled_by_assistant", lang_r), answered)
             )
@@ -635,6 +640,20 @@ field_state_class <- function(term, is_mapped, meta, required_terms) {
         return("field-attention")
     }
     NULL
+}
+
+#' Whether a card passes the All / Mapped / Pending filter
+#'
+#' @param mode "all", "mapped" or "pending"
+#' @param is_mapped logical, the card's mapped state
+#' @return logical
+#' @noRd
+keep_by_mapped_filter <- function(mode, is_mapped) {
+    switch(mode %||% "all",
+        mapped = isTRUE(is_mapped),
+        pending = !isTRUE(is_mapped),
+        TRUE
+    )
 }
 
 #' Determine if a mapping field is considered mapped

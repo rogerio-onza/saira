@@ -23,7 +23,7 @@ Each **row** should be one occurrence (a record of an organism in a place and ti
 To practice this and the next steps, download [`ocorrencias-demo.csv`](../../assets/exemplo/ocorrencias-demo.csv), Saíra's demonstration dataset: 1,107 occurrences of Brazilian species across several biomes, deliberately imperfect. It has 25 columns to map, day, month and year in separate columns, one date column mixing formats (slashes, times, month and year only) and two impossible years, catalogue numbers missing and repeated, coordinates swapped and out of range, records from neighbouring countries, threatened species for generalization and invasive alien species. Every tutorial step has something to resolve in it.
 :::
 
-In the **Upload** tab, drag the file onto the indicated area or click to select it.
+In the **Home** step, drag the file onto the indicated area or click to select it.
 
 ```{=html}
 <ol class="fix-steps">
@@ -38,7 +38,7 @@ In the **Upload** tab, drag the file onto the indicated area or click to select 
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/2-area-upload-resumo-arquivo-EN.png" alt="Saíra upload card with the file summary: 6 records, 7 columns, 0 MB">
+  <img src="../../assets/img/2-area-upload-resumo-arquivo-EN.png" alt="Saíra upload panel with the file summary: 1,107 records, 25 columns, 0.3 MB">
   <figcaption><b>Figure 1.</b> Upload area with the file summary (rows, columns and size) after loading.</figcaption>
 </figure>
 ```

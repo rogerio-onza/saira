@@ -819,7 +819,7 @@ testthat::test_that("class pills are pure navigation anchors — all sections al
     )
 })
 
-testthat::test_that("required-fields strip reflects live mapped status", {
+testthat::test_that("All / Mapped / Pending filter keeps the matching cards", {
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis"),
         stringsAsFactors = FALSE
@@ -833,36 +833,23 @@ testthat::test_that("required-fields strip reflects live mapped status", {
         ),
         {
             session$flushReact()
+            grid_all <- paste(output$mapping_ui$html, collapse = " ")
+            # occurrenceID is auto-UUID -> mapped; scientificName is not mapped.
+            testthat::expect_true(grepl("fieldcard_occurrenceID", grid_all, fixed = TRUE))
+            testthat::expect_true(grepl("fieldcard_scientificName", grid_all, fixed = TRUE))
+            testthat::expect_true(grepl("field-required-tag", grid_all, fixed = TRUE))
 
-            strip_before <- paste(output$required_fields_strip$html, collapse = " ")
-            for (term in c(
-                "scientificName", "eventDate", "decimalLatitude",
-                "decimalLongitude", "basisOfRecord", "occurrenceID"
-            )) {
-                testthat::expect_true(grepl(term, strip_before, fixed = TRUE))
-            }
-            # occurrenceID is auto-UUID -> always mapped.
-            testthat::expect_true(grepl(
-                "mapping-required-chip is-mapped", strip_before,
-                fixed = TRUE
-            ))
-            # scientificName not mapped yet -> a missing chip exists.
-            testthat::expect_true(grepl(
-                "mapping-required-chip is-missing", strip_before,
-                fixed = TRUE
-            ))
-
-            session$setInputs(map_scientificName = "scientificName")
+            session$setInputs(mapped_filter = "pending")
             session$flushReact()
+            grid_pending <- paste(output$mapping_ui$html, collapse = " ")
+            testthat::expect_false(grepl("fieldcard_occurrenceID", grid_pending, fixed = TRUE))
+            testthat::expect_true(grepl("fieldcard_scientificName", grid_pending, fixed = TRUE))
 
-            strip_after <- paste(output$required_fields_strip$html, collapse = " ")
-            sci_idx <- regexpr("scientificName", strip_after, fixed = TRUE)
-            chip_open <- regexpr(
-                "mapping-required-chip is-mapped",
-                substr(strip_after, 1, sci_idx[1]),
-                fixed = TRUE
-            )
-            testthat::expect_true(chip_open[1] > 0)
+            session$setInputs(mapped_filter = "mapped")
+            session$flushReact()
+            grid_mapped <- paste(output$mapping_ui$html, collapse = " ")
+            testthat::expect_true(grepl("fieldcard_occurrenceID", grid_mapped, fixed = TRUE))
+            testthat::expect_false(grepl("fieldcard_scientificName", grid_mapped, fixed = TRUE))
         }
     )
 })
@@ -1498,6 +1485,54 @@ testthat::test_that("importing a template seeds aliases through the module conne
     testthat::expect_identical(nrow(rows), 2L)
     testthat::expect_identical(rows$dwc_term, c("decimalLatitude", "scientificName"))
 })
+
+# A guide with an extra term re-runs the input-sync observer in the same flush
+# as the import. The inputs still hold their old empty values (the client has
+# not echoed the updates yet), and the observer wrote them back: the restored
+# mapping went blank until the echo, and the grid rendered twice.
+testthat::test_that("a guide import is not undone before the client echoes it", {
+    withr::local_envvar(c(SAIRA_USER = paste0("test_echo_", as.integer(Sys.time()))))
+    df <- data.frame(
+        especie = c("Panthera onca", "Leopardus pardalis"),
+        wkt = c("POINT (-55 -10)", "POINT (-54 -11)"),
+        stringsAsFactors = FALSE
+    )
+    guide <- build_mapping_guide_txt(
+        list(scientificName = "especie", footprintWKT = "wkt"),
+        df, lang = "en"
+    )
+    guide_path <- withr::local_tempfile(fileext = ".txt")
+    writeLines(guide, guide_path)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            # The cards rendered and the client echoed their empty selections.
+            session$setInputs(map_scientificName = "", map_decimalLatitude = "")
+            session$setInputs(import_template_file = list(
+                name = "guide.txt", size = 1L,
+                type = "text/plain", datapath = guide_path
+            ))
+            session$setInputs(confirm_import_template = 1)
+            session$flushReact()
+
+            testthat::expect_true("footprintWKT" %in% rv$extra_terms)
+            testthat::expect_identical(rv$map_values[["scientificName"]], "especie")
+            testthat::expect_true(isTRUE(rv$scientificname_mapped))
+
+            # The echo lands; later edits are the user's again.
+            session$setInputs(map_scientificName = "especie")
+            testthat::expect_identical(rv$map_values[["scientificName"]], "especie")
+            session$setInputs(map_scientificName = "")
+            testthat::expect_identical(rv$map_values[["scientificName"]], "")
+        }
+    )
+})
 # A fixed value on the country card fills the term for every row and overrides
 # any column mapping, so the coordinate gate has to accept it. It did not, which
 # blocked coordinate validation for the exact case the fixed value exists for: a
@@ -1665,6 +1700,47 @@ testthat::test_that("filling a required term clears its red state on the push", 
             session$setInputs(map_habitat = "especie")
             session$flushReact()
             testthat::expect_identical(last_state("habitat")$state, "")
+        }
+    )
+})
+
+# Unticking the last license box sends NULL, which observeEvent drops by
+# default, so the card stayed mapped after the clear.
+testthat::test_that("unticking the license puts its card back to required-missing", {
+    df <- data.frame(especie = c("Panthera onca"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            sent <- list()
+            real_session <- base::.subset2(session, "parent")
+            real_session$sendCustomMessage <- function(type, message) {
+                if (identical(type, "saira-toggle-field-mapped")) {
+                    sent[[length(sent) + 1L]] <<- message
+                }
+                invisible(NULL)
+            }
+            last_state <- function(term) {
+                id <- session$ns(paste0("fieldcard_", term))
+                hits <- Filter(function(m) identical(m$id, id), sent)
+                if (length(hits) == 0L) return(NULL)
+                hits[[length(hits)]]
+            }
+
+            session$flushReact()
+            session$setInputs(custom_license = "CC-BY 4.0")
+            session$flushReact()
+            testthat::expect_true(last_state("license")$mapped)
+            testthat::expect_identical(last_state("license")$state, "")
+
+            session$setInputs(custom_license = NULL)
+            session$flushReact()
+            testthat::expect_false(last_state("license")$mapped)
+            testthat::expect_identical(last_state("license")$state, "field-required-missing")
         }
     )
 })

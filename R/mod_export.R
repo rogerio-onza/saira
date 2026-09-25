@@ -36,19 +36,14 @@ mod_export_ui <- function(id) {
         ))),
         shiny::div(
             class = "container-fluid export-page",
+            shiny::uiOutput(ns("summary")),
+            # The download sits in a bar fixed to the bottom of the page, with
+            # the bundle name and what still blocks it (ADR-132).
             shiny::div(
-                class = "export-header",
-                shiny::div(
-                    class = "export-header-top",
-                    shiny::uiOutput(ns("title")),
-                    shiny::div(
-                        class = "export-header-actions",
-                        shiny::uiOutput(ns("download_btn_container"))
-                    )
-                ),
-                shiny::uiOutput(ns("subtitle"))
-            ),
-            shiny::uiOutput(ns("summary"))
+                class = "export-download-bar",
+                shiny::uiOutput(ns("download_status"), class = "export-download-status"),
+                shiny::uiOutput(ns("download_btn_container"))
+            )
         )
     )
 }
@@ -163,17 +158,24 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             s <- summary_r()
             if (length(s$missing_required) > 0L) {
                 on_navigate("mapping", term = s$missing_required[1L])
+            } else if (isTRUE(s$bor_blank_count > 0L)) {
+                on_navigate("mapping", term = "basisOfRecord")
             } else {
                 on_navigate("sensitive_coords")
             }
         }, ignoreInit = TRUE)
 
-        output$title <- shiny::renderUI({
-            shiny::h3(class = "export-title", tr("export_title", lang_r()))
-        })
-        output$subtitle <- shiny::renderUI({
-            shiny::p(class = "export-subtitle", tr("export_subtitle", lang_r()))
-        })
+        # One button per pending item, each opening the step that fixes it.
+        navigate_on <- function(input_id, tab, term = NULL) {
+            shiny::observeEvent(input[[input_id]], {
+                if (is.function(on_navigate)) on_navigate(tab, term = term)
+            }, ignoreInit = TRUE)
+        }
+        navigate_on("go_fix_justification", "sensitive_coords")
+        navigate_on("go_preview", "preview")
+        navigate_on("go_map_unmapped", "mapping")
+        navigate_on("go_map_establishment", "mapping", term = "establishmentMeans")
+        navigate_on("go_map_occid", "mapping", term = "occurrenceID")
 
         tier_label <- function(tier, lang) tr(paste0("export_tier_", tier), lang)
 
@@ -191,28 +193,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 class = "export-info-tip",
                 `data-bs-toggle` = "tooltip",
                 title = text,
-                shiny::icon("circle-info")
-            )
-        }
-
-        metric <- function(value, label) {
-            shiny::div(
-                class = paste("export-metric", if (identical(value, 0L) || identical(value, 0)) "is-zero" else NULL),
-                shiny::span(class = "export-metric-value", value),
-                shiny::span(class = "export-metric-label", label)
-            )
-        }
-
-        section_card <- function(icon, title, body) {
-            bslib::card(
-                class = "export-card",
-                bslib::card_header(
-                    shiny::div(
-                        class = "export-card-title",
-                        shiny::icon(icon, class = "me-2"), title
-                    )
-                ),
-                bslib::card_body(body)
+                ph_icon("circle-info")
             )
         }
 
@@ -233,250 +214,215 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             if (is.null(s) || !is.list(s) || s$record_count == 0L) {
                 return(shiny::div(
                     class = "alert alert-info export-empty",
-                    shiny::icon("circle-info"), " ", tr("export_empty", lang)
+                    ph_icon("circle-info"), " ", tr("export_empty", lang)
                 ))
             }
 
-            # --- Severity banner -------------------------------------------
-            banner <- if (isTRUE(s$export_blocked)) {
-                reasons <- list()
-                if (length(s$missing_required) > 0L) {
-                    reasons[[length(reasons) + 1L]] <- shiny::tags$li(
-                        tr("export_blocked_missing", lang), " ",
-                        shiny::tags$code(paste(s$missing_required, collapse = ", "))
-                    )
-                }
-                if (isTRUE(s$justification_pending)) {
-                    reasons[[length(reasons) + 1L]] <- shiny::tags$li(
-                        tr("export_blocked_justification", lang)
-                    )
-                }
-                cta_label <- if (length(s$missing_required) > 0L) {
-                    tr("export_fix_terms_cta", lang)
+            # --- Numbers ------------------------------------------------------
+            cc <- s$corrections
+            gen <- s$generalization
+            fmt_n <- function(value) {
+                if (identical(lang, "pt")) {
+                    format(value, big.mark = ".", decimal.mark = ",")
                 } else {
-                    tr("export_fix_justification_cta", lang)
+                    format(value, big.mark = ",", decimal.mark = ".")
                 }
+            }
+            # The numbers sit in a strip inside the package card (round 5,
+            # option C). Each detail line rides in the cell tooltip; records
+            # and corrections also get a line under the strip.
+            kpi <- function(value, label, sub) {
                 shiny::div(
-                    class = "export-banner export-banner--danger",
-                    shiny::icon("triangle-exclamation"),
-                    shiny::div(
-                        class = "export-banner-body",
-                        shiny::strong(tr("export_blocked_title", lang)),
-                        shiny::tags$ul(class = "export-banner-list", reasons)
-                    ),
-                    shiny::actionButton(
-                        ns("go_fix_terms"),
-                        label = shiny::tagList(cta_label, " ", shiny::icon("arrow-right")),
-                        class = "btn btn-success export-banner-action"
-                    )
-                )
-            } else if (!isTRUE(s$occurrence_id_present)) {
-                shiny::div(
-                    class = "export-banner export-banner--warning",
-                    shiny::icon("circle-info"),
-                    shiny::div(
-                        class = "export-banner-body",
-                        shiny::strong(tr("export_warn_title", lang)),
-                        shiny::p(class = "mb-0", tr("export_warn_occid", lang))
-                    )
-                )
-            } else {
-                shiny::div(
-                    class = "export-banner export-banner--ok",
-                    shiny::icon("circle-check"),
-                    shiny::div(
-                        class = "export-banner-body",
-                        shiny::strong(tr("export_ready_title", lang))
-                    )
+                    class = "export-kpi",
+                    title = sub,
+                    shiny::div(class = "export-kpi-value", fmt_n(value)),
+                    shiny::div(class = "export-kpi-label", label)
                 )
             }
+            n_aux <- length(s$files$auxiliary)
+            n_fix <- cc$names_corrected + cc$names_confirmed + cc$coord_fixes + cc$country_fills
+            records_sub <- sprintf(tr("export_kpi_records_sub", lang), s$term_count)
+            fixes_sub <- sprintf(tr("export_kpi_corrections_sub", lang),
+                                 cc$names_corrected + cc$names_confirmed, cc$coord_fixes, cc$country_fills)
+            kpis <- shiny::tagList(
+                shiny::div(
+                    class = "export-kpis",
+                    kpi(s$record_count, tr("export_kpi_records", lang), records_sub),
+                    kpi(n_fix, tr("export_kpi_corrections", lang), fixes_sub),
+                    kpi(nrow(gen), tr("export_kpi_generalized", lang),
+                        if (nrow(gen) == 0L) tr("export_gen_none_short", lang) else tr("export_kpi_generalized_sub", lang)),
+                    kpi(length(s$files$dwca) + n_aux, tr("export_kpi_files", lang),
+                        sprintf(tr("export_kpi_files_sub", lang), length(s$files$dwca), n_aux))
+                ),
+                shiny::div(
+                    class = "export-kpi-sub",
+                    shiny::span(records_sub),
+                    shiny::span(sprintf(tr("export_kpi_corrections_line", lang), fixes_sub))
+                )
+            )
 
+            # --- Pending items: one row each, with the step that fixes it ------
+            pending_row <- function(severity, body, action_id = NULL, action_label = NULL) {
+                shiny::div(
+                    class = paste0("export-pending-row is-", severity),
+                    shiny::span(class = paste0("export-sev export-sev--", severity),
+                                tr(paste0("export_sev_", severity), lang)),
+                    shiny::div(class = "export-pending-body", body),
+                    if (!is.null(action_id)) {
+                        shiny::actionButton(ns(action_id), action_label,
+                                            class = "btn btn-outline-secondary btn-sm export-pending-action")
+                    }
+                )
+            }
+            rows <- list()
+            add <- function(x) rows[[length(rows) + 1L]] <<- x
+            if (length(s$missing_required) > 0L) {
+                add(pending_row("block", shiny::tagList(
+                    tr("export_blocked_missing", lang), " ",
+                    shiny::tags$code(paste(s$missing_required, collapse = ", "))
+                ), "go_fix_terms", tr("export_fix_terms_cta", lang)))
+            }
+            if (isTRUE(s$bor_blank_count > 0L)) {
+                add(pending_row("block", sprintf(tr("export_blocked_bor_blank", lang), s$bor_blank_count),
+                                if (length(s$missing_required) == 0L) "go_fix_terms",
+                                tr("export_action_mapping", lang)))
+            }
+            if (isTRUE(s$justification_pending)) {
+                add(pending_row("block", tr("export_blocked_justification", lang),
+                                "go_fix_justification", tr("export_fix_justification_cta", lang)))
+            }
+            # A well-formed date can still be wrong: "2098" passes every format
+            # check and only a human knows it was meant to be "2008". The fix is
+            # at the source, so the button only shows the rows.
+            di <- s$date_issues
+            if (is.list(di) && di$count > 0L) {
+                add(pending_row("warn", shiny::tagList(
+                    shiny::strong(tr("export_date_range_title", lang)), " ",
+                    sprintf(tr("export_date_range_body", lang), di$count, di$min_year, di$max_year),
+                    shiny::tags$code(paste(
+                        sprintf(tr("export_date_range_row", lang),
+                                di$sample$row, di$sample$column, di$sample$value),
+                        collapse = ", "
+                    ))
+                ), "go_preview", tr("export_action_preview", lang)))
+            }
+            # A value outside the TDWG vocabulary leaves its row blank rather
+            # than travelling to GBIF as free text.
+            dropped <- call_r(establishment_dropped_r)
+            if (is.list(dropped) && length(dropped) > 0L) {
+                add(pending_row("warn", lapply(names(dropped), function(term) {
+                    entries <- dropped[[term]]
+                    shiny::tagList(
+                        sprintf(tr("export_establishment_dropped", lang),
+                                nrow(entries), term, sum(entries$n_records)), " ",
+                        shiny::tags$code(paste(sprintf("%s (%d)", entries$raw, entries$n_records),
+                                               collapse = ", "))
+                    )
+                }), "go_map_establishment", tr("export_action_mapping", lang)))
+            }
+            if (!isTRUE(s$occurrence_id_present)) {
+                add(pending_row("warn", tr("export_warn_occid", lang),
+                                "go_map_occid", tr("export_action_mapping", lang)))
+            }
             # Preserving unmapped columns in the CSV does not publish them:
             # meta.xml declares only recognized DwC terms, so GBIF drops the
-            # rest. Say it here, where the user can still go map them.
-            #
-            # `exclude` is what keeps this honest, and must stay in step with
+            # rest. `exclude` must stay in step with
             # process_for_export_with_unmapped(): a raw column whose name is
-            # already a column of the export is published under that name, not
-            # dropped. An upload carrying `occurrenceID` is the everyday case --
-            # it feeds the export whether or not the user picked it in the
-            # dropdown, so warning that GBIF would ignore it was simply false.
+            # already an export column is published under that name.
             unmapped_cols <- unmapped_raw_columns(
                 call_r(raw_data_r), call_r(map_values_r),
                 exclude = names(call_r(mapped_data_r)),
                 overridden_terms = overridden_mapping_terms(call_r(custom_values_r))
             )
-            unmapped_notice <- if (length(unmapped_cols) > 0L) {
-                shiny::div(
-                    class = "export-banner export-banner--warning",
-                    shiny::icon("circle-info"),
-                    shiny::div(
-                        class = "export-banner-body",
-                        shiny::p(
-                            class = "mb-0",
-                            sprintf(
-                                tr("export_unmapped_not_published", lang),
-                                length(unmapped_cols)
-                            )
-                        ),
-                        shiny::tags$code(paste(unmapped_cols, collapse = ", "))
-                    )
-                )
+            if (length(unmapped_cols) > 0L) {
+                add(pending_row("info", shiny::tagList(
+                    sprintf(tr("export_unmapped_not_published", lang), length(unmapped_cols)), " ",
+                    shiny::tags$code(paste(unmapped_cols, collapse = ", "))
+                ), "go_map_unmapped", tr("export_action_mapping", lang)))
             }
-
-            # A value the publisher wrote that is outside the TDWG vocabulary
-            # leaves its row blank rather than travelling to GBIF as free text.
-            # Name it here, with the row count, next to the button that opens
-            # the assistant where the translation is made.
-            dropped <- call_r(establishment_dropped_r)
-            establishment_notice <- if (is.list(dropped) && length(dropped) > 0L) {
-                shiny::div(
-                    class = "export-banner export-banner--warning",
-                    shiny::icon("triangle-exclamation"),
-                    shiny::div(
-                        class = "export-banner-body",
-                        lapply(names(dropped), function(term) {
-                            entries <- dropped[[term]]
-                            shiny::tagList(
-                                shiny::p(
-                                    class = "mb-0",
-                                    sprintf(
-                                        tr("export_establishment_dropped", lang),
-                                        nrow(entries), term,
-                                        sum(entries$n_records)
-                                    )
-                                ),
-                                shiny::tags$code(paste(
-                                    sprintf("%s (%d)", entries$raw, entries$n_records),
-                                    collapse = ", "
-                                ))
-                            )
-                        })
-                    )
-                )
-            }
-
-            # A well-formed date can still be wrong: "2098" passes every format
-            # check and only a human knows it was meant to be "2008". Name the
-            # rows here, where the publisher can still fix them at the source.
-            di <- s$date_issues
-            date_notice <- if (is.list(di) && di$count > 0L) {
-                shiny::div(
-                    class = "export-banner export-banner--warning",
-                    shiny::icon("triangle-exclamation"),
-                    shiny::div(
-                        class = "export-banner-body",
-                        shiny::strong(tr("export_date_range_title", lang)),
-                        shiny::p(
-                            class = "mb-0",
-                            sprintf(
-                                tr("export_date_range_body", lang),
-                                di$count, di$min_year, di$max_year
-                            )
-                        ),
-                        shiny::tags$code(paste(
-                            sprintf(
-                                tr("export_date_range_row", lang),
-                                di$sample$row, di$sample$column, di$sample$value
-                            ),
-                            collapse = ", "
-                        ))
-                    )
-                )
-            }
-
-            # --- Readiness: counts + per-term presence chips ----------------
-            term_chips <- lapply(seq_len(nrow(s$readiness)), function(i) {
-                term <- s$readiness$term[i]
-                ok <- isTRUE(s$readiness$present[i])
-                shiny::span(
-                    class = paste("export-term-chip", if (ok) "is-present" else "is-missing"),
-                    shiny::icon(if (ok) "circle-check" else "circle-xmark"),
-                    " ", term
-                )
-            })
-            readiness_card <- section_card(
-                if (s$all_required_present) "circle-check" else "triangle-exclamation",
-                tr("export_section_readiness", lang),
-                shiny::tagList(
-                    shiny::p(
-                        class = "export-readiness-counts",
-                        sprintf(tr("export_counts", lang), s$record_count, s$term_count)
-                    ),
-                    shiny::div(class = "export-terms", term_chips)
-                )
+            pending_card <- shiny::div(
+                class = "export-card export-pending",
+                shiny::h2(class = "export-card-title", tr("export_pending_title", lang)),
+                if (length(rows) == 0L) {
+                    shiny::div(class = "export-pending-none", ph_icon("circle-check"), " ",
+                               tr("export_nothing_pending", lang))
+                } else {
+                    rows
+                }
             )
 
-            # --- Corrections (dim metrics that are zero) --------------------
-            cc <- s$corrections
-            corrections_card <- section_card(
-                "wand-magic-sparkles", tr("export_section_corrections", lang),
-                shiny::div(
-                    class = "export-metrics",
-                    metric(cc$names_corrected, tr("export_names_corrected", lang)),
-                    metric(cc$names_confirmed, tr("export_names_confirmed", lang)),
-                    metric(cc$coord_fixes, tr("export_coord_fixes", lang)),
-                    metric(cc$country_fills, tr("export_country_fills", lang))
-                )
-            )
-
-            # --- Generalization (threat badges + rule tooltips) -------------
-            gen <- s$generalization
-            gen_body <- if (nrow(gen) == 0L) {
-                shiny::p(class = "export-muted", tr("export_gen_none", lang))
-            } else {
-                rows <- lapply(seq_len(nrow(gen)), function(i) {
+            # --- Generalized species (only when there are any) ----------------
+            gen_card <- if (nrow(gen) > 0L) {
+                gen_rows <- lapply(seq_len(nrow(gen)), function(i) {
                     shiny::tags$tr(
                         shiny::tags$td(shiny::tags$em(gen$scientificName[i])),
                         shiny::tags$td(cat_pill(gen$category[i])),
                         shiny::tags$td(tier_label(gen$tier[i], lang))
                     )
                 })
-                shiny::tags$table(
-                    class = "export-gen-table",
-                    shiny::tags$thead(shiny::tags$tr(
-                        shiny::tags$th(tr("export_gen_species", lang)),
-                        shiny::tags$th(
-                            tr("export_gen_category", lang), " ",
-                            info_tip(tr("export_cat_tooltip", lang))
-                        ),
-                        shiny::tags$th(
-                            tr("export_gen_tier", lang), " ",
-                            info_tip(tr("export_gen_tooltip", lang))
-                        )
-                    )),
-                    shiny::tags$tbody(rows)
+                shiny::div(
+                    class = "export-card",
+                    shiny::h2(class = "export-card-title", tr("export_section_generalization", lang)),
+                    shiny::tags$table(
+                        class = "export-gen-table",
+                        shiny::tags$thead(shiny::tags$tr(
+                            shiny::tags$th(tr("export_gen_species", lang)),
+                            shiny::tags$th(tr("export_gen_category", lang), " ",
+                                           info_tip(tr("export_cat_tooltip", lang))),
+                            shiny::tags$th(tr("export_gen_tier", lang), " ",
+                                           info_tip(tr("export_gen_tooltip", lang)))
+                        )),
+                        shiny::tags$tbody(gen_rows)
+                    )
                 )
             }
-            generalization_card <- section_card(
-                "shield-halved", tr("export_section_generalization", lang), gen_body
-            )
 
-            # --- Files (DwC-A core trio vs renamed auxiliary siblings) ------
-            files_card <- section_card(
-                "file-zipper", tr("export_section_files", lang),
-                shiny::tagList(
-                    shiny::p(class = "export-muted", tr("export_files_hint", lang)),
-                    file_group(tr("export_section_files_dwca", lang), s$files$dwca),
-                    file_group(tr("export_section_files_aux", lang), unname(s$files$auxiliary))
+            # --- Files, and what to do with them next -------------------------
+            files_card <- shiny::div(
+                class = "export-card export-files",
+                shiny::h2(class = "export-card-title", tr("export_section_package", lang)),
+                kpis,
+                file_group(tr("export_section_files_dwca", lang), s$files$dwca),
+                file_group(tr("export_section_files_aux", lang), unname(s$files$auxiliary)),
+                shiny::div(
+                    class = "export-ipt-note",
+                    ph_icon("upload"),
+                    shiny::span(shiny::strong(tr("export_ipt_title", lang)), " ",
+                                tr("export_ipt_body", lang))
                 )
             )
 
+            # Pending items and the package share the first grid row, so both
+            # cards end at the same line whatever their content.
             shiny::tagList(
-                banner,
-                date_notice,
-                unmapped_notice,
-                establishment_notice,
                 shiny::div(
                     class = "export-summary",
-                    readiness_card,
-                    corrections_card,
-                    generalization_card,
-                    files_card
+                    pending_card,
+                    files_card,
+                    if (!is.null(gen_card)) shiny::div(class = "export-summary-gen", gen_card)
                 ),
                 shiny::tags$script(shiny::HTML(
                     "(function(){if(window.bootstrap&&bootstrap.Tooltip){document.querySelectorAll('.export-info-tip[data-bs-toggle=\"tooltip\"]').forEach(function(el){if(!el.__tipInit){el.__tipInit=true;new bootstrap.Tooltip(el);}});}})();"
                 ))
+            )
+        })
+
+        # The bar under the page: bundle name and whether it can go out yet.
+        output$download_status <- shiny::renderUI({
+            s <- summary_r()
+            if (is.null(s) || !is.list(s) || s$record_count == 0L) return(NULL)
+            lang <- lang_r()
+            n_block <- length(s$missing_required) + isTRUE(s$bor_blank_count > 0L) +
+                isTRUE(s$justification_pending)
+            shiny::tagList(
+                ph_icon("file-zipper"),
+                shiny::span(class = "export-zip-name", s$files$zip),
+                if (n_block > 0L) {
+                    shiny::span(class = "export-bar-state is-blocked",
+                                sprintf(tr("export_bar_blocked", lang), n_block))
+                } else {
+                    shiny::span(class = "export-bar-state is-ready", tr("export_bar_ready", lang))
+                }
             )
         })
 

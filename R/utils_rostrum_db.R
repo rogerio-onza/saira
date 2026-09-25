@@ -971,28 +971,6 @@ rostrum_lookup_alias <- function(
     alias_df[1, , drop = FALSE]
 }
 
-rostrum_lookup_alias_for_term <- function(
-    conn,
-    col_name,
-    dwc_term,
-    user_id = Sys.getenv("SAIRA_USER", unset = ""),
-    institution_id = Sys.getenv("SAIRA_INSTITUTION", unset = "")
-) {
-    alias_df <- rostrum_list_aliases_for_column(
-        conn = conn,
-        col_name = col_name,
-        dwc_term = dwc_term,
-        user_id = user_id,
-        institution_id = institution_id
-    )
-
-    if (nrow(alias_df) == 0L) {
-        return(alias_df)
-    }
-
-    alias_df[1, , drop = FALSE]
-}
-
 #' Undo All Alias Decisions From a Session
 #'
 #' Deprecates all non-public alias records created during \code{run_id}.

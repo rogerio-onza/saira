@@ -13,7 +13,7 @@ The same taxon can appear written in many ways: with typos, old synonyms, abbrev
 
 ## Choosing the reference database
 
-In the **Name validation** tab, Saíra offers three taxonomic databases. Select one or more, whichever suits your group:
+In the **Names** step, Saíra offers three taxonomic databases. Select one or more, whichever suits your group:
 
 ```{=html}
 <table class="maptable">

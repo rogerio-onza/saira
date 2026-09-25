@@ -268,9 +268,14 @@ coords_points_in_coverage <- function(x, coverage_ref = NULL, coverage_boxes = N
             geom = c("decimalLongitude", "decimalLatitude"),
             crs = "+proj=longlat +datum=WGS84 +no_defs"
         )
-        extracted <- tryCatch(terra::extract(coverage_ref, pts), error = function(e) NULL)
-        if (!is.null(extracted) && ncol(extracted) >= 2L) {
-            return(!is.na(extracted[!duplicated(extracted[, 1]), 2]))
+        # A point-in-polygon test, not an attribute lookup: is.related()
+        # answers it about 16x faster than extract() with the same result.
+        inside <- tryCatch(
+            as.vector(terra::is.related(pts, coverage_ref, "intersects")),
+            error = function(e) NULL
+        )
+        if (is.logical(inside) && length(inside) == n) {
+            return(inside)
         }
     }
 
@@ -433,11 +438,6 @@ coords_load_aliases <- function(force = FALSE) {
 
     coords_aliases_cache$set(alias_df, path = path)
     alias_df
-}
-
-coords_alias_map <- function() {
-    alias_df <- coords_load_aliases()
-    stats::setNames(alias_df$iso3c, alias_df$alias)
 }
 
 coords_build_fuzzy_reference <- function(force = FALSE) {
@@ -1318,13 +1318,17 @@ apply_coords_correction_payload <- function(df, payload = NULL) {
     if (length(idx) == 0L) return(df)
 
     # Preserve verbatim originals where the template provides the columns and
-    # they are not already populated.
+    # they are not already populated. Decided row by row: a payload that mixes
+    # a UTM conversion (which sends its own verbatim values) with a transposed
+    # or manual fix (which does not) must still keep the originals of the
+    # second kind.
     for (vcol in c("verbatimLatitude", "verbatimLongitude")) {
-        if (vcol %in% names(df) && !vcol %in% names(corr)) {
-            src <- if (vcol == "verbatimLatitude") "decimalLatitude" else "decimalLongitude"
-            blank <- is.na(df[[vcol]][idx]) | !nzchar(trimws(as.character(df[[vcol]][idx])))
-            df[[vcol]][idx[blank]] <- as.character(df[[src]][idx[blank]])
-        }
+        if (!vcol %in% names(df)) next
+        src <- if (vcol == "verbatimLatitude") "decimalLatitude" else "decimalLongitude"
+        supplied <- if (vcol %in% names(corr)) !is.na(corr[[vcol]]) else rep(FALSE, length(idx))
+        blank <- is.na(df[[vcol]][idx]) | !nzchar(trimws(as.character(df[[vcol]][idx])))
+        take <- blank & !supplied
+        df[[vcol]][idx[take]] <- as.character(df[[src]][idx[take]])
     }
 
     # A correction that changes the coordinate system (the UTM conversion) sends
@@ -1347,6 +1351,180 @@ apply_coords_correction_payload <- function(df, payload = NULL) {
     df$decimalLatitude[idx]  <- as.character(corr$decimalLatitude)
     df$decimalLongitude[idx] <- as.character(corr$decimalLongitude)
     df
+}
+
+#' Parse one coordinate typed into the coordinates table
+#'
+#' Accepts a decimal comma, like the validation itself (\code{as_coord_numeric()}).
+#'
+#' @param value Raw cell text.
+#' @param axis \code{"lat"} or \code{"lon"}.
+#' @return List with \code{value} (the number, or \code{NA}) and \code{error}
+#'   (\code{NULL}, or the i18n key that explains why the value was refused).
+#' @noRd
+parse_coord_edit <- function(value, axis = c("lat", "lon")) {
+    axis <- match.arg(axis)
+    raw <- if (length(value) == 0L) NA_character_ else trimws(as.character(value[[1]]))
+    if (is.na(raw) || !nzchar(raw)) {
+        return(list(value = NA_real_, error = "validate_coords_edit_error_empty"))
+    }
+    num <- as_coord_numeric(raw)$num[[1]]
+    if (is.na(num)) {
+        return(list(value = NA_real_, error = "validate_coords_edit_error_number"))
+    }
+    limit <- if (axis == "lat") 90 else 180
+    if (abs(num) > limit) {
+        return(list(value = NA_real_, error = paste0("validate_coords_edit_error_range_", axis)))
+    }
+    list(value = num, error = NULL)
+}
+
+#' Which rows of the coordinates table can be edited by hand
+#'
+#' An edit is stored by occurrenceID, so a row without one, or with one that
+#' repeats, cannot be told apart from its twins and stays read-only.
+#'
+#' @param occ_ids occurrenceID of each row.
+#' @return Logical vector, one value per row.
+#' @noRd
+coords_edit_allowed <- function(occ_ids) {
+    ids <- as.character(occ_ids)
+    present <- !is.na(ids) & nzchar(trimws(ids))
+    present & !(ids %in% ids[present & duplicated(ids)])
+}
+
+#' Merge manual coordinate edits into the automatic correction payload
+#'
+#' A manual edit replaces the automatic correction of the same occurrenceID.
+#' The row keeps the verbatim columns the automatic correction sent (a UTM
+#' conversion sends the projected pair), since those still describe the
+#' original record.
+#'
+#' @param auto Payload list with \code{corrections}, or \code{NULL}.
+#' @param manual data.frame with \code{occurrenceID}, \code{decimalLatitude} and
+#'   \code{decimalLongitude}, or \code{NULL}.
+#' @return A payload list with \code{corrections}; \code{auto} unchanged when
+#'   there is no manual edit.
+#' @noRd
+merge_manual_coord_edits <- function(auto = NULL, manual = NULL) {
+    if (!is.data.frame(manual) || nrow(manual) == 0L) return(auto)
+    man <- data.frame(
+        occurrenceID = as.character(manual$occurrenceID),
+        decimalLatitude = as.character(manual$decimalLatitude),
+        decimalLongitude = as.character(manual$decimalLongitude),
+        stringsAsFactors = FALSE
+    )
+    man <- man[!duplicated(man$occurrenceID, fromLast = TRUE), , drop = FALSE]
+
+    auto_df <- if (is.list(auto) && is.data.frame(auto$corrections)) auto$corrections else NULL
+    if (is.null(auto_df) || nrow(auto_df) == 0L) {
+        out <- man
+    } else {
+        out <- auto_df
+        for (cl in c("occurrenceID", "decimalLatitude", "decimalLongitude")) {
+            out[[cl]] <- as.character(out[[cl]])
+        }
+        pos <- match(man$occurrenceID, out$occurrenceID)
+        hit <- !is.na(pos)
+        out$decimalLatitude[pos[hit]] <- man$decimalLatitude[hit]
+        out$decimalLongitude[pos[hit]] <- man$decimalLongitude[hit]
+        extra <- man[!hit, , drop = FALSE]
+        if (nrow(extra) > 0L) {
+            for (cl in setdiff(names(out), names(extra))) extra[[cl]] <- NA_character_
+            out <- rbind(out, extra[, names(out), drop = FALSE])
+        }
+    }
+    rownames(out) <- NULL
+
+    payload <- if (is.list(auto)) auto else list()
+    payload$corrections <- out
+    payload
+}
+
+#' Revalidate the rows a person edited by hand
+#'
+#' Runs the same engine as the full validation, on the edited rows only. One
+#' warm row costs about 0.3 to 0.75 s, most of it in the sea test (0.38 s) and
+#' the reference tests (0.29 s). A range-and-sea check would still cost about
+#' 0.4 s and drop the reference flags, so the full engine is used (ADR-129).
+#'
+#' @param df data.frame with the edited rows, their coordinates already
+#'   replaced by the edit.
+#' @param row_index \code{.row_index} of each row in the full result.
+#' @param lat_col,lon_col,country_col Column names.
+#' @param profile Validation profile.
+#' @return \code{validate_coords_cc_df()} result with \code{.row_index} set to
+#'   \code{row_index}.
+#' @noRd
+revalidate_coord_rows <- function(df, row_index,
+                                  lat_col = "decimalLatitude",
+                                  lon_col = "decimalLongitude",
+                                  country_col = "country",
+                                  profile = "complete") {
+    stopifnot(is.data.frame(df), length(row_index) == nrow(df))
+    if (nrow(df) == 0L) return(coords_empty_cc_result())
+    res <- validate_coords_cc_df(df, lat_col, lon_col, country_col, profile = profile)
+    res$.row_index <- as.integer(row_index)
+    res
+}
+
+#' Overlay manual coordinate edits onto a validation result
+#'
+#' Runs after \code{apply_coord_corrections_to_result()}, so a manual edit wins
+#' over an automatic correction of the same row. A point that passes its
+#' revalidation reads as \code{"corrected"}; one that still fails shows the new
+#' problem, so the person sees at once whether the fix worked.
+#'
+#' @param res Validation result (after the automatic corrections).
+#' @param edits data.frame with \code{row_index}, \code{decimalLatitude},
+#'   \code{decimalLongitude}, \code{diagnostic}, \code{diagnostic_family} and
+#'   \code{valid}, or NULL.
+#' @return \code{res} with a logical \code{edited} column.
+#' @noRd
+apply_manual_coord_edits_to_result <- function(res, edits = NULL) {
+    if (!is.data.frame(res) || nrow(res) == 0L) return(res)
+    res$edited <- FALSE
+    if (!is.data.frame(edits) || nrow(edits) == 0L || !".row_index" %in% names(res)) {
+        return(res)
+    }
+    pos <- match(as.integer(edits$row_index), res$.row_index)
+    ok <- !is.na(pos)
+    if (!any(ok)) return(res)
+    p <- pos[ok]
+    e <- edits[ok, , drop = FALSE]
+    passes <- as.character(e$diagnostic_family) %in% "ok"
+    res$lat_num[p] <- suppressWarnings(as.numeric(e$decimalLatitude))
+    res$lon_num[p] <- suppressWarnings(as.numeric(e$decimalLongitude))
+    if ("diagnostic" %in% names(res)) {
+        res$diagnostic[p] <- ifelse(passes, "corrected", as.character(e$diagnostic))
+    }
+    if ("diagnostic_family" %in% names(res)) {
+        res$diagnostic_family[p] <- ifelse(passes, "corrected", as.character(e$diagnostic_family))
+    }
+    if ("valid" %in% names(res)) res$valid[p] <- passes
+    res$edited[p] <- TRUE
+    res
+}
+
+#' Drop manual edits whose occurrenceID left the data
+#'
+#' A new validation can run on different data (a new mapping, a new upload of
+#' the same file). An edit whose occurrenceID is gone would never be applied,
+#' so it is dropped and counted for a notice.
+#'
+#' @param edits data.frame of manual edits with \code{occurrenceID}, or NULL.
+#' @param occ_ids occurrenceIDs present in the new validation.
+#' @return List with \code{edits} (the kept rows, or NULL) and \code{dropped}.
+#' @noRd
+drop_orphan_coord_edits <- function(edits, occ_ids) {
+    if (!is.data.frame(edits) || nrow(edits) == 0L) {
+        return(list(edits = NULL, dropped = 0L))
+    }
+    keep <- as.character(edits$occurrenceID) %in% as.character(occ_ids)
+    list(
+        edits = if (any(keep)) edits[keep, , drop = FALSE] else NULL,
+        dropped = as.integer(sum(!keep))
+    )
 }
 
 #' Match filled country names to the casing the column already uses
@@ -1760,37 +1938,6 @@ validate_coords_df <- function(df, lat_col = "decimalLatitude", lon_col = "decim
     out
 }
 
-has_coord_columns <- function(df) {
-    !is.null(detect_coord_columns(df))
-}
-
-detect_coord_columns <- function(df) {
-    if (!is.data.frame(df) || length(names(df)) == 0L) {
-        return(NULL)
-    }
-
-    col_names <- names(df)
-    normalized <- tolower(trimws(col_names))
-
-    pick_col <- function(candidates) {
-        idx <- match(candidates, normalized)
-        idx <- idx[!is.na(idx)]
-        if (length(idx) == 0L) {
-            return("")
-        }
-        col_names[[idx[[1]]]]
-    }
-
-    lat_col <- pick_col(c("decimallatitude", "latitude", "lat", "decimal_latitude", "verbatimlatitude"))
-    lon_col <- pick_col(c("decimallongitude", "longitude", "lon", "lng", "decimal_longitude", "verbatimlongitude"))
-
-    if (!nzchar(lat_col) || !nzchar(lon_col) || identical(lat_col, lon_col)) {
-        return(NULL)
-    }
-
-    list(lat_col = lat_col, lon_col = lon_col)
-}
-
 count_coords_diagnostics <- function(result_df) {
     base_counts <- stats::setNames(as.integer(rep(0L, length(coord_family_levels))), coord_family_levels)
     if (!is.data.frame(result_df) || !"diagnostic_family" %in% names(result_df)) {
@@ -1822,37 +1969,61 @@ count_coords_diagnostics <- function(result_df) {
     ))
 }
 
-count_coords_issues <- function(result_df) {
-    if (is.data.frame(result_df) && "diagnostic_family" %in% names(result_df)) {
-        return(count_coords_diagnostics(result_df))
+#' Coordinates a web map can place
+#'
+#' A latitude beyond 90 or a longitude beyond 180 has no place on the map: the
+#' marker falls outside the world and pulls the view out to zoom 1.
+#' @param lat,lon Numeric (or coercible) vectors of equal length.
+#' @return Logical vector, TRUE where the point can be drawn.
+#' @noRd
+coords_plottable <- function(lat, lon) {
+    lat <- suppressWarnings(as.numeric(lat))
+    lon <- suppressWarnings(as.numeric(lon))
+    is.finite(lat) & is.finite(lon) & abs(lat) <= 90 & abs(lon) <= 180
+}
+
+#' Map view that frames the drawable points
+#'
+#' @param lat,lon Numeric vectors of equal length.
+#' @return NULL when no point can be drawn, `list(type = "point", lng, lat)`
+#'   for one location, or `list(type = "bounds", lng1, lat1, lng2, lat2)`.
+#' @noRd
+coords_map_view <- function(lat, lon) {
+    keep <- coords_plottable(lat, lon)
+    if (!any(keep)) {
+        return(NULL)
     }
-
-    zero_counts <- stats::setNames(as.integer(rep(0L, length(coord_issue_levels))), coord_issue_levels)
-    if (!is.data.frame(result_df) || !"issue_type" %in% names(result_df)) {
-        out <- as.list(c(
-            total = 0L,
-            zero_counts,
-            invalid = 0L,
-            warnings = 0L
-        ))
-        return(out)
+    # Web Mercator stops near 85 degrees, so a pole point cannot widen the view.
+    lat <- pmin(pmax(as.numeric(lat[keep]), -85), 85)
+    lon <- as.numeric(lon[keep])
+    if (isTRUE(all.equal(min(lon), max(lon))) && isTRUE(all.equal(min(lat), max(lat)))) {
+        return(list(type = "point", lng = lon[[1]], lat = lat[[1]]))
     }
+    list(type = "bounds", lng1 = min(lon), lat1 = min(lat), lng2 = max(lon), lat2 = max(lat))
+}
 
-    issue_chr <- as.character(result_df$issue_type)
-    issue_chr[is.na(issue_chr) | !nzchar(issue_chr)] <- "missing"
-    tab <- table(factor(issue_chr, levels = coord_issue_levels))
-    counts <- as.integer(tab)
-    names(counts) <- coord_issue_levels
-
-    invalid_count <- counts[["lat_range"]] + counts[["lon_range"]]
-    warnings_count <- counts[["zero_zero"]] + counts[["swapped"]] + counts[["identical_all"]]
-
-    as.list(c(
-        total = as.integer(nrow(result_df)),
-        counts,
-        invalid = as.integer(invalid_count),
-        warnings = as.integer(warnings_count)
-    ))
+#' Keep a no-wrap Leaflet map filled by the world
+#'
+#' The tiles do not wrap, so a zoom whose world is narrower than the map
+#' leaves grey bands. This bounds the view to the world and sets the minimum
+#' zoom to the first one whose world fills the map width (256 px per tile).
+#' @param map_obj A `leaflet::leaflet()` widget.
+#' @return The widget.
+#' @noRd
+leaflet_fill_world <- function(map_obj) {
+    map_obj <- leaflet::setMaxBounds(map_obj, -180, -85, 180, 85)
+    htmlwidgets::onRender(map_obj, "
+        function(el, x) {
+            var map = this;
+            map.options.maxBoundsViscosity = 1;
+            function fillWorld() {
+                var width = map.getSize().x;
+                if (width > 0) map.setMinZoom(Math.max(1, Math.ceil(Math.log2(width / 256))));
+            }
+            fillWorld();
+            map.on('resize', fillWorld);
+        }
+    ")
 }
 
 build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = NULL, popup_labels = NULL) {
@@ -1872,7 +2043,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
         return(empty)
     }
 
-    popup_defaults <- list(row = "Row", issue = "Issue", lat = "Lat", lon = "Lon")
+    popup_defaults <- list(row = "Row", issue = "Issue", lat = "Lat", lon = "Lon", show_row = "Show in table")
     if (is.list(popup_labels) && length(popup_labels) > 0L) {
         for (nm in names(popup_labels)) {
             if (is.character(nm) && nzchar(nm) && nm %in% names(popup_defaults)) {
@@ -1883,7 +2054,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
 
     if (all(c(".row_index", "lat_num", "lon_num", "diagnostic", "diagnostic_family") %in% names(coords_result_df))) {
         filter_key <- as.character(if (is.null(filter)) "all" else filter)
-        allowed_filters <- c("all", "problems", "validity", "sea", "zero_equal", "reference")
+        allowed_filters <- c("all", "problems", "validity", "sea", "zero_equal", "reference", "edited")
         if (!(filter_key %in% allowed_filters)) {
             filter_key <- "all"
         }
@@ -1900,6 +2071,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             sea = fam == "sea",
             zero_equal = fam == "zero_equal",
             reference = fam == "reference",
+            edited = if ("edited" %in% names(coords_result_df)) coords_result_df$edited %in% TRUE else rep(FALSE, nrow(coords_result_df)),
             rep(TRUE, nrow(coords_result_df))
         )
 
@@ -1967,7 +2139,10 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             "<br><b>", popup_defaults$lat, ":</b> ", lat_text,
             " <b>", popup_defaults$lon, ":</b> ", lon_text,
             "<br><b>", popup_defaults$issue, ":</b> ",
-            "<span class=\"coord-issue-badge ", badge_class, "\">", diag_label, "</span>"
+            "<span class=\"coord-issue-badge ", badge_class, "\">", diag_label, "</span>",
+            # The module script pages the table to this row and marks it.
+            "<br><button type=\"button\" class=\"coords-show-row\" data-row=\"", out$.row_index, "\">",
+            popup_defaults$show_row, "</button>"
         )
 
         return(data.frame(

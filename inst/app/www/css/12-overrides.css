@@ -12,14 +12,6 @@
   .navbar .dropdown-toggle {
     padding: var(--space-2) var(--space-3);
   }
-
-  .navbar .nav-item .form-select,
-  .navbar .nav-item .shiny-input-select,
-  .navbar #lang_switch {
-    min-width: 130px;
-    padding: 0.45rem 2.2rem 0.45rem 0.8rem;
-    background-position: right 0.65rem center;
-  }
 }
 
 /* =============================================================================
@@ -34,19 +26,19 @@
 .shiny-notification-error {
   background-color: var(--error-bg);
   border: 1px solid var(--error-border);
-  color: var(--error);
+  color: var(--error-text);
 }
 
 .shiny-notification-warning {
   background-color: var(--warning-bg);
   border: 1px solid var(--warning-border);
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .shiny-notification-message {
   background-color: var(--success-bg);
   border: 1px solid var(--success-border);
-  color: var(--success);
+  color: var(--success-text);
 }
 
 /* Tab content padding */

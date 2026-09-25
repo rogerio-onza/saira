@@ -155,31 +155,36 @@ testthat::test_that("custom.css enforces navbar spacing and language dropdown gu
 
     testthat::expect_true(
         grepl("\\.navbar\\s+\\.navbar-nav>li>a", css_text, perl = TRUE) &&
-            grepl("padding:\\s*0\\.64rem\\s+1\\.3rem\\s*!important;", css_text, perl = TRUE),
+            grepl("padding:\\s*0\\.64rem\\s+1\\.3rem;", css_text, perl = TRUE),
         info = "Navbar links should use 0.64rem 1.3rem padding"
     )
 
+    # ADR-128: two-row header from 992px, and page offsets derive from its height.
     testthat::expect_true(
-        grepl("\\.navbar\\s+\\.navbar-nav>li\\.dropdown>a\\.dropdown-toggle", css_text, perl = TRUE) &&
-            grepl("padding:\\s*0\\.64rem\\s+1\\.3rem\\s*!important;", css_text, perl = TRUE),
-        info = "Navbar dropdown toggle should use 0.64rem 1.3rem padding"
+        grepl("--app-header-height:\\s*calc\\(", css_text, perl = TRUE),
+        info = "Missing --app-header-height token"
+    )
+
+    testthat::expect_true(
+        grepl("\\.navbar-collapse\\s*>\\s*\\.navbar-nav::after\\s*\\{[^}]*order:\\s*2;", css_text, perl = TRUE),
+        info = "The navbar list must break its two rows with ::after (order 2)"
     )
 
     testthat::expect_true(
         grepl("\\.navbar\\s+#lang_switch", css_text, perl = TRUE) &&
-            grepl("min-width:\\s*150px;", css_text, perl = TRUE),
-        info = "Language select should have min-width 150px"
+            grepl("min-width:\\s*4\\.25rem;", css_text, perl = TRUE),
+        info = "Language select keeps a compact min-width for the PT/EN codes"
     )
 
     testthat::expect_true(
         grepl("\\.navbar\\s+#lang_switch", css_text, perl = TRUE) &&
-            grepl("padding:\\s*0\\.5rem\\s+2\\.5rem\\s+0\\.5rem\\s+0\\.95rem;", css_text, perl = TRUE),
-        info = "Language select should have increased right padding"
+            grepl("padding:\\s*0\\.3rem\\s+1\\.8rem\\s+0\\.3rem\\s+0\\.6rem;", css_text, perl = TRUE),
+        info = "Language select keeps right padding for the arrow"
     )
 
     testthat::expect_true(
         grepl("\\.navbar\\s+#lang_switch", css_text, perl = TRUE) &&
-            grepl("background-position:\\s*right\\s+0\\.75rem\\s+center;", css_text, perl = TRUE),
+            grepl("background-position:\\s*right\\s+0\\.55rem\\s+center;", css_text, perl = TRUE),
         info = "Language select should keep explicit arrow position"
     )
 
@@ -189,12 +194,12 @@ testthat::test_that("custom.css enforces navbar spacing and language dropdown gu
     )
 })
 
-testthat::test_that("custom.css keeps validate-names tri-column workspace contracts", {
+testthat::test_that("custom.css keeps validate-names toolbar and workspace contracts", {
     css_path <- resolve_css_path()
     css_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
 
     testthat::expect_true(
-        grepl("--validate-names-header-offset:\\s*166px;", css_text, perl = TRUE),
+        grepl("--validate-names-header-offset:\\s*calc\\(var\\(--app-header-height\\)\\s*\\+\\s*9rem\\);", css_text, perl = TRUE),
         info = "Missing validate-names header offset token"
     )
 
@@ -204,10 +209,11 @@ testthat::test_that("custom.css keeps validate-names tri-column workspace contra
         info = "Validate-names workspace must use viewport-height contract"
     )
 
+    # ADR-132: providers, options and the run button form a toolbar above the
+    # two result columns, spread over the full width (round 5).
     testthat::expect_true(
-        grepl("\\.vn-config-panel\\s*\\{", css_text, perl = TRUE) &&
-            grepl("width:\\s*clamp\\(340px,\\s*22vw,\\s*420px\\);", css_text, perl = TRUE),
-        info = "Config panel must keep responsive clamp width (340px, 22vw, 420px)"
+        grepl("\\.vn-config-panel\\s*\\{[^}]*display:\\s*flex;[^}]*justify-content:\\s*space-between;", css_text, perl = TRUE),
+        info = "Config panel must be a full-width flex toolbar"
     )
 
     testthat::expect_true(

@@ -47,3 +47,7 @@ __pycache__/
 # reads. To regenerate, drop the Instituto Horus CSV back at this path and run
 # data-raw/generate_invasive_species.R.
 data-raw/invasive_species_horus_2023.csv
+
+# testthat failure snapshots. Regenerated on every failing run.
+tests/testthat/_problems/
+tests/testthat/testthat-problems.rds

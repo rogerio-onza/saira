@@ -8,6 +8,7 @@ complete_df <- function(n = 5) {
         decimalLatitude = rep("-23.5", n),
         decimalLongitude = rep("-46.6", n),
         basisOfRecord = rep("HumanObservation", n),
+        license = rep("CC-BY 4.0", n),
         stringsAsFactors = FALSE
     )
 }
@@ -26,7 +27,7 @@ testthat::test_that("mod_export_server enables the .ZIP download once required t
 
             testthat::expect_true(grepl("download_trigger", html, fixed = TRUE))
             testthat::expect_true(grepl("download_real", html, fixed = TRUE))
-            testthat::expect_true(grepl("fa-file-zipper", html, fixed = TRUE))
+            testthat::expect_true(grepl("ph-file-zip", html, fixed = TRUE))
             # Ready -> active green button, not inert/disabled.
             testthat::expect_true(grepl("btn-success", html, fixed = TRUE))
             testthat::expect_false(grepl("is-inert", html, fixed = TRUE))
@@ -55,7 +56,7 @@ testthat::test_that("mod_export_server blocks the download and offers a fix CTA 
 
             # The actionable CTA lives in the red banner instead.
             summary_html <- paste(output$summary$html, collapse = " ")
-            testthat::expect_true(grepl("export-banner--danger", summary_html, fixed = TRUE))
+            testthat::expect_true(grepl("export-sev--block", summary_html, fixed = TRUE))
             testthat::expect_true(grepl("go_fix_terms", summary_html, fixed = TRUE))
         }
     )
@@ -72,8 +73,8 @@ testthat::test_that("mod_export_server renders the readiness summary and an empt
             session$flushReact()
             html <- paste(output$summary$html, collapse = " ")
             testthat::expect_true(grepl("export-summary", html, fixed = TRUE))
-            testthat::expect_true(grepl("export-readiness-counts", html, fixed = TRUE))
-            testthat::expect_true(grepl("export-term-chip", html, fixed = TRUE))
+            testthat::expect_true(grepl("export-kpi", html, fixed = TRUE))
+            testthat::expect_true(grepl("export-pending", html, fixed = TRUE))
         }
     )
 

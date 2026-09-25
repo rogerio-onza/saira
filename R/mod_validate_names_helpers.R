@@ -37,52 +37,6 @@ format_provider_labels <- function(provider_values) {
     unique(labels)
 }
 
-#' Normalize provider failures data frame
-#' @param raw_failures Data frame (or NULL) with provider and error columns
-#' @return Data frame with columns provider, error (0 or more rows)
-#' @noRd
-normalize_provider_failures <- function(raw_failures) {
-    if (!is.data.frame(raw_failures) || nrow(raw_failures) == 0L) {
-        return(data.frame(provider = character(0), error = character(0), stringsAsFactors = FALSE))
-    }
-
-    out <- raw_failures
-    if (!"provider" %in% names(out)) out$provider <- NA_character_
-    if (!"error" %in% names(out)) out$error <- NA_character_
-    out$provider <- as.character(out$provider)
-    out$error <- as.character(out$error)
-    out <- out[!is.na(out$provider) & nzchar(out$provider), c("provider", "error"), drop = FALSE]
-    rownames(out) <- NULL
-    out
-}
-
-#' Format provider failure lines with i18n
-#' @param failure_df Data frame with provider and error columns
-#' @param resolved_unique Integer count of resolved unique queries
-#' @param lang Language code ("pt" or "en")
-#' @return Character vector of formatted failure messages
-#' @noRd
-provider_failure_lines <- function(failure_df, resolved_unique = 0L, lang = "pt") {
-    if (!is.data.frame(failure_df) || nrow(failure_df) == 0L) {
-        return(character(0))
-    }
-
-    resolved_int <- suppressWarnings(as.integer(resolved_unique))
-    if (is.na(resolved_int) || resolved_int < 0L) resolved_int <- 0L
-
-    vapply(seq_len(nrow(failure_df)), function(i) {
-        provider_label <- format_provider_labels(failure_df$provider[[i]])
-        if (length(provider_label) == 0L) {
-            provider_label <- toupper(as.character(failure_df$provider[[i]]))
-        } else {
-            provider_label <- provider_label[[1]]
-        }
-        error_text <- as.character(failure_df$error[[i]])
-        if (is.na(error_text) || !nzchar(error_text)) error_text <- tr("validate_names_error_unknown", lang)
-        sprintf(tr("validate_names_provider_failed_stream_item", lang), provider_label, resolved_int, error_text)
-    }, FUN.VALUE = character(1))
-}
-
 # ---------------------------------------------------------------------------
 # Stream utilities
 # ---------------------------------------------------------------------------
@@ -188,13 +142,29 @@ stream_filter_after_completion <- function(report_df) {
     "problems"
 }
 
+#' Cascade step at which a provider is queried
+#'
+#' Mirrors the reorder in `init_taxadb_run_state()`: the Brazilian providers
+#' answer first, and GBIF receives only the names they did not find.
+#' @param provider_id Provider id.
+#' @param selected Character vector of selected provider ids.
+#' @param br_ids Character vector of Brazilian provider ids.
+#' @return Integer step (1 or 2), or NA when the provider is not selected.
+#' @noRd
+provider_query_step <- function(provider_id, selected, br_ids) {
+    if (!(provider_id %in% selected)) {
+        return(NA_integer_)
+    }
+    if (provider_id %in% br_ids || !any(br_ids %in% selected)) 1L else 2L
+}
+
 # ---------------------------------------------------------------------------
 # Status classification
 # ---------------------------------------------------------------------------
 
 #' Map validation status to style attributes
 #' @param status_value Status value string
-#' @return Named list with key, icon_symbol, label_key, item_class, badge_class, row_class
+#' @return Named list with key, icon_symbol, icon (Phosphor name), label_key, item_class, badge_class, row_class
 #' @noRd
 status_style_map <- function(status_value) {
     status_key <- as.character(status_value)
@@ -204,6 +174,7 @@ status_style_map <- function(status_value) {
         return(list(
             key = "accepted",
             icon_symbol = "\u2713",
+            icon = "check",
             label_key = "validate_names_stream_status_accepted",
             item_class = "vn-stream-item-accepted",
             badge_class = "badge-success",
@@ -214,6 +185,7 @@ status_style_map <- function(status_value) {
         return(list(
             key = "synonym",
             icon_symbol = "\u21C4",
+            icon = "arrows-left-right",
             label_key = "validate_names_stream_status_synonym",
             item_class = "vn-stream-item-synonym",
             badge_class = "badge-info",
@@ -224,6 +196,7 @@ status_style_map <- function(status_value) {
         return(list(
             key = "ambiguous",
             icon_symbol = "?",
+            icon = "question",
             label_key = "validate_names_stream_status_ambiguous",
             item_class = "vn-stream-item-ambiguous",
             badge_class = "badge-warning",
@@ -234,6 +207,7 @@ status_style_map <- function(status_value) {
         return(list(
             key = "ignored",
             icon_symbol = "\u2014",
+            icon = "minus",
             label_key = "validate_names_stream_status_ignored",
             item_class = "vn-stream-item-ignored",
             badge_class = "badge-muted",
@@ -243,6 +217,7 @@ status_style_map <- function(status_value) {
     list(
         key = "not_found",
         icon_symbol = "\u2715",
+        icon = "x",
         label_key = "validate_names_stream_status_not_found",
         item_class = "vn-stream-item-not-found",
         badge_class = "badge-error",
@@ -291,15 +266,6 @@ normalize_status_vec <- function(status_values) {
         FUN.VALUE = character(1), USE.NAMES = FALSE
     )
     resolved[match(values, uniq)]
-}
-
-#' Test if status represents an unresolved problem
-#' @param status_key Status value (raw or canonical)
-#' @return Logical
-#' @noRd
-is_problem_status_key <- function(status_key) {
-    key <- normalize_status_for_filter(status_key)
-    key %in% .vn_problem_status_values
 }
 
 #' Count stream items by filter category
@@ -453,30 +419,41 @@ conservation_status_summary_ui <- function(report, selected, br_provider_ids, la
         return(NULL)
     }
 
+    # Each fact is a label and its count, like the stream filter pills. The
+    # full sentence stays in the tooltip.
+    fact_tag <- function(n, label_key, sentence_key, kind, icon) {
+        shiny::tags$span(
+            class = paste("vn-conservation-tag", kind),
+            title = sprintf(tr(sentence_key, lang), n),
+            shiny::tags$span(class = "vn-conservation-tag-label", ph_icon(icon), tr(label_key, lang)),
+            shiny::tags$span(class = "vn-conservation-tag-count", n)
+        )
+    }
+
     lines <- list()
     if (include_mma) {
         mma_n <- sum(!is.na(sensitive_category_for(name_col)))
         if (mma_n > 0L) {
-            lines[[length(lines) + 1L]] <- shiny::tags$span(
-                class = "vn-conservation-line",
-                sprintf(tr("validate_names_conservation_summary_mma", lang), mma_n)
+            lines[[length(lines) + 1L]] <- fact_tag(
+                mma_n, "validate_names_conservation_label_mma",
+                "validate_names_conservation_summary_mma", "is-mma", "shield-warning"
             )
         }
     }
     if (include_iucn) {
         iucn_n <- sum(!is.na(name_col) & nzchar(trimws(name_col)))
         if (iucn_n > 0L) {
-            lines[[length(lines) + 1L]] <- shiny::tags$span(
-                class = "vn-conservation-line",
-                sprintf(tr("validate_names_conservation_summary_iucn", lang), iucn_n)
+            lines[[length(lines) + 1L]] <- fact_tag(
+                iucn_n, "validate_names_conservation_label_iucn",
+                "validate_names_conservation_summary_iucn", "is-iucn", "globe-hemisphere-west"
             )
         }
     }
     invasive_n <- sum(flag_invasive_species(name_col))
     if (invasive_n > 0L) {
-        lines[[length(lines) + 1L]] <- shiny::tags$span(
-            class = "vn-conservation-line",
-            sprintf(tr("validate_names_conservation_summary_invasive", lang), invasive_n)
+        lines[[length(lines) + 1L]] <- fact_tag(
+            invasive_n, "validate_names_conservation_label_invasive",
+            "validate_names_conservation_summary_invasive", "is-invasive", "arrow-square-in"
         )
     }
     if (length(lines) == 0L) {

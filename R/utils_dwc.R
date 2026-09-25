@@ -584,7 +584,7 @@ constant_value_terms <- function() {
 required_mapping_terms <- function() {
     c(
         "scientificName", "eventDate", "decimalLatitude",
-        "decimalLongitude", "basisOfRecord", "occurrenceID"
+        "decimalLongitude", "basisOfRecord", "occurrenceID", "license"
     )
 }
 
@@ -641,14 +641,6 @@ is_valid_basis_of_record_term <- function(value) {
 # accessors below take the catalog instead of being copied per vocabulary.
 dwc_vocab_terms <- function(catalog) {
     vapply(catalog, function(item) item$term, FUN.VALUE = character(1))
-}
-
-is_valid_dwc_vocab_term <- function(value, catalog) {
-    if (is.null(value) || length(value) == 0) {
-        return(FALSE)
-    }
-    value_chr <- trimws(as.character(value)[[1]])
-    nzchar(value_chr) && value_chr %in% dwc_vocab_terms(catalog)
 }
 
 # Choices for a controlled-vocabulary select: "term - description", value =
