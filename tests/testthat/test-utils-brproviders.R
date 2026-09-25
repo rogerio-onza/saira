@@ -4,10 +4,8 @@
 # Version: 1.0
 
 normalize_brprovider_result    <- function(...) saira:::normalize_brprovider_result(...)
-brprovider_unresolved_names    <- function(...) saira:::brprovider_unresolved_names(...)
 brprovider_data_available      <- function(...) saira:::brprovider_data_available(...)
 brprovider_data_dir            <- function(...) saira:::brprovider_data_dir(...)
-brprovider_download_params     <- function(...) saira:::brprovider_download_params(...)
 .brprovider_read_meta          <- function(...) saira:::.brprovider_read_meta(...)
 .brprovider_write_meta         <- function(...) saira:::.brprovider_write_meta(...)
 .brprovider_lock_path          <- function(...) saira:::.brprovider_lock_path(...)
@@ -137,36 +135,6 @@ testthat::test_that("normalize_brprovider_result: taxadb expected columns are pr
 })
 
 # ---------------------------------------------------------------------------
-# brprovider_unresolved_names
-# ---------------------------------------------------------------------------
-
-testthat::test_that("brprovider_unresolved_names: returns only not_found names", {
-    df <- data.frame(
-        query_name        = c("Panthera onca", "Xyz abc", "Butia capita"),
-        validation_status = c("accepted", "not_found", "not_found"),
-        stringsAsFactors  = FALSE
-    )
-    out <- brprovider_unresolved_names(df)
-    testthat::expect_equal(sort(out), sort(c("Xyz abc", "Butia capita")))
-})
-
-testthat::test_that("brprovider_unresolved_names: empty df returns character(0)", {
-    testthat::expect_equal(
-        brprovider_unresolved_names(data.frame()),
-        character(0)
-    )
-})
-
-testthat::test_that("brprovider_unresolved_names: all accepted returns character(0)", {
-    df <- data.frame(
-        query_name        = "Panthera onca",
-        validation_status = "accepted",
-        stringsAsFactors  = FALSE
-    )
-    testthat::expect_equal(brprovider_unresolved_names(df), character(0))
-})
-
-# ---------------------------------------------------------------------------
 # brprovider_data_available
 # ---------------------------------------------------------------------------
 
@@ -184,32 +152,6 @@ testthat::test_that("brprovider_data_available: empty dir returns FALSE", {
     testthat::expect_false(
         length(list.files(tmp, pattern = "\\.rds$")) > 0L
     )
-})
-
-# ---------------------------------------------------------------------------
-# brprovider_download_params
-# ---------------------------------------------------------------------------
-
-testthat::test_that("brprovider_download_params: default data_version is 'latest'", {
-    p <- brprovider_download_params("florabr")
-    testthat::expect_equal(p$data_version, "latest")
-    testthat::expect_equal(p$provider_id, "florabr")
-    testthat::expect_type(p$tmp_dir, "character")
-    testthat::expect_type(p$persist_dir, "character")
-    testthat::expect_type(p$pkg_version, "character")
-})
-
-testthat::test_that("brprovider_download_params: fixed version propagates correctly", {
-    p <- brprovider_download_params("florabr", "393.319")
-    testthat::expect_equal(p$data_version, "393.319")
-    p2 <- brprovider_download_params("faunabr", "1.2")
-    testthat::expect_equal(p2$data_version, "1.2")
-    testthat::expect_equal(p2$provider_id, "faunabr")
-})
-
-testthat::test_that("brprovider_download_params: tmp_dir ends with provider_id", {
-    p <- brprovider_download_params("faunabr")
-    testthat::expect_true(endsWith(p$tmp_dir, "faunabr"))
 })
 
 # ---------------------------------------------------------------------------

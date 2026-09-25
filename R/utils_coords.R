@@ -440,11 +440,6 @@ coords_load_aliases <- function(force = FALSE) {
     alias_df
 }
 
-coords_alias_map <- function() {
-    alias_df <- coords_load_aliases()
-    stats::setNames(alias_df$iso3c, alias_df$alias)
-}
-
 coords_build_fuzzy_reference <- function(force = FALSE) {
     validate_force_flag(force)
 
@@ -1943,37 +1938,6 @@ validate_coords_df <- function(df, lat_col = "decimalLatitude", lon_col = "decim
     out
 }
 
-has_coord_columns <- function(df) {
-    !is.null(detect_coord_columns(df))
-}
-
-detect_coord_columns <- function(df) {
-    if (!is.data.frame(df) || length(names(df)) == 0L) {
-        return(NULL)
-    }
-
-    col_names <- names(df)
-    normalized <- tolower(trimws(col_names))
-
-    pick_col <- function(candidates) {
-        idx <- match(candidates, normalized)
-        idx <- idx[!is.na(idx)]
-        if (length(idx) == 0L) {
-            return("")
-        }
-        col_names[[idx[[1]]]]
-    }
-
-    lat_col <- pick_col(c("decimallatitude", "latitude", "lat", "decimal_latitude", "verbatimlatitude"))
-    lon_col <- pick_col(c("decimallongitude", "longitude", "lon", "lng", "decimal_longitude", "verbatimlongitude"))
-
-    if (!nzchar(lat_col) || !nzchar(lon_col) || identical(lat_col, lon_col)) {
-        return(NULL)
-    }
-
-    list(lat_col = lat_col, lon_col = lon_col)
-}
-
 count_coords_diagnostics <- function(result_df) {
     base_counts <- stats::setNames(as.integer(rep(0L, length(coord_family_levels))), coord_family_levels)
     if (!is.data.frame(result_df) || !"diagnostic_family" %in% names(result_df)) {
@@ -2002,39 +1966,6 @@ count_coords_diagnostics <- function(result_df) {
         problems = as.integer(sum(fam_counts[!(names(fam_counts) %in% c("ok", "corrected"))])),
         missing = as.integer(sum(diag_vec == "validity_missing", na.rm = TRUE)),
         fam_counts
-    ))
-}
-
-count_coords_issues <- function(result_df) {
-    if (is.data.frame(result_df) && "diagnostic_family" %in% names(result_df)) {
-        return(count_coords_diagnostics(result_df))
-    }
-
-    zero_counts <- stats::setNames(as.integer(rep(0L, length(coord_issue_levels))), coord_issue_levels)
-    if (!is.data.frame(result_df) || !"issue_type" %in% names(result_df)) {
-        out <- as.list(c(
-            total = 0L,
-            zero_counts,
-            invalid = 0L,
-            warnings = 0L
-        ))
-        return(out)
-    }
-
-    issue_chr <- as.character(result_df$issue_type)
-    issue_chr[is.na(issue_chr) | !nzchar(issue_chr)] <- "missing"
-    tab <- table(factor(issue_chr, levels = coord_issue_levels))
-    counts <- as.integer(tab)
-    names(counts) <- coord_issue_levels
-
-    invalid_count <- counts[["lat_range"]] + counts[["lon_range"]]
-    warnings_count <- counts[["zero_zero"]] + counts[["swapped"]] + counts[["identical_all"]]
-
-    as.list(c(
-        total = as.integer(nrow(result_df)),
-        counts,
-        invalid = as.integer(invalid_count),
-        warnings = as.integer(warnings_count)
     ))
 }
 

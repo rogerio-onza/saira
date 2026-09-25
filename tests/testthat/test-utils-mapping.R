@@ -549,36 +549,6 @@ testthat::test_that("compute_name_score prioritizes exact match and synonyms", {
     testthat::expect_true(low_res$score <= 0.60)
 })
 
-testthat::test_that("compute_value_score validates coordinates and blocks incompatible type", {
-    lat_ok <- c("-12.1", "-23.5", "0.0", "45.9")
-    lat_bad <- c("abc", "texto", "sem numero", "x")
-
-    ok_res <- compute_value_score(lat_ok, term = "decimalLatitude", name_score = 1.0)
-    bad_res <- compute_value_score(lat_bad, term = "decimalLatitude", name_score = 1.0)
-
-    testthat::expect_true(ok_res$score >= 0.90)
-    testthat::expect_true(ok_res$compatible_type)
-
-    testthat::expect_true(bad_res$score <= 0.60)
-    testthat::expect_false(bad_res$compatible_type)
-})
-
-testthat::test_that("compute_value_score validates scientificName and individualCount", {
-    sn_ok <- c("Panthera onca", "Leopardus sp.", "Leopardus cf. pardalis")
-    sn_bad <- c("foo", "123", "???")
-
-    count_ok <- c("1", "2", "0", "9")
-    count_bad <- c("one", "-1", "3.7", "abc")
-
-    sn_ok_res <- compute_value_score(sn_ok, term = "scientificName", name_score = 1.0)
-    sn_bad_res <- compute_value_score(sn_bad, term = "scientificName", name_score = 1.0)
-    count_ok_res <- compute_value_score(count_ok, term = "individualCount", name_score = 1.0)
-    count_bad_res <- compute_value_score(count_bad, term = "individualCount", name_score = 1.0)
-
-    testthat::expect_true(sn_ok_res$score > sn_bad_res$score)
-    testthat::expect_true(count_ok_res$score > count_bad_res$score)
-})
-
 testthat::test_that("run_rostrum_stage1 excludes temporal inference except exact match", {
     syn <- data.frame(
         term = c("eventDate"),

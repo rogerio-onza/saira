@@ -643,14 +643,6 @@ dwc_vocab_terms <- function(catalog) {
     vapply(catalog, function(item) item$term, FUN.VALUE = character(1))
 }
 
-is_valid_dwc_vocab_term <- function(value, catalog) {
-    if (is.null(value) || length(value) == 0) {
-        return(FALSE)
-    }
-    value_chr <- trimws(as.character(value)[[1]])
-    nzchar(value_chr) && value_chr %in% dwc_vocab_terms(catalog)
-}
-
 # Choices for a controlled-vocabulary select: "term - description", value =
 # term. The leading blank entry is what "not set" looks like in the assistant.
 dwc_vocab_choices <- function(catalog, lang = "en", include_skip = TRUE, skip_label = NULL) {

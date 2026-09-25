@@ -60,7 +60,6 @@ needed_functions <- c(
     "get_basis_of_record_term_choices",
     "is_valid_basis_of_record_term",
     "compute_name_score",
-    "compute_value_score",
     "run_rostrum_stage1",
     "mod_mapping_server"
 )

@@ -48,9 +48,6 @@ sensitive_species_empty <- function() {
     )
 }
 
-# Threat categories ordered by restrictiveness (drives the export grid).
-sensitive_category_levels <- function() c("VU", "EN", "CR", "CR (PEX)")
-
 # Cached read of the sensitive-species lookup. Missing/invalid file -> a
 # warning plus a zero-row frame (masking simply does nothing). The not-found
 # case is not cached, so a later regenerate is picked up without force.
@@ -155,11 +152,6 @@ sensitive_source_for <- function(names) {
     out
 }
 
-# Logical vector: which of `names` are on the MMA list (pill display).
-flag_sensitive_species <- function(names) {
-    !is.na(sensitive_category_for(names))
-}
-
 # Round coordinates to a coarser grid (default 0.1 deg ~ 11 km). NA -> NA.
 # The final round() removes binary float noise (e.g. -23.6 not -23.60000001).
 generalize_coord <- function(x, grid = 0.1) {
@@ -200,15 +192,6 @@ sensitive_grid_uncertainty_m <- function(grid, gen_lon, gen_lat) {
     d3 <- geo_distance_m(gen_lon, gen_lat, gen_lon + d, gen_lat + d)
     d4 <- geo_distance_m(gen_lon, gen_lat, gen_lon - d, gen_lat + d)
     pmax(d1, d2, d3, d4)
-}
-
-# Chapman 2020 (GBIF "Best Practices for Generalizing Sensitive Species
-# Occurrence Data", Table 7) defines four global generalization tiers; the
-# Saira UI exposes those four plus an explicit "not_sensitive" no-op. The
-# user picks ONE tier that applies uniformly to every sensitive record. The
-# MMA list still triggers detection, but it no longer governs the grid.
-sensitive_generalization_levels <- function() {
-    c("extreme", "high", "medium", "low", "not_sensitive")
 }
 
 # Category number the UI shows for a tier: 1 is the most aggressive grid, 4 the

@@ -56,13 +56,6 @@ testthat::test_that("coords_utm_to_wgs84 converts the reported coordinates to Ma
     testthat::expect_true(is.na(partial$decimalLatitude[[2]]))
 })
 
-testthat::test_that("coords_utm_zone_from_lon maps a longitude to its zone", {
-    testthat::expect_identical(coords_utm_zone_from_lon(-56.28), 21L)
-    testthat::expect_identical(coords_utm_zone_from_lon(-45), 23L)
-    testthat::expect_true(is.na(coords_utm_zone_from_lon(NA)))
-    testthat::expect_true(is.na(coords_utm_zone_from_lon(999)))
-})
-
 testthat::test_that("coords_utm_zone_candidates ranks zones and keeps ties", {
     testthat::skip_if_not_installed("rnaturalearth")
     testthat::skip_on_cran()

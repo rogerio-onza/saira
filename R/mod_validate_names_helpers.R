@@ -37,52 +37,6 @@ format_provider_labels <- function(provider_values) {
     unique(labels)
 }
 
-#' Normalize provider failures data frame
-#' @param raw_failures Data frame (or NULL) with provider and error columns
-#' @return Data frame with columns provider, error (0 or more rows)
-#' @noRd
-normalize_provider_failures <- function(raw_failures) {
-    if (!is.data.frame(raw_failures) || nrow(raw_failures) == 0L) {
-        return(data.frame(provider = character(0), error = character(0), stringsAsFactors = FALSE))
-    }
-
-    out <- raw_failures
-    if (!"provider" %in% names(out)) out$provider <- NA_character_
-    if (!"error" %in% names(out)) out$error <- NA_character_
-    out$provider <- as.character(out$provider)
-    out$error <- as.character(out$error)
-    out <- out[!is.na(out$provider) & nzchar(out$provider), c("provider", "error"), drop = FALSE]
-    rownames(out) <- NULL
-    out
-}
-
-#' Format provider failure lines with i18n
-#' @param failure_df Data frame with provider and error columns
-#' @param resolved_unique Integer count of resolved unique queries
-#' @param lang Language code ("pt" or "en")
-#' @return Character vector of formatted failure messages
-#' @noRd
-provider_failure_lines <- function(failure_df, resolved_unique = 0L, lang = "pt") {
-    if (!is.data.frame(failure_df) || nrow(failure_df) == 0L) {
-        return(character(0))
-    }
-
-    resolved_int <- suppressWarnings(as.integer(resolved_unique))
-    if (is.na(resolved_int) || resolved_int < 0L) resolved_int <- 0L
-
-    vapply(seq_len(nrow(failure_df)), function(i) {
-        provider_label <- format_provider_labels(failure_df$provider[[i]])
-        if (length(provider_label) == 0L) {
-            provider_label <- toupper(as.character(failure_df$provider[[i]]))
-        } else {
-            provider_label <- provider_label[[1]]
-        }
-        error_text <- as.character(failure_df$error[[i]])
-        if (is.na(error_text) || !nzchar(error_text)) error_text <- tr("validate_names_error_unknown", lang)
-        sprintf(tr("validate_names_provider_failed_stream_item", lang), provider_label, resolved_int, error_text)
-    }, FUN.VALUE = character(1))
-}
-
 # ---------------------------------------------------------------------------
 # Stream utilities
 # ---------------------------------------------------------------------------
@@ -312,15 +266,6 @@ normalize_status_vec <- function(status_values) {
         FUN.VALUE = character(1), USE.NAMES = FALSE
     )
     resolved[match(values, uniq)]
-}
-
-#' Test if status represents an unresolved problem
-#' @param status_key Status value (raw or canonical)
-#' @return Logical
-#' @noRd
-is_problem_status_key <- function(status_key) {
-    key <- normalize_status_for_filter(status_key)
-    key %in% .vn_problem_status_values
 }
 
 #' Count stream items by filter category
