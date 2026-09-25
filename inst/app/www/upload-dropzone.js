@@ -74,9 +74,12 @@
     dropzone.dataset.dropzoneBound = "true";
     var dragDepth = 0;
 
+    var fileNameEl = dropzone.querySelector(".upload-dropzone-filename");
+
     function syncHasFileState() {
       var hasFile = fileInput.files && fileInput.files.length > 0;
       dropzone.classList.toggle("has-file", !!hasFile);
+      if (fileNameEl) fileNameEl.textContent = hasFile ? fileInput.files[0].name : "";
     }
 
     fileInput.addEventListener("change", syncHasFileState);

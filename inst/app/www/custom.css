@@ -948,6 +948,13 @@ label,
   font-weight: var(--weight-regular);
 }
 
+/* Bootstrap paints links in the theme primary (#38CFF6), which disappears on
+   every alert tint. The link takes the alert's AA text color instead. */
+.alert a:not(.btn) {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .alert-success {
   background-color: var(--success-bg);
   color: var(--success-text);
@@ -2693,7 +2700,7 @@ table.dataTable tbody tr.validate-invalid td {
 .upload-native-input .progress .progress-bar,
 .upload-native-input .shiny-file-input-progress .progress-bar {
   background-color: var(--success);
-  color: var(--bg-card);
+  color: var(--text-primary); /* white on --success is 3.2:1, below AA */
   font-size: var(--text-sm);
   font-family: var(--font-mono);
   font-weight: var(--weight-semibold);
@@ -2816,6 +2823,43 @@ table.dataTable tbody tr.validate-invalid td {
   }
 }
 
+/* Import-template modal: the Home dropzone, shorter, and the file name in
+   place of the hint once a file is picked. */
+.modal-dialog:has(.import-template-modal) .modal-content {
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  box-shadow: none;
+}
+
+.import-template-help {
+  margin-bottom: var(--space-4);
+  color: var(--text-muted);
+}
+
+.import-template-dropzone {
+  min-height: 150px;
+}
+
+.upload-dropzone .upload-dropzone-when-file,
+.upload-dropzone.has-file .upload-dropzone-when-empty {
+  display: none;
+}
+
+.upload-dropzone.has-file .upload-dropzone-when-file {
+  display: block;
+}
+
+.import-template-dropzone.has-file .upload-dropzone-icon,
+.upload-dropzone-filename {
+  color: var(--success-text);
+}
+
+.upload-dropzone-filename {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  word-break: break-all;
+}
 /* =============================================================================
    MAPPING MODULE STYLES
    ============================================================================= */
