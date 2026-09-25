@@ -479,13 +479,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             is.data.frame(report) && nrow(report) > 0L
         })
 
-        is_pre_validation_state <- shiny::reactive({
-            !isTRUE(rv$running) &&
-                !isTRUE(rv$starting) &&
-                is.null(rv$run_state) &&
-                !isTRUE(has_validation_output())
-        })
-
         active_stream_filter <- shiny::reactive({
             key <- as.character(rv$stream_filter %||% "all")
             if (!(key %in% stream_filter_values)) key <- "all"
