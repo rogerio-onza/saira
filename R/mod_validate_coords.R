@@ -29,7 +29,6 @@ mod_validate_coords_ui <- function(id) {
                 shiny::div(
                     class = "validate-coords-right",
                     shiny::uiOutput(ns("pre_right_hint")),
-                    shiny::uiOutput(ns("progress_panel")),
                     shiny::uiOutput(ns("filter_pills")),
                     shiny::div(
                         class = "row g-3 validate-coords-results-row",
@@ -458,22 +457,6 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                             shiny::strong("country"),
                             tr("validate_coords_pre_hint_suffix", lang_r())
                         )
-                    )
-                )
-            )
-        })
-
-        output$progress_panel <- shiny::renderUI({
-            if (!isTRUE(rv$starting) && !isTRUE(rv$running)) {
-                return(NULL)
-            }
-            bslib::card(
-                class = "validate-coords-card mb-3 validation-progress-panel",
-                bslib::card_body(
-                    shiny::div(
-                        class = "validation-progress-empty",
-                        ph_icon("spinner", class = "me-2 ph-spin"),
-                        tr("validate_coords_run_running", lang_r())
                     )
                 )
             )

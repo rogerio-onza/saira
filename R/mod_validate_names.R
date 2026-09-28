@@ -1083,8 +1083,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
 
             helper_text <- if (isTRUE(rv$running) && isTRUE(rv$abort_requested)) {
                 tr("validate_names_cancel_requested", lang_r())
-            } else if (isTRUE(rv$starting)) {
-                tr("validate_names_run_running", lang_r())
             } else if (length(selected) == 0L) {
                 tr("validate_names_providers_required", lang_r())
             } else if (!identical(quick$status, "ok")) {

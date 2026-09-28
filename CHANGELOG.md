@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **coords:** Fix a latitude or longitude directly in the coordinates table, with revalidation and undo, ADR-129
 
 ### Changed
+- **names:** Center the providers, options and run button in the top bar
 - **mapping:** Make license a required term: its card shows as missing and export is blocked until a license is chosen
 - **mapping:** Import a mapping guide in about half the time and pick a column about three times faster: a pick re-renders only its own card
 - **ui:** Put the header in one row from 1360px and switch the icons to Phosphor, ADR-132
@@ -37,6 +38,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **names:** Drop the "Validating" line under the run button; the button already shows the state
+- **coords:** Drop the "Validating" card under the column check; the button and the loading dialog already show it
 - **upload:** Stop the browser tab from freezing after an upload in English
 - **basisOfRecord:** Convert mapped values without the assistant, recognize common Portuguese values, and block export on empty values, ADR-131
 - **upload:** Show "Upload complete" in the current language
