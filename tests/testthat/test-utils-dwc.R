@@ -36,7 +36,7 @@ testthat::test_that("get_dwc_terms_list supports pt and falls back to english fo
     terms <- get_dwc_terms()
     en_list <- get_dwc_terms_list("en")
     pt_list <- get_dwc_terms_list("pt")
-    unknown_lang_list <- get_dwc_terms_list("es")
+    unknown_lang_list <- get_dwc_terms_list("xx")
 
     testthat::expect_identical(sort(names(en_list)), sort(as.character(terms$term)))
     testthat::expect_identical(sort(names(pt_list)), sort(as.character(terms$term)))
@@ -225,7 +225,8 @@ testthat::test_that("get_dwc_full_catalog returns superset of base terms with co
         sort(names(catalog)),
         sort(c("term", "class", "definition_en", "definition_pt",
                "examples", "required", "data_type",
-               "card_hint_pt", "card_hint_en"))
+               "card_hint_pt", "card_hint_en",
+               "definition_es", "card_hint_es"))
     )
     testthat::expect_identical(
         sum(catalog$required),

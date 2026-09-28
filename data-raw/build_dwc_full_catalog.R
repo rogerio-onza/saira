@@ -16,6 +16,8 @@
 #     of every non-base recommended term). Base PT always wins on conflict.
 #   - The build asserts 100% PT coverage and fails loudly if any term is
 #     left without a Portuguese definition.
+#   - The output has no Spanish columns. Run build_dwc_definitions_es.R after
+#     this script to add definition_es and card_hint_es.
 #
 # To regenerate (from the project root):
 #   source(here::here("data-raw/build_dwc_full_catalog.R"))
