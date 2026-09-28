@@ -91,8 +91,8 @@ show_validate_coords_loading_modal <- function(ns, lang_r) {
                     var applyPhrase = function (index) {
                         var item = items[index];
                         if (!item) { return; }
-                        var nextIcon = item.getAttribute('data-icon') || 'gears';
-                        iconEl.className = 'fa-solid fa-' + nextIcon + ' automap-loading-phrase-icon';
+                        var nextIcon = item.getAttribute('data-icon') || 'gear-six';
+                        iconEl.className = 'ph ph-' + nextIcon + ' automap-loading-phrase-icon';
                         textEl.textContent = item.textContent || '';
                     };
 
@@ -159,7 +159,7 @@ show_validate_coords_loading_modal <- function(ns, lang_r) {
             class = "automap-loading-modal",
             shiny::div(
                 class = "automap-loading-brand-row",
-                shiny::icon("earth-americas", class = "fa-solid automap-loading-brand-icon")
+                ph_icon("earth-americas", class = "automap-loading-brand-icon")
             ),
             shiny::div(
                 class = "automap-loading-title",
@@ -185,10 +185,10 @@ show_validate_coords_loading_modal <- function(ns, lang_r) {
                 shiny::div(
                     class = "automap-loading-phrase-row",
                     id = ns("coords_loading_phrase_row"),
-                    shiny::icon(
+                    ph_icon(
                         first_spec$icon,
                         id = ns("coords_loading_phrase_icon"),
-                        class = "fa-solid automap-loading-phrase-icon"
+                        class = "automap-loading-phrase-icon"
                     ),
                     shiny::span(
                         tr(first_spec$key, lang_r()),
@@ -201,7 +201,7 @@ show_validate_coords_loading_modal <- function(ns, lang_r) {
                     lapply(ordered_specs, function(spec) {
                         shiny::span(
                             class = "automap-loading-phrase-item",
-                            `data-icon` = spec$icon,
+                            `data-icon` = ph_icon_name(spec$icon),
                             tr(spec$key, lang_r())
                         )
                     })

@@ -14,34 +14,6 @@ test_that("format_provider_labels: empty/NA input returns character(0)", {
     expect_equal(saira:::format_provider_labels(""), character(0))
 })
 
-test_that("normalize_provider_failures: NULL/empty returns empty df with correct schema", {
-    out <- saira:::normalize_provider_failures(NULL)
-    expect_equal(nrow(out), 0L)
-    expect_named(out, c("provider", "error"))
-
-    out2 <- saira:::normalize_provider_failures(data.frame())
-    expect_equal(nrow(out2), 0L)
-})
-
-test_that("normalize_provider_failures: valid df passes through", {
-    df <- data.frame(provider = "gbif", error = "timeout", stringsAsFactors = FALSE)
-    out <- saira:::normalize_provider_failures(df)
-    expect_equal(nrow(out), 1L)
-    expect_equal(out$provider, "gbif")
-    expect_equal(out$error, "timeout")
-})
-
-test_that("normalize_provider_failures: rows with NA provider are dropped", {
-    df <- data.frame(
-        provider = c("gbif", NA, ""),
-        error = c("e1", "e2", "e3"),
-        stringsAsFactors = FALSE
-    )
-    out <- saira:::normalize_provider_failures(df)
-    expect_equal(nrow(out), 1L)
-    expect_equal(out$provider, "gbif")
-})
-
 test_that("stream_window: returns df unchanged when fewer rows than limit", {
     df <- data.frame(
         display_order = 1:5,
@@ -86,18 +58,6 @@ test_that("normalize_status_for_filter: unknown/empty defaults to not_found", {
     expect_equal(saira:::normalize_status_for_filter(""), "not_found")
     expect_equal(saira:::normalize_status_for_filter(NA), "not_found")
     expect_equal(saira:::normalize_status_for_filter("GARBAGE"), "not_found")
-})
-
-test_that("is_problem_status_key: problem statuses return TRUE", {
-    expect_true(saira:::is_problem_status_key("not_found"))
-    expect_true(saira:::is_problem_status_key("ambiguous"))
-    expect_true(saira:::is_problem_status_key("synonym"))
-    expect_true(saira:::is_problem_status_key("unresolved"))  # mapped to ambiguous
-})
-
-test_that("is_problem_status_key: non-problem statuses return FALSE", {
-    expect_false(saira:::is_problem_status_key("accepted"))
-    expect_false(saira:::is_problem_status_key("ignored"))
 })
 
 test_that("stream_filter_counts: all zeros for empty df", {
@@ -332,4 +292,27 @@ test_that("stream_window still adds display_order when the column is absent", {
     out <- saira:::stream_window(df, limit = 2L)
     expect_equal(out$query_name, c("c", "b"))
     expect_equal(out$display_order, c(3L, 2L))
+})
+
+testthat::test_that("provider_query_step mirrors the cascade order", {
+    br <- c("florabr", "faunabr")
+    testthat::expect_identical(provider_query_step("florabr", c("gbif", "florabr"), br), 1L)
+    testthat::expect_identical(provider_query_step("gbif", c("gbif", "florabr"), br), 2L)
+    testthat::expect_identical(provider_query_step("gbif", "gbif", br), 1L)
+    testthat::expect_true(is.na(provider_query_step("faunabr", c("gbif", "florabr"), br)))
+})
+
+testthat::test_that("conservation summary renders short tags with the sentence as tooltip", {
+    testthat::local_mocked_bindings(
+        sensitive_category_for = function(x) c("VU", NA_character_),
+        flag_invasive_species = function(x) c(FALSE, TRUE),
+        .package = "saira"
+    )
+    report <- data.frame(scientificName = c("Anodorhynchus hyacinthinus", "Pinus elliottii"))
+    html <- as.character(conservation_status_summary_ui(report, c("gbif", "florabr"), c("florabr", "faunabr"), "pt"))
+
+    testthat::expect_identical(lengths(regmatches(html, gregexpr("class=\"vn-conservation-tag ", html, fixed = TRUE))), 3L)
+    testthat::expect_true(grepl(tr("validate_names_conservation_label_mma", "pt"), html, fixed = TRUE))
+    testthat::expect_true(grepl(tr("validate_names_conservation_label_invasive", "pt"), html, fixed = TRUE))
+    testthat::expect_true(grepl("title=", html, fixed = TRUE))
 })

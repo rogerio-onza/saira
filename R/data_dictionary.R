@@ -40,8 +40,8 @@ load_i18n_dict <- function(force = FALSE) {
     raw <- sub("^\uFEFF", "", raw)
     dict <- jsonlite::fromJSON(raw, simplifyVector = FALSE)
 
-    # Validate that all keys have pt and en
-    langs <- c("pt", "en")
+    # Validate that all keys have every interface language
+    langs <- get_languages()
     for (key in names(dict)) {
         missing <- setdiff(langs, names(dict[[key]]))
         if (length(missing) > 0L) {

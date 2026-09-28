@@ -43,10 +43,6 @@ app_server <- function(input, output, session) {
         tr("nav_preview", lang_r())
     })
 
-    output$nav_validate_title <- shiny::renderUI({
-        tr("nav_validate", lang_r())
-    })
-
     output$nav_validate_names_title <- shiny::renderUI({
         tr("nav_validate_names", lang_r())
     })
@@ -64,11 +60,21 @@ app_server <- function(input, output, session) {
     })
 
     output$nav_wiki_title <- shiny::renderUI({
-        tr("nav_wiki", lang_r())
+        label <- tr("nav_wiki", lang_r())
+        shiny::tags$span(
+            title = label,
+            ph_icon("book-open"),
+            shiny::tags$span(label, class = "nav-tool-label")
+        )
     })
 
     output$nav_help_title <- shiny::renderUI({
-        tr("nav_help", lang_r())
+        label <- tr("nav_help", lang_r())
+        shiny::tags$span(
+            title = label,
+            ph_icon("circle-question"),
+            shiny::tags$span(label, class = "nav-tool-label")
+        )
     })
 
     # Version badge (navbar): links to the releases page in the active language.

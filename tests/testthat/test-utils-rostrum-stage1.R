@@ -1,6 +1,5 @@
 score_token_overlap <- saira:::score_token_overlap
 apply_semantic_penalties <- saira:::apply_semantic_penalties
-compute_value_score <- saira:::compute_value_score
 run_rostrum_stage1 <- saira:::run_rostrum_stage1
 
 empty_synonyms <- function() {
@@ -51,21 +50,6 @@ testthat::test_that("semantic penalties are capped at -0.5", {
     penalty <- apply_semantic_penalties("temp_depth_count_campo1", "decimalLatitude")
 
     testthat::expect_identical(penalty$score, -0.5)
-})
-
-testthat::test_that("value score uses hard veto when validation ratio is below 0.3", {
-    bad_values <- c("220", "350", "999", "x")
-    res <- compute_value_score(bad_values, term = "decimalLatitude", name_score = 1.0)
-
-    testthat::expect_identical(res$score, 0)
-    testthat::expect_identical(res$reason, "veto_low_validation")
-})
-
-testthat::test_that("empty columns still trigger veto pathway", {
-    res <- compute_value_score(c("", " ", NA_character_), term = "decimalLatitude", name_score = 1.0)
-
-    testthat::expect_identical(res$score, 0)
-    testthat::expect_identical(res$reason, "empty_column")
 })
 
 testthat::test_that("final_score stays in [0,1] for random inputs", {

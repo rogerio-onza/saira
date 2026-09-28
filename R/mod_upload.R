@@ -1,7 +1,7 @@
 # Title: Upload Module
 # Author: Rogerio Nunes Oliveira
 # Date: 2026-02-08
-# Version: 2.0 - Two-column layout with welcome and financing
+# Version: 3.0 - One upload panel across the page
 
 #' Upload Module UI
 #'
@@ -11,204 +11,125 @@
 mod_upload_ui <- function(id) {
     ns <- shiny::NS(id)
 
-    shiny::tagList(
-        shiny::div(
-            class = "container-fluid homepage-container",
-            shiny::fluidRow(
-                # Column 1: Data Upload Section
-                shiny::column(
-                    width = 5,
-                    bslib::card(
-                        bslib::card_header(
-                            shiny::uiOutput(ns("data_title"))
+    # Home: one upload panel across the page (ADR-132).
+    shiny::div(
+        class = "container-fluid homepage-container home-b",
+        shiny::tags$section(
+            class = "home-panel home-upload-panel",
+            shiny::uiOutput(ns("home_header")),
+            # ADR-097: tab strip replaces ADR-095 input_switch.
+            # Native radioButtons drive the state. Shiny does
+            # NOT assign per-option ids on the radio inputs, so
+            # `<label for>` cannot forward clicks; instead a
+            # tiny click delegator (script below) syncs the
+            # visible tab clicks to the matching radio input.
+            shiny::div(
+                class = "upload-mode-tabs",
+                role  = "tablist",
+                `aria-labelledby` = ns("mode_tabs_label"),
+                shiny::tags$span(
+                    id = ns("mode_tabs_label"),
+                    class = "visually-hidden",
+                    shiny::uiOutput(ns("mode_tabs_a11y_label"), inline = TRUE)
+                ),
+                shiny::div(
+                    class = "upload-mode-tabs-input",
+                    shiny::radioButtons(
+                        inputId = ns("upload_mode"),
+                        label = NULL,
+                        choices = c("csv" = "csv", "camtrap" = "camtrap"),
+                        selected = "csv",
+                        inline = TRUE
+                    )
+                ),
+                shiny::tags$button(
+                    type = "button",
+                    class = "upload-mode-tab",
+                    `data-mode` = "csv",
+                    `aria-controls` = ns("upload_mode"),
+                    ph_icon("file-csv"),
+                    shiny::tags$span(
+                        class = "upload-mode-tab-title",
+                        shiny::uiOutput(ns("mode_csv_title"), inline = TRUE)
+                    )
+                ),
+                shiny::tags$button(
+                    type = "button",
+                    class = "upload-mode-tab",
+                    `data-mode` = "camtrap",
+                    `aria-controls` = ns("upload_mode"),
+                    ph_icon("box-archive"),
+                    shiny::tags$span(
+                        class = "upload-mode-tab-title",
+                        shiny::uiOutput(ns("mode_camtrap_title"), inline = TRUE)
+                    )
+                )
+            ),
+            shiny::tags$script(shiny::HTML(
+                "(function(){\n",
+                "  if (window.__sairaUploadModeTabsWired) return;\n",
+                "  window.__sairaUploadModeTabsWired = true;\n",
+                "  document.addEventListener('click', function(e){\n",
+                "    var tab = e.target.closest && e.target.closest('.upload-mode-tab');\n",
+                "    if (!tab) return;\n",
+                "    e.preventDefault();\n",
+                "    var wrap = tab.closest('.upload-mode-tabs');\n",
+                "    if (!wrap) return;\n",
+                "    var mode = tab.getAttribute('data-mode');\n",
+                "    var radio = wrap.querySelector('input[type=\"radio\"][value=\"' + mode + '\"]');\n",
+                "    if (!radio || radio.checked) return;\n",
+                "    radio.checked = true;\n",
+                "    radio.dispatchEvent(new Event('change', {bubbles: true}));\n",
+                "    radio.focus({preventScroll: true});\n",
+                "  });\n",
+                "})();"
+            )),
+            shiny::div(
+                id = ns("mode_change_announce"),
+                class = "visually-hidden",
+                role = "status",
+                `aria-live` = "polite",
+                shiny::uiOutput(ns("mode_change_text"), inline = TRUE)
+            ),
+            # File input with dropzone and detached native progress row
+            shiny::div(
+                class = "upload-section",
+                shiny::div(
+                    class = "upload-dropzone",
+                    shiny::div(
+                        class = "upload-dropzone-copy",
+                        ph_icon("arrow-up-from-bracket", class = "upload-dropzone-icon", weight = "light"),
+                        shiny::div(
+                            class = "upload-dropzone-hint",
+                            shiny::uiOutput(ns("dropzone_hint_text"), inline = TRUE)
                         ),
-                        bslib::card_body(
-                            # ADR-097: tab strip replaces ADR-095 input_switch.
-                            # Native radioButtons drive the state. Shiny does
-                            # NOT assign per-option ids on the radio inputs, so
-                            # `<label for>` cannot forward clicks; instead a
-                            # tiny click delegator (script below) syncs the
-                            # visible tab clicks to the matching radio input.
-                            shiny::div(
-                                class = "upload-mode-tabs",
-                                role  = "tablist",
-                                `aria-labelledby` = ns("mode_tabs_label"),
-                                shiny::tags$span(
-                                    id = ns("mode_tabs_label"),
-                                    class = "visually-hidden",
-                                    shiny::uiOutput(ns("mode_tabs_a11y_label"), inline = TRUE)
-                                ),
-                                shiny::div(
-                                    class = "upload-mode-tabs-input",
-                                    shiny::radioButtons(
-                                        inputId = ns("upload_mode"),
-                                        label = NULL,
-                                        choices = c("csv" = "csv", "camtrap" = "camtrap"),
-                                        selected = "csv",
-                                        inline = TRUE
-                                    )
-                                ),
-                                shiny::tags$button(
-                                    type = "button",
-                                    class = "upload-mode-tab",
-                                    `data-mode` = "csv",
-                                    `aria-controls` = ns("upload_mode"),
-                                    shiny::icon("file-csv", class = "fa-solid"),
-                                    shiny::tags$span(
-                                        class = "upload-mode-tab-title",
-                                        shiny::uiOutput(ns("mode_csv_title"), inline = TRUE)
-                                    )
-                                ),
-                                shiny::tags$button(
-                                    type = "button",
-                                    class = "upload-mode-tab",
-                                    `data-mode` = "camtrap",
-                                    `aria-controls` = ns("upload_mode"),
-                                    shiny::icon("box-archive", class = "fa-solid"),
-                                    shiny::tags$span(
-                                        class = "upload-mode-tab-title",
-                                        shiny::uiOutput(ns("mode_camtrap_title"), inline = TRUE)
-                                    )
-                                )
-                            ),
-                            shiny::tags$script(shiny::HTML(
-                                "(function(){\n",
-                                "  if (window.__sairaUploadModeTabsWired) return;\n",
-                                "  window.__sairaUploadModeTabsWired = true;\n",
-                                "  document.addEventListener('click', function(e){\n",
-                                "    var tab = e.target.closest && e.target.closest('.upload-mode-tab');\n",
-                                "    if (!tab) return;\n",
-                                "    e.preventDefault();\n",
-                                "    var wrap = tab.closest('.upload-mode-tabs');\n",
-                                "    if (!wrap) return;\n",
-                                "    var mode = tab.getAttribute('data-mode');\n",
-                                "    var radio = wrap.querySelector('input[type=\"radio\"][value=\"' + mode + '\"]');\n",
-                                "    if (!radio || radio.checked) return;\n",
-                                "    radio.checked = true;\n",
-                                "    radio.dispatchEvent(new Event('change', {bubbles: true}));\n",
-                                "    radio.focus({preventScroll: true});\n",
-                                "  });\n",
-                                "})();"
-                            )),
-                            shiny::div(
-                                id = ns("mode_change_announce"),
-                                class = "visually-hidden",
-                                role = "status",
-                                `aria-live` = "polite",
-                                shiny::uiOutput(ns("mode_change_text"), inline = TRUE)
-                            ),
-                            # File input with dropzone and detached native progress row
-                            shiny::div(
-                                class = "upload-section",
-                                shiny::div(
-                                    class = "upload-dropzone",
-                                    shiny::div(
-                                        class = "upload-dropzone-copy",
-                                        shiny::div(
-                                            class = "upload-dropzone-hint",
-                                            shiny::uiOutput(ns("dropzone_hint_text"), inline = TRUE)
-                                        ),
-                                        shiny::div(
-                                            class = "upload-dropzone-max-size",
-                                            shiny::uiOutput(ns("max_size_text"), inline = TRUE)
-                                        )
-                                    )
-                                ),
-                                shiny::div(
-                                    class = "upload-native-input",
-                                    shiny::fileInput(
-                                        inputId = ns("file"),
-                                        label = shiny::tags$span(tr("a11y_upload_file_label", "pt"), class = "visually-hidden"),
-                                        accept = c(
-                                            ".csv", "text/csv",
-                                            ".tsv", "text/tab-separated-values",
-                                            ".txt", "text/plain"
-                                        ),
-                                        buttonLabel = shiny::icon("upload", class = "fa-solid"),
-                                        placeholder = ""
-                                    )
-                                )
-                            ),
-                            # Upload info chips
-                            shiny::div(
-                                class = "upload-info-chips",
-                            shiny::div(
-                                class = "upload-info-chip upload-info-chip--neutral",
-                                shiny::icon("code", class = "fa-solid upload-info-chip-icon"),
-                                shiny::uiOutput(ns("encoding_text"), inline = TRUE)
-                            ),
-                            shiny::div(
-                                class = "upload-info-chip upload-info-chip--privacy",
-                                shiny::icon("lock", class = "fa-solid upload-info-chip-icon"),
-                                shiny::uiOutput(ns("privacy_text"), inline = TRUE)
-                            ),
-                            shiny::div(
-                                class = "upload-info-chip upload-info-chip--tip",
-                                shiny::icon("lightbulb", class = "fa-solid upload-info-chip-icon"),
-                                shiny::uiOutput(ns("recommendation_text"), inline = TRUE)
-                            )
-                            ),
-
-                            # Stats after upload
-                            shiny::uiOutput(ns("stats"))
+                        shiny::div(
+                            class = "upload-dropzone-max-size",
+                            shiny::uiOutput(ns("max_size_text"), inline = TRUE)
                         )
                     )
                 ),
-
-                # Column 2: Welcome Section
-                shiny::column(
-                    width = 7,
-                    bslib::card(
-                        bslib::card_body(
-                            shiny::uiOutput(ns("welcome_header")),
-
-                            # Description
-                            shiny::uiOutput(ns("welcome_description")),
-
-                            # Workflow section
-                            shiny::tags$h5(
-                                shiny::icon("diagram-project", class = "fa-solid"),
-                                shiny::uiOutput(ns("workflow_title"), inline = TRUE),
-                                class = "text-mono mt-4 mb-3"
-                            ),
-                            shiny::div(
-                                class = "workflow-steps",
-                                # Step 1
-                                shiny::div(
-                                    class = "workflow-step is-active",
-                                    shiny::div(class = "step-icon", shiny::icon("upload", class = "fa-solid")),
-                                    shiny::div(class = "step-label", shiny::uiOutput(ns("step1_title"), inline = TRUE)),
-                                    shiny::div(class = "step-sublabel", shiny::uiOutput(ns("step1_desc"), inline = TRUE))
-                                ),
-                                # Step 2
-                                shiny::div(
-                                    class = "workflow-step",
-                                    shiny::div(class = "step-icon", shiny::icon("arrows-alt", class = "fa-solid")),
-                                    shiny::div(class = "step-label", shiny::uiOutput(ns("step2_title"), inline = TRUE)),
-                                    shiny::div(class = "step-sublabel", shiny::uiOutput(ns("step2_desc"), inline = TRUE))
-                                ),
-                                # Step 3
-                                shiny::div(
-                                    class = "workflow-step",
-                                    shiny::div(class = "step-icon", shiny::icon("check-circle", class = "fa-solid")),
-                                    shiny::div(class = "step-label", shiny::uiOutput(ns("step3_title"), inline = TRUE)),
-                                    shiny::div(class = "step-sublabel", shiny::uiOutput(ns("step3_desc"), inline = TRUE))
-                                ),
-                                # Step 4
-                                shiny::div(
-                                    class = "workflow-step",
-                                    shiny::div(class = "step-icon", shiny::icon("download", class = "fa-solid")),
-                                    shiny::div(class = "step-label", shiny::uiOutput(ns("step4_title"), inline = TRUE)),
-                                    shiny::div(class = "step-sublabel", shiny::uiOutput(ns("step4_desc"), inline = TRUE))
-                                )
-                            ),
-
-                            # Required DwC fields
-                            shiny::uiOutput(ns("dwc_required"))
-                        )
+                shiny::div(
+                    class = "upload-native-input",
+                    shiny::fileInput(
+                        inputId = ns("file"),
+                        label = shiny::tags$span(tr("a11y_upload_file_label", "pt"), class = "visually-hidden"),
+                        accept = c(
+                            ".csv", "text/csv",
+                            ".tsv", "text/tab-separated-values",
+                            ".txt", "text/plain",
+                            ".xlsx",
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        ),
+                        buttonLabel = ph_icon("upload"),
+                        placeholder = ""
                     )
                 )
-                )
+            ),
+            shiny::uiOutput(ns("upload_notes"), class = "home-upload-notes"),
+
+            # Stats after upload
+            shiny::uiOutput(ns("stats"))
         )
     )
 }
@@ -226,22 +147,6 @@ mod_upload_server <- function(id, lang_r) {
         # Load dependencies
 
         # Column 1: Data Section UI
-        output$data_title <- shiny::renderUI({
-            shiny::h3(
-                shiny::icon("database", class = "fa-solid"),
-                tr("upload_data_title", lang_r()),
-                class = "text-mono"
-            )
-        })
-
-        output$upload_btn_text <- shiny::renderUI({
-            shiny::tags$span(tr("upload_btn_label", lang_r()))
-        })
-
-        output$file_placeholder_text <- shiny::renderUI({
-            shiny::tags$span(tr("upload_no_file", lang_r()))
-        })
-
         output$mode_csv_title <- shiny::renderUI({
             shiny::tags$span(tr("upload_mode_csv_title", lang_r()))
         })
@@ -281,128 +186,40 @@ mod_upload_server <- function(id, lang_r) {
             shiny::tags$span(tr("upload_max_size", lang_r()))
         })
 
-        output$encoding_text <- shiny::renderUI({
-            shiny::tags$span(tr("upload_encoding_info", lang_r()))
-        })
-
-        output$privacy_text <- shiny::renderUI({
-            shiny::tags$span(tr("upload_privacy_alert", lang_r()))
-        })
-
-        output$recommendation_text <- shiny::renderUI({
-            shiny::tags$span(tr("upload_recommendation", lang_r()))
-        })
-
-        # Column 2: Welcome Section UI
-        output$welcome_header <- shiny::renderUI({
+        output$home_header <- shiny::renderUI({
             shiny::div(
-                class = "welcome-header",
-                shiny::div(
-                    class = "welcome-eyebrow",
-                    tr("welcome_eyebrow", lang_r())
-                ),
-                shiny::tags$h1(
-                    class = "welcome-main-title",
-                    tr("welcome_title_prefix", lang_r()),
-                    " ",
-                    shiny::tags$span("Sa\u00EDra", class = "welcome-main-title-brand")
-                )
+                class = "home-header",
+                shiny::div(class = "home-eyebrow", tr("welcome_eyebrow", lang_r())),
+                shiny::tags$h1(class = "home-title", tr("home_title", lang_r()))
             )
         })
 
-        output$welcome_description <- shiny::renderUI({
-            shiny::p(tr("welcome_description", lang_r()), class = "text-accent")
+        # Label for Shiny's own progress bar, which writes "Upload complete"
+        # in English (upload-dropzone.js swaps it).
+        shiny::observe({
+            session$sendCustomMessage(
+                "saira-upload-complete-label",
+                list(label = tr("upload_complete_label", lang_r()))
+            )
         })
 
-        output$workflow_title <- shiny::renderUI({
-            shiny::tags$span(tr("workflow_title", lang_r()))
-        })
-
-        output$step1_title <- shiny::renderUI({
-            shiny::tags$span(tr("workflow_step1", lang_r()))
-        })
-        output$step1_desc <- shiny::renderUI({
-            shiny::tags$span(tr("workflow_step1_desc", lang_r()))
-        })
-
-        output$step2_title <- shiny::renderUI({
-            shiny::tags$span(tr("workflow_step2", lang_r()))
-        })
-        output$step2_desc <- shiny::renderUI({
-            shiny::tags$span(tr("workflow_step2_desc", lang_r()))
-        })
-
-        output$step3_title <- shiny::renderUI({
-            shiny::tags$span(tr("workflow_step3", lang_r()))
-        })
-        output$step3_desc <- shiny::renderUI({
-            shiny::tags$span(tr("workflow_step3_desc", lang_r()))
-        })
-
-        output$step4_title <- shiny::renderUI({
-            shiny::tags$span(tr("workflow_step4", lang_r()))
-        })
-        output$step4_desc <- shiny::renderUI({
-            shiny::tags$span(tr("workflow_step4_desc", lang_r()))
-        })
-
-        # Required DwC fields aligned with preview readiness checklist
-        required_fields <- c(
-            "scientificName",
-            "eventDate",
-            "decimalLatitude",
-            "decimalLongitude",
-            "basisOfRecord",
-            "occurrenceID"
-        )
-        class_fallback <- c(
-            "scientificName" = "Taxon",
-            "eventDate" = "Occurrence",
-            "decimalLatitude" = "Location",
-            "decimalLongitude" = "Location",
-            "basisOfRecord" = "Record-level",
-            "occurrenceID" = "Occurrence"
-        )
-        category_order <- c("Record-level", "Occurrence", "Taxon", "Location")
-        required_terms_all <- tryCatch(
-            get_dwc_terms(),
-            error = function(e) {
-                warning("[Sa\u00EDra] Failed to load DwC terms: ", e$message)
-                data.frame(
-                    term = character(0),
-                    class = character(0),
-                    required = logical(0),
-                    definition_pt = character(0),
-                    definition_en = character(0),
-                    stringsAsFactors = FALSE
-                )
-            }
-        )
-        required_terms <- required_terms_all[required_terms_all$term %in% required_fields, , drop = FALSE]
-        required_terms <- required_terms[match(required_fields, required_terms$term), , drop = FALSE]
-        required_terms <- required_terms[!is.na(required_terms$term), , drop = FALSE]
-
-        # ADR-097: unified scaffold — persistent header plus body that
-        # crossfades between CSV (DwC term chips) and Camtrap (file rows).
-        output$dwc_required <- shiny::renderUI({
+        # Notes under the dropzone: what the page needs to say before an upload.
+        # The format hints follow the selected mode.
+        output$upload_notes <- shiny::renderUI({
             lang <- lang_r()
-            mode <- input$upload_mode %||% "csv"
-            body <- if (identical(mode, "camtrap")) {
-                upload_camtrap_requirements_ui(lang)
-            } else {
-                upload_csv_requirements_ui(required_terms, lang)
+            note <- function(icon, text) {
+                shiny::div(class = "home-upload-note", ph_icon(icon), shiny::tags$span(text))
             }
-            shiny::div(
-                class = "format-requirements",
-                `data-mode` = mode,
-                shiny::tags$h5(
-                    class = "format-requirements-title text-mono",
-                    shiny::icon("list-check", class = "fa-solid"),
-                    " ",
-                    tr("upload_format_requirements_title", lang)
-                ),
-                shiny::div(class = "format-requirements-body", body)
-            )
+            format_notes <- if (identical(input$upload_mode %||% "csv", "camtrap")) {
+                list(note("box-archive", tr("home_camtrap_files_note", lang)))
+            } else {
+                list(
+                    note("code", tr("upload_encoding_info", lang)),
+                    note("table-list", tr("upload_recommendation", lang)),
+                    note("file-import", tr("home_guide_tip", lang))
+                )
+            }
+            shiny::tagList(format_notes, note("lock", tr("upload_privacy_alert", lang)))
         })
 
         # ADR-087: classify the upload as data CSV or Saira mapping guide.
@@ -419,11 +236,19 @@ mod_upload_server <- function(id, lang_r) {
                 if (!is_camtrap_dp_zip(input$file$datapath)) return("invalid")
                 return("camtrap_dp")
             }
+            if (ext == "xlsx") return("data")
             if (!ext %in% c("csv", "tsv", "txt")) return("invalid")
             if (is_saira_mapping_guide(input$file$datapath)) return("guide")
-            if (ext == "txt") return("invalid")  # .txt without magic = bogus
             "data"
         })
+
+        invalid_upload_msg_key <- function() {
+            if (identical(input$upload_mode %||% "csv", "camtrap")) {
+                "err_camtrap_invalid_zip"
+            } else {
+                "err_invalid_format"
+            }
+        }
 
         # File Upload Logic — only loads data for CSVs. Guides are handled
         # by the observers below (modal + alias import), and produce NULL
@@ -446,13 +271,8 @@ mod_upload_server <- function(id, lang_r) {
 
             kind <- file_kind()
             if (identical(kind, "invalid")) {
-                msg_key <- if (identical(input$upload_mode %||% "csv", "camtrap")) {
-                    "err_camtrap_invalid_zip"
-                } else {
-                    "err_invalid_format"
-                }
                 shiny::validate(
-                    shiny::need(FALSE, tr(msg_key, lang))
+                    shiny::need(FALSE, tr(invalid_upload_msg_key(), lang))
                 )
             }
             if (identical(kind, "guide")) {
@@ -496,7 +316,11 @@ mod_upload_server <- function(id, lang_r) {
 
             tryCatch(
                 {
-                    df <- read_biodiversity_csv(input$file$datapath)
+                    df <- if (identical(tolower(tools::file_ext(input$file$name)), "xlsx")) {
+                        read_biodiversity_xlsx(input$file$datapath)
+                    } else {
+                        read_biodiversity_csv(input$file$datapath)
+                    }
                     shiny::showNotification(
                         tr("success_upload", lang),
                         type = "message",
@@ -589,8 +413,18 @@ mod_upload_server <- function(id, lang_r) {
 
         # Display stats after upload
         output$stats <- shiny::renderUI({
-            shiny::req(raw_data())
             shiny::req(input$file)
+            # Without this the validate() in raw_data() shows the message as
+            # plain grey text, which reads as a hint and not as an error.
+            if (identical(file_kind(), "invalid")) {
+                return(shiny::div(
+                    class = "alert alert-danger upload-format-error",
+                    role = "alert",
+                    ph_icon("triangle-exclamation"),
+                    shiny::tags$span(tr(invalid_upload_msg_key(), lang_r()))
+                ))
+            }
+            shiny::req(raw_data())
 
             df <- raw_data()
 

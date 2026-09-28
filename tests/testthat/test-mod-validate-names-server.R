@@ -47,7 +47,7 @@ testthat::test_that("upstream reset signal clears reviews but keeps providers", 
     )
 })
 
-testthat::test_that("provider priority follows toggle order", {
+testthat::test_that("BR providers toggle and GBIF stays locked", {
     mapped_df <- data.frame(scientificName = c("Puma concolor"), stringsAsFactors = FALSE)
     # Pin the on-disk cache to "nothing downloaded" so the default is
     # deterministically GBIF-only regardless of the test machine's cache.
@@ -69,10 +69,10 @@ testthat::test_that("provider priority follows toggle order", {
             testthat::expect_identical(rv$selected_providers, c("gbif", "florabr"))
 
             toggle_provider_selection("gbif")
-            testthat::expect_identical(rv$selected_providers, "florabr")
+            testthat::expect_identical(rv$selected_providers, c("gbif", "florabr"))
 
-            toggle_provider_selection("gbif")
-            testthat::expect_identical(rv$selected_providers, c("florabr", "gbif"))
+            toggle_provider_selection("florabr")
+            testthat::expect_identical(rv$selected_providers, "gbif")
         }
     )
 })
@@ -184,31 +184,6 @@ testthat::test_that("completed validation defaults stream filter to problems", {
     )
 })
 
-testthat::test_that("report status counts classify valid, invalid and unresolved buckets", {
-    mapped_df <- data.frame(scientificName = c("Puma concolor"), stringsAsFactors = FALSE)
-
-    shiny::testServer(
-        mod_validate_names_server,
-        args = list(
-            mapped_data_r = shiny::reactive(mapped_df),
-            lang_r = shiny::reactive("en")
-        ),
-        {
-            mock_report <- data.frame(
-                scientificName = c("A", "B", "C", "D", "E"),
-                validation_status = c("accepted", "synonym", "ignored", "not_found", "ambiguous"),
-                stringsAsFactors = FALSE
-            )
-
-            counts <- report_status_counts(mock_report)
-            testthat::expect_identical(as.integer(counts[["valid"]]), 1L)
-            testthat::expect_identical(as.integer(counts[["invalid"]]), 1L)
-            testthat::expect_identical(as.integer(counts[["unresolved"]]), 3L)
-            testthat::expect_identical(as.integer(counts[["total"]]), 5L)
-        }
-    )
-})
-
 testthat::test_that("manual confirm review decrements unresolved and problem filter counts", {
     mapped_df <- data.frame(scientificName = c("A", "B"), stringsAsFactors = FALSE)
 
@@ -241,17 +216,6 @@ testthat::test_that("manual confirm review decrements unresolved and problem fil
 
             after_counts <- stream_filter_counts(rv$stream_df, reviewed_keys = reviewed_query_keys())
             testthat::expect_identical(as.integer(after_counts[["problems"]]), 0L)
-
-            report_df <- data.frame(
-                scientificName = c("A", "B"),
-                query_name = c("A", "B"),
-                validation_status = c("accepted", "not_found"),
-                stringsAsFactors = FALSE
-            )
-            counts <- report_status_counts(within(report_df, {
-                manual_review <- c(FALSE, TRUE)
-            }))
-            testthat::expect_identical(as.integer(counts[["unresolved"]]), 0L)
         }
     )
 })
@@ -717,10 +681,12 @@ testthat::test_that("sensitivity payload reflects per-species overrides", {
     )
 })
 
-# ADR-113: the run tick repaints the progress bar, not the config panel -------
+# ADR-113: the run tick repaints the phase line, not the config panel ---------
 
-testthat::test_that("progress_block renders the percentage independently of config_panel", {
+testthat::test_that("run_phase shows the phase only during a run", {
     gate <- list(status = "ok", has_data = TRUE, scientific_col = "scientificName")
+    # Hold the run on its current step, so the phase stays on screen.
+    testthat::local_mocked_bindings(next_taxadb_run_step = function(state) state, .package = "saira")
 
     shiny::testServer(
         mod_validate_names_server,
@@ -732,30 +698,19 @@ testthat::test_that("progress_block renders the percentage independently of conf
             validation_gate_r = shiny::reactive(gate)
         ),
         {
-            rv$run_state <- list(
-                total_unique = 10L, resolved_unique = 5L,
-                provider_batch_idx = 1L, provider_batch_total = 2L,
-                phase = "querying"
-            )
+            testthat::expect_null(output$run_phase)
+
+            rv$running <- TRUE
+            rv$run_state <- list(phase = "provider_query_batch", current_provider = "gbif")
             session$flushReact()
 
-            progress_html <- paste(output$progress_block$html, collapse = " ")
+            phase_html <- paste(output$run_phase$html, collapse = " ")
             config_html <- paste(output$config_panel$html, collapse = " ")
+            testthat::expect_true(grepl("vn-progress-phrase-text", phase_html, fixed = TRUE))
 
-            # The bar moved to its own output and still renders the fill.
-            testthat::expect_true(grepl("vn-progress-fill", progress_html, fixed = TRUE))
-            testthat::expect_true(grepl("vn-progress-percent", progress_html, fixed = TRUE))
-
-            # config_panel keeps the widgets that are NOT progress, and no longer
-            # carries the bar itself -- it only hosts the output placeholder.
-            testthat::expect_true(grepl("vn-config-panel", config_html, fixed = TRUE))
+            # config_panel hosts only the placeholder, and no bar is left.
+            testthat::expect_false(grepl("vn-progress-phrase-text", config_html, fixed = TRUE))
             testthat::expect_false(grepl("vn-progress-fill", config_html, fixed = TRUE))
-
-            # NOTE: this asserts the WIRING, which is all testServer can see. It
-            # deliberately does not attempt to assert that config_panel stopped
-            # depending on rv$run_state: testServer cannot observe render counts
-            # or DOM input rebinding, so that half is covered by manual testing
-            # (a run must not make the two option switches flicker).
         }
     )
 })
@@ -834,6 +789,31 @@ testthat::test_that("a silent req() upstream leaves the tab idle without an erro
             rv$start_requested <- TRUE
             testthat::expect_no_error(session$flushReact())
             testthat::expect_identical(rv$last_run_status, "idle")
+        }
+    )
+})
+
+testthat::test_that("GBIF stays selected and has no toggle", {
+    testthat::local_mocked_bindings(
+        brprovider_data_available = function(provider_id) FALSE,
+        .package = "saira"
+    )
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(data.frame(scientificName = "Puma concolor")),
+            lang_r = shiny::reactive("pt")
+        ),
+        {
+            toggle_provider_selection("gbif")
+            testthat::expect_identical(rv$selected_providers, "gbif")
+            session$flushReact()
+
+            config_html <- paste(output$config_panel$html, collapse = " ")
+            testthat::expect_false(grepl("provider_card_gbif", config_html, fixed = TRUE))
+            testthat::expect_true(grepl("provider_card_florabr", config_html, fixed = TRUE))
+            testthat::expect_true(grepl("is-locked", config_html, fixed = TRUE))
         }
     )
 })

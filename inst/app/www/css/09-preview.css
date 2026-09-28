@@ -15,8 +15,8 @@
 }
 
 .saira-table-shell {
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
   background-color: var(--bg-card);
   box-shadow: var(--shadow-sm);
   padding: var(--space-3);
@@ -31,7 +31,7 @@
 .saira-table-shell .dataTables_wrapper .dataTables_filter label {
   font-family: var(--font-serif);
   font-size: var(--text-sm);
-  color: var(--accent);
+  color: var(--text-muted);
 }
 
 .saira-table-shell .dataTables_wrapper .dataTables_length select,
@@ -56,10 +56,17 @@
   padding-top: var(--space-2);
 }
 
+/* One line per cell, as in the mockup: long values widen the column and the
+   table scrolls sideways. */
+#preview-datatable table.dataTable th,
+#preview-datatable table.dataTable td {
+  white-space: nowrap;
+}
+
 .saira-table-shell table.dataTable thead th {
-  background: var(--accent);
-  color: #ffffff;
-  border-bottom: 1px solid var(--border-strong);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-default);
 }
 
 .saira-table-shell table.dataTable thead>tr>th.sorting::before,
@@ -68,7 +75,7 @@
 .saira-table-shell table.dataTable thead>tr>th.sorting_asc::after,
 .saira-table-shell table.dataTable thead>tr>th.sorting_desc::before,
 .saira-table-shell table.dataTable thead>tr>th.sorting_desc::after {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-muted);
 }
 
 .saira-table-shell .dataTables_wrapper .dataTables_paginate {
@@ -99,9 +106,10 @@
 
 .saira-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button.current,
 .saira-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #ffffff;
+  border-color: var(--step-active);
+  background: var(--bg-card);
+  color: var(--step-active);
+  font-weight: 700;
   box-shadow: none;
 }
 
@@ -158,9 +166,10 @@
 }
 
 .saira-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item.active .page-link {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #ffffff;
+  border-color: var(--step-active);
+  background: var(--bg-card);
+  color: var(--step-active);
+  font-weight: 700;
   box-shadow: none;
 }
 
@@ -189,7 +198,7 @@
 }
 
 .modal .preview-export-confirm-warning {
-  color: var(--warning);
+  color: var(--warning-text);
   font-weight: var(--weight-medium);
 }
 
@@ -283,3 +292,52 @@
   }
 }
 
+
+/* Title inside the table card, on the row of the DT search and length
+   controls (round 5, option B). Both controls float right (dom "flrtip"). */
+.preview-table-shell {
+  position: relative;
+}
+
+.preview-card-head {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  height: 34px;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  max-width: calc(100% - 34rem);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.preview-card-title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: 34px;
+}
+
+.preview-card-subtitle {
+  font-family: var(--font-serif);
+  font-size: var(--text-base);
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-table-shell .dataTables_wrapper .dataTables_length,
+.preview-table-shell .dataTables_wrapper .dataTables_filter {
+  float: right;
+  margin-left: var(--space-4);
+}
+
+@media (max-width: 991.98px) {
+  .preview-card-head {
+    position: static;
+    max-width: none;
+    margin-bottom: var(--space-2);
+  }
+}

@@ -15,19 +15,16 @@ Coordinate validation only runs once three Darwin Core terms are mapped (see **[
 - <span class="term">decimalLongitude</span>
 - <span class="term">country</span>
 
-The left panel shows the column associated with each term. While any is missing, the **Validate Coordinates** button stays disabled.
+The bar at the top of the screen shows the column associated with each term. While any is missing, the **Validate Coordinates** button stays disabled.
 
-Before running, choose the **Profile**:
-
-- **Complete**: runs every test, including the detection of *reference hotspots* (suspicious points on capitals, country centroids, the GBIF HQ and biodiversity institutions).
-- **Fast**: skips the reference tests; handy for a first pass over large datasets.
+Validation always runs every test, including the detection of *reference hotspots* (suspicious points on capitals, country centroids, the GBIF HQ and biodiversity institutions).
 
 Click **Validate Coordinates**. Validation is triggered by you, not on every change to the data.
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/9-painel-validação-EN.png" alt="Left panel of coordinate validation: status of the mapped columns (latitude, longitude, country), the Complete/Fast Profile selector and the Validate Coordinates button">
-  <figcaption><b>Figure 1.</b> Left panel: status of the mapped columns (latitude, longitude, country), the Profile selector (Complete / Fast) and the Validate Coordinates button.</figcaption>
+  <img src="../../assets/img/9-painel-validação-EN.png" alt="Coordinate validation bar: status of the mapped columns (latitude, longitude, country) and the Validate Coordinates button">
+  <figcaption><b>Figure 1.</b> Top bar: status of the mapped columns (latitude, longitude, country) and the Validate Coordinates button.</figcaption>
 </figure>
 ```
 
@@ -126,7 +123,31 @@ When candidates exist, panels appear on the left. Each shows the count and one e
 </figure>
 ```
 
-**Records with no coordinate** are marked *Missing coordinate*. Saíra does not invent a point from the locality text: those records are left to your judgement. Keep them ungeoreferenced as a conscious choice, or fill in the coordinates before upload.
+## Fix a coordinate in the table
+
+When no panel covers the error, fix the point in the **Coordinate Diagnostics** table itself, without going back to the spreadsheet:
+
+```{=html}
+<ol class="fix-steps">
+  <li><strong>Double-click the latitude or the longitude.</strong>
+    <p>The cell turns into a field. Type the value in decimal degrees, with a comma or a point (<code>-15,8</code> or <code>-15.8</code>). Enter saves.</p></li>
+  <li><strong>Read the new diagnosis.</strong>
+    <p>Saíra validates the point again, with the same tests. If it passes, the row reads <em>Edited</em> and <em>Corrected</em>. If it still fails (for example, it is still at sea), the row shows the new problem. The marker moves on the map.</p></li>
+  <li><strong>Undo if you need to.</strong>
+    <p>The row's <strong>Undo</strong> link brings the original coordinate back. The <strong>Edited</strong> filter shows only the rows you fixed.</p></li>
+</ol>
+```
+
+```{=html}
+<figure class="shot">
+  <img src="../../assets/img/9.5-editar-coordenada-tabela-EN.png" alt="Coordinate Diagnostics table with the first row edited: Edited and Corrected badges, the Undo link and the new longitude">
+  <figcaption><b>Figure 6.</b> A row fixed in the table: <em>Edited</em> and <em>Corrected</em> badges, the Undo link and the new value.</figcaption>
+</figure>
+```
+
+A manual fix follows the rules of the assisted ones: it goes into the export, and the original value goes to <span class="term">verbatimLatitude</span> and <span class="term">verbatimLongitude</span> when those columns are empty. Validating again does not erase manual fixes. A row without a unique <span class="term">occurrenceID</span> cannot be edited.
+
+**Records with no coordinate** are marked *Missing coordinate*. Saíra does not invent a point from the locality text: those records are left to your judgement. Keep them ungeoreferenced as a conscious choice, or type both coordinates in the table.
 
 ::: {.callout-tip}
 ## Datum and precision

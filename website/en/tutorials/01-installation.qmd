@@ -94,8 +94,8 @@ On servers or environments without a default browser, `run_app()` prints a local
 
 ```{=html}
 <figure class="shot">
-  <img src="../../assets/img/1-tela-inicial-EN.png" alt="Saíra start screen: Home tab with the upload area and welcome panel">
-  <figcaption><b>Figure 8.</b> Saíra's welcome screen, with the language selector (PT-BR/EN) and the start of the import workflow.</figcaption>
+  <img src="../../assets/img/1-tela-inicial-EN.png" alt="Saíra start screen: Home step with the upload panel and the list of required columns">
+  <figcaption><b>Figure 8.</b> Saíra's start screen, with the language selector (PT-BR/EN), the numbered steps and the upload panel.</figcaption>
 </figure>
 ```
 
@@ -114,7 +114,7 @@ pak::pak("rogerio-onza/saira")
 
 ## Language
 
-Saíra is bilingual. In the top corner of the interface you switch between **Portuguese (PT-BR)** and **English (EN-US)** at any time, handy for mixed teams or for publishing metadata in English. The switch is instant and does not interrupt work in progress.
+Saíra is trilingual. In the top corner of the interface you switch between **Portuguese (PT-BR)**, **English (EN-US)** and **Spanish (ES)** at any time, handy for mixed teams or for publishing metadata in English. The switch is instant and does not interrupt work in progress.
 
 ## File size and performance
 

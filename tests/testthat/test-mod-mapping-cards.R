@@ -199,6 +199,16 @@ test_that("build_field_card marks state, wide span and the hidden-text tooltip",
         state_class = "field-required-missing"
     ))
     expect_match(flagged, "field-required-missing", fixed = TRUE)
+
+    # A required term carries the "Required" tag; other terms do not.
+    expect_false(grepl("field-required-tag", flagged, fixed = TRUE))
+    required <- as.character(build_field_card(
+        item = terms[["eventDate"]], cols = cols, current_val = "",
+        is_mapped = FALSE, badge_info = NULL, ns = ns, lang_r = "pt",
+        input = list(), cat_class = "cat-event", required = TRUE
+    ))
+    expect_match(required, "field-required-tag", fixed = TRUE)
+    expect_match(required, tr("mapping_required", "pt"), fixed = TRUE)
 })
 
 test_that("build_field_row renders a read-only row that links back to its card", {

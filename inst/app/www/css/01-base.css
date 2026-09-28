@@ -19,8 +19,7 @@ p,
 
 .card p,
 .panel p,
-.description,
-.welcome-text {
+.description {
   font-size: var(--text-md);
   font-weight: var(--weight-medium);
   line-height: var(--leading-normal);

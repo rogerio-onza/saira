@@ -6,8 +6,9 @@
   /* Base */
   --bg-main: #f4f3ee;
   --bg-card: #ffffff;
+  --bg-subtle: #faf9f5; /* sunken surface inside a white panel, e.g. the dropzone */
   --text-primary: #1c1c26;
-  --text-muted: #6c757d;
+  --text-muted: #5f6570; /* AA on --bg-main: 5.3:1 (#6c757d gave 4.2:1) */
 
   /* Bird Palette */
   --primary: #38cff6;
@@ -32,6 +33,11 @@
      the mapping cards, where the 0.25 alpha reads as no border at all. */
   --warning-border-strong: rgba(255, 162, 4, 0.55);
   --error-border-strong: rgba(192, 57, 43, 0.5);
+  /* Text on a semantic tint. The saturated state colors fail AA as text on
+     their own tint (success 2.8:1, warning 1.9:1), so text uses these. */
+  --success-text: #0b6b47;
+  --warning-text: #7a4d00;
+  --error-text: #9b2c20;
   --info-bg: rgba(37, 38, 89, 0.1);
   --info-border: rgba(37, 38, 89, 0.2);
 
@@ -41,20 +47,45 @@
   --coord-swapped: #6d28d9;
   --coord-corrected: #0e7c86;
 
-  /* Mapping Badges */
-  --color-badge-ambiguous: #e67e22;
-  --color-badge-template: #8e44ad;
+  /* Mapping card states and status badges (ADR-127): light fills, 1px borders,
+     dark text on each pastel for AA contrast. */
+  --state-mapped-border: #a9d8c4;
+  --state-attention-bg: #fffaf0;
+  --state-attention-border: #efc98a;
+  --state-missing-bg: #fdf3f1;
+  --state-missing-border: #e3a69d;
+  --badge-auto-bg: #e2f4ec;
+  --badge-auto-fg: #0b6b47;
+  --badge-suggested-bg: #fff1d6;
+  --badge-suggested-fg: #7a4d00;
+  --badge-alias-bg: #e7e9fa;
+  --badge-alias-fg: #2833ac;
+  --badge-manual-bg: #f1f0ea;
+  --badge-manual-fg: #5f6570;
+  --badge-ambiguous-bg: #fde6d6;
+  --badge-ambiguous-fg: #8a3f0a;
+  --badge-template-bg: #f1e4f7;
+  --badge-template-fg: #6b2d86;
+  --badge-assistant-bg: #e6e9ef;
+  --badge-assistant-fg: #3d4656;
+  --badge-edited-bg: #e1eef8;
+  --badge-edited-fg: #1f5585;
+  --badge-missing-fg: #9b2c20;
+  --badge-invasive-bg: #f5e8dc;
+  --badge-invasive-fg: #8c4a00; /* invasive species: brown, never the not-found red */
 
-  /* Borders */
-  --border-light: rgba(40, 51, 172, 0.08);
-  --border-default: rgba(40, 51, 172, 0.18);
-  --border-strong: rgba(40, 51, 172, 0.35);
-  --border: rgba(40, 51, 172, 0.18);
+  /* Borders: warm neutrals that sit on --bg-main (ADR-127). */
+  --border-light: #efede6;
+  --border-default: #e6e4dc;
+  --border-strong: #d9d6cc;
+  --border: var(--border-default);
 
   /* Backgrounds */
   --overlay: rgba(28, 28, 38, 0.5);
   --hover-bg: rgba(40, 51, 172, 0.07);
   --active-bg: rgba(40, 51, 172, 0.13);
+  /* Flat fill for a selected card or an active drop target. */
+  --selected-bg: rgba(40, 51, 172, 0.1); /* brand blue tint, between hover and active */
 
   /* Typography */
   --font-serif: 'Source Serif 4', Georgia, serif;
@@ -97,20 +128,23 @@
   --radius-sm: 4px;
   --radius: 8px;
   --radius-lg: 12px;
+  --radius-xl: 14px;
   --radius-full: 9999px;
+  --radius-chip: 6px; /* filter chips and status tags (ADR-130) */
 
-  /* Shadows */
-  --shadow-sm: 0 1px 4px rgba(28, 28, 38, 0.05);
-  --shadow: 0 2px 8px rgba(28, 28, 38, 0.08);
-  --shadow-md: 0 4px 12px rgba(28, 28, 38, 0.1);
-  --shadow-hover: 0 4px 16px rgba(28, 28, 38, 0.12);
-  --shadow-lg: 0 8px 24px rgba(28, 28, 38, 0.15);
-  --shadow-primary: 0 2px 6px rgba(56, 207, 246, 0.35);
-  --shadow-primary-hover: 0 4px 12px rgba(56, 207, 246, 0.45);
-  --shadow-success: 0 2px 6px rgba(0, 168, 107, 0.3);
-  --shadow-error: 0 2px 6px rgba(192, 57, 43, 0.3);
-  --shadow-accent: 0 2px 4px rgba(40, 51, 172, 0.3);
-  --shadow-accent-hover: 0 4px 8px rgba(40, 51, 172, 0.4);
+  /* Shadows: the design is flat (ADR-127). The tokens stay so a rule can
+     name its intent, but every one resolves to none. Focus rings stay. */
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-md: none;
+  --shadow-hover: none;
+  --shadow-lg: none;
+  --shadow-primary: none;
+  --shadow-primary-hover: none;
+  --shadow-success: none;
+  --shadow-error: none;
+  --shadow-accent: none;
+  --shadow-accent-hover: none;
 
   /* Focus Rings */
   --focus-ring-primary: 0 0 0 3px rgba(56, 207, 246, 0.25);
@@ -129,7 +163,16 @@
   --input-bg-disabled: rgba(40, 51, 172, 0.05);
   --input-text-disabled: rgba(28, 28, 38, 0.35);
 
-  /* Navbar */
+  /* Navbar: two rows from 992px (ADR-128). The header height adds the two
+     rows and their 1px borders. Page offsets derive from it. */
+  --header-row-height: 56px;
+  --step-row-height: 48px;
+  --app-header-height: calc(var(--header-row-height) + var(--step-row-height) + 2px);
+  --step-active: var(--accent); /* brand blue: selection color, 8.75:1 on --bg-main */
+  --navbar-brand-width: 7.5rem;
+  /* Width kept on the left of the single-row header so the steps sit in the
+     true center: the tools on the right take about this much (ADR-132). */
+  --header-tools-width: 14.625rem;
   --navbar-link-color: #2833ac;
   --navbar-link-hover-bg: var(--hover-bg);
   --navbar-link-active-bg: #38cff6;
@@ -142,9 +185,32 @@
   --transition-colors: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
   --transition-transform: transform 0.2s ease;
   --transition-shadow: box-shadow 0.2s ease;
-  --lift-sm: translateY(-1px);
-  --lift-base: translateY(-2px);
-  --lift-lg: translateY(-4px);
-  --validate-names-header-offset: 166px;
+  /* Flat design (ADR-127): nothing lifts on hover. The tokens stay so a rule
+     still names its intent. */
+  --lift-sm: none;
+  --lift-base: none;
+  --lift-lg: none;
+  /* Header, the names toolbar and the page padding (ADR-132). */
+  --validate-names-header-offset: calc(var(--app-header-height) + 9rem);
 }
 
+/* From 1360px the steps and the tools share one row (ADR-132). The tools
+   show icons only up to 1679px, and icon + word from 1680px. */
+@media (min-width: 1360px) {
+  :root {
+    --app-header-height: calc(var(--header-row-height) + 1px);
+  }
+}
+
+@media (min-width: 1680px) {
+  :root {
+    --header-tools-width: 22.375rem;
+  }
+}
+
+/* Below 992px the header is the one-row collapsed navbar. */
+@media (max-width: 991.98px) {
+  :root {
+    --app-header-height: 80px;
+  }
+}

@@ -94,8 +94,8 @@ Em servidores ou ambientes sem navegador padrão, o `run_app()` imprime um ender
 
 ```{=html}
 <figure class="shot">
-  <img src="../assets/img/1-tela-inicial.png" alt="Tela inicial do Saíra: aba Início com área de upload e painel de boas-vindas">
-  <figcaption><b>Figura 8.</b> Tela de boas-vindas do Saíra, com o seletor de idioma (PT-BR/EN) e o início do fluxo de importação.</figcaption>
+  <img src="../assets/img/1-tela-inicial.png" alt="Tela inicial do Saíra: etapa Início com o painel de upload e a lista de colunas obrigatórias">
+  <figcaption><b>Figura 8.</b> Tela inicial do Saíra, com o seletor de idioma (PT-BR/EN), as etapas numeradas e o painel de upload.</figcaption>
 </figure>
 ```
 
@@ -114,7 +114,7 @@ O `pak` baixa a versão mais recente e atualiza só o que mudou (as instalaçõe
 
 ## Idioma
 
-O Saíra é bilíngue. No canto superior da interface você alterna entre **Português (PT-BR)** e **Inglês (EN-US)** a qualquer momento, útil para equipes mistas ou para publicar metadados em inglês. A troca é imediata e não interrompe o trabalho em andamento.
+O Saíra é trilíngue. No canto superior da interface você alterna entre **Português (PT-BR)**, **Inglês (EN-US)** e **Espanhol (ES)** a qualquer momento, útil para equipes mistas ou para publicar metadados em inglês. A troca é imediata e não interrompe o trabalho em andamento.
 
 ## Tamanho de arquivo e desempenho
 

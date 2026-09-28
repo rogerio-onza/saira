@@ -8,19 +8,34 @@
   font-weight: 400;
 }
 
+/* Light header, horizontal rules only: no vertical dividers (ADR-127). */
 .dataTable thead th {
-  background-color: var(--bg-main);
+  background-color: var(--bg-subtle);
   color: var(--text-primary);
   font-family: var(--font-mono);
-  font-weight: var(--weight-semibold);
-  font-size: var(--text-md);
-  border-bottom: 2px solid var(--border-strong);
-  padding: var(--space-3);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--border-default);
+  padding: var(--space-2) var(--space-3);
 }
 
 .dataTable tbody td {
-  padding: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border-light);
+}
+
+.dataTable thead th,
+.dataTable tbody td {
+  border-left: 0;
+  border-right: 0;
+}
+
+/* No zebra stripes. Bootstrap and DataTables paint them with an inset
+   box-shadow from these variables, under selectors no rule here outranks, so
+   the variables carry the fix: a transparent stripe and a white one at 5%. */
+.dataTable {
+  --bs-table-striped-bg: transparent;
+  --dt-row-stripe: 255, 255, 255;
 }
 
 .dataTable tbody tr:hover {

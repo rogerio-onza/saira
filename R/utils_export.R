@@ -471,7 +471,7 @@ write_xlsx_text_only <- function(df, path) {
 #' @param map_values Named list: nome = termo DwC, valor = char vec de colunas
 #'   fonte (multi-coluna serializa como "colA + colB").
 #' @param raw_data data.frame original (para listar colunas nao usadas).
-#' @param lang Character scalar "pt" ou "en" (ou reactive — extraido com `()` se for).
+#' @param lang Character scalar from `get_languages()` (ou reactive — extraido com `()` se for).
 #' @param required_terms Character vector de termos DwC obrigatorios (default = required do preview).
 #' @param source_file Optional character: nome do arquivo de origem para metadados.
 #' @param id_strategy Optional character: occurrenceID strategy used at export,
@@ -497,7 +497,7 @@ build_mapping_guide_txt <- function(map_values,
                                     id_counts = NULL) {
     if (is.function(lang)) lang <- lang()
     lang <- as.character(lang)[1L]
-    if (!lang %in% c("pt", "en")) lang <- "pt"
+    if (!lang %in% get_languages()) lang <- "en"
 
     if (!is.list(map_values)) map_values <- list()
     if (!is.data.frame(raw_data)) raw_data <- data.frame()
@@ -567,6 +567,8 @@ build_mapping_guide_txt <- function(map_values,
         if (is.na(cl) || !nzchar(cl)) "Other" else cl
     }
 
+    # Like the Portuguese text, the Spanish text stays ASCII: the guide is a
+    # plain .txt that people open in any editor.
     L <- if (lang == "pt") {
         list(
             title        = "#   SAIRA \u00b7 Guia de Mapeamento Darwin Core",
@@ -588,6 +590,28 @@ build_mapping_guide_txt <- function(map_values,
             unmp_note_3  = "#     um termo DwC ou inclua o conteudo em dynamicProperties.",
             coverage     = "# cobertura: %d termo(s) DwC mapeado(s), %d constante(s), %d obrigatorio(s) faltando",
             none         = "(nenhum)"
+        )
+    } else if (lang == "es") {
+        list(
+            title        = "#   SAIRA \u00b7 Guia de Mapeo Darwin Core",
+            url          = "#   github.com/sibbr/saira",
+            tagline      = "#   Vocabulario de mapeo compartible - sin datos de registros",
+            how_to_use   = "#   como usar",
+            step_1       = "#     1. Cargue su CSV de datos en Saira y abra la pestana Mapeo.",
+            step_2       = "#     2. En la barra lateral, haga clic en Importar plantilla y elija este .txt.",
+            step_3       = "#     3. El mapeo se reconstruye en las tarjetas (concatenaciones y constantes).",
+            step_4       = "#     4. Revise y exporte. (Cada columna tambien se vuelve un alias personal reutilizable.)",
+            section_map  = "#   mapeos por clase DwC   (columna_origen -> termino_DwC)",
+            legend       = "#   las concatenaciones de columnas se unen con el separador \" | \"",
+            section_const= "#   constantes   (valor escrito/elegido aplicado a todas las filas)",
+            section_miss = "#   terminos DwC obligatorios todavia sin mapear",
+            section_unmp = "#   columnas originales sin usar (se mantienen al final del CSV)",
+            unmp_empty   = "#     Vacias en todas las filas, por eso quedan fuera del archivo:",
+            unmp_note_1  = "#     Estas columnas siguen en el archivo, pero NO se declaran en meta.xml,",
+            unmp_note_2  = "#     por eso GBIF las va a ignorar. Para publicarlas, mapee cada una a un",
+            unmp_note_3  = "#     termino DwC o incluya su contenido en dynamicProperties.",
+            coverage     = "# cobertura: %d termino(s) DwC mapeado(s), %d constante(s), %d obligatorio(s) faltante(s)",
+            none         = "(ninguno)"
         )
     } else {
         list(
@@ -702,7 +726,24 @@ build_mapping_guide_txt <- function(map_values,
     }
 
     if (!is.na(id_strategy) && nzchar(id_strategy)) {
-        strategy_section <- if (lang == "pt") {
+        strategy_section <- if (lang == "es") {
+            list(
+                header = "#   estrategia de occurrenceID",
+                explainers = list(
+                    user_supplied = "#     Estrategia: user_supplied. Todos los occurrenceID vinieron de sus datos y se conservaron literalmente.",
+                    user_supplied_with_generated = "#     Estrategia: user_supplied_with_generated. Los identificadores de sus datos se conservaron; las filas que no tenian uno recibieron un identificador generado por Saira.",
+                    generated = "#     Estrategia: generated. Ninguna columna de sus datos tenia identificador, por eso Saira derivo uno del contenido de cada fila. Volver a cargar la misma hoja de calculo reproduce los mismos identificadores; corregir un valor cambia el identificador de esa fila."
+                ),
+                counts = "#     Conteo: %d de %d conservados de sus datos, %d generados.",
+                roundtrip = c(
+                    "#",
+                    "#     Para mantener estos identificadores en la proxima exportacion, vuelva a",
+                    "#     importar ESTE archivo (o copie la columna occurrenceID a su hoja de",
+                    "#     calculo) y mapee occurrenceID. Los existentes se conservan y solo las",
+                    "#     ocurrencias nuevas reciben un ID."
+                )
+            )
+        } else if (lang == "pt") {
             list(
                 header = "#   estrategia de occurrenceID",
                 explainers = list(

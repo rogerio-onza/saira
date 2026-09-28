@@ -6,9 +6,9 @@
 #
 # Usage: Rscript scripts/release_gate.R
 
-message("=== RELEASE GATE v0.2.0 ===")
+message("=== RELEASE GATE ===")
 
-message("\n[0/6] DESCRIPTION integrity check")
+message("\n[0/8] DESCRIPTION integrity check")
 # Regenerate DESCRIPTION:Collate based on @include directives
 devtools::document()
 
@@ -36,27 +36,46 @@ if (length(collate_start) > 0) {
     }
 }
 
-message("[0/6] ✓ DESCRIPTION integrity OK")
+message("[0/8] ✓ DESCRIPTION integrity OK")
 
-message("\n[1/6] Unit + Server tests")
-devtools::test()
+message("\n[1/8] CSS bundle is current")
+# No test reads custom.css against its sources, so a missed rebuild ships old
+# styles. Rebuild it and stop if the output changed.
+css_bundle <- file.path("inst", "app", "www", "custom.css")
+css_before <- readLines(css_bundle, warn = FALSE)
+if (system2("Rscript", file.path("data-raw", "build_css.R")) != 0L) {
+    stop("data-raw/build_css.R failed")
+}
+if (!identical(css_before, readLines(css_bundle, warn = FALSE))) {
+    stop(css_bundle, " was out of date. The gate rebuilt it: review and commit it.")
+}
 
-message("\n[2/6] CSS Guardrails")
-testthat::test_file("tests/testthat/test-css-guardrails.R")
+message("\n[2/8] Unit + Server tests")
+devtools::test(stop_on_failure = TRUE)
 
-message("\n[3/6] i18n Integrity")
-testthat::test_file("tests/testthat/test-utils-i18n.R")
-testthat::test_file("tests/testthat/test-i18n-a11y-keys.R")
+message("\n[3/8] Performance budgets (report only)")
+# Stage 3 of Rostrum already fails its 0.5 s budget on main, so this step
+# cannot stop the gate. Compare the failures with the last baseline.
+Sys.setenv(RUN_PERF = "true")
+devtools::test(filter = "performance|utils-coords")
+Sys.unsetenv("RUN_PERF")
 
-message("\n[4/6] E2E")
+message("\n[4/8] CSS Guardrails")
+testthat::test_file("tests/testthat/test-css-guardrails.R", stop_on_failure = TRUE)
+
+message("\n[5/8] i18n Integrity")
+testthat::test_file("tests/testthat/test-utils-i18n.R", stop_on_failure = TRUE)
+testthat::test_file("tests/testthat/test-i18n-a11y-keys.R", stop_on_failure = TRUE)
+
+message("\n[6/8] E2E")
 Sys.setenv(RUN_E2E = "true", NOT_CRAN = "true")
-testthat::test_file("tests/testthat/test-e2e-flows.R")
+testthat::test_file("tests/testthat/test-e2e-flows.R", stop_on_failure = TRUE)
 Sys.unsetenv(c("RUN_E2E", "NOT_CRAN"))
 
-message("\n[5/6] R CMD check")
+message("\n[7/8] R CMD check")
 devtools::check(document = FALSE, manual = FALSE)
 
-message("\n[6/6] Roxygen hygiene")
+message("\n[8/8] Roxygen hygiene")
 # Verify that exported functions have @examples or are documented
 # and that internal helpers have @noRd (when applicable)
 # This is a soft check — warnings are acceptable, errors are not.
@@ -76,6 +95,6 @@ exported_functions <- Reduce(c,
     })
 )
 
-message("[6/6] ✓ Roxygen hygiene check passed")
+message("[8/8] ✓ Roxygen hygiene check passed")
 
 message("\n=== ALL GATES PASSED ===")

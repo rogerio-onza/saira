@@ -2,7 +2,7 @@
 
 > **Background:** `#f4f3ee` (warm beige) — non-negotiable  
 > **Palette:** *Tangara fastuosa* + estados semânticos com personalidade  
-> **Version:** 4.3 — tipografia atualizada (Spectral → Source Serif 4) + auditoria de contraste
+> **Version:** 5.0 — visual plano e leve (ADR-127): sem sombra, sem gradiente, bordas neutras quentes
 
 ---
 
@@ -61,7 +61,7 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 --bg-main:       #f4f3ee;   /* NON-NEGOTIABLE */
 --bg-card:       #ffffff;   /* NON-NEGOTIABLE */
 --text-primary:  #1C1C26;   /* Cauda */
---text-muted:    #6c757d;
+--text-muted:    #5F6570;   /* 5.3:1 sobre o bege */
 
 /* ── Brand — do pássaro ── */
 --primary:       #38CFF6;   /* Peito */
@@ -87,21 +87,43 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 --info-border:    rgba(37, 38, 89, 0.20);
 
 /* ── Borders ── */
---border-light:   rgba(40, 51, 172, 0.08);
---border-default: rgba(40, 51, 172, 0.18);
---border-strong:  rgba(40, 51, 172, 0.35);
---border:         rgba(40, 51, 172, 0.18);
+--border-light:   #EFEDE6;
+--border-default: #E6E4DC;
+--border-strong:  #D9D6CC;
+--border:         var(--border-default);
+--warning-border-strong: rgba(255, 162, 4, 0.55);
+--error-border-strong:   rgba(192, 57, 43, 0.50);
 
 /* ── Backgrounds ── */
 --overlay:    rgba(28, 28, 38, 0.50);
 --hover-bg:   rgba(40, 51, 172, 0.07);
 --active-bg:  rgba(40, 51, 172, 0.13);
+--selected-bg: rgba(56, 207, 246, 0.12);  /* card selecionado, alvo de drop */
 
 /* ── Coordinate validation ── */
 --coord-ok:      #00A86B;
 --coord-missing: rgba(28, 28, 38, 0.35);
---coord-swapped: #8b5cf6;
+--coord-swapped:   #6D28D9;
+--coord-corrected: #0E7C86;
+
+/* ── Mapping badges ── */
+/* Estados do card (fundo claro + borda de 1px) */
+--state-mapped-border:    #A9D8C4;
+--state-attention-bg:     #FFFAF0;  --state-attention-border: #EFC98A;
+--state-missing-bg:       #FDF3F1;  --state-missing-border:   #E3A69D;
+
+/* Badges de status: pílula pastel, texto escuro (AA 5.1:1 ou mais) */
+--badge-auto-*       #E2F4EC / #0B6B47
+--badge-suggested-*  #FFF1D6 / #7A4D00
+--badge-alias-*      #E7E9FA / #2833AC
+--badge-manual-*     #F1F0EA / #5F6570
+--badge-ambiguous-*  #FDE6D6 / #8A3F0A
+--badge-template-*   #F1E4F7 / #6B2D86
+--badge-assistant-*  #E6E9EF / #3D4656
+--badge-edited-*     #E1EEF8 / #1F5585
 ```
+
+Os badges do mapeamento usam `field-status-badge--<status>`, nunca `bg-*` do Bootstrap: esses utilitários forçam a cor.
 
 ---
 
@@ -201,26 +223,21 @@ code, .data-cell, .coord-value {
 --space-4: 1rem;     --space-5: 1.25rem;  --space-6: 1.5rem;
 --space-8: 2rem;     --space-10: 2.5rem;  --space-12: 3rem;
 
---radius-sm: 4px;  --radius: 8px;  --radius-lg: 12px;  --radius-full: 9999px;
+--radius-sm: 4px;  --radius: 8px;  --radius-lg: 12px;  --radius-xl: 14px;  --radius-full: 9999px;  --radius-chip: 6px;
+```
+
+Controles 8px, cards 12px, painéis 14px. Filtros e tags de status usam `--radius-chip` (6px, ADR-130); `--radius-full` fica para o selo de versão, interruptores e barras de progresso. Não use número fixo: `50%` só para círculo.
+
+```css
 ```
 
 ---
 
 ## 💫 Shadows & Focus Rings
 
-```css
---shadow-sm:            0 1px 4px  rgba(28,28,38,0.05);
---shadow:               0 2px 8px  rgba(28,28,38,0.08);
---shadow-md:            0 4px 12px rgba(28,28,38,0.10);
---shadow-hover:         0 4px 16px rgba(28,28,38,0.12);
---shadow-lg:            0 8px 24px rgba(28,28,38,0.15);
---shadow-primary:       0 2px 6px  rgba(56,207,246,0.35);
---shadow-primary-hover: 0 4px 12px rgba(56,207,246,0.45);
---shadow-success:       0 2px 6px  rgba(0,168,107,0.30);
---shadow-error:         0 2px 6px  rgba(192,57,43,0.30);
---shadow-accent:        0 2px 4px  rgba(40,51,172,0.30);
---shadow-accent-hover:  0 4px 8px  rgba(40,51,172,0.40);
+O visual é plano (ADR-127). Todo token `--shadow-*` vale `none`: nenhum card, botão, modal ou menu tem sombra. Um card mostra o limite com a borda de 1px e o fundo branco sobre o bege. Um estado selecionado usa `--selected-bg` e um anel `inset 0 0 0 1px`. Os anéis de foco ficam.
 
+```css
 --focus-ring-primary: 0 0 0 3px rgba(56,207,246,0.25);
 --focus-ring-accent:  0 0 0 3px rgba(40,51,172,0.22);
 --focus-ring-success: 0 0 0 3px rgba(0,168,107,0.22);
@@ -304,10 +321,10 @@ code, .data-cell, .coord-value {
 ### Alerts
 
 ```css
-.alert-success → success-bg / border-left: --success / title: #007A4D
-.alert-warning → warning-bg / border-left: --warning / title: #C07800
-.alert-error   → error-bg   / border-left: --error   / title: #C0392B
-.alert-info    → info-bg    / border-left: --info    / title: #252659
+.alert-success → success-bg / border: 1px --success-border / title: #007A4D
+.alert-warning → warning-bg / border: 1px --warning-border / title: #C07800
+.alert-error   → error-bg   / border: 1px --error-border   / title: #C0392B
+.alert-info    → info-bg    / border: 1px --info-border    / title: #252659
 ```
 
 ### Forms
@@ -333,8 +350,17 @@ label, .input-label { font-family: var(--font-mono); font-size: var(--text-sm); 
 --navbar-link-color:       #2833AC;    /* azul-violeta */
 --navbar-link-hover-bg:    var(--hover-bg);
 --navbar-link-active-bg:   #38CFF6;   /* ciano peito */
---navbar-link-active-text: #1C1C26;   /* contraste 8.1:1 ✅ */
+--navbar-link-active-text: #1C1C26;   /* contraste 8.1:1 ✅ (menu recolhido) */
+
+/* Cabeçalho em duas linhas a partir de 992px (ADR-128) */
+--header-row-height:  56px;   /* marca, Wiki DwC, Ajuda, idioma, versão */
+--step-row-height:    48px;   /* etapas 1 a 7 */
+--app-header-height:  calc(56px + 48px + 2px);  /* 80px abaixo de 992px */
+--step-active:        var(--accent);  /* azul da marca: etapa ativa, caixas marcadas, filtro Todos; 8.75:1 (ADR-130) */
+--navbar-brand-width: 7.5rem;
 ```
+
+A etapa ativa usa cor e sublinhado, sem fundo. Abaixo de 992px, o menu recolhido mantém o fundo ciano na aba ativa. Todo deslocamento de página que desconta o cabeçalho usa `--app-header-height`, nunca um número fixo.
 
 ---
 
@@ -354,11 +380,18 @@ label, .input-label { font-family: var(--font-mono); font-size: var(--text-sm); 
 .coord-issue-badge-warning → warning-bg / --warning   (#FFA204)
 .coord-issue-badge-missing → rgba(40,51,172,.06) / --text-muted
 
-/* Stream pills active */
-.stream-pill.active   → #2833AC, white text
-.pill-error.active    → #C0392B
-.pill-warning.active  → #FFA204, dark text
-.pill-info.active     → #252659
+/* Filter chips (ADR-130): label | count, --radius-chip, the color of what they filter */
+--pill-fg / --pill-bg per class: pill-problems, pill-error → missing red;
+  pill-warning → suggested amber; pill-info → --info; pill-success → auto green;
+  pill-invasive → --badge-invasive-*; pill-reference → --coord-swapped; pill-edited;
+  none (All) → --step-active
+count part → --pill-bg tint; active chip → --pill-bg fill, --pill-fg border, count filled --pill-fg
+
+/* Status tags (.vn-status-badge): no border, light fill, dark text */
+.badge-success → --badge-auto-*      .badge-warning → --badge-suggested-*
+.badge-error   → --state-missing-bg / --badge-missing-fg
+.badge-info    → --badge-assistant-* .badge-accent → --badge-alias-*
+.badge-muted   → --badge-manual-*     .badge-invasive → --badge-invasive-* (brown)
 ```
 
 ---
@@ -375,6 +408,9 @@ label, .input-label { font-family: var(--font-mono); font-size: var(--text-sm); 
 | `#ffffff` on `#C0392B` | white on error | **5.44:1** | ✅ AA |
 | `#252659` on `#f4f3ee` | info on bg | **12.6:1** | ✅ AAA |
 | `#38CFF6` on `#f4f3ee` | primary on bg | **1.65:1** | ❌ NUNCA como texto |
+| `#5F6570` on `#f4f3ee` | text-muted on bg | **5.28:1** | ✅ AA |
+| `#5F6570` on `#ffffff` | text-muted on card | **5.86:1** | ✅ AA |
+| `#6D28D9` on `#f4f3ee` | coord-swapped on bg | **6.4:1** | ✅ AA |
 
 ---
 
@@ -384,11 +420,9 @@ As cores abaixo são fiéis ao saíra e **não devem ser alteradas**. Os conflit
 
 | Cor | Uso pretendido | Ratio real | Problema | Decisão sugerida |
 |---|---|---|---|---|
-| `#6c757d` (text-muted) on `#f4f3ee` | Texto secundário | **4.22:1** | Falha AA (mínimo 4.5:1) | Usar apenas para texto não-essencial (decorativo, metadata) ou aumentar tamanho para 18px+ (AA large = 3:1) |
 | `#00A86B` (success) on `#f4f3ee` | Texto de status | **2.77:1** | Falha AA e AAA | Usar `#00A86B` **apenas como fundo/ícone/borda** — nunca como texto. Para texto, o token `#007A4D` (já no doc em badges) tem 4.86:1 ✅ |
 | `#ffffff` on `#00A86B` (btn-success) | Texto branco no botão | **3.08:1** | Falha AA — o doc afirma 4.7:1, mas o valor real é 3.08:1 | Usar texto `#1C1C26` no lugar de branco (contraste 4.43:1 ✅ AA), ou aceitar o desvio em botões grandes |
 | `#C07800` (warning dark) on `#f4f3ee` | Texto em badges warning | **3.19:1** | Falha AA | Usar apenas em badges grandes (18px+) onde AA large (3:1) se aplica, ou escurecer só nesse contexto de uso |
-| `#8b5cf6` (coord-swapped) on `#f4f3ee` | Label de coordenada | **3.81:1** | Falha AA | Cor não vem do pássaro — pode ser ajustada sem conflito de identidade. `#6d28d9` tem 6.4:1 ✅ |
 
 > **Nota sobre `btn-success`:** O valor `4.7:1` documentado na seção anterior está incorreto. O contraste real de `#ffffff` sobre `#00A86B` é **3.08:1**, abaixo do mínimo AA. O único conflito de identidade visual entre os problemas listados acima é o `btn-success` — os demais ou têm workarounds contextuais ou (no caso do `coord-swapped`) envolvem uma cor que não é do pássaro.
 
@@ -405,6 +439,7 @@ As cores abaixo são fiéis ao saíra e **não devem ser alteradas**. Os conflit
 7. ❌ **Não usar Source Serif 4 sem `font-optical-sizing: auto`** — perde o benefício do eixo óptico variável
 8. ❌ **Não usar Source Serif 4 em labels de input ou dados tabulares** — usar Space Mono nesses contextos
 9. ❌ **Não importar pesos tipográficos não-utilizados** — impacta performance de carregamento no Shiny
+10. ❌ **Não usar sombra, gradiente decorativo nem borda lateral grossa** — ADR-127, ADR-040
 
 ---
 
