@@ -37,8 +37,9 @@ test_that("saira_running_version returns the loaded namespace version", {
 test_that("saira_releases_url is language-aware", {
     expect_match(saira_releases_url("pt"), "/novidades\\.html$")
     expect_match(saira_releases_url("en"), "/en/releases\\.html$")
-    # Unknown/blank language falls back to the PT page.
-    expect_match(saira_releases_url(""), "/novidades\\.html$")
+    expect_match(saira_releases_url("es"), "/es/novedades\\.html$")
+    # Unknown/blank language falls back to the English page, like tr().
+    expect_match(saira_releases_url(""), "/en/releases\\.html$")
     expect_true(startsWith(saira_releases_url("pt"), "https://rogerio-onza.github.io/saira"))
 })
 

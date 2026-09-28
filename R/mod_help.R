@@ -78,10 +78,12 @@ help_get_author_meta <- function() {
     )
 }
 
-# Language-aware website URL for tutorials/FAQ pages.
-help_site_url <- function(lang, path_pt, path_en) {
-    base <- "https://rogerio-onza.github.io/saira"
-    paste0(base, if (identical(lang, "en")) path_en else path_pt)
+# Language-aware website URL: one path per language, English when the language
+# has no page of its own (the same fallback as tr()).
+help_site_url <- function(lang, ...) {
+    paths <- list(...)
+    path <- paths[[as.character(lang)[1L]]] %||% paths[["en"]]
+    paste0("https://rogerio-onza.github.io/saira", path)
 }
 
 help_link_item <- function(link_item, lang) {
@@ -113,7 +115,7 @@ help_tutorials_card <- function(lang) {
         ),
         shiny::p(class = "help-resource-body", tr("help_tutorials_body", lang)),
         shiny::tags$a(
-            href = help_site_url(lang, "/tutoriais/", "/en/tutorials/"),
+            href = help_site_url(lang, pt = "/tutoriais/", en = "/en/tutorials/", es = "/es/tutoriales/"),
             class = "help-tutorials-button",
             target = "_blank",
             rel = "noopener noreferrer",
@@ -254,7 +256,7 @@ help_faq_card <- function(lang) {
                 })
             ),
             shiny::tags$a(
-                href = help_site_url(lang, "/faq.html", "/en/faq.html"),
+                href = help_site_url(lang, pt = "/faq.html", en = "/en/faq.html", es = "/es/faq.html"),
                 class = "help-faq-view-all",
                 target = "_blank",
                 rel = "noopener noreferrer",

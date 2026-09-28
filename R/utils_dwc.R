@@ -14,56 +14,72 @@ basis_of_record_vocab_catalog <- list(
         label_en = "Preserved Specimen",
         label_pt = "Esp\u00E9cime Preservado",
         desc_en = "Specimen preserved in a biological collection.",
-        desc_pt = "Esp\u00E9cime preservado em cole\u00E7\u00E3o biol\u00F3gica."
+        desc_pt = "Esp\u00E9cime preservado em cole\u00E7\u00E3o biol\u00F3gica.",
+        label_es = "Esp\u00E9cimen preservado",
+        desc_es = "Esp\u00E9cimen preservado en una colecci\u00F3n biol\u00F3gica."
     ),
     list(
         term = "FossilSpecimen",
         label_en = "Fossil Specimen",
         label_pt = "Esp\u00E9cime F\u00F3ssil",
         desc_en = "Preserved specimen that is a fossil.",
-        desc_pt = "Esp\u00E9cime preservado que \u00E9 f\u00F3ssil."
+        desc_pt = "Esp\u00E9cime preservado que \u00E9 f\u00F3ssil.",
+        label_es = "Esp\u00E9cimen f\u00F3sil",
+        desc_es = "Esp\u00E9cimen preservado que es un f\u00F3sil."
     ),
     list(
         term = "LivingSpecimen",
         label_en = "Living Specimen",
         label_pt = "Esp\u00E9cime Vivo",
         desc_en = "Specimen that is currently alive.",
-        desc_pt = "Esp\u00E9cime atualmente vivo."
+        desc_pt = "Esp\u00E9cime atualmente vivo.",
+        label_es = "Esp\u00E9cimen vivo",
+        desc_es = "Esp\u00E9cimen que est\u00E1 vivo actualmente."
     ),
     list(
         term = "HumanObservation",
         label_en = "Human Observation",
         label_pt = "Observa\u00E7\u00E3o por Humano",
         desc_en = "Direct observation performed by a person.",
-        desc_pt = "Observa\u00E7\u00E3o direta realizada por pessoa."
+        desc_pt = "Observa\u00E7\u00E3o direta realizada por pessoa.",
+        label_es = "Observaci\u00F3n humana",
+        desc_es = "Observaci\u00F3n directa realizada por una persona."
     ),
     list(
         term = "MachineObservation",
         label_en = "Machine Observation",
         label_pt = "Observa\u00E7\u00E3o por M\u00E1quina",
         desc_en = "Observation produced by camera, sensor, or recorder.",
-        desc_pt = "Observa\u00E7\u00E3o gerada por c\u00E2mera, sensor ou gravador."
+        desc_pt = "Observa\u00E7\u00E3o gerada por c\u00E2mera, sensor ou gravador.",
+        label_es = "Observaci\u00F3n por m\u00E1quina",
+        desc_es = "Observaci\u00F3n producida por una c\u00E1mara, un sensor o una grabadora."
     ),
     list(
         term = "MaterialSample",
         label_en = "Material Sample",
         label_pt = "Amostra",
         desc_en = "Physical result obtained from a sampling event.",
-        desc_pt = "Resultado f\u00EDsico obtido em evento de amostragem."
+        desc_pt = "Resultado f\u00EDsico obtido em evento de amostragem.",
+        label_es = "Muestra de material",
+        desc_es = "Resultado f\u00EDsico obtenido en un evento de muestreo."
     ),
     list(
         term = "MaterialCitation",
         label_en = "Material Citation",
         label_pt = "Cita\u00E7\u00E3o de Material",
         desc_en = "Reference to material cited in publications.",
-        desc_pt = "Refer\u00EAncia a material citado em publica\u00E7\u00F5es."
+        desc_pt = "Refer\u00EAncia a material citado em publica\u00E7\u00F5es.",
+        label_es = "Cita de material",
+        desc_es = "Referencia a material citado en publicaciones."
     ),
     list(
         term = "Occurrence",
         label_en = "Occurrence",
         label_pt = "Ocorr\u00EAncia",
         desc_en = "Record of organism existence at place and time.",
-        desc_pt = "Registro de exist\u00EAncia de organismo em lugar e tempo."
+        desc_pt = "Registro de exist\u00EAncia de organismo em lugar e tempo.",
+        label_es = "Ocurrencia",
+        desc_es = "Registro de la existencia de un organismo en un lugar y un momento."
     )
 )
 
@@ -76,49 +92,63 @@ establishment_means_vocab_catalog <- list(
         label_en = "native (indigenous)",
         label_pt = "nativa (ind\u00EDgena)",
         desc_en = "A taxon occurring within its natural range.",
-        desc_pt = "T\u00E1xon que ocorre dentro de sua distribui\u00E7\u00E3o natural."
+        desc_pt = "T\u00E1xon que ocorre dentro de sua distribui\u00E7\u00E3o natural.",
+        label_es = "nativa (ind\u00EDgena)",
+        desc_es = "Tax\u00F3n que ocurre dentro de su distribuci\u00F3n natural."
     ),
     list(
         term = "nativeEndemic",
         label_en = "native: endemic",
         label_pt = "nativa: end\u00EAmica",
         desc_en = "A taxon with a natural distribution restricted to a single geographical area.",
-        desc_pt = "T\u00E1xon com distribui\u00E7\u00E3o natural restrita a uma \u00FAnica \u00E1rea geogr\u00E1fica."
+        desc_pt = "T\u00E1xon com distribui\u00E7\u00E3o natural restrita a uma \u00FAnica \u00E1rea geogr\u00E1fica.",
+        label_es = "nativa: end\u00E9mica",
+        desc_es = "Tax\u00F3n con una distribuci\u00F3n natural restringida a una \u00FAnica \u00E1rea geogr\u00E1fica."
     ),
     list(
         term = "nativeReintroduced",
         label_en = "native: reintroduced",
         label_pt = "nativa: reintroduzida",
         desc_en = "A taxon re-established by humans in an area that was once part of its natural range, but from where it had become extinct.",
-        desc_pt = "T\u00E1xon restabelecido por a\u00E7\u00E3o humana em \u00E1rea que j\u00E1 fez parte de sua distribui\u00E7\u00E3o natural, mas de onde havia sido extinto."
+        desc_pt = "T\u00E1xon restabelecido por a\u00E7\u00E3o humana em \u00E1rea que j\u00E1 fez parte de sua distribui\u00E7\u00E3o natural, mas de onde havia sido extinto.",
+        label_es = "nativa: reintroducida",
+        desc_es = "Tax\u00F3n restablecido por acci\u00F3n humana en un \u00E1rea que fue parte de su distribuci\u00F3n natural, pero donde se hab\u00EDa extinguido."
     ),
     list(
         term = "introduced",
         label_en = "introduced (alien, exotic, non-native)",
         label_pt = "introduzida (ex\u00F3tica, n\u00E3o nativa)",
         desc_en = "Establishment of a taxon by human agency into an area that is not part of its natural range.",
-        desc_pt = "Estabelecimento de um t\u00E1xon por a\u00E7\u00E3o humana em \u00E1rea que n\u00E3o faz parte de sua distribui\u00E7\u00E3o natural."
+        desc_pt = "Estabelecimento de um t\u00E1xon por a\u00E7\u00E3o humana em \u00E1rea que n\u00E3o faz parte de sua distribui\u00E7\u00E3o natural.",
+        label_es = "introducida (ex\u00F3tica, no nativa)",
+        desc_es = "Establecimiento de un tax\u00F3n por acci\u00F3n humana en un \u00E1rea que no es parte de su distribuci\u00F3n natural."
     ),
     list(
         term = "introducedAssistedColonisation",
         label_en = "introduced: assisted colonisation",
         label_pt = "introduzida: coloniza\u00E7\u00E3o assistida",
         desc_en = "Establishment of a taxon specifically to create a self-sustaining wild population outside its natural range.",
-        desc_pt = "Estabelecimento de um t\u00E1xon com a inten\u00E7\u00E3o espec\u00EDfica de criar popula\u00E7\u00E3o silvestre autossustent\u00E1vel fora de sua distribui\u00E7\u00E3o natural."
+        desc_pt = "Estabelecimento de um t\u00E1xon com a inten\u00E7\u00E3o espec\u00EDfica de criar popula\u00E7\u00E3o silvestre autossustent\u00E1vel fora de sua distribui\u00E7\u00E3o natural.",
+        label_es = "introducida: colonizaci\u00F3n asistida",
+        desc_es = "Establecimiento de un tax\u00F3n con la intenci\u00F3n espec\u00EDfica de crear una poblaci\u00F3n silvestre autosostenible fuera de su distribuci\u00F3n natural."
     ),
     list(
         term = "vagrant",
         label_en = "vagrant (casual)",
         label_pt = "vagante (casual)",
         desc_en = "The temporary occurrence of a taxon far outside its natural or migratory range.",
-        desc_pt = "Ocorr\u00EAncia tempor\u00E1ria de um t\u00E1xon muito al\u00E9m de sua distribui\u00E7\u00E3o natural ou migrat\u00F3ria."
+        desc_pt = "Ocorr\u00EAncia tempor\u00E1ria de um t\u00E1xon muito al\u00E9m de sua distribui\u00E7\u00E3o natural ou migrat\u00F3ria.",
+        label_es = "errante (casual)",
+        desc_es = "Ocurrencia temporal de un tax\u00F3n muy lejos de su distribuci\u00F3n natural o migratoria."
     ),
     list(
         term = "uncertain",
         label_en = "uncertain (unknown, cryptogenic)",
         label_pt = "incerta (desconhecida, criptog\u00EAnica)",
         desc_en = "The origin of the occurrence of the taxon in an area is obscure.",
-        desc_pt = "A origem da ocorr\u00EAncia do t\u00E1xon na \u00E1rea \u00E9 obscura."
+        desc_pt = "A origem da ocorr\u00EAncia do t\u00E1xon na \u00E1rea \u00E9 obscura.",
+        label_es = "incierta (desconocida, criptog\u00E9nica)",
+        desc_es = "El origen de la ocurrencia del tax\u00F3n en el \u00E1rea es incierto."
     )
 )
 
@@ -132,77 +162,99 @@ degree_of_establishment_vocab_catalog <- list(
         label_en = "native (category A)",
         label_pt = "nativa (categoria A)",
         desc_en = "Not transported beyond limits of native range.",
-        desc_pt = "N\u00E3o transportada al\u00E9m dos limites de sua distribui\u00E7\u00E3o nativa."
+        desc_pt = "N\u00E3o transportada al\u00E9m dos limites de sua distribui\u00E7\u00E3o nativa.",
+        label_es = "nativa (categor\u00EDa A)",
+        desc_es = "No transportada m\u00E1s all\u00E1 de los l\u00EDmites de su distribuci\u00F3n nativa."
     ),
     list(
         term = "captive",
         label_en = "captive (category B1)",
         label_pt = "em cativeiro (categoria B1)",
         desc_en = "Individuals in captivity or quarantine, with explicit measures of containment in place.",
-        desc_pt = "Indiv\u00EDduos em cativeiro ou quarentena, com medidas expl\u00EDcitas de conten\u00E7\u00E3o."
+        desc_pt = "Indiv\u00EDduos em cativeiro ou quarentena, com medidas expl\u00EDcitas de conten\u00E7\u00E3o.",
+        label_es = "en cautiverio (categor\u00EDa B1)",
+        desc_es = "Individuos en cautiverio o cuarentena, con medidas expl\u00EDcitas de contenci\u00F3n."
     ),
     list(
         term = "cultivated",
         label_en = "cultivated (category B2)",
         label_pt = "cultivada (categoria B2)",
         desc_en = "Individuals in cultivation, with measures to prevent dispersal limited at best.",
-        desc_pt = "Indiv\u00EDduos em cultivo, com medidas limitadas para impedir a dispers\u00E3o."
+        desc_pt = "Indiv\u00EDduos em cultivo, com medidas limitadas para impedir a dispers\u00E3o.",
+        label_es = "cultivada (categor\u00EDa B2)",
+        desc_es = "Individuos en cultivo, con medidas limitadas para impedir la dispersi\u00F3n."
     ),
     list(
         term = "released",
         label_en = "released (category B3)",
         label_pt = "solta (categoria B3)",
         desc_en = "Individuals directly released into a novel environment.",
-        desc_pt = "Indiv\u00EDduos soltos diretamente em ambiente novo."
+        desc_pt = "Indiv\u00EDduos soltos diretamente em ambiente novo.",
+        label_es = "liberada (categor\u00EDa B3)",
+        desc_es = "Individuos liberados directamente en un ambiente nuevo."
     ),
     list(
         term = "failing",
         label_en = "failing (category C0)",
         label_pt = "em decl\u00EDnio (categoria C0)",
         desc_en = "Individuals released outside captivity or cultivation, but incapable of surviving for a significant period.",
-        desc_pt = "Indiv\u00EDduos soltos fora de cativeiro ou cultivo, incapazes de sobreviver por per\u00EDodo significativo."
+        desc_pt = "Indiv\u00EDduos soltos fora de cativeiro ou cultivo, incapazes de sobreviver por per\u00EDodo significativo.",
+        label_es = "en declive (categor\u00EDa C0)",
+        desc_es = "Individuos liberados fuera del cautiverio o el cultivo, incapaces de sobrevivir por un per\u00EDodo significativo."
     ),
     list(
         term = "casual",
         label_en = "casual (category C1)",
         label_pt = "casual (categoria C1)",
         desc_en = "Individuals surviving outside captivity or cultivation, with no reproduction.",
-        desc_pt = "Indiv\u00EDduos sobrevivendo fora de cativeiro ou cultivo, sem reprodu\u00E7\u00E3o."
+        desc_pt = "Indiv\u00EDduos sobrevivendo fora de cativeiro ou cultivo, sem reprodu\u00E7\u00E3o.",
+        label_es = "casual (categor\u00EDa C1)",
+        desc_es = "Individuos que sobreviven fuera del cautiverio o el cultivo, sin reproducci\u00F3n."
     ),
     list(
         term = "reproducing",
         label_en = "reproducing (category C2)",
         label_pt = "reprodutiva (categoria C2)",
         desc_en = "Reproduction is occurring, but the population is not self-sustaining.",
-        desc_pt = "H\u00E1 reprodu\u00E7\u00E3o, mas a popula\u00E7\u00E3o n\u00E3o \u00E9 autossustent\u00E1vel."
+        desc_pt = "H\u00E1 reprodu\u00E7\u00E3o, mas a popula\u00E7\u00E3o n\u00E3o \u00E9 autossustent\u00E1vel.",
+        label_es = "reproductiva (categor\u00EDa C2)",
+        desc_es = "Hay reproducci\u00F3n, pero la poblaci\u00F3n no es autosostenible."
     ),
     list(
         term = "established",
         label_en = "established (category C3)",
         label_pt = "estabelecida (categoria C3)",
         desc_en = "Reproduction occurring and population self-sustaining.",
-        desc_pt = "Reprodu\u00E7\u00E3o ocorrendo e popula\u00E7\u00E3o autossustent\u00E1vel."
+        desc_pt = "Reprodu\u00E7\u00E3o ocorrendo e popula\u00E7\u00E3o autossustent\u00E1vel.",
+        label_es = "establecida (categor\u00EDa C3)",
+        desc_es = "Hay reproducci\u00F3n y la poblaci\u00F3n es autosostenible."
     ),
     list(
         term = "colonising",
         label_en = "colonising (category D1)",
         label_pt = "colonizadora (categoria D1)",
         desc_en = "Self-sustaining population, with individuals surviving a significant distance from the original point of introduction.",
-        desc_pt = "Popula\u00E7\u00E3o autossustent\u00E1vel, com indiv\u00EDduos sobrevivendo a dist\u00E2ncia significativa do ponto original de introdu\u00E7\u00E3o."
+        desc_pt = "Popula\u00E7\u00E3o autossustent\u00E1vel, com indiv\u00EDduos sobrevivendo a dist\u00E2ncia significativa do ponto original de introdu\u00E7\u00E3o.",
+        label_es = "colonizadora (categor\u00EDa D1)",
+        desc_es = "Poblaci\u00F3n autosostenible, con individuos que sobreviven a una distancia significativa del punto original de introducci\u00F3n."
     ),
     list(
         term = "invasive",
         label_en = "invasive (category D2)",
         label_pt = "invasora (categoria D2)",
         desc_en = "Self-sustaining population, with individuals surviving and reproducing a significant distance from the original point of introduction.",
-        desc_pt = "Popula\u00E7\u00E3o autossustent\u00E1vel, com indiv\u00EDduos sobrevivendo e se reproduzindo a dist\u00E2ncia significativa do ponto original de introdu\u00E7\u00E3o."
+        desc_pt = "Popula\u00E7\u00E3o autossustent\u00E1vel, com indiv\u00EDduos sobrevivendo e se reproduzindo a dist\u00E2ncia significativa do ponto original de introdu\u00E7\u00E3o.",
+        label_es = "invasora (categor\u00EDa D2)",
+        desc_es = "Poblaci\u00F3n autosostenible, con individuos que sobreviven y se reproducen a una distancia significativa del punto original de introducci\u00F3n."
     ),
     list(
         term = "widespreadInvasive",
         label_en = "widespread invasive (category E)",
         label_pt = "invasora disseminada (categoria E)",
         desc_en = "Fully invasive species, dispersing, surviving and reproducing at multiple sites across a spectrum of habitats.",
-        desc_pt = "Esp\u00E9cie plenamente invasora, dispersando, sobrevivendo e se reproduzindo em m\u00FAltiplos locais e h\u00E1bitats."
+        desc_pt = "Esp\u00E9cie plenamente invasora, dispersando, sobrevivendo e se reproduzindo em m\u00FAltiplos locais e h\u00E1bitats.",
+        label_es = "invasora extendida (categor\u00EDa E)",
+        desc_es = "Especie plenamente invasora, que se dispersa, sobrevive y se reproduce en m\u00FAltiples sitios y h\u00E1bitats."
     )
 )
 
@@ -413,12 +465,7 @@ get_active_dwc_terms <- function(extra = character(0)) {
 #' @return Character vector the same length as `desc`.
 #' @noRd
 dwc_card_hints <- function(terms_df, lang, desc) {
-    col <- if (identical(lang, "pt")) "card_hint_pt" else "card_hint_en"
-    if (!col %in% names(terms_df)) {
-        return(desc)
-    }
-    hint <- as.character(terms_df[[col]])
-    hint[is.na(hint)] <- ""
+    hint <- lang_col(terms_df, "card_hint", lang)
     ifelse(nzchar(hint), hint, desc)
 }
 
@@ -435,14 +482,7 @@ get_dwc_terms_list <- function(lang = "en") {
 
     # Columns are extracted once and zipped with Map(); the previous per-row
     # lapply re-indexed the data frame four times per term.
-    n <- nrow(terms_df)
-    desc <- if (lang == "pt" && "definition_pt" %in% names(terms_df)) {
-        as.character(terms_df$definition_pt)
-    } else if ("definition_en" %in% names(terms_df)) {
-        as.character(terms_df$definition_en)
-    } else {
-        rep("", n)
-    }
+    desc <- lang_col(terms_df, "definition", lang)
 
     terms_list <- Map(
         function(term, category, desc, hint, required) {
@@ -479,18 +519,9 @@ get_dwc_terms_list <- function(lang = "en") {
 get_active_dwc_terms_list <- function(extra = character(0), lang = "en") {
     terms_df <- get_active_dwc_terms(extra = extra)
 
-    # Same column-wise construction as get_dwc_terms_list(), with the extra
-    # rule that a blank Portuguese definition falls back to English.
-    n <- nrow(terms_df)
-    desc <- if (lang == "pt" && "definition_pt" %in% names(terms_df)) {
-        pt <- as.character(terms_df$definition_pt)
-        en <- as.character(terms_df$definition_en)
-        ifelse(nzchar(pt), pt, en)
-    } else if ("definition_en" %in% names(terms_df)) {
-        as.character(terms_df$definition_en)
-    } else {
-        rep("", n)
-    }
+    # Same column-wise construction as get_dwc_terms_list(). A blank
+    # definition (a session-extra term) falls back to English.
+    desc <- lang_col(terms_df, "definition", lang)
 
     terms_list <- Map(
         function(term, category, desc, hint, required) {
@@ -604,14 +635,17 @@ wide_card_terms <- function() {
     c("dynamicProperties")
 }
 
-get_basis_of_record_vocab <- function(lang = "en") {
-    use_lang <- if (identical(lang, "pt")) "pt" else "en"
+# Field `<stem>_<lang>` of a vocabulary item, English when the language has none.
+vocab_item_text <- function(item, stem, lang) {
+    item[[paste0(stem, "_", lang)]] %||% item[[paste0(stem, "_en")]]
+}
 
+get_basis_of_record_vocab <- function(lang = "en") {
     lapply(basis_of_record_vocab_catalog, function(item) {
         list(
             term = item$term,
-            label = if (use_lang == "pt") item$label_pt else item$label_en,
-            description = if (use_lang == "pt") item$desc_pt else item$desc_en,
+            label = vocab_item_text(item, "label", lang),
+            description = vocab_item_text(item, "desc", lang),
             label_pt = item$label_pt,
             label_en = item$label_en,
             desc_pt = item$desc_pt,
@@ -646,12 +680,10 @@ dwc_vocab_terms <- function(catalog) {
 # Choices for a controlled-vocabulary select: "term - description", value =
 # term. The leading blank entry is what "not set" looks like in the assistant.
 dwc_vocab_choices <- function(catalog, lang = "en", include_skip = TRUE, skip_label = NULL) {
-    use_lang <- if (identical(lang, "pt")) "pt" else "en"
     labels <- vapply(
         catalog,
         function(item) {
-            desc <- if (use_lang == "pt") item$desc_pt else item$desc_en
-            paste0(item$term, " - ", desc)
+            paste0(item$term, " - ", vocab_item_text(item, "desc", lang))
         },
         FUN.VALUE = character(1)
     )

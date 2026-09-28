@@ -263,6 +263,18 @@ testthat::test_that("parse_month_to_number supports numeric, Portuguese and Engl
     testthat::expect_true(is.na(parse_month_to_number("foo")))
 })
 
+testthat::test_that("parse_month_to_number supports Spanish month names", {
+    testthat::expect_identical(parse_month_to_number("Enero"), "01")
+    testthat::expect_identical(parse_month_to_number("ene"), "01")
+    testthat::expect_identical(parse_month_to_number("Setiembre"), "09")
+    testthat::expect_identical(parse_month_to_number("Septiembre"), "09")
+    testthat::expect_identical(parse_month_to_number("dic"), "12")
+    testthat::expect_identical(
+        parse_month_to_number_vec(c("marzo", "Mayo", "OCTUBRE")),
+        c("03", "05", "10")
+    )
+})
+
 # Vectorized parser companions ------------------------------------------
 # Each one is asserted against its scalar original element by element, so the
 # scalar stays the specification and the companion can only be accepted when it
@@ -827,6 +839,16 @@ testthat::test_that("auto_suggest_basis_of_record_terms matches labels and commo
     )
 })
 
+testthat::test_that("auto_suggest_basis_of_record_terms matches Spanish labels and synonyms", {
+    raw <- c("Observación humana", "Espécimen preservado", "Fototrampeo",
+             "Muestra de tejido", "Fósil")
+    testthat::expect_identical(
+        auto_suggest_basis_of_record_terms(raw),
+        c("HumanObservation", "PreservedSpecimen", "MachineObservation",
+          "MaterialSample", "FossilSpecimen")
+    )
+})
+
 testthat::test_that("auto_suggest_basis_of_record_terms leaves ambiguous and blank values empty", {
     raw <- c("Coleta", "Registro fotográfico", "Unknown method", "", NA_character_)
     testthat::expect_identical(auto_suggest_basis_of_record_terms(raw), rep("", 5L))
@@ -920,6 +942,13 @@ testthat::test_that("map_occurrence_status_values converts 0/1 and common varian
     testthat::expect_identical(
         map_occurrence_status_values(inputs),
         expected
+    )
+})
+
+testthat::test_that("map_occurrence_status_values accepts Spanish yes values", {
+    testthat::expect_identical(
+        map_occurrence_status_values(c("Sí", "si", "SI", "no")),
+        c("present", "present", "present", "absent")
     )
 })
 

@@ -214,13 +214,24 @@ basis_of_record_synonyms <- c(
     "amostra de tecido" = "MaterialSample",
     "tissue sample" = "MaterialSample",
     "especime vivo" = "LivingSpecimen",
-    "fossil" = "FossilSpecimen"
+    "fossil" = "FossilSpecimen",
+    "observacion" = "HumanObservation",
+    "observacion de campo" = "HumanObservation",
+    "observacion directa" = "HumanObservation",
+    "avistamiento" = "HumanObservation",
+    "fototrampeo" = "MachineObservation",
+    "camara trampa" = "MachineObservation",
+    "trampa camara" = "MachineObservation",
+    "especimen de herbario" = "PreservedSpecimen",
+    "especimen de museo" = "PreservedSpecimen",
+    "muestra de tejido" = "MaterialSample",
+    "fosil" = "FossilSpecimen"
 )
 
 #' Suggest a basisOfRecord term for each raw value
 #'
 #' Matches, in order: the DwC term itself (case, space and underscore
-#' insensitive), its English or Portuguese label, then
+#' insensitive), its English, Portuguese or Spanish label, then
 #' `basis_of_record_synonyms`. Accents do not matter. Vectorized.
 #'
 #' @param raw_values Character vector of raw spreadsheet values
@@ -235,10 +246,12 @@ auto_suggest_basis_of_record_terms <- function(raw_values) {
     terms <- get_basis_of_record_terms()
     labels_en <- vapply(basis_of_record_vocab_catalog, function(item) item$label_en, character(1))
     labels_pt <- vapply(basis_of_record_vocab_catalog, function(item) item$label_pt, character(1))
+    labels_es <- vapply(basis_of_record_vocab_catalog, function(item) item$label_es, character(1))
     lookup <- c(
         stats::setNames(terms, gsub(" ", "", normalize_for_matching(terms), fixed = TRUE)),
         stats::setNames(terms, normalize_for_matching(labels_en)),
         stats::setNames(terms, normalize_for_matching(labels_pt)),
+        stats::setNames(terms, normalize_for_matching(labels_es)),
         basis_of_record_synonyms
     )
 
@@ -652,8 +665,8 @@ sanitize_synonyms_table <- function(synonyms_tbl) {
     if (any(is.na(clean_tbl$name_score) | clean_tbl$name_score < 0.90 | clean_tbl$name_score > 0.98)) {
         stop("Synonyms table name_score must be numeric in range [0.90, 0.98].")
     }
-    if (any(is.na(clean_tbl$lang) | !clean_tbl$lang %in% c("pt", "en", "any"))) {
-        stop("Synonyms table lang must be one of: pt, en, any.")
+    if (any(is.na(clean_tbl$lang) | !clean_tbl$lang %in% c("pt", "en", "es", "any"))) {
+        stop("Synonyms table lang must be one of: pt, en, es, any.")
     }
     if (any(is.na(clean_tbl$active))) {
         stop("Synonyms table active column must be TRUE/FALSE.")
@@ -2754,7 +2767,11 @@ build_eventdate_interval_dmy <- function(df, cols, fallback_raw = TRUE) {
     set = "09", setembro = "09", sep = "09", sept = "09", september = "09",
     out = "10", outubro = "10", oct = "10", october = "10",
     nov = "11", novembro = "11", november = "11",
-    dez = "12", dezembro = "12", dec = "12", december = "12"
+    dez = "12", dezembro = "12", dec = "12", december = "12",
+    # Spanish names that the Portuguese and English entries do not cover
+    ene = "01", enero = "01", febrero = "02", marzo = "03", mayo = "05",
+    junio = "06", julio = "07", septiembre = "09", setiembre = "09",
+    octubre = "10", noviembre = "11", dic = "12", diciembre = "12"
 )
 
 parse_month_to_number <- function(x) {
@@ -2897,7 +2914,7 @@ build_eventdate_interval <- function(df, cols, fallback_raw = TRUE) {
 
 #' Map raw values to DwC occurrenceStatus literals
 #'
-#' Coerces common presence/absence representations (0/1, sim/nao, yes/no,
+#' Coerces common presence/absence representations (0/1, sim/nao, si/no, yes/no,
 #' presente/ausente, present/absent, TRUE/FALSE) to canonical DwC values
 #' "present" or "absent" for export. Convention: 0 = absent, 1 = present.
 #' Unrecognized non-empty values pass through after trim. NA / empty stay NA.
@@ -2911,7 +2928,7 @@ map_occurrence_status_values <- function(raw_values) {
     out <- x
     norm <- tolower(x)
 
-    present_set <- c("1", "present", "presente", "yes", "y", "sim", "s", "true", "t")
+    present_set <- c("1", "present", "presente", "yes", "y", "sim", "s", "si", "s\u00ed", "true", "t")
     absent_set  <- c("0", "absent", "ausente", "no", "n", "nao", "n\u00e3o", "false", "f")
 
     out[norm %in% present_set] <- "present"

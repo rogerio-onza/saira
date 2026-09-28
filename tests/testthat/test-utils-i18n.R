@@ -258,20 +258,21 @@ testthat::test_that("tr falls back to english and warns for missing language ent
 
     expected_en <- tr_fn("nav_home", "en")
     testthat::expect_warning(
-        out <- tr_fn("nav_home", "es"),
-        "Translation missing for nav_home in es"
+        out <- tr_fn("nav_home", "xx"),
+        "Translation missing for nav_home in xx"
     )
     testthat::expect_identical(out, expected_en)
 })
 
 testthat::test_that("get_languages returns supported language codes", {
-    testthat::expect_identical(get_languages(), c("pt", "en"))
+    testthat::expect_identical(get_languages(), c("pt", "en", "es"))
 })
 
 testthat::test_that("get_language_name resolves known and unknown language codes", {
     testthat::expect_identical(get_language_name("pt"), "Português")
     testthat::expect_identical(get_language_name("en"), "English")
-    testthat::expect_identical(get_language_name("es"), "es")
+    testthat::expect_identical(get_language_name("es"), "Español")
+    testthat::expect_identical(get_language_name("xx"), "xx")
 })
 
 testthat::test_that("format_count groups integers by locale without warning", {
@@ -279,20 +280,51 @@ testthat::test_that("format_count groups integers by locale without warning", {
     testthat::expect_no_warning(testthat::expect_identical(format_count(1234567L, "en"), "1,234,567"))
     testthat::expect_no_warning(testthat::expect_identical(format_count(999L, "pt"), "999"))
     testthat::expect_no_warning(testthat::expect_identical(format_count(999L, "en"), "999"))
+    testthat::expect_identical(format_count(1234567L, "es"), "1.234.567")
 })
 
-testthat::test_that("all dictionary keys contain non-empty pt and en translations", {
+testthat::test_that("lang_col reads the language column and falls back to English", {
+    df <- data.frame(
+        definition_en = c("one", "two", "three"),
+        definition_es = c("uno", "", NA),
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_identical(saira:::lang_col(df, "definition", "es"), c("uno", "two", "three"))
+    testthat::expect_identical(saira:::lang_col(df, "definition", "en"), c("one", "two", "three"))
+    # No definition_pt column: English for every row.
+    testthat::expect_identical(saira:::lang_col(df, "definition", "pt"), c("one", "two", "three"))
+    testthat::expect_identical(saira:::lang_col(df, "card_hint", "es"), c("", "", ""))
+})
+
+testthat::test_that("all dictionary keys contain a non-empty translation in every language", {
     dict <- saira:::load_i18n_dict()
 
     for (key in names(dict)) {
-        testthat::expect_true(
-            !is.null(dict[[key]][["pt"]]) && nzchar(dict[[key]][["pt"]]),
-            info = paste("Missing pt translation for key:", key)
-        )
-        testthat::expect_true(
-            !is.null(dict[[key]][["en"]]) && nzchar(dict[[key]][["en"]]),
-            info = paste("Missing en translation for key:", key)
-        )
+        for (lang in get_languages()) {
+            testthat::expect_true(
+                !is.null(dict[[key]][[lang]]) && nzchar(dict[[key]][[lang]]),
+                info = paste("Missing", lang, "translation for key:", key)
+            )
+        }
+    }
+})
+
+testthat::test_that("every language keeps the placeholders of the English text", {
+    # A translation that drops or adds a %s breaks the sprintf() that fills it,
+    # and a lost DataTables token or HTML tag breaks the widget. Compare the
+    # sorted token list of each language with the English one.
+    dict <- saira:::load_i18n_dict()
+    token_re <- "%%|%[-+ 0#]*[0-9]*(\\.[0-9]+)?[sdif]|_(START|END|TOTAL|MENU)_|</?[A-Za-z][^>]*>"
+    tokens <- function(text) sort(regmatches(text, gregexpr(token_re, text, perl = TRUE))[[1]])
+
+    for (key in names(dict)) {
+        expected <- tokens(dict[[key]][["en"]])
+        for (lang in setdiff(get_languages(), "en")) {
+            testthat::expect_identical(
+                tokens(dict[[key]][[lang]]), expected,
+                info = paste("Placeholder mismatch in", lang, "for key:", key)
+            )
+        }
     }
 })
 

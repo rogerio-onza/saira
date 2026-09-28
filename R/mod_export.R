@@ -221,13 +221,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             # --- Numbers ------------------------------------------------------
             cc <- s$corrections
             gen <- s$generalization
-            fmt_n <- function(value) {
-                if (identical(lang, "pt")) {
-                    format(value, big.mark = ".", decimal.mark = ",")
-                } else {
-                    format(value, big.mark = ",", decimal.mark = ".")
-                }
-            }
+            fmt_n <- function(value) format_count(value, lang)
             # The numbers sit in a strip inside the package card (round 5,
             # option C). Each detail line rides in the cell tooltip; records
             # and corrections also get a line under the strip.

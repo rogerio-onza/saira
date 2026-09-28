@@ -59,16 +59,11 @@ saira_running_version <- function() {
 #'
 #' Language-aware so an EN session links to the English releases page.
 #'
-#' @param lang Active language code (\code{"pt"} or \code{"en"}).
+#' @param lang Active language code.
 #' @return Absolute URL string to the releases page.
 #' @noRd
 saira_releases_url <- function(lang = "pt") {
-    base <- "https://rogerio-onza.github.io/saira"
-    if (identical(as.character(lang), "en")) {
-        paste0(base, "/en/releases.html")
-    } else {
-        paste0(base, "/novidades.html")
-    }
+    help_site_url(lang, pt = "/novidades.html", en = "/en/releases.html", es = "/es/novedades.html")
 }
 
 #' Warn in-app when the R session is running a stale Saira version

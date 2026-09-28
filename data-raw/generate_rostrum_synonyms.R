@@ -3,11 +3,11 @@
 #
 # Rules enforced by sanitize_synonyms_table():
 #   - name_score in [0.90, 0.98]
-#   - lang in {"pt", "en", "any"}
+#   - lang in {"pt", "en", "es", "any"}
 #   - No duplicated active (term, synonym, lang) triples after normalization
 #
 # Conventions for this bundle:
-#   - New aliases use "pt" or "en" only (never "any")
+#   - New aliases use "pt", "en" or "es" only (never "any")
 #   - Existing "any" entries retained for backward compatibility
 #   - No aliases that are generic/ambiguous standalone tokens
 #     (avoided: "id", "name", "type", "data", "local" as sole alias)
@@ -577,6 +577,73 @@ dwc_synonyms <- data.frame(
     ),
     active = TRUE,
     stringsAsFactors = FALSE
+)
+
+# Spanish aliases (ADR-133). A separate block, so the parallel vectors above
+# stay unchanged. An alias that is identical to a "pt" alias after
+# normalization (provincia, municipio, familia) is not repeated here.
+es_aliases <- c(
+    "nombre cientifico" = "scientificName",
+    "latitud" = "decimalLatitude",
+    "latitud decimal" = "decimalLatitude",
+    "longitud" = "decimalLongitude",
+    "longitud decimal" = "decimalLongitude",
+    "numero de individuos" = "individualCount",
+    "cantidad de individuos" = "individualCount",
+    "colector" = "recordedBy",
+    "colectores" = "recordedBy",
+    "colectado por" = "recordedBy",
+    "recolectado por" = "recordedBy",
+    "fecha de colecta" = "eventDate",
+    "fecha de recoleccion" = "eventDate",
+    "fecha del evento" = "eventDate",
+    "anio" = "year",
+    "fecha de identificacion" = "dateIdentified",
+    "base del registro" = "basisOfRecord",
+    "codigo de la coleccion" = "collectionCode",
+    "codigo de la institucion" = "institutionCode",
+    "conjunto de datos" = "datasetName",
+    "metodo de muestreo" = "samplingProtocol",
+    "protocolo de muestreo" = "samplingProtocol",
+    "esfuerzo de muestreo" = "samplingEffort",
+    "preparaciones" = "preparations",
+    "notas de la ocurrencia" = "occurrenceRemarks",
+    "observaciones de la ocurrencia" = "occurrenceRemarks",
+    "clase" = "class",
+    "orden" = "order",
+    "rango taxonomico" = "taxonRank",
+    "autor del nombre" = "scientificNameAuthorship",
+    "calificador de identificacion" = "identificationQualifier",
+    "nombre comun" = "vernacularName",
+    "nombre vulgar" = "vernacularName",
+    "determinado por" = "identifiedBy",
+    "departamento" = "stateProvince",
+    "localidad" = "locality",
+    "lugar de colecta" = "locality",
+    "notas de la localidad" = "locationRemarks",
+    "latitud original" = "verbatimLatitude",
+    "longitud original" = "verbatimLongitude",
+    "libreta de campo" = "fieldNotes"
+)
+# Scores follow the pt/en entries for the same term: 0.98 for the plain
+# column name, lower for longer or less common spellings.
+es_scores <- c(
+    0.98, 0.98, 0.95, 0.98, 0.95, 0.94, 0.93, 0.95, 0.93, 0.92, 0.92,
+    0.95, 0.94, 0.93, 0.93, 0.95, 0.93, 0.93, 0.93, 0.93, 0.94, 0.93,
+    0.93, 0.93, 0.92, 0.91, 0.95, 0.94, 0.91, 0.91, 0.91, 0.93, 0.92,
+    0.92, 0.92, 0.95, 0.92, 0.91, 0.93, 0.93, 0.91
+)
+stopifnot(length(es_scores) == length(es_aliases))
+dwc_synonyms <- rbind(
+    dwc_synonyms,
+    data.frame(
+        term = unname(es_aliases),
+        synonym = names(es_aliases),
+        name_score = es_scores,
+        lang = "es",
+        active = TRUE,
+        stringsAsFactors = FALSE
+    )
 )
 
 # Validate with the production sanitizer before saving
