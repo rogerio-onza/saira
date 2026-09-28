@@ -57,7 +57,7 @@ No. The application runs **locally** on your computer (or on an institutional se
 ### Which languages does the application work in?
 
 ::: {.faq-card}
-Saíra is bilingual: **Portuguese (PT-BR)** and **English (EN-US)**. You can switch the language at any time in the top corner of the interface. This help site is also available in both languages (see the language button at the top).
+Saíra is trilingual: **Portuguese (PT-BR)**, **English (EN-US)** and **Spanish (ES)**. You can switch the language at any time in the top corner of the interface. This help site is also available in all three languages (see the language buttons at the top).
 :::
 
 ### Can I go back to a previous step without losing my work?

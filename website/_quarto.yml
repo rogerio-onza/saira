@@ -75,6 +75,22 @@ website:
             - en/tutorials/05-coordinate-validation.qmd
             - en/tutorials/06-generalization.qmd
             - en/tutorials/07-preview-export.qmd
+    - id: tutoriales-es
+      title: "Tutoriales"
+      style: floating
+      collapse-level: 1
+      contents:
+        - text: "Visión general"
+          href: es/tutoriales/index.qmd
+        - section: "Del dato bruto al DwC-A"
+          contents:
+            - es/tutoriales/01-instalacion.qmd
+            - es/tutoriales/02-carga.qmd
+            - es/tutoriales/03-mapeo-dwc.qmd
+            - es/tutoriales/04-validacion-nombres.qmd
+            - es/tutoriales/05-validacion-coordenadas.qmd
+            - es/tutoriales/06-generalizacion.qmd
+            - es/tutoriales/07-vista-previa-exportacion.qmd
   page-footer:
     border: true
     left: "© 2026 Saíra · Licença GPL-3.0"

@@ -57,7 +57,7 @@ Não. O aplicativo roda **localmente** no seu computador (ou em um servidor da s
 ### Em quais idiomas o aplicativo funciona?
 
 ::: {.faq-card}
-O Saíra é bilíngue: **Português (PT-BR)** e **Inglês (EN-US)**. Você alterna o idioma a qualquer momento no canto superior da interface. Este site de ajuda também está disponível nos dois idiomas (veja o botão de idioma no topo).
+O Saíra é trilíngue: **Português (PT-BR)**, **Inglês (EN-US)** e **Espanhol (ES)**. Você alterna o idioma a qualquer momento no canto superior da interface. Este site de ajuda também está disponível nos três idiomas (veja os botões de idioma no topo).
 :::
 
 ### Posso voltar a uma etapa anterior sem perder o trabalho?
