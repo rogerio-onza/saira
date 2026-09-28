@@ -8,6 +8,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **ui:** Add Spanish (neutral Latin American) as a third interface language, ADR-133
+- **mapping:** Show Darwin Core definitions and card hints in Spanish, ADR-133
+- **mapping:** Recognize Spanish column names, months, sí/no and basisOfRecord labels in uploaded spreadsheets, ADR-133
+- **site:** Publish the help site in Spanish under `/es/`, with a three-language switcher, ADR-133
 - **upload:** Accept Excel (.xlsx, first sheet) and plain-text (.txt) data files
 - **coords:** Fix a latitude or longitude directly in the coordinates table, with revalidation and undo, ADR-129
 
@@ -40,6 +44,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - **names:** Drop the "Validating" line under the run button; the button already shows the state
 - **coords:** Drop the "Validating" card under the column check; the button and the loading dialog already show it
+- **site:** Show "On this page" instead of the Portuguese table-of-contents title on English pages
 - **upload:** Stop the browser tab from freezing after an upload in English
 - **basisOfRecord:** Convert mapped values without the assistant, recognize common Portuguese values, and block export on empty values, ADR-131
 - **upload:** Show "Upload complete" in the current language

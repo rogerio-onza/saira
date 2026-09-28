@@ -36,7 +36,16 @@ app_ui <- function() {
             ),
             shiny::tags$script(
                 src = paste0("www/vendor/lottie/lottie-player.js?v=", css_version)
-            )
+            ),
+            # Keep <html lang> in step with the language selector, so screen
+            # readers and the browser's hyphenation follow the interface.
+            shiny::tags$script(shiny::HTML(
+                "$(document).on('shiny:inputchanged', function (e) {
+                    if (e.name !== 'lang_switch') return;
+                    var tags = {pt: 'pt-BR', en: 'en', es: 'es'};
+                    document.documentElement.lang = tags[e.value] || e.value;
+                });"
+            ))
         ),
         bslib::page_navbar(
             id = "main_nav",
@@ -190,7 +199,7 @@ app_ui <- function() {
                     label = shiny::tags$span(tr("a11y_lang_switch_label", "pt"), class = "visually-hidden"),
                     # Short codes keep the header row compact; the hidden label
                     # names the control for screen readers.
-                    choices = c("PT" = "pt", "EN" = "en"),
+                    choices = stats::setNames(get_languages(), toupper(get_languages())),
                     selected = "pt",
                     width = "auto",
                     selectize = FALSE

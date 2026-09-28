@@ -228,6 +228,40 @@ testthat::test_that("E2E: Language switch PT -> EN -> PT without error (Flow 5)"
     testthat::expect_equal(nav_pt_initial, nav_pt_final)
 })
 
+# ADR-133: Spanish is the third UI language. The test visits every tab in
+# Spanish, because a key without "es" text only shows on the tab that uses it.
+testthat::test_that("E2E: Spanish UI renders every tab and sets the page language", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 10000)
+
+    app$set_inputs(lang_switch = "es")
+    app$wait_for_idle(timeout = 10000)
+
+    testthat::expect_identical(app$get_js("document.documentElement.lang"), "es")
+    nav_es <- trimws(gsub("<[^>]+>", "", as.character(app$get_html("#nav_upload_title"))))
+    testthat::expect_identical(nav_es, tr("nav_home", "es"))
+
+    tabs <- c("upload", "mapping", "preview", "validate_names", "validate_coords",
+              "sensitive_coords", "export", "wiki", "help")
+    for (tab in tabs) {
+        app$click(selector = sprintf("a[data-value='%s']", tab))
+        app$wait_for_idle(timeout = 10000)
+        testthat::expect_identical(
+            app$get_js("document.querySelectorAll('.shiny-output-error:not(.shiny-output-error-validation)').length"),
+            0L,
+            info = tab
+        )
+    }
+})
+
 # In English the translated label is Shiny's own "Upload complete". The page
 # rewrote the same text, its MutationObserver saw the change and rewrote it
 # again, so the tab spun forever after an upload.

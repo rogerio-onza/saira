@@ -2722,3 +2722,16 @@ Formato: ADR leve (Architecture Decision Record).
   - Exportacao: uma lista de pendencias com a acao que resolve cada uma e, ao lado, o cartao Pacote (quatro numeros numa faixa, os arquivos e o aviso de que os metadados se completam no IPT). Os dois dividem a primeira linha da grade e terminam na mesma altura. Barra de download fixa no rodape.
   - Pre-visualizacao: o titulo vai para dentro do cartao, na linha da busca, e a tabela mostra 15 linhas.
 - **Consequencias**: a pagina de Coordenadas cabe em 1440x900 sem rolagem. Em 1280 a 1359px o cabecalho continua em duas linhas. Testes de CSS e de modulo foram atualizados para o novo contrato.
+
+## ADR-133: espanhol como terceiro idioma (app, catalogo DwC, reconhecimento de planilhas e site)
+
+- **Data**: 2026-09-27
+- **Status**: Aceito
+- **Contexto**: O Saira atende projetos latino-americanos alem do Brasil. O app e o site eram so PT/EN, e varios pontos do codigo assumiam dois idiomas (`c("pt","en")`, `isEN`, `PAIRS`, colunas `_pt`/`_en`).
+- **Decisao**:
+  - Espanhol neutro latino-americano. `get_languages()` e a lista unica de idiomas; o seletor, a validacao do dicionario e as colunas por idioma leem dela. `lang_col(df, stem, lang)` le `<stem>_<lang>` e cai para `_en` quando falta, a mesma regra do `tr()`. O `<html lang>` acompanha o seletor.
+  - Os vocabularios (basisOfRecord, establishmentMeans, degreeOfEstablishment) e o texto do guia de mapeamento ficam no R, com `label_es`/`desc_es` ao lado de PT/EN em `\uXXXX`, e nao no `i18n.json` como previa o plano: sao dados estruturados com varios campos por item, e o `i18n.json` so guarda frases soltas da interface.
+  - Catalogo DwC: `definition_es` e `card_hint_es` vem de `data-raw/dwc_definitions_es.csv` por um script proprio (`build_dwc_definitions_es.R`) que roda depois dos builds do TDWG, sem novo download. O script exige 100% de cobertura e o mesmo conjunto de dicas do ingles.
+  - Planilhas em espanhol: 41 sinonimos Rostrum `lang = "es"`, meses, `si`/`no` no occurrenceStatus e rotulos/sinonimos de basisOfRecord. O `lang` do sinonimo e so metadado; nao entra no match.
+  - Site: `website/es/` espelha PT e EN linha a linha; `head.html` troca `PAIRS` por trios em `PAGES`, com rotulos do navbar e do tema por idioma. Capturas `-ES.png` ainda nao existem, e as paginas ES usam as `-EN.png`.
+- **Consequencias**: um idioma novo exige a entrada em `get_languages()`, a coluna no `i18n.json`, as colunas `_xx` do catalogo e um trio a mais no site. O teste de paridade do `i18n.json` falha se faltar texto em qualquer idioma. A traducao precisa de revisao de um falante nativo.
