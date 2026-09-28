@@ -5204,8 +5204,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   border-color: var(--error-border);
 }
 
-.validation-stream-empty,
-.validation-progress-empty {
+.validation-stream-empty {
   color: var(--text-muted);
   font-size: var(--text-sm);
 }
@@ -5317,13 +5316,14 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 /* Toolbar on top of the page (ADR-132): providers, options and the run
-   button spread over the full width (round 5, option A). */
+   button form one centered group with a wide gap, so the button stays
+   near the options on a wide screen. */
 .vn-config-panel {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: center;
   align-items: flex-end;
-  gap: var(--space-3) var(--space-6);
+  gap: var(--space-3) var(--space-12);
   margin: 0 0 var(--space-3);
   padding: var(--space-3) var(--space-5);
   background: var(--bg-card);

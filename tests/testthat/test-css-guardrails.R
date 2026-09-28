@@ -210,10 +210,10 @@ testthat::test_that("custom.css keeps validate-names toolbar and workspace contr
     )
 
     # ADR-132: providers, options and the run button form a toolbar above the
-    # two result columns, spread over the full width (round 5).
+    # two result columns, grouped at the center.
     testthat::expect_true(
-        grepl("\\.vn-config-panel\\s*\\{[^}]*display:\\s*flex;[^}]*justify-content:\\s*space-between;", css_text, perl = TRUE),
-        info = "Config panel must be a full-width flex toolbar"
+        grepl("\\.vn-config-panel\\s*\\{[^}]*display:\\s*flex;[^}]*justify-content:\\s*center;", css_text, perl = TRUE),
+        info = "Config panel must be a centered flex toolbar"
     )
 
     testthat::expect_true(
