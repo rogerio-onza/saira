@@ -32,6 +32,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **names:** GBIF is always on; providers and options are one checklist that shows the query order, ADR-130
 - **ui:** Square filter chips in the color of what they filter, borderless status tags, invasive species in brown; center the step row and group Wiki, Help, language and version on the right; selection states use the brand blue
 - **names:** Remove the percentage bar; the run shows only its current phase
+- **site:** Rebuild the home page in the flat style: a sheet that each app tab fixes, and an animated install console
 - **site:** Explain the in-table coordinate fix in the coordinate tutorial, in PT and EN
 - **site:** Refresh ten tutorial screenshots in PT and EN and name the steps as the app does
 - **ui:** Flatten tables, buttons, alerts and filter pills, and darken state-colored text to pass AA contrast

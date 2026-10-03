@@ -6,208 +6,114 @@ anchor-sections: false
 ---
 
 ```{=html}
+<div class="lp">
+
 <!-- ===================== HERO ===================== -->
-<header class="hero">
-  <canvas class="hero-canvas" id="hero-canvas"></canvas>
-  <div class="wrap">
-    <span class="eyebrow">Aplicativo R/Shiny · Código Aberto</span>
-    <h1>Sa<span class="on">í</span>ra</h1>
-    <p class="hero-sub">Darwin Core para a <span class="nowrap">Biodiversidade Brasileira</span></p>
-    <div class="hero-actions">
-      <a class="btn-saira btn-primary-saira" href="tutoriais/01-instalacao.html">Começar a usar</a>
-      <a class="btn-saira btn-ghost-saira" href="tutoriais/01-instalacao.html">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
-        Download
-      </a>
+<section class="lp-hero">
+  <div class="lp-hero-text">
+    <h1 class="lp-rise">Saíra</h1>
+    <p class="lp-sub lp-rise" style="--d: .15s">Darwin Core para a biodiversidade brasileira.</p>
+    <p class="lp-lede lp-rise" style="--d: .3s">Um app em R/Shiny que converte planilhas de ocorrência para o formato do GBIF e do SiBBr. Você usa por menus e botões, e a planilha não sai do seu computador.</p>
+    <div class="lp-actions lp-rise" style="--d: .45s">
+      <a class="lp-btn lp-btn-primary" href="tutoriais/01-instalacao.html">Ver os tutoriais</a>
+      <a class="lp-btn" href="#instalar">Instalar</a>
     </div>
   </div>
-</header>
-
-<!-- ===================== INSTALL ===================== -->
-<section class="band install-band">
-  <div class="install">
-    <div class="install-bar">
-      <div class="tl"><span></span><span></span><span></span></div>
-      <span class="label">Console · R</span>
+  <figure class="lp-fig">
+    <img class="lp-rise" style="--d: .1s" src="assets/img/saira-sete-cores-Ester-Ramirez.jpg" width="736" height="736" fetchpriority="high" alt="Saíra-pintor (Tangara fastuosa) pousada num galho com flores amarelas ao fundo">
+    <div class="lp-label lp-rise" style="--d: .6s" role="group" aria-label="Linha do occurrence.txt">
+      <div class="lp-label-head"><span class="lp-ring"></span>OCCURRENCE.TXT · LINHA 1</div>
+      <dl>
+        <dt>kingdom</dt><dd>Animalia</dd>
+        <dt>family</dt><dd>Thraupidae</dd>
+        <dt>scientificName</dt><dd><em>Tangara fastuosa</em></dd>
+        <dt>scientificNameAuthorship</dt><dd>(Lesson, 1831)</dd>
+        <dt>vernacularName</dt><dd>saíra-pintor</dd>
+        <dt>dynamicProperties</dt><dd>{"mmaThreatStatus":"VU"}</dd>
+      </dl>
     </div>
-    <div class="install-body">
-      <div class="copy-row">
-        <div>
-          <div class="code-line"><span class="pr">&gt;</span><span><span class="fn">pak::pak</span>(<span class="str">"rogerio-onza/saira"</span>)</span></div>
-          <div class="code-line"><span class="pr">&gt;</span><span><span class="fn">saira::run_app</span>()</span></div>
-        </div>
-        <button class="copy-btn" data-copy='pak::pak("rogerio-onza/saira")&#10;saira::run_app()'>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
-          <span class="ct">Copiar</span>
-        </button>
-      </div>
+    <figcaption class="lp-credit lp-rise" style="--d: .4s">Foto: Ester Ramirez</figcaption>
+  </figure>
+</section>
+
+<!-- ===================== FLOW: sheet, app tabs, occurrence.txt ===================== -->
+<section class="lp-section" id="fluxo" aria-labelledby="fluxo-titulo">
+  <div class="lp-head">
+    <div>
+      <span class="lp-eyebrow">Da planilha ao Darwin Core</span>
+      <h2 id="fluxo-titulo">Cada aba trata a planilha inteira</h2>
+    </div>
+    <p>Quatro registros fictícios de armadilha fotográfica. Em cima, a planilha como chega. Embaixo, o occurrence.txt, completo aba por aba.</p>
+  </div>
+  <div class="lp-panel lp-flow" data-step="Etapa {n} de {total} · {tab}" data-raw="Planilha como chegou" data-done="Pronto. 4 linhas no occurrence.txt, 2 com coordenadas generalizadas.">
+    <div class="lp-bar">
+      <span class="lp-file">felinos_2023.csv<small>4 registros · armadilha fotográfica</small></span>
+      <button type="button" class="lp-toggle" data-pause="Pausar" data-play="Continuar">Pausar</button>
+    </div>
+    <div class="lp-stage">
+      <span class="lp-cap">Sua planilha</span>
+      <div class="lp-scroll"><div class="lp-grid lp-in" role="table" aria-label="Planilha original" data-cols="Espécie|Lat|Long|Data|Local"></div></div>
+      <div class="lp-vconn" aria-hidden="true"></div>
+      <ol class="lp-tabs" aria-label="Abas do Saíra">
+        <li data-verb="lê o arquivo e a codificação"><b>1</b>Início</li>
+        <li data-verb="associa colunas a termos"><b>2</b>Mapeamento</li>
+        <li data-verb="mostra os registros mapeados"><b>3</b>Pré-visualização</li>
+        <li data-verb="confere os nomes nas bases"><b>4</b>Nomes</li>
+        <li data-verb="testa faixa, mar, país e inversão"><b>5</b>Coordenadas</li>
+        <li data-verb="protege espécies ameaçadas"><b>6</b>Generalização</li>
+        <li data-verb="gera datas ISO e IDs estáveis"><b>7</b>Exportação</li>
+      </ol>
+      <p class="lp-verb"></p>
+      <div class="lp-vconn" aria-hidden="true"></div>
+      <span class="lp-cap">Darwin Core · <span>occurrence.txt</span></span>
+      <div class="lp-scroll"><div class="lp-grid lp-out" role="table" aria-label="occurrence.txt"></div></div>
+    </div>
+    <div class="lp-foot">
+      <div class="lp-segs" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <span class="lp-status">Planilha como chegou</span>
+      <span class="lp-note">Dados fictícios. A grade da generalização depende da avaliação de cada espécie. Aqui, 0,1°.</span>
     </div>
   </div>
 </section>
 
-<!-- ===================== O QUE É ===================== -->
-<section class="band" id="projeto">
-  <div class="wrap">
-    <div class="about-grid">
-      <div class="about-text">
-        <span class="eyebrow">O que é</span>
-        <p class="lead">O Saíra nasceu de um <em>problema concreto</em>.</p>
-        <p>Ajudar projetos, instituições e organizações como as da <a href="https://sibbr.gov.br/page/por-onde-andam-os-felinos.html">Rede Felinos do Brasil</a>, com históricos de anos de monitoramento em planilhas próprias e formatos distintos, a colocar esse passivo de dados em Darwin Core, sem lidar com scripts complicados no ambiente R.</p>
-        <p>Construído em R/Shiny, funciona em PT-BR e EN, roda localmente, sem tocar em scripts ou linhas de comando.</p>
-      </div>
-      <div class="about-media">
-        <figure class="bird-figure">
-          <img src="assets/img/saira-sete-cores-Ester-Ramirez.jpg" alt="Saíra-pintor (Tangara fastuosa), a ave multicolorida que dá nome ao aplicativo, pousada num galho com flores amarelas ao fundo">
-          <figcaption>Saíra-pintor · <em>Tangara fastuosa</em> · <span class="credit">Foto: Ester Ramirez</span></figcaption>
-        </figure>
-      </div>
-    </div>
+<!-- ===================== INSTALL: macOS console replaying the install ===================== -->
+<section class="lp-section lp-install" id="instalar" aria-labelledby="instalar-titulo">
+  <div class="lp-install-text">
+    <span class="lp-eyebrow">Instalação</span>
+    <h2 id="instalar-titulo">Instale pelo console do R</h2>
+    <p>O pak instala o Saíra e as dependências. Depois, <code>saira::run_app()</code> abre o app no navegador.</p>
+    <p class="lp-small">Nunca usou R? O <a href="tutoriais/01-instalacao.html">tutorial de instalação</a> começa do zero. Achou um erro? <a href="https://github.com/rogerio-onza/saira/issues">Abra uma issue</a>.</p>
   </div>
+  <figure class="lp-term" aria-labelledby="lp-term-label">
+    <div class="lp-term-bar">
+      <div class="lp-tl" aria-hidden="true"><span></span><span></span><span></span></div>
+      <figcaption id="lp-term-label" class="lp-term-label">Console · R</figcaption>
+      <button type="button" class="lp-copy" data-copied="Copiado" data-copy='options(repos = c(&#10;  ropensci = "https://ropensci.r-universe.dev",&#10;  CRAN     = "https://cloud.r-project.org"&#10;))&#10;install.packages("pak")&#10;pak::pak("rogerio-onza/saira")&#10;saira::run_app()'>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+        <span>Copiar</span>
+      </button>
+    </div>
+    <pre class="visually-hidden">options(repos = c(ropensci = "https://ropensci.r-universe.dev", CRAN = "https://cloud.r-project.org"))&#10;install.packages("pak")&#10;pak::pak("rogerio-onza/saira")&#10;saira::run_app()</pre>
+    <div class="lp-term-body" aria-hidden="true">
+      <div class="lp-term-line" data-cmd data-wait="90"><span class="pr">&gt; </span><span class="fn">options</span><span>(repos = </span><span class="fn">c</span><span>(</span></div>
+      <div class="lp-term-line" data-cmd data-wait="90"><span class="pr">+ </span><span>  ropensci = </span><span class="str">"https://ropensci.r-universe.dev"</span><span>,</span></div>
+      <div class="lp-term-line" data-cmd data-wait="90"><span class="pr">+ </span><span>  CRAN     = </span><span class="str">"https://cloud.r-project.org"</span></div>
+      <div class="lp-term-line" data-cmd data-wait="500"><span class="pr">+ </span><span>))</span></div>
+      <div class="lp-term-line" data-cmd data-wait="900"><span class="pr">&gt; </span><span class="fn">install.packages</span><span>(</span><span class="str">"pak"</span><span>)</span></div>
+      <div class="lp-term-line" data-wait="120"><span class="out">The downloaded binary packages are in</span></div>
+      <div class="lp-term-line" data-wait="500"><span class="out">    /var/folders/…/downloaded_packages</span></div>
+      <div class="lp-term-line" data-cmd data-wait="700"><span class="pr">&gt; </span><span class="fn">pak::pak</span><span>(</span><span class="str">"rogerio-onza/saira"</span><span>)</span></div>
+      <div class="lp-term-line" data-wait="450"><span class="str">✔ </span><span class="out">Loading metadata database ... done</span></div>
+      <div class="lp-term-line" data-wait="350"><span class="out">→ Will install 128 packages.</span></div>
+      <div class="lp-term-line" data-wait="1600"><span class="pr">ℹ </span><span class="out">Getting 128 pkgs</span></div>
+      <div class="lp-term-line" data-wait="250"><span class="str">✔ </span><span class="out">Installed saira <span data-saira-version>0.11.2</span> (github::rogerio-onza/saira)</span></div>
+      <div class="lp-term-line" data-wait="500"><span class="str">✔ </span><span class="out">1 pkg + 127 deps: added 128</span></div>
+      <div class="lp-term-line" data-cmd data-wait="900"><span class="pr">&gt; </span><span class="fn">saira::run_app</span><span>()</span></div>
+      <div class="lp-term-line"><span class="out">Listening on </span><span>http://127.0.0.1:7346</span></div>
+    </div>
+  </figure>
 </section>
 
-<!-- ===================== FUNCIONALIDADES ===================== -->
-<section class="band feature-flow" id="funcionalidades">
-  <div class="wrap flow-grid">
-    <div class="flow-intro">
-      <span class="eyebrow">Funcionalidades</span>
-      <h2>Da planilha bruta<br>ao <em>DwC-A</em> publicável</h2>
-      <p>Cinco passos pensados para facilitar a conversão de dados para a língua comum do SiBBr e GBIF: o Darwin Core.</p>
-    </div>
-    <ol class="flow-steps">
-      <li class="flow-step" style="--step:#38CFF6">
-        <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg></div>
-        <div class="flow-body">
-          <span class="flow-num">01</span>
-          <h3>Importe qualquer planilha</h3>
-          <p>CSV, TSV, TXT ou Excel, incluindo dados de armadilhas fotográficas. O Saíra detecta sozinho a codificação e o separador e prepara a planilha para o mapeamento.</p>
-          <div class="proof">
-            <span class="proof-in">acentuação quebrada · sep ";"</span>
-            <span class="proof-arrow">→</span>
-            <span class="proof-out">UTF-8 · leitura correta</span>
-          </div>
-        </div>
-      </li>
-      <li class="flow-step" style="--step:#20C0D0">
-        <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h6M3 12h6M3 18h6"/><path d="M15 6h6M15 12h6M15 18h6"/><path d="M9 12h6"/></svg></div>
-        <div class="flow-body">
-          <span class="flow-num">02</span>
-          <h3>Mapeie suas colunas</h3>
-          <p>Associe cada coluna aos termos Darwin Core, com sugestões automáticas e modelos reutilizáveis. Um assistente guia campos como o basisOfRecord, sem você decorar vocabulários.</p>
-          <div class="proof">
-            <span class="proof-in">minha_coluna</span>
-            <span class="proof-arrow">→</span>
-            <span class="proof-out">scientificName ✓</span>
-          </div>
-        </div>
-      </li>
-      <li class="flow-step" style="--step:#16B3BD">
-        <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12l2 2 4-4"/><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/></svg></div>
-        <div class="flow-body">
-          <span class="flow-num">03</span>
-          <h3>Valide nomes e coordenadas</h3>
-          <p>Harmonize nomes científicos contra bases taxonômicas (sinônimos e grafias divergentes) e flagre coordenadas ausentes, invertidas ou em terra/mar incompatível, corrigindo cada ponto com revisão visual no mapa.</p>
-          <div class="proof">
-            <span class="proof-in">lat/lon invertidas</span>
-            <span class="proof-arrow">→</span>
-            <span class="proof-out">-8.0476, -34.8770 ✓</span>
-          </div>
-        </div>
-      </li>
-      <li class="flow-step" style="--step:#6d28d9">
-        <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><circle cx="12" cy="10" r="2.2"/><path d="M12 12.2V15"/></svg></div>
-        <div class="flow-body">
-          <span class="flow-num">04</span>
-          <h3>Generalize espécies sensíveis</h3>
-          <p>Reduza a precisão das coordenadas de táxons ameaçados (Lista MMA), espécie por espécie, seguindo a tabela de decisão de Chapman (2020). Protege locais sensíveis sem descartar o registro.</p>
-          <div class="proof">
-            <span class="proof-in">coordenada exata</span>
-            <span class="proof-arrow">→</span>
-            <span class="proof-out">precisão reduzida · Chapman</span>
-          </div>
-        </div>
-      </li>
-      <li class="flow-step" style="--step:#2fc488">
-        <div class="flow-marker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg></div>
-        <div class="flow-body">
-          <span class="flow-num">05</span>
-          <h3>Exporte um DwC-A pronto para o SiBBr</h3>
-          <p>Gere o Darwin Core Archive completo, com o status de conservação (MMA e IUCN) anexado, pronto para publicar no SiBBr e no GBIF.</p>
-          <div class="flow-tags">
-            <span class="flow-tag">occurrence.txt</span>
-            <span class="flow-tag">meta.xml</span>
-            <span class="flow-tag">eml.xml</span>
-          </div>
-        </div>
-      </li>
-    </ol>
-  </div>
-</section>
-
-<!-- ===================== POR QUE DARWIN CORE ===================== -->
-<section class="band band-alt">
-  <div class="wrap">
-    <div class="dwc-grid">
-      <div class="dwc-text">
-        <span class="eyebrow">Por que Darwin Core?</span>
-        <h2>Uma língua comum para a vida</h2>
-        <p class="lead">Darwin Core é o padrão da TDWG que descreve ocorrências de organismos no tempo e no espaço.</p>
-        <p>Ao falar Darwin Core, sua coleção se torna localizável e combinável com milhões de registros do SiBBr e do GBIF. Cada termo tem definição estável, o que torna os dados úteis muito além da sua instituição.</p>
-        <div class="dwc-chips">
-          <span class="chip">occurrenceID</span>
-          <span class="chip">scientificName</span>
-          <span class="chip">decimalLatitude</span>
-          <span class="chip">eventDate</span>
-          <span class="chip">basisOfRecord</span>
-        </div>
-      </div>
-      <div class="record">
-        <div class="install-bar">
-          <div class="tl"><span></span><span></span><span></span></div>
-          <span class="label">occurrence · registro</span>
-        </div>
-        <pre><span class="p">{</span>
-  <span class="k">"occurrenceID"</span>: <span class="s">"SAIRA:MN:0042817"</span>,
-  <span class="k">"basisOfRecord"</span>: <span class="s">"PreservedSpecimen"</span>,
-  <span class="k">"scientificName"</span>: <span class="s">"Tangara fastuosa"</span>,
-  <span class="k">"kingdom"</span>: <span class="s">"Animalia"</span>,
-  <span class="k">"family"</span>: <span class="s">"Thraupidae"</span>,
-  <span class="k">"decimalLatitude"</span>: <span class="n">-8.0476</span>,
-  <span class="k">"decimalLongitude"</span>: <span class="n">-34.8770</span>,
-  <span class="k">"geodeticDatum"</span>: <span class="s">"WGS84"</span>,
-  <span class="k">"eventDate"</span>: <span class="s">"2024-11-03"</span>,
-  <span class="k">"country"</span>: <span class="s">"Brasil"</span>,
-  <span class="k">"stateProvince"</span>: <span class="s">"Pernambuco"</span>,
-  <span class="k">"recordedBy"</span>: <span class="s">"M. Andrade"</span>
-<span class="p">}</span></pre>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===================== FECHO ===================== -->
-<section class="band" style="padding-bottom:clamp(48px,7vw,90px)">
-  <div class="wrap">
-    <div class="closing">
-      <p>Gratuito, <em>código aberto</em>!</p>
-    </div>
-  </div>
-</section>
-
-<script>
-/* botão copiar do bloco de instalação */
-document.querySelectorAll('[data-copy]').forEach(function (btn) {
-  btn.addEventListener('click', function () {
-    var text = btn.getAttribute('data-copy');
-    var label = btn.querySelector('.ct');
-    function flash() {
-      btn.classList.add('copied');
-      if (label) label.textContent = 'Copiado!';
-      setTimeout(function () { btn.classList.remove('copied'); if (label) label.textContent = 'Copiar'; }, 1600);
-    }
-    if (navigator.clipboard) { navigator.clipboard.writeText(text).then(flash, flash); }
-    else { flash(); }
-  });
-});
-</script>
-<script src="assets/js/hero-network.js" defer></script>
+</div>
+<script src="assets/js/landing.js" defer></script>
 ```
