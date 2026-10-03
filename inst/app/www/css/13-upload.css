@@ -402,7 +402,7 @@
 }
 
 .homepage-container .stats-container .stat-box {
-  background: #f4f3ee;
+  background: var(--bg-subtle);
   border: 1.5px solid rgba(40, 51, 172, 0.08);
   border-radius: var(--radius-lg);
   padding: 16px 12px;

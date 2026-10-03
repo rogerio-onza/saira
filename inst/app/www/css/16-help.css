@@ -584,7 +584,7 @@
   font-weight: var(--weight-semibold);
   padding: 4px 9px;
   border-radius: var(--radius);
-  background: #f4f3ee;
+  background: var(--bg-subtle);
   color: var(--text-muted);
   border: 1px solid rgba(40, 51, 172, 0.08);
   transition: all 0.2s ease;

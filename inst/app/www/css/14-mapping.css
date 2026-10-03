@@ -538,7 +538,7 @@
   margin-bottom: var(--space-2);
 }
 
-/* Flat white sidebar with 1px dividers (bslib paints it beige by default). */
+/* Flat white sidebar with 1px dividers (bslib paints it in the page color by default). */
 .bslib-sidebar-layout:has(> .mapping-sidebar) {
   --_sidebar-bg: var(--bg-card);
   --bslib-sidebar-bg: var(--bg-card);
