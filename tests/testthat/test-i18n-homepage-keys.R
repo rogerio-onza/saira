@@ -8,7 +8,7 @@ testthat::test_that("homepage welcome keys exist in pt/en", {
     required_keys <- c(
         "welcome_eyebrow",
         "home_title",
-        "home_guide_tip"
+        "home_subtitle"
     )
 
     missing_keys <- setdiff(required_keys, names(dict))

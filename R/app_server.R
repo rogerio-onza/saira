@@ -199,15 +199,16 @@ app_server <- function(input, output, session) {
     mod_wiki_server("wiki", lang_r)
     mod_help_server("help", lang_r)
 
-    # Auto-navigation after upload
+    # Auto-navigation after upload. No ignoreInit: req(input$file) stops the
+    # startup run before Shiny marks the observer as started, so ignoreInit
+    # skipped the first upload of the session instead.
     shiny::observeEvent(raw_data(),
         {
             if (!is.null(raw_data()) && nrow(raw_data()) > 0) {
                 bslib::nav_select("main_nav", selected = "mapping")
             }
         },
-        ignoreNULL = TRUE,
-        ignoreInit = TRUE
+        ignoreNULL = TRUE
     )
 
     # Cleanup on session end

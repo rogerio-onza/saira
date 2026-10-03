@@ -1199,6 +1199,9 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 ),
                 shiny::div(
                     class = "vn-config-section vn-config-section-action",
+                    # Empty label line: the button lines up with the provider
+                    # rows, and the helper text goes under it.
+                    shiny::div(class = "vn-section-label", `aria-hidden` = "true", shiny::HTML("&nbsp;")),
                     shiny::actionButton(
                         inputId = ns("validate"),
                         label = run_label,

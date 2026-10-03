@@ -1168,7 +1168,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: var(--space-3) var(--space-12);
   margin: 0 0 var(--space-3);
   padding: var(--space-3) var(--space-5);
@@ -1353,6 +1353,12 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 
 .vn-config-section-action > .btn {
   align-self: stretch;
+}
+
+/* The empty label line lines the button up with the provider rows. The
+   section gap would push the button 4px lower. */
+.vn-config-section-action > .vn-section-label {
+  margin-bottom: calc(0.55rem - var(--space-1));
 }
 
 .vn-run-btn.btn,
