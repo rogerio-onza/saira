@@ -127,6 +127,15 @@
       if (event.target === fileInput) return;
       fileInput.click();
     });
+
+    // The Home dropzone is a role="button" with no visible picker button, so
+    // Enter and Space must open the picker as a click does.
+    dropzone.addEventListener("keydown", function (event) {
+      if (event.target !== dropzone) return;
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      fileInput.click();
+    });
   }
 
   // Shiny writes "Upload complete" in English into the progress bar, with no

@@ -2757,3 +2757,17 @@ Formato: ADR leve (Architecture Decision Record).
   - Bordas frias: `#ECEEF2`, `#E3E6EB`, `#D3D8E0`.
   - As oito regras com `#f4f3ee` fixo (Wiki, Ajuda, Nomes, estatisticas do upload) passam a `var(--bg-subtle)`.
 - **Consequencias**: o contraste sobe um pouco: `--text-muted` da 5,4:1 sobre o fundo. Cor de superficie nova usa token, nunca hex fixo. O tema do site (`website/theme-light.scss`) continua bege ate um PR proprio.
+
+## ADR-136: pagina inicial com cartoes de formato, notas curtas e proximas etapas
+
+- **Data**: 2026-10-03
+- **Status**: Aceito. Substitui o painel unico do Inicio do ADR-132.
+- **Contexto**: o Inicio era um painel branco com titulo, abas, dropzone e quatro notas longas. Faltava dizer o que o Saira faz e o que vem depois do envio.
+- **Decisao**:
+  - Sem painel: titulo, subtitulo, dois cartoes de formato (Planilha, Camtrap DP) e a dropzone ficam direto no fundo.
+  - A dropzone e o unico seletor de arquivo: sem botao "Selecionar arquivo". Ela recebe foco (`tabindex`, `role="button"`), e Enter ou Espaco abre o seletor. A barra de progresso fica sobre a borda de baixo da dropzone.
+  - A privacidade nao se repete na dropzone: a nota "Privacidade" ja diz isso.
+  - "Antes de comecar": cinco notas curtas em linha (tres no modo Camtrap). O texto completo fica em "Saiba mais". Tokens de formato entre crases no `i18n.json` saem em mono.
+  - "Depois do envio": as etapas 2 a 7 em pilulas numeradas, com os rotulos do navbar.
+  - O estilo novo da dropzone fica sob `.home-upload-panel`: o modal de importar guia usa as mesmas classes.
+- **Consequencias**: as classes que o roteiro do tutorial marca (`.home-header`, `.upload-mode-tabs`, `.upload-dropzone`, `#upload-stats`) ficam. A captura `t02-upload` precisa ser refeita.
