@@ -14,7 +14,7 @@
   background-color: transparent;
   border-bottom: 1px solid var(--border-light);
   padding: var(--space-5) var(--space-6);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   font-size: var(--text-md);
 }

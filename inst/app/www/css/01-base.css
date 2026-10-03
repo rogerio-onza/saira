@@ -93,10 +93,14 @@ pre,
   font-size: var(--text-sm);
 }
 
-/* Inputs and compact UI metadata are always mono in v6. */
+/* Labels are UI text. Values from the dataset stay mono (ADR-134). */
 label,
 .ui-label,
-.input-label,
+.input-label {
+  font-family: var(--font-ui);
+  font-weight: 400;
+}
+
 .data-cell,
 .coord-value {
   font-family: var(--font-mono);

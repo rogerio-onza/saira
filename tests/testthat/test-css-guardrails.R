@@ -72,6 +72,10 @@ testthat::test_that("custom.css removes hardcoded IBM font-family declarations",
         info = "Missing --font-serif token for Source Serif 4"
     )
     testthat::expect_true(
+        grepl("--font-ui:\\s*'IBM Plex Sans',\\s*system-ui,\\s*sans-serif;", css_text, perl = TRUE),
+        info = "Missing --font-ui token for IBM Plex Sans (ADR-134)"
+    )
+    testthat::expect_true(
         grepl("--font-mono:\\s*'Space Mono',\\s*'IBM Plex Mono',\\s*monospace;", css_text, perl = TRUE),
         info = "Missing --font-mono v5 token with Space Mono primary fallback stack"
     )

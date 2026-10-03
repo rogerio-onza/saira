@@ -32,7 +32,7 @@
 }
 
 .home-eyebrow {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -102,7 +102,7 @@
   border-radius: var(--radius-sm);
   background: transparent;
   cursor: pointer;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-regular);
   color: var(--text-primary);
@@ -220,7 +220,7 @@
   border-radius: 0 var(--radius) var(--radius) 0;
   padding: 0 1rem;
   font-size: var(--text-sm);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   color: var(--text-primary);
   min-width: 200px;
   display: flex;
@@ -280,7 +280,7 @@
 }
 
 .upload-dropzone-max-size {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-medium);
   font-size: var(--text-xs);
   letter-spacing: 0.02em;
@@ -331,7 +331,7 @@
   background-color: var(--success);
   color: var(--text-primary); /* white on --success is 3.2:1, below AA */
   font-size: var(--text-sm);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   display: flex;
   align-items: center;
@@ -419,7 +419,7 @@
 }
 
 .homepage-container .stats-container .stat-box .stat-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   font-size: var(--text-xl);
   color: #1C1C26;

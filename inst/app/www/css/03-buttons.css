@@ -3,7 +3,7 @@
    ============================================================================= */
 
 .btn {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: 400;
   font-size: var(--text-base);
   padding: 0.6rem 1.25rem;

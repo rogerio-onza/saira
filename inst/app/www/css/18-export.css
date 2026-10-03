@@ -43,7 +43,7 @@
 
 .export-gen-table th {
   text-align: left;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -60,7 +60,7 @@
 
 /* Grouped file list: DwC-A core trio vs renamed auxiliary siblings. */
 .export-file-group-title {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -115,7 +115,7 @@
 }
 
 .export-kpi-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xl);
   font-weight: 700;
   line-height: 1.1;
@@ -124,7 +124,7 @@
 
 .export-kpi-label {
   margin-top: var(--space-1);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -227,7 +227,7 @@
   margin-top: 2px;
   padding: 2px var(--space-2);
   border-radius: var(--radius-chip);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: 700;
   text-align: center;
