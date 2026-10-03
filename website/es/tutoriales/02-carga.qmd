@@ -4,77 +4,55 @@ pagetitle: "Carga de datos · Tutoriales de Saíra"
 ---
 
 ::: {.tut-standfirst}
-El primer paso dentro de la aplicación es cargar su hoja de cálculo de ocurrencias. Saíra acepta CSV (y las variantes TSV/TXT) y paquetes de cámaras trampa, y detecta la codificación y el separador por usted.
+Cargue la hoja de cálculo de ocurrencias en la etapa **Inicio**.
 :::
 
-## Formatos aceptados
+## Envíe el archivo
 
-| Formato | Extensión | Observaciones |
+```{=html}
+<figure class="shot"><img src="../../assets/img/t02-upload-ES.png" width="720" alt="Etapa Inicio después de la carga, con las pestañas de formato, el área de carga y el resumen del archivo resaltados"></figure>
+```
+
+::: {.marks}
+1. Elija el formato: **CSV Darwin Core** para hojas de cálculo, **Camtrap DP (ZIP)** para cámaras trampa.
+2. Arrastre el archivo al área verde, o haga clic en ella.
+3. Revise el resumen: registros, columnas y tamaño.
+:::
+
+| Formato | Archivos |
+|---|---|
+| Hoja de cálculo | `.csv`, `.tsv`, `.txt`, `.xlsx` (solo la primera hoja) |
+| Cámara trampa | `.zip` Camtrap DP o exportación de Wildlife Insights |
+
+Cada fila es una ocurrencia. Cada columna es un atributo. La primera fila debe tener los nombres de las columnas.
+
+::: {.callout-tip}
+## Hoja de cálculo de ejemplo
+[`ocorrencias-demo.csv`](../../assets/exemplo/ocorrencias-demo.csv) tiene 1.107 ocurrencias con errores a propósito: fechas mezcladas, números de catálogo repetidos, coordenadas invertidas, especies amenazadas e invasoras. Los tutoriales usan este archivo.
+:::
+
+## Si la lectura sale mal
+
+Saíra detecta la codificación (UTF-8, Latin-1, Windows-1252) y el separador (coma, punto y coma, tabulación). Si el resumen o los datos parecen incorrectos:
+
+| Síntoma | Causa | Solución |
 |---|---|---|
-| Texto delimitado | `.csv`, `.tsv`, `.txt` | Coma, punto y coma o tabulación, detectados automáticamente |
-| Cámara trampa | `.zip` | Camtrap DP (con o sin descriptor) y exportaciones de Wildlife Insights (vea abajo) |
+| `SÃ£o Paulo` o `S?o Paulo` | Codificación | En Excel, guarde como **CSV UTF-8** y envíelo de nuevo. |
+| Una sola columna en el resumen | Separador mezclado | Guarde con un solo separador, `;` o `,`. |
+| Nombres de columna extraños | Filas encima del encabezado | Borre títulos, logos y celdas combinadas encima del encabezado. |
 
-Cada **fila** debe ser una ocurrencia (el registro de un organismo en un lugar y un momento) y cada **columna** un atributo: número de catálogo, especie, fecha, localidad, colector, etc.
+## Cámaras trampa
 
-## Carga del archivo
+En la pestaña **Camtrap DP (ZIP)**, Saíra acepta tres tipos de `.zip`:
 
-::: {.callout-tip}
-## Descargue la hoja de cálculo de ejemplo
-Para practicar esta etapa y las siguientes, descargue [`ocorrencias-demo.csv`](../../assets/exemplo/ocorrencias-demo.csv), el conjunto de demostración de Saíra: 1.107 ocurrencias de especies brasileñas en varios biomas, imperfecto a propósito. Tiene 25 columnas para mapear, día, mes y año en columnas separadas, una columna de fecha que mezcla formatos (barras, horas, solo mes y año) y dos años imposibles, números de catálogo ausentes y repetidos, coordenadas invertidas y fuera de rango, registros de países vecinos, especies amenazadas para la generalización y especies exóticas invasoras. Cada etapa del tutorial tiene algo que resolver en ella.
-:::
+- **Camtrap DP** con el descriptor `datapackage.json` y las tablas `deployments`, `observations` y, si existe, `media`.
+- Las mismas tablas **sin el descriptor**. Saíra crea el descriptor a partir de los CSV.
+- La **exportación de Wildlife Insights**. Saíra renombra las columnas al formato Camtrap DP.
 
-En la etapa **Inicio**, arrastre el archivo al área indicada o haga clic para seleccionarlo.
+Saíra une las tablas en una sola hoja de cálculo, con nombre científico, fecha y lugar. Después el flujo es igual al de una hoja de cálculo.
 
-```{=html}
-<ol class="fix-steps">
-  <li><strong>Seleccione el archivo.</strong>
-    <p>Suelte el CSV o el paquete de cámaras trampa en el área de carga (o haga clic para elegir).</p></li>
-  <li><strong>Espere la lectura.</strong>
-    <p>Saíra detecta la codificación y el separador automáticamente y muestra un resumen del archivo: número de filas, número de columnas y tamaño.</p></li>
-  <li><strong>Revise el resumen.</strong>
-    <p>Verifique que el número de filas y de columnas coincida con lo esperado.</p></li>
-</ol>
-```
+Los datos de Wildlife Insights ya vienen con las especies sensibles protegidas. Vea la [generalización](06-generalizacion.qmd).
 
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/2-area-upload-resumo-arquivo-EN.png" alt="Panel de carga de Saíra con el resumen del archivo: 1.107 registros, 25 columnas, 0,3 MB">
-  <figcaption><b>Figura 1.</b> Área de carga con el resumen del archivo (filas, columnas y tamaño) después de la carga.</figcaption>
-</figure>
-```
+## Guía de mapeo
 
-## Detección automática de codificación y separador
-
-Al recibir un CSV, Saíra intenta identificar la **codificación** (UTF-8, Latin-1/ISO-8859-1, Windows-1252) y el **separador** de columnas, y elimina la marca de orden de bytes (BOM) que algunos programas agregan al inicio del archivo. Acierta casi siempre. Verifique en el resumen que el número de columnas tenga sentido y revise el contenido en las etapas Mapeo y Vista previa. Las fechas en varios formatos (`03/11/2024`, `2024-11-03`, `Nov 3 2024`) se reconocen y se estandarizan después, al exportar.
-
-::: {.callout-tip}
-## ¿Los acentos aparecen mal?
-Casi siempre es la codificación. Las hojas de cálculo suelen estar en **UTF-8** o **Latin-1 (ISO-8859-1)**. Si en lugar de `São Paulo` ve `SÃ£o Paulo` o `S?o Paulo`, es la codificación. Saíra intenta detectarla sola. Si el resultado sigue mal, guarde de nuevo el archivo como **UTF-8** antes de cargarlo (en Excel: *Guardar como → CSV UTF-8*).
-:::
-
-::: {.callout-warning}
-## ¿Toda la hoja de cálculo se abrió en una sola columna?
-Es el separador equivocado. Los archivos en portugués y en español usan con frecuencia **punto y coma (`;`)** porque la coma ya es el separador decimal. Saíra detecta el separador solo. Si el resumen muestra una sola columna, guarde el archivo con un separador consistente (`;` o `,`) o expórtelo como **CSV UTF-8** y cárguelo de nuevo.
-:::
-
-::: {.callout-important}
-## Encabezado en la primera fila
-Saíra supone que la **primera fila** contiene los nombres de las columnas. Elimine filas de título, logotipos o celdas combinadas antes de exportar desde Excel: impiden la lectura.
-:::
-
-## Datos de cámaras trampa
-
-Una hoja de cálculo de ocurrencias común se carga directamente (vea [Formatos aceptados](#formatos-aceptados)). Los conjuntos de cámaras trampa son diferentes: llegan en **varios archivos separados** (registros, instalaciones, medios) que se deben unir en una sola tabla. Por eso Saíra trata estos paquetes `.zip` por separado y los une automáticamente antes del mapeo. Reconoce:
-
-- **Camtrap DP** (Camera Trap Data Package): el `.zip` estandarizado, con el descriptor `datapackage.json` y las tablas `deployments`, `observations` y (opcional) `media`.
-- **CSV sueltos de Camtrap DP**: las mismas tablas en un `.zip`, pero **sin el descriptor**: Saíra sintetiza uno a partir de los CSV que encuentra.
-- **Wildlife Insights**: la exportación de la plataforma, en la que Saíra cambia el nombre de las columnas al formato Camtrap DP y deriva el nombre científico, la fecha y hora y el tipo de observación.
-
-En todos los casos, Saíra construye un nombre científico consistente y organiza tiempo y lugar, así el resto del flujo (mapeo, nombres, coordenadas) funciona igual que con una hoja de cálculo común.
-
-::: {.callout-note}
-## ¿Paquete camtrap incompleto?
-Si falta el descriptor del paquete, Saíra intenta **sintetizar** uno a partir de los CSV que encuentra. Aun así, verifique en el resumen y en las etapas siguientes que las columnas de especie, fecha y coordenadas llegaron antes de continuar.
-:::
-
-Con los datos cargados y mostrados correctamente, pase a **[Mapeo de campos a Darwin Core](03-mapeo-dwc.qmd)**.
+Si ya tiene el `<dataset>-mapping-guide.txt` de una exportación anterior, envíe la guía en la misma área. Saíra importa el mapeo. Vea [Reutilice el mapeo](03-mapeo-dwc.qmd#reutilice-el-mapeo).

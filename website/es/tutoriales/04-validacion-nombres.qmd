@@ -4,196 +4,107 @@ pagetitle: "Validación de nombres · Tutoriales de Saíra"
 ---
 
 ::: {.tut-standfirst}
-Esta etapa verifica cada nombre científico en una base taxonómica de su elección, resuelve sinónimos y grafías divergentes, y señala las especies amenazadas de la lista nacional del MMA de Brasil.
+Verifique cada <span class="term">scientificName</span> contra una base taxonómica en la etapa **Nombres**. La etapa también señala especies amenazadas e invasoras.
 :::
 
-## Por qué validar los nombres
-
-El mismo taxón puede aparecer escrito de muchas formas: con errores de tipeo, sinónimos antiguos, abreviaturas o sin el autor. Para que sus datos se combinen con otras colecciones, los nombres se deben **resolver** con una referencia taxonómica estable.
-
-## Elección de la base de referencia
-
-En la etapa **Nombres**, Saíra ofrece tres bases taxonómicas. Seleccione una o más, según su grupo:
+## Ejecute la validación
 
 ```{=html}
-<table class="maptable">
-  <thead><tr><th>Base</th><th>Cobertura</th><th>Cuándo usar</th></tr></thead>
-  <tbody>
-    <tr><td>Flora do Brasil</td><td>Plantas, algas y hongos de Brasil</td><td>Colecciones botánicas y micológicas nacionales</td></tr>
-    <tr><td>Fauna do Brasil</td><td>Animales de Brasil</td><td>Colecciones zoológicas nacionales</td></tr>
-    <tr><td>GBIF (recomendada)</td><td>Base taxonómica global</td><td>Cualquier grupo, o cuando el taxón no es brasileño</td></tr>
-  </tbody>
-</table>
+<figure class="shot"><img src="../../assets/img/t04-run-ES.png" width="1440" alt="Barra de configuración de la etapa Nombres con los proveedores, las opciones de validación y el botón Validar nombres resaltados"></figure>
 ```
 
-Si selecciona más de una base, Saíra las consulta en **cascada** (Flora do Brasil → Fauna do Brasil → GBIF) y usa como veredicto el primer proveedor que devuelve un resultado. Internamente, todas las consultas pasan por el paquete `taxadb`.
+::: {.marks}
+1. Marque **Flora BR** y **Fauna BR**. GBIF está siempre activo.
+2. Las dos opciones vienen activadas. Quitan autor y año (`Harpia harpyja (Daudin, 1800)`) y calificadores (`sp.`, `cf.`, `aff.`, `nr.`) antes de la consulta.
+3. Haga clic en **Validar nombres**.
+:::
+
+El número en el proveedor es el orden de la consulta. Saíra consulta Flora BR y Fauna BR primero, después GBIF. Cada nombre distinto se consulta una vez.
 
 ::: {.callout-note}
-## Las bases brasileñas quedan en su computadora
-Flora do Brasil y Fauna do Brasil se **descargan y guardan localmente** la primera vez que las usa. Después, la validación funciona incluso sin internet y es más rápida. Cada base aparece como una **tarjeta de proveedor** con su estado (no descargado, descargando, actualizado) y la versión local. Las bases que ya descargó quedan **preseleccionadas** cuando abre de nuevo la aplicación, así su elección se mantiene entre sesiones. GBIF se consulta según la necesidad.
+## Flora BR y Fauna BR quedan en su computadora
+Saíra descarga las dos bases en el primer uso. Después la validación funciona sin internet. Si el proveedor muestra **Falló la actualización**, reinstale Saíra con `pak::pak("rogerio-onza/saira")`.
 :::
 
-::: {.callout-warning}
-## ¿Flora BR / Fauna BR no se descargan? Actualice Saíra
-Los archivos que publican Flora e Funga do Brasil y el Catálogo Taxonômico da Fauna do Brasil cambian de vez en cuando, y Saíra acompaña esos formatos. Si una tarjeta queda en **"falló la actualización"** y nunca se pone verde, probablemente usa una versión anterior de la aplicación. **Reinstale Saíra con `pak`** para obtener la corrección más reciente. `pak` resuelve por usted las versiones correctas de los paquetes de las bases (Flora BR y Fauna BR):
+## Lea el resultado
 
-```r
-pak::pak("rogerio-onza/saira")
+```{=html}
+<figure class="shot"><img src="../../assets/img/t04-results-ES.png" width="1440" alt="Etapa Nombres después de la validación, con los filtros de estado, el botón Revisar, los contadores de conservación y el informe de nombres resaltados"></figure>
 ```
 
-Después, abra de nuevo la aplicación con `saira::run_app()` e intente validar otra vez.
+::: {.marks}
+1. Los filtros separan los nombres por estado. **Solo problemáticos** muestra lo que pide revisión.
+2. **Revisar** abre la decisión para ese nombre.
+3. Cuántas especies están en la Lista MMA, cuántos registros reciben el estado UICN y cuántas especies son invasoras.
+4. El informe lista todos los nombres, con estado y marca de sensibilidad.
 :::
 
-## Antes de ejecutar: normalización
+| Estado | Significado |
+|---|---|
+| Aceptado | El nombre es el nombre aceptado en la base. |
+| Sinónimo | La base apunta a otro nombre aceptado. También vale para grafías que la base marca como inválidas. |
+| Ambiguo | Más de un candidato fuerte. Usted elige. |
+| No encontrado | El nombre no está en ninguna base consultada. |
 
-Debajo de las bases, dos opciones controlan cómo se prepara cada nombre antes de la consulta. Las dos vienen **activadas** de forma predeterminada:
+Saíra no corrige la grafía por sí solo. Solo muestra lo que la base devuelve.
 
-- **Quitar autores**: elimina la autoría y el año para mejorar la correspondencia entre proveedores. Ej.: `Harpia harpyja (Daudin, 1800)` se convierte en `Harpia harpyja`.
-- **Ignorar sp., cf., aff., nr.**: ignora los calificadores no taxonómicos durante la normalización.
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/8-validacao-nomes-provedores-EN.png" alt="Columna de configuración de la validación de nombres: tarjetas de los proveedores Flora BR, Fauna BR y GBIF con su estado, las opciones de normalización y el botón Validar nombres">
-  <figcaption><b>Figura 1.</b> La columna de configuración: proveedores con el estado de cada base local, las opciones de normalización y el botón <span class="term">Validar nombres</span>.</figcaption>
-</figure>
-```
-
-## Verificación de la nomenclatura
-
-Al hacer clic en **Validar nombres**, Saíra compara cada <span class="term">scientificName</span> con la base elegida y asigna un **estado** a cada nombre:
-
-- **Aceptado** — el nombre coincide con la referencia y ya es el nombre aceptado.
-- **Sinónimo** — el nombre es válido, pero la base indica un nombre aceptado más actual (también es el estado de las grafías inválidas o mal aplicadas que devuelve la base).
-- **Ambiguo** — más de un candidato fuerte. Usted decide cuál aplicar.
-- **No encontrado** — no está en la base. Requiere revisión manual.
-
-Saíra **no corrige la ortografía por su cuenta** ni adivina el nombre "más cercano": solo informa lo que devuelve la base taxonómica. Toda corrección viene de usted.
+## Revise un nombre
 
 ```{=html}
-<ol class="fix-steps">
-  <li><strong>Ejecute la verificación.</strong>
-    <p>Saíra procesa la lista de nombres (cada nombre distinto se consulta una sola vez) y muestra un resumen por estado, con filtros para aislar los problemas.</p></li>
-  <li><strong>Revise los problemas.</strong>
-    <p>Para cada nombre señalado como sinónimo, ambiguo o no encontrado, abra la revisión manual y decida.</p></li>
-  <li><strong>Trate los no encontrados.</strong>
-    <p>Corrija la ortografía, confirme que es correcta (por ejemplo, un taxón descrito hace poco) o ajústela según la publicación de referencia.</p></li>
-</ol>
+<figure class="shot"><img src="../../assets/img/t04-review-ES.png" width="572" alt="Ventana de revisión de un nombre no encontrado, con la confirmación y el botón de corrección resaltados"></figure>
 ```
+
+::: {.marks}
+1. ¿El nombre es correcto, como un taxón recién descrito? Márquelo y haga clic en **Confirmar**. El nombre sale tal como está.
+2. ¿El nombre es incorrecto? Haga clic en **No, quiero corregir el nombre**.
+:::
 
 ```{=html}
-<figure class="shot">
-  <img src="../../assets/img/8.1-painel-nomes-processados-EN.png" alt="Panel Nombres procesados con filtros por situación (Todos, Solo problemáticos, No encontrados, Ambiguos, Sinónimos, Aceptados) y entradas con el botón Revisar">
-  <figcaption><b>Figura 2.</b> El panel <span class="term">Nombres procesados</span>: el resumen por situación, con filtros para aislar los problemas y un botón <span class="term">Revisar</span> en cada nombre pendiente.</figcaption>
-</figure>
+<figure class="shot"><img src="../../assets/img/t04-review-edit-ES.png" width="572" alt="Ventana de revisión en modo de corrección, con el campo del nombre corregido y el botón Guardar corrección resaltados"></figure>
 ```
 
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/8.2-painel-relatorio-nomes-EN.png" alt="Tabla Informe de nombres con las columnas Nombre científico, Estado y Estado taxonómico, y los conteos de válidos, inválidos y sin resolver arriba">
-  <figcaption><b>Figura 3.</b> El Informe de nombres: todos los taxones en una tabla, con el estado de cada uno y los conteos de válidos, inválidos y sin resolver arriba.</figcaption>
-</figure>
-```
+::: {.marks}
+1. Escriba el nombre correcto. El motivo es opcional.
+2. **Guardar corrección**.
+:::
 
-## Corrección de nombres
-
-La corrección es manual y ocurre en el **modal de revisión**. Haga clic en un nombre con problema y elija:
-
-- **Sí, este nombre es correcto**: confirma el nombre como está. Se exporta exactamente así. Es útil para taxones descritos hace poco o nombres que faltan en la base.
-- **No, quiero corregir el nombre**: abre el campo **Corrección del nombre** para escribir la grafía correcta, con un motivo opcional (ej.: error de tipeo en la hoja original, nombre actualizado según una publicación).
-
-La decisión se **aplica de nuevo automáticamente** a todas las filas con el mismo nombre: como la validación agrupa los nombres idénticos, usted revisa cada uno una sola vez y la corrección vale para todo el conjunto de datos.
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/8.3-pop-up-revisao-nomes-EN.png" alt="Modal de revisión manual que pregunta si el nombre es correcto, con la opción de confirmar o de corregir el nombre">
-  <figcaption><b>Figura 4.</b> El modal de revisión: confirme el nombre como está o elija corregirlo.</figcaption>
-</figure>
-```
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/8.4-pop-up-revisao-nomes-edicao-de-nome-EN.png" alt="Modal de revisión en modo de edición, con el campo Corrección del nombre y un campo de motivo">
-  <figcaption><b>Figura 5.</b> Modo de edición: escriba la grafía correcta y, si quiere, registre el motivo del cambio.</figcaption>
-</figure>
-```
+La decisión vale para todas las filas con el mismo nombre.
 
 ::: {.callout-warning}
 ## La decisión taxonómica es suya
-En grupos con taxonomía inestable, revise cada caso antes de aceptar. Reemplazar un nombre por su sinónimo aceptado significa reemplazar el nombre en el conjunto exportado: el nombre original se puede conservar en <span class="term">verbatimIdentification</span> u <span class="term">originalNameUsage</span> si mapeó esos campos.
+En grupos con taxonomía inestable, revise cada caso. La corrección sustituye el nombre en la exportación. Para guardar el nombre original, mapee la misma columna también en <span class="term">verbatimIdentification</span> en el [mapeo](03-mapeo-dwc.qmd).
 :::
 
-## Especies amenazadas (lista del MMA)
+## Revise las especies amenazadas
 
-Después de resolver los nombres, Saíra compara cada taxón con la **lista nacional de especies amenazadas de extinción** de Brasil, que viene **incluida en la aplicación** (no hay nada que descargar). Los taxones de la lista reciben la marca **Sensible** en el informe, con la categoría de amenaza: **VU** (vulnerable), **EN** (en peligro), **CR** (en peligro crítico) y **CR (PEX)** (en peligro crítico, posiblemente extinta).
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/8.6-relatorio-nomes-especie-sensivel-EN.png" alt="Informe con taxones marcados como Sensible y su categoría de amenaza, y la opción de marcar especies que no están en la lista">
-  <figcaption><b>Figura 6.</b> En el informe, los taxones de la lista llevan la etiqueta <span class="term">Sensible</span> con la categoría. Los demás llevan la opción <span class="term">+ marcar</span>.</figcaption>
-</figure>
-```
-
-### Ajuste de la sensibilidad
-
-La lista del MMA es la referencia oficial y Saíra no la edita: las categorías de amenaza vienen de las ordenanzas federales y no cambian. Lo que usted ajusta es la **marca de sensibilidad** de cada taxón, según su experiencia y la realidad de su región de estudio:
-
-- **Quitar la sensibilidad de un taxón**: si, en su contexto, ese registro no es sensible, desmárquelo. Saíra avisa que es una **decisión del custodio**: sin la marca, las coordenadas de ese taxón se publican sin generalización.
-- **Marcar una especie que no está en la lista**: use **+ marcar** para señalar como sensible un taxón que la lista nacional no cubre, pero que usted sabe que es vulnerable en su zona.
-
-El ajuste se hace en un pequeño diálogo de confirmación y se aplica al exportar.
+La lista nacional del MMA de Brasil viene incorporada en Saíra. Las especies de la lista reciben la marca **Sensible** con la categoría: VU, EN, CR o CR (PEX).
 
 ```{=html}
-<figure class="shot">
-  <img src="../../assets/img/8.5-pop-up-especie-sensivel-EN.png" alt="Diálogo de enmascaramiento de coordenadas con la casilla Sensible marcada y el aviso de que desmarcar es una decisión del custodio">
-  <figcaption><b>Figura 7.</b> El diálogo de sensibilidad: marque o desmarque el taxón. Al desmarcar una especie de la lista del MMA, Saíra le recuerda que la decisión es suya y que las coordenadas se publicarán sin generalización.</figcaption>
-</figure>
+<figure class="shot"><img src="../../assets/img/t04-sensitive-ES.png" width="563" alt="Informe de nombres con la marca Sensible de una especie de la lista y la opción marcar de otra especie resaltadas"></figure>
 ```
 
-Aquí la etapa solo **señala** lo que es sensible. La protección real de las coordenadas (decidir si generalizar la ubicación y cuánto) ocurre en la etapa de **[generalización](06-generalizacion.qmd)**, según la tabla de decisión de Chapman (2020).
+::: {.marks}
+1. Haga clic en la marca para quitar la sensibilidad. Sin la marca, las coordenadas de la especie salen sin generalización.
+2. **+ marcar** vuelve sensible una especie fuera de la lista.
+:::
+
+La categoría de amenaza no cambia: viene de las ordenanzas. La etapa solo marca. La protección de las coordenadas ocurre en la [generalización](06-generalizacion.qmd).
 
 ::: {.callout-note}
 ## De dónde viene la lista
-La lista incluida viene de las listas oficiales del Ministerio del Medio Ambiente de Brasil: **flora** de la [**Portaria MMA nº 148, del 7 de junio de 2022**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733); **fauna terrestre** de la [**Portaria MMA nº 1.704, del 16 de junio de 2026**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917); y **fauna acuática** (peces e invertebrados) de la [**Portaria GM/MMA nº 1.667, del 27 de abril de 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623).
+La lista incorporada viene de las listas oficiales del Ministerio de Medio Ambiente de Brasil (MMA): la **flora** por la [**Portaria MMA nº 148, de 7 de junio de 2022**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733); la **fauna terrestre** por la [**Portaria MMA nº 1.704, de 16 de junio de 2026**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917); y la **fauna acuática** (peces e invertebrados) por la [**Portaria GM/MMA nº 1.667, de 27 de abril de 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623).
 :::
 
-## Especies exóticas invasoras (Instituto Hórus)
-
-Además de la lista de amenazadas, Saíra compara cada taxón con la **lista brasileña de especies exóticas invasoras** del **Instituto Hórus**, con 483 taxones de animales y plantas. También viene **incluida en la aplicación**: la verificación es local, sin conexión e inmediata.
-
-La marca aparece en dos lugares. En **Nombres procesados**, la píldora de filtro <span class="term">Invasoras</span> se suma a las demás, con un conteo de taxones, y reduce la lista solo a esos, lo que ayuda cuando la lista es larga.
+## Encuentre las especies invasoras
 
 ```{=html}
-<figure class="shot">
-  <img src="../../assets/img/8.7-pilula-filtro-invasoras-EN.png" alt="Panel Nombres procesados con la píldora de filtro Invasoras resaltada por una flecha roja, junto a las píldoras de estado, y la lista filtrada con Sus scrofa, Felis catus, Equus caballus y Canis familiaris">
-  <figcaption><b>Figura 8.</b> La píldora <span class="term">Invasoras</span> en Nombres procesados, con su conteo de taxones. Al hacer clic, quedan solo las especies de la lista de Hórus.</figcaption>
-</figure>
+<figure class="shot"><img src="../../assets/img/t04-invasive-ES.png" width="907" alt="Panel Nombres procesados con el filtro Invasoras activo y la lista de especies invasoras"></figure>
 ```
 
-En el **Informe de nombres**, cada taxón de la lista lleva la etiqueta **Exótica invasora** bajo el nombre, y una línea sobre la tabla informa cuántos registros se ven afectados.
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/8.8-relatorio-nomes-especie-invasora-EN.png" alt="Informe de nombres con la etiqueta Exótica invasora bajo Canis familiaris, Sus scrofa y Equus caballus, Panthera onca con la etiqueta Sensible VU en su lugar, y Bos taurus sin ninguna de las dos">
-  <figcaption><b>Figura 9.</b> La etiqueta <span class="term">Exótica invasora</span> en el informe. El mismo cuadro muestra que las dos listas son independientes: <span class="term">Panthera onca</span> es <span class="term">Sensible · VU</span> pero no invasora, y <span class="term">Bos taurus</span> no es ninguna de las dos.</figcaption>
-</figure>
-```
-
-La comparación usa **exactamente la misma normalización de nombres** que el validador, así la autoría y los calificadores no la impiden: <span class="term">Felis catus (Linnaeus, 1758)</span> se reconoce.
-
-::: {.callout-note}
-## Invasora no es lo mismo que amenazada, y las píldoras también son diferentes
-Las otras píldoras filtran por **estado de validación** (aceptado, sinónimo, no encontrado…), que cambia a medida que usted revisa los nombres. La píldora <span class="term">Invasoras</span> filtra por la **lista de especies**, por eso sus revisiones no la afectan. Un taxón puede estar en las dos condiciones o en ninguna: son listas independientes con propósitos opuestos.
+::: {.marks}
+1. El filtro **Invasoras** muestra las especies de la lista de exóticas invasoras del Instituto Hórus (483 taxones).
 :::
 
-Estar en esta lista significa que el taxón es **exótico e invasor en Brasil**, que es justamente el dato de entrada para la sugerencia automática de <span class="term">establishmentMeans</span> en el **[mapeo](03-mapeo-dwc.qmd)**: esas especies llegan al asistente completadas como `introduced`. La lista a propósito **no dice nada** sobre <span class="term">degreeOfEstablishment</span>, que depende del registro: un animal en cautiverio y uno asilvestrado son la misma especie.
+Este filtro usa la lista de especies, no el estado de la validación. Las revisiones no cambian el conteo. En el [mapeo](03-mapeo-dwc.qmd), estas especies llegan al asistente de <span class="term">establishmentMeans</span> como `introduced`.
 
-Si la lista falta o no se puede leer, la validación sigue funcionando y solo deja de señalar, con un aviso, en lugar de fallar.
-
-## El estado de conservación va a la exportación
-
-::: {.callout-important}
-## Las bases que elige deciden el estado de conservación
-Las bases que selecciona aquí deciden lo que Saíra escribe en `dynamicProperties` al exportar: una base **brasileña** (Flora BR / Fauna BR) aporta la categoría del **MMA**, **GBIF** la categoría global de la **UICN**. Una línea corta sobre el informe indica cuántos registros recibirán cada una. Las claves generadas y el comportamiento sin conexión se explican en **[Vista previa y exportación](07-vista-previa-exportacion.qmd)**.
-:::
-
-Con los nombres resueltos, pase al espacio: vaya a **[Validación de coordenadas](05-validacion-coordenadas.qmd)**.
+Las bases marcadas definen el estado de conservación grabado en la exportación: Flora BR y Fauna BR dan la categoría MMA, GBIF da la categoría UICN. Vea [Vista previa y exportación](07-vista-previa-exportacion.qmd#estado-de-conservación-en-dynamicproperties).

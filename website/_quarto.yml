@@ -30,7 +30,7 @@ website:
       - text: "Projeto"
         href: index.qmd
       - text: "Tutoriais"
-        href: tutoriais/index.qmd
+        href: tutoriais/01-instalacao.qmd
       - text: "FAQ"
         href: faq.qmd
       - text: "Glossário"
@@ -48,8 +48,6 @@ website:
       style: floating
       collapse-level: 1
       contents:
-        - text: "Visão geral"
-          href: tutoriais/index.qmd
         - section: "Fluxo do dado bruto ao DwC-A"
           contents:
             - tutoriais/01-instalacao.qmd
@@ -64,8 +62,6 @@ website:
       style: floating
       collapse-level: 1
       contents:
-        - text: "Overview"
-          href: en/tutorials/index.qmd
         - section: "From raw data to DwC-A"
           contents:
             - en/tutorials/01-installation.qmd
@@ -80,8 +76,6 @@ website:
       style: floating
       collapse-level: 1
       contents:
-        - text: "Visión general"
-          href: es/tutoriales/index.qmd
         - section: "Del dato bruto al DwC-A"
           contents:
             - es/tutoriales/01-instalacion.qmd

@@ -1,123 +1,84 @@
 ---
 title: "Instalação e primeiros passos"
 pagetitle: "Instalação · Tutoriais Saíra"
+aliases:
+  - index.html
 ---
 
 ::: {.tut-standfirst}
-O Saíra é um pacote R que abre uma interface visual no seu navegador. Esta página mostra como instalá-lo, iniciar o aplicativo pela primeira vez e o que esperar do primeiro uso.
+Instale o R, o Saíra e abra o app no navegador. Você não precisa saber programar.
 :::
 
-## Pré-requisitos
+## Instale o R
 
-Você precisa do **R** instalado (versão 4.1 ou superior), baixado direto do [CRAN](https://cran.r-project.org/). O [RStudio](https://posit.co/download/rstudio-desktop) é recomendado, mas não é obrigatório: qualquer console R serve. Não é necessário saber programar. Depois de instalado, todo o uso acontece pela interface gráfica.
-
-Como o Saíra consulta bases taxonômicas e desenha mapas, alguns pacotes de apoio (espaciais e de leitura de planilhas) são instalados junto. Em Linux, esses pacotes podem exigir bibliotecas de sistema como `GDAL`, `GEOS` e `PROJ`; em Windows e macOS elas vêm nos binários.
-
-## Instalando o R
-
-Baixe o R no site oficial do **[CRAN](https://cran.r-project.org/)**. Os passos abaixo são para Windows; no macOS escolha "Download R for macOS" e siga o instalador.
+Precisa do R 4.1 ou superior. Baixe no **[CRAN](https://cran.r-project.org/)**. Os passos abaixo são para Windows. No macOS, escolha **Download R for macOS**.
 
 ```{=html}
-<figure class="shot">
-  <img src="../assets/img/01-r-instalacao-cran.png" alt="Página do CRAN com a opção Download R for Windows destacada">
-  <figcaption><b>Figura 1.</b> Na página do CRAN, escolha <b>Download R for Windows</b> (ou macOS, conforme seu sistema).</figcaption>
-</figure>
-<figure class="shot">
-  <img src="../assets/img/01.1-r-instalacao-cran.png" alt="Página do R para Windows com o link base destacado">
-  <figcaption><b>Figura 2.</b> Clique em <b>base</b>: é a distribuição que se instala da primeira vez.</figcaption>
-</figure>
-<figure class="shot">
-  <img src="../assets/img/01.2-r-instalacao-cran-final.png" alt="Link de download do instalador do R para Windows">
-  <figcaption><b>Figura 3.</b> Baixe o instalador (<b>Download R-4.x.x for Windows</b>) e execute com as opções padrão.</figcaption>
-</figure>
+<figure class="shot"><img src="../assets/img/01-r-instalacao-cran.png" alt="Página do CRAN com a opção Download R for Windows destacada"></figure>
+<figure class="shot"><img src="../assets/img/01.1-r-instalacao-cran.png" alt="Página do R para Windows com o link base destacado"></figure>
+<figure class="shot"><img src="../assets/img/01.2-r-instalacao-cran-final.png" alt="Link de download do instalador do R para Windows"></figure>
 ```
 
-## Instalando o RStudio
+1. Clique em **Download R for Windows**.
+2. Clique em **base**.
+3. Baixe o instalador e execute com as opções padrão.
 
-O **[RStudio Desktop](https://posit.co/download/rstudio-desktop)** é opcional, mas deixa o uso mais confortável. Baixe a versão para o seu sistema e instale com as opções padrão.
+## Instale o RStudio (opcional)
+
+O **[RStudio Desktop](https://posit.co/download/rstudio-desktop)** deixa o uso mais confortável. Qualquer console R também serve.
 
 ```{=html}
-<figure class="shot">
-  <img src="../assets/img/02-r-studio-instalacao.png" alt="Botão de download do RStudio Desktop para Windows no site da Posit">
-  <figcaption><b>Figura 4.</b> No site da Posit, baixe o <b>RStudio Desktop</b> e instale.</figcaption>
-</figure>
+<figure class="shot"><img src="../assets/img/02-r-studio-instalacao.png" alt="Botão de download do RStudio Desktop para Windows no site da Posit"></figure>
 ```
 
 ## Windows: instale o Rtools
 
-Como o Saíra **não está no CRAN**, ele é instalado a partir do código-fonte. No **Windows**, compilar pacotes a partir do código exige o **Rtools**. Instale a versão de Rtools que corresponde à sua versão do R antes de instalar o Saíra. (No macOS e no Linux esse passo normalmente não é necessário.)
+O Saíra não está no CRAN. No Windows, a instalação a partir do GitHub precisa do **Rtools** da mesma versão do R. No macOS e no Linux, pule este passo.
 
 ```{=html}
-<figure class="shot">
-  <img src="../assets/img/0.3-r-tools-instalacao.png" alt="Página do R para Windows com o link Rtools destacado">
-  <figcaption><b>Figura 5.</b> Na mesma página do R para Windows, abra <b>Rtools</b>.</figcaption>
-</figure>
-<figure class="shot">
-  <img src="../assets/img/0.3.1-r-tools-instalacao.png" alt="Lista de versões do Rtools">
-  <figcaption><b>Figura 6.</b> Escolha a versão compatível com o seu R (ex.: <b>RTools 4.5</b> para R 4.5 ou superior).</figcaption>
-</figure>
-<figure class="shot">
-  <img src="../assets/img/0.3.2-r-tools-instalacao-final.png" alt="Página com o link do instalador do Rtools">
-  <figcaption><b>Figura 7.</b> Baixe o <b>instalador do Rtools</b> e execute com as opções padrão.</figcaption>
-</figure>
+<figure class="shot"><img src="../assets/img/0.3-r-tools-instalacao.png" alt="Página do R para Windows com o link Rtools destacado"></figure>
+<figure class="shot"><img src="../assets/img/0.3.1-r-tools-instalacao.png" alt="Lista de versões do Rtools"></figure>
+<figure class="shot"><img src="../assets/img/0.3.2-r-tools-instalacao-final.png" alt="Página com o link do instalador do Rtools"></figure>
 ```
 
-## Instalando o Saíra
+1. Na página do R para Windows, abra **Rtools**.
+2. Escolha a versão do seu R, por exemplo **RTools 4.5** para R 4.5.
+3. Baixe o instalador e execute com as opções padrão.
 
-Agora que o R (e, se quiser, o RStudio) já estão instalados, vamos instalar o Saíra. Como ele ainda não está no CRAN, a instalação é feita direto do repositório no GitHub com o `pak`, que resolve todas as dependências automaticamente. Abra o R (ou o RStudio) e rode:
+No Linux, os pacotes espaciais precisam das bibliotecas de sistema `GDAL`, `GEOS` e `PROJ`.
+
+## Instale o Saíra
+
+No R ou no RStudio, rode:
 
 ```r
 install.packages("pak")
 pak::pak("rogerio-onza/saira")
 ```
 
-::: {.callout-tip}
-## Primeira instalação demora um pouco
-O Saíra depende de vários pacotes (Shiny, leitura de planilhas, bases taxonômicas e geográficas). A primeira instalação pode levar alguns minutos enquanto essas dependências são baixadas e compiladas. As instalações seguintes são rápidas.
-:::
+A primeira instalação baixa e compila as dependências. Ela pode levar alguns minutos.
 
-## Abrindo o aplicativo
-
-Com o pacote instalado, uma única linha abre a interface no navegador:
+## Abra o app
 
 ```r
-library(saira)
 saira::run_app()
 ```
 
-O app abre em uma nova aba. A partir daí, tudo é feito por menus, botões e tabelas. Para encerrar, feche a aba e interrompa a sessão R (`Esc` no console ou o botão de parada do RStudio).
+O app abre numa aba do navegador. Para encerrar, feche a aba e pare a sessão R (`Esc` no console ou o botão de parada do RStudio).
 
 ::: {.callout-warning}
-## A janela não abriu?
-Em servidores ou ambientes sem navegador padrão, o `run_app()` imprime um endereço local (algo como `http://127.0.0.1:xxxx`). Copie esse endereço e abra manualmente no navegador. Para servir a outros computadores da rede, rode `saira::run_app(options = list(host = "0.0.0.0", port = 3838))`.
+## A aba não abriu?
+O `run_app()` mostra um endereço como `http://127.0.0.1:xxxx`. Abra esse endereço no navegador. Para servir a outros computadores da rede, rode `saira::run_app(options = list(host = "0.0.0.0", port = 3838))`.
 :::
 
-```{=html}
-<figure class="shot">
-  <img src="../assets/img/1-tela-inicial.png" alt="Tela inicial do Saíra: etapa Início com o painel de upload e a lista de colunas obrigatórias">
-  <figcaption><b>Figura 8.</b> Tela inicial do Saíra, com o seletor de idioma (PT-BR/EN), as etapas numeradas e o painel de upload.</figcaption>
-</figure>
-```
+O seletor no canto superior troca o idioma entre PT, EN e ES a qualquer momento, sem perder o trabalho. O app aceita arquivos de até 500 MB.
 
-## Atualizando
+## Atualize
 
-O Saíra é instalado a partir do GitHub, então **atualizar é reinstalar**: o mesmo comando da instalação traz sempre a versão mais recente.
-
-1. Feche o app, se estiver aberto.
-2. No console do R (ou do RStudio), rode novamente:
+Feche o app e rode de novo:
 
 ```r
 pak::pak("rogerio-onza/saira")
 ```
 
-O `pak` baixa a versão mais recente e atualiza só o que mudou (as instalações seguintes são rápidas). Reabra o app com `saira::run_app()`. Para conferir qual versão está instalada, rode `packageVersion("saira")`.
-
-## Idioma
-
-O Saíra é trilíngue. No canto superior da interface você alterna entre **Português (PT-BR)**, **Inglês (EN-US)** e **Espanhol (ES)** a qualquer momento, útil para equipes mistas ou para publicar metadados em inglês. A troca é imediata e não interrompe o trabalho em andamento.
-
-## Tamanho de arquivo e desempenho
-
-O app aceita uploads de até **500 MB**, suficiente para conjuntos com centenas de milhares de ocorrências. Conjuntos muito grandes deixam a validação de nomes e o mapa mais lentos, porque cada nome é consultado nas bases e cada ponto é desenhado. Se for só treinar o fluxo, comece com a planilha de exemplo.
-
-Com o app aberto, siga para **[Importando seus dados](02-upload.qmd)** e carregue sua primeira planilha.
+Para ver a versão instalada, rode `packageVersion("saira")`.
