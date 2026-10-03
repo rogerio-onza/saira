@@ -602,7 +602,7 @@
   "loading_import_title": {
     "pt": "Importando o modelo",
     "en": "Importing the template",
-    "es": "Importando la plantilla"
+    "es": "Importando el modelo"
   },
   "loading_import_status": {
     "pt": "Restaurando o mapeamento... %s%%",
@@ -612,12 +612,12 @@
   "loading_import_phrase_1": {
     "pt": "Lendo o modelo e conferindo o cabeçalho Saíra.",
     "en": "Reading the template and checking the Saíra header.",
-    "es": "Leyendo la plantilla y verificando el encabezado de Saíra."
+    "es": "Leyendo el modelo y verificando el encabezado de Saíra."
   },
   "loading_import_phrase_2": {
     "pt": "Casando as colunas do modelo com as da sua planilha.",
     "en": "Matching the template's columns against your spreadsheet.",
-    "es": "Emparejando las columnas de la plantilla con las de su hoja de cálculo."
+    "es": "Emparejando las columnas del modelo con las de su hoja de cálculo."
   },
   "loading_import_phrase_3": {
     "pt": "Guardando os apelidos de coluna no seu Rostrum local.",
@@ -722,7 +722,7 @@
   "notif_auto_mapping_done": {
     "pt": "Auto-mapear concluído: %s termos mapeados (%s por alias ou modelo, %s automáticos, %s para revisar).",
     "en": "Auto-map done: %s terms mapped (%s from aliases or a template, %s automatic, %s to review).",
-    "es": "Automapeo completado: %s términos mapeados (%s por alias o plantilla, %s automáticos, %s para revisar)."
+    "es": "Automapeo completado: %s términos mapeados (%s por alias o modelo, %s automáticos, %s para revisar)."
   },
   "notif_auto_mapping_v1_error": {
     "pt": "Falha no Auto-mapear: %s",
@@ -752,12 +752,12 @@
   "btn_import_template": {
     "pt": "Importar modelo",
     "en": "Import template",
-    "es": "Importar plantilla"
+    "es": "Importar modelo"
   },
   "modal_import_template_title": {
     "pt": "Importar modelo de mapeamento",
     "en": "Import mapping template",
-    "es": "Importar plantilla de mapeo"
+    "es": "Importar modelo de mapeo"
   },
   "modal_import_template_help": {
     "pt": "Use o arquivo saira-mapping-guide.txt que vem no pacote exportado pelo Saíra. O mapeamento volta para os cards desta planilha, e cada coluna vira um alias no seu Rostrum.",
@@ -767,7 +767,7 @@
   "modal_import_template_dropzone_hint": {
     "pt": "Arraste o arquivo .txt do modelo aqui ou clique para selecionar.",
     "en": "Drag the template .txt file here or click to select.",
-    "es": "Arrastre aquí el archivo .txt de la plantilla o haga clic para seleccionarlo."
+    "es": "Arrastre aquí el archivo .txt del modelo o haga clic para seleccionarlo."
   },
   "modal_import_template_replace_hint": {
     "pt": "Clique ou arraste outro arquivo para trocar",
@@ -777,7 +777,7 @@
   "modal_import_template_label": {
     "pt": "Arquivo .txt do modelo",
     "en": "Template .txt file",
-    "es": "Archivo .txt de la plantilla"
+    "es": "Archivo .txt del modelo"
   },
   "modal_import_template_confirm": {
     "pt": "Importar",
@@ -792,22 +792,22 @@
   "modal_import_template_invalid_magic": {
     "pt": "Esse arquivo não é um modelo Saíra (cabeçalho '# saira:mapping:v1' ausente).",
     "en": "This file is not a Saíra template (missing '# saira:mapping:v1' header).",
-    "es": "Este archivo no es una plantilla de Saíra (falta el encabezado '# saira:mapping:v1')."
+    "es": "Este archivo no es un modelo de Saíra (falta el encabezado '# saira:mapping:v1')."
   },
   "modal_import_template_restored": {
     "pt": "Mapeamento restaurado: %d termo(s) aplicado(s) a partir do modelo.",
     "en": "Mapping restored: %d term(s) applied from the template.",
-    "es": "Mapeo restaurado: %d término(s) aplicado(s) a partir de la plantilla."
+    "es": "Mapeo restaurado: %d término(s) aplicado(s) a partir del modelo."
   },
   "modal_import_template_none_applied": {
     "pt": "Nenhum termo aplicado: as colunas deste modelo não existem nesta planilha. Confira se o modelo foi feito para este arquivo.",
     "en": "No term applied: the columns of this template are not in this spreadsheet. Check that the template was made for this file.",
-    "es": "Ningún término aplicado: las columnas de esta plantilla no están en esta hoja de cálculo. Verifique que la plantilla se haya hecho para este archivo."
+    "es": "Ningún término aplicado: las columnas de este modelo no están en esta hoja de cálculo. Verifique que el modelo se haya hecho para este archivo."
   },
   "modal_import_template_missing_cols": {
     "pt": "%d coluna(s) do modelo não existem nesta planilha: %s.",
     "en": "%d column(s) from the template are not in this spreadsheet: %s.",
-    "es": "%d columna(s) de la plantilla no están en esta hoja de cálculo: %s."
+    "es": "%d columna(s) del modelo no están en esta hoja de cálculo: %s."
   },
   "modal_add_term_title": {
     "pt": "Adicionar termo DwC",
@@ -977,7 +977,7 @@
   "rostrum_reason_template_override": {
     "pt": "Template aplicado com prioridade",
     "en": "Template applied with priority",
-    "es": "Plantilla aplicada con prioridad"
+    "es": "Modelo aplicado con prioridad"
   },
   "rostrum_badge_auto": {
     "pt": "AUTO",
@@ -3327,7 +3327,7 @@
   "help_faq_a6": {
     "pt": "Um Darwin Core Archive (DwC-A): um pacote .zip com occurrence.txt, meta.xml e eml.xml, pronto para publicação. No mesmo .zip vão também um espelho em Excel (.xlsx) e o modelo de mapeamento reutilizável.",
     "en": "A Darwin Core Archive (DwC-A): a .zip with occurrence.txt, meta.xml and eml.xml, ready to publish. The same .zip also carries an Excel mirror (.xlsx) and the reusable mapping template.",
-    "es": "Un Darwin Core Archive (DwC-A): un paquete .zip con occurrence.txt, meta.xml y eml.xml, listo para publicar. El mismo .zip también lleva una copia en Excel (.xlsx) y la plantilla de mapeo reutilizable."
+    "es": "Un Darwin Core Archive (DwC-A): un paquete .zip con occurrence.txt, meta.xml y eml.xml, listo para publicar. El mismo .zip también lleva una copia en Excel (.xlsx) y el modelo de mapeo reutilizable."
   },
   "err_invalid_format": {
     "pt": "Formato inválido. Aceitamos arquivos CSV, TSV, TXT ou Excel (.xlsx).",

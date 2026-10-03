@@ -819,6 +819,35 @@ testthat::test_that("class pills are pure navigation anchors — all sections al
     )
 })
 
+testthat::test_that("a language switch keeps the pill dots and the pending count", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        stringsAsFactors = FALSE
+    )
+    lang <- shiny::reactiveVal("pt")
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(raw_data_r = shiny::reactive(df), lang_r = lang),
+        {
+            session$flushReact()
+            pending <- length(pending_terms())
+            testthat::expect_gt(pending, 0L)
+
+            # The re-render on a language switch replaces the DOM that the
+            # triage handler patched, so it must draw the state itself.
+            lang("en")
+            session$flushReact()
+            pills_html <- paste(output$class_pills$html, collapse = " ")
+            testthat::expect_true(grepl("pill-state-dot is-blocked", pills_html, fixed = TRUE))
+            testthat::expect_false(grepl("is-idle", pills_html, fixed = TRUE))
+            testthat::expect_true(grepl(
+                paste0(">", pending, "</span>"), pills_html, fixed = TRUE
+            ))
+        }
+    )
+})
+
 testthat::test_that("All / Mapped / Pending filter keeps the matching cards", {
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis"),

@@ -109,7 +109,7 @@ Sí. Al exportar, escribe el estado en el campo `dynamicProperties` según las b
 ### ¿Qué genera Saíra al final?
 
 ::: {.faq-card}
-Un **Darwin Core Archive (DwC-A)**: un paquete `.zip` con `occurrence.txt`, `meta.xml` y `eml.xml`, listo para publicar. El mismo `.zip` también lleva una copia en Excel (`.xlsx`), la plantilla de mapeo reutilizable (`<dataset>-mapping-guide.txt`) y, cuando hay especies generalizadas, un archivo con las coordenadas precisas que usted guarda pero no publica.
+Un **Darwin Core Archive (DwC-A)**: un paquete `.zip` con `occurrence.txt`, `meta.xml` y `eml.xml`, listo para publicar. El mismo `.zip` también lleva una copia en Excel (`.xlsx`), el modelo de mapeo reutilizable (`<dataset>-mapping-guide.txt`) y, cuando hay especies generalizadas, un archivo con las coordenadas precisas que usted guarda pero no publica.
 :::
 
 ### ¿Cómo publico el archivo en SiBBr o GBIF?

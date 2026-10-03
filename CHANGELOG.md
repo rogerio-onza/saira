@@ -42,6 +42,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **mapping:** Keep the category state dots and the "Next pending" count after a language switch
+- **mapping:** Keep a card title whole: when the row is narrow, the status badge moves to the next line
+- **ui:** Use "modelo" for the mapping template in Spanish, so the sidebar button fits on one line
 - **names:** Drop the "Validating" line under the run button; the button already shows the state
 - **coords:** Drop the "Validating" card under the column check; the button and the loading dialog already show it
 - **site:** Show "On this page" instead of the Portuguese table-of-contents title on English pages
