@@ -299,6 +299,18 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
 .fix-steps li strong { font-weight: 600; }
 .fix-steps li p { margin: 0.3em 0 0; font-size: 1.02rem; color: var(--text-soft); }
 
+// Legend under an annotated screenshot. The numbers repeat the magenta badges
+// that data-raw/tutorial_shots.R draws on the image, so the color is fixed and
+// does not follow the theme accent.
+.marks ol { list-style: none; counter-reset: mark; margin: 1em 0 1.6em; padding: 0; }
+.marks li { counter-increment: mark; position: relative; padding-left: 2.2em; margin-bottom: 0.5em; }
+.marks li::before {
+  content: counter(mark);
+  position: absolute; left: 0; top: 0.15em; width: 1.5em; height: 1.5em; border-radius: 50%;
+  background: #e0157a; color: #fff;
+  display: grid; place-items: center; font-family: var(--mono); font-size: 0.8rem; font-weight: 700;
+}
+
 // FAQ answers as flat cards — the question stays as a heading above the card
 .faq-card {
   padding: 14px 18px; margin: 0.4em 0 1.4em;
@@ -308,39 +320,6 @@ section.band { padding: clamp(60px, 9vw, 124px) 0; }
 .faq-card > :first-child { margin-top: 0; }
 .faq-card > :last-child { margin-bottom: 0; }
 .faq-card p { color: var(--text-soft); }
-
-// =============================================================================
-//  Grade de cards da página de Tutoriais — cada etapa é um card clicável
-// =============================================================================
-.tut-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1rem;
-  margin: 1.8em 0;
-}
-.tut-card {
-  display: flex; flex-direction: column;
-  padding: 1.4rem 1.5rem 1.2rem;
-  border: 1px solid var(--border); border-radius: var(--r);
-  background: var(--surface); box-shadow: none; text-decoration: none;
-  transition: border-color .2s ease, transform .2s ease;
-}
-.tut-card:hover { border-color: var(--accent); transform: translateY(-2px); text-decoration: none; }
-.tut-card-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.85rem; }
-.tut-card-num {
-  font-family: var(--mono); font-weight: 700; font-size: 1.05rem; color: var(--accent);
-  background: var(--accent-soft); border-radius: 8px; padding: 0.1em 0.5em;
-}
-.tut-card-eyebrow { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft); }
-.tut-card-title { font-family: var(--serif); font-size: 1.32rem; font-weight: 600; color: var(--text); margin: 0 0 0.45rem; line-height: 1.25; }
-.tut-card-desc { font-size: 0.98rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
-.tut-card-arrow { margin-top: auto; padding-top: 1rem; font-family: var(--mono); font-size: 1.1rem; color: var(--accent); align-self: flex-end; transition: transform .2s ease; }
-.tut-card:hover .tut-card-arrow { transform: translateX(4px); }
-@media (prefers-reduced-motion: reduce) {
-  .tut-card, .tut-card-arrow { transition: none; }
-  .tut-card:hover { transform: none; }
-  .tut-card:hover .tut-card-arrow { transform: none; }
-}
 
 // inline color dot for legend/category tables — fill set inline as a theme token
 .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--border); vertical-align: middle; margin-right: 8px; }
@@ -398,17 +377,6 @@ table.table:not(.maptable) code { font-family: var(--mono); }
 // screenshots are downscaled inline (tab captures are ~1900px wide); invite the
 // click-to-zoom lightbox built in assets/head.html.
 .shot img { cursor: zoom-in; }
-
-// the how-it-works diagram is a drawing, not a screen capture: it carries its own
-// background panel, so the .shot frame would nest a second border around the first.
-// It also has nothing to zoom into.
-// It fills the text column and stops there, so it shares its edges with the
-// screenshots and the prose. Negative margins only push the figure under the
-// grid, which clips the drawing instead of enlarging it.
-.shot.diagram-flow img {
-  width: 100%; max-width: none;
-  border: 0; border-radius: 0; box-shadow: none; cursor: default;
-}
 
 // screenshot lightbox — overlay built by JS (assets/head.html), appended to body
 .lightbox-overlay {

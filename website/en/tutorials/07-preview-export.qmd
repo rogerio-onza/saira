@@ -4,139 +4,79 @@ pagetitle: "DwC-A export · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-Check the complete result, review what was corrected and which species will be generalized, and generate the Darwin Core Archive ready to publish on SiBBr and GBIF.
+Check the data in Darwin Core and download the Darwin Core Archive in the **Export** step.
 :::
 
-## Preview
-
-In the **Preview** tab, Saíra shows the final table already in Darwin Core vocabulary, with all corrections applied. This is the moment for one last overall check:
-
-- columns carry the correct Darwin Core names;
-- required fields are filled in;
-- names and coordinates were validated in the previous steps.
+## Check the preview
 
 ```{=html}
-<figure class="shot">
-  <div class="frame"><span class="ph-label">screenshot · final preview</span></div>
-  <figcaption><b>Figure 1.</b> Preview of the dataset in Darwin Core, with completeness indicators per field.</figcaption>
-</figure>
+<figure class="shot"><img src="../../assets/img/t07-preview-EN.png" width="1440" alt="Preview step with the Darwin Core header, the row selector and the search highlighted"></figure>
 ```
 
-## The Export tab: review before publishing
+::: {.marks}
+1. The columns already have the Darwin Core names.
+2. Choose how many rows to see. The preview shows the first 100 records.
+3. Search for a value in any column.
+:::
 
-Before you download the package, the **Export** tab gathers in one place what was corrected, which species will be generalized and which files go into the `.zip`. Check each block before generating the Darwin Core Archive.
+## Resolve the pending items
 
 ```{=html}
-<figure class="shot">
-  <img src="../../assets/img/11-aba-exportacao-EN.png" alt="Export tab with readiness indicator, applied corrections summary, generalized species and bundle files">
-  <figcaption><b>Figure 2.</b> The Export review hub, with readiness, applied corrections, generalized species and the bundle files.</figcaption>
-</figure>
+<figure class="shot"><img src="../../assets/img/t07-export-EN.png" width="1440" alt="Export step with the pending items, the Fix missing terms button, the package card and the download bar highlighted"></figure>
 ```
 
-### Export readiness
+::: {.marks}
+1. **Blocks** stops the download. **Info** only warns.
+2. Each pending item has a button that goes to the step that resolves it.
+3. The package: records, corrections, generalized species and files.
+4. The download opens when no blocking item is left.
+:::
 
-At the top, an indicator says whether the dataset is **ready to publish** (green) or whether the **export is blocked** (red). When it blocks, Saíra lists what is missing (usually **required terms** left unfilled or **generalized species without the justification** required for Categories 1–3) and offers a shortcut to resolve the pending item.
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/11.1-aba-exportacao-blocante-faltando-info-EN.png" alt="Export tab with red blocked indicator listing the pending required information and shortcut links">
-  <figcaption><b>Figure 3.</b> The blocked indicator: Saíra lists the missing required fields or pending justifications and offers direct shortcuts to resolve each one.</figcaption>
-</figure>
-```
+| Pending item | Where to resolve |
+|---|---|
+| Required term missing, such as <span class="term">eventDate</span> or <span class="term">license</span> | [Mapping](03-dwc-mapping.qmd) |
+| <span class="term">basisOfRecord</span> without a DwC term | [basisOfRecord Assistant](03-dwc-mapping.qmd#set-basisofrecord) |
+| Generalization without justification | [Generalization](06-generalization.qmd#handle-one-species-separately) |
+| Unmapped column (Info) | GBIF ignores the column. Map it to a term or include it in <span class="term">dynamicProperties</span>. |
 
 ::: {.callout-warning}
-## No occurrenceID mapped
-If you did not map an <span class="term">occurrenceID</span>, Saíra warns you: the IPT/GBIF then generate unstable identifiers on each publish. Export still works, and the identifiers Saíra generates are derived from the row content, so re-uploading the same spreadsheet reproduces them. Even so, the recommendation is to **map the column that already carries your identifiers**: Saíra keeps the ones you have and fills only the blank rows.
+## Map the occurrenceID
+Without <span class="term">occurrenceID</span>, Saíra makes an identifier from the content of the row. If you change the row, the identifier changes. Map the column with your identifiers. Saíra fills only the empty rows.
 :::
 
-### Applied corrections
+## What Saíra adjusts
 
-A summary shows everything the previous steps adjusted, so you can check at a glance before publishing:
-
-- **Names corrected** and **names confirmed** in [name validation](04-name-validation.qmd);
-- **Coordinates fixed** (transpositions, lat/lon swap, combined fill) and **countries filled** in [coordinate validation](05-coordinate-validation.qmd).
-
-### Generalized species
-
-If you generalized any taxon in the [generalization](06-generalization.qmd) step, a table lists each **species**, its **threat (MMA)** and the **generalization level** that will go into the package, at the same four levels described in [Generalizing sensitive species](06-generalization.qmd).
-
-If nothing was generalized, Saíra records: *no species will be generalized; coordinates will be published as held*.
-
-## What Saíra adjusts at export
-
-When generating the package, Saíra automatically standardizes the dataset so it meets the repositories' expectations:
-
-- **Dates** converted to ISO format (`YYYY-MM-DD`), whatever separator the spreadsheet used. A date with no day comes out as `YYYY-MM`, and a date carrying a time as `YYYY-MM-DDThh:mm`. If the year falls outside 1600 and the current year, Saíra warns and names the rows: the error is a typo and only you know what the date should be. The warning does not block the export.
-- **Coordinates** with the decimal separator normalized (comma becomes dot).
-- **occurrenceID** derived from the row content when missing, to guarantee a unique, stable identifier per record.
-- **Licenses** abbreviated to the canonical URL (for example, the matching Creative Commons URL).
-- **Columns reordered** into the canonical Darwin Core sequence, with unmapped columns appended on the right, preserving their original names.
+- **Dates** in ISO 8601: `YYYY-MM-DD`, `YYYY-MM` without a day, `YYYY-MM-DDThh:mm` with time. A year before 1600 or after the current year gives a warning, without blocking.
+- **Coordinates** with a decimal point.
+- **License** with the short name (`CC-BY`) in `occurrence.txt` and the URL in `eml.xml`.
+- **Columns** in Darwin Core order. Unmapped columns go at the end, with the original name.
 
 ### Conservation status in `dynamicProperties`
 
-For each assessed taxon, Saíra writes its conservation status into `dynamicProperties` as JSON keys, based on the databases you chose in [name validation](04-name-validation.qmd):
+Saíra writes the conservation status from the backbones of [name validation](04-name-validation.qmd):
 
-- a **Brazilian** database (Flora BR / Fauna BR) → `mmaThreatStatus` (category) and `mmaSource` (portaria);
-- **GBIF** → `iucnRedListCategory` (global IUCN code, looked up live).
-
-Both can appear together and they merge into whatever you mapped yourself:
+- Flora BR or Fauna BR → `mmaThreatStatus` and `mmaSource`;
+- GBIF → `iucnRedListCategory`, queried at export.
 
 ```json
 {"mmaThreatStatus":"CR","mmaSource":"Portaria 1.704/2026","iucnRedListCategory":"NT"}
 ```
 
-The GBIF lookup is best-effort: with no internet or no assessment, the IUCN key is omitted and the export proceeds.
+Without internet, the IUCN key is left out and the export continues. The MMA keys go only into records from Brazil, by <span class="term">country</span> or <span class="term">countryCode</span>. A record without a country has no MMA keys.
 
-::: {.callout-warning}
-## The MMA status is national
-The MMA category comes from Brazil's red list, so Saíra writes it only to records whose `country` (or `countryCode`) resolves to Brazil. In a dataset spanning several countries, the same species gets the MMA keys on the Brazilian row and not on the foreign one. A record with no country is left without the keys too: map `country`, or use the fill from coordinates in [coordinate validation](05-coordinate-validation.qmd). `iucnRedListCategory` is global and does not depend on this.
-:::
+## Package files
 
-## Bundle files
+The `.zip` (`<dataset>-dwc-archive.zip`) has the Darwin Core Archive and the auxiliary files.
 
-The download produces a `.zip` (`<dataset>-dwc-archive.zip`) with two sets of files.
+| File | Use |
+|---|---|
+| `occurrence.txt` | The data. Goes to the IPT. |
+| `meta.xml` | Gives the term of each column. Goes to the IPT. |
+| `eml.xml` | Metadata: title, geographic extent, period and license. Goes to the IPT. |
+| `<dataset>-occurrences.xlsx` | Excel copy, with all cells as text. |
+| `<dataset>-mapping-guide.txt` | The mapping, to [reuse](03-dwc-mapping.qmd#reuse-the-mapping). |
+| `<dataset>-sensitive-coords.csv` | Original coordinates of the generalized records. Keep it, do not publish it. |
 
-The **Darwin Core Archive**, what you send to the repository:
+## Publish through the IPT
 
-```{=html}
-<table class="maptable">
-  <thead><tr><th>File</th><th>What it is</th></tr></thead>
-  <tbody>
-    <tr><td>occurrence.txt</td><td>The data: the core of the Darwin Core Archive.</td></tr>
-    <tr><td>meta.xml</td><td>The descriptor that says what each column means.</td></tr>
-    <tr><td>eml.xml</td><td>The dataset metadata (title, institution, license).</td></tr>
-  </tbody>
-</table>
-```
-
-And the **auxiliary files**, for your own control, kept out of the public package:
-
-```{=html}
-<table class="maptable">
-  <thead><tr><th>File</th><th>What it is</th></tr></thead>
-  <tbody>
-    <tr><td>&lt;dataset&gt;-occurrences.xlsx</td><td>An Excel mirror, with every cell forced to text.</td></tr>
-    <tr><td>&lt;dataset&gt;-mapping-guide.txt</td><td>The "your column → Darwin Core term" template, to reuse.</td></tr>
-    <tr><td>&lt;dataset&gt;-sensitive-coords.csv</td><td>The real, precise coordinates of generalized records. Only present when there is generalization; you keep it, but do not publish it.</td></tr>
-  </tbody>
-</table>
-```
-
-## Generating the Darwin Core Archive
-
-The metadata (`eml.xml`) is assembled **automatically**: Saíra uses a default title, computes the geographic bounding box and date range from your data, and applies the CC0 license by default, with nothing for you to fill in. Fine-tuning the metadata (institution, responsible parties, final license) happens later, in the IPT, at publication time.
-
-```{=html}
-<ol class="fix-steps">
-  <li><strong>Generate the archive.</strong>
-    <p>Saíra assembles the <span class="term">.zip</span> package with <span class="term">occurrence.txt</span>, <span class="term">meta.xml</span> and <span class="term">eml.xml</span>.</p></li>
-  <li><strong>Download and publish.</strong>
-    <p>Download the Darwin Core Archive and send it to your IPT (SiBBr/GBIF) for publication.</p></li>
-</ol>
-```
-
-## Publishing on SiBBr and GBIF
-
-With the `.zip` in hand, publication happens outside Saíra, usually via your institution's or SiBBr's **IPT** (Integrated Publishing Toolkit). The archive Saíra generates is already in the expected format: just upload it, check the mapping in the IPT and publish.
-
-Back to the **[tutorials overview](index.qmd)** or to the **[home page](../index.qmd)**.
+Saíra does not publish to GBIF. Send the `.zip` to the IPT of your institution or of SiBBr. In the IPT, complete the metadata (abstract, contacts, coverage) and publish.

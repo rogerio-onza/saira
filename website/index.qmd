@@ -14,7 +14,7 @@ anchor-sections: false
     <h1>Sa<span class="on">í</span>ra</h1>
     <p class="hero-sub">Darwin Core para a <span class="nowrap">Biodiversidade Brasileira</span></p>
     <div class="hero-actions">
-      <a class="btn-saira btn-primary-saira" href="tutoriais/index.html">Começar a usar</a>
+      <a class="btn-saira btn-primary-saira" href="tutoriais/01-instalacao.html">Começar a usar</a>
       <a class="btn-saira btn-ghost-saira" href="tutoriais/01-instalacao.html">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
         Download
