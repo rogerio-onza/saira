@@ -49,19 +49,11 @@ $toc-active-border: #38cff6;
   --caution-title: #aab1f5;
 
   --on-primary: #06222b;
-  --dots: rgba(138, 147, 240, 0.55);
-  --dots-line: rgba(56, 207, 246, 0.26);
   --code-bg: #0c0d13;
   --code-text: #e3e1d8;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.30), 0 2px 8px rgba(0,0,0,0.30);
   --shadow-md: 0 6px 18px rgba(0,0,0,0.40), 0 22px 50px rgba(0,0,0,0.45);
 
-  // CTA (superfície destacada sobre o escuro)
-  --cta-bg: #1C1C26;
-  --cta-fg: #ECEAE3;
-  --cta-fg-soft: #9a9bb0;
-  --cta-border: rgba(255,255,255,0.18);
-  --cta-hover: rgba(255,255,255,0.06);
 
   --maxw: 1180px;
   --gutter: clamp(20px, 5vw, 64px);
@@ -72,8 +64,6 @@ $toc-active-border: #38cff6;
 }
 
 @import "saira-rules";
-
-.cta { border-color: var(--border); }
 
 // No modo escuro o toggle mostra a lua (este arquivo só carrega no tema escuro).
 // Precisa vir DEPOIS do @import "saira-rules" para vencer o padrão (sol visível).
