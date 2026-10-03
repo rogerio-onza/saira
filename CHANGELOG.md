@@ -17,6 +17,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - **site:** Rewrite the tutorials around annotated screenshots and open the first tutorial instead of an index page ([#149](https://github.com/rogerio-onza/saira/pull/149))
+- **site:** Show the tutorials as flat panels like the app: numbered sidebar with the page contents, one panel per step, screenshot legends joined to their image
 - **names:** Center the providers, options and run button in the top bar
 - **mapping:** Make license a required term: its card shows as missing and export is blocked until a license is chosen
 - **mapping:** Import a mapping guide in about half the time and pick a column about three times faster: a pick re-renders only its own card

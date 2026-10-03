@@ -368,7 +368,7 @@ table.table:not(.maptable) code { font-family: var(--mono); }
 }
 .shot .frame .ph-label { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft); background: var(--surface); border: 1px solid var(--border); padding: 0.6em 1em; border-radius: 100px; box-shadow: var(--shadow-sm); }
 .shot img {
-  max-width: 100%; width: auto; height: auto; display: block; margin: 0 auto;
+  max-width: 100%; height: auto; display: block; margin: 0 auto;
   border: 1px solid var(--border); border-radius: var(--r);
   box-shadow: var(--shadow-sm);
 }
@@ -650,6 +650,138 @@ code span.an, code span.cv, code span.in, code span.do { color: rgba(233,231,223
 .nav-footer { border-top: 1px solid var(--border); background: var(--bg); color: var(--text-soft); font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .nav-footer a { color: var(--text); }
 .nav-footer a:hover { color: var(--primary-dark); }
+
+// =============================================================================
+//  Tutorial pages: flat panels like the app (body.tut-page, set in each
+//  tutorial folder's _metadata.yml). Borders only, no shadows, no side bars.
+// =============================================================================
+body.tut-page {
+  // sidebar: one panel with the numbered tutorials and the page TOC
+  #quarto-sidebar {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 18px 12px; margin-top: 32px;
+    scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent;
+  }
+  // Quarto sets top and max-height inline on scroll; keep a gap under the navbar.
+  @media (min-width: 992px) {
+    #quarto-sidebar { top: 103px !important; max-height: calc(100vh - 127px) !important; }
+  }
+  #quarto-sidebar .sidebar-item-section > .sidebar-item-container {
+    .sidebar-link { pointer-events: none; padding: 0 10px 8px; }
+    .menu-text { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft); }
+    .sidebar-item-toggle { display: none; }
+  }
+  #quarto-sidebar .sidebar-section { counter-reset: tut; padding-left: 0; }
+  #quarto-sidebar .sidebar-section > .sidebar-item { counter-increment: tut; }
+  #quarto-sidebar .sidebar-section .sidebar-link {
+    border-left: 0; margin: 1px 0; padding: 8px 10px; border-radius: 8px; background: none;
+    color: var(--text);
+  }
+  #quarto-sidebar .sidebar-section .sidebar-link:hover { background: var(--surface-2); }
+  #quarto-sidebar .sidebar-section .menu-text { display: flex; gap: 12px; align-items: baseline; color: var(--text); font-size: 0.96rem; }
+  #quarto-sidebar .sidebar-section .menu-text::before {
+    content: counter(tut, decimal-leading-zero);
+    font-family: var(--mono); font-size: 0.74rem; color: var(--text-soft);
+  }
+  #quarto-sidebar .sidebar-section .sidebar-link.active { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
+  #quarto-sidebar .sidebar-section .sidebar-link.active .menu-text,
+  #quarto-sidebar .sidebar-section .sidebar-link.active .menu-text::before { color: var(--accent); font-weight: 600; }
+
+  #quarto-sidebar #TOC { border-top: 1px solid var(--border); margin: 16px 10px 0; padding-top: 14px; }
+  #quarto-sidebar #TOC ul { padding-left: 0; }
+  #quarto-sidebar #TOC ul ul { padding-left: 12px; }
+  #quarto-sidebar nav[role="doc-toc"] ul > li > a {
+    border-left: 0; padding: 4px 0; font-size: 0.9rem; line-height: 1.35; color: var(--text-soft);
+  }
+  #quarto-sidebar nav[role="doc-toc"] ul > li > a.active { color: var(--accent); font-weight: 600; }
+
+  // title block and standfirst share one panel
+  #title-block-header {
+    background: var(--surface); border: 1px solid var(--border); border-bottom: 0;
+    border-radius: var(--r) var(--r) 0 0; padding: 36px 44px 0; margin: 0;
+  }
+  .quarto-title-breadcrumbs { margin-bottom: 8px; }
+  .quarto-title-breadcrumbs .breadcrumb { margin: 0; }
+  .quarto-title-breadcrumbs .breadcrumb-item:last-child { display: none; }
+  .quarto-title-breadcrumbs a { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft); }
+  #title-block-header .title { margin: 0; font-size: 2.5rem; line-height: 1.12; }
+  #title-block-header .quarto-title-meta { display: none; }
+  .tut-standfirst {
+    max-width: none; margin: 0 0 24px; padding: 12px 44px 36px;
+    background: var(--surface); border: 1px solid var(--border); border-top: 0;
+    border-radius: 0 0 var(--r) var(--r);
+    font-style: normal; font-size: 1.2rem;
+  }
+  .tut-standfirst p { max-width: 62ch; margin: 0; font-size: inherit; }
+
+  // each h2 section is a panel
+  main.content > section.level2 {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+    padding: 30px 40px 34px; margin: 0 0 24px;
+  }
+  main.content > section.level2 > h2 { margin-top: 0; padding-bottom: 0; border-bottom: 0; }
+  main.content > section.level2 > :last-child,
+  main.content > section.level2 > :last-child > :last-child { margin-bottom: 0; }
+
+  // screenshot on a subtle panel, legend joined below it
+  .shot {
+    margin: 1.4em 0; padding: 20px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+  }
+  .shot img { box-shadow: none; border-radius: 8px; }
+  .shot:has(+ .marks) { margin-bottom: 0; border-radius: 12px 12px 0 0; }
+  .marks { margin: 0 0 1.4em; }
+  .marks ol { margin: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+  .shot + .marks ol { border-top: 0; border-radius: 0 0 12px 12px; }
+  .marks li { margin: 0; padding: 12px 20px 12px 60px; border-bottom: 1px solid var(--border); }
+  .marks li:last-child { border-bottom: 0; }
+  .marks li::before { left: 20px; top: 13px; width: 26px; height: 26px; }
+
+  // flat tables in a bordered box
+  table.table:not(.maptable) {
+    border-collapse: separate; border-spacing: 0; overflow: hidden;
+    border: 1px solid var(--border); border-radius: 12px;
+  }
+  table.table:not(.maptable) thead th { background: var(--surface-2); padding: 12px 20px; }
+  table.table:not(.maptable) tbody td { padding: 11px 20px; }
+  table.table:not(.maptable) tbody tr:last-child td { border-bottom: 0; }
+
+  div.sourceCode { box-shadow: none; }
+
+  // previous / next as two panels
+  .page-navigation { display: flex; gap: 16px; max-width: 960px; margin: 0; padding: 0; border: 0; }
+  .page-navigation .nav-page { flex: 1 1 0; max-width: none; }
+  .page-navigation .pagination-link {
+    display: block; height: 100%; padding: 18px 22px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+    color: var(--text); text-decoration: none; transition: border-color .2s ease;
+  }
+  .page-navigation .pagination-link:hover { border-color: var(--accent); }
+  .page-navigation .nav-page-next .pagination-link { text-align: right; }
+  .page-navigation .pagination-link .bi { display: none; }
+  .page-navigation .nav-page-text { font-size: 1.15rem; font-weight: 600; }
+  .page-navigation .pagination-link::before {
+    display: block; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--text-soft); margin-bottom: 2px;
+  }
+  .nav-page-previous .pagination-link::before { content: "\2190  Anterior"; }
+  .nav-page-next .pagination-link::before { content: "Pr\00F3ximo  \2192"; }
+  .nav-page-previous .pagination-link:lang(en)::before { content: "\2190  Previous"; }
+  .nav-page-next .pagination-link:lang(en)::before { content: "Next  \2192"; }
+  .nav-page-next .pagination-link:lang(es)::before { content: "Siguiente  \2192"; }
+}
+@media (max-width: 767.98px) {
+  body.tut-page {
+    #title-block-header { padding: 24px 20px 0; }
+    #title-block-header .title { font-size: 1.9rem; }
+    .tut-standfirst { padding: 10px 20px 24px; font-size: 1.08rem; }
+    main.content > section.level2 { padding: 22px 18px 24px; }
+    .shot { padding: 10px; }
+    .marks li { padding: 10px 14px 10px 50px; }
+    .marks li::before { left: 14px; top: 11px; }
+    .page-navigation { flex-direction: column; }
+  }
+}
 
 // =============================================================================
 //  responsivo
