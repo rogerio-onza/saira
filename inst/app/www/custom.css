@@ -2989,15 +2989,18 @@ table.dataTable tbody tr.validate-invalid td {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
   margin-bottom: var(--space-1);
 }
 
-/* Keeps the term name and its "?" together as one shrinkable unit, so the
-   badge stays pinned to the right edge. min-width:0 lets the pair shrink
-   instead of pushing the badge out of a three-column card. */
+/* Keeps the term name, its "?" and the Required tag together, so the status
+   badge stays pinned to the right edge. When the row is too narrow, the badge
+   and then the tag move to the next line, so the term name stays whole.
+   min-width:0 lets the group shrink in a three-column card. */
 .field-header-name {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
   min-width: 0;
@@ -3019,9 +3022,10 @@ table.dataTable tbody tr.validate-invalid td {
   color: var(--text-primary);
   margin-bottom: 0;
   /* The longest term (coordinateUncertaintyInMeters, 29 mono characters) is
-     about 292px and a three-column card gives it 313px of content box, so with
-     the "?" and a badge alongside it has to be able to break. */
-  overflow-wrap: anywhere;
+     about 292px and a three-column card gives it 313px of content box.
+     break-word, not anywhere: anywhere lets flex shrink the name below one
+     word, so it broke mid-word beside the tags. */
+  overflow-wrap: break-word;
 }
 
 .field-required-tag {

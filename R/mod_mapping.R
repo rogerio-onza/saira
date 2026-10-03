@@ -1477,12 +1477,18 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
         # Class pill bar: pure scroll-navigation anchors. Clicking a pill scrolls
         # to its category section. No filter toggle — all sections always render.
-        # The state dots and the pending counter are NOT rendered here: this
-        # output must not depend on rv$map_meta, or every column pick would
-        # recreate the pill actionButtons. They are placeholders patched in
-        # place by the saira-mapping-triage handler (see the observer below).
+        # The state dots and the pending counter must not make this output
+        # depend on rv$map_meta, or every column pick would recreate the pill
+        # actionButtons: the saira-mapping-triage handler patches them in place
+        # (see the observer below). A language switch still re-renders the bar,
+        # after the handler has patched the old one, so the render reads the
+        # current state (isolated) instead of drawing empty placeholders.
         output$class_pills <- shiny::renderUI({
             cats <- all_filter_categories()
+            triage <- shiny::isolate(triage_state(lang_r()))
+            dot_by_id <- stats::setNames(triage$dots, vapply(
+                triage$dots, function(d) d$id, FUN.VALUE = character(1)
+            ))
 
             shiny::div(
                 class = "mapping-class-pillbar",
@@ -1493,12 +1499,15 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     icon = ph_icon("arrows-up-to-line")
                 ),
                 lapply(cats, function(cat) {
+                    dot_id <- ns(paste0("pill_dot_", slug(cat)))
+                    dot <- dot_by_id[[dot_id]]
                     shiny::actionButton(
                         ns(paste0("class_pill_", slug(cat))),
                         shiny::tagList(
                             shiny::span(
-                                id = ns(paste0("pill_dot_", slug(cat))),
-                                class = "pill-state-dot is-clear"
+                                id = dot_id,
+                                class = paste0("pill-state-dot is-", dot$state),
+                                title = dot$title
                             ),
                             category_label(cat)
                         ),
@@ -1511,10 +1520,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         tr("mapping_next_pending", lang_r()),
                         shiny::span(
                             id = ns("next_pending_count"),
-                            class = "next-pending-count"
+                            class = "next-pending-count",
+                            if (triage$count > 0L) as.character(triage$count)
                         )
                     ),
-                    class = "stream-pill next-pending-pill is-idle",
+                    class = paste(
+                        "stream-pill next-pending-pill",
+                        if (triage$count > 0L) "" else "is-idle"
+                    ),
                     icon = ph_icon("arrow-right")
                 )
             )
@@ -1561,14 +1574,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             fields[keep]
         })
 
-        # Push the dot states and the counter whenever the mapping changes.
-        shiny::observe({
-            rv$map_values
-            rv$map_meta
-            rv$extra_terms
-            rv$scientificname_mapped
-            lang <- lang_r()
-
+        # Dot state per category plus the pending count. Read by the pill bar
+        # render and by the observer below, so both always draw the same state.
+        triage_state <- function(lang) {
             pending <- pending_terms()
             blocked <- vapply(
                 pending, function(x) x$term %in% required_fields_strip,
@@ -1596,9 +1604,20 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 )
             })
 
+            list(dots = dots, count = length(pending))
+        }
+
+        # Push the dot states and the counter whenever the mapping changes.
+        shiny::observe({
+            rv$map_values
+            rv$map_meta
+            rv$extra_terms
+            rv$scientificname_mapped
+            triage <- triage_state(lang_r())
+
             session$sendCustomMessage("saira-mapping-triage", list(
-                dots = dots,
-                count = length(pending),
+                dots = triage$dots,
+                count = triage$count,
                 count_id = ns("next_pending_count"),
                 button_id = ns("next_pending")
             ))

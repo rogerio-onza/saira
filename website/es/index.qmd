@@ -92,7 +92,7 @@ anchor-sections: false
         <div class="flow-body">
           <span class="flow-num">02</span>
           <h3>Mapee sus columnas</h3>
-          <p>Relacione cada columna con los términos Darwin Core, con sugerencias automáticas y plantillas reutilizables. Un asistente guía campos como basisOfRecord, así no necesita memorizar vocabularios.</p>
+          <p>Relacione cada columna con los términos Darwin Core, con sugerencias automáticas y modelos reutilizables. Un asistente guía campos como basisOfRecord, así no necesita memorizar vocabularios.</p>
           <div class="proof">
             <span class="proof-in">mi_columna</span>
             <span class="proof-arrow">→</span>
