@@ -990,7 +990,7 @@ compute_name_score <- function(
     )
     if (overlap_details$score >= 0.40) {
         return(list(
-            score = overlap_details$score,
+            score = overlap_details$score + rostrum_identifier_name_bonus(col_tokens, term),
             reason = "token_overlap",
             is_exact = FALSE,
             exact_hits = overlap_details$exact_hits,
@@ -1120,6 +1120,15 @@ validate_individual_count <- function(values) {
     )
 }
 
+validate_vocabulary <- function(is_valid) {
+    valid_ratio <- if (length(is_valid) == 0) 0 else mean(is_valid)
+    list(
+        score = score_ratio_to_confidence(valid_ratio),
+        compatible_type = TRUE,
+        valid_ratio = valid_ratio
+    )
+}
+
 finalize_value_result <- function(result, sampled_n) {
     valid_ratio <- suppressWarnings(as.numeric(result$valid_ratio))
     if (length(valid_ratio) != 1L || is.na(valid_ratio)) {
@@ -1165,12 +1174,75 @@ count_relevant_tokens <- function(x) {
     length(tokenize_for_overlap(x))
 }
 
+# Identifier columns: the shared "id" token alone made location_id,
+# species_id and study_id tie for locationID. The qualifier before "id" names
+# the entity, so it decides which identifier term the column can fill.
+rostrum_id_tokens <- c("id", "identifier", "identificador", "codigo", "cod")
+rostrum_id_entities <- list(
+    occurrence = c("occurrence", "ocorrencia"),
+    location = c("location", "localidade", "local", "site", "sitio", "station", "estacao",
+                 "plot", "parcela", "point", "ponto", "trap", "armadilha", "road", "rodovia",
+                 "transect", "transecto", "trail", "trilha"),
+    event = c("event", "evento", "survey", "campanha", "sampling", "amostragem", "visit", "visita"),
+    person = c("identified", "determiner", "determinador", "collector", "coletor",
+               "observer", "observador", "person", "pessoa"),
+    other = c("taxon", "species", "especie", "study", "estudo", "reference", "referencia", "ref",
+              "project", "projeto", "dataset", "individual", "organism", "animal", "tag",
+              "record", "registro", "photo", "foto")
+)
+rostrum_id_term_entity <- c(
+    occurrenceID = "occurrence", locationID = "location",
+    eventID = "event", parentEventID = "event", identifiedByID = "person"
+)
+# Terms that can hold a code. Any other term on an identifier column is a
+# name coincidence (location_id -> locationRemarks, Event_ID -> eventTime).
+rostrum_id_accepting_terms <- c(
+    names(rostrum_id_term_entity), "catalogNumber", "recordNumber",
+    "associatedMedia", "associatedReferences"
+)
+
+# Returns NULL when the column name is not an identifier name, else whether
+# the "id" stands alone and which entities the qualifier tokens name.
+rostrum_identifier_entities <- function(col_tokens) {
+    if (!any(col_tokens %in% rostrum_id_tokens)) {
+        return(NULL)
+    }
+    qualifier <- setdiff(col_tokens, rostrum_id_tokens)
+    hits <- vapply(rostrum_id_entities, function(words) any(qualifier %in% words), logical(1))
+    list(bare = length(qualifier) == 0L, entities = names(rostrum_id_entities)[hits])
+}
+
+# +0.10 name evidence when the qualifier names only the term's own entity
+# (location_id, Road_ID -> locationID).
+rostrum_identifier_name_bonus <- function(col_tokens, term) {
+    own <- rostrum_id_term_entity[as.character(term)]
+    if (is.na(own)) {
+        return(0)
+    }
+    id_parts <- rostrum_identifier_entities(col_tokens)
+    if (!is.null(id_parts) && identical(id_parts$entities, own[[1]])) 0.10 else 0
+}
+
 apply_semantic_penalties <- function(col_name, term) {
     col_norm <- normalize_for_matching(col_name)
     term_name <- as.character(term)
 
     penalties <- numeric(0)
     reason_codes <- character(0)
+
+    id_parts <- rostrum_identifier_entities(tokenize_for_overlap(col_name))
+    if (!is.null(id_parts)) {
+        # A bare "id" identifies the row, so it is only an occurrenceID.
+        own <- unname(rostrum_id_term_entity[term_name])
+        foreign_id <- !is.na(own) && (
+            (id_parts$bare && own != "occurrence") ||
+                (length(id_parts$entities) > 0L && !(own %in% id_parts$entities))
+        )
+        if (foreign_id || !(term_name %in% rostrum_id_accepting_terms)) {
+            penalties <- c(penalties, -0.30)
+            reason_codes <- c(reason_codes, "identifier_context")
+        }
+    }
 
     is_coordinate_term <- term_name %in% c("decimalLatitude", "decimalLongitude")
     is_temporal_term <- term_name %in% c("eventDate", "year", "month", "day", "modified", "dateIdentified")
@@ -1343,6 +1415,8 @@ rostrum_build_tier_value_cache <- function(sampled_values) {
             decimalLongitude = empty,
             scientificName = empty,
             individualCount = empty,
+            occurrenceStatus = empty,
+            basisOfRecord = empty,
             neutral = empty
         ))
     }
@@ -1362,6 +1436,14 @@ rostrum_build_tier_value_cache <- function(sampled_values) {
         ),
         individualCount = finalize_value_result(
             validate_individual_count(sampled_values),
+            sampled_n = sampled_n
+        ),
+        occurrenceStatus = finalize_value_result(
+            validate_vocabulary(map_occurrence_status_values(sampled_values) %in% c("present", "absent")),
+            sampled_n = sampled_n
+        ),
+        basisOfRecord = finalize_value_result(
+            validate_vocabulary(nzchar(auto_suggest_basis_of_record_terms(sampled_values))),
             sampled_n = sampled_n
         ),
         neutral = list(
@@ -1429,6 +1511,17 @@ compute_value_score_from_profile <- function(value_profile, term, name_score) {
 
     if (term_name %in% c("decimalLatitude", "decimalLongitude", "scientificName", "individualCount")) {
         return(tier_cache[[term_name]])
+    }
+
+    # Vocabulary terms: values off the list veto a weak name (IUCN_status is
+    # not an occurrenceStatus). An exact or synonym name keeps the neutral
+    # score instead, because the value step translates unknown values later.
+    if (term_name %in% c("occurrenceStatus", "basisOfRecord")) {
+        vocab_res <- tier_cache[[term_name]]
+        if (identical(tier, "high") && vocab_res$valid_ratio < 0.80) {
+            return(tier_cache$neutral)
+        }
+        return(vocab_res)
     }
 
     tier_cache$neutral

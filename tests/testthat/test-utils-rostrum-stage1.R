@@ -206,3 +206,75 @@ local({
         assert_parity(par_out)
     })
 })
+
+testthat::test_that("identifier qualifier decides which identifier term a column can fill", {
+    entities <- saira:::rostrum_identifier_entities
+
+    testthat::expect_null(entities(c("species", "name")))
+    testthat::expect_true(entities("id")$bare)
+    testthat::expect_identical(entities(c("location", "id"))$entities, "location")
+    testthat::expect_identical(entities(c("xyz", "id"))$entities, character(0))
+    testthat::expect_false(entities(c("xyz", "id"))$bare)
+})
+
+testthat::test_that("identifier columns are penalized on foreign identifier terms", {
+    has_id_penalty <- function(col, term) {
+        "identifier_context" %in% apply_semantic_penalties(col, term)$reasons
+    }
+
+    testthat::expect_true(has_id_penalty("ID", "locationID"))
+    testthat::expect_true(has_id_penalty("species_id", "locationID"))
+    testthat::expect_true(has_id_penalty("location_id", "locationRemarks"))
+    testthat::expect_true(has_id_penalty("Event_ID", "eventTime"))
+    testthat::expect_false(has_id_penalty("ID", "occurrenceID"))
+    testthat::expect_false(has_id_penalty("location_id", "locationID"))
+    testthat::expect_false(has_id_penalty("xyz_id", "locationID"))
+    testthat::expect_false(has_id_penalty("specimen_id", "catalogNumber"))
+})
+
+testthat::test_that("a qualifier that names the term entity adds name evidence", {
+    bonus <- saira:::rostrum_identifier_name_bonus
+    tokens <- saira:::tokenize_for_overlap
+
+    testthat::expect_equal(bonus(tokens("location_id"), "locationID"), 0.10)
+    testthat::expect_equal(bonus(tokens("Road_ID"), "locationID"), 0.10)
+    testthat::expect_equal(bonus(tokens("study_id"), "locationID"), 0)
+    testthat::expect_equal(bonus(tokens("location_id"), "locationRemarks"), 0)
+})
+
+testthat::test_that("location_id wins locationID over species_id and study_id", {
+    df <- data.frame(
+        location_id = c("L1", "L2", "L3", "L1"),
+        species_id = c("S1", "S2", "S1", "S3"),
+        study_id = c("T1", "T1", "T2", "T2"),
+        stringsAsFactors = FALSE
+    )
+    dwc_terms <- data.frame(term = "locationID", stringsAsFactors = FALSE)
+
+    out <- run_rostrum_stage1(df, dwc_terms, empty_synonyms(), options = rostrum_options())
+
+    testthat::expect_identical(out$selected_col[[1]], "location_id")
+})
+
+testthat::test_that("off-list values veto a weak name on vocabulary terms", {
+    profile_iucn <- saira:::rostrum_build_column_value_profile(c("LC", "VU", "EN", "NT", "LC"))
+    profile_pa <- saira:::rostrum_build_column_value_profile(c("presente", "ausente", "present", "absent"))
+    value_score <- saira:::compute_value_score_from_profile
+
+    weak <- value_score(profile_iucn, "occurrenceStatus", name_score = 0.60)
+    exact <- value_score(profile_iucn, "occurrenceStatus", name_score = 1)
+    valid <- value_score(profile_pa, "occurrenceStatus", name_score = 0.60)
+
+    testthat::expect_lt(weak$valid_ratio, 0.30)
+    testthat::expect_equal(exact$score, 0.80)
+    testthat::expect_equal(valid$valid_ratio, 1)
+})
+
+testthat::test_that("basisOfRecord values are checked against its vocabulary", {
+    profile <- saira:::rostrum_build_column_value_profile(c("camera trap", "specimen", "observation"))
+    profile_bad <- saira:::rostrum_build_column_value_profile(c("Panthera onca", "Puma concolor"))
+    value_score <- saira:::compute_value_score_from_profile
+
+    testthat::expect_gt(value_score(profile, "basisOfRecord", name_score = 0.60)$valid_ratio, 0.60)
+    testthat::expect_lt(value_score(profile_bad, "basisOfRecord", name_score = 0.60)$valid_ratio, 0.30)
+})

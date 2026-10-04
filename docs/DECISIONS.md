@@ -2773,3 +2773,14 @@ Formato: ADR leve (Architecture Decision Record).
   - Os outputs do Inicio comecam com o conteudo em portugues, o idioma padrao (`prefilled_ui_output()`), entao a pagina aparece antes de o servidor terminar a partida.
   - O estilo novo da dropzone fica sob `.home-upload-panel`: o modal de importar guia usa as mesmas classes.
 - **Consequencias**: as classes que o roteiro do tutorial marca (`.home-header`, `.upload-mode-tabs`, `.upload-dropzone`, `#upload-stats`) ficam. A captura `t02-upload` precisa ser refeita.
+
+## ADR-138: qualificador do identificador e validadores de vocabulario no Rostrum
+
+- **Data**: 2026-10-04
+- **Status**: Aceito.
+- **Contexto**: no benchmark de 6 datasets reais (107 colunas), o token `id` sozinho empatava `location_id`, `species_id` e `study_id` em `locationID`, e `Event_ID` ia para `eventTime`. O token `status` levava `IUCN_status` para `occurrenceStatus`, porque o termo nao tinha validador de valores.
+- **Decisao**:
+  - Em coluna de identificador, a palavra antes do `id` nomeia a entidade. Entidade de outro termo, `id` sozinho fora de `occurrenceID`, ou termo que nao guarda codigo: penalidade -0.30 (`identifier_context`). Entidade do proprio termo: +0.10 no name score.
+  - `occurrenceStatus` e `basisOfRecord` ganham validador pelo vocabulario que a etapa de valores ja usa. Nome fraco com valores fora da lista cai no veto. Nome exato ou sinonimo fica com o score neutro, porque a etapa de valores traduz depois.
+- **Consequencias**: no benchmark dev, top1 sobe de 69 para 73/107, SUGERIDO errado cai de 6 para 1, AMBIGUO sem alternativa certa cai de 35 para 20. Nenhum AUTO errado antes ou depois. Palavra de entidade nova entra nas listas de `rostrum_id_entities`.
+
