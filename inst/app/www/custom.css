@@ -90,6 +90,7 @@
 
   /* Typography */
   --font-serif: 'Source Serif 4', Georgia, serif;
+  --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
   --font-mono: 'Space Mono', 'IBM Plex Mono', monospace;
 
   /* Type Scale */
@@ -310,10 +311,14 @@ pre,
   font-size: var(--text-sm);
 }
 
-/* Inputs and compact UI metadata are always mono in v6. */
+/* Labels are UI text. Values from the dataset stay mono (ADR-134). */
 label,
 .ui-label,
-.input-label,
+.input-label {
+  font-family: var(--font-ui);
+  font-weight: 400;
+}
+
 .data-cell,
 .coord-value {
   font-family: var(--font-mono);
@@ -405,7 +410,7 @@ label,
 }
 
 .navbar-brand {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
   font-size: var(--text-2xl);
@@ -488,7 +493,7 @@ label,
 .navbar #lang_switch {
   border: 1px solid var(--border-default);
   border-radius: var(--radius);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   padding: 0.3rem 1.8rem 0.3rem 0.6rem;
   min-width: 4.25rem;
@@ -513,7 +518,7 @@ label,
 .navbar .navbar-nav .nav-link,
 .navbar .nav-item .nav-link,
 .navbar .nav-link {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-medium);
   font-size: var(--text-sm);
   color: var(--navbar-link-color);
@@ -762,7 +767,7 @@ label,
    ============================================================================= */
 
 .btn {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: 400;
   font-size: var(--text-base);
   padding: 0.6rem 1.25rem;
@@ -870,7 +875,7 @@ label,
   background-color: transparent;
   border-bottom: 1px solid var(--border-light);
   padding: var(--space-5) var(--space-6);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   font-size: var(--text-md);
 }
@@ -909,7 +914,7 @@ label,
 }
 
 .form-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-medium);
   font-size: var(--text-sm);
   color: var(--accent);
@@ -920,7 +925,7 @@ label,
 .shiny-input-container .btn-file {
   background-color: var(--primary);
   color: var(--text-primary);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: 400;
   border: none;
   border-radius: var(--radius);
@@ -990,7 +995,7 @@ label,
    ============================================================================= */
 
 .dataTables_wrapper {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: 400;
 }
@@ -999,7 +1004,7 @@ label,
 .dataTable thead th {
   background-color: var(--bg-subtle);
   color: var(--text-primary);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: 700;
   font-size: var(--text-sm);
   border-bottom: 1px solid var(--border-default);
@@ -1007,6 +1012,7 @@ label,
 }
 
 .dataTable tbody td {
+  font-family: var(--font-mono);
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border-light);
 }
@@ -1077,7 +1083,7 @@ label,
 }
 
 .wiki-header-eyebrow {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.12em;
@@ -1148,7 +1154,7 @@ label,
   background: rgba(40, 51, 172, 0.07);
   border: 1.5px solid rgba(40, 51, 172, 0.18);
   border-radius: var(--radius-lg);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   color: #2833ac;
@@ -1239,7 +1245,7 @@ label,
 
 .wiki-show-label {
   margin: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   color: #2833ac;
@@ -1247,7 +1253,7 @@ label,
 
 .wiki-show-select {
   min-width: 68px;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   color: #2833ac;
@@ -1304,7 +1310,7 @@ label,
   gap: 5px;
   padding: 5px 13px;
   border-radius: var(--radius-chip);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   cursor: pointer;
@@ -1468,7 +1474,7 @@ label,
 .wiki-table.saira-table-shell table.dataTable thead th {
   background: var(--bg-subtle);
   padding: 13px 18px;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1566,7 +1572,7 @@ label,
 .wiki-class-badge {
   display: inline-flex;
   align-items: center;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.04em;
@@ -1671,7 +1677,7 @@ label,
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   border-radius: var(--radius-chip);
   line-height: 1;
@@ -1824,6 +1830,11 @@ label,
   white-space: nowrap;
 }
 
+/* The Preview headers are Darwin Core term names, so they stay mono. */
+#preview-datatable table.dataTable thead th {
+  font-family: var(--font-mono);
+}
+
 .saira-table-shell table.dataTable thead th {
   background: var(--bg-subtle);
   color: var(--text-primary);
@@ -1849,7 +1860,7 @@ label,
   border-radius: var(--radius-sm);
   background: var(--bg-card);
   color: var(--accent);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   padding: 0.25rem 0.55rem;
   margin: 0 2px;
@@ -1904,7 +1915,7 @@ label,
   border-radius: var(--radius-sm);
   background: var(--bg-card);
   color: var(--accent);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   padding: 0.3rem 0.6rem;
   min-width: 2rem;
@@ -1954,7 +1965,7 @@ label,
 }
 
 .modal .preview-export-confirm-question {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   color: var(--text-primary);
 }
 
@@ -1979,7 +1990,7 @@ label,
 }
 
 .modal .preview-export-validation-card-title {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-base);
   color: var(--text-primary);
   margin-bottom: var(--space-3);
@@ -2075,7 +2086,7 @@ label,
 
 .preview-card-title {
   margin: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-lg);
   font-weight: 700;
   line-height: 34px;
@@ -2117,7 +2128,7 @@ label,
    ============================================================================= */
 
 .badge {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   padding: 0.25rem 0.5rem;
@@ -2238,7 +2249,7 @@ label,
 }
 
 .stat-box .stat-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-2xl);
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
@@ -2412,7 +2423,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .home-eyebrow {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2482,7 +2493,7 @@ table.dataTable tbody tr.validate-invalid td {
   border-radius: var(--radius-sm);
   background: transparent;
   cursor: pointer;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-regular);
   color: var(--text-primary);
@@ -2600,7 +2611,7 @@ table.dataTable tbody tr.validate-invalid td {
   border-radius: 0 var(--radius) var(--radius) 0;
   padding: 0 1rem;
   font-size: var(--text-sm);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   color: var(--text-primary);
   min-width: 200px;
   display: flex;
@@ -2660,7 +2671,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .upload-dropzone-max-size {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-medium);
   font-size: var(--text-xs);
   letter-spacing: 0.02em;
@@ -2711,7 +2722,7 @@ table.dataTable tbody tr.validate-invalid td {
   background-color: var(--success);
   color: var(--text-primary); /* white on --success is 3.2:1, below AA */
   font-size: var(--text-sm);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   display: flex;
   align-items: center;
@@ -2799,7 +2810,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .homepage-container .stats-container .stat-box .stat-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   font-size: var(--text-xl);
   color: #1C1C26;
@@ -3030,7 +3041,7 @@ table.dataTable tbody tr.validate-invalid td {
 
 .field-required-tag {
   flex-shrink: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 0.7rem;
   font-weight: 700;
   color: var(--text-muted);
@@ -3135,7 +3146,7 @@ table.dataTable tbody tr.validate-invalid td {
 .field-desc-help {
   flex-shrink: 0;
   cursor: help;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   line-height: 1;
   color: var(--text-muted);
@@ -3190,7 +3201,7 @@ table.dataTable tbody tr.validate-invalid td {
   border-bottom: 0;
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: var(--space-2) var(--space-3);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -3400,7 +3411,7 @@ table.dataTable tbody tr.validate-invalid td {
 
 /* Mapping sidebar filter labels */
 .mapping-sidebar .form-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -3453,7 +3464,7 @@ table.dataTable tbody tr.validate-invalid td {
   padding: 0;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   cursor: pointer;
 }
@@ -3547,7 +3558,7 @@ table.dataTable tbody tr.validate-invalid td {
   align-items: center;
   gap: var(--space-2);
   margin: var(--space-3) 0 var(--space-2);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   letter-spacing: 0.08em;
@@ -3584,7 +3595,7 @@ table.dataTable tbody tr.validate-invalid td {
 /* Tinted "every row" strip revealed under a fixed-value checkbox. Subtle info
    banner (not a heavy alert) warning the typed value fills every row. */
 .field-allrows-note {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: var(--info);
   background-color: var(--info-bg);
@@ -3893,7 +3904,7 @@ table.dataTable tbody tr.validate-invalid td {
 .est-assistant-species-meta {
   font-size: var(--text-xs);
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
 }
 
 .est-assistant-invasive {
@@ -4032,7 +4043,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .dynprops-keys-block .custom-field-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   color: var(--text-primary);
@@ -4135,7 +4146,7 @@ table.dataTable tbody tr.validate-invalid td {
   padding: 0 var(--space-3);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   cursor: pointer;
 }
@@ -4230,7 +4241,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .provider-card-short {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
 }
@@ -4271,7 +4282,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .provider-badge {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   border-radius: var(--radius-chip);
   padding: 2px 8px;
@@ -4333,7 +4344,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .validate-ready-hint strong {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   color: var(--text-primary);
   display: inline;
@@ -4373,7 +4384,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .validate-action-metric .metric-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   font-size: var(--text-md);
   color: var(--text-primary);
@@ -4400,7 +4411,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .validation-progress-status {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
 }
@@ -4427,7 +4438,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .validation-progress-meta-item .meta-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: var(--text-primary);
 }
@@ -4514,7 +4525,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .coords-utm-title {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: 700;
 }
@@ -4538,7 +4549,7 @@ table.dataTable tbody tr.validate-invalid td {
 
 .coords-utm-band .control-label {
   margin: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: 700;
   text-transform: uppercase;
@@ -4552,7 +4563,7 @@ table.dataTable tbody tr.validate-invalid td {
   min-width: 5rem;
   height: 34px;
   padding: 0 var(--space-6) 0 var(--space-2);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
 }
 
@@ -4580,7 +4591,7 @@ table.dataTable tbody tr.validate-invalid td {
   border-radius: var(--radius-sm);
   background: var(--bg-card);
   color: var(--accent);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: 700;
   cursor: pointer;
@@ -4654,7 +4665,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .validate-coords-toolbar .coords-fix-chip .coords-transposed-title {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: 700;
   white-space: nowrap;
@@ -4768,7 +4779,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   font-size: var(--text-sm);
   color: var(--text-primary);
@@ -4831,7 +4842,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   border-radius: var(--radius);
   background: var(--state-attention-bg);
   color: var(--warning-text);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
 }
 
@@ -4915,7 +4926,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   display: inline-block;
   border-radius: var(--radius-chip);
   padding: 0.15rem 0.55rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   white-space: nowrap;
@@ -4961,7 +4972,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 
 .coords-edit-undo {
   margin-left: var(--space-1);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: var(--step-active);
   white-space: nowrap;
@@ -5006,7 +5017,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .stream-pill {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   padding: 0.2rem 0.65rem;
   border-radius: var(--radius-chip);
@@ -5341,7 +5352,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .vn-section-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -5392,7 +5403,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .vn-check-step {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: var(--text-muted);
 }
@@ -5442,7 +5453,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 
 .vn-check-name {
   display: block;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: 700;
   line-height: 1.3;
@@ -5463,7 +5474,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: 700;
   cursor: pointer;
@@ -5489,7 +5500,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   display: flex;
   gap: 0.28rem;
   align-items: flex-start;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: var(--text-muted);
   line-height: var(--leading-tight);
@@ -5517,7 +5528,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 .vn-run-btn.action-button {
   background: #38cff6;
   color: #1c1c26;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: 700;
   border-radius: var(--radius);
@@ -5537,13 +5548,13 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 .vn-cancel-btn.btn,
 .vn-cancel-btn.action-button {
   border-radius: var(--radius);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
 }
 
 .vn-action-helper {
   margin-top: 0.45rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: var(--text-muted);
   line-height: 1.3;
@@ -5587,7 +5598,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   border-radius: var(--radius-chip);
   background: var(--bg-card);
   color: var(--text-primary);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   display: inline-flex;
   box-shadow: none;
 }
@@ -5684,7 +5695,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   align-items: center;
   justify-content: center;
   font-size: var(--text-xs);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   flex-shrink: 0;
 }
 
@@ -5732,7 +5743,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   display: inline-flex;
   align-items: center;
   gap: 0.28rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: var(--text-muted);
 }
@@ -5747,7 +5758,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 
 .vn-stream-empty {
   padding: 1rem 0.85rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: var(--text-muted);
 }
@@ -5836,7 +5847,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   justify-content: center;
   flex-shrink: 0;
   font-size: var(--text-sm);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
 }
 
 .vn-review-header-error .vn-review-header-icon {
@@ -5867,7 +5878,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 
 .vn-review-header-problem {
   margin-top: var(--space-1);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -5956,7 +5967,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .vn-review-edit-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -6083,7 +6094,7 @@ body.vn-review-open .modal-backdrop.show {
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--bg-card);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   color: var(--text-primary);
   cursor: help;
@@ -6144,7 +6155,7 @@ body.vn-review-open .modal-backdrop.show {
   background: #f4f3ee;
   border: 1px solid rgba(40, 51, 172, 0.18);
   border-radius: var(--radius);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: #1c1c26;
   height: 30px;
@@ -6172,7 +6183,7 @@ body.vn-review-open .modal-backdrop.show {
 
 .vn-report-empty {
   padding: 1rem 0.85rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: var(--text-muted);
 }
@@ -6209,7 +6220,7 @@ body.vn-review-open .modal-backdrop.show {
   display: inline-flex;
   align-items: center;
   gap: 0.28rem;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -6318,7 +6329,7 @@ body.vn-review-open .modal-backdrop.show {
 .vn-report-pagination .dataTables_info {
   margin: 0;
   padding: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: var(--text-muted);
   line-height: var(--leading-normal);
@@ -6348,7 +6359,7 @@ body.vn-review-open .modal-backdrop.show {
   border-radius: var(--radius);
   background: #f4f3ee;
   color: #2833ac;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   display: inline-flex;
   align-items: center;
@@ -6385,7 +6396,7 @@ body.vn-review-open .modal-backdrop.show {
   border-radius: var(--radius-chip);
   padding: 0.12rem 0.5rem;
   border: 1px solid transparent;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   white-space: nowrap;
   line-height: 1.2;
@@ -6497,7 +6508,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .help-page-header-eyebrow {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.12em;
@@ -6583,7 +6594,7 @@ body.vn-review-open .modal-backdrop.show {
   padding: 9px 18px;
   background: #2833ac;
   color: #ffffff;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   border-radius: var(--radius-lg);
@@ -6656,7 +6667,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .help-ref-authors {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: var(--text-muted);
 }
@@ -6683,7 +6694,7 @@ body.vn-review-open .modal-backdrop.show {
   padding: 12px 16px;
   cursor: pointer;
   list-style: none;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   color: #2833ac;
@@ -6748,7 +6759,7 @@ body.vn-review-open .modal-backdrop.show {
   align-items: center;
   gap: 6px;
   margin: 12px 16px 14px;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   color: #2833ac;
@@ -6782,7 +6793,7 @@ body.vn-review-open .modal-backdrop.show {
   border-radius: 50%;
   background: var(--accent);
   border: 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   font-size: var(--text-base);
   color: #ffffff;
@@ -6792,7 +6803,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .help-author-name {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-base);
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
@@ -6849,7 +6860,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .help-author-version-badge {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   padding: 3px 9px;
@@ -6915,7 +6926,7 @@ body.vn-review-open .modal-backdrop.show {
   padding: 9px 16px;
   background: #c0392b;
   color: #ffffff;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   border: 0;
@@ -7006,7 +7017,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .help-stack-title {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   letter-spacing: 0.08em;
@@ -7028,7 +7039,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .help-stack-chip {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   padding: 4px 9px;
@@ -7143,7 +7154,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sensitive-panel .sp-count-chip {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     padding: 2px var(--space-2);
     border-radius: var(--radius-chip);
@@ -7269,7 +7280,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sensitive-panel .sp-mode-radio .sp-mode-badge {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -7334,7 +7345,7 @@ body.vn-review-open .modal-backdrop.show {
 
 .sensitive-panel .sp-axis-low,
 .sensitive-panel .sp-axis-high {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     color: var(--text-muted);
     white-space: nowrap;
@@ -7373,14 +7384,14 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sensitive-panel .sp-card-scale {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-lg);
     font-weight: var(--weight-semibold);
     color: var(--accent);
 }
 
 .sensitive-panel .sp-card-ref {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -7453,7 +7464,7 @@ body.vn-review-open .modal-backdrop.show {
 /* MMA threat pill -- global (used in the assessment panel AND result rows),
    one distinct, WCAG-AA, severity-ascending colour per category. */
 .sp-cat-pill {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     font-weight: var(--weight-semibold);
     letter-spacing: 0.04em;
@@ -7498,7 +7509,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sensitive-panel .sp-group-count {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     color: var(--text-muted);
 }
@@ -7506,7 +7517,7 @@ body.vn-review-open .modal-backdrop.show {
 /* Determination badge: result of the group's cascade. */
 .sensitive-panel .sp-group-badge {
     margin-left: auto;
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     padding: 2px var(--space-2);
     border-radius: var(--radius-chip);
@@ -7542,7 +7553,7 @@ body.vn-review-open .modal-backdrop.show {
 /* Read-only species list. */
 .sensitive-panel .sp-group-species > summary {
     cursor: pointer;
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     color: var(--text-muted);
     margin-top: var(--space-2);
@@ -7570,7 +7581,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sensitive-panel .sp-override-remove {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     color: var(--error);
 }
@@ -7594,7 +7605,7 @@ body.vn-review-open .modal-backdrop.show {
 
 .sensitive-panel .sp-group-species > summary::before {
     content: "\25B8";
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     transition: transform var(--transition-fast);
 }
 
@@ -7623,7 +7634,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sensitive-panel .sp-assess-count {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-sm);
     color: var(--text-primary);
     margin: var(--space-2) 0;
@@ -7653,7 +7664,7 @@ body.vn-review-open .modal-backdrop.show {
 
 .sensitive-panel .sp-justification-label {
     display: block;
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     color: var(--text-muted);
     margin-bottom: var(--space-1);
@@ -7702,7 +7713,7 @@ body.vn-review-open .modal-backdrop.show {
 
 .sensitive-panel .sp-disclosure-summary::before {
     content: "\25B8";
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     color: var(--text-muted);
     display: inline-block;
     margin-right: var(--space-2);
@@ -7743,7 +7754,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sensitive-grid-table th {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     font-weight: var(--weight-semibold);
     text-transform: uppercase;
@@ -8129,7 +8140,7 @@ body.vn-review-open .modal-backdrop.show {
 /* Exception row: the same table as the groups, one species (round 5). */
 .sensitive-panel .sp-exceptions-title {
     margin: 0;
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-sm);
     font-weight: 700;
     color: var(--text-primary);
@@ -8166,7 +8177,7 @@ body.vn-review-open .modal-backdrop.show {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-sm);
 }
 
@@ -8180,7 +8191,7 @@ body.vn-review-open .modal-backdrop.show {
     background: var(--accent);
     border-color: var(--accent);
     color: #ffffff;
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-sm);
     font-weight: 700;
 }
@@ -8276,7 +8287,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sc-mode-summary {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-sm);
     font-weight: 700;
 }
@@ -8307,7 +8318,7 @@ body.vn-review-open .modal-backdrop.show {
     padding: 0 var(--space-3);
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-sm);
     cursor: pointer;
 }
@@ -8355,7 +8366,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sensitive-panel .sc-mode-card .sp-mode-title {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-base-sm);
     font-weight: 700;
 }
@@ -8395,7 +8406,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sc-mode-card .sp-mode-badge {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
@@ -8424,7 +8435,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sc-matrix-hint {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     color: var(--text-muted);
 }
@@ -8437,7 +8448,7 @@ body.vn-review-open .modal-backdrop.show {
 .sc-matrix th {
     padding: var(--space-2);
     border-bottom: 1px solid var(--border-default);
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     font-weight: 700;
     letter-spacing: 0.04em;
@@ -8470,7 +8481,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sc-matrix-count {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     white-space: nowrap;
     cursor: help;
@@ -8495,7 +8506,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sc-matrix-skip {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     color: var(--border-strong);
 }
 
@@ -8509,7 +8520,7 @@ body.vn-review-open .modal-backdrop.show {
     border-radius: var(--radius-chip);
     background: var(--bg-card);
     color: var(--text-primary);
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     font-weight: 700;
     white-space: nowrap;
@@ -8546,7 +8557,7 @@ button.sc-scale-chip:hover .sc-level-chip {
     border-radius: var(--radius-chip);
     background: var(--bg-card);
     color: var(--text-primary);
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     font-weight: 700;
 }
@@ -8587,7 +8598,7 @@ button.sc-scale-chip:hover .sc-level-chip {
 /* One label style for the two fields. */
 .sc-confirm-row .sp-justification-label,
 .sc-confirm-row .sp-review-date .control-label {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
     font-weight: 700;
     color: var(--text-muted);
@@ -8619,7 +8630,7 @@ button.sc-scale-chip:hover .sc-level-chip {
 }
 
 .sc-about-ref {
-    font-family: var(--font-mono);
+    font-family: var(--font-ui);
     font-size: var(--text-xs);
 }
 /* =============================================================================
@@ -8667,7 +8678,7 @@ button.sc-scale-chip:hover .sc-level-chip {
 
 .export-gen-table th {
   text-align: left;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -8684,7 +8695,7 @@ button.sc-scale-chip:hover .sc-level-chip {
 
 /* Grouped file list: DwC-A core trio vs renamed auxiliary siblings. */
 .export-file-group-title {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -8739,7 +8750,7 @@ button.sc-scale-chip:hover .sc-level-chip {
 }
 
 .export-kpi-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xl);
   font-weight: 700;
   line-height: 1.1;
@@ -8748,7 +8759,7 @@ button.sc-scale-chip:hover .sc-level-chip {
 
 .export-kpi-label {
   margin-top: var(--space-1);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -8851,7 +8862,7 @@ button.sc-scale-chip:hover .sc-level-chip {
   margin-top: 2px;
   padding: 2px var(--space-2);
   border-radius: var(--radius-chip);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: 700;
   text-align: center;

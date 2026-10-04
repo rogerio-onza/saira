@@ -95,7 +95,7 @@
 }
 
 .stat-box .stat-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-2xl);
   font-weight: var(--weight-semibold);
   color: var(--text-primary);

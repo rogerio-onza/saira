@@ -2735,3 +2735,14 @@ Formato: ADR leve (Architecture Decision Record).
   - Planilhas em espanhol: 41 sinonimos Rostrum `lang = "es"`, meses, `si`/`no` no occurrenceStatus e rotulos/sinonimos de basisOfRecord. O `lang` do sinonimo e so metadado; nao entra no match.
   - Site: `website/es/` espelha PT e EN linha a linha; `head.html` troca `PAIRS` por trios em `PAGES`, com rotulos do navbar e do tema por idioma. Capturas `-ES.png` ainda nao existem, e as paginas ES usam as `-EN.png`.
 - **Consequencias**: um idioma novo exige a entrada em `get_languages()`, a coluna no `i18n.json`, as colunas `_xx` do catalogo e um trio a mais no site. O teste de paridade do `i18n.json` falha se faltar texto em qualquer idioma. A traducao precisa de revisao de um falante nativo.
+
+## ADR-134: IBM Plex Sans para a interface, Space Mono so para codigo e dados
+
+- **Data**: 2026-10-03
+- **Status**: Aceito. Revisa o ADR-046: Space Mono deixa de ser a fonte dos rotulos de interface.
+- **Contexto**: abas, botoes, labels e badges usavam Space Mono. Em textos de interface a fonte fica larga e cansa a leitura, e nao separa rotulo de dado.
+- **Decisao**:
+  - Tres papeis: `--font-serif` (Source Serif 4) para leitura, `--font-ui` (IBM Plex Sans) para a interface, `--font-mono` (Space Mono) so para codigo e dados.
+  - Fica em mono: termos DwC (cartao do mapeamento, cabecalhos da Previa), amostras "ex.:", celulas de tabela (`.dataTable tbody td`), coordenadas, nomes de arquivo, codigo e o badge de versao.
+  - IBM Plex Sans vai para `inst/app/www/vendor/fonts/` (woff2 latin e latin-ext, pesos 400 a 700) e entra no `source-fonts.css`, sem CDN (ADR-100).
+- **Consequencias**: componente novo escolhe `--font-ui` ou `--font-mono` pela origem do texto. Os testes de CSS cobram o token `--font-ui` e os arquivos da fonte. As capturas do tutorial precisam ser refeitas.

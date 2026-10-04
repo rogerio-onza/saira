@@ -83,7 +83,7 @@
 }
 
 .navbar-brand {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
   font-size: var(--text-2xl);
@@ -166,7 +166,7 @@
 .navbar #lang_switch {
   border: 1px solid var(--border-default);
   border-radius: var(--radius);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   padding: 0.3rem 1.8rem 0.3rem 0.6rem;
   min-width: 4.25rem;
@@ -191,7 +191,7 @@
 .navbar .navbar-nav .nav-link,
 .navbar .nav-item .nav-link,
 .navbar .nav-link {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-medium);
   font-size: var(--text-sm);
   color: var(--navbar-link-color);

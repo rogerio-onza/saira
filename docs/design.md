@@ -129,12 +129,11 @@ Os badges do mapeamento usam `field-status-badge--<status>`, nunca `bg-*` do Boo
 
 ## 📝 Typography
 
-### Google Fonts Import
+### Fontes locais
 
-```html
-<!-- Importar apenas os pesos efetivamente usados -->
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&family=Space+Mono:ital@0;1&display=swap" rel="stylesheet">
-```
+As três famílias ficam em `inst/app/www/vendor/fonts/` (woff2, latin e latin-ext), declaradas em `source-fonts.css`. O app funciona offline (ADR-100): nada de Google Fonts ou CDN em runtime.
+
+> **Três papéis (ADR-134):** Source Serif 4 para leitura, IBM Plex Sans para a interface, Space Mono só para código e dados.
 
 > **Nota v4.3:** A Source Serif 4 substitui o Spectral. O problema da Spectral era o alto contraste old-style entre traços grossos e finos — ótimo em impressão, porém fatigante em interfaces densas com múltiplos tamanhos. A Source Serif 4 (Adobe) foi desenhada especificamente para legibilidade em tela: contraste de traço equilibrado, abertura generosa e **eixo óptico variável** (`opsz: 8..60`), que ajusta automaticamente a forma dos glifos conforme o tamanho — solução direta dos problemas relatados em contextos menores. O itálico é elegante e adequado para nomes científicos em latim. Usar sempre `font-optical-sizing: auto`. Não importar pesos não-utilizados reduz tempo de carregamento no Shiny.
 
@@ -143,6 +142,7 @@ Os badges do mapeamento usam `field-status-badge--<status>`, nunca `bg-*` do Boo
 ```css
 /* Famílias */
 --font-serif: 'Source Serif 4', Georgia, serif;
+--font-ui:    'IBM Plex Sans', system-ui, sans-serif;
 --font-mono:  'Space Mono', 'IBM Plex Mono', monospace;
 
 /* Scale */
@@ -169,10 +169,13 @@ Os badges do mapeamento usam `field-status-badge--<status>`, nunca `bg-*` do Boo
 | Body / `<p>` | Source Serif 4 | 400 | font-optical-sizing: auto — eixo óptico ativo |
 | Ênfase em body | Source Serif 4 | 500 | subtítulos, descrições longas |
 | Nomes científicos | Source Serif 4 | 400 italic | *Tangara fastuosa* — itálico nativo calibrado |
-| Botões | Space Mono | 400 | preserva sensação de "ferramenta" |
-| Labels de inputs | Space Mono | 400 | legibilidade em tamanho pequeno |
-| Dados / tabelas / coordenadas | Space Mono | 400 | ⚠️ testar em `0.75rem` e `0.8rem` — ver nota abaixo |
-| Código | Space Mono | 400 | — |
+| Abas, botões, labels, badges, filtros, eyebrows | IBM Plex Sans | 400-600 | `var(--font-ui)` |
+| Cabeçalhos de tabelas de interface | IBM Plex Sans | 600-700 | Wiki, nomes, exportação |
+| Nomes de termos DwC, cabeçalhos da Prévia | Space Mono | 400 | `var(--font-mono)`: é dado |
+| Células de tabela, amostras "ex.:", coordenadas, nomes de arquivo | Space Mono | 400 | ⚠️ testar em `0.75rem` e `0.8rem`, ver nota abaixo |
+| Código, badge de versão | Space Mono | 400 | — |
+
+**Regra:** se o texto vem do dataset ou do padrão (termo, valor, arquivo, código), use `--font-mono`. Se o texto é da interface, use `--font-ui`. Nunca use `--font-mono` para um rótulo.
 
 > ⚠️ **Atenção — Space Mono em tamanhos pequenos:** O Space Mono pode apresentar kerning apertado em `font-size < 0.85rem`, especialmente nos pares `fi`, `fl` e nos dígitos `1` e `7`. Testar obrigatoriamente nas tabelas de coordenadas antes de fazer deploy. Se necessário, usar `IBM Plex Mono` como fallback apenas nesses contextos menores (já declarado no stack acima).
 
@@ -198,11 +201,14 @@ body, p, .body-text {
   color: var(--text-primary);   /* melhor contraste para texto longo */
 }
 
-/* UI — botões, labels, dados */
-button, .btn, label, .ui-label,
-code, .data-cell, .coord-value {
+/* UI: botões, labels */
+button, .btn, label, .ui-label {
+  font-family: var(--font-ui);
+}
+
+/* Dados: código, células, coordenadas */
+code, .data-cell, .coord-value, .dataTable tbody td {
   font-family: var(--font-mono);
-  font-weight: 400;
 }
 ```
 
@@ -267,7 +273,7 @@ O visual é plano (ADR-127). Todo token `--shadow-*` vale `none`: nenhum card, b
 .btn-primary {
   background: #38CFF6;
   color: #1C1C26;        /* preto azulado — contraste 8.1:1 ✅ */
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   box-shadow: var(--shadow-primary);
 }
 .btn-primary:hover { background: #16B3BD; transform: translateY(-1px); }
@@ -276,7 +282,7 @@ O visual é plano (ADR-127). Todo token `--shadow-*` vale `none`: nenhum card, b
 .btn-success {
   background: #00A86B;
   color: #ffffff;        /* contraste 4.7:1 ✅ */
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   box-shadow: var(--shadow-success);
 }
 .btn-success:hover { background: #009960; }
@@ -285,7 +291,7 @@ O visual é plano (ADR-127). Todo token `--shadow-*` vale `none`: nenhum card, b
 .btn-warning {
   background: #FFA204;
   color: #1C1C26;        /* contraste 9.8:1 ✅ */
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
 }
 .btn-warning:hover { background: #E09000; }
 
@@ -293,7 +299,7 @@ O visual é plano (ADR-127). Todo token `--shadow-*` vale `none`: nenhum card, b
 .btn-error {
   background: #C0392B;
   color: #ffffff;        /* contraste 5.9:1 ✅ */
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   box-shadow: var(--shadow-error);
 }
 .btn-error:hover { background: #A93226; }
@@ -303,7 +309,7 @@ O visual é plano (ADR-127). Todo token `--shadow-*` vale `none`: nenhum card, b
   background: transparent;
   border: 1.5px solid #2833AC;
   color: #2833AC;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
 }
 .btn-secondary:hover { background: #2833AC; color: #ffffff; }
 ```
@@ -340,8 +346,8 @@ O visual é plano (ADR-127). Todo token `--shadow-*` vale `none`: nenhum card, b
 --input-bg-disabled:      rgba(40,51,172,0.05);
 --input-text-disabled:    rgba(28,28,38,0.35);
 
-/* Labels de input usam Space Mono */
-label, .input-label { font-family: var(--font-mono); font-size: var(--text-sm); }
+/* Labels de input usam IBM Plex Sans (ADR-134) */
+label, .input-label { font-family: var(--font-ui); font-size: var(--text-sm); }
 ```
 
 ### Navbar
@@ -437,7 +443,7 @@ As cores abaixo são fiéis ao saíra e **não devem ser alteradas**. Os conflit
 5. ❌ **Não remover focus rings**
 6. ❌ **Não criar componentes sem os 5 estados** (default/hover/active/focus/disabled)
 7. ❌ **Não usar Source Serif 4 sem `font-optical-sizing: auto`** — perde o benefício do eixo óptico variável
-8. ❌ **Não usar Source Serif 4 em labels de input ou dados tabulares** — usar Space Mono nesses contextos
+8. ❌ **Não usar Space Mono em rótulos de interface** — usar IBM Plex Sans; Space Mono só para código e dados (ADR-134)
 9. ❌ **Não importar pesos tipográficos não-utilizados** — impacta performance de carregamento no Shiny
 10. ❌ **Não usar sombra, gradiente decorativo nem borda lateral grossa** — ADR-127, ADR-040
 
@@ -465,14 +471,15 @@ As cores abaixo são fiéis ao saíra e **não devem ser alteradas**. Os conflit
 
 - **Pixel sampling:** Pillow/Python sobre 3 fotografias originais de *Tangara fastuosa*
 - **Source Serif 4:** [Google Fonts](https://fonts.google.com/specimen/Source+Serif+4)
+- **IBM Plex Sans:** [Google Fonts](https://fonts.google.com/specimen/IBM+Plex+Sans)
 - **Space Mono:** [Google Fonts](https://fonts.google.com/specimen/Space+Mono)
 - **Contrast:** [WebAIM](https://webaim.org/resources/contrastchecker/)
 
 ---
 
-**Version:** 4.3 — Source Serif 4 + Space Mono; auditoria de contraste WCAG  
-**Previous:** 4.2 — Spectral + Space Mono  
-**Last Updated:** Fevereiro 2026  
+**Version:** 5.1 — IBM Plex Sans para a interface, Space Mono só para código e dados (ADR-134)  
+**Previous:** 5.0 — visual plano e leve (ADR-127)  
+**Last Updated:** Outubro 2026  
 **Maintained By:** Rogério Nunes Oliveira
 
 

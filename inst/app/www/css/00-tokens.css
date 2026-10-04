@@ -89,6 +89,7 @@
 
   /* Typography */
   --font-serif: 'Source Serif 4', Georgia, serif;
+  --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
   --font-mono: 'Space Mono', 'IBM Plex Mono', monospace;
 
   /* Type Scale */
