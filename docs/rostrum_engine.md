@@ -206,6 +206,10 @@ Cenário B: value_score = 0.7 (valores ambíguos)
 | `scientificName` | Padrão binomial (`Genus species`) + sem números isolados | 80% das amostras válidas |
 | `year` | Range 1600..2100 + inteiro | 95% das amostras válidas |
 | `individualCount` | Inteiro positivo | 100% das amostras válidas |
+| `occurrenceStatus` | Valor traduzível para `present`/`absent` | Abaixo de 30% → veto |
+| `basisOfRecord` | Valor traduzível para o vocabulário GBIF | Abaixo de 30% → veto |
+
+Nos dois termos de vocabulário, um nome exato ou sinônimo com menos de 80% de valores válidos fica com o score neutro (0.80): a etapa de valores traduz os valores desconhecidos depois. Um nome fraco com valores fora da lista é vetado (`IUCN_status` não vira `occurrenceStatus`). ADR-138.
 
 3. **Cálculo do score**:
 ```
@@ -247,6 +251,11 @@ Reduzem score quando há evidência contextual contrária.
 - Nome contém `depth`, `profund`, `altura` → penalidade -0.3 para coordenadas
 - Nome contém `count`, `numero`, `qtd` → penalidade -0.2 para datas
 - Nome é genérico (`campo1`, `col_a`) → penalidade -0.1 para qualquer termo
+- Nome de identificador (`id`, `identifier`, `codigo`, `cod`) → penalidade -0.3 (`identifier_context`) quando:
+  - o termo não guarda código (só `occurrenceID`, `locationID`, `eventID`, `parentEventID`, `identifiedByID`, `catalogNumber`, `recordNumber`, `associatedMedia` e `associatedReferences` aceitam);
+  - o qualificador nomeia outra entidade (`species_id` em `locationID`);
+  - o `id` está sozinho e o termo não é `occurrenceID`.
+- Qualificador que nomeia só a entidade do termo (`location_id`, `Road_ID` → `locationID`) soma +0.10 ao name score. Qualificador desconhecido não pune nem soma. ADR-138.
 
 **Aplicação**:
 ```

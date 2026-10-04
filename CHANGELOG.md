@@ -51,6 +51,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **mapping:** Stop `species_id` and `study_id` from tying with `location_id` for locationID, and stop `IUCN_status` from filling occurrenceStatus, ADR-138
 - **upload:** Open Mapping after the first upload of a session, not only after the second ([#155](https://github.com/rogerio-onza/saira/pull/155))
 - **names:** Line up the Validate names button with the provider and option rows ([#155](https://github.com/rogerio-onza/saira/pull/155))
 - **mapping:** Keep the category state dots and the "Next pending" count after a language switch
