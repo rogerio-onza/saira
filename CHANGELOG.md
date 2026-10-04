@@ -18,6 +18,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - **ui:** Use IBM Plex Sans for interface text and keep Space Mono for code and data, ADR-134 ([#152](https://github.com/rogerio-onza/saira/pull/152))
 - **ui:** Replace the warm beige background with cool gray and cool borders, ADR-135 ([#153](https://github.com/rogerio-onza/saira/pull/153))
+- **upload:** Rebuild the home page with format cards, a larger dropzone, short notes and the next steps, ADR-136 ([#154](https://github.com/rogerio-onza/saira/pull/154))
 - **site:** Rewrite the tutorials around annotated screenshots and open the first tutorial instead of an index page ([#149](https://github.com/rogerio-onza/saira/pull/149))
 - **site:** Show the tutorials as flat panels like the app: numbered sidebar with the page contents, one panel per step, screenshot legends joined to their image
 - **names:** Center the providers, options and run button in the top bar

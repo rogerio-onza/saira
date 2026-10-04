@@ -3565,9 +3565,9 @@
     "es": "Sin pendientes en esta clase"
   },
   "upload_max_size": {
-    "pt": "Tamanho máximo de arquivo: 500 MB",
-    "en": "Maximum file size: 500 MB",
-    "es": "Tamaño máximo de archivo: 500 MB"
+    "pt": "Tamanho máximo: 500 MB",
+    "en": "Maximum size: 500 MB",
+    "es": "Tamaño máximo: 500 MB"
   },
   "upload_encoding_info": {
     "pt": "Encodings suportados: UTF-8, Latin-1 (ISO-8859-1)",
@@ -3575,9 +3575,9 @@
     "es": "Codificaciones admitidas: UTF-8, Latin-1 (ISO-8859-1)"
   },
   "upload_dropzone_cta": {
-    "pt": "Arraste e solte seu arquivo CSV, TXT ou Excel (.xlsx) aqui ou clique para selecionar.",
-    "en": "Drag and drop your CSV, TXT or Excel (.xlsx) file here or click to select.",
-    "es": "Arrastre y suelte aquí su archivo CSV, TXT o Excel (.xlsx) o haga clic para seleccionarlo."
+    "pt": "Arraste a sua planilha aqui",
+    "en": "Drag your spreadsheet here",
+    "es": "Arrastre su hoja de cálculo aquí"
   },
   "a11y_upload_file_label": {
     "pt": "Selecionar arquivo CSV, TXT ou Excel para upload",
@@ -3595,14 +3595,14 @@
     "es": "Use ; como separador de elementos (ej.: Autor X ; Autor Y). En DwC, la salida se estandarizará como Autor X | Autor Y."
   },
   "upload_mode_csv_title": {
-    "pt": "CSV Darwin Core",
-    "en": "Darwin Core CSV",
-    "es": "CSV Darwin Core"
+    "pt": "Planilha",
+    "en": "Spreadsheet",
+    "es": "Hoja de cálculo"
   },
   "upload_mode_camtrap_title": {
-    "pt": "Camtrap DP (ZIP)",
-    "en": "Camtrap DP (ZIP)",
-    "es": "Camtrap DP (ZIP)"
+    "pt": "Camtrap DP",
+    "en": "Camtrap DP",
+    "es": "Camtrap DP"
   },
   "upload_mode_tabs_a11y_label": {
     "pt": "Selecione o formato de upload",
@@ -3615,9 +3615,9 @@
     "es": "Formato cambiado a %s"
   },
   "upload_camtrap_dropzone_hint": {
-    "pt": "Arraste o ZIP com CSVs do Camtrap DP (deployments + observations, media opcional) ou um export do Wildlife Insights.",
-    "en": "Drag a ZIP with Camtrap DP CSVs (deployments + observations, media optional) or a Wildlife Insights export.",
-    "es": "Arrastre el ZIP con los CSV de Camtrap DP (deployments + observations, media opcional) o una exportación de Wildlife Insights."
+    "pt": "Arraste o ZIP do Camtrap DP aqui",
+    "en": "Drag the Camtrap DP ZIP here",
+    "es": "Arrastre el ZIP de Camtrap DP aquí"
   },
   "upload_camtrap_source_camtrap": {
     "pt": "Camtrap DP (CSVs)",
@@ -3678,6 +3678,101 @@
     "pt": "Padronizador Darwin Core",
     "en": "Darwin Core Standardizer",
     "es": "Estandarizador Darwin Core"
+  },
+  "home_subtitle": {
+    "pt": "Envie a sua planilha e o Saíra ajuda a organizar os dados em uma estrutura compatível com Darwin Core.",
+    "en": "Upload your spreadsheet and Saíra helps you organize the data into a structure compatible with Darwin Core.",
+    "es": "Cargue su hoja de cálculo y Saíra le ayuda a organizar los datos en una estructura compatible con Darwin Core."
+  },
+  "upload_dropzone_click": {
+    "pt": "ou clique para selecionar",
+    "en": "or click to select",
+    "es": "o haga clic para seleccionar"
+  },
+  "home_before_title": {
+    "pt": "Antes de começar",
+    "en": "Before you start",
+    "es": "Antes de comenzar"
+  },
+  "home_note_formats_title": {
+    "pt": "Formatos",
+    "en": "Formats",
+    "es": "Formatos"
+  },
+  "home_note_formats_text": {
+    "pt": "`CSV`, `TXT` ou `XLSX`",
+    "en": "`CSV`, `TXT` or `XLSX`",
+    "es": "`CSV`, `TXT` o `XLSX`"
+  },
+  "home_note_encoding_title": {
+    "pt": "Codificação",
+    "en": "Encoding",
+    "es": "Codificación"
+  },
+  "home_note_encoding_text": {
+    "pt": "`UTF-8` ou `Latin-1`",
+    "en": "`UTF-8` or `Latin-1`",
+    "es": "`UTF-8` o `Latin-1`"
+  },
+  "home_note_separator_title": {
+    "pt": "Separador",
+    "en": "Separator",
+    "es": "Separador"
+  },
+  "home_note_separator_text": {
+    "pt": "`;` entre vários valores",
+    "en": "`;` between several values",
+    "es": "`;` entre varios valores"
+  },
+  "home_note_guide_title": {
+    "pt": "Guia de mapeamento",
+    "en": "Mapping guide",
+    "es": "Guía de mapeo"
+  },
+  "home_note_guide_text": {
+    "pt": "Envie o guia do Saíra no mesmo campo",
+    "en": "Upload the Saíra guide in the same field",
+    "es": "Cargue la guía de Saíra en el mismo campo"
+  },
+  "home_note_privacy_title": {
+    "pt": "Privacidade",
+    "en": "Privacy",
+    "es": "Privacidad"
+  },
+  "home_note_privacy_text": {
+    "pt": "Processamento local, sem internet",
+    "en": "Local processing, no internet",
+    "es": "Procesamiento local, sin internet"
+  },
+  "home_note_camtrap_format_title": {
+    "pt": "Formato",
+    "en": "Format",
+    "es": "Formato"
+  },
+  "home_note_camtrap_format_text": {
+    "pt": "`ZIP` do Camtrap DP ou do Wildlife Insights",
+    "en": "Camtrap DP or Wildlife Insights `ZIP`",
+    "es": "`ZIP` de Camtrap DP o de Wildlife Insights"
+  },
+  "home_note_camtrap_files_title": {
+    "pt": "Arquivos",
+    "en": "Files",
+    "es": "Archivos"
+  },
+  "home_note_camtrap_files_text": {
+    "pt": "`deployments.csv` e `observations.csv`",
+    "en": "`deployments.csv` and `observations.csv`",
+    "es": "`deployments.csv` y `observations.csv`"
+  },
+  "home_notes_more": {
+    "pt": "Saiba mais",
+    "en": "Learn more",
+    "es": "Más información"
+  },
+  "home_next_eyebrow": {
+    "pt": "Depois do envio",
+    "en": "After the upload",
+    "es": "Después de la carga"
   },
   "data_quality_title": {
     "pt": "Qualidade dos Dados",

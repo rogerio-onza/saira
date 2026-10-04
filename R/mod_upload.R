@@ -11,11 +11,12 @@
 mod_upload_ui <- function(id) {
     ns <- shiny::NS(id)
 
-    # Home: one upload panel across the page (ADR-132).
+    # Home: header, format cards and dropzone on the page, then the notes and
+    # the next steps (ADR-136).
     shiny::div(
         class = "container-fluid homepage-container home-b",
         shiny::tags$section(
-            class = "home-panel home-upload-panel",
+            class = "home-upload-panel",
             shiny::uiOutput(ns("home_header")),
             # ADR-097: tab strip replaces ADR-095 input_switch.
             # Native radioButtons drive the state. Shiny does
@@ -49,8 +50,12 @@ mod_upload_ui <- function(id) {
                     `aria-controls` = ns("upload_mode"),
                     ph_icon("file-csv"),
                     shiny::tags$span(
-                        class = "upload-mode-tab-title",
-                        shiny::uiOutput(ns("mode_csv_title"), inline = TRUE)
+                        class = "upload-mode-tab-text",
+                        shiny::tags$span(
+                            class = "upload-mode-tab-title",
+                            shiny::uiOutput(ns("mode_csv_title"), inline = TRUE)
+                        ),
+                        shiny::tags$span(class = "upload-mode-tab-sub", "CSV \u00B7 XLSX \u00B7 TXT")
                     )
                 ),
                 shiny::tags$button(
@@ -60,8 +65,12 @@ mod_upload_ui <- function(id) {
                     `aria-controls` = ns("upload_mode"),
                     ph_icon("box-archive"),
                     shiny::tags$span(
-                        class = "upload-mode-tab-title",
-                        shiny::uiOutput(ns("mode_camtrap_title"), inline = TRUE)
+                        class = "upload-mode-tab-text",
+                        shiny::tags$span(
+                            class = "upload-mode-tab-title",
+                            shiny::uiOutput(ns("mode_camtrap_title"), inline = TRUE)
+                        ),
+                        shiny::tags$span(class = "upload-mode-tab-sub", "ZIP")
                     )
                 )
             ),
@@ -94,15 +103,17 @@ mod_upload_ui <- function(id) {
             # File input with dropzone and detached native progress row
             shiny::div(
                 class = "upload-section",
+                # The dropzone is the only file picker, so it takes keyboard
+                # focus (upload-dropzone.js opens the picker on Enter/Space).
                 shiny::div(
                     class = "upload-dropzone",
+                    tabindex = "0",
+                    role = "button",
+                    `aria-labelledby` = ns("dropzone_hint_text"),
                     shiny::div(
                         class = "upload-dropzone-copy",
-                        ph_icon("arrow-up-from-bracket", class = "upload-dropzone-icon", weight = "light"),
-                        shiny::div(
-                            class = "upload-dropzone-hint",
-                            shiny::uiOutput(ns("dropzone_hint_text"), inline = TRUE)
-                        ),
+                        ph_icon("arrow-up-from-bracket", class = "upload-dropzone-icon"),
+                        shiny::uiOutput(ns("dropzone_hint_text")),
                         shiny::div(
                             class = "upload-dropzone-max-size",
                             shiny::uiOutput(ns("max_size_text"), inline = TRUE)
@@ -126,10 +137,11 @@ mod_upload_ui <- function(id) {
                     )
                 )
             ),
-            shiny::uiOutput(ns("upload_notes"), class = "home-upload-notes"),
 
             # Stats after upload
-            shiny::uiOutput(ns("stats"))
+            shiny::uiOutput(ns("stats"), class = "home-stats"),
+            shiny::uiOutput(ns("upload_notes"), class = "home-before"),
+            shiny::uiOutput(ns("home_next"), class = "home-next")
         )
     )
 }
@@ -173,13 +185,14 @@ mod_upload_server <- function(id, lang_r) {
         })
 
         output$dropzone_hint_text <- shiny::renderUI({
-            mode <- input$upload_mode %||% "csv"
-            key <- if (identical(mode, "camtrap")) {
-                "upload_camtrap_dropzone_hint"
-            } else {
-                "upload_dropzone_cta"
-            }
-            shiny::tags$span(tr(key, lang_r()))
+            camtrap <- identical(input$upload_mode %||% "csv", "camtrap")
+            key <- if (camtrap) "upload_camtrap_dropzone_hint" else "upload_dropzone_cta"
+            formats <- if (camtrap) "ZIP" else "CSV \u00B7 XLSX \u00B7 TXT"
+            shiny::tagList(
+                shiny::tags$h2(class = "upload-dropzone-title", tr(key, lang_r())),
+                shiny::div(class = "upload-dropzone-hint", tr("upload_dropzone_click", lang_r())),
+                shiny::div(class = "upload-dropzone-formats", formats)
+            )
         })
 
         output$max_size_text <- shiny::renderUI({
@@ -190,7 +203,8 @@ mod_upload_server <- function(id, lang_r) {
             shiny::div(
                 class = "home-header",
                 shiny::div(class = "home-eyebrow", tr("welcome_eyebrow", lang_r())),
-                shiny::tags$h1(class = "home-title", tr("home_title", lang_r()))
+                shiny::tags$h1(class = "home-title", tr("home_title", lang_r())),
+                shiny::tags$p(class = "home-subtitle", tr("home_subtitle", lang_r()))
             )
         })
 
@@ -203,23 +217,87 @@ mod_upload_server <- function(id, lang_r) {
             )
         })
 
-        # Notes under the dropzone: what the page needs to say before an upload.
-        # The format hints follow the selected mode.
+        # Notes under the dropzone: short notes in a row, the full text behind
+        # "Learn more". The notes follow the selected mode.
         output$upload_notes <- shiny::renderUI({
             lang <- lang_r()
-            note <- function(icon, text) {
-                shiny::div(class = "home-upload-note", ph_icon(icon), shiny::tags$span(text))
+            # Text between backticks is a format token and shows in mono. One
+            # HTML string, so no whitespace goes between a token and a comma.
+            tokens <- function(text) {
+                parts <- htmltools::htmlEscape(strsplit(text, "`", fixed = TRUE)[[1]])
+                even <- seq_along(parts) %% 2 == 0
+                parts[even] <- sprintf('<span class="home-note-token">%s</span>', parts[even])
+                shiny::HTML(paste(parts, collapse = ""))
             }
-            format_notes <- if (identical(input$upload_mode %||% "csv", "camtrap")) {
-                list(note("box-archive", tr("home_camtrap_files_note", lang)))
-            } else {
-                list(
-                    note("code", tr("upload_encoding_info", lang)),
-                    note("table-list", tr("upload_recommendation", lang)),
-                    note("file-import", tr("home_guide_tip", lang))
+            note <- function(icon, key) {
+                shiny::div(
+                    class = "home-note",
+                    ph_icon(icon, class = "home-note-icon"),
+                    shiny::div(class = "home-note-title", tr(paste0("home_note_", key, "_title"), lang)),
+                    shiny::div(class = "home-note-text", tokens(tr(paste0("home_note_", key, "_text"), lang)))
                 )
             }
-            shiny::tagList(format_notes, note("lock", tr("upload_privacy_alert", lang)))
+            full_note <- function(icon, text) {
+                shiny::div(class = "home-upload-note", ph_icon(icon), shiny::tags$span(text))
+            }
+            if (identical(input$upload_mode %||% "csv", "camtrap")) {
+                notes <- list(
+                    note("box-archive", "camtrap_format"),
+                    note("file-zipper", "camtrap_files"),
+                    note("lock", "privacy")
+                )
+                full <- list(full_note("box-archive", tr("home_camtrap_files_note", lang)))
+            } else {
+                notes <- list(
+                    note("file-lines", "formats"),
+                    note("code", "encoding"),
+                    note("table-list", "separator"),
+                    note("file-import", "guide"),
+                    note("lock", "privacy")
+                )
+                full <- list(
+                    full_note("code", tr("upload_encoding_info", lang)),
+                    full_note("table-list", tr("upload_recommendation", lang)),
+                    full_note("file-import", tr("home_guide_tip", lang))
+                )
+            }
+            shiny::tagList(
+                shiny::tags$h3(class = "home-section-title", tr("home_before_title", lang)),
+                shiny::div(class = "home-notes-grid", notes),
+                shiny::tags$details(
+                    class = "home-notes-more",
+                    shiny::tags$summary(
+                        ph_icon("circle-info"),
+                        tr("home_notes_more", lang),
+                        ph_icon("chevron-down", class = "home-notes-more-caret")
+                    ),
+                    shiny::div(
+                        class = "home-upload-notes",
+                        full,
+                        full_note("lock", tr("upload_privacy_alert", lang))
+                    )
+                )
+            )
+        })
+
+        # The workflow steps after the upload, numbered as in the navbar.
+        output$home_next <- shiny::renderUI({
+            lang <- lang_r()
+            keys <- c(
+                "nav_mapping", "nav_preview", "nav_validate_names",
+                "nav_validate_coords", "nav_generalize", "nav_export"
+            )
+            steps <- lapply(seq_along(keys), function(i) {
+                shiny::tags$li(
+                    class = "home-next-step",
+                    shiny::tags$span(class = "home-next-num", i + 1L),
+                    tr(keys[[i]], lang)
+                )
+            })
+            shiny::tagList(
+                shiny::div(class = "home-eyebrow", tr("home_next_eyebrow", lang)),
+                shiny::tags$ol(class = "home-next-steps", steps)
+            )
         })
 
         # ADR-087: classify the upload as data CSV or Saira mapping guide.
