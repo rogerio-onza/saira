@@ -51,6 +51,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **mapping:** Replace the old learned alias when an export maps the same column to another term, ADR-140 ([#159](https://github.com/rogerio-onza/saira/pull/159))
 - **mapping:** Suggest field-sheet headers such as `site`, `VEG_TYPE`, `X` and `# of inds.`, and date columns by their values, ADR-139 ([#157](https://github.com/rogerio-onza/saira/pull/157))
 - **mapping:** Stop `species_id` and `study_id` from tying with `location_id` for locationID, and stop `IUCN_status` from filling occurrenceStatus, ADR-138 ([#156](https://github.com/rogerio-onza/saira/pull/156))
 - **upload:** Open Mapping after the first upload of a session, not only after the second ([#155](https://github.com/rogerio-onza/saira/pull/155))
