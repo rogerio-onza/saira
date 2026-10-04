@@ -646,6 +646,72 @@ dwc_synonyms <- rbind(
     )
 )
 
+# Common field names from published survey datasets (ADR-139). Short or
+# abbreviated headers (site, method, obs) carried no synonym, so the name
+# gate dropped them before their values were read. "x" and "y" are one
+# letter: Stage 1 caps a one-letter column at SUGERIDO.
+field_names <- data.frame(
+    term = c(
+        rep("locality", 3),
+        rep("decimalLongitude", 2), rep("decimalLatitude", 2),
+        rep("habitat", 6),
+        rep("coordinateUncertaintyInMeters", 6),
+        rep("samplingProtocol", 6),
+        rep("occurrenceRemarks", 8),
+        rep("occurrenceStatus", 5),
+        rep("establishmentMeans", 4),
+        rep("locationID", 3),
+        rep("associatedMedia", 6),
+        rep("eventDate", 6),
+        rep("individualCount", 2)
+    ),
+    synonym = c(
+        "site", "sitio", "site name",
+        "x", "coord x", "y", "coord y",
+        "vegetation", "vegetation type", "vegetacao", "tipo de vegetacao", "vegetacion", "tipo de vegetacion",
+        "precision", "coordinate precision", "precisao", "coordinate uncertainty", "incerteza", "incertidumbre",
+        "method", "methods", "metodo", "metodologia", "protocol", "protocolo",
+        "notes", "remarks", "comments", "obs", "observacao", "observacoes", "comentarios", "observaciones",
+        "presence absence", "presence", "presenca", "presenca ausencia", "presencia ausencia",
+        "origin", "species origin", "origem", "origen",
+        "station", "estacao", "estacion",
+        "photo", "photo id", "foto", "image", "imagem", "imagen",
+        "date", "fecha", "timestamp", "datetime", "data hora", "fecha hora",
+        "individuals", "number of individuals"
+    ),
+    name_score = c(
+        0.92, 0.92, 0.92,
+        0.90, 0.92, 0.90, 0.92,
+        0.91, 0.93, 0.91, 0.93, 0.91, 0.93,
+        0.92, 0.94, 0.92, 0.94, 0.91, 0.91,
+        0.92, 0.91, 0.92, 0.92, 0.92, 0.92,
+        0.91, 0.91, 0.90, 0.91, 0.91, 0.91, 0.90, 0.91,
+        0.94, 0.91, 0.91, 0.94, 0.94,
+        0.91, 0.93, 0.91, 0.91,
+        0.91, 0.91, 0.91,
+        0.92, 0.92, 0.92, 0.92, 0.92, 0.92,
+        0.93, 0.93, 0.93, 0.93, 0.93, 0.93,
+        0.92, 0.94
+    ),
+    lang = c(
+        "en", "pt", "en",
+        "en", "en", "en", "en",
+        "en", "en", "pt", "pt", "es", "es",
+        "en", "en", "pt", "en", "pt", "es",
+        "en", "en", "pt", "pt", "en", "pt",
+        "en", "en", "en", "pt", "pt", "pt", "pt", "es",
+        "en", "en", "pt", "pt", "es",
+        "en", "en", "pt", "es",
+        "en", "pt", "es",
+        "en", "en", "pt", "en", "pt", "es",
+        "en", "es", "en", "en", "pt", "es",
+        "en", "en"
+    ),
+    active = TRUE,
+    stringsAsFactors = FALSE
+)
+dwc_synonyms <- rbind(dwc_synonyms, field_names)
+
 # Validate with the production sanitizer before saving
 pkgload::load_all(quiet = TRUE)
 sanitize_synonyms_table(dwc_synonyms)

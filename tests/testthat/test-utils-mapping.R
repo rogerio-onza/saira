@@ -561,7 +561,7 @@ testthat::test_that("compute_name_score prioritizes exact match and synonyms", {
     testthat::expect_true(low_res$score <= 0.60)
 })
 
-testthat::test_that("run_rostrum_stage1 excludes temporal inference except exact match", {
+testthat::test_that("run_rostrum_stage1 caps a non-exact eventDate name at SUGERIDO", {
     syn <- data.frame(
         term = c("eventDate"),
         synonym = c("data coleta"),
@@ -577,8 +577,8 @@ testthat::test_that("run_rostrum_stage1 excludes temporal inference except exact
         stringsAsFactors = FALSE
     )
     out_synonym <- run_rostrum_stage1(df_synonym_only, dwc_terms, syn, options = rostrum_options())
-    testthat::expect_identical(out_synonym$status[[1]], "MANUAL")
-    testthat::expect_true(is.na(out_synonym$selected_col[[1]]))
+    testthat::expect_identical(out_synonym$status[[1]], "SUGERIDO")
+    testthat::expect_identical(out_synonym$selected_col[[1]], "data_coleta")
 
     df_exact <- data.frame(
         eventDate = c("2024-01-01", "2024-01-02"),

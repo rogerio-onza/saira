@@ -278,3 +278,104 @@ testthat::test_that("basisOfRecord values are checked against its vocabulary", {
     testthat::expect_gt(value_score(profile, "basisOfRecord", name_score = 0.60)$valid_ratio, 0.60)
     testthat::expect_lt(value_score(profile_bad, "basisOfRecord", name_score = 0.60)$valid_ratio, 0.30)
 })
+
+one_synonym <- function(term, synonym, name_score = 0.92) {
+    data.frame(
+        term = term,
+        synonym = synonym,
+        name_score = name_score,
+        lang = "en",
+        active = TRUE,
+        stringsAsFactors = FALSE
+    )
+}
+
+testthat::test_that("header abbreviations expand for synonym lookup", {
+    expand <- saira:::rostrum_expand_column_name
+    profile <- saira:::build_column_matching_profile
+
+    testthat::expect_identical(expand("# of inds."), "number of individuals")
+    testthat::expect_identical(expand("VEG_TYPE"), "vegetation type")
+    testthat::expect_identical(expand("CAM_EFF"), "cam effort")
+    testthat::expect_identical(profile("n_points")$norm_expanded, "number points")
+    testthat::expect_false("number" %in% profile("n_points")$tokens)
+    testthat::expect_null(profile("site")$norm_expanded)
+})
+
+testthat::test_that("a synonym reached through an abbreviation stays SUGERIDO", {
+    counts <- c("1", "2", "3", "1", "4")
+    synonyms <- one_synonym("individualCount", "number of individuals", 0.94)
+    dwc_terms <- data.frame(term = "individualCount", stringsAsFactors = FALSE)
+    abbreviated <- data.frame(`# of inds.` = counts, check.names = FALSE)
+    spelled <- data.frame(`number of individuals` = counts, check.names = FALSE)
+
+    out_abbreviated <- run_rostrum_stage1(abbreviated, dwc_terms, synonyms, options = rostrum_options())
+    out_spelled <- run_rostrum_stage1(spelled, dwc_terms, synonyms, options = rostrum_options())
+
+    testthat::expect_identical(out_abbreviated$status[[1]], "SUGERIDO")
+    testthat::expect_identical(out_abbreviated$selected_col[[1]], "# of inds.")
+    testthat::expect_identical(out_spelled$status[[1]], "AUTO")
+})
+
+testthat::test_that("a one-letter header stays SUGERIDO", {
+    longitudes <- c("-45.1", "-46.2", "-44.9")
+    dwc_terms <- data.frame(term = "decimalLongitude", stringsAsFactors = FALSE)
+    out <- run_rostrum_stage1(
+        data.frame(X = longitudes), dwc_terms,
+        one_synonym("decimalLongitude", "x", 0.90), options = rostrum_options()
+    )
+
+    testthat::expect_identical(out$status[[1]], "SUGERIDO")
+    testthat::expect_identical(out$selected_col[[1]], "X")
+})
+
+testthat::test_that("eventDate takes a non-exact name only when the values are dates", {
+    dwc_terms <- data.frame(term = "eventDate", stringsAsFactors = FALSE)
+    synonyms <- one_synonym("eventDate", "date")
+    dates <- data.frame(date = c("2020-01-05", "2020-02-11", "2021-03-09"))
+    words <- data.frame(date = c("a", "b", "c"))
+
+    out_dates <- run_rostrum_stage1(dates, dwc_terms, synonyms, options = rostrum_options())
+    out_words <- run_rostrum_stage1(words, dwc_terms, synonyms, options = rostrum_options())
+
+    testthat::expect_identical(out_dates$status[[1]], "SUGERIDO")
+    testthat::expect_identical(out_dates$selected_col[[1]], "date")
+    testthat::expect_identical(out_words$status[[1]], "MANUAL")
+})
+
+testthat::test_that("other temporal terms still need an exact name", {
+    df <- data.frame(det_date = c("2020-01-05", "2020-02-11", "2021-03-09"))
+    dwc_terms <- data.frame(term = "dateIdentified", stringsAsFactors = FALSE)
+
+    out <- run_rostrum_stage1(df, dwc_terms, one_synonym("dateIdentified", "det date"),
+                              options = rostrum_options())
+
+    testthat::expect_identical(out$reason[[1]], "temporal_manual_only")
+})
+
+testthat::test_that("a column named like another term does not compete for this term", {
+    df <- data.frame(
+        OBS = c("seen at dawn", "tracks only", "near road"),
+        locationRemarks = c("near river", "forest edge", "pasture"),
+        stringsAsFactors = FALSE
+    )
+    dwc_terms <- data.frame(term = c("occurrenceRemarks", "locationRemarks"), stringsAsFactors = FALSE)
+
+    out <- run_rostrum_stage1(df, dwc_terms, one_synonym("occurrenceRemarks", "obs"),
+                              options = rostrum_options())
+    remarks <- out[out$term == "occurrenceRemarks", ]
+
+    testthat::expect_identical(remarks$status[[1]], "SUGERIDO")
+    testthat::expect_identical(remarks$selected_col[[1]], "OBS")
+    testthat::expect_false(grepl("locationRemarks", remarks$alternatives_json[[1]], fixed = TRUE))
+})
+
+testthat::test_that("the synonym bundle carries survey field names", {
+    bundle <- saira:::load_dwc_synonyms_v1()
+    pairs <- paste(bundle$term, bundle$synonym)
+
+    testthat::expect_true(all(c(
+        "locality site", "habitat vegetation type", "individualCount number of individuals",
+        "occurrenceStatus presence absence", "eventDate date"
+    ) %in% pairs))
+})

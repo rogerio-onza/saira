@@ -967,6 +967,11 @@ compute_name_score <- function(
         term_syn <- synonym_lookup$by_term[[term_norm]]
         if (!is.null(term_syn) && nrow(term_syn) > 0) {
             hit_idx <- which(term_syn$synonym_norm == col_norm)
+            via_expansion <- FALSE
+            if (length(hit_idx) == 0 && !is.null(col_profile$norm_expanded)) {
+                hit_idx <- which(term_syn$synonym_norm == col_profile$norm_expanded)
+                via_expansion <- length(hit_idx) > 0
+            }
             if (length(hit_idx) > 0) {
                 score <- max(term_syn$name_score[hit_idx], na.rm = TRUE)
                 score <- pmin(0.98, pmax(0.90, score))
@@ -975,7 +980,8 @@ compute_name_score <- function(
                     reason = "known_synonym",
                     is_exact = FALSE,
                     exact_hits = 0L,
-                    substring_hits = 0L
+                    substring_hits = 0L,
+                    via_expansion = via_expansion
                 ))
             }
         }
@@ -1370,6 +1376,41 @@ build_matching_profile <- function(x) {
     )
 }
 
+# Abbreviations in survey headers (ADR-139).
+rostrum_column_abbreviations <- c(
+    inds = "individuals", indiv = "individuals",
+    eff = "effort", veg = "vegetation", sp = "species", spp = "species"
+)
+# "#", "n" and "num" read as "number" only for synonym lookup ("# of inds." ->
+# "number of individuals"). As a token, "number" would match catalogNumber.
+rostrum_number_abbreviations <- c("n", "num", "nr", "nro")
+
+rostrum_expand_column_name <- function(col_name, numbers = TRUE) {
+    x <- as.character(col_name)
+    if (numbers) {
+        x <- gsub("#", " number ", x, fixed = TRUE)
+    }
+    words <- strsplit(normalize_for_matching(x), " ", fixed = TRUE)[[1]]
+    hit <- words %in% names(rostrum_column_abbreviations)
+    words[hit] <- rostrum_column_abbreviations[words[hit]]
+    if (numbers) {
+        words[words %in% rostrum_number_abbreviations] <- "number"
+    }
+    paste(words, collapse = " ")
+}
+
+# Column profile with the expanded name. norm_expanded is set only when an
+# abbreviation changed the name, so a synonym hit through it is known.
+build_column_matching_profile <- function(col_name) {
+    profile <- build_matching_profile(col_name)
+    expanded <- rostrum_expand_column_name(col_name)
+    if (nzchar(expanded) && !identical(expanded, profile$norm)) {
+        profile$norm_expanded <- expanded
+        profile$tokens <- tokenize_for_overlap(rostrum_expand_column_name(col_name, numbers = FALSE))
+    }
+    profile
+}
+
 rostrum_debug_enabled <- function(options = NULL) {
     opt_debug <- isTRUE(getOption("saira.rostrum.debug", FALSE))
     if (is.list(options) && !is.null(options$debug)) {
@@ -1616,12 +1657,20 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
     }
 
     column_profiles <- stats::setNames(
-        lapply(columns, build_matching_profile),
+        lapply(columns, build_column_matching_profile),
         columns
     )
     term_profiles <- stats::setNames(
         lapply(terms, build_matching_profile),
         terms
+    )
+    # Term whose name equals the column name, NA when there is none.
+    column_exact_owner <- stats::setNames(
+        terms[match(
+            vapply(column_profiles, function(p) p$norm, character(1)),
+            vapply(term_profiles, function(p) p$norm, character(1))
+        )],
+        columns
     )
     value_profiles <- stats::setNames(
         lapply(columns, function(col_name) {
@@ -1643,6 +1692,20 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
         ").",
         options = options
     )
+
+    # Share of values that parse as dates, computed only for the columns that
+    # reach the eventDate rescue.
+    date_results <- new.env(parent = emptyenv())
+    column_date_result <- function(col_name) {
+        if (is.null(date_results[[col_name]])) {
+            sampled <- sample_values_for_scoring(df[[col_name]], name_score = 0.80,
+                                                 max_sample_n = options$max_sample_n)
+            is_date <- !is.na(parse_dates_to_iso(sampled))
+            date_results[[col_name]] <- finalize_value_result(validate_vocabulary(is_date),
+                                                              sampled_n = length(sampled))
+        }
+        date_results[[col_name]]
+    }
 
     empty_row <- function(term, reason = "no_confident_match", is_temporal_limited = FALSE) {
         data.frame(
@@ -1693,6 +1756,12 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
         term_profile <- term_profiles[[term]]
 
         candidate_rows <- lapply(columns, function(col_name) {
+            # A column named exactly like another term belongs to that term, so
+            # "locationRemarks" does not tie with "OBS" for occurrenceRemarks.
+            owner <- column_exact_owner[[col_name]]
+            if (!is.na(owner) && !identical(owner, term)) {
+                return(NULL)
+            }
             col_profile <- column_profiles[[col_name]]
             name_res <- compute_name_score(
                 col_name = col_name,
@@ -1703,8 +1772,15 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
                 synonyms_index = synonyms_index
             )
 
+            # Temporal terms need an exact name. eventDate also takes a synonym
+            # or token-overlap name when most values parse as dates (ADR-139).
+            date_rescue <- FALSE
             if (is_temporal_limited && !isTRUE(name_res$is_exact)) {
-                return(NULL)
+                if (!identical(term, "eventDate") || name_res$score < prune_threshold ||
+                    column_date_result(col_name)$valid_ratio < 0.90) {
+                    return(NULL)
+                }
+                date_rescue <- TRUE
             }
 
             if (!isTRUE(name_res$is_exact) &&
@@ -1713,11 +1789,15 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
                 return(NULL)
             }
 
-            value_res <- compute_value_score_from_profile(
-                value_profile = value_profiles[[col_name]],
-                term = term,
-                name_score = name_res$score
-            )
+            value_res <- if (date_rescue) {
+                column_date_result(col_name)
+            } else {
+                compute_value_score_from_profile(
+                    value_profile = value_profiles[[col_name]],
+                    term = term,
+                    name_score = name_res$score
+                )
+            }
             if (identical(name_res$reason, "token_overlap") &&
                 name_res$score <= 0.70 &&
                 value_res$score < options$token_overlap_min_value_score) {
@@ -1730,6 +1810,11 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
             base_score <- (0.5 * name_res$score) + (0.5 * value_res$score)
             final_score <- base_score + penalty_res$score
             final_score <- pmin(1, pmax(0, final_score))
+            # Offered for review, never AUTO: a one-letter header, a header
+            # read through an abbreviation, a date column found by its values.
+            if (date_rescue || isTRUE(name_res$via_expansion) || nchar(col_profile$norm) == 1L) {
+                final_score <- min(final_score, options$auto_apply_threshold - 0.01)
+            }
 
             if (!is_blank_value(veto_code)) {
                 final_score <- 0
