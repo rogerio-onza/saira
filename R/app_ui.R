@@ -57,7 +57,7 @@ app_ui <- function() {
             theme = bslib::bs_theme(
                 version = 5,
                 bootswatch = "flatly",
-                bg = "#f4f3ee",
+                bg = "#f5f6f8",
                 fg = "#1C1C26",
                 primary = "#38CFF6",
                 secondary = "#2833AC",

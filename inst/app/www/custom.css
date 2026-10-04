@@ -5,11 +5,11 @@
 
 :root {
   /* Base */
-  --bg-main: #f4f3ee;
+  --bg-main: #f5f6f8;
   --bg-card: #ffffff;
-  --bg-subtle: #faf9f5; /* sunken surface inside a white panel, e.g. the dropzone */
+  --bg-subtle: #f8f9fb; /* sunken surface inside a white panel, e.g. the dropzone */
   --text-primary: #1c1c26;
-  --text-muted: #5f6570; /* AA on --bg-main: 5.3:1 (#6c757d gave 4.2:1) */
+  --text-muted: #5f6570; /* AA on --bg-main: 5.4:1 (#6c757d gave 4.3:1) */
 
   /* Bird Palette */
   --primary: #38cff6;
@@ -61,7 +61,7 @@
   --badge-suggested-fg: #7a4d00;
   --badge-alias-bg: #e7e9fa;
   --badge-alias-fg: #2833ac;
-  --badge-manual-bg: #f1f0ea;
+  --badge-manual-bg: #eef0f3;
   --badge-manual-fg: #5f6570;
   --badge-ambiguous-bg: #fde6d6;
   --badge-ambiguous-fg: #8a3f0a;
@@ -75,10 +75,10 @@
   --badge-invasive-bg: #f5e8dc;
   --badge-invasive-fg: #8c4a00; /* invasive species: brown, never the not-found red */
 
-  /* Borders: warm neutrals that sit on --bg-main (ADR-127). */
-  --border-light: #efede6;
-  --border-default: #e6e4dc;
-  --border-strong: #d9d6cc;
+  /* Borders: cool neutrals that sit on --bg-main (ADR-135). */
+  --border-light: #eceef2;
+  --border-default: #e3e6eb;
+  --border-strong: #d3d8e0;
   --border: var(--border-default);
 
   /* Backgrounds */
@@ -1219,7 +1219,7 @@ label,
   font-family: var(--font-serif);
   font-size: var(--text-base);
   color: #1c1c26;
-  background: #f4f3ee;
+  background: var(--bg-subtle);
   border: 1.5px solid rgba(40, 51, 172, 0.18);
   border-radius: var(--radius-lg);
   outline: none;
@@ -1257,7 +1257,7 @@ label,
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   color: #2833ac;
-  background-color: #f4f3ee;
+  background-color: var(--bg-subtle);
   border: 1.5px solid rgba(40, 51, 172, 0.18);
   border-radius: var(--radius);
   padding: 5px 28px 5px 10px;
@@ -1315,7 +1315,7 @@ label,
   font-weight: var(--weight-semibold);
   cursor: pointer;
   border: 1.5px solid rgba(40, 51, 172, 0.08);
-  background: #f4f3ee;
+  background: var(--bg-subtle);
   color: var(--text-muted);
   transition: all 0.2s ease;
 }
@@ -1708,7 +1708,7 @@ label,
   flex-wrap: wrap;
   padding: 12px 18px;
   border-top: 1px solid rgba(40, 51, 172, 0.08);
-  background: #f4f3ee;
+  background: var(--bg-subtle);
   margin-top: 0;
   border-bottom-left-radius: var(--radius-xl);
   border-bottom-right-radius: var(--radius-xl);
@@ -2793,7 +2793,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .homepage-container .stats-container .stat-box {
-  background: #f4f3ee;
+  background: var(--bg-subtle);
   border: 1.5px solid rgba(40, 51, 172, 0.08);
   border-radius: var(--radius-lg);
   padding: 16px 12px;
@@ -3420,7 +3420,7 @@ table.dataTable tbody tr.validate-invalid td {
   margin-bottom: var(--space-2);
 }
 
-/* Flat white sidebar with 1px dividers (bslib paints it beige by default). */
+/* Flat white sidebar with 1px dividers (bslib paints it in the page color by default). */
 .bslib-sidebar-layout:has(> .mapping-sidebar) {
   --_sidebar-bg: var(--bg-card);
   --bslib-sidebar-bg: var(--bg-card);
@@ -6152,7 +6152,7 @@ body.vn-review-open .modal-backdrop.show {
 
 .vn-report-search,
 .vn-report-select {
-  background: #f4f3ee;
+  background: var(--bg-subtle);
   border: 1px solid rgba(40, 51, 172, 0.18);
   border-radius: var(--radius);
   font-family: var(--font-ui);
@@ -6357,7 +6357,7 @@ body.vn-review-open .modal-backdrop.show {
   padding: 0 0.45rem;
   border: 1px solid rgba(40, 51, 172, 0.18);
   border-radius: var(--radius);
-  background: #f4f3ee;
+  background: var(--bg-subtle);
   color: #2833ac;
   font-family: var(--font-ui);
   font-size: var(--text-xs);
@@ -7044,7 +7044,7 @@ body.vn-review-open .modal-backdrop.show {
   font-weight: var(--weight-semibold);
   padding: 4px 9px;
   border-radius: var(--radius);
-  background: #f4f3ee;
+  background: var(--bg-subtle);
   color: var(--text-muted);
   border: 1px solid rgba(40, 51, 172, 0.08);
   transition: all 0.2s ease;

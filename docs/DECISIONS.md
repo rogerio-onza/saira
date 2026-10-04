@@ -2746,3 +2746,14 @@ Formato: ADR leve (Architecture Decision Record).
   - Fica em mono: termos DwC (cartao do mapeamento, cabecalhos da Previa), amostras "ex.:", celulas de tabela (`.dataTable tbody td`), coordenadas, nomes de arquivo, codigo e o badge de versao.
   - IBM Plex Sans vai para `inst/app/www/vendor/fonts/` (woff2 latin e latin-ext, pesos 400 a 700) e entra no `source-fonts.css`, sem CDN (ADR-100).
 - **Consequencias**: componente novo escolhe `--font-ui` ou `--font-mono` pela origem do texto. Os testes de CSS cobram o token `--font-ui` e os arquivos da fonte. As capturas do tutorial precisam ser refeitas.
+
+## ADR-135: fundo cinza frio no lugar do bege
+
+- **Data**: 2026-10-03
+- **Status**: Aceito. Substitui as cores de fundo e de borda do ADR-127.
+- **Contexto**: o bege `#f4f3ee` deixava a interface amarelada ao lado dos paineis brancos e do azul `#2833AC`. Oito regras repetiam o bege em hex fixo, fora dos tokens.
+- **Decisao**:
+  - `--bg-main: #f5f6f8` e `bg` do `bs_theme` no mesmo valor. `--bg-subtle: #f8f9fb`, `--badge-manual-bg: #eef0f3`.
+  - Bordas frias: `#ECEEF2`, `#E3E6EB`, `#D3D8E0`.
+  - As oito regras com `#f4f3ee` fixo (Wiki, Ajuda, Nomes, estatisticas do upload) passam a `var(--bg-subtle)`.
+- **Consequencias**: o contraste sobe um pouco: `--text-muted` da 5,4:1 sobre o fundo. Cor de superficie nova usa token, nunca hex fixo. O tema do site (`website/theme-light.scss`) continua bege ate um PR proprio.

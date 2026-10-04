@@ -1983,7 +1983,7 @@ body.vn-review-open .modal-backdrop.show {
 
 .vn-report-search,
 .vn-report-select {
-  background: #f4f3ee;
+  background: var(--bg-subtle);
   border: 1px solid rgba(40, 51, 172, 0.18);
   border-radius: var(--radius);
   font-family: var(--font-ui);
@@ -2188,7 +2188,7 @@ body.vn-review-open .modal-backdrop.show {
   padding: 0 0.45rem;
   border: 1px solid rgba(40, 51, 172, 0.18);
   border-radius: var(--radius);
-  background: #f4f3ee;
+  background: var(--bg-subtle);
   color: #2833ac;
   font-family: var(--font-ui);
   font-size: var(--text-xs);

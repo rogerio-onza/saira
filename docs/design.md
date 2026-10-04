@@ -1,8 +1,8 @@
 # Design System — Saíra Scientific Application
 
-> **Background:** `#f4f3ee` (warm beige) — non-negotiable  
+> **Background:** `#f5f6f8` (cinza frio) com painéis brancos (ADR-135)  
 > **Palette:** *Tangara fastuosa* + estados semânticos com personalidade  
-> **Version:** 5.0 — visual plano e leve (ADR-127): sem sombra, sem gradiente, bordas neutras quentes
+> **Version:** 5.1 — visual plano e leve (ADR-127): sem sombra, sem gradiente, bordas neutras frias (ADR-135), IBM Plex Sans na interface (ADR-134)
 
 ---
 
@@ -58,10 +58,10 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 
 ```css
 /* ── Base ── */
---bg-main:       #f4f3ee;   /* NON-NEGOTIABLE */
+--bg-main:       #f5f6f8;   /* cinza frio, ADR-135 */
 --bg-card:       #ffffff;   /* NON-NEGOTIABLE */
 --text-primary:  #1C1C26;   /* Cauda */
---text-muted:    #5F6570;   /* 5.3:1 sobre o bege */
+--text-muted:    #5F6570;   /* 5.4:1 sobre o cinza frio */
 
 /* ── Brand — do pássaro ── */
 --primary:       #38CFF6;   /* Peito */
@@ -87,9 +87,9 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 --info-border:    rgba(37, 38, 89, 0.20);
 
 /* ── Borders ── */
---border-light:   #EFEDE6;
---border-default: #E6E4DC;
---border-strong:  #D9D6CC;
+--border-light:   #ECEEF2;
+--border-default: #E3E6EB;
+--border-strong:  #D3D8E0;
 --border:         var(--border-default);
 --warning-border-strong: rgba(255, 162, 4, 0.55);
 --error-border-strong:   rgba(192, 57, 43, 0.50);
@@ -116,7 +116,7 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 --badge-auto-*       #E2F4EC / #0B6B47
 --badge-suggested-*  #FFF1D6 / #7A4D00
 --badge-alias-*      #E7E9FA / #2833AC
---badge-manual-*     #F1F0EA / #5F6570
+--badge-manual-*     #EEF0F3 / #5F6570
 --badge-ambiguous-*  #FDE6D6 / #8A3F0A
 --badge-template-*   #F1E4F7 / #6B2D86
 --badge-assistant-*  #E6E9EF / #3D4656
@@ -241,7 +241,7 @@ Controles 8px, cards 12px, painéis 14px. Filtros e tags de status usam `--radiu
 
 ## 💫 Shadows & Focus Rings
 
-O visual é plano (ADR-127). Todo token `--shadow-*` vale `none`: nenhum card, botão, modal ou menu tem sombra. Um card mostra o limite com a borda de 1px e o fundo branco sobre o bege. Um estado selecionado usa `--selected-bg` e um anel `inset 0 0 0 1px`. Os anéis de foco ficam.
+O visual é plano (ADR-127). Todo token `--shadow-*` vale `none`: nenhum card, botão, modal ou menu tem sombra. Um card mostra o limite com a borda de 1px e o fundo branco sobre o cinza frio. Um estado selecionado usa `--selected-bg` e um anel `inset 0 0 0 1px`. Os anéis de foco ficam.
 
 ```css
 --focus-ring-primary: 0 0 0 3px rgba(56,207,246,0.25);
@@ -406,17 +406,17 @@ count part → --pill-bg tint; active chip → --pill-bg fill, --pill-fg border,
 
 | Foreground | Background | Ratio | Status |
 |---|---|---|---|
-| `#1C1C26` on `#f4f3ee` | text on bg | **15.2:1** | ✅ AAA |
-| `#2833AC` on `#f4f3ee` | accent on bg | **8.75:1** | ✅ AAA |
+| `#1C1C26` on `#f5f6f8` | text on bg | **15.6:1** | ✅ AAA |
+| `#2833AC` on `#f5f6f8` | accent on bg | **8.99:1** | ✅ AAA |
 | `#1C1C26` on `#38CFF6` | dark text on primary | **9.19:1** | ✅ AAA — botões |
 | `#ffffff` on `#00A86B` | white on success | **3.08:1** | ⚠️ FALHA — ver nota abaixo |
 | `#1C1C26` on `#FFA204` | dark text on warning | **8.38:1** | ✅ AAA |
 | `#ffffff` on `#C0392B` | white on error | **5.44:1** | ✅ AA |
-| `#252659` on `#f4f3ee` | info on bg | **12.6:1** | ✅ AAA |
-| `#38CFF6` on `#f4f3ee` | primary on bg | **1.65:1** | ❌ NUNCA como texto |
-| `#5F6570` on `#f4f3ee` | text-muted on bg | **5.28:1** | ✅ AA |
+| `#252659` on `#f5f6f8` | info on bg | **12.9:1** | ✅ AAA |
+| `#38CFF6` on `#f5f6f8` | primary on bg | **1.70:1** | ❌ NUNCA como texto |
+| `#5F6570` on `#f5f6f8` | text-muted on bg | **5.42:1** | ✅ AA |
 | `#5F6570` on `#ffffff` | text-muted on card | **5.86:1** | ✅ AA |
-| `#6D28D9` on `#f4f3ee` | coord-swapped on bg | **6.4:1** | ✅ AA |
+| `#6D28D9` on `#f5f6f8` | coord-swapped on bg | **6.57:1** | ✅ AA |
 
 ---
 
@@ -426,9 +426,9 @@ As cores abaixo são fiéis ao saíra e **não devem ser alteradas**. Os conflit
 
 | Cor | Uso pretendido | Ratio real | Problema | Decisão sugerida |
 |---|---|---|---|---|
-| `#00A86B` (success) on `#f4f3ee` | Texto de status | **2.77:1** | Falha AA e AAA | Usar `#00A86B` **apenas como fundo/ícone/borda** — nunca como texto. Para texto, o token `#007A4D` (já no doc em badges) tem 4.86:1 ✅ |
+| `#00A86B` (success) on `#f5f6f8` | Texto de status | **2.85:1** | Falha AA e AAA | Usar `#00A86B` **apenas como fundo/ícone/borda** — nunca como texto. Para texto, o token `#007A4D` (já no doc em badges) tem 4.86:1 ✅ |
 | `#ffffff` on `#00A86B` (btn-success) | Texto branco no botão | **3.08:1** | Falha AA — o doc afirma 4.7:1, mas o valor real é 3.08:1 | Usar texto `#1C1C26` no lugar de branco (contraste 4.43:1 ✅ AA), ou aceitar o desvio em botões grandes |
-| `#C07800` (warning dark) on `#f4f3ee` | Texto em badges warning | **3.19:1** | Falha AA | Usar apenas em badges grandes (18px+) onde AA large (3:1) se aplica, ou escurecer só nesse contexto de uso |
+| `#C07800` (warning dark) on `#f5f6f8` | Texto em badges warning | **3.28:1** | Falha AA | Usar apenas em badges grandes (18px+) onde AA large (3:1) se aplica, ou escurecer só nesse contexto de uso |
 
 > **Nota sobre `btn-success`:** O valor `4.7:1` documentado na seção anterior está incorreto. O contraste real de `#ffffff` sobre `#00A86B` é **3.08:1**, abaixo do mínimo AA. O único conflito de identidade visual entre os problemas listados acima é o `btn-success` — os demais ou têm workarounds contextuais ou (no caso do `coord-swapped`) envolvem uma cor que não é do pássaro.
 
@@ -477,8 +477,8 @@ As cores abaixo são fiéis ao saíra e **não devem ser alteradas**. Os conflit
 
 ---
 
-**Version:** 5.1 — IBM Plex Sans para a interface, Space Mono só para código e dados (ADR-134)  
-**Previous:** 5.0 — visual plano e leve (ADR-127)  
+**Version:** 5.2 — fundo cinza frio `#f5f6f8` e bordas frias (ADR-135)  
+**Previous:** 5.1 — IBM Plex Sans para a interface, Space Mono só para código e dados (ADR-134)  
 **Last Updated:** Outubro 2026  
 **Maintained By:** Rogério Nunes Oliveira
 
