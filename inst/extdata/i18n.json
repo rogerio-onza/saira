@@ -3569,11 +3569,6 @@
     "en": "Maximum size: 500 MB",
     "es": "Tamaño máximo: 500 MB"
   },
-  "upload_encoding_info": {
-    "pt": "Encodings suportados: UTF-8, Latin-1 (ISO-8859-1)",
-    "en": "Supported encodings: UTF-8, Latin-1 (ISO-8859-1)",
-    "es": "Codificaciones admitidas: UTF-8, Latin-1 (ISO-8859-1)"
-  },
   "upload_dropzone_cta": {
     "pt": "Arraste a sua planilha aqui",
     "en": "Drag your spreadsheet here",
@@ -3583,16 +3578,6 @@
     "pt": "Selecionar arquivo CSV, TXT ou Excel para upload",
     "en": "Select CSV, TXT or Excel file for upload",
     "es": "Seleccionar un archivo CSV, TXT o Excel para cargar"
-  },
-  "upload_privacy_alert": {
-    "pt": "Privacidade: Todos os seus dados são processados localmente, nenhum dado é enviado à internet.",
-    "en": "Privacy: All your data is processed locally, no data is sent to the internet.",
-    "es": "Privacidad: todos sus datos se procesan localmente, ningún dato se envía a internet."
-  },
-  "upload_recommendation": {
-    "pt": "Utilize ; como separador de itens (ex.: Autor X ; Autor Y). No DwC, a saída será padronizada como Autor X | Autor Y.",
-    "en": "Use ; as item separator (e.g., Author X ; Author Y). In DwC output, it will be standardized as Author X | Author Y.",
-    "es": "Use ; como separador de elementos (ej.: Autor X ; Autor Y). En DwC, la salida se estandarizará como Autor X | Autor Y."
   },
   "upload_mode_csv_title": {
     "pt": "Planilha",
@@ -3663,16 +3648,6 @@
     "pt": "Envio concluído",
     "en": "Upload complete",
     "es": "Carga completada"
-  },
-  "home_camtrap_files_note": {
-    "pt": "Camtrap DP: datapackage.json, deployments.csv e observations.csv (media.csv é opcional). Wildlife Insights: deployments.csv, projects.csv e images_*.csv.",
-    "en": "Camtrap DP: datapackage.json, deployments.csv and observations.csv (media.csv is optional). Wildlife Insights: deployments.csv, projects.csv and images_*.csv.",
-    "es": "Camtrap DP: datapackage.json, deployments.csv y observations.csv (media.csv es opcional). Wildlife Insights: deployments.csv, projects.csv e images_*.csv."
-  },
-  "home_guide_tip": {
-    "pt": "Tem um guia de mapeamento do Saíra? Envie-o no mesmo campo para importar os aliases.",
-    "en": "Have a Saíra mapping guide? Upload it in the same field to import its aliases.",
-    "es": "¿Tiene una guía de mapeo de Saíra? Cárguela en el mismo campo para importar sus alias."
   },
   "welcome_eyebrow": {
     "pt": "Padronizador Darwin Core",
@@ -3763,16 +3738,6 @@
     "pt": "`deployments.csv` e `observations.csv`",
     "en": "`deployments.csv` and `observations.csv`",
     "es": "`deployments.csv` y `observations.csv`"
-  },
-  "home_notes_more": {
-    "pt": "Saiba mais",
-    "en": "Learn more",
-    "es": "Más información"
-  },
-  "home_next_eyebrow": {
-    "pt": "Depois do envio",
-    "en": "After the upload",
-    "es": "Después de la carga"
   },
   "data_quality_title": {
     "pt": "Qualidade dos Dados",

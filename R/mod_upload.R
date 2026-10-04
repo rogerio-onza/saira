@@ -11,66 +11,92 @@
 mod_upload_ui <- function(id) {
     ns <- shiny::NS(id)
 
-    # Home: header, format cards and dropzone on the page, then the notes and
-    # the next steps (ADR-136).
+    # Home: header, format cards and dropzone on the page, then the notes
+    # (ADR-136). The text outputs start with the Portuguese content, which is
+    # the default language, so the home shows before the server is ready.
     shiny::div(
         class = "container-fluid homepage-container home-b",
         shiny::tags$section(
             class = "home-upload-panel",
-            shiny::uiOutput(ns("home_header")),
-            # ADR-097: tab strip replaces ADR-095 input_switch.
-            # Native radioButtons drive the state. Shiny does
-            # NOT assign per-option ids on the radio inputs, so
-            # `<label for>` cannot forward clicks; instead a
-            # tiny click delegator (script below) syncs the
-            # visible tab clicks to the matching radio input.
+            # The bird sits on the bottom edge of this block, so its branch
+            # touches the top border of the dropzone.
             shiny::div(
-                class = "upload-mode-tabs",
-                role  = "tablist",
-                `aria-labelledby` = ns("mode_tabs_label"),
-                shiny::tags$span(
-                    id = ns("mode_tabs_label"),
-                    class = "visually-hidden",
-                    shiny::uiOutput(ns("mode_tabs_a11y_label"), inline = TRUE)
+                class = "home-top",
+                prefilled_ui_output(ns("home_header"), home_header_ui("pt")),
+                shiny::tags$img(
+                    src = "www/images/saira_bird.webp",
+                    class = "home-bird",
+                    alt = "",
+                    `aria-hidden` = "true",
+                    width = 640,
+                    height = 407
                 ),
+                # ADR-097: tab strip replaces ADR-095 input_switch.
+                # Native radioButtons drive the state. Shiny does
+                # NOT assign per-option ids on the radio inputs, so
+                # `<label for>` cannot forward clicks; instead a
+                # tiny click delegator (script below) syncs the
+                # visible tab clicks to the matching radio input.
                 shiny::div(
-                    class = "upload-mode-tabs-input",
-                    shiny::radioButtons(
-                        inputId = ns("upload_mode"),
-                        label = NULL,
-                        choices = c("csv" = "csv", "camtrap" = "camtrap"),
-                        selected = "csv",
-                        inline = TRUE
-                    )
-                ),
-                shiny::tags$button(
-                    type = "button",
-                    class = "upload-mode-tab",
-                    `data-mode` = "csv",
-                    `aria-controls` = ns("upload_mode"),
-                    ph_icon("file-csv"),
+                    class = "upload-mode-tabs",
+                    role  = "tablist",
+                    `aria-labelledby` = ns("mode_tabs_label"),
                     shiny::tags$span(
-                        class = "upload-mode-tab-text",
+                        id = ns("mode_tabs_label"),
+                        class = "visually-hidden",
+                        prefilled_ui_output(
+                            ns("mode_tabs_a11y_label"),
+                            shiny::tags$span(tr("upload_mode_tabs_a11y_label", "pt")),
+                            inline = TRUE
+                        )
+                    ),
+                    shiny::div(
+                        class = "upload-mode-tabs-input",
+                        shiny::radioButtons(
+                            inputId = ns("upload_mode"),
+                            label = NULL,
+                            choices = c("csv" = "csv", "camtrap" = "camtrap"),
+                            selected = "csv",
+                            inline = TRUE
+                        )
+                    ),
+                    shiny::tags$button(
+                        type = "button",
+                        class = "upload-mode-tab",
+                        `data-mode` = "csv",
+                        `aria-controls` = ns("upload_mode"),
+                        ph_icon("file-csv"),
                         shiny::tags$span(
-                            class = "upload-mode-tab-title",
-                            shiny::uiOutput(ns("mode_csv_title"), inline = TRUE)
-                        ),
-                        shiny::tags$span(class = "upload-mode-tab-sub", "CSV \u00B7 XLSX \u00B7 TXT")
-                    )
-                ),
-                shiny::tags$button(
-                    type = "button",
-                    class = "upload-mode-tab",
-                    `data-mode` = "camtrap",
-                    `aria-controls` = ns("upload_mode"),
-                    ph_icon("box-archive"),
-                    shiny::tags$span(
-                        class = "upload-mode-tab-text",
+                            class = "upload-mode-tab-text",
+                            shiny::tags$span(
+                                class = "upload-mode-tab-title",
+                                prefilled_ui_output(
+                                    ns("mode_csv_title"),
+                                    shiny::tags$span(tr("upload_mode_csv_title", "pt")),
+                                    inline = TRUE
+                                )
+                            ),
+                            shiny::tags$span(class = "upload-mode-tab-sub", "CSV \u00B7 XLSX \u00B7 TXT")
+                        )
+                    ),
+                    shiny::tags$button(
+                        type = "button",
+                        class = "upload-mode-tab",
+                        `data-mode` = "camtrap",
+                        `aria-controls` = ns("upload_mode"),
+                        ph_icon("box-archive"),
                         shiny::tags$span(
-                            class = "upload-mode-tab-title",
-                            shiny::uiOutput(ns("mode_camtrap_title"), inline = TRUE)
-                        ),
-                        shiny::tags$span(class = "upload-mode-tab-sub", "ZIP")
+                            class = "upload-mode-tab-text",
+                            shiny::tags$span(
+                                class = "upload-mode-tab-title",
+                                prefilled_ui_output(
+                                    ns("mode_camtrap_title"),
+                                    shiny::tags$span(tr("upload_mode_camtrap_title", "pt")),
+                                    inline = TRUE
+                                )
+                            ),
+                            shiny::tags$span(class = "upload-mode-tab-sub", "ZIP")
+                        )
                     )
                 )
             ),
@@ -113,10 +139,17 @@ mod_upload_ui <- function(id) {
                     shiny::div(
                         class = "upload-dropzone-copy",
                         ph_icon("arrow-up-from-bracket", class = "upload-dropzone-icon"),
-                        shiny::uiOutput(ns("dropzone_hint_text")),
+                        prefilled_ui_output(
+                            ns("dropzone_hint_text"),
+                            home_dropzone_hint_ui("csv", "pt")
+                        ),
                         shiny::div(
                             class = "upload-dropzone-max-size",
-                            shiny::uiOutput(ns("max_size_text"), inline = TRUE)
+                            prefilled_ui_output(
+                                ns("max_size_text"),
+                                shiny::tags$span(tr("upload_max_size", "pt")),
+                                inline = TRUE
+                            )
                         )
                     )
                 ),
@@ -140,8 +173,11 @@ mod_upload_ui <- function(id) {
 
             # Stats after upload
             shiny::uiOutput(ns("stats"), class = "home-stats"),
-            shiny::uiOutput(ns("upload_notes"), class = "home-before"),
-            shiny::uiOutput(ns("home_next"), class = "home-next")
+            prefilled_ui_output(
+                ns("upload_notes"),
+                home_notes_ui("csv", "pt"),
+                class = "home-before"
+            )
         )
     )
 }
@@ -185,14 +221,7 @@ mod_upload_server <- function(id, lang_r) {
         })
 
         output$dropzone_hint_text <- shiny::renderUI({
-            camtrap <- identical(input$upload_mode %||% "csv", "camtrap")
-            key <- if (camtrap) "upload_camtrap_dropzone_hint" else "upload_dropzone_cta"
-            formats <- if (camtrap) "ZIP" else "CSV \u00B7 XLSX \u00B7 TXT"
-            shiny::tagList(
-                shiny::tags$h2(class = "upload-dropzone-title", tr(key, lang_r())),
-                shiny::div(class = "upload-dropzone-hint", tr("upload_dropzone_click", lang_r())),
-                shiny::div(class = "upload-dropzone-formats", formats)
-            )
+            home_dropzone_hint_ui(input$upload_mode %||% "csv", lang_r())
         })
 
         output$max_size_text <- shiny::renderUI({
@@ -200,12 +229,7 @@ mod_upload_server <- function(id, lang_r) {
         })
 
         output$home_header <- shiny::renderUI({
-            shiny::div(
-                class = "home-header",
-                shiny::div(class = "home-eyebrow", tr("welcome_eyebrow", lang_r())),
-                shiny::tags$h1(class = "home-title", tr("home_title", lang_r())),
-                shiny::tags$p(class = "home-subtitle", tr("home_subtitle", lang_r()))
-            )
+            home_header_ui(lang_r())
         })
 
         # Label for Shiny's own progress bar, which writes "Upload complete"
@@ -217,87 +241,9 @@ mod_upload_server <- function(id, lang_r) {
             )
         })
 
-        # Notes under the dropzone: short notes in a row, the full text behind
-        # "Learn more". The notes follow the selected mode.
+        # Notes under the dropzone, for the selected mode.
         output$upload_notes <- shiny::renderUI({
-            lang <- lang_r()
-            # Text between backticks is a format token and shows in mono. One
-            # HTML string, so no whitespace goes between a token and a comma.
-            tokens <- function(text) {
-                parts <- htmltools::htmlEscape(strsplit(text, "`", fixed = TRUE)[[1]])
-                even <- seq_along(parts) %% 2 == 0
-                parts[even] <- sprintf('<span class="home-note-token">%s</span>', parts[even])
-                shiny::HTML(paste(parts, collapse = ""))
-            }
-            note <- function(icon, key) {
-                shiny::div(
-                    class = "home-note",
-                    ph_icon(icon, class = "home-note-icon"),
-                    shiny::div(class = "home-note-title", tr(paste0("home_note_", key, "_title"), lang)),
-                    shiny::div(class = "home-note-text", tokens(tr(paste0("home_note_", key, "_text"), lang)))
-                )
-            }
-            full_note <- function(icon, text) {
-                shiny::div(class = "home-upload-note", ph_icon(icon), shiny::tags$span(text))
-            }
-            if (identical(input$upload_mode %||% "csv", "camtrap")) {
-                notes <- list(
-                    note("box-archive", "camtrap_format"),
-                    note("file-zipper", "camtrap_files"),
-                    note("lock", "privacy")
-                )
-                full <- list(full_note("box-archive", tr("home_camtrap_files_note", lang)))
-            } else {
-                notes <- list(
-                    note("file-lines", "formats"),
-                    note("code", "encoding"),
-                    note("table-list", "separator"),
-                    note("file-import", "guide"),
-                    note("lock", "privacy")
-                )
-                full <- list(
-                    full_note("code", tr("upload_encoding_info", lang)),
-                    full_note("table-list", tr("upload_recommendation", lang)),
-                    full_note("file-import", tr("home_guide_tip", lang))
-                )
-            }
-            shiny::tagList(
-                shiny::tags$h3(class = "home-section-title", tr("home_before_title", lang)),
-                shiny::div(class = "home-notes-grid", notes),
-                shiny::tags$details(
-                    class = "home-notes-more",
-                    shiny::tags$summary(
-                        ph_icon("circle-info"),
-                        tr("home_notes_more", lang),
-                        ph_icon("chevron-down", class = "home-notes-more-caret")
-                    ),
-                    shiny::div(
-                        class = "home-upload-notes",
-                        full,
-                        full_note("lock", tr("upload_privacy_alert", lang))
-                    )
-                )
-            )
-        })
-
-        # The workflow steps after the upload, numbered as in the navbar.
-        output$home_next <- shiny::renderUI({
-            lang <- lang_r()
-            keys <- c(
-                "nav_mapping", "nav_preview", "nav_validate_names",
-                "nav_validate_coords", "nav_generalize", "nav_export"
-            )
-            steps <- lapply(seq_along(keys), function(i) {
-                shiny::tags$li(
-                    class = "home-next-step",
-                    shiny::tags$span(class = "home-next-num", i + 1L),
-                    tr(keys[[i]], lang)
-                )
-            })
-            shiny::tagList(
-                shiny::div(class = "home-eyebrow", tr("home_next_eyebrow", lang)),
-                shiny::tags$ol(class = "home-next-steps", steps)
-            )
+            home_notes_ui(input$upload_mode %||% "csv", lang_r())
         })
 
         # ADR-087: classify the upload as data CSV or Saira mapping guide.
@@ -534,4 +480,71 @@ mod_upload_server <- function(id, lang_r) {
         # Explicit return
         return(raw_data)
     })
+}
+
+# Home content builders. The server renders them in the current language, and
+# mod_upload_ui() renders them in Portuguese as the first content.
+home_header_ui <- function(lang) {
+    shiny::div(
+        class = "home-header",
+        shiny::div(class = "home-eyebrow", tr("welcome_eyebrow", lang)),
+        shiny::tags$h1(class = "home-title", tr("home_title", lang)),
+        shiny::tags$p(class = "home-subtitle", tr("home_subtitle", lang))
+    )
+}
+
+home_dropzone_hint_ui <- function(mode, lang) {
+    camtrap <- identical(mode, "camtrap")
+    key <- if (camtrap) "upload_camtrap_dropzone_hint" else "upload_dropzone_cta"
+    formats <- if (camtrap) "ZIP" else "CSV \u00B7 XLSX \u00B7 TXT"
+    shiny::tagList(
+        shiny::tags$h2(class = "upload-dropzone-title", tr(key, lang)),
+        shiny::div(class = "upload-dropzone-hint", tr("upload_dropzone_click", lang)),
+        shiny::div(class = "upload-dropzone-formats", formats)
+    )
+}
+
+home_notes_ui <- function(mode, lang) {
+    # Text between backticks is a format token and shows in mono. One HTML
+    # string, so no whitespace goes between a token and a comma.
+    tokens <- function(text) {
+        parts <- htmltools::htmlEscape(strsplit(text, "`", fixed = TRUE)[[1]])
+        even <- seq_along(parts) %% 2 == 0
+        parts[even] <- sprintf('<span class="home-note-token">%s</span>', parts[even])
+        shiny::HTML(paste(parts, collapse = ""))
+    }
+    note <- function(icon, key) {
+        shiny::div(
+            class = "home-note",
+            ph_icon(icon, class = "home-note-icon"),
+            shiny::div(class = "home-note-title", tr(paste0("home_note_", key, "_title"), lang)),
+            shiny::div(class = "home-note-text", tokens(tr(paste0("home_note_", key, "_text"), lang)))
+        )
+    }
+    notes <- if (identical(mode, "camtrap")) {
+        list(
+            note("box-archive", "camtrap_format"),
+            note("file-zipper", "camtrap_files"),
+            note("lock", "privacy")
+        )
+    } else {
+        list(
+            note("file-lines", "formats"),
+            note("code", "encoding"),
+            note("table-list", "separator"),
+            note("file-import", "guide"),
+            note("lock", "privacy")
+        )
+    }
+    shiny::tagList(
+        shiny::tags$h3(class = "home-section-title", tr("home_before_title", lang)),
+        shiny::div(class = "home-notes-grid", notes)
+    )
+}
+
+# A uiOutput that shows `content` until the server sends its first value.
+prefilled_ui_output <- function(id, content, inline = FALSE, ...) {
+    out <- shiny::uiOutput(id, inline = inline, ...)
+    out$children <- list(content)
+    out
 }

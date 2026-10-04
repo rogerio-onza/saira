@@ -19,6 +19,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **ui:** Use IBM Plex Sans for interface text and keep Space Mono for code and data, ADR-134 ([#152](https://github.com/rogerio-onza/saira/pull/152))
 - **ui:** Replace the warm beige background with cool gray and cool borders, ADR-135 ([#153](https://github.com/rogerio-onza/saira/pull/153))
 - **upload:** Rebuild the home page with format cards, a larger dropzone, short notes and the next steps, ADR-136 ([#154](https://github.com/rogerio-onza/saira/pull/154))
+- **upload:** Show the home page as soon as the page loads, drop the repeated notes and next steps, add the saíra illustration, ADR-136 ([#155](https://github.com/rogerio-onza/saira/pull/155))
+- **mapping:** Enlarge the text of the class filter pills ([#155](https://github.com/rogerio-onza/saira/pull/155))
+- **ui:** Give the language selector the same height, border and corners as the version badge ([#155](https://github.com/rogerio-onza/saira/pull/155))
 - **site:** Rewrite the tutorials around annotated screenshots and open the first tutorial instead of an index page ([#149](https://github.com/rogerio-onza/saira/pull/149))
 - **site:** Show the tutorials as flat panels like the app: numbered sidebar with the page contents, one panel per step, screenshot legends joined to their image
 - **names:** Center the providers, options and run button in the top bar
@@ -48,6 +51,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **upload:** Open Mapping after the first upload of a session, not only after the second ([#155](https://github.com/rogerio-onza/saira/pull/155))
+- **names:** Line up the Validate names button with the provider and option rows ([#155](https://github.com/rogerio-onza/saira/pull/155))
 - **mapping:** Keep the category state dots and the "Next pending" count after a language switch
 - **mapping:** Keep a card title whole: when the row is narrow, the status badge moves to the next line
 - **ui:** Use "modelo" for the mapping template in Spanish, so the sidebar button fits on one line

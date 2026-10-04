@@ -640,6 +640,7 @@
 .mapping-class-pillbar .stream-pill {
   min-height: 34px;
   padding: 0 var(--space-3);
+  font-size: 0.875rem;
   color: var(--text-primary);
   border-color: var(--border-strong);
 }

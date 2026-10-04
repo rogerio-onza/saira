@@ -68,9 +68,9 @@ testthat::test_that("mod_upload_server shows the CSV notes by default", {
         {
             session$flushReact()
             html <- output$upload_notes$html
-            testthat::expect_true(grepl("item separator", html, fixed = TRUE))
-            testthat::expect_true(grepl("mapping guide", html, fixed = TRUE))
-            testthat::expect_false(grepl("datapackage.json", html, fixed = TRUE))
+            testthat::expect_true(grepl("between several values", html, fixed = TRUE))
+            testthat::expect_true(grepl("guide in the same field", html, fixed = TRUE))
+            testthat::expect_false(grepl("deployments.csv", html, fixed = TRUE))
         }
     )
 })
@@ -85,8 +85,8 @@ testthat::test_that("mod_upload_server shows the expected Camtrap files in camtr
             session$setInputs(upload_mode = "camtrap")
             session$flushReact()
             html <- output$upload_notes$html
-            testthat::expect_true(grepl("datapackage.json", html, fixed = TRUE))
-            testthat::expect_false(grepl("item separator", html, fixed = TRUE))
+            testthat::expect_true(grepl("deployments.csv", html, fixed = TRUE))
+            testthat::expect_false(grepl("between several values", html, fixed = TRUE))
         }
     )
 })
@@ -367,4 +367,41 @@ testthat::test_that("mod_upload_server still re-reads when a new file is uploade
             testthat::expect_equal(nrow(session$getReturned()()), 4L)
         }
     )
+})
+
+testthat::test_that("mod_upload_ui carries the Portuguese home content before the server renders", {
+    html <- as.character(mod_upload_ui("upload"))
+    testthat::expect_true(grepl(tr("home_title", "pt"), html, fixed = TRUE))
+    testthat::expect_true(grepl(tr("home_before_title", "pt"), html, fixed = TRUE))
+    testthat::expect_true(grepl("CSV · XLSX · TXT", html, fixed = TRUE))
+})
+
+testthat::test_that("app_server opens Mapping on the first upload of the session", {
+    csv_path <- tempfile(fileext = ".csv")
+    on.exit(unlink(csv_path), add = TRUE)
+    writeLines(
+        c("scientificName,decimalLatitude,decimalLongitude",
+          "Panthera onca,-10.5,-55.2"),
+        csv_path
+    )
+    navigated <- character()
+    testthat::local_mocked_bindings(
+        nav_select = function(id, selected = NULL, session = NULL) {
+            navigated <<- c(navigated, selected)
+        },
+        .package = "bslib"
+    )
+
+    suppressWarnings(shiny::testServer(app_server, {
+        session$flushReact()
+        session$setInputs(`upload-file` = list(
+            name = "data.csv",
+            size = file.info(csv_path)$size,
+            type = "text/csv",
+            datapath = csv_path
+        ))
+        session$flushReact()
+    }))
+
+    testthat::expect_true("mapping" %in% navigated)
 })
