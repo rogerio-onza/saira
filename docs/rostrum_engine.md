@@ -113,8 +113,8 @@ Match direto no dicionário de sinônimos, com confiança variável.
 "lat" → dicionário → decimalLatitude (confidence: 0.95)
 → score = 0.95
 
-"y" → dicionário → decimalLatitude (confidence: 0.6, contexto cartesiano)
-→ score = 0.6 (requer validação forte de conteúdo)
+"y" → dicionário → decimalLatitude (confidence: 0.90)
+→ score = 0.90, mas o card fica no máximo em SUGERIDO (coluna de uma letra)
 ```
 
 #### 3. Token Overlap Completo (score = 0.7-0.8)
@@ -187,6 +187,13 @@ Cenário A: value_score = 0.95 (valores claramente latitude)
 Cenário B: value_score = 0.7 (valores ambíguos)
 → Rejeitado (value_score abaixo de 0.8 necessário para token overlap)
 ```
+
+**Regras de nome do Stage 1 (ADR-139)**:
+- Sinônimo só casa com o nome normalizado inteiro. Sem acerto, o Stage 1 tenta o nome com abreviações expandidas: `inds` → `individuals`, `eff` → `effort`, `veg` → `vegetation`, `sp`/`spp` → `species`.
+- `#`, `n`, `num`, `nr` e `nro` viram `number` só nessa busca (`# of inds.` → `number of individuals`). Como token, `number` levaria `n_points` para `catalogNumber`.
+- Sinônimo achado pela expansão e coluna de uma letra (`X`, `Y`) ficam no máximo em SUGERIDO.
+- Termos temporais (`eventDate`, `year`, `month`, `day`, `modified`, `dateIdentified`) pedem nome exato. Só `eventDate` aceita sinônimo ou token overlap, quando 90% ou mais dos valores são datas. Esse card fica no máximo em SUGERIDO.
+- Coluna com o nome exato de um termo pertence a esse termo e não concorre a outro (`locationRemarks` não empata com `OBS` em `occurrenceRemarks`).
 
 ### 3.2 Value Score (Peso: 0.5)
 

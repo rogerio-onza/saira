@@ -2784,3 +2784,16 @@ Formato: ADR leve (Architecture Decision Record).
   - `occurrenceStatus` e `basisOfRecord` ganham validador pelo vocabulario que a etapa de valores ja usa. Nome fraco com valores fora da lista cai no veto. Nome exato ou sinonimo fica com o score neutro, porque a etapa de valores traduz depois.
 - **Consequencias**: no benchmark dev, top1 sobe de 69 para 73/107, SUGERIDO errado cai de 6 para 1, AMBIGUO sem alternativa certa cai de 35 para 20. Nenhum AUTO errado antes ou depois. Palavra de entidade nova entra nas listas de `rostrum_id_entities`.
 
+## ADR-139: sinonimos de campo, abreviacoes e data por valores no Rostrum
+
+- **Data**: 2026-10-04
+- **Status**: Aceito.
+- **Contexto**: no benchmark dev (107 colunas), 29 colunas ficavam sem card certo depois do ADR-138. Os nomes eram de planilha de campo (`site`, `VEG_TYPE`, `PRECISION`, `X`, `# of inds.`, `timestamp`), sem sinonimo no pacote. Termos temporais so aceitavam nome exato, regra sem ADR desde o primeiro commit.
+- **Decisao**:
+  - O pacote de sinonimos ganha nomes de campo em PT, EN e ES, com score 0.90 a 0.94.
+  - Sem acerto no nome inteiro, o Stage 1 tenta o nome com abreviacoes expandidas. `#`, `n`, `num`, `nr` e `nro` viram `number` so na busca de sinonimo, nunca como token.
+  - `eventDate` aceita sinonimo ou token overlap quando 90% ou mais dos valores sao datas. Os outros termos temporais seguem so com nome exato.
+  - Ficam no maximo em SUGERIDO: sinonimo achado pela expansao, coluna de uma letra e `eventDate` achado pelos valores.
+  - Coluna com o nome exato de um termo nao concorre a outro termo.
+  - O resgate por conteudo para termos de vocabulario ficou de fora: depois dos sinonimos, nenhum caso do dev precisava dele.
+- **Consequencias**: no benchmark dev, top1 sobe de 73 para 91/107, colunas sem card certo caem de 29 para 11, SUGERIDO certo sobe de 19 para 35 e SUGERIDO errado cai de 1 para 0. Nenhum AUTO errado. Os sinonimos vieram dos erros do dev, entao o holdout mede o overfit.
