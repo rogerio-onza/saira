@@ -2774,6 +2774,20 @@ Formato: ADR leve (Architecture Decision Record).
   - O estilo novo da dropzone fica sob `.home-upload-panel`: o modal de importar guia usa as mesmas classes.
 - **Consequencias**: as classes que o roteiro do tutorial marca (`.home-header`, `.upload-mode-tabs`, `.upload-dropzone`, `#upload-stats`) ficam. A captura `t02-upload` precisa ser refeita.
 
+## ADR-137: filtro "Relevantes" no Mapeamento, com termos sem coluna em linhas
+
+- **Data**: 2026-10-04
+- **Status**: Aceito.
+- **Contexto**: a grade mostrava os 66 termos da base como cards. No `ocorrencias-demo.csv`, depois do Auto-mapear, ~40 cards opcionais ficavam vazios (5.960 px de rolagem). Reduzir o conjunto base mudaria o escopo do Rostrum, calibrado nesses termos.
+- **Decisao**:
+  - Novo filtro "Relevantes", primeiro e padrao (Relevantes/Todos/Mapeados/Pendentes). Ele so muda a grade: o Rostrum continua com todos os termos ativos.
+  - Ficam como card: termos mapeados, `relevant_mapping_terms()` (obrigatorios, `establishmentMeans`, `datasetName`, `rightsHolder`, `institutionCode`, `collectionCode`, `language`), termos com valor fixo ligado e termos adicionados pelo usuario. A regra e `collapse_mapping_term()`. No demo, 31 cards.
+  - Os outros termos de cada classe viram uma linha "+ N termos sem coluna" com a lista dos nomes. "Mostrar" abre linhas compactas (nome + seletor de coluna).
+  - A linha compacta e o proprio card com `.field-card-compact`, e a abertura e no cliente. Os inputs ja estao ligados, entao nada se reconstroi e o gate do ADR-104 nao muda.
+  - Termos de valor fixo ganham o link "Valor fixo", que tira a classe compacta e mostra o card inteiro no lugar.
+  - Uma linha que recebe coluna continua linha ate a proxima reconstrucao da grade.
+- **Consequencias**: os 66 seletores continuam sendo renderizados: o ganho e visual, nao de tempo de carga. "Proximo pendente" nao muda: a fila so tem termos obrigatorios ou sugeridos, que sempre ficam como card. A rolagem para um card dentro de um grupo fechado abre o grupo antes.
+
 ## ADR-138: qualificador do identificador e validadores de vocabulario no Rostrum
 
 - **Data**: 2026-10-04

@@ -883,6 +883,41 @@ testthat::test_that("All / Mapped / Pending filter keeps the matching cards", {
     )
 })
 
+testthat::test_that("Relevant filter is the default and collapses unmapped optional terms", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            grid <- paste(output$mapping_ui$html, collapse = " ")
+            card_class <- function(html, term) {
+                regmatches(html, regexpr(
+                    paste0('id="', ns(paste0("fieldcard_", term)), '" class="[^"]*"'), html
+                ))
+            }
+            # Required and dataset terms stay full cards, optional ones collapse.
+            testthat::expect_false(grepl("field-card-compact", card_class(grid, "scientificName"), fixed = TRUE))
+            testthat::expect_false(grepl("field-card-compact", card_class(grid, "datasetName"), fixed = TRUE))
+            testthat::expect_true(grepl("field-card-compact", card_class(grid, "recordedBy"), fixed = TRUE))
+            testthat::expect_true(grepl("mapping-more-group", grid, fixed = TRUE))
+
+            session$setInputs(mapped_filter = "all")
+            session$flushReact()
+            grid_all <- paste(output$mapping_ui$html, collapse = " ")
+            testthat::expect_false(grepl("field-card-compact", grid_all, fixed = TRUE))
+            testthat::expect_false(grepl("mapping-more-group", grid_all, fixed = TRUE))
+        }
+    )
+})
+
 testthat::test_that("mod_mapping_server auto-registers extra DwC columns from the upload", {
     raw_data_state <- shiny::reactiveVal(NULL)
 

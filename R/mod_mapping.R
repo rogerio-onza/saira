@@ -80,6 +80,30 @@ mod_mapping_ui <- function(id) {
         "(function () {
           if (window.__sairaMappingScrollRegistered) { return; }
           window.__sairaMappingScrollRegistered = true;
+          // Relevant filter: open or close a class's compact rows client-side.
+          // The rows are bound inputs already, so nothing is rebuilt (ADR-137).
+          // The jQuery events make Shiny recheck which outputs are hidden.
+          function setMoreGroupOpen(group, open) {
+            group.classList.toggle('is-open', open);
+            var btn = group.querySelector('.mapping-more');
+            if (btn) { btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
+            window.jQuery(group).trigger(open ? 'shown' : 'hidden');
+          }
+          document.addEventListener('click', function (ev) {
+            var more = ev.target.closest('.mapping-more');
+            if (more) {
+              var group = more.closest('.mapping-more-group');
+              setMoreGroupOpen(group, !group.classList.contains('is-open'));
+              return;
+            }
+            // 'Fixed value' on a compact row: show the full card in place.
+            var expand = ev.target.closest('.field-compact-expand');
+            if (expand) {
+              var card = expand.closest('.field-card');
+              card.classList.remove('field-card-compact');
+              window.jQuery(card).trigger('shown');
+            }
+          });
           Shiny.addCustomMessageHandler('saira-mapping-scroll-to-class', function (payload) {
             var id = payload && payload.anchor_id;
             if (!id) { return; }
@@ -92,6 +116,12 @@ mod_mapping_ui <- function(id) {
             (function tryScroll() {
               var el = document.getElementById(id);
               if (el) {
+                // A card collapsed by the Relevant filter sits in a closed
+                // group (display: none) and cannot scroll into view.
+                var group = el.closest('.mapping-more-group');
+                if (group && !group.classList.contains('is-open')) {
+                  setMoreGroupOpen(group, true);
+                }
                 el.scrollIntoView({ behavior: 'smooth', block: payload.block || 'start' });
                 // Optional highlight, used by the 'next pending' button so the
                 // card that was scrolled to is identifiable among its
@@ -1015,21 +1045,24 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             )
         })
 
-        # All / Mapped / Pending: filters the cards and the list. It sits in the
-        # panel header because it acts on the whole panel (ADR-132).
+        # Relevant / All / Mapped / Pending: filters the cards and the list. It
+        # sits in the panel header because it acts on the whole panel (ADR-132).
+        # Relevant, the default, collapses the unmapped optional terms to one
+        # line per class (ADR-137).
         output$mapped_filter_control <- shiny::renderUI({
             shiny::radioButtons(
                 ns("mapped_filter"),
                 label = shiny::tags$span(tr("mapping_filter_label", lang_r()), class = "visually-hidden"),
                 choices = stats::setNames(
-                    c("all", "mapped", "pending"),
+                    c("relevant", "all", "mapped", "pending"),
                     c(
+                        tr("mapping_filter_relevant", lang_r()),
                         tr("mapping_filter_all", lang_r()),
                         tr("mapping_filter_mapped", lang_r()),
                         tr("mapping_filter_pending", lang_r())
                     )
                 ),
-                selected = shiny::isolate(input$mapped_filter %||% "all"),
+                selected = shiny::isolate(input$mapped_filter %||% "relevant"),
                 inline = TRUE
             )
         })
@@ -2138,7 +2171,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             # The grid (50 selectize inputs) is expensive to rebuild, so it is
             # rendered only on a real structural change: a new upload, a language
-            # switch, the All/Mapped/Pending filter, a change to the active term set
+            # switch, the Relevant/All/Mapped/Pending filter, a change to the active term set
             # (Add-term modal, template import, reset), or when scientificName's
             # mapped-state flips (which locks/unlocks taxonRank/specificEpithet).
             # These are the only reactive dependencies. Everything else --
@@ -2146,7 +2179,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # isolate() below, so selecting a column updates just that card via
             # its carddyn_<term> output and push_card_state(), never the grid.
             lang <- lang_r()
-            mapped_filter <- input$mapped_filter %||% "all"
+            mapped_filter <- input$mapped_filter %||% "relevant"
             scientificname_mapped <- isTRUE(rv$scientificname_mapped)
             # Structural dependency: adding/removing terms must rebuild the grid
             # so the new card actually appears. dwc_all() carries rv$extra_terms
@@ -2174,6 +2207,62 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         cat_fields <- Filter(function(x) x$category == cat, fields_to_show)
                         cat_class <- paste0("cat-", tolower(gsub("-", "", cat)))
 
+                        entries <- lapply(cat_fields, function(item) {
+                            term <- item$term
+                            current_val <- rv$map_values[[term]]
+                            if (is.null(current_val)) {
+                                current_val <- input[[paste0("map_", term)]]
+                            }
+                            current_val <- sanitize_map_selection(term, current_val)
+                            is_mapped <- is_field_mapped(term, current_val, input)
+                            # The derived taxon terms lock (and read as
+                            # mapped) once scientificName is set; they are
+                            # derived from it at export.
+                            locked_taxon <- isTRUE(scientificname_mapped) &&
+                                term %in% locked_taxon_terms()
+                            if (locked_taxon) {
+                                is_mapped <- TRUE
+                            }
+                            field_meta <- rv$map_meta[[term]]
+                            if (is.null(field_meta)) {
+                                field_meta <- default_meta()
+                            }
+                            card_state <- apply_establishment_card_state(
+                                term, current_val, is_mapped, field_meta
+                            )
+                            is_mapped <- card_state$is_mapped
+                            field_meta <- card_state$meta
+                            badge_info <- build_badge_info(field_meta)
+
+                            if (!keep_by_mapped_filter(mapped_filter, is_mapped)) {
+                                return(NULL)
+                            }
+                            compact <- identical(mapped_filter, "relevant") &&
+                                collapse_mapping_term(
+                                    term, is_mapped,
+                                    fixed_value_on = input[[paste0("usecustom_", term)]],
+                                    extra = rv$extra_terms
+                                )
+
+                            list(term = term, compact = compact, card = build_field_card(
+                                item = item, cols = cols,
+                                current_val = current_val,
+                                is_mapped = is_mapped,
+                                badge_info = badge_info,
+                                ns = ns, lang_r = lang,
+                                input = input, cat_class = cat_class,
+                                scientificname_mapped = scientificname_mapped,
+                                required = term %in% required_fields_strip,
+                                state_class = field_state_class(
+                                    term, is_mapped, field_meta,
+                                    required_fields_strip
+                                ),
+                                compact = compact
+                            ))
+                        })
+                        entries <- Filter(Negate(is.null), entries)
+                        compact <- vapply(entries, function(x) x$compact, FUN.VALUE = logical(1))
+
                         shiny::tagList(
                             shiny::div(
                                 id = ns(paste0("cat_anchor_", slug(cat))),
@@ -2182,53 +2271,15 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             ),
                             shiny::div(
                                 class = "mapping-card-grid",
-                                lapply(cat_fields, function(item) {
-                                    term <- item$term
-                                    current_val <- rv$map_values[[term]]
-                                    if (is.null(current_val)) {
-                                        current_val <- input[[paste0("map_", term)]]
-                                    }
-                                    current_val <- sanitize_map_selection(term, current_val)
-                                    is_mapped <- is_field_mapped(term, current_val, input)
-                                    # The derived taxon terms lock (and read as
-                                    # mapped) once scientificName is set; they are
-                                    # derived from it at export.
-                                    locked_taxon <- isTRUE(scientificname_mapped) &&
-                                        term %in% locked_taxon_terms()
-                                    if (locked_taxon) {
-                                        is_mapped <- TRUE
-                                    }
-                                    field_meta <- rv$map_meta[[term]]
-                                    if (is.null(field_meta)) {
-                                        field_meta <- default_meta()
-                                    }
-                                    card_state <- apply_establishment_card_state(
-                                        term, current_val, is_mapped, field_meta
-                                    )
-                                    is_mapped <- card_state$is_mapped
-                                    field_meta <- card_state$meta
-                                    badge_info <- build_badge_info(field_meta)
-
-                                    if (!keep_by_mapped_filter(mapped_filter, is_mapped)) {
-                                        return(NULL)
-                                    }
-
-                                    build_field_card(
-                                        item = item, cols = cols,
-                                        current_val = current_val,
-                                        is_mapped = is_mapped,
-                                        badge_info = badge_info,
-                                        ns = ns, lang_r = lang,
-                                        input = input, cat_class = cat_class,
-                                        scientificname_mapped = scientificname_mapped,
-                                        required = term %in% required_fields_strip,
-                                        state_class = field_state_class(
-                                            term, is_mapped, field_meta,
-                                            required_fields_strip
-                                        )
-                                    )
-                                })
-                            )
+                                lapply(entries[!compact], function(x) x$card)
+                            ),
+                            if (any(compact)) {
+                                build_collapsed_terms(
+                                    vapply(entries[compact], function(x) x$term, FUN.VALUE = character(1)),
+                                    lapply(entries[compact], function(x) x$card),
+                                    lang
+                                )
+                            }
                         )
                     })
                 )

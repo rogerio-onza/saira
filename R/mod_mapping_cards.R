@@ -19,13 +19,16 @@
 #'   are locked because they are derived from scientificName.
 #' @param required Logical; when TRUE the card shows a "Required" tag. The value
 #'   is fixed per term, so the per-card update path never has to change it.
+#' @param compact Logical; when TRUE the card renders as a one-line row (term
+#'   and column select) for the "Relevant" filter. It is the same card with a
+#'   CSS class, so its inputs stay bound when the row opens.
 #'
 #'   Selection-dependent content (the source sample, the basisOfRecord assistant
 #'   button, and the dynamicProperties key inputs) is rendered into a per-term
 #'   `carddyn_<term>` uiOutput slot, so picking a column updates only that card
 #'   instead of rebuilding the whole 50-selectize grid (see mod_mapping.R).
 #' @noRd
-build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL, required = FALSE) {
+build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL, required = FALSE, compact = FALSE) {
     term <- item$term
 
     # taxonRank/specificEpithet/infraspecificEpithet are inferred from
@@ -48,7 +51,8 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 "field-card no-break", cat_class,
                 if (is_mapped) "field-mapped" else "field-unmapped",
                 state_class,
-                if (term %in% wide_card_terms()) "field-card-wide"
+                if (term %in% wide_card_terms()) "field-card-wide",
+                if (isTRUE(compact)) "field-card-compact"
             ),
             collapse = " "
         ),
@@ -313,6 +317,16 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 },
                 if (is_const_term) {
                     build_constant_value_input(term, ns, lang_r, input)
+                },
+                # A compact row hides the fixed-value checkbox. This button
+                # removes the compact class in place (client-side), so the full
+                # card with the checkbox opens where the row was.
+                if (is_const_term && isTRUE(compact)) {
+                    shiny::tags$button(
+                        type = "button",
+                        class = "field-compact-expand",
+                        tr("mapping_fixed_value_link", lang_r)
+                    )
                 }
             )
         }
@@ -643,9 +657,12 @@ field_state_class <- function(term, is_mapped, meta, required_terms) {
     NULL
 }
 
-#' Whether a card passes the All / Mapped / Pending filter
+#' Whether a card passes the Relevant / All / Mapped / Pending filter
 #'
-#' @param mode "all", "mapped" or "pending"
+#' "relevant" keeps every card, like "all": it collapses some of them to rows
+#' instead (see [collapse_mapping_term()]).
+#'
+#' @param mode "relevant", "all", "mapped" or "pending"
 #' @param is_mapped logical, the card's mapped state
 #' @return logical
 #' @noRd
@@ -654,6 +671,44 @@ keep_by_mapped_filter <- function(mode, is_mapped) {
         mapped = isTRUE(is_mapped),
         pending = !isTRUE(is_mapped),
         TRUE
+    )
+}
+
+#' The collapsed terms of one class under the "Relevant" filter
+#'
+#' One line ("+ N terms with no column", the term names, Show) that opens a
+#' grid of compact rows. The toggle is client-side (see the mapping UI script):
+#' the rows are rendered and bound already, so opening them rebuilds nothing.
+#'
+#' @param terms Character vector of the collapsed term names.
+#' @param cards List of compact cards from [build_field_card()].
+#' @param lang_r Language code (already evaluated).
+#' @noRd
+build_collapsed_terms <- function(terms, cards, lang_r) {
+    n <- length(terms)
+    label <- paste(
+        n, tr(if (n == 1L) "mapping_more_terms_one" else "mapping_more_terms_other", lang_r)
+    )
+    shiny::div(
+        class = "mapping-more-group",
+        shiny::tags$button(
+            type = "button",
+            class = "mapping-more",
+            `aria-expanded` = "false",
+            shiny::span(
+                class = "mapping-more-count",
+                shiny::span(class = "when-closed", "+"),
+                shiny::span(class = "when-open", "\u2212"),
+                " ", label
+            ),
+            shiny::span(class = "mapping-more-terms", paste(terms, collapse = ", ")),
+            shiny::span(
+                class = "mapping-more-action",
+                shiny::span(class = "when-closed", tr("mapping_more_show", lang_r)),
+                shiny::span(class = "when-open", tr("mapping_more_hide", lang_r))
+            )
+        ),
+        shiny::div(class = "mapping-card-grid mapping-row-grid", cards)
     )
 }
 

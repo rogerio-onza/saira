@@ -65,6 +65,153 @@
   }
 }
 
+/* Relevant filter (ADR-137): after each class grid, one line lists the
+   unmapped optional terms. It opens a grid of compact rows, which are the
+   real cards with .field-card-compact, so the inputs stay bound. */
+.mapping-more-group {
+  margin-top: var(--space-2);
+}
+
+.mapping-more {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mapping-more:hover {
+  border-color: var(--accent);
+}
+
+.mapping-more:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-primary);
+}
+
+.mapping-more-count,
+.mapping-more-action {
+  white-space: nowrap;
+}
+
+.mapping-more-terms {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.mapping-more-action {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.mapping-more-group .when-open,
+.mapping-more-group.is-open .when-closed {
+  display: none;
+}
+
+.mapping-more-group.is-open .when-open {
+  display: inline;
+}
+
+.mapping-row-grid {
+  display: none;
+  align-items: start;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.mapping-more-group.is-open .mapping-row-grid {
+  display: grid;
+}
+
+/* Compact row: term name, then the column select, then "Fixed value" for
+   the constant-value terms. Everything else on the card is hidden. */
+.field-card.field-card-compact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+}
+
+.field-card.field-card-compact:has(> .field-compact-expand) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) auto;
+}
+
+.field-card-compact.field-card-wide {
+  grid-column: auto;
+}
+
+.field-card-compact .field-header-row,
+.field-card-compact .field-header-name {
+  flex-wrap: nowrap;
+  min-width: 0;
+  margin: 0;
+}
+
+.field-card-compact .field-header {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-card-compact .field-desc,
+.field-card-compact .field-desc-help,
+.field-card-compact .field-status-badge,
+.field-card-compact .shiny-html-output,
+.field-card-compact .field-or-divider,
+.field-card-compact .fixed-value-toggle,
+.field-card-compact .fixed-value-toggle ~ .shiny-panel-conditional,
+.field-card-compact bslib-layout-columns > :nth-child(2) {
+  display: none;
+}
+
+/* One track for the select: the separator input of a multi-value term is
+   hidden above, and the term keeps its default separator. bslib forces
+   display: grid, so the track and the item span change instead. */
+.field-card-compact .bslib-grid {
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: 0;
+}
+
+.field-card-compact .bslib-grid > .bslib-grid-item {
+  grid-column: 1 / -1;
+}
+
+.field-card-compact .shiny-input-container {
+  margin-bottom: 0;
+}
+
+.field-compact-expand {
+  display: none;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.field-card-compact .field-compact-expand {
+  display: inline;
+}
+
 /* Field cards */
 .field-card {
   background: var(--bg-card);
