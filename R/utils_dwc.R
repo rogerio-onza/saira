@@ -619,6 +619,37 @@ required_mapping_terms <- function() {
     )
 }
 
+#' Terms the "Relevant" filter always shows as full cards
+#'
+#' The required terms, establishmentMeans (it has an assistant that needs no
+#' column) and the dataset terms a publisher usually types in.
+#'
+#' @return Character vector of DwC term names.
+#' @noRd
+relevant_mapping_terms <- function() {
+    unique(c(
+        required_mapping_terms(), "establishmentMeans", "datasetName",
+        "rightsHolder", "institutionCode", "collectionCode", "language"
+    ))
+}
+
+#' Whether the "Relevant" filter shows a term as a compact row
+#'
+#' Only an unmapped term outside `relevant_mapping_terms()` collapses. A term
+#' with its fixed value switched on or a term the user added stays a card.
+#'
+#' @param term DwC term name.
+#' @param is_mapped Logical, the card's mapped state.
+#' @param fixed_value_on Logical, whether the fixed-value checkbox is on.
+#' @param extra Character vector of terms added to the active set.
+#' @return Logical scalar.
+#' @noRd
+collapse_mapping_term <- function(term, is_mapped, fixed_value_on = FALSE,
+                                  extra = character(0)) {
+    !isTRUE(is_mapped) && !isTRUE(fixed_value_on) &&
+        !(term %in% c(relevant_mapping_terms(), extra))
+}
+
 #' Terms whose mapping card spans two grid tracks
 #'
 #' `dynamicProperties` builds one `bslib::layout_columns(col_widths = c(5, 7))`

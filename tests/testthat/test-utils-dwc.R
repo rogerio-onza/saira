@@ -481,6 +481,20 @@ testthat::test_that("required_mapping_terms is the readiness strip's term set", 
     testthat::expect_false(anyDuplicated(required) > 0L)
 })
 
+testthat::test_that("collapse_mapping_term keeps relevant, mapped and added terms as cards", {
+    relevant <- relevant_mapping_terms()
+    testthat::expect_true(all(required_mapping_terms() %in% relevant))
+    testthat::expect_true(all(relevant %in% names(get_dwc_terms_list("en"))))
+
+    testthat::expect_true(collapse_mapping_term("recordedBy", FALSE))
+    testthat::expect_false(collapse_mapping_term("recordedBy", TRUE))
+    testthat::expect_false(collapse_mapping_term("datasetName", FALSE))
+    testthat::expect_false(collapse_mapping_term("establishmentMeans", FALSE))
+    testthat::expect_false(collapse_mapping_term("country", FALSE, fixed_value_on = TRUE))
+    testthat::expect_true(collapse_mapping_term("country", FALSE, fixed_value_on = NULL))
+    testthat::expect_false(collapse_mapping_term("taxonID", FALSE, extra = "taxonID"))
+})
+
 testthat::test_that("wide_card_terms only spans terms that need the extra track", {
     testthat::expect_identical(wide_card_terms(), "dynamicProperties")
 })

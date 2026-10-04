@@ -359,6 +359,36 @@
     "en": "Show terms",
     "es": "Mostrar términos"
   },
+  "mapping_filter_relevant": {
+    "pt": "Relevantes",
+    "en": "Relevant",
+    "es": "Relevantes"
+  },
+  "mapping_more_terms_one": {
+    "pt": "termo sem coluna",
+    "en": "term with no column",
+    "es": "término sin columna"
+  },
+  "mapping_more_terms_other": {
+    "pt": "termos sem coluna",
+    "en": "terms with no column",
+    "es": "términos sin columna"
+  },
+  "mapping_more_show": {
+    "pt": "Mostrar",
+    "en": "Show",
+    "es": "Mostrar"
+  },
+  "mapping_more_hide": {
+    "pt": "Ocultar",
+    "en": "Hide",
+    "es": "Ocultar"
+  },
+  "mapping_fixed_value_link": {
+    "pt": "Valor fixo",
+    "en": "Fixed value",
+    "es": "Valor fijo"
+  },
   "mapping_filter_all": {
     "pt": "Todos",
     "en": "All",

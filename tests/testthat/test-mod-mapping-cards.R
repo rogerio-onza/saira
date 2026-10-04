@@ -254,3 +254,48 @@ test_that("build_field_row_header names the four list columns in both languages"
         }
     }
 })
+
+test_that("a compact card keeps its select and adds Fixed value only for constant terms", {
+    ns <- shiny::NS("map")
+    cols <- c("-- " = "", colA = "colA")
+
+    const_html <- as.character(build_field_card(
+        item = list(term = "country", desc = "x", category = "Location", sep = ""),
+        cols = cols, current_val = "", is_mapped = FALSE, badge_info = NULL,
+        ns = ns, lang_r = "en", input = list(), cat_class = "cat-location",
+        compact = TRUE
+    ))
+    expect_match(const_html, "field-card-compact", fixed = TRUE)
+    expect_match(const_html, ns("map_country"), fixed = TRUE)
+    expect_match(const_html, "field-compact-expand", fixed = TRUE)
+
+    plain_html <- as.character(build_field_card(
+        item = list(term = "recordedBy", desc = "x", category = "Occurrence", sep = ""),
+        cols = cols, current_val = "", is_mapped = FALSE, badge_info = NULL,
+        ns = ns, lang_r = "en", input = list(), cat_class = "cat-occurrence",
+        compact = TRUE
+    ))
+    expect_false(grepl("field-compact-expand", plain_html, fixed = TRUE))
+
+    full_html <- as.character(build_field_card(
+        item = list(term = "country", desc = "x", category = "Location", sep = ""),
+        cols = cols, current_val = "", is_mapped = FALSE, badge_info = NULL,
+        ns = ns, lang_r = "en", input = list(), cat_class = "cat-location"
+    ))
+    expect_false(grepl("field-card-compact|field-compact-expand", full_html))
+})
+
+test_that("build_collapsed_terms counts the terms and wraps the rows", {
+    html <- as.character(build_collapsed_terms(
+        c("recordedBy", "sex"),
+        list(shiny::div(class = "field-card"), shiny::div(class = "field-card")),
+        "en"
+    ))
+    expect_match(html, paste("2", tr("mapping_more_terms_other", "en")), fixed = TRUE)
+    expect_match(html, "recordedBy, sex", fixed = TRUE)
+    expect_match(html, "mapping-row-grid", fixed = TRUE)
+    expect_match(html, tr("mapping_more_show", "en"), fixed = TRUE)
+
+    one <- as.character(build_collapsed_terms("sex", list(shiny::div()), "en"))
+    expect_match(one, paste("1", tr("mapping_more_terms_one", "en")), fixed = TRUE)
+})
