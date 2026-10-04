@@ -312,3 +312,89 @@ testthat::test_that("commit_session_aliases is a no-op when there is nothing to 
         DBI::dbGetQuery(conn, "SELECT COUNT(*) AS n FROM rostrum_aliases")$n[[1]], 0L
     )
 })
+
+live_terms <- function(conn, col_name_norm) {
+    DBI::dbGetQuery(
+        conn,
+        "SELECT dwc_term FROM rostrum_aliases WHERE col_name_norm = ? AND deprecated = 0 ORDER BY dwc_term",
+        params = list(col_name_norm)
+    )$dwc_term
+}
+
+testthat::test_that("an export supersedes the older alias of the same column", {
+    conn <- rostrum_connect(path = tempfile(fileext = ".sqlite"))
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
+    rostrum_commit_session_aliases(conn, list(fieldNotes = "Notes"), run_id = "run-1", user_id = "tester")
+    rostrum_commit_session_aliases(conn, list(occurrenceRemarks = "Notes"), run_id = "run-2", user_id = "tester")
+
+    testthat::expect_identical(live_terms(conn, "notes"), "occurrenceRemarks")
+    testthat::expect_identical(
+        rostrum_lookup_alias(conn, "Notes", user_id = "tester")$dwc_term[[1]],
+        "occurrenceRemarks"
+    )
+    events <- DBI::dbGetQuery(conn, "SELECT run_id FROM rostrum_alias_events WHERE action = 'alias_superseded'")
+    testthat::expect_identical(events$run_id, "run-2")
+})
+
+testthat::test_that("two terms for one column in the same export both stay", {
+    conn <- rostrum_connect(path = tempfile(fileext = ".sqlite"))
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
+    rostrum_commit_session_aliases(
+        conn,
+        list(minimumElevationInMeters = "Altitude", maximumElevationInMeters = "Altitude"),
+        run_id = "run-1",
+        user_id = "tester"
+    )
+
+    testthat::expect_identical(
+        live_terms(conn, "altitude"),
+        c("maximumElevationInMeters", "minimumElevationInMeters")
+    )
+})
+
+testthat::test_that("an export does not supersede aliases of another scope or owner", {
+    conn <- rostrum_connect(path = tempfile(fileext = ".sqlite"))
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
+    rostrum_upsert_alias(conn, "Notes", "fieldNotes", confidence = 1, scope = "public")
+    rostrum_upsert_alias(conn, "Notes", "locationRemarks", confidence = 1, user_id = "other")
+    rostrum_commit_session_aliases(conn, list(occurrenceRemarks = "Notes"), run_id = "run-1", user_id = "tester")
+
+    testthat::expect_identical(
+        live_terms(conn, "notes"),
+        c("fieldNotes", "locationRemarks", "occurrenceRemarks")
+    )
+})
+
+testthat::test_that("undo_session_aliases restores the alias an export superseded", {
+    conn <- rostrum_connect(path = tempfile(fileext = ".sqlite"))
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
+    rostrum_commit_session_aliases(conn, list(fieldNotes = "Notes"), run_id = "run-1", user_id = "tester")
+    rostrum_commit_session_aliases(conn, list(occurrenceRemarks = "Notes"), run_id = "run-2", user_id = "tester")
+    undone <- undo_session_aliases(conn, run_id = "run-2", created_by = "tester")
+
+    testthat::expect_identical(undone, 1L)
+    testthat::expect_identical(live_terms(conn, "notes"), "fieldNotes")
+})
+
+testthat::test_that("lookup prefers the alias updated later on the same day", {
+    conn <- rostrum_connect(path = tempfile(fileext = ".sqlite"))
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
+    first <- rostrum_upsert_alias(conn, "Notes", "fieldNotes", confidence = 1, user_id = "tester")
+    second <- rostrum_upsert_alias(conn, "Notes", "occurrenceRemarks", confidence = 1, user_id = "tester")
+    set_time <- function(alias_id, time) {
+        DBI::dbExecute(conn, "UPDATE rostrum_aliases SET updated_at = ? WHERE alias_id = ?",
+                       params = list(time, alias_id))
+    }
+    set_time(first$alias_id, "2026-10-04T08:00:00Z")
+    set_time(second$alias_id, "2026-10-04T18:00:00Z")
+
+    testthat::expect_identical(
+        rostrum_lookup_alias(conn, "Notes", user_id = "tester")$dwc_term[[1]],
+        "occurrenceRemarks"
+    )
+})

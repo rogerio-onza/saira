@@ -2797,3 +2797,17 @@ Formato: ADR leve (Architecture Decision Record).
   - Coluna com o nome exato de um termo nao concorre a outro termo.
   - O resgate por conteudo para termos de vocabulario ficou de fora: depois dos sinonimos, nenhum caso do dev precisava dele.
 - **Consequencias**: no benchmark dev, top1 sobe de 73 para 91/107, colunas sem card certo caem de 29 para 11, SUGERIDO certo sobe de 19 para 35 e SUGERIDO errado cai de 1 para 0. Nenhum AUTO errado. Os sinonimos vieram dos erros do dev, entao o holdout mede o overfit.
+
+## ADR-140: exportacao substitui o alias antigo da mesma coluna
+
+- **Data**: 2026-10-04
+- **Status**: Aceito.
+- **Contexto**: o motor aplica um alias por coluna (`rostrum_lookup_alias()`). Uma exportacao nova com outro termo para a mesma coluna gravava mais um alias e deixava o antigo vivo. A ordenacao lia `updated_at` com `as.POSIXct()` sem formato, que nao le o `T` de `rostrum_now_utc()` e guarda so a data. No mesmo dia, o empate ia para o alias mais antigo, e o Rostrum voltava a sugerir o termo que o usuario acabara de trocar.
+- **Decisao**:
+  - `rostrum_commit_session_aliases()` deprecia, na mesma transacao, os aliases vivos do mesmo escopo, dono e coluna que apontam para um termo fora da exportacao. Cada um ganha um evento `alias_superseded` com o `run_id`.
+  - Termos da mesma coluna na mesma exportacao ficam todos vivos.
+  - `undo_session_aliases()` reativa os aliases que o `run_id` substituiu.
+  - A ordenacao le `updated_at` no formato `%Y-%m-%dT%H:%M:%OSZ` e usa o `as.POSIXct()` antigo so para valor em outro formato.
+  - `import_mapping_guide_to_aliases()` nao substitui: o guia divide composicoes (`genus + epithet`) em aliases soltos, e substituir ali apagaria alias valido. O guia mais novo ganha pela ordenacao.
+- **Consequencias**: coluna deixada sem mapeamento na exportacao nao aposenta o alias dela. Aliases antigos acumulados antes desta mudanca seguem vivos ate a proxima exportacao da coluna.
+
