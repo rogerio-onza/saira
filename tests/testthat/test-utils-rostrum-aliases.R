@@ -380,6 +380,58 @@ testthat::test_that("undo_session_aliases restores the alias an export supersede
     testthat::expect_identical(live_terms(conn, "notes"), "fieldNotes")
 })
 
+testthat::test_that("undo_session_aliases keeps an alias that was live before the run", {
+    conn <- rostrum_connect(path = tempfile(fileext = ".sqlite"))
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
+    rostrum_commit_session_aliases(conn, list(fieldNotes = "Notes"), run_id = "run-1", user_id = "tester")
+    rostrum_commit_session_aliases(
+        conn, list(fieldNotes = "Notes", locality = "Local"), run_id = "run-2", user_id = "tester"
+    )
+    undone <- undo_session_aliases(conn, run_id = "run-2", created_by = "tester")
+
+    testthat::expect_identical(undone, 1L)
+    testthat::expect_identical(live_terms(conn, "notes"), "fieldNotes")
+    testthat::expect_length(live_terms(conn, "local"), 0L)
+})
+
+testthat::test_that("undo_session_aliases deprecates an alias the run reactivated", {
+    conn <- rostrum_connect(path = tempfile(fileext = ".sqlite"))
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
+    rostrum_commit_session_aliases(conn, list(fieldNotes = "Notes"), run_id = "run-1", user_id = "tester")
+    rostrum_commit_session_aliases(conn, list(occurrenceRemarks = "Notes"), run_id = "run-2", user_id = "tester")
+    rostrum_commit_session_aliases(conn, list(fieldNotes = "Notes"), run_id = "run-3", user_id = "tester")
+
+    actions <- DBI::dbGetQuery(
+        conn, "SELECT action FROM rostrum_alias_events WHERE run_id = 'run-3' ORDER BY rowid"
+    )$action
+    testthat::expect_identical(actions, c("alias_reactivated", "alias_superseded"))
+
+    undo_session_aliases(conn, run_id = "run-3", created_by = "tester")
+    testthat::expect_identical(live_terms(conn, "notes"), "occurrenceRemarks")
+})
+
+testthat::test_that("the export receipt lists only the aliases the export created or reactivated", {
+    conn <- rostrum_connect(path = tempfile(fileext = ".sqlite"))
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+
+    first <- rostrum_commit_session_aliases(
+        conn, list(fieldNotes = "Notes", sex = "Sexo"), run_id = "run-1", user_id = "tester"
+    )
+    receipt <- alias_export_receipt(first, "run-1")
+    testthat::expect_identical(receipt$run_id, "run-1")
+    testthat::expect_identical(receipt$pairs$dwc_term, c("fieldNotes", "sex"))
+
+    # The same mapping again teaches nothing new.
+    again <- rostrum_commit_session_aliases(
+        conn, list(fieldNotes = "Notes", sex = "Sexo"), run_id = "run-2", user_id = "tester"
+    )
+    testthat::expect_identical(again$action, c("alias_updated", "alias_updated"))
+    testthat::expect_null(alias_export_receipt(again, "run-2"))
+    testthat::expect_null(alias_export_receipt(NULL, "run-3"))
+})
+
 testthat::test_that("lookup prefers the alias updated later on the same day", {
     conn <- rostrum_connect(path = tempfile(fileext = ".sqlite"))
     on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)

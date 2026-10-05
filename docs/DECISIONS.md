@@ -2825,3 +2825,15 @@ Formato: ADR leve (Architecture Decision Record).
   - `import_mapping_guide_to_aliases()` nao substitui: o guia divide composicoes (`genus + epithet`) em aliases soltos, e substituir ali apagaria alias valido. O guia mais novo ganha pela ordenacao.
 - **Consequencias**: coluna deixada sem mapeamento na exportacao nao aposenta o alias dela. Aliases antigos acumulados antes desta mudanca seguem vivos ate a proxima exportacao da coluna.
 
+## ADR-141: cada exportacao tem um run_id, e desfazer reverte so o que ela mudou
+
+- **Data**: 2026-10-04
+- **Status**: Aceito.
+- **Contexto**: o modulo de mapeamento lia o `run_id` de `rv$rostrum_run_stats`, que o motor nunca preenche. Toda exportacao gravava `run_id` NA, e nenhuma podia ser desfeita sozinha. `undo_session_aliases()` depreciava todo alias com evento no `run_id`, inclusive os que ja estavam vivos antes e a exportacao so confirmou. Nenhuma tela chamava `undo_session_aliases()`.
+- **Decisao**:
+  - O modulo gera um `run_id` novo a cada exportacao (`rostrum_new_run_id()`).
+  - O upsert grava `alias_reactivated` quando reativa um alias deprecado, e `alias_updated` so quando o alias ja estava vivo.
+  - `undo_session_aliases()` deprecia os aliases com `alias_created` ou `alias_reactivated` no `run_id`, e reativa os com `alias_superseded`. Alias com so `alias_updated` fica vivo.
+  - O card Pacote da exportacao mostra os aliases que a ultima exportacao criou ou reativou, com o botao "Desfazer aprendizado". Enviar outro arquivo limpa esse recibo.
+- **Consequencias**: so a ultima exportacao da sessao tem desfazer na tela. Desfazer nao volta `confidence` nem `reviewed` de um alias que a exportacao so confirmou. Eventos antigos com `run_id` NA continuam sem desfazer.
+

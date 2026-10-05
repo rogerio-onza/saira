@@ -71,6 +71,8 @@ mod_export_ui <- function(id) {
 #'   whose column carried values outside the controlled vocabulary.
 #' @param occurrence_id_info_r Optional reactive with the identifier strategy and
 #'   counts from `resolve_occurrence_ids()`.
+#' @param alias_receipt_r Optional reactive with what the last export taught the
+#'   alias store (`alias_export_receipt()`), shown with an undo (ADR-141).
 #' @param on_navigate Optional callback `function(tab)` to switch the top-level
 #'   navbar (used by the "fix missing terms" banner action).
 #' @param on_export_success Optional callback fired after a successful export,
@@ -90,6 +92,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                               custom_values_r = NULL,
                               establishment_dropped_r = NULL,
                               occurrence_id_info_r = NULL,
+                              alias_receipt_r = NULL,
                               on_navigate = NULL,
                               on_export_success = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
@@ -378,6 +381,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 kpis,
                 file_group(tr("export_section_files_dwca", lang), s$files$dwca),
                 file_group(tr("export_section_files_aux", lang), unname(s$files$auxiliary)),
+                shiny::uiOutput(ns("alias_memory")),
                 shiny::div(
                     class = "export-ipt-note",
                     ph_icon("upload"),
@@ -399,6 +403,77 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     "(function(){if(window.bootstrap&&bootstrap.Tooltip){document.querySelectorAll('.export-info-tip[data-bs-toggle=\"tooltip\"]').forEach(function(el){if(!el.__tipInit){el.__tipInit=true;new bootstrap.Tooltip(el);}});}})();"
                 ))
             )
+        })
+
+        # What the last export taught Rostrum, with an undo (ADR-141). The undo
+        # reverses only that export, so the receipt names its run_id.
+        undone_run <- shiny::reactiveVal(NULL)
+
+        output$alias_memory <- shiny::renderUI({
+            receipt <- call_r(alias_receipt_r)
+            if (is.null(receipt)) return(NULL)
+            lang <- lang_r()
+            body <- if (identical(undone_run(), receipt$run_id)) {
+                shiny::p(class = "export-memory-text", tr("export_memory_undone", lang))
+            } else {
+                pairs <- receipt$pairs
+                shiny::tagList(
+                    shiny::p(
+                        class = "export-memory-text",
+                        ph_icon("check"),
+                        shiny::span(sprintf(tr("export_memory_learned", lang), nrow(pairs)))
+                    ),
+                    shiny::div(
+                        class = "export-memory-actions",
+                        shiny::tags$details(
+                            class = "export-memory-details",
+                            shiny::tags$summary(tr("export_memory_show", lang)),
+                            shiny::div(
+                                class = "export-memory-pairs",
+                                lapply(seq_len(nrow(pairs)), function(i) {
+                                    shiny::tagList(
+                                        shiny::span(pairs$col_name[[i]]),
+                                        shiny::span(class = "export-memory-arrow", "\u2192"),
+                                        shiny::span(class = "export-memory-term", pairs$dwc_term[[i]])
+                                    )
+                                })
+                            )
+                        ),
+                        shiny::actionButton(
+                            ns("undo_alias_export"),
+                            shiny::tagList(ph_icon("rotate-left"), tr("export_memory_undo", lang)),
+                            class = "btn btn-outline-secondary btn-sm export-memory-undo"
+                        )
+                    )
+                )
+            }
+            shiny::div(
+                class = "export-memory",
+                shiny::div(class = "export-file-group-title", tr("export_memory_title", lang)),
+                body
+            )
+        })
+
+        shiny::observeEvent(input$undo_alias_export, {
+            receipt <- call_r(alias_receipt_r)
+            if (is.null(receipt) || identical(undone_run(), receipt$run_id)) return(invisible(NULL))
+            undo <- function() {
+                conn <- rostrum_connect()
+                on.exit(DBI::dbDisconnect(conn), add = TRUE)
+                undo_session_aliases(conn, run_id = receipt$run_id)
+            }
+            ok <- tryCatch({
+                undo()
+                TRUE
+            }, error = function(e) {
+                warning("[rostrum] Could not undo the export aliases: ", e$message)
+                FALSE
+            })
+            if (ok) {
+                undone_run(receipt$run_id)
+            } else {
+                shiny::showNotification(tr("export_memory_undo_failed", lang_r()), type = "error", duration = 5)
+            }
         })
 
         # The bar under the page: bundle name and whether it can go out yet.

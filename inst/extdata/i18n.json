@@ -224,6 +224,36 @@
     "en": "Upload the .zip to the IPT and complete the metadata there (title, abstract, contacts, coverage). Saíra does not publish to GBIF.",
     "es": "Suba el .zip al IPT y complete allí los metadatos (título, resumen, contactos, cobertura). Saíra no publica en GBIF."
   },
+  "export_memory_title": {
+    "pt": "Memória do Rostrum",
+    "en": "Rostrum memory",
+    "es": "Memoria de Rostrum"
+  },
+  "export_memory_learned": {
+    "pt": "Aliases aprendidos nesta exportação: %d. Numa próxima planilha com as mesmas colunas, o Rostrum sugere estes termos.",
+    "en": "Aliases learned from this export: %d. In a next sheet with the same columns, Rostrum suggests these terms.",
+    "es": "Alias aprendidos en esta exportación: %d. En una próxima planilla con las mismas columnas, Rostrum sugiere estos términos."
+  },
+  "export_memory_show": {
+    "pt": "Ver os aliases",
+    "en": "Show the aliases",
+    "es": "Ver los alias"
+  },
+  "export_memory_undo": {
+    "pt": "Desfazer aprendizado",
+    "en": "Undo learning",
+    "es": "Deshacer aprendizaje"
+  },
+  "export_memory_undone": {
+    "pt": "Aprendizado desfeito. O Rostrum voltou a sugerir o que sugeria antes desta exportação. O .zip baixado não muda.",
+    "en": "Learning undone. Rostrum suggests again what it suggested before this export. The downloaded .zip does not change.",
+    "es": "Aprendizaje deshecho. Rostrum vuelve a sugerir lo que sugería antes de esta exportación. El .zip descargado no cambia."
+  },
+  "export_memory_undo_failed": {
+    "pt": "Não foi possível desfazer o aprendizado.",
+    "en": "Could not undo the learning.",
+    "es": "No fue posible deshacer el aprendizaje."
+  },
   "export_bar_blocked": {
     "pt": "%d pendência(s) bloqueiam o download",
     "en": "%d item(s) block the download",

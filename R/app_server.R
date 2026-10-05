@@ -177,6 +177,7 @@ app_server <- function(input, output, session) {
         custom_values_r                    = mapping_result$custom_values_r,
         establishment_dropped_r            = mapping_result$establishment_dropped_r,
         occurrence_id_info_r               = mapping_result$occurrence_id_info_r,
+        alias_receipt_r                    = mapping_result$alias_receipt_r,
         on_export_success                  = function() {
             export_signal_rv(shiny::isolate(export_signal_rv()) + 1L)
         },

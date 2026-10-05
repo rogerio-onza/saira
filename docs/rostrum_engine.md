@@ -534,6 +534,8 @@ Se alias "collector" → decimalLatitude foi erro:
 
 **Substituição (ADR-140)**: a exportação é a decisão mais nova para cada coluna que ela mapeia. Os aliases vivos do mesmo escopo, dono e coluna que apontam para outro termo ficam `deprecated = 1`, com evento `alias_superseded`. Dois termos da mesma coluna na mesma exportação (`altitude` → elevação mínima e máxima) ficam os dois. `undo_session_aliases()` reativa o que a exportação substituiu. A busca ordena pelo horário completo de `updated_at`.
 
+**Desfazer (ADR-141)**: cada exportação grava com um `run_id` próprio. `undo_session_aliases(run_id)` deprecia só os aliases que a exportação criou (`alias_created`) ou reativou (`alias_reactivated`), e reativa os que ela substituiu. Um alias que já estava vivo e a exportação só confirmou (`alias_updated`) fica vivo.
+
 **Aprendizado incremental**:
 - Quando usuário **confirma** sugestão (score 0.75-0.89):
   - Criar alias com `confidence = score_original`
