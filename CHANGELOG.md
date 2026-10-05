@@ -15,6 +15,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **upload:** Accept Excel (.xlsx, first sheet) and plain-text (.txt) data files
 - **coords:** Fix a latitude or longitude directly in the coordinates table, with revalidation and undo, ADR-129
 - **export:** Show the aliases an export taught Rostrum in the package card, with an undo button, ADR-141 ([#160](https://github.com/rogerio-onza/saira/pull/160))
+- **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
 - **mapping:** Add a default "Relevant" filter: unmapped optional terms collapse to one line per class that opens compact rows, ADR-137 ([#158](https://github.com/rogerio-onza/saira/pull/158))

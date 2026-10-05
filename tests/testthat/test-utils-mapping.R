@@ -1448,6 +1448,49 @@ test_that("build_processed_mapping_df emits establishment columns from the assis
     expect_equal(out$degreeOfEstablishment, c("invasive", "", "invasive"))
 })
 
+test_that("island records take the island answer, never the species answer", {
+    species <- c("Nasua nasua", "Nasua nasua", "Sus scrofa")
+    islands <- c("Fernando de Noronha", NA, NA)
+    map <- list(
+        means = c("nasua nasua" = "native", "sus scrofa" = "introduced"),
+        degree = c("nasua nasua" = "native"),
+        island_means = c("nasua nasua" = "introduced")
+    )
+    expect_equal(
+        map_establishment_values(species, map, "means", island_rows = islands),
+        c("introduced", "native", "introduced")
+    )
+    expect_equal(
+        map_establishment_values(species, map, "degree", island_rows = islands),
+        c("", "native", "")
+    )
+    expect_equal(establishment_pairs_missing_degree(map), c("sus scrofa", "nasua nasua"))
+    expect_equal(establishment_answer_count(map, "means"), 2L)
+})
+
+test_that("build_processed_mapping_df splits a species by island from the coordinates", {
+    df <- data.frame(
+        especie = c("Nasua nasua", "Nasua nasua"),
+        lat = c("-3.85", "-19.9"), lon = c("-32.42", "-43.9"),
+        stringsAsFactors = FALSE
+    )
+    map <- list(
+        means = c("nasua nasua" = "native"),
+        island_means = c("nasua nasua" = "introduced"),
+        island_degree = c("nasua nasua" = "invasive")
+    )
+    out <- build_processed_mapping_df(
+        df = df, dwc_terms = get_active_dwc_terms_list(),
+        map_values = list(
+            scientificName = "especie", decimalLatitude = "lat", decimalLongitude = "lon"
+        ),
+        occurrence_ids = paste0("id-", seq_len(nrow(df))),
+        establishment_map = map
+    )$data
+    expect_equal(out$establishmentMeans, c("introduced", "native"))
+    expect_equal(out$degreeOfEstablishment, c("invasive", ""))
+})
+
 test_that("build_processed_mapping_df omits establishment columns without answers", {
     df <- data.frame(especie = c("Sus scrofa"), stringsAsFactors = FALSE)
     out <- build_processed_mapping_df(

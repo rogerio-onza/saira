@@ -2857,3 +2857,17 @@ Formato: ADR leve (Architecture Decision Record).
   - Manter o selo e so bloquear a escrita - rejeitado: corrige o export e deixa a UI chamando um quati nativo de exotico invasor.
   - Decidir por registro, com a area de distribuicao - fora do escopo desta ADR; fica para uma ADR propria.
 - **Consequencias**: `inst/extdata/invasive_species.rds` regenerado com a coluna nova (350 alien / 133 translocated_native, CTFB 1.52 / Flora 393.429). i18n: 17 chaves novas pt/en/es: os rotulos, a pilula e a tag de contagem de nativas translocadas, os 2 tooltips, a linha de distribuicao natural e os 9 do motivo (8 valores + a linha `invasive_reason_line`). A tabela ganha a coluna oculta 7 com o motivo ja formatado, resolvido sobre nomes unicos como o resto da celula. CSS: tokens `--badge-translocated-bg`/`-fg` violeta (o dorso da Tangara fastuosa, escolhido no canvas em 2026-10-05), usados pelo selo, pela pilula e pela tag de contagem -- deliberadamente **nao** o marrom de `.badge-invasive`, que significa "exotica invasora". O gerador agora exige os caches de provider e imprime as versoes usadas, para a classificacao ser auditavel sem o CSV gitignorado. Revoga o item 7 da ADR-109 e emenda o item 2 da ADR-110.
+
+## ADR-143: ilhas oceanicas separam os registros de uma nativa translocada
+
+- **Data**: 2026-10-05
+- **Status**: Aceito
+- **Contexto**: A ADR-142 deixou a nativa translocada sem sugestao de `establishmentMeans`, porque o nome nao diz se o registro cai dentro ou fora da area natural. Mas `establishmentMeans` e por registro, e o assistente da ADR-110 e por especie: o quati em Fernando de Noronha e no continente recebia a mesma resposta.
+- **Fontes de area natural por UF, todas rejeitadas por medicao**:
+  - `states` da Fauna do Brasil e `distribution.txt` do DwC-A do CTFB marcam toda UF como nativa, inclusive as de introducao (`Callithrix jacchus` aparece nativo em RJ e SP).
+  - `native_range` do Horus e prosa livre: so 20 das 39 nativas translocadas nao-peixe citam UF.
+  - A API de ocorrencias do Horus (`api-bd.institutohorus.org.br`) responde 404 em todas as rotas hoje.
+- **Decisao**: so as ilhas oceanicas (Fernando de Noronha, Atol das Rocas, Trindade e Martim Vaz, Sao Pedro e Sao Paulo). Nenhuma nativa translocada nao-marinha da lista e nativa delas, entao o caso se decide sem dado de area. Caixa de coordenadas por arquipelago (`R/utils_oceanic_islands.R`): sao longe da costa, nao precisa de poligono. Especies com motivo "Especies marinhas" ficam de fora, porque vivem nas aguas em volta.
+- **Interface (layout B3, escolhido no canvas)**: a especie com registro em ilha vira um cabecalho e duas sub-linhas, "No continente" e "Em ilha oceanica", cada uma com seus selects. A sub-linha da ilha mostra "Sugestao: introduced" com Aplicar e Desfazer. Nada e preenchido sem o clique, mesma regra da ADR-110.
+- **Dado**: `establishment_map` ganha `island_means` e `island_degree`. Registro em ilha usa **so** a resposta da ilha e nunca cai na resposta da especie: "native" dado para o continente e falso na ilha. Sem `decimalLatitude`/`decimalLongitude` mapeados, nada muda.
+- **Fora do escopo**: peixes entre bacias e a area natural continental. Uma camada de ocorrencias do Horus fica para depois da v1.0, quando a API voltar.
