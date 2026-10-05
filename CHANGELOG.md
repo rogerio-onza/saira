@@ -53,6 +53,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **export:** Refuse the package download on the server while export pending items block it, so the hidden link cannot ship data or teach aliases
+- **export:** Disable the download button again while the export is blocked: Shiny 1.13 ignores `disabled = "disabled"`, so the grey button still accepted clicks
 - **mapping:** Replace the old learned alias when an export maps the same column to another term, ADR-140 ([#159](https://github.com/rogerio-onza/saira/pull/159))
 - **mapping:** Give each export its own alias run id, so undoing an export reverses only what it learned, ADR-141 ([#160](https://github.com/rogerio-onza/saira/pull/160))
 - **mapping:** Suggest field-sheet headers such as `site`, `VEG_TYPE`, `X` and `# of inds.`, and date columns by their values, ADR-139 ([#157](https://github.com/rogerio-onza/saira/pull/157))

@@ -738,7 +738,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                                 ns("review_save_correction"),
                                 label = tr("validate_names_review_save_correction", lang_r()),
                                 class = "btn btn-success vn-review-save-btn",
-                                disabled = "disabled"
+                                disabled = TRUE
                             )
                         ),
                         shiny::tags$script(shiny::HTML(edit_script)),
@@ -833,7 +833,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                             ns("review_confirm_keep"),
                             label = tr("validate_names_review_confirm_btn", lang_r()),
                             class = "btn btn-success vn-review-confirm-btn",
-                            disabled = "disabled"
+                            disabled = TRUE
                         )
                     ),
                     shiny::tags$script(shiny::HTML(confirm_script)),

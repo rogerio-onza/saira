@@ -259,6 +259,11 @@
     "en": "%d item(s) block the download",
     "es": "%d pendiente(s) bloquean la descarga"
   },
+  "export_download_blocked": {
+    "pt": "Resolva as pendências da exportação antes de baixar o pacote.",
+    "en": "Resolve the export pending items before you download the package.",
+    "es": "Resuelva los pendientes de la exportación antes de descargar el paquete."
+  },
   "export_bar_ready": {
     "pt": "Pronto para baixar",
     "en": "Ready to download",
