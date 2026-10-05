@@ -53,6 +53,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **names:** Stop labelling species native to Brazil as invasive aliens. The Instituto Hórus list also covers natives that are invasive outside their natural range, such as the coati: they get their own badge and no longer pre-fill `establishmentMeans` as `introduced`, ADR-142
+- **names:** Show the names under the Invasive, Translocated, Accepted and All filters after every problem is resolved. Only the Problems filter shows "All resolved!"
 - **export:** Refuse the package download on the server while export pending items block it, so the hidden link cannot ship data or teach aliases
 - **export:** Disable the download button again while the export is blocked: Shiny 1.13 ignores `disabled = "disabled"`, so the grey button still accepted clicks
 - **mapping:** Replace the old learned alias when an export maps the same column to another term, ADR-140 ([#159](https://github.com/rogerio-onza/saira/pull/159))

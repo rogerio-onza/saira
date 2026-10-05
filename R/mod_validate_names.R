@@ -1264,7 +1264,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 list(key = "ambiguous", class = "pill-warning", label_key = "validate_names_stream_filter_ambiguous"),
                 list(key = "synonym", class = "pill-info", label_key = "validate_names_stream_filter_synonym"),
                 list(key = "accepted", class = "pill-success", label_key = "validate_names_stream_filter_accepted"),
-                list(key = "invasive", class = "pill-invasive", label_key = "validate_names_stream_filter_invasive")
+                list(key = "invasive", class = "pill-invasive", label_key = "validate_names_stream_filter_invasive"),
+                list(key = "translocated", class = "pill-translocated", label_key = "validate_names_stream_filter_translocated")
             )
 
             pills_ui <- shiny::div(
@@ -1286,7 +1287,10 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
 
             unresolved_count <- suppressWarnings(as.integer(counts[["problems"]]))
             if (is.na(unresolved_count) || unresolved_count < 0L) unresolved_count <- 0L
-            all_resolved <- isTRUE(unresolved_count == 0L) && is.data.frame(stream_df) && nrow(stream_df) > 0L
+            # The celebration answers the "problems" filter only. Any other
+            # filter (invasive, translocated, accepted) asks to see names.
+            all_resolved <- identical(active_filter, "problems") &&
+                isTRUE(unresolved_count == 0L) && is.data.frame(stream_df) && nrow(stream_df) > 0L
 
             stream_body <- if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
                 shiny::div(
@@ -1328,6 +1332,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                             shiny::div(
                                 class = "vn-stream-item-main",
                                 shiny::div(class = "vn-stream-item-name", row$query_name[[1]]),
+                                invasive_stream_note_ui(query_name, lang_r()),
                                 shiny::div(
                                     class = "vn-stream-item-meta",
                                     shiny::span(provider_label),
@@ -1440,11 +1445,24 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             cat_for_pill <- du$category[sens_idx]
             cat_for_pill[is.na(cat_for_pill) | !nzchar(cat_for_pill)] <- "\u2014"
             is_sensitive_vec <- ifelse(du$sensitive[sens_idx], cat_for_pill, "")
-            # Alien invasive species (Instituto Horus). invasive_info_for()
-            # dedupes internally, so the same unique-name economy applies.
-            is_invasive_vec <- ifelse(
-                flag_invasive_species(sensitive_source), "1", ""
+            # Invasive species (Instituto Horus). The cell carries the
+            # origin_class, not a boolean, so the badge can say "alien
+            # invasive" only where the list actually asserts it.
+            # invasive_info_for() dedupes internally, so the same unique-name
+            # economy applies.
+            is_invasive_vec <- invasive_origin_class_for(sensitive_source)
+            is_invasive_vec[is.na(is_invasive_vec)] <- ""
+            # Natural range and introduction reason, resolved over unique names
+            # like everything else in this cell and joined with a newline the
+            # renderer splits. Empty for taxa the source leaves blank.
+            u_inv <- unique(sensitive_source)
+            u_detail <- vapply(
+                u_inv,
+                function(nm) paste(invasive_detail_lines(nm, lang_r()), collapse = "\n"),
+                FUN.VALUE = character(1),
+                USE.NAMES = FALSE
             )
+            invasive_reason_vec <- u_detail[match(sensitive_source, u_inv)]
 
             table_df <- data.frame(
                 scientificName = scientific_name,
@@ -1454,6 +1472,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 is_sensitive = is_sensitive_vec,
                 sensitive_name = sensitive_source,
                 is_invasive = is_invasive_vec,
+                invasive_reason = invasive_reason_vec,
                 stringsAsFactors = FALSE
             )
 
@@ -1464,7 +1483,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 ".review_original_name",
                 ".is_sensitive",
                 ".sensitive_name",
-                ".is_invasive"
+                ".is_invasive",
+                ".invasive_reason"
             )
 
             status_labels <- list(
@@ -1481,6 +1501,9 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             sensitive_label_json <- jsonlite::toJSON(tr("validate_names_status_badge_sensitive", lang_r()), auto_unbox = TRUE)
             sensitive_mark_json <- jsonlite::toJSON(tr("sensitive_mark_label", lang_r()), auto_unbox = TRUE)
             invasive_label_json <- jsonlite::toJSON(tr("validate_names_status_badge_invasive", lang_r()), auto_unbox = TRUE)
+            translocated_label_json <- jsonlite::toJSON(tr("validate_names_status_badge_translocated", lang_r()), auto_unbox = TRUE)
+            invasive_tooltip_json <- jsonlite::toJSON(tr("validate_names_invasive_tooltip", lang_r()), auto_unbox = TRUE)
+            translocated_tooltip_json <- jsonlite::toJSON(tr("validate_names_translocated_tooltip", lang_r()), auto_unbox = TRUE)
 
             status_badge_js <- DT::JS(
                 sprintf(
@@ -1527,8 +1550,20 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         "  }",
                         "  var invasive = String(row[6] === null || row[6] === undefined ? '' : row[6]).trim();",
                         "  if (invasive.length > 0) {",
-                        "    var iLabel = %s;",
-                        "    content += '<div class=\"vn-cell-invasive\"><span class=\"vn-status-badge badge-invasive\">' + $('<div/>').text(String(iLabel)).html() + '</span></div>';",
+                        "    var alien = (invasive === 'alien');",
+                        "    var iLabel = alien ? %s : %s;",
+                        "    var iTip = alien ? %s : %s;",
+                        "    var iClass = alien ? 'badge-invasive' : 'badge-translocated';",
+                        "    var tipEsc = $('<div/>').text(String(iTip)).html().replace(/\"/g, '&quot;');",
+                        "    content += '<div class=\"vn-cell-invasive\"><span class=\"vn-status-badge ' + iClass + '\" title=\"' + tipEsc + '\">' + $('<div/>').text(String(iLabel)).html() + '</span>';",
+                        "    var iDetail = String(row[7] === null || row[7] === undefined ? '' : row[7]).trim();",
+                        "    if (iDetail.length > 0) {",
+                        "      iDetail.split('\\n').forEach(function(line) {",
+                        "        if (line.length === 0) return;",
+                        "        content += '<div class=\"vn-cell-invasive-reason\">' + $('<div/>').text(line).html() + '</div>';",
+                        "      });",
+                        "    }",
+                        "    content += '</div>';",
                         "  }",
                         "  return content;",
                         "}"
@@ -1536,7 +1571,10 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     replaced_prefix_json,
                     sensitive_label_json,
                     sensitive_mark_json,
-                    invasive_label_json
+                    invasive_label_json,
+                    translocated_label_json,
+                    invasive_tooltip_json,
+                    translocated_tooltip_json
                 )
             )
 
@@ -1653,7 +1691,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         list(targets = 3, visible = FALSE, searchable = FALSE),
                         list(targets = 4, visible = FALSE, searchable = FALSE),
                         list(targets = 5, visible = FALSE, searchable = FALSE),
-                        list(targets = 6, visible = FALSE, searchable = FALSE)
+                        list(targets = 6, visible = FALSE, searchable = FALSE),
+                        list(targets = 7, visible = FALSE, searchable = FALSE)
                     ),
                     rowCallback = row_callback_js,
                     headerCallback = header_callback_js,
