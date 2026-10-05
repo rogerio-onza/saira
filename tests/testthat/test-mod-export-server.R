@@ -31,6 +31,7 @@ testthat::test_that("mod_export_server enables the .ZIP download once required t
             # Ready -> active green button, not inert/disabled.
             testthat::expect_true(grepl("btn-success", html, fixed = TRUE))
             testthat::expect_false(grepl("is-inert", html, fixed = TRUE))
+            testthat::expect_no_match(html, "<button(?=[^>]*download_trigger)[^>]*\\sdisabled[\\s>]", perl = TRUE)
         }
     )
 })
@@ -50,7 +51,7 @@ testthat::test_that("mod_export_server blocks the download and offers a fix CTA 
             session$flushReact()
             btn_html <- paste(output$download_btn_container$html, collapse = " ")
             # Button is inert (grey, not green) and disabled.
-            testthat::expect_true(grepl("disabled", btn_html, fixed = TRUE))
+            testthat::expect_match(btn_html, "<button(?=[^>]*download_trigger)[^>]*\\sdisabled[\\s>]", perl = TRUE)
             testthat::expect_true(grepl("is-inert", btn_html, fixed = TRUE))
             testthat::expect_false(grepl("btn-success", btn_html, fixed = TRUE))
 
@@ -60,6 +61,30 @@ testthat::test_that("mod_export_server blocks the download and offers a fix CTA 
             testthat::expect_true(grepl("go_fix_terms", summary_html, fixed = TRUE))
         }
     )
+})
+
+testthat::test_that("mod_export_server refuses a direct download while the export is blocked", {
+    incomplete <- data.frame(
+        scientificName = c("Aus bus", "Cus dus"),
+        stringsAsFactors = FALSE
+    )
+    learned <- FALSE
+    shiny::testServer(
+        mod_export_server,
+        args = list(
+            mapped_data_r = shiny::reactive(incomplete),
+            download_data_r = shiny::reactive(incomplete),
+            lang_r = shiny::reactive("pt"),
+            on_export_success = function() learned <<- TRUE
+        ),
+        {
+            session$flushReact()
+            # The hidden link works without the disabled button.
+            zip_path <- output$download_real
+            testthat::expect_identical(zip::zip_list(zip_path)$filename, "export_error.csv")
+        }
+    )
+    testthat::expect_false(learned)
 })
 
 testthat::test_that("mod_export_server renders the readiness summary and an empty state without data", {

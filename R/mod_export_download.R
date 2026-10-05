@@ -50,6 +50,19 @@ mount_export_download <- function(input, output, session, lang_r,
             list(key = "preview_export_phrase_9", icon = "file-csv"),
             list(key = "preview_export_phrase_10", icon = "download")
         )
+        # Disabled until the dataset is publishable. Uses the module-level
+        # readiness (the same `export_blocked` the banner shows) so the
+        # button and the banner never contradict each other; falls back to
+        # the local required-term check when no readiness reactive is given.
+        # The server checks it again before it writes the bundle, because the
+        # hidden download link works without the button.
+        export_blocked <- shiny::reactive({
+            if (!is.null(blocked_r) && shiny::is.reactive(blocked_r)) {
+                isTRUE(blocked_r())
+            } else {
+                !isTRUE(download_validation()$ok)
+            }
+        })
         output$download_btn_container <- shiny::renderUI({
             register_handlers_script <- sprintf(
                 "(function () {
@@ -121,16 +134,7 @@ mount_export_download <- function(input, output, session, lang_r,
                 jsonlite::toJSON(download_finish_channel, auto_unbox = TRUE)
             )
 
-            # Disabled until the dataset is publishable. Uses the module-level
-            # readiness (the same `export_blocked` the banner shows) so the
-            # button and the banner never contradict each other; falls back to
-            # the local required-term check when no readiness reactive is given.
-            blocked <- if (!is.null(blocked_r) && shiny::is.reactive(blocked_r)) {
-                isTRUE(blocked_r())
-            } else {
-                !isTRUE(download_validation()$ok)
-            }
-            inert <- isTRUE(is_exporting()) || blocked
+            inert <- isTRUE(is_exporting()) || export_blocked()
 
             shiny::tagList(
                 shiny::actionButton(
@@ -144,7 +148,7 @@ mount_export_download <- function(input, output, session, lang_r,
                         "btn action-button preview-download-btn export-download-btn",
                         if (inert) "is-inert" else "btn-success"
                     ),
-                    disabled = if (inert) "disabled" else NULL
+                    disabled = inert
                 ),
                 shiny::div(
                     style = "display: none;",
@@ -451,12 +455,15 @@ mount_export_download <- function(input, output, session, lang_r,
                 show_download_validation_modal(validation_result)
                 return(invisible(NULL))
             }
+            if (isTRUE(export_blocked())) {
+                return(invisible(NULL))
+            }
 
             show_download_confirmation_modal(validation_result)
         }, ignoreInit = TRUE)
 
         shiny::observeEvent(input$confirm_download_yes, {
-            if (isTRUE(is_exporting())) {
+            if (isTRUE(is_exporting()) || isTRUE(export_blocked())) {
                 return(invisible(NULL))
             }
 
@@ -511,6 +518,11 @@ mount_export_download <- function(input, output, session, lang_r,
 
                 tryCatch(
                     {
+                        # The error branch below writes an error zip, so a
+                        # blocked dataset never ships and never teaches aliases.
+                        if (isTRUE(export_blocked())) {
+                            stop(tr("export_download_blocked", lang_r()), call. = FALSE)
+                        }
                         review_ready <- apply_name_review_payload(
                             download_data(),
                             payload = export_name_review_payload()
