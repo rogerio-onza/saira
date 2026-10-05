@@ -312,7 +312,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # decision state. had_first_upload distinguishes the initial upload
             # (nothing downstream to clear) from a true re-upload.
             downstream_reset = 0L,
-            had_first_upload = FALSE
+            had_first_upload = FALSE,
+            # What the last export taught the alias store, for its undo.
+            alias_receipt = NULL
         )
 
         # SQLite connection for alias and template persistence
@@ -334,16 +336,19 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         if (!is.null(export_signal_r) && shiny::is.reactive(export_signal_r)) {
             shiny::observeEvent(export_signal_r(), {
                 if (is.null(conn) || !DBI::dbIsValid(conn)) return(invisible(NULL))
-                tryCatch(
+                run_id <- rostrum_new_run_id()
+                committed <- tryCatch(
                     rostrum_commit_session_aliases(
                         conn = conn,
                         map_values = shiny::isolate(rv$map_values),
-                        run_id = shiny::isolate(rv$rostrum_run_stats[["run_id"]])
+                        run_id = run_id
                     ),
                     error = function(e) {
                         warning("[rostrum] Could not commit aliases: ", e$message)
+                        NULL
                     }
                 )
+                rv$alias_receipt <- alias_export_receipt(committed, run_id)
             }, ignoreInit = TRUE)
         }
 
@@ -1202,6 +1207,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 # The first upload has nothing downstream to clear (silent); a
                 # re-upload warns the user why their validations disappeared.
                 rv$downstream_reset <- rv$downstream_reset + 1L
+                rv$alias_receipt <- NULL
                 if (isTRUE(rv$had_first_upload)) {
                     shiny::showNotification(
                         tr("notif_reupload_cleared", lang_r()),
@@ -3125,7 +3131,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             occurrence_id_info_r        = occurrence_id_info_r,
             custom_values_r             = custom_values_r,
             establishment_dropped_r     = establishment_dropped_r,
-            reset_signal_r              = shiny::reactive(rv$downstream_reset)
+            reset_signal_r              = shiny::reactive(rv$downstream_reset),
+            alias_receipt_r             = shiny::reactive(rv$alias_receipt)
         ))
     })
 }

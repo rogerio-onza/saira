@@ -21,6 +21,7 @@ undo_session_aliases(
 Invisibly, the integer count of aliases deprecated.
 }
 \description{
-Deprecates all non-public alias records created during \code{run_id}, and
-restores the aliases that \code{run_id} superseded.
+Deprecates the alias records that \code{run_id} created or reactivated, and
+restores the aliases that \code{run_id} superseded. An alias that was live
+before the run stays live.
 }

@@ -84,7 +84,7 @@ testthat::test_that("mod_mapping_server exposes lightweight preview_data alongsi
                     "rostrum_decisions_r", "rostrum_explain_r", "rostrum_run_stats_r",
                     "map_values_r", "occurrence_id_info_r",
                     "custom_values_r", "establishment_dropped_r",
-                    "reset_signal_r"
+                    "reset_signal_r", "alias_receipt_r"
                 )
             )
 
@@ -1876,6 +1876,68 @@ testthat::test_that("picking a column writes no alias, exporting writes the fina
     testthat::expect_identical(nrow(rows), 2L)
     testthat::expect_identical(rows$dwc_term, c("basisOfRecord", "scientificName"))
     testthat::expect_identical(rows$col_name_norm, c("tipo registro", "especie"))
+})
+
+# Every export gets its own run_id. The module once read it from the engine
+# stats, which have none, so every export was written with run_id NA and no
+# export could be undone on its own.
+testthat::test_that("each export writes its aliases under its own run_id", {
+    data_dir <- withr::local_tempdir()
+    user_id <- paste0("test_export_run_id_", as.integer(Sys.time()))
+    withr::local_envvar(c(SAIRA_DATA_DIR = data_dir, SAIRA_USER = user_id))
+
+    df <- data.frame(
+        especie = c("Panthera onca", "Leopardus pardalis"),
+        tipo_registro = c("observacao", "especime"),
+        stringsAsFactors = FALSE
+    )
+    export_signal <- shiny::reactiveVal(0L)
+    seen <- new.env()
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en"),
+            export_signal_r = shiny::reactive(export_signal())
+        ),
+        {
+            session$flushReact()
+            session$setInputs(map_scientificName = "especie")
+            session$flushReact()
+            export_signal(1L)
+            session$flushReact()
+            session$setInputs(map_basisOfRecord = "tipo_registro")
+            session$flushReact()
+            export_signal(2L)
+            session$flushReact()
+            seen$receipt <- session$getReturned()$alias_receipt_r()
+        }
+    )
+
+    conn <- rostrum_connect()
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+    events <- DBI::dbGetQuery(
+        conn,
+        "SELECT run_id FROM rostrum_alias_events WHERE created_by = ? ORDER BY rowid",
+        params = list(user_id)
+    )
+    run_ids <- unique(events$run_id)
+    testthat::expect_length(run_ids, 2L)
+    testthat::expect_false(anyNA(run_ids))
+
+    # The export tab offers to undo the last export: only its new alias.
+    testthat::expect_identical(seen$receipt$run_id, run_ids[[2]])
+    testthat::expect_identical(seen$receipt$pairs$dwc_term, "basisOfRecord")
+
+    # Undoing the second export leaves the first one in place.
+    undo_session_aliases(conn, run_id = run_ids[[2]], created_by = user_id)
+    live <- DBI::dbGetQuery(
+        conn,
+        "SELECT dwc_term FROM rostrum_aliases WHERE user_id = ? AND deprecated = 0",
+        params = list(user_id)
+    )$dwc_term
+    testthat::expect_identical(live, "scientificName")
 })
 
 # Regression: a term overridden by a fixed value is written to the guide as a

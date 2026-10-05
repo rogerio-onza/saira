@@ -91,3 +91,54 @@ testthat::test_that("mod_export_server renders the readiness summary and an empt
         }
     )
 })
+
+# ADR-141: the package card shows what the last export taught Rostrum, and its
+# undo reverses that export only.
+testthat::test_that("mod_export_server shows the alias receipt and undoes that export", {
+    withr::local_envvar(c(SAIRA_DATA_DIR = withr::local_tempdir(), SAIRA_USER = "test_export_undo"))
+    conn <- rostrum_connect()
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+    rostrum_commit_session_aliases(conn, list(fieldNotes = "Notes"), run_id = "run-1")
+    committed <- rostrum_commit_session_aliases(conn, list(occurrenceRemarks = "Notes"), run_id = "run-2")
+    receipt <- alias_export_receipt(committed, "run-2")
+
+    shiny::testServer(
+        mod_export_server,
+        args = list(
+            mapped_data_r = shiny::reactive(complete_df()),
+            lang_r = shiny::reactive("pt"),
+            alias_receipt_r = shiny::reactive(receipt)
+        ),
+        {
+            session$flushReact()
+            html <- paste(output$alias_memory$html, collapse = " ")
+            testthat::expect_true(grepl("undo_alias_export", html, fixed = TRUE))
+            testthat::expect_true(grepl("occurrenceRemarks", html, fixed = TRUE))
+
+            session$setInputs(undo_alias_export = 1)
+            html <- paste(output$alias_memory$html, collapse = " ")
+            testthat::expect_false(grepl("undo_alias_export", html, fixed = TRUE))
+            testthat::expect_true(grepl(tr("export_memory_undone", "pt"), html, fixed = TRUE))
+        }
+    )
+
+    live <- DBI::dbGetQuery(
+        conn, "SELECT dwc_term FROM rostrum_aliases WHERE col_name_norm = 'notes' AND deprecated = 0"
+    )$dwc_term
+    testthat::expect_identical(live, "fieldNotes")
+})
+
+testthat::test_that("mod_export_server shows no alias receipt before an export", {
+    shiny::testServer(
+        mod_export_server,
+        args = list(
+            mapped_data_r = shiny::reactive(complete_df()),
+            lang_r = shiny::reactive("pt"),
+            alias_receipt_r = shiny::reactive(NULL)
+        ),
+        {
+            session$flushReact()
+            testthat::expect_null(output$alias_memory)
+        }
+    )
+})
