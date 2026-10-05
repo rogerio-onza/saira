@@ -421,6 +421,34 @@ testthat::test_that("stream panel shows celebratory empty state when all problem
     )
 })
 
+testthat::test_that("stream panel lists names under other filters when all problems are resolved", {
+    mapped_df <- data.frame(scientificName = c("A"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            rv$stream_df <- data.frame(
+                query_name = "A",
+                validation_status = "accepted",
+                provider = "gbif",
+                updated_at = as.POSIXct("2026-02-27 11:00:00", tz = "UTC"),
+                display_order = 1L,
+                stringsAsFactors = FALSE
+            )
+            rv$stream_filter <- "accepted"
+            session$flushReact()
+
+            html <- paste(output$stream_panel$html, collapse = " ")
+            testthat::expect_false(grepl("vn-review-empty-state", html, fixed = TRUE))
+            testthat::expect_true(grepl("vn-stream-list", html, fixed = TRUE))
+        }
+    )
+})
+
 testthat::test_that("module stream state grows incrementally per processed batch", {
     mapped_df <- data.frame(
         scientificName = paste("Species", seq_len(250)),
@@ -622,13 +650,21 @@ testthat::test_that("report table wires the sensitive-species pill column", {
             )
             # ADR-092: the resolved-name click target sits at hidden index 5.
             testthat::expect_true(5 %in% hidden_targets)
-            # ADR-109: the invasive-species flag sits at hidden index 6.
+            # ADR-109: the invasive-species flag sits at hidden index 6. It
+            # carries the origin_class, not a boolean, so the badge can only
+            # say "alien invasive" where the list asserts it.
             testthat::expect_true(6 %in% hidden_targets)
             testthat::expect_true(
                 grepl("vn-cell-invasive", scientific_render, fixed = TRUE)
             )
             testthat::expect_true(
                 grepl("row[6]", scientific_render, fixed = TRUE)
+            )
+            testthat::expect_true(
+                grepl("invasive === 'alien'", scientific_render, fixed = TRUE)
+            )
+            testthat::expect_true(
+                grepl("badge-translocated", scientific_render, fixed = TRUE)
             )
         }
     )

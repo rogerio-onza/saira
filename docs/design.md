@@ -389,7 +389,8 @@ A etapa ativa usa cor e sublinhado, sem fundo. Abaixo de 992px, o menu recolhido
 /* Filter chips (ADR-130): label | count, --radius-chip, the color of what they filter */
 --pill-fg / --pill-bg per class: pill-problems, pill-error → missing red;
   pill-warning → suggested amber; pill-info → --info; pill-success → auto green;
-  pill-invasive → --badge-invasive-*; pill-reference → --coord-swapped; pill-edited;
+  pill-invasive → --badge-invasive-*; pill-translocated → --badge-translocated-*;
+  pill-reference → --coord-swapped; pill-edited;
   none (All) → --step-active
 count part → --pill-bg tint; active chip → --pill-bg fill, --pill-fg border, count filled --pill-fg
 
@@ -398,6 +399,7 @@ count part → --pill-bg tint; active chip → --pill-bg fill, --pill-fg border,
 .badge-error   → --state-missing-bg / --badge-missing-fg
 .badge-info    → --badge-assistant-* .badge-accent → --badge-alias-*
 .badge-muted   → --badge-manual-*     .badge-invasive → --badge-invasive-* (brown)
+.badge-translocated → --badge-translocated-* (violet, ADR-142)
 ```
 
 ---

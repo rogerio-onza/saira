@@ -928,6 +928,12 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   --pill-bg: var(--badge-invasive-bg);
 }
 
+.stream-pill.pill-translocated,
+.vn-stream-pill.pill-translocated {
+  --pill-fg: var(--badge-translocated-fg);
+  --pill-bg: var(--badge-translocated-bg);
+}
+
 .stream-pill.pill-reference,
 .vn-stream-pill.pill-reference {
   --pill-fg: var(--coord-swapped);
@@ -1870,6 +1876,27 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   margin-top: var(--space-1);
 }
 
+/* Horus "motivo da introducao", under the badge in both the report cell and
+   the processed-names row. Absent for roughly a fifth of the list. */
+.vn-cell-invasive-reason,
+.vn-stream-item-invasive-reason {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  line-height: var(--leading-normal);
+}
+
+.vn-cell-invasive-reason {
+  margin-top: 0.15rem;
+}
+
+.vn-stream-item-invasive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: 0.15rem;
+}
+
 .vn-report-table tbody tr.vn-row-manual > td {
   background: var(--warning-bg);
 }
@@ -1945,6 +1972,11 @@ body.vn-review-open .modal-backdrop.show {
 .vn-conservation-tag.is-invasive {
   --tag-fg: var(--badge-invasive-fg);
   --tag-bg: var(--badge-invasive-bg);
+}
+
+.vn-conservation-tag.is-translocated {
+  --tag-fg: var(--badge-translocated-fg);
+  --tag-bg: var(--badge-translocated-bg);
 }
 
 .vn-conservation-tag-label {
@@ -2252,6 +2284,14 @@ body.vn-review-open .modal-backdrop.show {
 .badge-error {
   background: var(--state-missing-bg);
   color: var(--badge-missing-fg);
+}
+
+/* Native to Brazil, invasive outside its natural range. Deliberately not the
+   brown of .badge-invasive: that brown reads "alien invasive", which is
+   exactly the claim this badge exists to avoid. */
+.badge-translocated {
+  background: var(--badge-translocated-bg);
+  color: var(--badge-translocated-fg);
 }
 
 .badge-info {

@@ -51,3 +51,7 @@ data-raw/invasive_species_horus_2023.csv
 # testthat failure snapshots. Regenerated on every failing run.
 tests/testthat/_problems/
 tests/testthat/testthat-problems.rds
+
+# Richer Horus export: same database, carries the authoritative `origin`
+# (Native / Non-native / Cripto / Hybrid) and `native_distribution_area`.
+data-raw/invasive_species_horus_detail.csv

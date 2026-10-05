@@ -539,6 +539,11 @@
     "en": "Invasive alien",
     "es": "Exótica invasora"
   },
+  "est_assistant_translocated_hint": {
+    "pt": "Nativa translocada",
+    "en": "Translocated native",
+    "es": "Nativa translocada"
+  },
   "est_assistant_map_scientificname_first": {
     "pt": "Mapeie a coluna de scientificName antes de abrir o assistente.",
     "en": "Map the scientificName column before opening the assistant.",
@@ -1664,6 +1669,11 @@
     "en": "Invasive",
     "es": "Invasoras"
   },
+  "validate_names_stream_filter_translocated": {
+    "pt": "Nativas transl.",
+    "en": "Transl. natives",
+    "es": "Nativas transl."
+  },
   "validate_names_stream_filter_accepted": {
     "pt": "Aceitos",
     "en": "Accepted",
@@ -1719,10 +1729,20 @@
     "en": "Invasive",
     "es": "Invasoras"
   },
+  "validate_names_conservation_label_translocated": {
+    "pt": "Nativas transl.",
+    "en": "Transl. natives",
+    "es": "Nativas transl."
+  },
   "validate_names_conservation_summary_invasive": {
     "pt": "%d registro(s) de espécie exótica invasora (Instituto Hórus, 2023).",
     "en": "%d record(s) of invasive alien species (Instituto Hórus, 2023).",
     "es": "%d registro(s) de especies exóticas invasoras (Instituto Hórus, 2023)."
+  },
+  "validate_names_conservation_summary_translocated": {
+    "pt": "%d registro(s) de espécie nativa do Brasil invasora fora da sua área de distribuição natural (Instituto Hórus, 2023).",
+    "en": "%d record(s) of species native to Brazil but invasive outside their natural range (Instituto Hórus, 2023).",
+    "es": "%d registro(s) de especie nativa de Brasil invasora fuera de su área de distribución natural (Instituto Hórus, 2023)."
   },
   "validate_names_conservation_summary_mma": {
     "pt": "%d espécie(s) na lista nacional MMA; o status vai para os registros do Brasil no export.",
@@ -1823,6 +1843,11 @@
     "pt": "Exótica invasora",
     "en": "Invasive alien",
     "es": "Exótica invasora"
+  },
+  "validate_names_status_badge_translocated": {
+    "pt": "Nativa translocada",
+    "en": "Translocated native",
+    "es": "Nativa translocada"
   },
   "sensitive_data_generalizations": {
     "pt": "Coordenadas de espécie %s (lista nacional MMA) generalizadas para %s grau pois",
@@ -3853,5 +3878,65 @@
     "pt": "Colunas com >50% ausentes",
     "en": "Columns with >50% missing",
     "es": "Columnas con >50% ausentes"
+  },
+  "invasive_reason_marine": {
+    "pt": "espécies marinhas",
+    "en": "marine species",
+    "es": "especies marinas"
+  },
+  "invasive_reason_aquarium_fish": {
+    "pt": "peixes de aquário",
+    "en": "aquarium fish",
+    "es": "peces de acuario"
+  },
+  "invasive_reason_aquaculture_fish": {
+    "pt": "peixes de aquicultura",
+    "en": "aquaculture fish",
+    "es": "peces de acuicultura"
+  },
+  "invasive_reason_sport_fishing": {
+    "pt": "pesca desportiva",
+    "en": "sport fishing",
+    "es": "pesca deportiva"
+  },
+  "invasive_reason_pets": {
+    "pt": "animais de estimação",
+    "en": "pets",
+    "es": "mascotas"
+  },
+  "invasive_reason_forage_plants": {
+    "pt": "plantas forrageiras",
+    "en": "forage plants",
+    "es": "plantas forrajeras"
+  },
+  "invasive_reason_ornamental_plants": {
+    "pt": "plantas ornamentais",
+    "en": "ornamental plants",
+    "es": "plantas ornamentales"
+  },
+  "invasive_reason_forestry": {
+    "pt": "uso florestal",
+    "en": "forestry use",
+    "es": "uso forestal"
+  },
+  "invasive_reason_line": {
+    "pt": "Introduzida para: %s",
+    "en": "Introduced for: %s",
+    "es": "Introducida para: %s"
+  },
+  "invasive_native_range_line": {
+    "pt": "Distribuição natural: %s",
+    "en": "Natural range: %s",
+    "es": "Distribución natural: %s"
+  },
+  "validate_names_translocated_tooltip": {
+    "pt": "Nativa do Brasil, invasora fora da sua área de distribuição natural. Verifique se este registro está dentro ou fora dela.",
+    "en": "Native to Brazil, invasive outside its natural range. Check whether this record falls inside or outside it.",
+    "es": "Nativa de Brasil, invasora fuera de su área de distribución natural. Verifique si este registro está dentro o fuera de ella."
+  },
+  "validate_names_invasive_tooltip": {
+    "pt": "Espécie exótica invasora no Brasil (Instituto Hórus, 2023).",
+    "en": "Invasive alien species in Brazil (Instituto Hórus, 2023).",
+    "es": "Especie exótica invasora en Brasil (Instituto Hórus, 2023)."
   }
 }

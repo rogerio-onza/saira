@@ -73,6 +73,8 @@
   --badge-missing-fg: #9b2c20;
   --badge-invasive-bg: #f5e8dc;
   --badge-invasive-fg: #8c4a00; /* invasive species: brown, never the not-found red */
+  --badge-translocated-bg: #efe9f8;
+  --badge-translocated-fg: #4a2a8a; /* native to Brazil, invasive outside its range */
 
   /* Borders: cool neutrals that sit on --bg-main (ADR-135). */
   --border-light: #eceef2;
