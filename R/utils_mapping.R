@@ -384,7 +384,9 @@ sanitize_establishment_field_map <- function(field_map, field = "means") {
     stats::setNames(clean_values[keep], clean_keys[keep])
 }
 
-# The assistant's committed state: list(means = <named chr>, degree = <named chr>).
+# The assistant's committed state: list(means, degree, island_means,
+# island_degree), each a named chr keyed by species. The island pair holds the
+# answer for the species' records on an oceanic island (ADR-143).
 sanitize_establishment_map <- function(establishment_map) {
     if (!is.list(establishment_map)) {
         establishment_map <- list()
@@ -395,13 +397,19 @@ sanitize_establishment_map <- function(establishment_map) {
         ),
         degree = sanitize_establishment_field_map(
             establishment_map$degree, field = "degree"
+        ),
+        island_means = sanitize_establishment_field_map(
+            establishment_map$island_means, field = "means"
+        ),
+        island_degree = sanitize_establishment_field_map(
+            establishment_map$island_degree, field = "degree"
         )
     )
 }
 
 establishment_map_is_empty <- function(establishment_map) {
     clean <- sanitize_establishment_map(establishment_map)
-    !any(nzchar(clean$means)) && !any(nzchar(clean$degree))
+    !any(vapply(clean, function(x) any(nzchar(x)), logical(1)))
 }
 
 # Unique species in the mapped scientificName column, with the record count so
@@ -457,20 +465,28 @@ auto_suggest_establishment_means <- function(species_names) {
     stats::setNames(out, normalize_species_keys(species_names))
 }
 
-# Expand a per-species answer to one value per row.
+# Expand a per-species answer to one value per row. `island_rows` (from
+# establishment_island_rows()) marks the records that take the island answer
+# instead. They never fall back to the species answer: "native" given for the
+# mainland records is false on the island.
 map_establishment_values <- function(species_values, establishment_map = NULL,
-                                     field = "means") {
+                                     field = "means", island_rows = NULL) {
     keys <- normalize_species_keys(species_values)
     if (is.null(establishment_map) || length(establishment_map) == 0) {
         return(rep("", length(keys)))
     }
     clean <- sanitize_establishment_map(establishment_map)
-    field_map <- if (identical(field, "degree")) clean$degree else clean$means
-    if (length(field_map) == 0) {
-        return(rep("", length(keys)))
-    }
+    degree <- identical(field, "degree")
+    field_map <- if (degree) clean$degree else clean$means
     mapped <- unname(field_map[keys])
     mapped[is.na(mapped)] <- ""
+    if (length(island_rows) == length(keys)) {
+        on_island <- !is.na(island_rows)
+        island_map <- if (degree) clean$island_degree else clean$island_means
+        island_values <- unname(island_map[keys[on_island]])
+        island_values[is.na(island_values)] <- ""
+        mapped[on_island] <- island_values
+    }
     mapped
 }
 
@@ -508,13 +524,17 @@ canonical_establishment_values <- function(values, field = "means") {
 build_establishment_term_value <- function(term, df, user_cols = NULL,
                                            species_values = NULL,
                                            establishment_map = NULL,
-                                           out_sep = " | ") {
+                                           out_sep = " | ",
+                                           island_rows = NULL) {
     field <- if (identical(term, "degreeOfEstablishment")) "degree" else "means"
     n <- nrow(df)
     assistant_values <- if (is.null(species_values)) {
         rep("", n)
     } else {
-        map_establishment_values(species_values, establishment_map, field = field)
+        map_establishment_values(
+            species_values, establishment_map, field = field,
+            island_rows = island_rows
+        )
     }
     column_values <- if (has_selected_value(user_cols)) {
         build_term_value(term = term, df = df, user_cols = user_cols, out_sep = out_sep)$values
@@ -541,7 +561,8 @@ build_establishment_term_value <- function(term, df, user_cols = NULL,
 establishment_dropped_values <- function(term, df, user_cols = NULL,
                                          species_values = NULL,
                                          establishment_map = NULL,
-                                         out_sep = " | ") {
+                                         out_sep = " | ",
+                                         island_rows = NULL) {
     empty <- data.frame(
         raw = character(0), n_records = integer(0), stringsAsFactors = FALSE
     )
@@ -555,7 +576,7 @@ establishment_dropped_values <- function(term, df, user_cols = NULL,
     published <- build_establishment_term_value(
         term = term, df = df, user_cols = user_cols,
         species_values = species_values, establishment_map = establishment_map,
-        out_sep = out_sep
+        out_sep = out_sep, island_rows = island_rows
     )
 
     raw_chr <- trimws(as.character(column_values))
@@ -579,11 +600,11 @@ establishment_dropped_values <- function(term, df, user_cols = NULL,
 # the assistant has done its job.
 establishment_answer_count <- function(establishment_map, field = "means") {
     clean <- sanitize_establishment_map(establishment_map)
-    values <- if (identical(field, "degree")) clean$degree else clean$means
-    if (length(values) == 0L) {
-        return(0L)
-    }
-    sum(nzchar(values))
+    degree <- identical(field, "degree")
+    values <- if (degree) clean$degree else clean$means
+    island <- if (degree) clean$island_degree else clean$island_means
+    answered <- union(names(values)[nzchar(values)], names(island)[nzchar(island)])
+    length(answered)
 }
 
 # Species that got an establishmentMeans but no degreeOfEstablishment. The
@@ -592,16 +613,16 @@ establishment_answer_count <- function(establishment_map, field = "means") {
 # a taxon whose degree is genuinely unknown must still be publishable.
 establishment_pairs_missing_degree <- function(establishment_map) {
     clean <- sanitize_establishment_map(establishment_map)
-    if (length(clean$means) == 0) {
-        return(character(0))
+    missing_in <- function(means, degree) {
+        with_means <- names(means)[nzchar(means)]
+        degree_for <- degree[with_means]
+        degree_for[is.na(degree_for)] <- ""
+        with_means[!nzchar(degree_for)]
     }
-    with_means <- names(clean$means)[nzchar(clean$means)]
-    if (length(with_means) == 0) {
-        return(character(0))
-    }
-    degree_for <- clean$degree[with_means]
-    degree_for[is.na(degree_for)] <- ""
-    with_means[!nzchar(degree_for)]
+    union(
+        missing_in(clean$means, clean$degree),
+        missing_in(clean$island_means, clean$island_degree)
+    )
 }
 
 default_meta <- function() {
@@ -3473,10 +3494,14 @@ build_processed_mapping_df <- function(
     # df_final, so it does not depend on where scientificName falls in the term
     # loop. NULL means "no assistant answers to apply".
     establishment_species <- NULL
+    establishment_islands <- NULL
     if (!is.null(establishment_map) && !establishment_map_is_empty(establishment_map)) {
         sci_cols <- sanitize_map_selection("scientificName", map_values[["scientificName"]])
         if (has_selected_value(sci_cols) && sci_cols[[1]] %in% names(df)) {
             establishment_species <- as.character(df[[sci_cols[[1]]]])
+            establishment_islands <- establishment_island_rows_for_df(
+                df, map_values, establishment_species
+            )
         }
     }
 
@@ -3555,7 +3580,8 @@ build_processed_mapping_df <- function(
             merged <- build_establishment_term_value(
                 term = term, df = df, user_cols = user_cols,
                 species_values = establishment_species,
-                establishment_map = establishment_map, out_sep = out_sep
+                establishment_map = establishment_map, out_sep = out_sep,
+                island_rows = establishment_islands
             )
             if (has_column || any(nzchar(merged[!is.na(merged)]))) {
                 df_final[[term]] <- merged

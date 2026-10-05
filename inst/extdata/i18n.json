@@ -544,6 +544,36 @@
     "en": "Translocated native",
     "es": "Nativa translocada"
   },
+  "est_assistant_group_mainland": {
+    "pt": "No continente",
+    "en": "On the mainland",
+    "es": "En el continente"
+  },
+  "est_assistant_group_island": {
+    "pt": "Em ilha oceânica",
+    "en": "On an oceanic island",
+    "es": "En isla oceánica"
+  },
+  "est_assistant_island_records": {
+    "pt": "%d registro(s): %s",
+    "en": "%d record(s): %s",
+    "es": "%d registro(s): %s"
+  },
+  "est_assistant_island_suggestion": {
+    "pt": "Fora da distribuição natural. Sugestão: introduced",
+    "en": "Outside the natural range. Suggestion: introduced",
+    "es": "Fuera de la distribución natural. Sugerencia: introduced"
+  },
+  "est_assistant_island_apply": {
+    "pt": "Aplicar",
+    "en": "Apply",
+    "es": "Aplicar"
+  },
+  "est_assistant_island_undo": {
+    "pt": "Desfazer",
+    "en": "Undo",
+    "es": "Deshacer"
+  },
   "est_assistant_map_scientificname_first": {
     "pt": "Mapeie a coluna de scientificName antes de abrir o assistente.",
     "en": "Map the scientificName column before opening the assistant.",
@@ -563,6 +593,16 @@
     "pt": "degreeOfEstablishment para %s",
     "en": "degreeOfEstablishment for %s",
     "es": "degreeOfEstablishment para %s"
+  },
+  "a11y_est_island_means_label": {
+    "pt": "establishmentMeans para %s em ilha oceânica",
+    "en": "establishmentMeans for %s on an oceanic island",
+    "es": "establishmentMeans para %s en isla oceánica"
+  },
+  "a11y_est_island_degree_label": {
+    "pt": "degreeOfEstablishment para %s em ilha oceânica",
+    "en": "degreeOfEstablishment for %s on an oceanic island",
+    "es": "degreeOfEstablishment para %s en isla oceánica"
   },
   "bor_assistant_button": {
     "pt": "Assistente basisOfRecord",

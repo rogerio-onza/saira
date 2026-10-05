@@ -4302,6 +4302,61 @@ table.dataTable tbody tr.validate-invalid td {
   font-weight: var(--weight-medium);
 }
 
+/* A species split by place (ADR-143): a header row, then one indented sub-row
+   per group of records, each with its own selects. */
+.est-split-head > td {
+  border-bottom: 0;
+}
+
+.est-split-head-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.est-split-head-line .est-assistant-invasive {
+  margin-top: 0;
+}
+
+.bor-assistant-table tbody .est-split-sub > td {
+  background-color: var(--bg-subtle);
+}
+
+.est-split-sub > td:first-child {
+  padding-left: var(--space-6);
+}
+
+.est-split-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+.est-split-island .est-split-label {
+  color: var(--warning-text);
+}
+
+.est-island-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* The global .btn padding wins over .btn-sm, so size these here. */
+.est-island-suggest .btn {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  box-shadow: none;
+}
+
+.est-island-suggest.is-applied .est-island-hint,
+.est-island-suggest.is-applied .est-island-apply,
+.est-island-suggest:not(.is-applied) .est-island-undo {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .bor-assistant-pagination {
     justify-content: center;

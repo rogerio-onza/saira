@@ -102,7 +102,26 @@ mod_mapping_ui <- function(id) {
               var card = expand.closest('.field-card');
               card.classList.remove('field-card-compact');
               window.jQuery(card).trigger('shown');
+              return;
             }
+            // Island suggestion in the establishment assistant (ADR-143):
+            // the user applies it, the app never fills it in silently.
+            var island = ev.target.closest('.est-island-apply, .est-island-undo');
+            if (island) {
+              var wrap = island.closest('.est-island-suggest');
+              var apply = island.classList.contains('est-island-apply');
+              window.jQuery(document.getElementById(wrap.dataset.target))
+                .val(apply ? 'introduced' : '').trigger('change');
+              wrap.classList.toggle('is-applied', apply);
+            }
+          });
+          document.addEventListener('change', function (ev) {
+            var sel = ev.target;
+            if (!sel.id || sel.id.indexOf('est_island_means_') === -1) { return; }
+            var wrap = document.querySelector(
+              '.est-island-suggest[data-target=\"' + sel.id + '\"]'
+            );
+            if (wrap) { wrap.classList.toggle('is-applied', sel.value === 'introduced'); }
           });
           Shiny.addCustomMessageHandler('saira-mapping-scroll-to-class', function (payload) {
             var id = payload && payload.anchor_id;
@@ -276,14 +295,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # Per-species establishment answers (ADR-110). Keyed on the species,
             # not on a source column: one answer covers every record of that
             # taxon. `map` is what reaches the data; `draft` is in-modal only.
-            establishment_map = list(
-                means = stats::setNames(character(0), character(0)),
-                degree = stats::setNames(character(0), character(0))
-            ),
-            establishment_draft = list(
-                means = stats::setNames(character(0), character(0)),
-                degree = stats::setNames(character(0), character(0))
-            ),
+            establishment_map = sanitize_establishment_map(list()),
+            establishment_draft = sanitize_establishment_map(list()),
             establishment_auto_map = stats::setNames(character(0), character(0)),
             establishment_entries = data.frame(
                 idx = integer(0),
@@ -670,13 +683,17 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             result <- tryCatch(
                 if (is_establishment) {
                     species <- utils::head(get_establishment_species(), 200L)
+                    if (length(species) != nrow(slice)) species <- NULL
                     list(values = build_establishment_term_value(
                         term = term,
                         df = slice,
                         user_cols = user_cols,
-                        species_values = if (length(species) == nrow(slice)) species else NULL,
+                        species_values = species,
                         establishment_map = rv$establishment_map,
-                        out_sep = " | "
+                        out_sep = " | ",
+                        island_rows = establishment_island_rows_for_df(
+                            slice, rv$map_values, species
+                        )
                     ))
                 } else {
                     build_term_value(
@@ -901,6 +918,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             as.character(df[[col]])
         }
 
+        # Oceanic island per record, NA off the islands (ADR-143). NULL when
+        # the coordinates or the species are not mapped.
+        get_establishment_island_rows <- function() {
+            establishment_island_rows_for_df(
+                raw_data_r(), rv$map_values, get_establishment_species()
+            )
+        }
+
         establishment_page_count <- function() {
             total_items <- nrow(rv$establishment_entries)
             if (total_items <= 0) {
@@ -937,12 +962,12 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
         # Auto-suggestions overlaid by the user's in-modal edits. Only
         # establishmentMeans has suggestions; degreeOfEstablishment starts empty
-        # by design (it depends on the record, not on the species).
+        # by design (it depends on the record, not on the species). The island
+        # answers have no auto-suggestion: the user applies it with one click.
         get_effective_establishment_map <- function() {
             entries <- rv$establishment_entries
-            empty <- stats::setNames(character(0), character(0))
             if (nrow(entries) == 0) {
-                return(list(means = empty, degree = empty))
+                return(sanitize_establishment_map(list()))
             }
 
             keys <- entries$key
@@ -955,16 +980,21 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             has_draft <- !is.na(draft_means)
             means[has_draft] <- draft_means[has_draft]
 
-            degree <- draft$degree[keys]
-            degree[is.na(degree)] <- ""
+            draft_only <- function(field, vocab) {
+                values <- draft[[field]][keys]
+                values[is.na(values)] <- ""
+                stats::setNames(
+                    as.character(sanitize_establishment_terms(values, vocab)), keys
+                )
+            }
 
             list(
                 means = stats::setNames(
                     as.character(sanitize_establishment_terms(means, "means")), keys
                 ),
-                degree = stats::setNames(
-                    as.character(sanitize_establishment_terms(degree, "degree")), keys
-                )
+                degree = draft_only("degree", "degree"),
+                island_means = draft_only("island_means", "means"),
+                island_degree = draft_only("island_degree", "degree")
             )
         }
 
@@ -976,13 +1006,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             for (i in seq_len(nrow(entries))) {
                 key <- entries$key[[i]]
                 idx <- entries$idx[[i]]
-                for (field in c("means", "degree")) {
+                for (field in c("means", "degree", "island_means", "island_degree")) {
                     input_value <- input[[paste0("est_", field, "_", idx)]]
                     if (is.null(input_value)) {
                         next
                     }
                     sanitized <- sanitize_establishment_terms(
-                        as.character(input_value)[[1]], field
+                        as.character(input_value)[[1]], sub("^island_", "", field)
                     )
                     # [[ ]] on a named character vector errors for an absent
                     # name (unlike a list), so gate the read like the
@@ -1000,8 +1030,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
         reset_establishment_state <- function() {
             empty <- stats::setNames(character(0), character(0))
-            rv$establishment_map <- list(means = empty, degree = empty)
-            rv$establishment_draft <- list(means = empty, degree = empty)
+            rv$establishment_map <- sanitize_establishment_map(list())
+            rv$establishment_draft <- sanitize_establishment_map(list())
             rv$establishment_auto_map <- empty
             rv$establishment_entries <- data.frame(
                 idx = integer(0), key = character(0), raw = character(0),
@@ -1126,6 +1156,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             establishment_choices = establishment_choices,
             get_effective_establishment_map = get_effective_establishment_map,
             get_establishment_species = get_establishment_species,
+            get_establishment_island_rows = get_establishment_island_rows,
             sync_establishment_page_to_draft = sync_establishment_page_to_draft
         )
 
@@ -3109,7 +3140,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     term = term, df = df, user_cols = cols,
                     species_values = species,
                     establishment_map = rv$establishment_map,
-                    out_sep = " | "
+                    out_sep = " | ",
+                    island_rows = establishment_island_rows_for_df(
+                        df, rv$map_values, species
+                    )
                 )
                 if (nrow(dropped) > 0L) out[[term]] <- dropped
             }

@@ -1315,6 +1315,57 @@ testthat::test_that("saved answers reach the preview for every record of the spe
     )
 })
 
+# ADR-143: a translocated native with records on an oceanic island gets a
+# separate answer for those records. The mainland answer never reaches them.
+testthat::test_that("the establishment assistant splits island records of a translocated native", {
+    df <- data.frame(
+        especie = c("Nasua nasua", "Nasua nasua", "Nasua nasua"),
+        lat = c("-3.85", "-19.9", "-3.86"),
+        lon = c("-32.42", "-43.9", "-32.41"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(
+                map_scientificName = "especie",
+                map_decimalLatitude = "lat",
+                map_decimalLongitude = "lon"
+            )
+            session$flushReact()
+            session$setInputs(open_establishment_assistant = 1)
+            session$flushReact()
+
+            entries <- rv$establishment_entries
+            testthat::expect_equal(entries$n_island, 2L)
+            testthat::expect_equal(entries$island_names, "Fernando de Noronha")
+            # No silent prefill: the island answer starts empty.
+            testthat::expect_equal(
+                unname(get_effective_establishment_map()$island_means), ""
+            )
+
+            idx <- entries$idx[[1]]
+            do.call(session$setInputs, stats::setNames(
+                list("native", "introduced"),
+                paste0(c("est_means_", "est_island_means_"), idx)
+            ))
+            session$setInputs(save_establishment_assistant = 1)
+            session$flushReact()
+
+            preview <- session$getReturned()$preview_data_r()
+            testthat::expect_equal(
+                preview$establishmentMeans, c("introduced", "native", "introduced")
+            )
+        }
+    )
+})
+
 # The pair is recommended, never enforced: a species can be saved with
 # establishmentMeans alone and the export still proceeds.
 testthat::test_that("establishmentMeans without a degree is reported, not blocked", {
