@@ -1,132 +1,61 @@
 # Title: Tests for Help Module Server
 # Author: Rogerio Nunes Oliveira
 # Date: 2026-02-28
-# Version: 1.0 (Onda 5, Item 5.5)
+# Version: 2.0 (ADR-146)
 
-testthat::test_that("mod_help_server renders header card", {
+help_page_html <- function(lang) {
+    html <- NULL
     shiny::testServer(
         mod_help_server,
-        args = list(
-            lang_r = shiny::reactive("en")
-        ),
+        args = list(lang_r = shiny::reactive(lang)),
         {
             session$flushReact()
-            header_html <- output$help_header_card
-            testthat::expect_true(!is.null(header_html))
+            html <<- paste(output$help_page$html, collapse = " ")
         }
     )
+    html
+}
+
+testthat::test_that("the help page credits the author from DESCRIPTION, with a citation", {
+    html <- help_page_html("en")
+    meta <- credits_saira_meta()
+
+    testthat::expect_match(html, meta$name, fixed = TRUE)
+    testthat::expect_match(html, paste0("mailto:", meta$email), fixed = TRUE)
+    testthat::expect_match(html, paste0("v", meta$version), fixed = TRUE)
+    testthat::expect_match(html, "LICENSE.md", fixed = TRUE)
+    # Both copy buttons carry their text for copy-button.js.
+    testthat::expect_equal(lengths(regmatches(html, gregexpr("data-copy=", html, fixed = TRUE))), 2L)
+    testthat::expect_match(html, "@Manual{saira", fixed = TRUE)
 })
 
-testthat::test_that("mod_help_server renders the resources content (tutorials, links, refs, FAQ)", {
-    shiny::testServer(
-        mod_help_server,
-        args = list(
-            lang_r = shiny::reactive("en")
-        ),
-        {
-            session$flushReact()
-            html <- paste(output$help_content$html, collapse = " ")
+testthat::test_that("the help page links tutorials, FAQ, issues and methods", {
+    html <- help_page_html("en")
 
-            # No leftover workflow stepper.
-            testthat::expect_false(grepl("help-workflow", html, fixed = TRUE))
-            # Tutorials link to the website index.
-            testthat::expect_true(grepl("rogerio-onza.github.io/saira/en/tutorials/", html, fixed = TRUE))
-            # Direct GitHub issues link.
-            testthat::expect_true(grepl("github.com/rogerio-onza/saira/issues", html, fixed = TRUE))
-            # All three Chapman / GBIF reference PDFs.
-            testthat::expect_true(grepl("doi.org/10.15468/doc-5jp4-5g10", html, fixed = TRUE))
-            testthat::expect_true(grepl("doi.org/10.15468/doc-gg7h-s853", html, fixed = TRUE))
-            testthat::expect_true(grepl("doi.org/10.35035/e09p-h128", html, fixed = TRUE))
-            # FAQ toggle with six collapsible items.
-            testthat::expect_true(grepl("help-faq-toggle", html, fixed = TRUE))
-            faq_items <- lengths(regmatches(
-                html,
-                gregexpr("help-faq-item", html, fixed = TRUE)
-            ))
-            testthat::expect_equal(faq_items, 6L)
-            # FAQ links out to the full site FAQ.
-            testthat::expect_true(grepl("rogerio-onza.github.io/saira/en/faq.html", html, fixed = TRUE))
-        }
-    )
+    testthat::expect_match(html, "rogerio-onza.github.io/saira/en/tutorials/", fixed = TRUE)
+    testthat::expect_match(html, "rogerio-onza.github.io/saira/en/faq.html", fixed = TRUE)
+    testthat::expect_match(html, "rogerio-onza.github.io/saira/en/technologies.html", fixed = TRUE)
+    testthat::expect_match(html, "github.com/rogerio-onza/saira/issues", fixed = TRUE)
+    testthat::expect_equal(lengths(regmatches(html, gregexpr("help-faq-item", html, fixed = TRUE))), 4L)
+    for (doi in c("10.1111/2041-210X.13868", "10.15468/doc-5jp4-5g10", "10.15468/doc-gg7h-s853", "10.35035/e09p-h128")) {
+        testthat::expect_match(html, paste0("doi.org/", doi), fixed = TRUE)
+    }
 })
 
-testthat::test_that("mod_help_server built-with card links every dependency and drops AI chips", {
-    shiny::testServer(
-        mod_help_server,
-        args = list(
-            lang_r = shiny::reactive("en")
-        ),
-        {
-            session$flushReact()
-            html <- paste(output$help_sidebar$html, collapse = " ")
+testthat::test_that("the help page links every package, with no AI tool chips", {
+    html <- help_page_html("en")
 
-            # Every runtime dependency renders as a linked chip.
-            pkgs <- help_dependency_packages()
-            testthat::expect_equal(length(pkgs), 26L)
-            for (pkg in pkgs) {
-                testthat::expect_true(grepl(pkg$href, html, fixed = TRUE))
-            }
-            # faunabr points at the GitHub source, not CRAN.
-            testthat::expect_true(grepl("github.com/wevertonbio/faunabr", html, fixed = TRUE))
-            # The AI-tool chips are gone.
-            testthat::expect_false(grepl("Codex", html, fixed = TRUE))
-            testthat::expect_false(grepl("Sonnet", html, fixed = TRUE))
-        }
-    )
+    for (pkg in unlist(credits_package_groups())) {
+        testthat::expect_match(html, credits_package_meta(pkg)$href, fixed = TRUE)
+    }
+    testthat::expect_match(html, "github.com/wevertonbio/faunabr", fixed = TRUE)
+    testthat::expect_match(html, sprintf(tr("help_stack_body", "en"), length(unlist(credits_package_groups()))), fixed = TRUE)
+    testthat::expect_false(grepl("Codex", html, fixed = TRUE))
+    testthat::expect_false(grepl("Sonnet", html, fixed = TRUE))
 })
 
-testthat::test_that("mod_help_server renders sidebar with author metadata", {
-    shiny::testServer(
-        mod_help_server,
-        args = list(
-            lang_r = shiny::reactive("en")
-        ),
-        {
-            session$flushReact()
-            sidebar_html <- output$help_sidebar
-            testthat::expect_true(!is.null(sidebar_html))
-        }
-    )
-})
-
-testthat::test_that("mod_help_server works with PT language", {
-    shiny::testServer(
-        mod_help_server,
-        args = list(
-            lang_r = shiny::reactive("pt")
-        ),
-        {
-            session$flushReact()
-            header_html <- output$help_header_card
-            testthat::expect_true(!is.null(header_html))
-            content_html <- output$help_content
-            testthat::expect_true(!is.null(content_html))
-            sidebar_html <- output$help_sidebar
-            testthat::expect_true(!is.null(sidebar_html))
-        }
-    )
-})
-
-testthat::test_that("mod_help_server survives language switch EN to PT", {
-    shiny::testServer(
-        mod_help_server,
-        args = list(
-            lang_r = shiny::reactive("en")
-        ),
-        {
-            session$flushReact()
-            testthat::expect_no_error(session$flushReact())
-        }
-    )
-
-    shiny::testServer(
-        mod_help_server,
-        args = list(
-            lang_r = shiny::reactive("pt")
-        ),
-        {
-            session$flushReact()
-            testthat::expect_no_error(session$flushReact())
-        }
-    )
+testthat::test_that("the help page follows the language", {
+    testthat::expect_match(help_page_html("pt"), tr("help_made_by", "pt"), fixed = TRUE)
+    testthat::expect_match(help_page_html("es"), tr("help_made_by", "es"), fixed = TRUE)
+    testthat::expect_match(help_page_html("es"), "/es/tutoriales/", fixed = TRUE)
 })

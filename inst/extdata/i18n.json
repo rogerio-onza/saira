@@ -3274,40 +3274,10 @@
     "en": "optional",
     "es": "opcional"
   },
-  "help_header_eyebrow": {
-    "pt": "Tutorial · FAQ · Documentação",
-    "en": "Tutorial · FAQ · Documentation",
-    "es": "Tutorial · FAQ · Documentación"
-  },
-  "help_header_title_prefix": {
-    "pt": "Central de",
-    "en": "Help",
-    "es": "Centro de"
-  },
-  "help_header_title_highlight": {
-    "pt": "Ajuda",
-    "en": "Center",
-    "es": "Ayuda"
-  },
-  "help_header_subtitle": {
-    "pt": "Tudo o que você precisa para usar o Saíra com confiança.",
-    "en": "Everything you need to use Saíra with confidence.",
-    "es": "Todo lo que necesita para usar Saíra con confianza."
-  },
   "help_author_role": {
-    "pt": "Maintainer",
-    "en": "Maintainer",
-    "es": "Mantenedor"
-  },
-  "help_author_contact_email": {
-    "pt": "Email:",
-    "en": "Email:",
-    "es": "Correo:"
-  },
-  "help_author_contact_repository": {
-    "pt": "Repositório:",
-    "en": "Repository:",
-    "es": "Repositorio:"
+    "pt": "Autor e mantenedor do Saíra",
+    "en": "Author and maintainer of Saíra",
+    "es": "Autor y mantenedor de Saíra"
   },
   "help_author_version_label": {
     "pt": "Versão",
@@ -3315,44 +3285,24 @@
     "es": "Versión"
   },
   "help_bug_title": {
-    "pt": "Reportar bug",
-    "en": "Report bug",
-    "es": "Reportar un error"
+    "pt": "Reportar um problema",
+    "en": "Report a problem",
+    "es": "Reportar un problema"
   },
   "help_bug_body": {
-    "pt": "Encontrou comportamento inesperado? Abra uma issue com detalhes para investigarmos.",
-    "en": "Found unexpected behavior? Open an issue with details so we can investigate.",
-    "es": "¿Encontró un comportamiento inesperado? Abra un issue con los detalles para que podamos investigarlo."
+    "pt": "Algo deu errado? Abra uma issue no GitHub. Diga o que você fez, o que esperava e o que aconteceu.",
+    "en": "Did something go wrong? Open an issue on GitHub. Tell us what you did, what you expected and what happened.",
+    "es": "¿Algo salió mal? Abra un issue en GitHub. Diga qué hizo, qué esperaba y qué ocurrió."
   },
   "help_bug_button": {
-    "pt": "Abrir GitHub Issues",
-    "en": "Open GitHub Issues",
-    "es": "Abrir GitHub Issues"
+    "pt": "Abrir uma issue",
+    "en": "Open an issue",
+    "es": "Abrir un issue"
   },
   "a11y_help_bug_link": {
     "pt": "Abrir página de issues do Saíra no GitHub",
     "en": "Open Saíra issues page on GitHub",
     "es": "Abrir la página de issues de Saíra en GitHub"
-  },
-  "help_links_title": {
-    "pt": "Links úteis",
-    "en": "Useful links",
-    "es": "Enlaces útiles"
-  },
-  "help_links_dwc": {
-    "pt": "DwC TDWG",
-    "en": "DwC TDWG",
-    "es": "DwC TDWG"
-  },
-  "help_links_sibbr": {
-    "pt": "SiBBr",
-    "en": "SiBBr",
-    "es": "SiBBr"
-  },
-  "help_links_gbif": {
-    "pt": "GBIF",
-    "en": "GBIF",
-    "es": "GBIF"
   },
   "a11y_help_external_link": {
     "pt": "Abrir link externo",
@@ -3364,60 +3314,35 @@
     "en": "Built with",
     "es": "Construido con"
   },
-  "help_stack_subtitle": {
-    "pt": "Pacotes de R que tornam o Saíra possível.",
-    "en": "R packages that make Saíra possible.",
-    "es": "Paquetes de R que hacen posible Saíra."
-  },
   "help_tutorials_title": {
     "pt": "Tutoriais",
     "en": "Tutorials",
     "es": "Tutoriales"
   },
   "help_tutorials_body": {
-    "pt": "Tutoriais passo a passo de cada etapa do Saíra estão no site do aplicativo, em português e inglês.",
-    "en": "Step-by-step tutorials for every stage of Saíra live on the app website, in Portuguese and English.",
-    "es": "Los tutoriales paso a paso de cada etapa de Saíra están en el sitio de la aplicación, en portugués, inglés y español."
+    "pt": "Um tutorial para cada etapa do Saíra, no site, em português, inglês e espanhol.",
+    "en": "One tutorial for each step of Saíra, on the website, in Portuguese, English and Spanish.",
+    "es": "Un tutorial para cada etapa de Saíra, en el sitio, en portugués, inglés y español."
   },
   "help_tutorials_link": {
-    "pt": "Ver todos os tutoriais",
-    "en": "See all tutorials",
-    "es": "Ver todos los tutoriales"
-  },
-  "help_links_issues": {
-    "pt": "GitHub Issues",
-    "en": "GitHub Issues",
-    "es": "GitHub Issues"
+    "pt": "Abrir os tutoriais",
+    "en": "Open the tutorials",
+    "es": "Abrir los tutoriales"
   },
   "help_refs_title": {
-    "pt": "Boas práticas e referências",
-    "en": "Best practices and references",
-    "es": "Buenas prácticas y referencias"
-  },
-  "help_refs_subtitle": {
-    "pt": "Guias do GBIF que fundamentam a generalização e o georreferenciamento no Saíra.",
-    "en": "GBIF guides behind Saíra's generalization and georeferencing.",
-    "es": "Guías de GBIF que fundamentan la generalización y la georreferenciación en Saíra."
+    "pt": "Métodos e referências",
+    "en": "Methods and references",
+    "es": "Métodos y referencias"
   },
   "help_faq": {
     "pt": "Perguntas frequentes",
-    "en": "FAQ",
+    "en": "Frequently asked questions",
     "es": "Preguntas frecuentes"
   },
-  "help_faq_subtitle": {
-    "pt": "Dúvidas comuns de quem está começando.",
-    "en": "Common questions for people getting started.",
-    "es": "Dudas comunes de quienes están comenzando."
-  },
-  "help_faq_toggle": {
-    "pt": "Mostrar perguntas frequentes",
-    "en": "Show frequently asked questions",
-    "es": "Mostrar las preguntas frecuentes"
-  },
   "help_faq_view_all": {
-    "pt": "Ver todas as perguntas no site",
-    "en": "See all questions on the site",
-    "es": "Ver todas las preguntas en el sitio"
+    "pt": "Todas as perguntas no site",
+    "en": "All questions on the website",
+    "es": "Todas las preguntas en el sitio"
   },
   "help_faq_q1": {
     "pt": "Preciso saber programar para usar o Saíra?",
@@ -3459,25 +3384,280 @@
     "en": "It suggests corrections from taxonomic databases, but the final decision is always the specialist's.",
     "es": "Sugiere correcciones a partir de bases taxonómicas, pero la decisión final siempre es del especialista."
   },
-  "help_faq_q5": {
-    "pt": "Como o Saíra trata espécies ameaçadas?",
-    "en": "How does Saíra handle threatened species?",
-    "es": "¿Cómo trata Saíra las especies amenazadas?"
+  "help_made_by": {
+    "pt": "Feito por",
+    "en": "Made by",
+    "es": "Hecho por"
   },
-  "help_faq_a5": {
-    "pt": "Numa etapa dedicada de generalização, ele sinaliza táxons ameaçados (Lista Nacional do MMA) e ajuda você a decidir, espécie por espécie, se e quanto reduzir a precisão das coordenadas, seguindo a tabela de decisão de Chapman (2020).",
-    "en": "In a dedicated generalization step, it flags threatened taxa (the MMA National List) and helps you decide, species by species, whether and how much to reduce coordinate precision, following Chapman's (2020) decision table.",
-    "es": "En una etapa dedicada de generalización, señala los taxones amenazados (Lista Nacional del MMA) y le ayuda a decidir, especie por especie, si reducir la precisión de las coordenadas y cuánto, según la tabla de decisión de Chapman (2020)."
+  "help_license_label": {
+    "pt": "Licença",
+    "en": "License",
+    "es": "Licencia"
   },
-  "help_faq_q6": {
-    "pt": "O que o Saíra gera no final?",
-    "en": "What does Saíra produce in the end?",
-    "es": "¿Qué genera Saíra al final?"
+  "help_cite_title": {
+    "pt": "Como citar",
+    "en": "How to cite",
+    "es": "Cómo citar"
   },
-  "help_faq_a6": {
-    "pt": "Um Darwin Core Archive (DwC-A): um pacote .zip com occurrence.txt, meta.xml e eml.xml, pronto para publicação. No mesmo .zip vão também um espelho em Excel (.xlsx) e o modelo de mapeamento reutilizável.",
-    "en": "A Darwin Core Archive (DwC-A): a .zip with occurrence.txt, meta.xml and eml.xml, ready to publish. The same .zip also carries an Excel mirror (.xlsx) and the reusable mapping template.",
-    "es": "Un Darwin Core Archive (DwC-A): un paquete .zip con occurrence.txt, meta.xml y eml.xml, listo para publicar. El mismo .zip también lleva una copia en Excel (.xlsx) y el modelo de mapeo reutilizable."
+  "help_cite_copy": {
+    "pt": "Copiar citação",
+    "en": "Copy citation",
+    "es": "Copiar cita"
+  },
+  "a11y_help_cite_bibtex": {
+    "pt": "Copiar a citação em BibTeX",
+    "en": "Copy the citation as BibTeX",
+    "es": "Copiar la cita en BibTeX"
+  },
+  "help_cite_copied": {
+    "pt": "Copiado",
+    "en": "Copied",
+    "es": "Copiado"
+  },
+  "help_start_here": {
+    "pt": "Comece aqui",
+    "en": "Start here",
+    "es": "Empiece aquí"
+  },
+  "help_stack_body": {
+    "pt": "%d pacotes de R de código aberto, com a versão instalada e quem mantém cada um.",
+    "en": "%d open source R packages, with the installed version and the maintainer of each.",
+    "es": "%d paquetes de R de código abierto, con la versión instalada y quién mantiene cada uno."
+  },
+  "help_stack_full_list": {
+    "pt": "Lista completa no site",
+    "en": "Full list on the website",
+    "es": "Lista completa en el sitio"
+  },
+  "help_pkg_not_installed": {
+    "pt": "não instalado",
+    "en": "not installed",
+    "es": "no instalado"
+  },
+  "help_pkg_group_ui": {
+    "pt": "Interface",
+    "en": "Interface",
+    "es": "Interfaz"
+  },
+  "help_pkg_group_io": {
+    "pt": "Leitura e escrita",
+    "en": "Reading and writing",
+    "es": "Lectura y escritura"
+  },
+  "help_pkg_group_taxonomy": {
+    "pt": "Taxonomia",
+    "en": "Taxonomy",
+    "es": "Taxonomía"
+  },
+  "help_pkg_group_coords": {
+    "pt": "Coordenadas",
+    "en": "Coordinates",
+    "es": "Coordenadas"
+  },
+  "help_pkg_group_utils": {
+    "pt": "Utilitários",
+    "en": "Utilities",
+    "es": "Utilidades"
+  },
+  "help_pkg_group_camtrap": {
+    "pt": "Armadilhas fotográficas (opcional)",
+    "en": "Camera traps (optional)",
+    "es": "Cámaras trampa (opcional)"
+  },
+  "help_pkg_shiny": {
+    "pt": "Framework da aplicação web",
+    "en": "Web application framework",
+    "es": "Framework de aplicaciones web"
+  },
+  "help_pkg_bslib": {
+    "pt": "Tema Bootstrap 5 e layout",
+    "en": "Bootstrap 5 theme and layout",
+    "es": "Tema y diseño Bootstrap 5"
+  },
+  "help_pkg_htmltools": {
+    "pt": "Geração de HTML",
+    "en": "HTML generation",
+    "es": "Generación de HTML"
+  },
+  "help_pkg_htmlwidgets": {
+    "pt": "Ponte com widgets JavaScript",
+    "en": "Bridge to JavaScript widgets",
+    "es": "Puente con widgets de JavaScript"
+  },
+  "help_pkg_dt": {
+    "pt": "Tabelas interativas",
+    "en": "Interactive tables",
+    "es": "Tablas interactivas"
+  },
+  "help_pkg_leaflet": {
+    "pt": "Mapas interativos",
+    "en": "Interactive maps",
+    "es": "Mapas interactivos"
+  },
+  "help_pkg_readr": {
+    "pt": "Leitura de CSV",
+    "en": "CSV reading",
+    "es": "Lectura de CSV"
+  },
+  "help_pkg_readxl": {
+    "pt": "Leitura de Excel",
+    "en": "Excel reading",
+    "es": "Lectura de Excel"
+  },
+  "help_pkg_writexl": {
+    "pt": "Escrita de Excel",
+    "en": "Excel writing",
+    "es": "Escritura de Excel"
+  },
+  "help_pkg_zip": {
+    "pt": "Empacota o Darwin Core Archive",
+    "en": "Darwin Core Archive packaging",
+    "es": "Empaquetado del Darwin Core Archive"
+  },
+  "help_pkg_xml2": {
+    "pt": "Gera meta.xml e eml.xml",
+    "en": "meta.xml and eml.xml generation",
+    "es": "Generación de meta.xml y eml.xml"
+  },
+  "help_pkg_jsonlite": {
+    "pt": "Leitura e escrita de JSON",
+    "en": "JSON reading and writing",
+    "es": "Lectura y escritura de JSON"
+  },
+  "help_pkg_taxadb": {
+    "pt": "Bases taxonômicas locais",
+    "en": "Local taxonomic backbones",
+    "es": "Bases taxonómicas locales"
+  },
+  "help_pkg_florabr": {
+    "pt": "Flora e Funga do Brasil",
+    "en": "Flora e Funga do Brasil",
+    "es": "Flora e Funga do Brasil"
+  },
+  "help_pkg_faunabr": {
+    "pt": "Catálogo Taxonômico da Fauna do Brasil",
+    "en": "Catálogo Taxonômico da Fauna do Brasil",
+    "es": "Catálogo Taxonômico da Fauna do Brasil"
+  },
+  "help_pkg_coordinatecleaner": {
+    "pt": "Testes de qualidade de coordenadas",
+    "en": "Coordinate quality tests",
+    "es": "Pruebas de calidad de coordenadas"
+  },
+  "help_pkg_sf": {
+    "pt": "Dados vetoriais",
+    "en": "Vector data",
+    "es": "Datos vectoriales"
+  },
+  "help_pkg_terra": {
+    "pt": "Ponto em polígono",
+    "en": "Point in polygon",
+    "es": "Punto en polígono"
+  },
+  "help_pkg_countrycode": {
+    "pt": "Nomes e códigos de país",
+    "en": "Country names and codes",
+    "es": "Nombres y códigos de países"
+  },
+  "help_pkg_rnaturalearth": {
+    "pt": "Limites do Natural Earth",
+    "en": "Natural Earth boundaries",
+    "es": "Límites de Natural Earth"
+  },
+  "help_pkg_rnaturalearthdata": {
+    "pt": "Dados de limites (1:110m e 1:50m)",
+    "en": "Boundary data (1:110m and 1:50m)",
+    "es": "Datos de límites (1:110m y 1:50m)"
+  },
+  "help_pkg_stringr": {
+    "pt": "Manipulação de texto",
+    "en": "Text manipulation",
+    "es": "Manipulación de texto"
+  },
+  "help_pkg_digest": {
+    "pt": "Hash do occurrenceID",
+    "en": "occurrenceID hash",
+    "es": "Hash del occurrenceID"
+  },
+  "help_pkg_ids": {
+    "pt": "Identificadores",
+    "en": "Identifiers",
+    "es": "Identificadores"
+  },
+  "help_pkg_uuid": {
+    "pt": "UUIDs",
+    "en": "UUIDs",
+    "es": "UUID"
+  },
+  "help_pkg_withr": {
+    "pt": "Estado temporário",
+    "en": "Temporary state",
+    "es": "Estado temporal"
+  },
+  "help_pkg_dbi": {
+    "pt": "Interface de banco de dados",
+    "en": "Database interface",
+    "es": "Interfaz de bases de datos"
+  },
+  "help_pkg_rsqlite": {
+    "pt": "SQLite dos caches e do Rostrum",
+    "en": "SQLite for the caches and Rostrum",
+    "es": "SQLite de las cachés y de Rostrum"
+  },
+  "help_pkg_camtrapdp": {
+    "pt": "Importa pacotes Camtrap DP",
+    "en": "Camtrap DP package import",
+    "es": "Importación de paquetes Camtrap DP"
+  },
+  "help_data_title": {
+    "pt": "Dados e métodos",
+    "en": "Data and methods",
+    "es": "Datos y métodos"
+  },
+  "help_data_bundled": {
+    "pt": "Dados embutidos",
+    "en": "Bundled data",
+    "es": "Datos incluidos"
+  },
+  "help_data_land": {
+    "pt": "Limites de terra e países",
+    "en": "Land and country boundaries",
+    "es": "Límites de tierra y países"
+  },
+  "help_data_dwc": {
+    "pt": "Termos Darwin Core",
+    "en": "Darwin Core terms",
+    "es": "Términos Darwin Core"
+  },
+  "help_data_redlist": {
+    "pt": "Lista Nacional de Espécies Ameaçadas",
+    "en": "Brazilian Official List of Threatened Species",
+    "es": "Lista Oficial de Especies Amenazadas de Brasil"
+  },
+  "help_data_redlist_source": {
+    "pt": "Portarias MMA 148/2022, 1.704/2026 e GM/MMA 1.667/2026",
+    "en": "MMA ordinances 148/2022, 1.704/2026 and GM/MMA 1.667/2026",
+    "es": "Portarias MMA 148/2022, 1.704/2026 y GM/MMA 1.667/2026"
+  },
+  "help_data_saira": {
+    "pt": "Apelidos de termos e de países, textos da interface",
+    "en": "Term and country aliases, interface text",
+    "es": "Alias de términos y de países, textos de la interfaz"
+  },
+  "help_license_public_domain": {
+    "pt": "Domínio público",
+    "en": "Public domain",
+    "es": "Dominio público"
+  },
+  "help_license_public_record": {
+    "pt": "Registro público",
+    "en": "Public record",
+    "es": "Registro público"
+  },
+  "help_method_bdc": {
+    "pt": "bdc: biodiversity data cleaning. Base de duas correções de coordenadas, reimplementadas sem código do bdc.",
+    "en": "bdc: biodiversity data cleaning. The basis of two coordinate corrections, reimplemented with no bdc code.",
+    "es": "bdc: biodiversity data cleaning. Base de dos correcciones de coordenadas, reimplementadas sin código de bdc."
   },
   "err_invalid_format": {
     "pt": "Formato inválido. Aceitamos arquivos CSV, TSV, TXT ou Excel (.xlsx).",
