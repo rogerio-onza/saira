@@ -92,6 +92,7 @@ Collate:
     'utils_invasive.R'
     'utils_io.R'
     'utils_mapping.R'
+    'utils_oceanic_islands.R'
     'utils_preview.R'
     'utils_rostrum_contracts.R'
     'utils_rostrum_db.R'
