@@ -60,6 +60,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **coords:** Keep the points on the coordinates map after a language change, and translate their popups
 - **build:** List `utils_oceanic_islands.R` in `Collate`, so the package installs again ([#164](https://github.com/rogerio-onza/saira/pull/164))
 - **ui:** Stop the console errors from the header titles at startup ([#168](https://github.com/rogerio-onza/saira/pull/168))
 - **mapping:** Give single and multiple selects on the cards the same arrow ([#170](https://github.com/rogerio-onza/saira/pull/170))
