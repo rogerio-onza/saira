@@ -22,6 +22,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - **ui:** Make notifications opaque, so the page text does not show through them ([#166](https://github.com/rogerio-onza/saira/pull/166))
+- **ui:** Replace the playful loading phrases with phrases that say what each step does ([#169](https://github.com/rogerio-onza/saira/pull/169))
+- **ui:** Remove em dashes, exclamation marks and "successfully" from interface texts ([#169](https://github.com/rogerio-onza/saira/pull/169))
 - **mapping:** Add a default "Relevant" filter: unmapped optional terms collapse to one line per class that opens compact rows, ADR-137 ([#158](https://github.com/rogerio-onza/saira/pull/158))
 - **ui:** Use IBM Plex Sans for interface text and keep Space Mono for code and data, ADR-134 ([#152](https://github.com/rogerio-onza/saira/pull/152))
 - **ui:** Replace the warm beige background with cool gray and cool borders, ADR-135 ([#153](https://github.com/rogerio-onza/saira/pull/153))
@@ -60,8 +62,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - **build:** List `utils_oceanic_islands.R` in `Collate`, so the package installs again ([#164](https://github.com/rogerio-onza/saira/pull/164))
 - **ui:** Stop the console errors from the header titles at startup ([#168](https://github.com/rogerio-onza/saira/pull/168))
+- **coords:** Translate "Issue" and "Country" in Portuguese ([#169](https://github.com/rogerio-onza/saira/pull/169))
 - **names:** Stop labelling species native to Brazil as invasive aliens. The Instituto Hórus list also covers natives that are invasive outside their natural range, such as the coati: they get their own badge and no longer pre-fill `establishmentMeans` as `introduced`, ADR-142
-- **names:** Show the names under the Invasive, Translocated, Accepted and All filters after every problem is resolved. Only the Problems filter shows "All resolved!"
+- **names:** Show the names under the Invasive, Translocated, Accepted and All filters after every problem is resolved. Only the Problems filter shows "All resolved"
 - **export:** Refuse the package download on the server while export pending items block it, so the hidden link cannot ship data or teach aliases
 - **export:** Disable the download button again while the export is blocked: Shiny 1.13 ignores `disabled = "disabled"`, so the grey button still accepted clicks
 - **mapping:** Replace the old learned alias when an export maps the same column to another term, ADR-140 ([#159](https://github.com/rogerio-onza/saira/pull/159))

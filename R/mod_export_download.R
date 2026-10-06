@@ -44,10 +44,10 @@ mount_export_download <- function(input, output, session, lang_r,
             list(key = "preview_export_phrase_3", icon = "calendar-days"),
             list(key = "preview_export_phrase_4", icon = "earth-americas"),
             list(key = "preview_export_phrase_5", icon = "list-check"),
-            list(key = "preview_export_phrase_6", icon = "flask"),
-            list(key = "preview_export_phrase_7", icon = "box-archive"),
+            list(key = "preview_export_phrase_6", icon = "circle-check"),
+            list(key = "preview_export_phrase_7", icon = "lock"),
             list(key = "preview_export_phrase_8", icon = "shield-check"),
-            list(key = "preview_export_phrase_9", icon = "file-csv"),
+            list(key = "preview_export_phrase_9", icon = "file-zipper"),
             list(key = "preview_export_phrase_10", icon = "download")
         )
         # Disabled until the dataset is publishable. Uses the module-level

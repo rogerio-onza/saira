@@ -8,22 +8,21 @@
 #' @noRd
 mapping_loading_phrase_specs <- function() {
     list(
-        list(key = "loading_automap_phrase_1", icon = "language"),
+        list(key = "loading_automap_phrase_1", icon = "table-list"),
         list(key = "loading_automap_phrase_2", icon = "microscope"),
         list(key = "loading_automap_phrase_3", icon = "seedling"),
-        list(key = "loading_automap_phrase_4", icon = "dna"),
-        list(key = "loading_automap_phrase_5", icon = "trophy"),
-        list(key = "loading_automap_phrase_6", icon = "binoculars"),
-        list(key = "loading_automap_phrase_7", icon = "flask"),
-        list(key = "loading_automap_phrase_8", icon = "tree")
+        list(key = "loading_automap_phrase_4", icon = "calendar-days"),
+        list(key = "loading_automap_phrase_5", icon = "list-check"),
+        list(key = "loading_automap_phrase_6", icon = "right-left"),
+        list(key = "loading_automap_phrase_7", icon = "filter"),
+        list(key = "loading_automap_phrase_8", icon = "table")
     )
 }
 
 #' Loading phrase specifications for the template import modal
 #'
-#' Deliberately literal, unlike the automap phrases: a template import looks
-#' like an auto-mapping run from the outside (the cards fill themselves in),
-#' and the whole point of showing this modal is to say that it is not one.
+#' A template import looks like an auto-mapping run from the outside (the
+#' cards fill themselves in), so these phrases say that it is not one.
 #' @noRd
 mapping_import_phrase_specs <- function() {
     list(
