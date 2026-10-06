@@ -2913,3 +2913,23 @@ Formato: ADR leve (Architecture Decision Record).
 - **Fonte unica**: `R/utils_credits.R` le o autor (`Authors@R`, papel `cre`), a versao, a licenca e os links do DESCRIPTION do Saira, e a versao e o mantenedor de cada pacote do DESCRIPTION instalado dele. A Ajuda nao pode divergir do pacote. Um teste falha se um pacote do `Imports` ficar fora dos grupos.
 - **Alternativas**: tabela de pacotes fixa no i18n, rejeitada porque versao e mantenedor mudam a cada atualizacao.
 - **Consequencias**: o e-mail da Ajuda e o do DESCRIPTION. A afiliacao fica fora ate o dono definir.
+
+## ADR-147: Camtrap DP com schemas locais e descritor sem metadados de dataset
+
+- **Data**: 2026-10-06
+- **Status**: Aceito
+- **Contexto**: a auditoria do Camtrap DP (dataset real do Wildlife Insights, 24.273 imagens) achou seis defeitos.
+  1. O descritor sintetico tinha `id` e `title` inventados, e `write_dwc()` os copia para `datasetID` e `datasetName`.
+  2. `samplingEffort` do WI saia com `Z`, a mesma falsa marca UTC que `eventDate` ja perdia.
+  3. Zip de CSVs soltos sem `media.csv` falhava: `read_camtrapdp()` exige o recurso media.
+  4. O frictionless baixa a URL de cada table schema na leitura: sem internet o upload falhava, e com internet o download levava ~1,3 s de 3,4 s.
+  5. `end_date` do WI e data de calendario. Lida como meia-noite, deixava 491 imagens depois de `deploymentEnd`.
+  6. `feature_type`, `age` e `sex` do WI nao casavam com os enums do Camtrap DP e viravam NA com aviso de parse.
+- **Decisao**:
+  - O descritor sintetico nao tem `id` nem `title`. O usuario informa o nome do dataset no Mapeamento.
+  - `inst/extdata/camtrap-dp/<versao>/` guarda os table schemas oficiais de 1.0, 1.0.1 e 1.0.2, copias exatas do repositorio tdwg/camtrap-dp. Antes de ler, `localize_camtrap_schemas()` troca cada URL oficial pela copia da mesma versao, ao lado do descritor. Vale para as tres fontes, inclusive o `datapackage.json` do usuario. Outras URLs ficam como estao.
+  - Sem `media.csv`, o leitor grava um `media.csv` so com cabecalho.
+  - `end_date` do WI vira o fim do dia (23:59:59). `feature_type` vai para camelCase, `age`/`sex` para minusculas, e o que nao casa com o enum vira NA sem aviso.
+  - Os diretorios temporarios da leitura e da conversao saem no fim de cada funcao.
+- **Alternativas**: ler os enums dos schemas em tempo de execucao, rejeitada porque constantes sao mais simples e os enums so mudam com uma versao nova do padrao. Trocar todas as versoes pelo schema 1.0.2, rejeitada porque 1.0.2 mudou `missingValues` e a leitura de dados antigos mudaria.
+- **Consequencias**: a leitura funciona offline e cai de ~3,4 s para ~2,2 s no dataset real. Uma versao nova do Camtrap DP precisa da copia dos schemas em `inst/extdata/camtrap-dp/`, senao a leitura volta a baixar pela rede.

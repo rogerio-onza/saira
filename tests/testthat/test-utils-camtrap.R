@@ -187,6 +187,35 @@ testthat::test_that("wi_to_camtrap_csv maps blank/human/animal/unknown", {
                            stringsAsFactors = FALSE)
     testthat::expect_setequal(dep$deploymentID, c("DEP1", "DEP2"))
     testthat::expect_true(all(grepl("Trophy Cam HD", dep$cameraModel)))
+
+    # WI end_date is a calendar date: the deployment runs to the end of it.
+    end <- stats::setNames(dep$deploymentEnd, dep$deploymentID)
+    testthat::expect_identical(end[["DEP2"]], "2021-11-04T23:59:59Z")
+
+    # WI "Adult" maps to the Camtrap DP enum, "Unknown" has no match.
+    life <- stats::setNames(obs$lifeStage, obs$mediaID)
+    sex <- stats::setNames(obs$sex, obs$mediaID)
+    testthat::expect_identical(life[["img-jaguar"]], "adult")
+    testthat::expect_true(is.na(sex[["img-jaguar"]]) || sex[["img-jaguar"]] == "")
+})
+
+testthat::test_that("WI value helpers follow the Camtrap DP enums", {
+    testthat::expect_identical(
+        saira:::wi_end_of_day(c("2021-11-04 00:00:00", "2021-11-04",
+                                "2021-11-04 15:30:00", NA)),
+        c("2021-11-04 23:59:59", "2021-11-04 23:59:59",
+          "2021-11-04 15:30:00", NA)
+    )
+    testthat::expect_identical(
+        saira:::wi_feature_type(c("Trail game", "Road paved", "Water source",
+                                  "Trail - game", "None", "Other", NA)),
+        c("trailGame", "roadPaved", "waterSource", "trailGame", NA, NA, NA)
+    )
+    testthat::expect_identical(
+        saira:::wi_enum(tolower(c("Adult", "Juvenile", "Unknown", "Mixed", NA)),
+                        c("adult", "subadult", "juvenile")),
+        c("adult", "juvenile", NA, NA, NA)
+    )
 })
 
 testthat::test_that("wi_to_camtrap_csv stops when required columns are missing", {
@@ -222,6 +251,43 @@ testthat::test_that("synthesize_camtrap_descriptor writes a valid descriptor", {
     testthat::expect_match(desc$profile, "camtrap-dp-profile\\.json$")
     resource_names <- vapply(desc$resources, function(r) r$name, character(1))
     testthat::expect_setequal(resource_names, c("deployments", "observations"))
+    # write_dwc() copies id and title to datasetID and datasetName.
+    testthat::expect_null(desc$id)
+    testthat::expect_null(desc$title)
+})
+
+# localize_camtrap_schemas -----------------------------------------------
+
+testthat::test_that("localize_camtrap_schemas points schema URLs at bundled copies", {
+    dir <- tempfile("local_schema_")
+    dir.create(dir)
+    withr::defer(unlink(dir, recursive = TRUE))
+    base <- "https://raw.githubusercontent.com/tdwg/camtrap-dp/"
+    other <- "https://example.org/custom-table-schema.json"
+    desc_path <- file.path(dir, "datapackage.json")
+    jsonlite::write_json(list(resources = list(
+        list(name = "deployments", schema = paste0(base, "1.0/deployments-table-schema.json")),
+        list(name = "media", schema = paste0(base, "1.0.1/media-table-schema.json")),
+        list(name = "observations", schema = paste0(base, "1.0.2/observations-table-schema.json")),
+        list(name = "extra", schema = other)
+    )), desc_path, auto_unbox = TRUE)
+
+    saira:::localize_camtrap_schemas(desc_path)
+    desc <- jsonlite::fromJSON(desc_path, simplifyVector = FALSE)
+    refs <- vapply(desc$resources, function(r) r$schema, character(1))
+    testthat::expect_identical(refs[1:3], c(
+        "saira-camtrap-dp-1.0-deployments-table-schema.json",
+        "saira-camtrap-dp-1.0.1-media-table-schema.json",
+        "saira-camtrap-dp-1.0.2-observations-table-schema.json"
+    ))
+    testthat::expect_identical(refs[[4]], other)
+    # Each copy is the bundled schema of the same version.
+    testthat::expect_identical(
+        unname(tools::md5sum(file.path(dir, refs[[2]]))),
+        unname(tools::md5sum(system.file("extdata", "camtrap-dp", "1.0.1",
+                                         "media-table-schema.json",
+                                         package = "saira")))
+    )
 })
 
 # require_camtrapdp ------------------------------------------------------
@@ -235,8 +301,9 @@ testthat::test_that("require_camtrapdp errors with translatable message when mis
     )
 })
 
-# read_camtrap_dp_zip round-trips (needs camtrapdp + internet) -----------
+# read_camtrap_dp_zip round-trips (needs camtrapdp) -----------------------
 
+# Only example_dataset() needs internet. Table schemas come from inst/extdata.
 skip_if_offline <- function() {
     ok <- tryCatch({
         con <- url("https://raw.githubusercontent.com/tdwg/camtrap-dp/1.0.2/camtrap-dp-profile.json")
@@ -323,9 +390,32 @@ testthat::test_that("read_camtrap_dp_zip round-trips a loose Camtrap DP csv zip"
     testthat::expect_true("scientificName" %in% names(df))
 })
 
-testthat::test_that("read_camtrap_dp_zip round-trips a Wildlife Insights zip (animals only)", {
+testthat::test_that("read_camtrap_dp_zip reads a loose csv zip without media.csv", {
     testthat::skip_if_not_installed("camtrapdp")
     skip_if_offline()
+    src_pkg <- tryCatch(camtrapdp::example_dataset(), error = function(e) NULL)
+    testthat::skip_if(is.null(src_pkg), "camtrapdp::example_dataset() unavailable.")
+
+    src_dir <- tempfile("camtrap_no_media_src_")
+    dir.create(src_dir)
+    withr::defer(unlink(src_dir, recursive = TRUE))
+    camtrapdp::write_camtrapdp(src_pkg, directory = src_dir)
+    unlink(file.path(src_dir, c("datapackage.json", "media.csv")))
+
+    zip_path <- tempfile("camtrap_no_media_", fileext = ".zip")
+    withr::defer(unlink(zip_path))
+    withr::with_dir(src_dir, {
+        zip::zip(zipfile = zip_path, files = list.files("."))
+    })
+
+    pkg <- suppressWarnings(saira:::read_camtrap_dp_zip(zip_path, lang = "en"))
+    testthat::expect_equal(nrow(camtrapdp::media(pkg)), 0L)
+    df <- suppressWarnings(saira:::convert_camtrap_to_dwc_occurrence(pkg, lang = "en"))
+    testthat::expect_gt(nrow(df), 0L)
+})
+
+testthat::test_that("read_camtrap_dp_zip round-trips a Wildlife Insights zip (animals only)", {
+    testthat::skip_if_not_installed("camtrapdp")
 
     fx <- wi_zip_fixture()
     withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
@@ -366,7 +456,6 @@ testthat::test_that("read_camtrap_dp_zip round-trips a Wildlife Insights zip (an
 
 testthat::test_that("read_camtrap_dp_zip sets gbifIngestion$observationLevel = 'media' on WI", {
     testthat::skip_if_not_installed("camtrapdp")
-    skip_if_offline()
 
     fx <- wi_zip_fixture()
     withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
@@ -384,7 +473,6 @@ testthat::test_that("read_camtrap_dp_zip sets gbifIngestion$observationLevel = '
 
 testthat::test_that("convert_camtrap_to_dwc_occurrence errors on empty occurrence (all blank/human)", {
     testthat::skip_if_not_installed("camtrapdp")
-    skip_if_offline()
 
     # WI fixture with only blank + human rows — no animals to export.
     deployments <- c(
@@ -541,7 +629,6 @@ testthat::test_that("wi_to_camtrap_csv leaves habitat empty and defaults count t
 
 testthat::test_that("WI conversion strips the fabricated UTC designator from eventDate", {
     testthat::skip_if_not_installed("camtrapdp")
-    skip_if_offline()
 
     fx <- wi_zip_fixture()
     withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
@@ -564,4 +651,19 @@ testthat::test_that("WI conversion strips the fabricated UTC designator from eve
     }
     testthat::expect_false(any(grepl("Z", df$eventDate)))
     testthat::expect_true(any(grepl("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$", df$eventDate)))
+    testthat::expect_identical(df$samplingEffort[1],
+                               "2021-08-25T00:00:00/2021-11-04T23:59:59")
+    # The synthesized descriptor must not reach the export as dataset metadata.
+    testthat::expect_false(any(c("datasetName", "datasetID") %in% names(df)))
+})
+
+testthat::test_that("WI read and conversion remove their temporary directories", {
+    testthat::skip_if_not_installed("camtrapdp")
+    fx <- wi_zip_fixture()
+    withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
+
+    before <- list.files(tempdir())
+    pkg <- suppressWarnings(saira:::read_camtrap_dp_zip(fx$zip, lang = "en"))
+    suppressMessages(saira:::convert_camtrap_to_dwc_occurrence(pkg, lang = "en"))
+    testthat::expect_length(setdiff(list.files(tempdir()), before), 0L)
 })
