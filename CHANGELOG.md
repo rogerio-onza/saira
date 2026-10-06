@@ -65,7 +65,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
-- **upload:** Show camera trap read errors without the contradictory "ZIP not recognized" prefix, and show their root cause
+- **upload:** Show camera trap read errors without the contradictory "ZIP not recognized" prefix, and show their root cause ([#177](https://github.com/rogerio-onza/saira/pull/177))
 - **datasetName:** Stop filling it, and datasetID, with placeholder values for camera trap zips without a descriptor, ADR-147 ([#175](https://github.com/rogerio-onza/saira/pull/175))
 - **samplingEffort:** Drop the false UTC marker from Wildlife Insights deployment intervals ([#175](https://github.com/rogerio-onza/saira/pull/175))
 - **upload:** Read camera trap zips without internet access, ADR-147 ([#175](https://github.com/rogerio-onza/saira/pull/175))
