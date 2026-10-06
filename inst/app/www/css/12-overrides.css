@@ -18,25 +18,28 @@
    SHINY-SPECIFIC OVERRIDES
    ============================================================================= */
 
+/* Toasts sit over the page, so they must be opaque. The state tints are
+   translucent: they go over the card color. Shiny also sets opacity 0.85. */
 .shiny-notification {
   border-radius: var(--radius);
   font-family: var(--font-serif);
+  opacity: 1;
 }
 
 .shiny-notification-error {
-  background-color: var(--error-bg);
+  background: linear-gradient(var(--error-bg), var(--error-bg)) var(--bg-card);
   border: 1px solid var(--error-border);
   color: var(--error-text);
 }
 
 .shiny-notification-warning {
-  background-color: var(--warning-bg);
+  background: linear-gradient(var(--warning-bg), var(--warning-bg)) var(--bg-card);
   border: 1px solid var(--warning-border);
   color: var(--warning-text);
 }
 
 .shiny-notification-message {
-  background-color: var(--success-bg);
+  background: linear-gradient(var(--success-bg), var(--success-bg)) var(--bg-card);
   border: 1px solid var(--success-border);
   color: var(--success-text);
 }

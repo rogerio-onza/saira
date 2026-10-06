@@ -9,6 +9,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 - **ui:** Add a dark theme, with a Light, Dark or System switch in the header, ADR-144 ([#165](https://github.com/rogerio-onza/saira/pull/165))
+- **ui:** Animate tab changes, notifications, dialogs and the export pending rows, ADR-145 ([#166](https://github.com/rogerio-onza/saira/pull/166))
 - **ui:** Add Spanish (neutral Latin American) as a third interface language, ADR-133
 - **mapping:** Show Darwin Core definitions and card hints in Spanish, ADR-133
 - **mapping:** Recognize Spanish column names, months, sí/no and basisOfRecord labels in uploaded spreadsheets, ADR-133
@@ -19,6 +20,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **ui:** Make notifications opaque, so the page text does not show through them ([#166](https://github.com/rogerio-onza/saira/pull/166))
 - **mapping:** Add a default "Relevant" filter: unmapped optional terms collapse to one line per class that opens compact rows, ADR-137 ([#158](https://github.com/rogerio-onza/saira/pull/158))
 - **ui:** Use IBM Plex Sans for interface text and keep Space Mono for code and data, ADR-134 ([#152](https://github.com/rogerio-onza/saira/pull/152))
 - **ui:** Replace the warm beige background with cool gray and cool borders, ADR-135 ([#153](https://github.com/rogerio-onza/saira/pull/153))
