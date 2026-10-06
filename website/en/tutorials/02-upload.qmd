@@ -47,7 +47,7 @@ In the **Camtrap DP** tab, Saíra accepts three kinds of `.zip`:
 
 - **Camtrap DP** with the `datapackage.json` descriptor and the `deployments`, `observations` and, if present, `media` tables.
 - The same tables **without the descriptor**. Saíra builds the descriptor from the CSVs.
-- The **Wildlife Insights export**. Saíra renames the columns to the Camtrap DP format.
+- The **Wildlife Insights export**. Saíra renames the columns to the Camtrap DP format. In an image project, each identified image becomes one record. In a sequence project, each identification of a sequence becomes one record, with the group size.
 
 Saíra joins the tables into one spreadsheet, with scientific name, date and location. After that, the workflow is the same as for a spreadsheet.
 
