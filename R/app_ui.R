@@ -38,9 +38,6 @@ app_ui <- function() {
                 src = paste0("www/upload-dropzone.js?v=", css_version)
             ),
             shiny::tags$script(
-                src = paste0("www/vendor/lottie/lottie-player.js?v=", css_version)
-            ),
-            shiny::tags$script(
                 src = paste0("www/theme-switch.js?v=", css_version)
             ),
             shiny::tags$script(

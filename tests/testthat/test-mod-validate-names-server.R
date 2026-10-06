@@ -853,3 +853,56 @@ testthat::test_that("GBIF stays selected and has no toggle", {
         }
     )
 })
+
+testthat::test_that("the provider status poll runs only during a run or an update", {
+    state <- new.env()
+    state$calls <- 0L
+    state$status <- "up_to_date"
+    testthat::local_mocked_bindings(
+        brprovider_data_available = function(provider_id) TRUE,
+        brprovider_cache_statuses = function(provider_ids = c("florabr", "faunabr"), poll = TRUE) {
+            if (isTRUE(poll)) state$calls <- state$calls + 1L
+            list(
+                florabr = list(provider_id = "florabr", status = state$status, local_version = "393.319"),
+                faunabr = list(provider_id = "faunabr", status = "up_to_date", local_version = "1.48")
+            )
+        },
+        .package = "saira"
+    )
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(data.frame(scientificName = "Panthera onca")),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            # Both providers are cached and selected, but nothing runs.
+            before <- state$calls
+            session$elapse(6000)
+            testthat::expect_identical(state$calls, before)
+
+            rv$running <- TRUE
+            session$flushReact()
+            before <- state$calls
+            session$elapse(2500)
+            testthat::expect_gt(state$calls, before)
+
+            # The run starts an update that continues after the run.
+            state$status <- "update_in_progress"
+            session$elapse(1300)
+            rv$running <- FALSE
+            session$flushReact()
+            before <- state$calls
+            session$elapse(2500)
+            testthat::expect_gt(state$calls, before)
+
+            state$status <- "up_to_date"
+            session$elapse(1300)
+            before <- state$calls
+            session$elapse(6000)
+            testthat::expect_identical(state$calls, before)
+        }
+    )
+})

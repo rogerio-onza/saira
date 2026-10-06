@@ -12,20 +12,12 @@
 #' @param session Shiny session
 #' @export
 app_server <- function(input, output, session) {
-    # Reactive: Selected language (debounced after first render)
-    lang_initialized <- shiny::reactiveVal(FALSE)
+    # Selected language. debounce() gives the first value at once and waits
+    # 150 ms only on a change, so the first render has no delay.
     lang_raw_r <- shiny::reactive({
         input$lang_switch %||% "pt"
     })
-    lang_debounced_r <- lang_raw_r |> shiny::debounce(150)
-    lang_r <- shiny::reactive({
-        if (!lang_initialized()) {
-            lang_initialized(TRUE)
-            lang_raw_r()
-        } else {
-            lang_debounced_r()
-        }
-    })
+    lang_r <- lang_raw_r |> shiny::debounce(150)
 
     # Warn once if the package was updated without restarting R (no-op otherwise).
     notify_session_stale(session, lang_r)
