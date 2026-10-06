@@ -2896,3 +2896,17 @@ Formato: ADR leve (Architecture Decision Record).
   - Toasts entram pela direita, dialogos sobem 16 px, as linhas de pendencia da Exportacao entram uma a uma (60 ms) e a resposta do FAQ da Ajuda desce sob a pergunta.
   - Navegador sem View Transitions ganha uma subida curta da pagina nova. `prefers-reduced-motion: reduce` desliga tudo.
 - **Consequencias**: a animacao do toast nao tem `fill-mode`: o Shiny some com o toast por `opacity` inline, e um valor preso da animacao ganharia dele. Os toasts ficaram opacos (`12-overrides.css`), porque o tom de estado e translucido e deixava o texto da pagina aparecer por baixo.
+
+## ADR-146: Ajuda B, com autor, citacao, pacotes e dados lidos do DESCRIPTION
+
+- **Data**: 2026-10-05
+- **Status**: Aceito
+- **Contexto**: A Ajuda nao deixava claro quem faz o Saira, nem quais pacotes ele usa e quem os mantem. O cartao do autor tinha nome e e-mail escritos a mao. Havia chips de ferramentas de IA.
+- **Decisao**: quatro faixas, layout B do canvas.
+  1. Quem faz e como citar: nome, papel, e-mail, repositorio, licenca e versao. Citacao em texto e em BibTeX, com botao de copiar.
+  2. Comece aqui: tutoriais, quatro perguntas do FAQ com link para o resto, e o botao de bug para as issues.
+  3. Feito com: os pacotes do `Imports` em seis grupos, cada um com versao, finalidade e mantenedor.
+  4. Dados e metodos: as bases embarcadas com licenca, os metodos citados com DOI e os padroes (Darwin Core, SiBBr, GBIF).
+- **Fonte unica**: `R/utils_credits.R` le o autor (`Authors@R`, papel `cre`), a versao, a licenca e os links do DESCRIPTION do Saira, e a versao e o mantenedor de cada pacote do DESCRIPTION instalado dele. A Ajuda nao pode divergir do pacote. Um teste falha se um pacote do `Imports` ficar fora dos grupos.
+- **Alternativas**: tabela de pacotes fixa no i18n, rejeitada porque versao e mantenedor mudam a cada atualizacao.
+- **Consequencias**: o e-mail da Ajuda e o do DESCRIPTION. A afiliacao fica fora ate o dono definir.

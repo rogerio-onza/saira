@@ -10,6 +10,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - **ui:** Add a dark theme, with a Light, Dark or System switch in the header, ADR-144 ([#165](https://github.com/rogerio-onza/saira/pull/165))
 - **ui:** Animate tab changes, notifications, dialogs and the export pending rows, ADR-145 ([#166](https://github.com/rogerio-onza/saira/pull/166))
+- **help:** Show who makes Saíra, how to cite it, the R packages with their maintainers, and the bundled data, ADR-146 ([#167](https://github.com/rogerio-onza/saira/pull/167))
 - **ui:** Add Spanish (neutral Latin American) as a third interface language, ADR-133
 - **mapping:** Show Darwin Core definitions and card hints in Spanish, ADR-133
 - **mapping:** Recognize Spanish column names, months, sí/no and basisOfRecord labels in uploaded spreadsheets, ADR-133

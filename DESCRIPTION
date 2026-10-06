@@ -84,6 +84,7 @@ Collate:
     'utils_camtrap.R'
     'utils_coords.R'
     'utils_coords_utm.R'
+    'utils_credits.R'
     'utils_dwc.R'
     'utils_export.R'
     'utils_export_summary.R'

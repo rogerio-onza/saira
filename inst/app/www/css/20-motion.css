@@ -80,6 +80,11 @@
   .export-pending > .export-pending-row:nth-child(5) { animation-delay: 180ms; }
   .export-pending > .export-pending-row:nth-child(6) { animation-delay: 240ms; }
   .export-pending > .export-pending-row:nth-child(n + 7) { animation-delay: 300ms; }
+
+  /* -- Help FAQ: the answer drops in under its question -- */
+  .help-faq-item[open] > .help-faq-answer {
+    animation: answer-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
 }
 
 @keyframes page-slide-in {
@@ -114,5 +119,12 @@
   from {
     opacity: 0;
     transform: translateX(-12px);
+  }
+}
+
+@keyframes answer-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }
