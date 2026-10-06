@@ -329,7 +329,7 @@ mod_upload_server <- function(id, lang_r) {
                     },
                     error = function(e) {
                         shiny::showNotification(
-                            paste(tr("err_camtrap_invalid_zip", lang), ":", e$message),
+                            camtrap_error_message(e, lang),
                             type = "error",
                             duration = 8
                         )
