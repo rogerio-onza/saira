@@ -2885,3 +2885,14 @@ Formato: ADR leve (Architecture Decision Record).
   - A troca usa o revelar em circulo do canvas "expressiva": View Transitions, 600 ms, a partir do botao clicado. Sem a API, ou com movimento reduzido, a troca e imediata.
 - **Alternativas**: tema por `bslib::bs_theme()` no servidor, rejeitado porque recompila o Sass e recarrega o CSS a cada troca.
 - **Consequencias**: todo token de cor novo precisa de valor nos dois temas. Os rotulos do controle seguem o idioma por atributos `data-label-<lang>`.
+
+## ADR-145: movimento nas trocas de aba, toasts, dialogos e pendencias
+
+- **Data**: 2026-10-05
+- **Status**: Aceito
+- **Contexto**: O dono pediu animacoes elegantes no proprio app. As trocas eram cortes secos.
+- **Decisao**:
+  - A area da pagina desliza 32 px no sentido do passo (para tras, ao contrario). O cabecalho troca na hora. `motion.js` cancela o `show.bs.tab` do Bootstrap e mostra a mesma aba dentro de uma View Transition, entao o Shiny e os widgets veem uma troca de aba comum.
+  - Toasts entram pela direita, dialogos sobem 16 px, as linhas de pendencia da Exportacao entram uma a uma (60 ms) e a resposta do FAQ da Ajuda desce sob a pergunta.
+  - Navegador sem View Transitions ganha uma subida curta da pagina nova. `prefers-reduced-motion: reduce` desliga tudo.
+- **Consequencias**: a animacao do toast nao tem `fill-mode`: o Shiny some com o toast por `opacity` inline, e um valor preso da animacao ganharia dele. Os toasts ficaram opacos (`12-overrides.css`), porque o tom de estado e translucido e deixava o texto da pagina aparecer por baixo.

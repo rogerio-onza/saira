@@ -65,6 +65,8 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 
 - **Leaflet descarta uma chamada de proxy feita antes de o widget existir** (2026-09-24, ADR-129). O mapa de Coordenadas mora num `renderUI` que so aparece com o resultado, e o observer dos marcadores rodava no mesmo flush: o mapa ficava vazio depois de cada validacao ate um clique de filtro. O mapa informa `input$<id>_bounds` quando termina de desenhar; um `reactiveVal` que vira `TRUE` nesse primeiro aviso (e volta a `FALSE` quando o resultado some) entra no `bindEvent` e dispara o primeiro desenho. Conte os marcadores com `HTMLWidgets.find(...).getMap().eachLayer()` antes de culpar o dado.
 
+- **O Bootstrap dispara `show.bs.tab` duas vezes num clique de aba da navbar** (ADR-145). Um handler que cancela o evento e reabre a aba dentro de uma View Transition precisa ignorar a segunda chamada para o mesmo link, ou a segunda transicao pula a primeira.
+
 ## CSS / Bootstrap / bslib
 
 - **`fileInput` gera `input-group`** do Bootstrap. Nao forcar flex externo -- estilizar o `input-group` diretamente.
@@ -118,6 +120,8 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Page-scroll opt-in por aba via `:has()` e o padrao oficial do projeto**: para abas que precisam liberar `overflow-y: auto` no `.tab-pane` sem afetar o contrato viewport-bound de outras abas, use `.tab-content > .tab-pane:has(.<modulo-class>) { overflow-y: auto; height: auto; max-height: none; }` em `inst/app/www/css/12-overrides.css`. A especificidade do seletor ja vence `.bslib-page-fill` — **nao adicionar `!important`**. O modulo precisa de uma classe marker no container raiz (`wiki-module`, `preview-page`); o seletor combinado em uma unica regra mantem o codigo enxuto (ADR-085).
 - **Nao adicionar `scrollY`/`scrollCollapse` ao DT como "fix" para falta de scroll de pagina**: `scrollY` muda o contrato da tabela para "altura fixa com scroll interno vertical e cabecalho fixado durante scroll vertical interno". Misturar isso com falta de page-scroll faz o usuario ter que rolar **dentro** da tabela mesmo quando seleciona pageLength=10 e a tabela caberia na pagina. Se o usuario quer "tabela cresce com pageLength selecionada", o DT default (sem `scrollY`) ja entrega isso — o que falta e page-scroll opt-in (vide licao acima).
 - **`!important` nao e ferramenta para sobrescrever layout do bslib/Bootstrap quando especificidade resolve**: antes de adicionar `!important`, calcule se o seletor pode ser mais especifico (ex.: `.tab-content > .tab-pane:has(...)` vence `.bslib-page-fill` por ser mais especifico no ancestor chain). Cada `!important` introduzido conta contra o guardrail `tests/testthat/test-css-guardrails.R` (limite 13). Subir o limite e admissao de derrota e quase sempre evitavel.
+
+- **Animacao de entrada de toast sem `fill-mode`** (ADR-145). O Shiny some com o toast por `opacity` inline via jQuery `fadeOut`; um valor preso de `animation-fill-mode: both` ganha do estilo inline e o toast nao some.
 
 ## i18n / Internacionalizacao
 
