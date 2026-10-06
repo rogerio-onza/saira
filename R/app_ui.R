@@ -14,6 +14,9 @@ app_ui <- function() {
 
     shiny::tagList(
         shiny::tags$head(
+            # Paint the stored theme before the first frame, so a dark page
+            # never flashes light (ADR-144).
+            shiny::tags$script(shiny::HTML(theme_boot_js)),
             shiny::tags$link(
                 rel = "stylesheet",
                 href = paste0("www/vendor/fonts/source-fonts.css?v=", css_version)
@@ -36,6 +39,9 @@ app_ui <- function() {
             ),
             shiny::tags$script(
                 src = paste0("www/vendor/lottie/lottie-player.js?v=", css_version)
+            ),
+            shiny::tags$script(
+                src = paste0("www/theme-switch.js?v=", css_version)
             ),
             # Keep <html lang> in step with the language selector, so screen
             # readers and the browser's hyphenation follow the interface.
@@ -192,6 +198,9 @@ app_ui <- function() {
                 mod_help_ui("help")
             ),
 
+            # Theme switch: light, dark, follow the system
+            bslib::nav_item(theme_switch_ui(), class = "theme-switch-item"),
+
             # Language selector
             bslib::nav_item(
                 shiny::selectInput(
@@ -214,4 +223,58 @@ app_ui <- function() {
             )
         )
     )
+}
+
+# Runs in <head> before the stylesheets. It must stay small and must not fail:
+# no stored choice, or no localStorage, means "follow the system".
+theme_boot_js <- paste0(
+    "(function(){var m;try{m=localStorage.getItem('saira-theme')}catch(e){}",
+    "if(m!=='light'&&m!=='dark')m='system';",
+    "var d=m==='dark'||(m==='system'&&window.matchMedia&&",
+    "matchMedia('(prefers-color-scheme: dark)').matches);",
+    "if(d)document.documentElement.setAttribute('data-bs-theme','dark');})();"
+)
+
+#' Theme switch for the navbar
+#'
+#' Three buttons: light, dark and follow the system. theme-switch.js sets
+#' `aria-pressed` from the stored choice and swaps the labels when the
+#' language changes, from the `data-label-<lang>` attributes.
+#'
+#' @return A `shiny.tag`
+#' @noRd
+theme_switch_ui <- function() {
+    labels <- function(key) {
+        langs <- get_languages()
+        stats::setNames(
+            lapply(langs, function(l) tr(key, l)),
+            paste0("data-label-", langs)
+        )
+    }
+    button <- function(mode, icon, key) {
+        do.call(shiny::tags$button, c(
+            list(
+                type = "button",
+                `data-theme` = mode,
+                `aria-pressed` = "false",
+                `aria-label` = tr(key, "pt"),
+                title = tr(key, "pt")
+            ),
+            labels(key),
+            list(ph_icon(icon))
+        ))
+    }
+    do.call(shiny::tags$div, c(
+        list(
+            class = "theme-switch",
+            role = "group",
+            `aria-label` = tr("theme_switch_label", "pt")
+        ),
+        labels("theme_switch_label"),
+        list(
+            button("light", "sun", "theme_light"),
+            button("dark", "moon", "theme_dark"),
+            button("system", "desktop", "theme_system")
+        )
+    ))
 }

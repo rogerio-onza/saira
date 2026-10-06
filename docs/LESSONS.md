@@ -240,6 +240,8 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Ao endurecer parser de CSV, cobrir BOM + arquivo vazio no mesmo ciclo**: isso evita regressao em `detect_delimiter()` para entradas exportadas por Notepad/Excel.
 - **Para hardening de startup, adicionar teste de modulo com dependencia mockada em erro**: validar que o modulo sobe mesmo com falha externa previne regressao de disponibilidade.
 
+- **Para testar o que vai no `<head>`, usar `htmltools::renderTags(x)$head`**. `as.character()` de uma `tagList` com `tags$head` nao separa o head do body, e o teste nao prova que o script de tema roda antes do CSS.
+
 ## Package Check / Deploy
 
 - Em pacote R, evitar `source()` dentro de arquivos em `R/`; carregar funcoes via namespace previne divergencia entre ambiente dev e tarball.

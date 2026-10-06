@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **ui:** Add a dark theme, with a Light, Dark or System switch in the header, ADR-144 ([#165](https://github.com/rogerio-onza/saira/pull/165))
 - **ui:** Add Spanish (neutral Latin American) as a third interface language, ADR-133
 - **mapping:** Show Darwin Core definitions and card hints in Spanish, ADR-133
 - **mapping:** Recognize Spanish column names, months, sí/no and basisOfRecord labels in uploaded spreadsheets, ADR-133

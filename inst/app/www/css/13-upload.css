@@ -222,7 +222,7 @@
 .upload-native-input .input-group .btn {
   background-color: var(--primary);
   border: 2px solid var(--primary);
-  color: var(--text-primary);
+  color: var(--on-bright);
   width: 40px;
   height: 40px;
   min-width: 40px;
@@ -502,7 +502,7 @@
 .upload-native-input .progress .progress-bar,
 .upload-native-input .shiny-file-input-progress .progress-bar {
   background-color: var(--success);
-  color: var(--text-primary); /* white on --success is 3.2:1, below AA */
+  color: var(--on-bright); /* white on --success is 3.2:1, below AA */
   font-size: var(--text-sm);
   font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
@@ -576,7 +576,7 @@
 
 .homepage-container .stats-container .stat-box {
   background: var(--bg-subtle);
-  border: 1.5px solid rgba(40, 51, 172, 0.08);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.08);
   border-radius: var(--radius-lg);
   padding: 16px 12px;
   text-align: center;
@@ -585,8 +585,8 @@
 }
 
 .homepage-container .stats-container .stat-box:hover {
-  border-color: rgba(40, 51, 172, 0.18);
-  background: rgba(40, 51, 172, 0.07);
+  border-color: rgba(var(--accent-rgb), 0.18);
+  background: rgba(var(--accent-rgb), 0.07);
   transform: var(--lift-base);
   box-shadow: none;
 }
@@ -595,7 +595,7 @@
   font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   font-size: var(--text-xl);
-  color: #1C1C26;
+  color: var(--text-primary);
   letter-spacing: -0.03em;
   line-height: 1.1;
   margin-bottom: 0;

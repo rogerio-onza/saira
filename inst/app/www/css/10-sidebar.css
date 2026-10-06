@@ -26,7 +26,7 @@
 
 .badge.bg-success,
 .badge.bg-danger {
-  color: var(--bg-card);
+  color: var(--on-fill);
 }
 
 .badge.bg-warning {
@@ -34,6 +34,6 @@
 }
 
 .badge.bg-info {
-  color: var(--bg-card);
+  color: var(--on-fill);
 }
 

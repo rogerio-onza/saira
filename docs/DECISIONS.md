@@ -2871,3 +2871,17 @@ Formato: ADR leve (Architecture Decision Record).
 - **Interface (layout B3, escolhido no canvas)**: a especie com registro em ilha vira um cabecalho e duas sub-linhas, "No continente" e "Em ilha oceanica", cada uma com seus selects. A sub-linha da ilha mostra "Sugestao: introduced" com Aplicar e Desfazer. Nada e preenchido sem o clique, mesma regra da ADR-110.
 - **Dado**: `establishment_map` ganha `island_means` e `island_degree`. Registro em ilha usa **so** a resposta da ilha e nunca cai na resposta da especie: "native" dado para o continente e falso na ilha. Sem `decimalLatitude`/`decimalLongitude` mapeados, nada muda.
 - **Fora do escopo**: peixes entre bacias e a area natural continental. Uma camada de ocorrencias do Horus fica para depois da v1.0, quando a API voltar.
+
+## ADR-144: tema escuro "Plumagem" com controle segmentado
+
+- **Data**: 2026-10-05
+- **Status**: Aceito
+- **Contexto**: A v1.0 pediu um modo escuro com a identidade da saira. O canvas mostrou tres paletas, tres intensidades e tres controles. O dono escolheu "Plumagem" (o azul-preto do dorso), "atenuado" e o controle segmentado Claro / Escuro / Sistema.
+- **Decisao**:
+  - `theme-switch.js` poe `data-bs-theme="dark"` no `<html>`, entao o Bootstrap vira junto. O tema claro remove o atributo: a pagina clara fica igual a de antes.
+  - `19-dark.css` troca os tokens de `00-tokens.css`. Regras fora dos tokens cobrem so o que nao e token: escalas pastel, superficies de formulario e controles do mapa.
+  - A escolha fica no `localStorage` (`saira-theme`). "Sistema" apaga a chave e segue `prefers-color-scheme`.
+  - Um script inline no `<head>` pinta o tema salvo antes do primeiro quadro, entao a pagina escura nunca pisca clara.
+  - A troca usa o revelar em circulo do canvas "expressiva": View Transitions, 600 ms, a partir do botao clicado. Sem a API, ou com movimento reduzido, a troca e imediata.
+- **Alternativas**: tema por `bslib::bs_theme()` no servidor, rejeitado porque recompila o Sass e recarrega o CSS a cada troca.
+- **Consequencias**: todo token de cor novo precisa de valor nos dois temas. Os rotulos do controle seguem o idioma por atributos `data-label-<lang>`.

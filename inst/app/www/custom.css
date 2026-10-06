@@ -21,30 +21,53 @@
   --warning-alt: #ffe005;
   --saira-preto: #12141b;
 
+  /* RGB triplets for translucent tints, as in rgba(var(--accent-rgb), 0.1).
+     The dark theme swaps the triplets, so every tint follows (ADR-144). */
+  --accent-rgb: 40, 51, 172;
+  --primary-rgb: 56, 207, 246;
+  --ink-rgb: 28, 28, 38;
+  --success-rgb: 0, 168, 107;
+  --error-rgb: 192, 57, 43;
+  --warning-rgb: 255, 162, 4;
+  --info-rgb: 37, 38, 89;
+
+  /* Solid fills under white text. In the light theme they equal the state
+     colors. The dark theme keeps them deep while text colors turn light. */
+  --accent-fill: #2833ac;
+  --accent-fill-hover: #1e2790;
+  --info-fill: #252659;
+  --error-fill: #c0392b;
+  --error-fill-hover: #a93226;
+  --success-fill: #00a86b;
+  --on-fill: #ffffff; /* text on a deep fill */
+  --on-bright: #1c1c26; /* text on turquoise, orange or yellow, both themes */
+  --tooltip-bg: #1c1c26;
+  --tooltip-fg: #ffffff;
+
   /* Semantic States */
   --success: #00a86b;
-  --success-bg: rgba(0, 168, 107, 0.1);
-  --success-border: rgba(0, 168, 107, 0.25);
-  --warning-bg: rgba(255, 162, 4, 0.1);
-  --warning-border: rgba(255, 162, 4, 0.25);
+  --success-bg: rgba(var(--success-rgb), 0.1);
+  --success-border: rgba(var(--success-rgb), 0.25);
+  --warning-bg: rgba(var(--warning-rgb), 0.1);
+  --warning-border: rgba(var(--warning-rgb), 0.25);
   --error: #c0392b;
-  --error-bg: rgba(192, 57, 43, 0.1);
-  --error-border: rgba(192, 57, 43, 0.25);
+  --error-bg: rgba(var(--error-rgb), 0.1);
+  --error-border: rgba(var(--error-rgb), 0.25);
   /* Stronger variants for when the border alone has to carry the state, as on
      the mapping cards, where the 0.25 alpha reads as no border at all. */
-  --warning-border-strong: rgba(255, 162, 4, 0.55);
-  --error-border-strong: rgba(192, 57, 43, 0.5);
+  --warning-border-strong: rgba(var(--warning-rgb), 0.55);
+  --error-border-strong: rgba(var(--error-rgb), 0.5);
   /* Text on a semantic tint. The saturated state colors fail AA as text on
      their own tint (success 2.8:1, warning 1.9:1), so text uses these. */
   --success-text: #0b6b47;
   --warning-text: #7a4d00;
   --error-text: #9b2c20;
-  --info-bg: rgba(37, 38, 89, 0.1);
-  --info-border: rgba(37, 38, 89, 0.2);
+  --info-bg: rgba(var(--info-rgb), 0.1);
+  --info-border: rgba(var(--info-rgb), 0.2);
 
   /* Coordinate Validation */
   --coord-ok: #00a86b;
-  --coord-missing: rgba(28, 28, 38, 0.35);
+  --coord-missing: rgba(var(--ink-rgb), 0.35);
   --coord-swapped: #6d28d9;
   --coord-corrected: #0e7c86;
 
@@ -84,11 +107,11 @@
   --border: var(--border-default);
 
   /* Backgrounds */
-  --overlay: rgba(28, 28, 38, 0.5);
-  --hover-bg: rgba(40, 51, 172, 0.07);
-  --active-bg: rgba(40, 51, 172, 0.13);
+  --overlay: rgba(var(--ink-rgb), 0.5);
+  --hover-bg: rgba(var(--accent-rgb), 0.07);
+  --active-bg: rgba(var(--accent-rgb), 0.13);
   /* Flat fill for a selected card or an active drop target. */
-  --selected-bg: rgba(40, 51, 172, 0.1); /* brand blue tint, between hover and active */
+  --selected-bg: rgba(var(--accent-rgb), 0.1); /* brand blue tint, between hover and active */
 
   /* Typography */
   --font-serif: 'Source Serif 4', Georgia, serif;
@@ -151,10 +174,10 @@
   --shadow-accent-hover: none;
 
   /* Focus Rings */
-  --focus-ring-primary: 0 0 0 3px rgba(56, 207, 246, 0.25);
-  --focus-ring-accent: 0 0 0 3px rgba(40, 51, 172, 0.22);
-  --focus-ring-success: 0 0 0 3px rgba(0, 168, 107, 0.22);
-  --focus-ring-error: 0 0 0 3px rgba(192, 57, 43, 0.22);
+  --focus-ring-primary: 0 0 0 3px rgba(var(--primary-rgb), 0.25);
+  --focus-ring-accent: 0 0 0 3px rgba(var(--accent-rgb), 0.22);
+  --focus-ring-success: 0 0 0 3px rgba(var(--success-rgb), 0.22);
+  --focus-ring-error: 0 0 0 3px rgba(var(--error-rgb), 0.22);
 
   /* Forms */
   --input-bg: var(--bg-card);
@@ -164,8 +187,8 @@
   --input-focus-ring: var(--focus-ring-primary);
   --input-border-error: var(--error);
   --input-focus-ring-error: var(--focus-ring-error);
-  --input-bg-disabled: rgba(40, 51, 172, 0.05);
-  --input-text-disabled: rgba(28, 28, 38, 0.35);
+  --input-bg-disabled: rgba(var(--accent-rgb), 0.05);
+  --input-text-disabled: rgba(var(--ink-rgb), 0.35);
 
   /* Navbar: two rows from 992px (ADR-128). The header height adds the two
      rows and their 1px borders. Page offsets derive from it. */
@@ -176,7 +199,7 @@
   --navbar-brand-width: 7.5rem;
   /* Width kept on the left of the single-row header so the steps sit in the
      true center: the tools on the right take about this much (ADR-132). */
-  --header-tools-width: 14.625rem;
+  --header-tools-width: 18.8125rem;
   --navbar-link-color: #2833ac;
   --navbar-link-hover-bg: var(--hover-bg);
   --navbar-link-active-bg: #38cff6;
@@ -208,7 +231,7 @@
 
 @media (min-width: 1680px) {
   :root {
-    --header-tools-width: 22.375rem;
+    --header-tools-width: 26.1875rem;
   }
 }
 
@@ -721,8 +744,10 @@ label,
     height: var(--header-row-height);
   }
 
+  /* It may shrink: at 1360px the row is a few pixels short, and the steps
+     can move off center by that much. */
   .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav::before {
-    flex: 1 0 var(--header-tools-width);
+    flex: 1 1 var(--header-tools-width);
   }
 
   .bslib-page-navbar .navbar .navbar-nav > .bslib-nav-spacer {
@@ -787,7 +812,7 @@ label,
 
 .btn-primary {
   background-color: var(--primary);
-  color: var(--text-primary);
+  color: var(--on-bright);
   box-shadow: none;
 }
 
@@ -825,38 +850,39 @@ label,
   color: var(--step-active);
 }
 
+/* Bright fills keep dark text in both themes (--on-bright). */
 .btn-success {
   background-color: var(--success);
-  color: var(--text-primary);
+  color: var(--on-bright);
   box-shadow: var(--shadow-success);
 }
 
 .btn-success:hover {
   background-color: #009960;
-  color: var(--text-primary);
+  color: var(--on-bright);
 }
 
 .btn-warning {
   background-color: var(--warning);
-  color: var(--text-primary);
+  color: var(--on-bright);
 }
 
 .btn-warning:hover {
   background-color: #e09000;
-  color: var(--text-primary);
+  color: var(--on-bright);
 }
 
 .btn-danger,
 .btn-error {
-  background-color: var(--error);
-  color: var(--bg-card);
+  background-color: var(--error-fill);
+  color: var(--on-fill);
   box-shadow: var(--shadow-error);
 }
 
 .btn-danger:hover,
 .btn-error:hover {
-  background-color: #a93226;
-  color: var(--bg-card);
+  background-color: var(--error-fill-hover);
+  color: var(--on-fill);
 }
 
 .btn:disabled {
@@ -932,7 +958,7 @@ label,
 /* File Input */
 .shiny-input-container .btn-file {
   background-color: var(--primary);
-  color: var(--text-primary);
+  color: var(--on-bright);
   font-family: var(--font-ui);
   font-weight: 400;
   border: none;
@@ -1074,8 +1100,8 @@ label,
 }
 
 .wiki-header-card {
-  background: #ffffff;
-  border: 1.5px solid rgba(40, 51, 172, 0.18);
+  background: var(--bg-card);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius-xl);
   padding: 24px 28px;
   box-shadow: none;
@@ -1105,19 +1131,19 @@ label,
   font-family: var(--font-serif);
   font-size: var(--text-xl);
   font-weight: var(--weight-semibold);
-  color: #1c1c26;
+  color: var(--text-primary);
   letter-spacing: -0.03em;
   line-height: 1.15;
 }
 
 .wiki-title-accent {
-  color: #2833ac;
+  color: var(--accent);
 }
 
 .wiki-header-subtitle {
   margin-top: 6px;
   font-size: var(--text-sm);
-  color: #2833ac;
+  color: var(--accent);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1125,7 +1151,7 @@ label,
 }
 
 .wiki-header-subtitle-icon {
-  color: #2833ac;
+  color: var(--accent);
   display: inline-flex;
   line-height: 1;
 }
@@ -1159,13 +1185,13 @@ label,
   align-items: center;
   gap: 7px;
   padding: 7px 14px;
-  background: rgba(40, 51, 172, 0.07);
-  border: 1.5px solid rgba(40, 51, 172, 0.18);
+  background: rgba(var(--accent-rgb), 0.07);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius-lg);
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: #2833ac;
+  color: var(--accent);
   line-height: 1;
 }
 
@@ -1176,7 +1202,7 @@ label,
 
 .wiki-stat-value {
   font-size: var(--text-base);
-  color: #1c1c26;
+  color: var(--text-primary);
 }
 
 .wiki-stat-label {
@@ -1184,8 +1210,8 @@ label,
 }
 
 .wiki-toolbar-card {
-  background: #ffffff;
-  border: 1.5px solid rgba(40, 51, 172, 0.18);
+  background: var(--bg-card);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius-xl);
   padding: 16px 20px;
   box-shadow: none;
@@ -1226,9 +1252,9 @@ label,
   padding: 0 16px 0 40px;
   font-family: var(--font-serif);
   font-size: var(--text-base);
-  color: #1c1c26;
+  color: var(--text-primary);
   background: var(--bg-subtle);
-  border: 1.5px solid rgba(40, 51, 172, 0.18);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius-lg);
   outline: none;
   transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
@@ -1239,9 +1265,9 @@ label,
 }
 
 .wiki-search-input:focus {
-  border-color: #38cff6;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(56, 207, 246, 0.18);
+  border-color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
 }
 
 .wiki-show-wrap {
@@ -1256,7 +1282,7 @@ label,
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: #2833ac;
+  color: var(--accent);
 }
 
 .wiki-show-select {
@@ -1264,9 +1290,9 @@ label,
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: #2833ac;
+  color: var(--accent);
   background-color: var(--bg-subtle);
-  border: 1.5px solid rgba(40, 51, 172, 0.18);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius);
   padding: 5px 28px 5px 10px;
   line-height: 1.2;
@@ -1280,8 +1306,8 @@ label,
 
 .wiki-show-select:focus {
   outline: none;
-  border-color: #38cff6;
-  box-shadow: 0 0 0 3px rgba(56, 207, 246, 0.18);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
 }
 
 .wiki-show-records {
@@ -1322,16 +1348,16 @@ label,
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   cursor: pointer;
-  border: 1.5px solid rgba(40, 51, 172, 0.08);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.08);
   background: var(--bg-subtle);
   color: var(--text-muted);
   transition: all 0.2s ease;
 }
 
 .wiki-filter-pill:hover {
-  background: rgba(40, 51, 172, 0.07);
-  border-color: rgba(40, 51, 172, 0.18);
-  color: #2833ac;
+  background: rgba(var(--accent-rgb), 0.07);
+  border-color: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent);
 }
 
 .wiki-filter-pill:focus-visible {
@@ -1385,7 +1411,7 @@ label,
 }
 
 .wiki-filter-pill[data-filter="MaterialSample"] .wiki-filter-pill-dot {
-  background: var(--accent);
+  background: var(--accent-fill);
 }
 
 .wiki-filter-pill[data-filter="MeasurementOrFact"] .wiki-filter-pill-dot {
@@ -1407,76 +1433,76 @@ label,
 }
 
 .wiki-filter-pill[data-filter="Record-level"].active {
-  background: #38cff6;
-  border-color: #38cff6;
-  color: #12141b;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--saira-preto);
 }
 
 .wiki-filter-pill[data-filter="Occurrence"].active {
-  background: #2833ac;
-  border-color: #2833ac;
-  color: #ffffff;
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="Event"].active {
-  background: #252659;
-  border-color: #252659;
-  color: #ffffff;
+  background: var(--info-fill);
+  border-color: var(--info-fill);
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="Location"].active {
-  background: #00a86b;
-  border-color: #00a86b;
-  color: #ffffff;
+  background: var(--success-fill);
+  border-color: var(--success-fill);
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="Identification"].active {
-  background: #ffa204;
-  border-color: #ffa204;
-  color: #12141b;
+  background: var(--warning);
+  border-color: var(--warning);
+  color: var(--saira-preto);
 }
 
 .wiki-filter-pill[data-filter="Taxon"].active {
-  background: #c0392b;
-  border-color: #c0392b;
-  color: #ffffff;
+  background: var(--error-fill);
+  border-color: var(--error-fill);
+  color: var(--on-fill);
 }
 
 /* On-demand catalog classes — active state (ADR-081/082) */
 .wiki-filter-pill[data-filter="GeologicalContext"].active {
-  background: #16b3bd;
-  border-color: #16b3bd;
-  color: #ffffff;
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="MaterialEntity"].active {
   background: #6d28d9;
   border-color: #6d28d9;
-  color: #ffffff;
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="MaterialSample"].active {
-  background: var(--accent);
+  background: var(--accent-fill);
   border-color: var(--accent);
-  color: #ffffff;
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="MeasurementOrFact"].active {
   background: #ffe005;
   border-color: #ffe005;
-  color: #12141b;
+  color: var(--saira-preto);
 }
 
 .wiki-filter-pill[data-filter="Organism"].active {
   background: #e67e22;
   border-color: #e67e22;
-  color: #ffffff;
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="ResourceRelationship"].active {
   background: #8e44ad;
   border-color: #8e44ad;
-  color: #ffffff;
+  color: var(--on-fill);
 }
 
 .wiki-table.saira-table-shell table.dataTable thead th {
@@ -1537,7 +1563,7 @@ label,
   padding: 12px 18px;
   font-size: var(--text-sm);
   vertical-align: middle;
-  border-bottom: 1px solid rgba(40, 51, 172, 0.08);
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.08);
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody tr {
@@ -1549,11 +1575,11 @@ label,
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody tr:hover td {
-  background: rgba(56, 207, 246, 0.04);
+  background: rgba(var(--primary-rgb), 0.04);
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody tr:nth-child(even):hover td {
-  background: rgba(56, 207, 246, 0.05);
+  background: rgba(var(--primary-rgb), 0.05);
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody tr:last-child td {
@@ -1564,9 +1590,9 @@ label,
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
-  color: #2833ac;
+  color: var(--accent);
   text-decoration: none;
-  border-bottom: 1px solid rgba(40, 51, 172, 0.2);
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.2);
   transition: all 0.2s ease;
 }
 
@@ -1590,39 +1616,39 @@ label,
 }
 
 .wiki-class-badge--record-level {
-  background: rgba(56, 207, 246, 0.12);
+  background: rgba(var(--primary-rgb), 0.12);
   color: var(--accent);
-  border: 1px solid rgba(56, 207, 246, 0.3);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
 }
 
 .wiki-class-badge--occurrence {
-  background: rgba(40, 51, 172, 0.13);
+  background: rgba(var(--accent-rgb), 0.13);
   color: #2833ac;
-  border: 1px solid rgba(40, 51, 172, 0.2);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
 }
 
 .wiki-class-badge--event {
-  background: rgba(37, 38, 89, 0.1);
+  background: rgba(var(--info-rgb), 0.1);
   color: #252659;
-  border: 1px solid rgba(37, 38, 89, 0.2);
+  border: 1px solid rgba(var(--info-rgb), 0.2);
 }
 
 .wiki-class-badge--location {
-  background: rgba(0, 168, 107, 0.1);
+  background: rgba(var(--success-rgb), 0.1);
   color: #005a3a;
-  border: 1px solid rgba(0, 168, 107, 0.25);
+  border: 1px solid rgba(var(--success-rgb), 0.25);
 }
 
 .wiki-class-badge--identification {
-  background: rgba(255, 162, 4, 0.1);
+  background: rgba(var(--warning-rgb), 0.1);
   color: #7a4e00;
-  border: 1px solid rgba(255, 162, 4, 0.25);
+  border: 1px solid rgba(var(--warning-rgb), 0.25);
 }
 
 .wiki-class-badge--taxon {
-  background: rgba(192, 57, 43, 0.08);
+  background: rgba(var(--error-rgb), 0.08);
   color: #c0392b;
-  border: 1px solid rgba(192, 57, 43, 0.2);
+  border: 1px solid rgba(var(--error-rgb), 0.2);
 }
 
 /* On-demand catalog classes — DT badges (ADR-081/082) */
@@ -1663,7 +1689,7 @@ label,
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody td:nth-child(3) {
-  color: #1c1c26;
+  color: var(--text-primary);
   font-weight: 400;
   line-height: var(--leading-normal);
   max-width: 520px;
@@ -1671,7 +1697,7 @@ label,
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody td.is-required {
-  color: #2833ac;
+  color: var(--accent);
   font-weight: var(--weight-medium);
 }
 
@@ -1695,9 +1721,9 @@ label,
 .wiki-required-badge--true {
   font-weight: var(--weight-semibold);
   padding: 3px 9px;
-  background: rgba(0, 168, 107, 0.1);
+  background: rgba(var(--success-rgb), 0.1);
   color: #007a4d;
-  border: 1px solid rgba(0, 168, 107, 0.25);
+  border: 1px solid rgba(var(--success-rgb), 0.25);
 }
 
 .wiki-required-badge--false {
@@ -1705,7 +1731,7 @@ label,
   padding: 3px 9px;
   background: transparent;
   color: var(--text-muted);
-  border: 1px solid rgba(40, 51, 172, 0.08);
+  border: 1px solid rgba(var(--accent-rgb), 0.08);
 }
 
 .wiki-table.saira-table-shell .wiki-table-footer {
@@ -1715,7 +1741,7 @@ label,
   gap: 12px;
   flex-wrap: wrap;
   padding: 12px 18px;
-  border-top: 1px solid rgba(40, 51, 172, 0.08);
+  border-top: 1px solid rgba(var(--accent-rgb), 0.08);
   background: var(--bg-subtle);
   margin-top: 0;
   border-bottom-left-radius: var(--radius-xl);
@@ -2149,7 +2175,7 @@ label,
 
 .badge.bg-success,
 .badge.bg-danger {
-  color: var(--bg-card);
+  color: var(--on-fill);
 }
 
 .badge.bg-warning {
@@ -2157,7 +2183,7 @@ label,
 }
 
 .badge.bg-info {
-  color: var(--bg-card);
+  color: var(--on-fill);
 }
 
 /* =============================================================================
@@ -2305,7 +2331,7 @@ table.dataTable tbody tr.validate-ambiguous td {
 }
 
 table.dataTable tbody tr.validate-invalid td {
-  background-color: rgba(40, 51, 172, 0.06);
+  background-color: rgba(var(--accent-rgb), 0.06);
 }
 
 /* Progress bar */
@@ -2621,7 +2647,7 @@ table.dataTable tbody tr.validate-invalid td {
 .upload-native-input .input-group .btn {
   background-color: var(--primary);
   border: 2px solid var(--primary);
-  color: var(--text-primary);
+  color: var(--on-bright);
   width: 40px;
   height: 40px;
   min-width: 40px;
@@ -2901,7 +2927,7 @@ table.dataTable tbody tr.validate-invalid td {
 .upload-native-input .progress .progress-bar,
 .upload-native-input .shiny-file-input-progress .progress-bar {
   background-color: var(--success);
-  color: var(--text-primary); /* white on --success is 3.2:1, below AA */
+  color: var(--on-bright); /* white on --success is 3.2:1, below AA */
   font-size: var(--text-sm);
   font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
@@ -2975,7 +3001,7 @@ table.dataTable tbody tr.validate-invalid td {
 
 .homepage-container .stats-container .stat-box {
   background: var(--bg-subtle);
-  border: 1.5px solid rgba(40, 51, 172, 0.08);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.08);
   border-radius: var(--radius-lg);
   padding: 16px 12px;
   text-align: center;
@@ -2984,8 +3010,8 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .homepage-container .stats-container .stat-box:hover {
-  border-color: rgba(40, 51, 172, 0.18);
-  background: rgba(40, 51, 172, 0.07);
+  border-color: rgba(var(--accent-rgb), 0.18);
+  background: rgba(var(--accent-rgb), 0.07);
   transform: var(--lift-base);
   box-shadow: none;
 }
@@ -2994,7 +3020,7 @@ table.dataTable tbody tr.validate-invalid td {
   font-family: var(--font-ui);
   font-weight: var(--weight-semibold);
   font-size: var(--text-xl);
-  color: #1C1C26;
+  color: var(--text-primary);
   letter-spacing: -0.03em;
   line-height: 1.1;
   margin-bottom: 0;
@@ -3654,7 +3680,7 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .pill-state-dot.is-blocked {
-  background-color: var(--error);
+  background-color: var(--error-fill);
 }
 
 .pill-state-dot.is-review {
@@ -3685,8 +3711,8 @@ table.dataTable tbody tr.validate-invalid td {
   margin-left: 0.35rem;
   padding: 0 0.35rem;
   border-radius: var(--radius-full);
-  background-color: var(--step-active);
-  color: #ffffff;
+  background-color: var(--accent-fill);
+  color: var(--on-fill);
 }
 
 /* Select input styling in mapping cards */
@@ -4622,7 +4648,7 @@ table.dataTable tbody tr.validate-invalid td {
 
 .provider-card.provider-card-selected {
   border-color: var(--accent);
-  background: rgba(56, 207, 246, 0.12);
+  background: rgba(var(--primary-rgb), 0.12);
   box-shadow: var(--shadow);
 }
 
@@ -4662,8 +4688,8 @@ table.dataTable tbody tr.validate-invalid td {
   bottom: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: var(--text-primary);
-  color: #ffffff;
+  background: var(--tooltip-bg);
+  color: var(--tooltip-fg);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
@@ -4695,12 +4721,12 @@ table.dataTable tbody tr.validate-invalid td {
 }
 
 .provider-badge-recommended {
-  background: rgba(56, 207, 246, 0.12);
+  background: rgba(var(--primary-rgb), 0.12);
   color: var(--accent);
 }
 
 .provider-priority-badge {
-  background: rgba(0, 168, 107, 0.16);
+  background: rgba(var(--success-rgb), 0.16);
   color: var(--success-text);
 }
 
@@ -5301,11 +5327,11 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 
 .coords-map-legend-dot-error,
 .coords-map-legend-dot-validity {
-  background: var(--error);
+  background: var(--error-fill);
 }
 
 .coords-map-legend-dot-sea {
-  background: var(--info);
+  background: var(--info-fill);
 }
 
 .coords-map-legend-dot-zero-equal {
@@ -5362,7 +5388,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .coord-issue-badge-missing {
-  background: rgba(40, 51, 172, 0.06);
+  background: rgba(var(--accent-rgb), 0.06);
   color: var(--text-muted);
   border: 1px solid var(--border-light);
 }
@@ -5547,7 +5573,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 .vn-stream-pill.is-active .vn-pill-count {
   background: var(--pill-fg);
   border-left-color: var(--pill-fg);
-  color: #ffffff;
+  color: var(--on-fill);
 }
 
 .validation-stream-window-note {
@@ -5829,7 +5855,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .vn-check-row.is-selected .vn-check-box {
-  background: var(--step-active);
+  background: var(--accent-fill);
   border-color: var(--step-active);
 }
 
@@ -5901,7 +5927,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 /* bslib paints a checked box in the primary cyan with a dark check drawn
    for that cyan; match the provider boxes: blue fill, white check. */
 .vn-option-row input[type="checkbox"]:checked {
-  background-color: var(--step-active);
+  background-color: var(--accent-fill);
   border-color: var(--step-active);
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='m6 10 3 3 6-6'/%3e%3c/svg%3e");
 }
@@ -5943,8 +5969,8 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 
 .vn-run-btn.btn,
 .vn-run-btn.action-button {
-  background: #38cff6;
-  color: #1c1c26;
+  background: var(--primary);
+  color: var(--on-bright);
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: 700;
@@ -5957,7 +5983,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .vn-run-btn:hover:not(:disabled) {
-  background: #16b3bd;
+  background: var(--primary-hover);
   transform: var(--lift-sm);
   box-shadow: none;
 }
@@ -5979,8 +6005,8 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 
 .vn-stream-panel {
   flex: 1 1 auto;
-  background: #ffffff;
-  border: 1px solid rgba(40, 51, 172, 0.18);
+  background: var(--bg-card);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius-lg);
   box-shadow: none;
   overflow: hidden;
@@ -5990,14 +6016,14 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 
 .vn-stream-header {
   padding: 0.85rem 1.1rem 0.7rem;
-  border-bottom: 1px solid rgba(40, 51, 172, 0.08);
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.08);
 }
 
 .vn-stream-title {
   font-family: var(--font-serif);
   font-weight: var(--weight-semibold);
   font-size: var(--text-base);
-  color: #1c1c26;
+  color: var(--text-primary);
   letter-spacing: -0.01em;
   margin-bottom: 0.45rem;
 }
@@ -6041,10 +6067,10 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .vn-stream-item {
-  border: 1px solid rgba(40, 51, 172, 0.08);
+  border: 1px solid rgba(var(--accent-rgb), 0.08);
   border-radius: var(--radius);
   padding: 0.6rem 0.75rem;
-  background: #ffffff;
+  background: var(--bg-card);
   display: flex;
   align-items: flex-start;
   gap: 0.6rem;
@@ -6053,7 +6079,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .vn-stream-item:hover {
-  border-color: rgba(40, 51, 172, 0.18);
+  border-color: rgba(var(--accent-rgb), 0.18);
   box-shadow: none;
 }
 
@@ -6117,27 +6143,27 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .vn-stream-status-icon-accepted {
-  background: #00a86b;
-  color: #ffffff;
+  background: var(--success-fill);
+  color: var(--on-fill);
 }
 
 .vn-stream-status-icon-not_found {
-  background: #c0392b;
-  color: #ffffff;
+  background: var(--error-fill);
+  color: var(--on-fill);
 }
 
 .vn-stream-status-icon-ambiguous {
-  background: #ffa204;
-  color: #1c1c26;
+  background: var(--warning);
+  color: var(--on-bright);
 }
 
 .vn-stream-status-icon-synonym {
-  background: #252659;
-  color: #ffffff;
+  background: var(--info-fill);
+  color: var(--on-fill);
 }
 
 .vn-stream-status-icon-ignored {
-  background: rgba(40, 51, 172, 0.12);
+  background: rgba(var(--accent-rgb), 0.12);
   color: var(--text-muted);
 }
 
@@ -6151,7 +6177,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   font-weight: var(--weight-medium);
   font-style: italic;
   font-size: var(--text-base);
-  color: #1c1c26;
+  color: var(--text-primary);
   line-height: 1.2;
 }
 
@@ -6169,7 +6195,7 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: rgba(40, 51, 172, 0.45);
+  background: rgba(var(--accent-rgb), 0.45);
   display: inline-block;
 }
 
@@ -6268,18 +6294,18 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .vn-review-header-error .vn-review-header-icon {
-  background: #c0392b;
-  color: #ffffff;
+  background: var(--error-fill);
+  color: var(--on-fill);
 }
 
 .vn-review-header-warning .vn-review-header-icon {
-  background: #ffa204;
-  color: #1c1c26;
+  background: var(--warning);
+  color: var(--on-bright);
 }
 
 .vn-review-header-info .vn-review-header-icon {
-  background: #252659;
-  color: #ffffff;
+  background: var(--info-fill);
+  color: var(--on-fill);
 }
 
 .vn-review-header-text {
@@ -6496,11 +6522,11 @@ body.vn-review-open .modal-backdrop.show {
 .vn-report-panel {
   width: clamp(520px, 31vw, 640px);
   flex: 0 0 clamp(520px, 31vw, 640px);
-  background: #ffffff;
+  background: var(--bg-card);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(40, 51, 172, 0.18);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius-lg);
   box-shadow: none;
 }
@@ -6576,14 +6602,14 @@ body.vn-review-open .modal-backdrop.show {
 
 .vn-report-header {
   padding: 0.85rem 1rem 0.7rem;
-  border-bottom: 1px solid rgba(40, 51, 172, 0.08);
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.08);
 }
 
 .vn-report-title {
   font-family: var(--font-serif);
   font-weight: var(--weight-semibold);
   font-size: var(--text-base);
-  color: #1c1c26;
+  color: var(--text-primary);
   margin-bottom: 0.42rem;
 }
 
@@ -6596,11 +6622,11 @@ body.vn-review-open .modal-backdrop.show {
 .vn-report-search,
 .vn-report-select {
   background: var(--bg-subtle);
-  border: 1px solid rgba(40, 51, 172, 0.18);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius);
   font-family: var(--font-ui);
   font-size: var(--text-xs);
-  color: #1c1c26;
+  color: var(--text-primary);
   height: 30px;
   padding: 0.3rem 0.5rem;
 }
@@ -6612,8 +6638,8 @@ body.vn-review-open .modal-backdrop.show {
 
 .vn-report-search:focus,
 .vn-report-select:focus {
-  border-color: #38cff6;
-  box-shadow: 0 0 0 3px rgba(56, 207, 246, 0.25);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.25);
   outline: none;
 }
 
@@ -6683,7 +6709,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .vn-report-table tbody td {
-  border-bottom: 1px solid rgba(40, 51, 172, 0.08);
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.08);
   padding: 0.4rem 0.55rem;
   vertical-align: top;
 }
@@ -6693,7 +6719,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .vn-report-table tbody tr:hover td {
-  background: rgba(40, 51, 172, 0.07);
+  background: rgba(var(--accent-rgb), 0.07);
 }
 
 .vn-cell-scientific {
@@ -6707,7 +6733,7 @@ body.vn-review-open .modal-backdrop.show {
   font-weight: var(--weight-medium);
   font-style: italic;
   font-size: var(--text-sm);
-  color: #1c1c26;
+  color: var(--text-primary);
 }
 
 .vn-cell-taxonomic {
@@ -6737,25 +6763,25 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .vn-report-table tbody tr.vn-row-synonym > td {
-  background: rgba(37, 38, 89, 0.1);
+  background: rgba(var(--info-rgb), 0.1);
 }
 
 .vn-report-table tbody tr.vn-row-ambiguous > td {
-  background: rgba(255, 162, 4, 0.1);
+  background: rgba(var(--warning-rgb), 0.1);
 }
 
 .vn-report-table tbody tr.vn-row-not-found > td {
-  background: rgba(192, 57, 43, 0.1);
+  background: rgba(var(--error-rgb), 0.1);
 }
 
 .vn-report-table tbody tr.vn-row-accepted > td,
 .vn-report-table tbody tr.vn-row-ignored > td {
-  background: #ffffff;
+  background: var(--bg-card);
 }
 
 .vn-report-pagination {
   margin-top: auto;
-  border-top: 1px solid rgba(40, 51, 172, 0.08);
+  border-top: 1px solid rgba(var(--accent-rgb), 0.08);
   padding: 0.5rem 0.75rem;
   display: flex;
   justify-content: space-between;
@@ -6765,7 +6791,7 @@ body.vn-review-open .modal-backdrop.show {
   flex-shrink: 0;
   position: sticky;
   bottom: 0;
-  background: #ffffff;
+  background: var(--bg-card);
   z-index: 2;
 }
 
@@ -6798,10 +6824,10 @@ body.vn-review-open .modal-backdrop.show {
   height: 26px;
   min-width: 26px;
   padding: 0 0.45rem;
-  border: 1px solid rgba(40, 51, 172, 0.18);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius);
   background: var(--bg-subtle);
-  color: #2833ac;
+  color: var(--accent);
   font-family: var(--font-ui);
   font-size: var(--text-xs);
   display: inline-flex;
@@ -6815,7 +6841,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .vn-report-pagination .dataTables_paginate .pagination .page-item .page-link:hover {
-  background: rgba(40, 51, 172, 0.07);
+  background: rgba(var(--accent-rgb), 0.07);
 }
 
 .vn-report-pagination .dataTables_paginate .pagination .page-item.active .page-link {
@@ -7609,7 +7635,7 @@ body.vn-review-open .modal-backdrop.show {
     font-size: var(--text-xs);
     padding: 2px var(--space-2);
     border-radius: var(--radius-chip);
-    background: rgba(56, 207, 246, 0.12);
+    background: rgba(var(--primary-rgb), 0.12);
     color: var(--accent);
     letter-spacing: 0.02em;
 }
@@ -7984,7 +8010,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sensitive-panel .sp-group-badge--medium {
-    background: rgba(56, 207, 246, 0.12);
+    background: rgba(var(--primary-rgb), 0.12);
     color: var(--accent);
     border-color: var(--accent);
 }
@@ -8244,7 +8270,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sp-grid-swatch--extreme {
-    background: var(--error);
+    background: var(--error-fill);
 }
 
 .sp-grid-swatch--high {
@@ -8256,7 +8282,7 @@ body.vn-review-open .modal-backdrop.show {
 }
 
 .sp-grid-swatch--low {
-    background: var(--success);
+    background: var(--success-fill);
 }
 
 .sp-grid-swatch--not_sensitive {
@@ -8511,13 +8537,13 @@ body.vn-review-open .modal-backdrop.show {
 
 /* Neutral cells; a cell that leaves the country is dashed red (ADR-132). */
 .sc-legend-mark--area {
-    border: 1px solid rgba(28, 28, 38, 0.55);
-    background: rgba(28, 28, 38, 0.06);
+    border: 1px solid rgba(var(--ink-rgb), 0.55);
+    background: rgba(var(--ink-rgb), 0.06);
 }
 
 .sc-legend-mark--cross {
     border: 2px dashed #c0392b;
-    background: rgba(192, 57, 43, 0.06);
+    background: rgba(var(--error-rgb), 0.06);
 }
 
 /* Points: the threat group's colour once decided, white while waiting. */
@@ -8639,17 +8665,17 @@ body.vn-review-open .modal-backdrop.show {
 .sp-exc-apply.btn {
     min-height: 36px;
     padding: 0 var(--space-4);
-    background: var(--accent);
+    background: var(--accent-fill);
     border-color: var(--accent);
-    color: #ffffff;
+    color: var(--on-fill);
     font-family: var(--font-ui);
     font-size: var(--text-sm);
     font-weight: 700;
 }
 
 .sp-exc-apply.btn:hover {
-    background: var(--step-active);
-    color: #ffffff;
+    background: var(--accent-fill);
+    color: var(--on-fill);
 }
 
 .sc-exc-cat1-note {
@@ -9470,4 +9496,223 @@ button.sc-scale-chip:hover .sc-level-chip {
 
 .export-bar-state.is-ready {
   color: var(--success-text);
+}
+/* =============================================================================
+   DARK THEME (ADR-144)
+   theme-switch.js sets data-bs-theme="dark" on <html>, so Bootstrap flips with
+   the app. The palette is "Plumagem": the blue-black of the saira's back, with
+   the blue of its wings for links and selection. Almost everything is a token
+   swap. The rules after the tokens cover the few colors that are not tokens
+   (pastel scales, form surfaces, map controls).
+   ============================================================================= */
+
+:root[data-bs-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces and ink */
+  --bg-main: #0f1116;
+  --bg-card: #171a21;
+  --bg-subtle: #13151b;
+  --text-primary: #e6e8ee;
+  --text-muted: #9ba2ae;
+  --border-light: #1f232b;
+  --border-default: #292e37;
+  --border-strong: #384050;
+  --ink-rgb: 230, 232, 238;
+
+  /* Brand: light text colors, deep fills under white text. */
+  --accent: #a3abff;
+  --accent-rgb: 158, 166, 255;
+  --accent-fill: #3d49cc;
+  --accent-fill-hover: #4955dc;
+  --info: #b5b8f5;
+  --info-rgb: 181, 184, 245;
+  --info-fill: #2c2f6e;
+  --primary: #38cff6;
+  --primary-hover: #6ad9f7;
+  --primary-dark: #9be7fa;
+  --primary-rgb: 56, 207, 246;
+
+  /* States */
+  --success: #34d399;
+  --success-rgb: 52, 211, 153;
+  --success-fill: #05875a;
+  --success-text: #6ee7b7;
+  --warning: #ffa204;
+  --warning-rgb: 255, 170, 40;
+  --warning-text: #ffc266;
+  --error: #f87265;
+  --error-rgb: 248, 114, 101;
+  --error-fill: #c0392b;
+  --error-fill-hover: #d04a3b;
+  --error-text: #ff9b90;
+  --on-fill: #ffffff;
+  --on-bright: #12141b;
+  --tooltip-bg: #2a2f3a;
+  --tooltip-fg: #e6e8ee;
+
+  --coord-ok: #34d399;
+  --coord-swapped: #a78bfa;
+  --coord-corrected: #3cc3cf;
+
+  --state-mapped-border: #2f6b55;
+  --state-attention-bg: #241f14;
+  --state-attention-border: #6b5225;
+  --state-missing-bg: #2a1816;
+  --state-missing-border: #7a3a32;
+  --badge-auto-bg: #133a2c;
+  --badge-auto-fg: #6ee7b7;
+  --badge-suggested-bg: #3a2c0f;
+  --badge-suggested-fg: #ffc266;
+  --badge-ambiguous-bg: #3d2412;
+  --badge-ambiguous-fg: #ffb27a;
+  --badge-template-bg: #33213f;
+  --badge-template-fg: #dcb2f0;
+  --badge-edited-bg: #172d42;
+  --badge-edited-fg: #9cc8ef;
+  --badge-missing-fg: #ff9b90;
+  --badge-invasive-bg: #3a2814;
+  --badge-invasive-fg: #f0b072;
+  --badge-translocated-bg: #2c2347;
+  --badge-translocated-fg: #c4b0f5;
+  --badge-manual-bg: #232831;
+  --badge-manual-fg: #a9b0bc;
+  --badge-assistant-bg: #262b35;
+  --badge-assistant-fg: #b7c0cf;
+  --badge-alias-bg: #252a5c;
+  --badge-alias-fg: #c0c5ff;
+
+  --overlay: rgba(0, 0, 0, 0.6);
+  --input-bg: var(--bg-subtle);
+  --navbar-link-color: var(--accent);
+  --navbar-link-active-bg: #38cff6;
+  --navbar-link-active-text: #12141b;
+  --step-active: var(--accent);
+
+  /* Bootstrap reads these. bslib compiled them from the light theme. */
+  --bs-body-bg: var(--bg-main);
+  --bs-body-color: var(--text-primary);
+  --bs-emphasis-color: var(--text-primary);
+  --bs-heading-color: var(--text-primary);
+  --bs-secondary-color: var(--text-muted);
+  --bs-secondary-bg: var(--bg-subtle);
+  --bs-tertiary-color: var(--text-muted);
+  --bs-tertiary-bg: var(--bg-subtle);
+  --bs-border-color: var(--border-default);
+  --bs-border-color-translucent: rgba(var(--ink-rgb), 0.12);
+  --bs-link-color: var(--accent);
+  --bs-link-hover-color: var(--accent);
+  --bs-link-color-rgb: var(--accent-rgb);
+  --bs-link-hover-color-rgb: var(--accent-rgb);
+  --bs-code-color: var(--accent);
+  --bs-dark-rgb: var(--ink-rgb);
+  --bs-light-rgb: 23, 26, 33;
+}
+
+/* Pastel scales with fixed dark text: tint the fill, light text. */
+[data-bs-theme="dark"] .wiki-class-badge,
+[data-bs-theme="dark"] .sp-cat-pill {
+  color: var(--text-primary);
+}
+[data-bs-theme="dark"] .wiki-required-badge--true {
+  color: var(--success-text);
+}
+[data-bs-theme="dark"] .sp-cat-pill--vu { background: rgba(230, 200, 77, 0.16); }
+[data-bs-theme="dark"] .sp-cat-pill--en { background: rgba(230, 135, 60, 0.18); }
+[data-bs-theme="dark"] .sp-cat-pill--crpex { background: rgba(163, 59, 87, 0.3); }
+
+/* Bootstrap surfaces that keep a light literal in the compiled theme. */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select,
+[data-bs-theme="dark"] .selectize-input,
+[data-bs-theme="dark"] .selectize-dropdown {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+[data-bs-theme="dark"] .modal-content,
+[data-bs-theme="dark"] .dropdown-menu,
+[data-bs-theme="dark"] .popover,
+[data-bs-theme="dark"] .card {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+/* Maps: the tiles keep the true colors of the data, only dimmed. The
+   controls follow the theme. */
+[data-bs-theme="dark"] .leaflet-container {
+  background: var(--bg-subtle);
+}
+[data-bs-theme="dark"] .leaflet-tile-pane {
+  filter: brightness(0.78) contrast(1.08) saturate(0.85);
+}
+[data-bs-theme="dark"] .leaflet-bar a,
+[data-bs-theme="dark"] .leaflet-control-layers,
+[data-bs-theme="dark"] .leaflet-control-attribution {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+[data-bs-theme="dark"] .leaflet-control-attribution a {
+  color: var(--accent);
+}
+/* The sea dot is deep navy, as on the map. A light ring keeps it visible on
+   the dark legend. */
+[data-bs-theme="dark"] .coords-map-legend-dot {
+  border-color: rgba(var(--ink-rgb), 0.35);
+}
+
+/* -- Theme switch: light, dark, follow the system (navbar) -- */
+.navbar .theme-switch-item {
+  display: flex;
+  align-items: center;
+}
+
+.theme-switch {
+  display: inline-flex;
+  height: 1.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-chip);
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.theme-switch button {
+  width: 1.85rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  transition: var(--transition-colors);
+}
+
+.theme-switch button + button {
+  border-left: 1px solid var(--border-default);
+}
+
+.theme-switch button:hover {
+  color: var(--text-primary);
+  background: var(--hover-bg);
+}
+
+.theme-switch button[aria-pressed="true"] {
+  background: var(--hover-bg);
+  color: var(--accent);
+}
+
+.theme-switch button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* The new theme grows as a circle from the clicked button. theme-switch.js
+   animates the clip-path. The old page stays still under it. */
+html.theme-reveal::view-transition-old(root),
+html.theme-reveal::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }

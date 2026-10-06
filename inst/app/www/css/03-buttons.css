@@ -15,7 +15,7 @@
 
 .btn-primary {
   background-color: var(--primary);
-  color: var(--text-primary);
+  color: var(--on-bright);
   box-shadow: none;
 }
 
@@ -53,38 +53,39 @@
   color: var(--step-active);
 }
 
+/* Bright fills keep dark text in both themes (--on-bright). */
 .btn-success {
   background-color: var(--success);
-  color: var(--text-primary);
+  color: var(--on-bright);
   box-shadow: var(--shadow-success);
 }
 
 .btn-success:hover {
   background-color: #009960;
-  color: var(--text-primary);
+  color: var(--on-bright);
 }
 
 .btn-warning {
   background-color: var(--warning);
-  color: var(--text-primary);
+  color: var(--on-bright);
 }
 
 .btn-warning:hover {
   background-color: #e09000;
-  color: var(--text-primary);
+  color: var(--on-bright);
 }
 
 .btn-danger,
 .btn-error {
-  background-color: var(--error);
-  color: var(--bg-card);
+  background-color: var(--error-fill);
+  color: var(--on-fill);
   box-shadow: var(--shadow-error);
 }
 
 .btn-danger:hover,
 .btn-error:hover {
-  background-color: #a93226;
-  color: var(--bg-card);
+  background-color: var(--error-fill-hover);
+  color: var(--on-fill);
 }
 
 .btn:disabled {
