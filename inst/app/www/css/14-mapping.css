@@ -651,12 +651,18 @@
   margin-bottom: 0;
 }
 
-/* Dropdown arrow for all selectize inputs */
-.field-card .selectize-control.multi .selectize-input::after {
+/* Dropdown arrow for all selectize inputs. The single select gets a border
+   triangle from selectize, so the border and size are reset here. The :is()
+   and :not() give the specificity to win over the selectize rule. */
+.field-card .selectize-control:is(.single, .multi) .selectize-input:not(.no-arrow)::after {
   content: '\25BE';
   position: absolute;
   right: 10px;
   top: 50%;
+  width: auto;
+  height: auto;
+  margin: 0;
+  border: 0;
   transform: translateY(-50%);
   font-size: var(--text-base);
   color: var(--text-muted);
@@ -665,11 +671,13 @@
 }
 
 /* Rotate arrow when dropdown is open */
-.field-card .selectize-control.multi .selectize-input.dropdown-active::after {
+.field-card .selectize-control:is(.single, .multi) .selectize-input:not(.no-arrow).dropdown-active::after {
+  margin: 0;
+  border: 0;
   transform: translateY(-50%) rotate(180deg);
 }
 
-.field-card .selectize-control.multi .selectize-input {
+.field-card .selectize-control:is(.single, .multi) .selectize-input {
   position: relative;
   padding-right: 28px;
 }

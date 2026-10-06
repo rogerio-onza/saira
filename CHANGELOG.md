@@ -62,6 +62,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - **build:** List `utils_oceanic_islands.R` in `Collate`, so the package installs again ([#164](https://github.com/rogerio-onza/saira/pull/164))
 - **ui:** Stop the console errors from the header titles at startup ([#168](https://github.com/rogerio-onza/saira/pull/168))
+- **mapping:** Give single and multiple selects on the cards the same arrow ([#170](https://github.com/rogerio-onza/saira/pull/170))
 - **coords:** Translate "Issue" and "Country" in Portuguese ([#169](https://github.com/rogerio-onza/saira/pull/169))
 - **names:** Stop labelling species native to Brazil as invasive aliens. The Instituto Hórus list also covers natives that are invasive outside their natural range, such as the coati: they get their own badge and no longer pre-fill `establishmentMeans` as `introduced`, ADR-142
 - **names:** Show the names under the Invasive, Translocated, Accepted and All filters after every problem is resolved. Only the Problems filter shows "All resolved"

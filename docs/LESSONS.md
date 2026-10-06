@@ -124,6 +124,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **`!important` nao e ferramenta para sobrescrever layout do bslib/Bootstrap quando especificidade resolve**: antes de adicionar `!important`, calcule se o seletor pode ser mais especifico (ex.: `.tab-content > .tab-pane:has(...)` vence `.bslib-page-fill` por ser mais especifico no ancestor chain). Cada `!important` introduzido conta contra o guardrail `tests/testthat/test-css-guardrails.R` (limite 13). Subir o limite e admissao de derrota e quase sempre evitavel.
 
 - **O padding da aba `fillable` do bslib vem de um seletor de 5 classes** (`.navbar+.container-fluid>.tab-content>.tab-pane.active.html-fill-container`). Uma regra `.tab-pane:has(...)` perde. Para tirar o padding de uma aba, repetir a cadeia e acrescentar o `:has()`.
+- **O caret do selectize simples usa `:not(.no-arrow)`, que conta como uma classe**. A regra do `▾` dos cartoes de mapeamento cobria so o select multiplo; estendida ao simples, empatava em especificidade e perdia pela ordem. `:is(.single, .multi)` mais o mesmo `:not(.no-arrow)` ganham, e o triangulo de borda do selectize precisa de `border: 0` e `width/height: auto`.
 - **Animacao de entrada de toast sem `fill-mode`** (ADR-145). O Shiny some com o toast por `opacity` inline via jQuery `fadeOut`; um valor preso de `animation-fill-mode: both` ganha do estilo inline e o toast nao some.
 
 ## i18n / Internacionalizacao
