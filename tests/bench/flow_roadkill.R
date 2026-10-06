@@ -157,7 +157,12 @@ mark_grid()
 timed("viii. pick after generalization", set_input(`mapping-map_habitat` = "Road_length"))
 note_last(grid_note())
 
-# ix. Export: download the ZIP and count the rows.
+# ix. Export: download the ZIP and count the rows. The guide leaves
+# basisOfRecord and license empty, and the server refuses a blocked export.
+app$set_inputs(`mapping-map_basisOfRecord` = "basisOfRecord")
+app$wait_for_idle(timeout = 20000)
+app$set_inputs(`mapping-custom_license` = "CC BY 4.0")
+app$wait_for_idle(timeout = 20000)
 timed("ix. open export", go_to("export"))
 started <- Sys.time()
 zip_path <- app$get_download("export-download_real")
@@ -168,6 +173,10 @@ utils::unzip(zip_path, exdir = unzip_dir)
 occurrence_path <- list.files(
     unzip_dir, pattern = "^occurrence\\.txt$", recursive = TRUE, full.names = TRUE
 )
+if (length(occurrence_path) == 0L) {
+    error_path <- list.files(unzip_dir, pattern = "^export_error\\.csv$", full.names = TRUE)
+    stop("The export has no occurrence.txt: ", paste(readLines(error_path), collapse = " "))
+}
 occurrence <- utils::read.csv(occurrence_path[[1]], colClasses = "character", encoding = "UTF-8")
 note_last(sprintf("%d rows", nrow(occurrence)))
 app$stop()

@@ -106,6 +106,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Tests
 - **build:** Serve the E2E app through run_app() and keep Chrome timers unthrottled in long runs
 - **build:** Guard the mapping reactivity fixes and run the full flow end to end in the release gate
+- **build:** Complete the roadkill benchmark export again, now that the server refuses a blocked download ([#172](https://github.com/rogerio-onza/saira/pull/172))
 
 ## [0.11.2] - 2026-09-11
 
