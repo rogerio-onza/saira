@@ -9,17 +9,21 @@
 #   (the navbar badge shows the version).
 #
 # Usage (from the repo root, NOT_CRAN=true, Chrome installed):
-#   Rscript data-raw/tutorial_shots.R [langs] [app_root]
+#   Rscript data-raw/tutorial_shots.R [langs] [app_root] [themes]
 #   langs     comma list of pt, en, es (default: all three)
 #   app_root  package root of the app to capture (default: the repo root)
+#   themes    comma list of light, dark (default: both)
 #
-# Output: website/assets/img/tNN-name.png (PT), tNN-name-EN.png, tNN-name-ES.png.
+# Output: website/assets/img/tNN-name.png (PT), tNN-name-EN.png, tNN-name-ES.png,
+# and the same names with -dark for the dark theme. The site shows the -dark
+# file when the reader picks the dark theme (website/assets/head.html).
 # The names step downloads the Flora/Fauna do Brasil databases into a temporary
 # SAIRA_DATA_DIR, so the first language takes a few minutes longer.
 
 args <- commandArgs(trailingOnly = TRUE)
 langs <- if (length(args) >= 1L) strsplit(args[[1]], ",")[[1]] else c("pt", "en", "es")
 app_root <- normalizePath(if (length(args) >= 2L) args[[2]] else ".", mustWork = TRUE)
+themes <- if (length(args) >= 3L) strsplit(args[[3]], ",")[[1]] else c("light", "dark")
 repo <- normalizePath(".", mustWork = TRUE)
 img_dir <- file.path(repo, "website", "assets", "img")
 demo_csv <- file.path(repo, "website", "assets", "exemplo", "ocorrencias-demo.csv")
@@ -48,8 +52,11 @@ chromote::set_chrome_args(c(
     "--disable-backgrounding-occluded-windows"
 ))
 
-run_lang <- function(lang) {
-    suffix <- if (identical(lang, "pt")) "" else paste0("-", toupper(lang))
+run_lang <- function(lang, theme = "light") {
+    suffix <- paste0(
+        if (identical(lang, "pt")) "" else paste0("-", toupper(lang)),
+        if (identical(theme, "dark")) "-dark" else ""
+    )
     app <- shinytest2::AppDriver$new(
         app_dir = build_app, width = 1440, height = 900,
         timeout = 60000, load_timeout = 60000
@@ -76,11 +83,13 @@ run_lang <- function(lang) {
     # The marks layer hangs off <body>, so one injection lasts the session.
     # screenshot() hides the scrollbars only during the capture, which widens
     # the page and can unwrap text after the marks are drawn. Hide them for the
-    # whole session so the marks and the capture see the same layout.
+    # whole session so the marks and the capture see the same layout. Stop the
+    # CSS transitions too: a box that is still in transition at the capture
+    # has a different size than the mark drawn on it.
     inject <- function() {
         js(marks_js)
         js("var s = document.createElement('style');
-            s.textContent = 'html { scrollbar-width: none; } ::-webkit-scrollbar { display: none; }';
+            s.textContent = 'html { scrollbar-width: none; } ::-webkit-scrollbar { display: none; } *, *::before, *::after { transition: none !important; }';
             document.head.appendChild(s);")
     }
     M <- function(code) js(code)
@@ -116,15 +125,21 @@ run_lang <- function(lang) {
         tryCatch(expr, error = function(e) message("  FAIL ", name, ": ", conditionMessage(e)))
     }
 
-    message("[", lang, "]")
+    message("[", lang, " ", theme, "]")
     app$wait_for_idle(timeout = 20000)
-    app$set_inputs(lang_switch = lang)
+    # The app opens in PT, and setting the same value updates no output.
+    if (!identical(lang, "pt")) app$set_inputs(lang_switch = lang)
     idle()
+    # Click the header switch, as a user does, then wait for the circle reveal.
+    js(sprintf("document.querySelector('.theme-switch button[data-theme=\"%s\"]').click()", theme))
+    Sys.sleep(1)
     inject()
 
     # 02 Upload -----------------------------------------------------------
     app$upload_file(`upload-file` = demo_csv)
     idle()
+    # The first upload moves to Mapeamento, so come back to the home.
+    go("upload", 1)
     safe("t02-upload", {
         # The summary renders after the upload settles and sits below the fold.
         wait_js("!!document.querySelector('#upload-stats .stats-container')", 60)
@@ -134,7 +149,7 @@ run_lang <- function(lang) {
         js("var d = document.querySelector('.upload-dropzone');
             d.style.height = d.offsetHeight + 'px'; d.style.flex = 'none';")
         # #upload-upload_mode is the hidden radio input, so mark the visible tabs.
-        M("tutMarks.mark('.upload-mode-tabs', 1);
+        M("tutMarks.mark('.upload-mode-tabs', 1, {fit: true});
            tutMarks.mark('.upload-dropzone', 2, {radius: 16});
            tutMarks.mark('#upload-stats .stats-container', 3);")
         shot("t02-upload", c(".home-header", ".upload-mode-tabs", ".upload-dropzone", "#upload-stats .stats-container"))
@@ -215,6 +230,9 @@ run_lang <- function(lang) {
     })
     safe("t03-dyn", {
         C <- "#mapping-fieldcard_dynamicProperties"
+        # "Relevant" collapses the unmapped terms to rows, so show all cards.
+        app$set_inputs(`mapping-mapped_filter` = "all")
+        idle()
         app$set_inputs(`mapping-map_dynamicProperties` = c("ambiente", "nome_comum"))
         idle()
         app$set_inputs(`mapping-dynprops_key_nome_comum` = "nomePopular")
@@ -314,7 +332,7 @@ run_lang <- function(lang) {
         M("tutMarks.mark('#validate_coords-action_card', 1, {corner: 'ot'});
            tutMarks.mark('#validate_coords-transposed_panel', 2, {corner: 'ot'});
            tutMarks.mark('#validate_coords-country_panel', 3, {corner: 'ot'});
-           tutMarks.mark('.coords-filter-pills', 4, {corner: 'or'});
+           tutMarks.mark('.coords-filter-pills', 4, {corner: 'or', fit: true});
            tutMarks.mark('#validate_coords-issues_table', 5, {corner: 'ot'});")
         shot("t05-results", "body", 0)
     })
@@ -387,4 +405,4 @@ run_lang <- function(lang) {
     invisible(NULL)
 }
 
-for (lang in langs) run_lang(lang)
+for (lang in langs) for (theme in themes) run_lang(lang, theme)

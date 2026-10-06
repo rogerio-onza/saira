@@ -78,9 +78,13 @@
     var inCells = [];
     var head = row(gridIn, "1");
     var inHead = cols.map(function (name) { var c = cell(head, true); c.textContent = name; return c; });
+    // an empty slot where the app adds dynamicProperties, so both sheets share the right edge
+    function slot(r) { cell(r, false).classList.add("lp-slot"); }
+    slot(head);
     ROWS.forEach(function (data, r) {
       var line = row(gridIn, String(r + 2));
       inCells.push(data.raw.map(function (parts) { var c = cell(line, false); fill(c, parts, "lp-bad"); return c; }));
+      slot(line);
     });
 
     // bottom sheet: each cell lists its stages, the newest one with from <= lane shows
@@ -164,7 +168,11 @@
         s.classList.toggle("is-done", i < L);
         s.classList.toggle("is-active", i === L);
       });
-      verb.textContent = moving ? tabs[L].textContent.replace(/^\d+/, "") + ": " + tabs[L].getAttribute("data-verb") : "";
+      verb.textContent = "";
+      if (moving) {
+        verb.appendChild(make("b", null, tabs[L].textContent.replace(/^\d+/, "")));
+        verb.appendChild(document.createTextNode(" " + tabs[L].getAttribute("data-verb")));
+      }
       status.textContent = L < 0 ? panel.getAttribute("data-raw")
         : moving ? panel.getAttribute("data-step").replace("{n}", L + 1).replace("{total}", tabs.length).replace("{tab}", tabs[L].textContent.replace(/^\d+/, ""))
         : panel.getAttribute("data-done");

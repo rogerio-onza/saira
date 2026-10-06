@@ -39,8 +39,19 @@ window.tutMarks = (function () {
     return e;
   }
 
-  function rect(sel, pad) {
-    var r = el(sel).getBoundingClientRect();
+  // fit: wrap the visible children, not a container that fills the row.
+  function rect(sel, pad, fit) {
+    var e = el(sel), r = e.getBoundingClientRect();
+    if (fit) {
+      var l = Infinity, t = Infinity, rr = -Infinity, b = -Infinity;
+      Array.prototype.forEach.call(e.children, function (k) {
+        var q = k.getBoundingClientRect();
+        if (q.width < 2 || q.height < 2) return;
+        l = Math.min(l, q.left); t = Math.min(t, q.top);
+        rr = Math.max(rr, q.right); b = Math.max(b, q.bottom);
+      });
+      if (l < Infinity) r = { left: l, top: t, width: rr - l, height: b - t };
+    }
     pad = pad || 0;
     return { x: r.left + window.scrollX - pad, y: r.top + window.scrollY - pad,
              w: r.width + 2 * pad, h: r.height + 2 * pad };
@@ -56,7 +67,7 @@ window.tutMarks = (function () {
 
   function box(sel, o) {
     o = o || {};
-    var r = rect(sel, o.pad == null ? 6 : o.pad);
+    var r = rect(sel, o.pad == null ? 6 : o.pad, o.fit);
     div('tut-box', 'left:' + r.x + 'px;top:' + r.y + 'px;width:' + r.w + 'px;height:' +
       r.h + 'px;border-color:' + opts.color + ';border-radius:' + (o.radius || 12) + 'px;');
     return r;
@@ -68,7 +79,7 @@ window.tutMarks = (function () {
   // corners keep the badge off the text that the box marks.
   function badge(sel, n, o) {
     o = o || {};
-    var r = rect(sel, o.pad == null ? 6 : o.pad);
+    var r = rect(sel, o.pad == null ? 6 : o.pad, o.fit);
     var c = o.corner || 'ol', x, y;
     if (c === 'ol') { x = r.x - 19; y = r.y + r.h / 2; }
     else if (c === 'or') { x = r.x + r.w + 19; y = r.y + r.h / 2; }
@@ -85,8 +96,8 @@ window.tutMarks = (function () {
   // Box plus badge, the usual pair.
   function mark(sel, n, o) {
     o = o || {};
-    box(sel, { pad: o.pad == null ? 4 : o.pad, radius: o.radius || 10 });
-    badge(sel, n, { pad: o.pad == null ? 4 : o.pad, corner: o.corner, dx: o.dx, dy: o.dy });
+    box(sel, { pad: o.pad == null ? 4 : o.pad, radius: o.radius || 10, fit: o.fit });
+    badge(sel, n, { pad: o.pad == null ? 4 : o.pad, fit: o.fit, corner: o.corner, dx: o.dx, dy: o.dy });
   }
 
   // Short curved arrow that ends on one side of the element.
@@ -158,11 +169,27 @@ window.tutMarks = (function () {
       mask.appendChild(hole);
     });
     defs.appendChild(mask); svg.appendChild(defs);
+    // A gray shade does not show on the dark theme, so use a deeper black
+    // there and outline each hole.
+    var bg = getComputedStyle(document.body).backgroundColor.match(/\d+/g).map(Number);
+    var dark = (0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2]) < 90;
     var shade = document.createElementNS(NS, 'rect');
     shade.setAttribute('width', W); shade.setAttribute('height', H);
-    shade.setAttribute('fill', 'rgba(28,28,38,' + (o.alpha || 0.5) + ')');
+    shade.setAttribute('fill', dark ? 'rgba(0,0,0,' + (o.alpha || 0.62) + ')'
+                                    : 'rgba(28,28,38,' + (o.alpha || 0.5) + ')');
     shade.setAttribute('mask', 'url(#' + id + ')');
     svg.appendChild(shade);
+    if (dark) {
+      sels.forEach(function (s) {
+        var r = rect(s, o.pad == null ? 8 : o.pad);
+        var ring = document.createElementNS(NS, 'rect');
+        ring.setAttribute('x', r.x); ring.setAttribute('y', r.y);
+        ring.setAttribute('width', r.w); ring.setAttribute('height', r.h);
+        ring.setAttribute('rx', 12); ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', 'rgba(255,255,255,0.55)'); ring.setAttribute('stroke-width', 1.5);
+        svg.appendChild(ring);
+      });
+    }
     layer().insertBefore(svg, layer().firstChild);
   }
 

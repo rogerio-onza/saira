@@ -43,7 +43,6 @@ anchor-sections: false
       <span class="lp-eyebrow">From spreadsheet to Darwin Core</span>
       <h2 id="flow-title">Each tab works on the whole spreadsheet</h2>
     </div>
-    <p>Four fictional camera-trap records. On top, the spreadsheet as it arrives. Below, the occurrence.txt, filled in tab by tab.</p>
   </div>
   <div class="lp-panel lp-flow" data-step="Step {n} of {total} · {tab}" data-raw="Spreadsheet as it arrived" data-done="Done. 4 rows in occurrence.txt, 2 with generalized coordinates.">
     <div class="lp-bar">
@@ -71,9 +70,9 @@ anchor-sections: false
     <div class="lp-foot">
       <div class="lp-segs" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <span class="lp-status">Spreadsheet as it arrived</span>
-      <span class="lp-note">Fictional data. The generalization grid depends on each species' assessment. Here, 0.1°.</span>
     </div>
   </div>
+  <p class="lp-note">Fictional data. The generalization grid depends on each species' assessment. Here, 0.1°.</p>
 </section>
 
 <!-- ===================== INSTALL: macOS console replaying the install ===================== -->

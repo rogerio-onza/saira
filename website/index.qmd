@@ -43,7 +43,6 @@ anchor-sections: false
       <span class="lp-eyebrow">Da planilha ao Darwin Core</span>
       <h2 id="fluxo-titulo">Cada aba trata a planilha inteira</h2>
     </div>
-    <p>Quatro registros fictícios de armadilha fotográfica. Em cima, a planilha como chega. Embaixo, o occurrence.txt, completo aba por aba.</p>
   </div>
   <div class="lp-panel lp-flow" data-step="Etapa {n} de {total} · {tab}" data-raw="Planilha como chegou" data-done="Pronto. 4 linhas no occurrence.txt, 2 com coordenadas generalizadas.">
     <div class="lp-bar">
@@ -71,9 +70,9 @@ anchor-sections: false
     <div class="lp-foot">
       <div class="lp-segs" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <span class="lp-status">Planilha como chegou</span>
-      <span class="lp-note">Dados fictícios. A grade da generalização depende da avaliação de cada espécie. Aqui, 0,1°.</span>
     </div>
   </div>
+  <p class="lp-note">Dados fictícios. A grade da generalização depende da avaliação de cada espécie. Aqui, 0,1°.</p>
 </section>
 
 <!-- ===================== INSTALL: macOS console replaying the install ===================== -->

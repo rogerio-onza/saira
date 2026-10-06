@@ -14,8 +14,8 @@ Cargue la hoja de cálculo de ocurrencias en la etapa **Inicio**.
 ```
 
 ::: {.marks}
-1. Elija el formato: **CSV Darwin Core** para hojas de cálculo, **Camtrap DP (ZIP)** para cámaras trampa.
-2. Arrastre el archivo al área verde, o haga clic en ella.
+1. Elija el formato: **Hoja de cálculo** para CSV, XLSX o TXT, **Camtrap DP** para el ZIP de cámaras trampa.
+2. Arrastre el archivo al área de carga, o haga clic en ella.
 3. Revise el resumen: registros, columnas y tamaño.
 :::
 
@@ -43,7 +43,7 @@ Saíra detecta la codificación (UTF-8, Latin-1, Windows-1252) y el separador (c
 
 ## Cámaras trampa
 
-En la pestaña **Camtrap DP (ZIP)**, Saíra acepta tres tipos de `.zip`:
+En la pestaña **Camtrap DP**, Saíra acepta tres tipos de `.zip`:
 
 - **Camtrap DP** con el descriptor `datapackage.json` y las tablas `deployments`, `observations` y, si existe, `media`.
 - Las mismas tablas **sin el descriptor**. Saíra crea el descriptor a partir de los CSV.

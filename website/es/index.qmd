@@ -43,7 +43,6 @@ anchor-sections: false
       <span class="lp-eyebrow">De la hoja de cálculo a Darwin Core</span>
       <h2 id="flujo-titulo">Cada pestaña trata la hoja de cálculo entera</h2>
     </div>
-    <p>Cuatro registros ficticios de cámara trampa. Arriba, la hoja de cálculo tal como llega. Abajo, el occurrence.txt, completado pestaña por pestaña.</p>
   </div>
   <div class="lp-panel lp-flow" data-step="Paso {n} de {total} · {tab}" data-raw="Hoja de cálculo tal como llegó" data-done="Listo. 4 filas en occurrence.txt, 2 con coordenadas generalizadas.">
     <div class="lp-bar">
@@ -71,9 +70,9 @@ anchor-sections: false
     <div class="lp-foot">
       <div class="lp-segs" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
       <span class="lp-status">Hoja de cálculo tal como llegó</span>
-      <span class="lp-note">Datos ficticios. La grilla de generalización depende de la evaluación de cada especie. Aquí, 0,1°.</span>
     </div>
   </div>
+  <p class="lp-note">Datos ficticios. La grilla de generalización depende de la evaluación de cada especie. Aquí, 0,1°.</p>
 </section>
 
 <!-- ===================== INSTALL: macOS console replaying the install ===================== -->

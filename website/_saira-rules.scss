@@ -108,7 +108,6 @@ a { color: inherit; }
   .lp-section { display: flex; flex-direction: column; gap: 28px; scroll-margin-top: 80px; }
   .lp-head { display: flex; flex-wrap: wrap; gap: 16px 64px; align-items: flex-end; }
   .lp-head > div { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-  .lp-head > p { flex: 1 1 320px; margin: 0; color: var(--lp-soft); }
   .lp-eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--lp-soft); }
   h2 {
     margin: 0; padding: 0; border: 0; max-width: 15em;
@@ -121,11 +120,11 @@ a { color: inherit; }
   .lp-file { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-family: var(--mono); font-size: 14px; }
   .lp-file small { font-size: 12px; color: var(--lp-soft); }
   .lp-toggle {
-    margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 16px;
-    background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text);
-    font-family: var(--mono); font-size: 13px; cursor: pointer;
+    margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 12px;
+    background: var(--surface); border: 1px solid var(--lp-line); border-radius: 8px; color: var(--lp-soft);
+    font-family: var(--mono); font-size: 12px; cursor: pointer;
   }
-  .lp-toggle:hover { border-color: var(--text); }
+  .lp-toggle:hover { border-color: var(--border-strong); color: var(--text); }
   // pause bars, then a play triangle while paused
   .lp-toggle::before { content: ""; box-sizing: border-box; width: 9px; height: 10px; border: solid currentColor; border-width: 0 2px; }
   .lp-flow.is-paused .lp-toggle::before { width: 0; height: 0; border-width: 5px 0 5px 9px; border-color: transparent transparent transparent currentColor; }
@@ -156,6 +155,7 @@ a { color: inherit; }
   .lp-row:first-child .lp-cell.is-hot { color: var(--accent); }
   // dynamicProperties: a column the app adds, hidden until the terms exist
   .lp-row .lp-cell.is-ghost { background: transparent; border-color: transparent; }
+  .lp-row .lp-cell.lp-slot { background: transparent; border-right-style: dashed; border-bottom-style: dashed; }
   .lp-bad { padding: 0 2px; border-radius: 3px; background: var(--lp-bad-soft); color: var(--lp-bad); }
   .lp-struck { color: var(--lp-soft); text-decoration: line-through; text-decoration-color: var(--lp-bad); }
   .lp-pop { display: inline-block; margin-left: -4px; padding: 0 4px; border-radius: 4px; animation: lp-pop .9s ease-out both; }
@@ -187,7 +187,8 @@ a { color: inherit; }
     display: inline-block; width: 11px; height: 6px; font-size: 0;
     border: solid currentColor; border-width: 0 0 2px 2px; transform: translateY(-2px) rotate(-45deg);
   }
-  .lp-verb { margin: 10px 0 0; min-height: 20px; text-align: center; font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--accent); }
+  .lp-verb { margin: 12px 0 0; min-height: 26px; text-align: center; font-size: 16px; line-height: 1.6; color: var(--lp-soft); }
+  .lp-verb b { font-weight: 600; color: var(--accent); }
 
   .lp-foot {
     display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 14px var(--px);
@@ -197,7 +198,8 @@ a { color: inherit; }
   .lp-segs span { flex: 1; height: 4px; border-radius: 9999px; background: var(--lp-line); transition: background-color .35s ease; }
   .lp-segs .is-done { background: var(--lp-ok); }
   .lp-segs .is-active { background: var(--accent); }
-  .lp-note { margin-left: auto; color: var(--lp-soft); }
+  .lp-status { color: var(--text); }
+  .lp-note { margin: -16px 0 0; font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--lp-soft); }
 
   // ---------- install: macOS console window ----------
   .lp-install { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 40px 64px; align-items: center; }
@@ -369,16 +371,17 @@ table.table:not(.maptable) code { font-family: var(--mono); }
   background: rgba(12, 14, 20, 0.82);
   cursor: zoom-out;
   opacity: 0; visibility: hidden;
-  transition: opacity 0.18s ease, visibility 0.18s ease;
+  transition: opacity 240ms ease-out, visibility 240ms ease-out;
 }
 .lightbox-overlay.is-open { opacity: 1; visibility: visible; }
 .lightbox-overlay img {
   max-width: 100%; max-height: 100%; width: auto; height: auto;
   border: 1px solid var(--border-strong); border-radius: var(--r);
   box-shadow: var(--shadow-md);
-  transform: scale(0.98); transition: transform 0.18s ease;
+  // Rises 16px, as the app dialogs do (ADR-145).
+  transform: translateY(16px); transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.lightbox-overlay.is-open img { transform: scale(1); }
+.lightbox-overlay.is-open img { transform: none; }
 .lightbox-close {
   position: fixed; top: 18px; right: 22px;
   width: 42px; height: 42px; display: grid; place-items: center;
@@ -399,7 +402,7 @@ table.table:not(.maptable) code { font-family: var(--mono); }
   color: var(--on-primary);
   background: linear-gradient(120deg, var(--primary) 0%, var(--primary-hover) 45%, var(--success) 100%);
   border: 1px solid transparent; border-radius: 100px;
-  padding: 0.14em 0.72em; margin-right: 0.5rem; text-decoration: none;
+  padding: 0.14em 0.72em; text-decoration: none;
   display: inline-flex; align-items: center; white-space: nowrap; box-shadow: none;
   transition: filter 0.15s ease;
 }
@@ -574,31 +577,42 @@ main.content p { font-size: 1.1rem; }
 .callout.callout-important { --cc: var(--error);        --cc-title: var(--important-title); }
 .callout.callout-caution   { --cc: var(--accent);       --cc-title: var(--caution-title); }
 
-// ---------- theme toggle (estilo do design Claude) ----------
-.theme-toggle-saira {
-  width: 42px; height: 42px; border-radius: 50%;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  cursor: pointer; display: grid; place-items: center;
-  color: var(--text) !important;
-  padding: 0;
-  transition: border-color .2s ease, transform .35s ease, background-color .2s ease;
+// ---------- theme switch and language select (the app controls, ADR-144) ----------
+// Same height, border and corner as in the app navbar. head.html removes
+// Quarto's one-button toggle. Quarto may add a floating copy later.
+.quarto-color-scheme-toggle { display: none !important; }
+.theme-switch {
+  display: inline-flex; height: 1.75rem;
+  border: 1px solid var(--border-strong); border-radius: 6px;
+  overflow: hidden; background: var(--surface);
 }
-.theme-toggle-saira:hover { border-color: var(--text); background: var(--surface); }
-.theme-toggle-saira > i, .theme-toggle-saira .bi { display: none !important; }
-.theme-toggle-saira svg { width: 18px; height: 18px; }
-.theme-toggle-saira .moon { display: none; }
-.theme-toggle-saira .sun { display: block; }
+.theme-switch button {
+  width: 1.85rem; padding: 0; border: 0;
+  background: transparent; color: var(--text-soft);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: color .15s ease, background-color .15s ease;
+}
+.theme-switch button + button { border-left: 1px solid var(--border); }
+.theme-switch button:hover { color: var(--text); background: var(--accent-soft); }
+.theme-switch button[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); }
+.theme-switch button:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.theme-switch svg { width: 0.95rem; height: 0.95rem; }
 
-// ---------- language switcher (pill, injetado via JS) ----------
-.lang-switch {
-  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.10em; text-transform: uppercase;
-  color: var(--text-soft) !important; text-decoration: none;
-  padding: 0.5em 0.85em; border: 1px solid var(--border-strong); border-radius: 100px;
-  transition: color .2s ease, border-color .2s ease, background-color .2s ease;
-  display: inline-flex; align-items: center; gap: 0.4em;
+.lang-select {
+  height: 1.75rem; margin: 0; padding: 0 1.45rem 0 0.6rem;
+  border: 1px solid var(--border-strong); border-radius: 6px;
+  font-family: var(--mono); font-size: 0.72rem; font-weight: 700; line-height: 1;
+  color: var(--text); cursor: pointer;
+  // The native arrow differs per browser, so draw the app arrow.
+  appearance: none;
+  background: var(--surface) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3e%3cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%235f6570' stroke-width='1.6'/%3e%3c/svg%3e") no-repeat right 0.5rem center / 0.55rem 0.45rem;
 }
-.lang-switch:hover { color: var(--text) !important; border-color: var(--text); background: var(--surface); }
+// Quarto marks the navbar data-bs-theme="dark", so the native list would open
+// dark on the light page. Follow the page theme instead.
+body.quarto-light .lang-select { color-scheme: light; }
+body.quarto-dark .lang-select { color-scheme: dark; }
+.lang-select:hover { border-color: var(--text); }
+.lang-select:focus-visible { outline: 2px solid var(--primary); outline-offset: 1px; }
 
 // ---------- code blocks ----------
 div.sourceCode { background: var(--code-bg); border-radius: var(--r); border: 1px solid rgba(255,255,255,0.06); box-shadow: var(--shadow-sm); }
@@ -770,3 +784,39 @@ body.tut-page {
 //  responsivo
 // =============================================================================
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+// =============================================================================
+//  Motion, as in the app (ADR-144, ADR-145). assets/head.html runs the
+//  theme circle and marks page changes. Reduced motion turns all of it off.
+// =============================================================================
+// The new theme grows as a circle from the clicked button. The old page stays
+// still under it. No color transition may run, or the new snapshot would show
+// the colors halfway.
+html.theme-reveal *, html.theme-reveal *::before, html.theme-reveal *::after { transition: none !important; }
+html.theme-reveal::view-transition-old(root),
+html.theme-reveal::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+
+@media (prefers-reduced-motion: no-preference) {
+  // A link to another page of the site: only the page area slides 32px in the
+  // direction of the step, the header changes at once.
+  @view-transition { navigation: auto; }
+  html.vt-page { --page-slide: 32px; }
+  html.vt-page.vt-back { --page-slide: -32px; }
+  html.vt-page #quarto-content { view-transition-name: saira-page; }
+  html.vt-page::view-transition-old(root),
+  html.vt-page::view-transition-new(root),
+  html.vt-page::view-transition-group(saira-page) { animation: none; }
+  html.vt-page::view-transition-old(root),
+  html.vt-page::view-transition-new(root),
+  html.vt-page::view-transition-old(saira-page),
+  html.vt-page::view-transition-new(saira-page) { mix-blend-mode: normal; }
+  html.vt-page::view-transition-old(saira-page) { animation: page-slide-out 320ms cubic-bezier(0.4, 0, 0.2, 1) both; }
+  html.vt-page::view-transition-new(saira-page) { animation: page-slide-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox-overlay, .lightbox-overlay img { transition: none; }
+}
+
+@keyframes page-slide-in { from { opacity: 0; transform: translateX(var(--page-slide)); } }
+@keyframes page-slide-out { to { opacity: 0; transform: translateX(calc(-1 * var(--page-slide))); } }

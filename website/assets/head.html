@@ -1,12 +1,35 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300..700;1,8..60,300..600&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-<meta name="theme-color" content="#f4f3ee" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#12141b" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1116" media="(prefers-color-scheme: dark)">
+<script>
+// Theme: light, dark or follow the system, as in the app (ADR-144). Quarto
+// paints its own stored scheme before the body, so write that value from our
+// choice first. The page then never shows the wrong theme for one frame.
+(function () {
+  try {
+    var mode = localStorage.getItem("saira-theme");
+    if (mode !== "light" && mode !== "dark" && mode !== "system") {
+      // Keep a choice made with the old one-button toggle.
+      var old = localStorage.getItem("quarto-color-scheme");
+      mode = old === "alternate" ? "dark" : old === "default" ? "light" : "system";
+      localStorage.setItem("saira-theme", mode);
+    }
+    var dark = mode === "dark" ||
+      (mode === "system" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    localStorage.setItem("quarto-color-scheme", dark ? "alternate" : "default");
+  } catch (e) { /* storage blocked: Quarto shows its default theme */ }
+})();
+</script>
 <script>
 (function () {
-  var SUN = '<svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
-  var MOON = '<svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>';
+  // Phosphor regular icons, the same glyphs as the app (viewBox 0 0 1024 1024).
+  var ICONS = {
+    sun: '<svg viewBox="0 0 1024 1024" aria-hidden="true" focusable="false"><path fill="currentColor" d="M480 160V64Q480 51 489 41Q499 32 512 32Q525 32 534 41Q544 51 544 64V160Q544 173 534 182Q525 192 512 192Q499 192 489 182Q480 173 480 160ZM768 512Q768 565 748 612Q728 658 693 693Q658 728 612 748Q565 768 512 768Q459 768 412 748Q366 728 331 693Q296 658 276 612Q256 565 256 512Q256 459 276 412Q296 366 331 331Q366 296 412 276Q459 256 512 256Q565 256 612 276Q658 296 693 331Q728 366 748 412Q768 459 768 512ZM704 512Q704 432 648 376Q592 320 512 320Q432 320 376 376Q320 432 320 512Q320 592 376 648Q432 704 512 704Q591 704 647 647Q704 591 704 512ZM233 279Q238 283 243 285Q249 288 256 288Q269 288 278 278Q288 269 288 256Q288 249 285 243Q283 238 279 233L215 169Q210 165 204 162Q199 160 192 160Q179 160 169 169Q160 179 160 192Q160 199 162 204Q165 210 169 215ZM233 745 169 809Q165 814 162 819Q160 825 160 832Q160 845 169 854Q179 864 192 864Q199 864 204 861Q210 859 215 855L279 791Q283 786 285 780Q288 775 288 768Q288 755 278 745Q269 736 256 736Q249 736 243 738Q238 741 233 745ZM768 288Q768 288 768 288Q768 288 768 288Q775 288 780 285Q786 283 791 279L855 215Q859 210 861 204Q864 199 864 192Q864 179 854 169Q845 160 832 160Q825 160 819 162Q814 165 809 169L745 233Q741 238 738 243Q736 249 736 256Q736 269 745 278Q755 288 768 288Q768 288 768 288Q768 288 768 288ZM791 745Q786 741 780 738Q775 736 768 736Q755 736 745 745Q736 755 736 768Q736 775 738 780Q741 786 745 791L809 855Q814 859 819 861Q825 864 832 864Q845 864 854 854Q864 845 864 832Q864 825 861 819Q859 814 855 809ZM192 512Q192 499 182 489Q173 480 160 480H64Q51 480 41 489Q32 499 32 512Q32 525 41 534Q51 544 64 544H160Q173 544 182 534Q192 525 192 512ZM512 832Q499 832 489 841Q480 851 480 864V960Q480 973 489 982Q499 992 512 992Q525 992 534 982Q544 973 544 960V864Q544 851 534 841Q525 832 512 832ZM960 480H864Q851 480 841 489Q832 499 832 512Q832 525 841 534Q851 544 864 544H960Q973 544 982 534Q992 525 992 512Q992 499 982 489Q973 480 960 480Z"/></svg>',
+    moon: '<svg viewBox="0 0 1024 1024" aria-hidden="true" focusable="false"><path fill="currentColor" d="M934 569Q930 565 924 562Q918 560 912 560Q909 560 906 560Q904 560 902 561Q879 568 853 572Q827 576 800 576Q727 576 663 548Q599 521 551 473Q503 425 476 361Q448 297 448 224Q448 196 452 170Q456 144 464 119L463 122Q464 120 464 117Q464 115 464 112Q464 99 455 89Q446 80 432 80Q430 80 427 80Q425 81 423 82Q358 102 304 140Q251 178 212 229L211 230Q172 281 150 345Q128 409 128 480Q128 566 160 642Q193 718 249 774Q306 831 382 863Q457 896 544 896Q544 896 544 896Q544 896 544 896Q544 896 544 896Q545 896 545 896Q616 896 679 873Q743 851 795 812H794Q846 773 884 720Q922 667 941 604L942 601Q943 599 943 596Q943 594 943 591Q943 585 940 579Q938 573 934 569ZM756 761Q712 795 658 813Q604 832 544 832Q471 832 407 805Q343 777 295 729Q247 681 219 617Q192 553 192 480Q192 420 211 366Q230 312 263 268Q288 236 319 210Q350 184 386 165L388 164Q386 178 385 193Q384 208 384 224Q384 310 417 386Q450 462 506 518Q562 574 638 607Q714 640 800 640Q816 640 831 639Q847 638 862 635L860 636Q841 674 815 705Q789 736 756 761Z"/></svg>',
+    desktop: '<svg viewBox="0 0 1024 1024" aria-hidden="true" focusable="false"><path fill="currentColor" d="M832 160H192Q152 160 124 188Q96 216 96 256V704Q96 744 124 772Q152 800 192 800H480V864H384Q371 864 361 873Q352 883 352 896Q352 909 361 918Q371 928 384 928H640Q653 928 662 918Q672 909 672 896Q672 883 662 873Q653 864 640 864H544V800H832Q872 800 900 772Q928 744 928 704V256Q928 216 900 188Q872 160 832 160ZM192 224H832Q845 224 854 233Q864 243 864 256V576H160V256Q160 243 169 233Q179 224 192 224ZM832 736H192Q179 736 169 726Q160 717 160 704V640H864V704Q864 717 854 726Q845 736 832 736Z"/></svg>'
+  };
 
   // Page trios PT / EN / ES (paths relative to the site root). A page added in
   // one language needs its row here and in the three sidebars of _quarto.yml.
@@ -45,10 +68,14 @@
     }
   };
   var UI = {
-    pt: { theme: "Alternar tema claro/escuro", themeShort: "Alternar tema", releases: "Novidades", close: "Fechar", switchTo: "Mudar para Português" },
-    en: { theme: "Toggle light/dark theme", themeShort: "Toggle theme", releases: "Release notes", close: "Close", switchTo: "Switch to English" },
-    es: { theme: "Cambiar tema claro/oscuro", themeShort: "Cambiar tema", releases: "Novedades", close: "Cerrar", switchTo: "Cambiar a español" }
+    pt: { theme: "Tema", light: "Tema claro", dark: "Tema escuro", system: "Seguir o sistema", lang: "Selecionar idioma da página", releases: "Novidades", close: "Fechar" },
+    en: { theme: "Theme", light: "Light theme", dark: "Dark theme", system: "Follow the system", lang: "Select page language", releases: "Release notes", close: "Close" },
+    es: { theme: "Tema", light: "Tema claro", dark: "Tema oscuro", system: "Seguir el sistema", lang: "Seleccionar el idioma de la página", releases: "Novedades", close: "Cerrar" }
   };
+  // Navbar order of each PAGES row, so a page change slides in the direction
+  // of the step: Projeto, the seven tutorials, FAQ, Glossário, Tecnologias,
+  // Atualizações.
+  var RANK = [0, 8, 9, 10, 11, 1, 2, 3, 4, 5, 6, 7];
 
   function norm(path) {
     if (path.charAt(path.length - 1) === "/") path += "index.html";
@@ -86,14 +113,29 @@
     var info = pageInfo();
     var ui = UI[info.lang];
 
-    // 1) Toggle de tema nativo do Quarto -> estilo do design Claude (sol/lua)
-    var toggle = document.querySelector("a.quarto-color-scheme-toggle");
-    if (toggle && !toggle.classList.contains("theme-toggle-saira")) {
-      toggle.classList.add("theme-toggle-saira");
-      // mantém o <i> nativo do Quarto (escondido via CSS) e acrescenta os ícones sol/lua
-      toggle.insertAdjacentHTML("beforeend", SUN + MOON);
-      toggle.setAttribute("aria-label", ui.theme);
-      toggle.setAttribute("title", ui.themeShort);
+    var tools = document.querySelector(".quarto-navbar-tools") ||
+                document.querySelector(".navbar .navbar-nav.ms-auto") ||
+                document.querySelector(".navbar .navbar-nav");
+
+    // 1) Theme switch of the app (light, dark, system) in place of Quarto's
+    //    one-button toggle.
+    Array.prototype.forEach.call(document.querySelectorAll(".quarto-color-scheme-toggle"), function (t) { t.remove(); });
+    if (tools && !document.querySelector(".theme-switch")) {
+      var group = document.createElement("div");
+      group.className = "theme-switch";
+      group.setAttribute("role", "group");
+      group.setAttribute("aria-label", ui.theme);
+      ["light", "dark", "system"].forEach(function (mode) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.setAttribute("data-theme", mode);
+        b.setAttribute("aria-pressed", mode === storedMode() ? "true" : "false");
+        b.setAttribute("aria-label", ui[mode]);
+        b.setAttribute("title", ui[mode]);
+        b.innerHTML = ICONS[{ light: "sun", dark: "moon", system: "desktop" }[mode]];
+        group.appendChild(b);
+      });
+      tools.appendChild(group);
     }
 
     // 2) On EN and ES pages, translate the navbar labels and point the links to
@@ -112,23 +154,22 @@
       }
     }
 
-    // 3) Language switcher: one link for each of the other two languages
-    if (!document.querySelector(".lang-switch")) {
-      var tools = document.querySelector(".quarto-navbar-tools") ||
-                  (toggle && toggle.parentNode) ||
-                  document.querySelector(".navbar .navbar-nav.ms-auto") ||
-                  document.querySelector(".navbar .navbar-nav");
+    // 3) Language selector of the app: a select with PT, EN and ES that opens
+    //    the same page in the chosen language.
+    if (tools && !document.querySelector(".lang-select")) {
+      var sel = document.createElement("select");
+      sel.className = "lang-select";
+      sel.setAttribute("aria-label", ui.lang);
       for (var t = 0; t < LANGS.length; t++) {
-        var target = LANGS[t];
-        if (target === info.lang) continue;
-        var a = document.createElement("a");
-        a.className = "lang-switch";
-        a.href = info.base + (info.row >= 0 ? PAGES[info.row][t] : PAGES[0][t]);
-        a.textContent = target.toUpperCase();
-        a.setAttribute("hreflang", target);
-        a.setAttribute("aria-label", UI[target].switchTo);
-        if (tools) tools.appendChild(a);
+        var opt = document.createElement("option");
+        opt.value = info.base + (info.row >= 0 ? PAGES[info.row][t] : PAGES[0][t]);
+        opt.textContent = LANGS[t].toUpperCase();
+        opt.lang = LANGS[t];
+        opt.selected = LANGS[t] === info.lang;
+        sel.appendChild(opt);
       }
+      sel.addEventListener("change", function () { location.href = this.value; });
+      tools.appendChild(sel);
     }
 
     // 4) Badge de versão na navbar (versão vem de assets/version.html, gerado no
@@ -139,14 +180,36 @@
       vb.textContent = "v" + window.SAIRA_VERSION;
       vb.href = info.base + PAGES[4][LANGS.indexOf(info.lang)];
       vb.setAttribute("aria-label", ui.releases);
-      var vtools = document.querySelector(".quarto-navbar-tools") ||
-                   document.querySelector(".navbar .navbar-nav.ms-auto") ||
-                   document.querySelector(".navbar .navbar-nav");
-      if (vtools) vtools.insertBefore(vb, vtools.firstChild);
+      if (tools) tools.appendChild(vb);
     }
 
     // 5) Lightbox: clicar numa captura de tela (.shot img) abre em tamanho grande
     setupLightbox(ui.close);
+
+    // 6) Screenshots of the app in the theme of the page
+    syncShots();
+  }
+
+  // A tutorial screenshot tNN-name.png has a twin tNN-name-dark.png of the app
+  // in its dark theme (data-raw/tutorial_shots.R). Show the twin of the page
+  // theme. A twin that does not load falls back to the light file.
+  function syncShots() {
+    var dark = current() === "dark";
+    var imgs = document.querySelectorAll('.shot img[src$=".png"], .shot img[data-light-src]');
+    return Promise.all(Array.prototype.map.call(imgs, function (img) {
+      var light = img.getAttribute("data-light-src");
+      if (!light) {
+        light = img.getAttribute("src");
+        img.setAttribute("data-light-src", light);
+        img.addEventListener("error", function () {
+          if (img.getAttribute("src") !== light) img.setAttribute("src", light);
+        });
+      }
+      var want = dark ? light.replace(/\.png$/, "-dark.png") : light;
+      if (img.getAttribute("src") === want) return null;
+      img.setAttribute("src", want);
+      return img.decode ? img.decode().catch(function () {}) : null;
+    }));
   }
 
   // Cria (uma vez) o overlay de lightbox e liga o clique em cada .shot img.
@@ -202,6 +265,150 @@
       });
     }
   }
+
+  // ---- Theme switch (ADR-144) -------------------------------------------------
+  var root = document.documentElement;
+  var media = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+  function reducedMotion() {
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+
+  function storedMode() {
+    try {
+      var m = localStorage.getItem("saira-theme");
+      return m === "light" || m === "dark" ? m : "system";
+    } catch (e) {
+      return "system";
+    }
+  }
+
+  function storeMode(mode) {
+    try { localStorage.setItem("saira-theme", mode); } catch (e) { /* this page only */ }
+  }
+
+  function resolve(mode) {
+    if (mode !== "system") return mode;
+    return media && media.matches ? "dark" : "light";
+  }
+
+  function current() {
+    return document.body.classList.contains("quarto-dark") ? "dark" : "light";
+  }
+
+  // Quarto turns the dark sheets on or off. The new snapshot must wait until
+  // the browser has them, or the circle would show the old colors.
+  function sheetsReady() {
+    return new Promise(function (done) {
+      var start = Date.now();
+      (function check() {
+        var links = document.querySelectorAll('link.quarto-color-scheme[rel="stylesheet"]');
+        var ok = Array.prototype.every.call(links, function (l) { return !!l.sheet; });
+        if (ok || Date.now() - start > 500) done();
+        else requestAnimationFrame(check);
+      })();
+    });
+  }
+
+  // The new theme grows as a circle from (x, y) over the old one, 600 ms.
+  function applyTheme(theme, x, y) {
+    if (theme === current() || typeof window.quartoToggleColorScheme !== "function") return;
+    if (!document.startViewTransition || reducedMotion()) {
+      window.quartoToggleColorScheme();
+      syncShots();
+      return;
+    }
+    var r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    root.classList.add("theme-reveal");
+    // The circle waits for the new sheets and the screenshots, at most 500 ms.
+    var vt = document.startViewTransition(function () {
+      window.quartoToggleColorScheme();
+      return Promise.race([
+        Promise.all([sheetsReady(), syncShots()]),
+        new Promise(function (done) { setTimeout(done, 500); })
+      ]);
+    });
+    vt.ready.then(function () {
+      root.animate(
+        { clipPath: ["circle(0px at " + x + "px " + y + "px)", "circle(" + r + "px at " + x + "px " + y + "px)"] },
+        { duration: 600, easing: "cubic-bezier(.4,0,.2,1)", pseudoElement: "::view-transition-new(root)" }
+      );
+    }).catch(function () {});
+    vt.finished.finally(function () { root.classList.remove("theme-reveal"); });
+  }
+
+  function centerOf(el) {
+    if (!el) return { x: innerWidth - 1, y: 0 };
+    var box = el.getBoundingClientRect();
+    return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+  }
+
+  function markPressed(mode) {
+    var bs = document.querySelectorAll(".theme-switch button[data-theme]");
+    Array.prototype.forEach.call(bs, function (b) {
+      b.setAttribute("aria-pressed", b.getAttribute("data-theme") === mode ? "true" : "false");
+    });
+  }
+
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest ? e.target.closest(".theme-switch button[data-theme]") : null;
+    if (!btn) return;
+    var mode = btn.getAttribute("data-theme");
+    storeMode(mode);
+    markPressed(mode);
+    var c = centerOf(btn);
+    applyTheme(resolve(mode), c.x, c.y);
+  });
+
+  if (media) {
+    var onSystemChange = function () {
+      if (storedMode() !== "system") return;
+      var c = centerOf(document.querySelector('.theme-switch button[data-theme="system"]'));
+      applyTheme(resolve("system"), c.x, c.y);
+    };
+    if (media.addEventListener) media.addEventListener("change", onSystemChange);
+    else if (media.addListener) media.addListener(onSystemChange);
+  }
+
+  // ---- Page change (ADR-145) --------------------------------------------------
+  // A link to another page of the site is a cross-document view transition.
+  // The page area slides 32 px in the direction of the step, the header
+  // changes at once. A language change keeps the same page, so it does not
+  // slide.
+  function rankOf(url) {
+    var a = document.createElement("a");
+    a.href = url;
+    var path = norm(a.pathname);
+    var m = path.match(/\/(en|es)\//);
+    var row = matchRow(path, LANGS.indexOf(m ? m[1] : "pt"));
+    return row >= 0 ? RANK[row] : -1;
+  }
+
+  function markPageChange(vt, from, to) {
+    if (!vt) return;
+    var a = rankOf(from), b = rankOf(to);
+    if (a >= 0 && a === b) {
+      vt.skipTransition();
+      return;
+    }
+    root.classList.add("vt-page");
+    root.classList.toggle("vt-back", a >= 0 && b >= 0 && b < a);
+    vt.finished.finally(function () { root.classList.remove("vt-page", "vt-back"); });
+  }
+
+  // Old page: name the page area before the browser takes its snapshot.
+  window.addEventListener("pageswap", function (e) {
+    var to = e.activation && e.activation.entry && e.activation.entry.url;
+    if (to) markPageChange(e.viewTransition, location.href, to);
+  });
+
+  // New page: the direction classes drive the keyframes.
+  window.addEventListener("pagereveal", function (e) {
+    var act = window.navigation && window.navigation.activation;
+    var from = act && act.from && act.from.url;
+    if (from) markPageChange(e.viewTransition, from, location.href);
+    else if (e.viewTransition) e.viewTransition.skipTransition();
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", enhance);
