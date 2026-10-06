@@ -17,7 +17,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Rogério Nunes Oliveira \email{rogerio@sibbr.gov.br}
+\strong{Maintainer}: Rogério Nunes Oliveira \email{rogerio.onza@outlook.com}
 
 }
 \keyword{internal}

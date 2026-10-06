@@ -324,7 +324,7 @@ app_server <- function(input, output, session) {
 Package: saira
 Title: Biodiversity Data Standardization to Darwin Core
 Version: 0.1.0
-Authors@R: person("Rogério", "Nunes Oliveira", email = "rogerio@sibbr.gov.br", role = c("aut", "cre"))
+Authors@R: person("Rogério", "Nunes Oliveira", email = "rogerio.onza@outlook.com", role = c("aut", "cre"))
 Description: Shiny application for standardizing biodiversity datasets to the
     Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools
     for data validation, column mapping, and taxonomic verification.
