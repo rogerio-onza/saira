@@ -1065,6 +1065,7 @@ Formato: ADR leve (Architecture Decision Record).
 - **Contexto**: A troca de idioma disparava ~385 re-renderizacoes simultaneas sem amortizacao. O fuzzy matching de paises na Layer 5 de `coords_country_to_iso3()` usava loop por item com `adist()` individual, O(n x m) com overhead de chamada de funcao por token.
 - **Decisao**:
   - Debounce de 150ms em `lang_r` com bypass na primeira renderizacao via `reactiveVal` flag (`lang_initialized`). Primeira renderizacao imediata para evitar atraso de startup.
+  - **Emenda (2026-10-05)**: o flag `lang_initialized` saiu. Ele era lido e gravado dentro do mesmo `reactive`, que se invalidava e renderizava os titulos da navbar duas vezes; o cliente via `nav_upload_title` recalcular fora de ordem e registrava 6 erros no console. `shiny::debounce()` ja entrega o primeiro valor na hora, entao `lang_r` e so `debounce(150)` sobre o input.
   - Substituir loop individual por batch matricial com `adist(all_tokens, ref$alias)`. Sem chunking (memoria trivial para matrizes observadas no uso real).
   - Envolver bloco batch em `tryCatch` para resiliencia a encoding corrompido — se `adist` falhar, loga e pula em vez de crashar todo o batch.
   - `normalize_country_token`: `iconv(from = "UTF-8")` explicito em vez de `from = ""` (dependente de locale do OS).

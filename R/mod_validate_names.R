@@ -168,23 +168,21 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             shiny::tags$span(class = "vn-status-badge badge-muted", tr("validate_names_provider_status_not_downloaded", lang_r()))
         }
 
+        # Poll the BR provider caches only during a run or a background update.
+        # A run can start an update that continues after the run, so the end
+        # of a run reads the status again and an update keeps the poll on.
         shiny::observe({
-            selected <- as.character(rv$selected_providers)
-            selected_br <- intersect(selected, br_provider_ids)
-            current_map <- rv$provider_runtime_status
-            has_running_update <- is.list(current_map) && any(vapply(
+            active <- isTRUE(rv$running) || isTRUE(rv$starting)
+            previous <- shiny::isolate(rv$provider_runtime_status)
+            updated <- refresh_provider_runtime_status(poll = TRUE)
+            has_running_update <- is.list(updated) && any(vapply(
                 br_provider_ids,
-                function(id) identical(as.character((current_map[[id]] %||% list())$status %||% ""), "update_in_progress"),
+                function(id) identical(as.character((updated[[id]] %||% list())$status %||% ""), "update_in_progress"),
                 FUN.VALUE = logical(1)
             ))
-
-            if (length(selected_br) == 0L && !isTRUE(rv$running) && !isTRUE(rv$starting) && !isTRUE(has_running_update)) {
-                return(invisible(NULL))
+            if (active || has_running_update) {
+                shiny::invalidateLater(1200, session)
             }
-
-            shiny::invalidateLater(1200, session)
-            previous <- rv$provider_runtime_status
-            updated <- refresh_provider_runtime_status(poll = TRUE)
 
             for (provider_id in br_provider_ids) {
                 prev_obj <- if (is.list(previous)) previous[[provider_id]] else NULL
