@@ -14,8 +14,8 @@ Carregue a planilha de ocorrências na etapa **Início**.
 ```
 
 ::: {.marks}
-1. Escolha o formato: **CSV Darwin Core** para planilhas, **Camtrap DP (ZIP)** para armadilha fotográfica.
-2. Arraste o arquivo para a área verde, ou clique nela.
+1. Escolha o formato: **Planilha** para CSV, XLSX ou TXT, **Camtrap DP** para o ZIP de armadilha fotográfica.
+2. Arraste o arquivo para a área de envio, ou clique nela.
 3. Confira o resumo: registros, colunas e tamanho.
 :::
 
@@ -43,7 +43,7 @@ O Saíra detecta a codificação (UTF-8, Latin-1, Windows-1252) e o separador (v
 
 ## Armadilha fotográfica
 
-Na aba **Camtrap DP (ZIP)**, o Saíra aceita três tipos de `.zip`:
+Na aba **Camtrap DP**, o Saíra aceita três tipos de `.zip`:
 
 - **Camtrap DP** com o descritor `datapackage.json` e as tabelas `deployments`, `observations` e, se houver, `media`.
 - As mesmas tabelas **sem o descritor**. O Saíra cria o descritor a partir dos CSVs.

@@ -21,6 +21,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **site:** Use the app background colors on the help site, in the light and dark themes
+- **site:** Use the app theme switch, language select and motion on the help site, ADR-144, ADR-145
+- **site:** Retake the tutorial screenshots in the current look, with dark copies for the dark theme
+- **site:** Line up both sheets of the home flow on the same right edge
 - **ui:** Make notifications opaque, so the page text does not show through them ([#166](https://github.com/rogerio-onza/saira/pull/166))
 - **ui:** Replace the playful loading phrases with phrases that say what each step does ([#169](https://github.com/rogerio-onza/saira/pull/169))
 - **ui:** Remove em dashes, exclamation marks and "successfully" from interface texts ([#169](https://github.com/rogerio-onza/saira/pull/169))

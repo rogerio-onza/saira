@@ -5,7 +5,7 @@ $font-family-sans-serif: 'Source Serif 4', Georgia, serif;
 $font-family-monospace:  'Space Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 $headings-font-family:   'Source Serif 4', Georgia, serif;
 
-$body-bg:        #f4f3ee;
+$body-bg:        #f5f6f8;
 $body-color:     #1c1c26;
 $link-color:     #0e8a95;
 $navbar-bg:      transparent;
@@ -14,10 +14,10 @@ $toc-active-border: #38cff6;
 
 /*-- scss:rules --*/
 :root {
-  --bg: #f4f3ee;
-  --bg-2: #eceae2;
+  --bg: #f5f6f8;
+  --bg-2: #eceef2;
   --surface: #ffffff;
-  --surface-2: #faf9f5;
+  --surface-2: #f8f9fb;
   --table-bg: #ffffff;
   --text: #1C1C26;
   --text-soft: #6c757d;

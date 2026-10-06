@@ -14,8 +14,8 @@ Load the occurrence spreadsheet in the **Home** step.
 ```
 
 ::: {.marks}
-1. Choose the format: **Darwin Core CSV** for spreadsheets, **Camtrap DP (ZIP)** for camera traps.
-2. Drag the file to the green area, or click it.
+1. Choose the format: **Spreadsheet** for CSV, XLSX or TXT, **Camtrap DP** for the camera-trap ZIP.
+2. Drag the file to the upload area, or click it.
 3. Check the summary: records, columns and size.
 :::
 
@@ -43,7 +43,7 @@ Saíra detects the encoding (UTF-8, Latin-1, Windows-1252) and the separator (co
 
 ## Camera traps
 
-In the **Camtrap DP (ZIP)** tab, Saíra accepts three kinds of `.zip`:
+In the **Camtrap DP** tab, Saíra accepts three kinds of `.zip`:
 
 - **Camtrap DP** with the `datapackage.json` descriptor and the `deployments`, `observations` and, if present, `media` tables.
 - The same tables **without the descriptor**. Saíra builds the descriptor from the CSVs.

@@ -2886,6 +2886,7 @@ Formato: ADR leve (Architecture Decision Record).
   - A troca usa o revelar em circulo do canvas "expressiva": View Transitions, 600 ms, a partir do botao clicado. Sem a API, ou com movimento reduzido, a troca e imediata.
 - **Alternativas**: tema por `bslib::bs_theme()` no servidor, rejeitado porque recompila o Sass e recarrega o CSS a cada troca.
 - **Consequencias**: todo token de cor novo precisa de valor nos dois temas. Os rotulos do controle seguem o idioma por atributos `data-label-<lang>`.
+- **Site de ajuda**: `website/assets/head.html` repete o controle, os icones Phosphor (SVG) e o circulo. A escolha fica em `saira-theme`, e um script no `<head>` escreve dela o `quarto-color-scheme` antes de o Quarto pintar a pagina.
 
 ## ADR-145: movimento nas trocas de aba, toasts, dialogos e pendencias
 
@@ -2897,6 +2898,7 @@ Formato: ADR leve (Architecture Decision Record).
   - Toasts entram pela direita, dialogos sobem 16 px, as linhas de pendencia da Exportacao entram uma a uma (60 ms) e a resposta do FAQ da Ajuda desce sob a pergunta.
   - Navegador sem View Transitions ganha uma subida curta da pagina nova. `prefers-reduced-motion: reduce` desliga tudo.
 - **Consequencias**: a animacao do toast nao tem `fill-mode`: o Shiny some com o toast por `opacity` inline, e um valor preso da animacao ganharia dele. Os toasts ficaram opacos (`12-overrides.css`), porque o tom de estado e translucido e deixava o texto da pagina aparecer por baixo.
+- **Site de ajuda**: a troca de pagina usa View Transition entre documentos (`@view-transition`). `#quarto-content` desliza 32 px na ordem da navbar, e a troca de idioma nao desliza. A captura de tela ampliada sobe 16 px, como um dialogo.
 
 ## ADR-146: Ajuda B, com autor, citacao, pacotes e dados lidos do DESCRIPTION
 
