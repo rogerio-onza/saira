@@ -3949,11 +3949,6 @@
     "en": "This Wildlife Insights export is from a sequence project, but sequences.csv or one of the columns sequence_id, start_time and end_time is missing.",
     "es": "Esta exportación de Wildlife Insights es de un proyecto de secuencias, pero falta sequences.csv o una de las columnas sequence_id, start_time y end_time."
   },
-  "err_camtrap_pkg_missing": {
-    "pt": "Pacote R 'camtrapdp' não instalado. Rode install.packages('camtrapdp') para habilitar este modo.",
-    "en": "R package 'camtrapdp' is not installed. Run install.packages('camtrapdp') to enable this mode.",
-    "es": "El paquete de R 'camtrapdp' no está instalado. Ejecute install.packages('camtrapdp') para habilitar este modo."
-  },
   "err_camtrap_empty_occurrence": {
     "pt": "O arquivo foi lido mas nenhuma ocorrência foi extraída. Verifique se contém imagens identificadas como animais (não-vazias, não-humanos).",
     "en": "The file was read but no occurrences were extracted. Check that it contains images identified as animals (non-blank, non-human).",

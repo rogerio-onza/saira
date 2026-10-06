@@ -22,6 +22,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **upload:** Install camtrapdp with Saíra, so the camera trap mode always works and CI tests it, ADR-149
 - **site:** Use the app background colors on the help site, in the light and dark themes
 - **site:** Use the app theme switch, language select and motion on the help site, ADR-144, ADR-145
 - **site:** Retake the tutorial screenshots in the current look, with dark copies for the dark theme

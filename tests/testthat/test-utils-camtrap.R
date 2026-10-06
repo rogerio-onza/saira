@@ -342,18 +342,7 @@ testthat::test_that("localize_camtrap_schemas points schema URLs at bundled copi
     )
 })
 
-# require_camtrapdp ------------------------------------------------------
-
-testthat::test_that("require_camtrapdp errors with translatable message when missing", {
-    testthat::skip_if(requireNamespace("camtrapdp", quietly = TRUE),
-                      "camtrapdp is installed.")
-    testthat::expect_error(
-        saira:::require_camtrapdp(lang = "en"),
-        regexp = "camtrapdp"
-    )
-})
-
-# read_camtrap_dp_zip round-trips (needs camtrapdp) -----------------------
+# read_camtrap_dp_zip round-trips --------------------------------------
 
 # Only example_dataset() needs internet. Table schemas come from inst/extdata.
 skip_if_offline <- function() {
@@ -367,7 +356,6 @@ skip_if_offline <- function() {
 }
 
 testthat::test_that("read_camtrap_dp_zip round-trips a descriptor zip (canonical example)", {
-    testthat::skip_if_not_installed("camtrapdp")
     skip_if_offline()
     src_pkg <- tryCatch(camtrapdp::example_dataset(), error = function(e) NULL)
     testthat::skip_if(is.null(src_pkg), "camtrapdp::example_dataset() unavailable.")
@@ -409,7 +397,6 @@ testthat::test_that("read_camtrap_dp_zip round-trips a descriptor zip (canonical
 })
 
 testthat::test_that("read_camtrap_dp_zip round-trips a loose Camtrap DP csv zip", {
-    testthat::skip_if_not_installed("camtrapdp")
     skip_if_offline()
     src_pkg <- tryCatch(camtrapdp::example_dataset(), error = function(e) NULL)
     testthat::skip_if(is.null(src_pkg), "camtrapdp::example_dataset() unavailable.")
@@ -443,7 +430,6 @@ testthat::test_that("read_camtrap_dp_zip round-trips a loose Camtrap DP csv zip"
 })
 
 testthat::test_that("read_camtrap_dp_zip reads a loose csv zip without media.csv", {
-    testthat::skip_if_not_installed("camtrapdp")
     skip_if_offline()
     src_pkg <- tryCatch(camtrapdp::example_dataset(), error = function(e) NULL)
     testthat::skip_if(is.null(src_pkg), "camtrapdp::example_dataset() unavailable.")
@@ -467,7 +453,6 @@ testthat::test_that("read_camtrap_dp_zip reads a loose csv zip without media.csv
 })
 
 testthat::test_that("read_camtrap_dp_zip round-trips a Wildlife Insights zip (animals only)", {
-    testthat::skip_if_not_installed("camtrapdp")
 
     fx <- wi_zip_fixture()
     withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
@@ -507,7 +492,6 @@ testthat::test_that("read_camtrap_dp_zip round-trips a Wildlife Insights zip (an
 })
 
 testthat::test_that("read_camtrap_dp_zip sets gbifIngestion$observationLevel = 'media' on WI", {
-    testthat::skip_if_not_installed("camtrapdp")
 
     fx <- wi_zip_fixture()
     withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
@@ -524,7 +508,6 @@ testthat::test_that("read_camtrap_dp_zip sets gbifIngestion$observationLevel = '
 })
 
 testthat::test_that("convert_camtrap_to_dwc_occurrence errors on empty occurrence (all blank/human)", {
-    testthat::skip_if_not_installed("camtrapdp")
 
     # WI fixture with only blank + human rows — no animals to export.
     deployments <- c(
@@ -680,7 +663,6 @@ testthat::test_that("wi_to_camtrap_csv leaves habitat empty and defaults count t
 # convert_camtrap_to_dwc_occurrence: WI eventDate carries no Z (C1) ------
 
 testthat::test_that("WI conversion strips the fabricated UTC designator from eventDate", {
-    testthat::skip_if_not_installed("camtrapdp")
 
     fx <- wi_zip_fixture()
     withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
@@ -710,7 +692,6 @@ testthat::test_that("WI conversion strips the fabricated UTC designator from eve
 })
 
 testthat::test_that("WI read and conversion remove their temporary directories", {
-    testthat::skip_if_not_installed("camtrapdp")
     fx <- wi_zip_fixture()
     withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
 
@@ -758,7 +739,6 @@ testthat::test_that("wi_to_camtrap_csv writes one event-level observation per se
 })
 
 testthat::test_that("WI sequence projects export one occurrence per animal identification", {
-    testthat::skip_if_not_installed("camtrapdp")
     fx <- wi_sequence_zip_fixture()
     withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
 
@@ -786,7 +766,6 @@ testthat::test_that("WI sequence projects export one occurrence per animal ident
 })
 
 testthat::test_that("WI image projects keep media-level observations", {
-    testthat::skip_if_not_installed("camtrapdp")
     fx <- wi_zip_fixture()
     withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
 
