@@ -2933,3 +2933,17 @@ Formato: ADR leve (Architecture Decision Record).
   - Os diretorios temporarios da leitura e da conversao saem no fim de cada funcao.
 - **Alternativas**: ler os enums dos schemas em tempo de execucao, rejeitada porque constantes sao mais simples e os enums so mudam com uma versao nova do padrao. Trocar todas as versoes pelo schema 1.0.2, rejeitada porque 1.0.2 mudou `missingValues` e a leitura de dados antigos mudaria.
 - **Consequencias**: a leitura funciona offline e cai de ~3,4 s para ~2,2 s no dataset real. Uma versao nova do Camtrap DP precisa da copia dos schemas em `inst/extdata/camtrap-dp/`, senao a leitura volta a baixar pela rede.
+
+## ADR-148: Projetos Sequence do Wildlife Insights como observacoes de evento
+
+- **Data**: 2026-10-06
+- **Status**: Aceito
+- **Contexto**: o WI tem dois tipos de projeto (`project_type` em `projects.csv`). No tipo Image, cada imagem tem a sua identificacao. No tipo Sequence, a identificacao vale para a sequencia (fotos com menos de 60 s entre si) e fica em `sequences.csv`, com `group_size`, `identified_by` e `cv_confidence`. O `images.csv` desse tipo nao tem essas colunas. O Saira passava pela checagem de colunas e gerava um registro por imagem, com contagem 1 e metodo "human".
+- **Decisao**:
+  - `project_type == "Sequence"` em `projects.csv` liga o modo sequencia. Sem a coluna, o modo continua imagem.
+  - Cada linha de `sequences.csv` vira uma observacao `event`: `eventID` = `sequence_id`, `eventStart`/`eventEnd` = `start_time`/`end_time`, `count` = `group_size`, sem `mediaID`. As imagens continuam em `media.csv`.
+  - O leitor so declara `gbifIngestion$observationLevel = "media"` quando todas as observacoes sao `media`. Sequence fica no nivel `event`, o padrao do `write_dwc()`.
+  - Projeto Sequence sem `sequences.csv` (ou sem `sequence_id`, `start_time`, `end_time`) para com erro i18n.
+- **Alternativas**: agrupar as imagens em sequencias no Saira, rejeitada porque o WI ja entrega a identificacao por sequencia. Manter um registro por imagem, rejeitada porque repete o mesmo animal e perde o tamanho do grupo.
+- **Consequencias**: `eventDate` vira o intervalo `inicio/fim` quando a sequencia tem mais de uma foto. O `camtrapdp` liga cada imagem a sua sequencia pela janela de tempo, entao o `multimedia` sai por evento. Nao ha export Sequence publico: o teste de escala usou o projeto real (Image) reagrupado pela regra de 60 s, com 24.210 imagens e 1.767 ocorrencias.
+

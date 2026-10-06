@@ -3944,6 +3944,11 @@
     "en": "Wildlife Insights export is missing required columns (deployment_id, latitude, longitude, start_date, end_date, image_id or timestamp).",
     "es": "A la exportación de Wildlife Insights le faltan columnas obligatorias (deployment_id, latitude, longitude, start_date, end_date, image_id o timestamp)."
   },
+  "err_camtrap_wi_sequences_missing": {
+    "pt": "Este export do Wildlife Insights é de um projeto de sequências, mas falta o sequences.csv ou uma das colunas sequence_id, start_time e end_time.",
+    "en": "This Wildlife Insights export is from a sequence project, but sequences.csv or one of the columns sequence_id, start_time and end_time is missing.",
+    "es": "Esta exportación de Wildlife Insights es de un proyecto de secuencias, pero falta sequences.csv o una de las columnas sequence_id, start_time y end_time."
+  },
   "err_camtrap_pkg_missing": {
     "pt": "Pacote R 'camtrapdp' não instalado. Rode install.packages('camtrapdp') para habilitar este modo.",
     "en": "R package 'camtrapdp' is not installed. Run install.packages('camtrapdp') to enable this mode.",

@@ -63,6 +63,7 @@ WI_REQUIRED_DEP_COLS <- c(
     "deployment_id", "latitude", "longitude", "start_date", "end_date"
 )
 WI_REQUIRED_IMG_COLS <- c("deployment_id", "image_id", "timestamp")
+WI_REQUIRED_SEQ_COLS <- c("deployment_id", "sequence_id", "start_time", "end_time")
 
 wi_read_csv <- function(path) {
     utils::read.csv(
@@ -174,6 +175,12 @@ wi_build_scientific_name <- function(genus, species, family, order, class) {
 # Reads WI CSVs from `input_dir`, writes deployments/media/observations CSVs
 # in Camtrap DP shape under `<input_dir>/_camtrap_normalized`, returns the
 # normalized directory.
+#
+# WI projects identify either each image or each sequence (a burst of images
+# less than 60 s apart), per projects.csv `project_type`. A sequence project
+# keeps the identifications in sequences.csv, and its images.csv has no
+# is_blank, identified_by or count. Each sequences.csv row becomes one
+# event-level observation, with the images of the sequence as its media.
 wi_to_camtrap_csv <- function(input_dir, lang = "en") {
     dep_paths <- list.files(input_dir, pattern = "^deployments\\.csv$",
                             recursive = TRUE, full.names = TRUE,
@@ -196,6 +203,27 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
     missing_img <- setdiff(WI_REQUIRED_IMG_COLS, names(wi_img))
     if (length(missing_dep) > 0L || length(missing_img) > 0L) {
         stop(tr("err_camtrap_wi_columns_missing", lang), call. = FALSE)
+    }
+
+    proj_paths <- list.files(input_dir, pattern = "^projects\\.csv$",
+                             recursive = TRUE, full.names = TRUE,
+                             ignore.case = TRUE)
+    # WI writes projects.csv without a final newline, and read.csv() warns on
+    # that. The file is small, so read its lines first.
+    wi_proj <- if (length(proj_paths) > 0L) {
+        utils::read.csv(text = readLines(proj_paths[1], warn = FALSE),
+                        stringsAsFactors = FALSE, check.names = FALSE)
+    } else NULL
+    is_sequence <- "project_type" %in% names(wi_proj) &&
+        any(tolower(wi_proj$project_type) == "sequence", na.rm = TRUE)
+    if (is_sequence) {
+        seq_paths <- list.files(input_dir, pattern = "^sequences.*\\.csv$",
+                                recursive = TRUE, full.names = TRUE,
+                                ignore.case = TRUE)
+        wi_seq <- if (length(seq_paths) > 0L) wi_read_csv(seq_paths[1]) else NULL
+        if (is.null(wi_seq) || !all(WI_REQUIRED_SEQ_COLS %in% names(wi_seq))) {
+            stop(tr("err_camtrap_wi_sequences_missing", lang), call. = FALSE)
+        }
     }
 
     out_dir <- file.path(input_dir, "_camtrap_normalized")
@@ -282,76 +310,92 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
                      row.names = FALSE, na = "", fileEncoding = "UTF-8")
 
     # observations.csv ---------------------------------------------------
-    n_img <- nrow(wi_img)
+    # An image project has one event per image, and its observations point at
+    # that image. A sequence project has one event per sequence, and
+    # event-level observations have no mediaID.
+    if (is_sequence) {
+        src <- wi_seq
+        event_chr <- as.character(src$sequence_id)
+        media_chr <- rep(NA_character_, nrow(src))
+        event_start <- wi_parse_timestamp(src$start_time)
+        event_end <- wi_parse_timestamp(src$end_time)
+        level <- "event"
+        count_col <- "group_size"
+    } else {
+        src <- wi_img
+        event_chr <- as.character(src$image_id)
+        media_chr <- event_chr
+        event_start <- wi_parse_timestamp(src$timestamp)
+        event_end <- event_start
+        level <- "media"
+        count_col <- "number_of_objects"
+    }
+    n_obs <- nrow(src)
     obs_type <- wi_derive_observation_type(
-        is_blank = pick(wi_img, "is_blank"),
-        class = pick(wi_img, "class"),
-        order = pick(wi_img, "order"),
-        family = pick(wi_img, "family"),
-        genus = pick(wi_img, "genus"),
-        species = pick(wi_img, "species"),
-        common_name = pick(wi_img, "common_name")
+        is_blank = pick(src, "is_blank"),
+        class = pick(src, "class"),
+        order = pick(src, "order"),
+        family = pick(src, "family"),
+        genus = pick(src, "genus"),
+        species = pick(src, "species"),
+        common_name = pick(src, "common_name")
     )
     sci_name <- wi_build_scientific_name(
-        genus = pick(wi_img, "genus"),
-        species = pick(wi_img, "species"),
-        family = pick(wi_img, "family"),
-        order = pick(wi_img, "order"),
-        class = pick(wi_img, "class")
+        genus = pick(src, "genus"),
+        species = pick(src, "species"),
+        family = pick(src, "family"),
+        order = pick(src, "order"),
+        class = pick(src, "class")
     )
-    cv_conf <- suppressWarnings(as.numeric(pick(wi_img, "cv_confidence")))
+    cv_conf <- suppressWarnings(as.numeric(pick(src, "cv_confidence")))
     if (any(!is.na(cv_conf)) && max(cv_conf, na.rm = TRUE) > 1) {
         cv_conf <- cv_conf / 100
     }
     method <- ifelse(
-        !is.na(pick(wi_img, "identified_by")) &
-            pick(wi_img, "identified_by") == "Computer Vision",
+        !is.na(pick(src, "identified_by")) &
+            pick(src, "identified_by") == "Computer Vision",
         "machine", "human"
     )
-    ts_iso <- wi_parse_timestamp(wi_img$timestamp)
-    # observationID precisa ser único por linha. Para imagens com múltiplas
-    # identificações WI, sufixamos seq dentro do mesmo image_id: img-1, img-2.
-    image_id_chr <- as.character(wi_img$image_id)
-    within_image_seq <- stats::ave(seq_along(image_id_chr), image_id_chr, FUN = seq_along)
-    observation_id <- paste0(image_id_chr, "-obs-", within_image_seq)
+    # WI can give one image or sequence several identifications, and
+    # observationID must be unique: suffix a counter within the event.
+    within_event_seq <- stats::ave(seq_along(event_chr), event_chr, FUN = seq_along)
+    observation_id <- paste0(event_chr, "-obs-", within_event_seq)
     obs <- data.frame(
         observationID = observation_id,
-        deploymentID = as.character(wi_img$deployment_id),
-        mediaID = image_id_chr,
-        # eventID = image_id (cada imagem é um evento de detecção). Linhas com
-        # múltiplas identificações na mesma imagem compartilham eventID.
-        eventID = image_id_chr,
-        eventStart = ts_iso,
-        eventEnd = ts_iso,
-        observationLevel = rep("media", n_img),
+        deploymentID = as.character(src$deployment_id),
+        mediaID = media_chr,
+        eventID = event_chr,
+        eventStart = event_start,
+        eventEnd = event_end,
+        observationLevel = rep(level, n_obs),
         observationType = obs_type,
-        cameraSetupType = rep(NA_character_, n_img),
+        cameraSetupType = rep(NA_character_, n_obs),
         scientificName = sci_name,
         # Camtrap DP `count` has a minimum of 1; default missing values to 1
         # rather than emitting an empty individualCount for animal records.
         count = {
-            n_obj <- suppressWarnings(as.integer(pick(wi_img, "number_of_objects", 1L)))
+            n_obj <- suppressWarnings(as.integer(pick(src, count_col, 1L)))
             n_obj[is.na(n_obj)] <- 1L
             n_obj
         },
-        lifeStage = wi_enum(tolower(pick(wi_img, "age", NA)),
+        lifeStage = wi_enum(tolower(pick(src, "age", NA)),
                             c("adult", "subadult", "juvenile")),
-        sex = wi_enum(tolower(pick(wi_img, "sex", NA)), c("female", "male")),
-        behavior = pick(wi_img, "behavior", NA_character_),
-        individualID = pick(wi_img, "individual_id", NA_character_),
-        individualPositionRadius = rep(NA_real_, n_img),
-        individualPositionAngle = rep(NA_real_, n_img),
-        individualSpeed = rep(NA_real_, n_img),
-        bboxX = rep(NA_real_, n_img),
-        bboxY = rep(NA_real_, n_img),
-        bboxWidth = rep(NA_real_, n_img),
-        bboxHeight = rep(NA_real_, n_img),
+        sex = wi_enum(tolower(pick(src, "sex", NA)), c("female", "male")),
+        behavior = pick(src, "behavior", NA_character_),
+        individualID = pick(src, "individual_id", NA_character_),
+        individualPositionRadius = rep(NA_real_, n_obs),
+        individualPositionAngle = rep(NA_real_, n_obs),
+        individualSpeed = rep(NA_real_, n_obs),
+        bboxX = rep(NA_real_, n_obs),
+        bboxY = rep(NA_real_, n_obs),
+        bboxWidth = rep(NA_real_, n_obs),
+        bboxHeight = rep(NA_real_, n_obs),
         classificationMethod = method,
-        classifiedBy = pick(wi_img, "identified_by", NA_character_),
-        classificationTimestamp = rep(NA_character_, n_img),
+        classifiedBy = pick(src, "identified_by", NA_character_),
+        classificationTimestamp = rep(NA_character_, n_obs),
         classificationProbability = cv_conf,
-        observationTags = rep(NA_character_, n_img),
-        observationComments = pick(wi_img, "individual_animal_notes", NA_character_),
+        observationTags = rep(NA_character_, n_obs),
+        observationComments = pick(src, "individual_animal_notes", NA_character_),
         stringsAsFactors = FALSE
     )
     utils::write.csv(obs, file.path(out_dir, "observations.csv"),
@@ -501,10 +545,13 @@ read_camtrap_dp_zip <- function(path, lang = "en") {
         descriptor <- synthesize_camtrap_descriptor(norm_dir, lang = lang)
         localize_camtrap_schemas(descriptor)
         pkg <- camtrapdp::read_camtrapdp(descriptor)
-        # camtrapdp::write_dwc() filtra observationLevel == gbifIngestion$observationLevel
-        # (default "event"). Como WI sintetiza só linhas media-level, declaramos o nível
-        # explicitamente para que write_dwc() exporte essas linhas como ocorrências.
-        pkg$gbifIngestion$observationLevel <- "media"
+        # write_dwc() exports only the observations at
+        # gbifIngestion$observationLevel, "event" by default. An image project
+        # has only media-level observations, so declare that level.
+        levels <- unique(as.character(camtrapdp::observations(pkg)$observationLevel))
+        if (identical(levels, "media")) {
+            pkg$gbifIngestion$observationLevel <- "media"
+        }
         attr(pkg, "saira_camtrap_source") <- source
         return(pkg)
     }

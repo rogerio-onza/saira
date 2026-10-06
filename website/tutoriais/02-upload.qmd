@@ -47,7 +47,7 @@ Na aba **Camtrap DP**, o Saíra aceita três tipos de `.zip`:
 
 - **Camtrap DP** com o descritor `datapackage.json` e as tabelas `deployments`, `observations` e, se houver, `media`.
 - As mesmas tabelas **sem o descritor**. O Saíra cria o descritor a partir dos CSVs.
-- A **exportação do Wildlife Insights**. O Saíra renomeia as colunas para o formato Camtrap DP.
+- A **exportação do Wildlife Insights**. O Saíra renomeia as colunas para o formato Camtrap DP. Em projeto de imagens, cada imagem identificada vira um registro. Em projeto de sequências, cada identificação da sequência vira um registro, com o tamanho do grupo.
 
 O Saíra junta as tabelas numa planilha só, com nome científico, data e local. Depois o fluxo é igual ao de uma planilha.
 
