@@ -540,28 +540,39 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
         })
 
         # NOTE: depend only on coord_validation_r() here. This renderUI hosts the
-        # leafletOutput, so any extra reactive dependency (e.g. on corrections)
-        # would recreate the map widget mid-session and break proxy repaints.
+        # leafletOutput, so any extra reactive dependency (e.g. on corrections
+        # or the language) would recreate the map widget mid-session and break
+        # proxy repaints. Translated text lives in map_legend for this reason.
         output$map_panel <- shiny::renderUI({
             res <- coord_validation_r()
             if (is.null(res) || !is.data.frame(res) || nrow(res) == 0L) {
                 return(NULL)
             }
 
+            bslib::card(
+                class = "validate-coords-card validate-coords-map-card",
+                `aria-labelledby` = ns("map_title"),
+                bslib::card_body(
+                    shiny::div(
+                        class = "coords-map-container",
+                        leaflet::leafletOutput(ns("coords_map"), height = "100%"),
+                        shiny::uiOutput(ns("map_legend"))
+                    ),
+                    shiny::uiOutput(ns("map_note"))
+                )
+            )
+        })
+
+        output$map_legend <- shiny::renderUI({
             info_icon <- function(text) {
                 shiny::tags$span(
                     class = "coords-map-legend-info", title = text, tabindex = "0",
                     `aria-label` = text, ph_icon("circle-info")
                 )
             }
-            bslib::card(
-                class = "validate-coords-card validate-coords-map-card",
-                `aria-label` = tr("validate_coords_map_title", lang_r()),
-                bslib::card_body(
-                    shiny::div(
-                        class = "coords-map-container",
-                        leaflet::leafletOutput(ns("coords_map"), height = "100%"),
-                        shiny::div(
+            shiny::tagList(
+                shiny::span(id = ns("map_title"), class = "visually-hidden", tr("validate_coords_map_title", lang_r())),
+                shiny::div(
                         class = "coords-map-legend",
                         shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-ok"), shiny::span(tr("validate_coords_map_legend_ok", lang_r()))),
                         shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-validity"), shiny::span(tr("validate_coords_map_legend_validity", lang_r()))),
@@ -570,9 +581,6 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                         shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-reference"), shiny::span(tr("validate_coords_map_legend_reference", lang_r())), info_icon(tr("validate_coords_map_legend_reference_note", lang_r()))),
                         shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-corrected"), shiny::span(tr("validate_coords_map_legend_corrected", lang_r()))),
                         info_icon(tr("validate_coords_sea_precision_note", lang_r()))
-                        )
-                    ),
-                    shiny::uiOutput(ns("map_note"))
                 )
             )
         })
@@ -644,54 +652,59 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             if (is.null(coord_validation_r())) map_ready(FALSE)
         }, ignoreNULL = FALSE)
 
+        draw_markers <- function(map_df, fit_view = TRUE) {
+            proxy <- leaflet::leafletProxy(ns("coords_map"))
+            proxy <- leaflet::clearMarkers(proxy)
+            proxy <- leaflet::clearMarkerClusters(proxy)
+            if (!is.data.frame(map_df) || nrow(map_df) == 0L) {
+                return(invisible(NULL))
+            }
+
+            # A point outside the valid range has no place on the map. The
+            # map note counts these rows, and the table lists them.
+            map_df <- map_df[coords_plottable(map_df$lat_num, map_df$lon_num), , drop = FALSE]
+            if (nrow(map_df) == 0L) {
+                return(invisible(NULL))
+            }
+
+            marker_radius <- if (nrow(map_df) > 2000L) 4 else 6
+            leaflet::addCircleMarkers(
+                map = proxy,
+                data = map_df,
+                lat = ~lat_num,
+                lng = ~lon_num,
+                radius = marker_radius,
+                stroke = TRUE,
+                weight = 1,
+                color = ~color,
+                fillColor = ~color,
+                fillOpacity = 0.85,
+                popup = ~popup_html,
+                layerId = ~paste0("r", .row_index)
+            )
+
+            if (!fit_view) {
+                return(invisible(NULL))
+            }
+            view <- coords_map_view(map_df$lat_num, map_df$lon_num)
+            if (identical(view$type, "point")) {
+                leaflet::setView(map = proxy, lng = view$lng, lat = view$lat, zoom = 8)
+            } else if (identical(view$type, "bounds")) {
+                leaflet::fitBounds(
+                    map = proxy,
+                    lng1 = view$lng1,
+                    lat1 = view$lat1,
+                    lng2 = view$lng2,
+                    lat2 = view$lat2
+                )
+            }
+        }
+
         shiny::bindEvent(
             shiny::observe({
                 res <- coord_validation_r()
                 shiny::req(res, map_ready())
-                map_df <- map_data_r()
-
-                proxy <- leaflet::leafletProxy(ns("coords_map"))
-                proxy <- leaflet::clearMarkers(proxy)
-                proxy <- leaflet::clearMarkerClusters(proxy)
-                if (!is.data.frame(map_df) || nrow(map_df) == 0L) {
-                    return(invisible(NULL))
-                }
-
-                # A point outside the valid range has no place on the map. The
-                # map note counts these rows, and the table lists them.
-                map_df <- map_df[coords_plottable(map_df$lat_num, map_df$lon_num), , drop = FALSE]
-                if (nrow(map_df) == 0L) {
-                    return(invisible(NULL))
-                }
-
-                marker_radius <- if (nrow(map_df) > 2000L) 4 else 6
-                leaflet::addCircleMarkers(
-                    map = proxy,
-                    data = map_df,
-                    lat = ~lat_num,
-                    lng = ~lon_num,
-                    radius = marker_radius,
-                    stroke = TRUE,
-                    weight = 1,
-                    color = ~color,
-                    fillColor = ~color,
-                    fillOpacity = 0.85,
-                    popup = ~popup_html,
-                    layerId = ~paste0("r", .row_index)
-                )
-
-                view <- coords_map_view(map_df$lat_num, map_df$lon_num)
-                if (identical(view$type, "point")) {
-                    leaflet::setView(map = proxy, lng = view$lng, lat = view$lat, zoom = 8)
-                } else if (identical(view$type, "bounds")) {
-                    leaflet::fitBounds(
-                        map = proxy,
-                        lng1 = view$lng1,
-                        lat1 = view$lat1,
-                        lng2 = view$lng2,
-                        lat2 = view$lat2
-                    )
-                }
+                draw_markers(map_data_r())
             }),
             # Not effective_validation_r(): a manual edit moves its own marker
             # (refresh_marker below) and must not redraw or re-zoom the map.
@@ -701,6 +714,12 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             active_filter(),
             map_ready()
         )
+
+        # The popups carry translated labels. Keep the view the user chose.
+        shiny::observeEvent(lang_r(), {
+            shiny::req(coord_validation_r(), map_ready())
+            draw_markers(map_data_r(), fit_view = FALSE)
+        }, ignoreInit = TRUE)
 
         refresh_marker <- function(row_index) {
             eff <- shiny::isolate(effective_validation_r())

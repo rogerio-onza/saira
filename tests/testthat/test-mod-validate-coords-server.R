@@ -491,3 +491,39 @@ testthat::test_that("a manual edit reaches the payload, survives a new validatio
         }
     )
 })
+
+testthat::test_that("a language switch keeps the map widget and translates the legend", {
+    mapped_df <- data.frame(
+        decimalLatitude = c(-10),
+        decimalLongitude = c(-50),
+        country = c("Brasil"),
+        stringsAsFactors = FALSE
+    )
+    lang <- shiny::reactiveVal("pt")
+
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = lang
+        ),
+        {
+            coord_validation_r(mapped_df)
+            session$flushReact()
+            panel_pt <- output$map_panel$html
+            legend_pt <- output$map_legend$html
+
+            lang("en")
+            session$flushReact()
+
+            # A new map_panel would recreate the leaflet widget empty.
+            testthat::expect_identical(output$map_panel$html, panel_pt)
+            testthat::expect_false(identical(output$map_legend$html, legend_pt))
+            testthat::expect_match(
+                as.character(output$map_legend$html),
+                tr("validate_coords_map_legend_ok", "en"),
+                fixed = TRUE
+            )
+        }
+    )
+})
