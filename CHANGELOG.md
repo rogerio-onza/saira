@@ -54,6 +54,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **build:** List `utils_oceanic_islands.R` in `Collate`, so the package installs again ([#164](https://github.com/rogerio-onza/saira/pull/164))
 - **names:** Stop labelling species native to Brazil as invasive aliens. The Instituto Hórus list also covers natives that are invasive outside their natural range, such as the coati: they get their own badge and no longer pre-fill `establishmentMeans` as `introduced`, ADR-142
 - **names:** Show the names under the Invasive, Translocated, Accepted and All filters after every problem is resolved. Only the Problems filter shows "All resolved!"
 - **export:** Refuse the package download on the server while export pending items block it, so the hidden link cannot ship data or teach aliases
