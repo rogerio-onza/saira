@@ -29,8 +29,8 @@
 }
 
 .wiki-header-card {
-  background: #ffffff;
-  border: 1.5px solid rgba(40, 51, 172, 0.18);
+  background: var(--bg-card);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius-xl);
   padding: 24px 28px;
   box-shadow: none;
@@ -60,19 +60,19 @@
   font-family: var(--font-serif);
   font-size: var(--text-xl);
   font-weight: var(--weight-semibold);
-  color: #1c1c26;
+  color: var(--text-primary);
   letter-spacing: -0.03em;
   line-height: 1.15;
 }
 
 .wiki-title-accent {
-  color: #2833ac;
+  color: var(--accent);
 }
 
 .wiki-header-subtitle {
   margin-top: 6px;
   font-size: var(--text-sm);
-  color: #2833ac;
+  color: var(--accent);
   display: flex;
   align-items: center;
   gap: 6px;
@@ -80,7 +80,7 @@
 }
 
 .wiki-header-subtitle-icon {
-  color: #2833ac;
+  color: var(--accent);
   display: inline-flex;
   line-height: 1;
 }
@@ -114,13 +114,13 @@
   align-items: center;
   gap: 7px;
   padding: 7px 14px;
-  background: rgba(40, 51, 172, 0.07);
-  border: 1.5px solid rgba(40, 51, 172, 0.18);
+  background: rgba(var(--accent-rgb), 0.07);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius-lg);
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: #2833ac;
+  color: var(--accent);
   line-height: 1;
 }
 
@@ -131,7 +131,7 @@
 
 .wiki-stat-value {
   font-size: var(--text-base);
-  color: #1c1c26;
+  color: var(--text-primary);
 }
 
 .wiki-stat-label {
@@ -139,8 +139,8 @@
 }
 
 .wiki-toolbar-card {
-  background: #ffffff;
-  border: 1.5px solid rgba(40, 51, 172, 0.18);
+  background: var(--bg-card);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius-xl);
   padding: 16px 20px;
   box-shadow: none;
@@ -181,9 +181,9 @@
   padding: 0 16px 0 40px;
   font-family: var(--font-serif);
   font-size: var(--text-base);
-  color: #1c1c26;
+  color: var(--text-primary);
   background: var(--bg-subtle);
-  border: 1.5px solid rgba(40, 51, 172, 0.18);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius-lg);
   outline: none;
   transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
@@ -194,9 +194,9 @@
 }
 
 .wiki-search-input:focus {
-  border-color: #38cff6;
-  background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(56, 207, 246, 0.18);
+  border-color: var(--primary);
+  background: var(--bg-card);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
 }
 
 .wiki-show-wrap {
@@ -211,7 +211,7 @@
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: #2833ac;
+  color: var(--accent);
 }
 
 .wiki-show-select {
@@ -219,9 +219,9 @@
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
-  color: #2833ac;
+  color: var(--accent);
   background-color: var(--bg-subtle);
-  border: 1.5px solid rgba(40, 51, 172, 0.18);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.18);
   border-radius: var(--radius);
   padding: 5px 28px 5px 10px;
   line-height: 1.2;
@@ -235,8 +235,8 @@
 
 .wiki-show-select:focus {
   outline: none;
-  border-color: #38cff6;
-  box-shadow: 0 0 0 3px rgba(56, 207, 246, 0.18);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.18);
 }
 
 .wiki-show-records {
@@ -277,16 +277,16 @@
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   cursor: pointer;
-  border: 1.5px solid rgba(40, 51, 172, 0.08);
+  border: 1.5px solid rgba(var(--accent-rgb), 0.08);
   background: var(--bg-subtle);
   color: var(--text-muted);
   transition: all 0.2s ease;
 }
 
 .wiki-filter-pill:hover {
-  background: rgba(40, 51, 172, 0.07);
-  border-color: rgba(40, 51, 172, 0.18);
-  color: #2833ac;
+  background: rgba(var(--accent-rgb), 0.07);
+  border-color: rgba(var(--accent-rgb), 0.18);
+  color: var(--accent);
 }
 
 .wiki-filter-pill:focus-visible {
@@ -340,7 +340,7 @@
 }
 
 .wiki-filter-pill[data-filter="MaterialSample"] .wiki-filter-pill-dot {
-  background: var(--accent);
+  background: var(--accent-fill);
 }
 
 .wiki-filter-pill[data-filter="MeasurementOrFact"] .wiki-filter-pill-dot {
@@ -362,76 +362,76 @@
 }
 
 .wiki-filter-pill[data-filter="Record-level"].active {
-  background: #38cff6;
-  border-color: #38cff6;
-  color: #12141b;
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--saira-preto);
 }
 
 .wiki-filter-pill[data-filter="Occurrence"].active {
-  background: #2833ac;
-  border-color: #2833ac;
-  color: #ffffff;
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="Event"].active {
-  background: #252659;
-  border-color: #252659;
-  color: #ffffff;
+  background: var(--info-fill);
+  border-color: var(--info-fill);
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="Location"].active {
-  background: #00a86b;
-  border-color: #00a86b;
-  color: #ffffff;
+  background: var(--success-fill);
+  border-color: var(--success-fill);
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="Identification"].active {
-  background: #ffa204;
-  border-color: #ffa204;
-  color: #12141b;
+  background: var(--warning);
+  border-color: var(--warning);
+  color: var(--saira-preto);
 }
 
 .wiki-filter-pill[data-filter="Taxon"].active {
-  background: #c0392b;
-  border-color: #c0392b;
-  color: #ffffff;
+  background: var(--error-fill);
+  border-color: var(--error-fill);
+  color: var(--on-fill);
 }
 
 /* On-demand catalog classes — active state (ADR-081/082) */
 .wiki-filter-pill[data-filter="GeologicalContext"].active {
-  background: #16b3bd;
-  border-color: #16b3bd;
-  color: #ffffff;
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="MaterialEntity"].active {
   background: #6d28d9;
   border-color: #6d28d9;
-  color: #ffffff;
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="MaterialSample"].active {
-  background: var(--accent);
+  background: var(--accent-fill);
   border-color: var(--accent);
-  color: #ffffff;
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="MeasurementOrFact"].active {
   background: #ffe005;
   border-color: #ffe005;
-  color: #12141b;
+  color: var(--saira-preto);
 }
 
 .wiki-filter-pill[data-filter="Organism"].active {
   background: #e67e22;
   border-color: #e67e22;
-  color: #ffffff;
+  color: var(--on-fill);
 }
 
 .wiki-filter-pill[data-filter="ResourceRelationship"].active {
   background: #8e44ad;
   border-color: #8e44ad;
-  color: #ffffff;
+  color: var(--on-fill);
 }
 
 .wiki-table.saira-table-shell table.dataTable thead th {
@@ -492,7 +492,7 @@
   padding: 12px 18px;
   font-size: var(--text-sm);
   vertical-align: middle;
-  border-bottom: 1px solid rgba(40, 51, 172, 0.08);
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.08);
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody tr {
@@ -504,11 +504,11 @@
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody tr:hover td {
-  background: rgba(56, 207, 246, 0.04);
+  background: rgba(var(--primary-rgb), 0.04);
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody tr:nth-child(even):hover td {
-  background: rgba(56, 207, 246, 0.05);
+  background: rgba(var(--primary-rgb), 0.05);
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody tr:last-child td {
@@ -519,9 +519,9 @@
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
-  color: #2833ac;
+  color: var(--accent);
   text-decoration: none;
-  border-bottom: 1px solid rgba(40, 51, 172, 0.2);
+  border-bottom: 1px solid rgba(var(--accent-rgb), 0.2);
   transition: all 0.2s ease;
 }
 
@@ -545,39 +545,39 @@
 }
 
 .wiki-class-badge--record-level {
-  background: rgba(56, 207, 246, 0.12);
+  background: rgba(var(--primary-rgb), 0.12);
   color: var(--accent);
-  border: 1px solid rgba(56, 207, 246, 0.3);
+  border: 1px solid rgba(var(--primary-rgb), 0.3);
 }
 
 .wiki-class-badge--occurrence {
-  background: rgba(40, 51, 172, 0.13);
+  background: rgba(var(--accent-rgb), 0.13);
   color: #2833ac;
-  border: 1px solid rgba(40, 51, 172, 0.2);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
 }
 
 .wiki-class-badge--event {
-  background: rgba(37, 38, 89, 0.1);
+  background: rgba(var(--info-rgb), 0.1);
   color: #252659;
-  border: 1px solid rgba(37, 38, 89, 0.2);
+  border: 1px solid rgba(var(--info-rgb), 0.2);
 }
 
 .wiki-class-badge--location {
-  background: rgba(0, 168, 107, 0.1);
+  background: rgba(var(--success-rgb), 0.1);
   color: #005a3a;
-  border: 1px solid rgba(0, 168, 107, 0.25);
+  border: 1px solid rgba(var(--success-rgb), 0.25);
 }
 
 .wiki-class-badge--identification {
-  background: rgba(255, 162, 4, 0.1);
+  background: rgba(var(--warning-rgb), 0.1);
   color: #7a4e00;
-  border: 1px solid rgba(255, 162, 4, 0.25);
+  border: 1px solid rgba(var(--warning-rgb), 0.25);
 }
 
 .wiki-class-badge--taxon {
-  background: rgba(192, 57, 43, 0.08);
+  background: rgba(var(--error-rgb), 0.08);
   color: #c0392b;
-  border: 1px solid rgba(192, 57, 43, 0.2);
+  border: 1px solid rgba(var(--error-rgb), 0.2);
 }
 
 /* On-demand catalog classes — DT badges (ADR-081/082) */
@@ -618,7 +618,7 @@
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody td:nth-child(3) {
-  color: #1c1c26;
+  color: var(--text-primary);
   font-weight: 400;
   line-height: var(--leading-normal);
   max-width: 520px;
@@ -626,7 +626,7 @@
 }
 
 .wiki-table.saira-table-shell table.dataTable tbody td.is-required {
-  color: #2833ac;
+  color: var(--accent);
   font-weight: var(--weight-medium);
 }
 
@@ -650,9 +650,9 @@
 .wiki-required-badge--true {
   font-weight: var(--weight-semibold);
   padding: 3px 9px;
-  background: rgba(0, 168, 107, 0.1);
+  background: rgba(var(--success-rgb), 0.1);
   color: #007a4d;
-  border: 1px solid rgba(0, 168, 107, 0.25);
+  border: 1px solid rgba(var(--success-rgb), 0.25);
 }
 
 .wiki-required-badge--false {
@@ -660,7 +660,7 @@
   padding: 3px 9px;
   background: transparent;
   color: var(--text-muted);
-  border: 1px solid rgba(40, 51, 172, 0.08);
+  border: 1px solid rgba(var(--accent-rgb), 0.08);
 }
 
 .wiki-table.saira-table-shell .wiki-table-footer {
@@ -670,7 +670,7 @@
   gap: 12px;
   flex-wrap: wrap;
   padding: 12px 18px;
-  border-top: 1px solid rgba(40, 51, 172, 0.08);
+  border-top: 1px solid rgba(var(--accent-rgb), 0.08);
   background: var(--bg-subtle);
   margin-top: 0;
   border-bottom-left-radius: var(--radius-xl);

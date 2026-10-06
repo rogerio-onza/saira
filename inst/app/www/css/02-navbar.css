@@ -392,8 +392,10 @@
     height: var(--header-row-height);
   }
 
+  /* It may shrink: at 1360px the row is a few pixels short, and the steps
+     can move off center by that much. */
   .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav::before {
-    flex: 1 0 var(--header-tools-width);
+    flex: 1 1 var(--header-tools-width);
   }
 
   .bslib-page-navbar .navbar .navbar-nav > .bslib-nav-spacer {

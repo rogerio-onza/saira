@@ -344,6 +344,26 @@
     "en": "Select interface language",
     "es": "Seleccionar el idioma de la interfaz"
   },
+  "theme_switch_label": {
+    "pt": "Tema",
+    "en": "Theme",
+    "es": "Tema"
+  },
+  "theme_light": {
+    "pt": "Tema claro",
+    "en": "Light theme",
+    "es": "Tema claro"
+  },
+  "theme_dark": {
+    "pt": "Tema escuro",
+    "en": "Dark theme",
+    "es": "Tema oscuro"
+  },
+  "theme_system": {
+    "pt": "Seguir o sistema",
+    "en": "Follow the system",
+    "es": "Seguir el sistema"
+  },
   "upload_stats_rows": {
     "pt": "Registros",
     "en": "Records",

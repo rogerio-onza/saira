@@ -570,7 +570,7 @@
 }
 
 .pill-state-dot.is-blocked {
-  background-color: var(--error);
+  background-color: var(--error-fill);
 }
 
 .pill-state-dot.is-review {
@@ -601,8 +601,8 @@
   margin-left: 0.35rem;
   padding: 0 0.35rem;
   border-radius: var(--radius-full);
-  background-color: var(--step-active);
-  color: #ffffff;
+  background-color: var(--accent-fill);
+  color: var(--on-fill);
 }
 
 /* Select input styling in mapping cards */
