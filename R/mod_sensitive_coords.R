@@ -750,7 +750,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             crossing <- crossing[!duplicated(crossing$scientificName), , drop = FALSE]
             items <- lapply(seq_len(nrow(crossing)), function(i) {
                 shiny::tags$li(
-                    shiny::tags$em(crossing$scientificName[i]), " \u2014 ",
+                    shiny::tags$em(crossing$scientificName[i]), ": ",
                     sprintf("%s \u2192 %s", crossing$country_orig[i] %||% "?", crossing$country_gen[i] %||% "?")
                 )
             })

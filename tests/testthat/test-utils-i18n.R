@@ -42,7 +42,6 @@ testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
         "validate_names_stream_filter_not_found",
         "validate_names_stream_filter_ambiguous",
         "validate_names_stream_filter_synonym",
-        "validate_names_provider_failed_stream_item",
         "validate_names_report_title",
         "validate_names_report_search_placeholder",
         "validate_names_report_show_n",

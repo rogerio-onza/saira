@@ -10,8 +10,8 @@ validate_coords_loading_phrase_specs <- function() {
     list(
         list(key = "loading_coords_phrase_1", icon = "map-location-dot"),
         list(key = "loading_coords_phrase_2", icon = "water"),
-        list(key = "loading_coords_phrase_3", icon = "earth-americas"),
-        list(key = "loading_coords_phrase_4", icon = "circle-check")
+        list(key = "loading_coords_phrase_3", icon = "right-left"),
+        list(key = "loading_coords_phrase_4", icon = "map-marker-alt")
     )
 }
 

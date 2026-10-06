@@ -55,8 +55,8 @@
     "es": "Exportación"
   },
   "export_empty": {
-    "pt": "Mapeie seus dados primeiro — o resumo de exportação aparece quando houver dados mapeados.",
-    "en": "Map your data first — the export summary appears once there is mapped data.",
+    "pt": "Mapeie seus dados primeiro: o resumo de exportação aparece quando houver dados mapeados.",
+    "en": "Map your data first: the export summary appears once there is mapped data.",
     "es": "Primero mapee sus datos: el resumen de exportación aparece cuando hay datos mapeados."
   },
   "export_section_generalization": {
@@ -385,8 +385,8 @@
     "es": "Mapeo de columnas"
   },
   "mapping_dup_source_warning": {
-    "pt": "Mesma coluna em mais de um termo Darwin Core — confira se é intencional:",
-    "en": "Same source column in more than one Darwin Core term — check it's intentional:",
+    "pt": "A mesma coluna está em mais de um termo Darwin Core. Confira se é intencional:",
+    "en": "The same source column is in more than one Darwin Core term. Check that it is intentional:",
     "es": "La misma columna de origen está en más de un término Darwin Core. Verifique que sea intencional:"
   },
   "mapping_sidebar_actions": {
@@ -765,44 +765,44 @@
     "es": "Mapeando campos... %s%%"
   },
   "loading_automap_phrase_1": {
-    "pt": "Traduzindo o dialeto da sua planilha para Darwin Core...",
-    "en": "Translating your spreadsheet dialect to Darwin Core...",
-    "es": "Traduciendo el dialecto de su hoja de cálculo a Darwin Core..."
+    "pt": "Comparando os nomes das colunas com os termos Darwin Core.",
+    "en": "Comparing the column names with the Darwin Core terms.",
+    "es": "Comparando los nombres de las columnas con los términos Darwin Core."
   },
   "loading_automap_phrase_2": {
-    "pt": "Identificando homologias entre seus dados e o padrão DwC.",
-    "en": "Identifying homologies between your data and the DwC standard.",
-    "es": "Identificando homologías entre sus datos y el estándar DwC."
+    "pt": "Lendo os valores de cada coluna para confirmar o termo.",
+    "en": "Reading the values in each column to confirm the term.",
+    "es": "Leyendo los valores de cada columna para confirmar el término."
   },
   "loading_automap_phrase_3": {
-    "pt": "A seleção natural das colunas está começando...",
-    "en": "Natural selection of columns is starting...",
-    "es": "La selección natural de las columnas está comenzando..."
+    "pt": "Consultando os aliases de coluna que o Rostrum já aprendeu.",
+    "en": "Checking the column aliases that Rostrum already learned.",
+    "es": "Consultando los alias de columna que Rostrum ya aprendió."
   },
   "loading_automap_phrase_4": {
-    "pt": "Rostrum mapeando a ancestralidade dos seus registros.",
-    "en": "Rostrum mapping the ancestry of your records.",
-    "es": "Rostrum mapeando la ascendencia de sus registros."
+    "pt": "Procurando colunas que juntas formam a data ou o nome científico.",
+    "en": "Looking for columns that together give the date or the scientific name.",
+    "es": "Buscando columnas que juntas forman la fecha o el nombre científico."
   },
   "loading_automap_phrase_5": {
-    "pt": "Sobrevivência do mais mapeado: Rostrum em ação.",
-    "en": "Survival of the most mapped: Rostrum in action.",
-    "es": "Supervivencia del más mapeado: Rostrum en acción."
+    "pt": "Pontuando cada par de coluna e termo pelo nome e pelos valores.",
+    "en": "Scoring each column and term pair by name and by values.",
+    "es": "Puntuando cada par de columna y término por el nombre y por los valores."
   },
   "loading_automap_phrase_6": {
-    "pt": "Observando a diversidade de campos como Darwin em Galápagos.",
-    "en": "Observing field diversity like Darwin in the Galapagos.",
-    "es": "Observando la diversidad de campos como Darwin en Galápagos."
+    "pt": "Resolvendo colunas que disputam o mesmo termo.",
+    "en": "Resolving columns that compete for the same term.",
+    "es": "Resolviendo columnas que compiten por el mismo término."
   },
   "loading_automap_phrase_7": {
-    "pt": "Mutação de cabeçalhos detectada. Ajustando o fenótipo dos dados...",
-    "en": "Header mutation detected. Adjusting data phenotype...",
-    "es": "Mutación de encabezados detectada. Ajustando el fenotipo de los datos..."
+    "pt": "Deixando sem mapear os pares com pontuação baixa.",
+    "en": "Leaving the low-score pairs unmapped.",
+    "es": "Dejando sin mapear los pares con puntuación baja."
   },
   "loading_automap_phrase_8": {
-    "pt": "A árvore da vida dos seus registros está sendo desenhada.",
-    "en": "The tree of life of your records is being drawn.",
-    "es": "El árbol de la vida de sus registros se está dibujando."
+    "pt": "Preenchendo os cartões com os termos encontrados.",
+    "en": "Filling the cards with the terms found.",
+    "es": "Llenando las tarjetas con los términos encontrados."
   },
   "no_file_uploaded": {
     "pt": "Nenhum arquivo carregado",
@@ -820,8 +820,8 @@
     "es": "%d de %d identificadores vinieron de sus datos y se conservarán."
   },
   "occurrence_id_status_generated": {
-    "pt": "%d gerados pela Saira.",
-    "en": "%d generated by Saira.",
+    "pt": "%d gerados pela Saíra.",
+    "en": "%d generated by Saíra.",
     "es": "%d generados por Saíra."
   },
   "occurrence_id_duplicates": {
@@ -843,11 +843,6 @@
     "pt": "Inferido automaticamente a partir do scientificName",
     "en": "Auto-inferred from scientificName",
     "es": "Inferido automáticamente a partir de scientificName"
-  },
-  "notif_auto_mapping": {
-    "pt": "Auto-mapeamento concluído!",
-    "en": "Auto-mapping completed!",
-    "es": "¡Automapeo completado!"
   },
   "notif_auto_mapping_done": {
     "pt": "Auto-mapear concluído: %s termos mapeados (%s por alias ou modelo, %s automáticos, %s para revisar).",
@@ -990,8 +985,8 @@
     "es": "Mapeos reiniciados"
   },
   "notif_reupload_cleared": {
-    "pt": "Novo arquivo carregado — as validações e a generalização anteriores foram limpas.",
-    "en": "New file uploaded — previous validations and generalization were cleared.",
+    "pt": "Novo arquivo carregado: as validações e a generalização anteriores foram limpas.",
+    "en": "New file uploaded: the previous validations and generalization were cleared.",
     "es": "Nuevo archivo cargado: se borraron las validaciones y la generalización anteriores."
   },
   "notif_eventdate_parse_warning": {
@@ -1365,14 +1360,14 @@
     "es": "Armonizando los vocabularios controlados."
   },
   "preview_export_phrase_6": {
-    "pt": "Aplicando regras de qualidade do pacote.",
-    "en": "Applying package quality rules.",
-    "es": "Aplicando las reglas de calidad del paquete."
+    "pt": "Aplicando as revisões de nomes e coordenadas.",
+    "en": "Applying the name and coordinate reviews.",
+    "es": "Aplicando las revisiones de nombres y coordenadas."
   },
   "preview_export_phrase_7": {
-    "pt": "Compactando valores para exportação segura.",
-    "en": "Compacting values for safe export.",
-    "es": "Compactando los valores para una exportación segura."
+    "pt": "Aplicando a generalização das espécies sensíveis.",
+    "en": "Applying the generalization of sensitive species.",
+    "es": "Aplicando la generalización de las especies sensibles."
   },
   "preview_export_phrase_8": {
     "pt": "Validando integridade final do dataset.",
@@ -1380,9 +1375,9 @@
     "es": "Validando la integridad final del conjunto de datos."
   },
   "preview_export_phrase_9": {
-    "pt": "Montando arquivo CSV compatível com DwC.",
-    "en": "Building DwC-compatible CSV file.",
-    "es": "Armando el archivo CSV compatible con DwC."
+    "pt": "Montando o pacote DwC-A: occurrence.txt, meta.xml e eml.xml.",
+    "en": "Building the DwC-A bundle: occurrence.txt, meta.xml and eml.xml.",
+    "es": "Armando el paquete DwC-A: occurrence.txt, meta.xml y eml.xml."
   },
   "preview_export_phrase_10": {
     "pt": "Finalizando download.",
@@ -1390,8 +1385,8 @@
     "es": "Finalizando la descarga."
   },
   "preview_export_needs_justification": {
-    "pt": "Generalização Categoria 1/2/3 exige justificativa — preencha na aba Generalização antes de exportar.",
-    "en": "Category 1/2/3 generalization requires a justification — fill it in the Generalization tab before exporting.",
+    "pt": "A generalização de Categoria 1/2/3 exige justificativa: preencha na aba Generalização antes de exportar.",
+    "en": "Category 1/2/3 generalization requires a justification: fill it in the Generalization tab before exporting.",
     "es": "La generalización de categoría 1/2/3 exige una justificación: complétela en la pestaña Generalización antes de exportar."
   },
   "preview_export_failed_phrase": {
@@ -1420,8 +1415,8 @@
     "es": "Archivo de mapeo de Saíra detectado"
   },
   "upload_guide_detected_message": {
-    "pt": "Detectamos um arquivo de mapeamento Saíra com %d par(es) coluna → termo DwC. Importar para o seu app? Cada par vira um alias salvo no seu Rostrum local — futuras planilhas de dados com colunas de mesmo nome serão auto-mapeadas usando esses aliases. Após importar, suba sua planilha de dados (CSV) normalmente neste mesmo dropzone.",
-    "en": "Detected a Saíra mapping file with %d (column → DwC term) pair(s). Import into your app? Each pair becomes an alias stored in your local Rostrum — future data sheets with the same column names will auto-map using these aliases. After importing, upload your data spreadsheet (CSV) normally in this same dropzone.",
+    "pt": "Detectamos um arquivo de mapeamento Saíra com %d par(es) coluna → termo DwC. Importar para o seu app? Cada par vira um alias salvo no seu Rostrum local: futuras planilhas de dados com colunas de mesmo nome serão auto-mapeadas com esses aliases. Após importar, suba sua planilha de dados (CSV) normalmente neste mesmo dropzone.",
+    "en": "Detected a Saíra mapping file with %d (column → DwC term) pair(s). Import into your app? Each pair becomes an alias stored in your local Rostrum: future data sheets with the same column names will auto-map with these aliases. After importing, upload your data spreadsheet (CSV) normally in this same dropzone.",
     "es": "Detectamos un archivo de mapeo de Saíra con %d par(es) columna → término DwC. ¿Importarlo a su aplicación? Cada par se convierte en un alias guardado en su Rostrum local: las futuras hojas de datos con columnas del mismo nombre se automapearán con estos alias. Después de importar, cargue su hoja de datos (CSV) normalmente en esta misma zona de carga."
   },
   "upload_guide_import_btn": {
@@ -1674,11 +1669,6 @@
     "en": "Validation failed",
     "es": "Falló la validación"
   },
-  "validate_names_provider_failed_stream_item": {
-    "pt": "%s falhou após %d nomes (%s).",
-    "en": "%s failed after %d names (%s).",
-    "es": "%s falló después de %d nombres (%s)."
-  },
   "validate_names_stream_panel_title": {
     "pt": "Nomes Processados",
     "en": "Processed Names",
@@ -1830,9 +1820,9 @@
     "es": "No fue posible validar los nombres: %s"
   },
   "validate_names_report_title": {
-    "pt": "⊞ Relatório de Nomes",
-    "en": "⊞ Names Report",
-    "es": "⊞ Informe de nombres"
+    "pt": "Relatório de Nomes",
+    "en": "Names Report",
+    "es": "Informe de nombres"
   },
   "validate_names_report_search_placeholder": {
     "pt": "Buscar nome...",
@@ -1925,8 +1915,8 @@
     "es": "Coordenadas precisas omitidas por tratarse de una especie amenazada | Disponibles a solicitud ante el publicador de los datos."
   },
   "sensitive_real_coords_notice": {
-    "pt": "Arquivo privado — coordenadas reais das espécies sensíveis. Não publicar no IPT/GBIF; uso exclusivo de controle do pesquisador.",
-    "en": "Private file — real coordinates of the sensitive species. Do not publish to IPT/GBIF; for the researcher's own control only.",
+    "pt": "Arquivo privado: coordenadas reais das espécies sensíveis. Não publicar no IPT/GBIF. Uso exclusivo de controle do pesquisador.",
+    "en": "Private file: real coordinates of the sensitive species. Do not publish to IPT/GBIF. For the researcher's own control only.",
     "es": "Archivo privado: coordenadas reales de las especies sensibles. No publicar en el IPT/GBIF. Uso exclusivo para el control del investigador."
   },
   "sensitive_mark_label": {
@@ -1935,8 +1925,8 @@
     "es": "marcar"
   },
   "sensitive_unmark_mma_warning": {
-    "pt": "Esta espécie está na lista nacional MMA. Desmarcar é uma decisão de custodiante — as coordenadas serão publicadas sem generalização.",
-    "en": "This species is on the MMA national red list. Unmarking is a custodian decision — its coordinates will be published without generalization.",
+    "pt": "Esta espécie está na lista nacional MMA. Desmarcar é uma decisão de custodiante: as coordenadas serão publicadas sem generalização.",
+    "en": "This species is on the MMA national red list. Unmarking is a custodian decision: its coordinates will be published without generalization.",
     "es": "Esta especie está en la lista roja nacional MMA. Desmarcarla es una decisión del custodio: sus coordenadas se publicarán sin generalización."
   },
   "sensitive_pick_level_label": {
@@ -1970,8 +1960,8 @@
     "es": "Enmascaramiento de coordenadas (especies sensibles)"
   },
   "sensitive_gen_not_sensitive": {
-    "pt": "Não sensível — publicar sem mascaramento",
-    "en": "Not sensitive — publish unmasked",
+    "pt": "Não sensível: publicar sem mascaramento",
+    "en": "Not sensitive: publish unmasked",
     "es": "No sensible: publicar sin enmascaramiento"
   },
   "sensitive_card_num_extreme": {
@@ -2140,13 +2130,13 @@
     "es": "Los datos solo se pueden entregar bajo condiciones estrictas de licencia o como presencia en una región amplia, como una cuenca hidrográfica, un municipio o una región biogeográfica."
   },
   "sensitive_cat1_alert_note": {
-    "pt": "* Esta categoria leva os pontos à resolução de ecorregião ou país (~111 km). Não a use se o objetivo é apenas mascarar localidades que a comunidade local ou regional já conhece — reserve-a para casos extremos de ameaça à espécie em âmbito local ou regional.",
-    "en": "* This category coarsens points to ecoregion or country resolution (~111 km). Do not use it merely to mask localities the local or regional community already knows — reserve it for extreme cases of threat to the species at local or regional scale.",
+    "pt": "* Esta categoria leva os pontos à resolução de ecorregião ou país (~111 km). Não a use só para mascarar localidades que a comunidade local ou regional já conhece. Reserve-a para casos extremos de ameaça à espécie em âmbito local ou regional.",
+    "en": "* This category coarsens points to ecoregion or country resolution (~111 km). Do not use it only to mask localities the local or regional community already knows. Reserve it for extreme cases of threat to the species at local or regional scale.",
     "es": "* Esta categoría lleva los puntos a la resolución de ecorregión o país (~111 km). No la use solo para enmascarar localidades que la comunidad local o regional ya conoce. Resérvela para casos extremos de amenaza a la especie a escala local o regional."
   },
   "sensitive_justification_label": {
-    "pt": "Justificativa — vai para o campo dataGeneralizations",
-    "en": "Justification — written into dataGeneralizations",
+    "pt": "Justificativa: vai para o campo dataGeneralizations",
+    "en": "Justification: written into dataGeneralizations",
     "es": "Justificación: se escribe en dataGeneralizations"
   },
   "sensitive_justification_placeholder": {
@@ -2203,11 +2193,6 @@
     "pt": "Generalizada",
     "en": "Generalized",
     "es": "Generalizada"
-  },
-  "sc_legend_original": {
-    "pt": "Original",
-    "en": "Original",
-    "es": "Original"
   },
   "sc_legend_generalized": {
     "pt": "Coordenada generalizada",
@@ -2365,8 +2350,8 @@
     "es": "Los puntos ya están en la categoría menos agresiva y todavía cruzan la frontera. Revise las coordenadas o publique sin generalizar."
   },
   "sc_precision_lock_desc": {
-    "pt": "%d registro(s) mantidos na precisão real do dado — generalizar nunca aumenta a precisão (Chapman 2020). Inclui dados já generalizados pela fonte e casos em que o nível escolhido era mais fino que o dado.",
-    "en": "%d record(s) kept at the data's real precision — generalization never increases precision (Chapman 2020). Includes data already generalized by the source, and cases where the chosen level was finer than the data.",
+    "pt": "%d registro(s) mantidos na precisão real do dado: generalizar nunca aumenta a precisão (Chapman 2020). Inclui dados já generalizados pela fonte e casos em que o nível escolhido era mais fino que o dado.",
+    "en": "%d record(s) kept at the data's real precision: generalization never increases precision (Chapman 2020). Includes data already generalized by the source, and cases where the chosen level was finer than the data.",
     "es": "%d registro(s) se mantuvieron en la precisión real del dato: generalizar nunca aumenta la precisión (Chapman 2020). Incluye datos ya generalizados por la fuente y casos en que el nivel elegido era más fino que el dato."
   },
   "sensitive_eml_access_note": {
@@ -2475,18 +2460,18 @@
     "es": "No fue posible abrir la revisión manual: %s"
   },
   "validate_names_review_toast_confirm": {
-    "pt": "Nome confirmado com sucesso.",
-    "en": "Name confirmed successfully.",
+    "pt": "Nome confirmado.",
+    "en": "Name confirmed.",
     "es": "Nombre confirmado correctamente."
   },
   "validate_names_review_toast_correct": {
-    "pt": "Correção manual salva com sucesso.",
-    "en": "Manual correction saved successfully.",
+    "pt": "Correção manual salva.",
+    "en": "Manual correction saved.",
     "es": "Corrección manual guardada correctamente."
   },
   "validate_names_review_empty_title": {
-    "pt": "Tudo resolvido!",
-    "en": "All resolved!",
+    "pt": "Tudo resolvido",
+    "en": "All resolved",
     "es": "¡Todo resuelto!"
   },
   "validate_names_review_empty_message": {
@@ -2675,24 +2660,24 @@
     "es": "Analizando... %s%%"
   },
   "loading_coords_phrase_1": {
-    "pt": "Interrogando coordenadas com latitude zero e suspeitas de falsidade.",
-    "en": "Interrogating zero-latitude coordinates suspected of falsification.",
-    "es": "Interrogando coordenadas con latitud cero sospechosas de falsedad."
+    "pt": "Procurando coordenadas zeradas, inválidas ou com latitude igual à longitude.",
+    "en": "Looking for zero, invalid or equal latitude and longitude values.",
+    "es": "Buscando coordenadas en cero, inválidas o con latitud igual a la longitud."
   },
   "loading_coords_phrase_2": {
-    "pt": "Nenhum ponto no mar passa pelo CoordinateCleaner impune.",
-    "en": "No sea point escapes CoordinateCleaner unchallenged.",
-    "es": "Ningún punto en el mar pasa por CoordinateCleaner sin ser cuestionado."
+    "pt": "Conferindo se algum ponto cai no mar.",
+    "en": "Checking whether a point falls in the sea.",
+    "es": "Verificando si algún punto cae en el mar."
   },
   "loading_coords_phrase_3": {
-    "pt": "A terra firme sendo consultada como testemunha de defesa.",
-    "en": "Solid ground being consulted as a witness for the defense.",
-    "es": "La tierra firme declara como testigo de la defensa."
+    "pt": "Procurando coordenadas trocadas ou com sinal invertido.",
+    "en": "Looking for swapped or sign-flipped coordinates.",
+    "es": "Buscando coordenadas invertidas o con el signo cambiado."
   },
   "loading_coords_phrase_4": {
-    "pt": "Georeferenciamento: onde 0.00001\u00b0 de desvio \u00e9 registrado.",
-    "en": "Georeferencing: where a 0.00001\u00b0 deviation is on the record.",
-    "es": "Georreferenciación: donde queda registrado un desvío de 0,00001°."
+    "pt": "Procurando centroides de país, capitais e sedes de instituições.",
+    "en": "Looking for country centroids, capitals and institution sites.",
+    "es": "Buscando centroides de país, capitales y sedes de instituciones."
   },
   "validate_coords_failed": {
     "pt": "Falha na validação de coordenadas: %s",
@@ -2870,9 +2855,9 @@
     "es": "Fila"
   },
   "validate_coords_popup_issue": {
-    "pt": "Issue",
-    "en": "Issue",
-    "es": "Problema"
+    "pt": "Diagnóstico",
+    "en": "Diagnosis",
+    "es": "Diagnóstico"
   },
   "validate_coords_popup_show_row": {
     "pt": "Mostrar na tabela",
@@ -2880,12 +2865,12 @@
     "es": "Mostrar en la tabla"
   },
   "validate_coords_status_country": {
-    "pt": "Country",
+    "pt": "País",
     "en": "Country",
     "es": "País"
   },
   "validate_coords_country_missing": {
-    "pt": "Country não mapeado. Mapeie country antes de validar.",
+    "pt": "País não mapeado. Mapeie country antes de validar.",
     "en": "Country not mapped. Map country before validating.",
     "es": "País no mapeado. Mapee country antes de validar."
   },
@@ -2915,7 +2900,7 @@
     "es": "Referencia"
   },
   "validate_coords_col_country": {
-    "pt": "Country",
+    "pt": "País",
     "en": "Country",
     "es": "País"
   },
@@ -2995,8 +2980,8 @@
     "es": "%d coordenada(s) transpuesta(s) detectada(s) y corregible(s)"
   },
   "validate_coords_transposed_applied": {
-    "pt": "%d coordenada(s) transposta(s) corrigida(s) — já vale na generalização e exportação",
-    "en": "%d transposed coordinate(s) corrected — effective now in generalization & export",
+    "pt": "%d coordenada(s) transposta(s) corrigida(s): já vale na generalização e na exportação",
+    "en": "%d transposed coordinate(s) corrected: effective now in generalization and export",
     "es": "%d coordenada(s) transpuesta(s) corregida(s): ya vale en la generalización y la exportación"
   },
   "validate_coords_utm_found": {
@@ -3040,23 +3025,23 @@
     "es": "Ese datum no cubre la zona elegida. Seleccione otra combinación."
   },
   "validate_coords_country_found": {
-    "pt": "%d país(es) faltando — preenchível(eis) pelas coordenadas",
-    "en": "%d missing country value(s) — fillable from coordinates",
+    "pt": "%d país(es) faltando: preenchível(eis) pelas coordenadas",
+    "en": "%d missing country value(s): fillable from coordinates",
     "es": "%d país(es) faltante(s): se pueden completar a partir de las coordenadas"
   },
   "validate_coords_country_filled": {
-    "pt": "%d país(es) preenchido(s) pelas coordenadas — já vale na generalização e exportação",
-    "en": "%d country value(s) filled from coordinates — effective now in generalization & export",
+    "pt": "%d país(es) preenchido(s) pelas coordenadas: já vale na generalização e na exportação",
+    "en": "%d country value(s) filled from coordinates: effective now in generalization and export",
     "es": "%d país(es) completado(s) a partir de las coordenadas: ya vale en la generalización y la exportación"
   },
   "validate_coords_swapfill_found": {
-    "pt": "%d ponto(s) no mar + país vazio — corrigível(eis) por troca lat/lon",
-    "en": "%d point(s) at sea + blank country — fixable by lat/lon swap",
+    "pt": "%d ponto(s) no mar + país vazio: corrigível(eis) por troca lat/lon",
+    "en": "%d point(s) at sea + blank country: fixable by lat/lon swap",
     "es": "%d punto(s) en el mar + país vacío: se pueden corregir invirtiendo lat/lon"
   },
   "validate_coords_swapfill_applied": {
-    "pt": "%d corrigido(s): lat/lon trocadas + país preenchido — já vale na generalização e exportação",
-    "en": "%d fixed: lat/lon swapped + country filled — effective now in generalization & export",
+    "pt": "%d corrigido(s): lat/lon trocadas + país preenchido. Já vale na generalização e na exportação",
+    "en": "%d fixed: lat/lon swapped + country filled. Effective now in generalization and export",
     "es": "%d corregido(s): lat/lon invertidas + país completado. Ya vale en la generalización y la exportación"
   },
   "validate_coords_transposed_more": {
@@ -3670,13 +3655,13 @@
     "es": "No fue posible leer el archivo. Verifique el formato."
   },
   "success_upload": {
-    "pt": "Arquivo carregado com sucesso!",
-    "en": "File uploaded successfully!",
+    "pt": "Arquivo carregado.",
+    "en": "File uploaded.",
     "es": "¡Archivo cargado correctamente!"
   },
   "success_download": {
-    "pt": "Download iniciado!",
-    "en": "Download started!",
+    "pt": "Download iniciado.",
+    "en": "Download started.",
     "es": "¡Descarga iniciada!"
   },
   "loading": {
@@ -4068,56 +4053,6 @@
     "pt": "`deployments.csv` e `observations.csv`",
     "en": "`deployments.csv` and `observations.csv`",
     "es": "`deployments.csv` y `observations.csv`"
-  },
-  "data_quality_title": {
-    "pt": "Qualidade dos Dados",
-    "en": "Data Quality",
-    "es": "Calidad de los datos"
-  },
-  "data_quality_empty_cols": {
-    "pt": "Colunas Vazias",
-    "en": "Empty Columns",
-    "es": "Columnas vacías"
-  },
-  "data_quality_types": {
-    "pt": "Tipos Detectados",
-    "en": "Detected Types",
-    "es": "Tipos detectados"
-  },
-  "data_quality_rows": {
-    "pt": "Total de Linhas",
-    "en": "Total Rows",
-    "es": "Total de filas"
-  },
-  "data_quality_completeness": {
-    "pt": "Completude",
-    "en": "Completeness",
-    "es": "Completitud"
-  },
-  "data_quality_missing": {
-    "pt": "Valores Ausentes",
-    "en": "Missing Values",
-    "es": "Valores ausentes"
-  },
-  "data_quality_column_analysis": {
-    "pt": "Análise de Colunas",
-    "en": "Column Analysis",
-    "es": "Análisis de columnas"
-  },
-  "data_quality_unique_cols": {
-    "pt": "Colunas com valores únicos",
-    "en": "Columns with unique values",
-    "es": "Columnas con valores únicos"
-  },
-  "data_quality_constant_cols": {
-    "pt": "Colunas constantes",
-    "en": "Constant columns",
-    "es": "Columnas constantes"
-  },
-  "data_quality_high_missing": {
-    "pt": "Colunas com >50% ausentes",
-    "en": "Columns with >50% missing",
-    "es": "Columnas con >50% ausentes"
   },
   "invasive_reason_marine": {
     "pt": "espécies marinhas",
