@@ -64,11 +64,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
-- **datasetName:** Stop filling it, and datasetID, with placeholder values for camera trap zips without a descriptor, ADR-147
-- **samplingEffort:** Drop the false UTC marker from Wildlife Insights deployment intervals
-- **upload:** Read camera trap zips without internet access, ADR-147
-- **upload:** Accept loose Camtrap DP CSV zips that have no media file
-- **upload:** Keep the last deployment day and the feature type, life stage and sex of Wildlife Insights uploads
+- **datasetName:** Stop filling it, and datasetID, with placeholder values for camera trap zips without a descriptor, ADR-147 ([#175](https://github.com/rogerio-onza/saira/pull/175))
+- **samplingEffort:** Drop the false UTC marker from Wildlife Insights deployment intervals ([#175](https://github.com/rogerio-onza/saira/pull/175))
+- **upload:** Read camera trap zips without internet access, ADR-147 ([#175](https://github.com/rogerio-onza/saira/pull/175))
+- **upload:** Accept loose Camtrap DP CSV zips that have no media file ([#175](https://github.com/rogerio-onza/saira/pull/175))
+- **upload:** Keep the last deployment day and the feature type, life stage and sex of Wildlife Insights uploads ([#175](https://github.com/rogerio-onza/saira/pull/175))
 - **coords:** Keep the points on the coordinates map after a language change, and translate their popups
 - **build:** List `utils_oceanic_islands.R` in `Collate`, so the package installs again ([#164](https://github.com/rogerio-onza/saira/pull/164))
 - **ui:** Stop the console errors from the header titles at startup ([#168](https://github.com/rogerio-onza/saira/pull/168))
