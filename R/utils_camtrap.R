@@ -9,8 +9,6 @@
 #                                + optional media), no descriptor; we synthesize one
 #   - "wildlife_insights_zip"  : Wildlife Insights export; columns are renamed
 #                                to Camtrap DP shape, then synthesized descriptor
-#
-# `camtrapdp` is a Suggests dependency; all entry points check at runtime.
 
 # --- Source detection ---------------------------------------------------
 
@@ -66,15 +64,6 @@ camtrap_error_message <- function(e, lang = "en") {
     if (inherits(e, "saira_camtrap_error")) return(conditionMessage(e))
     while (inherits(e$parent, "condition")) e <- e$parent
     paste(tr("err_read_failed", lang), conditionMessage(e))
-}
-
-# --- Optional package guard ---------------------------------------------
-
-require_camtrapdp <- function(lang = "en") {
-    if (!requireNamespace("camtrapdp", quietly = TRUE)) {
-        camtrap_stop("err_camtrap_pkg_missing", lang)
-    }
-    invisible(TRUE)
 }
 
 # --- Wildlife Insights → Camtrap DP normalizer --------------------------
@@ -526,7 +515,6 @@ find_csv_root <- function(dest, signature_predicate) {
 # --- Read + dispatch ----------------------------------------------------
 
 read_camtrap_dp_zip <- function(path, lang = "en") {
-    require_camtrapdp(lang)
     source <- detect_camtrap_source(path)
     if (is.na(source)) {
         camtrap_stop("err_camtrap_invalid_zip", lang)
@@ -615,7 +603,6 @@ strip_fabricated_utc <- function(x) {
 }
 
 convert_camtrap_to_dwc_occurrence <- function(x, lang = "en") {
-    require_camtrapdp(lang)
     out_dir <- tempfile("camtrap_dwc_")
     dir.create(out_dir)
     on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
