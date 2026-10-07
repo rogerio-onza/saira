@@ -48,11 +48,31 @@ is_camtrap_dp_zip <- function(path) {
     !is.na(detect_camtrap_source(path))
 }
 
+# --- Errors -------------------------------------------------------------
+
+# Saira's own Camtrap errors carry a complete user message. Their class lets
+# the upload show them as they are.
+camtrap_stop <- function(key, lang) {
+    stop(structure(
+        class = c("saira_camtrap_error", "error", "condition"),
+        list(message = tr(key, lang), call = NULL)
+    ))
+}
+
+# Text for the upload error notification. Other errors come from camtrapdp or
+# frictionless, and purrr wraps them as "In index: 1.", so show the root cause
+# after the generic read failure.
+camtrap_error_message <- function(e, lang = "en") {
+    if (inherits(e, "saira_camtrap_error")) return(conditionMessage(e))
+    while (inherits(e$parent, "condition")) e <- e$parent
+    paste(tr("err_read_failed", lang), conditionMessage(e))
+}
+
 # --- Optional package guard ---------------------------------------------
 
 require_camtrapdp <- function(lang = "en") {
     if (!requireNamespace("camtrapdp", quietly = TRUE)) {
-        stop(tr("err_camtrap_pkg_missing", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_pkg_missing", lang)
     }
     invisible(TRUE)
 }
@@ -193,7 +213,7 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
                             ignore.case = TRUE)
 
     if (length(dep_paths) == 0L || length(img_paths) == 0L) {
-        stop(tr("err_camtrap_wi_columns_missing", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_wi_columns_missing", lang)
     }
     wi_dep <- wi_read_csv(dep_paths[1])
     wi_img <- wi_read_csv(img_paths[1])
@@ -202,7 +222,7 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
     missing_dep <- setdiff(WI_REQUIRED_DEP_COLS, names(wi_dep))
     missing_img <- setdiff(WI_REQUIRED_IMG_COLS, names(wi_img))
     if (length(missing_dep) > 0L || length(missing_img) > 0L) {
-        stop(tr("err_camtrap_wi_columns_missing", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_wi_columns_missing", lang)
     }
 
     proj_paths <- list.files(input_dir, pattern = "^projects\\.csv$",
@@ -222,7 +242,7 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
                                 ignore.case = TRUE)
         wi_seq <- if (length(seq_paths) > 0L) wi_read_csv(seq_paths[1]) else NULL
         if (is.null(wi_seq) || !all(WI_REQUIRED_SEQ_COLS %in% names(wi_seq))) {
-            stop(tr("err_camtrap_wi_sequences_missing", lang), call. = FALSE)
+            camtrap_stop("err_camtrap_wi_sequences_missing", lang)
         }
     }
 
@@ -436,7 +456,7 @@ synthesize_camtrap_descriptor <- function(dir, lang = "en") {
     })
     resources <- Filter(Negate(is.null), resources)
     if (length(resources) == 0L) {
-        stop(tr("err_camtrap_invalid_zip", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_invalid_zip", lang)
     }
     # No `id` or `title`: write_dwc() copies them to dwc:datasetID and
     # dwc:datasetName, and a made-up value would reach the export.
@@ -509,7 +529,7 @@ read_camtrap_dp_zip <- function(path, lang = "en") {
     require_camtrapdp(lang)
     source <- detect_camtrap_source(path)
     if (is.na(source)) {
-        stop(tr("err_camtrap_invalid_zip", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_invalid_zip", lang)
     }
 
     # read_camtrapdp() reads every table into memory, so the unzipped files
@@ -525,7 +545,7 @@ read_camtrap_dp_zip <- function(path, lang = "en") {
             recursive = TRUE, full.names = TRUE
         )
         if (length(descriptor) == 0L) {
-            stop(tr("err_camtrap_invalid_zip", lang), call. = FALSE)
+            camtrap_stop("err_camtrap_invalid_zip", lang)
         }
         localize_camtrap_schemas(descriptor[1])
         pkg <- camtrapdp::read_camtrapdp(descriptor[1])
@@ -539,7 +559,7 @@ read_camtrap_dp_zip <- function(path, lang = "en") {
                 any(grepl("^images.*\\.csv$", siblings))
         })
         if (is.na(wi_root)) {
-            stop(tr("err_camtrap_wi_columns_missing", lang), call. = FALSE)
+            camtrap_stop("err_camtrap_wi_columns_missing", lang)
         }
         norm_dir <- wi_to_camtrap_csv(wi_root, lang = lang)
         descriptor <- synthesize_camtrap_descriptor(norm_dir, lang = lang)
@@ -561,7 +581,7 @@ read_camtrap_dp_zip <- function(path, lang = "en") {
         "observations.csv" %in% siblings
     })
     if (is.na(csv_root)) {
-        stop(tr("err_camtrap_invalid_zip", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_invalid_zip", lang)
     }
     if (!"media.csv" %in% tolower(list.files(csv_root))) {
         utils::write.csv(
@@ -608,10 +628,10 @@ convert_camtrap_to_dwc_occurrence <- function(x, lang = "en") {
         NULL
     }
     if (!is.data.frame(occ) || !"scientificName" %in% names(occ)) {
-        stop(tr("err_camtrap_invalid_zip", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_invalid_zip", lang)
     }
     if (nrow(occ) == 0L) {
-        stop(tr("err_camtrap_empty_occurrence", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_empty_occurrence", lang)
     }
     df <- as.data.frame(occ, stringsAsFactors = FALSE)
     # camtrapdp::write_dwc() emits a fixed Occurrence schema; terms the source

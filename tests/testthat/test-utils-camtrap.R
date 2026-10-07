@@ -797,9 +797,12 @@ testthat::test_that("WI image projects keep media-level observations", {
 
 testthat::test_that("WI sequence project without sequences.csv stops with a clear error", {
     fx <- wi_sequence_zip_fixture(with_sequences = FALSE)
-    withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
+    dest <- tempfile("wi_seq_unzip_")
+    dir.create(dest)
+    utils::unzip(fx$zip, exdir = dest)
+    withr::defer(unlink(c(fx$dir, fx$zip, dest), recursive = TRUE))
     testthat::expect_error(
-        saira:::read_camtrap_dp_zip(fx$zip, lang = "en"),
+        saira:::wi_to_camtrap_csv(dest, lang = "en"),
         "sequences.csv", fixed = TRUE
     )
 })
@@ -818,5 +821,42 @@ testthat::test_that("WI projects.csv without a final newline reads without a war
     obs <- utils::read.csv(file.path(norm_dir, "observations.csv"),
                            stringsAsFactors = FALSE)
     testthat::expect_true(all(obs$observationLevel == "event"))
+})
+
+# camtrap_error_message ---------------------------------------------------
+
+testthat::test_that("camtrap_error_message shows Saira errors without a prefix", {
+    fx <- wi_sequence_zip_fixture(with_sequences = FALSE)
+    dest <- tempfile("wi_seq_unzip_")
+    dir.create(dest)
+    utils::unzip(fx$zip, exdir = dest)
+    withr::defer(unlink(c(fx$dir, fx$zip, dest), recursive = TRUE))
+    e <- tryCatch(saira:::wi_to_camtrap_csv(dest, lang = "pt"),
+                  error = function(e) e)
+    testthat::expect_s3_class(e, "saira_camtrap_error")
+    testthat::expect_identical(saira:::camtrap_error_message(e, "pt"),
+                               saira:::tr("err_camtrap_wi_sequences_missing", "pt"))
+
+    e <- tryCatch(saira:::camtrap_stop("err_camtrap_invalid_zip", "en"),
+                  error = function(e) e)
+    testthat::expect_identical(saira:::camtrap_error_message(e, "en"),
+                               saira:::tr("err_camtrap_invalid_zip", "en"))
+})
+
+testthat::test_that("camtrap_error_message shows the root cause of other errors", {
+    cause <- simpleError("Can't find column `x`.")
+    wrapped <- structure(
+        class = c("rlang_error", "error", "condition"),
+        list(message = "In index: 1.", parent = cause, call = NULL)
+    )
+    msg <- saira:::camtrap_error_message(wrapped, "en")
+    testthat::expect_identical(
+        msg, paste(saira:::tr("err_read_failed", "en"), "Can't find column `x`.")
+    )
+    testthat::expect_false(grepl("In index", msg, fixed = TRUE))
+    testthat::expect_identical(
+        saira:::camtrap_error_message(simpleError("boom"), "pt"),
+        paste(saira:::tr("err_read_failed", "pt"), "boom")
+    )
 })
 
