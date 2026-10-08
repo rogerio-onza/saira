@@ -103,3 +103,4 @@ Collate:
     'utils_taxadb.R'
     'utils_threat_status.R'
     'utils_version.R'
+    'utils_vocabulary.R'

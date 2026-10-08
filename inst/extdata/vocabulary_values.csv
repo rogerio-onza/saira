@@ -1,0 +1,214 @@
+term,value,target,auto
+occurrenceStatus,present,present,TRUE
+occurrenceStatus,absent,absent,TRUE
+occurrenceStatus,presence,present,TRUE
+occurrenceStatus,absence,absent,TRUE
+occurrenceStatus,visto,present,TRUE
+occurrenceStatus,vista,present,TRUE
+occurrenceStatus,observado,present,TRUE
+occurrenceStatus,observada,present,TRUE
+occurrenceStatus,avistado,present,TRUE
+occurrenceStatus,avistada,present,TRUE
+occurrenceStatus,ouvido,present,TRUE
+occurrenceStatus,registrado,present,TRUE
+occurrenceStatus,registrada,present,TRUE
+occurrenceStatus,coletado,present,TRUE
+occurrenceStatus,coletada,present,TRUE
+occurrenceStatus,capturado,present,TRUE
+occurrenceStatus,capturada,present,TRUE
+occurrenceStatus,detectado,present,TRUE
+occurrenceStatus,detectada,present,TRUE
+occurrenceStatus,encontrado,present,TRUE
+occurrenceStatus,encontrada,present,TRUE
+occurrenceStatus,colectado,present,TRUE
+occurrenceStatus,colectada,present,TRUE
+occurrenceStatus,oido,present,TRUE
+occurrenceStatus,oído,present,TRUE
+occurrenceStatus,seen,present,TRUE
+occurrenceStatus,observed,present,TRUE
+occurrenceStatus,heard,present,TRUE
+occurrenceStatus,recorded,present,TRUE
+occurrenceStatus,collected,present,TRUE
+occurrenceStatus,captured,present,TRUE
+occurrenceStatus,detected,present,TRUE
+occurrenceStatus,found,present,TRUE
+occurrenceStatus,não visto,absent,TRUE
+occurrenceStatus,nao visto,absent,TRUE
+occurrenceStatus,não observado,absent,TRUE
+occurrenceStatus,nao observado,absent,TRUE
+occurrenceStatus,não encontrado,absent,TRUE
+occurrenceStatus,nao encontrado,absent,TRUE
+occurrenceStatus,não detectado,absent,TRUE
+occurrenceStatus,nao detectado,absent,TRUE
+occurrenceStatus,no observado,absent,TRUE
+occurrenceStatus,no encontrado,absent,TRUE
+occurrenceStatus,no detectado,absent,TRUE
+occurrenceStatus,not seen,absent,TRUE
+occurrenceStatus,not observed,absent,TRUE
+occurrenceStatus,not found,absent,TRUE
+occurrenceStatus,not detected,absent,TRUE
+sex,female,female,TRUE
+sex,male,male,TRUE
+sex,mixed,mixed,TRUE
+sex,indeterminate,indeterminate,TRUE
+sex,other,other,TRUE
+sex,f,female,TRUE
+sex,fêmea,female,TRUE
+sex,femea,female,TRUE
+sex,fêmeas,female,TRUE
+sex,femeas,female,TRUE
+sex,feminino,female,TRUE
+sex,hembra,female,TRUE
+sex,hembras,female,TRUE
+sex,femenino,female,TRUE
+sex,females,female,TRUE
+sex,♀,female,TRUE
+sex,m,male,TRUE
+sex,macho,male,TRUE
+sex,machos,male,TRUE
+sex,masculino,male,TRUE
+sex,males,male,TRUE
+sex,♂,male,TRUE
+sex,i,indeterminate,TRUE
+sex,ind,indeterminate,TRUE
+sex,ind.,indeterminate,TRUE
+sex,indet,indeterminate,TRUE
+sex,indet.,indeterminate,TRUE
+sex,indeterminado,indeterminate,TRUE
+sex,indeterminada,indeterminate,TRUE
+sex,desconhecido,indeterminate,TRUE
+sex,desconocido,indeterminate,TRUE
+sex,unknown,indeterminate,TRUE
+sex,undetermined,indeterminate,TRUE
+sex,misto,mixed,TRUE
+sex,mista,mixed,TRUE
+sex,mixto,mixed,TRUE
+sex,mixta,mixed,TRUE
+sex,m/f,mixed,FALSE
+sex,f/m,mixed,FALSE
+sex,m e f,mixed,FALSE
+sex,m y f,mixed,FALSE
+sex,ambos,mixed,FALSE
+sex,outro,other,TRUE
+sex,otro,other,TRUE
+lifeStage,adult,adult,TRUE
+lifeStage,juvenile,juvenile,TRUE
+lifeStage,unknown,unknown,TRUE
+lifeStage,subadult,subadult,TRUE
+lifeStage,fledgling,fledgling,TRUE
+lifeStage,nestling,nestling,TRUE
+lifeStage,larva,larva,TRUE
+lifeStage,seedling,seedling,TRUE
+lifeStage,hatchling,hatchling,TRUE
+lifeStage,immature,immature,TRUE
+lifeStage,tadpole,tadpole,TRUE
+lifeStage,pupa,pupa,TRUE
+lifeStage,nymph,nymph,TRUE
+lifeStage,neonate,neonate,TRUE
+lifeStage,nauplius,nauplius,TRUE
+lifeStage,medusa,medusa,TRUE
+lifeStage,fruiting,fruiting,TRUE
+lifeStage,flowering,flowering,TRUE
+lifeStage,fetus,fetus,TRUE
+lifeStage,embryo,embryo,TRUE
+lifeStage,egg,egg,TRUE
+lifeStage,cyst,cyst,TRUE
+lifeStage,imago,imago,TRUE
+lifeStage,polyp,polyp,TRUE
+lifeStage,caterpillar,caterpillar,TRUE
+lifeStage,veliger,veliger,TRUE
+lifeStage,cyprid,cyprid,TRUE
+lifeStage,megalopa,megalopa,TRUE
+lifeStage,zoea,zoea,TRUE
+lifeStage,furcilia,furcilia,TRUE
+lifeStage,calyptopsis,calyptopsis,TRUE
+lifeStage,metanauplius,metanauplius,TRUE
+lifeStage,deutonymph,deutonymph,TRUE
+lifeStage,eft,eft,TRUE
+lifeStage,zygote,zygote,TRUE
+lifeStage,gametophyte,gametophyte,TRUE
+lifeStage,mature,mature,TRUE
+lifeStage,vegetative,vegetative,TRUE
+lifeStage,chick,chick,TRUE
+lifeStage,adulto,adult,TRUE
+lifeStage,adulta,adult,TRUE
+lifeStage,adultos,adult,TRUE
+lifeStage,adultas,adult,TRUE
+lifeStage,adults,adult,TRUE
+lifeStage,ad,adult,TRUE
+lifeStage,ad.,adult,TRUE
+lifeStage,jovem,juvenile,TRUE
+lifeStage,jovens,juvenile,TRUE
+lifeStage,juvenil,juvenile,TRUE
+lifeStage,juvenis,juvenile,TRUE
+lifeStage,juveniles,juvenile,TRUE
+lifeStage,joven,juvenile,TRUE
+lifeStage,jóvenes,juvenile,TRUE
+lifeStage,jovenes,juvenile,TRUE
+lifeStage,juv,juvenile,TRUE
+lifeStage,juv.,juvenile,TRUE
+lifeStage,subadulto,subadult,TRUE
+lifeStage,subadulta,subadult,TRUE
+lifeStage,sub-adulto,subadult,TRUE
+lifeStage,sub-adult,subadult,TRUE
+lifeStage,imaturo,immature,TRUE
+lifeStage,imatura,immature,TRUE
+lifeStage,inmaduro,immature,TRUE
+lifeStage,inmadura,immature,TRUE
+lifeStage,maduro,mature,TRUE
+lifeStage,madura,mature,TRUE
+lifeStage,filhote,juvenile,FALSE
+lifeStage,filhote,nestling,FALSE
+lifeStage,filhotes,juvenile,FALSE
+lifeStage,filhotes,nestling,FALSE
+lifeStage,cria,juvenile,FALSE
+lifeStage,cria,neonate,FALSE
+lifeStage,cría,juvenile,FALSE
+lifeStage,cría,neonate,FALSE
+lifeStage,ninhego,nestling,TRUE
+lifeStage,ninhegos,nestling,TRUE
+lifeStage,pichón,nestling,TRUE
+lifeStage,pichon,nestling,TRUE
+lifeStage,volantão,fledgling,TRUE
+lifeStage,volantao,fledgling,TRUE
+lifeStage,volantón,fledgling,TRUE
+lifeStage,volanton,fledgling,TRUE
+lifeStage,ovo,egg,TRUE
+lifeStage,ovos,egg,TRUE
+lifeStage,huevo,egg,TRUE
+lifeStage,huevos,egg,TRUE
+lifeStage,eggs,egg,TRUE
+lifeStage,larvas,larva,TRUE
+lifeStage,pupas,pupa,TRUE
+lifeStage,girino,tadpole,TRUE
+lifeStage,girinos,tadpole,TRUE
+lifeStage,renacuajo,tadpole,TRUE
+lifeStage,ninfa,nymph,TRUE
+lifeStage,ninfas,nymph,TRUE
+lifeStage,embrião,embryo,TRUE
+lifeStage,embriao,embryo,TRUE
+lifeStage,embrión,embryo,TRUE
+lifeStage,embrion,embryo,TRUE
+lifeStage,neonato,neonate,TRUE
+lifeStage,neonata,neonate,TRUE
+lifeStage,recém-nascido,neonate,TRUE
+lifeStage,recem-nascido,neonate,TRUE
+lifeStage,recién nacido,neonate,TRUE
+lifeStage,lagarta,caterpillar,TRUE
+lifeStage,oruga,caterpillar,TRUE
+lifeStage,plântula,seedling,TRUE
+lifeStage,plantula,seedling,TRUE
+lifeStage,plántula,seedling,TRUE
+lifeStage,florido,flowering,TRUE
+lifeStage,florida,flowering,TRUE
+lifeStage,em flor,flowering,TRUE
+lifeStage,en flor,flowering,TRUE
+lifeStage,florescendo,flowering,TRUE
+lifeStage,frutificando,fruiting,TRUE
+lifeStage,com fruto,fruiting,TRUE
+lifeStage,con fruto,fruiting,TRUE
+lifeStage,vegetativo,vegetative,TRUE
+lifeStage,vegetativa,vegetative,TRUE
+lifeStage,desconhecido,unknown,TRUE
+lifeStage,desconocido,unknown,TRUE
+lifeStage,indeterminado,unknown,TRUE
