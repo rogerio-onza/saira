@@ -24,6 +24,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **deps:** Remove the ids package, uuid makes the same identifiers
 - **occurrenceID:** Replace a repeated identifier with a persistent UUID when the Preview does not fix it, ADR-152 ([#181](https://github.com/rogerio-onza/saira/pull/181))
 - **upload:** Install camtrapdp with Saíra, so the camera trap mode always works and CI tests it, ADR-149 ([#178](https://github.com/rogerio-onza/saira/pull/178))
 - **site:** Use the app background colors on the help site, in the light and dark themes

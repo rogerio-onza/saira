@@ -1498,7 +1498,7 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
         "Biodiversity occurrence dataset standardized to Darwin Core via Saira v%s.",
         utils::packageVersion("saira")
     )
-    pkg_id <- package_id %||% paste0("urn:uuid:", ids::uuid())
+    pkg_id <- package_id %||% paste0("urn:uuid:", uuid::UUIDgenerate())
 
     # Split creator name into given/sur for EML structure.
     name_parts <- strsplit(trimws(creator$name), "\\s+")[[1]]
