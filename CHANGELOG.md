@@ -67,7 +67,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
-- **export:** Write the rank the Names tab found for a one-word name (Felidae as family, not genus), ADR-151
+- **export:** Write the rank the Names tab found for a one-word name (Felidae as family, not genus), ADR-151 ([#180](https://github.com/rogerio-onza/saira/pull/180))
 - **upload:** Show camera trap read errors without the contradictory "ZIP not recognized" prefix, and show their root cause ([#177](https://github.com/rogerio-onza/saira/pull/177))
 - **datasetName:** Stop filling it, and datasetID, with placeholder values for camera trap zips without a descriptor, ADR-147 ([#175](https://github.com/rogerio-onza/saira/pull/175))
 - **samplingEffort:** Drop the false UTC marker from Wildlife Insights deployment intervals ([#175](https://github.com/rogerio-onza/saira/pull/175))
