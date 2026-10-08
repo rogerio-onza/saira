@@ -3374,6 +3374,42 @@ resolve_occurrence_ids <- function(df, n = NULL, map_values = NULL) {
     out
 }
 
+# Replace the occurrenceIDs that still repeat after the Preview corrections.
+#
+# Darwin Core requires occurrenceID to be unique within the dataset, so an
+# identifier that two rows share is not an identifier, and the TDWG note for
+# the term applies: construct one. The person can correct the rows in the
+# Preview first. Every row that still repeats an identifier gets one, the first
+# row too, because which row comes first depends on the row order. The ids
+# come from `basis` (the mapped rows before the Preview corrections), so a
+# correction in the Preview does not change them (ADR-152).
+#
+# Returns `df`, with the `ids_replaced` attribute (the count of rows changed)
+# when it changes a row.
+replace_repeated_ids <- function(df, basis = df) {
+    if (!is.data.frame(df) || !"occurrenceID" %in% names(df)) {
+        return(df)
+    }
+    v <- trimws(as.character(df$occurrenceID))
+    repeated <- !is.na(v) & nzchar(v) & (duplicated(v) | duplicated(v, fromLast = TRUE))
+    if (any(repeated)) {
+        df$occurrenceID[repeated] <- generate_persistent_ids(basis, rows = repeated)
+        attr(df, "ids_replaced") <- sum(repeated)
+    }
+    df
+}
+
+# The identifier counts of the mapping stage, after `replace_repeated_ids()`
+# changed `replaced` of the preserved ids.
+occurrence_id_counts_after_repeats <- function(counts, replaced) {
+    if (!is.list(counts) || is.null(counts$total) || !isTRUE(replaced > 0L)) {
+        return(counts)
+    }
+    counts$preserved <- max(counts$preserved - replaced, 0L)
+    counts$generated <- counts$total - counts$preserved
+    counts
+}
+
 # Name what produced a dataset's identifiers. The mapping guide keys its
 # explanation off this label.
 occurrence_id_strategy_label <- function(n_preserved, n_total) {

@@ -1169,6 +1169,41 @@ testthat::test_that("resolve_occurrence_ids preserves provided IDs and fills gap
     testthat::expect_false(anyNA(out))
 })
 
+testthat::test_that("replace_repeated_ids gives every repeated row a persistent id", {
+    basis <- data.frame(
+        occurrenceID = c("a1", "a2", "a2", "a4", "a2"),
+        sex = c("male", "female", "male", "male", "female"),
+        stringsAsFactors = FALSE
+    )
+    out <- replace_repeated_ids(basis)
+    testthat::expect_identical(out$occurrenceID[c(1L, 4L)], c("a1", "a4"))
+    # The first "a2" is replaced too: which row comes first depends on the order.
+    testthat::expect_true(all(startsWith(out$occurrenceID[c(2L, 3L, 5L)], "urn:uuid:")))
+    testthat::expect_false(anyDuplicated(out$occurrenceID) > 0L)
+    testthat::expect_identical(attr(out, "ids_replaced"), 3L)
+    testthat::expect_identical(replace_repeated_ids(basis)$occurrenceID, out$occurrenceID)
+
+    # A Preview correction changes neither the id basis nor the other ids.
+    edited <- basis
+    edited$sex[2] <- "male"
+    testthat::expect_identical(replace_repeated_ids(edited, basis = basis)$occurrenceID,
+                               out$occurrenceID)
+    # A row whose id the person corrected leaves the others unique.
+    edited$occurrenceID[c(3L, 5L)] <- c("a2-b", "a2-c")
+    fixed <- replace_repeated_ids(edited, basis = basis)
+    testthat::expect_identical(fixed$occurrenceID[2:3], c("a2", "a2-b"))
+    testthat::expect_null(attr(fixed, "ids_replaced"))
+})
+
+testthat::test_that("occurrence_id_counts_after_repeats moves the replaced ids to generated", {
+    counts <- list(total = 10L, preserved = 8L, generated = 2L)
+    out <- occurrence_id_counts_after_repeats(counts, 3L)
+    testthat::expect_equal(out$preserved, 5L)
+    testthat::expect_equal(out$generated, 5L)
+    testthat::expect_identical(occurrence_id_counts_after_repeats(counts, 0L), counts)
+    testthat::expect_identical(occurrence_id_counts_after_repeats(counts, NULL), counts)
+})
+
 testthat::test_that("resolve_occurrence_ids generates UUIDs when no column exists", {
     out <- resolve_occurrence_ids(data.frame(x = 1:3))
     testthat::expect_length(out, 3L)

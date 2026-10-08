@@ -114,16 +114,44 @@ app_server <- function(input, output, session) {
         coord_validation_gate <- NULL
     }
 
-    validate_names_r <- mod_validate_names_server("validate_names", mapped_data, lang_r, validation_gate_r = validation_gate, reset_signal_r = reset_signal)
+    # Bind the root session: this callback fires inside a module's reactive
+    # context, so without an explicit session nav_select would namespace
+    # "main_nav" and silently no-op. When a term is given, also scroll the
+    # Mapping tab to that field card and flash it.
+    navigate_to <- function(tab, term = NULL) {
+        bslib::nav_select("main_nav", selected = tab, session = session)
+        if (!is.null(term) && length(term) == 1L && nzchar(term)) {
+            session$sendCustomMessage(
+                "saira_focus_field",
+                list(id = paste0("mapping-fieldcard_", term))
+            )
+        }
+    }
+
+    # Preview shows the mapped records and lets the user correct cell
+    # problems. Its corrections sit on top of the mapped frame, so every tab
+    # after it (Names, Coordinates, Generalization, Export) reads the corrected
+    # data.
+    preview_r <- mod_preview_server(
+        "preview", preview_data, lang_r,
+        full_data_r = mapped_data,
+        raw_data_r = raw_data,
+        reset_signal_r = reset_signal,
+        on_navigate = navigate_to,
+        active_r = shiny::reactive(identical(input$main_nav, "preview"))
+    )
+    edited_data <- attr(preview_r, "edited_data_r")
+
+    validate_names_r <- mod_validate_names_server("validate_names", edited_data, lang_r, validation_gate_r = validation_gate, reset_signal_r = reset_signal)
     name_review_payload_r <- attr(validate_names_r, "review_export_payload")
     sensitivity_payload_r <- attr(validate_names_r, "sensitivity_payload")
     conservation_payload_r <- attr(validate_names_r, "conservation_payload")
 
-    # Coordinate validation runs before preview so its transposed-coordinate
-    # correction payload can be applied at export (mirrors name review).
+    # The transposed-coordinate correction payload is applied at export
+    # (mirrors name review).
     coord_validation_r <- mod_validate_coords_server(
         "validate_coords",
-        mapped_data,
+        edited_data,
         lang_r,
         validation_gate_r = coord_validation_gate,
         reset_signal_r = reset_signal
@@ -136,7 +164,7 @@ app_server <- function(input, output, session) {
     # its map preview matches the published point; returns the export decision.
     sensitive_generalization_payload_r <- mod_sensitive_coords_server(
         "sensitive_coords",
-        mapped_data,
+        edited_data,
         lang_r,
         sensitivity_payload_r = sensitivity_payload_r,
         coords_correction_payload_r = coords_correction_payload_r,
@@ -148,16 +176,13 @@ app_server <- function(input, output, session) {
         active_r = shiny::reactive(identical(input$main_nav, "sensitive_coords"))
     )
 
-    # Preview is read-only (the download/export flow lives in the Export tab).
-    mod_preview_server("preview", preview_data, lang_r)
-
     # Export review + publish hub: the same validation/generalization payloads
     # feed the summary, and the DwC-A download flow lives here (ADR-103).
     mod_export_server(
         "export",
-        mapped_data,
+        edited_data,
         lang_r,
-        download_data_r                    = mapped_data,
+        download_data_r                    = edited_data,
         name_review_payload_r              = name_review_payload_r,
         coords_correction_payload_r        = coords_correction_payload_r,
         country_fill_payload_r             = country_fill_payload_r,
@@ -173,19 +198,7 @@ app_server <- function(input, output, session) {
         on_export_success                  = function() {
             export_signal_rv(shiny::isolate(export_signal_rv()) + 1L)
         },
-        # Bind the root session: this callback fires inside the export module's
-        # reactive context, so without an explicit session nav_select would
-        # namespace "main_nav" and silently no-op. When a term is given, also
-        # scroll the Mapping tab to that field card and flash it.
-        on_navigate                        = function(tab, term = NULL) {
-            bslib::nav_select("main_nav", selected = tab, session = session)
-            if (!is.null(term) && length(term) == 1L && nzchar(term)) {
-                session$sendCustomMessage(
-                    "saira_focus_field",
-                    list(id = paste0("mapping-fieldcard_", term))
-                )
-            }
-        }
+        on_navigate                        = navigate_to
     )
 
     # Independent modules (no data dependency)

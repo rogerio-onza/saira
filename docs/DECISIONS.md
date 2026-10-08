@@ -2539,7 +2539,7 @@ Formato: ADR leve (Architecture Decision Record).
 ## ADR-118: `occurrenceID` sai do mapeamento; identificador existente sempre vence
 
 - **Data**: 2026-08-05
-- **Status**: Aceito
+- **Status**: Aceito. Emendado pelo ADR-152: so identificador unico vence.
 - **Contexto**: `resolve_occurrence_ids()` procurava uma coluna chamada **literalmente** `occurrenceID` no upload cru e nunca lia `map_values`. Como a coluna de identificador raramente tem esse nome na planilha do publicador, todo dataset cujo ID vinha de outra coluna tinha as linhas substituidas por identificador gerado. Pior, `build_processed_mapping_df()` gravava esse vetor e fazia `next`, pulando o mapeamento; no export, `generate_occurrence_ids()` via a coluna cheia, retornava cedo e rotulava `user_supplied`. O guia entao afirmava "todos vieram dos seus dados e serao preservados literalmente" sobre identificadores que a propria Saira acabara de inventar, e que mudavam a cada exportacao. O card tambem nao oferecia seletor (`occurrenceID` estava em `special_no_dropdown`), entao o unico caminho que chegava a gravar o mapeamento era a importacao de modelo, que nao aplica aquela exclusao. Dois subsistemas discordando, sem nada apontando o desacordo.
 - **Decisao**:
   - `resolve_occurrence_ids(df, n, map_values)` e a **unica** funcao que responde "qual o occurrenceID desta linha", com uma cadeia de precedencia e nada mais: valor que a linha ja carrega vence, e a Saira preenche so as lacunas.
@@ -2980,3 +2980,11 @@ Formato: ADR leve (Architecture Decision Record).
 - **Alternativas**: regras de sufixo (-idae, -aceae, -ales), rejeitada porque nao cobre Aves, Mammalia nem Carnivora. O parser de nomes do GBIF, rejeitado porque nao infere rank de nome de uma palavra.
 - **Consequencias**: sem validacao na aba Nomes, o nome de uma palavra continua saindo como genero. O export muda para todo conjunto com taxon acima de genero, nao so para correcoes da Pre-visualizacao.
 
+## ADR-152: `occurrenceID` repetido vira UUID persistente
+
+- **Data**: 2026-10-08
+- **Status**: Aceito
+- **Contexto**: pelo ADR-118, o identificador que a linha traz sempre vencia, mesmo repetido. O card do mapeamento avisava, e o export saia com a duplicata, que o GBIF recusa. Um ID repetido nao identifica a ocorrencia, entao vale a nota do TDWG para o termo: sem identificador unico, construa um.
+- **Decisao**: a pessoa pode corrigir o ID repetido no modo Problemas (ADR-150). Depois das correcoes, `replace_repeated_ids()` troca o ID de toda linha que ainda repete um, a primeira tambem, pelo `generate_persistent_ids()` das linhas vazias. A base do hash e o dado mapeado antes das correcoes da Pre-visualizacao, entao uma correcao nao muda o ID. O guia do export conta essas linhas como geradas (`occurrence_id_counts_after_repeats()`).
+- **Alternativas**: sufixo no ID original (`SAIRA-023-2`), rejeitado porque continua um ID local e nao padronizado. Manter o ID na primeira linha, rejeitado porque a primeira linha depende da ordem da planilha, e o ID deixaria de ser persistente. Trocar no mapeamento, rejeitado porque o modo Problemas nao veria mais o ID repetido para a pessoa corrigir.
+- **Consequencias**: as abas depois da Pre-visualizacao (Nomes, Coordenadas, Generalizacao, Export) leem IDs unicos, entao a edicao de coordenada (ADR-129) chega a essas linhas. A tabela da Pre-visualizacao continua mostrando o ID da planilha.
