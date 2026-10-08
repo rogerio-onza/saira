@@ -1885,6 +1885,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         review_export_payload <- shiny::reactive({
             list(
                 entries = review_entries_df(),
+                ranks = name_rank_table(validation_result()),
                 normalize_opts = list(
                     remove_authors = isTRUE(input$remove_authors %||% TRUE),
                     ignore_qualifiers = isTRUE(input$ignore_qualifiers %||% TRUE)

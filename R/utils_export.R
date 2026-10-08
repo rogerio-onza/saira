@@ -120,6 +120,59 @@ apply_name_review_payload <- function(df, payload = NULL) {
     out
 }
 
+#' Rank of each name the Names tab validated
+#'
+#' @param report Validation report (`validation_result()` of the Names tab).
+#' @return Data frame `query_name`, `taxonRank` (lowercase), or NULL.
+#' @noRd
+name_rank_table <- function(report) {
+    cols <- c("query_name", "taxonRank", "validation_status")
+    if (!is.data.frame(report) || !all(cols %in% names(report))) {
+        return(NULL)
+    }
+    rank <- tolower(trimws(as.character(report$taxonRank)))
+    keep <- report$validation_status %in% c("accepted", "synonym") &
+        !is.na(report$query_name) & !is.na(rank) & nzchar(rank)
+    out <- data.frame(query_name = as.character(report$query_name[keep]),
+                      taxonRank = rank[keep], stringsAsFactors = FALSE)
+    out[!duplicated(out$query_name), , drop = FALSE]
+}
+
+#' Put the validated rank on one-word names (ADR-151)
+#'
+#' The mapping reads every one-word name as a genus, so "Felidae" leaves with
+#' `taxonRank = genus` and `genus = Felidae`, and the GBIF match then fails. The
+#' name provider knows the real rank. Only a blank or "genus" rank changes, so a
+#' rank the user mapped from a column stays.
+#'
+#' @param df Data frame to export.
+#' @param ranks Output of `name_rank_table()`.
+#' @return `df` with the rank of higher taxa corrected.
+#' @noRd
+apply_name_rank_payload <- function(df, ranks) {
+    if (!is.data.frame(df) || !is.data.frame(ranks) || nrow(ranks) == 0L ||
+            !"scientificName" %in% names(df)) {
+        return(df)
+    }
+    name <- trimws(as.character(df$scientificName))
+    name[is.na(name)] <- ""
+    rank <- ranks$taxonRank[match(name, ranks$query_name)]
+    current <- if ("taxonRank" %in% names(df)) as.character(df$taxonRank) else rep(NA_character_, nrow(df))
+    fix <- nzchar(name) & !grepl(" ", name, fixed = TRUE) & !is.na(rank) & rank != "genus" &
+        (is.na(current) | !nzchar(trimws(current)) | current == "genus")
+    if (!any(fix)) {
+        return(df)
+    }
+    current[fix] <- rank[fix]
+    df$taxonRank <- current
+    if ("genus" %in% names(df)) {
+        genus <- as.character(df$genus)
+        genus[fix & !is.na(genus) & genus == name] <- ""
+        df$genus <- genus
+    }
+    df
+}
+
 # Rows whose country resolves to Brazil. The MMA portaria is a *national* legal
 # instrument, so its status must never be asserted for a record collected
 # elsewhere -- picking a BR name provider is a taxonomic-source preference, not

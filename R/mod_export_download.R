@@ -527,6 +527,9 @@ mount_export_download <- function(input, output, session, lang_r,
                             download_data(),
                             payload = export_name_review_payload()
                         )
+                        review_ready <- apply_name_rank_payload(
+                            review_ready, export_name_review_payload()$ranks
+                        )
 
                         # Apply transposed-coordinate corrections approved in the
                         # coordinate validation tab (preserves verbatim coords).
