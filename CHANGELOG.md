@@ -8,7 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- **preview:** Add a Problems mode that lists cell errors in all records and fixes them in place, with undo, ADR-150
+- **preview:** Add a Problems mode that lists cell errors in all records and fixes them in place, with undo, ADR-150 ([#181](https://github.com/rogerio-onza/saira/pull/181))
 - **mapping:** Convert common sex, lifeStage and occurrenceStatus values to the GBIF vocabulary ("M" to male, "visto" to present), ADR-150 ([#179](https://github.com/rogerio-onza/saira/pull/179))
 - **ui:** Add a dark theme, with a Light, Dark or System switch in the header, ADR-144 ([#165](https://github.com/rogerio-onza/saira/pull/165))
 - **ui:** Animate tab changes, notifications, dialogs and the export pending rows, ADR-145 ([#166](https://github.com/rogerio-onza/saira/pull/166))
@@ -24,7 +24,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
-- **occurrenceID:** Replace a repeated identifier with a persistent UUID when the Preview does not fix it, ADR-152
+- **occurrenceID:** Replace a repeated identifier with a persistent UUID when the Preview does not fix it, ADR-152 ([#181](https://github.com/rogerio-onza/saira/pull/181))
 - **upload:** Install camtrapdp with Saíra, so the camera trap mode always works and CI tests it, ADR-149 ([#178](https://github.com/rogerio-onza/saira/pull/178))
 - **site:** Use the app background colors on the help site, in the light and dark themes
 - **site:** Use the app theme switch, language select and motion on the help site, ADR-144, ADR-145
