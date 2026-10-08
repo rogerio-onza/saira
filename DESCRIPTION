@@ -95,6 +95,7 @@ Collate:
     'utils_mapping.R'
     'utils_oceanic_islands.R'
     'utils_preview.R'
+    'utils_preview_fix.R'
     'utils_rostrum_contracts.R'
     'utils_rostrum_db.R'
     'utils_rostrum_engine.R'

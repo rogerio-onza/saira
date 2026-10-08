@@ -659,7 +659,14 @@ mount_export_download <- function(input, output, session, lang_r,
                         }
                         id_strategy <- id_info$strategy %||% attr(export_data, "id_strategy")
                         if (is.null(id_strategy)) id_strategy <- NA_character_
-                        id_counts <- id_info$counts
+                        # The Preview replaces the ids that still repeat
+                        # after its corrections (ADR-152).
+                        id_counts <- occurrence_id_counts_after_repeats(
+                            id_info$counts, attr(download_data(), "ids_replaced")
+                        )
+                        if (!identical(id_counts, id_info$counts)) {
+                            id_strategy <- occurrence_id_strategy_label(id_counts$preserved, id_counts$total)
+                        }
 
                         readr::write_csv(export_data, core_path, na = "")
                         writeLines(

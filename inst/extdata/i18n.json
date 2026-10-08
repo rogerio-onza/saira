@@ -825,9 +825,9 @@
     "es": "%d generados por Saíra."
   },
   "occurrence_id_duplicates": {
-    "pt": "%d identificadores repetidos. O Darwin Core exige occurrenceID único no conjunto e o GBIF recusa duplicatas.",
-    "en": "%d duplicate identifiers. Darwin Core requires occurrenceID to be unique within the dataset and GBIF rejects duplicates.",
-    "es": "%d identificadores repetidos. Darwin Core exige que occurrenceID sea único en el conjunto de datos y GBIF rechaza los duplicados."
+    "pt": "%d identificadores repetidos. O Darwin Core exige occurrenceID único no conjunto. Corrija na Pré-visualização; as linhas que continuarem repetidas recebem um UUID persistente.",
+    "en": "%d duplicate identifiers. Darwin Core requires occurrenceID to be unique within the dataset. Fix them in Preview; the rows that still repeat one get a persistent UUID.",
+    "es": "%d identificadores repetidos. Darwin Core exige que occurrenceID sea único en el conjunto de datos. Corríjalos en la Vista previa; las filas que sigan repetidas reciben un UUID persistente."
   },
   "export_unmapped_not_published": {
     "pt": "%d coluna(s) não mapeada(s) seguem no arquivo, mas fora do meta.xml: o GBIF vai ignorá-las. Mapeie para um termo DwC ou inclua em dynamicProperties para publicá-las.",
@@ -1273,6 +1273,331 @@
     "pt": "Visualize os primeiros 100 registros mapeados",
     "en": "View the first 100 mapped records",
     "es": "Vea los primeros 100 registros mapeados"
+  },
+  "preview_mode_table": {
+    "pt": "Tabela",
+    "en": "Table",
+    "es": "Tabla"
+  },
+  "preview_mode_problems": {
+    "pt": "Problemas",
+    "en": "Problems",
+    "es": "Problemas"
+  },
+  "preview_fix_subtitle": {
+    "pt": "Todos os registros, não só os 100 primeiros",
+    "en": "All records, not only the first 100",
+    "es": "Todos los registros, no solo los 100 primeros"
+  },
+  "preview_fix_hint": {
+    "pt": "\"Na planilha\" nunca muda. O export usa a \"Correção\" quando ela existe.",
+    "en": "\"In the spreadsheet\" never changes. The export uses the \"Correction\" when there is one.",
+    "es": "\"En la planilla\" nunca cambia. La exportación usa la \"Corrección\" cuando existe."
+  },
+  "preview_fix_none": {
+    "pt": "Nenhum problema encontrado nos valores mapeados.",
+    "en": "No problems found in the mapped values.",
+    "es": "No se encontraron problemas en los valores mapeados."
+  },
+  "preview_fix_pill_problems": {
+    "pt": "Problemas",
+    "en": "Problems",
+    "es": "Problemas"
+  },
+  "preview_fix_pill_vocab": {
+    "pt": "Vocabulário",
+    "en": "Vocabulary",
+    "es": "Vocabulario"
+  },
+  "preview_fix_pill_date": {
+    "pt": "Data",
+    "en": "Date",
+    "es": "Fecha"
+  },
+  "preview_fix_pill_year": {
+    "pt": "Ano",
+    "en": "Year",
+    "es": "Año"
+  },
+  "preview_fix_pill_interval": {
+    "pt": "Intervalo",
+    "en": "Interval",
+    "es": "Intervalo"
+  },
+  "preview_fix_pill_date_mismatch": {
+    "pt": "Data × ano",
+    "en": "Date × year",
+    "es": "Fecha × año"
+  },
+  "preview_fix_pill_count": {
+    "pt": "Contagem",
+    "en": "Count",
+    "es": "Conteo"
+  },
+  "preview_fix_pill_empty": {
+    "pt": "Vazio",
+    "en": "Empty",
+    "es": "Vacío"
+  },
+  "preview_fix_pill_id": {
+    "pt": "ID",
+    "en": "ID",
+    "es": "ID"
+  },
+  "preview_fix_pill_edited": {
+    "pt": "Editadas",
+    "en": "Edited",
+    "es": "Editadas"
+  },
+  "preview_fix_diag_vocab_unknown": {
+    "pt": "Fora do vocabulário",
+    "en": "Not in the vocabulary",
+    "es": "Fuera del vocabulario"
+  },
+  "preview_fix_diag_date_unparsed": {
+    "pt": "Data não reconhecida",
+    "en": "Date not recognized",
+    "es": "Fecha no reconocida"
+  },
+  "preview_fix_diag_year_range": {
+    "pt": "Ano fora do intervalo",
+    "en": "Year out of range",
+    "es": "Año fuera del rango"
+  },
+  "preview_fix_diag_interval_inverted": {
+    "pt": "Intervalo invertido",
+    "en": "Inverted interval",
+    "es": "Intervalo invertido"
+  },
+  "preview_fix_diag_date_mismatch": {
+    "pt": "Difere de eventDate",
+    "en": "Differs from eventDate",
+    "es": "Difiere de eventDate"
+  },
+  "preview_fix_diag_count_invalid": {
+    "pt": "Contagem inválida",
+    "en": "Invalid count",
+    "es": "Conteo inválido"
+  },
+  "preview_fix_diag_required_empty": {
+    "pt": "Obrigatório vazio",
+    "en": "Required and empty",
+    "es": "Obligatorio vacío"
+  },
+  "preview_fix_diag_id_duplicate": {
+    "pt": "ID repetido",
+    "en": "Duplicate ID",
+    "es": "ID repetido"
+  },
+  "preview_fix_banner": {
+    "pt": "<b>%s%% dos registros têm \"%s\" em %s</b>, como <code>%s</code>. Isso parece um formato ou um mapeamento, não um erro de digitação. Confira o Mapeamento antes de corrigir linha por linha.",
+    "en": "<b>%s%% of the records have \"%s\" in %s</b>, such as <code>%s</code>. This looks like a format or a mapping issue, not a typo. Check the Mapping before you correct row by row.",
+    "es": "<b>El %s%% de los registros tiene \"%s\" en %s</b>, como <code>%s</code>. Esto parece un formato o un mapeo, no un error de tipeo. Revise el Mapeo antes de corregir fila por fila."
+  },
+  "preview_fix_banner_go": {
+    "pt": "Voltar ao Mapeamento",
+    "en": "Back to Mapping",
+    "es": "Volver al Mapeo"
+  },
+  "preview_fix_vocab_title": {
+    "pt": "Vocabulário",
+    "en": "Vocabulary",
+    "es": "Vocabulario"
+  },
+  "preview_fix_vocab_desc": {
+    "pt": "Valores que o Saíra não reconheceu. A escolha vale para todas as linhas com o mesmo valor.",
+    "en": "Values Saíra did not recognize. Your choice applies to every row with the same value.",
+    "es": "Valores que Saíra no reconoció. La elección vale para todas las filas con el mismo valor."
+  },
+  "preview_fix_rows_title": {
+    "pt": "Por linha",
+    "en": "By row",
+    "es": "Por fila"
+  },
+  "preview_fix_rows_desc": {
+    "pt": "Clique na Correção para editar. Enter salva.",
+    "en": "Click the Correction to edit it. Enter saves.",
+    "es": "Haga clic en la Corrección para editarla. Enter guarda."
+  },
+  "preview_fix_same_value": {
+    "pt": "Aplicar às linhas com o mesmo valor",
+    "en": "Apply to the rows with the same value",
+    "es": "Aplicar a las filas con el mismo valor"
+  },
+  "preview_fix_col_row": {
+    "pt": "Linha",
+    "en": "Row",
+    "es": "Fila"
+  },
+  "preview_fix_col_term": {
+    "pt": "Termo",
+    "en": "Term",
+    "es": "Término"
+  },
+  "preview_fix_col_diag": {
+    "pt": "Diagnóstico",
+    "en": "Diagnosis",
+    "es": "Diagnóstico"
+  },
+  "preview_fix_col_value": {
+    "pt": "Na planilha",
+    "en": "In the spreadsheet",
+    "es": "En la planilla"
+  },
+  "preview_fix_col_fix": {
+    "pt": "Correção",
+    "en": "Correction",
+    "es": "Corrección"
+  },
+  "preview_fix_rows_one": {
+    "pt": "1 linha",
+    "en": "1 row",
+    "es": "1 fila"
+  },
+  "preview_fix_rows_n": {
+    "pt": "%d linhas",
+    "en": "%d rows",
+    "es": "%d filas"
+  },
+  "preview_fix_placeholder": {
+    "pt": "clique para editar",
+    "en": "click to edit",
+    "es": "haga clic para editar"
+  },
+  "preview_fix_placeholder_taxon": {
+    "pt": "espécie ou outro táxon",
+    "en": "species or other taxon",
+    "es": "especie u otro taxón"
+  },
+  "preview_fix_suggestion": {
+    "pt": "sugestão",
+    "en": "suggestion",
+    "es": "sugerencia"
+  },
+  "preview_fix_use": {
+    "pt": "Usar",
+    "en": "Use",
+    "es": "Usar"
+  },
+  "preview_fix_edited": {
+    "pt": "Editada",
+    "en": "Edited",
+    "es": "Editada"
+  },
+  "preview_fix_undo": {
+    "pt": "Desfazer",
+    "en": "Undo",
+    "es": "Deshacer"
+  },
+  "preview_fix_same_n": {
+    "pt": "+%d iguais",
+    "en": "+%d alike",
+    "es": "+%d iguales"
+  },
+  "preview_fix_choose": {
+    "pt": "escolher…",
+    "en": "choose…",
+    "es": "elegir…"
+  },
+  "preview_fix_suggested": {
+    "pt": "Sugeridos",
+    "en": "Suggested",
+    "es": "Sugeridos"
+  },
+  "preview_fix_vocab_all": {
+    "pt": "Vocabulário GBIF",
+    "en": "GBIF vocabulary",
+    "es": "Vocabulario GBIF"
+  },
+  "preview_fix_blank": {
+    "pt": "(deixar vazio)",
+    "en": "(leave empty)",
+    "es": "(dejar vacío)"
+  },
+  "preview_fix_apply_n": {
+    "pt": "Aplicar a %d",
+    "en": "Apply to %d",
+    "es": "Aplicar a %d"
+  },
+  "preview_fix_empty_value": {
+    "pt": "(vazio)",
+    "en": "(empty)",
+    "es": "(vacío)"
+  },
+  "preview_fix_leave_empty": {
+    "pt": "Deixar vazio",
+    "en": "Leave empty",
+    "es": "Dejar vacío"
+  },
+  "preview_fix_auto": {
+    "pt": "automático",
+    "en": "automatic",
+    "es": "automático"
+  },
+  "preview_fix_id_note": {
+    "pt": "Se você não corrigir, o Saíra troca cada ID repetido por um UUID persistente: ele vem do conteúdo da linha e fica igual a cada exportação.",
+    "en": "If you do not fix them, Saíra replaces each repeated ID with a persistent UUID: it comes from the row content and stays the same on every export.",
+    "es": "Si no los corrige, Saíra reemplaza cada ID repetido por un UUID persistente: viene del contenido de la fila y queda igual en cada exportación."
+  },
+  "preview_fix_record_title": {
+    "pt": "Registro %d como está na planilha",
+    "en": "Record %d as it is in the spreadsheet",
+    "es": "Registro %d tal como está en la planilla"
+  },
+  "preview_fix_record_empty": {
+    "pt": "Clique numa linha para ver o registro como está na planilha.",
+    "en": "Click a row to see its record as it is in the spreadsheet.",
+    "es": "Haga clic en una fila para ver su registro tal como está en la planilla."
+  },
+  "preview_fix_taxon_hint": {
+    "pt": "Não sabe a espécie? Escreva o táxon mais específico que conhece: gênero, família, ordem ou classe.",
+    "en": "You do not know the species? Write the most specific taxon that you know: genus, family, order or class.",
+    "es": "¿No sabe la especie? Escriba el taxón más específico que conoce: género, familia, orden o clase."
+  },
+  "preview_fix_taxon_none": {
+    "pt": "Este registro não tem nome popular nem táxon superior.",
+    "en": "This record has no common name and no higher taxon.",
+    "es": "Este registro no tiene nombre común ni taxón superior."
+  },
+  "preview_fix_saved": {
+    "pt": "Correção salva em %d linha(s).",
+    "en": "Correction saved in %d row(s).",
+    "es": "Corrección guardada en %d fila(s)."
+  },
+  "preview_fix_undone": {
+    "pt": "Correção desfeita.",
+    "en": "Correction undone.",
+    "es": "Corrección deshecha."
+  },
+  "preview_fix_err_vocab": {
+    "pt": "Escolha um valor do vocabulário.",
+    "en": "Choose a value from the vocabulary.",
+    "es": "Elija un valor del vocabulario."
+  },
+  "preview_fix_err_blank": {
+    "pt": "O valor não pode ficar vazio. Use Desfazer para voltar ao valor da planilha.",
+    "en": "The value cannot be empty. Use Undo to go back to the spreadsheet value.",
+    "es": "El valor no puede quedar vacío. Use Deshacer para volver al valor de la planilla."
+  },
+  "preview_fix_err_date": {
+    "pt": "Data não reconhecida. Escreva como AAAA-MM-DD.",
+    "en": "Date not recognized. Write it as YYYY-MM-DD.",
+    "es": "Fecha no reconocida. Escríbala como AAAA-MM-DD."
+  },
+  "preview_fix_err_count": {
+    "pt": "Use um número inteiro, como 10.",
+    "en": "Use a whole number, such as 10.",
+    "es": "Use un número entero, como 10."
+  },
+  "preview_fix_err_number": {
+    "pt": "Número fora do intervalo.",
+    "en": "Number out of range.",
+    "es": "Número fuera del rango."
+  },
+  "preview_fix_err_id_taken": {
+    "pt": "Outro registro já usa este ID.",
+    "en": "Another record already uses this ID.",
+    "es": "Otro registro ya usa este ID."
   },
   "preview_download_validation_title": {
     "pt": "Não foi possível iniciar o download",
