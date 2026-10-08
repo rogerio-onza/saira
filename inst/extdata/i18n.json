@@ -3949,6 +3949,16 @@
     "en": "MMA ordinances 148/2022, 1.704/2026 and GM/MMA 1.667/2026",
     "es": "Portarias MMA 148/2022, 1.704/2026 y GM/MMA 1.667/2026"
   },
+  "help_data_flora": {
+    "pt": "Flora e Funga do Brasil, cópia para uso offline",
+    "en": "Flora and Funga of Brazil, offline copy",
+    "es": "Flora y Funga de Brasil, copia para uso sin conexión"
+  },
+  "help_data_fauna": {
+    "pt": "Catálogo Taxonômico da Fauna do Brasil, cópia para uso offline",
+    "en": "Taxonomic Catalog of the Brazilian Fauna, offline copy",
+    "es": "Catálogo Taxonómico de la Fauna de Brasil, copia para uso sin conexión"
+  },
   "help_data_saira": {
     "pt": "Apelidos de termos e de países, textos da interface",
     "en": "Term and country aliases, interface text",

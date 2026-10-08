@@ -165,7 +165,54 @@ brprovider_data_dir <- function(provider_id) {
 #' @return Single logical.
 #' @noRd
 brprovider_data_available <- function(provider_id) {
+    .brprovider_seed_from_bundle(provider_id)
     file.exists(.brprovider_rds_path(provider_id))
+}
+
+#' Path of a file in the BR provider snapshot shipped with the package
+#' @param file Character. File name inside inst/extdata/brproviders.
+#' @return Absolute path, or "" when the file is not bundled.
+#' @noRd
+.brprovider_bundle_path <- function(file) {
+    system.file("extdata", "brproviders", file, package = "saira")
+}
+
+#' Copy the bundled snapshot into an empty user cache
+#'
+#' The IPT download fails often (ADR-070, ADR-153), and without a cache a new
+#' user has no Flora or Fauna BR data at all. The copy goes into the normal
+#' cache, so a later download replaces it as usual.
+#' @param provider_id Character. "florabr" or "faunabr".
+#' @return TRUE when it copied the snapshot, FALSE otherwise.
+#' @noRd
+.brprovider_seed_from_bundle <- function(provider_id) {
+    target <- .brprovider_rds_path(provider_id)
+    bundle <- .brprovider_bundle_path(paste0(provider_id, ".rds"))
+    if (file.exists(target) || !nzchar(bundle)) {
+        return(FALSE)
+    }
+    dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
+    # Copy, then rename: a parallel session must never read a half-copied file.
+    tmp <- paste0(target, ".seed")
+    if (!isTRUE(file.copy(bundle, tmp, overwrite = TRUE)) ||
+        !isTRUE(file.rename(tmp, target))) {
+        unlink(tmp, force = TRUE)
+        return(FALSE)
+    }
+    info <- tryCatch(
+        jsonlite::fromJSON(.brprovider_bundle_path("snapshot.json"))[[provider_id]],
+        error = function(e) NULL
+    )
+    version <- .brprovider_scalar_chr(info$version)
+    .brprovider_patch_meta(provider_id, list(
+        local_version = version,
+        remote_version_last_seen = version,
+        last_updated_at = .brprovider_scalar_chr(info$downloaded_at),
+        status = "up_to_date",
+        last_error = NA_character_,
+        retry_after_at = NA_character_
+    ))
+    TRUE
 }
 
 #' Return metadata status for one BR provider cache
@@ -179,8 +226,9 @@ brprovider_cache_status <- function(provider_id, poll = TRUE) {
         brprovider_poll_updates(provider_id = provider_id)
     }
 
-    meta <- .brprovider_read_meta(provider_id)
+    # Check data first: it can copy the bundled snapshot and write its meta.
     has_data <- brprovider_data_available(provider_id)
+    meta <- .brprovider_read_meta(provider_id)
 
     meta_changed <- FALSE
 

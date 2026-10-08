@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **names:** Ship Flora e Funga do Brasil and Fauna do Brasil with Saíra, so a new install validates names without the IPT download, ADR-153
 - **preview:** Add a Problems mode that lists cell errors in all records and fixes them in place, with undo, ADR-150 ([#181](https://github.com/rogerio-onza/saira/pull/181))
 - **mapping:** Convert common sex, lifeStage and occurrenceStatus values to the GBIF vocabulary ("M" to male, "visto" to present), ADR-150 ([#179](https://github.com/rogerio-onza/saira/pull/179))
 - **ui:** Add a dark theme, with a Light, Dark or System switch in the header, ADR-144 ([#165](https://github.com/rogerio-onza/saira/pull/165))

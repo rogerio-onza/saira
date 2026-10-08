@@ -230,6 +230,7 @@ testthat::test_that("brprovider_cache_status returns never_downloaded without ca
 
     testthat::with_mocked_bindings(
         brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .brprovider_bundle_path = function(file) "",
         .package = "saira",
         {
             st <- brprovider_cache_status("faunabr", poll = FALSE)
@@ -341,6 +342,7 @@ testthat::test_that("bootstrap failure without cache is reported clearly", {
 
     testthat::with_mocked_bindings(
         brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .brprovider_bundle_path = function(file) "",
         .brprovider_download_data_impl = function(provider_id, verbose = TRUE, data_version = "latest") {
             list(
                 ok = FALSE,
@@ -476,6 +478,46 @@ testthat::test_that("poll_updates marks update_failed and preserves cache", {
             st <- brprovider_cache_status(pid, poll = FALSE)
             testthat::expect_identical(as.character(st$status), "up_to_date")
             testthat::expect_true(isTRUE(st$has_data))
+        }
+    )
+})
+
+testthat::test_that("bundled snapshot fills an empty cache with its version", {
+    tmp <- tempfile(pattern = "brp_seed_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+
+    testthat::with_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .package = "saira",
+        {
+            snap <- jsonlite::fromJSON(system.file(
+                "extdata", "brproviders", "snapshot.json", package = "saira"
+            ))
+            # The status call is the first touch, as in the Names tab.
+            st <- brprovider_cache_status("florabr", poll = FALSE)
+            testthat::expect_true(isTRUE(st$has_data))
+            testthat::expect_identical(as.character(st$status), "up_to_date")
+            testthat::expect_identical(as.character(st$local_version), snap$florabr$version)
+        }
+    )
+})
+
+testthat::test_that("bundled snapshot never replaces a user cache", {
+    tmp <- tempfile(pattern = "brp_seed_keep_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+
+    testthat::with_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .package = "saira",
+        {
+            pid <- "faunabr"
+            dir.create(brprovider_data_dir(pid), recursive = TRUE, showWarnings = FALSE)
+            rds <- file.path(brprovider_data_dir(pid), paste0(pid, ".rds"))
+            saveRDS(data.frame(scientificName = "user cache", stringsAsFactors = FALSE), rds)
+            testthat::expect_true(brprovider_data_available(pid))
+            testthat::expect_identical(readRDS(rds)$scientificName, "user cache")
         }
     )
 })
