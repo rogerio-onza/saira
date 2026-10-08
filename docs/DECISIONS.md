@@ -2971,3 +2971,12 @@ Formato: ADR leve (Architecture Decision Record).
 - **Alternativas**: chavear a correcao por occurrenceID, rejeitada porque ID repetido e um dos erros a corrigir. Usar os rotulos ocultos do vocabulario GBIF como sinonimos, rejeitada porque traziam valores errados.
 - **Consequencias**: o export de `sex`, `lifeStage` e `occurrenceStatus` muda para quem usava valores fora do vocabulario. A linha da correcao e o indice da linha mapeada, que e 1:1 com a planilha.
 
+## ADR-151: taxonRank de nome de uma palavra vem da aba Nomes
+
+- **Data**: 2026-10-08
+- **Status**: Aceito
+- **Contexto**: o mapeamento le todo nome de uma palavra como genero. "Felidae" saia com `taxonRank = genus` e `genus = Felidae`. O match do GBIF com `name=Felidae&rank=GENUS` da `matchType: NONE`. Quem nao sabe a especie escreve o taxon mais especifico que conhece (genero, familia, ordem, classe), entao esse caso fica comum com o modo Problemas (ADR-150).
+- **Decisao**: o relatorio da aba Nomes ja traz o `taxonRank` do provedor (taxadb: Felidae -> family, Aves -> class). O payload de revisao leva esse rank (`name_rank_table()`), e o export aplica em nome de uma palavra cujo rank esta vazio ou e "genus" (`apply_name_rank_payload()`). O `genus` igual ao nome fica vazio. Rank mapeado de coluna do usuario fica.
+- **Alternativas**: regras de sufixo (-idae, -aceae, -ales), rejeitada porque nao cobre Aves, Mammalia nem Carnivora. O parser de nomes do GBIF, rejeitado porque nao infere rank de nome de uma palavra.
+- **Consequencias**: sem validacao na aba Nomes, o nome de uma palavra continua saindo como genero. O export muda para todo conjunto com taxon acima de genero, nao so para correcoes da Pre-visualizacao.
+
