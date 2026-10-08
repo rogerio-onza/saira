@@ -167,7 +167,7 @@ testthat::test_that("Performance regression: dynamicProperties JSON over 100k x 
 build_dwca_perf_dataset <- function(rows_n) {
     set.seed(20260525L)
     data.frame(
-        occurrenceID = paste0("urn:uuid:", ids::uuid(n = rows_n)),
+        occurrenceID = paste0("urn:uuid:", uuid::UUIDgenerate(n = rows_n)),
         scientificName = sample(
             c("Panthera onca", "Leopardus pardalis", "Tapirus terrestris"),
             rows_n,

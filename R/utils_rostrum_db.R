@@ -70,7 +70,7 @@ rostrum_now_utc <- function() {
 
 # One id per export, so undo_session_aliases() can reverse exactly that export.
 rostrum_new_run_id <- function() {
-    paste0("export-", format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC"), "-", ids::random_id(bytes = 4))
+    paste0("export-", format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC"), "-", substr(uuid::UUIDgenerate(), 1L, 8L))
 }
 
 rostrum_resolve_data_dir <- function() {
