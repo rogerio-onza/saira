@@ -240,6 +240,8 @@ help_data_band <- function(lang) {
         list(tr("help_data_land", lang), "Natural Earth", tr("help_license_public_domain", lang)),
         list(tr("help_data_dwc", lang), "TDWG", "CC BY 4.0"),
         list(tr("help_data_redlist", lang), tr("help_data_redlist_source", lang), tr("help_license_public_record", lang)),
+        list(tr("help_data_flora", lang), "JBRJ", "CC BY 4.0"),
+        list(tr("help_data_fauna", lang), "JBRJ", "CC BY 4.0"),
         list(tr("help_data_saira", lang), "Sa\u00EDra", "GPL-3")
     )
     methods <- list(

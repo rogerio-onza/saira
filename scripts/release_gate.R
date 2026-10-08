@@ -8,7 +8,7 @@
 
 message("=== RELEASE GATE ===")
 
-message("\n[0/8] DESCRIPTION integrity check")
+message("\n[0/9] DESCRIPTION integrity check")
 # Regenerate DESCRIPTION:Collate based on @include directives
 devtools::document()
 
@@ -36,9 +36,9 @@ if (length(collate_start) > 0) {
     }
 }
 
-message("[0/8] ✓ DESCRIPTION integrity OK")
+message("[0/9] ✓ DESCRIPTION integrity OK")
 
-message("\n[1/8] CSS bundle is current")
+message("\n[1/9] CSS bundle is current")
 # No test reads custom.css against its sources, so a missed rebuild ships old
 # styles. Rebuild it and stop if the output changed.
 css_bundle <- file.path("inst", "app", "www", "custom.css")
@@ -50,32 +50,36 @@ if (!identical(css_before, readLines(css_bundle, warn = FALSE))) {
     stop(css_bundle, " was out of date. The gate rebuilt it: review and commit it.")
 }
 
-message("\n[2/8] Unit + Server tests")
+message("\n[2/9] Flora and Fauna BR snapshot (report only)")
+# The IPT often refuses requests, so a failed check cannot stop the gate.
+system2("Rscript", c(file.path("data-raw", "update_brproviders.R"), "--check"))
+
+message("\n[3/9] Unit + Server tests")
 devtools::test(stop_on_failure = TRUE)
 
-message("\n[3/8] Performance budgets (report only)")
+message("\n[4/9] Performance budgets (report only)")
 # Stage 3 of Rostrum already fails its 0.5 s budget on main, so this step
 # cannot stop the gate. Compare the failures with the last baseline.
 Sys.setenv(RUN_PERF = "true")
 devtools::test(filter = "performance|utils-coords")
 Sys.unsetenv("RUN_PERF")
 
-message("\n[4/8] CSS Guardrails")
+message("\n[5/9] CSS Guardrails")
 testthat::test_file("tests/testthat/test-css-guardrails.R", stop_on_failure = TRUE)
 
-message("\n[5/8] i18n Integrity")
+message("\n[6/9] i18n Integrity")
 testthat::test_file("tests/testthat/test-utils-i18n.R", stop_on_failure = TRUE)
 testthat::test_file("tests/testthat/test-i18n-a11y-keys.R", stop_on_failure = TRUE)
 
-message("\n[6/8] E2E")
+message("\n[7/9] E2E")
 Sys.setenv(RUN_E2E = "true", NOT_CRAN = "true")
 testthat::test_file("tests/testthat/test-e2e-flows.R", stop_on_failure = TRUE)
 Sys.unsetenv(c("RUN_E2E", "NOT_CRAN"))
 
-message("\n[7/8] R CMD check")
+message("\n[8/9] R CMD check")
 devtools::check(document = FALSE, manual = FALSE)
 
-message("\n[8/8] Roxygen hygiene")
+message("\n[9/9] Roxygen hygiene")
 # Verify that exported functions have @examples or are documented
 # and that internal helpers have @noRd (when applicable)
 # This is a soft check — warnings are acceptable, errors are not.
@@ -95,6 +99,6 @@ exported_functions <- Reduce(c,
     })
 )
 
-message("[8/8] ✓ Roxygen hygiene check passed")
+message("[9/9] ✓ Roxygen hygiene check passed")
 
 message("\n=== ALL GATES PASSED ===")
