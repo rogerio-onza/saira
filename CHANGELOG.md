@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **mapping:** Convert common sex, lifeStage and occurrenceStatus values to the GBIF vocabulary ("M" to male, "visto" to present), ADR-150 ([#179](https://github.com/rogerio-onza/saira/pull/179))
 - **ui:** Add a dark theme, with a Light, Dark or System switch in the header, ADR-144 ([#165](https://github.com/rogerio-onza/saira/pull/165))
 - **ui:** Animate tab changes, notifications, dialogs and the export pending rows, ADR-145 ([#166](https://github.com/rogerio-onza/saira/pull/166))
 - **help:** Show who makes Saíra, how to cite it, the R packages with their maintainers, and the bundled data, ADR-146 ([#167](https://github.com/rogerio-onza/saira/pull/167))

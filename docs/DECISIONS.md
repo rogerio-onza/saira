@@ -2956,3 +2956,18 @@ Formato: ADR leve (Architecture Decision Record).
 - **Alternativas**: manter em `Suggests` e instalar o pacote so no CI, rejeitada porque o modo Camtrap tem um card na pagina inicial e nao deve falhar por um pacote opcional.
 - **Consequencias**: a instalacao ganha 7 pacotes (camtrapdp, EML, emld, frictionless, jqr, jsonld, V8) sobre os 127 de hoje. No Windows e no macOS todos vem como binarios. No Linux, instalar pelo codigo-fonte exige `libjq-dev`, e o `setup-r-dependencies` do CI instala essa biblioteca pelo apt.
 
+
+## ADR-150: Modo Problemas na Pre-visualizacao e vocabulario de sex, lifeStage e occurrenceStatus
+
+- **Data**: 2026-10-08
+- **Status**: Aceito
+- **Contexto**: o usuario so via um erro de celula (data que o parser nao leu, contagem em texto, nome vazio, ID repetido, "M" em `sex`) depois do export, e tinha de corrigir na planilha e subir de novo. Coordenadas, nomes e ameaca ja tem abas proprias.
+- **Decisao**:
+  1. A Pre-visualizacao ganha o modo Problemas, que varre todo o frame mapeado. A aba abre em Problemas quando ha problema aberto e em Tabela quando nao ha, entao a varredura roda ao entrar na aba (60 mil linhas: 1,6 s de mapeamento completo mais 1,6 s de varredura, uma vez por mudanca). Tipos: vocabulario desconhecido, data nao lida, ano fora da faixa, intervalo invertido, eventDate contra year/month/day, individualCount invalido, scientificName ou eventDate vazio, occurrenceID repetido. basisOfRecord e establishmentMeans ficam fora.
+  2. Uma correcao e uma camada sobre o frame mapeado: `row`, `term`, `from`, `to`. Ela so age enquanto a celula ainda mostra `from`, entao uma mudanca no Mapeamento deixa a correcao inerte em vez de escrever sobre outro valor. `row = NA` corrige todas as celulas do termo com o mesmo valor. Um year que difere do eventDate nao usa `row = NA`, porque o mesmo ano pode estar certo em outra linha: a correcao em lote vai para as linhas com o mesmo valor e a mesma sugestao, uma correcao por linha. Termo opcional aceita correcao vazia; scientificName, eventDate e occurrenceID nao. A camada zera com novo upload ou reset do Mapeamento.
+  3. Nomes, Coordenadas, Generalizacao e Exportacao leem o frame corrigido. Uma correcao de scientificName recalcula genus, epitetos, taxonRank e autoria como o mapeamento faz. Um valor que veio de coluna do usuario fica.
+  4. Layout em duas colunas para nao rolar a pagina: vocabulario a esquerda (um cartao por valor; o valor aplicado encolhe para uma linha no mesmo lugar, como as linhas compactas do ADR-137, e a ordem fica), tabela por linha sem paginas (DT Scroller no servidor, linhas de altura fixa) e registro da linha clicada a direita. Depois de salvar, o foco vai para o proximo problema aberto abaixo, na ordem atual da tabela, e a tabela so rola quando essa linha esta fora da vista: uma correcao para todas as linhas com o mesmo valor deixa as copias editadas no caminho.
+  5. `sex`, `lifeStage` e `occurrenceStatus` passam pela tabela `inst/extdata/vocabulary_values.csv` (conceitos GBIF mais sinonimos PT, EN e ES escritos a mao). Valor conhecido vira o conceito no mapeamento ("M" -> male, "visto" -> present). Valor ambiguo ("filhote": juvenile ou nestling) fica como esta e aparece no modo Problemas com as opcoes, e o usuario escolhe.
+- **Alternativas**: chavear a correcao por occurrenceID, rejeitada porque ID repetido e um dos erros a corrigir. Usar os rotulos ocultos do vocabulario GBIF como sinonimos, rejeitada porque traziam valores errados.
+- **Consequencias**: o export de `sex`, `lifeStage` e `occurrenceStatus` muda para quem usava valores fora do vocabulario. A linha da correcao e o indice da linha mapeada, que e 1:1 com a planilha.
+

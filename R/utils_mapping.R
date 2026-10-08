@@ -3161,6 +3161,13 @@ build_term_value <- function(
         )
     } else if (term == "occurrenceStatus") {
         values <- map_occurrence_status_values(df[[user_cols[[1]]]])
+        values <- map_vocabulary_values(term, values)
+    } else if (term %in% c("sex", "lifeStage") && length(user_cols) == 1) {
+        # Known spreadsheet words become GBIF vocabulary concepts ("M" -> male).
+        # Unknown ones keep their text and reach the user in the Preview.
+        values <- map_vocabulary_values(
+            term, normalize_semicolon_tokens(df[[user_cols[[1]]]], out_sep = out_sep)
+        )
     } else if (term == "dynamicProperties") {
         values <- build_dynamic_properties_json(df = df, cols = user_cols, keys = dyn_props_keys)
     } else if (term == "eventDate" && length(user_cols) == 6) {
