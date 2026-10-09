@@ -76,6 +76,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **ui:** Remove the flash at the start of a theme switch: the circle starts in the first frame, and the cards no longer fade from the old color, ADR-144
 - **export:** Write the rank the Names tab found for a one-word name (Felidae as family, not genus), ADR-151 ([#180](https://github.com/rogerio-onza/saira/pull/180))
 - **upload:** Show camera trap read errors without the contradictory "ZIP not recognized" prefix, and show their root cause ([#177](https://github.com/rogerio-onza/saira/pull/177))
 - **datasetName:** Stop filling it, and datasetID, with placeholder values for camera trap zips without a descriptor, ADR-147 ([#175](https://github.com/rogerio-onza/saira/pull/175))

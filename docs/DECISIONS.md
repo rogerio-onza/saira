@@ -2884,6 +2884,7 @@ Formato: ADR leve (Architecture Decision Record).
   - A escolha fica no `localStorage` (`saira-theme`). "Sistema" apaga a chave e segue `prefers-color-scheme`.
   - Um script inline no `<head>` pinta o tema salvo antes do primeiro quadro, entao a pagina escura nunca pisca clara.
   - A troca usa o revelar em circulo do canvas "expressiva": View Transitions, 600 ms, a partir do botao clicado. Sem a API, ou com movimento reduzido, a troca e imediata.
+  - O circulo e uma animacao CSS no `::view-transition-new(root)`, com centro e raio em variaveis que o JS define antes de `startViewTransition()`. Um `animate()` em `vt.ready` chegava um quadro atrasado no Firefox: esse quadro mostrava a pagina nova inteira (um flash). Durante a troca, as transicoes param, para os cards nao mostrarem a cor antiga dentro do circulo.
 - **Alternativas**: tema por `bslib::bs_theme()` no servidor, rejeitado porque recompila o Sass e recarrega o CSS a cada troca.
 - **Consequencias**: todo token de cor novo precisa de valor nos dois temas. Os rotulos do controle seguem o idioma por atributos `data-label-<lang>`.
 - **Site de ajuda**: `website/assets/head.html` repete o controle, os icones Phosphor (SVG) e o circulo. A escolha fica em `saira-theme`, e um script no `<head>` escreve dela o `quarto-color-scheme` antes de o Quarto pintar a pagina.
