@@ -2,6 +2,7 @@
    MOTION (ADR-145)
    The page slides 32px in the direction of the step, toasts come in from the
    right, dialogs rise 16px, and the export pending rows come in one by one.
+   A segmented filter slides its new content in like a page (ADR-156).
    motion.js runs the page slide with the View Transitions API. A browser
    without the API gets a short rise of the new page. Reduced motion turns
    all of it off.
@@ -85,6 +86,36 @@
   .help-faq-item[open] > .help-faq-answer {
     animation: answer-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+
+  /* -- Segmented filters (ADR-156): the thumb slides to the picked option
+     and the new content comes in 32px from its side, as a page does -- */
+  .saira-seg.has-thumb .seg-thumb {
+    transition:
+      transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      width 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .saira-seg.has-thumb .radio-inline {
+    transition: color 200ms ease;
+  }
+
+  .seg-wait {
+    opacity: 0.45;
+    transition: opacity 120ms ease-out;
+  }
+
+  /* The new grid, hidden while the browser lays it out (motion.js). */
+  .seg-hold {
+    opacity: 0;
+  }
+
+  .seg-enter {
+    animation: seg-slide-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .seg-enter.seg-back {
+    animation-name: seg-slide-in-back;
+  }
 }
 
 @keyframes page-slide-in {
@@ -98,6 +129,22 @@
   to {
     opacity: 0;
     transform: translateX(calc(-1 * var(--tab-slide)));
+  }
+}
+
+/* The page slide with fixed offsets. A custom property set on the Mapping
+   grid restyles every card in it, at the start and at the end. */
+@keyframes seg-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes seg-slide-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
   }
 }
 

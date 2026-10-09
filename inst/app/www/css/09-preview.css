@@ -299,9 +299,12 @@
 
 
 /* Title inside the table card, on the row of the DT search and length
-   controls (round 5, option B). Both controls float right (dom "flrtip"). */
+   controls (round 5, option B). Both controls float right (dom "flrtip").
+   The table scrolls sideways inside DT (scrollX), so the clip only hides the
+   32px a mode starts outside on a Table | Problems change (ADR-156). */
 .preview-table-shell {
   position: relative;
+  overflow-x: clip;
 }
 
 .preview-card-head {
@@ -347,51 +350,9 @@
   }
 }
 
-/* --- Table | Problems: a segmented control over the native radios, as in
-   the Mapping sidebar. --- */
-.preview-card-head .shiny-input-container {
-  width: auto;
-  margin: 0;
+/* Table | Problems uses the shared segmented control (.saira-seg, 05-forms). */
+.preview-card-head .saira-seg {
   align-self: center;
-}
-
-.preview-card-head .shiny-options-group {
-  display: inline-flex;
-  gap: var(--space-1);
-  padding: 2px;
-  background: var(--bg-main);
-  border-radius: var(--radius);
-}
-
-.preview-card-head .radio-inline {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  margin: 0;
-  padding: 0 var(--space-3);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-ui);
-  font-size: var(--text-sm);
-  line-height: 1;
-  cursor: pointer;
-}
-
-.preview-card-head .radio-inline input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.preview-card-head .radio-inline:has(input:checked) {
-  background: var(--bg-card);
-  border-color: var(--border-default);
-  color: var(--step-active);
-  font-weight: 700;
-}
-
-.preview-card-head .radio-inline:has(input:focus-visible) {
-  box-shadow: var(--focus-ring-primary);
 }
 
 /* --- Problems mode (ADR-150) --- */

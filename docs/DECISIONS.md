@@ -2997,3 +2997,29 @@ Formato: ADR leve (Architecture Decision Record).
 - **Decisao**: o pacote leva as duas bases em `inst/extdata/brproviders/` (`florabr.rds`, `faunabr.rds` e `snapshot.json` com versao e data). Sem cache, `brprovider_data_available()` copia o snapshot para o cache do usuario e grava a versao no meta. Dali em diante vale o fluxo de sempre: a checagem diaria baixa versao mais nova do IPT quando ele responde, e um cache do usuario nunca e substituido pelo snapshot. `data-raw/update_brproviders.R` refaz o snapshot (`--cache` usa o cache local quando o IPT recusa), e o passo 2 do `scripts/release_gate.R` compara o snapshot com o IPT, sem bloquear.
 - **Alternativas**: publicar os `.rds` como asset do GitHub Release, rejeitada porque continua exigindo rede na primeira validacao. Ler o snapshot direto de `inst/` sem copiar, rejeitada porque o fluxo de atualizacao, backup e lock trabalha sobre o cache.
 - **Consequencias**: Flora e Fauna BR ficam disponiveis desde a primeira sessao, entao a aba Nomes ja as pre-seleciona. O snapshot envelhece entre releases. Cada troca soma cerca de 8 MB ao historico do git. A Ajuda lista as duas bases com a licenca CC BY 4.0.
+
+## ADR-155: Contagens de acao no menu e nos filtros
+
+- **Data**: 2026-10-08
+- **Status**: Aceito
+- **Contexto**: o passo 3 do menu nao dizia se a Pre-visualizacao tinha algo a corrigir, e o filtro Pendentes do Mapeamento mostrava todo termo sem coluna (cerca de 45), enquanto "Proximo pendente" contava 4. Canvas aprovado em 2026-10-08 (Menu D, filtros V1).
+- **Decisao**:
+  - O passo 3 mostra os problemas abertos em vermelho, ou um check verde quando nao ha nenhum. `mod_preview_server` devolve a contagem no atributo `problems_n_r`.
+  - A contagem le o conjunto completo (ADR-021), cerca de 1,3 s em 21.512 linhas. Ela so recalcula numa troca de aba, numa correcao da Pre-visualizacao ou 1,5 s depois da ultima mudanca de mapeamento (`refresh_r`).
+  - Um controle segmentado compartilhado (`.saira-seg`, 30 px) leva as contagens de Relevantes, Todos, Mapeados e Pendentes, e de Problemas. Contagem de trabalho a fazer fica vermelha (`--error-fill`), como no menu e em "Proximo pendente".
+  - Pendentes usa a regra de "Proximo pendente" (`field_state_class()`): obrigatorio sem coluna ou sugestao incerta. `term_states()` alimenta as bolinhas, a fila e as contagens.
+- **Alternativas**: contar a cada edicao, rejeitada pelo custo acima. Contar so fora da aba Mapeamento, rejeitada porque o badge nao apareceria depois do upload, que abre o Mapeamento.
+- **Consequencias**: na aba Mapeamento o badge atrasa 1,5 s em relacao a edicao. Mudar um valor fixo sem mudar coluna so atualiza o badge na troca de aba.
+
+## ADR-156: Movimento na troca dos filtros segmentados
+
+- **Data**: 2026-10-08
+- **Status**: Aceito
+- **Contexto**: o filtro do Mapeamento e a troca Tabela | Problemas trocavam o conteudo sem movimento, ao contrario das abas (ADR-145). Canvas de 2026-10-08, opcao A "Deslizar".
+- **Decisao**:
+  - Um thumb unico desliza ate a opcao escolhida em 240 ms. `motion.js` cria o thumb em todo `.saira-seg` e o reposiciona num `ResizeObserver`, porque as contagens mudam a largura das opcoes.
+  - Numa escolha do usuario (evento confiavel), o elemento de `data-seg-target` entra 32 px pelo lado da opcao, em 320 ms, com o movimento das abas. Uma atualizacao do servidor so move o thumb.
+  - O grid do Mapeamento vem do servidor: `data-seg-wait` nomeia o `uiOutput`, o grid antigo esmaece no clique e o novo desliza quando o valor chega. A troca Tabela | Problemas e no cliente e desliza no proximo quadro.
+  - Com 66 cards, o primeiro quadro do grid novo gasta cerca de 80 ms em layout. O grid fica invisivel nesse quadro (`seg-hold`) e o deslize comeca no seguinte. Os keyframes usam deslocamento fixo e o recorte horizontal dos conteineres e fixo, porque mudar uma variavel CSS ou o `overflow` na caixa refaz o estilo ou o layout de todos os cards. Medido no Chrome headless: quadros de ate 133 ms antes, 17 ms em 6 de 8 trocas depois.
+  - Movimento reduzido desliga o deslize e o esmaecimento. O thumb continua, sem transicao.
+- **Consequencias**: o grid fica numa `div` propria (`grid_box`), porque um `uiOutput` com conteudo e `display: contents` no Shiny com BS5 e nao anima. O deslize do Mapeamento comeca so depois da reconstrucao do grid no servidor.

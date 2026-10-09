@@ -660,16 +660,19 @@ field_state_class <- function(term, is_mapped, meta, required_terms) {
 #' Whether a card passes the Relevant / All / Mapped / Pending filter
 #'
 #' "relevant" keeps every card, like "all": it collapses some of them to rows
-#' instead (see [collapse_mapping_term()]).
+#' instead (see [collapse_mapping_term()]). "pending" keeps the cards that need
+#' the user (see [field_state_class()]), the same queue as "Next pending". An
+#' unmapped optional term needs nothing, so it is not pending.
 #'
 #' @param mode "relevant", "all", "mapped" or "pending"
 #' @param is_mapped logical, the card's mapped state
+#' @param needs_action logical, TRUE when `field_state_class()` gives a class
 #' @return logical
 #' @noRd
-keep_by_mapped_filter <- function(mode, is_mapped) {
+keep_by_mapped_filter <- function(mode, is_mapped, needs_action = FALSE) {
     switch(mode %||% "all",
         mapped = isTRUE(is_mapped),
-        pending = !isTRUE(is_mapped),
+        pending = isTRUE(needs_action),
         TRUE
     )
 }

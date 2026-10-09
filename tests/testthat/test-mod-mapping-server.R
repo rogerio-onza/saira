@@ -868,11 +868,22 @@ testthat::test_that("All / Mapped / Pending filter keeps the matching cards", {
             testthat::expect_true(grepl("fieldcard_scientificName", grid_all, fixed = TRUE))
             testthat::expect_true(grepl("field-required-tag", grid_all, fixed = TRUE))
 
+            # The filter counts match the cards each option shows.
+            control <- output$mapped_filter_control$html
+            pending_chip <- regmatches(control, regexpr(
+                '<span class="seg-n is-act" data-action="true" id="[^"]*filter_n_pending">[0-9]+</span>', control
+            ))
+            testthat::expect_length(pending_chip, 1L)
+
             session$setInputs(mapped_filter = "pending")
             session$flushReact()
             grid_pending <- paste(output$mapping_ui$html, collapse = " ")
             testthat::expect_false(grepl("fieldcard_occurrenceID", grid_pending, fixed = TRUE))
             testthat::expect_true(grepl("fieldcard_scientificName", grid_pending, fixed = TRUE))
+            # An unmapped optional term needs nothing, so it is not pending.
+            testthat::expect_false(grepl("fieldcard_recordedBy", grid_pending, fixed = TRUE))
+            n_pending <- lengths(regmatches(grid_pending, gregexpr('id="[^"]*fieldcard_', grid_pending)))
+            testthat::expect_match(pending_chip, paste0(">", n_pending, "</span>"), fixed = TRUE)
 
             session$setInputs(mapped_filter = "mapped")
             session$flushReact()

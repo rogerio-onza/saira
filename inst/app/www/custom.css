@@ -601,6 +601,38 @@ label,
   color: inherit;
 }
 
+/* -- Open problems after the Preview step name: a red count, or a green check
+   when there is nothing to fix -- */
+.navbar .nav-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  margin-left: var(--space-2);
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--error-fill);
+  color: var(--on-fill);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 1px;
+}
+
+.navbar .nav-count.is-clear {
+  min-width: 0;
+  padding: 0;
+  background: none;
+  color: var(--success-text);
+  font-size: var(--text-base-sm);
+}
+
+.navbar .nav-link.active .nav-count.is-clear {
+  color: inherit;
+}
+
 /* -- Two-row header from 992px (ADR-128) --
    Row 1: brand, Wiki DwC, Help, language and version. Row 2: the numbered
    steps. bslib puts every item in one list, so the list wraps: `order` puts
@@ -969,6 +1001,117 @@ label,
   background-color: var(--primary-hover);
 }
 
+
+/* Segmented control over native inline radios, with an optional count per
+   option (Preview Table | Problems, Mapping filter). 30px options in a 2px
+   track fit the 34px Preview head. A count of work left to do is red, like
+   the nav badge. */
+.saira-seg .shiny-input-container {
+  width: auto;
+  margin: 0;
+}
+
+.saira-seg .shiny-options-group {
+  position: relative;
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-main);
+  border-radius: var(--radius);
+}
+
+.saira-seg .radio-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  margin: 0;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-chip);
+  font-family: var(--font-ui);
+  font-size: var(--text-base-sm);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.saira-seg .radio-inline input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.saira-seg .radio-inline:has(input:checked) {
+  background: var(--bg-card);
+  border-color: var(--step-active);
+  color: var(--step-active);
+  font-weight: 700;
+}
+
+.saira-seg .radio-inline:has(input:focus-visible) {
+  box-shadow: var(--focus-ring-primary);
+}
+
+/* motion.js draws the selection as one thumb that slides between the
+   options (ADR-156). Until the thumb is in place, the option draws it. */
+.saira-seg .seg-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--step-active);
+  border-radius: var(--radius-chip);
+  pointer-events: none;
+}
+
+.saira-seg.has-thumb .radio-inline {
+  position: relative;
+}
+
+.saira-seg.has-thumb .radio-inline:has(input:checked) {
+  background: transparent;
+  border-color: transparent;
+}
+
+.saira-seg .seg-ok {
+  display: none;
+}
+
+.saira-seg .radio-inline:has(input:checked) .seg-ok {
+  display: inline-block;
+}
+
+.saira-seg .seg-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.saira-seg .seg-n:empty {
+  display: none;
+}
+
+.saira-seg .radio-inline:has(input:checked) .seg-n {
+  background: var(--bg-main);
+  color: var(--step-active);
+}
+
+.saira-seg .seg-n.is-act,
+.saira-seg .radio-inline:has(input:checked) .seg-n.is-act {
+  background: var(--error-fill);
+  color: var(--on-fill);
+}
 /* =============================================================================
    ALERTS & NOTIFICATIONS
    ============================================================================= */
@@ -2100,9 +2243,12 @@ label,
 
 
 /* Title inside the table card, on the row of the DT search and length
-   controls (round 5, option B). Both controls float right (dom "flrtip"). */
+   controls (round 5, option B). Both controls float right (dom "flrtip").
+   The table scrolls sideways inside DT (scrollX), so the clip only hides the
+   32px a mode starts outside on a Table | Problems change (ADR-156). */
 .preview-table-shell {
   position: relative;
+  overflow-x: clip;
 }
 
 .preview-card-head {
@@ -2148,51 +2294,9 @@ label,
   }
 }
 
-/* --- Table | Problems: a segmented control over the native radios, as in
-   the Mapping sidebar. --- */
-.preview-card-head .shiny-input-container {
-  width: auto;
-  margin: 0;
+/* Table | Problems uses the shared segmented control (.saira-seg, 05-forms). */
+.preview-card-head .saira-seg {
   align-self: center;
-}
-
-.preview-card-head .shiny-options-group {
-  display: inline-flex;
-  gap: var(--space-1);
-  padding: 2px;
-  background: var(--bg-main);
-  border-radius: var(--radius);
-}
-
-.preview-card-head .radio-inline {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  margin: 0;
-  padding: 0 var(--space-3);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-ui);
-  font-size: var(--text-sm);
-  line-height: 1;
-  cursor: pointer;
-}
-
-.preview-card-head .radio-inline input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.preview-card-head .radio-inline:has(input:checked) {
-  background: var(--bg-card);
-  border-color: var(--border-default);
-  color: var(--step-active);
-  font-weight: 700;
-}
-
-.preview-card-head .radio-inline:has(input:focus-visible) {
-  box-shadow: var(--focus-ring-primary);
 }
 
 /* --- Problems mode (ADR-150) --- */
@@ -3560,8 +3664,12 @@ table.dataTable tbody tr.validate-invalid td {
    ============================================================================= */
 
 /* Scrollable container for mapping cards */
+/* No horizontal scroll bar for the 32px the grid starts outside on a filter
+   change (ADR-156). Fixed, because a change of overflow lays out all the
+   cards again in the first frame of the slide. */
 .mapping-scroll-container {
   max-height: calc(100vh - var(--app-header-height) - 120px);
+  overflow-x: hidden;
   overflow-y: auto;
   padding-right: 15px;
   scrollbar-gutter: stable;
@@ -4154,11 +4262,12 @@ table.dataTable tbody tr.validate-invalid td {
   font-variant-numeric: tabular-nums;
 }
 
+/* Red like the Pending filter count and the nav badge: work left to do. */
 .next-pending-count:not(:empty) {
   margin-left: 0.35rem;
   padding: 0 0.35rem;
   border-radius: var(--radius-full);
-  background-color: var(--accent-fill);
+  background-color: var(--error-fill);
   color: var(--on-fill);
 }
 
@@ -5011,48 +5120,6 @@ table.dataTable tbody tr.validate-invalid td {
   gap: var(--space-4);
 }
 
-.mapping-card-header .shiny-input-container {
-  width: auto;
-  margin: 0;
-}
-
-.mapping-card-header .shiny-options-group {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  background: var(--bg-main);
-  border-radius: var(--radius);
-}
-
-.mapping-card-header .radio-inline {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  margin: 0;
-  padding: 0 var(--space-3);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-ui);
-  font-size: var(--text-xs);
-  cursor: pointer;
-}
-
-.mapping-card-header .radio-inline input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.mapping-card-header .radio-inline:has(input:checked) {
-  background: var(--bg-card);
-  border-color: var(--border-default);
-  color: var(--step-active);
-  font-weight: 700;
-}
-
-.mapping-card-header .radio-inline:has(input:focus-visible) {
-  box-shadow: var(--focus-ring-primary);
-}
 /* =============================================================================
    VALIDATE NAMES: TWO COLUMN UX + INCREMENTAL STREAM
    ============================================================================= */
@@ -10037,6 +10104,7 @@ html.theme-reveal::view-transition-new(root) {
    MOTION (ADR-145)
    The page slides 32px in the direction of the step, toasts come in from the
    right, dialogs rise 16px, and the export pending rows come in one by one.
+   A segmented filter slides its new content in like a page (ADR-156).
    motion.js runs the page slide with the View Transitions API. A browser
    without the API gets a short rise of the new page. Reduced motion turns
    all of it off.
@@ -10120,6 +10188,36 @@ html.theme-reveal::view-transition-new(root) {
   .help-faq-item[open] > .help-faq-answer {
     animation: answer-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+
+  /* -- Segmented filters (ADR-156): the thumb slides to the picked option
+     and the new content comes in 32px from its side, as a page does -- */
+  .saira-seg.has-thumb .seg-thumb {
+    transition:
+      transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      width 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .saira-seg.has-thumb .radio-inline {
+    transition: color 200ms ease;
+  }
+
+  .seg-wait {
+    opacity: 0.45;
+    transition: opacity 120ms ease-out;
+  }
+
+  /* The new grid, hidden while the browser lays it out (motion.js). */
+  .seg-hold {
+    opacity: 0;
+  }
+
+  .seg-enter {
+    animation: seg-slide-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .seg-enter.seg-back {
+    animation-name: seg-slide-in-back;
+  }
 }
 
 @keyframes page-slide-in {
@@ -10133,6 +10231,22 @@ html.theme-reveal::view-transition-new(root) {
   to {
     opacity: 0;
     transform: translateX(calc(-1 * var(--tab-slide)));
+  }
+}
+
+/* The page slide with fixed offsets. A custom property set on the Mapping
+   grid restyles every card in it, at the start and at the end. */
+@keyframes seg-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes seg-slide-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
   }
 }
 

@@ -3,8 +3,12 @@
    ============================================================================= */
 
 /* Scrollable container for mapping cards */
+/* No horizontal scroll bar for the 32px the grid starts outside on a filter
+   change (ADR-156). Fixed, because a change of overflow lays out all the
+   cards again in the first frame of the slide. */
 .mapping-scroll-container {
   max-height: calc(100vh - var(--app-header-height) - 120px);
+  overflow-x: hidden;
   overflow-y: auto;
   padding-right: 15px;
   scrollbar-gutter: stable;
@@ -597,11 +601,12 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Red like the Pending filter count and the nav badge: work left to do. */
 .next-pending-count:not(:empty) {
   margin-left: 0.35rem;
   padding: 0 0.35rem;
   border-radius: var(--radius-full);
-  background-color: var(--accent-fill);
+  background-color: var(--error-fill);
   color: var(--on-fill);
 }
 
@@ -1454,45 +1459,3 @@
   gap: var(--space-4);
 }
 
-.mapping-card-header .shiny-input-container {
-  width: auto;
-  margin: 0;
-}
-
-.mapping-card-header .shiny-options-group {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  background: var(--bg-main);
-  border-radius: var(--radius);
-}
-
-.mapping-card-header .radio-inline {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  margin: 0;
-  padding: 0 var(--space-3);
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  font-family: var(--font-ui);
-  font-size: var(--text-xs);
-  cursor: pointer;
-}
-
-.mapping-card-header .radio-inline input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.mapping-card-header .radio-inline:has(input:checked) {
-  background: var(--bg-card);
-  border-color: var(--border-default);
-  color: var(--step-active);
-  font-weight: 700;
-}
-
-.mapping-card-header .radio-inline:has(input:focus-visible) {
-  box-shadow: var(--focus-ring-primary);
-}

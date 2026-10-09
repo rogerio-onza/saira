@@ -61,7 +61,10 @@ mod_mapping_ui <- function(id) {
                         class = "mapping-scroll-container",
                         shiny::uiOutput(ns("duplicate_source_warning")),
                         shiny::uiOutput(ns("class_pills")),
-                        shiny::uiOutput(ns("mapping_ui"))
+                        # A uiOutput with content has no box of its own
+                        # (display: contents), so this box is what the filter
+                        # motion slides (ADR-156).
+                        shiny::div(id = ns("grid_box"), shiny::uiOutput(ns("mapping_ui")))
                     )
                 ),
                 shiny::conditionalPanel(
@@ -187,6 +190,13 @@ mod_mapping_ui <- function(id) {
               if (btn) {
                 btn.classList.toggle('is-idle', !(payload.count > 0));
               }
+              Object.keys(payload.filters || {}).forEach(function (key) {
+                var chip = document.getElementById(payload.filter_prefix + key);
+                if (!chip) { return; }
+                var n = payload.filters[key];
+                chip.textContent = String(n);
+                chip.classList.toggle('is-act', chip.dataset.action === 'true' && n > 0);
+              });
             })();
           });
           // Live-toggle a field card's mapped border without re-rendering the
@@ -1084,21 +1094,29 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # sits in the panel header because it acts on the whole panel (ADR-132).
         # Relevant, the default, collapses the unmapped optional terms to one
         # line per class (ADR-137).
+        # The counts come from triage_state(); the saira-mapping-triage
+        # handler patches them in place after each mapping change.
+        # motion.js slides the grid in once the server renders it (ADR-156).
         output$mapped_filter_control <- shiny::renderUI({
-            shiny::radioButtons(
-                ns("mapped_filter"),
-                label = shiny::tags$span(tr("mapping_filter_label", lang_r()), class = "visually-hidden"),
-                choices = stats::setNames(
-                    c("relevant", "all", "mapped", "pending"),
-                    c(
-                        tr("mapping_filter_relevant", lang_r()),
-                        tr("mapping_filter_all", lang_r()),
-                        tr("mapping_filter_mapped", lang_r()),
-                        tr("mapping_filter_pending", lang_r())
-                    )
-                ),
-                selected = shiny::isolate(input$mapped_filter %||% "relevant"),
-                inline = TRUE
+            lang <- lang_r()
+            modes <- c("relevant", "all", "mapped", "pending")
+            counts <- shiny::isolate(triage_state(lang))$filters
+            shiny::div(
+                class = "saira-seg",
+                `data-seg-target` = ns("grid_box"),
+                `data-seg-wait` = ns("mapping_ui"),
+                shiny::radioButtons(
+                    ns("mapped_filter"),
+                    label = shiny::tags$span(tr("mapping_filter_label", lang), class = "visually-hidden"),
+                    choiceNames = lapply(modes, function(mode) seg_choice(
+                        tr(paste0("mapping_filter_", mode), lang),
+                        seg_count(counts[[mode]], action = identical(mode, "pending"),
+                                  id = ns(paste0("filter_n_", mode)))
+                    )),
+                    choiceValues = modes,
+                    selected = shiny::isolate(input$mapped_filter %||% "relevant"),
+                    inline = TRUE
+                )
             )
         })
 
@@ -1603,10 +1621,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             )
         })
 
-        # Terms that still need the user, in grid order: a required term with no
-        # mapping, or one the Rostrum was not sure about. Feeds both the pill
-        # dots and the "next pending" queue, so the count and the jump target
-        # can never disagree.
+        # State of every term, in grid order. A pending term still needs the
+        # user: a required term with no mapping, or one the Rostrum was not sure
+        # about. Feeds the pill dots, the "next pending" queue and the filter
+        # counts, so the counts and the jump target can never disagree.
         # Fully isolated: the caller declares what it wakes on. Reading the 66
         # map_ and usecustom_ inputs here would make the triage observer depend
         # on all of them, and auto-map writes each term separately with
@@ -1614,9 +1632,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # once per flush. rv$map_values is the source of truth anyway; the sync
         # observer fills it one flush after a selection, which is what the
         # observer below wakes on.
-        pending_terms <- function() shiny::isolate({
-            fields <- dwc_all()
-            keep <- vapply(fields, function(item) {
+        term_states <- function() shiny::isolate({
+            lapply(dwc_all(), function(item) {
                 term <- item$term
                 current_val <- rv$map_values[[term]]
                 if (is.null(current_val)) {
@@ -1635,19 +1652,33 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 card_state <- apply_establishment_card_state(
                     term, current_val, is_mapped, field_meta
                 )
-                !is.null(field_state_class(
-                    term, card_state$is_mapped, card_state$meta,
-                    required_fields_strip
-                ))
-            }, FUN.VALUE = logical(1))
-
-            fields[keep]
+                list(
+                    item = item,
+                    is_mapped = isTRUE(card_state$is_mapped),
+                    pending = !is.null(field_state_class(
+                        term, card_state$is_mapped, card_state$meta,
+                        required_fields_strip
+                    )),
+                    compact = collapse_mapping_term(
+                        term, card_state$is_mapped,
+                        fixed_value_on = input[[paste0("usecustom_", term)]],
+                        extra = rv$extra_terms
+                    )
+                )
+            })
         })
+
+        pending_terms <- function() {
+            pending <- Filter(function(x) x$pending, term_states())
+            lapply(pending, function(x) x$item)
+        }
 
         # Dot state per category plus the pending count. Read by the pill bar
         # render and by the observer below, so both always draw the same state.
         triage_state <- function(lang) {
-            pending <- pending_terms()
+            states <- term_states()
+            flag <- function(key) vapply(states, function(x) x[[key]], FUN.VALUE = logical(1))
+            pending <- lapply(states[flag("pending")], function(x) x$item)
             blocked <- vapply(
                 pending, function(x) x$term %in% required_fields_strip,
                 FUN.VALUE = logical(1)
@@ -1674,7 +1705,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 )
             })
 
-            list(dots = dots, count = length(pending))
+            # Cards each Relevant / All / Mapped / Pending option shows.
+            filters <- list(
+                relevant = sum(!flag("compact")), all = length(states),
+                mapped = sum(flag("is_mapped")), pending = length(pending)
+            )
+
+            list(dots = dots, count = length(pending), filters = filters)
         }
 
         # Push the dot states and the counter whenever the mapping changes.
@@ -1689,7 +1726,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 dots = triage$dots,
                 count = triage$count,
                 count_id = ns("next_pending_count"),
-                button_id = ns("next_pending")
+                button_id = ns("next_pending"),
+                filters = triage$filters,
+                filter_prefix = ns("filter_n_")
             ))
         })
 
@@ -2116,8 +2155,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         )
                         is_mapped <- card_state$is_mapped
                         field_meta <- card_state$meta
+                        state_class <- field_state_class(
+                            term, is_mapped, field_meta, required_fields_strip
+                        )
 
-                        if (!keep_by_mapped_filter(mapped_filter, is_mapped)) {
+                        if (!keep_by_mapped_filter(mapped_filter, is_mapped, !is.null(state_class))) {
                             return(NULL)
                         }
 
@@ -2143,9 +2185,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             sample_text = paste(sample_vals, collapse = "  "),
                             is_mapped = is_mapped,
                             badge_info = if (locked_taxon) NULL else build_badge_info(field_meta),
-                            state_class = field_state_class(
-                                term, is_mapped, field_meta, required_fields_strip
-                            ),
+                            state_class = state_class,
                             ns = ns, lang_r = lang
                         )
                     })
@@ -2270,8 +2310,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             is_mapped <- card_state$is_mapped
                             field_meta <- card_state$meta
                             badge_info <- build_badge_info(field_meta)
+                            state_class <- field_state_class(
+                                term, is_mapped, field_meta, required_fields_strip
+                            )
 
-                            if (!keep_by_mapped_filter(mapped_filter, is_mapped)) {
+                            if (!keep_by_mapped_filter(mapped_filter, is_mapped, !is.null(state_class))) {
                                 return(NULL)
                             }
                             compact <- identical(mapped_filter, "relevant") &&
@@ -2290,10 +2333,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                                 input = input, cat_class = cat_class,
                                 scientificname_mapped = scientificname_mapped,
                                 required = term %in% required_fields_strip,
-                                state_class = field_state_class(
-                                    term, is_mapped, field_meta,
-                                    required_fields_strip
-                                ),
+                                state_class = state_class,
                                 compact = compact
                             ))
                         })

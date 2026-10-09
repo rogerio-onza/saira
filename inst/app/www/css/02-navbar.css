@@ -249,6 +249,38 @@
   color: inherit;
 }
 
+/* -- Open problems after the Preview step name: a red count, or a green check
+   when there is nothing to fix -- */
+.navbar .nav-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  margin-left: var(--space-2);
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--error-fill);
+  color: var(--on-fill);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 1px;
+}
+
+.navbar .nav-count.is-clear {
+  min-width: 0;
+  padding: 0;
+  background: none;
+  color: var(--success-text);
+  font-size: var(--text-base-sm);
+}
+
+.navbar .nav-link.active .nav-count.is-clear {
+  color: inherit;
+}
+
 /* -- Two-row header from 992px (ADR-128) --
    Row 1: brand, Wiki DwC, Help, language and version. Row 2: the numbered
    steps. bslib puts every item in one list, so the list wraps: `order` puts

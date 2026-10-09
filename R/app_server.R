@@ -32,7 +32,10 @@ app_server <- function(input, output, session) {
     })
 
     output$nav_preview_title <- shiny::renderUI({
-        tr("nav_preview", lang_r())
+        shiny::tagList(
+            tr("nav_preview", lang_r()),
+            preview_nav_badge(preview_problems_n(), lang_r())
+        )
     })
 
     output$nav_validate_names_title <- shiny::renderUI({
@@ -132,15 +135,21 @@ app_server <- function(input, output, session) {
     # problems. Its corrections sit on top of the mapped frame, so every tab
     # after it (Names, Coordinates, Generalization, Export) reads the corrected
     # data.
+    # The nav badge counts the problems on the full mapped frame (ADR-021),
+    # about 1.3 s for 21k rows, so it recounts on a tab change or after a
+    # pause in the mapping edits, never on each edit.
+    mapping_settled <- shiny::debounce(mapping_result$map_values_r, 1500)
     preview_r <- mod_preview_server(
         "preview", preview_data, lang_r,
         full_data_r = mapped_data,
         raw_data_r = raw_data,
         reset_signal_r = reset_signal,
         on_navigate = navigate_to,
-        active_r = shiny::reactive(identical(input$main_nav, "preview"))
+        active_r = shiny::reactive(identical(input$main_nav, "preview")),
+        refresh_r = shiny::reactive(list(input$main_nav, mapping_settled()))
     )
     edited_data <- attr(preview_r, "edited_data_r")
+    preview_problems_n <- attr(preview_r, "problems_n_r")
 
     validate_names_r <- mod_validate_names_server("validate_names", edited_data, lang_r, validation_gate_r = validation_gate, reset_signal_r = reset_signal)
     name_review_payload_r <- attr(validate_names_r, "review_export_payload")
