@@ -14,6 +14,15 @@
   scrollbar-gutter: stable;
 }
 
+/* The filter slide gives the grid its own layer. On a transparent layer
+   Chrome splits the cards into one layer each (88 with all cards). The card
+   color makes the layer opaque, so Chrome draws all cards in one layer
+   (ADR-157). Only during the slide: at rest the box stays transparent, so a
+   theme switch does not change. */
+.mapping-grid-box.seg-enter {
+  background: var(--bg-card);
+}
+
 /* Category headers */
 .category-header {
   color: var(--text-primary);
@@ -69,11 +78,24 @@
   }
 }
 
-/* Relevant filter (ADR-137): after each class grid, one line lists the
-   unmapped optional terms. It opens a grid of compact rows, which are the
-   real cards with .field-card-compact, so the inputs stay bound. */
+/* Relevant filter (ADR-137): after the cards of a class, one line lists the
+   unmapped optional terms. It opens the compact rows, which are the real
+   cards with .field-card-compact, so the inputs stay bound. The line and the
+   rows are items of the class grid (ADR-157): the order property puts them
+   after the cards, so a filter switch moves no card in the DOM. */
 .mapping-more-group {
+  grid-column: 1 / -1;
+  order: 1;
+  /* The term list does not wrap. Without this its full width sets the
+     minimum of the one column below 860px. */
+  min-width: 0;
   margin-top: var(--space-2);
+}
+
+/* The grid gap is --space-3. Below the cards the line keeps its old
+   --space-2. */
+.mapping-card-grid:has(> .field-card:not(.field-card-collapsed)) > .mapping-more-group {
+  margin-top: calc(var(--space-2) - var(--space-3));
 }
 
 .mapping-more {
@@ -130,15 +152,52 @@
   display: inline;
 }
 
-.mapping-row-grid {
-  display: none;
-  align-items: start;
-  gap: var(--space-2);
-  margin-top: var(--space-2);
+/* The rows keep the --space-2 gap they had in their own grid: a negative
+   margin on each side cuts the --space-3 gap of the class grid. */
+.field-card-collapsed {
+  --row-cut: calc(var(--space-2) - var(--space-3));
+  order: 2;
+  align-self: start;
+  margin-top: var(--row-cut);
 }
 
-.mapping-more-group.is-open .mapping-row-grid {
-  display: grid;
+.mapping-card-grid:has(> .mapping-more-group:not(.is-open)) > .field-card-collapsed {
+  display: none;
+}
+
+.field-card-collapsed:nth-child(3n + 1 of .field-card-collapsed) {
+  margin-right: calc(var(--row-cut) * 2 / 3);
+}
+
+.field-card-collapsed:nth-child(3n + 2 of .field-card-collapsed) {
+  margin-right: calc(var(--row-cut) / 3);
+  margin-left: calc(var(--row-cut) / 3);
+}
+
+.field-card-collapsed:nth-child(3n of .field-card-collapsed) {
+  margin-left: calc(var(--row-cut) * 2 / 3);
+}
+
+@media (max-width: 1280px) {
+  .field-card-collapsed:nth-child(n of .field-card-collapsed) {
+    margin-right: 0;
+    margin-left: 0;
+  }
+
+  .field-card-collapsed:nth-child(2n + 1 of .field-card-collapsed) {
+    margin-right: calc(var(--row-cut) / 2);
+  }
+
+  .field-card-collapsed:nth-child(2n of .field-card-collapsed) {
+    margin-left: calc(var(--row-cut) / 2);
+  }
+}
+
+@media (max-width: 860px) {
+  .field-card-collapsed:nth-child(n of .field-card-collapsed) {
+    margin-right: 0;
+    margin-left: 0;
+  }
 }
 
 /* Compact row: term name, then the column select, then "Fixed value" for
@@ -229,7 +288,9 @@
      content's intrinsic width; without this the no-wrap .field-card-sample
      blows the card past its 1fr track and the ellipsis never engages. */
   min-width: 0;
-  transition: var(--transition-base);
+  /* Colors only: a filter switch changes the padding and the margins of a
+     card in place, and a layout transition then runs on the main thread. */
+  transition: var(--transition-colors);
 }
 
 .field-card:hover {

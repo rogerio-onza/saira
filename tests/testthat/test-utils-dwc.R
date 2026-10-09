@@ -493,6 +493,10 @@ testthat::test_that("collapse_mapping_term keeps relevant, mapped and added term
     testthat::expect_false(collapse_mapping_term("country", FALSE, fixed_value_on = TRUE))
     testthat::expect_true(collapse_mapping_term("country", FALSE, fixed_value_on = NULL))
     testthat::expect_false(collapse_mapping_term("taxonID", FALSE, extra = "taxonID"))
+
+    testthat::expect_true(collapsible_mapping_term("recordedBy"))
+    testthat::expect_false(collapsible_mapping_term("datasetName"))
+    testthat::expect_false(collapsible_mapping_term("taxonID", extra = "taxonID"))
 })
 
 testthat::test_that("wide_card_terms only spans terms that need the extra track", {

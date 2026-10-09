@@ -848,7 +848,7 @@ testthat::test_that("a language switch keeps the pill dots and the pending count
     )
 })
 
-testthat::test_that("All / Mapped / Pending filter keeps the matching cards", {
+testthat::test_that("Mapping filter hides cards in place and a switch does not rebuild the grid", {
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis"),
         stringsAsFactors = FALSE
@@ -861,35 +861,37 @@ testthat::test_that("All / Mapped / Pending filter keeps the matching cards", {
             lang_r = shiny::reactive("en")
         ),
         {
-            session$flushReact()
-            grid_all <- paste(output$mapping_ui$html, collapse = " ")
-            # occurrenceID is auto-UUID -> mapped; scientificName is not mapped.
-            testthat::expect_true(grepl("fieldcard_occurrenceID", grid_all, fixed = TRUE))
-            testthat::expect_true(grepl("fieldcard_scientificName", grid_all, fixed = TRUE))
-            testthat::expect_true(grepl("field-required-tag", grid_all, fixed = TRUE))
+            # The first render reads the filter, so the cards come in at
+            # their place (ADR-157).
+            session$setInputs(mapped_filter = "pending")
+            grid <- paste(output$mapping_ui$html, collapse = " ")
+            card_tag <- function(term) {
+                regmatches(grid, regexpr(
+                    paste0('<div id="', ns(paste0("fieldcard_", term)), '"[^>]*>'), grid
+                ))
+            }
+            # Every card is in the grid, and the filter hides the ones it
+            # drops. occurrenceID is auto-UUID -> mapped; scientificName is
+            # not mapped.
+            testthat::expect_match(card_tag("occurrenceID"), " hidden>", fixed = TRUE)
+            testthat::expect_no_match(card_tag("scientificName"), " hidden>", fixed = TRUE)
+            testthat::expect_true(grepl("field-required-tag", grid, fixed = TRUE))
+            # An unmapped optional term needs nothing, so it is not pending.
+            testthat::expect_match(card_tag("recordedBy"), " hidden>", fixed = TRUE)
 
-            # The filter counts match the cards each option shows.
+            # The pending count matches the cards the filter shows.
             control <- output$mapped_filter_control$html
             pending_chip <- regmatches(control, regexpr(
                 '<span class="seg-n is-act" data-action="true" id="[^"]*filter_n_pending">[0-9]+</span>', control
             ))
             testthat::expect_length(pending_chip, 1L)
+            tags <- regmatches(grid, gregexpr('<div id="[^"]*fieldcard_[^"]*"[^>]*>', grid))[[1]]
+            n_shown <- sum(!grepl(" hidden>", tags, fixed = TRUE))
+            testthat::expect_match(pending_chip, paste0(">", n_shown, "</span>"), fixed = TRUE)
 
-            session$setInputs(mapped_filter = "pending")
-            session$flushReact()
-            grid_pending <- paste(output$mapping_ui$html, collapse = " ")
-            testthat::expect_false(grepl("fieldcard_occurrenceID", grid_pending, fixed = TRUE))
-            testthat::expect_true(grepl("fieldcard_scientificName", grid_pending, fixed = TRUE))
-            # An unmapped optional term needs nothing, so it is not pending.
-            testthat::expect_false(grepl("fieldcard_recordedBy", grid_pending, fixed = TRUE))
-            n_pending <- lengths(regmatches(grid_pending, gregexpr('id="[^"]*fieldcard_', grid_pending)))
-            testthat::expect_match(pending_chip, paste0(">", n_pending, "</span>"), fixed = TRUE)
-
+            # The browser applies a switch. The server does not rebuild.
             session$setInputs(mapped_filter = "mapped")
-            session$flushReact()
-            grid_mapped <- paste(output$mapping_ui$html, collapse = " ")
-            testthat::expect_true(grepl("fieldcard_occurrenceID", grid_mapped, fixed = TRUE))
-            testthat::expect_false(grepl("fieldcard_scientificName", grid_mapped, fixed = TRUE))
+            testthat::expect_identical(paste(output$mapping_ui$html, collapse = " "), grid)
         }
     )
 })
@@ -909,22 +911,28 @@ testthat::test_that("Relevant filter is the default and collapses unmapped optio
         {
             session$flushReact()
             grid <- paste(output$mapping_ui$html, collapse = " ")
-            card_class <- function(html, term) {
+            card_tag <- function(html, term) {
                 regmatches(html, regexpr(
-                    paste0('id="', ns(paste0("fieldcard_", term)), '" class="[^"]*"'), html
+                    paste0('<div id="', ns(paste0("fieldcard_", term)), '"[^>]*>'), html
                 ))
             }
             # Required and dataset terms stay full cards, optional ones collapse.
-            testthat::expect_false(grepl("field-card-compact", card_class(grid, "scientificName"), fixed = TRUE))
-            testthat::expect_false(grepl("field-card-compact", card_class(grid, "datasetName"), fixed = TRUE))
-            testthat::expect_true(grepl("field-card-compact", card_class(grid, "recordedBy"), fixed = TRUE))
+            testthat::expect_false(grepl("field-card-compact", card_tag(grid, "scientificName"), fixed = TRUE))
+            testthat::expect_false(grepl("field-card-compact", card_tag(grid, "datasetName"), fixed = TRUE))
+            testthat::expect_true(grepl("field-card-compact", card_tag(grid, "recordedBy"), fixed = TRUE))
             testthat::expect_true(grepl("mapping-more-group", grid, fixed = TRUE))
 
-            session$setInputs(mapped_filter = "all")
-            session$flushReact()
-            grid_all <- paste(output$mapping_ui$html, collapse = " ")
-            testthat::expect_false(grepl("field-card-compact", grid_all, fixed = TRUE))
-            testthat::expect_false(grepl("mapping-more-group", grid_all, fixed = TRUE))
+            # The browser gets the fixed part of the rule (ADR-157).
+            testthat::expect_match(card_tag(grid, "recordedBy"), 'data-collapse="true"', fixed = TRUE)
+            testthat::expect_no_match(card_tag(grid, "datasetName"), "data-collapse", fixed = TRUE)
+
+            # One grid per class, so a filter switch moves no card: no class
+            # has a second grid for the rows.
+            testthat::expect_false(grepl("mapping-row-grid", grid, fixed = TRUE))
+            testthat::expect_identical(
+                lengths(regmatches(grid, gregexpr('class="mapping-card-grid"', grid, fixed = TRUE))),
+                lengths(regmatches(grid, gregexpr('class="category-header"', grid, fixed = TRUE)))
+            )
         }
     )
 })

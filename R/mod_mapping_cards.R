@@ -21,7 +21,9 @@
 #'   is fixed per term, so the per-card update path never has to change it.
 #' @param compact Logical; when TRUE the card renders as a one-line row (term
 #'   and column select) for the "Relevant" filter. It is the same card with a
-#'   CSS class, so its inputs stay bound when the row opens.
+#'   CSS class, so its inputs stay bound when the row opens. The second class
+#'   (`field-card-collapsed`) puts the row under its class's line. "Fixed
+#'   value" removes only the one-line look.
 #'
 #'   Selection-dependent content (the source sample, the basisOfRecord assistant
 #'   button, and the dynamicProperties key inputs) is rendered into a per-term
@@ -52,7 +54,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 if (is_mapped) "field-mapped" else "field-unmapped",
                 state_class,
                 if (term %in% wide_card_terms()) "field-card-wide",
-                if (isTRUE(compact)) "field-card-compact"
+                if (isTRUE(compact)) "field-card-compact field-card-collapsed"
             ),
             collapse = " "
         ),
@@ -320,8 +322,10 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 },
                 # A compact row hides the fixed-value checkbox. This button
                 # removes the compact class in place (client-side), so the full
-                # card with the checkbox opens where the row was.
-                if (is_const_term && isTRUE(compact)) {
+                # card with the checkbox opens where the row was. Every card
+                # has it, because the browser decides which cards are compact
+                # (ADR-157). CSS shows it on a compact row only.
+                if (is_const_term) {
                     shiny::tags$button(
                         type = "button",
                         class = "field-compact-expand",
@@ -364,9 +368,14 @@ build_constant_value_input <- function(term, ns, lang_r, input) {
                 tr("mapping_fixed_value_hint", lang_r)
             )
         ),
+        # Start hidden when the condition is false. On a compact row the CSS
+        # hides the panel, so Shiny never hides it. It then hides it when the
+        # row opens, and that "hidden" event makes Shiny check all outputs
+        # in the filter slide (ADR-157).
         shiny::conditionalPanel(
             condition = paste0("input.usecustom_", term),
             ns = ns,
+            style = if (!isTRUE(saved_use)) "display: none;",
             shiny::div(
                 class = "field-allrows-note",
                 ph_icon("info-circle"),
@@ -679,21 +688,26 @@ keep_by_mapped_filter <- function(mode, is_mapped, needs_action = FALSE) {
 
 #' The collapsed terms of one class under the "Relevant" filter
 #'
-#' One line ("+ N terms with no column", the term names, Show) that opens a
-#' grid of compact rows. The toggle is client-side (see the mapping UI script):
-#' the rows are rendered and bound already, so opening them rebuilds nothing.
+#' One line ("+ N terms with no column", the term names, Show) that shows the
+#' compact rows. The toggle is client-side (see the mapping UI script): the
+#' rows are rendered and bound already, so opening them rebuilds nothing.
+#' The line is the last item of the class grid, and the CSS puts it after the
+#' cards and before the rows. Every class has the line, hidden while it is
+#' empty: a filter switch in the browser toggles the card classes in place
+#' and rewrites the line (ADR-157).
 #'
 #' @param terms Character vector of the collapsed term names.
-#' @param cards List of compact cards from [build_field_card()].
 #' @param lang_r Language code (already evaluated).
 #' @noRd
-build_collapsed_terms <- function(terms, cards, lang_r) {
+build_collapsed_terms <- function(terms, lang_r) {
     n <- length(terms)
-    label <- paste(
-        n, tr(if (n == 1L) "mapping_more_terms_one" else "mapping_more_terms_other", lang_r)
-    )
+    one <- tr("mapping_more_terms_one", lang_r)
+    other <- tr("mapping_more_terms_other", lang_r)
     shiny::div(
         class = "mapping-more-group",
+        `data-one` = one,
+        `data-other` = other,
+        hidden = if (n == 0L) NA,
         shiny::tags$button(
             type = "button",
             class = "mapping-more",
@@ -702,7 +716,11 @@ build_collapsed_terms <- function(terms, cards, lang_r) {
                 class = "mapping-more-count",
                 shiny::span(class = "when-closed", "+"),
                 shiny::span(class = "when-open", "\u2212"),
-                " ", label
+                " ",
+                shiny::span(
+                    class = "mapping-more-label",
+                    paste(n, if (n == 1L) one else other)
+                )
             ),
             shiny::span(class = "mapping-more-terms", paste(terms, collapse = ", ")),
             shiny::span(
@@ -710,8 +728,7 @@ build_collapsed_terms <- function(terms, cards, lang_r) {
                 shiny::span(class = "when-closed", tr("mapping_more_show", lang_r)),
                 shiny::span(class = "when-open", tr("mapping_more_hide", lang_r))
             )
-        ),
-        shiny::div(class = "mapping-card-grid mapping-row-grid", cards)
+        )
     )
 }
 
