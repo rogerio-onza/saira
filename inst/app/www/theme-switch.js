@@ -58,18 +58,23 @@
   function apply(theme, x, y) {
     if (theme === current()) return;
     if (!document.startViewTransition || reducedMotion()) {
+      // The cards change color with the page, as in the circle (19-dark.css).
+      // The layout read applies the new colors before the class goes.
+      root.classList.add("theme-reveal");
       paint(theme);
+      void document.body.offsetHeight;
+      root.classList.remove("theme-reveal");
       return;
     }
     var r = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    // The CSS keyframes read the circle from these properties. A clip set in
+    // vt.ready came one frame late in Firefox: that frame showed the whole
+    // new page, then the circle started from zero (a flash).
+    root.style.setProperty("--reveal-x", x + "px");
+    root.style.setProperty("--reveal-y", y + "px");
+    root.style.setProperty("--reveal-r", r + "px");
     root.classList.add("theme-reveal");
     var vt = document.startViewTransition(function () { paint(theme); });
-    vt.ready.then(function () {
-      root.animate(
-        { clipPath: ["circle(0px at " + x + "px " + y + "px)", "circle(" + r + "px at " + x + "px " + y + "px)"] },
-        { duration: 600, easing: "cubic-bezier(.4,0,.2,1)", pseudoElement: "::view-transition-new(root)" }
-      );
-    }).catch(function () {});
     vt.finished.finally(function () { root.classList.remove("theme-reveal"); });
   }
 
