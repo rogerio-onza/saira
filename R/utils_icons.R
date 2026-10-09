@@ -109,3 +109,34 @@ ph_icon <- function(name, class = NULL, weight = c("regular", "light"), ...) {
     cls <- trimws(gsub("\\s+", " ", paste(base, paste0("ph-", ph_icon_name(name)), extra)))
     shiny::tags$i(class = cls, `aria-hidden` = "true", ...)
 }
+
+#' Label of one option in a segmented control
+#'
+#' The check marks the selected option for readers who do not see the navy
+#' border. CSS shows it only on the checked option.
+#'
+#' @param label Option text
+#' @param count Optional count chip, from `seg_count()`
+#' @return A `shiny.tag.list`
+#' @noRd
+seg_choice <- function(label, count = NULL) {
+    shiny::tagList(ph_icon("check", class = "seg-ok"), shiny::tags$span(label), count)
+}
+
+#' Count chip of a segmented control option
+#'
+#' @param n Count, or NA for no chip text
+#' @param action TRUE when the count is work left to do: it shows red while
+#'   above zero
+#' @param ... Other attributes for the `<span>` tag
+#' @return A `shiny.tag`
+#' @noRd
+seg_count <- function(n, action = FALSE, ...) {
+    n <- if (length(n) == 1L && !is.na(n)) as.integer(n) else NA_integer_
+    shiny::tags$span(
+        class = paste("seg-n", if (isTRUE(action) && isTRUE(n > 0L)) "is-act" else ""),
+        `data-action` = if (isTRUE(action)) "true" else NULL,
+        ...,
+        if (is.na(n)) "" else n
+    )
+}

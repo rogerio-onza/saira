@@ -120,12 +120,16 @@ mod_preview_ui <- function(id) {
 #' @param on_navigate Function(tab, term) that opens another tab.
 #' @param active_r Reactive, TRUE while the Preview tab is open. On each entry
 #'   the tab opens Problems when there is something to correct.
+#' @param refresh_r Reactive whose change recounts the open problems for the
+#'   nav badge, or NULL to count on every change of the full data.
 #' @return Reactive preview data frame, with the corrected full data frame in
-#'   attribute `edited_data_r`.
+#'   attribute `edited_data_r` and the open-problem count (NA without data) in
+#'   attribute `problems_n_r`.
 #' @export
 mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_data_r,
                                raw_data_r = NULL, reset_signal_r = NULL,
-                               on_navigate = NULL, active_r = NULL) {
+                               on_navigate = NULL, active_r = NULL,
+                               refresh_r = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
@@ -169,6 +173,21 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             all_problems_r()
         })
 
+        # Problems with no correction yet, for the nav badge and the Problems
+        # option. Counting builds the full mapped frame (ADR-021), so the caller
+        # decides when through refresh_r.
+        problems_n_r <- shiny::reactive({
+            df <- tryCatch(full_data_r(), shiny.silent.error = function(e) NULL)
+            if (!is.data.frame(df) || nrow(df) == 0L) {
+                return(NA_integer_)
+            }
+            sum(is.na(preview_problem_edit(all_problems_r(), edits_rv())))
+        })
+        if (!is.null(refresh_r)) {
+            problems_n_r <- problems_n_r |>
+                shiny::bindEvent(refresh_r(), edits_rv(), ignoreNULL = FALSE)
+        }
+
         # The mode the tab opens in. It runs before the tab renders, so the
         # first render already shows the right mode.
         entry_mode_rv <- shiny::reactiveVal("table")
@@ -208,26 +227,39 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                 shiny::div(
                     class = "preview-card-head",
                     shiny::h2(class = "preview-card-title", tr("preview_title", lang)),
-                    shiny::radioButtons(
-                        ns("mode"), label = NULL, inline = TRUE, selected = mode,
-                        choiceNames = list(tr("preview_mode_table", lang), tr("preview_mode_problems", lang)),
-                        choiceValues = list("table", "problems")
+                    shiny::div(
+                        class = "saira-seg",
+                        `data-seg-target` = ns("mode_body"),
+                        shiny::radioButtons(
+                            ns("mode"), label = NULL, inline = TRUE, selected = mode,
+                            choiceNames = list(
+                                seg_choice(tr("preview_mode_table", lang)),
+                                seg_choice(tr("preview_mode_problems", lang),
+                                           shiny::uiOutput(ns("problems_n"), inline = TRUE))
+                            ),
+                            choiceValues = list("table", "problems")
+                        )
                     ),
                     shiny::conditionalPanel(
                         is_table, ns = ns, inline = TRUE,
                         shiny::span(class = "preview-card-subtitle", tr("preview_subtitle", lang))
-                    ),
-                    shiny::conditionalPanel(
-                        is_problems, ns = ns, inline = TRUE,
-                        shiny::span(class = "preview-card-subtitle", tr("preview_fix_subtitle", lang))
                     )
                 ),
-                shiny::conditionalPanel(is_table, ns = ns, DT::dataTableOutput(ns("datatable"))),
-                shiny::conditionalPanel(
-                    is_problems, ns = ns,
-                    shiny::div(class = "preview-problems", shiny::uiOutput(ns("problems_panel")))
+                # One box for both modes, so motion.js slides in the mode the
+                # user picks (ADR-156).
+                shiny::div(
+                    id = ns("mode_body"),
+                    shiny::conditionalPanel(is_table, ns = ns, DT::dataTableOutput(ns("datatable"))),
+                    shiny::conditionalPanel(
+                        is_problems, ns = ns,
+                        shiny::div(class = "preview-problems", shiny::uiOutput(ns("problems_panel")))
+                    )
                 )
             )
+        })
+
+        output$problems_n <- shiny::renderUI({
+            seg_count(problems_n_r(), action = TRUE)
         })
 
         output$datatable <- DT::renderDataTable({
@@ -866,8 +898,30 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
         }
 
         attr(preview_data, "edited_data_r") <- edited_data_r
+        attr(preview_data, "problems_n_r") <- problems_n_r
         return(preview_data)
     })
+}
+
+#' Count of open problems after the Preview step name in the nav
+#'
+#' @param n Open problems, or NA before there is data to count
+#' @param lang Language code
+#' @return A `shiny.tag`, or NULL for NA
+#' @noRd
+preview_nav_badge <- function(n, lang) {
+    if (length(n) != 1L || is.na(n)) {
+        return(NULL)
+    }
+    if (n == 0L) {
+        return(shiny::tags$span(
+            class = "nav-count is-clear", title = tr("preview_nav_clear_title", lang),
+            ph_icon("check")
+        ))
+    }
+    shiny::tags$span(
+        class = "nav-count", title = sprintf(tr("preview_nav_count_title", lang), n), n
+    )
 }
 
 preview_dt_language <- function(lang) {

@@ -25,6 +25,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **ui:** Show the open Preview problems on menu step 3, and counts on the Mapping filter and the Table/Problems switch, ADR-155
+- **mapping:** Show only the terms that need the user under Pending, the same queue as "Next pending", ADR-155
+- **ui:** Slide the new content in when the Mapping filter or the Table/Problems switch changes, ADR-156
+- **preview:** Rename the first Problems pill to "All" and shorten the Table subtitle to "First 100 records"
 - **deps:** Remove the ids package, uuid makes the same identifiers
 - **occurrenceID:** Replace a repeated identifier with a persistent UUID when the Preview does not fix it, ADR-152 ([#181](https://github.com/rogerio-onza/saira/pull/181))
 - **upload:** Install camtrapdp with Saíra, so the camera trap mode always works and CI tests it, ADR-149 ([#178](https://github.com/rogerio-onza/saira/pull/178))

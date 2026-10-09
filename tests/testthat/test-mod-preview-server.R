@@ -205,3 +205,51 @@ testthat::test_that("mod_preview_server opens Problems on entry only while a pro
         }
     )
 })
+
+testthat::test_that("mod_preview_server counts open problems on refresh and after a fix", {
+    df <- data.frame(
+        occurrenceID = c("a1", "a2"),
+        scientificName = c("Puma concolor", "Nasua nasua"),
+        individualCount = c("2", "cerca de 10"),
+        stringsAsFactors = FALSE
+    )
+    data_rv <- shiny::reactiveVal(NULL)
+    refresh_rv <- shiny::reactiveVal(0L)
+
+    shiny::testServer(
+        mod_preview_server,
+        args = list(
+            mapped_data_r = shiny::reactive(data_rv()),
+            lang_r = shiny::reactive("en"),
+            refresh_r = shiny::reactive(refresh_rv())
+        ),
+        {
+            n_r <- attr(session$getReturned(), "problems_n_r")
+            testthat::expect_identical(n_r(), NA_integer_)
+
+            # New data waits for the refresh signal.
+            data_rv(df)
+            session$flushReact()
+            testthat::expect_identical(n_r(), NA_integer_)
+            refresh_rv(1L)
+            session$flushReact()
+            testthat::expect_identical(n_r(), 1L)
+            testthat::expect_match(output$problems_n$html, "seg-n is-act", fixed = TRUE)
+
+            # A fix recounts at once.
+            session$setInputs(mode = "problems")
+            session$setInputs(use = which(problems_r()$term == "individualCount")[1])
+            testthat::expect_identical(n_r(), 0L)
+        }
+    )
+})
+
+testthat::test_that("preview_nav_badge shows a count, a check or nothing", {
+    testthat::expect_null(preview_nav_badge(NA_integer_, "en"))
+    clear <- as.character(preview_nav_badge(0L, "en"))
+    testthat::expect_match(clear, "nav-count is-clear", fixed = TRUE)
+    testthat::expect_match(clear, "No problems to fix", fixed = TRUE)
+    count <- as.character(preview_nav_badge(22L, "pt"))
+    testthat::expect_match(count, ">22</span>", fixed = TRUE)
+    testthat::expect_match(count, "22 problemas para corrigir", fixed = TRUE)
+})

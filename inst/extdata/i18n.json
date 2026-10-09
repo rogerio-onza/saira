@@ -459,6 +459,16 @@
     "en": "Pending",
     "es": "Pendientes"
   },
+  "preview_nav_count_title": {
+    "pt": "%d problemas para corrigir",
+    "en": "%d problems to fix",
+    "es": "%d problemas para corregir"
+  },
+  "preview_nav_clear_title": {
+    "pt": "Nenhum problema para corrigir",
+    "en": "No problems to fix",
+    "es": "Ningún problema para corregir"
+  },
   "mapping_card_sample_prefix": {
     "pt": "ex.:",
     "en": "e.g.:",
@@ -1270,9 +1280,9 @@
     "es": "Vista previa de los datos"
   },
   "preview_subtitle": {
-    "pt": "Visualize os primeiros 100 registros mapeados",
-    "en": "View the first 100 mapped records",
-    "es": "Vea los primeros 100 registros mapeados"
+    "pt": "Primeiros 100 registros",
+    "en": "First 100 records",
+    "es": "Primeros 100 registros"
   },
   "preview_mode_table": {
     "pt": "Tabela",
@@ -1283,11 +1293,6 @@
     "pt": "Problemas",
     "en": "Problems",
     "es": "Problemas"
-  },
-  "preview_fix_subtitle": {
-    "pt": "Todos os registros, não só os 100 primeiros",
-    "en": "All records, not only the first 100",
-    "es": "Todos los registros, no solo los 100 primeros"
   },
   "preview_fix_hint": {
     "pt": "\"Na planilha\" nunca muda. O export usa a \"Correção\" quando ela existe.",
@@ -1300,9 +1305,9 @@
     "es": "No se encontraron problemas en los valores mapeados."
   },
   "preview_fix_pill_problems": {
-    "pt": "Problemas",
-    "en": "Problems",
-    "es": "Problemas"
+    "pt": "Todos",
+    "en": "All",
+    "es": "Todos"
   },
   "preview_fix_pill_vocab": {
     "pt": "Vocabulário",
