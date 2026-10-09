@@ -319,6 +319,12 @@
       return;
     }
     var r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    // The CSS keyframes read the circle from these properties. A clip set in
+    // vt.ready came one frame late in Firefox: that frame showed the whole
+    // new page, then the circle started from zero (a flash).
+    root.style.setProperty("--reveal-x", x + "px");
+    root.style.setProperty("--reveal-y", y + "px");
+    root.style.setProperty("--reveal-r", r + "px");
     root.classList.add("theme-reveal");
     // The circle waits for the new sheets and the screenshots, at most 500 ms.
     var vt = document.startViewTransition(function () {
@@ -328,12 +334,6 @@
         new Promise(function (done) { setTimeout(done, 500); })
       ]);
     });
-    vt.ready.then(function () {
-      root.animate(
-        { clipPath: ["circle(0px at " + x + "px " + y + "px)", "circle(" + r + "px at " + x + "px " + y + "px)"] },
-        { duration: 600, easing: "cubic-bezier(.4,0,.2,1)", pseudoElement: "::view-transition-new(root)" }
-      );
-    }).catch(function () {});
     vt.finished.finally(function () { root.classList.remove("theme-reveal"); });
   }
 

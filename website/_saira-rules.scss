@@ -789,12 +789,20 @@ body.tut-page {
 //  Motion, as in the app (ADR-144, ADR-145). assets/head.html runs the
 //  theme circle and marks page changes. Reduced motion turns all of it off.
 // =============================================================================
-// The new theme grows as a circle from the clicked button. The old page stays
-// still under it. No color transition may run, or the new snapshot would show
-// the colors halfway.
+// The new theme grows as a circle from the clicked button. head.html sets the
+// center and the radius. The old page stays still under it. No color
+// transition may run, or the new snapshot would show the colors halfway.
+html { --reveal-x: 100%; --reveal-y: 0px; --reveal-r: 150vmax; }
 html.theme-reveal *, html.theme-reveal *::before, html.theme-reveal *::after { transition: none !important; }
-html.theme-reveal::view-transition-old(root),
-html.theme-reveal::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+html.theme-reveal::view-transition-old(root) { animation: none; mix-blend-mode: normal; }
+html.theme-reveal::view-transition-new(root) {
+  animation: theme-reveal 600ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  mix-blend-mode: normal;
+}
+@keyframes theme-reveal {
+  from { clip-path: circle(0 at var(--reveal-x) var(--reveal-y)); }
+  to { clip-path: circle(var(--reveal-r) at var(--reveal-x) var(--reveal-y)); }
+}
 
 @media (prefers-reduced-motion: no-preference) {
   // A link to another page of the site: only the page area slides 32px in the

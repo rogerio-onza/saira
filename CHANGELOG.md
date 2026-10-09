@@ -79,6 +79,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **preview:** Slide Table | Problems with the content in place: Problems no longer grows in three steps during the slide, ADR-158
 - **mapping:** Show the card when "Next pending" goes to a term that the Mapped filter hides, ADR-157
 - **ui:** Remove the flash at the start of a theme switch: the circle starts in the first frame, and the cards no longer fade from the old color, ADR-144
+- **site:** Remove the same flash at the start of a theme switch on the help site, ADR-144
 - **export:** Write the rank the Names tab found for a one-word name (Felidae as family, not genus), ADR-151 ([#180](https://github.com/rogerio-onza/saira/pull/180))
 - **upload:** Show camera trap read errors without the contradictory "ZIP not recognized" prefix, and show their root cause ([#177](https://github.com/rogerio-onza/saira/pull/177))
 - **datasetName:** Stop filling it, and datasetID, with placeholder values for camera trap zips without a descriptor, ADR-147 ([#175](https://github.com/rogerio-onza/saira/pull/175))
