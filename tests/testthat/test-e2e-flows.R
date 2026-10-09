@@ -574,6 +574,67 @@ testthat::test_that("E2E: the Mapping filter runs in the browser and Next pendin
     testthat::expect_identical(app$get_js("document.querySelectorAll('#mapping-mapping_ui .field-card[hidden]').length"), 0L)
 })
 
+testthat::test_that("E2E: Table | Problems in the Preview switches in the browser", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+
+    app$wait_for_idle(timeout = 10000)
+
+    # An empty eventDate is a problem, so the tab opens in Problems.
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("scientificName,decimalLatitude,decimalLongitude,eventDate",
+          "Panthera onca,-10.5,-55.2,2024-01-15",
+          "Leopardus pardalis,-11.3,-54.8,"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='preview']")
+    app$wait_for_idle(timeout = 15000)
+    app$wait_for_js("document.querySelector('.shiny-notification') === null",
+                    timeout = 20000)
+    testthat::expect_identical(app$get_value(input = "preview-mode"), "problems")
+
+    # The content of both modes is there before a switch (ADR-158), so a
+    # switch renders no output and starts no check of hidden outputs.
+    app$run_js("window.__previewRenders = 0; window.__hiddenChecks = 0;
+      $(document).on('shiny:value', function (e) {
+        if (/^preview-/.test(e.target.id)) { window.__previewRenders++; }
+      });
+      $(document).on('shiny:inputchanged', function (e) {
+        if (/^[.]clientdata_output_.*_hidden$/.test(e.name)) { window.__hiddenChecks++; }
+      });")
+    shows <- function(part) {
+        app$get_js(paste0("document.querySelector('#preview-mode_body [data-mode=\"", part,
+                          "\"]').getBoundingClientRect().height > 0"))
+    }
+    rows <- function(table) {
+        app$get_js(paste0("document.querySelectorAll('#preview-", table,
+                          " .dataTables_scrollBody tbody tr').length"))
+    }
+    for (mode in c("table", "problems", "table")) {
+        app$set_inputs(`preview-mode` = mode, wait_ = FALSE)
+        app$wait_for_idle(timeout = 10000)
+        other <- setdiff(c("table", "problems"), mode)
+        testthat::expect_true(shows(mode), label = mode)
+        testthat::expect_false(shows(other), label = other)
+    }
+    testthat::expect_gt(rows("datatable"), 0L)
+    testthat::expect_gt(rows("rows_table"), 0L)
+    testthat::expect_identical(app$get_js("window.__previewRenders"), 0L)
+    testthat::expect_identical(app$get_js("window.__hiddenChecks"), 0L)
+})
+
 # --- Flow 9: the whole flow on the demo dataset, timed ---
 #
 # The public demo sheet exercises every validation, so this is the one run that

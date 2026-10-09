@@ -76,6 +76,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **preview:** Slide Table | Problems with the content in place: Problems no longer grows in three steps during the slide, ADR-158
 - **mapping:** Show the card when "Next pending" goes to a term that the Mapped filter hides, ADR-157
 - **ui:** Remove the flash at the start of a theme switch: the circle starts in the first frame, and the cards no longer fade from the old color, ADR-144
 - **export:** Write the rank the Names tab found for a one-word name (Felidae as family, not genus), ADR-151 ([#180](https://github.com/rogerio-onza/saira/pull/180))

@@ -31,6 +31,13 @@ testthat::test_that("mod_preview_server returns the preview transform and has no
             table_html <- paste(output$table_or_message$html, collapse = " ")
             testthat::expect_true(grepl("preview-table-shell", table_html, fixed = TRUE))
             testthat::expect_false(grepl("download", table_html, ignore.case = TRUE))
+            # Both modes render, and the module script shows the picked one
+            # (ADR-158). A conditionalPanel would make Shiny check every output.
+            testthat::expect_false(grepl("data-display-if", table_html, fixed = TRUE))
+            testthat::expect_true(grepl("<div class=\"preview-mode-part\" data-mode=\"table\">",
+                                        table_html, fixed = TRUE))
+            testthat::expect_true(grepl("preview-problems is-off\" data-mode=\"problems\"",
+                                        table_html, fixed = TRUE))
         }
     )
 })

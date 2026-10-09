@@ -95,9 +95,17 @@ mod_preview_ui <- function(id) {
              // DT commits a single-cell edit only on blur, so Enter blurs.
              $(document).on('keydown', '.preview-rows-table td input', function(e) {
                if (e.key === 'Enter') { e.preventDefault(); this.blur(); }
+             });
+             // Table | Problems shows content that is already there (ADR-158).
+             // A conditionalPanel would make Shiny check every output.
+             $(document).on('change', '#%s', function() {
+               var mode = $(this).find('input:checked').val();
+               $('#%s [data-mode]').each(function() {
+                 this.classList.toggle('is-off', this.getAttribute('data-mode') !== mode);
+               });
              });",
             ns("use"), ns("blank"), ns("undo"), ns("vocab_apply"), ns("vocab_section"), ns("focus"),
-            ns("fix_next"), ns("rows_table"), ns("focus")
+            ns("fix_next"), ns("rows_table"), ns("focus"), ns("mode"), ns("table_or_message")
         )))
     )
 }
@@ -113,8 +121,9 @@ mod_preview_ui <- function(id) {
 #' @param id Module ID
 #' @param mapped_data_r Reactive data frame with the lightweight mapped preview
 #' @param lang_r Reactive language value
-#' @param full_data_r Reactive full mapped data frame. Read only in Problems
-#'   mode, because building it costs the full mapping pipeline (ADR-021).
+#' @param full_data_r Reactive full mapped data frame. Read only while the
+#'   tab shows and for the nav count, because building it costs the full
+#'   mapping pipeline (ADR-021).
 #' @param raw_data_r Reactive uploaded data frame, for the record panel.
 #' @param reset_signal_r Reactive that changes on re-upload or a Mapping reset.
 #' @param on_navigate Function(tab, term) that opens another tab.
@@ -160,17 +169,13 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             replace_repeated_ids(corrected_data_r(), basis = full_data_r())
         })
 
-        problems_mode <- shiny::reactive(identical(input$mode, "problems"))
-
-        all_problems_r <- shiny::reactive({
+        # Both modes stay rendered while the tab shows, so a mode switch
+        # sends nothing to the server (ADR-158). A hidden tab suspends the
+        # outputs, so they do not scan while another tab shows.
+        problems_r <- shiny::reactive({
             df <- full_data_r()
             shiny::req(is.data.frame(df))
             detect_preview_problems(df)
-        })
-
-        problems_r <- shiny::reactive({
-            shiny::req(problems_mode())
-            all_problems_r()
         })
 
         # Problems with no correction yet, for the nav badge and the Problems
@@ -181,7 +186,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             if (!is.data.frame(df) || nrow(df) == 0L) {
                 return(NA_integer_)
             }
-            sum(is.na(preview_problem_edit(all_problems_r(), edits_rv())))
+            sum(is.na(preview_problem_edit(problems_r(), edits_rv())))
         })
         if (!is.null(refresh_r)) {
             problems_n_r <- problems_n_r |>
@@ -194,7 +199,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
         if (!is.null(active_r)) {
             shiny::observeEvent(active_r(), {
                 shiny::req(isTRUE(active_r()), is.data.frame(mapped_data_r()), nrow(mapped_data_r()) > 0L)
-                open <- is.na(preview_problem_edit(all_problems_r(), edits_rv()))
+                open <- is.na(preview_problem_edit(problems_r(), edits_rv()))
                 mode <- if (any(open)) "problems" else "table"
                 entry_mode_rv(mode)
                 shiny::updateRadioButtons(session, "mode", selected = mode)
@@ -218,8 +223,13 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                 ))
             }
             mode <- shiny::isolate(input$mode %||% entry_mode_rv())
-            is_table <- "input.mode !== 'problems'"
-            is_problems <- "input.mode === 'problems'"
+            # The module script shows the part of the picked mode (ADR-158).
+            mode_part <- function(tag, part) {
+                htmltools::tagAppendAttributes(
+                    tag, `data-mode` = part,
+                    class = if (!identical(mode, part)) "is-off"
+                )
+            }
             # The title shares the row of the DT length and search controls,
             # so the table gets the height the page header used to take.
             shiny::div(
@@ -240,19 +250,16 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                             choiceValues = list("table", "problems")
                         )
                     ),
-                    shiny::conditionalPanel(
-                        is_table, ns = ns, inline = TRUE,
-                        shiny::span(class = "preview-card-subtitle", tr("preview_subtitle", lang))
-                    )
+                    mode_part(shiny::span(class = "preview-card-subtitle", tr("preview_subtitle", lang)), "table")
                 ),
                 # One box for both modes, so motion.js slides in the mode the
                 # user picks (ADR-156).
                 shiny::div(
                     id = ns("mode_body"),
-                    shiny::conditionalPanel(is_table, ns = ns, DT::dataTableOutput(ns("datatable"))),
-                    shiny::conditionalPanel(
-                        is_problems, ns = ns,
-                        shiny::div(class = "preview-problems", shiny::uiOutput(ns("problems_panel")))
+                    mode_part(shiny::div(class = "preview-mode-part", DT::dataTableOutput(ns("datatable"))), "table"),
+                    mode_part(
+                        shiny::div(class = "preview-mode-part preview-problems", shiny::uiOutput(ns("problems_panel"))),
+                        "problems"
                     )
                 )
             )
@@ -528,10 +535,6 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                 shiny::div(class = "preview-vocab-list", items)
             )
         })
-
-        # The CSS hides this column while it is empty. A hidden output does not
-        # render, so without this the column could never fill again.
-        shiny::outputOptions(output, "vocab_section", suspendWhenHidden = FALSE)
 
         shiny::observeEvent(input$vocab_apply, {
             p <- problems_r()
