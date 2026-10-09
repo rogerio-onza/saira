@@ -1048,8 +1048,8 @@ testthat::test_that("importing a mapping guide registers and renders non-default
     )
 })
 
-# The camtrap auto-map is deferred until the field cards render (the first
-# non-NULL scientificName). Camtrap columns are canonical Darwin Core terms, so
+# The camtrap auto-map is deferred until the field cards render (the client's
+# cards_bound signal). Camtrap columns are canonical Darwin Core terms, so
 # the mapping is a deterministic identity (column X -> term X) badged AUTO, not a
 # fuzzy engine run (rostrum_decisions stays NULL). We assert the trigger wiring
 # (pending TRUE -> FALSE), the AUTO identity meta, and that the resulting
@@ -1078,17 +1078,18 @@ testthat::test_that("camtrap-origin uploads queue and run identity auto-map once
             session$flushReact()
 
             # Run is deferred (cards not rendered yet); engine has not run.
-            testthat::expect_true(camtrap_automap_pending())
+            testthat::expect_true(automap_pending())
             testthat::expect_null(rv$rostrum_decisions)
             testthat::expect_true("geodeticDatum" %in% rv$extra_terms)
 
-            # Simulate the field cards rendering: the first non-NULL
-            # scientificName consumes the deferred auto-map. No `auto_map`
-            # button input was ever set.
+            # Simulate the field cards rendering: the client sends the card
+            # values, then cards_bound consumes the deferred auto-map. No
+            # `auto_map` button input was ever set.
             session$setInputs(map_scientificName = "")
+            session$setInputs(cards_bound = 1)
             session$flushReact()
 
-            testthat::expect_false(camtrap_automap_pending())
+            testthat::expect_false(automap_pending())
             # Identity map, not the fuzzy engine: no decisions frame is produced.
             testthat::expect_null(rv$rostrum_decisions)
 
@@ -1110,7 +1111,7 @@ testthat::test_that("camtrap-origin uploads queue and run identity auto-map once
     )
 })
 
-testthat::test_that("non-camtrap uploads do NOT auto-map on load", {
+testthat::test_that("plain uploads run the Rostrum engine once cards render", {
     raw_data_state <- shiny::reactiveVal(NULL)
 
     shiny::testServer(
@@ -1128,13 +1129,29 @@ testthat::test_that("non-camtrap uploads do NOT auto-map on load", {
                 stringsAsFactors = FALSE
             ))
             session$flushReact()
-            testthat::expect_false(camtrap_automap_pending())
-
-            # Even after the cards render, the engine does not run on its own.
-            session$setInputs(map_scientificName = "")
-            session$flushReact()
-            testthat::expect_false(camtrap_automap_pending())
+            testthat::expect_true(automap_pending())
             testthat::expect_null(rv$rostrum_decisions)
+
+            # The cards render: the engine runs once, without an Auto-map click.
+            session$setInputs(map_scientificName = "")
+            session$setInputs(cards_bound = 1)
+            session$flushReact()
+            testthat::expect_false(automap_pending())
+            testthat::expect_false(is.null(rv$rostrum_decisions))
+            testthat::expect_identical(rv$map_values$decimalLatitude, "decimalLatitude")
+
+            # A new upload queues a new run, even when the new cards report the
+            # same values as the old ones.
+            raw_data_state(data.frame(
+                decimalLongitude = "-55.3",
+                stringsAsFactors = FALSE
+            ))
+            session$flushReact()
+            testthat::expect_true(automap_pending())
+            session$setInputs(cards_bound = 2)
+            session$flushReact()
+            testthat::expect_false(automap_pending())
+            testthat::expect_identical(rv$map_values$decimalLongitude, "decimalLongitude")
         }
     )
 })

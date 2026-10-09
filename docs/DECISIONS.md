@@ -2998,6 +2998,15 @@ Formato: ADR leve (Architecture Decision Record).
 - **Alternativas**: publicar os `.rds` como asset do GitHub Release, rejeitada porque continua exigindo rede na primeira validacao. Ler o snapshot direto de `inst/` sem copiar, rejeitada porque o fluxo de atualizacao, backup e lock trabalha sobre o cache.
 - **Consequencias**: Flora e Fauna BR ficam disponiveis desde a primeira sessao, entao a aba Nomes ja as pre-seleciona. O snapshot envelhece entre releases. Cada troca soma cerca de 8 MB ao historico do git. A Ajuda lista as duas bases com a licenca CC BY 4.0.
 
+## ADR-154: Auto-map em todo upload, disparado pelo sinal `cards_bound`
+
+- **Data**: 2026-10-08
+- **Status**: Aceito. Amplia a ADR-104, que rodava o auto-map sozinho so para Camtrap DP.
+- **Contexto**: a pessoa sobe a planilha e precisa achar e clicar "Auto-mapear" antes de ver qualquer coluna ligada. O Camtrap DP ja mapeava sozinho, com o run adiado ate os cards existirem (ADR-104). O gatilho era a primeira mudanca de `input$map_scientificName`. Um input que volta com o mesmo valor nao chega ao servidor, entao um segundo upload depois de um arquivo sem coluna de especie (`""` para `""`) nao mapeava.
+- **Decisao**: todo upload marca `automap_pending`. `perform_auto_map()` continua escolhendo identidade para Camtrap e Rostrum para o resto. O gatilho passa a ser `input$cards_bound`: o JS do modulo escuta `shiny:bound` dos inputs `map_<termo>` e manda um `Date.now()` uma vez por render da grade, depois de o Shiny enfileirar os valores dos cards.
+- **Alternativas**: rodar o motor no proprio observer do upload, rejeitada porque os cards ainda nao existem e o observer de sync apaga as selecoes (ADR-104). Esperar o `shiny:value` do `mapping_ui`, rejeitada porque o render pode ser assincrono e o sinal chegaria antes dos valores.
+- **Consequencias**: o botao "Auto-mapear" fica para refazer o mapeamento. O modal de carregamento aparece logo depois do upload. Com a grade pre-aquecida (ADR-114), o run pode acontecer antes de a aba Mapeamento abrir.
+
 ## ADR-155: Contagens de acao no menu e nos filtros
 
 - **Data**: 2026-10-08
