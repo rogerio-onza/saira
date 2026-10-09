@@ -25,6 +25,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **mapping:** Run the auto-map on every upload, not only on Camtrap DP, ADR-154
 - **ui:** Show the open Preview problems on menu step 3, and counts on the Mapping filter and the Table/Problems switch, ADR-155
 - **mapping:** Show only the terms that need the user under Pending, the same queue as "Next pending", ADR-155
 - **ui:** Slide the new content in when the Mapping filter or the Table/Problems switch changes, ADR-156

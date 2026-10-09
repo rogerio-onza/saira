@@ -199,6 +199,21 @@ mod_mapping_ui <- function(id) {
               });
             })();
           });
+          // Tell the server the field cards are bound, once per grid render.
+          // The upload auto-map waits for this signal: a card value alone may
+          // not change (a new file can leave scientificName empty again), and
+          // an unchanged input never reaches the server. The timer runs after
+          // Shiny has queued the card values, so they arrive first.
+          var cardsBoundTimer = null;
+          window.jQuery(document).on('shiny:bound', function (ev) {
+            if (ev.bindingType !== 'input' || cardsBoundTimer) { return; }
+            var m = /^(.*-)map_[A-Za-z]+$/.exec(ev.target.id || '');
+            if (!m || !ev.target.closest('.mapping-scroll-container')) { return; }
+            cardsBoundTimer = setTimeout(function () {
+              cardsBoundTimer = null;
+              Shiny.setInputValue(m[1] + 'cards_bound', Date.now());
+            }, 0);
+          });
           // Live-toggle a field card's mapped border without re-rendering the
           // whole mapping grid. Used for fixed-value terms whose free-text read
           // is isolated (ADR-098): the server recomputes is_field_mapped() after
@@ -1204,13 +1219,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             }
         })
 
-        # Camtrap-origin uploads should auto-map without an "Auto-map" click, but
-        # we cannot run the engine the instant data loads: the mapping field
-        # cards have not rendered yet, so the programmatic selections would be
-        # read back as NULL by the input-sync observer below and wiped (it treats
-        # a not-yet-rendered input as a user clear). This flag defers the run
-        # until the UI is up (see the scientificName-triggered observer).
-        camtrap_automap_pending <- shiny::reactiveVal(FALSE)
+        # Every upload auto-maps without an "Auto-map" click, but we cannot run
+        # the engine the instant data loads: the mapping field cards have not
+        # rendered yet, so the programmatic selections would be read back as
+        # NULL by the input-sync observer below and wiped (it treats a
+        # not-yet-rendered input as a user clear). This flag defers the run
+        # until the UI is up (see the cards_bound observer).
+        automap_pending <- shiny::reactiveVal(FALSE)
 
         shiny::observeEvent(raw_data_r(),
             {
@@ -1245,12 +1260,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 )
                 rm(list = ls(pending_map_echo, all.names = TRUE), envir = pending_map_echo)
 
-                # Camtrap columns are Darwin Core terms already: queue the
-                # automatic mapping (run once the cards render). Non-camtrap
-                # uploads leave the flag FALSE and require the manual click.
-                camtrap_automap_pending(
-                    !is.null(attr(raw_data_r(), "saira_camtrap_source"))
-                )
+                # Queue the automatic mapping (run once the cards render).
+                # perform_auto_map() picks the identity path for camtrap and
+                # the Rostrum engine for every other upload.
+                automap_pending(TRUE)
 
                 # Signal the downstream tabs to clear their retained decisions.
                 # The first upload has nothing downstream to clear (silent); a
@@ -1269,17 +1282,17 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             ignoreNULL = TRUE
         )
 
-        # Consume the deferred camtrap auto-map: the first non-NULL scientificName
-        # means the field cards have rendered, so perform_auto_map()'s selections
-        # land on real inputs (and survive the sync observer). Fires only when the
-        # flag was set by a camtrap upload; otherwise a no-op on every remap.
-        shiny::observeEvent(input$map_scientificName, {
-            if (!isTRUE(camtrap_automap_pending())) {
+        # Consume the deferred auto-map: cards_bound comes from the client after
+        # each grid render, so perform_auto_map()'s selections land on real
+        # inputs (and survive the sync observer). Fires once per upload; a
+        # no-op on every later render.
+        shiny::observeEvent(input$cards_bound, {
+            if (!isTRUE(automap_pending())) {
                 return(invisible(NULL))
             }
-            camtrap_automap_pending(FALSE)
+            automap_pending(FALSE)
             perform_auto_map()
-        }, ignoreInit = TRUE, ignoreNULL = TRUE)
+        }, ignoreInit = TRUE)
 
         shiny::observe({
             shiny::req(raw_data_r())
