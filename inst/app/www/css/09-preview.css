@@ -355,6 +355,19 @@
   align-self: center;
 }
 
+/* The part of the other mode keeps its layout (ADR-158): Shiny does not
+   suspend its outputs, and DT measures its columns while it is off. */
+.preview-mode-part.is-off {
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.preview-card-subtitle.is-off {
+  display: none;
+}
+
 /* --- Problems mode (ADR-150) --- */
 .preview-problems {
   /* Room for the title row, which floats over the top of the card. A margin,
@@ -448,8 +461,10 @@
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* Out of the flow, not display: none. Shiny suspends a hidden output, and
+   this column could then never fill again. */
 .preview-fix-vocab-col:empty {
-  display: none;
+  position: absolute;
 }
 
 @media (max-width: 991.98px) {
