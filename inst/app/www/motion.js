@@ -73,9 +73,8 @@
   // Segmented filters (ADR-156): one thumb slides to the picked option of a
   // .saira-seg control. After a pick by the user, the element named in
   // data-seg-target comes in 32 px from the side of the option, as a page
-  // does on a step change. data-seg-wait names an output in that element
-  // that the server renders again. The old content dims until the new
-  // content of that output arrives.
+  // does on a step change. Both filters change their content in the
+  // browser (ADR-157), so the slide starts on the next frame.
   var $ = window.jQuery;
   if (!$) return;
 
@@ -151,27 +150,6 @@
     el.classList.add("seg-enter");
   }
 
-  // The value event comes before the render, so the new content is in place
-  // on the next task. The first frame of a large grid spends about 100 ms on
-  // layout and paint, and a slide that starts in that frame loses its first
-  // part. The box stays hidden for that frame, and the slide starts after it.
-  function enterAfterRender(el, output, back) {
-    el.classList.add("seg-wait");
-    $(output).off(".segEnter").on("shiny:value.segEnter shiny:error.segEnter", function (e) {
-      if (e.target !== output) return;
-      $(output).off(".segEnter");
-      window.setTimeout(function () {
-        el.classList.replace("seg-wait", "seg-hold");
-        window.requestAnimationFrame(function () {
-          window.requestAnimationFrame(function () {
-            el.classList.remove("seg-hold");
-            enter(el, back);
-          });
-        });
-      }, 0);
-    });
-  }
-
   // A pick by the user is a trusted event. An update from the server
   // moves the thumb only.
   $(document).on("change", ".saira-seg", function (e) {
@@ -185,9 +163,7 @@
     if (!byUser || to === from || reducedMotion()) return;
     var target = document.getElementById(this.getAttribute("data-seg-target"));
     if (!target || !target.getClientRects().length) return;
-    var output = document.getElementById(this.getAttribute("data-seg-wait"));
-    if (output) enterAfterRender(target, output, to < from);
-    else window.requestAnimationFrame(function () { enter(target, to < from); });
+    window.requestAnimationFrame(function () { enter(target, to < from); });
   });
 
   $(document).on("animationend animationcancel", ".seg-enter", function (e) {

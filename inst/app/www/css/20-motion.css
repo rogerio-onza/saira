@@ -99,16 +99,6 @@
     transition: color 200ms ease;
   }
 
-  .seg-wait {
-    opacity: 0.45;
-    transition: opacity 120ms ease-out;
-  }
-
-  /* The new grid, hidden while the browser lays it out (motion.js). */
-  .seg-hold {
-    opacity: 0;
-  }
-
   .seg-enter {
     animation: seg-slide-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }

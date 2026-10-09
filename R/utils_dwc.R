@@ -633,10 +633,25 @@ relevant_mapping_terms <- function() {
     ))
 }
 
+#' Whether a term can collapse to a compact row under the "Relevant" filter
+#'
+#' The fixed part of [collapse_mapping_term()]: a term outside
+#' `relevant_mapping_terms()` that the user did not add. The card carries it
+#' as `data-collapse`, and the browser adds the live part (ADR-157).
+#'
+#' @param term DwC term name.
+#' @param extra Character vector of terms added to the active set.
+#' @return Logical scalar.
+#' @noRd
+collapsible_mapping_term <- function(term, extra = character(0)) {
+    !(term %in% c(relevant_mapping_terms(), extra))
+}
+
 #' Whether the "Relevant" filter shows a term as a compact row
 #'
 #' Only an unmapped term outside `relevant_mapping_terms()` collapses. A term
 #' with its fixed value switched on or a term the user added stays a card.
+#' The mapping UI script applies the same rule in the browser (ADR-157).
 #'
 #' @param term DwC term name.
 #' @param is_mapped Logical, the card's mapped state.
@@ -647,7 +662,7 @@ relevant_mapping_terms <- function() {
 collapse_mapping_term <- function(term, is_mapped, fixed_value_on = FALSE,
                                   extra = character(0)) {
     !isTRUE(is_mapped) && !isTRUE(fixed_value_on) &&
-        !(term %in% c(relevant_mapping_terms(), extra))
+        collapsible_mapping_term(term, extra)
 }
 
 #' Terms whose mapping card spans two grid tracks

@@ -492,6 +492,88 @@ testthat::test_that("E2E: a language switch keeps the column picked in a card", 
     }
 })
 
+testthat::test_that("E2E: the Mapping filter runs in the browser and Next pending shows a hidden card", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+
+    app$wait_for_idle(timeout = 10000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("scientificName,decimalLatitude,decimalLongitude,eventDate",
+          "Panthera onca,-10.5,-55.2,2024-01-15",
+          "Leopardus pardalis,-11.3,-54.8,2024-02-20"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='mapping']")
+    app$wait_for_idle(timeout = 15000)
+    # A notification that closes also starts a check of hidden outputs.
+    app$wait_for_js("document.querySelector('.shiny-notification') === null",
+                    timeout = 20000)
+
+    # A card that moves in the DOM is styled and laid out from zero, and its
+    # tooltips connect again. The filter only toggles classes.
+    app$run_js("window.__cardMoves = 0;
+      new MutationObserver(function (records) {
+        records.forEach(function (r) {
+          Array.prototype.forEach.call(r.addedNodes, function (n) {
+            if (n.classList && n.classList.contains('field-card')) { window.__cardMoves++; }
+          });
+        });
+      }).observe(document.getElementById('mapping-mapping_ui'), { childList: true, subtree: true });")
+    # A check of hidden outputs blocks the page for 50 to 90 ms and stops
+    # the filter slide, so a switch must not start one.
+    app$run_js("window.__gridRenders = 0; window.__hiddenChecks = 0;
+      $(document).on('shiny:value', function (e) {
+        if (e.target.id === 'mapping-mapping_ui') { window.__gridRenders++; }
+      });
+      $(document).on('shiny:inputchanged', function (e) {
+        if (/^[.]clientdata_output_.*_hidden$/.test(e.name)) { window.__hiddenChecks++; }
+      });")
+    shown <- function() {
+        app$get_js("Array.prototype.filter.call(
+          document.querySelectorAll('#mapping-mapping_ui .field-card'),
+          function (card) { return card.getClientRects().length > 0; }).length")
+    }
+    count <- function(mode) {
+        as.integer(app$get_text(paste0("#mapping-filter_n_", mode)))
+    }
+    pick <- function(mode) {
+        # The server does nothing on a switch (ADR-157), so no output changes.
+        app$set_inputs(`mapping-mapped_filter` = mode, wait_ = FALSE)
+        app$wait_for_idle(timeout = 10000)
+    }
+
+    # The count on each option is the number of cards the option shows.
+    for (mode in c("all", "mapped", "pending", "relevant", "all", "relevant")) {
+        pick(mode)
+        testthat::expect_identical(shown(), count(mode), label = mode)
+    }
+    testthat::expect_identical(app$get_js("window.__cardMoves"), 0L)
+    testthat::expect_identical(app$get_js("window.__gridRenders"), 0L)
+    testthat::expect_identical(app$get_js("window.__hiddenChecks"), 0L)
+
+    # Mapped hides the missing required terms. Next pending goes to one of
+    # them, so the filter changes to Relevant, which hides no card.
+    pick("mapped")
+    testthat::expect_gt(app$get_js("document.querySelectorAll('#mapping-mapping_ui .field-card[hidden]').length"), 0L)
+    app$click("mapping-next_pending")
+    app$wait_for_idle(timeout = 10000)
+    testthat::expect_identical(app$get_value(input = "mapping-mapped_filter"), "relevant")
+    testthat::expect_identical(app$get_js("document.querySelectorAll('#mapping-mapping_ui .field-card[hidden]').length"), 0L)
+})
+
 # --- Flow 9: the whole flow on the demo dataset, timed ---
 #
 # The public demo sheet exercises every validation, so this is the one run that

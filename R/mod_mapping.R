@@ -64,7 +64,10 @@ mod_mapping_ui <- function(id) {
                         # A uiOutput with content has no box of its own
                         # (display: contents), so this box is what the filter
                         # motion slides (ADR-156).
-                        shiny::div(id = ns("grid_box"), shiny::uiOutput(ns("mapping_ui")))
+                        shiny::div(
+                            id = ns("grid_box"), class = "mapping-grid-box",
+                            shiny::uiOutput(ns("mapping_ui"))
+                        )
                     )
                 ),
                 shiny::conditionalPanel(
@@ -92,6 +95,85 @@ mod_mapping_ui <- function(id) {
             if (btn) { btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
             window.jQuery(group).trigger(open ? 'shown' : 'hidden');
           }
+          // Relevant / All / Mapped / Pending in the browser (ADR-157). The
+          // grid holds every card, so a switch rebuilds nothing. The rules
+          // follow keep_by_mapped_filter() and collapse_mapping_term(): the
+          // server keeps the state classes current (saira-toggle-field-mapped)
+          // and marks the terms that can collapse (data-collapse).
+          function keepByFilter(mode, el) {
+            if (mode === 'mapped') { return el.classList.contains('field-mapped'); }
+            if (mode === 'pending') {
+              return el.classList.contains('field-required-missing') ||
+                el.classList.contains('field-attention');
+            }
+            return true;
+          }
+          function cardTerm(card, prefix) {
+            return card.id.slice((prefix + 'fieldcard_').length);
+          }
+          function collapseByFilter(mode, card, prefix) {
+            if (mode !== 'relevant' || card.dataset.collapse !== 'true' ||
+                !card.classList.contains('field-unmapped')) { return false; }
+            var fixed = document.getElementById(prefix + 'usecustom_' + cardTerm(card, prefix));
+            return !(fixed && fixed.checked);
+          }
+          // Write only a changed value: each write is a DOM mutation.
+          function setHidden(el, hide) {
+            if (el.hidden !== hide) { el.hidden = hide; }
+          }
+          function setText(el, text) {
+            if (el.textContent !== text) { el.textContent = text; }
+          }
+          // Classes only, no card moves: a moved card connects its tooltips
+          // again, and the browser styles and lays it out from zero. The CSS
+          // order puts the collapsed cards after the line.
+          function applyMappingFilter(prefix) {
+            var picked = document.querySelector('input[name=\"' + prefix + 'mapped_filter\"]:checked');
+            var out = document.getElementById(prefix + 'mapping_ui');
+            if (!picked || !out) { return; }
+            var mode = picked.value;
+            out.querySelectorAll('.field-row').forEach(function (row) {
+              setHidden(row, !keepByFilter(mode, row));
+            });
+            out.querySelectorAll('.mapping-card-grid').forEach(function (grid) {
+              var group = grid.querySelector(':scope > .mapping-more-group');
+              if (!group) { return; }
+              var terms = [];
+              grid.querySelectorAll(':scope > .field-card').forEach(function (card) {
+                setHidden(card, !keepByFilter(mode, card));
+                var collapse = collapseByFilter(mode, card, prefix);
+                card.classList.toggle('field-card-compact', collapse);
+                card.classList.toggle('field-card-collapsed', collapse);
+                if (collapse) { terms.push(cardTerm(card, prefix)); }
+              });
+              setHidden(group, terms.length === 0);
+              setText(group.querySelector('.mapping-more-label'), terms.length + ' ' +
+                (terms.length === 1 ? group.dataset.one : group.dataset.other));
+              setText(group.querySelector('.mapping-more-terms'), terms.join(', '));
+            });
+          }
+          // jQuery, not addEventListener: a server update of the radio
+          // triggers a jQuery change event, which a native listener misses.
+          window.jQuery(document).on('change', '.shiny-input-radiogroup', function () {
+            var m = /^(.*-)mapped_filter$/.exec(this.id || '');
+            if (m) { applyMappingFilter(m[1]); }
+          });
+          // A rebuild can start before the server gets a filter switch, so
+          // the new grid gets the filter on screen.
+          window.jQuery(document).on('shiny:value', function (ev) {
+            var m = /^(.*-)mapping_ui$/.exec(ev.target.id || '');
+            if (m) { setTimeout(function () { applyMappingFilter(m[1]); }, 0); }
+          });
+          // A card or row that the filter hides cannot scroll into view.
+          // Relevant keeps every card, so switch to it.
+          function revealFiltered(el) {
+            var m = /^(.*-)field(card|row)_/.exec(el.id);
+            var group = m && document.getElementById(m[1] + 'mapped_filter');
+            var relevant = group && group.querySelector('input[value=\"relevant\"]');
+            if (!relevant) { return; }
+            relevant.checked = true;
+            window.jQuery(group).trigger('change');
+          }
           document.addEventListener('click', function (ev) {
             var more = ev.target.closest('.mapping-more');
             if (more) {
@@ -104,7 +186,6 @@ mod_mapping_ui <- function(id) {
             if (expand) {
               var card = expand.closest('.field-card');
               card.classList.remove('field-card-compact');
-              window.jQuery(card).trigger('shown');
               return;
             }
             // Island suggestion in the establishment assistant (ADR-143):
@@ -138,9 +219,12 @@ mod_mapping_ui <- function(id) {
             (function tryScroll() {
               var el = document.getElementById(id);
               if (el) {
-                // A card collapsed by the Relevant filter sits in a closed
-                // group (display: none) and cannot scroll into view.
-                var group = el.closest('.mapping-more-group');
+                if (el.hidden) { revealFiltered(el); }
+                // A card collapsed by the Relevant filter is hidden
+                // (display: none) while its line is closed, and cannot
+                // scroll into view.
+                var group = el.classList.contains('field-card-collapsed') &&
+                  el.parentElement.querySelector(':scope > .mapping-more-group');
                 if (group && !group.classList.contains('is-open')) {
                   setMoreGroupOpen(group, true);
                 }
@@ -1111,7 +1195,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # line per class (ADR-137).
         # The counts come from triage_state(); the saira-mapping-triage
         # handler patches them in place after each mapping change.
-        # motion.js slides the grid in once the server renders it (ADR-156).
+        # The mapping UI script applies the filter in the browser (ADR-157),
+        # and motion.js slides the grid in (ADR-156).
         output$mapped_filter_control <- shiny::renderUI({
             lang <- lang_r()
             modes <- c("relevant", "all", "mapped", "pending")
@@ -1119,7 +1204,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             shiny::div(
                 class = "saira-seg",
                 `data-seg-target` = ns("grid_box"),
-                `data-seg-wait` = ns("mapping_ui"),
                 shiny::radioButtons(
                     ns("mapped_filter"),
                     label = shiny::tags$span(tr("mapping_filter_label", lang), class = "visually-hidden"),
@@ -2172,10 +2256,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             term, is_mapped, field_meta, required_fields_strip
                         )
 
-                        if (!keep_by_mapped_filter(mapped_filter, is_mapped, !is.null(state_class))) {
-                            return(NULL)
-                        }
-
                         source_label <- if (locked_taxon) {
                             tr("mapping_row_derived", lang)
                         } else if (identical(term, "occurrenceID")) {
@@ -2192,7 +2272,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             character(0)
                         }
 
-                        build_field_row(
+                        row <- build_field_row(
                             item = item,
                             source_label = source_label,
                             sample_text = paste(sample_vals, collapse = "  "),
@@ -2201,6 +2281,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             state_class = state_class,
                             ns = ns, lang_r = lang
                         )
+                        # Like the cards: every row is here, and the browser
+                        # applies the filter (ADR-157).
+                        keep <- keep_by_mapped_filter(mapped_filter, is_mapped, !is.null(state_class))
+                        shiny::tagAppendAttributes(row, hidden = if (!keep) NA)
                     })
 
                     shiny::tagList(
@@ -2261,15 +2345,18 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             # The grid (50 selectize inputs) is expensive to rebuild, so it is
             # rendered only on a real structural change: a new upload, a language
-            # switch, the Relevant/All/Mapped/Pending filter, a change to the active term set
+            # switch, a change to the active term set
             # (Add-term modal, template import, reset), or when scientificName's
             # mapped-state flips (which locks/unlocks taxonRank/specificEpithet).
             # These are the only reactive dependencies. Everything else --
             # per-term map_values, fixed-value inputs, meta -- is read inside the
             # isolate() below, so selecting a column updates just that card via
             # its carddyn_<term> output and push_card_state(), never the grid.
+            # The Relevant/All/Mapped/Pending filter runs in the browser
+            # (ADR-157): the grid holds every card, and the filter is read
+            # here only so the cards come in at their place.
             lang <- lang_r()
-            mapped_filter <- input$mapped_filter %||% "relevant"
+            mapped_filter <- shiny::isolate(input$mapped_filter) %||% "relevant"
             scientificname_mapped <- isTRUE(rv$scientificname_mapped)
             # Structural dependency: adding/removing terms must rebuild the grid
             # so the new card actually appears. dwc_all() carries rv$extra_terms
@@ -2327,9 +2414,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                                 term, is_mapped, field_meta, required_fields_strip
                             )
 
-                            if (!keep_by_mapped_filter(mapped_filter, is_mapped, !is.null(state_class))) {
-                                return(NULL)
-                            }
+                            # The mapping UI script repeats this on each
+                            # filter switch, with the classes and the
+                            # data attributes set here.
+                            keep <- keep_by_mapped_filter(mapped_filter, is_mapped, !is.null(state_class))
                             compact <- identical(mapped_filter, "relevant") &&
                                 collapse_mapping_term(
                                     term, is_mapped,
@@ -2337,7 +2425,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                                     extra = rv$extra_terms
                                 )
 
-                            list(term = term, compact = compact, card = build_field_card(
+                            card <- build_field_card(
                                 item = item, cols = cols,
                                 current_val = current_val,
                                 is_mapped = is_mapped,
@@ -2348,11 +2436,18 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                                 required = term %in% required_fields_strip,
                                 state_class = state_class,
                                 compact = compact
-                            ))
+                            )
+                            card <- shiny::tagAppendAttributes(
+                                card,
+                                `data-collapse` = if (collapsible_mapping_term(term, rv$extra_terms)) "true",
+                                hidden = if (!keep) NA
+                            )
+                            list(term = term, compact = compact, card = card)
                         })
-                        entries <- Filter(Negate(is.null), entries)
                         compact <- vapply(entries, function(x) x$compact, FUN.VALUE = logical(1))
 
+                        # One grid per class in the term order, so a
+                        # filter switch never moves a card (ADR-157).
                         shiny::tagList(
                             shiny::div(
                                 id = ns(paste0("cat_anchor_", slug(cat))),
@@ -2361,15 +2456,12 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             ),
                             shiny::div(
                                 class = "mapping-card-grid",
-                                lapply(entries[!compact], function(x) x$card)
-                            ),
-                            if (any(compact)) {
+                                lapply(entries, function(x) x$card),
                                 build_collapsed_terms(
                                     vapply(entries[compact], function(x) x$term, FUN.VALUE = character(1)),
-                                    lapply(entries[compact], function(x) x$card),
                                     lang
                                 )
-                            }
+                            )
                         )
                     })
                 )
@@ -2460,6 +2552,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     NULL
                 }
             })
+            # The filter shows and hides cards in the browser (ADR-157). To
+            # resume a suspended output, Shiny checks all outputs, and that
+            # blocks the page for 50 to 90 ms. This content changes only on an
+            # upload, a language switch or a pick for this term.
+            shiny::outputOptions(output, paste0("carddyn_", term), suspendWhenHidden = FALSE)
         }
         shiny::observe({
             for (term in all_term_names()) {
