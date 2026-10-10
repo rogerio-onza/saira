@@ -246,15 +246,10 @@ setup_basis_of_record_assistant <- function(
                 next_auto <- stats::setNames(character(0), character(0))
 
                 if (nrow(entries) > 0) {
-                    allowed_terms <- get_basis_of_record_terms()
-                    match_idx <- match(
-                        tolower(trimws(entries$raw)),
-                        tolower(allowed_terms)
+                    next_auto <- stats::setNames(
+                        auto_suggest_basis_of_record_terms(entries$raw),
+                        entries$key
                     )
-                    suggested <- rep("", nrow(entries))
-                    matched <- !is.na(match_idx)
-                    suggested[matched] <- allowed_terms[match_idx[matched]]
-                    next_auto <- stats::setNames(suggested, entries$key)
                 }
 
                 rv$basis_of_record_entries <- entries

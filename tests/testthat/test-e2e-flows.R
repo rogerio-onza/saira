@@ -19,10 +19,27 @@ if (!identical(Sys.getenv("RUN_E2E"), "true")) {
     testthat::skip("E2E suite ignorada em check rotineiro. Use RUN_E2E=true para rodar.")
 }
 app_root <- normalizePath(testthat::test_path("../../"), winslash = "/", mustWork = TRUE)
+# One Chrome serves every flow, and after a few minutes it throttled the
+# timers of the page, so Shiny missed the 10 s "stable" window in late flows.
+chromote::set_chrome_args(c(
+    chromote::default_chrome_args(),
+    "--disable-background-timer-throttling",
+    "--disable-renderer-backgrounding",
+    "--disable-backgrounding-occluded-windows"
+))
 build_e2e_app <- function() {
     pkgload::load_all(app_root, export_all = FALSE, quiet = TRUE)
-    shiny::shinyApp(app_ui(), app_server)
+    # run_app() registers www (custom.css, upload-dropzone.js) and the 500 MB
+    # upload limit; a bare shinyApp() served the pages without them.
+    run_app()
 }
+# AppDriver sends this function to the app process. testthat keeps source
+# references, so the function carries the text of this whole file with it.
+# With them, Chrome 151 reloaded the page during startup in most flows, and
+# AppDriver lost the tracer it had injected. Without them, every flow passes.
+# A padded copy of one flow failed the same way, so the file size is the
+# trigger. The mechanism is not known.
+build_e2e_app <- utils::removeSource(build_e2e_app)
 
 # --- Flow 1: Upload -> Mapping -> Preview -> Download ---
 
@@ -211,6 +228,69 @@ testthat::test_that("E2E: Language switch PT -> EN -> PT without error (Flow 5)"
     testthat::expect_equal(nav_pt_initial, nav_pt_final)
 })
 
+# ADR-133: Spanish is the third UI language. The test visits every tab in
+# Spanish, because a key without "es" text only shows on the tab that uses it.
+testthat::test_that("E2E: Spanish UI renders every tab and sets the page language", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 10000)
+
+    app$set_inputs(lang_switch = "es")
+    app$wait_for_idle(timeout = 10000)
+
+    testthat::expect_identical(app$get_js("document.documentElement.lang"), "es")
+    nav_es <- trimws(gsub("<[^>]+>", "", as.character(app$get_html("#nav_upload_title"))))
+    testthat::expect_identical(nav_es, tr("nav_home", "es"))
+
+    tabs <- c("upload", "mapping", "preview", "validate_names", "validate_coords",
+              "sensitive_coords", "export", "wiki", "help")
+    for (tab in tabs) {
+        app$click(selector = sprintf("a[data-value='%s']", tab))
+        app$wait_for_idle(timeout = 10000)
+        testthat::expect_identical(
+            app$get_js("document.querySelectorAll('.shiny-output-error:not(.shiny-output-error-validation)').length"),
+            0L,
+            info = tab
+        )
+    }
+})
+
+# In English the translated label is Shiny's own "Upload complete". The page
+# rewrote the same text, its MutationObserver saw the change and rewrote it
+# again, so the tab spun forever after an upload.
+testthat::test_that("E2E: an upload in English completes", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 10000)
+
+    app$set_inputs(lang_switch = "en")
+    app$wait_for_idle(timeout = 5000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(c("scientificName,decimalLatitude", "Panthera onca,-10.5"), csv_path)
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path, timeout_ = 15000)
+    label <- app$get_js(
+        "document.querySelector('.shiny-file-input-progress .progress-bar').textContent"
+    )
+    testthat::expect_identical(label, "Upload complete")
+})
+
 # --- Flow 6: mapping-guide import restores a fixed value ---
 #
 # The one step no unit test reaches. testServer has no browser, so it can only
@@ -353,4 +433,294 @@ testthat::test_that("E2E: slash dates export as ISO and an out-of-range year is 
         occurrence$eventDate,
         c("2023-12-25", "2023-11-02", "2023-12-25T14:30", "2098-05-01")
     )
+})
+
+# --- Flow 8: a language switch keeps a card's column ---
+#
+# ADR-111, item 5: the mapping sync observer keeps its lang_r() dependency. When
+# a refactor isolated it, a language switch rebuilt the card grid and the
+# recreated inputs wiped every pick. testServer cannot see this, because it has
+# no DOM to recreate the inputs in.
+
+testthat::test_that("E2E: a language switch keeps the column picked in a card", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+
+    app$wait_for_idle(timeout = 10000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("especie,ambiente",
+          "Panthera onca,forest",
+          "Leopardus pardalis,savanna"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='mapping']")
+    app$wait_for_idle(timeout = 10000)
+
+    app$set_inputs(`mapping-map_habitat` = "ambiente")
+    app$wait_for_idle(timeout = 10000)
+
+    card_is_mapped <- function() {
+        isTRUE(app$get_js(
+            "document.getElementById('mapping-fieldcard_habitat').classList.contains('field-mapped')"
+        ))
+    }
+    picked <- function() {
+        app$get_values(input = "mapping-map_habitat")$input[["mapping-map_habitat"]]
+    }
+
+    testthat::expect_identical(picked(), "ambiente")
+    testthat::expect_true(card_is_mapped())
+
+    for (lang in c("en", "pt")) {
+        app$set_inputs(lang_switch = lang)
+        app$wait_for_idle(timeout = 15000)
+        testthat::expect_identical(picked(), "ambiente")
+        testthat::expect_true(card_is_mapped())
+    }
+})
+
+testthat::test_that("E2E: the Mapping filter runs in the browser and Next pending shows a hidden card", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+
+    app$wait_for_idle(timeout = 10000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("scientificName,decimalLatitude,decimalLongitude,eventDate",
+          "Panthera onca,-10.5,-55.2,2024-01-15",
+          "Leopardus pardalis,-11.3,-54.8,2024-02-20"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='mapping']")
+    app$wait_for_idle(timeout = 15000)
+    # A notification that closes also starts a check of hidden outputs.
+    app$wait_for_js("document.querySelector('.shiny-notification') === null",
+                    timeout = 20000)
+
+    # A card that moves in the DOM is styled and laid out from zero, and its
+    # tooltips connect again. The filter only toggles classes.
+    app$run_js("window.__cardMoves = 0;
+      new MutationObserver(function (records) {
+        records.forEach(function (r) {
+          Array.prototype.forEach.call(r.addedNodes, function (n) {
+            if (n.classList && n.classList.contains('field-card')) { window.__cardMoves++; }
+          });
+        });
+      }).observe(document.getElementById('mapping-mapping_ui'), { childList: true, subtree: true });")
+    # A check of hidden outputs blocks the page for 50 to 90 ms and stops
+    # the filter slide, so a switch must not start one.
+    app$run_js("window.__gridRenders = 0; window.__hiddenChecks = 0;
+      $(document).on('shiny:value', function (e) {
+        if (e.target.id === 'mapping-mapping_ui') { window.__gridRenders++; }
+      });
+      $(document).on('shiny:inputchanged', function (e) {
+        if (/^[.]clientdata_output_.*_hidden$/.test(e.name)) { window.__hiddenChecks++; }
+      });")
+    shown <- function() {
+        app$get_js("Array.prototype.filter.call(
+          document.querySelectorAll('#mapping-mapping_ui .field-card'),
+          function (card) { return card.getClientRects().length > 0; }).length")
+    }
+    count <- function(mode) {
+        as.integer(app$get_text(paste0("#mapping-filter_n_", mode)))
+    }
+    pick <- function(mode) {
+        # The server does nothing on a switch (ADR-157), so no output changes.
+        app$set_inputs(`mapping-mapped_filter` = mode, wait_ = FALSE)
+        app$wait_for_idle(timeout = 10000)
+    }
+
+    # The count on each option is the number of cards the option shows.
+    for (mode in c("all", "mapped", "pending", "relevant", "all", "relevant")) {
+        pick(mode)
+        testthat::expect_identical(shown(), count(mode), label = mode)
+    }
+    testthat::expect_identical(app$get_js("window.__cardMoves"), 0L)
+    testthat::expect_identical(app$get_js("window.__gridRenders"), 0L)
+    testthat::expect_identical(app$get_js("window.__hiddenChecks"), 0L)
+
+    # Mapped hides the missing required terms. Next pending goes to one of
+    # them, so the filter changes to Relevant, which hides no card.
+    pick("mapped")
+    testthat::expect_gt(app$get_js("document.querySelectorAll('#mapping-mapping_ui .field-card[hidden]').length"), 0L)
+    app$click("mapping-next_pending")
+    app$wait_for_idle(timeout = 10000)
+    testthat::expect_identical(app$get_value(input = "mapping-mapped_filter"), "relevant")
+    testthat::expect_identical(app$get_js("document.querySelectorAll('#mapping-mapping_ui .field-card[hidden]').length"), 0L)
+})
+
+testthat::test_that("E2E: Table | Problems in the Preview switches in the browser", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+
+    app$wait_for_idle(timeout = 10000)
+
+    # An empty eventDate is a problem, so the tab opens in Problems.
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("scientificName,decimalLatitude,decimalLongitude,eventDate",
+          "Panthera onca,-10.5,-55.2,2024-01-15",
+          "Leopardus pardalis,-11.3,-54.8,"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='preview']")
+    app$wait_for_idle(timeout = 15000)
+    app$wait_for_js("document.querySelector('.shiny-notification') === null",
+                    timeout = 20000)
+    testthat::expect_identical(app$get_value(input = "preview-mode"), "problems")
+
+    # The content of both modes is there before a switch (ADR-158), so a
+    # switch renders no output and starts no check of hidden outputs.
+    app$run_js("window.__previewRenders = 0; window.__hiddenChecks = 0;
+      $(document).on('shiny:value', function (e) {
+        if (/^preview-/.test(e.target.id)) { window.__previewRenders++; }
+      });
+      $(document).on('shiny:inputchanged', function (e) {
+        if (/^[.]clientdata_output_.*_hidden$/.test(e.name)) { window.__hiddenChecks++; }
+      });")
+    shows <- function(part) {
+        app$get_js(paste0("document.querySelector('#preview-mode_body [data-mode=\"", part,
+                          "\"]').getBoundingClientRect().height > 0"))
+    }
+    rows <- function(table) {
+        app$get_js(paste0("document.querySelectorAll('#preview-", table,
+                          " .dataTables_scrollBody tbody tr').length"))
+    }
+    for (mode in c("table", "problems", "table")) {
+        app$set_inputs(`preview-mode` = mode, wait_ = FALSE)
+        app$wait_for_idle(timeout = 10000)
+        other <- setdiff(c("table", "problems"), mode)
+        testthat::expect_true(shows(mode), label = mode)
+        testthat::expect_false(shows(other), label = other)
+    }
+    testthat::expect_gt(rows("datatable"), 0L)
+    testthat::expect_gt(rows("rows_table"), 0L)
+    testthat::expect_identical(app$get_js("window.__previewRenders"), 0L)
+    testthat::expect_identical(app$get_js("window.__hiddenChecks"), 0L)
+})
+
+# --- Flow 9: the whole flow on the demo dataset, timed ---
+#
+# The public demo sheet exercises every validation, so this is the one run that
+# crosses every tab with real data. Each step records its time. The numbers are
+# printed, and written to SAIRA_E2E_TIMINGS when that variable names a file, to
+# compare a branch against the baseline taken on main. Name validation queries
+# GBIF and taxadb over the network, so it stays out of this flow.
+
+testthat::test_that("E2E: full flow on the demo dataset, with step timings", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    demo_path <- file.path(app_root, "website", "assets", "exemplo", "ocorrencias-demo.csv")
+    testthat::skip_if_not(file.exists(demo_path), "demo dataset not found")
+    demo_rows <- nrow(utils::read.csv(demo_path, colClasses = "character"))
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 60000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+
+    app$wait_for_idle(timeout = 20000)
+
+    idle_ms <- 500
+    timings <- data.frame(step = character(0), seconds = numeric(0))
+    timed <- function(step, action, timeout = 120000) {
+        started <- Sys.time()
+        action()
+        app$wait_for_idle(duration = idle_ms, timeout = timeout)
+        seconds <- as.numeric(difftime(Sys.time(), started, units = "secs")) - idle_ms / 1000
+        timings[nrow(timings) + 1L, ] <<- list(step, round(max(seconds, 0), 2))
+    }
+    # Setting the navbar input reaches every tab, including the ones inside a
+    # dropdown menu, without depending on how the navbar is drawn. wait_ = FALSE
+    # because a tab that is already open updates no output, and set_inputs()
+    # would wait for one until its timeout. timed() waits for idle instead.
+    go_to <- function(tab) function() app$set_inputs(main_nav = tab, wait_ = FALSE)
+
+    timed("upload", function() app$upload_file(`upload-file` = demo_path))
+    timed("open mapping", go_to("mapping"))
+    timed("auto-map", function() app$click(selector = "#mapping-auto_map"))
+    mapped <- app$get_values(input = "mapping-map_scientificName")$input
+    testthat::expect_true(nzchar(mapped[["mapping-map_scientificName"]]))
+
+    timed("open preview", go_to("preview"))
+    testthat::expect_true(nchar(app$get_html("#preview-datatable")) > 0L)
+
+    timed("open coordinates", go_to("validate_coords"))
+    timed("validate coordinates", function() app$click(selector = "#validate_coords-validate"),
+          timeout = 300000)
+    testthat::expect_true(nchar(app$get_html("#validate_coords-filter_pills")) > 0L)
+
+    timed("open generalization", go_to("sensitive_coords"))
+    testthat::expect_true(nchar(app$get_html(".sensitive-coords-page")) > 0L)
+
+    timed("open export", go_to("export"))
+    started <- Sys.time()
+    zip_path <- app$get_download("export-download_real")
+    timings[nrow(timings) + 1L, ] <- list(
+        "download zip",
+        round(as.numeric(difftime(Sys.time(), started, units = "secs")), 2)
+    )
+    on.exit(unlink(zip_path), add = TRUE)
+
+    unzip_dir <- tempfile()
+    dir.create(unzip_dir)
+    on.exit(unlink(unzip_dir, recursive = TRUE), add = TRUE)
+    utils::unzip(zip_path, exdir = unzip_dir)
+    occurrence_path <- list.files(
+        unzip_dir, pattern = "^occurrence\\.txt$", recursive = TRUE, full.names = TRUE
+    )
+    testthat::expect_length(occurrence_path, 1L)
+    occurrence <- utils::read.csv(
+        occurrence_path[[1]], sep = ",", colClasses = "character", encoding = "UTF-8"
+    )
+    testthat::expect_identical(nrow(occurrence), demo_rows)
+    testthat::expect_true(all(
+        c("scientificName", "decimalLatitude", "decimalLongitude") %in% names(occurrence)
+    ))
+
+    message(paste(c("Step timings (s):", utils::capture.output(print(timings, row.names = FALSE))),
+                  collapse = "\n"))
+    out_file <- Sys.getenv("SAIRA_E2E_TIMINGS")
+    if (nzchar(out_file)) {
+        utils::write.csv(timings, out_file, row.names = FALSE)
+    }
 })

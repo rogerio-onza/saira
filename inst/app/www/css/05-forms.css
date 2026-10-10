@@ -28,7 +28,7 @@
 }
 
 .form-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: var(--weight-medium);
   font-size: var(--text-sm);
   color: var(--accent);
@@ -38,8 +38,8 @@
 /* File Input */
 .shiny-input-container .btn-file {
   background-color: var(--primary);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
+  color: var(--on-bright);
+  font-family: var(--font-ui);
   font-weight: 400;
   border: none;
   border-radius: var(--radius);
@@ -49,3 +49,114 @@
   background-color: var(--primary-hover);
 }
 
+
+/* Segmented control over native inline radios, with an optional count per
+   option (Preview Table | Problems, Mapping filter). 30px options in a 2px
+   track fit the 34px Preview head. A count of work left to do is red, like
+   the nav badge. */
+.saira-seg .shiny-input-container {
+  width: auto;
+  margin: 0;
+}
+
+.saira-seg .shiny-options-group {
+  position: relative;
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-main);
+  border-radius: var(--radius);
+}
+
+.saira-seg .radio-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  margin: 0;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-chip);
+  font-family: var(--font-ui);
+  font-size: var(--text-base-sm);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.saira-seg .radio-inline input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.saira-seg .radio-inline:has(input:checked) {
+  background: var(--bg-card);
+  border-color: var(--step-active);
+  color: var(--step-active);
+  font-weight: 700;
+}
+
+.saira-seg .radio-inline:has(input:focus-visible) {
+  box-shadow: var(--focus-ring-primary);
+}
+
+/* motion.js draws the selection as one thumb that slides between the
+   options (ADR-156). Until the thumb is in place, the option draws it. */
+.saira-seg .seg-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--step-active);
+  border-radius: var(--radius-chip);
+  pointer-events: none;
+}
+
+.saira-seg.has-thumb .radio-inline {
+  position: relative;
+}
+
+.saira-seg.has-thumb .radio-inline:has(input:checked) {
+  background: transparent;
+  border-color: transparent;
+}
+
+.saira-seg .seg-ok {
+  display: none;
+}
+
+.saira-seg .radio-inline:has(input:checked) .seg-ok {
+  display: inline-block;
+}
+
+.saira-seg .seg-n {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.saira-seg .seg-n:empty {
+  display: none;
+}
+
+.saira-seg .radio-inline:has(input:checked) .seg-n {
+  background: var(--bg-main);
+  color: var(--step-active);
+}
+
+.saira-seg .seg-n.is-act,
+.saira-seg .radio-inline:has(input:checked) .seg-n.is-act {
+  background: var(--error-fill);
+  color: var(--on-fill);
+}

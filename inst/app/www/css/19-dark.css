@@ -1,0 +1,248 @@
+/* =============================================================================
+   DARK THEME (ADR-144)
+   theme-switch.js sets data-bs-theme="dark" on <html>, so Bootstrap flips with
+   the app. The palette is "Plumagem": the blue-black of the saira's back, with
+   the blue of its wings for links and selection. Almost everything is a token
+   swap. The rules after the tokens cover the few colors that are not tokens
+   (pastel scales, form surfaces, map controls).
+   ============================================================================= */
+
+:root[data-bs-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces and ink */
+  --bg-main: #0f1116;
+  --bg-card: #171a21;
+  --bg-subtle: #13151b;
+  --text-primary: #e6e8ee;
+  --text-muted: #9ba2ae;
+  --border-light: #1f232b;
+  --border-default: #292e37;
+  --border-strong: #384050;
+  --ink-rgb: 230, 232, 238;
+
+  /* Brand: light text colors, deep fills under white text. */
+  --accent: #a3abff;
+  --accent-rgb: 158, 166, 255;
+  --accent-fill: #3d49cc;
+  --accent-fill-hover: #4955dc;
+  --info: #b5b8f5;
+  --info-rgb: 181, 184, 245;
+  --info-fill: #2c2f6e;
+  --primary: #38cff6;
+  --primary-hover: #6ad9f7;
+  --primary-dark: #9be7fa;
+  --primary-rgb: 56, 207, 246;
+
+  /* States */
+  --success: #34d399;
+  --success-rgb: 52, 211, 153;
+  --success-fill: #05875a;
+  --success-text: #6ee7b7;
+  --warning: #ffa204;
+  --warning-rgb: 255, 170, 40;
+  --warning-text: #ffc266;
+  --error: #f87265;
+  --error-rgb: 248, 114, 101;
+  --error-fill: #c0392b;
+  --error-fill-hover: #d04a3b;
+  --error-text: #ff9b90;
+  --on-fill: #ffffff;
+  --on-bright: #12141b;
+  --tooltip-bg: #2a2f3a;
+  --tooltip-fg: #e6e8ee;
+
+  --coord-ok: #34d399;
+  --coord-swapped: #a78bfa;
+  --coord-corrected: #3cc3cf;
+
+  --state-mapped-border: #2f6b55;
+  --state-attention-bg: #241f14;
+  --state-attention-border: #6b5225;
+  --state-missing-bg: #2a1816;
+  --state-missing-border: #7a3a32;
+  --badge-auto-bg: #133a2c;
+  --badge-auto-fg: #6ee7b7;
+  --badge-suggested-bg: #3a2c0f;
+  --badge-suggested-fg: #ffc266;
+  --badge-ambiguous-bg: #3d2412;
+  --badge-ambiguous-fg: #ffb27a;
+  --badge-template-bg: #33213f;
+  --badge-template-fg: #dcb2f0;
+  --badge-edited-bg: #172d42;
+  --badge-edited-fg: #9cc8ef;
+  --badge-missing-fg: #ff9b90;
+  --badge-invasive-bg: #3a2814;
+  --badge-invasive-fg: #f0b072;
+  --badge-translocated-bg: #2c2347;
+  --badge-translocated-fg: #c4b0f5;
+  --badge-manual-bg: #232831;
+  --badge-manual-fg: #a9b0bc;
+  --badge-assistant-bg: #262b35;
+  --badge-assistant-fg: #b7c0cf;
+  --badge-alias-bg: #252a5c;
+  --badge-alias-fg: #c0c5ff;
+
+  --overlay: rgba(0, 0, 0, 0.6);
+  --input-bg: var(--bg-subtle);
+  --navbar-link-color: var(--accent);
+  --navbar-link-active-bg: #38cff6;
+  --navbar-link-active-text: #12141b;
+  --step-active: var(--accent);
+
+  /* Bootstrap reads these. bslib compiled them from the light theme. */
+  --bs-body-bg: var(--bg-main);
+  --bs-body-color: var(--text-primary);
+  --bs-emphasis-color: var(--text-primary);
+  --bs-heading-color: var(--text-primary);
+  --bs-secondary-color: var(--text-muted);
+  --bs-secondary-bg: var(--bg-subtle);
+  --bs-tertiary-color: var(--text-muted);
+  --bs-tertiary-bg: var(--bg-subtle);
+  --bs-border-color: var(--border-default);
+  --bs-border-color-translucent: rgba(var(--ink-rgb), 0.12);
+  --bs-link-color: var(--accent);
+  --bs-link-hover-color: var(--accent);
+  --bs-link-color-rgb: var(--accent-rgb);
+  --bs-link-hover-color-rgb: var(--accent-rgb);
+  --bs-code-color: var(--accent);
+  --bs-dark-rgb: var(--ink-rgb);
+  --bs-light-rgb: 23, 26, 33;
+}
+
+/* Pastel scales with fixed dark text: tint the fill, light text. */
+[data-bs-theme="dark"] .wiki-class-badge,
+[data-bs-theme="dark"] .sp-cat-pill {
+  color: var(--text-primary);
+}
+[data-bs-theme="dark"] .wiki-required-badge--true {
+  color: var(--success-text);
+}
+[data-bs-theme="dark"] .sp-cat-pill--vu { background: rgba(230, 200, 77, 0.16); }
+[data-bs-theme="dark"] .sp-cat-pill--en { background: rgba(230, 135, 60, 0.18); }
+[data-bs-theme="dark"] .sp-cat-pill--crpex { background: rgba(163, 59, 87, 0.3); }
+
+/* Bootstrap surfaces that keep a light literal in the compiled theme. */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select,
+[data-bs-theme="dark"] .selectize-input,
+[data-bs-theme="dark"] .selectize-dropdown {
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+[data-bs-theme="dark"] .modal-content,
+[data-bs-theme="dark"] .dropdown-menu,
+[data-bs-theme="dark"] .popover,
+[data-bs-theme="dark"] .card {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
+/* Maps: the tiles keep the true colors of the data, only dimmed. The
+   controls follow the theme. */
+[data-bs-theme="dark"] .leaflet-container {
+  background: var(--bg-subtle);
+}
+[data-bs-theme="dark"] .leaflet-tile-pane {
+  filter: brightness(0.78) contrast(1.08) saturate(0.85);
+}
+[data-bs-theme="dark"] .leaflet-bar a,
+[data-bs-theme="dark"] .leaflet-control-layers,
+[data-bs-theme="dark"] .leaflet-control-attribution {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+[data-bs-theme="dark"] .leaflet-control-attribution a {
+  color: var(--accent);
+}
+/* The sea dot is deep navy, as on the map. A light ring keeps it visible on
+   the dark legend. */
+[data-bs-theme="dark"] .coords-map-legend-dot {
+  border-color: rgba(var(--ink-rgb), 0.35);
+}
+
+/* -- Theme switch: light, dark, follow the system (navbar) -- */
+.navbar .theme-switch-item {
+  display: flex;
+  align-items: center;
+}
+
+.theme-switch {
+  display: inline-flex;
+  height: 1.75rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-chip);
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.theme-switch button {
+  width: 1.85rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  transition: var(--transition-colors);
+}
+
+.theme-switch button + button {
+  border-left: 1px solid var(--border-default);
+}
+
+.theme-switch button:hover {
+  color: var(--text-primary);
+  background: var(--hover-bg);
+}
+
+.theme-switch button[aria-pressed="true"] {
+  background: var(--hover-bg);
+  color: var(--accent);
+}
+
+.theme-switch button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* The new theme grows as a circle from the clicked button. theme-switch.js
+   sets the center and the radius. The old page stays still under it. */
+html {
+  --reveal-x: 100%;
+  --reveal-y: 0px;
+  --reveal-r: 150vmax;
+}
+
+html.theme-reveal::view-transition-old(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html.theme-reveal::view-transition-new(root) {
+  animation: theme-reveal 600ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  mix-blend-mode: normal;
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--reveal-x) var(--reveal-y));
+  }
+  to {
+    clip-path: circle(var(--reveal-r) at var(--reveal-x) var(--reveal-y));
+  }
+}
+
+/* The page color changes at once, but a card fades its colors in 200 ms
+   (--transition-base). Inside the circle the cards then flash the old
+   color, so the switch stops the transitions. !important: some inputs set
+   their transition with four classes. */
+html.theme-reveal *,
+html.theme-reveal *::before,
+html.theme-reveal *::after {
+  transition: none !important;
+}

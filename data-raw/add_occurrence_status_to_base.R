@@ -15,14 +15,23 @@
 base_path <- file.path("inst", "extdata", "dwc_terms.rds")
 base <- readRDS(base_path)
 
+# Written with escapes: the first version of this script lost the accents.
+occurrence_status_definition_pt <- paste0(
+  "Declara\u00e7\u00e3o sobre a presen\u00e7a ou aus\u00eancia ",
+  "de um Taxon em um Local."
+)
+
 if ("occurrenceStatus" %in% base$term) {
-  message("occurrenceStatus already present in dwc_terms.rds — nothing to do.")
+  # Present already: only make sure the PT definition has its accents.
+  base$definition_pt[base$term == "occurrenceStatus"] <- occurrence_status_definition_pt
+  saveRDS(base, base_path)
+  message("occurrenceStatus already present in dwc_terms.rds: PT definition refreshed.")
 } else {
   new_row <- data.frame(
     term          = "occurrenceStatus",
     class         = "Occurrence",
     definition_en = "A statement about the presence or absence of a Taxon at a Location.",
-    definition_pt = "Declaracao sobre a presenca ou ausencia de um Taxon em um Local.",
+    definition_pt = occurrence_status_definition_pt,
     examples      = "present | absent",
     required      = FALSE,
     data_type     = "string",

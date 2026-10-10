@@ -68,6 +68,11 @@ rostrum_now_utc <- function() {
     format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
 }
 
+# One id per export, so undo_session_aliases() can reverse exactly that export.
+rostrum_new_run_id <- function() {
+    paste0("export-", format(Sys.time(), "%Y%m%dT%H%M%SZ", tz = "UTC"), "-", substr(uuid::UUIDgenerate(), 1L, 8L))
+}
+
 rostrum_resolve_data_dir <- function() {
     explicit_dir <- trimws(Sys.getenv("SAIRA_DATA_DIR", unset = ""))
     if (nzchar(explicit_dir)) {
@@ -528,7 +533,7 @@ rostrum_upsert_alias_locked <- function(
             existing <- DBI::dbGetQuery(
                 conn,
                 paste(
-                    "SELECT alias_id FROM rostrum_aliases",
+                    "SELECT alias_id, deprecated FROM rostrum_aliases",
                     "WHERE scope = ?",
                     "  AND COALESCE(user_id, '') = COALESCE(?, '')",
                     "  AND COALESCE(institution_id, '') = COALESCE(?, '')",
@@ -561,7 +566,12 @@ rostrum_upsert_alias_locked <- function(
                     ),
                     params = list(confidence_num, reviewed_int, now_utc, alias_id)
                 )
-                action_effective <- "alias_updated"
+                # Undo has to tell a revived alias from one that was live before.
+                action_effective <- if (isTRUE(as.integer(existing$deprecated[[1]]) == 1L)) {
+                    "alias_reactivated"
+                } else {
+                    "alias_updated"
+                }
             } else {
                 DBI::dbExecute(
                     conn,
@@ -621,6 +631,8 @@ rostrum_upsert_alias_locked <- function(
                 alias_id = alias_id,
                 action = action_effective,
                 scope = scope_norm,
+                user_id = user_id_norm,
+                institution_id = institution_id_norm,
                 col_name_norm = col_name_norm,
                 dwc_term = term_chr,
                 confidence = confidence_num
@@ -734,7 +746,7 @@ rostrum_record_alias_override <- function(
 #' @param user_id Character. User identifier for scope resolution.
 #' @param institution_id Character. Institution identifier.
 #' @return Invisibly, a data frame of the committed pairs (zero rows when there
-#'   was nothing to learn).
+#'   was nothing to learn), with the upsert \code{action} of each pair.
 #' @export
 rostrum_commit_session_aliases <- function(
     conn,
@@ -793,8 +805,9 @@ rostrum_commit_session_aliases <- function(
         add = TRUE
     )
 
+    upserted <- vector("list", nrow(pairs))
     for (i in seq_len(nrow(pairs))) {
-        rostrum_upsert_alias_locked(
+        upserted[[i]] <- rostrum_upsert_alias_locked(
             conn = conn,
             col_name = pairs$col_name[[i]],
             dwc_term = pairs$dwc_term[[i]],
@@ -812,10 +825,86 @@ rostrum_commit_session_aliases <- function(
             now_utc = now_utc
         )
     }
+    rostrum_supersede_aliases_locked(
+        conn = conn,
+        upserted = upserted,
+        run_id = run_id,
+        created_by = created_by,
+        now_utc = now_utc
+    )
 
     DBI::dbExecute(conn, "COMMIT")
     committed <- TRUE
+    pairs$action <- vapply(upserted, function(u) u$action, character(1))
     invisible(pairs)
+}
+
+# What an export taught the alias store: the pairs it created or reactivated.
+# A pair that was live before is not news, and undo leaves it live (ADR-141).
+alias_export_receipt <- function(committed, run_id) {
+    if (!is.data.frame(committed) || !"action" %in% names(committed)) {
+        return(NULL)
+    }
+    learned <- committed[committed$action %in% c("alias_created", "alias_reactivated"), , drop = FALSE]
+    if (nrow(learned) == 0L) {
+        return(NULL)
+    }
+    list(
+        run_id = run_id,
+        pairs = data.frame(col_name = learned$col_name, dwc_term = learned$dwc_term, stringsAsFactors = FALSE)
+    )
+}
+
+# The export is the newest decision for each column it maps. Older live
+# aliases of the same scope, owner and column that point to another term are
+# deprecated, so the lookup cannot return a stale term. Two terms mapped to one
+# column in the same export (altitude -> minimum and maximum elevation) both
+# stay (ADR-140). The caller owns the transaction.
+rostrum_supersede_aliases_locked <- function(conn, upserted, run_id, created_by, now_utc) {
+    run_id_norm <- rostrum_normalize_identity(run_id)
+    created_by_norm <- rostrum_normalize_identity(created_by)
+    col_keys <- vapply(upserted, function(u) {
+        paste(u$scope, u$user_id, u$institution_id, u$col_name_norm, sep = "\r")
+    }, character(1))
+
+    for (key in unique(col_keys)) {
+        group <- upserted[col_keys == key]
+        first <- group[[1]]
+        keep_ids <- vapply(group, function(u) as.integer(u$alias_id), integer(1))
+        old <- DBI::dbGetQuery(
+            conn,
+            paste(
+                "SELECT alias_id FROM rostrum_aliases",
+                "WHERE scope = ?",
+                "  AND COALESCE(user_id, '') = COALESCE(?, '')",
+                "  AND COALESCE(institution_id, '') = COALESCE(?, '')",
+                "  AND col_name_norm = ?",
+                "  AND deprecated = 0",
+                "  AND alias_id NOT IN (", paste(rep("?", length(keep_ids)), collapse = ","), ")"
+            ),
+            params = c(
+                list(first$scope, first$user_id, first$institution_id, first$col_name_norm),
+                as.list(keep_ids)
+            )
+        )
+        for (alias_id in as.integer(old$alias_id)) {
+            DBI::dbExecute(
+                conn,
+                "UPDATE rostrum_aliases SET deprecated = 1, updated_at = ? WHERE alias_id = ?",
+                params = list(now_utc, alias_id)
+            )
+            rostrum_insert_alias_event_locked(
+                conn = conn,
+                alias_id = alias_id,
+                action = "alias_superseded",
+                run_id = run_id_norm,
+                payload = list(superseded_by = vapply(group, function(u) u$dwc_term, character(1))),
+                created_by = created_by_norm,
+                created_at = now_utc
+            )
+        }
+    }
+    invisible(NULL)
 }
 
 rostrum_deprecate_alias <- function(
@@ -937,7 +1026,13 @@ rostrum_list_aliases_for_column <- function(
     alias_df$confidence <- suppressWarnings(as.numeric(alias_df$confidence))
     alias_df$reviewed <- as.integer(alias_df$reviewed)
     alias_df$reviewed_rank <- ifelse(alias_df$reviewed > 0L, 1L, 0L)
-    updated_rank <- suppressWarnings(as.numeric(as.POSIXct(alias_df$updated_at, tz = "UTC")))
+    # rostrum_now_utc() writes "...T...Z". The default as.POSIXct() formats
+    # do not read the "T" and keep only the date, so a same-day tie went to
+    # the oldest alias (ADR-140).
+    updated_at <- as.character(alias_df$updated_at)
+    updated_rank <- suppressWarnings(as.numeric(as.POSIXct(updated_at, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")))
+    legacy <- is.na(updated_rank) & !is.na(updated_at)
+    updated_rank[legacy] <- suppressWarnings(as.numeric(as.POSIXct(updated_at[legacy], tz = "UTC")))
     updated_rank[is.na(updated_rank)] <- -Inf
 
     ordering <- order(
@@ -971,31 +1066,11 @@ rostrum_lookup_alias <- function(
     alias_df[1, , drop = FALSE]
 }
 
-rostrum_lookup_alias_for_term <- function(
-    conn,
-    col_name,
-    dwc_term,
-    user_id = Sys.getenv("SAIRA_USER", unset = ""),
-    institution_id = Sys.getenv("SAIRA_INSTITUTION", unset = "")
-) {
-    alias_df <- rostrum_list_aliases_for_column(
-        conn = conn,
-        col_name = col_name,
-        dwc_term = dwc_term,
-        user_id = user_id,
-        institution_id = institution_id
-    )
-
-    if (nrow(alias_df) == 0L) {
-        return(alias_df)
-    }
-
-    alias_df[1, , drop = FALSE]
-}
-
 #' Undo All Alias Decisions From a Session
 #'
-#' Deprecates all non-public alias records created during \code{run_id}.
+#' Deprecates the alias records that \code{run_id} created or reactivated, and
+#' restores the aliases that \code{run_id} superseded. An alias that was live
+#' before the run stays live.
 #'
 #' @param conn A DBI connection from \code{rostrum_connect()}.
 #' @param run_id Character. Run identifier whose aliases should be undone.
@@ -1033,7 +1108,8 @@ undo_session_aliases <- function(
                     "SELECT DISTINCT alias_id",
                     "FROM rostrum_alias_events",
                     "WHERE run_id = ?",
-                    "  AND alias_id IS NOT NULL"
+                    "  AND alias_id IS NOT NULL",
+                    "  AND action IN ('alias_created', 'alias_reactivated', 'alias_superseded')"
                 ),
                 params = list(run_id_chr)
             )
@@ -1045,6 +1121,35 @@ undo_session_aliases <- function(
 
             alias_ids <- sort(unique(suppressWarnings(as.integer(alias_df$alias_id))))
             alias_ids <- alias_ids[!is.na(alias_ids) & alias_ids > 0L]
+
+            # An alias this run superseded comes back (ADR-140).
+            superseded <- DBI::dbGetQuery(
+                conn,
+                paste(
+                    "SELECT DISTINCT alias_id FROM rostrum_alias_events",
+                    "WHERE run_id = ? AND action = 'alias_superseded'"
+                ),
+                params = list(run_id_chr)
+            )
+            restore_ids <- intersect(alias_ids, as.integer(superseded$alias_id))
+            alias_ids <- setdiff(alias_ids, restore_ids)
+            for (alias_id in restore_ids) {
+                DBI::dbExecute(
+                    conn,
+                    "UPDATE rostrum_aliases SET deprecated = 0, updated_at = ? WHERE alias_id = ?",
+                    params = list(now_utc, alias_id)
+                )
+                rostrum_insert_alias_event_locked(
+                    conn = conn,
+                    alias_id = alias_id,
+                    action = "alias_undo_session",
+                    run_id = run_id_chr,
+                    payload = list(reason = "restore_superseded", run_id = run_id_chr),
+                    created_by = created_by,
+                    created_at = now_utc
+                )
+            }
+
             if (length(alias_ids) == 0L) {
                 DBI::dbExecute(conn, "COMMIT")
                 committed <- TRUE

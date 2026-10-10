@@ -17,13 +17,20 @@
 #' @param cat_class CSS class for the category
 #' @param scientificname_mapped Logical; when TRUE, taxonRank and specificEpithet
 #'   are locked because they are derived from scientificName.
+#' @param required Logical; when TRUE the card shows a "Required" tag. The value
+#'   is fixed per term, so the per-card update path never has to change it.
+#' @param compact Logical; when TRUE the card renders as a one-line row (term
+#'   and column select) for the "Relevant" filter. It is the same card with a
+#'   CSS class, so its inputs stay bound when the row opens. The second class
+#'   (`field-card-collapsed`) puts the row under its class's line. "Fixed
+#'   value" removes only the one-line look.
 #'
 #'   Selection-dependent content (the source sample, the basisOfRecord assistant
 #'   button, and the dynamicProperties key inputs) is rendered into a per-term
 #'   `carddyn_<term>` uiOutput slot, so picking a column updates only that card
 #'   instead of rebuilding the whole 50-selectize grid (see mod_mapping.R).
 #' @noRd
-build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL) {
+build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL, required = FALSE, compact = FALSE) {
     term <- item$term
 
     # taxonRank/specificEpithet/infraspecificEpithet are inferred from
@@ -46,7 +53,8 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 "field-card no-break", cat_class,
                 if (is_mapped) "field-mapped" else "field-unmapped",
                 state_class,
-                if (term %in% wide_card_terms()) "field-card-wide"
+                if (term %in% wide_card_terms()) "field-card-wide",
+                if (isTRUE(compact)) "field-card-compact field-card-collapsed"
             ),
             collapse = " "
         ),
@@ -72,6 +80,9 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                         item$desc,
                         placement = "right"
                     )
+                },
+                if (isTRUE(required)) {
+                    shiny::tags$span(class = "field-required-tag", tr("mapping_required", lang_r))
                 }
             ),
             if (!is.null(badge_info) && term != "occurrenceID" && !locked_taxon) {
@@ -96,7 +107,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
             shiny::div(
                 class = "alert alert-info",
                 style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
-                shiny::icon("dna"),
+                ph_icon("dna"),
                 " ", tr("taxon_auto_derived", lang_r)
             )
         } else if (term == "occurrenceID") {
@@ -202,10 +213,11 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                     ns("custom_language"),
                     NULL,
                     choices = stats::setNames(
-                        c("pt", "en"),
+                        c("pt", "en", "es"),
                         c(
                             sprintf("%s (pt)", tr("lang_pt", lang_r)),
-                            sprintf("%s (en)", tr("lang_en", lang_r))
+                            sprintf("%s (en)", tr("lang_en", lang_r)),
+                            sprintf("%s (es)", tr("lang_es", lang_r))
                         )
                     ),
                     selected = if (!is.null(saved_lang)) saved_lang else character(0),
@@ -307,6 +319,18 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 },
                 if (is_const_term) {
                     build_constant_value_input(term, ns, lang_r, input)
+                },
+                # A compact row hides the fixed-value checkbox. This button
+                # removes the compact class in place (client-side), so the full
+                # card with the checkbox opens where the row was. Every card
+                # has it, because the browser decides which cards are compact
+                # (ADR-157). CSS shows it on a compact row only.
+                if (is_const_term) {
+                    shiny::tags$button(
+                        type = "button",
+                        class = "field-compact-expand",
+                        tr("mapping_fixed_value_link", lang_r)
+                    )
                 }
             )
         }
@@ -344,12 +368,17 @@ build_constant_value_input <- function(term, ns, lang_r, input) {
                 tr("mapping_fixed_value_hint", lang_r)
             )
         ),
+        # Start hidden when the condition is false. On a compact row the CSS
+        # hides the panel, so Shiny never hides it. It then hides it when the
+        # row opens, and that "hidden" event makes Shiny check all outputs
+        # in the filter slide (ADR-157).
         shiny::conditionalPanel(
             condition = paste0("input.usecustom_", term),
             ns = ns,
+            style = if (!isTRUE(saved_use)) "display: none;",
             shiny::div(
                 class = "field-allrows-note",
-                shiny::icon("info-circle"),
+                ph_icon("info-circle"),
                 " ", tr("mapping_fills_every_row", lang_r)
             ),
             shiny::textInput(
@@ -382,7 +411,7 @@ build_basis_assistant_button <- function(current_val, ns, lang_r) {
         ns("open_basis_of_record_assistant"),
         tr("bor_assistant_button", lang_r),
         class = "btn btn-outline-primary btn-sm w-100 mt-2",
-        icon = shiny::icon("list-check")
+        icon = ph_icon("list-check")
     )
 }
 
@@ -403,7 +432,7 @@ build_establishment_assistant_button <- function(ns, lang_r) {
         ns("open_establishment_assistant"),
         tr("est_assistant_button", lang_r),
         class = "btn btn-outline-primary btn-sm w-100 mt-2",
-        icon = shiny::icon("seedling")
+        icon = ph_icon("seedling")
     )
 }
 
@@ -417,7 +446,7 @@ build_establishment_assistant_button <- function(ns, lang_r) {
 build_establishment_degree_hint <- function(ns, lang_r) {
     shiny::div(
         class = "alert alert-info est-degree-hint",
-        shiny::icon("link"),
+        ph_icon("link"),
         " ",
         tr("est_degree_card_hint", lang_r),
         " ",
@@ -445,7 +474,7 @@ build_establishment_status_note <- function(answered, missing_degree, lang_r) {
         if (answered > 0L) {
             shiny::div(
                 class = "est-card-status-line",
-                shiny::icon("wand-magic-sparkles"),
+                ph_icon("wand-magic-sparkles"),
                 " ",
                 sprintf(tr("est_card_filled_by_assistant", lang_r), answered)
             )
@@ -635,6 +664,72 @@ field_state_class <- function(term, is_mapped, meta, required_terms) {
         return("field-attention")
     }
     NULL
+}
+
+#' Whether a card passes the Relevant / All / Mapped / Pending filter
+#'
+#' "relevant" keeps every card, like "all": it collapses some of them to rows
+#' instead (see [collapse_mapping_term()]). "pending" keeps the cards that need
+#' the user (see [field_state_class()]), the same queue as "Next pending". An
+#' unmapped optional term needs nothing, so it is not pending.
+#'
+#' @param mode "relevant", "all", "mapped" or "pending"
+#' @param is_mapped logical, the card's mapped state
+#' @param needs_action logical, TRUE when `field_state_class()` gives a class
+#' @return logical
+#' @noRd
+keep_by_mapped_filter <- function(mode, is_mapped, needs_action = FALSE) {
+    switch(mode %||% "all",
+        mapped = isTRUE(is_mapped),
+        pending = isTRUE(needs_action),
+        TRUE
+    )
+}
+
+#' The collapsed terms of one class under the "Relevant" filter
+#'
+#' One line ("+ N terms with no column", the term names, Show) that shows the
+#' compact rows. The toggle is client-side (see the mapping UI script): the
+#' rows are rendered and bound already, so opening them rebuilds nothing.
+#' The line is the last item of the class grid, and the CSS puts it after the
+#' cards and before the rows. Every class has the line, hidden while it is
+#' empty: a filter switch in the browser toggles the card classes in place
+#' and rewrites the line (ADR-157).
+#'
+#' @param terms Character vector of the collapsed term names.
+#' @param lang_r Language code (already evaluated).
+#' @noRd
+build_collapsed_terms <- function(terms, lang_r) {
+    n <- length(terms)
+    one <- tr("mapping_more_terms_one", lang_r)
+    other <- tr("mapping_more_terms_other", lang_r)
+    shiny::div(
+        class = "mapping-more-group",
+        `data-one` = one,
+        `data-other` = other,
+        hidden = if (n == 0L) NA,
+        shiny::tags$button(
+            type = "button",
+            class = "mapping-more",
+            `aria-expanded` = "false",
+            shiny::span(
+                class = "mapping-more-count",
+                shiny::span(class = "when-closed", "+"),
+                shiny::span(class = "when-open", "\u2212"),
+                " ",
+                shiny::span(
+                    class = "mapping-more-label",
+                    paste(n, if (n == 1L) one else other)
+                )
+            ),
+            shiny::span(class = "mapping-more-terms", paste(terms, collapse = ", ")),
+            shiny::span(
+                class = "mapping-more-action",
+                shiny::span(class = "when-closed", tr("mapping_more_show", lang_r)),
+                shiny::span(class = "when-open", tr("mapping_more_hide", lang_r))
+            )
+        )
+    )
 }
 
 #' Determine if a mapping field is considered mapped

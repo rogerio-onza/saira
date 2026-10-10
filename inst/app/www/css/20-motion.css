@@ -1,0 +1,199 @@
+/* =============================================================================
+   MOTION (ADR-145)
+   The page slides 32px in the direction of the step, toasts come in from the
+   right, dialogs rise 16px, and the export pending rows come in one by one.
+   A segmented filter slides its new content in like a page (ADR-156).
+   motion.js runs the page slide with the View Transitions API. A browser
+   without the API gets a short rise of the new page. Reduced motion turns
+   all of it off.
+   ============================================================================= */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* -- Page slide: only the page area moves, the header changes at once -- */
+  html.vt-tab {
+    --tab-slide: 32px;
+  }
+
+  html.vt-tab.vt-back {
+    --tab-slide: -32px;
+  }
+
+  html.vt-tab .saira-pages {
+    view-transition-name: saira-page;
+  }
+
+  html.vt-tab::view-transition-old(root),
+  html.vt-tab::view-transition-new(root),
+  html.vt-tab::view-transition-group(saira-page) {
+    animation: none;
+  }
+
+  html.vt-tab::view-transition-old(root),
+  html.vt-tab::view-transition-new(root),
+  html.vt-tab::view-transition-old(saira-page),
+  html.vt-tab::view-transition-new(saira-page) {
+    mix-blend-mode: normal;
+  }
+
+  html.vt-tab::view-transition-old(saira-page) {
+    animation: page-slide-out 320ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  html.vt-tab::view-transition-new(saira-page) {
+    animation: page-slide-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  @supports not (view-transition-name: none) {
+    .saira-pages > .tab-pane.active {
+      animation: page-rise 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+  }
+
+  /* -- Toasts. No fill after the end: Shiny fades them out with an inline
+     opacity, and a filled animation value would win over it. -- */
+  #shiny-notification-panel .shiny-notification {
+    animation: toast-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* -- Dialogs: rise 16px. Bootstrap drops 50px from above. -- */
+  .modal.fade,
+  .modal-backdrop.fade {
+    transition: opacity 240ms ease-out;
+  }
+
+  .modal.fade .modal-dialog {
+    transform: translateY(16px);
+    transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Same weight as the rule above, so it must come after it. */
+  .modal.show .modal-dialog {
+    transform: none;
+  }
+
+  /* -- Export pending rows: one by one, 60ms apart -- */
+  .export-pending > .export-pending-row {
+    animation: row-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  }
+
+  .export-pending > .export-pending-row:nth-child(3) { animation-delay: 60ms; }
+  .export-pending > .export-pending-row:nth-child(4) { animation-delay: 120ms; }
+  .export-pending > .export-pending-row:nth-child(5) { animation-delay: 180ms; }
+  .export-pending > .export-pending-row:nth-child(6) { animation-delay: 240ms; }
+  .export-pending > .export-pending-row:nth-child(n + 7) { animation-delay: 300ms; }
+
+  /* -- Help FAQ: the answer drops in under its question -- */
+  .help-faq-item[open] > .help-faq-answer {
+    animation: answer-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* -- Segmented filters (ADR-156): the thumb slides to the picked option
+     and the new content comes in 32px from its side, as a page does -- */
+  .saira-seg.has-thumb .seg-thumb {
+    transition:
+      transform 240ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      width 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .saira-seg.has-thumb .radio-inline {
+    transition: color 200ms ease;
+  }
+
+  .seg-enter {
+    animation: seg-slide-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .seg-enter.seg-back {
+    animation-name: seg-slide-in-back;
+  }
+
+  /* -- Names run: the bar fills smoothly, a first download slides a short
+     bar, and the report fades in when the run ends -- */
+  .vn-run-bar-fill {
+    transition: width 600ms ease;
+  }
+
+  .vn-run-bar.is-waiting::after {
+    width: 30%;
+    opacity: 1;
+    animation: run-wait 1400ms ease-in-out infinite;
+  }
+
+  .vn-report-panel.is-entering > * {
+    animation: fade-in 200ms ease-out;
+  }
+}
+
+@keyframes page-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--tab-slide));
+  }
+}
+
+@keyframes page-slide-out {
+  to {
+    opacity: 0;
+    transform: translateX(calc(-1 * var(--tab-slide)));
+  }
+}
+
+/* The page slide with fixed offsets. A custom property set on the Mapping
+   grid restyles every card in it, at the start and at the end. */
+@keyframes seg-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+}
+
+@keyframes seg-slide-in-back {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+}
+
+@keyframes page-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+}
+
+@keyframes answer-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes run-wait {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(340%);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}

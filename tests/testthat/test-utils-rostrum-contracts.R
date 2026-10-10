@@ -1,4 +1,3 @@
-validate_composition_df <- saira:::validate_composition_df
 
 testthat::test_that("adapt_synonyms_v1_to_v2 preserves rows and maps any to mul", {
     v1 <- data.frame(
@@ -66,64 +65,4 @@ testthat::test_that("validate_decision_df rejects wrong column types", {
         validate_decision_df(bad_df),
         "decision_df\\$score must be numeric"
     )
-})
-
-testthat::test_that("validate_composition_df rejects missing required columns", {
-    bad_df <- data.frame(
-        term = "scientificName",
-        stringsAsFactors = FALSE
-    )
-
-    testthat::expect_error(
-        validate_composition_df(bad_df),
-        "missing required columns"
-    )
-})
-
-testthat::test_that("validate_composition_df rejects wrong type for applied", {
-    bad_df <- data.frame(
-        term = "scientificName",
-        selected_col = NA_character_,
-        status = "SUGERIDO",
-        reason = "composed_scientific_name",
-        applied = "FALSE",
-        composed_from_json = NA_character_,
-        stringsAsFactors = FALSE
-    )
-
-    testthat::expect_error(
-        validate_composition_df(bad_df),
-        "composition_df\\$applied must be logical"
-    )
-})
-
-testthat::test_that("validate_composition_df rejects unsupported status", {
-    bad_df <- data.frame(
-        term = "scientificName",
-        selected_col = NA_character_,
-        status = "UNKNOWN",
-        reason = "composed_scientific_name",
-        applied = FALSE,
-        composed_from_json = NA_character_,
-        stringsAsFactors = FALSE
-    )
-
-    testthat::expect_error(
-        validate_composition_df(bad_df),
-        "unsupported values"
-    )
-})
-
-testthat::test_that("validate_composition_df accepts valid composition stage data", {
-    good_df <- data.frame(
-        term = c("scientificName", "eventDate"),
-        selected_col = c(NA_character_, "year_col"),
-        status = c("SUGERIDO", "SUGERIDO"),
-        reason = c("composed_scientific_name", "composed_eventdate_partial"),
-        applied = c(FALSE, TRUE),
-        composed_from_json = c("[\"genus\",\"specificEpithet\"]", NA_character_),
-        stringsAsFactors = FALSE
-    )
-
-    testthat::expect_true(validate_composition_df(good_df))
 })

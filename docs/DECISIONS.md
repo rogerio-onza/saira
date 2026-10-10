@@ -1065,6 +1065,7 @@ Formato: ADR leve (Architecture Decision Record).
 - **Contexto**: A troca de idioma disparava ~385 re-renderizacoes simultaneas sem amortizacao. O fuzzy matching de paises na Layer 5 de `coords_country_to_iso3()` usava loop por item com `adist()` individual, O(n x m) com overhead de chamada de funcao por token.
 - **Decisao**:
   - Debounce de 150ms em `lang_r` com bypass na primeira renderizacao via `reactiveVal` flag (`lang_initialized`). Primeira renderizacao imediata para evitar atraso de startup.
+  - **Emenda (2026-10-05)**: o flag `lang_initialized` saiu. Ele era lido e gravado dentro do mesmo `reactive`, que se invalidava e renderizava os titulos da navbar duas vezes; o cliente via `nav_upload_title` recalcular fora de ordem e registrava 6 erros no console. `shiny::debounce()` ja entrega o primeiro valor na hora, entao `lang_r` e so `debounce(150)` sobre o input.
   - Substituir loop individual por batch matricial com `adist(all_tokens, ref$alias)`. Sem chunking (memoria trivial para matrizes observadas no uso real).
   - Envolver bloco batch em `tryCatch` para resiliencia a encoding corrompido — se `adist` falhar, loga e pula em vez de crashar todo o batch.
   - `normalize_country_token`: `iconv(from = "UTF-8")` explicito em vez de `from = ""` (dependente de locale do OS).
@@ -2050,7 +2051,7 @@ Formato: ADR leve (Architecture Decision Record).
 - **Decisao**:
   1. **Upload como ZIP unico**: `R/mod_upload.R` ganha um `bslib::input_switch` "Subir pacote Camtrap DP". Quando ligado, `file_kind()` aceita apenas `.zip` e valida via `is_camtrap_dp_zip()` (presenca de `datapackage.json` na listagem do zip). UI dinamica: o dropzone hint troca para o copy Camtrap DP, e o painel "campos DwC obrigatorios" e substituido por uma lista compacta dos 4 arquivos esperados. Modos pre-existentes (CSV de dados; TXT de mapping guide ADR-087) seguem inalterados quando o switch esta desligado.
   2. **Conversao para Darwin Core Occurrence Core via `camtrapdp::write_dwc()`**: `R/utils_camtrap.R` (puro, sem Shiny) implementa `is_camtrap_dp_zip()`, `read_camtrap_dp_zip()` (descompacta em tempdir, chama `camtrapdp::read_camtrapdp()` no descriptor, tolerando layout root ou nested), e `convert_camtrap_to_dwc_occurrence()` (chama `camtrapdp::write_dwc()` para um tempdir e le `dwc_occurrence.csv` de volta via `read_biodiversity_csv()` — reuso direto do detector de encoding/delimitador testado). A saida e uma `data.frame` plana que entra no pipeline existente como `raw_data()`, preservando o contrato ADR-054 do `mod_mapping`.
-  3. **`camtrapdp` em `Suggests`, nao `Imports`**: o pacote arrasta dependencias pesadas (`V8`, `jsonld`, `EML`, `jqr` — com requisito de sistema `libjq-dev`). Mantendo em Suggests, o instalador padrao da Saira nao precisa do toolchain extra; quem ativar o modo recebe um erro amigavel via `require_camtrapdp()` se o pacote nao estiver presente. Mesmo padrao de `rnaturalearthhires` (cache opcional para mapas em alta resolucao).
+  3. **`camtrapdp` em `Suggests`, nao `Imports`**: o pacote arrasta dependencias pesadas (`V8`, `jsonld`, `EML`, `jqr` — com requisito de sistema `libjq-dev`). Mantendo em Suggests, o instalador padrao da Saira nao precisa do toolchain extra; quem ativar o modo recebe um erro amigavel via `require_camtrapdp()` se o pacote nao estiver presente. Mesmo padrao de `rnaturalearthhires` (cache opcional para mapas em alta resolucao). **Revisto pelo ADR-149**: o `camtrapdp` foi para `Imports`.
   4. **Skip de remascara via dois sinais ortogonais**: `mask_sensitive_coordinates()` em `R/utils_sensitive.R` ganha a constante `SENSITIVE_ALREADY_MASKED_THRESHOLD_M = 1000` (metros). Uma linha e tratada como pre-generalizada pelo publisher (e *completamente pulada*) se *qualquer um* dos sinais abaixo bater:
      - **`coordinateUncertaintyInMeters >= 1000`** — captura Chapman categorias 2 (`round_coordinates(x, 1)` ~ 11–15 km) e 3 (`round_coordinates(x, 2)` ~ 1.1–1.6 km).
      - **`dataGeneralizations` nao-vazio** — captura Chapman categoria 4 (`round_coordinates(x, 3)` ~ 112–157 m, abaixo do threshold numerico). Per PDF do `camtrapdp` v0.5.0 p.26: "dwc:dataGeneralizations: set if x$coordinatePrecision is defined" — ou seja, o sinal e *garantido por contrato* pelo pacote upstream sempre que houver generalizacao, nao e heuristico.
@@ -2538,7 +2539,7 @@ Formato: ADR leve (Architecture Decision Record).
 ## ADR-118: `occurrenceID` sai do mapeamento; identificador existente sempre vence
 
 - **Data**: 2026-08-05
-- **Status**: Aceito
+- **Status**: Aceito. Emendado pelo ADR-152: so identificador unico vence.
 - **Contexto**: `resolve_occurrence_ids()` procurava uma coluna chamada **literalmente** `occurrenceID` no upload cru e nunca lia `map_values`. Como a coluna de identificador raramente tem esse nome na planilha do publicador, todo dataset cujo ID vinha de outra coluna tinha as linhas substituidas por identificador gerado. Pior, `build_processed_mapping_df()` gravava esse vetor e fazia `next`, pulando o mapeamento; no export, `generate_occurrence_ids()` via a coluna cheia, retornava cedo e rotulava `user_supplied`. O guia entao afirmava "todos vieram dos seus dados e serao preservados literalmente" sobre identificadores que a propria Saira acabara de inventar, e que mudavam a cada exportacao. O card tambem nao oferecia seletor (`occurrenceID` estava em `special_no_dropdown`), entao o unico caminho que chegava a gravar o mapeamento era a importacao de modelo, que nao aplica aquela exclusao. Dois subsistemas discordando, sem nada apontando o desacordo.
 - **Decisao**:
   - `resolve_occurrence_ids(df, n, map_values)` e a **unica** funcao que responde "qual o occurrenceID desta linha", com uma cadeia de precedencia e nada mais: valor que a linha ja carrega vence, e a Saira preenche so as lacunas.
@@ -2663,3 +2664,416 @@ Formato: ADR leve (Architecture Decision Record).
 - **Contexto**: A ADR-107 consulta a categoria IUCN no GBIF durante o export, com um GET por taxon (`species/match` para nomes sem `taxonID`, depois `iucnRedListCategory` por chave), um de cada vez. No roadkill (451 nomes, 21.512 linhas) o download levou 240 s, 96% dele esperando a rede (`Rprof(event = "elapsed")`). A IUCN fica ligada por padrao, porque o GBIF vem pre-selecionado.
 - **Decisao**: `gbif_api_get_many()` troca os dois lacos por `httr2::req_perform_parallel()` com no maximo 10 requests ativos. Cada request tem `req_retry(max_tries = 3)`, para que um 429 do GBIF sob carga paralela nao vire `NA`. O resto da ADR-107 fica igual: mesmos endpoints e campos, memo por sessao, qualquer falha vira `NA`.
 - **Consequencias**: O mesmo calculo leva 36 s, com `dynamicProperties` identico nas 21.512 linhas. `httr2` em Suggests sobe para `>= 1.1.1`, a primeira versao em que o paralelo respeita `req_retry()`. `gbif_api_get()` sai, porque os dois chamadores passam a usar a versao em lote.
+
+## ADR-127: visual plano e leve -- sem sombra, sem gradiente, bordas neutras
+
+- **Data**: 2026-09-23
+- **Status**: Aceito
+- **Contexto**: O redesign do marco 1 segue o mockup Inicio B: visual plano, cantos arredondados, bordas claras. O CSS tinha 11 tokens de sombra e cerca de 25 sombras fixas, 14 gradientes, 49 raios em pixel fixo e bordas num azul translucido que tinge o bege. O `--text-muted` (`#6c757d`) dava 4,2:1 sobre `--bg-main`, abaixo do AA.
+- **Decisao**: Todo token `--shadow-*` vale `none`, e as sombras fixas viram `none`. Os aneis de foco e os aneis `inset` de selecao ficam. Os gradientes decorativos viram cor solida, e o card selecionado usa o novo `--selected-bg`. Tres gradientes ficam porque carregam funcao: a escala de gravidade da Generalizacao, as listras do upload ativo e a camada solida do aviso de duplicata. As bordas passam a `#EFEDE6`, `#E6E4DC` e `#D9D6CC`. O raio usa so tokens, com o novo `--radius-xl: 14px` para paineis. O `--text-muted` passa a `#5F6570` (5,3:1).
+- **Consequencias**: Um card mostra o limite pela borda de 1px e pelo branco sobre o bege. Nova sombra pede um novo ADR.
+- **Atualizacao (redesign das telas de dados)**: `--lift-*` tambem vale `none`: nada sobe no hover. Texto sobre a cor de um estado usa `--success-text`, `--warning-text` e `--error-text`, porque `--success` (3,0:1) e `--warning` (1,9:1) falham no AA como texto. Tabelas tem cabecalho claro e so linhas horizontais.
+
+## ADR-128: cabecalho em duas linhas com etapas numeradas
+
+- **Data**: 2026-09-23
+- **Status**: Aceito
+- **Contexto**: A navbar tinha sete abas com icone e um menu "Validacao" que escondia Nomes, Coordenadas e Generalizacao. Abaixo de 1920px ela quebrava em duas linhas soltas (110px a 122px), com o seletor de idioma sozinho embaixo. Os deslocamentos de pagina (Pre-visualizacao, Nomes, Mapeamento) eram numeros fixos que so batiam com uma altura.
+- **Decisao**: Seguir o mockup Inicio B. A partir de 992px, a linha 1 tem a marca, Wiki DwC, Ajuda, idioma e versao, e a linha 2 tem as etapas de 1 a 7, sem icone, com o numero em markup estatico. A ativa tem cor `--step-active` e sublinhado. O menu "Validacao" sai, e os valores das abas nao mudam. O layout e so CSS: a lista do bslib quebra em duas linhas com `order` e um `::after`, e a marca fica sobre o inicio da linha 1. O padding lateral dos links vem de `--bs-navbar-nav-link-padding-x`, porque uma regra do Bootstrap com cadeia de `:not()` vence qualquer seletor nosso. `--app-header-height` (106px, ou 80px abaixo de 992px) substitui os numeros fixos, calibrados para a navbar de uma linha.
+- **Consequencias**: O cabecalho tem a mesma altura em qualquer largura de desktop. O `!important` cai de 11 para 9 (o do dropdown e o do padding dos links saem). Abaixo de 992px, o menu recolhido continua como antes. Um novo deslocamento de pagina deve partir de `--app-header-height`.
+
+## ADR-129: corrigir a coordenada na tabela de Coordenadas
+
+- **Data**: 2026-09-24
+- **Status**: Aceito
+- **Contexto**: Uma coordenada errada que nenhuma correcao automatica cobre (transposta, UTM, pais) obrigava a voltar a planilha, corrigir e carregar de novo. A tabela de diagnostico ja mostra a linha, o ponto e o problema.
+- **Decisao**: Latitude e longitude ficam editaveis na tabela (clique duplo, Enter). O valor passa por `parse_coord_edit()` (aceita virgula decimal, checa o intervalo) e o ponto e revalidado por `revalidate_coord_rows()`, o mesmo motor da validacao completa. Uma linha medida custa de 0,3 a 0,75 s (mar 0,38 s, referencias 0,29 s); so intervalo e mar ainda custariam cerca de 0,4 s e perderiam as flags de referencia, entao o motor completo fica. A edicao mora em estado proprio por `occurrenceID`, separado das correcoes automaticas: validar de novo nao a apaga, e uma edicao cujo registro sumiu cai com aviso. O pacote que Generalizacao e Exportacao leem e `merge_manual_coord_edits(automaticas, manuais)`, com a manual vencendo; o original vai para `verbatimLatitude`/`verbatimLongitude` como nas correcoes automaticas, sem colunas de auditoria (ADR-088). Linha sem `occurrenceID` unico nao e editavel. A tabela renderiza uma vez por validacao, filtro ou correcao em lote; a edicao atualiza as linhas por `replaceData(resetPaging = FALSE)` e move so o marcador dela (`layerId`), sem refazer o zoom.
+- **Consequencias**: `app_server.R` nao muda. O `bindCache` de `filtered_result_r` segue com a chave do resultado inteiro: o hash custa 13,7 ms com 21.512 linhas. Nenhum observer fora da aba roda por edicao: os consumidores do pacote sao `reactive()` preguicosos (ADR-114). O mesmo PR corrige `apply_coords_correction_payload()`, que pulava a copia do original em todas as linhas quando uma delas trazia `verbatim*` (UTM).
+
+## ADR-130: tela de Nomes no padrao plano, GBIF fixo e mapa sem pontos fora do mundo
+
+- **Data**: 2026-09-24
+- **Status**: Aceito
+- **Contexto**: A tela de Nomes ainda tinha cartoes de provedor com selo "Prioridade 1" no GBIF, embora `init_taxadb_run_state()` consulte Flora BR e Fauna BR primeiro. O GBIF podia ser desmarcado, mas e a reserva de toda rodada. A faixa "Validos / Invalidos / Nao resolvidos" encolhia sob uma tabela alta (coluna flex com `overflow: hidden`) e o resumo de conservacao cobria os rotulos. No mapa de Coordenadas, pontos com latitude alem de 90 ou longitude alem de 180 entravam no `fitBounds` e levavam o zoom a 1, com faixas cinza dos lados (`noWrap`).
+- **Decisao**: Provedores e opcoes viram uma lista com caixa de selecao; cada provedor mostra a etapa real da cascata (`provider_query_step()`). O GBIF fica sempre marcado: nao tem botao nem observer, e `toggle_provider_selection()` o ignora. Filtros e tags usam `--radius-chip` (6px); o filtro tem duas partes (rotulo e contagem) e leva a cor do que filtra, a mesma da tag: Problematicos e Nao encontrados vermelhos, Ambiguos ambar, Sinonimos azul-marinho, Aceitos verde, Todos verde-petroleo, em Nomes e em Coordenadas. Invasora passa a ser marrom (`--badge-invasive-*`) no filtro, na tag do relatorio e no resumo, para nao repetir o vermelho de Nao encontrado. A barra de porcentagem da validacao sai (pulava de 0 a 100); fica so a frase da fase durante a rodada. Na linha 1 do cabecalho, Wiki, Ajuda, idioma (PT/EN) e versao ficam juntos a direita. A cor de selecao (`--step-active`, antes um verde-petroleo `#0b7580` que nao e da ave) passa a ser o azul da marca `--accent`; o `#0e8a95` da Wiki e da Ajuda tambem. As contagens do relatorio viram caixas com `flex-shrink: 0`, e o resumo de conservacao vira tags curtas com a frase no `title`. O mapa desenha e enquadra so os pontos que `coords_plottable()` aceita (latitude limitada a 85 no enquadramento), avisa quantos registros ficaram de fora com link para o filtro Validade, e o zoom minimo e o primeiro cujo mundo preenche a largura do mapa (`leaflet_fill_world()`, com `htmlwidgets::onRender`). O mapa da Generalizacao usa as mesmas funcoes.
+- **Consequencias**: `htmlwidgets` entra em Imports (ja vinha com `leaflet` e `DT`). Um conjunto de dados com pontos no mundo inteiro nao cabe todo na tela num mapa largo; o usuario arrasta. As etapas do cabecalho ficam centralizadas por `justify-content: center`, que nao move a linha 1 porque o espacador do bslib absorve a sobra.
+
+## ADR-131: basisOfRecord converte sem o assistente e bloqueia a exportacao com valor vazio
+
+- **Data**: 2026-09-24
+- **Status**: Aceito
+- **Contexto**: `map_basis_of_record_values()` devolvia vazio para toda linha enquanto o assistente nao fosse salvo, ate para valores ja em DwC como `HumanObservation`. Modelos importados nao guardam o mapa de valores, entao o bug aparecia com ou sem modelo. A coluna saia toda vazia, o processamento a descartava e a exportacao acusava "termo obrigatorio faltando" com a coluna mapeada. `auto_suggest_basis_of_record_term()` existia, mas nada a chamava.
+- **Decisao**: `auto_suggest_basis_of_record_terms()` (vetorizada) reconhece o termo DwC sem diferenca de caixa, espaco ou `_`, os rotulos PT/EN do vocabulario sem acento e uma lista curta de sinonimos (`basis_of_record_synonyms`). Valor ambiguo ("Coleta", "Registro fotografico") fica vazio para a pessoa decidir. Um valor com decisao salva no assistente mantem a decisao, inclusive o "pular"; os outros recebem a sugestao, calculada uma vez por valor distinto. O assistente abre com as sugestoes. `build_export_summary()` conta os registros com basisOfRecord vazio (`bor_blank_count`) e bloqueia a exportacao, porque o GBIF exige o termo em todo registro.
+- **Consequencias**: quem pulava valores no assistente agora ve a exportacao bloqueada ate converte-los. O `smoke_report` muda para o arquivo de exemplo: 784 de 1.107 linhas passam a ter basisOfRecord.
+
+## ADR-132: passada de interface para a v1.0.0 (barra em uma linha, Phosphor, barras no topo, tabela do Chapman, painel de exportacao)
+
+- **Data**: 2026-09-24
+- **Status**: Aceito
+- **Contexto**: A passada plana (ADR-127 a 130) deixou telas com rolagem em 1440x900, uma coluna sem uso na Inicio, filtros e textos de apoio espalhados e icones Font Awesome solidos. Os mockups aprovados estao em https://claude.ai/artifact/AW4SgnxbHKcBPo1oYjAJKL.
+- **Decisao**:
+  - Cabecalho em uma linha a partir de 1360px: marca a esquerda, etapas no centro exato e Wiki/Ajuda/idioma/versao a direita. O `::before` da lista reserva a largura das ferramentas (`--header-tools-width`) e cresce junto com o espacador. Wiki e Ajuda sao icone de 1360 a 1679px e icone + palavra a partir de 1680px. Abaixo de 1360px ficam as duas linhas do ADR-128. Selo da versao com `--radius-chip`.
+  - Icones Phosphor (Regular; Light no icone grande de envio) vendorizados em `www/vendor/phosphor`. `ph_icon()` traduz os nomes Font Awesome usados no codigo por uma tabela unica (`ph_icon_names`), assim nomes guardados em dados (fases, status, frases de carregamento) seguem validos. O Font Awesome sai.
+  - Inicio: um painel so; a coluna de termos obrigatorios sai, e as dicas viram notas sob a area de envio (no modo Camtrap, a lista de arquivos esperados).
+  - Mapeamento: o bloco de obrigatorias sai da barra lateral; o filtro vira o seletor Todos/Mapeados/Pendentes no cabecalho do painel; a tag Obrigatorio fica verde ou vermelha pela classe de estado do card, que o servidor ja troca sem redesenhar a grade. A grade e montada em segundo plano logo apos o upload (`suspendWhenHidden` desligado por uma renderizacao) e os dois controles que ela le renderizam ocultos, para a aba abrir pronta.
+  - Coordenadas e Nomes: configuracao e correcoes numa barra no topo, sem titulo de pagina; mapa e tabela ocupam a largura. Correcoes viram chips curtos com a frase completa no `title`, todas as caixas da barra com a mesma altura. Legenda sobre o mapa.
+  - Coordenadas: pares projetados (UTM) ganham uma faixa propria abaixo da barra, so quando existem; zona e datum nao cabem num chip, e o que se exporta e sempre WGS84. "Mostrar na tabela" no popup do ponto envia a linha ao servidor, que a seleciona e abre a pagina dela: a tabela e server-side, o navegador so tem a pagina atual.
+  - Nomes: a barra ocupa a largura toda. Os tres contadores do relatorio saem (os filtros de Nomes processados ja contam); Lista MMA, IUCN no export e Invasoras viram pills rotulo e numero, como os filtros.
+  - Generalizacao: a Tabela 5 do Chapman vira uma matriz (grupo x perguntas 4.3/4.4/4.5, o primeiro Sim define a grade). Categorias ficam neutras, so texto; cor fica so para o status de ameaca (MMA). O modo vira dois cartoes com uma linha sobre o que cada um faz. O seletor do mapa comeca em "Decisao atual", o caminho de volta de uma pre-visualizacao. A excecao por especie e uma linha da mesma tabela, com as mesmas perguntas; a Categoria 1 e uma caixa na mesma linha, e cada excecao se remove sozinha. Os pontos do mapa levam a cor do grupo quando decididos, brancos enquanto esperam; celulas neutras e borda vermelha tracejada quando saem do pais; contorno branco no fundo de satelite. Saem o card de resultado por especie e a tabela de referencia; a fonte vira um texto curto com o DOI.
+  - Exportacao: uma lista de pendencias com a acao que resolve cada uma e, ao lado, o cartao Pacote (quatro numeros numa faixa, os arquivos e o aviso de que os metadados se completam no IPT). Os dois dividem a primeira linha da grade e terminam na mesma altura. Barra de download fixa no rodape.
+  - Pre-visualizacao: o titulo vai para dentro do cartao, na linha da busca, e a tabela mostra 15 linhas.
+- **Consequencias**: a pagina de Coordenadas cabe em 1440x900 sem rolagem. Em 1280 a 1359px o cabecalho continua em duas linhas. Testes de CSS e de modulo foram atualizados para o novo contrato.
+
+## ADR-133: espanhol como terceiro idioma (app, catalogo DwC, reconhecimento de planilhas e site)
+
+- **Data**: 2026-09-27
+- **Status**: Aceito
+- **Contexto**: O Saira atende projetos latino-americanos alem do Brasil. O app e o site eram so PT/EN, e varios pontos do codigo assumiam dois idiomas (`c("pt","en")`, `isEN`, `PAIRS`, colunas `_pt`/`_en`).
+- **Decisao**:
+  - Espanhol neutro latino-americano. `get_languages()` e a lista unica de idiomas; o seletor, a validacao do dicionario e as colunas por idioma leem dela. `lang_col(df, stem, lang)` le `<stem>_<lang>` e cai para `_en` quando falta, a mesma regra do `tr()`. O `<html lang>` acompanha o seletor.
+  - Os vocabularios (basisOfRecord, establishmentMeans, degreeOfEstablishment) e o texto do guia de mapeamento ficam no R, com `label_es`/`desc_es` ao lado de PT/EN em `\uXXXX`, e nao no `i18n.json` como previa o plano: sao dados estruturados com varios campos por item, e o `i18n.json` so guarda frases soltas da interface.
+  - Catalogo DwC: `definition_es` e `card_hint_es` vem de `data-raw/dwc_definitions_es.csv` por um script proprio (`build_dwc_definitions_es.R`) que roda depois dos builds do TDWG, sem novo download. O script exige 100% de cobertura e o mesmo conjunto de dicas do ingles.
+  - Planilhas em espanhol: 41 sinonimos Rostrum `lang = "es"`, meses, `si`/`no` no occurrenceStatus e rotulos/sinonimos de basisOfRecord. O `lang` do sinonimo e so metadado; nao entra no match.
+  - Site: `website/es/` espelha PT e EN linha a linha; `head.html` troca `PAIRS` por trios em `PAGES`, com rotulos do navbar e do tema por idioma. Capturas `-ES.png` ainda nao existem, e as paginas ES usam as `-EN.png`.
+- **Consequencias**: um idioma novo exige a entrada em `get_languages()`, a coluna no `i18n.json`, as colunas `_xx` do catalogo e um trio a mais no site. O teste de paridade do `i18n.json` falha se faltar texto em qualquer idioma. A traducao precisa de revisao de um falante nativo.
+
+## ADR-134: IBM Plex Sans para a interface, Space Mono so para codigo e dados
+
+- **Data**: 2026-10-03
+- **Status**: Aceito. Revisa o ADR-046: Space Mono deixa de ser a fonte dos rotulos de interface.
+- **Contexto**: abas, botoes, labels e badges usavam Space Mono. Em textos de interface a fonte fica larga e cansa a leitura, e nao separa rotulo de dado.
+- **Decisao**:
+  - Tres papeis: `--font-serif` (Source Serif 4) para leitura, `--font-ui` (IBM Plex Sans) para a interface, `--font-mono` (Space Mono) so para codigo e dados.
+  - Fica em mono: termos DwC (cartao do mapeamento, cabecalhos da Previa), amostras "ex.:", celulas de tabela (`.dataTable tbody td`), coordenadas, nomes de arquivo, codigo e o badge de versao.
+  - IBM Plex Sans vai para `inst/app/www/vendor/fonts/` (woff2 latin e latin-ext, pesos 400 a 700) e entra no `source-fonts.css`, sem CDN (ADR-100).
+- **Consequencias**: componente novo escolhe `--font-ui` ou `--font-mono` pela origem do texto. Os testes de CSS cobram o token `--font-ui` e os arquivos da fonte. As capturas do tutorial precisam ser refeitas.
+
+## ADR-135: fundo cinza frio no lugar do bege
+
+- **Data**: 2026-10-03
+- **Status**: Aceito. Substitui as cores de fundo e de borda do ADR-127.
+- **Contexto**: o bege `#f4f3ee` deixava a interface amarelada ao lado dos paineis brancos e do azul `#2833AC`. Oito regras repetiam o bege em hex fixo, fora dos tokens.
+- **Decisao**:
+  - `--bg-main: #f5f6f8` e `bg` do `bs_theme` no mesmo valor. `--bg-subtle: #f8f9fb`, `--badge-manual-bg: #eef0f3`.
+  - Bordas frias: `#ECEEF2`, `#E3E6EB`, `#D3D8E0`.
+  - As oito regras com `#f4f3ee` fixo (Wiki, Ajuda, Nomes, estatisticas do upload) passam a `var(--bg-subtle)`.
+- **Consequencias**: o contraste sobe um pouco: `--text-muted` da 5,4:1 sobre o fundo. Cor de superficie nova usa token, nunca hex fixo. O tema do site (`website/theme-light.scss`) continua bege ate um PR proprio.
+
+## ADR-136: pagina inicial com cartoes de formato e notas curtas
+
+- **Data**: 2026-10-03
+- **Status**: Aceito. Substitui o painel unico do Inicio do ADR-132.
+- **Contexto**: o Inicio era um painel branco com titulo, abas, dropzone e quatro notas longas. Faltava dizer o que o Saira faz. O Inicio tambem ficava em branco por ~7 s na abertura, porque so tinha `uiOutput`s.
+- **Decisao**:
+  - Sem painel: titulo, subtitulo, dois cartoes de formato (Planilha, Camtrap DP) e a dropzone ficam direto no fundo.
+  - A dropzone e o unico seletor de arquivo: sem botao "Selecionar arquivo". Ela recebe foco (`tabindex`, `role="button"`), e Enter ou Espaco abre o seletor. A barra de progresso fica sobre a borda de baixo da dropzone.
+  - A privacidade nao se repete na dropzone: a nota "Privacidade" ja diz isso.
+  - "Antes de comecar": cinco notas curtas em linha (tres no modo Camtrap), sem "Saiba mais": o texto completo repetia as notas. Tokens de formato entre crases no `i18n.json` saem em mono.
+  - Sem caixa "Depois do envio": o navbar numerado ja mostra as etapas, e o upload abre o Mapeamento.
+  - A ilustracao da saira fica a direita do cabecalho, decorativa (`alt=""`), com a ponta do galho na borda de cima da dropzone. Some abaixo de 992px.
+  - Os outputs do Inicio comecam com o conteudo em portugues, o idioma padrao (`prefilled_ui_output()`), entao a pagina aparece antes de o servidor terminar a partida.
+  - O estilo novo da dropzone fica sob `.home-upload-panel`: o modal de importar guia usa as mesmas classes.
+- **Consequencias**: as classes que o roteiro do tutorial marca (`.home-header`, `.upload-mode-tabs`, `.upload-dropzone`, `#upload-stats`) ficam. A captura `t02-upload` precisa ser refeita.
+
+## ADR-137: filtro "Relevantes" no Mapeamento, com termos sem coluna em linhas
+
+- **Data**: 2026-10-04
+- **Status**: Aceito.
+- **Contexto**: a grade mostrava os 66 termos da base como cards. No `ocorrencias-demo.csv`, depois do Auto-mapear, ~40 cards opcionais ficavam vazios (5.960 px de rolagem). Reduzir o conjunto base mudaria o escopo do Rostrum, calibrado nesses termos.
+- **Decisao**:
+  - Novo filtro "Relevantes", primeiro e padrao (Relevantes/Todos/Mapeados/Pendentes). Ele so muda a grade: o Rostrum continua com todos os termos ativos.
+  - Ficam como card: termos mapeados, `relevant_mapping_terms()` (obrigatorios, `establishmentMeans`, `datasetName`, `rightsHolder`, `institutionCode`, `collectionCode`, `language`), termos com valor fixo ligado e termos adicionados pelo usuario. A regra e `collapse_mapping_term()`. No demo, 31 cards.
+  - Os outros termos de cada classe viram uma linha "+ N termos sem coluna" com a lista dos nomes. "Mostrar" abre linhas compactas (nome + seletor de coluna).
+  - A linha compacta e o proprio card com `.field-card-compact`, e a abertura e no cliente. Os inputs ja estao ligados, entao nada se reconstroi e o gate do ADR-104 nao muda.
+  - Termos de valor fixo ganham o link "Valor fixo", que tira a classe compacta e mostra o card inteiro no lugar.
+  - Uma linha que recebe coluna continua linha ate a proxima reconstrucao da grade.
+- **Consequencias**: os 66 seletores continuam sendo renderizados: o ganho e visual, nao de tempo de carga. "Proximo pendente" nao muda: a fila so tem termos obrigatorios ou sugeridos, que sempre ficam como card. A rolagem para um card dentro de um grupo fechado abre o grupo antes.
+
+## ADR-138: qualificador do identificador e validadores de vocabulario no Rostrum
+
+- **Data**: 2026-10-04
+- **Status**: Aceito.
+- **Contexto**: no benchmark de 6 datasets reais (107 colunas), o token `id` sozinho empatava `location_id`, `species_id` e `study_id` em `locationID`, e `Event_ID` ia para `eventTime`. O token `status` levava `IUCN_status` para `occurrenceStatus`, porque o termo nao tinha validador de valores.
+- **Decisao**:
+  - Em coluna de identificador, a palavra antes do `id` nomeia a entidade. Entidade de outro termo, `id` sozinho fora de `occurrenceID`, ou termo que nao guarda codigo: penalidade -0.30 (`identifier_context`). Entidade do proprio termo: +0.10 no name score.
+  - `occurrenceStatus` e `basisOfRecord` ganham validador pelo vocabulario que a etapa de valores ja usa. Nome fraco com valores fora da lista cai no veto. Nome exato ou sinonimo fica com o score neutro, porque a etapa de valores traduz depois.
+- **Consequencias**: no benchmark dev, top1 sobe de 69 para 73/107, SUGERIDO errado cai de 6 para 1, AMBIGUO sem alternativa certa cai de 35 para 20. Nenhum AUTO errado antes ou depois. Palavra de entidade nova entra nas listas de `rostrum_id_entities`.
+
+## ADR-139: sinonimos de campo, abreviacoes e data por valores no Rostrum
+
+- **Data**: 2026-10-04
+- **Status**: Aceito.
+- **Contexto**: no benchmark dev (107 colunas), 29 colunas ficavam sem card certo depois do ADR-138. Os nomes eram de planilha de campo (`site`, `VEG_TYPE`, `PRECISION`, `X`, `# of inds.`, `timestamp`), sem sinonimo no pacote. Termos temporais so aceitavam nome exato, regra sem ADR desde o primeiro commit.
+- **Decisao**:
+  - O pacote de sinonimos ganha nomes de campo em PT, EN e ES, com score 0.90 a 0.94.
+  - Sem acerto no nome inteiro, o Stage 1 tenta o nome com abreviacoes expandidas. `#`, `n`, `num`, `nr` e `nro` viram `number` so na busca de sinonimo, nunca como token.
+  - `eventDate` aceita sinonimo ou token overlap quando 90% ou mais dos valores sao datas. Os outros termos temporais seguem so com nome exato.
+  - Ficam no maximo em SUGERIDO: sinonimo achado pela expansao, coluna de uma letra e `eventDate` achado pelos valores.
+  - Coluna com o nome exato de um termo nao concorre a outro termo.
+  - O resgate por conteudo para termos de vocabulario ficou de fora: depois dos sinonimos, nenhum caso do dev precisava dele.
+- **Consequencias**: no benchmark dev, top1 sobe de 73 para 91/107, colunas sem card certo caem de 29 para 11, SUGERIDO certo sobe de 19 para 35 e SUGERIDO errado cai de 1 para 0. Nenhum AUTO errado. Os sinonimos vieram dos erros do dev, entao o holdout mede o overfit.
+
+## ADR-140: exportacao substitui o alias antigo da mesma coluna
+
+- **Data**: 2026-10-04
+- **Status**: Aceito.
+- **Contexto**: o motor aplica um alias por coluna (`rostrum_lookup_alias()`). Uma exportacao nova com outro termo para a mesma coluna gravava mais um alias e deixava o antigo vivo. A ordenacao lia `updated_at` com `as.POSIXct()` sem formato, que nao le o `T` de `rostrum_now_utc()` e guarda so a data. No mesmo dia, o empate ia para o alias mais antigo, e o Rostrum voltava a sugerir o termo que o usuario acabara de trocar.
+- **Decisao**:
+  - `rostrum_commit_session_aliases()` deprecia, na mesma transacao, os aliases vivos do mesmo escopo, dono e coluna que apontam para um termo fora da exportacao. Cada um ganha um evento `alias_superseded` com o `run_id`.
+  - Termos da mesma coluna na mesma exportacao ficam todos vivos.
+  - `undo_session_aliases()` reativa os aliases que o `run_id` substituiu.
+  - A ordenacao le `updated_at` no formato `%Y-%m-%dT%H:%M:%OSZ` e usa o `as.POSIXct()` antigo so para valor em outro formato.
+  - `import_mapping_guide_to_aliases()` nao substitui: o guia divide composicoes (`genus + epithet`) em aliases soltos, e substituir ali apagaria alias valido. O guia mais novo ganha pela ordenacao.
+- **Consequencias**: coluna deixada sem mapeamento na exportacao nao aposenta o alias dela. Aliases antigos acumulados antes desta mudanca seguem vivos ate a proxima exportacao da coluna.
+
+## ADR-141: cada exportacao tem um run_id, e desfazer reverte so o que ela mudou
+
+- **Data**: 2026-10-04
+- **Status**: Aceito.
+- **Contexto**: o modulo de mapeamento lia o `run_id` de `rv$rostrum_run_stats`, que o motor nunca preenche. Toda exportacao gravava `run_id` NA, e nenhuma podia ser desfeita sozinha. `undo_session_aliases()` depreciava todo alias com evento no `run_id`, inclusive os que ja estavam vivos antes e a exportacao so confirmou. Nenhuma tela chamava `undo_session_aliases()`.
+- **Decisao**:
+  - O modulo gera um `run_id` novo a cada exportacao (`rostrum_new_run_id()`).
+  - O upsert grava `alias_reactivated` quando reativa um alias deprecado, e `alias_updated` so quando o alias ja estava vivo.
+  - `undo_session_aliases()` deprecia os aliases com `alias_created` ou `alias_reactivated` no `run_id`, e reativa os com `alias_superseded`. Alias com so `alias_updated` fica vivo.
+  - O card Pacote da exportacao mostra os aliases que a ultima exportacao criou ou reativou, com o botao "Desfazer aprendizado". Enviar outro arquivo limpa esse recibo.
+- **Consequencias**: so a ultima exportacao da sessao tem desfazer na tela. Desfazer nao volta `confidence` nem `reviewed` de um alias que a exportacao so confirmou. Eventos antigos com `run_id` NA continuam sem desfazer.
+
+## ADR-142: a lista do Instituto Horus nao e so de exoticas -- `origin_class` separa alienigena de nativa translocada
+
+- **Data**: 2026-08-13 (portada para a v1.0.0 em 2026-10-05)
+- **Status**: Aceito
+- **Contexto**: A ADR-109 embarcou a "Lista de especies exoticas invasoras do Brasil" (Instituto Horus, 2023) tratando **pertencer a lista** como equivalente a **ser exotica no Brasil**. Nao e. A lista tambem cobre nativas brasileiras invasoras **fora da sua area de distribuicao natural** dentro do pais: o quati em Fernando de Noronha, `Callithrix` spp. em fragmentos de Mata Atlantica, `Cichla` spp. movidos entre bacias. Cruzando os 483 taxons com o campo `origin` do CTFB/Flora e Funga do Brasil: **133 nativos**, 350 no resto. Sete deles estao simultaneamente na `sensitive_species.rds` do MMA -- o app chamava o mesmo taxon de nativo ameacado e de exotico invasor. Reportado numa demo com `Nasua nasua`. Mesmo defeito de escopo geografico: um fato valido em parte do pais aplicado ao pais inteiro.
+- **Nao era display**: o item 7 da ADR-109 dizia que nada e escrito no dado, mas a ADR-110 ligou a lista ao export. `auto_suggest_establishment_means()` pre-preenchia `introduced` para **todo** taxon listado, e `get_effective_establishment_map()` preserva esse valor para qualquer especie que a pessoa nao sobrescreva. Um quati nativo saia publicavel com `dwc:establishmentMeans = "introduced"` num unico clique em Salvar.
+- **Decisao**: `data-raw/generate_invasive_species.R` grava uma coluna `origin_class` (`"translocated_native"` / `"alien"`) a partir de um **segundo export do proprio Horus** (`invasive_species_horus_detail.csv`, tambem gitignorado), que traz a coluna `origin` com `Native` / `Non-native` / `Cripto` / `Hybrid`. Classificacao em **tempo de build**, nao de runtime: nada no app cruza pais ou coordenada do registro com nada. O RDS continua com 483 linhas.
+- **Quem manda e o Horus, nao o CTFB.** A primeira versao desta ADR derivava a classe do `origin` do CTFB/Flora; medindo contra o `origin` do Horus, as duas discordavam em **24 taxons** (15 que o CTFB chamava de nativo e o Horus chama de exotico, 9 o contrario). Quem montou a lista esta melhor posicionado para dizer o que as proprias linhas dela significam. O CTFB/Flora fica como **fallback** e so alcanca os 21 taxons que o export detalhado nao cobre -- nomes que ele ja renomeou (`Sansevieria trifasciata` -> `Dracaena trifasciata`, `Schefflera arboricola` -> `Heptapleurum arboricola`). Esses nomes antigos sao **mantidos**: a planilha de quem publica ainda pode usa-los. Resolver o sinonimo automaticamente foi rejeitado -- casar por epiteto acerta `Sansevieria`/`Dracaena` e erra `Duchesnea indica` -> `Azadirachta indica`, que e outra especie.
+- **Composicao da lista nao muda (decisao do dono).** O export detalhado tem 546 taxons contra os 483 atuais, mas o arquivo de 2023 continua definindo **quem** esta na lista; o detalhado so descreve quem ja esta. Os 78 taxons novos ficam para outra decisao.
+- **Propriedade de seguranca**: a regra so **rebaixa** com evidencia positiva de nativeza. `Non-native`, `Cripto`, `Hybrid`, em branco e nao-encontrado mantem o tratamento anterior, entao um nome que nao resolve via sinonimo nao perde o selo em silencio. `load_invasive_species()` trata um RDS sem a coluna como tudo `alien`, pelo mesmo motivo.
+- **Consumo**: `flag_invasive_species()` continua `TRUE` para os dois grupos (pertencer a lista e o predicado; ninguem afirma nada com ele). Quem **afirma** algo sobre o taxon ramifica em `invasive_origin_class_for()`: o selo do DT (coluna oculta 6 passa a carregar a classe, nao um booleano), o selo do assistente, as duas linhas de contagem e a sugestao de `establishmentMeans`. Nativa translocada **nao** sugere nada, pela mesma regra do item 2 da ADR-110: de que lado da area de distribuicao o registro cai nao se sabe pelo nome.
+- **A aba de nomes processados fala o mesmo idioma da tabela** (achado do teste manual): manter uma unica pilula "Invasoras" cobrindo os dois grupos reintroduzia a afirmacao errada no outro lado da tela -- `Nasua nasua` continuava contado como invasor. `.vn_stream_filter_values` ganha `"translocated"`, `stream_filter_counts()`/`filter_stream_df()` ganham o ramo, e cada linha do stream ganha o mesmo selo da tabela via `invasive_stream_note_ui()`. Regra geral: uma classificacao so vale a pena se **todas** as superficies que a exibem forem migradas juntas.
+- **Regiao brasileira de invasao nao existe em nenhum dos dois arquivos.** O app **nao** diz "invasora em Fernando de Noronha", ainda que seja verdade na literatura para o quati e o teiu. O campo `world_invasive_places` do export detalhado nao serve: registra invasoes **fora** do Brasil (para `Nasua nasua` diz "America do Sul (Chile)"), esta preenchido em so 41 das 150 nativas, e das 371 linhas preenchidas 7 citam o Brasil e exatamente 1 cita Noronha, redigida a mao. Rejeitado por isso.
+- **O que se mostra sob o selo** sao duas linhas, via `invasive_detail_lines()`, compartilhada pela tabela e pelo stream: `native_distribution_area` (preenchida em 465 dos 483, incluindo o quati e o teiu) e o motivo da introducao (369). Traducao assimetrica e deliberada: o motivo tem vocabulario fechado de 8 valores e e traduzido por `translate_invasive_reason()` (desconhecido passa direto em vez de virar placeholder de chave); a area de distribuicao e prosa livre em portugues, entao so o rotulo e traduzido e o texto sai como a fonte escreveu, inclusive em EN. **A area e informativa**: nada no app testa o `country` ou a coordenada do registro contra ela -- e prosa, nao poligono. Quem julga se o registro caiu dentro ou fora e o publicador. O texto generico curto vive no `title` do selo.
+- **Alternativas**:
+  - Usar `introduction_reason` como discriminador - rejeitado por medicao: e **invertido**. 31% de NA nas nativas contra 75% nas exoticas genuinas.
+  - Remover as nativas da lista - rejeitado: perde o fato real de que sao invasoras em parte do Brasil.
+  - Manter o selo e so bloquear a escrita - rejeitado: corrige o export e deixa a UI chamando um quati nativo de exotico invasor.
+  - Decidir por registro, com a area de distribuicao - fora do escopo desta ADR; fica para uma ADR propria.
+- **Consequencias**: `inst/extdata/invasive_species.rds` regenerado com a coluna nova (350 alien / 133 translocated_native, CTFB 1.52 / Flora 393.429). i18n: 17 chaves novas pt/en/es: os rotulos, a pilula e a tag de contagem de nativas translocadas, os 2 tooltips, a linha de distribuicao natural e os 9 do motivo (8 valores + a linha `invasive_reason_line`). A tabela ganha a coluna oculta 7 com o motivo ja formatado, resolvido sobre nomes unicos como o resto da celula. CSS: tokens `--badge-translocated-bg`/`-fg` violeta (o dorso da Tangara fastuosa, escolhido no canvas em 2026-10-05), usados pelo selo, pela pilula e pela tag de contagem -- deliberadamente **nao** o marrom de `.badge-invasive`, que significa "exotica invasora". O gerador agora exige os caches de provider e imprime as versoes usadas, para a classificacao ser auditavel sem o CSV gitignorado. Revoga o item 7 da ADR-109 e emenda o item 2 da ADR-110.
+
+## ADR-143: ilhas oceanicas separam os registros de uma nativa translocada
+
+- **Data**: 2026-10-05
+- **Status**: Aceito
+- **Contexto**: A ADR-142 deixou a nativa translocada sem sugestao de `establishmentMeans`, porque o nome nao diz se o registro cai dentro ou fora da area natural. Mas `establishmentMeans` e por registro, e o assistente da ADR-110 e por especie: o quati em Fernando de Noronha e no continente recebia a mesma resposta.
+- **Fontes de area natural por UF, todas rejeitadas por medicao**:
+  - `states` da Fauna do Brasil e `distribution.txt` do DwC-A do CTFB marcam toda UF como nativa, inclusive as de introducao (`Callithrix jacchus` aparece nativo em RJ e SP).
+  - `native_range` do Horus e prosa livre: so 20 das 39 nativas translocadas nao-peixe citam UF.
+  - A API de ocorrencias do Horus (`api-bd.institutohorus.org.br`) responde 404 em todas as rotas hoje.
+- **Decisao**: so as ilhas oceanicas (Fernando de Noronha, Atol das Rocas, Trindade e Martim Vaz, Sao Pedro e Sao Paulo). Nenhuma nativa translocada nao-marinha da lista e nativa delas, entao o caso se decide sem dado de area. Caixa de coordenadas por arquipelago (`R/utils_oceanic_islands.R`): sao longe da costa, nao precisa de poligono. Especies com motivo "Especies marinhas" ficam de fora, porque vivem nas aguas em volta.
+- **Interface (layout B3, escolhido no canvas)**: a especie com registro em ilha vira um cabecalho e duas sub-linhas, "No continente" e "Em ilha oceanica", cada uma com seus selects. A sub-linha da ilha mostra "Sugestao: introduced" com Aplicar e Desfazer. Nada e preenchido sem o clique, mesma regra da ADR-110.
+- **Dado**: `establishment_map` ganha `island_means` e `island_degree`. Registro em ilha usa **so** a resposta da ilha e nunca cai na resposta da especie: "native" dado para o continente e falso na ilha. Sem `decimalLatitude`/`decimalLongitude` mapeados, nada muda.
+- **Fora do escopo**: peixes entre bacias e a area natural continental. Uma camada de ocorrencias do Horus fica para depois da v1.0, quando a API voltar.
+
+## ADR-144: tema escuro "Plumagem" com controle segmentado
+
+- **Data**: 2026-10-05
+- **Status**: Aceito
+- **Contexto**: A v1.0 pediu um modo escuro com a identidade da saira. O canvas mostrou tres paletas, tres intensidades e tres controles. O dono escolheu "Plumagem" (o azul-preto do dorso), "atenuado" e o controle segmentado Claro / Escuro / Sistema.
+- **Decisao**:
+  - `theme-switch.js` poe `data-bs-theme="dark"` no `<html>`, entao o Bootstrap vira junto. O tema claro remove o atributo: a pagina clara fica igual a de antes.
+  - `19-dark.css` troca os tokens de `00-tokens.css`. Regras fora dos tokens cobrem so o que nao e token: escalas pastel, superficies de formulario e controles do mapa.
+  - A escolha fica no `localStorage` (`saira-theme`). "Sistema" apaga a chave e segue `prefers-color-scheme`.
+  - Um script inline no `<head>` pinta o tema salvo antes do primeiro quadro, entao a pagina escura nunca pisca clara.
+  - A troca usa o revelar em circulo do canvas "expressiva": View Transitions, 600 ms, a partir do botao clicado. Sem a API, ou com movimento reduzido, a troca e imediata.
+  - O circulo e uma animacao CSS no `::view-transition-new(root)`, com centro e raio em variaveis que o JS define antes de `startViewTransition()`. Um `animate()` em `vt.ready` chegava um quadro atrasado no Firefox: esse quadro mostrava a pagina nova inteira (um flash). Durante a troca, as transicoes param, para os cards nao mostrarem a cor antiga dentro do circulo.
+- **Alternativas**: tema por `bslib::bs_theme()` no servidor, rejeitado porque recompila o Sass e recarrega o CSS a cada troca.
+- **Consequencias**: todo token de cor novo precisa de valor nos dois temas. Os rotulos do controle seguem o idioma por atributos `data-label-<lang>`.
+- **Site de ajuda**: `website/assets/head.html` repete o controle, os icones Phosphor (SVG) e o circulo. A escolha fica em `saira-theme`, e um script no `<head>` escreve dela o `quarto-color-scheme` antes de o Quarto pintar a pagina.
+
+## ADR-145: movimento nas trocas de aba, toasts, dialogos e pendencias
+
+- **Data**: 2026-10-05
+- **Status**: Aceito
+- **Contexto**: O dono pediu animacoes elegantes no proprio app. As trocas eram cortes secos.
+- **Decisao**:
+  - A area da pagina desliza 32 px no sentido do passo (para tras, ao contrario). O cabecalho troca na hora. `motion.js` cancela o `show.bs.tab` do Bootstrap e mostra a mesma aba dentro de uma View Transition, entao o Shiny e os widgets veem uma troca de aba comum.
+  - Toasts entram pela direita, dialogos sobem 16 px, as linhas de pendencia da Exportacao entram uma a uma (60 ms) e a resposta do FAQ da Ajuda desce sob a pergunta.
+  - Navegador sem View Transitions ganha uma subida curta da pagina nova. `prefers-reduced-motion: reduce` desliga tudo.
+- **Consequencias**: a animacao do toast nao tem `fill-mode`: o Shiny some com o toast por `opacity` inline, e um valor preso da animacao ganharia dele. Os toasts ficaram opacos (`12-overrides.css`), porque o tom de estado e translucido e deixava o texto da pagina aparecer por baixo.
+- **Site de ajuda**: a troca de pagina usa View Transition entre documentos (`@view-transition`). `#quarto-content` desliza 32 px na ordem da navbar, e a troca de idioma nao desliza. A captura de tela ampliada sobe 16 px, como um dialogo.
+
+## ADR-146: Ajuda B, com autor, citacao, pacotes e dados lidos do DESCRIPTION
+
+- **Data**: 2026-10-05
+- **Status**: Aceito
+- **Contexto**: A Ajuda nao deixava claro quem faz o Saira, nem quais pacotes ele usa e quem os mantem. O cartao do autor tinha nome e e-mail escritos a mao. Havia chips de ferramentas de IA.
+- **Decisao**: quatro faixas, layout B do canvas.
+  1. Quem faz e como citar: nome, papel, e-mail, repositorio, licenca e versao. Citacao em texto e em BibTeX, com botao de copiar.
+  2. Comece aqui: tutoriais, quatro perguntas do FAQ com link para o resto, e o botao de bug para as issues.
+  3. Feito com: os pacotes do `Imports` em seis grupos, cada um com versao, finalidade e mantenedor.
+  4. Dados e metodos: as bases embarcadas com licenca, os metodos citados com DOI e os padroes (Darwin Core, SiBBr, GBIF).
+- **Fonte unica**: `R/utils_credits.R` le o autor (`Authors@R`, papel `cre`), a versao, a licenca e os links do DESCRIPTION do Saira, e a versao e o mantenedor de cada pacote do DESCRIPTION instalado dele. A Ajuda nao pode divergir do pacote. Um teste falha se um pacote do `Imports` ficar fora dos grupos.
+- **Alternativas**: tabela de pacotes fixa no i18n, rejeitada porque versao e mantenedor mudam a cada atualizacao.
+- **Consequencias**: o e-mail da Ajuda e o do DESCRIPTION. A afiliacao fica fora ate o dono definir.
+
+## ADR-147: Camtrap DP com schemas locais e descritor sem metadados de dataset
+
+- **Data**: 2026-10-06
+- **Status**: Aceito
+- **Contexto**: a auditoria do Camtrap DP (dataset real do Wildlife Insights, 24.273 imagens) achou seis defeitos.
+  1. O descritor sintetico tinha `id` e `title` inventados, e `write_dwc()` os copia para `datasetID` e `datasetName`.
+  2. `samplingEffort` do WI saia com `Z`, a mesma falsa marca UTC que `eventDate` ja perdia.
+  3. Zip de CSVs soltos sem `media.csv` falhava: `read_camtrapdp()` exige o recurso media.
+  4. O frictionless baixa a URL de cada table schema na leitura: sem internet o upload falhava, e com internet o download levava ~1,3 s de 3,4 s.
+  5. `end_date` do WI e data de calendario. Lida como meia-noite, deixava 491 imagens depois de `deploymentEnd`.
+  6. `feature_type`, `age` e `sex` do WI nao casavam com os enums do Camtrap DP e viravam NA com aviso de parse.
+- **Decisao**:
+  - O descritor sintetico nao tem `id` nem `title`. O usuario informa o nome do dataset no Mapeamento.
+  - `inst/extdata/camtrap-dp/<versao>/` guarda os table schemas oficiais de 1.0, 1.0.1 e 1.0.2, copias exatas do repositorio tdwg/camtrap-dp. Antes de ler, `localize_camtrap_schemas()` troca cada URL oficial pela copia da mesma versao, ao lado do descritor. Vale para as tres fontes, inclusive o `datapackage.json` do usuario. Outras URLs ficam como estao.
+  - Sem `media.csv`, o leitor grava um `media.csv` so com cabecalho.
+  - `end_date` do WI vira o fim do dia (23:59:59). `feature_type` vai para camelCase, `age`/`sex` para minusculas, e o que nao casa com o enum vira NA sem aviso.
+  - Os diretorios temporarios da leitura e da conversao saem no fim de cada funcao.
+- **Alternativas**: ler os enums dos schemas em tempo de execucao, rejeitada porque constantes sao mais simples e os enums so mudam com uma versao nova do padrao. Trocar todas as versoes pelo schema 1.0.2, rejeitada porque 1.0.2 mudou `missingValues` e a leitura de dados antigos mudaria.
+- **Consequencias**: a leitura funciona offline e cai de ~3,4 s para ~2,2 s no dataset real. Uma versao nova do Camtrap DP precisa da copia dos schemas em `inst/extdata/camtrap-dp/`, senao a leitura volta a baixar pela rede.
+
+## ADR-148: Projetos Sequence do Wildlife Insights como observacoes de evento
+
+- **Data**: 2026-10-06
+- **Status**: Aceito
+- **Contexto**: o WI tem dois tipos de projeto (`project_type` em `projects.csv`). No tipo Image, cada imagem tem a sua identificacao. No tipo Sequence, a identificacao vale para a sequencia (fotos com menos de 60 s entre si) e fica em `sequences.csv`, com `group_size`, `identified_by` e `cv_confidence`. O `images.csv` desse tipo nao tem essas colunas. O Saira passava pela checagem de colunas e gerava um registro por imagem, com contagem 1 e metodo "human".
+- **Decisao**:
+  - `project_type == "Sequence"` em `projects.csv` liga o modo sequencia. Sem a coluna, o modo continua imagem.
+  - Cada linha de `sequences.csv` vira uma observacao `event`: `eventID` = `sequence_id`, `eventStart`/`eventEnd` = `start_time`/`end_time`, `count` = `group_size`, sem `mediaID`. As imagens continuam em `media.csv`.
+  - O leitor so declara `gbifIngestion$observationLevel = "media"` quando todas as observacoes sao `media`. Sequence fica no nivel `event`, o padrao do `write_dwc()`.
+  - Projeto Sequence sem `sequences.csv` (ou sem `sequence_id`, `start_time`, `end_time`) para com erro i18n.
+- **Alternativas**: agrupar as imagens em sequencias no Saira, rejeitada porque o WI ja entrega a identificacao por sequencia. Manter um registro por imagem, rejeitada porque repete o mesmo animal e perde o tamanho do grupo.
+- **Consequencias**: `eventDate` vira o intervalo `inicio/fim` quando a sequencia tem mais de uma foto. O `camtrapdp` liga cada imagem a sua sequencia pela janela de tempo, entao o `multimedia` sai por evento. Nao ha export Sequence publico: o teste de escala usou o projeto real (Image) reagrupado pela regra de 60 s, com 24.210 imagens e 1.767 ocorrencias.
+
+## ADR-149: camtrapdp em Imports (revisa o item 3 do ADR-095)
+
+- **Data**: 2026-10-06
+- **Status**: Aceito
+- **Contexto**: o ADR-095 deixou o `camtrapdp` em `Suggests` para nao exigir `libjq-dev` de quem instala o Saira. O CI instala so as dependencias obrigatorias (`dependencies: '"hard"'`), entao pulava 10 testes do Camtrap, inclusive todos os round trips. Uma falha do modo Camtrap so aparecia no teste manual. O `sf` ja esta em `Imports` e exige GDAL, GEOS e PROJ no Linux, bibliotecas mais pesadas que a `libjq`.
+- **Decisao**: `camtrapdp (>= 0.5.0)` vai para `Imports`. Saem a guarda `require_camtrapdp()`, a chave `err_camtrap_pkg_missing` e os `skip_if_not_installed("camtrapdp")` dos testes.
+- **Alternativas**: manter em `Suggests` e instalar o pacote so no CI, rejeitada porque o modo Camtrap tem um card na pagina inicial e nao deve falhar por um pacote opcional.
+- **Consequencias**: a instalacao ganha 7 pacotes (camtrapdp, EML, emld, frictionless, jqr, jsonld, V8) sobre os 127 de hoje. No Windows e no macOS todos vem como binarios. No Linux, instalar pelo codigo-fonte exige `libjq-dev`, e o `setup-r-dependencies` do CI instala essa biblioteca pelo apt.
+
+
+## ADR-150: Modo Problemas na Pre-visualizacao e vocabulario de sex, lifeStage e occurrenceStatus
+
+- **Data**: 2026-10-08
+- **Status**: Aceito
+- **Contexto**: o usuario so via um erro de celula (data que o parser nao leu, contagem em texto, nome vazio, ID repetido, "M" em `sex`) depois do export, e tinha de corrigir na planilha e subir de novo. Coordenadas, nomes e ameaca ja tem abas proprias.
+- **Decisao**:
+  1. A Pre-visualizacao ganha o modo Problemas, que varre todo o frame mapeado. A aba abre em Problemas quando ha problema aberto e em Tabela quando nao ha, entao a varredura roda ao entrar na aba (60 mil linhas: 1,6 s de mapeamento completo mais 1,6 s de varredura, uma vez por mudanca). Tipos: vocabulario desconhecido, data nao lida, ano fora da faixa, intervalo invertido, eventDate contra year/month/day, individualCount invalido, scientificName ou eventDate vazio, occurrenceID repetido. basisOfRecord e establishmentMeans ficam fora.
+  2. Uma correcao e uma camada sobre o frame mapeado: `row`, `term`, `from`, `to`. Ela so age enquanto a celula ainda mostra `from`, entao uma mudanca no Mapeamento deixa a correcao inerte em vez de escrever sobre outro valor. `row = NA` corrige todas as celulas do termo com o mesmo valor. Um year que difere do eventDate nao usa `row = NA`, porque o mesmo ano pode estar certo em outra linha: a correcao em lote vai para as linhas com o mesmo valor e a mesma sugestao, uma correcao por linha. Termo opcional aceita correcao vazia; scientificName, eventDate e occurrenceID nao. A camada zera com novo upload ou reset do Mapeamento.
+  3. Nomes, Coordenadas, Generalizacao e Exportacao leem o frame corrigido. Uma correcao de scientificName recalcula genus, epitetos, taxonRank e autoria como o mapeamento faz. Um valor que veio de coluna do usuario fica.
+  4. Layout em duas colunas para nao rolar a pagina: vocabulario a esquerda (um cartao por valor; o valor aplicado encolhe para uma linha no mesmo lugar, como as linhas compactas do ADR-137, e a ordem fica), tabela por linha sem paginas (DT Scroller no servidor, linhas de altura fixa) e registro da linha clicada a direita. Depois de salvar, o foco vai para o proximo problema aberto abaixo, na ordem atual da tabela, e a tabela so rola quando essa linha esta fora da vista: uma correcao para todas as linhas com o mesmo valor deixa as copias editadas no caminho.
+  5. `sex`, `lifeStage` e `occurrenceStatus` passam pela tabela `inst/extdata/vocabulary_values.csv` (conceitos GBIF mais sinonimos PT, EN e ES escritos a mao). Valor conhecido vira o conceito no mapeamento ("M" -> male, "visto" -> present). Valor ambiguo ("filhote": juvenile ou nestling) fica como esta e aparece no modo Problemas com as opcoes, e o usuario escolhe.
+- **Alternativas**: chavear a correcao por occurrenceID, rejeitada porque ID repetido e um dos erros a corrigir. Usar os rotulos ocultos do vocabulario GBIF como sinonimos, rejeitada porque traziam valores errados.
+- **Consequencias**: o export de `sex`, `lifeStage` e `occurrenceStatus` muda para quem usava valores fora do vocabulario. A linha da correcao e o indice da linha mapeada, que e 1:1 com a planilha.
+
+## ADR-151: taxonRank de nome de uma palavra vem da aba Nomes
+
+- **Data**: 2026-10-08
+- **Status**: Aceito
+- **Contexto**: o mapeamento le todo nome de uma palavra como genero. "Felidae" saia com `taxonRank = genus` e `genus = Felidae`. O match do GBIF com `name=Felidae&rank=GENUS` da `matchType: NONE`. Quem nao sabe a especie escreve o taxon mais especifico que conhece (genero, familia, ordem, classe), entao esse caso fica comum com o modo Problemas (ADR-150).
+- **Decisao**: o relatorio da aba Nomes ja traz o `taxonRank` do provedor (taxadb: Felidae -> family, Aves -> class). O payload de revisao leva esse rank (`name_rank_table()`), e o export aplica em nome de uma palavra cujo rank esta vazio ou e "genus" (`apply_name_rank_payload()`). O `genus` igual ao nome fica vazio. Rank mapeado de coluna do usuario fica.
+- **Alternativas**: regras de sufixo (-idae, -aceae, -ales), rejeitada porque nao cobre Aves, Mammalia nem Carnivora. O parser de nomes do GBIF, rejeitado porque nao infere rank de nome de uma palavra.
+- **Consequencias**: sem validacao na aba Nomes, o nome de uma palavra continua saindo como genero. O export muda para todo conjunto com taxon acima de genero, nao so para correcoes da Pre-visualizacao.
+
+## ADR-152: `occurrenceID` repetido vira UUID persistente
+
+- **Data**: 2026-10-08
+- **Status**: Aceito
+- **Contexto**: pelo ADR-118, o identificador que a linha traz sempre vencia, mesmo repetido. O card do mapeamento avisava, e o export saia com a duplicata, que o GBIF recusa. Um ID repetido nao identifica a ocorrencia, entao vale a nota do TDWG para o termo: sem identificador unico, construa um.
+- **Decisao**: a pessoa pode corrigir o ID repetido no modo Problemas (ADR-150). Depois das correcoes, `replace_repeated_ids()` troca o ID de toda linha que ainda repete um, a primeira tambem, pelo `generate_persistent_ids()` das linhas vazias. A base do hash e o dado mapeado antes das correcoes da Pre-visualizacao, entao uma correcao nao muda o ID. O guia do export conta essas linhas como geradas (`occurrence_id_counts_after_repeats()`).
+- **Alternativas**: sufixo no ID original (`SAIRA-023-2`), rejeitado porque continua um ID local e nao padronizado. Manter o ID na primeira linha, rejeitado porque a primeira linha depende da ordem da planilha, e o ID deixaria de ser persistente. Trocar no mapeamento, rejeitado porque o modo Problemas nao veria mais o ID repetido para a pessoa corrigir.
+- **Consequencias**: as abas depois da Pre-visualizacao (Nomes, Coordenadas, Generalizacao, Export) leem IDs unicos, entao a edicao de coordenada (ADR-129) chega a essas linhas. A tabela da Pre-visualizacao continua mostrando o ID da planilha.
+
+## ADR-153: Flora e Fauna BR embutidas como snapshot
+
+- **Data**: 2026-10-08
+- **Status**: Aceito
+- **Contexto**: quem instala a Saira nao tem cache da Flora e Funga do Brasil nem da Fauna do Brasil, e a primeira validacao baixa as duas do IPT do JBRJ. Esse download ja quebrou por `verbose` (ADR-070), nome de arquivo, formato do CTFB e timeout, e em 2026-10-08 o IPT respondia 403 (LESSONS). Uma pessoa nova na v0.11.2 nao conseguiu baixar a Fauna BR. Com `xz`, as duas bases somam 8,4 MB.
+- **Decisao**: o pacote leva as duas bases em `inst/extdata/brproviders/` (`florabr.rds`, `faunabr.rds` e `snapshot.json` com versao e data). Sem cache, `brprovider_data_available()` copia o snapshot para o cache do usuario e grava a versao no meta. Dali em diante vale o fluxo de sempre: a checagem diaria baixa versao mais nova do IPT quando ele responde, e um cache do usuario nunca e substituido pelo snapshot. `data-raw/update_brproviders.R` refaz o snapshot (`--cache` usa o cache local quando o IPT recusa), e o passo 2 do `scripts/release_gate.R` compara o snapshot com o IPT, sem bloquear.
+- **Alternativas**: publicar os `.rds` como asset do GitHub Release, rejeitada porque continua exigindo rede na primeira validacao. Ler o snapshot direto de `inst/` sem copiar, rejeitada porque o fluxo de atualizacao, backup e lock trabalha sobre o cache.
+- **Consequencias**: Flora e Fauna BR ficam disponiveis desde a primeira sessao, entao a aba Nomes ja as pre-seleciona. O snapshot envelhece entre releases. Cada troca soma cerca de 8 MB ao historico do git. A Ajuda lista as duas bases com a licenca CC BY 4.0.
+
+## ADR-154: Auto-map em todo upload, disparado pelo sinal `cards_bound`
+
+- **Data**: 2026-10-08
+- **Status**: Aceito. Amplia a ADR-104, que rodava o auto-map sozinho so para Camtrap DP.
+- **Contexto**: a pessoa sobe a planilha e precisa achar e clicar "Auto-mapear" antes de ver qualquer coluna ligada. O Camtrap DP ja mapeava sozinho, com o run adiado ate os cards existirem (ADR-104). O gatilho era a primeira mudanca de `input$map_scientificName`. Um input que volta com o mesmo valor nao chega ao servidor, entao um segundo upload depois de um arquivo sem coluna de especie (`""` para `""`) nao mapeava.
+- **Decisao**: todo upload marca `automap_pending`. `perform_auto_map()` continua escolhendo identidade para Camtrap e Rostrum para o resto. O gatilho passa a ser `input$cards_bound`: o JS do modulo escuta `shiny:bound` dos inputs `map_<termo>` e manda um `Date.now()` uma vez por render da grade, depois de o Shiny enfileirar os valores dos cards.
+- **Alternativas**: rodar o motor no proprio observer do upload, rejeitada porque os cards ainda nao existem e o observer de sync apaga as selecoes (ADR-104). Esperar o `shiny:value` do `mapping_ui`, rejeitada porque o render pode ser assincrono e o sinal chegaria antes dos valores.
+- **Consequencias**: o botao "Auto-mapear" fica para refazer o mapeamento. O modal de carregamento aparece logo depois do upload. Com a grade pre-aquecida (ADR-114), o run pode acontecer antes de a aba Mapeamento abrir.
+
+## ADR-155: Contagens de acao no menu e nos filtros
+
+- **Data**: 2026-10-08
+- **Status**: Aceito
+- **Contexto**: o passo 3 do menu nao dizia se a Pre-visualizacao tinha algo a corrigir, e o filtro Pendentes do Mapeamento mostrava todo termo sem coluna (cerca de 45), enquanto "Proximo pendente" contava 4. Canvas aprovado em 2026-10-08 (Menu D, filtros V1).
+- **Decisao**:
+  - O passo 3 mostra os problemas abertos em vermelho, ou um check verde quando nao ha nenhum. `mod_preview_server` devolve a contagem no atributo `problems_n_r`.
+  - A contagem le o conjunto completo (ADR-021), cerca de 1,3 s em 21.512 linhas. Ela so recalcula numa troca de aba, numa correcao da Pre-visualizacao ou 1,5 s depois da ultima mudanca de mapeamento (`refresh_r`).
+  - Um controle segmentado compartilhado (`.saira-seg`, 30 px) leva as contagens de Relevantes, Todos, Mapeados e Pendentes, e de Problemas. Contagem de trabalho a fazer fica vermelha (`--error-fill`), como no menu e em "Proximo pendente".
+  - Pendentes usa a regra de "Proximo pendente" (`field_state_class()`): obrigatorio sem coluna ou sugestao incerta. `term_states()` alimenta as bolinhas, a fila e as contagens.
+- **Alternativas**: contar a cada edicao, rejeitada pelo custo acima. Contar so fora da aba Mapeamento, rejeitada porque o badge nao apareceria depois do upload, que abre o Mapeamento.
+- **Consequencias**: na aba Mapeamento o badge atrasa 1,5 s em relacao a edicao. Mudar um valor fixo sem mudar coluna so atualiza o badge na troca de aba.
+
+## ADR-156: Movimento na troca dos filtros segmentados
+
+- **Data**: 2026-10-08
+- **Status**: Aceito
+- **Contexto**: o filtro do Mapeamento e a troca Tabela | Problemas trocavam o conteudo sem movimento, ao contrario das abas (ADR-145). Canvas de 2026-10-08, opcao A "Deslizar".
+- **Decisao**:
+  - Um thumb unico desliza ate a opcao escolhida em 240 ms. `motion.js` cria o thumb em todo `.saira-seg` e o reposiciona num `ResizeObserver`, porque as contagens mudam a largura das opcoes.
+  - Numa escolha do usuario (evento confiavel), o elemento de `data-seg-target` entra 32 px pelo lado da opcao, em 320 ms, com o movimento das abas. Uma atualizacao do servidor so move o thumb.
+  - O grid do Mapeamento vem do servidor: `data-seg-wait` nomeia o `uiOutput`, o grid antigo esmaece no clique e o novo desliza quando o valor chega. A troca Tabela | Problemas e no cliente e desliza no proximo quadro.
+  - Com 66 cards, o primeiro quadro do grid novo gasta cerca de 80 ms em layout. O grid fica invisivel nesse quadro (`seg-hold`) e o deslize comeca no seguinte. Os keyframes usam deslocamento fixo e o recorte horizontal dos conteineres e fixo, porque mudar uma variavel CSS ou o `overflow` na caixa refaz o estilo ou o layout de todos os cards. Medido no Chrome headless: quadros de ate 133 ms antes, 17 ms em 6 de 8 trocas depois.
+  - Movimento reduzido desliga o deslize e o esmaecimento. O thumb continua, sem transicao.
+- **Consequencias**: o grid fica numa `div` propria (`grid_box`), porque um `uiOutput` com conteudo e `display: contents` no Shiny com BS5 e nao anima. O deslize do Mapeamento comeca so depois da reconstrucao do grid no servidor.
+
+## ADR-157: Filtro do Mapeamento no navegador
+
+- **Data**: 2026-10-08
+- **Status**: Aceito. Emenda a ADR-137 (as linhas compactas de Relevantes) e a ADR-156 (o deslize do Mapeamento sai da espera).
+- **Contexto**: cada troca de filtro refazia o grid no servidor. Relevantes e Todos levam 66 cards: medido com cliques reais no Chrome headless, 1,7 a 2,7 s do clique ao grid pronto, cerca de 1 s no servidor (151 KB de HTML) e o resto numa tarefa so do navegador, que liga 135 inputs. Online, a rede soma tempo e o processo R fica ocupado para os outros usuarios.
+- **Decisao**:
+  - O grid sempre leva todos os cards. `output$mapping_ui` le o filtro com `isolate()`, so para o primeiro render ja vir no lugar. Um card ou uma linha da lista que o filtro tira recebe o atributo `hidden`.
+  - O script do modulo aplica o filtro na troca, com as regras de `keep_by_mapped_filter()` e `collapse_mapping_term()`. O servidor ja mantem as classes de estado de cada card ao vivo (`saira-toggle-field-mapped`). O card leva a parte fixa da regra (`data-collapse`, de `collapsible_mapping_term()`).
+  - Nenhum card se move no DOM. Cada classe tem uma grade so, com os cards na ordem dos termos e a linha "+N termos" no fim, escondida quando vazia. Em Relevantes, o script troca as classes no lugar (`field-card-compact`, o visual, e `field-card-collapsed`, a posicao) e reescreve a linha. O CSS `order` poe a linha depois dos cards e as linhas compactas depois da linha. Margens negativas mantem os 8 px entre as linhas compactas. Todo card de valor fixo tem o botao "Valor fixo", que tira so o visual compacto.
+  - Um card movido custava caro: o navegador religa as tooltips dele (`connectedCallback`) e calcula estilo e layout do zero. No Firefox, as trocas de ou para Relevantes gastavam de 11 a 19 ms so nos movimentos, e o primeiro quadro saia em 46 a 63 ms.
+  - `.field-card` anima so as cores. Com `transition: all`, a troca de classe no lugar animaria padding e margem na thread principal.
+  - O script aplica o filtro de novo depois de cada render do grid, porque um rebuild pode comecar antes de o servidor receber a troca.
+  - "Proximo pendente" num card escondido pelo filtro troca o filtro para Relevantes, que mostra todos os cards.
+  - Os outputs dos cards (`carddyn_<term>`) nao suspendem quando ocultos. Para retomar um output suspenso, o Shiny checa todos os outputs, uma tarefa de 50 a 90 ms que cortava o inicio do deslize e travava a pagina depois dele. O conteudo desses outputs so muda com o upload, o idioma ou a escolha do proprio termo. Pelo mesmo motivo, o painel do valor fixo comeca com `display: none` quando a condicao e falsa.
+  - Durante o deslize (`.seg-enter`), a caixa do grid (`.mapping-grid-box`) tem a cor do card. O deslize da ao grid uma camada propria no Chrome. Numa camada transparente, o Chrome separa os cards em camadas: 88 em Todos, 49 em Relevantes, 14 em Pendentes, e o custo de cada quadro cresce com os cards. Com o fundo opaco, sao 12 camadas em todos os filtros. Em repouso a caixa fica transparente.
+- **Alternativas**: renderizar o grid inteiro e esconder tudo no cliente, sem o filtro no servidor, rejeitada porque o primeiro quadro mostraria os 66 cards cheios antes do filtro.
+- **Consequencias**: a troca leva de 50 a 180 ms do clique ao inicio do deslize, sem rebuild, e o deslize toca inteiro, com quadros de 17 ms. No headless, o Layerize de um deslize para Todos cai de 28 para 8 ms. O ganho na GPU nao se mede no headless. Nenhuma troca move card: no Firefox, as trocas de ou para Relevantes custam o mesmo que Mapeados e Todos, com o primeiro quadro em 33 a 47 ms. Com a linha aberta, a ordem do Tab segue o DOM e passa pelas linhas compactas entre os cards cheios. Os outputs dos cards ocultos tambem calculam, sem custo medido na abertura do app. Um rebuild (idioma, upload, termo novo) com Mapeados ou Pendentes ativo monta 66 cards, nao 16 ou 4. A regra do filtro fica em R e em JS: o E2E compara as contagens dos filtros com os cards visiveis.
+
+## ADR-158: Troca Tabela | Problemas no navegador
+
+- **Data**: 2026-10-09
+- **Status**: Aceito. Emenda a ADR-156 (a troca Tabela | Problemas) e a ADR-150 (a varredura roda enquanto a aba mostra).
+- **Contexto**: Tabela -> Problemas deslizava uma caixa vazia. `problems_r` exigia o modo Problemas, entao a volta para Tabela limpava os outputs de Problemas. Cada ida os refazia em tres idas ao servidor (painel; pilulas, faixa e secao; tabela por linha), com uma checagem de outputs ocultos em cada. Medido no Firefox headless: a caixa crescia de 0 a 497 px entre 24 e 377 ms, e o deslize de 320 ms acabava antes.
+- **Decisao**:
+  - Os dois modos ficam renderizados enquanto a aba mostra. `problems_r` nao le mais o modo. A aba oculta suspende os outputs, entao a varredura nao roda em outra aba.
+  - O script do modulo troca o modo com a classe `is-off`, sem `conditionalPanel`. A parte desligada tem `height: 0`, `overflow: hidden` e `visibility: hidden`: ela mantem a largura, o Shiny nao a ve como oculta, e o DT mede as colunas mesmo desligado.
+  - A coluna de vocabulario vazia sai do fluxo (`position: absolute`), nao tem mais `display: none`. Assim `vocab_section` suspende com a aba, como os outros outputs. Com `suspendWhenHidden = FALSE`, ele refaria a varredura a cada mudanca do Mapeamento, em qualquer aba.
+- **Consequencias**: a troca so manda `input$mode` ao servidor, que nao calcula nada. A altura final aparece no primeiro quadro do deslize nos dois sentidos, sem quadro longo na ida para Problemas. A entrada na aba renderiza os dois modos: o ultimo output chega em 867 ms (antes 897 ms), sem quadro maior. O deslize para Tabela ainda tem quadros de 33 a 50 ms no Firefox headless, como antes: o custo e o da tabela de 100 linhas. O E2E conta zero renders e zero checagens de outputs ocultos numa troca.
+
+## ADR-159: Fotos de especies no app
+
+- **Data**: 2026-10-10
+- **Status**: Aceito.
+- **Contexto**: as seis fotos da home do site (uma especie ameacada por bioma) entram no app em tres lugares escolhidos no canvas: Nomes (C), Exportacao (B) e Ajuda (B).
+- **Decisao**:
+  - `R/utils_species_photos.R` guarda as fotos e monta a figura com o credito (autor e licenca), que a licenca pede junto da foto. O nome popular vem do i18n (`species_common_<slug>`). As fotos sao WebP de 1200 px em `www/images/species/`, ~310 KB no total.
+  - Nomes: durante a rodada, o Relatorio mostra um card com uma foto sorteada, a contagem, a barra e as etapas. O card renderiza uma vez por rodada, e `vnRunProgress` reescreve o texto no lugar. No fim, o relatorio volta com um fade de 200 ms.
+  - O observer da rodada le `rv$run_state` com `isolate()`. Ele escrevia e lia o mesmo valor, entao cada tick disparava o seguinte no mesmo flush, sem passar pelo `invalidateLater`. A sessao nunca ficava ociosa, e o Shiny so mandava os outputs no fim: a lista da esquerda, a fase e o botao Cancelar nunca apareciam durante a rodada.
+  - Flora BR e Fauna BR consultam lotes de 5 nomes (`br_batch_size`), o GBIF segue com 200. A consulta BR custa ~0,3 s por nome: com um lote so, um tick de 17 s fazia a contagem pular de 0 para 10 e de 10 para 48. Com 5 nomes, a tela atualiza a cada ~1,5 s, e a consulta BR leva ~10% mais tempo.
+  - Num empate de distancia, `normalize_brprovider_result()` fica com a linha que nao e sinonimo. A Flora BR lista "Victoria amazonica" como aceito e como sinonimo ilegitimo, e a ordem das linhas muda com os outros nomes do lote.
+  - Durante a rodada, o Cancelar e a linha da fase deixam a barra 67 px mais alta. O workspace perde a mesma altura (`:has(.vn-cancel-btn)`).
+  - Exportacao: sem pendencias, o card de pendencias vira "pacote pronto" com o saira-pintor. Ajuda: o card Tutoriais leva o saira-pintor no topo.
+- **Consequencias**: a lista, a fase e o card mandam valores a cada tick. A linha da fase repete a etapa do card.

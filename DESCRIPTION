@@ -1,7 +1,7 @@
 Package: saira
 Title: Biodiversity Data Standardization to Darwin Core
 Version: 0.11.2
-Authors@R: person("Rog\u00E9rio", "Nunes Oliveira", email = "rogerio@sibbr.gov.br", role = c("aut", "cre"))
+Authors@R: person("Rog\u00E9rio", "Nunes Oliveira", email = "rogerio.onza@outlook.com", role = c("aut", "cre"))
 Description: Shiny application for standardizing biodiversity datasets to the
     Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools
     for data validation, column mapping, and taxonomic verification. Designed
@@ -27,7 +27,7 @@ Imports:
     rnaturalearthdata (>= 1.0.0),
     DT (>= 0.28),
     leaflet (>= 2.1.0),
-    ids (>= 1.0.0),
+    htmlwidgets (>= 1.5.0),
     jsonlite (>= 1.8.0),
     DBI (>= 1.0.0),
     RSQLite (>= 2.2.0),
@@ -36,9 +36,11 @@ Imports:
     florabr (>= 1.3.0),
     faunabr (>= 1.1.1),
     writexl (>= 1.4.0),
+    readxl (>= 1.4.0),
     zip (>= 2.3.0),
     uuid (>= 1.1.0),
-    xml2 (>= 1.3.0)
+    xml2 (>= 1.3.0),
+    camtrapdp (>= 0.5.0)
 Additional_repositories: https://ropensci.r-universe.dev
 Remotes:
     github::wevertonbio/faunabr@5bb3b689247d6595872f1673ccff38004274e630
@@ -46,14 +48,12 @@ Suggests:
     testthat (>= 3.0.0),
     shinytest2 (>= 0.3.0),
     rnaturalearthhires (>= 1.0.0),
-    camtrapdp (>= 0.5.0),
     httr2 (>= 1.1.1),
     devtools,
     future,
     furrr,
     parallelly,
     profvis,
-    readxl,
     roxygen2,
     pkgload
 Collate: 
@@ -83,20 +83,25 @@ Collate:
     'utils_camtrap.R'
     'utils_coords.R'
     'utils_coords_utm.R'
+    'utils_credits.R'
     'utils_dwc.R'
     'utils_export.R'
     'utils_export_summary.R'
     'utils_i18n.R'
+    'utils_icons.R'
     'utils_invasive.R'
     'utils_io.R'
     'utils_mapping.R'
+    'utils_oceanic_islands.R'
     'utils_preview.R'
+    'utils_preview_fix.R'
     'utils_rostrum_contracts.R'
     'utils_rostrum_db.R'
     'utils_rostrum_engine.R'
     'utils_rostrum_templates.R'
     'utils_sensitive.R'
+    'utils_species_photos.R'
     'utils_taxadb.R'
     'utils_threat_status.R'
-    'utils_upload.R'
     'utils_version.R'
+    'utils_vocabulary.R'

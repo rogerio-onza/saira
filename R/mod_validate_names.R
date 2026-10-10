@@ -17,11 +17,11 @@ mod_validate_names_ui <- function(id) {
     shiny::tagList(
         shiny::div(
             class = "container-fluid validate-names-page",
-            shiny::uiOutput(ns("title")),
-            shiny::uiOutput(ns("subtitle")),
+            # Providers, options and the run button in one bar on top, as on
+            # the Coordinates page (ADR-132).
+            shiny::uiOutput(ns("config_panel")),
             shiny::div(
                 class = "validate-names-workspace",
-                shiny::uiOutput(ns("config_panel")),
                 shiny::uiOutput(ns("stream_panel")),
                 shiny::uiOutput(ns("report_panel"))
             ),
@@ -38,6 +38,24 @@ mod_validate_names_ui <- function(id) {
                         document.body.style.removeProperty('overflow');
                         document.body.style.removeProperty('padding-right');
                         document.body.classList.remove('modal-open');
+                    });
+                    // The run tick writes the photo card text in place, so
+                    // the report panel renders once per run (see vnRunProgress
+                    // in the server).
+                    Shiny.addCustomMessageHandler('vnRunProgress', function(msg) {
+                        var card = document.querySelector('.vn-run-card');
+                        if (!card) { return; }
+                        card.querySelector('.vn-run-eyebrow').textContent = msg.eyebrow;
+                        card.querySelector('.vn-run-count').textContent = msg.count;
+                        card.querySelector('.vn-run-bar').classList.toggle('is-waiting', !!msg.waiting);
+                        card.querySelector('.vn-run-bar-fill').style.width = msg.pct + '%';
+                        (msg.steps || []).forEach(function(step) {
+                            var row = card.querySelector('.vn-run-step[data-step=\"' + step.key + '\"]');
+                            if (!row) { return; }
+                            row.className = 'vn-run-step is-' + step.state;
+                            row.querySelector('.vn-run-step-label').textContent = step.label;
+                            row.querySelector('.vn-run-step-state').textContent = step.state_label;
+                        });
                     });
                 });"
             ))
@@ -60,11 +78,13 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         ns <- session$ns
 
         provider_catalog <- list(
-            list(id = "florabr", short = "Flora BR", full_key = "validate_names_provider_florabr_full", desc_key = "validate_names_provider_florabr_desc", icon = "seedling",      recommended = FALSE, type = "br"),
-            list(id = "faunabr", short = "Fauna BR", full_key = "validate_names_provider_faunabr_full", desc_key = "validate_names_provider_faunabr_desc", icon = "paw",           recommended = FALSE, type = "br"),
-            list(id = "gbif",    short = "GBIF",     full_key = "validate_names_provider_gbif_full",    desc_key = "validate_names_provider_gbif_desc",    icon = "earth-americas", recommended = TRUE,  type = "taxadb")
+            list(id = "florabr", short = "Flora BR", full_key = "validate_names_provider_florabr_full", desc_key = "validate_names_provider_florabr_desc", icon = "seedling",      locked = FALSE, type = "br"),
+            list(id = "faunabr", short = "Fauna BR", full_key = "validate_names_provider_faunabr_full", desc_key = "validate_names_provider_faunabr_desc", icon = "paw",           locked = FALSE, type = "br"),
+            list(id = "gbif",    short = "GBIF",     full_key = "validate_names_provider_gbif_full",    desc_key = "validate_names_provider_gbif_desc",    icon = "earth-americas", locked = TRUE,  type = "taxadb")
         )
         provider_ids <- vapply(provider_catalog, function(item) item$id, FUN.VALUE = character(1))
+        # GBIF is the fallback of every run, so the user cannot turn it off.
+        locked_provider_ids <- provider_ids[vapply(provider_catalog, function(item) isTRUE(item$locked), logical(1))]
         br_provider_ids <- c("florabr", "faunabr")
         initial_provider_runtime_status <- tryCatch(
             brprovider_cache_statuses(br_provider_ids, poll = FALSE),
@@ -105,7 +125,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         }
 
         rv <- shiny::reactiveValues(
-            # GBIF is always on (priority 1); any BR provider already downloaded
+            # GBIF is always on (locked); any BR provider already downloaded
             # to the on-disk cache is pre-selected so the user's last download
             # persists across app restarts (the RDS cache is the persistence).
             selected_providers = c(
@@ -128,6 +148,12 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             exiting_reviews = empty_exiting_reviews(),
             provider_runtime_status = initial_provider_runtime_status
         )
+        # Plain environment, not reactive: the run tick reads and writes it
+        # ~16 times a second, and no output may depend on that.
+        run_card <- new.env(parent = emptyenv())
+        run_card$photo <- NULL
+        run_card$last_sent <- NULL
+        run_card$fade_report <- FALSE
 
         provider_button_id <- function(provider_id) paste0("provider_card_", provider_id)
 
@@ -166,23 +192,21 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             shiny::tags$span(class = "vn-status-badge badge-muted", tr("validate_names_provider_status_not_downloaded", lang_r()))
         }
 
+        # Poll the BR provider caches only during a run or a background update.
+        # A run can start an update that continues after the run, so the end
+        # of a run reads the status again and an update keeps the poll on.
         shiny::observe({
-            selected <- as.character(rv$selected_providers)
-            selected_br <- intersect(selected, br_provider_ids)
-            current_map <- rv$provider_runtime_status
-            has_running_update <- is.list(current_map) && any(vapply(
+            active <- isTRUE(rv$running) || isTRUE(rv$starting)
+            previous <- shiny::isolate(rv$provider_runtime_status)
+            updated <- refresh_provider_runtime_status(poll = TRUE)
+            has_running_update <- is.list(updated) && any(vapply(
                 br_provider_ids,
-                function(id) identical(as.character((current_map[[id]] %||% list())$status %||% ""), "update_in_progress"),
+                function(id) identical(as.character((updated[[id]] %||% list())$status %||% ""), "update_in_progress"),
                 FUN.VALUE = logical(1)
             ))
-
-            if (length(selected_br) == 0L && !isTRUE(rv$running) && !isTRUE(rv$starting) && !isTRUE(has_running_update)) {
-                return(invisible(NULL))
+            if (active || has_running_update) {
+                shiny::invalidateLater(1200, session)
             }
-
-            shiny::invalidateLater(1200, session)
-            previous <- rv$provider_runtime_status
-            updated <- refresh_provider_runtime_status(poll = TRUE)
 
             for (provider_id in br_provider_ids) {
                 prev_obj <- if (is.list(previous)) previous[[provider_id]] else NULL
@@ -396,13 +420,16 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         }
 
         toggle_provider_selection <- function(provider_id) {
+            if (provider_id %in% locked_provider_ids) {
+                return(invisible(NULL))
+            }
             selected <- as.character(rv$selected_providers)
             selected <- selected[!is.na(selected) & nzchar(selected)]
             if (provider_id %in% selected) selected <- selected[selected != provider_id] else selected <- c(selected, provider_id)
             rv$selected_providers <- selected
         }
 
-        for (provider_id in provider_ids) {
+        for (provider_id in setdiff(provider_ids, locked_provider_ids)) {
             local({
                 id_local <- provider_id
                 shiny::observeEvent(input[[provider_button_id(id_local)]],
@@ -464,10 +491,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             list(status = "ok")
         })
 
-        active_options_count <- shiny::reactive({
-            sum(c(isTRUE(input$remove_authors %||% TRUE), isTRUE(input$ignore_qualifiers %||% TRUE)))
-        })
-
         can_run_validation <- shiny::reactive({
             prep <- quick_inputs()
             length(rv$selected_providers) > 0L && identical(prep$status, "ok") && !isTRUE(rv$running) && !isTRUE(rv$starting)
@@ -476,13 +499,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         has_validation_output <- shiny::reactive({
             report <- validation_result()
             is.data.frame(report) && nrow(report) > 0L
-        })
-
-        is_pre_validation_state <- shiny::reactive({
-            !isTRUE(rv$running) &&
-                !isTRUE(rv$starting) &&
-                is.null(rv$run_state) &&
-                !isTRUE(has_validation_output())
         })
 
         active_stream_filter <- shiny::reactive({
@@ -583,64 +599,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             input$remove_authors,
             input$ignore_qualifiers
         )
-
-        report_status_counts <- function(report_df) {
-            out <- c(valid = 0L, invalid = 0L, unresolved = 0L, total = 0L)
-            if (!is.data.frame(report_df) || nrow(report_df) == 0L) {
-                return(out)
-            }
-
-            status_vec <- normalize_status_vec(report_df$validation_status)
-            reviewed_vec <- if ("manual_review" %in% names(report_df)) as.logical(report_df$manual_review) else rep(FALSE, length(status_vec))
-            reviewed_vec[is.na(reviewed_vec)] <- FALSE
-            out[["total"]] <- as.integer(length(status_vec))
-            out[["valid"]] <- as.integer(sum(status_vec == "accepted" | reviewed_vec, na.rm = TRUE))
-            out[["invalid"]] <- as.integer(sum(status_vec == "ignored", na.rm = TRUE))
-            out[["unresolved"]] <- as.integer(sum(status_vec %in% problem_status_values & !reviewed_vec, na.rm = TRUE))
-            out
-        }
-
-        progress_snapshot <- function() {
-            state <- rv$run_state
-            report <- validation_result()
-            total_unique <- 0L
-            resolved_unique <- 0L
-            batch_idx <- 0L
-            batch_total <- 0L
-            provider_text <- tr("validate_names_loading_provider_unknown", lang_r())
-            phase_text <- tr("validate_names_progress_idle", lang_r())
-
-            if (!is.null(state)) {
-                total_unique <- suppressWarnings(as.integer(state$total_unique %||% 0L))
-                resolved_unique <- suppressWarnings(as.integer(state$resolved_unique %||% 0L))
-                batch_idx <- suppressWarnings(as.integer(state$provider_batch_idx %||% 0L))
-                batch_total <- suppressWarnings(as.integer(state$provider_batch_total %||% 0L))
-                if (is.na(total_unique) || total_unique < 0L) total_unique <- 0L
-                if (is.na(resolved_unique) || resolved_unique < 0L) resolved_unique <- 0L
-                if (is.na(batch_idx) || batch_idx < 0L) batch_idx <- 0L
-                if (is.na(batch_total) || batch_total < 0L) batch_total <- 0L
-                provider_label <- format_provider_labels(state$current_provider %||% "")
-                if (length(provider_label) > 0L) provider_text <- provider_label[[1]]
-                phase_text <- phase_label(state, lang_r())
-            } else if (is.data.frame(report) && nrow(report) > 0L) {
-                total_unique <- nrow(report)
-                resolved_unique <- total_unique
-                phase_text <- tr("validate_names_progress_phase_done", lang_r())
-            }
-
-            progress_pct <- if (total_unique > 0L) as.integer(round((resolved_unique / total_unique) * 100)) else 0L
-            progress_pct <- max(0L, min(100L, progress_pct))
-            batch_text <- if (batch_total > 0L) sprintf("%d/%d", batch_idx, batch_total) else "-"
-
-            list(
-                total_unique = total_unique,
-                resolved_unique = resolved_unique,
-                progress_pct = progress_pct,
-                provider_text = provider_text,
-                phase_text = phase_text,
-                batch_text = batch_text
-            )
-        }
 
         shiny::observe({
             exiting <- rv$exiting_reviews
@@ -768,6 +726,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                             shiny::actionButton(
                                 ns("review_back_to_confirm"),
                                 label = tr("validate_names_review_back", lang_r()),
+                                icon = ph_icon("arrow-left"),
                                 class = "btn btn-secondary vn-review-back-btn"
                             )
                         ),
@@ -801,7 +760,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                                 ns("review_save_correction"),
                                 label = tr("validate_names_review_save_correction", lang_r()),
                                 class = "btn btn-success vn-review-save-btn",
-                                disabled = "disabled"
+                                disabled = TRUE
                             )
                         ),
                         shiny::tags$script(shiny::HTML(edit_script)),
@@ -845,7 +804,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         class = trimws(paste("vn-review-header", ctx$header_class)),
                         shiny::div(
                             class = "vn-review-header-icon",
-                            status_style_map(target$status_key)$icon_symbol
+                            ph_icon(status_style_map(target$status_key)$icon)
                         ),
                         shiny::div(
                             class = "vn-review-header-text",
@@ -880,6 +839,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         shiny::actionButton(
                             ns("review_switch_to_edit"),
                             label = tr("validate_names_review_switch_to_edit", lang_r()),
+                            icon = ph_icon("pencil-simple"),
                             class = "btn btn-secondary vn-review-edit-btn"
                         )
                     ),
@@ -895,7 +855,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                             ns("review_confirm_keep"),
                             label = tr("validate_names_review_confirm_btn", lang_r()),
                             class = "btn btn-success vn-review-confirm-btn",
-                            disabled = "disabled"
+                            disabled = TRUE
                         )
                     ),
                     shiny::tags$script(shiny::HTML(confirm_script)),
@@ -1127,38 +1087,24 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             ignoreInit = TRUE
         )
 
-        output$title <- shiny::renderUI({
-            shiny::h3(
-                shiny::icon("microscope", class = "me-2"),
-                tr("validate_names_title", lang_r()),
-                class = "text-mono mb-2"
-            )
-        })
-
-        output$subtitle <- shiny::renderUI({
-            shiny::p(tr("validate_names_subtitle", lang_r()), class = "text-accent mb-4")
-        })
-
         output$config_panel <- shiny::renderUI({
             selected <- as.character(rv$selected_providers)
             selected <- selected[!is.na(selected) & nzchar(selected)]
             is_busy <- isTRUE(rv$running) || isTRUE(rv$starting)
             quick <- quick_inputs()
-            # Deliberately does NOT read progress_snapshot(), rv$run_state or
-            # validation_result(). The run loop rewrites rv$run_state every 60ms,
-            # and reactiveValues invalidate on write whether or not the value
-            # changed -- so a single read here, even one whose result is thrown
-            # away, rebuilds this whole panel ~16 times a second during a run,
-            # recreating the two input_switch widgets below each time. The
-            # progress bar lives in output$progress_block for exactly this
-            # reason; keep the two dependency sets apart.
+            # Deliberately does NOT read rv$run_state or validation_result().
+            # The run loop rewrites rv$run_state every 60ms, and reactiveValues
+            # invalidate on write whether or not the value changed -- so a
+            # single read here, even one whose result is thrown away, rebuilds
+            # this whole panel ~16 times a second during a run, recreating the
+            # two option checkboxes below each time. The phase line lives in
+            # output$run_phase for exactly this reason; keep the two
+            # dependency sets apart.
             run_label <- if (is_busy) tr("validate_names_run_running", lang_r()) else tr("validate_names_run_cta", lang_r())
             can_run <- isTRUE(can_run_validation())
 
             helper_text <- if (isTRUE(rv$running) && isTRUE(rv$abort_requested)) {
                 tr("validate_names_cancel_requested", lang_r())
-            } else if (isTRUE(rv$starting)) {
-                tr("validate_names_run_running", lang_r())
             } else if (length(selected) == 0L) {
                 tr("validate_names_providers_required", lang_r())
             } else if (!identical(quick$status, "ok")) {
@@ -1168,7 +1114,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     ""
                 }
             } else {
-                tr("validate_names_action_ready", lang_r())
+                ""
             }
 
             shiny::div(
@@ -1177,66 +1123,48 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     class = "vn-config-section vn-config-section-providers",
                     shiny::div(class = "vn-section-label", tr("validate_names_providers_card_title", lang_r())),
                     shiny::div(
-                        class = "vn-provider-list",
+                        class = "vn-check-list",
                         lapply(provider_catalog, function(item) {
-                            priority <- match(item$id, selected)
-                            is_selected <- !is.na(priority)
-                            is_priority_one <- is_selected && identical(as.integer(priority), 1L)
-                            card_class <- trimws(paste(
-                                "vn-provider-card",
+                            is_selected <- item$id %in% selected
+                            is_locked <- isTRUE(item$locked)
+                            step <- provider_query_step(item$id, selected, br_provider_ids)
+                            status_ui <- if (identical(item$type, "br")) {
+                                provider_runtime_badge(provider_runtime_status_for(item$id))
+                            } else if (is_locked) {
+                                shiny::tags$span(class = "vn-status-badge badge-muted", tr("validate_names_provider_always_on", lang_r()))
+                            }
+                            content <- shiny::div(
+                                class = "vn-check-row-content",
+                                shiny::span(class = "vn-check-step", if (is.na(step)) "" else step),
+                                shiny::span(class = "vn-check-box", `aria-hidden` = "true"),
+                                shiny::div(
+                                    class = "vn-check-text",
+                                    shiny::div(
+                                        class = "vn-check-head",
+                                        shiny::span(class = "vn-check-name", item$short),
+                                        status_ui
+                                    )
+                                )
+                            )
+                            row_class <- trimws(paste(
+                                "vn-check-row vn-provider-row",
                                 if (is_selected) "is-selected" else "",
-                                if (is_priority_one) "is-priority-1" else "",
+                                if (is_locked) "is-locked" else "",
                                 if (is_busy) "is-disabled" else ""
                             ))
-
-                            badges <- list()
-                            if (isTRUE(item$recommended)) {
-                                badges[[length(badges) + 1L]] <- shiny::tags$span(
-                                    class = "vn-status-badge badge-success",
-                                    tr("validate_names_provider_recommended", lang_r())
+                            if (is_locked) {
+                                shiny::div(class = row_class, content)
+                            } else {
+                                shiny::actionButton(
+                                    inputId = ns(provider_button_id(item$id)),
+                                    icon = NULL,
+                                    label = content,
+                                    class = row_class,
+                                    `aria-pressed` = if (is_selected) "true" else "false",
+                                    disabled = is_busy
                                 )
                             }
-                            if (is_priority_one) {
-                                badges[[length(badges) + 1L]] <- shiny::tags$span(
-                                    class = "vn-status-badge badge-info",
-                                    sprintf(tr("validate_names_provider_priority_badge", lang_r()), 1L)
-                                )
-                            }
-                            if (identical(item$type, "br")) {
-                                badges[[length(badges) + 1L]] <- provider_runtime_badge(
-                                    provider_runtime_status_for(item$id)
-                                )
-                            }
-
-                            shiny::actionButton(
-                                inputId = ns(provider_button_id(item$id)),
-                                icon = NULL,
-                                label = shiny::div(
-                                    class = "vn-provider-card-content",
-                                    shiny::span(
-                                        class = "vn-provider-icon-wrap",
-                                        shiny::icon(item$icon, class = "vn-provider-icon")
-                                    ),
-                                    shiny::div(
-                                        class = "vn-provider-text-wrap",
-                                        shiny::span(class = "vn-provider-name", item$short),
-                                        shiny::span(class = "vn-provider-desc", tr(item$desc_key, lang_r()))
-                                    ),
-                                    shiny::div(class = "vn-provider-badges", badges)
-                                ),
-                                class = card_class,
-                                disabled = is_busy
-                            )
                         })
-                    ),
-                    shiny::div(
-                        class = "vn-provider-note",
-                        shiny::span(class = "vn-note-icon", shiny::HTML("&#8505;")),
-                        if (any(c("florabr", "faunabr") %in% selected)) {
-                            tr("validate_names_cascade_br_notice", lang_r())
-                        } else {
-                            tr("validate_names_priority_notice", lang_r())
-                        }
                     ),
                     {
                         in_progress <- br_provider_ids[vapply(
@@ -1262,9 +1190,9 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     class = "vn-config-section vn-config-section-options",
                     shiny::div(class = "vn-section-label", tr("validate_names_options_card_title", lang_r())),
                     shiny::div(
-                        class = "vn-toggle-list",
+                        class = "vn-check-list",
                         # isolate() on both reads: this renderUI RECREATES these
-                        # switches, so an un-isolated read makes each toggle
+                        # checkboxes, so an un-isolated read makes each click
                         # rebuild the widget that produced it. The value is still
                         # carried across a legitimate re-render (a language
                         # switch) because it is read back here -- it just no
@@ -1274,90 +1202,64 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         # nothing syncs these two inputs into rv -- they are read
                         # directly by report_df and review_export_payload.
                         shiny::div(
-                            class = "vn-toggle-item",
-                            bslib::input_switch(
+                            class = "vn-check-row vn-option-row",
+                            shiny::checkboxInput(
                                 ns("remove_authors"),
                                 tr("validate_names_remove_authors", lang_r()),
                                 value = isTRUE(shiny::isolate(input$remove_authors) %||% TRUE)
-                            ),
-                            shiny::p(tr("validate_names_remove_authors_desc", lang_r()), class = "vn-toggle-desc")
+                            )
                         ),
                         shiny::div(
-                            class = "vn-toggle-item",
-                            bslib::input_switch(
+                            class = "vn-check-row vn-option-row",
+                            shiny::checkboxInput(
                                 ns("ignore_qualifiers"),
                                 tr("validate_names_ignore_qualifiers", lang_r()),
                                 value = isTRUE(shiny::isolate(input$ignore_qualifiers) %||% TRUE)
-                            ),
-                            shiny::p(tr("validate_names_ignore_qualifiers_desc", lang_r()), class = "vn-toggle-desc")
+                            )
                         )
-                    ),
-                    shiny::div(
-                        class = "vn-options-note",
-                        shiny::span(class = "vn-note-icon", shiny::HTML("&#11015;")),
-                        tr("validate_names_download_notice", lang_r())
                     )
                 ),
                 shiny::div(
                     class = "vn-config-section vn-config-section-action",
+                    # Empty label line: the button lines up with the provider
+                    # rows, and the helper text goes under it.
+                    shiny::div(class = "vn-section-label", `aria-hidden` = "true", shiny::HTML("&nbsp;")),
                     shiny::actionButton(
                         inputId = ns("validate"),
                         label = run_label,
-                        class = "vn-run-btn w-100",
+                        icon = if (is_busy) ph_icon("spinner", class = "ph-spin") else ph_icon("play"),
+                        class = "vn-run-btn",
                         disabled = !can_run
                     ),
                     if (isTRUE(rv$running)) {
                         shiny::actionButton(
                             inputId = ns("cancel_validation"),
                             label = tr("validate_names_cancel", lang_r()),
-                            icon = shiny::icon("stop"),
-                            class = "vn-cancel-btn w-100 mt-2",
+                            icon = ph_icon("stop"),
+                            class = "vn-cancel-btn",
                             disabled = isTRUE(rv$abort_requested)
                         )
                     },
-                    shiny::div(
-                        class = "vn-mini-stats",
-                        shiny::div(
-                            class = "vn-mini-stat",
-                            shiny::div(class = "vn-mini-stat-value", as.integer(length(selected))),
-                            shiny::div(class = "vn-mini-stat-label", tr("validate_names_action_metric_providers", lang_r()))
-                        ),
-                        shiny::div(
-                            class = "vn-mini-stat",
-                            shiny::div(class = "vn-mini-stat-value", as.integer(active_options_count())),
-                            shiny::div(class = "vn-mini-stat-label", tr("validate_names_action_metric_options", lang_r()))
-                        )
-                    ),
-                    shiny::uiOutput(ns("progress_block")),
-                    shiny::div(class = "vn-action-helper", helper_text)
+                    shiny::uiOutput(ns("run_phase")),
+                    if (nzchar(helper_text)) shiny::div(class = "vn-action-helper", helper_text)
                 )
             )
         })
 
-        # Split out of output$config_panel so the 60ms run tick repaints only the
-        # bar. This is the ONLY output allowed to depend on rv$run_state; keeping
-        # it small is the whole point.
-        output$progress_block <- shiny::renderUI({
-            snapshot <- progress_snapshot()
-
+        # Split out of output$config_panel so the 60ms run tick repaints only
+        # this line. This is the ONLY output allowed to depend on rv$run_state;
+        # keeping it small is the whole point. It shows the phase during a run
+        # (a first Flora BR or Fauna BR download takes minutes) and nothing
+        # otherwise: the percentage bar jumped from 0 to 100 and was removed.
+        output$run_phase <- shiny::renderUI({
+            state <- rv$run_state
+            if (!isTRUE(rv$running) || is.null(state)) {
+                return(NULL)
+            }
             shiny::div(
-                class = "vn-progress-block",
-                shiny::div(
-                    class = "vn-progress-header",
-                    shiny::span(class = "vn-progress-title", tr("validate_names_progress_label", lang_r())),
-                    shiny::span(class = "vn-progress-percent", sprintf("%d%%", snapshot$progress_pct))
-                ),
-                shiny::div(
-                    class = "vn-progress-track",
-                    shiny::div(class = "vn-progress-fill", style = paste0("width: ", snapshot$progress_pct, "%;"))
-                ),
-                if (isTRUE(rv$running) && !is.null(rv$run_state)) {
-                    shiny::div(
-                        class = "vn-progress-phrase-row",
-                        shiny::icon(vn_phase_icon(rv$run_state), class = "fa-solid vn-progress-phrase-icon"),
-                        shiny::span(class = "vn-progress-phrase-text", vn_phase_text(rv$run_state, lang_r()))
-                    )
-                }
+                class = "vn-progress-phrase-row",
+                ph_icon(vn_phase_icon(state), class = "vn-progress-phrase-icon"),
+                shiny::span(class = "vn-progress-phrase-text", vn_phase_text(state, lang_r()))
             )
         })
 
@@ -1384,7 +1286,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 list(key = "ambiguous", class = "pill-warning", label_key = "validate_names_stream_filter_ambiguous"),
                 list(key = "synonym", class = "pill-info", label_key = "validate_names_stream_filter_synonym"),
                 list(key = "accepted", class = "pill-success", label_key = "validate_names_stream_filter_accepted"),
-                list(key = "invasive", class = "pill-invasive", label_key = "validate_names_stream_filter_invasive")
+                list(key = "invasive", class = "pill-invasive", label_key = "validate_names_stream_filter_invasive"),
+                list(key = "translocated", class = "pill-translocated", label_key = "validate_names_stream_filter_translocated")
             )
 
             pills_ui <- shiny::div(
@@ -1396,7 +1299,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     shiny::actionButton(
                         inputId = ns(paste0("stream_filter_", item$key)),
                         label = shiny::tagList(
-                            tr(item$label_key, lang_r()),
+                            shiny::tags$span(class = "vn-pill-label", tr(item$label_key, lang_r())),
                             shiny::tags$span(class = "vn-pill-count", count_value)
                         ),
                         class = trimws(paste("vn-stream-pill", item$class, if (is_active) "is-active" else ""))
@@ -1406,7 +1309,10 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
 
             unresolved_count <- suppressWarnings(as.integer(counts[["problems"]]))
             if (is.na(unresolved_count) || unresolved_count < 0L) unresolved_count <- 0L
-            all_resolved <- isTRUE(unresolved_count == 0L) && is.data.frame(stream_df) && nrow(stream_df) > 0L
+            # The celebration answers the "problems" filter only. Any other
+            # filter (invasive, translocated, accepted) asks to see names.
+            all_resolved <- identical(active_filter, "problems") &&
+                isTRUE(unresolved_count == 0L) && is.data.frame(stream_df) && nrow(stream_df) > 0L
 
             stream_body <- if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
                 shiny::div(
@@ -1416,7 +1322,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             } else if (isTRUE(all_resolved)) {
                 shiny::div(
                     class = "vn-review-empty-state",
-                    shiny::div(class = "vn-review-empty-icon", shiny::icon("party-horn", class = "fa-solid")),
+                    shiny::div(class = "vn-review-empty-icon", ph_icon("party-horn")),
                     shiny::div(class = "vn-review-empty-title", tr("validate_names_review_empty_title", lang_r())),
                     shiny::div(class = "vn-review-empty-message", tr("validate_names_review_empty_message", lang_r())),
                     shiny::actionButton(
@@ -1444,14 +1350,13 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         is_exiting <- query_name %in% exiting_keys
                         shiny::div(
                             class = trimws(paste("vn-stream-item", style$item_class, if (isTRUE(is_exiting)) "vn-review-item-exit" else "")),
-                            shiny::span(class = trimws(paste("vn-stream-status-icon", paste0("vn-stream-status-icon-", style$key))), style$icon_symbol),
+                            shiny::span(class = trimws(paste("vn-stream-status-icon", paste0("vn-stream-status-icon-", style$key))), ph_icon(style$icon)),
                             shiny::div(
                                 class = "vn-stream-item-main",
                                 shiny::div(class = "vn-stream-item-name", row$query_name[[1]]),
+                                invasive_stream_note_ui(query_name, lang_r()),
                                 shiny::div(
                                     class = "vn-stream-item-meta",
-                                    shiny::span(status_text),
-                                    shiny::span(class = "vn-dot"),
                                     shiny::span(provider_label),
                                     shiny::span(class = "vn-dot"),
                                     shiny::span(updated_text)
@@ -1468,6 +1373,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                                             ns("open_review_target"),
                                             jsonlite::toJSON(query_name, auto_unbox = TRUE)
                                         ),
+                                        ph_icon("pencil-simple"),
                                         tr("validate_names_review_action", lang_r())
                                     )
                                 },
@@ -1493,30 +1399,23 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         })
 
         output$report_panel <- shiny::renderUI({
+            # During a run the panel shows a species photo and the progress.
+            # rv$running changes only at the start and the end of a run, and
+            # the run state is read under isolate(): vnRunProgress updates
+            # the card in place.
+            if (isTRUE(rv$running)) {
+                progress <- vn_run_progress(shiny::isolate(rv$run_state), lang_r())
+                return(vn_run_card_ui(progress, run_card$photo %||% species_photo(), lang_r()))
+            }
+
             report <- effective_report()
             has_report <- is.data.frame(report) && nrow(report) > 0L
-            counts <- report_status_counts(report)
+            # The report fades in once, when a run ends.
+            fade <- isTRUE(run_card$fade_report)
+            run_card$fade_report <- FALSE
 
             shiny::div(
-                class = "vn-report-panel",
-                shiny::div(
-                    class = "vn-report-statbar",
-                    shiny::div(
-                        class = "vn-report-statcell",
-                        shiny::div(class = "vn-report-statvalue vn-report-statvalue-valid", as.integer(counts[["valid"]])),
-                        shiny::div(class = "vn-report-statlabel", tr("validate_names_valid", lang_r()))
-                    ),
-                    shiny::div(
-                        class = "vn-report-statcell",
-                        shiny::div(class = "vn-report-statvalue vn-report-statvalue-invalid", as.integer(counts[["invalid"]])),
-                        shiny::div(class = "vn-report-statlabel", tr("validate_names_invalid", lang_r()))
-                    ),
-                    shiny::div(
-                        class = "vn-report-statcell",
-                        shiny::div(class = "vn-report-statvalue vn-report-statvalue-unresolved", as.integer(counts[["unresolved"]])),
-                        shiny::div(class = "vn-report-statlabel", tr("validate_names_unresolved", lang_r()))
-                    )
-                ),
+                class = paste("vn-report-panel", if (fade) "is-entering" else ""),
                 if (has_report) conservation_status_summary_ui(report, as.character(rv$selected_providers), br_provider_ids, lang_r()),
                 shiny::div(
                     class = "vn-report-header",
@@ -1580,11 +1479,24 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             cat_for_pill <- du$category[sens_idx]
             cat_for_pill[is.na(cat_for_pill) | !nzchar(cat_for_pill)] <- "\u2014"
             is_sensitive_vec <- ifelse(du$sensitive[sens_idx], cat_for_pill, "")
-            # Alien invasive species (Instituto Horus). invasive_info_for()
-            # dedupes internally, so the same unique-name economy applies.
-            is_invasive_vec <- ifelse(
-                flag_invasive_species(sensitive_source), "1", ""
+            # Invasive species (Instituto Horus). The cell carries the
+            # origin_class, not a boolean, so the badge can say "alien
+            # invasive" only where the list actually asserts it.
+            # invasive_info_for() dedupes internally, so the same unique-name
+            # economy applies.
+            is_invasive_vec <- invasive_origin_class_for(sensitive_source)
+            is_invasive_vec[is.na(is_invasive_vec)] <- ""
+            # Natural range and introduction reason, resolved over unique names
+            # like everything else in this cell and joined with a newline the
+            # renderer splits. Empty for taxa the source leaves blank.
+            u_inv <- unique(sensitive_source)
+            u_detail <- vapply(
+                u_inv,
+                function(nm) paste(invasive_detail_lines(nm, lang_r()), collapse = "\n"),
+                FUN.VALUE = character(1),
+                USE.NAMES = FALSE
             )
+            invasive_reason_vec <- u_detail[match(sensitive_source, u_inv)]
 
             table_df <- data.frame(
                 scientificName = scientific_name,
@@ -1594,6 +1506,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 is_sensitive = is_sensitive_vec,
                 sensitive_name = sensitive_source,
                 is_invasive = is_invasive_vec,
+                invasive_reason = invasive_reason_vec,
                 stringsAsFactors = FALSE
             )
 
@@ -1604,7 +1517,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 ".review_original_name",
                 ".is_sensitive",
                 ".sensitive_name",
-                ".is_invasive"
+                ".is_invasive",
+                ".invasive_reason"
             )
 
             status_labels <- list(
@@ -1621,6 +1535,9 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             sensitive_label_json <- jsonlite::toJSON(tr("validate_names_status_badge_sensitive", lang_r()), auto_unbox = TRUE)
             sensitive_mark_json <- jsonlite::toJSON(tr("sensitive_mark_label", lang_r()), auto_unbox = TRUE)
             invasive_label_json <- jsonlite::toJSON(tr("validate_names_status_badge_invasive", lang_r()), auto_unbox = TRUE)
+            translocated_label_json <- jsonlite::toJSON(tr("validate_names_status_badge_translocated", lang_r()), auto_unbox = TRUE)
+            invasive_tooltip_json <- jsonlite::toJSON(tr("validate_names_invasive_tooltip", lang_r()), auto_unbox = TRUE)
+            translocated_tooltip_json <- jsonlite::toJSON(tr("validate_names_translocated_tooltip", lang_r()), auto_unbox = TRUE)
 
             status_badge_js <- DT::JS(
                 sprintf(
@@ -1667,8 +1584,20 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         "  }",
                         "  var invasive = String(row[6] === null || row[6] === undefined ? '' : row[6]).trim();",
                         "  if (invasive.length > 0) {",
-                        "    var iLabel = %s;",
-                        "    content += '<div class=\"vn-cell-invasive\"><span class=\"vn-status-badge badge-error\">' + $('<div/>').text(String(iLabel)).html() + '</span></div>';",
+                        "    var alien = (invasive === 'alien');",
+                        "    var iLabel = alien ? %s : %s;",
+                        "    var iTip = alien ? %s : %s;",
+                        "    var iClass = alien ? 'badge-invasive' : 'badge-translocated';",
+                        "    var tipEsc = $('<div/>').text(String(iTip)).html().replace(/\"/g, '&quot;');",
+                        "    content += '<div class=\"vn-cell-invasive\"><span class=\"vn-status-badge ' + iClass + '\" title=\"' + tipEsc + '\">' + $('<div/>').text(String(iLabel)).html() + '</span>';",
+                        "    var iDetail = String(row[7] === null || row[7] === undefined ? '' : row[7]).trim();",
+                        "    if (iDetail.length > 0) {",
+                        "      iDetail.split('\\n').forEach(function(line) {",
+                        "        if (line.length === 0) return;",
+                        "        content += '<div class=\"vn-cell-invasive-reason\">' + $('<div/>').text(line).html() + '</div>';",
+                        "      });",
+                        "    }",
+                        "    content += '</div>';",
                         "  }",
                         "  return content;",
                         "}"
@@ -1676,7 +1605,10 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     replaced_prefix_json,
                     sensitive_label_json,
                     sensitive_mark_json,
-                    invasive_label_json
+                    invasive_label_json,
+                    translocated_label_json,
+                    invasive_tooltip_json,
+                    translocated_tooltip_json
                 )
             )
 
@@ -1793,7 +1725,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         list(targets = 3, visible = FALSE, searchable = FALSE),
                         list(targets = 4, visible = FALSE, searchable = FALSE),
                         list(targets = 5, visible = FALSE, searchable = FALSE),
-                        list(targets = 6, visible = FALSE, searchable = FALSE)
+                        list(targets = 6, visible = FALSE, searchable = FALSE),
+                        list(targets = 7, visible = FALSE, searchable = FALSE)
                     ),
                     rowCallback = row_callback_js,
                     headerCallback = header_callback_js,
@@ -1917,6 +1850,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     return(invisible(NULL))
                 }
 
+                run_card$photo <- species_photo()
+                run_card$last_sent <- NULL
                 rv$running <- TRUE
                 rv$starting <- FALSE
                 rv$abort_requested <- FALSE
@@ -1939,12 +1874,16 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         )
 
         shiny::observe({
-            if (!isTRUE(rv$running) || is.null(rv$run_state)) {
+            # rv$run_state is read under isolate(): the tick writes it, and a
+            # dependency would start the next tick in the same flush. The
+            # session would then stay busy, and Shiny sends no output value
+            # until the run ends (ADR-159).
+            state <- shiny::isolate(rv$run_state)
+            if (!isTRUE(rv$running) || is.null(state)) {
                 return(invisible(NULL))
             }
             shiny::invalidateLater(60, session)
 
-            state <- rv$run_state
             if (isTRUE(rv$abort_requested)) state$aborted <- TRUE
 
             state <- tryCatch(next_taxadb_run_step(state), error = function(e) {
@@ -1957,9 +1896,16 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             rv$run_state <- state
             rv$stream_df <- state$stream_df
             if (!is_taxadb_run_done(state)) {
+                # Send only what changed: most ticks leave the count as it is.
+                progress <- vn_run_progress(state, shiny::isolate(lang_r()))
+                if (!identical(progress, run_card$last_sent)) {
+                    run_card$last_sent <- progress
+                    session$sendCustomMessage("vnRunProgress", progress)
+                }
                 return(invisible(NULL))
             }
 
+            run_card$fade_report <- TRUE
             rv$running <- FALSE
             rv$starting <- FALSE
             rv$abort_requested <- FALSE
@@ -1988,6 +1934,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         review_export_payload <- shiny::reactive({
             list(
                 entries = review_entries_df(),
+                ranks = name_rank_table(validation_result()),
                 normalize_opts = list(
                     remove_authors = isTRUE(input$remove_authors %||% TRUE),
                     ignore_qualifiers = isTRUE(input$ignore_qualifiers %||% TRUE)

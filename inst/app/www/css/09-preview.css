@@ -15,8 +15,8 @@
 }
 
 .saira-table-shell {
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
   background-color: var(--bg-card);
   box-shadow: var(--shadow-sm);
   padding: var(--space-3);
@@ -31,7 +31,7 @@
 .saira-table-shell .dataTables_wrapper .dataTables_filter label {
   font-family: var(--font-serif);
   font-size: var(--text-sm);
-  color: var(--accent);
+  color: var(--text-muted);
 }
 
 .saira-table-shell .dataTables_wrapper .dataTables_length select,
@@ -56,10 +56,22 @@
   padding-top: var(--space-2);
 }
 
+/* One line per cell, as in the mockup: long values widen the column and the
+   table scrolls sideways. */
+#preview-datatable table.dataTable th,
+#preview-datatable table.dataTable td {
+  white-space: nowrap;
+}
+
+/* The Preview headers are Darwin Core term names, so they stay mono. */
+#preview-datatable table.dataTable thead th {
+  font-family: var(--font-mono);
+}
+
 .saira-table-shell table.dataTable thead th {
-  background: var(--accent);
-  color: #ffffff;
-  border-bottom: 1px solid var(--border-strong);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-default);
 }
 
 .saira-table-shell table.dataTable thead>tr>th.sorting::before,
@@ -68,7 +80,7 @@
 .saira-table-shell table.dataTable thead>tr>th.sorting_asc::after,
 .saira-table-shell table.dataTable thead>tr>th.sorting_desc::before,
 .saira-table-shell table.dataTable thead>tr>th.sorting_desc::after {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-muted);
 }
 
 .saira-table-shell .dataTables_wrapper .dataTables_paginate {
@@ -81,7 +93,7 @@
   border-radius: var(--radius-sm);
   background: var(--bg-card);
   color: var(--accent);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   padding: 0.25rem 0.55rem;
   margin: 0 2px;
@@ -99,9 +111,10 @@
 
 .saira-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button.current,
 .saira-table-shell .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #ffffff;
+  border-color: var(--step-active);
+  background: var(--bg-card);
+  color: var(--step-active);
+  font-weight: 700;
   box-shadow: none;
 }
 
@@ -135,7 +148,7 @@
   border-radius: var(--radius-sm);
   background: var(--bg-card);
   color: var(--accent);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   padding: 0.3rem 0.6rem;
   min-width: 2rem;
@@ -158,9 +171,10 @@
 }
 
 .saira-table-shell .dataTables_wrapper .dataTables_paginate .pagination .page-item.active .page-link {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: #ffffff;
+  border-color: var(--step-active);
+  background: var(--bg-card);
+  color: var(--step-active);
+  font-weight: 700;
   box-shadow: none;
 }
 
@@ -184,12 +198,12 @@
 }
 
 .modal .preview-export-confirm-question {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   color: var(--text-primary);
 }
 
 .modal .preview-export-confirm-warning {
-  color: var(--warning);
+  color: var(--warning-text);
   font-weight: var(--weight-medium);
 }
 
@@ -209,7 +223,7 @@
 }
 
 .modal .preview-export-validation-card-title {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-base);
   color: var(--text-primary);
   margin-bottom: var(--space-3);
@@ -283,3 +297,472 @@
   }
 }
 
+
+/* Title inside the table card, on the row of the DT search and length
+   controls (round 5, option B). Both controls float right (dom "flrtip").
+   The table scrolls sideways inside DT (scrollX), so the clip only hides the
+   32px a mode starts outside on a Table | Problems change (ADR-156). */
+.preview-table-shell {
+  position: relative;
+  overflow-x: clip;
+}
+
+.preview-card-head {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  height: 34px;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  max-width: calc(100% - 34rem);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.preview-card-title {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: 34px;
+}
+
+.preview-card-subtitle {
+  font-family: var(--font-serif);
+  font-size: var(--text-base);
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-table-shell .dataTables_wrapper .dataTables_length,
+.preview-table-shell .dataTables_wrapper .dataTables_filter {
+  float: right;
+  margin-left: var(--space-4);
+}
+
+@media (max-width: 991.98px) {
+  .preview-card-head {
+    position: static;
+    max-width: none;
+    margin-bottom: var(--space-2);
+  }
+}
+
+/* Table | Problems uses the shared segmented control (.saira-seg, 05-forms). */
+.preview-card-head .saira-seg {
+  align-self: center;
+}
+
+/* The part of the other mode keeps its layout (ADR-158): Shiny does not
+   suspend its outputs, and DT measures its columns while it is off. */
+.preview-mode-part.is-off {
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+.preview-card-subtitle.is-off {
+  display: none;
+}
+
+/* --- Problems mode (ADR-150) --- */
+.preview-problems {
+  /* Room for the title row, which floats over the top of the card. A margin,
+     not a padding, so the scrolled content does not pass under the title. */
+  margin-top: calc(34px + var(--space-3));
+  /* The Preview tab does not scroll the page (the table mode keeps its
+     header frozen), so this panel scrolls inside the card. */
+  max-height: calc(100vh - 10rem);
+  overflow-y: auto;
+  /* Two columns that fill the screen, so the per-row table and the record
+     need no page scroll. --pf-top is the room above the column lists: tune
+     it if the title, hint, pill or section rows change. */
+  --pf-top: 16rem;
+  --pf-record-height: 10rem;
+  --pf-col-height: calc(100vh - var(--app-header-height) - var(--pf-top));
+  /* Less the DT header row, the info row and the gap above the record. */
+  --pf-note-height: 0rem;
+  --pf-rows-height: calc(var(--pf-col-height) - var(--pf-record-height) - var(--pf-note-height) - 5rem);
+}
+
+.preview-problems:has(.preview-fix-banner) {
+  --pf-top: 20rem;
+}
+
+.preview-problems:has(.preview-fix-note) {
+  --pf-note-height: 2.75rem;
+}
+
+.preview-problems .btn-sm {
+  padding: 0.2rem 0.65rem;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.preview-fix-hint {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-serif);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.preview-fix-none {
+  padding: var(--space-4) 0;
+  color: var(--success-text);
+  font-family: var(--font-ui);
+}
+
+.preview-fix-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.preview-fix-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--state-attention-border);
+  border-radius: var(--radius-lg);
+  background: var(--state-attention-bg);
+  box-shadow: none;
+  color: var(--text-primary);
+}
+
+.preview-fix-banner > i {
+  color: var(--warning-text);
+}
+
+.preview-fix-banner p {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.preview-fix-banner b {
+  color: var(--warning-text);
+}
+
+.preview-fix-cols {
+  display: grid;
+  grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* One column when the filter shows no vocabulary value. */
+.preview-fix-cols:has(> .preview-fix-vocab-col:empty) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Out of the flow, not display: none. Shiny suspends a hidden output, and
+   this column could then never fill again. */
+.preview-fix-vocab-col:empty {
+  position: absolute;
+}
+
+@media (max-width: 991.98px) {
+  .preview-fix-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.preview-fix-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin: var(--space-2) 0;
+}
+
+.preview-fix-section-head h3 {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+  font-weight: 700;
+}
+
+.preview-fix-section-head > span {
+  font-family: var(--font-serif);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.preview-fix-same {
+  margin-left: auto;
+}
+
+.preview-fix-same .shiny-input-container {
+  width: auto;
+  margin: 0;
+}
+
+.preview-fix-same label {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+/* Vocabulary column: one card per value. An applied value shrinks to one
+   line in its place (as the compact Mapping rows, ADR-137), so the order
+   stays and the open values get the room. */
+.preview-vocab-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: var(--pf-col-height);
+  overflow-y: auto;
+}
+
+.preview-vocab-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  box-shadow: none;
+  font-size: var(--text-sm);
+}
+
+.preview-vocab-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.preview-vocab-n {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.preview-vocab-item.is-done {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: var(--space-1) var(--space-3);
+  border-color: var(--border-light);
+  background: var(--bg-subtle);
+}
+
+.preview-vocab-item.is-done > .pf-mono {
+  color: var(--text-muted);
+}
+
+.preview-vocab-item.is-done > i {
+  color: var(--text-muted);
+}
+
+.preview-vocab-item.is-done .preview-fix-undo {
+  margin-left: auto;
+}
+
+.preview-vocab-select.form-select {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0.15rem 1.8rem 0.15rem 0.55rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.pf-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.pf-muted {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.pf-bad {
+  padding: 0.1rem 0.45rem;
+  border: 1px dashed var(--state-missing-border);
+  border-radius: var(--radius-sm);
+  background: var(--state-missing-bg);
+  font-family: var(--font-mono);
+}
+
+.pf-done {
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--state-mapped-border);
+  border-radius: var(--radius-sm);
+  background: var(--badge-auto-bg);
+  color: var(--badge-auto-fg);
+  font-family: var(--font-mono);
+}
+
+.pf-ghost {
+  padding: 0.1rem 0.45rem;
+  border: 1px dashed var(--state-mapped-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.pf-tag {
+  padding: 0 0.35rem;
+  border-radius: var(--radius-sm);
+  background: var(--badge-auto-bg);
+  color: var(--badge-auto-fg);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+}
+
+/* The id the export writes when the person leaves a repeated id as it is
+   (ADR-152). */
+.pf-auto {
+  display: inline-block;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  padding: 0.1rem 0.45rem;
+  border: 1px dashed var(--coord-swapped);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.pf-tag-auto {
+  background: var(--badge-template-bg);
+  color: var(--badge-template-fg);
+}
+
+.preview-fix-note {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  background: var(--badge-template-bg);
+  box-shadow: none;
+  color: var(--badge-template-fg);
+  font-size: var(--text-sm);
+}
+
+.preview-fix-note p {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.pf-empty {
+  padding: 0.1rem 0.5rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+
+.pf-fix-cell {
+  cursor: text;
+}
+
+.preview-fix-undo {
+  margin-left: var(--space-1);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--step-active);
+  white-space: nowrap;
+}
+
+/* Scroller needs rows of one height, so a cell never wraps. Tighter cells
+   keep the action column inside the table next to the vocabulary column. */
+.preview-rows-table td {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+/* Scroller measures its row on empty rows before the data comes, so every
+   row takes the height of a row with a badge or a button. Without it, an
+   edit far down the list moves the scroll by many rows. */
+.preview-rows-table.dataTable > tbody > tr > td {
+  height: 1.75rem;
+  padding: var(--space-1) var(--space-2);
+}
+
+.pf-cut {
+  display: inline-block;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+/* The row whose record shows below the table. */
+.preview-rows-table.dataTable > tbody > tr.pf-focus > td:first-child {
+  box-shadow: inset 3px 0 0 var(--step-active);
+  font-weight: 700;
+}
+
+/* The record behind the focused row, as the spreadsheet holds it. */
+.preview-record {
+  height: var(--pf-record-height);
+  overflow-y: auto;
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  box-shadow: none;
+}
+
+.preview-record.is-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-family: var(--font-serif);
+  font-size: var(--text-sm);
+}
+
+.preview-record-title {
+  margin-bottom: var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.preview-record-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 12rem) minmax(10rem, 1fr));
+  gap: var(--space-1) var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.preview-record-key {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.preview-record-value {
+  overflow-wrap: anywhere;
+}
+
+.preview-record-value.is-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Common name and higher taxa, for a person who does not know the species. */
+.preview-taxon-clues {
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.preview-taxon-hint {
+  margin-bottom: var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}

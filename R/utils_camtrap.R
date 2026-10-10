@@ -9,8 +9,6 @@
 #                                + optional media), no descriptor; we synthesize one
 #   - "wildlife_insights_zip"  : Wildlife Insights export; columns are renamed
 #                                to Camtrap DP shape, then synthesized descriptor
-#
-# `camtrapdp` is a Suggests dependency; all entry points check at runtime.
 
 # --- Source detection ---------------------------------------------------
 
@@ -48,13 +46,24 @@ is_camtrap_dp_zip <- function(path) {
     !is.na(detect_camtrap_source(path))
 }
 
-# --- Optional package guard ---------------------------------------------
+# --- Errors -------------------------------------------------------------
 
-require_camtrapdp <- function(lang = "en") {
-    if (!requireNamespace("camtrapdp", quietly = TRUE)) {
-        stop(tr("err_camtrap_pkg_missing", lang), call. = FALSE)
-    }
-    invisible(TRUE)
+# Saira's own Camtrap errors carry a complete user message. Their class lets
+# the upload show them as they are.
+camtrap_stop <- function(key, lang) {
+    stop(structure(
+        class = c("saira_camtrap_error", "error", "condition"),
+        list(message = tr(key, lang), call = NULL)
+    ))
+}
+
+# Text for the upload error notification. Other errors come from camtrapdp or
+# frictionless, and purrr wraps them as "In index: 1.", so show the root cause
+# after the generic read failure.
+camtrap_error_message <- function(e, lang = "en") {
+    if (inherits(e, "saira_camtrap_error")) return(conditionMessage(e))
+    while (inherits(e$parent, "condition")) e <- e$parent
+    paste(tr("err_read_failed", lang), conditionMessage(e))
 }
 
 # --- Wildlife Insights → Camtrap DP normalizer --------------------------
@@ -63,6 +72,7 @@ WI_REQUIRED_DEP_COLS <- c(
     "deployment_id", "latitude", "longitude", "start_date", "end_date"
 )
 WI_REQUIRED_IMG_COLS <- c("deployment_id", "image_id", "timestamp")
+WI_REQUIRED_SEQ_COLS <- c("deployment_id", "sequence_id", "start_time", "end_time")
 
 wi_read_csv <- function(path) {
     utils::read.csv(
@@ -90,6 +100,42 @@ wi_parse_timestamp <- function(x) {
         out[idx[ok]] <- format(parsed[ok], "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
     }
     out
+}
+
+# WI exports end_date as a calendar date (Data Dictionary: YYYY-MM-DD), padded
+# with 00:00:00. Read as midnight, it drops the whole last day of the
+# deployment, so images from that day fall after deploymentEnd.
+wi_end_of_day <- function(x) {
+    sub("^(\\d{4}-\\d{2}-\\d{2})( 00:00(:00)?)?$", "\\1 23:59:59", as.character(x))
+}
+
+# Camtrap DP 1.0.2 enums. frictionless reads an enum field as a factor, so a
+# value outside the list becomes NA with a parsing warning.
+CAMTRAP_FEATURE_TYPES <- c(
+    "roadPaved", "roadDirt", "trailHiking", "trailGame", "roadUnderpass",
+    "roadOverpass", "roadBridge", "culvert", "burrow", "nestSite", "carcass",
+    "waterSource", "fruitingTree"
+)
+
+# Keeps the values in `allowed`. WI "Unknown" and "Mixed" have no match.
+wi_enum <- function(x, allowed) {
+    x <- as.character(x)
+    x[!x %in% allowed] <- NA_character_
+    x
+}
+
+# WI feature types are spaced words ("Road paved", "Trail game"). The Camtrap
+# DP enum holds the same values in camelCase. "None" and "Other" have no match.
+wi_feature_type <- function(x) {
+    words <- strsplit(tolower(as.character(x)), "[^a-z]+")
+    camel <- vapply(words, function(w) {
+        w <- w[!is.na(w) & nzchar(w)]
+        if (length(w) == 0L) return(NA_character_)
+        rest <- w[-1]
+        paste0(w[1], paste0(toupper(substring(rest, 1, 1)), substring(rest, 2),
+                            collapse = ""))
+    }, character(1))
+    wi_enum(camel, CAMTRAP_FEATURE_TYPES)
 }
 
 wi_derive_observation_type <- function(is_blank, class, order, family,
@@ -138,6 +184,12 @@ wi_build_scientific_name <- function(genus, species, family, order, class) {
 # Reads WI CSVs from `input_dir`, writes deployments/media/observations CSVs
 # in Camtrap DP shape under `<input_dir>/_camtrap_normalized`, returns the
 # normalized directory.
+#
+# WI projects identify either each image or each sequence (a burst of images
+# less than 60 s apart), per projects.csv `project_type`. A sequence project
+# keeps the identifications in sequences.csv, and its images.csv has no
+# is_blank, identified_by or count. Each sequences.csv row becomes one
+# event-level observation, with the images of the sequence as its media.
 wi_to_camtrap_csv <- function(input_dir, lang = "en") {
     dep_paths <- list.files(input_dir, pattern = "^deployments\\.csv$",
                             recursive = TRUE, full.names = TRUE,
@@ -150,7 +202,7 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
                             ignore.case = TRUE)
 
     if (length(dep_paths) == 0L || length(img_paths) == 0L) {
-        stop(tr("err_camtrap_wi_columns_missing", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_wi_columns_missing", lang)
     }
     wi_dep <- wi_read_csv(dep_paths[1])
     wi_img <- wi_read_csv(img_paths[1])
@@ -159,7 +211,28 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
     missing_dep <- setdiff(WI_REQUIRED_DEP_COLS, names(wi_dep))
     missing_img <- setdiff(WI_REQUIRED_IMG_COLS, names(wi_img))
     if (length(missing_dep) > 0L || length(missing_img) > 0L) {
-        stop(tr("err_camtrap_wi_columns_missing", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_wi_columns_missing", lang)
+    }
+
+    proj_paths <- list.files(input_dir, pattern = "^projects\\.csv$",
+                             recursive = TRUE, full.names = TRUE,
+                             ignore.case = TRUE)
+    # WI writes projects.csv without a final newline, and read.csv() warns on
+    # that. The file is small, so read its lines first.
+    wi_proj <- if (length(proj_paths) > 0L) {
+        utils::read.csv(text = readLines(proj_paths[1], warn = FALSE),
+                        stringsAsFactors = FALSE, check.names = FALSE)
+    } else NULL
+    is_sequence <- "project_type" %in% names(wi_proj) &&
+        any(tolower(wi_proj$project_type) == "sequence", na.rm = TRUE)
+    if (is_sequence) {
+        seq_paths <- list.files(input_dir, pattern = "^sequences.*\\.csv$",
+                                recursive = TRUE, full.names = TRUE,
+                                ignore.case = TRUE)
+        wi_seq <- if (length(seq_paths) > 0L) wi_read_csv(seq_paths[1]) else NULL
+        if (is.null(wi_seq) || !all(WI_REQUIRED_SEQ_COLS %in% names(wi_seq))) {
+            camtrap_stop("err_camtrap_wi_sequences_missing", lang)
+        }
     }
 
     out_dir <- file.path(input_dir, "_camtrap_normalized")
@@ -189,7 +262,7 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
         longitude = suppressWarnings(as.numeric(wi_dep$longitude)),
         coordinateUncertainty = rep(NA_real_, n_dep),
         deploymentStart = wi_parse_timestamp(wi_dep$start_date),
-        deploymentEnd = wi_parse_timestamp(wi_dep$end_date),
+        deploymentEnd = wi_parse_timestamp(wi_end_of_day(wi_dep$end_date)),
         setupBy = pick(wi_dep, "recorded_by", NA_character_),
         cameraID = as.character(pick(wi_dep, "camera_id", NA)),
         cameraModel = unname(cam_lookup[as.character(pick(wi_dep, "camera_id", NA))]),
@@ -201,7 +274,7 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
         detectionDistance = rep(NA_real_, n_dep),
         timestampIssues = rep(FALSE, n_dep),
         baitUse = rep(NA_character_, n_dep),
-        featureType = pick(wi_dep, "feature_type", NA_character_),
+        featureType = wi_feature_type(pick(wi_dep, "feature_type", NA_character_)),
         # WI has no habitat field; feature_type is a placement feature, not a
         # habitat description. Leaving habitat empty avoids polluting dwc:habitat.
         habitat = rep(NA_character_, n_dep),
@@ -246,75 +319,92 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
                      row.names = FALSE, na = "", fileEncoding = "UTF-8")
 
     # observations.csv ---------------------------------------------------
-    n_img <- nrow(wi_img)
+    # An image project has one event per image, and its observations point at
+    # that image. A sequence project has one event per sequence, and
+    # event-level observations have no mediaID.
+    if (is_sequence) {
+        src <- wi_seq
+        event_chr <- as.character(src$sequence_id)
+        media_chr <- rep(NA_character_, nrow(src))
+        event_start <- wi_parse_timestamp(src$start_time)
+        event_end <- wi_parse_timestamp(src$end_time)
+        level <- "event"
+        count_col <- "group_size"
+    } else {
+        src <- wi_img
+        event_chr <- as.character(src$image_id)
+        media_chr <- event_chr
+        event_start <- wi_parse_timestamp(src$timestamp)
+        event_end <- event_start
+        level <- "media"
+        count_col <- "number_of_objects"
+    }
+    n_obs <- nrow(src)
     obs_type <- wi_derive_observation_type(
-        is_blank = pick(wi_img, "is_blank"),
-        class = pick(wi_img, "class"),
-        order = pick(wi_img, "order"),
-        family = pick(wi_img, "family"),
-        genus = pick(wi_img, "genus"),
-        species = pick(wi_img, "species"),
-        common_name = pick(wi_img, "common_name")
+        is_blank = pick(src, "is_blank"),
+        class = pick(src, "class"),
+        order = pick(src, "order"),
+        family = pick(src, "family"),
+        genus = pick(src, "genus"),
+        species = pick(src, "species"),
+        common_name = pick(src, "common_name")
     )
     sci_name <- wi_build_scientific_name(
-        genus = pick(wi_img, "genus"),
-        species = pick(wi_img, "species"),
-        family = pick(wi_img, "family"),
-        order = pick(wi_img, "order"),
-        class = pick(wi_img, "class")
+        genus = pick(src, "genus"),
+        species = pick(src, "species"),
+        family = pick(src, "family"),
+        order = pick(src, "order"),
+        class = pick(src, "class")
     )
-    cv_conf <- suppressWarnings(as.numeric(pick(wi_img, "cv_confidence")))
+    cv_conf <- suppressWarnings(as.numeric(pick(src, "cv_confidence")))
     if (any(!is.na(cv_conf)) && max(cv_conf, na.rm = TRUE) > 1) {
         cv_conf <- cv_conf / 100
     }
     method <- ifelse(
-        !is.na(pick(wi_img, "identified_by")) &
-            pick(wi_img, "identified_by") == "Computer Vision",
+        !is.na(pick(src, "identified_by")) &
+            pick(src, "identified_by") == "Computer Vision",
         "machine", "human"
     )
-    ts_iso <- wi_parse_timestamp(wi_img$timestamp)
-    # observationID precisa ser único por linha. Para imagens com múltiplas
-    # identificações WI, sufixamos seq dentro do mesmo image_id: img-1, img-2.
-    image_id_chr <- as.character(wi_img$image_id)
-    within_image_seq <- stats::ave(seq_along(image_id_chr), image_id_chr, FUN = seq_along)
-    observation_id <- paste0(image_id_chr, "-obs-", within_image_seq)
+    # WI can give one image or sequence several identifications, and
+    # observationID must be unique: suffix a counter within the event.
+    within_event_seq <- stats::ave(seq_along(event_chr), event_chr, FUN = seq_along)
+    observation_id <- paste0(event_chr, "-obs-", within_event_seq)
     obs <- data.frame(
         observationID = observation_id,
-        deploymentID = as.character(wi_img$deployment_id),
-        mediaID = image_id_chr,
-        # eventID = image_id (cada imagem é um evento de detecção). Linhas com
-        # múltiplas identificações na mesma imagem compartilham eventID.
-        eventID = image_id_chr,
-        eventStart = ts_iso,
-        eventEnd = ts_iso,
-        observationLevel = rep("media", n_img),
+        deploymentID = as.character(src$deployment_id),
+        mediaID = media_chr,
+        eventID = event_chr,
+        eventStart = event_start,
+        eventEnd = event_end,
+        observationLevel = rep(level, n_obs),
         observationType = obs_type,
-        cameraSetupType = rep(NA_character_, n_img),
+        cameraSetupType = rep(NA_character_, n_obs),
         scientificName = sci_name,
         # Camtrap DP `count` has a minimum of 1; default missing values to 1
         # rather than emitting an empty individualCount for animal records.
         count = {
-            n_obj <- suppressWarnings(as.integer(pick(wi_img, "number_of_objects", 1L)))
+            n_obj <- suppressWarnings(as.integer(pick(src, count_col, 1L)))
             n_obj[is.na(n_obj)] <- 1L
             n_obj
         },
-        lifeStage = tolower(as.character(pick(wi_img, "age", NA))),
-        sex = tolower(as.character(pick(wi_img, "sex", NA))),
-        behavior = pick(wi_img, "behavior", NA_character_),
-        individualID = pick(wi_img, "individual_id", NA_character_),
-        individualPositionRadius = rep(NA_real_, n_img),
-        individualPositionAngle = rep(NA_real_, n_img),
-        individualSpeed = rep(NA_real_, n_img),
-        bboxX = rep(NA_real_, n_img),
-        bboxY = rep(NA_real_, n_img),
-        bboxWidth = rep(NA_real_, n_img),
-        bboxHeight = rep(NA_real_, n_img),
+        lifeStage = wi_enum(tolower(pick(src, "age", NA)),
+                            c("adult", "subadult", "juvenile")),
+        sex = wi_enum(tolower(pick(src, "sex", NA)), c("female", "male")),
+        behavior = pick(src, "behavior", NA_character_),
+        individualID = pick(src, "individual_id", NA_character_),
+        individualPositionRadius = rep(NA_real_, n_obs),
+        individualPositionAngle = rep(NA_real_, n_obs),
+        individualSpeed = rep(NA_real_, n_obs),
+        bboxX = rep(NA_real_, n_obs),
+        bboxY = rep(NA_real_, n_obs),
+        bboxWidth = rep(NA_real_, n_obs),
+        bboxHeight = rep(NA_real_, n_obs),
         classificationMethod = method,
-        classifiedBy = pick(wi_img, "identified_by", NA_character_),
-        classificationTimestamp = rep(NA_character_, n_img),
+        classifiedBy = pick(src, "identified_by", NA_character_),
+        classificationTimestamp = rep(NA_character_, n_obs),
         classificationProbability = cv_conf,
-        observationTags = rep(NA_character_, n_img),
-        observationComments = pick(wi_img, "individual_animal_notes", NA_character_),
+        observationTags = rep(NA_character_, n_obs),
+        observationComments = pick(src, "individual_animal_notes", NA_character_),
         stringsAsFactors = FALSE
     )
     utils::write.csv(obs, file.path(out_dir, "observations.csv"),
@@ -355,14 +445,14 @@ synthesize_camtrap_descriptor <- function(dir, lang = "en") {
     })
     resources <- Filter(Negate(is.null), resources)
     if (length(resources) == 0L) {
-        stop(tr("err_camtrap_invalid_zip", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_invalid_zip", lang)
     }
+    # No `id` or `title`: write_dwc() copies them to dwc:datasetID and
+    # dwc:datasetName, and a made-up value would reach the export.
     descriptor <- list(
         profile = "https://raw.githubusercontent.com/tdwg/camtrap-dp/1.0.2/camtrap-dp-profile.json",
         name = paste0("saira-ingest-",
                       format(Sys.time(), "%Y%m%d%H%M%S", tz = "UTC")),
-        id = paste0("urn:uuid:", ids::random_id(bytes = 16)),
-        title = "Saira-generated Camtrap DP descriptor",
         created = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
         version = "1.0",
         resources = resources
@@ -372,6 +462,41 @@ synthesize_camtrap_descriptor <- function(dir, lang = "en") {
                          auto_unbox = TRUE, pretty = TRUE)
     invisible(out_path)
 }
+
+# frictionless downloads each table schema URL at read time: without internet
+# the upload fails, and with it the download takes about a third of the read.
+# Point each official schema URL at the copy in inst/extdata of the same
+# version, so the parse rules do not change. Other URLs stay as they are.
+localize_camtrap_schemas <- function(descriptor_path) {
+    txt <- paste(readLines(descriptor_path, warn = FALSE, encoding = "UTF-8"),
+                 collapse = "\n")
+    for (version in c("1.0", "1.0.1", "1.0.2")) {
+        for (resource in c("deployments", "media", "observations")) {
+            schema <- paste0(resource, "-table-schema.json")
+            url <- paste0('"https://raw.githubusercontent.com/tdwg/camtrap-dp/',
+                          version, "/", schema, '"')
+            if (!grepl(url, txt, fixed = TRUE)) next
+            local_name <- paste0("saira-camtrap-dp-", version, "-", schema)
+            file.copy(
+                system.file("extdata", "camtrap-dp", version, schema,
+                            package = "saira"),
+                file.path(dirname(descriptor_path), local_name),
+                overwrite = TRUE
+            )
+            txt <- gsub(url, paste0('"', local_name, '"'), txt, fixed = TRUE)
+        }
+    }
+    writeLines(txt, descriptor_path, useBytes = TRUE)
+    invisible(descriptor_path)
+}
+
+# read_camtrapdp() requires a media resource, but loose Camtrap DP CSVs can
+# come without media.csv. A header-only file satisfies the reader.
+CAMTRAP_MEDIA_COLS <- c(
+    "mediaID", "deploymentID", "captureMethod", "timestamp", "filePath",
+    "filePublic", "fileName", "fileMediatype", "exifData", "favorite",
+    "mediaComments"
+)
 
 # --- Root discovery after unzip -----------------------------------------
 
@@ -390,14 +515,16 @@ find_csv_root <- function(dest, signature_predicate) {
 # --- Read + dispatch ----------------------------------------------------
 
 read_camtrap_dp_zip <- function(path, lang = "en") {
-    require_camtrapdp(lang)
     source <- detect_camtrap_source(path)
     if (is.na(source)) {
-        stop(tr("err_camtrap_invalid_zip", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_invalid_zip", lang)
     }
 
+    # read_camtrapdp() reads every table into memory, so the unzipped files
+    # are not needed after it returns.
     dest <- tempfile("camtrapdp_")
     dir.create(dest)
+    on.exit(unlink(dest, recursive = TRUE), add = TRUE)
     utils::unzip(path, exdir = dest)
 
     if (source == "datapackage_zip") {
@@ -406,8 +533,9 @@ read_camtrap_dp_zip <- function(path, lang = "en") {
             recursive = TRUE, full.names = TRUE
         )
         if (length(descriptor) == 0L) {
-            stop(tr("err_camtrap_invalid_zip", lang), call. = FALSE)
+            camtrap_stop("err_camtrap_invalid_zip", lang)
         }
+        localize_camtrap_schemas(descriptor[1])
         pkg <- camtrapdp::read_camtrapdp(descriptor[1])
         attr(pkg, "saira_camtrap_source") <- source
         return(pkg)
@@ -419,15 +547,19 @@ read_camtrap_dp_zip <- function(path, lang = "en") {
                 any(grepl("^images.*\\.csv$", siblings))
         })
         if (is.na(wi_root)) {
-            stop(tr("err_camtrap_wi_columns_missing", lang), call. = FALSE)
+            camtrap_stop("err_camtrap_wi_columns_missing", lang)
         }
         norm_dir <- wi_to_camtrap_csv(wi_root, lang = lang)
-        synthesize_camtrap_descriptor(norm_dir, lang = lang)
-        pkg <- camtrapdp::read_camtrapdp(file.path(norm_dir, "datapackage.json"))
-        # camtrapdp::write_dwc() filtra observationLevel == gbifIngestion$observationLevel
-        # (default "event"). Como WI sintetiza só linhas media-level, declaramos o nível
-        # explicitamente para que write_dwc() exporte essas linhas como ocorrências.
-        pkg$gbifIngestion$observationLevel <- "media"
+        descriptor <- synthesize_camtrap_descriptor(norm_dir, lang = lang)
+        localize_camtrap_schemas(descriptor)
+        pkg <- camtrapdp::read_camtrapdp(descriptor)
+        # write_dwc() exports only the observations at
+        # gbifIngestion$observationLevel, "event" by default. An image project
+        # has only media-level observations, so declare that level.
+        levels <- unique(as.character(camtrapdp::observations(pkg)$observationLevel))
+        if (identical(levels, "media")) {
+            pkg$gbifIngestion$observationLevel <- "media"
+        }
         attr(pkg, "saira_camtrap_source") <- source
         return(pkg)
     }
@@ -437,10 +569,20 @@ read_camtrap_dp_zip <- function(path, lang = "en") {
         "observations.csv" %in% siblings
     })
     if (is.na(csv_root)) {
-        stop(tr("err_camtrap_invalid_zip", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_invalid_zip", lang)
     }
-    synthesize_camtrap_descriptor(csv_root, lang = lang)
-    pkg <- camtrapdp::read_camtrapdp(file.path(csv_root, "datapackage.json"))
+    if (!"media.csv" %in% tolower(list.files(csv_root))) {
+        utils::write.csv(
+            stats::setNames(
+                as.data.frame(matrix(character(0), ncol = length(CAMTRAP_MEDIA_COLS))),
+                CAMTRAP_MEDIA_COLS
+            ),
+            file.path(csv_root, "media.csv"), row.names = FALSE
+        )
+    }
+    descriptor <- synthesize_camtrap_descriptor(csv_root, lang = lang)
+    localize_camtrap_schemas(descriptor)
+    pkg <- camtrapdp::read_camtrapdp(descriptor)
     attr(pkg, "saira_camtrap_source") <- source
     pkg
 }
@@ -461,9 +603,9 @@ strip_fabricated_utc <- function(x) {
 }
 
 convert_camtrap_to_dwc_occurrence <- function(x, lang = "en") {
-    require_camtrapdp(lang)
     out_dir <- tempfile("camtrap_dwc_")
     dir.create(out_dir)
+    on.exit(unlink(out_dir, recursive = TRUE), add = TRUE)
     result <- camtrapdp::write_dwc(x, directory = out_dir)
     occ <- if (!is.null(result[["occurrence"]])) {
         result[["occurrence"]]
@@ -473,10 +615,10 @@ convert_camtrap_to_dwc_occurrence <- function(x, lang = "en") {
         NULL
     }
     if (!is.data.frame(occ) || !"scientificName" %in% names(occ)) {
-        stop(tr("err_camtrap_invalid_zip", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_invalid_zip", lang)
     }
     if (nrow(occ) == 0L) {
-        stop(tr("err_camtrap_empty_occurrence", lang), call. = FALSE)
+        camtrap_stop("err_camtrap_empty_occurrence", lang)
     }
     df <- as.data.frame(occ, stringsAsFactors = FALSE)
     # camtrapdp::write_dwc() emits a fixed Occurrence schema; terms the source
@@ -493,7 +635,8 @@ convert_camtrap_to_dwc_occurrence <- function(x, lang = "en") {
     df <- df[, has_data, drop = FALSE]
     src <- attr(x, "saira_camtrap_source")
     if (identical(src, "wildlife_insights_zip")) {
-        for (col in intersect(c("eventDate", "dateIdentified"), names(df))) {
+        for (col in intersect(c("eventDate", "dateIdentified", "samplingEffort"),
+                             names(df))) {
             df[[col]] <- strip_fabricated_utc(df[[col]])
         }
     }

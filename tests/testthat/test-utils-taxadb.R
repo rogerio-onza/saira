@@ -6,7 +6,6 @@
 normalize_scientific_name   <- function(...) saira:::normalize_scientific_name(...)
 prepare_taxadb_inputs       <- function(...) saira:::prepare_taxadb_inputs(...)
 resolve_taxadb_matches      <- function(...) saira:::resolve_taxadb_matches(...)
-run_taxadb_cascade          <- function(...) saira:::run_taxadb_cascade(...)
 build_validation_report     <- function(...) saira:::build_validation_report(...)
 init_taxadb_run_state       <- function(...) saira:::init_taxadb_run_state(...)
 next_taxadb_run_step        <- function(...) saira:::next_taxadb_run_step(...)
@@ -90,89 +89,6 @@ testthat::test_that("resolve_taxadb_matches detects ambiguity and acceptance", {
 
     testthat::expect_identical(resolved$validation_status[[1]], "ambiguous")
     testthat::expect_identical(resolved$validation_status[[2]], "accepted")
-})
-
-testthat::test_that("run_taxadb_cascade respects provider priority", {
-    calls <- list()
-
-    fake_fetch <- function(query_names, provider) {
-        calls[[length(calls) + 1L]] <<- list(provider = provider, names = query_names)
-        if (identical(provider, "gbif")) {
-            return(data.frame(
-                query_name = "puma concolor",
-                scientificName = "Puma concolor",
-                taxonomicStatus = "accepted",
-                provider = provider,
-                stringsAsFactors = FALSE
-            ))
-        }
-        if (identical(provider, "itis")) {
-            return(data.frame(
-                query_name = "abies alba",
-                scientificName = "Abies alba",
-                taxonomicStatus = "accepted",
-                provider = provider,
-                stringsAsFactors = FALSE
-            ))
-        }
-        data.frame()
-    }
-
-    out <- run_taxadb_cascade(
-        query_names = c("puma concolor", "abies alba"),
-        providers = c("gbif", "itis"),
-        fetch_fun = fake_fetch
-    )
-
-    testthat::expect_true(any(out$query_name == "puma concolor"))
-    testthat::expect_true(any(out$query_name == "abies alba"))
-    testthat::expect_identical(calls[[1]]$provider, "gbif")
-    testthat::expect_identical(calls[[2]]$provider, "itis")
-})
-
-testthat::test_that("run_taxadb_cascade skips failed providers and keeps metadata", {
-    calls <- character(0)
-
-    fake_fetch <- function(query_names, provider) {
-        calls <<- c(calls, provider)
-
-        if (identical(provider, "gbif")) {
-            return(data.frame())
-        }
-
-        if (identical(provider, "itis")) {
-            stop("provider unavailable")
-        }
-
-        if (identical(provider, "col")) {
-            return(data.frame(
-                query_name = "abies alba",
-                scientificName = "Abies alba",
-                taxonomicStatus = "accepted",
-                provider = provider,
-                stringsAsFactors = FALSE
-            ))
-        }
-
-        data.frame()
-    }
-
-    out <- run_taxadb_cascade(
-        query_names = c("abies alba"),
-        providers = c("gbif", "itis", "col"),
-        fetch_fun = fake_fetch
-    )
-
-    failures <- attr(out, "provider_failures")
-    attempted <- attr(out, "provider_attempted")
-
-    testthat::expect_identical(calls, c("gbif", "itis", "col"))
-    testthat::expect_true(any(out$query_name == "abies alba"))
-    testthat::expect_identical(out$provider[[1]], "col")
-    testthat::expect_true(is.data.frame(failures))
-    testthat::expect_identical(nrow(failures), 1L)
-    testthat::expect_identical(failures$provider[[1]], "itis")
-    testthat::expect_identical(attempted, c("gbif", "itis", "col"))
 })
 
 testthat::test_that("build_validation_report preserves order and flags ignored", {
@@ -513,6 +429,37 @@ testthat::test_that("next_taxadb_run_step: only BR accepted names leave pending_
             testthat::expect_identical(stream_status[["synonymus br"]], "synonym")
             testthat::expect_identical(stream_status[["ambiguous br"]], "ambiguous")
             testthat::expect_identical(stream_status[["unknownus br"]], "not_found")
+        }
+    )
+})
+
+testthat::test_that("next_taxadb_run_step: BR providers query in small batches, GBIF in large ones", {
+    input_df <- data.frame(
+        row_id      = 1:12,
+        input_name  = paste("Name", 1:12),
+        query_name  = paste("name", 1:12),
+        skip_reason = NA_character_,
+        stringsAsFactors = FALSE
+    )
+
+    testthat::with_mocked_bindings(
+        brprovider_ensure_data = function(provider_id, verbose = FALSE, ...) {
+            list(ok = TRUE, available = TRUE, provider_id = provider_id)
+        },
+        brprovider_load_data = function(provider_id, force_reload = FALSE) {
+            data.frame(provider = provider_id, stringsAsFactors = FALSE)
+        },
+        .package = "saira",
+        {
+            state <- init_taxadb_run_state(input_df, providers = c("florabr"), batch_size = 200L, br_batch_size = 5L)
+            state <- next_taxadb_run_step(state) # prepare -> provider_init
+            state <- next_taxadb_run_step(state) # init/load BR provider
+            testthat::expect_identical(state$provider_batch_total, 3L)
+            testthat::expect_identical(lengths(state$current_batches, use.names = FALSE), c(5L, 5L, 2L))
+            testthat::expect_identical(
+                saira:::split_query_batches(state$pending_queries, batch_size = state$batch_size) |> length(),
+                1L
+            )
         }
     )
 })

@@ -36,7 +36,7 @@ testthat::test_that("get_dwc_terms_list supports pt and falls back to english fo
     terms <- get_dwc_terms()
     en_list <- get_dwc_terms_list("en")
     pt_list <- get_dwc_terms_list("pt")
-    unknown_lang_list <- get_dwc_terms_list("es")
+    unknown_lang_list <- get_dwc_terms_list("xx")
 
     testthat::expect_identical(sort(names(en_list)), sort(as.character(terms$term)))
     testthat::expect_identical(sort(names(pt_list)), sort(as.character(terms$term)))
@@ -225,7 +225,8 @@ testthat::test_that("get_dwc_full_catalog returns superset of base terms with co
         sort(names(catalog)),
         sort(c("term", "class", "definition_en", "definition_pt",
                "examples", "required", "data_type",
-               "card_hint_pt", "card_hint_en"))
+               "card_hint_pt", "card_hint_en",
+               "definition_es", "card_hint_es"))
     )
     testthat::expect_identical(
         sum(catalog$required),
@@ -475,11 +476,44 @@ testthat::test_that("dwc_card_hints falls back when the column is absent", {
 
 testthat::test_that("required_mapping_terms is the readiness strip's term set", {
     required <- required_mapping_terms()
-    testthat::expect_length(required, 6L)
+    testthat::expect_length(required, 7L)
     testthat::expect_true(all(required %in% names(get_dwc_terms_list("en"))))
     testthat::expect_false(anyDuplicated(required) > 0L)
 })
 
+testthat::test_that("collapse_mapping_term keeps relevant, mapped and added terms as cards", {
+    relevant <- relevant_mapping_terms()
+    testthat::expect_true(all(required_mapping_terms() %in% relevant))
+    testthat::expect_true(all(relevant %in% names(get_dwc_terms_list("en"))))
+
+    testthat::expect_true(collapse_mapping_term("recordedBy", FALSE))
+    testthat::expect_false(collapse_mapping_term("recordedBy", TRUE))
+    testthat::expect_false(collapse_mapping_term("datasetName", FALSE))
+    testthat::expect_false(collapse_mapping_term("establishmentMeans", FALSE))
+    testthat::expect_false(collapse_mapping_term("country", FALSE, fixed_value_on = TRUE))
+    testthat::expect_true(collapse_mapping_term("country", FALSE, fixed_value_on = NULL))
+    testthat::expect_false(collapse_mapping_term("taxonID", FALSE, extra = "taxonID"))
+
+    testthat::expect_true(collapsible_mapping_term("recordedBy"))
+    testthat::expect_false(collapsible_mapping_term("datasetName"))
+    testthat::expect_false(collapsible_mapping_term("taxonID", extra = "taxonID"))
+})
+
 testthat::test_that("wide_card_terms only spans terms that need the extra track", {
     testthat::expect_identical(wide_card_terms(), "dynamicProperties")
+})
+
+testthat::test_that("Portuguese term definitions keep their accents", {
+    # Words that only appear without accents when a definition was typed in
+    # ASCII by mistake (occurrenceStatus shipped that way).
+    unaccented <- c(
+        "declaracao", "presenca", "ausencia", "informacao", "descricao",
+        "localizacao", "especie", "numero", "ocorrencia", "identificacao", "colecao"
+    )
+    pattern <- paste0("\\b(", paste(unaccented, collapse = "|"), ")\\b")
+    for (file in c("dwc_terms.rds", "dwc_full_catalog.rds")) {
+        terms <- readRDS(system.file("extdata", file, package = "saira"))
+        hits <- terms$term[grepl(pattern, tolower(terms$definition_pt))]
+        testthat::expect_identical(hits, character(0), info = file)
+    }
 })

@@ -48,12 +48,9 @@ testthat::test_that("mod_upload_server renders UI outputs in EN", {
         ),
         {
             session$flushReact()
-            testthat::expect_true(!is.null(output$data_title))
             testthat::expect_true(!is.null(output$dropzone_hint_text))
-            testthat::expect_true(!is.null(output$encoding_text))
-            testthat::expect_true(!is.null(output$privacy_text))
-            testthat::expect_true(!is.null(output$welcome_header))
-            testthat::expect_true(!is.null(output$welcome_description))
+            testthat::expect_true(!is.null(output$upload_notes))
+            testthat::expect_true(!is.null(output$home_header))
             # ADR-097: mode tab strip outputs
             testthat::expect_true(!is.null(output$mode_csv_title))
             testthat::expect_true(!is.null(output$mode_camtrap_title))
@@ -62,7 +59,7 @@ testthat::test_that("mod_upload_server renders UI outputs in EN", {
     )
 })
 
-testthat::test_that("mod_upload_server renders DwC chips by default (CSV mode)", {
+testthat::test_that("mod_upload_server shows the CSV notes by default", {
     shiny::testServer(
         mod_upload_server,
         args = list(
@@ -70,15 +67,15 @@ testthat::test_that("mod_upload_server renders DwC chips by default (CSV mode)",
         ),
         {
             session$flushReact()
-            html <- output$dwc_required$html
-            testthat::expect_true(grepl("dwc-inline-groups", html))
-            testthat::expect_false(grepl("upload-file-list", html))
-            testthat::expect_true(grepl("format-requirements", html))
+            html <- output$upload_notes$html
+            testthat::expect_true(grepl("between several values", html, fixed = TRUE))
+            testthat::expect_true(grepl("guide in the same field", html, fixed = TRUE))
+            testthat::expect_false(grepl("deployments.csv", html, fixed = TRUE))
         }
     )
 })
 
-testthat::test_that("mod_upload_server renders Camtrap file rows when mode is camtrap", {
+testthat::test_that("mod_upload_server shows the expected Camtrap files in camtrap mode", {
     shiny::testServer(
         mod_upload_server,
         args = list(
@@ -87,10 +84,9 @@ testthat::test_that("mod_upload_server renders Camtrap file rows when mode is ca
         {
             session$setInputs(upload_mode = "camtrap")
             session$flushReact()
-            html <- output$dwc_required$html
-            testthat::expect_true(grepl("upload-file-list", html))
-            testthat::expect_false(grepl("dwc-inline-groups", html))
-            testthat::expect_true(grepl("datapackage.json", html))
+            html <- output$upload_notes$html
+            testthat::expect_true(grepl("deployments.csv", html, fixed = TRUE))
+            testthat::expect_false(grepl("between several values", html, fixed = TRUE))
         }
     )
 })
@@ -135,9 +131,8 @@ testthat::test_that("mod_upload_server renders UI outputs in PT", {
         ),
         {
             session$flushReact()
-            testthat::expect_true(!is.null(output$data_title))
-            testthat::expect_true(!is.null(output$welcome_header))
-            testthat::expect_true(!is.null(output$dwc_required))
+            testthat::expect_true(!is.null(output$home_header))
+            testthat::expect_true(!is.null(output$upload_notes))
         }
     )
 })
@@ -268,6 +263,36 @@ testthat::test_that("mod_upload_server reads tab-delimited TSV", {
     )
 })
 
+testthat::test_that("mod_upload_server reads .txt and .xlsx data and rejects other formats", {
+    txt_path <- tempfile(fileext = ".txt")
+    xlsx_path <- tempfile(fileext = ".xlsx")
+    pdf_path <- tempfile(fileext = ".pdf")
+    on.exit(unlink(c(txt_path, xlsx_path, pdf_path)), add = TRUE)
+    writeLines(c("scientificName\tdecimalLatitude", "Panthera onca\t-10.5"), txt_path)
+    writexl::write_xlsx(data.frame(scientificName = "Panthera onca"), xlsx_path)
+    writeLines("%PDF-1.4", pdf_path)
+
+    upload <- function(path, name) {
+        list(name = name, size = file.info(path)$size, type = "", datapath = path)
+    }
+
+    shiny::testServer(
+        mod_upload_server,
+        args = list(lang_r = shiny::reactive("en")),
+        {
+            session$setInputs(file = upload(txt_path, "occurrence.txt"))
+            testthat::expect_identical(session$getReturned()()$scientificName, "Panthera onca")
+
+            session$setInputs(file = upload(xlsx_path, "planilha.xlsx"))
+            testthat::expect_identical(session$getReturned()()$scientificName, "Panthera onca")
+
+            session$setInputs(file = upload(pdf_path, "report.pdf"))
+            testthat::expect_error(session$getReturned()(), regexp = "Invalid format")
+            testthat::expect_match(output$stats$html, "alert-danger")
+        }
+    )
+})
+
 # Language switch must not re-read the upload (ADR-112) -------------------
 #
 # raw_data() used to read lang_r() directly for its notification wording, so a
@@ -342,4 +367,41 @@ testthat::test_that("mod_upload_server still re-reads when a new file is uploade
             testthat::expect_equal(nrow(session$getReturned()()), 4L)
         }
     )
+})
+
+testthat::test_that("mod_upload_ui carries the Portuguese home content before the server renders", {
+    html <- as.character(mod_upload_ui("upload"))
+    testthat::expect_true(grepl(tr("home_title", "pt"), html, fixed = TRUE))
+    testthat::expect_true(grepl(tr("home_before_title", "pt"), html, fixed = TRUE))
+    testthat::expect_true(grepl("CSV · XLSX · TXT", html, fixed = TRUE))
+})
+
+testthat::test_that("app_server opens Mapping on the first upload of the session", {
+    csv_path <- tempfile(fileext = ".csv")
+    on.exit(unlink(csv_path), add = TRUE)
+    writeLines(
+        c("scientificName,decimalLatitude,decimalLongitude",
+          "Panthera onca,-10.5,-55.2"),
+        csv_path
+    )
+    navigated <- character()
+    testthat::local_mocked_bindings(
+        nav_select = function(id, selected = NULL, session = NULL) {
+            navigated <<- c(navigated, selected)
+        },
+        .package = "bslib"
+    )
+
+    suppressWarnings(shiny::testServer(app_server, {
+        session$flushReact()
+        session$setInputs(`upload-file` = list(
+            name = "data.csv",
+            size = file.info(csv_path)$size,
+            type = "text/csv",
+            datapath = csv_path
+        ))
+        session$flushReact()
+    }))
+
+    testthat::expect_true("mapping" %in% navigated)
 })

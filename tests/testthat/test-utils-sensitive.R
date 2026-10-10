@@ -49,14 +49,7 @@ testthat::test_that("generalize_coord rejects an invalid grid", {
     testthat::expect_error(saira:::generalize_coord(1, c(0.1, 0.2)))
 })
 
-# sensitive_generalization_levels / _grid --------------------------------
-
-testthat::test_that("generalization levels follow Chapman 2020 Table 7", {
-    testthat::expect_equal(
-        saira:::sensitive_generalization_levels(),
-        c("extreme", "high", "medium", "low", "not_sensitive")
-    )
-})
+# sensitive_generalization_grid -----------------------------------------
 
 testthat::test_that("generalization grid maps each tier to the right degree", {
     testthat::expect_equal(saira:::sensitive_generalization_grid("extreme"), 1.0)
@@ -167,9 +160,11 @@ testthat::test_that("sensitive_category_for returns the MMA category or NA", {
     )
 })
 
-testthat::test_that("flag_sensitive_species matches exact and author forms", {
+on_mma_list <- function(names) !is.na(saira:::sensitive_category_for(names))
+
+testthat::test_that("MMA matching accepts exact and author forms", {
     local_sensitive_fixture(c("Panthera onca", "Hippocampus reidi"))
-    res <- saira:::flag_sensitive_species(c(
+    res <- on_mma_list(c(
         "Panthera onca",
         "Panthera onca (Linnaeus, 1758)",
         "Felis catus"
@@ -177,32 +172,32 @@ testthat::test_that("flag_sensitive_species matches exact and author forms", {
     testthat::expect_equal(res, c(TRUE, TRUE, FALSE))
 })
 
-testthat::test_that("flag_sensitive_species matching is rank-exact", {
+testthat::test_that("MMA matching is rank-exact", {
     local_sensitive_fixture("Arthrocereus melanurus subsp. magnus")
-    res <- saira:::flag_sensitive_species(c(
+    res <- on_mma_list(c(
         "Arthrocereus melanurus subsp. magnus",
         "Arthrocereus melanurus"
     ))
     testthat::expect_equal(res, c(TRUE, FALSE))
 })
 
-testthat::test_that("flag_sensitive_species handles empty, NA and blank input", {
+testthat::test_that("MMA matching handles empty, NA and blank input", {
     local_sensitive_fixture("Panthera onca")
-    testthat::expect_equal(saira:::flag_sensitive_species(character(0)), logical(0))
+    testthat::expect_equal(on_mma_list(character(0)), logical(0))
     testthat::expect_equal(
-        saira:::flag_sensitive_species(c(NA_character_, "", "  ")),
+        on_mma_list(c(NA_character_, "", "  ")),
         c(FALSE, FALSE, FALSE)
     )
 })
 
-testthat::test_that("flag_sensitive_species is all-FALSE on an empty list", {
+testthat::test_that("MMA matching finds nothing on an empty list", {
     saira:::sensitive_species_cache$set(
         saira:::sensitive_species_empty(),
         path = "test-empty"
     )
     withr::defer(saira:::sensitive_species_cache$reset())
     testthat::expect_equal(
-        saira:::flag_sensitive_species(c("Panthera onca", "Felis catus")),
+        on_mma_list(c("Panthera onca", "Felis catus")),
         c(FALSE, FALSE)
     )
 })

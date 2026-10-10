@@ -301,3 +301,25 @@ testthat::test_that("date_year_issues reads both halves of an interval and ignor
     no_cols <- saira:::date_year_issues(data.frame(x = 1:3))
     testthat::expect_identical(no_cols$count, 0L)
 })
+
+# A text read of an Excel date cell gives its serial number ("45372"), so each
+# cell is converted from its own type.
+testthat::test_that("read_biodiversity_xlsx returns text with ISO dates and plain numbers", {
+    path <- tempfile(fileext = ".xlsx")
+    on.exit(unlink(path), add = TRUE)
+    writexl::write_xlsx(data.frame(
+        especie = c("Panthera onca", NA),
+        data = as.Date(c("2024-03-22", NA)),
+        hora = as.POSIXct(c("2024-03-22 14:30:00", NA), tz = "UTC"),
+        latitude = c(-19.91491, 100000),
+        stringsAsFactors = FALSE
+    ), path)
+
+    df <- read_biodiversity_xlsx(path)
+
+    testthat::expect_true(all(vapply(df, is.character, logical(1))))
+    testthat::expect_identical(df$especie, c("Panthera onca", NA))
+    testthat::expect_identical(df$data, c("2024-03-22", NA))
+    testthat::expect_identical(df$hora, c("2024-03-22T14:30:00", NA))
+    testthat::expect_identical(df$latitude, c("-19.91491", "100000"))
+})

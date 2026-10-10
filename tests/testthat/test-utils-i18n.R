@@ -8,21 +8,12 @@ testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
 
     required_keys <- c(
         "nav_home",
-        "nav_validate",
+        "nav_validate_names",
         "mapping_dataset_placeholder",
         "mapping_separator_placeholder",
         "preview_datatable_search",
         "preview_datatable_length_menu",
         "preview_datatable_info",
-        "preview_stats_total_rows",
-        "preview_stats_with_coords",
-        "preview_stats_with_date",
-        "preview_stats_unique_ids",
-        "preview_stats_duplicates",
-        "preview_readiness_title",
-        "preview_readiness_present",
-        "preview_readiness_missing",
-        "preview_exporting",
         "preview_no_data_title",
         "preview_datatable_empty",
         "preview_datatable_zero_records",
@@ -31,44 +22,19 @@ testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
         "preview_datatable_next",
         "preview_datatable_prev",
         "validate_names_missing_scientific_name",
-        "validate_names_loading_title",
-        "validate_names_loading_status",
-        "validate_names_loading_phase_prepare",
-        "validate_names_loading_phase_provider",
-        "validate_names_loading_phase_consolidate",
-        "validate_names_loading_phase_finalize",
-        "validate_names_loading_phase_done",
-        "validate_names_loading_phase_failed",
-        "validate_names_unique_notice",
-        "validate_names_provider_used_summary",
-        "validate_names_provider_none_summary",
-        "validate_names_provider_failed_warning",
         "validate_names_providers_card_title",
         "validate_names_provider_gbif_full",
         "validate_names_provider_gbif_desc",
-        "validate_names_provider_priority_badge",
+        "validate_names_provider_always_on",
         "validate_names_provider_status_up_to_date",
         "validate_names_provider_status_updating",
         "validate_names_provider_status_update_failed",
         "validate_names_provider_status_not_downloaded",
         "validate_names_provider_notify_updated",
         "validate_names_provider_notify_update_failed",
-        "validate_names_priority_reset_notice",
         "validate_names_options_card_title",
-        "validate_names_action_card_title",
-        "validate_names_action_metric_providers",
-        "validate_names_action_metric_unique",
-        "validate_names_action_metric_options",
         "validate_names_run_cta",
-        "validate_names_ready_hint_title",
-        "validate_names_ready_hint_body",
-        "validate_names_progress_title",
-        "validate_names_progress_label",
-        "validate_names_progress_counter",
-        "validate_names_progress_meta_line1",
-        "validate_names_progress_meta_line2",
         "validate_names_progress_phase_provider_query_batch",
-        "validate_names_stream_title",
         "validate_names_stream_panel_title",
         "validate_names_stream_empty_filter",
         "validate_names_stream_filter_all",
@@ -76,19 +42,13 @@ testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
         "validate_names_stream_filter_not_found",
         "validate_names_stream_filter_ambiguous",
         "validate_names_stream_filter_synonym",
-        "validate_names_stream_filter_ignored",
-        "validate_names_stream_window_note",
-        "validate_names_provider_failed_stream_item",
         "validate_names_report_title",
         "validate_names_report_search_placeholder",
         "validate_names_report_show_n",
         "validate_names_report_empty",
         "validate_names_table_col_scientific_name",
         "validate_names_table_col_status",
-        "validate_names_table_col_provider",
         "validate_names_table_col_taxonomic_status",
-        "validate_names_table_col_query_name",
-        "validate_names_table_col_input_name",
         "validate_names_status_badge_accepted",
         "validate_names_status_badge_synonym",
         "validate_names_status_badge_not_found",
@@ -130,9 +90,6 @@ testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
         "validate_names_datatable_next",
         "validate_names_datatable_prev",
         "validate_names_cancelled_notice",
-        "validate_names_all_valid",
-        "validate_coords_missing_columns",
-        "validate_coords_all_valid",
         "validate_coords_datatable_search",
         "validate_coords_datatable_length_menu",
         "validate_coords_datatable_info",
@@ -164,46 +121,37 @@ testthat::test_that("onda 2 i18n keys exist with pt/en translations", {
         "wiki_show_label",
         "wiki_records_label",
         "a11y_wiki_page_length_label",
-        "help_header_eyebrow",
-        "help_header_title_prefix",
-        "help_header_title_highlight",
-        "help_header_subtitle",
-        "help_resources_title",
+        "help_made_by",
+        "help_author_role",
+        "help_author_version_label",
+        "help_license_label",
+        "help_cite_title",
+        "help_cite_copy",
+        "help_cite_copied",
+        "help_start_here",
         "help_tutorials_title",
         "help_tutorials_body",
         "help_tutorials_link",
-        "help_links_issues",
-        "help_refs_title",
-        "help_refs_subtitle",
         "help_faq",
-        "help_faq_subtitle",
-        "help_faq_toggle",
         "help_faq_view_all",
         "help_faq_q1",
         "help_faq_a1",
-        "help_faq_q6",
-        "help_faq_a6",
-        "help_author_role",
-        "help_author_contact_email",
-        "help_author_contact_repository",
-        "help_author_version_label",
+        "help_faq_q4",
+        "help_faq_a4",
         "help_bug_title",
         "help_bug_body",
         "help_bug_button",
-        "help_links_title",
-        "help_links_dwc",
-        "help_links_sibbr",
-        "help_links_gbif",
-        "help_links_ala",
         "help_stack_title",
-        "help_stack_subtitle",
+        "help_stack_body",
+        "help_stack_full_list",
+        "help_data_title",
+        "help_data_bundled",
+        "help_refs_title",
         "bor_assistant_button",
         "bor_assistant_title",
         "bor_assistant_skip_option",
         "bor_assistant_progress",
-        "bor_assistant_preview_title",
-        "bor_vocab_humanobservation",
-        "bor_desc_humanobservation"
+        "bor_assistant_preview_title"
     )
 
     missing_keys <- setdiff(required_keys, names(dict))
@@ -230,20 +178,11 @@ testthat::test_that("tr resolves onda 2 keys in pt and en", {
 
     keys <- c(
         "nav_home",
-        "nav_validate",
+        "nav_validate_names",
         "mapping_dataset_placeholder",
         "preview_datatable_length_menu",
-        "preview_stats_total_rows",
-        "preview_readiness_title",
-        "preview_exporting",
         "preview_datatable_empty",
         "preview_datatable_next",
-        "validate_names_loading_title",
-        "validate_names_loading_status",
-        "validate_names_unique_notice",
-        "validate_names_progress_title",
-        "validate_names_progress_label",
-        "validate_names_stream_title",
         "validate_names_stream_panel_title",
         "validate_names_stream_filter_problems",
         "validate_names_status_badge_not_found",
@@ -253,13 +192,10 @@ testthat::test_that("tr resolves onda 2 keys in pt and en", {
         "validate_names_review_save_correction",
         "validate_names_datatable_length_menu",
         "validate_names_cancelled_notice",
-        "validate_names_provider_used_summary",
-        "validate_names_all_valid",
         "validate_names_report_title",
         "validate_names_report_search_placeholder",
         "validate_names_report_show_n",
         "validate_names_report_empty",
-        "validate_coords_all_valid",
         "validate_coords_datatable_length_menu",
         "wiki_class_all",
         "wiki_datatable_length_menu",
@@ -270,12 +206,12 @@ testthat::test_that("tr resolves onda 2 keys in pt and en", {
         "wiki_stats_required_label",
         "wiki_show_label",
         "wiki_records_label",
-        "help_header_eyebrow",
+        "help_made_by",
         "help_tutorials_title",
         "help_refs_title",
-        "help_faq_toggle",
+        "help_cite_title",
         "help_bug_title",
-        "help_links_title",
+        "help_data_title",
         "help_stack_title",
         "bor_assistant_title",
         "bor_assistant_progress",
@@ -298,9 +234,7 @@ testthat::test_that("pt-en alternation yields distinct navigation labels", {
     tr_fn <- saira:::tr
 
     testthat::expect_false(identical(tr_fn("nav_home", "pt"), tr_fn("nav_home", "en")))
-    testthat::expect_false(identical(tr_fn("nav_validate", "pt"), tr_fn("nav_validate", "en")))
-    testthat::expect_false(identical(tr_fn("validate_names_all_valid", "pt"), tr_fn("validate_names_all_valid", "en")))
-    testthat::expect_false(identical(tr_fn("validate_coords_all_valid", "pt"), tr_fn("validate_coords_all_valid", "en")))
+    testthat::expect_false(identical(tr_fn("nav_validate_names", "pt"), tr_fn("nav_validate_names", "en")))
 })
 
 testthat::test_that("tr returns key placeholder and warning for missing key", {
@@ -318,20 +252,21 @@ testthat::test_that("tr falls back to english and warns for missing language ent
 
     expected_en <- tr_fn("nav_home", "en")
     testthat::expect_warning(
-        out <- tr_fn("nav_home", "es"),
-        "Translation missing for nav_home in es"
+        out <- tr_fn("nav_home", "xx"),
+        "Translation missing for nav_home in xx"
     )
     testthat::expect_identical(out, expected_en)
 })
 
 testthat::test_that("get_languages returns supported language codes", {
-    testthat::expect_identical(get_languages(), c("pt", "en"))
+    testthat::expect_identical(get_languages(), c("pt", "en", "es"))
 })
 
 testthat::test_that("get_language_name resolves known and unknown language codes", {
     testthat::expect_identical(get_language_name("pt"), "Português")
     testthat::expect_identical(get_language_name("en"), "English")
-    testthat::expect_identical(get_language_name("es"), "es")
+    testthat::expect_identical(get_language_name("es"), "Español")
+    testthat::expect_identical(get_language_name("xx"), "xx")
 })
 
 testthat::test_that("format_count groups integers by locale without warning", {
@@ -339,20 +274,51 @@ testthat::test_that("format_count groups integers by locale without warning", {
     testthat::expect_no_warning(testthat::expect_identical(format_count(1234567L, "en"), "1,234,567"))
     testthat::expect_no_warning(testthat::expect_identical(format_count(999L, "pt"), "999"))
     testthat::expect_no_warning(testthat::expect_identical(format_count(999L, "en"), "999"))
+    testthat::expect_identical(format_count(1234567L, "es"), "1.234.567")
 })
 
-testthat::test_that("all dictionary keys contain non-empty pt and en translations", {
+testthat::test_that("lang_col reads the language column and falls back to English", {
+    df <- data.frame(
+        definition_en = c("one", "two", "three"),
+        definition_es = c("uno", "", NA),
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_identical(saira:::lang_col(df, "definition", "es"), c("uno", "two", "three"))
+    testthat::expect_identical(saira:::lang_col(df, "definition", "en"), c("one", "two", "three"))
+    # No definition_pt column: English for every row.
+    testthat::expect_identical(saira:::lang_col(df, "definition", "pt"), c("one", "two", "three"))
+    testthat::expect_identical(saira:::lang_col(df, "card_hint", "es"), c("", "", ""))
+})
+
+testthat::test_that("all dictionary keys contain a non-empty translation in every language", {
     dict <- saira:::load_i18n_dict()
 
     for (key in names(dict)) {
-        testthat::expect_true(
-            !is.null(dict[[key]][["pt"]]) && nzchar(dict[[key]][["pt"]]),
-            info = paste("Missing pt translation for key:", key)
-        )
-        testthat::expect_true(
-            !is.null(dict[[key]][["en"]]) && nzchar(dict[[key]][["en"]]),
-            info = paste("Missing en translation for key:", key)
-        )
+        for (lang in get_languages()) {
+            testthat::expect_true(
+                !is.null(dict[[key]][[lang]]) && nzchar(dict[[key]][[lang]]),
+                info = paste("Missing", lang, "translation for key:", key)
+            )
+        }
+    }
+})
+
+testthat::test_that("every language keeps the placeholders of the English text", {
+    # A translation that drops or adds a %s breaks the sprintf() that fills it,
+    # and a lost DataTables token or HTML tag breaks the widget. Compare the
+    # sorted token list of each language with the English one.
+    dict <- saira:::load_i18n_dict()
+    token_re <- "%%|%[-+ 0#]*[0-9]*(\\.[0-9]+)?[sdif]|_(START|END|TOTAL|MENU)_|</?[A-Za-z][^>]*>"
+    tokens <- function(text) sort(regmatches(text, gregexpr(token_re, text, perl = TRUE))[[1]])
+
+    for (key in names(dict)) {
+        expected <- tokens(dict[[key]][["en"]])
+        for (lang in setdiff(get_languages(), "en")) {
+            testthat::expect_identical(
+                tokens(dict[[key]][[lang]]), expected,
+                info = paste("Placeholder mismatch in", lang, "for key:", key)
+            )
+        }
     }
 })
 
@@ -380,4 +346,24 @@ testthat::test_that("tr resolves both languages and both fallback paths", {
         "Translation missing"
     )
     testthat::expect_equal(fallback, saira::tr("nav_home", "en"))
+})
+
+testthat::test_that("the translocated-native copy exists and reads differently from alien", {
+    for (lang in c("pt", "en")) {
+        for (key in c("validate_names_status_badge_translocated",
+                      "est_assistant_translocated_hint",
+                      "validate_names_conservation_summary_translocated")) {
+            testthat::expect_true(nzchar(saira::tr(key, lang)))
+        }
+        # The whole point of the split is that the two say different things;
+        # copy-pasting the alien wording would silently undo it.
+        testthat::expect_false(identical(
+            saira::tr("validate_names_status_badge_translocated", lang),
+            saira::tr("validate_names_status_badge_invasive", lang)
+        ))
+        testthat::expect_false(identical(
+            saira::tr("est_assistant_translocated_hint", lang),
+            saira::tr("est_assistant_invasive_hint", lang)
+        ))
+    }
 })

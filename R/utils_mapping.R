@@ -190,22 +190,78 @@ sanitize_basis_of_record_terms <- function(values) {
     ifelse(chr %in% allowed, chr, "")
 }
 
-auto_suggest_basis_of_record_term <- function(raw_value) {
-    if (is_blank_value(raw_value)) {
-        return("")
-    }
+# Common spreadsheet values that name one basisOfRecord term without doubt.
+# Keys are normalize_for_matching() output. Values that can mean more than one
+# term ("coleta", "registro fotografico") stay out: the assistant asks for them.
+basis_of_record_synonyms <- c(
+    "observacao" = "HumanObservation",
+    "observacao em campo" = "HumanObservation",
+    "observacao de campo" = "HumanObservation",
+    "observacao direta" = "HumanObservation",
+    "avistamento" = "HumanObservation",
+    "observation" = "HumanObservation",
+    "field observation" = "HumanObservation",
+    "armadilha fotografica" = "MachineObservation",
+    "camera trap" = "MachineObservation",
+    "especime preservado" = "PreservedSpecimen",
+    "material preservado" = "PreservedSpecimen",
+    "material preservado herbario" = "PreservedSpecimen",
+    "especime de herbario" = "PreservedSpecimen",
+    "especime de museu" = "PreservedSpecimen",
+    "exsicata" = "PreservedSpecimen",
+    "herbarium specimen" = "PreservedSpecimen",
+    "museum specimen" = "PreservedSpecimen",
+    "amostra de tecido" = "MaterialSample",
+    "tissue sample" = "MaterialSample",
+    "especime vivo" = "LivingSpecimen",
+    "fossil" = "FossilSpecimen",
+    "observacion" = "HumanObservation",
+    "observacion de campo" = "HumanObservation",
+    "observacion directa" = "HumanObservation",
+    "avistamiento" = "HumanObservation",
+    "fototrampeo" = "MachineObservation",
+    "camara trampa" = "MachineObservation",
+    "trampa camara" = "MachineObservation",
+    "especimen de herbario" = "PreservedSpecimen",
+    "especimen de museo" = "PreservedSpecimen",
+    "muestra de tejido" = "MaterialSample",
+    "fosil" = "FossilSpecimen"
+)
 
-    allowed_terms <- get_basis_of_record_terms()
-    term_match <- match(
-        tolower(trimws(as.character(raw_value)[[1]])),
-        tolower(allowed_terms)
+#' Suggest a basisOfRecord term for each raw value
+#'
+#' Matches, in order: the DwC term itself (case, space and underscore
+#' insensitive), its English, Portuguese or Spanish label, then
+#' `basis_of_record_synonyms`. Accents do not matter. Vectorized.
+#'
+#' @param raw_values Character vector of raw spreadsheet values
+#' @return Character vector of the same length: a DwC term, or "" when no
+#'   match is certain
+#' @noRd
+auto_suggest_basis_of_record_terms <- function(raw_values) {
+    norm <- normalize_for_matching(raw_values)
+    norm[is.na(norm)] <- ""
+    out <- rep("", length(norm))
+
+    terms <- get_basis_of_record_terms()
+    labels_en <- vapply(basis_of_record_vocab_catalog, function(item) item$label_en, character(1))
+    labels_pt <- vapply(basis_of_record_vocab_catalog, function(item) item$label_pt, character(1))
+    labels_es <- vapply(basis_of_record_vocab_catalog, function(item) item$label_es, character(1))
+    lookup <- c(
+        stats::setNames(terms, gsub(" ", "", normalize_for_matching(terms), fixed = TRUE)),
+        stats::setNames(terms, normalize_for_matching(labels_en)),
+        stats::setNames(terms, normalize_for_matching(labels_pt)),
+        stats::setNames(terms, normalize_for_matching(labels_es)),
+        basis_of_record_synonyms
     )
 
-    if (is.na(term_match)) {
-        return("")
-    }
-
-    allowed_terms[[term_match]]
+    compact <- gsub(" ", "", norm, fixed = TRUE)
+    hit <- lookup[compact]
+    by_label <- is.na(hit)
+    hit[by_label] <- lookup[norm[by_label]]
+    found <- !is.na(hit) & nzchar(norm)
+    out[found] <- unname(hit[found])
+    out
 }
 
 sanitize_basis_of_record_map <- function(basis_of_record_map) {
@@ -266,15 +322,19 @@ map_basis_of_record_values <- function(raw_values, basis_of_record_map = NULL) {
     raw_chr[is.na(raw_values)] <- ""
     keys <- normalize_basis_of_record_keys(raw_chr)
 
-    if (is.null(basis_of_record_map) || length(basis_of_record_map) == 0) {
-        return(rep("", length(keys)))
-    }
-
+    # A value the assistant has a decision for keeps it, a skip ("") included.
+    # Any other value gets the automatic suggestion, so a mapped column converts
+    # without opening the assistant.
     clean_map <- sanitize_basis_of_record_map(basis_of_record_map)
     mapped <- unname(clean_map[keys])
-    mapped[is.na(mapped)] <- ""
-    mapped <- sanitize_basis_of_record_terms(mapped)
-    mapped
+    undecided <- is.na(mapped)
+    if (any(undecided)) {
+        # Suggest once per distinct value: a column has few, over many rows.
+        pending <- raw_chr[undecided]
+        distinct <- unique(pending)
+        mapped[undecided] <- auto_suggest_basis_of_record_terms(distinct)[match(pending, distinct)]
+    }
+    sanitize_basis_of_record_terms(mapped)
 }
 
 # ---------------------------------------------------------------------------
@@ -324,7 +384,9 @@ sanitize_establishment_field_map <- function(field_map, field = "means") {
     stats::setNames(clean_values[keep], clean_keys[keep])
 }
 
-# The assistant's committed state: list(means = <named chr>, degree = <named chr>).
+# The assistant's committed state: list(means, degree, island_means,
+# island_degree), each a named chr keyed by species. The island pair holds the
+# answer for the species' records on an oceanic island (ADR-143).
 sanitize_establishment_map <- function(establishment_map) {
     if (!is.list(establishment_map)) {
         establishment_map <- list()
@@ -335,13 +397,19 @@ sanitize_establishment_map <- function(establishment_map) {
         ),
         degree = sanitize_establishment_field_map(
             establishment_map$degree, field = "degree"
+        ),
+        island_means = sanitize_establishment_field_map(
+            establishment_map$island_means, field = "means"
+        ),
+        island_degree = sanitize_establishment_field_map(
+            establishment_map$island_degree, field = "degree"
         )
     )
 }
 
 establishment_map_is_empty <- function(establishment_map) {
     clean <- sanitize_establishment_map(establishment_map)
-    !any(nzchar(clean$means)) && !any(nzchar(clean$degree))
+    !any(vapply(clean, function(x) any(nzchar(x)), logical(1)))
 }
 
 # Unique species in the mapped scientificName column, with the record count so
@@ -378,36 +446,47 @@ extract_species_entries <- function(raw_values) {
     )
 }
 
-# Pre-fill establishmentMeans for taxa on the bundled invasive list: being
-# recorded as an alien invasive species in Brazil is what supports
-# "introduced". Nothing is suggested for the rest -- guessing "native" for an
-# unlisted taxon would assert something the app cannot know. Nothing is ever
-# suggested for degreeOfEstablishment: that depends on the record (a captive
-# animal and a feral one are the same species), so it stays with the user.
+# Pre-fill establishmentMeans only for taxa the bundled list records as alien
+# to Brazil: that is what supports "introduced". Nothing is suggested for the
+# rest -- guessing "native" for an unlisted taxon would assert something the
+# app cannot know, and the list's translocated natives are alien to part of
+# Brazil only, so a record could sit on either side of the taxon's natural
+# range. Nothing is ever suggested for degreeOfEstablishment: that depends on
+# the record (a captive animal and a feral one are the same species), so it
+# stays with the user.
 auto_suggest_establishment_means <- function(species_names) {
     n <- length(species_names)
     if (n == 0L) {
         return(stats::setNames(character(0), character(0)))
     }
-    listed <- flag_invasive_species(species_names)
-    out <- ifelse(listed, "introduced", "")
+    origin_class <- invasive_origin_class_for(species_names)
+    alien <- !is.na(origin_class) & origin_class == "alien"
+    out <- ifelse(alien, "introduced", "")
     stats::setNames(out, normalize_species_keys(species_names))
 }
 
-# Expand a per-species answer to one value per row.
+# Expand a per-species answer to one value per row. `island_rows` (from
+# establishment_island_rows()) marks the records that take the island answer
+# instead. They never fall back to the species answer: "native" given for the
+# mainland records is false on the island.
 map_establishment_values <- function(species_values, establishment_map = NULL,
-                                     field = "means") {
+                                     field = "means", island_rows = NULL) {
     keys <- normalize_species_keys(species_values)
     if (is.null(establishment_map) || length(establishment_map) == 0) {
         return(rep("", length(keys)))
     }
     clean <- sanitize_establishment_map(establishment_map)
-    field_map <- if (identical(field, "degree")) clean$degree else clean$means
-    if (length(field_map) == 0) {
-        return(rep("", length(keys)))
-    }
+    degree <- identical(field, "degree")
+    field_map <- if (degree) clean$degree else clean$means
     mapped <- unname(field_map[keys])
     mapped[is.na(mapped)] <- ""
+    if (length(island_rows) == length(keys)) {
+        on_island <- !is.na(island_rows)
+        island_map <- if (degree) clean$island_degree else clean$island_means
+        island_values <- unname(island_map[keys[on_island]])
+        island_values[is.na(island_values)] <- ""
+        mapped[on_island] <- island_values
+    }
     mapped
 }
 
@@ -445,13 +524,17 @@ canonical_establishment_values <- function(values, field = "means") {
 build_establishment_term_value <- function(term, df, user_cols = NULL,
                                            species_values = NULL,
                                            establishment_map = NULL,
-                                           out_sep = " | ") {
+                                           out_sep = " | ",
+                                           island_rows = NULL) {
     field <- if (identical(term, "degreeOfEstablishment")) "degree" else "means"
     n <- nrow(df)
     assistant_values <- if (is.null(species_values)) {
         rep("", n)
     } else {
-        map_establishment_values(species_values, establishment_map, field = field)
+        map_establishment_values(
+            species_values, establishment_map, field = field,
+            island_rows = island_rows
+        )
     }
     column_values <- if (has_selected_value(user_cols)) {
         build_term_value(term = term, df = df, user_cols = user_cols, out_sep = out_sep)$values
@@ -478,7 +561,8 @@ build_establishment_term_value <- function(term, df, user_cols = NULL,
 establishment_dropped_values <- function(term, df, user_cols = NULL,
                                          species_values = NULL,
                                          establishment_map = NULL,
-                                         out_sep = " | ") {
+                                         out_sep = " | ",
+                                         island_rows = NULL) {
     empty <- data.frame(
         raw = character(0), n_records = integer(0), stringsAsFactors = FALSE
     )
@@ -492,7 +576,7 @@ establishment_dropped_values <- function(term, df, user_cols = NULL,
     published <- build_establishment_term_value(
         term = term, df = df, user_cols = user_cols,
         species_values = species_values, establishment_map = establishment_map,
-        out_sep = out_sep
+        out_sep = out_sep, island_rows = island_rows
     )
 
     raw_chr <- trimws(as.character(column_values))
@@ -516,11 +600,11 @@ establishment_dropped_values <- function(term, df, user_cols = NULL,
 # the assistant has done its job.
 establishment_answer_count <- function(establishment_map, field = "means") {
     clean <- sanitize_establishment_map(establishment_map)
-    values <- if (identical(field, "degree")) clean$degree else clean$means
-    if (length(values) == 0L) {
-        return(0L)
-    }
-    sum(nzchar(values))
+    degree <- identical(field, "degree")
+    values <- if (degree) clean$degree else clean$means
+    island <- if (degree) clean$island_degree else clean$island_means
+    answered <- union(names(values)[nzchar(values)], names(island)[nzchar(island)])
+    length(answered)
 }
 
 # Species that got an establishmentMeans but no degreeOfEstablishment. The
@@ -529,16 +613,16 @@ establishment_answer_count <- function(establishment_map, field = "means") {
 # a taxon whose degree is genuinely unknown must still be publishable.
 establishment_pairs_missing_degree <- function(establishment_map) {
     clean <- sanitize_establishment_map(establishment_map)
-    if (length(clean$means) == 0) {
-        return(character(0))
+    missing_in <- function(means, degree) {
+        with_means <- names(means)[nzchar(means)]
+        degree_for <- degree[with_means]
+        degree_for[is.na(degree_for)] <- ""
+        with_means[!nzchar(degree_for)]
     }
-    with_means <- names(clean$means)[nzchar(clean$means)]
-    if (length(with_means) == 0) {
-        return(character(0))
-    }
-    degree_for <- clean$degree[with_means]
-    degree_for[is.na(degree_for)] <- ""
-    with_means[!nzchar(degree_for)]
+    union(
+        missing_in(clean$means, clean$degree),
+        missing_in(clean$island_means, clean$island_degree)
+    )
 }
 
 default_meta <- function() {
@@ -605,8 +689,8 @@ sanitize_synonyms_table <- function(synonyms_tbl) {
     if (any(is.na(clean_tbl$name_score) | clean_tbl$name_score < 0.90 | clean_tbl$name_score > 0.98)) {
         stop("Synonyms table name_score must be numeric in range [0.90, 0.98].")
     }
-    if (any(is.na(clean_tbl$lang) | !clean_tbl$lang %in% c("pt", "en", "any"))) {
-        stop("Synonyms table lang must be one of: pt, en, any.")
+    if (any(is.na(clean_tbl$lang) | !clean_tbl$lang %in% c("pt", "en", "es", "any"))) {
+        stop("Synonyms table lang must be one of: pt, en, es, any.")
     }
     if (any(is.na(clean_tbl$active))) {
         stop("Synonyms table active column must be TRUE/FALSE.")
@@ -907,6 +991,11 @@ compute_name_score <- function(
         term_syn <- synonym_lookup$by_term[[term_norm]]
         if (!is.null(term_syn) && nrow(term_syn) > 0) {
             hit_idx <- which(term_syn$synonym_norm == col_norm)
+            via_expansion <- FALSE
+            if (length(hit_idx) == 0 && !is.null(col_profile$norm_expanded)) {
+                hit_idx <- which(term_syn$synonym_norm == col_profile$norm_expanded)
+                via_expansion <- length(hit_idx) > 0
+            }
             if (length(hit_idx) > 0) {
                 score <- max(term_syn$name_score[hit_idx], na.rm = TRUE)
                 score <- pmin(0.98, pmax(0.90, score))
@@ -915,7 +1004,8 @@ compute_name_score <- function(
                     reason = "known_synonym",
                     is_exact = FALSE,
                     exact_hits = 0L,
-                    substring_hits = 0L
+                    substring_hits = 0L,
+                    via_expansion = via_expansion
                 ))
             }
         }
@@ -930,7 +1020,7 @@ compute_name_score <- function(
     )
     if (overlap_details$score >= 0.40) {
         return(list(
-            score = overlap_details$score,
+            score = overlap_details$score + rostrum_identifier_name_bonus(col_tokens, term),
             reason = "token_overlap",
             is_exact = FALSE,
             exact_hits = overlap_details$exact_hits,
@@ -1060,6 +1150,15 @@ validate_individual_count <- function(values) {
     )
 }
 
+validate_vocabulary <- function(is_valid) {
+    valid_ratio <- if (length(is_valid) == 0) 0 else mean(is_valid)
+    list(
+        score = score_ratio_to_confidence(valid_ratio),
+        compatible_type = TRUE,
+        valid_ratio = valid_ratio
+    )
+}
+
 finalize_value_result <- function(result, sampled_n) {
     valid_ratio <- suppressWarnings(as.numeric(result$valid_ratio))
     if (length(valid_ratio) != 1L || is.na(valid_ratio)) {
@@ -1085,77 +1184,6 @@ finalize_value_result <- function(result, sampled_n) {
     )
 }
 
-compute_value_score <- function(values, term, name_score, max_sample_n = 1000L) {
-    values_chr <- as.character(values)
-    values_chr[is.na(values)] <- NA_character_
-    non_blank <- values_chr[!is.na(values_chr) & nzchar(trimws(values_chr))]
-
-    if (length(non_blank) == 0) {
-        return(list(
-            score = 0,
-            reason = "empty_column",
-            compatible_type = FALSE,
-            sampled_n = 0L,
-            valid_ratio = 0
-        ))
-    }
-
-    if (name_score < 0.45) {
-        return(list(
-            score = 0,
-            reason = "low_name_confidence",
-            compatible_type = TRUE,
-            sampled_n = 0L,
-            valid_ratio = 0
-        ))
-    }
-
-    sampled_values <- sample_values_for_scoring(
-        values = values_chr,
-        name_score = name_score,
-        max_sample_n = max_sample_n
-    )
-    if (length(sampled_values) == 0) {
-        return(list(
-            score = 0,
-            reason = "empty_column",
-            compatible_type = FALSE,
-            sampled_n = 0L,
-            valid_ratio = 0
-        ))
-    }
-
-    term_name <- as.character(term)
-
-    if (identical(term_name, "decimalLatitude")) {
-        lat_result <- validate_numeric_range(sampled_values, -90, 90)
-        return(finalize_value_result(lat_result, sampled_n = length(sampled_values)))
-    }
-
-    if (identical(term_name, "decimalLongitude")) {
-        lon_result <- validate_numeric_range(sampled_values, -180, 180)
-        return(finalize_value_result(lon_result, sampled_n = length(sampled_values)))
-    }
-
-    if (identical(term_name, "scientificName")) {
-        sn_result <- validate_scientific_name_pattern(sampled_values)
-        return(finalize_value_result(sn_result, sampled_n = length(sampled_values)))
-    }
-
-    if (identical(term_name, "individualCount")) {
-        count_result <- validate_individual_count(sampled_values)
-        return(finalize_value_result(count_result, sampled_n = length(sampled_values)))
-    }
-
-    list(
-        score = 0.80,
-        reason = "neutral_no_validator",
-        compatible_type = TRUE,
-        sampled_n = length(sampled_values),
-        valid_ratio = 0.80
-    )
-}
-
 classify_automap_status <- function(final_score, compatible_type = TRUE) {
     if (is.na(final_score)) {
         return("MANUAL")
@@ -1176,12 +1204,75 @@ count_relevant_tokens <- function(x) {
     length(tokenize_for_overlap(x))
 }
 
+# Identifier columns: the shared "id" token alone made location_id,
+# species_id and study_id tie for locationID. The qualifier before "id" names
+# the entity, so it decides which identifier term the column can fill.
+rostrum_id_tokens <- c("id", "identifier", "identificador", "codigo", "cod")
+rostrum_id_entities <- list(
+    occurrence = c("occurrence", "ocorrencia"),
+    location = c("location", "localidade", "local", "site", "sitio", "station", "estacao",
+                 "plot", "parcela", "point", "ponto", "trap", "armadilha", "road", "rodovia",
+                 "transect", "transecto", "trail", "trilha"),
+    event = c("event", "evento", "survey", "campanha", "sampling", "amostragem", "visit", "visita"),
+    person = c("identified", "determiner", "determinador", "collector", "coletor",
+               "observer", "observador", "person", "pessoa"),
+    other = c("taxon", "species", "especie", "study", "estudo", "reference", "referencia", "ref",
+              "project", "projeto", "dataset", "individual", "organism", "animal", "tag",
+              "record", "registro", "photo", "foto")
+)
+rostrum_id_term_entity <- c(
+    occurrenceID = "occurrence", locationID = "location",
+    eventID = "event", parentEventID = "event", identifiedByID = "person"
+)
+# Terms that can hold a code. Any other term on an identifier column is a
+# name coincidence (location_id -> locationRemarks, Event_ID -> eventTime).
+rostrum_id_accepting_terms <- c(
+    names(rostrum_id_term_entity), "catalogNumber", "recordNumber",
+    "associatedMedia", "associatedReferences"
+)
+
+# Returns NULL when the column name is not an identifier name, else whether
+# the "id" stands alone and which entities the qualifier tokens name.
+rostrum_identifier_entities <- function(col_tokens) {
+    if (!any(col_tokens %in% rostrum_id_tokens)) {
+        return(NULL)
+    }
+    qualifier <- setdiff(col_tokens, rostrum_id_tokens)
+    hits <- vapply(rostrum_id_entities, function(words) any(qualifier %in% words), logical(1))
+    list(bare = length(qualifier) == 0L, entities = names(rostrum_id_entities)[hits])
+}
+
+# +0.10 name evidence when the qualifier names only the term's own entity
+# (location_id, Road_ID -> locationID).
+rostrum_identifier_name_bonus <- function(col_tokens, term) {
+    own <- rostrum_id_term_entity[as.character(term)]
+    if (is.na(own)) {
+        return(0)
+    }
+    id_parts <- rostrum_identifier_entities(col_tokens)
+    if (!is.null(id_parts) && identical(id_parts$entities, own[[1]])) 0.10 else 0
+}
+
 apply_semantic_penalties <- function(col_name, term) {
     col_norm <- normalize_for_matching(col_name)
     term_name <- as.character(term)
 
     penalties <- numeric(0)
     reason_codes <- character(0)
+
+    id_parts <- rostrum_identifier_entities(tokenize_for_overlap(col_name))
+    if (!is.null(id_parts)) {
+        # A bare "id" identifies the row, so it is only an occurrenceID.
+        own <- unname(rostrum_id_term_entity[term_name])
+        foreign_id <- !is.na(own) && (
+            (id_parts$bare && own != "occurrence") ||
+                (length(id_parts$entities) > 0L && !(own %in% id_parts$entities))
+        )
+        if (foreign_id || !(term_name %in% rostrum_id_accepting_terms)) {
+            penalties <- c(penalties, -0.30)
+            reason_codes <- c(reason_codes, "identifier_context")
+        }
+    }
 
     is_coordinate_term <- term_name %in% c("decimalLatitude", "decimalLongitude")
     is_temporal_term <- term_name %in% c("eventDate", "year", "month", "day", "modified", "dateIdentified")
@@ -1309,6 +1400,41 @@ build_matching_profile <- function(x) {
     )
 }
 
+# Abbreviations in survey headers (ADR-139).
+rostrum_column_abbreviations <- c(
+    inds = "individuals", indiv = "individuals",
+    eff = "effort", veg = "vegetation", sp = "species", spp = "species"
+)
+# "#", "n" and "num" read as "number" only for synonym lookup ("# of inds." ->
+# "number of individuals"). As a token, "number" would match catalogNumber.
+rostrum_number_abbreviations <- c("n", "num", "nr", "nro")
+
+rostrum_expand_column_name <- function(col_name, numbers = TRUE) {
+    x <- as.character(col_name)
+    if (numbers) {
+        x <- gsub("#", " number ", x, fixed = TRUE)
+    }
+    words <- strsplit(normalize_for_matching(x), " ", fixed = TRUE)[[1]]
+    hit <- words %in% names(rostrum_column_abbreviations)
+    words[hit] <- rostrum_column_abbreviations[words[hit]]
+    if (numbers) {
+        words[words %in% rostrum_number_abbreviations] <- "number"
+    }
+    paste(words, collapse = " ")
+}
+
+# Column profile with the expanded name. norm_expanded is set only when an
+# abbreviation changed the name, so a synonym hit through it is known.
+build_column_matching_profile <- function(col_name) {
+    profile <- build_matching_profile(col_name)
+    expanded <- rostrum_expand_column_name(col_name)
+    if (nzchar(expanded) && !identical(expanded, profile$norm)) {
+        profile$norm_expanded <- expanded
+        profile$tokens <- tokenize_for_overlap(rostrum_expand_column_name(col_name, numbers = FALSE))
+    }
+    profile
+}
+
 rostrum_debug_enabled <- function(options = NULL) {
     opt_debug <- isTRUE(getOption("saira.rostrum.debug", FALSE))
     if (is.list(options) && !is.null(options$debug)) {
@@ -1354,6 +1480,8 @@ rostrum_build_tier_value_cache <- function(sampled_values) {
             decimalLongitude = empty,
             scientificName = empty,
             individualCount = empty,
+            occurrenceStatus = empty,
+            basisOfRecord = empty,
             neutral = empty
         ))
     }
@@ -1373,6 +1501,14 @@ rostrum_build_tier_value_cache <- function(sampled_values) {
         ),
         individualCount = finalize_value_result(
             validate_individual_count(sampled_values),
+            sampled_n = sampled_n
+        ),
+        occurrenceStatus = finalize_value_result(
+            validate_vocabulary(map_occurrence_status_values(sampled_values) %in% c("present", "absent")),
+            sampled_n = sampled_n
+        ),
+        basisOfRecord = finalize_value_result(
+            validate_vocabulary(nzchar(auto_suggest_basis_of_record_terms(sampled_values))),
             sampled_n = sampled_n
         ),
         neutral = list(
@@ -1440,6 +1576,17 @@ compute_value_score_from_profile <- function(value_profile, term, name_score) {
 
     if (term_name %in% c("decimalLatitude", "decimalLongitude", "scientificName", "individualCount")) {
         return(tier_cache[[term_name]])
+    }
+
+    # Vocabulary terms: values off the list veto a weak name (IUCN_status is
+    # not an occurrenceStatus). An exact or synonym name keeps the neutral
+    # score instead, because the value step translates unknown values later.
+    if (term_name %in% c("occurrenceStatus", "basisOfRecord")) {
+        vocab_res <- tier_cache[[term_name]]
+        if (identical(tier, "high") && vocab_res$valid_ratio < 0.80) {
+            return(tier_cache$neutral)
+        }
+        return(vocab_res)
     }
 
     tier_cache$neutral
@@ -1534,12 +1681,20 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
     }
 
     column_profiles <- stats::setNames(
-        lapply(columns, build_matching_profile),
+        lapply(columns, build_column_matching_profile),
         columns
     )
     term_profiles <- stats::setNames(
         lapply(terms, build_matching_profile),
         terms
+    )
+    # Term whose name equals the column name, NA when there is none.
+    column_exact_owner <- stats::setNames(
+        terms[match(
+            vapply(column_profiles, function(p) p$norm, character(1)),
+            vapply(term_profiles, function(p) p$norm, character(1))
+        )],
+        columns
     )
     value_profiles <- stats::setNames(
         lapply(columns, function(col_name) {
@@ -1561,6 +1716,20 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
         ").",
         options = options
     )
+
+    # Share of values that parse as dates, computed only for the columns that
+    # reach the eventDate rescue.
+    date_results <- new.env(parent = emptyenv())
+    column_date_result <- function(col_name) {
+        if (is.null(date_results[[col_name]])) {
+            sampled <- sample_values_for_scoring(df[[col_name]], name_score = 0.80,
+                                                 max_sample_n = options$max_sample_n)
+            is_date <- !is.na(parse_dates_to_iso(sampled))
+            date_results[[col_name]] <- finalize_value_result(validate_vocabulary(is_date),
+                                                              sampled_n = length(sampled))
+        }
+        date_results[[col_name]]
+    }
 
     empty_row <- function(term, reason = "no_confident_match", is_temporal_limited = FALSE) {
         data.frame(
@@ -1611,6 +1780,12 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
         term_profile <- term_profiles[[term]]
 
         candidate_rows <- lapply(columns, function(col_name) {
+            # A column named exactly like another term belongs to that term, so
+            # "locationRemarks" does not tie with "OBS" for occurrenceRemarks.
+            owner <- column_exact_owner[[col_name]]
+            if (!is.na(owner) && !identical(owner, term)) {
+                return(NULL)
+            }
             col_profile <- column_profiles[[col_name]]
             name_res <- compute_name_score(
                 col_name = col_name,
@@ -1621,8 +1796,15 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
                 synonyms_index = synonyms_index
             )
 
+            # Temporal terms need an exact name. eventDate also takes a synonym
+            # or token-overlap name when most values parse as dates (ADR-139).
+            date_rescue <- FALSE
             if (is_temporal_limited && !isTRUE(name_res$is_exact)) {
-                return(NULL)
+                if (!identical(term, "eventDate") || name_res$score < prune_threshold ||
+                    column_date_result(col_name)$valid_ratio < 0.90) {
+                    return(NULL)
+                }
+                date_rescue <- TRUE
             }
 
             if (!isTRUE(name_res$is_exact) &&
@@ -1631,11 +1813,15 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
                 return(NULL)
             }
 
-            value_res <- compute_value_score_from_profile(
-                value_profile = value_profiles[[col_name]],
-                term = term,
-                name_score = name_res$score
-            )
+            value_res <- if (date_rescue) {
+                column_date_result(col_name)
+            } else {
+                compute_value_score_from_profile(
+                    value_profile = value_profiles[[col_name]],
+                    term = term,
+                    name_score = name_res$score
+                )
+            }
             if (identical(name_res$reason, "token_overlap") &&
                 name_res$score <= 0.70 &&
                 value_res$score < options$token_overlap_min_value_score) {
@@ -1648,6 +1834,11 @@ run_rostrum_stage1 <- function(df, dwc_terms_df, synonyms_tbl, options = rostrum
             base_score <- (0.5 * name_res$score) + (0.5 * value_res$score)
             final_score <- base_score + penalty_res$score
             final_score <- pmin(1, pmax(0, final_score))
+            # Offered for review, never AUTO: a one-letter header, a header
+            # read through an abbreviation, a date column found by its values.
+            if (date_rescue || isTRUE(name_res$via_expansion) || nchar(col_profile$norm) == 1L) {
+                final_score <- min(final_score, options$auto_apply_threshold - 0.01)
+            }
 
             if (!is_blank_value(veto_code)) {
                 final_score <- 0
@@ -2778,7 +2969,11 @@ build_eventdate_interval_dmy <- function(df, cols, fallback_raw = TRUE) {
     set = "09", setembro = "09", sep = "09", sept = "09", september = "09",
     out = "10", outubro = "10", oct = "10", october = "10",
     nov = "11", novembro = "11", november = "11",
-    dez = "12", dezembro = "12", dec = "12", december = "12"
+    dez = "12", dezembro = "12", dec = "12", december = "12",
+    # Spanish names that the Portuguese and English entries do not cover
+    ene = "01", enero = "01", febrero = "02", marzo = "03", mayo = "05",
+    junio = "06", julio = "07", septiembre = "09", setiembre = "09",
+    octubre = "10", noviembre = "11", dic = "12", diciembre = "12"
 )
 
 parse_month_to_number <- function(x) {
@@ -2921,7 +3116,7 @@ build_eventdate_interval <- function(df, cols, fallback_raw = TRUE) {
 
 #' Map raw values to DwC occurrenceStatus literals
 #'
-#' Coerces common presence/absence representations (0/1, sim/nao, yes/no,
+#' Coerces common presence/absence representations (0/1, sim/nao, si/no, yes/no,
 #' presente/ausente, present/absent, TRUE/FALSE) to canonical DwC values
 #' "present" or "absent" for export. Convention: 0 = absent, 1 = present.
 #' Unrecognized non-empty values pass through after trim. NA / empty stay NA.
@@ -2935,7 +3130,7 @@ map_occurrence_status_values <- function(raw_values) {
     out <- x
     norm <- tolower(x)
 
-    present_set <- c("1", "present", "presente", "yes", "y", "sim", "s", "true", "t")
+    present_set <- c("1", "present", "presente", "yes", "y", "sim", "s", "si", "s\u00ed", "true", "t")
     absent_set  <- c("0", "absent", "ausente", "no", "n", "nao", "n\u00e3o", "false", "f")
 
     out[norm %in% present_set] <- "present"
@@ -2966,6 +3161,13 @@ build_term_value <- function(
         )
     } else if (term == "occurrenceStatus") {
         values <- map_occurrence_status_values(df[[user_cols[[1]]]])
+        values <- map_vocabulary_values(term, values)
+    } else if (term %in% c("sex", "lifeStage") && length(user_cols) == 1) {
+        # Known spreadsheet words become GBIF vocabulary concepts ("M" -> male).
+        # Unknown ones keep their text and reach the user in the Preview.
+        values <- map_vocabulary_values(
+            term, normalize_semicolon_tokens(df[[user_cols[[1]]]], out_sep = out_sep)
+        )
     } else if (term == "dynamicProperties") {
         values <- build_dynamic_properties_json(df = df, cols = user_cols, keys = dyn_props_keys)
     } else if (term == "eventDate" && length(user_cols) == 6) {
@@ -3172,6 +3374,42 @@ resolve_occurrence_ids <- function(df, n = NULL, map_values = NULL) {
     out
 }
 
+# Replace the occurrenceIDs that still repeat after the Preview corrections.
+#
+# Darwin Core requires occurrenceID to be unique within the dataset, so an
+# identifier that two rows share is not an identifier, and the TDWG note for
+# the term applies: construct one. The person can correct the rows in the
+# Preview first. Every row that still repeats an identifier gets one, the first
+# row too, because which row comes first depends on the row order. The ids
+# come from `basis` (the mapped rows before the Preview corrections), so a
+# correction in the Preview does not change them (ADR-152).
+#
+# Returns `df`, with the `ids_replaced` attribute (the count of rows changed)
+# when it changes a row.
+replace_repeated_ids <- function(df, basis = df) {
+    if (!is.data.frame(df) || !"occurrenceID" %in% names(df)) {
+        return(df)
+    }
+    v <- trimws(as.character(df$occurrenceID))
+    repeated <- !is.na(v) & nzchar(v) & (duplicated(v) | duplicated(v, fromLast = TRUE))
+    if (any(repeated)) {
+        df$occurrenceID[repeated] <- generate_persistent_ids(basis, rows = repeated)
+        attr(df, "ids_replaced") <- sum(repeated)
+    }
+    df
+}
+
+# The identifier counts of the mapping stage, after `replace_repeated_ids()`
+# changed `replaced` of the preserved ids.
+occurrence_id_counts_after_repeats <- function(counts, replaced) {
+    if (!is.list(counts) || is.null(counts$total) || !isTRUE(replaced > 0L)) {
+        return(counts)
+    }
+    counts$preserved <- max(counts$preserved - replaced, 0L)
+    counts$generated <- counts$total - counts$preserved
+    counts
+}
+
 # Name what produced a dataset's identifiers. The mapping guide keys its
 # explanation off this label.
 occurrence_id_strategy_label <- function(n_preserved, n_total) {
@@ -3299,10 +3537,14 @@ build_processed_mapping_df <- function(
     # df_final, so it does not depend on where scientificName falls in the term
     # loop. NULL means "no assistant answers to apply".
     establishment_species <- NULL
+    establishment_islands <- NULL
     if (!is.null(establishment_map) && !establishment_map_is_empty(establishment_map)) {
         sci_cols <- sanitize_map_selection("scientificName", map_values[["scientificName"]])
         if (has_selected_value(sci_cols) && sci_cols[[1]] %in% names(df)) {
             establishment_species <- as.character(df[[sci_cols[[1]]]])
+            establishment_islands <- establishment_island_rows_for_df(
+                df, map_values, establishment_species
+            )
         }
     }
 
@@ -3381,7 +3623,8 @@ build_processed_mapping_df <- function(
             merged <- build_establishment_term_value(
                 term = term, df = df, user_cols = user_cols,
                 species_values = establishment_species,
-                establishment_map = establishment_map, out_sep = out_sep
+                establishment_map = establishment_map, out_sep = out_sep,
+                island_rows = establishment_islands
             )
             if (has_column || any(nzchar(merged[!is.na(merged)]))) {
                 df_final[[term]] <- merged

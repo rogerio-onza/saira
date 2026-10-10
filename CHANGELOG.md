@@ -7,11 +7,139 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **ui:** Show the species photos of the site in the names run, the ready export package and the Help tutorials card, ADR-159
+- **names:** Ship Flora e Funga do Brasil and Fauna do Brasil with Saíra, so a new install validates names without the IPT download, ADR-153
+- **preview:** Add a Problems mode that lists cell errors in all records and fixes them in place, with undo, ADR-150 ([#181](https://github.com/rogerio-onza/saira/pull/181))
+- **mapping:** Convert common sex, lifeStage and occurrenceStatus values to the GBIF vocabulary ("M" to male, "visto" to present), ADR-150 ([#179](https://github.com/rogerio-onza/saira/pull/179))
+- **ui:** Add a dark theme, with a Light, Dark or System switch in the header, ADR-144 ([#165](https://github.com/rogerio-onza/saira/pull/165))
+- **ui:** Animate tab changes, notifications, dialogs and the export pending rows, ADR-145 ([#166](https://github.com/rogerio-onza/saira/pull/166))
+- **help:** Show who makes Saíra, how to cite it, the R packages with their maintainers, and the bundled data, ADR-146 ([#167](https://github.com/rogerio-onza/saira/pull/167))
+- **ui:** Add Spanish (neutral Latin American) as a third interface language, ADR-133
+- **mapping:** Show Darwin Core definitions and card hints in Spanish, ADR-133
+- **mapping:** Recognize Spanish column names, months, sí/no and basisOfRecord labels in uploaded spreadsheets, ADR-133
+- **site:** Publish the help site in Spanish under `/es/`, with a three-language switcher, ADR-133
+- **upload:** Accept Excel (.xlsx, first sheet) and plain-text (.txt) data files
+- **coords:** Fix a latitude or longitude directly in the coordinates table, with revalidation and undo, ADR-129
+- **export:** Show the aliases an export taught Rostrum in the package card, with an undo button, ADR-141 ([#160](https://github.com/rogerio-onza/saira/pull/160))
+- **upload:** Read Wildlife Insights sequence projects, with one record per sequence identification and its group size, ADR-148 ([#176](https://github.com/rogerio-onza/saira/pull/176))
+- **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
+
 ### Changed
-- **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126
+- **mapping:** Run the auto-map on every upload, not only on Camtrap DP, ADR-154
+- **ui:** Show the open Preview problems on menu step 3, and counts on the Mapping filter and the Table/Problems switch, ADR-155
+- **mapping:** Show only the terms that need the user under Pending, the same queue as "Next pending", ADR-155
+- **ui:** Slide the new content in when the Mapping filter or the Table/Problems switch changes, ADR-156
+- **preview:** Rename the first Problems pill to "All" and shorten the Table subtitle to "First 100 records"
+- **deps:** Remove the ids package, uuid makes the same identifiers
+- **occurrenceID:** Replace a repeated identifier with a persistent UUID when the Preview does not fix it, ADR-152 ([#181](https://github.com/rogerio-onza/saira/pull/181))
+- **upload:** Install camtrapdp with Saíra, so the camera trap mode always works and CI tests it, ADR-149 ([#178](https://github.com/rogerio-onza/saira/pull/178))
+- **site:** Use the app background colors on the help site, in the light and dark themes
+- **site:** Use the app theme switch, language select and motion on the help site, ADR-144, ADR-145
+- **site:** Retake the tutorial screenshots in the current look, with dark copies for the dark theme
+- **site:** Line up both sheets of the home flow on the same right edge
+- **site:** Open the home page with one threatened species per biome, then fix the same six records in the flow and show them on the SiBBr map. A new block shows five uses of open data, and the install console shows the full script with a large Copy button
+- **ui:** Make notifications opaque, so the page text does not show through them ([#166](https://github.com/rogerio-onza/saira/pull/166))
+- **ui:** Replace the playful loading phrases with phrases that say what each step does ([#169](https://github.com/rogerio-onza/saira/pull/169))
+- **ui:** Remove em dashes, exclamation marks and "successfully" from interface texts ([#169](https://github.com/rogerio-onza/saira/pull/169))
+- **mapping:** Add a default "Relevant" filter: unmapped optional terms collapse to one line per class that opens compact rows, ADR-137 ([#158](https://github.com/rogerio-onza/saira/pull/158))
+- **ui:** Use IBM Plex Sans for interface text and keep Space Mono for code and data, ADR-134 ([#152](https://github.com/rogerio-onza/saira/pull/152))
+- **ui:** Replace the warm beige background with cool gray and cool borders, ADR-135 ([#153](https://github.com/rogerio-onza/saira/pull/153))
+- **upload:** Rebuild the home page with format cards, a larger dropzone, short notes and the next steps, ADR-136 ([#154](https://github.com/rogerio-onza/saira/pull/154))
+- **upload:** Show the home page as soon as the page loads, drop the repeated notes and next steps, add the saíra illustration, ADR-136 ([#155](https://github.com/rogerio-onza/saira/pull/155))
+- **mapping:** Enlarge the text of the class filter pills ([#155](https://github.com/rogerio-onza/saira/pull/155))
+- **ui:** Give the language selector the same height, border and corners as the version badge ([#155](https://github.com/rogerio-onza/saira/pull/155))
+- **site:** Rewrite the tutorials around annotated screenshots and open the first tutorial instead of an index page ([#149](https://github.com/rogerio-onza/saira/pull/149))
+- **site:** Show the tutorials as flat panels like the app: numbered sidebar with the page contents, one panel per step, screenshot legends joined to their image
+- **names:** Center the providers, options and run button in the top bar
+- **mapping:** Make license a required term: its card shows as missing and export is blocked until a license is chosen
+- **mapping:** Import a mapping guide in about half the time and pick a column about three times faster: a pick re-renders only its own card
+- **ui:** Put the header in one row from 1360px and switch the icons to Phosphor, ADR-132
+- **upload:** Use one upload panel across the home page, with the format tips below it, ADR-132
+- **mapping:** Filter cards by All, Mapped or Pending in the panel header; color the Required tag by state, ADR-132
+- **mapping:** Build the card grid in the background after an upload, so the tab opens ready, ADR-132
+- **coords:** Move the column check, the run button and the fixes to a bar on top; UTM pairs get a band of their own; "Show in table" in a point popup opens the row in the table, ADR-132
+- **names:** Move providers, options and the run button to a full-width bar on top; drop the three report counters; bigger MMA, IUCN and invasive pills, ADR-132
+- **generalization:** Answer Chapman's Table 5 as one decision table; color map points by threat group; mode as two option cards; a species exception is one row of the same table, ADR-132
+- **export:** Show pending items with their fix beside one package card (numbers, files, IPT next step), both the same height, and a fixed download bar, ADR-132
+- **preview:** Put the title inside the table card and show 15 rows, ADR-132
+- **names:** GBIF is always on; providers and options are one checklist that shows the query order, ADR-130
+- **ui:** Square filter chips in the color of what they filter, borderless status tags, invasive species in brown; center the step row and group Wiki, Help, language and version on the right; selection states use the brand blue
+- **names:** Remove the percentage bar; the run shows only its current phase
+- **site:** Rebuild the home page in the flat style: a sheet that each app tab fixes, and an animated install console
+- **site:** Explain the in-table coordinate fix in the coordinate tutorial, in PT and EN
+- **site:** Refresh ten tutorial screenshots in PT and EN and name the steps as the app does
+- **ui:** Flatten tables, buttons, alerts and filter pills, and darken state-colored text to pass AA contrast
+- **mapping:** Flatten the cards: light state fills, pastel status badges, a Required tag and a flat sidebar
+- **upload:** Redesign the home page: upload panel on the left, required columns with definitions on the right
+- **ui:** Replace the tab bar with a two-row header and numbered steps, ADR-128
+- **ui:** Drop shadows and gradients, use warm neutral borders and a darker muted text for AA contrast, ADR-127
+- **export:** Match the MMA threat list once per species, not once per row, so large datasets export faster
+- **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
-- **tests:** Pin the name validation batch test to GBIF so a local Fauna BR cache does not exhaust memory
+- **names:** Update the name list, the progress and the Cancel button during a run, not only at the end, ADR-159
+- **names:** Give a Flora BR homonym the same answer in any batch, ADR-159
+- **preview:** Slide Table | Problems with the content in place: Problems no longer grows in three steps during the slide, ADR-158
+- **mapping:** Show the card when "Next pending" goes to a term that the Mapped filter hides, ADR-157
+- **ui:** Remove the flash at the start of a theme switch: the circle starts in the first frame, and the cards no longer fade from the old color, ADR-144
+- **site:** Remove the same flash at the start of a theme switch on the help site, ADR-144
+- **export:** Write the rank the Names tab found for a one-word name (Felidae as family, not genus), ADR-151 ([#180](https://github.com/rogerio-onza/saira/pull/180))
+- **upload:** Show camera trap read errors without the contradictory "ZIP not recognized" prefix, and show their root cause ([#177](https://github.com/rogerio-onza/saira/pull/177))
+- **datasetName:** Stop filling it, and datasetID, with placeholder values for camera trap zips without a descriptor, ADR-147 ([#175](https://github.com/rogerio-onza/saira/pull/175))
+- **samplingEffort:** Drop the false UTC marker from Wildlife Insights deployment intervals ([#175](https://github.com/rogerio-onza/saira/pull/175))
+- **upload:** Read camera trap zips without internet access, ADR-147 ([#175](https://github.com/rogerio-onza/saira/pull/175))
+- **upload:** Accept loose Camtrap DP CSV zips that have no media file ([#175](https://github.com/rogerio-onza/saira/pull/175))
+- **upload:** Keep the last deployment day and the feature type, life stage and sex of Wildlife Insights uploads ([#175](https://github.com/rogerio-onza/saira/pull/175))
+- **coords:** Keep the points on the coordinates map after a language change, and translate their popups
+- **build:** List `utils_oceanic_islands.R` in `Collate`, so the package installs again ([#164](https://github.com/rogerio-onza/saira/pull/164))
+- **ui:** Stop the console errors from the header titles at startup ([#168](https://github.com/rogerio-onza/saira/pull/168))
+- **mapping:** Give single and multiple selects on the cards the same arrow ([#170](https://github.com/rogerio-onza/saira/pull/170))
+- **coords:** Translate "Issue" and "Country" in Portuguese ([#169](https://github.com/rogerio-onza/saira/pull/169))
+- **names:** Stop labelling species native to Brazil as invasive aliens. The Instituto Hórus list also covers natives that are invasive outside their natural range, such as the coati: they get their own badge and no longer pre-fill `establishmentMeans` as `introduced`, ADR-142
+- **names:** Show the names under the Invasive, Translocated, Accepted and All filters after every problem is resolved. Only the Problems filter shows "All resolved"
+- **export:** Refuse the package download on the server while export pending items block it, so the hidden link cannot ship data or teach aliases
+- **export:** Disable the download button again while the export is blocked: Shiny 1.13 ignores `disabled = "disabled"`, so the grey button still accepted clicks
+- **mapping:** Replace the old learned alias when an export maps the same column to another term, ADR-140 ([#159](https://github.com/rogerio-onza/saira/pull/159))
+- **mapping:** Give each export its own alias run id, so undoing an export reverses only what it learned, ADR-141 ([#160](https://github.com/rogerio-onza/saira/pull/160))
+- **mapping:** Suggest field-sheet headers such as `site`, `VEG_TYPE`, `X` and `# of inds.`, and date columns by their values, ADR-139 ([#157](https://github.com/rogerio-onza/saira/pull/157))
+- **mapping:** Stop `species_id` and `study_id` from tying with `location_id` for locationID, and stop `IUCN_status` from filling occurrenceStatus, ADR-138 ([#156](https://github.com/rogerio-onza/saira/pull/156))
+- **upload:** Open Mapping after the first upload of a session, not only after the second ([#155](https://github.com/rogerio-onza/saira/pull/155))
+- **names:** Line up the Validate names button with the provider and option rows ([#155](https://github.com/rogerio-onza/saira/pull/155))
+- **mapping:** Keep the category state dots and the "Next pending" count after a language switch
+- **mapping:** Keep a card title whole: when the row is narrow, the status badge moves to the next line
+- **ui:** Use "modelo" for the mapping template in Spanish, so the sidebar button fits on one line
+- **names:** Drop the "Validating" line under the run button; the button already shows the state
+- **coords:** Drop the "Validating" card under the column check; the button and the loading dialog already show it
+- **site:** Show "On this page" instead of the Portuguese table-of-contents title on English pages
+- **upload:** Stop the browser tab from freezing after an upload in English
+- **basisOfRecord:** Convert mapped values without the assistant, recognize common Portuguese values, and block export on empty values, ADR-131
+- **upload:** Show "Upload complete" in the current language
+- **upload:** Show an invalid file format in a red box
+- **mapping:** Count alias and template matches in the auto-map notice and drop the internal "V1" label
+- **occurrenceStatus:** Restore the accents of the Portuguese definition
+- **coords:** Speed up the sea check on large datasets, with the same result
+- **mapping:** Show a template import that matched no column as an error, and a partial match as a warning
+- **ui:** Make links inside alert boxes readable
+- **mapping:** Give the template import modal the Home dropzone and a readable progress bar
+- **mapping:** Speed up automatic mapping when many terms share the same column
+- **site:** Drop the removed Profile selector from the coordinate tutorial, in PT and EN
+- **names:** Keep the report counts readable when the table is tall
+- **mapping:** Return the license and language cards to unmapped when their box is unticked
+- **coords:** Frame the Coordinates and Generalization maps on valid points only, with no grey bands, and count the points the map cannot draw
+- **coords:** Draw the map points right after validation, not only after a filter click
+- **coords:** Keep the original of a transposed fix in verbatimLatitude/Longitude when the same export converts UTM points
+- **tests:** Pin the name validation batch test to GBIF so a local Fauna BR cache does not exhaust memory ([#131](https://github.com/rogerio-onza/saira/pull/131))
+
+### Performance
+- **mapping:** Switch the Mapping filter in the browser, with no grid rebuild and no card moves: Relevant and All now change at once, not after 2 s, ADR-157
+- **names:** Check the Brazilian provider status only during a run or a provider update ([#168](https://github.com/rogerio-onza/saira/pull/168))
+- **ui:** Stop loading the unused Lottie player on every page, and remove 9 MB of unused images from the package ([#168](https://github.com/rogerio-onza/saira/pull/168))
+
+### Tests
+- **build:** Serve the E2E app through run_app() and keep Chrome timers unthrottled in long runs
+- **build:** Guard the mapping reactivity fixes and run the full flow end to end in the release gate
+- **build:** Complete the roadkill benchmark export again, now that the server refuses a blocked download ([#172](https://github.com/rogerio-onza/saira/pull/172))
 
 ## [0.11.2] - 2026-09-11
 

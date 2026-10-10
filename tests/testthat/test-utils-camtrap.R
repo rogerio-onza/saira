@@ -77,6 +77,58 @@ wi_zip_fixture <- function() {
     ), prefix = "wi_zip_")
 }
 
+# WI sequence project: projects.csv says project_type Sequence, images.csv
+# carries sequence_id and no identification fields, and sequences.csv holds
+# one row per identification of a sequence.
+wi_sequence_zip_fixture <- function(with_sequences = TRUE) {
+    deployments <- c(
+        "project_id,deployment_id,placename,longitude,latitude,start_date,end_date,camera_id,quiet_period,feature_type,recorded_by,subproject_name,remarks",
+        "1,DEP1,site-a,-62.94,-8.57,2021-08-26 00:00:00,2022-01-19 00:00:00,c1,0,None,,UMF,",
+        "1,DEP2,site-b,-62.96,-8.55,2021-08-25 00:00:00,2021-11-04 00:00:00,c2,0,None,,UMF,"
+    )
+    cameras <- c(
+        "project_id,camera_id,camera_name,make,model,serial_number,year_purchased",
+        "1,c1,n1,Bushnell,T,c1,2020",
+        "1,c2,n2,Bushnell,T,c2,2020"
+    )
+    projects <- c(
+        "project_id,project_name,project_short_name,project_type",
+        "1,P,TP,Sequence"
+    )
+    images <- c(
+        paste0("project_id,deployment_id,image_id,filename,sequence_id,location,",
+               "wi_taxon_id,class,order,family,genus,species,common_name,",
+               "timestamp,bounding_boxes"),
+        "1,DEP1,img-1,1.jpg,seq-blank,gs://1,,,,,,,,2021-08-26 10:00:00,",
+        "1,DEP1,img-2,2.jpg,seq-blank,gs://2,,,,,,,,2021-08-26 10:00:20,",
+        "1,DEP2,img-3,3.jpg,seq-jaguar,gs://3,,,,,,,,2021-09-15 23:12:00,",
+        "1,DEP2,img-4,4.jpg,seq-jaguar,gs://4,,,,,,,,2021-09-15 23:12:10,",
+        "1,DEP2,img-5,5.jpg,seq-jaguar,gs://5,,,,,,,,2021-09-15 23:12:40,",
+        "1,DEP2,img-6,6.jpg,seq-mixed,gs://6,,,,,,,,2021-10-01 03:30:00,",
+        "1,DEP1,img-7,7.jpg,seq-human,gs://7,,,,,,,,2021-09-01 08:00:00,"
+    )
+    sequences <- c(
+        paste0("project_id,deployment_id,sequence_id,is_blank,identified_by,",
+               "wi_taxon_id,class,order,family,genus,species,common_name,",
+               "uncertainty,start_time,end_time,group_size,age,sex,",
+               "animal_recognizable,individual_id,individual_animal_notes,",
+               "behavior,highlighted,markings,cv_confidence,license"),
+        "1,DEP1,seq-blank,1,Ana,,,,,,,,,2021-08-26 10:00:00,2021-08-26 10:00:20,,,,,,,,false,,,CC-BY",
+        "1,DEP2,seq-jaguar,0,Computer Vision,,Mammalia,Carnivora,Felidae,Panthera,onca,Jaguar,,2021-09-15 23:12:00,2021-09-15 23:12:40,2,Adult,Female,,,,,false,,92,CC-BY",
+        "1,DEP2,seq-mixed,0,Ana,,Mammalia,Carnivora,Felidae,Panthera,onca,Jaguar,,2021-10-01 03:30:00,2021-10-01 03:30:00,1,,,,,,,false,,,CC-BY",
+        "1,DEP2,seq-mixed,0,Ana,,Mammalia,Perissodactyla,Tapiridae,Tapirus,terrestris,Tapir,,2021-10-01 03:30:00,2021-10-01 03:30:00,3,,,,,,,false,,,CC-BY",
+        "1,DEP1,seq-human,0,Ana,,Mammalia,Primates,Hominidae,Homo,sapiens,Human,,2021-09-01 08:00:00,2021-09-01 08:00:00,1,,,,,,,false,,,CC-BY"
+    )
+    files <- list(
+        "deployments.csv" = deployments,
+        "cameras.csv" = cameras,
+        "projects.csv" = projects,
+        "images_1.csv" = images
+    )
+    if (with_sequences) files[["sequences.csv"]] <- sequences
+    build_zip_fixture(files, prefix = "wi_seq_zip_")
+}
+
 # detect_camtrap_source --------------------------------------------------
 
 testthat::test_that("detect_camtrap_source detects descriptor zip", {
@@ -187,6 +239,35 @@ testthat::test_that("wi_to_camtrap_csv maps blank/human/animal/unknown", {
                            stringsAsFactors = FALSE)
     testthat::expect_setequal(dep$deploymentID, c("DEP1", "DEP2"))
     testthat::expect_true(all(grepl("Trophy Cam HD", dep$cameraModel)))
+
+    # WI end_date is a calendar date: the deployment runs to the end of it.
+    end <- stats::setNames(dep$deploymentEnd, dep$deploymentID)
+    testthat::expect_identical(end[["DEP2"]], "2021-11-04T23:59:59Z")
+
+    # WI "Adult" maps to the Camtrap DP enum, "Unknown" has no match.
+    life <- stats::setNames(obs$lifeStage, obs$mediaID)
+    sex <- stats::setNames(obs$sex, obs$mediaID)
+    testthat::expect_identical(life[["img-jaguar"]], "adult")
+    testthat::expect_true(is.na(sex[["img-jaguar"]]) || sex[["img-jaguar"]] == "")
+})
+
+testthat::test_that("WI value helpers follow the Camtrap DP enums", {
+    testthat::expect_identical(
+        saira:::wi_end_of_day(c("2021-11-04 00:00:00", "2021-11-04",
+                                "2021-11-04 15:30:00", NA)),
+        c("2021-11-04 23:59:59", "2021-11-04 23:59:59",
+          "2021-11-04 15:30:00", NA)
+    )
+    testthat::expect_identical(
+        saira:::wi_feature_type(c("Trail game", "Road paved", "Water source",
+                                  "Trail - game", "None", "Other", NA)),
+        c("trailGame", "roadPaved", "waterSource", "trailGame", NA, NA, NA)
+    )
+    testthat::expect_identical(
+        saira:::wi_enum(tolower(c("Adult", "Juvenile", "Unknown", "Mixed", NA)),
+                        c("adult", "subadult", "juvenile")),
+        c("adult", "juvenile", NA, NA, NA)
+    )
 })
 
 testthat::test_that("wi_to_camtrap_csv stops when required columns are missing", {
@@ -222,21 +303,48 @@ testthat::test_that("synthesize_camtrap_descriptor writes a valid descriptor", {
     testthat::expect_match(desc$profile, "camtrap-dp-profile\\.json$")
     resource_names <- vapply(desc$resources, function(r) r$name, character(1))
     testthat::expect_setequal(resource_names, c("deployments", "observations"))
+    # write_dwc() copies id and title to datasetID and datasetName.
+    testthat::expect_null(desc$id)
+    testthat::expect_null(desc$title)
 })
 
-# require_camtrapdp ------------------------------------------------------
+# localize_camtrap_schemas -----------------------------------------------
 
-testthat::test_that("require_camtrapdp errors with translatable message when missing", {
-    testthat::skip_if(requireNamespace("camtrapdp", quietly = TRUE),
-                      "camtrapdp is installed.")
-    testthat::expect_error(
-        saira:::require_camtrapdp(lang = "en"),
-        regexp = "camtrapdp"
+testthat::test_that("localize_camtrap_schemas points schema URLs at bundled copies", {
+    dir <- tempfile("local_schema_")
+    dir.create(dir)
+    withr::defer(unlink(dir, recursive = TRUE))
+    base <- "https://raw.githubusercontent.com/tdwg/camtrap-dp/"
+    other <- "https://example.org/custom-table-schema.json"
+    desc_path <- file.path(dir, "datapackage.json")
+    jsonlite::write_json(list(resources = list(
+        list(name = "deployments", schema = paste0(base, "1.0/deployments-table-schema.json")),
+        list(name = "media", schema = paste0(base, "1.0.1/media-table-schema.json")),
+        list(name = "observations", schema = paste0(base, "1.0.2/observations-table-schema.json")),
+        list(name = "extra", schema = other)
+    )), desc_path, auto_unbox = TRUE)
+
+    saira:::localize_camtrap_schemas(desc_path)
+    desc <- jsonlite::fromJSON(desc_path, simplifyVector = FALSE)
+    refs <- vapply(desc$resources, function(r) r$schema, character(1))
+    testthat::expect_identical(refs[1:3], c(
+        "saira-camtrap-dp-1.0-deployments-table-schema.json",
+        "saira-camtrap-dp-1.0.1-media-table-schema.json",
+        "saira-camtrap-dp-1.0.2-observations-table-schema.json"
+    ))
+    testthat::expect_identical(refs[[4]], other)
+    # Each copy is the bundled schema of the same version.
+    testthat::expect_identical(
+        unname(tools::md5sum(file.path(dir, refs[[2]]))),
+        unname(tools::md5sum(system.file("extdata", "camtrap-dp", "1.0.1",
+                                         "media-table-schema.json",
+                                         package = "saira")))
     )
 })
 
-# read_camtrap_dp_zip round-trips (needs camtrapdp + internet) -----------
+# read_camtrap_dp_zip round-trips --------------------------------------
 
+# Only example_dataset() needs internet. Table schemas come from inst/extdata.
 skip_if_offline <- function() {
     ok <- tryCatch({
         con <- url("https://raw.githubusercontent.com/tdwg/camtrap-dp/1.0.2/camtrap-dp-profile.json")
@@ -248,7 +356,6 @@ skip_if_offline <- function() {
 }
 
 testthat::test_that("read_camtrap_dp_zip round-trips a descriptor zip (canonical example)", {
-    testthat::skip_if_not_installed("camtrapdp")
     skip_if_offline()
     src_pkg <- tryCatch(camtrapdp::example_dataset(), error = function(e) NULL)
     testthat::skip_if(is.null(src_pkg), "camtrapdp::example_dataset() unavailable.")
@@ -290,7 +397,6 @@ testthat::test_that("read_camtrap_dp_zip round-trips a descriptor zip (canonical
 })
 
 testthat::test_that("read_camtrap_dp_zip round-trips a loose Camtrap DP csv zip", {
-    testthat::skip_if_not_installed("camtrapdp")
     skip_if_offline()
     src_pkg <- tryCatch(camtrapdp::example_dataset(), error = function(e) NULL)
     testthat::skip_if(is.null(src_pkg), "camtrapdp::example_dataset() unavailable.")
@@ -323,9 +429,30 @@ testthat::test_that("read_camtrap_dp_zip round-trips a loose Camtrap DP csv zip"
     testthat::expect_true("scientificName" %in% names(df))
 })
 
-testthat::test_that("read_camtrap_dp_zip round-trips a Wildlife Insights zip (animals only)", {
-    testthat::skip_if_not_installed("camtrapdp")
+testthat::test_that("read_camtrap_dp_zip reads a loose csv zip without media.csv", {
     skip_if_offline()
+    src_pkg <- tryCatch(camtrapdp::example_dataset(), error = function(e) NULL)
+    testthat::skip_if(is.null(src_pkg), "camtrapdp::example_dataset() unavailable.")
+
+    src_dir <- tempfile("camtrap_no_media_src_")
+    dir.create(src_dir)
+    withr::defer(unlink(src_dir, recursive = TRUE))
+    camtrapdp::write_camtrapdp(src_pkg, directory = src_dir)
+    unlink(file.path(src_dir, c("datapackage.json", "media.csv")))
+
+    zip_path <- tempfile("camtrap_no_media_", fileext = ".zip")
+    withr::defer(unlink(zip_path))
+    withr::with_dir(src_dir, {
+        zip::zip(zipfile = zip_path, files = list.files("."))
+    })
+
+    pkg <- suppressWarnings(saira:::read_camtrap_dp_zip(zip_path, lang = "en"))
+    testthat::expect_equal(nrow(camtrapdp::media(pkg)), 0L)
+    df <- suppressWarnings(saira:::convert_camtrap_to_dwc_occurrence(pkg, lang = "en"))
+    testthat::expect_gt(nrow(df), 0L)
+})
+
+testthat::test_that("read_camtrap_dp_zip round-trips a Wildlife Insights zip (animals only)", {
 
     fx <- wi_zip_fixture()
     withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
@@ -365,8 +492,6 @@ testthat::test_that("read_camtrap_dp_zip round-trips a Wildlife Insights zip (an
 })
 
 testthat::test_that("read_camtrap_dp_zip sets gbifIngestion$observationLevel = 'media' on WI", {
-    testthat::skip_if_not_installed("camtrapdp")
-    skip_if_offline()
 
     fx <- wi_zip_fixture()
     withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
@@ -383,8 +508,6 @@ testthat::test_that("read_camtrap_dp_zip sets gbifIngestion$observationLevel = '
 })
 
 testthat::test_that("convert_camtrap_to_dwc_occurrence errors on empty occurrence (all blank/human)", {
-    testthat::skip_if_not_installed("camtrapdp")
-    skip_if_offline()
 
     # WI fixture with only blank + human rows — no animals to export.
     deployments <- c(
@@ -540,8 +663,6 @@ testthat::test_that("wi_to_camtrap_csv leaves habitat empty and defaults count t
 # convert_camtrap_to_dwc_occurrence: WI eventDate carries no Z (C1) ------
 
 testthat::test_that("WI conversion strips the fabricated UTC designator from eventDate", {
-    testthat::skip_if_not_installed("camtrapdp")
-    skip_if_offline()
 
     fx <- wi_zip_fixture()
     withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
@@ -564,4 +685,157 @@ testthat::test_that("WI conversion strips the fabricated UTC designator from eve
     }
     testthat::expect_false(any(grepl("Z", df$eventDate)))
     testthat::expect_true(any(grepl("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$", df$eventDate)))
+    testthat::expect_identical(df$samplingEffort[1],
+                               "2021-08-25T00:00:00/2021-11-04T23:59:59")
+    # The synthesized descriptor must not reach the export as dataset metadata.
+    testthat::expect_false(any(c("datasetName", "datasetID") %in% names(df)))
 })
+
+testthat::test_that("WI read and conversion remove their temporary directories", {
+    fx <- wi_zip_fixture()
+    withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
+
+    before <- list.files(tempdir())
+    pkg <- suppressWarnings(saira:::read_camtrap_dp_zip(fx$zip, lang = "en"))
+    suppressMessages(saira:::convert_camtrap_to_dwc_occurrence(pkg, lang = "en"))
+    testthat::expect_length(setdiff(list.files(tempdir()), before), 0L)
+})
+
+# WI sequence projects ----------------------------------------------------
+
+testthat::test_that("wi_to_camtrap_csv writes one event-level observation per sequence row", {
+    fx <- wi_sequence_zip_fixture()
+    dest <- tempfile("wi_seq_unzip_")
+    dir.create(dest)
+    utils::unzip(fx$zip, exdir = dest)
+    withr::defer(unlink(c(fx$dir, fx$zip, dest), recursive = TRUE))
+
+    norm_dir <- saira:::wi_to_camtrap_csv(dest, lang = "en")
+    obs <- utils::read.csv(file.path(norm_dir, "observations.csv"),
+                           stringsAsFactors = FALSE, na.strings = "")
+    media <- utils::read.csv(file.path(norm_dir, "media.csv"),
+                             stringsAsFactors = FALSE, na.strings = "")
+
+    testthat::expect_identical(nrow(media), 7L)
+    testthat::expect_identical(nrow(obs), 5L)
+    testthat::expect_true(all(obs$observationLevel == "event"))
+    testthat::expect_true(all(is.na(obs$mediaID)))
+    testthat::expect_identical(
+        obs$observationID,
+        c("seq-blank-obs-1", "seq-jaguar-obs-1", "seq-mixed-obs-1",
+          "seq-mixed-obs-2", "seq-human-obs-1")
+    )
+    testthat::expect_identical(obs$observationType,
+                               c("blank", "animal", "animal", "animal", "human"))
+    testthat::expect_identical(obs$count, c(1L, 2L, 1L, 3L, 1L))
+
+    jaguar <- obs[obs$eventID == "seq-jaguar", ]
+    testthat::expect_identical(jaguar$eventStart, "2021-09-15T23:12:00Z")
+    testthat::expect_identical(jaguar$eventEnd, "2021-09-15T23:12:40Z")
+    testthat::expect_identical(jaguar$classificationMethod, "machine")
+    testthat::expect_equal(jaguar$classificationProbability, 0.92)
+    testthat::expect_identical(jaguar$lifeStage, "adult")
+    testthat::expect_identical(jaguar$sex, "female")
+})
+
+testthat::test_that("WI sequence projects export one occurrence per animal identification", {
+    fx <- wi_sequence_zip_fixture()
+    withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
+
+    pkg <- saira:::read_camtrap_dp_zip(fx$zip, lang = "en")
+    testthat::expect_null(pkg$gbifIngestion$observationLevel)
+    # camtrapdp links each image to its sequence by the event time window.
+    media <- camtrapdp::media(pkg)
+    testthat::expect_identical(
+        stats::setNames(media$eventID, media$mediaID)[c("img-3", "img-5", "img-6")],
+        c("img-3" = "seq-jaguar", "img-5" = "seq-jaguar", "img-6" = "seq-mixed")
+    )
+
+    df <- saira:::convert_camtrap_to_dwc_occurrence(pkg, lang = "en")
+    df <- df[order(df$occurrenceID), ]
+    testthat::expect_identical(df$occurrenceID,
+                               c("seq-jaguar-obs-1", "seq-mixed-obs-1", "seq-mixed-obs-2"))
+    testthat::expect_identical(df$scientificName,
+                               c("Panthera onca", "Panthera onca", "Tapirus terrestris"))
+    testthat::expect_equal(as.integer(df$individualCount), c(2L, 1L, 3L))
+    testthat::expect_identical(
+        df$eventDate,
+        c("2021-09-15T23:12:00/2021-09-15T23:12:40",
+          "2021-10-01T03:30:00", "2021-10-01T03:30:00")
+    )
+})
+
+testthat::test_that("WI image projects keep media-level observations", {
+    fx <- wi_zip_fixture()
+    withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
+
+    pkg <- saira:::read_camtrap_dp_zip(fx$zip, lang = "en")
+    testthat::expect_identical(pkg$gbifIngestion$observationLevel, "media")
+    testthat::expect_true(all(camtrapdp::observations(pkg)$observationLevel == "media"))
+})
+
+testthat::test_that("WI sequence project without sequences.csv stops with a clear error", {
+    fx <- wi_sequence_zip_fixture(with_sequences = FALSE)
+    dest <- tempfile("wi_seq_unzip_")
+    dir.create(dest)
+    utils::unzip(fx$zip, exdir = dest)
+    withr::defer(unlink(c(fx$dir, fx$zip, dest), recursive = TRUE))
+    testthat::expect_error(
+        saira:::wi_to_camtrap_csv(dest, lang = "en"),
+        "sequences.csv", fixed = TRUE
+    )
+})
+
+testthat::test_that("WI projects.csv without a final newline reads without a warning", {
+    fx <- wi_sequence_zip_fixture()
+    dest <- tempfile("wi_seq_unzip_")
+    dir.create(dest)
+    utils::unzip(fx$zip, exdir = dest)
+    withr::defer(unlink(c(fx$dir, fx$zip, dest), recursive = TRUE))
+    # The real WI export ends projects.csv without a newline.
+    cat("project_id,project_name,project_short_name,project_type\n1,P,TP,Sequence",
+        file = file.path(dest, "projects.csv"))
+
+    testthat::expect_no_warning(norm_dir <- saira:::wi_to_camtrap_csv(dest, lang = "en"))
+    obs <- utils::read.csv(file.path(norm_dir, "observations.csv"),
+                           stringsAsFactors = FALSE)
+    testthat::expect_true(all(obs$observationLevel == "event"))
+})
+
+# camtrap_error_message ---------------------------------------------------
+
+testthat::test_that("camtrap_error_message shows Saira errors without a prefix", {
+    fx <- wi_sequence_zip_fixture(with_sequences = FALSE)
+    dest <- tempfile("wi_seq_unzip_")
+    dir.create(dest)
+    utils::unzip(fx$zip, exdir = dest)
+    withr::defer(unlink(c(fx$dir, fx$zip, dest), recursive = TRUE))
+    e <- tryCatch(saira:::wi_to_camtrap_csv(dest, lang = "pt"),
+                  error = function(e) e)
+    testthat::expect_s3_class(e, "saira_camtrap_error")
+    testthat::expect_identical(saira:::camtrap_error_message(e, "pt"),
+                               saira:::tr("err_camtrap_wi_sequences_missing", "pt"))
+
+    e <- tryCatch(saira:::camtrap_stop("err_camtrap_invalid_zip", "en"),
+                  error = function(e) e)
+    testthat::expect_identical(saira:::camtrap_error_message(e, "en"),
+                               saira:::tr("err_camtrap_invalid_zip", "en"))
+})
+
+testthat::test_that("camtrap_error_message shows the root cause of other errors", {
+    cause <- simpleError("Can't find column `x`.")
+    wrapped <- structure(
+        class = c("rlang_error", "error", "condition"),
+        list(message = "In index: 1.", parent = cause, call = NULL)
+    )
+    msg <- saira:::camtrap_error_message(wrapped, "en")
+    testthat::expect_identical(
+        msg, paste(saira:::tr("err_read_failed", "en"), "Can't find column `x`.")
+    )
+    testthat::expect_false(grepl("In index", msg, fixed = TRUE))
+    testthat::expect_identical(
+        saira:::camtrap_error_message(simpleError("boom"), "pt"),
+        paste(saira:::tr("err_read_failed", "pt"), "boom")
+    )
+})
+

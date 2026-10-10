@@ -3,26 +3,34 @@
    ============================================================================= */
 
 /* Scrollable container for mapping cards */
+/* No horizontal scroll bar for the 32px the grid starts outside on a filter
+   change (ADR-156). Fixed, because a change of overflow lays out all the
+   cards again in the first frame of the slide. */
 .mapping-scroll-container {
-  max-height: calc(100vh - 200px);
+  max-height: calc(100vh - var(--app-header-height) - 120px);
+  overflow-x: hidden;
   overflow-y: auto;
   padding-right: 15px;
   scrollbar-gutter: stable;
 }
 
+/* The filter slide gives the grid its own layer. On a transparent layer
+   Chrome splits the cards into one layer each (88 with all cards). The card
+   color makes the layer opaque, so Chrome draws all cards in one layer
+   (ADR-157). Only during the slide: at rest the box stays transparent, so a
+   theme switch does not change. */
+.mapping-grid-box.seg-enter {
+  background: var(--bg-card);
+}
+
 /* Category headers */
 .category-header {
-  background: linear-gradient(135deg, var(--accent) 0%, var(--text-primary) 100%);
-  color: #ffffff;
-  padding: var(--space-3) var(--space-5);
+  color: var(--text-primary);
+  padding: 0;
   margin: var(--space-6) 0 var(--space-3) 0;
-  border-radius: var(--radius);
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
   font-weight: var(--weight-semibold);
-  font-size: var(--text-lg);
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  box-shadow: var(--shadow);
   /* These headers are the scroll-to-class anchors. Leave room for the sticky
      .mapping-class-pillbar (top: 0; z-index: 5) so scrollIntoView lands the
      header below the pillbar instead of behind it. */
@@ -70,74 +78,251 @@
   }
 }
 
+/* Relevant filter (ADR-137): after the cards of a class, one line lists the
+   unmapped optional terms. It opens the compact rows, which are the real
+   cards with .field-card-compact, so the inputs stay bound. The line and the
+   rows are items of the class grid (ADR-157): the order property puts them
+   after the cards, so a filter switch moves no card in the DOM. */
+.mapping-more-group {
+  grid-column: 1 / -1;
+  order: 1;
+  /* The term list does not wrap. Without this its full width sets the
+     minimum of the one column below 860px. */
+  min-width: 0;
+  margin-top: var(--space-2);
+}
+
+/* The grid gap is --space-3. Below the cards the line keeps its old
+   --space-2. */
+.mapping-card-grid:has(> .field-card:not(.field-card-collapsed)) > .mapping-more-group {
+  margin-top: calc(var(--space-2) - var(--space-3));
+}
+
+.mapping-more {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-4);
+  background: transparent;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.mapping-more:hover {
+  border-color: var(--accent);
+}
+
+.mapping-more:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-primary);
+}
+
+.mapping-more-count,
+.mapping-more-action {
+  white-space: nowrap;
+}
+
+.mapping-more-terms {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.mapping-more-action {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.mapping-more-group .when-open,
+.mapping-more-group.is-open .when-closed {
+  display: none;
+}
+
+.mapping-more-group.is-open .when-open {
+  display: inline;
+}
+
+/* The rows keep the --space-2 gap they had in their own grid: a negative
+   margin on each side cuts the --space-3 gap of the class grid. */
+.field-card-collapsed {
+  --row-cut: calc(var(--space-2) - var(--space-3));
+  order: 2;
+  align-self: start;
+  margin-top: var(--row-cut);
+}
+
+.mapping-card-grid:has(> .mapping-more-group:not(.is-open)) > .field-card-collapsed {
+  display: none;
+}
+
+.field-card-collapsed:nth-child(3n + 1 of .field-card-collapsed) {
+  margin-right: calc(var(--row-cut) * 2 / 3);
+}
+
+.field-card-collapsed:nth-child(3n + 2 of .field-card-collapsed) {
+  margin-right: calc(var(--row-cut) / 3);
+  margin-left: calc(var(--row-cut) / 3);
+}
+
+.field-card-collapsed:nth-child(3n of .field-card-collapsed) {
+  margin-left: calc(var(--row-cut) * 2 / 3);
+}
+
+@media (max-width: 1280px) {
+  .field-card-collapsed:nth-child(n of .field-card-collapsed) {
+    margin-right: 0;
+    margin-left: 0;
+  }
+
+  .field-card-collapsed:nth-child(2n + 1 of .field-card-collapsed) {
+    margin-right: calc(var(--row-cut) / 2);
+  }
+
+  .field-card-collapsed:nth-child(2n of .field-card-collapsed) {
+    margin-left: calc(var(--row-cut) / 2);
+  }
+}
+
+@media (max-width: 860px) {
+  .field-card-collapsed:nth-child(n of .field-card-collapsed) {
+    margin-right: 0;
+    margin-left: 0;
+  }
+}
+
+/* Compact row: term name, then the column select, then "Fixed value" for
+   the constant-value terms. Everything else on the card is hidden. */
+.field-card.field-card-compact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+}
+
+.field-card.field-card-compact:has(> .field-compact-expand) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) auto;
+}
+
+.field-card-compact.field-card-wide {
+  grid-column: auto;
+}
+
+.field-card-compact .field-header-row,
+.field-card-compact .field-header-name {
+  flex-wrap: nowrap;
+  min-width: 0;
+  margin: 0;
+}
+
+.field-card-compact .field-header {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.field-card-compact .field-desc,
+.field-card-compact .field-desc-help,
+.field-card-compact .field-status-badge,
+.field-card-compact .shiny-html-output,
+.field-card-compact .field-or-divider,
+.field-card-compact .fixed-value-toggle,
+.field-card-compact .fixed-value-toggle ~ .shiny-panel-conditional,
+.field-card-compact bslib-layout-columns > :nth-child(2) {
+  display: none;
+}
+
+/* One track for the select: the separator input of a multi-value term is
+   hidden above, and the term keeps its default separator. bslib forces
+   display: grid, so the track and the item span change instead. */
+.field-card-compact .bslib-grid {
+  grid-template-columns: minmax(0, 1fr);
+  margin-bottom: 0;
+}
+
+.field-card-compact .bslib-grid > .bslib-grid-item {
+  grid-column: 1 / -1;
+}
+
+.field-card-compact .shiny-input-container {
+  margin-bottom: 0;
+}
+
+.field-compact-expand {
+  display: none;
+  padding: 0;
+  background: none;
+  border: 0;
+  color: var(--accent);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.field-card-compact .field-compact-expand {
+  display: inline;
+}
+
 /* Field cards */
 .field-card {
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
   /* Tighter than the --space-3 the card used at two columns: with three
      columns there are half again as many cards on screen, so the padding is
      read as gutter between cards rather than as breathing room inside one. */
-  padding: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   /* Grid items default to min-width:auto and will not shrink below their
      content's intrinsic width; without this the no-wrap .field-card-sample
      blows the card past its 1fr track and the ellipsis never engages. */
   min-width: 0;
-  transition: var(--transition-base);
+  /* Colors only: a filter switch changes the padding and the margins of a
+     card in place, and a layout transition then runs on the main thread. */
+  transition: var(--transition-colors);
 }
 
 .field-card:hover {
-  border-color: var(--primary);
-  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
 }
 
 .field-card.field-unmapped {
   background-color: var(--bg-card);
-  border-color: var(--border);
-  opacity: 0.7;
-}
-
-.field-card.field-unmapped:hover {
-  opacity: 1;
 }
 
 .field-card.field-mapped {
   background-color: var(--bg-card);
-  border-color: var(--success);
-  box-shadow: none;
+  border-color: var(--state-mapped-border);
 }
 
 .field-card.field-mapped:hover {
   border-color: var(--success);
-  box-shadow: none;
 }
 
 /* Cards that need the user's attention. Same grammar as .field-mapped above:
    the state is carried by the border colour plus a light semantic fill, never
-   by a thick single-side stripe (ADR-040). Both reset the .field-unmapped
-   opacity, since a card that needs attention must not read as faded. */
-.field-card.field-attention {
-  border-color: var(--warning-border-strong);
-  background-color: var(--warning-bg);
-  opacity: 1;
-  box-shadow: none;
-}
-
+   by a thick single-side stripe (ADR-040). */
+.field-card.field-attention,
 .field-card.field-attention:hover {
-  border-color: var(--warning-border-strong);
-  box-shadow: none;
+  border-color: var(--state-attention-border);
+  background-color: var(--state-attention-bg);
 }
 
-.field-card.field-required-missing {
-  border-color: var(--error-border-strong);
-  background-color: var(--error-bg);
-  opacity: 1;
-  box-shadow: none;
-}
-
+.field-card.field-required-missing,
 .field-card.field-required-missing:hover {
-  border-color: var(--error-border-strong);
-  box-shadow: none;
+  border-color: var(--state-missing-border);
+  background-color: var(--state-missing-bg);
 }
 
 /* Field header (term name) */
@@ -145,15 +330,18 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
   margin-bottom: var(--space-1);
 }
 
-/* Keeps the term name and its "?" together as one shrinkable unit, so the
-   badge stays pinned to the right edge. min-width:0 lets the pair shrink
-   instead of pushing the badge out of a three-column card. */
+/* Keeps the term name, its "?" and the Required tag together, so the status
+   badge stays pinned to the right edge. When the row is too narrow, the badge
+   and then the tag move to the next line, so the term name stays whole.
+   min-width:0 lets the group shrink in a three-column card. */
 .field-header-name {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
   min-width: 0;
@@ -175,43 +363,73 @@
   color: var(--text-primary);
   margin-bottom: 0;
   /* The longest term (coordinateUncertaintyInMeters, 29 mono characters) is
-     about 292px and a three-column card gives it 313px of content box, so with
-     the "?" and a badge alongside it has to be able to break. */
-  overflow-wrap: anywhere;
+     about 292px and a three-column card gives it 313px of content box.
+     break-word, not anywhere: anywhere lets flex shrink the name below one
+     word, so it broke mid-word beside the tags. */
+  overflow-wrap: break-word;
 }
 
+.field-required-tag {
+  flex-shrink: 0;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-chip);
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+}
+
+/* The Required tag carries the term's state: green once mapped, red while
+   missing. It follows the card's state classes, which the server toggles in
+   place, so it needs no re-render (ADR-132). */
+.field-card.field-mapped .field-required-tag {
+  color: var(--badge-auto-fg);
+  background: var(--badge-auto-bg);
+  border-color: var(--state-mapped-border);
+}
+
+.field-card.field-required-missing .field-required-tag {
+  color: var(--badge-missing-fg);
+  background: var(--state-missing-bg);
+  border-color: var(--state-missing-border);
+}
+
+/* Status badges: one pastel pill per status. Own modifiers, not Bootstrap's
+   bg-* utilities, which force their colors. */
 .field-status-badge {
   flex-shrink: 0;
   cursor: help;
   white-space: nowrap;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-chip);
 }
 
-.badge-ambiguous {
-  background-color: var(--color-badge-ambiguous);
-  color: #ffffff;
-}
-
-.badge-template {
-  background-color: var(--color-badge-template);
-  color: #ffffff;
-}
+.field-status-badge--auto { background-color: var(--badge-auto-bg); color: var(--badge-auto-fg); }
+.field-status-badge--suggested { background-color: var(--badge-suggested-bg); color: var(--badge-suggested-fg); }
+.field-status-badge--ambiguous { background-color: var(--badge-ambiguous-bg); color: var(--badge-ambiguous-fg); }
+.field-status-badge--edited { background-color: var(--badge-edited-bg); color: var(--badge-edited-fg); }
+.field-status-badge--alias { background-color: var(--badge-alias-bg); color: var(--badge-alias-fg); }
+.field-status-badge--template { background-color: var(--badge-template-bg); color: var(--badge-template-fg); }
+.field-status-badge--manual { background-color: var(--badge-manual-bg); color: var(--badge-manual-fg); }
 
 /* Term filled by the per-species establishment assistant rather than by a
    mapped column. Distinct from MANUAL (grey) so the card stops reading as
    untouched once the assistant has answers. */
-.badge-assistant {
-  background-color: #4a5568;
-  color: #ffffff;
-}
+.field-status-badge--assistant { background-color: var(--badge-assistant-bg); color: var(--badge-assistant-fg); }
 
 /* Field description. Clamped to two lines so every card in a grid row is the
    same height: the row is sized by its tallest item, and a term added from the
    full 262-term catalog via "Add term" can carry a much longer definition than
    the base set. The full text stays in the .field-desc-help tooltip. */
 .field-desc {
-  font-size: var(--text-sm);
+  font-size: 0.9rem;
   color: var(--text-muted);
-  margin-bottom: var(--space-1);
+  margin-bottom: var(--space-2);
   /* Two lines of 0.8rem support text do not need reading leading, and this is
      the single largest block of height in the card. */
   line-height: var(--leading-tight);
@@ -258,7 +476,7 @@
 .field-desc-help {
   flex-shrink: 0;
   cursor: help;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   line-height: 1;
   color: var(--text-muted);
@@ -309,10 +527,11 @@
   top: 2.75rem;
   z-index: 4;
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius) var(--radius) 0 0;
+  border: 1px solid var(--border-default);
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   padding: var(--space-2) var(--space-3);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -320,8 +539,8 @@
 }
 
 .mapping-row-list {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-default);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   overflow: hidden;
   background: var(--bg-card);
 }
@@ -349,20 +568,14 @@
   outline-offset: -2px;
 }
 
-.field-row.field-unmapped {
-  opacity: 0.7;
-}
-
 /* Same semantic fill as the cards, minus the border: a row has neighbours on
    two sides, so a full border would read as a box inside the list. */
 .field-row.field-attention {
-  background-color: var(--warning-bg);
-  opacity: 1;
+  background-color: var(--state-attention-bg);
 }
 
 .field-row.field-required-missing {
-  background-color: var(--error-bg);
-  opacity: 1;
+  background-color: var(--state-missing-bg);
 }
 
 .field-row-term {
@@ -413,8 +626,8 @@
    where the pending work is, without costing a row of height. */
 .pill-state-dot {
   display: inline-block;
-  width: 0.45rem;
-  height: 0.45rem;
+  width: 0.5rem;
+  height: 0.5rem;
   border-radius: var(--radius-full);
   margin-right: 0.4rem;
   vertical-align: middle;
@@ -422,7 +635,7 @@
 }
 
 .pill-state-dot.is-blocked {
-  background-color: var(--error);
+  background-color: var(--error-fill);
 }
 
 .pill-state-dot.is-review {
@@ -432,65 +645,54 @@
 /* "Next pending" button, pinned to the end of the pill bar. Reads as an action
    while there is something to jump to, and as a spent control when the queue
    is empty. */
-.next-pending-pill {
+.mapping-class-pillbar .next-pending-pill {
   margin-left: auto;
-  border-color: var(--error);
-  color: var(--error);
+  border-color: var(--step-active);
+  color: var(--step-active);
+  font-weight: 700;
 }
 
-.next-pending-pill.is-idle {
-  border-color: var(--border);
+.mapping-class-pillbar .next-pending-pill.is-idle {
+  border-color: var(--border-default);
   color: var(--text-muted);
+  font-weight: var(--weight-regular);
 }
 
 .next-pending-count {
   font-variant-numeric: tabular-nums;
 }
 
+/* Red like the Pending filter count and the nav badge: work left to do. */
 .next-pending-count:not(:empty) {
   margin-left: 0.35rem;
   padding: 0 0.35rem;
   border-radius: var(--radius-full);
-  background-color: var(--error);
-  color: #ffffff;
-}
-
-/* Required-fields status pills in the sidebar */
-.mapping-required-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  margin-bottom: var(--space-3);
-  padding: var(--space-3);
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  background-color: var(--error-fill);
+  color: var(--on-fill);
 }
 
 /* Select input styling in mapping cards */
 .field-card .selectize-input {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  padding: 0.35rem var(--space-2);
+  padding: 0.4rem var(--space-3);
   font-size: var(--text-sm);
 }
 
 .field-card .selectize-input.focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  box-shadow: var(--focus-ring-primary);
 }
 
 /* Keep mapped selectize neutral (no yellow highlight) */
 .field-card.field-mapped .selectize-input.has-items {
-  background-color: var(--bg-main);
-  border-color: var(--border);
+  background-color: var(--bg-card);
+  border-color: var(--border-strong);
 }
 
 .field-card.field-mapped .selectize-input .item {
-  background-color: #ffffff;
-  border: 1px solid var(--border-default);
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95);
+  background-color: var(--bg-main);
+  border: 0;
   color: var(--text-primary);
   border-radius: var(--radius-sm);
 }
@@ -507,7 +709,7 @@
 .field-card input[type="text"]:focus {
   border-color: var(--primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+  box-shadow: var(--focus-ring-primary);
 }
 
 /* Alert inside field card */
@@ -515,12 +717,18 @@
   margin-bottom: 0;
 }
 
-/* Dropdown arrow for all selectize inputs */
-.field-card .selectize-control.multi .selectize-input::after {
+/* Dropdown arrow for all selectize inputs. The single select gets a border
+   triangle from selectize, so the border and size are reset here. The :is()
+   and :not() give the specificity to win over the selectize rule. */
+.field-card .selectize-control:is(.single, .multi) .selectize-input:not(.no-arrow)::after {
   content: '\25BE';
   position: absolute;
   right: 10px;
   top: 50%;
+  width: auto;
+  height: auto;
+  margin: 0;
+  border: 0;
   transform: translateY(-50%);
   font-size: var(--text-base);
   color: var(--text-muted);
@@ -529,19 +737,92 @@
 }
 
 /* Rotate arrow when dropdown is open */
-.field-card .selectize-control.multi .selectize-input.dropdown-active::after {
+.field-card .selectize-control:is(.single, .multi) .selectize-input:not(.no-arrow).dropdown-active::after {
+  margin: 0;
+  border: 0;
   transform: translateY(-50%) rotate(180deg);
 }
 
-.field-card .selectize-control.multi .selectize-input {
+.field-card .selectize-control:is(.single, .multi) .selectize-input {
   position: relative;
   padding-right: 28px;
 }
 
 /* Mapping sidebar filter labels */
 .mapping-sidebar .form-label {
-  font-weight: var(--weight-semibold);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
   margin-bottom: var(--space-2);
+}
+
+/* Flat white sidebar with 1px dividers (bslib paints it in the page color by default). */
+.bslib-sidebar-layout:has(> .mapping-sidebar) {
+  --_sidebar-bg: var(--bg-card);
+  --bslib-sidebar-bg: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+}
+
+.mapping-sidebar hr {
+  border-color: var(--border-light);
+  opacity: 1;
+  margin: var(--space-4) 0;
+}
+
+.mapping-sidebar .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-size: var(--text-base-sm);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+}
+
+
+/* Cards | List: a segmented control over the native radios. */
+.mapping-sidebar .shiny-input-radiogroup .shiny-options-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--bg-main);
+  border-radius: var(--radius);
+}
+
+.mapping-sidebar .shiny-input-radiogroup .radio-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.mapping-sidebar .shiny-input-radiogroup .radio-inline input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mapping-sidebar .shiny-input-radiogroup .radio-inline:has(input:checked) {
+  background: var(--bg-card);
+  border-color: var(--border-default);
+  color: var(--step-active);
+  font-weight: 700;
+}
+
+.mapping-sidebar .shiny-input-radiogroup .radio-inline:has(input:focus-visible) {
+  box-shadow: var(--focus-ring-primary);
 }
 
 .mapping-beta-help {
@@ -563,35 +844,6 @@
   margin: 0;
 }
 
-.mapping-sidebar .rostrum-switch-block {
-  margin-bottom: 0;
-}
-
-.mapping-sidebar .rostrum-switch-block>.shiny-input-container {
-  margin-bottom: 0;
-}
-
-.mapping-sidebar .rostrum-switch-block .form-check.form-switch {
-  margin: 0;
-  padding-left: 0;
-  display: inline-flex;
-  align-items: center;
-  column-gap: var(--space-2);
-  min-height: 1.5rem;
-}
-
-.mapping-sidebar .rostrum-switch-block .form-check-input {
-  cursor: pointer;
-  float: none;
-  margin: 0;
-}
-
-.mapping-sidebar .rostrum-switch-block .form-check-label {
-  font-weight: var(--weight-medium);
-  color: var(--text-primary);
-  margin: 0;
-}
-
 /* Class pill bar: sticky visibility filter + scroll navigation */
 .mapping-class-pillbar {
   position: sticky;
@@ -599,70 +851,25 @@
   z-index: 5;
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  margin-bottom: var(--space-3);
-  background: var(--bg-main);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
-}
-
-.mapping-required-header {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
+  padding: var(--space-2) 0;
   margin-bottom: var(--space-2);
+  background: var(--bg-card);
 }
 
-.mapping-required-strip-label {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.mapping-required-count {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  padding: 0 0.4rem;
-  border-radius: var(--radius-full);
-  background: var(--info-bg);
+.mapping-class-pillbar .stream-pill {
+  min-height: 34px;
+  padding: 0 var(--space-3);
+  font-size: 0.875rem;
   color: var(--text-primary);
+  border-color: var(--border-strong);
 }
 
-.mapping-required-count.is-complete {
-  background: var(--success-bg);
-}
-
-.mapping-required-chip {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  padding: 0.3rem 0.5rem;
-  border-radius: var(--radius);
-  color: var(--text-primary);
-  width: 100%;
-}
-
-.mapping-required-chip.is-mapped {
-  background: var(--success-bg);
-}
-
-.mapping-required-chip.is-mapped i {
-  color: var(--success);
-}
-
-.mapping-required-chip.is-missing {
-  background: var(--warning-bg);
-}
-
-.mapping-required-chip.is-missing i {
-  color: var(--warning);
+.mapping-class-pillbar .stream-pill:hover:not(:disabled):not(.active) {
+  border-color: var(--step-active);
+  background: var(--bg-card);
+  transform: none;
 }
 
 /* One-line sample preview inside a mapped field card */
@@ -691,7 +898,7 @@
   align-items: center;
   gap: var(--space-2);
   margin: var(--space-3) 0 var(--space-2);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   font-weight: var(--weight-medium);
   letter-spacing: 0.08em;
@@ -728,7 +935,7 @@
 /* Tinted "every row" strip revealed under a fixed-value checkbox. Subtle info
    banner (not a heavy alert) warning the typed value fills every row. */
 .field-allrows-note {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
   color: var(--info);
   background-color: var(--info-bg);
@@ -745,8 +952,8 @@
 }
 
 .modal.automap-loading-host .modal-content {
-  border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-xl);
+  box-shadow: none;
   border: 1px solid var(--border-light);
 }
 
@@ -799,7 +1006,7 @@
   height: 100%;
   width: 0;
   border-radius: var(--radius-full);
-  background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+  background: var(--primary);
   transition: width 0.24s ease;
 }
 
@@ -919,7 +1126,7 @@
 .bor-assistant-progress-bar {
   height: 100%;
   width: 0;
-  background: linear-gradient(90deg, var(--primary), var(--primary-hover));
+  background: var(--primary);
   transition: width 0.2s ease;
 }
 
@@ -952,11 +1159,11 @@
   position: sticky;
   top: 0;
   z-index: 3;
-  background: var(--accent);
+  background: var(--bg-subtle);
   background-clip: padding-box;
-  box-shadow: 0 1px 0 var(--border-strong);
-  border-bottom: 1px solid var(--border-strong);
-  color: #ffffff;
+  box-shadow: 0 1px 0 var(--border-default);
+  border-bottom: 1px solid var(--border-default);
+  color: var(--text-primary);
 }
 
 .bor-assistant-table> :not(caption)>*>* {
@@ -1005,9 +1212,9 @@
 }
 
 .bor-assistant-preview-table thead th {
-  background: var(--accent);
-  color: #ffffff;
-  border-bottom: 1px solid var(--border-strong);
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-default);
 }
 
 .bor-assistant-preview-table td,
@@ -1022,7 +1229,7 @@
 
 .bor-assistant-unmapped-count {
   font-size: var(--text-sm);
-  color: var(--warning);
+  color: var(--warning-text);
   font-weight: var(--weight-medium);
 }
 
@@ -1037,7 +1244,7 @@
 .est-assistant-species-meta {
   font-size: var(--text-xs);
   color: var(--text-muted);
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
 }
 
 .est-assistant-invasive {
@@ -1070,19 +1277,74 @@
 }
 
 .est-card-status-line {
-  color: var(--success);
+  color: var(--success-text);
   font-weight: var(--weight-medium);
 }
 
 .est-card-status-pending {
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .est-assistant-pair-warning {
   margin-top: var(--space-2);
   font-size: var(--text-sm);
-  color: var(--warning);
+  color: var(--warning-text);
   font-weight: var(--weight-medium);
+}
+
+/* A species split by place (ADR-143): a header row, then one indented sub-row
+   per group of records, each with its own selects. */
+.est-split-head > td {
+  border-bottom: 0;
+}
+
+.est-split-head-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.est-split-head-line .est-assistant-invasive {
+  margin-top: 0;
+}
+
+.bor-assistant-table tbody .est-split-sub > td {
+  background-color: var(--bg-subtle);
+}
+
+.est-split-sub > td:first-child {
+  padding-left: var(--space-6);
+}
+
+.est-split-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+.est-split-island .est-split-label {
+  color: var(--warning-text);
+}
+
+.est-island-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* The global .btn padding wins over .btn-sm, so size these here. */
+.est-island-suggest .btn {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  box-shadow: none;
+}
+
+.est-island-suggest.is-applied .est-island-hint,
+.est-island-suggest.is-applied .est-island-apply,
+.est-island-suggest:not(.is-applied) .est-island-undo {
+  display: none;
 }
 
 @media (max-width: 768px) {
@@ -1170,13 +1432,13 @@
 .dynprops-keys-block {
   margin-top: var(--space-3);
   padding: var(--space-3);
-  border-left: 3px solid var(--accent);
-  background: var(--bg-card);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background: var(--bg-subtle);
+  border-radius: var(--radius);
 }
 
 .dynprops-keys-block .custom-field-label {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
   color: var(--text-primary);
@@ -1248,3 +1510,13 @@
   margin: var(--space-1) 0 0;
   padding-left: var(--space-4);
 }
+
+
+/* Panel header: title on the left, All / Mapped / Pending on the right. */
+.mapping-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+

@@ -3,11 +3,11 @@
 #
 # Rules enforced by sanitize_synonyms_table():
 #   - name_score in [0.90, 0.98]
-#   - lang in {"pt", "en", "any"}
+#   - lang in {"pt", "en", "es", "any"}
 #   - No duplicated active (term, synonym, lang) triples after normalization
 #
 # Conventions for this bundle:
-#   - New aliases use "pt" or "en" only (never "any")
+#   - New aliases use "pt", "en" or "es" only (never "any")
 #   - Existing "any" entries retained for backward compatibility
 #   - No aliases that are generic/ambiguous standalone tokens
 #     (avoided: "id", "name", "type", "data", "local" as sole alias)
@@ -578,6 +578,139 @@ dwc_synonyms <- data.frame(
     active = TRUE,
     stringsAsFactors = FALSE
 )
+
+# Spanish aliases (ADR-133). A separate block, so the parallel vectors above
+# stay unchanged. An alias that is identical to a "pt" alias after
+# normalization (provincia, municipio, familia) is not repeated here.
+es_aliases <- c(
+    "nombre cientifico" = "scientificName",
+    "latitud" = "decimalLatitude",
+    "latitud decimal" = "decimalLatitude",
+    "longitud" = "decimalLongitude",
+    "longitud decimal" = "decimalLongitude",
+    "numero de individuos" = "individualCount",
+    "cantidad de individuos" = "individualCount",
+    "colector" = "recordedBy",
+    "colectores" = "recordedBy",
+    "colectado por" = "recordedBy",
+    "recolectado por" = "recordedBy",
+    "fecha de colecta" = "eventDate",
+    "fecha de recoleccion" = "eventDate",
+    "fecha del evento" = "eventDate",
+    "anio" = "year",
+    "fecha de identificacion" = "dateIdentified",
+    "base del registro" = "basisOfRecord",
+    "codigo de la coleccion" = "collectionCode",
+    "codigo de la institucion" = "institutionCode",
+    "conjunto de datos" = "datasetName",
+    "metodo de muestreo" = "samplingProtocol",
+    "protocolo de muestreo" = "samplingProtocol",
+    "esfuerzo de muestreo" = "samplingEffort",
+    "preparaciones" = "preparations",
+    "notas de la ocurrencia" = "occurrenceRemarks",
+    "observaciones de la ocurrencia" = "occurrenceRemarks",
+    "clase" = "class",
+    "orden" = "order",
+    "rango taxonomico" = "taxonRank",
+    "autor del nombre" = "scientificNameAuthorship",
+    "calificador de identificacion" = "identificationQualifier",
+    "nombre comun" = "vernacularName",
+    "nombre vulgar" = "vernacularName",
+    "determinado por" = "identifiedBy",
+    "departamento" = "stateProvince",
+    "localidad" = "locality",
+    "lugar de colecta" = "locality",
+    "notas de la localidad" = "locationRemarks",
+    "latitud original" = "verbatimLatitude",
+    "longitud original" = "verbatimLongitude",
+    "libreta de campo" = "fieldNotes"
+)
+# Scores follow the pt/en entries for the same term: 0.98 for the plain
+# column name, lower for longer or less common spellings.
+es_scores <- c(
+    0.98, 0.98, 0.95, 0.98, 0.95, 0.94, 0.93, 0.95, 0.93, 0.92, 0.92,
+    0.95, 0.94, 0.93, 0.93, 0.95, 0.93, 0.93, 0.93, 0.93, 0.94, 0.93,
+    0.93, 0.93, 0.92, 0.91, 0.95, 0.94, 0.91, 0.91, 0.91, 0.93, 0.92,
+    0.92, 0.92, 0.95, 0.92, 0.91, 0.93, 0.93, 0.91
+)
+stopifnot(length(es_scores) == length(es_aliases))
+dwc_synonyms <- rbind(
+    dwc_synonyms,
+    data.frame(
+        term = unname(es_aliases),
+        synonym = names(es_aliases),
+        name_score = es_scores,
+        lang = "es",
+        active = TRUE,
+        stringsAsFactors = FALSE
+    )
+)
+
+# Common field names from published survey datasets (ADR-139). Short or
+# abbreviated headers (site, method, obs) carried no synonym, so the name
+# gate dropped them before their values were read. "x" and "y" are one
+# letter: Stage 1 caps a one-letter column at SUGERIDO.
+field_names <- data.frame(
+    term = c(
+        rep("locality", 3),
+        rep("decimalLongitude", 2), rep("decimalLatitude", 2),
+        rep("habitat", 6),
+        rep("coordinateUncertaintyInMeters", 6),
+        rep("samplingProtocol", 6),
+        rep("occurrenceRemarks", 8),
+        rep("occurrenceStatus", 5),
+        rep("establishmentMeans", 4),
+        rep("locationID", 3),
+        rep("associatedMedia", 6),
+        rep("eventDate", 6),
+        rep("individualCount", 2)
+    ),
+    synonym = c(
+        "site", "sitio", "site name",
+        "x", "coord x", "y", "coord y",
+        "vegetation", "vegetation type", "vegetacao", "tipo de vegetacao", "vegetacion", "tipo de vegetacion",
+        "precision", "coordinate precision", "precisao", "coordinate uncertainty", "incerteza", "incertidumbre",
+        "method", "methods", "metodo", "metodologia", "protocol", "protocolo",
+        "notes", "remarks", "comments", "obs", "observacao", "observacoes", "comentarios", "observaciones",
+        "presence absence", "presence", "presenca", "presenca ausencia", "presencia ausencia",
+        "origin", "species origin", "origem", "origen",
+        "station", "estacao", "estacion",
+        "photo", "photo id", "foto", "image", "imagem", "imagen",
+        "date", "fecha", "timestamp", "datetime", "data hora", "fecha hora",
+        "individuals", "number of individuals"
+    ),
+    name_score = c(
+        0.92, 0.92, 0.92,
+        0.90, 0.92, 0.90, 0.92,
+        0.91, 0.93, 0.91, 0.93, 0.91, 0.93,
+        0.92, 0.94, 0.92, 0.94, 0.91, 0.91,
+        0.92, 0.91, 0.92, 0.92, 0.92, 0.92,
+        0.91, 0.91, 0.90, 0.91, 0.91, 0.91, 0.90, 0.91,
+        0.94, 0.91, 0.91, 0.94, 0.94,
+        0.91, 0.93, 0.91, 0.91,
+        0.91, 0.91, 0.91,
+        0.92, 0.92, 0.92, 0.92, 0.92, 0.92,
+        0.93, 0.93, 0.93, 0.93, 0.93, 0.93,
+        0.92, 0.94
+    ),
+    lang = c(
+        "en", "pt", "en",
+        "en", "en", "en", "en",
+        "en", "en", "pt", "pt", "es", "es",
+        "en", "en", "pt", "en", "pt", "es",
+        "en", "en", "pt", "pt", "en", "pt",
+        "en", "en", "en", "pt", "pt", "pt", "pt", "es",
+        "en", "en", "pt", "pt", "es",
+        "en", "en", "pt", "es",
+        "en", "pt", "es",
+        "en", "en", "pt", "en", "pt", "es",
+        "en", "es", "en", "en", "pt", "es",
+        "en", "en"
+    ),
+    active = TRUE,
+    stringsAsFactors = FALSE
+)
+dwc_synonyms <- rbind(dwc_synonyms, field_names)
 
 # Validate with the production sanitizer before saving
 pkgload::load_all(quiet = TRUE)

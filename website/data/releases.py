@@ -1,11 +1,11 @@
-# Curated, bilingual release highlights for the website "Novidades / Releases"
-# page. This is the single source of truth for that page: the pre-render script
-# (website/scripts/build_releases.py) turns it into styled cards in both PT and
-# EN. The canonical, exhaustive log stays in the repo-root CHANGELOG.md (English
+# Curated, trilingual release highlights for the website "Novidades / Releases
+# / Novedades" page. This is the single source of truth for that page: the
+# pre-render script (website/scripts/build_releases.py) turns it into styled
+# cards in PT, EN and ES. The canonical, exhaustive log stays in the repo-root CHANGELOG.md (English
 # only); here we keep only recent, user-facing highlights.
 #
 # To add a release: prepend a new dict at the top of RELEASES with the version,
-# the date (YYYY-MM-DD) and a short list of highlights in both languages. Each
+# the date (YYYY-MM-DD) and a short list of highlights in all three languages. Each
 # highlight is (type, text) where type is one of: "added", "changed", "fixed".
 #
 # Style: one line per change, `**scope**: what changed`. No trailing period, no
@@ -25,6 +25,10 @@ RELEASES = [
             ("changed", "**License**: the file publishes the license name (`CC BY 4.0`), not the legalcode URL"),
             ("fixed", "**Mapping guide**: lists only the unmapped columns the CSV actually carries"),
         ],
+        "es": [
+            ("changed", "**Licencia**: el archivo publica el nombre de la licencia (`CC BY 4.0`), no la URL del texto legal"),
+            ("fixed", "**Guía de mapeo**: lista solo las columnas no mapeadas que el CSV realmente trae"),
+        ],
     },
     {
         "version": "0.11.1",
@@ -34,6 +38,9 @@ RELEASES = [
         ],
         "en": [
             ("fixed", "**Upload**: every column is read as text, so no value is lost for not fitting a type"),
+        ],
+        "es": [
+            ("fixed", "**Carga**: toda columna se lee como texto, así ningún valor se pierde por no caber en un tipo"),
         ],
     },
     {
@@ -51,6 +58,12 @@ RELEASES = [
             ("fixed", "**Mapping**: a column whose header carries a stray space maps again"),
             ("fixed", "**Export**: the unpublished-columns warning ignores columns empty in every row"),
         ],
+        "es": [
+            ("added", "**Coordenadas**: las coordenadas UTM pasan a grados decimales, con la zona que usted confirma en el mapa"),
+            ("added", "**`scientificName`**: la autoría sale del nombre y va a `scientificNameAuthorship`"),
+            ("fixed", "**Mapeo**: una columna con un espacio sobrante en el encabezado vuelve a mapearse"),
+            ("fixed", "**Exportación**: el aviso de columnas no publicadas ignora las que están vacías en todas las filas"),
+        ],
     },
     {
         "version": "0.10.3",
@@ -64,6 +77,11 @@ RELEASES = [
             ("fixed", "**Dates**: every date is published in ISO 8601, whatever separator the spreadsheet used"),
             ("fixed", "**`eventDate`**: day, month and year for each end compose an ISO 8601 interval"),
             ("added", "**Dates**: a warning in Mapping and Export when the year falls outside 1600 and the current year"),
+        ],
+        "es": [
+            ("fixed", "**Fechas**: toda fecha se publica en ISO 8601, sea cual sea el separador de la hoja de cálculo"),
+            ("fixed", "**`eventDate`**: día, mes y año de inicio y fin forman un intervalo ISO 8601"),
+            ("added", "**Fechas**: aviso en Mapeo y Exportación cuando el año está fuera de 1600 y el año actual"),
         ],
     },
     {
@@ -81,6 +99,12 @@ RELEASES = [
             ("fixed", "**Mapping**: importing a guide restores the fixed values"),
             ("fixed", "**Generalization**: the decision survives an edit in Mapping"),
         ],
+        "es": [
+            ("fixed", "**`establishmentMeans` y `degreeOfEstablishment`**: la exportación publica solo los términos del vocabulario Darwin Core"),
+            ("fixed", "**Exportación**: la columna sigue en el CSV cuando un valor fijo sobrescribe el mapeo"),
+            ("fixed", "**Mapeo**: importar una guía restaura los valores fijos"),
+            ("fixed", "**Generalización**: la decisión se mantiene tras una edición en Mapeo"),
+        ],
     },
     {
         "version": "0.10.1",
@@ -96,6 +120,12 @@ RELEASES = [
             ("fixed", "**Fauna BR**: the download works again, with states of occurrence populated"),
             ("fixed", "**MMA threat status**: applied only to records in Brazil"),
             ("fixed", "**`eventDate`**: day, month and year in separate columns compose an ISO 8601 date"),
+        ],
+        "es": [
+            ("added", "**`occurrenceID`**: tarjeta para elegir la columna de identificadores, con aviso de valores repetidos"),
+            ("fixed", "**Fauna BR**: la descarga vuelve a funcionar, con los estados de ocurrencia completos"),
+            ("fixed", "**Estado de amenaza del MMA**: se aplica solo a registros en Brasil"),
+            ("fixed", "**`eventDate`**: día, mes y año en columnas separadas forman una fecha ISO 8601"),
         ],
     },
     {
@@ -113,6 +143,12 @@ RELEASES = [
             ("changed", "**Aliases**: a column name is learned on export, not on every selection"),
             ("fixed", "**Mapping**: picking a column no longer freezes on a large spreadsheet"),
         ],
+        "es": [
+            ("added", "**Mapeo**: vista de lista con los 66 términos, columna de origen y valor de ejemplo"),
+            ("changed", "**Mapeo**: tres columnas de tarjetas y píldoras de clase con el trabajo pendiente"),
+            ("changed", "**Alias**: el nombre de una columna se memoriza en la exportación, no en cada elección"),
+            ("fixed", "**Mapeo**: elegir una columna ya no bloquea la pantalla en hojas de cálculo grandes"),
+        ],
     },
     {
         "version": "0.9.7",
@@ -129,6 +165,12 @@ RELEASES = [
             ("changed", "**Name validation**: the progress bar no longer slows the validation down"),
             ("fixed", "**Language**: the name-validation options survive a switch"),
         ],
+        "es": [
+            ("changed", "**Inicio**: la aplicación abre cerca de 5x más rápido"),
+            ("changed", "**Mapeo**: armar el `eventDate` a partir de varias columnas es instantáneo"),
+            ("changed", "**Validación de nombres**: la barra de progreso ya no retrasa la validación"),
+            ("fixed", "**Idioma**: las opciones de la validación de nombres se mantienen tras el cambio"),
+        ],
     },
     {
         "version": "0.9.6",
@@ -138,6 +180,9 @@ RELEASES = [
         ],
         "en": [
             ("changed", "**Maintenance**: no changes to the app, only packaging, documentation and lint cleanup"),
+        ],
+        "es": [
+            ("changed", "**Mantenimiento**: sin cambios en la aplicación, solo limpieza de empaquetado, documentación y lint"),
         ],
     },
     {
@@ -155,6 +200,12 @@ RELEASES = [
             ("added", "**`dynamicProperties`**: the card shows the JSON it will generate"),
             ("fixed", "**Language**: switching language no longer wipes the mapping"),
         ],
+        "es": [
+            ("added", "**`establishmentMeans` y `degreeOfEstablishment`**: un asistente completa los dos por especie, con el vocabulario TDWG"),
+            ("added", "**Validación de nombres**: especies exóticas invasoras señaladas con la lista del Instituto Hórus (483 taxones)"),
+            ("added", "**`dynamicProperties`**: la tarjeta muestra el JSON que va a generar"),
+            ("fixed", "**Idioma**: cambiar de idioma ya no borra el mapeo"),
+        ],
     },
     {
         "version": "0.9.4",
@@ -170,6 +221,12 @@ RELEASES = [
             ("fixed", "**EML**: the license chosen in the mapping is reflected in the export"),
             ("fixed", "**Mapping**: a manually added term shows up again"),
             ("fixed", "**Preview**: the Darwin Core header stays fixed while the rows scroll"),
+        ],
+        "es": [
+            ("added", "**Vocabulario Darwin Core**: sincronizado con TDWG, de 217 a 262 términos"),
+            ("fixed", "**EML**: la licencia elegida en el mapeo se refleja en la exportación"),
+            ("fixed", "**Mapeo**: un término agregado manualmente vuelve a aparecer"),
+            ("fixed", "**Vista previa**: el encabezado Darwin Core queda fijo al desplazar las filas"),
         ],
     },
     {
@@ -187,6 +244,12 @@ RELEASES = [
             ("fixed", "**`modified`**: with \"use today's date\", written as a plain date, no time or timezone"),
             ("fixed", "**`eventDate` and `dateIdentified`**: shown in ISO 8601, and unpadded dates convert"),
         ],
+        "es": [
+            ("changed", "**Ayuda**: la pestaña es ahora un centro de tutoriales, enlaces, issues, PDF de GBIF y preguntas frecuentes"),
+            ("fixed", "**Mapeo**: elegir una columna o una licencia ya no bloquea la pantalla"),
+            ("fixed", "**`modified`**: con \"usar la fecha de hoy\", se escribe como fecha simple, sin hora ni zona horaria"),
+            ("fixed", "**`eventDate` y `dateIdentified`**: se muestran en ISO 8601, y las fechas sin cero a la izquierda se convierten"),
+        ],
     },
     {
         "version": "0.9.1",
@@ -196,6 +259,9 @@ RELEASES = [
         ],
         "en": [
             ("added", "**Upload**: `.tsv` files are accepted in the picker and in validation"),
+        ],
+        "es": [
+            ("added", "**Carga**: se aceptan archivos `.tsv` en el selector y en la validación"),
         ],
     },
     {
@@ -213,6 +279,12 @@ RELEASES = [
             ("changed", "**Generalization**: fully Chapman 2020, never rounding beyond the data's precision"),
             ("fixed", "**Camtrap DP**: empty columns dropped and auto-mapped values preserved"),
         ],
+        "es": [
+            ("added", "**Exportación**: `dynamicProperties` lleva la categoría de amenaza del MMA y la global de la UICN"),
+            ("added", "**Valor fijo**: `rightsHolder`, `institutionCode`, `collectionCode`, `country`, `references`, `bibliographicCitation` y `geodeticDatum`"),
+            ("changed", "**Generalización**: 100% Chapman 2020, nunca redondea más allá de la precisión del dato"),
+            ("fixed", "**Camtrap DP**: columnas vacías descartadas y valores automapeados preservados"),
+        ],
     },
     {
         "version": "0.8.6",
@@ -223,6 +295,9 @@ RELEASES = [
         "en": [
             ("fixed", "**Name validation**: the report table scrolls and pagination is reachable"),
         ],
+        "es": [
+            ("fixed", "**Validación de nombres**: la tabla del informe se desplaza y la paginación queda accesible"),
+        ],
     },
     {
         "version": "0.8.5",
@@ -232,6 +307,9 @@ RELEASES = [
         ],
         "en": [
             ("changed", "**MMA list**: threatened fauna updated to ordinances 1.704/2026 and 1.667/2026"),
+        ],
+        "es": [
+            ("changed", "**Lista del MMA**: fauna amenazada actualizada a las ordenanzas 1.704/2026 y 1.667/2026"),
         ],
     },
     {
@@ -244,6 +322,10 @@ RELEASES = [
         "en": [
             ("added", "**Site**: a new Technologies and credits page, with R packages, bundled data and sources"),
             ("added", "**Site**: cookieless analytics (Umami)"),
+        ],
+        "es": [
+            ("added", "**Sitio**: nueva página Tecnologías y créditos, con paquetes de R, datos incluidos y fuentes"),
+            ("added", "**Sitio**: análisis de acceso sin cookies (Umami)"),
         ],
     },
     {
@@ -259,6 +341,11 @@ RELEASES = [
             ("added", "**Site**: a Saíra-pintor photo on the home page and English screenshots in the EN tutorials"),
             ("changed", "**Site**: SiBBr now comes ahead of GBIF"),
         ],
+        "es": [
+            ("added", "**Sitio**: página de Novedades con los destacados de cada versión y distintivo de versión en la barra de navegación"),
+            ("added", "**Sitio**: foto de la saíra-pintor en la portada y capturas en inglés en los tutoriales EN"),
+            ("changed", "**Sitio**: SiBBr pasa a aparecer antes que GBIF"),
+        ],
     },
     {
         "version": "0.8.2",
@@ -270,6 +357,10 @@ RELEASES = [
         "en": [
             ("added", "**Site**: a dedicated sensitive-species generalization tutorial (PT and EN)"),
             ("fixed", "**Mapping**: resetting or re-uploading a file clears the downstream tabs"),
+        ],
+        "es": [
+            ("added", "**Sitio**: tutorial dedicado a la generalización de especies sensibles (PT y EN)"),
+            ("fixed", "**Mapeo**: reiniciar o volver a cargar un archivo limpia las pestañas siguientes"),
         ],
     },
     {
@@ -287,6 +378,12 @@ RELEASES = [
             ("fixed", "**Performance**: large camera-trap datasets no longer freeze the map"),
             ("fixed", "**Wildlife Insights**: timestamps no longer claim a false UTC timezone"),
         ],
+        "es": [
+            ("changed", "**Generalización**: la pestaña se desplaza completa y la lista filtra por nivel de amenaza"),
+            ("changed", "**`occurrenceID`**: las cargas que ya traen el identificador lo mantienen"),
+            ("fixed", "**Rendimiento**: los conjuntos grandes de cámaras trampa ya no bloquean el mapa"),
+            ("fixed", "**Wildlife Insights**: las marcas de fecha y hora ya no asumen una zona UTC falsa"),
+        ],
     },
     {
         "version": "0.8.0",
@@ -300,6 +397,11 @@ RELEASES = [
             ("added", "**Export**: a new review-and-publish tab, with a readiness indicator and the DwC-A download"),
             ("changed", "**Generalization**: its own tab, with a per-species assessment from Chapman's table"),
             ("changed", "**Coordinates**: corrections reflect in the map, the table and the counts"),
+        ],
+        "es": [
+            ("added", "**Exportación**: nueva pestaña de revisión y publicación, con indicador de preparación y descarga del DwC-A"),
+            ("changed", "**Generalización**: pestaña propia, con evaluación especie por especie según la tabla de Chapman"),
+            ("changed", "**Coordenadas**: las correcciones se reflejan en el mapa, la tabla y los conteos"),
         ],
     },
     {
@@ -315,6 +417,11 @@ RELEASES = [
             ("changed", "**Site**: a polished landing page and tutorials rewritten in PT and EN"),
             ("changed", "**License**: from MIT to GPL-3"),
         ],
+        "es": [
+            ("changed", "**Generalización**: el enmascaramiento pasa a ser una decisión en dos pasos"),
+            ("changed", "**Sitio**: página de inicio renovada y tutoriales reescritos en PT y EN"),
+            ("changed", "**Licencia**: de MIT a GPL-3"),
+        ],
     },
     {
         "version": "0.6.0",
@@ -329,6 +436,11 @@ RELEASES = [
             ("added", "**Coordinates**: fill a blank country from the point on the map"),
             ("added", "**Mapping templates**: export a reusable guide and restore it via Import template"),
         ],
+        "es": [
+            ("added", "**Coordenadas**: corrección en un clic para latitud/longitud intercambiadas o con signo invertido"),
+            ("added", "**Coordenadas**: completar el país vacío a partir del punto en el mapa"),
+            ("added", "**Plantillas de mapeo**: exporte una guía reutilizable y restáurela con Importar plantilla"),
+        ],
     },
     {
         "version": "0.5.0",
@@ -338,6 +450,9 @@ RELEASES = [
         ],
         "en": [
             ("added", "**Offline-first**: bundled fonts and icons, Saíra runs with no connection"),
+        ],
+        "es": [
+            ("added", "**Offline-first**: fuentes e íconos incluidos, Saíra funciona sin conexión"),
         ],
     },
 ]

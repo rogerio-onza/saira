@@ -835,13 +835,24 @@ rostrum_is_technical_tie <- function(first_row, second_row, ambiguity_gap) {
     TRUE
 }
 
-rostrum_build_stage3_candidate_df <- function(term, candidate_df, df) {
+rostrum_build_stage3_candidate_df <- function(term, candidate_df, df, metric_cache = NULL) {
     if (!is.data.frame(candidate_df) || nrow(candidate_df) == 0L) {
         return(candidate_df)
     }
 
     out <- candidate_df
-    metrics <- lapply(out$column_name, function(col_name) rostrum_column_quality_metrics(df, col_name))
+    # The metric scans the whole column, and the same column is a candidate
+    # for many terms: a run-wide cache computes it once per column.
+    column_metrics <- function(col_name) {
+        key <- paste0("col:", col_name)
+        if (!is.null(metric_cache) && exists(key, envir = metric_cache, inherits = FALSE)) {
+            return(get(key, envir = metric_cache, inherits = FALSE))
+        }
+        m <- rostrum_column_quality_metrics(df, col_name)
+        if (!is.null(metric_cache)) assign(key, m, envir = metric_cache)
+        m
+    }
+    metrics <- lapply(out$column_name, column_metrics)
     overlap <- lapply(out$column_name, function(col_name) {
         score_token_overlap(col_name = col_name, term = term, with_details = TRUE)
     })
@@ -935,6 +946,7 @@ rostrum_apply_stage3_candidates <- function(stage2_data, df, options) {
     loser_pool <- list()
     terms_with_alternatives <- character(0)
     ambiguity_gap <- rostrum_ambiguity_gap_epsilon(options)
+    metric_cache <- new.env(parent = emptyenv())
 
     if (nrow(data) == 0L) {
         return(list(
@@ -952,7 +964,9 @@ rostrum_apply_stage3_candidates <- function(stage2_data, df, options) {
             next
         }
 
-        candidate_df <- rostrum_build_stage3_candidate_df(term = term, candidate_df = candidate_seed, df = df)
+        candidate_df <- rostrum_build_stage3_candidate_df(
+            term = term, candidate_df = candidate_seed, df = df, metric_cache = metric_cache
+        )
         ranking <- rostrum_rank_candidate_rows(candidate_df, tie_label = "column_name")
         candidate_df <- candidate_df[ranking, , drop = FALSE]
         rownames(candidate_df) <- NULL

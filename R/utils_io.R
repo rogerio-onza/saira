@@ -81,6 +81,42 @@ read_biodiversity_csv <- function(file_path, encoding = NULL) {
     df
 }
 
+#' Read the first sheet of an Excel .xlsx file as text
+#'
+#' Every column comes back as character, like \code{read_biodiversity_csv()}.
+#' A plain \code{col_types = "text"} read turns a date cell into its Excel
+#' serial number ("45372"), so the sheet is read cell by cell and each cell is
+#' converted from its own type: dates to ISO 8601, numbers without scientific
+#' notation.
+#'
+#' @param file_path Path to the .xlsx file
+#' @return Data frame of character columns
+#' @export
+read_biodiversity_xlsx <- function(file_path) {
+    # readxl prints a message for each renamed blank header.
+    sheet <- suppressMessages(readxl::read_xlsx(
+        file_path,
+        sheet = 1L,
+        col_types = "list",
+        .name_repair = "unique"
+    ))
+    df <- as.data.frame(lapply(sheet, function(col) {
+        vapply(col, xlsx_cell_to_text, character(1))
+    }), stringsAsFactors = FALSE, check.names = FALSE)
+    names(df) <- names(sheet)
+    df
+}
+
+xlsx_cell_to_text <- function(x) {
+    if (length(x) == 0L || is.na(x)) return(NA_character_)
+    if (inherits(x, "POSIXt")) {
+        fmt <- if (format(x, "%H:%M:%S", tz = "UTC") == "00:00:00") "%Y-%m-%d" else "%Y-%m-%dT%H:%M:%S"
+        return(format(x, fmt, tz = "UTC"))
+    }
+    if (is.numeric(x)) return(format(x, scientific = FALSE, digits = 15L, trim = TRUE))
+    as.character(x)
+}
+
 #' Detect file encoding
 #'
 #' @param file_path Path to file

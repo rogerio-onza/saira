@@ -2,6 +2,33 @@
    UTILITY CLASSES
    ============================================================================= */
 
+/* Phosphor icons: an inline box on the text baseline, as the old icon font had. */
+.ph,
+.ph-light {
+  display: inline-block;
+  vertical-align: -0.125em;
+}
+
+.ph-3x {
+  font-size: 3em;
+}
+
+.ph-spin {
+  animation: ph-spin 1s linear infinite;
+}
+
+@keyframes ph-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-spin {
+    animation: none;
+  }
+}
+
 .text-mono {
   font-family: var(--font-mono);
 }
@@ -68,7 +95,7 @@
 }
 
 .stat-box .stat-value {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-2xl);
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
@@ -91,7 +118,7 @@
 }
 
 .stat-box-warn .stat-value {
-  color: var(--warning);
+  color: var(--warning-text);
 }
 
 .stat-box-muted .stat-value {
@@ -116,7 +143,7 @@ table.dataTable tbody tr.validate-ambiguous td {
 }
 
 table.dataTable tbody tr.validate-invalid td {
-  background-color: rgba(40, 51, 172, 0.06);
+  background-color: rgba(var(--accent-rgb), 0.06);
 }
 
 /* Progress bar */

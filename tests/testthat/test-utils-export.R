@@ -1310,3 +1310,27 @@ testthat::test_that("process_for_export_with_unmapped drops empty columns with t
     testthat::expect_true("note" %in% names(out))
     testthat::expect_false("empty" %in% names(out))
 })
+
+testthat::test_that("apply_name_rank_payload puts the validated rank on one-word names", {
+    report <- data.frame(
+        query_name = c("Felidae", "Aves", "Puma", "Nasua nasua", "Xyz"),
+        taxonRank = c("FAMILY", "class", "genus", "species", "family"),
+        validation_status = c("accepted", "accepted", "accepted", "accepted", "not_found"),
+        stringsAsFactors = FALSE
+    )
+    ranks <- name_rank_table(report)
+    testthat::expect_equal(ranks$query_name, c("Felidae", "Aves", "Puma", "Nasua nasua"))
+
+    df <- data.frame(
+        scientificName = c("Felidae", "Aves", "Puma", "Nasua nasua", "Xyz", "Felidae"),
+        genus = c("Felidae", "Aves", "Puma", "Nasua", "Xyz", "Felidae"),
+        taxonRank = c("genus", "", "genus", "species", "genus", "order"),
+        stringsAsFactors = FALSE
+    )
+    out <- apply_name_rank_payload(df, ranks)
+    testthat::expect_equal(out$taxonRank, c("family", "class", "genus", "species", "genus", "order"))
+    testthat::expect_equal(out$genus, c("", "", "Puma", "Nasua", "Xyz", "Felidae"))
+
+    testthat::expect_identical(apply_name_rank_payload(df, NULL), df)
+    testthat::expect_null(name_rank_table(NULL))
+})

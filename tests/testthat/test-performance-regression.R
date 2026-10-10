@@ -167,7 +167,7 @@ testthat::test_that("Performance regression: dynamicProperties JSON over 100k x 
 build_dwca_perf_dataset <- function(rows_n) {
     set.seed(20260525L)
     data.frame(
-        occurrenceID = paste0("urn:uuid:", ids::uuid(n = rows_n)),
+        occurrenceID = paste0("urn:uuid:", uuid::UUIDgenerate(n = rows_n)),
         scientificName = sample(
             c("Panthera onca", "Leopardus pardalis", "Tapirus terrestris"),
             rows_n,
@@ -443,36 +443,4 @@ testthat::test_that("Performance regression: multi-column collapse stays vectori
 
     testthat::expect_length(out, n)
     testthat::expect_lt(elapsed, 1.5)
-})
-
-testthat::test_that("multi-column collapse matches the per-row reference exactly", {
-    reference <- function(df, cols, out_sep = " | ") {
-        normalized <- lapply(cols, function(cn) {
-            saira:::normalize_semicolon_tokens(df[[cn]], out_sep = out_sep)
-        })
-        vapply(seq_len(nrow(df)), function(i) {
-            tokens <- character(0)
-            for (col_values in normalized) {
-                tokens <- c(tokens,
-                            saira:::split_output_tokens(col_values[[i]], out_sep = out_sep))
-            }
-            if (length(tokens) == 0) return(NA_character_)
-            paste(tokens, collapse = out_sep)
-        }, FUN.VALUE = character(1))
-    }
-
-    # Blank cells, NA, internal empty tokens, all-separator, semicolons, factors.
-    df <- data.frame(
-        a = c("x |  | y", " | ", NA, "p;q", "solo", "", "  "),
-        b = c("z", "w", NA, " ; ", NA, "", "v"),
-        c = c(NA, "k |  ", "m", "n", " | | ", "t", NA),
-        stringsAsFactors = FALSE
-    )
-    cols <- c("a", "b", "c")
-    testthat::expect_identical(collapse_mapped_values(df, cols), reference(df, cols))
-
-    fct <- data.frame(a = factor(c("u |  | v", NA)), b = factor(c("s", "r")))
-    testthat::expect_identical(
-        collapse_mapped_values(fct, c("a", "b")), reference(fct, c("a", "b"))
-    )
 })

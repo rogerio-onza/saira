@@ -14,34 +14,6 @@ test_that("format_provider_labels: empty/NA input returns character(0)", {
     expect_equal(saira:::format_provider_labels(""), character(0))
 })
 
-test_that("normalize_provider_failures: NULL/empty returns empty df with correct schema", {
-    out <- saira:::normalize_provider_failures(NULL)
-    expect_equal(nrow(out), 0L)
-    expect_named(out, c("provider", "error"))
-
-    out2 <- saira:::normalize_provider_failures(data.frame())
-    expect_equal(nrow(out2), 0L)
-})
-
-test_that("normalize_provider_failures: valid df passes through", {
-    df <- data.frame(provider = "gbif", error = "timeout", stringsAsFactors = FALSE)
-    out <- saira:::normalize_provider_failures(df)
-    expect_equal(nrow(out), 1L)
-    expect_equal(out$provider, "gbif")
-    expect_equal(out$error, "timeout")
-})
-
-test_that("normalize_provider_failures: rows with NA provider are dropped", {
-    df <- data.frame(
-        provider = c("gbif", NA, ""),
-        error = c("e1", "e2", "e3"),
-        stringsAsFactors = FALSE
-    )
-    out <- saira:::normalize_provider_failures(df)
-    expect_equal(nrow(out), 1L)
-    expect_equal(out$provider, "gbif")
-})
-
 test_that("stream_window: returns df unchanged when fewer rows than limit", {
     df <- data.frame(
         display_order = 1:5,
@@ -86,18 +58,6 @@ test_that("normalize_status_for_filter: unknown/empty defaults to not_found", {
     expect_equal(saira:::normalize_status_for_filter(""), "not_found")
     expect_equal(saira:::normalize_status_for_filter(NA), "not_found")
     expect_equal(saira:::normalize_status_for_filter("GARBAGE"), "not_found")
-})
-
-test_that("is_problem_status_key: problem statuses return TRUE", {
-    expect_true(saira:::is_problem_status_key("not_found"))
-    expect_true(saira:::is_problem_status_key("ambiguous"))
-    expect_true(saira:::is_problem_status_key("synonym"))
-    expect_true(saira:::is_problem_status_key("unresolved"))  # mapped to ambiguous
-})
-
-test_that("is_problem_status_key: non-problem statuses return FALSE", {
-    expect_false(saira:::is_problem_status_key("accepted"))
-    expect_false(saira:::is_problem_status_key("ignored"))
 })
 
 test_that("stream_filter_counts: all zeros for empty df", {
@@ -155,6 +115,51 @@ test_that("filter_stream_df: 'invasive' keeps only listed taxa", {
     )
     out <- saira:::filter_stream_df(df, "invasive")
     expect_equal(out$query_name, c("Sus scrofa", "Felis catus"))
+})
+
+test_that("the two list groups count and filter apart in the stream", {
+    df <- data.frame(
+        validation_status = c("accepted", "accepted", "accepted"),
+        query_name = c("Sus scrofa", "Nasua nasua", "Panthera onca"),
+        stringsAsFactors = FALSE
+    )
+    counts <- saira:::stream_filter_counts(df)
+    # The coati is on the list but native, so it must not be counted as an
+    # exotic invader -- that was the bug reported from the processed-names tab.
+    expect_equal(counts[["invasive"]], 1L)
+    expect_equal(counts[["translocated"]], 1L)
+
+    expect_equal(
+        saira:::filter_stream_df(df, "invasive")$query_name, "Sus scrofa"
+    )
+    expect_equal(
+        saira:::filter_stream_df(df, "translocated")$query_name, "Nasua nasua"
+    )
+})
+
+test_that("invasive_stream_note_ui states what the list actually says", {
+    alien <- as.character(saira:::invasive_stream_note_ui("Sus scrofa", "pt"))
+    expect_true(grepl("badge-invasive", alien, fixed = TRUE))
+    expect_false(grepl("badge-translocated", alien, fixed = TRUE))
+
+    native <- as.character(saira:::invasive_stream_note_ui("Nasua nasua", "pt"))
+    expect_true(grepl("badge-translocated", native, fixed = TRUE))
+    expect_false(grepl("badge-invasive", native, fixed = TRUE))
+
+    expect_null(saira:::invasive_stream_note_ui("Panthera onca", "pt"))
+})
+
+test_that("the detail lines render only where the source records them", {
+    # The coati and the tegu have no motivo, so they get the range line alone
+    # rather than an empty "Introduzida para:" prefix.
+    for (name in c("Nasua nasua", "Salvator merianae")) {
+        note <- as.character(saira:::invasive_stream_note_ui(name, "pt"))
+        expect_true(grepl("Distribui", note, fixed = TRUE))
+        expect_false(grepl("Introduzida para:", note, fixed = TRUE))
+    }
+    both <- as.character(saira:::invasive_stream_note_ui("Cichla kelberi", "pt"))
+    expect_true(grepl("Distribui", both, fixed = TRUE))
+    expect_true(grepl("Introduzida para:", both, fixed = TRUE))
 })
 
 test_that("filter_stream_df: 'invasive' ignores reviewed and exiting keys", {
@@ -332,4 +337,89 @@ test_that("stream_window still adds display_order when the column is absent", {
     out <- saira:::stream_window(df, limit = 2L)
     expect_equal(out$query_name, c("c", "b"))
     expect_equal(out$display_order, c(3L, 2L))
+})
+
+testthat::test_that("provider_query_step mirrors the cascade order", {
+    br <- c("florabr", "faunabr")
+    testthat::expect_identical(provider_query_step("florabr", c("gbif", "florabr"), br), 1L)
+    testthat::expect_identical(provider_query_step("gbif", c("gbif", "florabr"), br), 2L)
+    testthat::expect_identical(provider_query_step("gbif", "gbif", br), 1L)
+    testthat::expect_true(is.na(provider_query_step("faunabr", c("gbif", "florabr"), br)))
+})
+
+testthat::test_that("conservation summary renders short tags with the sentence as tooltip", {
+    testthat::local_mocked_bindings(
+        sensitive_category_for = function(x) c("VU", NA_character_),
+        flag_invasive_species = function(x) c(FALSE, TRUE),
+        .package = "saira"
+    )
+    report <- data.frame(scientificName = c("Anodorhynchus hyacinthinus", "Pinus elliottii"))
+    html <- as.character(conservation_status_summary_ui(report, c("gbif", "florabr"), c("florabr", "faunabr"), "pt"))
+
+    testthat::expect_identical(lengths(regmatches(html, gregexpr("class=\"vn-conservation-tag ", html, fixed = TRUE))), 3L)
+    testthat::expect_true(grepl(tr("validate_names_conservation_label_mma", "pt"), html, fixed = TRUE))
+    testthat::expect_true(grepl(tr("validate_names_conservation_label_invasive", "pt"), html, fixed = TRUE))
+    testthat::expect_true(grepl("title=", html, fixed = TRUE))
+})
+
+testthat::test_that("vn_run_progress moves the active step with the cascade", {
+    testthat::local_mocked_bindings(brprovider_data_available = function(id) TRUE, .package = "saira")
+    state <- list(
+        phase = "provider_query_batch", current_provider = "florabr", cascade_phase = "br",
+        provider_types = c(florabr = "br", faunabr = "br", gbif = "taxadb"),
+        total_unique = 1200L, resolved_unique = 300L
+    )
+    br <- vn_run_progress(state, "pt")
+    testthat::expect_identical(vapply(br$steps, `[[`, "", "key"), c("br", "gbif", "report"))
+    testthat::expect_identical(vapply(br$steps, `[[`, "", "state"), c("active", "next", "next"))
+    testthat::expect_identical(br$steps[[1]]$label, "Flora BR e Fauna BR")
+    testthat::expect_identical(br$count, "300 de 1.200 nomes conferidos")
+    testthat::expect_equal(br$pct, 25)
+    testthat::expect_false(br$waiting)
+
+    state$cascade_phase <- "fallback"
+    state$current_provider <- "gbif"
+    gbif <- vn_run_progress(state, "en")
+    testthat::expect_identical(vapply(gbif$steps, `[[`, "", "state"), c("done", "active", "next"))
+
+    # The last step counts every name: not-found names get an answer too.
+    state$phase <- "consolidate"
+    report <- vn_run_progress(state, "en")
+    testthat::expect_identical(vapply(report$steps, `[[`, "", "state"), c("done", "done", "active"))
+    testthat::expect_equal(report$pct, 100)
+})
+
+testthat::test_that("vn_run_progress drops the BR step and flags a first download", {
+    testthat::local_mocked_bindings(brprovider_data_available = function(id) FALSE, .package = "saira")
+    gbif_only <- vn_run_progress(list(
+        phase = "provider_init", current_provider = "gbif", cascade_phase = "fallback",
+        provider_types = c(gbif = "taxadb"), total_unique = 0L, resolved_unique = 0L
+    ), "pt")
+    testthat::expect_identical(vapply(gbif_only$steps, `[[`, "", "key"), c("gbif", "report"))
+    testthat::expect_identical(gbif_only$steps[[1]]$label, "GBIF")
+    testthat::expect_equal(gbif_only$pct, 0)
+    testthat::expect_false(gbif_only$waiting)
+
+    download <- vn_run_progress(list(
+        phase = "provider_init", current_provider = "faunabr", cascade_phase = "br",
+        provider_types = c(faunabr = "br", gbif = "taxadb"), total_unique = 10L, resolved_unique = 0L
+    ), "pt")
+    testthat::expect_true(download$waiting)
+})
+
+test_that("vn_run_card_ui builds the photo card with one row per step", {
+    progress <- list(
+        pct = 25, waiting = TRUE, eyebrow = "E", count = "C",
+        steps = list(
+            list(key = "br", label = "Flora BR", state = "active", state_label = "now"),
+            list(key = "report", label = "Report", state = "next", state_label = "next")
+        )
+    )
+    html <- as.character(vn_run_card_ui(progress, species_photo("boana-buriti"), "en"))
+    expect_match(html, "vn-report-panel vn-run-card", fixed = TRUE)
+    expect_match(html, "boana-buriti.webp", fixed = TRUE)
+    expect_match(html, "vn-run-bar is-waiting", fixed = TRUE)
+    expect_match(html, "width: 25%;", fixed = TRUE)
+    expect_match(html, "class=\"vn-run-step is-active\" data-step=\"br\"", fixed = TRUE)
+    expect_match(html, "data-step=\"report\"", fixed = TRUE)
 })

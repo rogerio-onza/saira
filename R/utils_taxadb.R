@@ -468,101 +468,6 @@ collapse_cascade_results <- function(cascade_results) {
     out
 }
 
-run_taxadb_cascade <- function(
-  query_names,
-  providers,
-  fetch_fun = fetch_taxadb_matches
-) {
-    empty_failures_df <- function() {
-        data.frame(provider = character(0), error = character(0), stringsAsFactors = FALSE)
-    }
-
-    failure_list <- list()
-
-    attach_metadata <- function(df, attempted, failures) {
-        attr(df, "provider_attempted") <- attempted
-        attr(df, "provider_failures") <- failures
-        df
-    }
-
-    build_failures_df <- function() {
-        if (length(failure_list) == 0L) return(empty_failures_df())
-        do.call(rbind, failure_list)
-    }
-
-    if (length(query_names) == 0L) {
-        return(attach_metadata(data.frame(), character(0), empty_failures_df()))
-    }
-
-    providers <- providers[!is.na(providers) & nzchar(providers)]
-    if (length(providers) == 0L) {
-        stop("providers must include at least one provider.")
-    }
-
-    remaining <- unique(as.character(query_names))
-    remaining <- remaining[!is.na(remaining) & nzchar(remaining)]
-
-    resolved_list <- list()
-
-    for (provider in providers) {
-        if (length(remaining) == 0L) {
-            break
-        }
-
-        matches <- tryCatch(
-            fetch_fun(remaining, provider),
-            error = function(e) e
-        )
-        if (inherits(matches, "error")) {
-            failure_list[[length(failure_list) + 1L]] <- data.frame(
-                provider = as.character(provider),
-                error    = as.character(matches$message),
-                stringsAsFactors = FALSE
-            )
-            next
-        }
-        if (is.null(matches) || nrow(matches) == 0L) {
-            next
-        }
-
-        resolved <- resolve_taxadb_matches(matches)
-        if (nrow(resolved) == 0L) {
-            next
-        }
-
-        resolved_list[[length(resolved_list) + 1L]] <- resolved
-        resolved_names <- unique(resolved$query_name)
-        remaining <- setdiff(remaining, resolved_names)
-    }
-
-    if (length(remaining) > 0L) {
-        resolved_list[[length(resolved_list) + 1L]] <- build_taxadb_placeholder(
-            remaining,
-            status = "not_found"
-        )
-    }
-
-    if (length(resolved_list) == 0L) {
-        return(attach_metadata(data.frame(), providers, build_failures_df()))
-    }
-
-    all_cols <- unique(unlist(lapply(resolved_list, names), use.names = FALSE))
-    resolved_list <- lapply(resolved_list, function(df) {
-        missing_cols <- setdiff(all_cols, names(df))
-        if (length(missing_cols) > 0L) {
-            for (col_name in missing_cols) {
-                df[[col_name]] <- NA
-            }
-        }
-        df <- df[, all_cols, drop = FALSE]
-        rownames(df) <- NULL
-        df
-    })
-
-    combined <- do.call(rbind, resolved_list)
-    attach_metadata(combined, providers, build_failures_df())
-}
-
 clean_provider_ids <- function(providers) {
     providers_chr <- as.character(providers)
     providers_chr <- providers_chr[!is.na(providers_chr) & nzchar(providers_chr)]
@@ -755,6 +660,7 @@ init_taxadb_run_state <- function(
   input_df,
   providers,
   batch_size = 200L,
+  br_batch_size = 5L,
   run_id = as.numeric(Sys.time()) * 1000
 ) {
     if (is.null(input_df) || !is.data.frame(input_df)) {
@@ -815,6 +721,10 @@ init_taxadb_run_state <- function(
         total_unique = length(valid_queries),
         resolved_unique = 0L,
         batch_size = suppressWarnings(as.integer(batch_size)),
+        # A Flora BR or Fauna BR query takes ~0.3 s per name, so a small
+        # batch keeps each run tick short and the progress moves in small
+        # steps. The cost is ~10% more time for the BR queries.
+        br_batch_size = suppressWarnings(as.integer(br_batch_size)),
         input_df = input_df,
         resolved_frames = list(),
         cascade_results = data.frame(),
@@ -889,7 +799,11 @@ next_taxadb_run_step <- function(state) {
         # Re-batch using current pending_queries (may differ from initial set).
         state$current_batches      <- split_query_batches(
             state$pending_queries,
-            batch_size = state$batch_size
+            batch_size = if (identical(provider_type, "br")) {
+                state$br_batch_size %||% state$batch_size
+            } else {
+                state$batch_size
+            }
         )
         state$provider_batch_total <- length(state$current_batches)
 

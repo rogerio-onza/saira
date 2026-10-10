@@ -165,7 +165,54 @@ brprovider_data_dir <- function(provider_id) {
 #' @return Single logical.
 #' @noRd
 brprovider_data_available <- function(provider_id) {
+    .brprovider_seed_from_bundle(provider_id)
     file.exists(.brprovider_rds_path(provider_id))
+}
+
+#' Path of a file in the BR provider snapshot shipped with the package
+#' @param file Character. File name inside inst/extdata/brproviders.
+#' @return Absolute path, or "" when the file is not bundled.
+#' @noRd
+.brprovider_bundle_path <- function(file) {
+    system.file("extdata", "brproviders", file, package = "saira")
+}
+
+#' Copy the bundled snapshot into an empty user cache
+#'
+#' The IPT download fails often (ADR-070, ADR-153), and without a cache a new
+#' user has no Flora or Fauna BR data at all. The copy goes into the normal
+#' cache, so a later download replaces it as usual.
+#' @param provider_id Character. "florabr" or "faunabr".
+#' @return TRUE when it copied the snapshot, FALSE otherwise.
+#' @noRd
+.brprovider_seed_from_bundle <- function(provider_id) {
+    target <- .brprovider_rds_path(provider_id)
+    bundle <- .brprovider_bundle_path(paste0(provider_id, ".rds"))
+    if (file.exists(target) || !nzchar(bundle)) {
+        return(FALSE)
+    }
+    dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
+    # Copy, then rename: a parallel session must never read a half-copied file.
+    tmp <- paste0(target, ".seed")
+    if (!isTRUE(file.copy(bundle, tmp, overwrite = TRUE)) ||
+        !isTRUE(file.rename(tmp, target))) {
+        unlink(tmp, force = TRUE)
+        return(FALSE)
+    }
+    info <- tryCatch(
+        jsonlite::fromJSON(.brprovider_bundle_path("snapshot.json"))[[provider_id]],
+        error = function(e) NULL
+    )
+    version <- .brprovider_scalar_chr(info$version)
+    .brprovider_patch_meta(provider_id, list(
+        local_version = version,
+        remote_version_last_seen = version,
+        last_updated_at = .brprovider_scalar_chr(info$downloaded_at),
+        status = "up_to_date",
+        last_error = NA_character_,
+        retry_after_at = NA_character_
+    ))
+    TRUE
 }
 
 #' Return metadata status for one BR provider cache
@@ -179,8 +226,9 @@ brprovider_cache_status <- function(provider_id, poll = TRUE) {
         brprovider_poll_updates(provider_id = provider_id)
     }
 
-    meta <- .brprovider_read_meta(provider_id)
+    # Check data first: it can copy the bundled snapshot and write its meta.
     has_data <- brprovider_data_available(provider_id)
+    meta <- .brprovider_read_meta(provider_id)
 
     meta_changed <- FALSE
 
@@ -1203,10 +1251,18 @@ normalize_brprovider_result <- function(raw_df, provider_id) {
         dist_num <- suppressWarnings(as.numeric(raw_df[["Distance"]]))
         dist_num[is.na(dist_num)] <- Inf
         raw_df[["Distance"]] <- dist_num
+        # A homonym ties at the same distance: Flora BR lists "Victoria
+        # amazonica" as accepted and as an illegitimate synonym. The row order
+        # changes with the other names of the query, so the tie goes to the
+        # row that is not a synonym, not to the first row.
+        not_synonym <- !grepl("synonym", tolower(as.character(raw_df[["taxonomicStatus"]] %||% "")), fixed = TRUE)
         split_list <- split(seq_len(nrow(raw_df)), raw_df[["input_name"]])
         keep_rows <- vapply(split_list, function(idxs) {
             if (length(idxs) == 1L) return(idxs[[1L]])
-            idxs[[which.min(raw_df[["Distance"]][idxs])]]
+            dist <- raw_df[["Distance"]][idxs]
+            closest <- idxs[dist == min(dist)]
+            preferred <- closest[not_synonym[closest]]
+            if (length(preferred) > 0L) preferred[[1L]] else closest[[1L]]
         }, FUN.VALUE = integer(1))
         raw_df <- raw_df[keep_rows, , drop = FALSE]
         rownames(raw_df) <- NULL
@@ -1366,41 +1422,3 @@ query_brprovider <- function(query_names, provider_id,
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-#' Inspect download parameters without performing any network calls
-#'
-#' Returns a named list of all relevant paths and metadata that
-#' brprovider_download_data() would use. Intended for local audit and debugging.
-#'
-#' @param provider_id Character. "florabr" or "faunabr".
-#' @param data_version Character. Version string. Default "latest".
-#' @return Named list with key paths and metadata.
-#' @noRd
-brprovider_download_params <- function(provider_id, data_version = "latest") {
-    list(
-        provider_id  = as.character(provider_id),
-        data_version = as.character(data_version),
-        tmp_dir      = file.path(tempdir(), as.character(provider_id)),
-        persist_dir  = brprovider_data_dir(provider_id),
-        rds_path     = .brprovider_rds_path(provider_id),
-        meta_path    = .brprovider_meta_path(provider_id),
-        lock_path    = .brprovider_lock_path(provider_id),
-        pkg_version  = .brprovider_pkg_version_safe(provider_id)
-    )
-}
-
-#' Return query names NOT resolved by a BR provider (validation_status == "not_found")
-#' @param result_df Data frame produced by query_brprovider / normalize_brprovider_result.
-#' @return Character vector of query_name values.
-#' @noRd
-brprovider_unresolved_names <- function(result_df) {
-    if (!is.data.frame(result_df) || nrow(result_df) == 0L) {
-        return(character(0))
-    }
-    if (!all(c("query_name", "validation_status") %in% names(result_df))) {
-        return(character(0))
-    }
-    idx <- result_df$validation_status == "not_found"
-    idx[is.na(idx)] <- FALSE
-    unique(as.character(result_df$query_name[idx]))
-}

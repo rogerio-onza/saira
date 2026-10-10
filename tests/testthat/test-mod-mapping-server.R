@@ -84,7 +84,7 @@ testthat::test_that("mod_mapping_server exposes lightweight preview_data alongsi
                     "rostrum_decisions_r", "rostrum_explain_r", "rostrum_run_stats_r",
                     "map_values_r", "occurrence_id_info_r",
                     "custom_values_r", "establishment_dropped_r",
-                    "reset_signal_r"
+                    "reset_signal_r", "alias_receipt_r"
                 )
             )
 
@@ -819,7 +819,84 @@ testthat::test_that("class pills are pure navigation anchors — all sections al
     )
 })
 
-testthat::test_that("required-fields strip reflects live mapped status", {
+testthat::test_that("a language switch keeps the pill dots and the pending count", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        stringsAsFactors = FALSE
+    )
+    lang <- shiny::reactiveVal("pt")
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(raw_data_r = shiny::reactive(df), lang_r = lang),
+        {
+            session$flushReact()
+            pending <- length(pending_terms())
+            testthat::expect_gt(pending, 0L)
+
+            # The re-render on a language switch replaces the DOM that the
+            # triage handler patched, so it must draw the state itself.
+            lang("en")
+            session$flushReact()
+            pills_html <- paste(output$class_pills$html, collapse = " ")
+            testthat::expect_true(grepl("pill-state-dot is-blocked", pills_html, fixed = TRUE))
+            testthat::expect_false(grepl("is-idle", pills_html, fixed = TRUE))
+            testthat::expect_true(grepl(
+                paste0(">", pending, "</span>"), pills_html, fixed = TRUE
+            ))
+        }
+    )
+})
+
+testthat::test_that("Mapping filter hides cards in place and a switch does not rebuild the grid", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            # The first render reads the filter, so the cards come in at
+            # their place (ADR-157).
+            session$setInputs(mapped_filter = "pending")
+            grid <- paste(output$mapping_ui$html, collapse = " ")
+            card_tag <- function(term) {
+                regmatches(grid, regexpr(
+                    paste0('<div id="', ns(paste0("fieldcard_", term)), '"[^>]*>'), grid
+                ))
+            }
+            # Every card is in the grid, and the filter hides the ones it
+            # drops. occurrenceID is auto-UUID -> mapped; scientificName is
+            # not mapped.
+            testthat::expect_match(card_tag("occurrenceID"), " hidden>", fixed = TRUE)
+            testthat::expect_no_match(card_tag("scientificName"), " hidden>", fixed = TRUE)
+            testthat::expect_true(grepl("field-required-tag", grid, fixed = TRUE))
+            # An unmapped optional term needs nothing, so it is not pending.
+            testthat::expect_match(card_tag("recordedBy"), " hidden>", fixed = TRUE)
+
+            # The pending count matches the cards the filter shows.
+            control <- output$mapped_filter_control$html
+            pending_chip <- regmatches(control, regexpr(
+                '<span class="seg-n is-act" data-action="true" id="[^"]*filter_n_pending">[0-9]+</span>', control
+            ))
+            testthat::expect_length(pending_chip, 1L)
+            tags <- regmatches(grid, gregexpr('<div id="[^"]*fieldcard_[^"]*"[^>]*>', grid))[[1]]
+            n_shown <- sum(!grepl(" hidden>", tags, fixed = TRUE))
+            testthat::expect_match(pending_chip, paste0(">", n_shown, "</span>"), fixed = TRUE)
+
+            # The browser applies a switch. The server does not rebuild.
+            session$setInputs(mapped_filter = "mapped")
+            testthat::expect_identical(paste(output$mapping_ui$html, collapse = " "), grid)
+        }
+    )
+})
+
+testthat::test_that("Relevant filter is the default and collapses unmapped optional terms", {
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis"),
         stringsAsFactors = FALSE
@@ -833,36 +910,29 @@ testthat::test_that("required-fields strip reflects live mapped status", {
         ),
         {
             session$flushReact()
-
-            strip_before <- paste(output$required_fields_strip$html, collapse = " ")
-            for (term in c(
-                "scientificName", "eventDate", "decimalLatitude",
-                "decimalLongitude", "basisOfRecord", "occurrenceID"
-            )) {
-                testthat::expect_true(grepl(term, strip_before, fixed = TRUE))
+            grid <- paste(output$mapping_ui$html, collapse = " ")
+            card_tag <- function(html, term) {
+                regmatches(html, regexpr(
+                    paste0('<div id="', ns(paste0("fieldcard_", term)), '"[^>]*>'), html
+                ))
             }
-            # occurrenceID is auto-UUID -> always mapped.
-            testthat::expect_true(grepl(
-                "mapping-required-chip is-mapped", strip_before,
-                fixed = TRUE
-            ))
-            # scientificName not mapped yet -> a missing chip exists.
-            testthat::expect_true(grepl(
-                "mapping-required-chip is-missing", strip_before,
-                fixed = TRUE
-            ))
+            # Required and dataset terms stay full cards, optional ones collapse.
+            testthat::expect_false(grepl("field-card-compact", card_tag(grid, "scientificName"), fixed = TRUE))
+            testthat::expect_false(grepl("field-card-compact", card_tag(grid, "datasetName"), fixed = TRUE))
+            testthat::expect_true(grepl("field-card-compact", card_tag(grid, "recordedBy"), fixed = TRUE))
+            testthat::expect_true(grepl("mapping-more-group", grid, fixed = TRUE))
 
-            session$setInputs(map_scientificName = "scientificName")
-            session$flushReact()
+            # The browser gets the fixed part of the rule (ADR-157).
+            testthat::expect_match(card_tag(grid, "recordedBy"), 'data-collapse="true"', fixed = TRUE)
+            testthat::expect_no_match(card_tag(grid, "datasetName"), "data-collapse", fixed = TRUE)
 
-            strip_after <- paste(output$required_fields_strip$html, collapse = " ")
-            sci_idx <- regexpr("scientificName", strip_after, fixed = TRUE)
-            chip_open <- regexpr(
-                "mapping-required-chip is-mapped",
-                substr(strip_after, 1, sci_idx[1]),
-                fixed = TRUE
+            # One grid per class, so a filter switch moves no card: no class
+            # has a second grid for the rows.
+            testthat::expect_false(grepl("mapping-row-grid", grid, fixed = TRUE))
+            testthat::expect_identical(
+                lengths(regmatches(grid, gregexpr('class="mapping-card-grid"', grid, fixed = TRUE))),
+                lengths(regmatches(grid, gregexpr('class="category-header"', grid, fixed = TRUE)))
             )
-            testthat::expect_true(chip_open[1] > 0)
         }
     )
 })
@@ -986,8 +1056,8 @@ testthat::test_that("importing a mapping guide registers and renders non-default
     )
 })
 
-# The camtrap auto-map is deferred until the field cards render (the first
-# non-NULL scientificName). Camtrap columns are canonical Darwin Core terms, so
+# The camtrap auto-map is deferred until the field cards render (the client's
+# cards_bound signal). Camtrap columns are canonical Darwin Core terms, so
 # the mapping is a deterministic identity (column X -> term X) badged AUTO, not a
 # fuzzy engine run (rostrum_decisions stays NULL). We assert the trigger wiring
 # (pending TRUE -> FALSE), the AUTO identity meta, and that the resulting
@@ -1016,17 +1086,18 @@ testthat::test_that("camtrap-origin uploads queue and run identity auto-map once
             session$flushReact()
 
             # Run is deferred (cards not rendered yet); engine has not run.
-            testthat::expect_true(camtrap_automap_pending())
+            testthat::expect_true(automap_pending())
             testthat::expect_null(rv$rostrum_decisions)
             testthat::expect_true("geodeticDatum" %in% rv$extra_terms)
 
-            # Simulate the field cards rendering: the first non-NULL
-            # scientificName consumes the deferred auto-map. No `auto_map`
-            # button input was ever set.
+            # Simulate the field cards rendering: the client sends the card
+            # values, then cards_bound consumes the deferred auto-map. No
+            # `auto_map` button input was ever set.
             session$setInputs(map_scientificName = "")
+            session$setInputs(cards_bound = 1)
             session$flushReact()
 
-            testthat::expect_false(camtrap_automap_pending())
+            testthat::expect_false(automap_pending())
             # Identity map, not the fuzzy engine: no decisions frame is produced.
             testthat::expect_null(rv$rostrum_decisions)
 
@@ -1048,7 +1119,7 @@ testthat::test_that("camtrap-origin uploads queue and run identity auto-map once
     )
 })
 
-testthat::test_that("non-camtrap uploads do NOT auto-map on load", {
+testthat::test_that("plain uploads run the Rostrum engine once cards render", {
     raw_data_state <- shiny::reactiveVal(NULL)
 
     shiny::testServer(
@@ -1066,13 +1137,29 @@ testthat::test_that("non-camtrap uploads do NOT auto-map on load", {
                 stringsAsFactors = FALSE
             ))
             session$flushReact()
-            testthat::expect_false(camtrap_automap_pending())
-
-            # Even after the cards render, the engine does not run on its own.
-            session$setInputs(map_scientificName = "")
-            session$flushReact()
-            testthat::expect_false(camtrap_automap_pending())
+            testthat::expect_true(automap_pending())
             testthat::expect_null(rv$rostrum_decisions)
+
+            # The cards render: the engine runs once, without an Auto-map click.
+            session$setInputs(map_scientificName = "")
+            session$setInputs(cards_bound = 1)
+            session$flushReact()
+            testthat::expect_false(automap_pending())
+            testthat::expect_false(is.null(rv$rostrum_decisions))
+            testthat::expect_identical(rv$map_values$decimalLatitude, "decimalLatitude")
+
+            # A new upload queues a new run, even when the new cards report the
+            # same values as the old ones.
+            raw_data_state(data.frame(
+                decimalLongitude = "-55.3",
+                stringsAsFactors = FALSE
+            ))
+            session$flushReact()
+            testthat::expect_true(automap_pending())
+            session$setInputs(cards_bound = 2)
+            session$flushReact()
+            testthat::expect_false(automap_pending())
+            testthat::expect_identical(rv$map_values$decimalLongitude, "decimalLongitude")
         }
     )
 })
@@ -1210,7 +1297,7 @@ testthat::test_that("the establishment assistant lists species and pre-fills inv
             entries <- rv$establishment_entries
             testthat::expect_equal(entries$raw, c("Sus scrofa", "Panthera onca"))
             testthat::expect_equal(entries$n_records, c(2L, 1L))
-            testthat::expect_equal(entries$invasive, c(TRUE, FALSE))
+            testthat::expect_equal(entries$origin_class, c("alien", NA))
             # Only the listed taxon is pre-filled, and only establishmentMeans.
             testthat::expect_equal(
                 unname(rv$establishment_auto_map[["sus scrofa"]]), "introduced"
@@ -1259,6 +1346,57 @@ testthat::test_that("saved answers reach the preview for every record of the spe
             )
             testthat::expect_equal(
                 preview$degreeOfEstablishment, c("invasive", "", "invasive")
+            )
+        }
+    )
+})
+
+# ADR-143: a translocated native with records on an oceanic island gets a
+# separate answer for those records. The mainland answer never reaches them.
+testthat::test_that("the establishment assistant splits island records of a translocated native", {
+    df <- data.frame(
+        especie = c("Nasua nasua", "Nasua nasua", "Nasua nasua"),
+        lat = c("-3.85", "-19.9", "-3.86"),
+        lon = c("-32.42", "-43.9", "-32.41"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(
+                map_scientificName = "especie",
+                map_decimalLatitude = "lat",
+                map_decimalLongitude = "lon"
+            )
+            session$flushReact()
+            session$setInputs(open_establishment_assistant = 1)
+            session$flushReact()
+
+            entries <- rv$establishment_entries
+            testthat::expect_equal(entries$n_island, 2L)
+            testthat::expect_equal(entries$island_names, "Fernando de Noronha")
+            # No silent prefill: the island answer starts empty.
+            testthat::expect_equal(
+                unname(get_effective_establishment_map()$island_means), ""
+            )
+
+            idx <- entries$idx[[1]]
+            do.call(session$setInputs, stats::setNames(
+                list("native", "introduced"),
+                paste0(c("est_means_", "est_island_means_"), idx)
+            ))
+            session$setInputs(save_establishment_assistant = 1)
+            session$flushReact()
+
+            preview <- session$getReturned()$preview_data_r()
+            testthat::expect_equal(
+                preview$establishmentMeans, c("introduced", "native", "introduced")
             )
         }
     )
@@ -1498,6 +1636,54 @@ testthat::test_that("importing a template seeds aliases through the module conne
     testthat::expect_identical(nrow(rows), 2L)
     testthat::expect_identical(rows$dwc_term, c("decimalLatitude", "scientificName"))
 })
+
+# A guide with an extra term re-runs the input-sync observer in the same flush
+# as the import. The inputs still hold their old empty values (the client has
+# not echoed the updates yet), and the observer wrote them back: the restored
+# mapping went blank until the echo, and the grid rendered twice.
+testthat::test_that("a guide import is not undone before the client echoes it", {
+    withr::local_envvar(c(SAIRA_USER = paste0("test_echo_", as.integer(Sys.time()))))
+    df <- data.frame(
+        especie = c("Panthera onca", "Leopardus pardalis"),
+        wkt = c("POINT (-55 -10)", "POINT (-54 -11)"),
+        stringsAsFactors = FALSE
+    )
+    guide <- build_mapping_guide_txt(
+        list(scientificName = "especie", footprintWKT = "wkt"),
+        df, lang = "en"
+    )
+    guide_path <- withr::local_tempfile(fileext = ".txt")
+    writeLines(guide, guide_path)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            # The cards rendered and the client echoed their empty selections.
+            session$setInputs(map_scientificName = "", map_decimalLatitude = "")
+            session$setInputs(import_template_file = list(
+                name = "guide.txt", size = 1L,
+                type = "text/plain", datapath = guide_path
+            ))
+            session$setInputs(confirm_import_template = 1)
+            session$flushReact()
+
+            testthat::expect_true("footprintWKT" %in% rv$extra_terms)
+            testthat::expect_identical(rv$map_values[["scientificName"]], "especie")
+            testthat::expect_true(isTRUE(rv$scientificname_mapped))
+
+            # The echo lands; later edits are the user's again.
+            session$setInputs(map_scientificName = "especie")
+            testthat::expect_identical(rv$map_values[["scientificName"]], "especie")
+            session$setInputs(map_scientificName = "")
+            testthat::expect_identical(rv$map_values[["scientificName"]], "")
+        }
+    )
+})
 # A fixed value on the country card fills the term for every row and overrides
 # any column mapping, so the coordinate gate has to accept it. It did not, which
 # blocked coordinate validation for the exact case the fixed value exists for: a
@@ -1669,6 +1855,47 @@ testthat::test_that("filling a required term clears its red state on the push", 
     )
 })
 
+# Unticking the last license box sends NULL, which observeEvent drops by
+# default, so the card stayed mapped after the clear.
+testthat::test_that("unticking the license puts its card back to required-missing", {
+    df <- data.frame(especie = c("Panthera onca"), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            sent <- list()
+            real_session <- base::.subset2(session, "parent")
+            real_session$sendCustomMessage <- function(type, message) {
+                if (identical(type, "saira-toggle-field-mapped")) {
+                    sent[[length(sent) + 1L]] <<- message
+                }
+                invisible(NULL)
+            }
+            last_state <- function(term) {
+                id <- session$ns(paste0("fieldcard_", term))
+                hits <- Filter(function(m) identical(m$id, id), sent)
+                if (length(hits) == 0L) return(NULL)
+                hits[[length(hits)]]
+            }
+
+            session$flushReact()
+            session$setInputs(custom_license = "CC-BY 4.0")
+            session$flushReact()
+            testthat::expect_true(last_state("license")$mapped)
+            testthat::expect_identical(last_state("license")$state, "")
+
+            session$setInputs(custom_license = NULL)
+            session$flushReact()
+            testthat::expect_false(last_state("license")$mapped)
+            testthat::expect_identical(last_state("license")$state, "field-required-missing")
+        }
+    )
+})
+
 # Saira used to record an alias on every column pick, so cycling a card through
 # candidates left each rejected one behind as a learned mapping (the real store
 # had accumulated `id -> basisOfRecord`, `1 -> basisOfRecord` and friends this
@@ -1736,6 +1963,68 @@ testthat::test_that("picking a column writes no alias, exporting writes the fina
     testthat::expect_identical(nrow(rows), 2L)
     testthat::expect_identical(rows$dwc_term, c("basisOfRecord", "scientificName"))
     testthat::expect_identical(rows$col_name_norm, c("tipo registro", "especie"))
+})
+
+# Every export gets its own run_id. The module once read it from the engine
+# stats, which have none, so every export was written with run_id NA and no
+# export could be undone on its own.
+testthat::test_that("each export writes its aliases under its own run_id", {
+    data_dir <- withr::local_tempdir()
+    user_id <- paste0("test_export_run_id_", as.integer(Sys.time()))
+    withr::local_envvar(c(SAIRA_DATA_DIR = data_dir, SAIRA_USER = user_id))
+
+    df <- data.frame(
+        especie = c("Panthera onca", "Leopardus pardalis"),
+        tipo_registro = c("observacao", "especime"),
+        stringsAsFactors = FALSE
+    )
+    export_signal <- shiny::reactiveVal(0L)
+    seen <- new.env()
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en"),
+            export_signal_r = shiny::reactive(export_signal())
+        ),
+        {
+            session$flushReact()
+            session$setInputs(map_scientificName = "especie")
+            session$flushReact()
+            export_signal(1L)
+            session$flushReact()
+            session$setInputs(map_basisOfRecord = "tipo_registro")
+            session$flushReact()
+            export_signal(2L)
+            session$flushReact()
+            seen$receipt <- session$getReturned()$alias_receipt_r()
+        }
+    )
+
+    conn <- rostrum_connect()
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+    events <- DBI::dbGetQuery(
+        conn,
+        "SELECT run_id FROM rostrum_alias_events WHERE created_by = ? ORDER BY rowid",
+        params = list(user_id)
+    )
+    run_ids <- unique(events$run_id)
+    testthat::expect_length(run_ids, 2L)
+    testthat::expect_false(anyNA(run_ids))
+
+    # The export tab offers to undo the last export: only its new alias.
+    testthat::expect_identical(seen$receipt$run_id, run_ids[[2]])
+    testthat::expect_identical(seen$receipt$pairs$dwc_term, "basisOfRecord")
+
+    # Undoing the second export leaves the first one in place.
+    undo_session_aliases(conn, run_id = run_ids[[2]], created_by = user_id)
+    live <- DBI::dbGetQuery(
+        conn,
+        "SELECT dwc_term FROM rostrum_aliases WHERE user_id = ? AND deprecated = 0",
+        params = list(user_id)
+    )$dwc_term
+    testthat::expect_identical(live, "scientificName")
 })
 
 # Regression: a term overridden by a fixed value is written to the guide as a
