@@ -1,38 +1,58 @@
-// Landing page animations: the flow panel (spreadsheet, app tabs,
-// occurrence.txt) and the install console. All visible text comes from the
-// page markup, so the PT, EN and ES pages share this file.
+// Landing page animations: the hero species, the flow panel (one sheet that
+// the app tabs fix in place), the network map and the install console. All visible
+// text comes from the page markup, so the PT, EN and ES pages share this file.
 (function () {
   "use strict";
 
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // Fictional camera-trap rows. Raw cells are [before, bad part, after].
-  // `listed` rows are on the MMA list, so their coordinates are generalized.
-  var ROWS = [
-    { listed: true,
-      raw: [["Leopardus ", "wiedi", ""], ["", "-51,82371", ""], ["", "-19,64183", ""], ["", "23/11/2023", ""], ["Fazenda S", "Ã£", "o Bento"]],
-      name: "Leopardus wiedii", lat: "-19.64183", lon: "-51.82371", gLat: "-19.6", gLon: "-51.8",
-      date: "2023-11-23", local: "Fazenda São Bento", cat: "VU" },
-    { listed: false,
-      raw: [["Puma concolor", "", ""], ["-19", ",", "70215"], ["-51", ",", "90433"], ["", "14/12/2023", ""], ["Fazenda S", "Ã£", "o Bento"]],
-      name: "Puma concolor", lat: "-19.70215", lon: "-51.90433", date: "2023-12-14", local: "Fazenda São Bento" },
-    { listed: true,
-      raw: [["Herpailurus ", "yagouarundi", ""], ["-19", ",", "58831"], ["-51", ",", "77102"], ["", "19/10/2023", ""], ["Retiro Boa Esperan", "Ã§", "a"]],
-      name: "Herpailurus yagouaroundi", lat: "-19.58831", lon: "-51.77102", gLat: "-19.6", gLon: "-51.8",
-      date: "2023-10-19", local: "Retiro Boa Esperança", cat: "VU" },
-    { listed: false,
-      raw: [["Leopardus pardalis", "", ""], ["-19", ",", "61544"], ["-51", ",", "85391"], ["", "28/09/2023", ""], ["Retiro Boa Esperan", "Ã§", "a"]],
-      name: "Leopardus pardalis", lat: "-19.61544", lon: "-51.85391", date: "2023-09-28", local: "Retiro Boa Esperança" }
-  ];
-  var TERMS = ["scientificName", "decimalLatitude", "decimalLongitude", "eventDate", "locality"];
+  // Text that changes swaps letter by letter through lowercase glyphs, like a
+  // record field that migrates to a new value.
+  var GLYPHS = "abcdefghijklmnopqrstuvwxyz";
+  var SCRAMBLE_MS = 900;
 
-  // Tab order matches the app navbar. A tab's result shows once the next tab
-  // is active, so "from" is the tab index plus one.
-  var HOME = 0, MAPPING = 1, PREVIEW = 2, NAMES = 3, COORDS = 4, GENERALIZE = 5, EXPORT = 6;
-  // the tab that fixes each raw column: species, lat, long, date, locality
-  var FIX_TAB = [NAMES, COORDS, COORDS, EXPORT, HOME];
-  var HOLD = 3;
-  var STEP_MS = 1800;
+  function scrambled(from, to, p) {
+    var n = Math.max(from.length, to.length), out = "";
+    for (var k = 0; k < n; k++) {
+      var t = k / n * 0.6 + 0.35;
+      if (p >= t) out += to.charAt(k);
+      else if (p < t - 0.35) out += from.charAt(k) || " ";
+      else out += (to.charAt(k) === " " || from.charAt(k) === " ") ? " " : GLYPHS.charAt(Math.floor(Math.random() * GLYPHS.length));
+    }
+    return out.replace(/\s+$/, "");
+  }
+
+  function scramble(node, from, to, onFrame, ms) {
+    cancelAnimationFrame(node.lpScramble);
+    var t0 = performance.now(), span = ms || SCRAMBLE_MS;
+    function step(now) {
+      var p = Math.min(1, (now - t0) / span);
+      node.textContent = p < 1 ? scrambled(from, to, p) : to;
+      if (onFrame) onFrame(p);
+      if (p < 1) node.lpScramble = requestAnimationFrame(step);
+    }
+    node.lpScramble = requestAnimationFrame(step);
+  }
+
+  // Real GBIF records of the hero species, in the hero order. Raw cells are
+  // [before, bad part, after], with errors inserted for the demo. All six are
+  // on the MMA list, so the export generalizes their coordinates to 0.1 degree.
+  var ROWS = [
+    { raw: [["Podocnemis sextuberculat", "ta", ""], ["-2", ",", "82514"], ["-64", ",", "889433"], ["", "11/08/2004", ""], ["Amazonas", "", ""]],
+      fix: ["Podocnemis sextuberculata", "-2.82514", "-64.889433", "2004-08-11", "Amazonas"], gen: ["-2.8", "-64.9"], cat: "EN" },
+    { raw: [["Micranthocereus p", "i", "lyanthus"], ["", "-42.595426", ""], ["", "-14.321965", ""], ["", "24/07/2023", ""], ["Bahia", "", ""]],
+      fix: ["Micranthocereus polyanthus", "-14.321965", "-42.595426", "2023-07-24", "Bahia"], gen: ["-14.3", "-42.6"], cat: "EN" },
+    { raw: [["Boana buriti", "", ""], ["-16", ",", "787468"], ["-47", ",", "781879"], ["", "17/12/2025", ""], ["Goi", "Ã¡", "s"]],
+      fix: ["Boana buriti", "-16.787468", "-47.781879", "2025-12-17", "Goiás"], gen: ["-16.8", "-47.8"], cat: "VU" },
+    { raw: [["Tangara fastuosa", "", ""], ["-6", ",", "931549"], ["-35", ",", "718407"], ["", "28/07/2019", ""], ["Para", "Ã­", "ba"]],
+      fix: ["Tangara fastuosa", "-6.931549", "-35.718407", "2019-07-28", "Paraíba"], gen: ["-6.9", "-35.7"], cat: "VU" },
+    { raw: [["Acanthochelys macroce", "f", "ala"], ["", "-17.061441", ""], ["", "-56.813209", ""], ["", "01/08/2022", ""], ["Mato Grosso", "", ""]],
+      fix: ["Acanthochelys macrocephala", "-17.061441", "-56.813209", "2022-08-01", "Mato Grosso"], gen: ["-17.1", "-56.8"], cat: "VU" },
+    { raw: [["Leopardus munoai", "", ""], ["-30", ",", "225021"], ["-54", ",", "345336"], ["", "27/01/2017", ""], ["Rio Grande do Sul", "", ""]],
+      fix: ["Leopardus munoai", "-30.225021", "-54.345336", "2017-01-27", "Rio Grande do Sul"], gen: ["-30.2", "-54.3"], cat: "CR" }
+  ];
+  var TERMS = ["scientificName", "decimalLatitude", "decimalLongitude", "eventDate", "stateProvince"];
+  var STOP = {};
 
   function make(tag, cls, text) {
     var node = document.createElement(tag);
@@ -48,171 +68,183 @@
     if (parts[2]) cell.appendChild(document.createTextNode(parts[2]));
   }
 
+  // Waits that count only while `live` is true (playing and on screen). A new
+  // token stops the old loop at its next wait.
+  function clock() {
+    var c = { token: 0, live: false };
+    c.wait = function (tok, ms) {
+      return new Promise(function (resolve, reject) {
+        var left = ms, last = performance.now();
+        (function tick() {
+          if (tok !== c.token) { reject(STOP); return; }
+          var now = performance.now();
+          if (c.live) left -= now - last;
+          last = now;
+          if (left <= 0) resolve(); else setTimeout(tick, Math.min(left, 100));
+        })();
+      });
+    };
+    return c;
+  }
+  function quiet(e) { if (e !== STOP) throw e; }
+
+  // Flow: one sheet that the seven tabs fix in place, column by column.
   function initFlow(panel) {
     var tabs = [].slice.call(panel.querySelectorAll(".lp-tabs li"));
-    var segs = [].slice.call(panel.querySelectorAll(".lp-segs span"));
+    var names = tabs.map(function (t) { return t.textContent.replace(/^\d+/, ""); });
     var verb = panel.querySelector(".lp-verb");
     var status = panel.querySelector(".lp-status");
     var toggle = panel.querySelector(".lp-toggle");
-    var gridIn = panel.querySelector(".lp-in");
-    var gridOut = panel.querySelector(".lp-out");
-    var cols = gridIn.getAttribute("data-cols").split("|");
-    var last = tabs.length + HOLD - 1;
-    var lane = -1, playing = !reduce, visible = false, timer = null;
+    var cap = panel.querySelector(".lp-cap");
+    var grid = panel.querySelector(".lp-grid");
+    var cols = grid.getAttribute("data-cols").split("|");
+    var capRaw = cap.textContent;
+    var C = clock(), playing = !reduce, visible = false, started = false;
+    var ALL = ROWS.map(function (_, r) { return r; });
 
-    function row(grid, label) {
+    function row(label) {
       var r = make("div", "lp-row");
       r.setAttribute("role", "row");
       r.appendChild(make("span", "lp-num", label));
       grid.appendChild(r);
       return r;
     }
-    function cell(r, header) {
-      var c = make("span", "lp-cell");
-      c.setAttribute("role", header ? "columnheader" : "cell");
-      r.appendChild(c);
-      return c;
-    }
-
-    // top sheet: built once, then only classes change
-    var inCells = [];
-    var head = row(gridIn, "1");
-    var inHead = cols.map(function (name) { var c = cell(head, true); c.textContent = name; return c; });
-    // an empty slot where the app adds dynamicProperties, so both sheets share the right edge
-    function slot(r) { cell(r, false).classList.add("lp-slot"); }
-    slot(head);
-    ROWS.forEach(function (data, r) {
-      var line = row(gridIn, String(r + 2));
-      inCells.push(data.raw.map(function (parts) { var c = cell(line, false); fill(c, parts, "lp-bad"); return c; }));
-      slot(line);
-    });
-
-    // bottom sheet: each cell lists its stages, the newest one with from <= lane shows
-    var outCells = [];
-    function addOut(r, header, stages, ph, ghost) {
-      var c = cell(r, header);
-      outCells.push({ node: c, stages: stages, ph: ph, ghost: ghost, shown: null });
-    }
-    var oh = row(gridOut, "1");
-    cols.forEach(function (name, i) {
-      addOut(oh, true, [{ from: MAPPING, parts: [name], cls: "lp-muted" }, { from: PREVIEW, parts: [TERMS[i]], pop: true }], 72);
-    });
-    addOut(oh, true, [{ from: PREVIEW, parts: ["dynamicProperties"], pop: true }], 0, true);
-    ROWS.forEach(function (data, r) {
-      var line = row(gridOut, String(r + 2));
-      var raw = data.raw;
-      var lat = [{ from: MAPPING, parts: raw[1] }, { from: COORDS + 1, parts: [data.lat], pop: true }];
-      var lon = [{ from: MAPPING, parts: raw[2] }, { from: COORDS + 1, parts: [data.lon], pop: true }];
-      if (data.listed) {
-        lat.push({ from: GENERALIZE + 1, parts: [data.gLat], pop: true });
-        lon.push({ from: GENERALIZE + 1, parts: [data.gLon], pop: true });
+    function cellsOf(r, header) {
+      var out = [];
+      for (var k = 0; k < 6; k++) {
+        var c = make("span", "lp-cell");
+        c.setAttribute("role", header ? "columnheader" : "cell");
+        r.appendChild(c);
+        out.push(c);
       }
-      addOut(line, false, [{ from: MAPPING, parts: raw[0] }, { from: NAMES + 1, parts: [data.name], pop: true, cls: "lp-italic" }], 120);
-      addOut(line, false, lat, 64);
-      addOut(line, false, lon, 64);
-      addOut(line, false, [{ from: MAPPING, parts: raw[3] }, { from: EXPORT + 1, parts: [data.date], pop: true }], 72);
-      addOut(line, false, [{ from: MAPPING, parts: [data.local], pop: true }], 110);
-      addOut(line, false, [{ from: EXPORT + 1, parts: [data.cat ? '{"mmaThreatStatus":"' + data.cat + '"}' : ""], pop: true }], 150, true);
-    });
-
-    function hotIn(r, c, L) {
-      if (L === HOME) return r >= 0 && c === 4;
-      if (L === MAPPING) return r < 0;
-      if (L === NAMES) return r >= 0 && c === 0;
-      if (L === COORDS) return r >= 0 && (c === 1 || c === 2);
-      if (L === GENERALIZE) return r >= 0 && (c === 1 || c === 2) && ROWS[r].listed;
-      if (L === EXPORT) return r >= 0 && c === 3;
-      return false;
+      return out;
     }
+    var head = cellsOf(row("1"), true);
+    var cells = ROWS.map(function (_, r) { return cellsOf(row(String(r + 2)), false); });
 
-    function render() {
-      var L = lane;
-      var moving = L >= 0 && L < tabs.length;
-      var showDyn = L >= PREVIEW;
-
-      inHead.forEach(function (c, i) { c.classList.toggle("is-hot", hotIn(-1, i, L)); });
-      inCells.forEach(function (line, r) {
-        line.forEach(function (c, i) {
-          c.classList.toggle("is-hot", hotIn(r, i, L));
-          var bad = c.querySelector(".lp-bad, .lp-struck");
-          if (bad) bad.className = FIX_TAB[i] < L ? "lp-struck" : "lp-bad";
-        });
-      });
-
-      outCells.forEach(function (o) {
-        var k = -1;
-        o.stages.forEach(function (s, i) { if (s.from <= L) k = i; });
-        o.node.classList.toggle("is-ghost", !!o.ghost && !showDyn);
-        o.node.classList.toggle("is-hot", L === PREVIEW);
-        var key = k < 0 ? (o.ph && !(o.ghost && !showDyn) ? "ph" : "none") : k;
-        if (key === o.shown) return;
-        o.shown = key;
-        o.node.textContent = "";
-        if (key === "ph") {
-          var bar = make("span", "lp-ph");
-          bar.style.setProperty("--w", o.ph + "px");
-          o.node.appendChild(bar);
-        } else if (key !== "none") {
-          var s = o.stages[k];
-          var span = make("span", (s.pop && !reduce ? "lp-pop " : "") + (s.cls || ""));
-          fill(span, s.parts, "lp-bad");
-          o.node.appendChild(span);
-        }
-      });
-
+    function dyn(r) { return '{"mmaThreatStatus":"' + ROWS[r].cat + '"}'; }
+    function setTabs(L) {
       tabs.forEach(function (t, i) {
-        t.classList.toggle("is-done", i < L);
         t.classList.toggle("is-active", i === L);
-      });
-      segs.forEach(function (s, i) {
-        s.classList.toggle("is-done", i < L);
-        s.classList.toggle("is-active", i === L);
+        t.classList.toggle("is-done", i < L);
       });
       verb.textContent = "";
-      if (moving) {
-        verb.appendChild(make("b", null, tabs[L].textContent.replace(/^\d+/, "")));
+      if (L >= 0 && L < tabs.length) {
+        verb.appendChild(make("b", null, names[L]));
         verb.appendChild(document.createTextNode(" " + tabs[L].getAttribute("data-verb")));
+        status.textContent = panel.getAttribute("data-step").replace("{n}", L + 1).replace("{total}", tabs.length).replace("{tab}", names[L]);
       }
-      status.textContent = L < 0 ? panel.getAttribute("data-raw")
-        : moving ? panel.getAttribute("data-step").replace("{n}", L + 1).replace("{total}", tabs.length).replace("{tab}", tabs[L].textContent.replace(/^\d+/, ""))
-        : panel.getAttribute("data-done");
-      panel.classList.toggle("is-moving", moving);
-      panel.classList.toggle("is-done", L >= tabs.length);
-
-      // a fresh dot per step restarts the fall animation in both connectors
-      panel.querySelectorAll(".lp-vconn").forEach(function (v, i) {
-        var old = v.querySelector(".lp-drop");
-        if (old) v.removeChild(old);
-        if (moving && !reduce) {
-          var dot = make("span", "lp-drop");
-          dot.style.setProperty("--t", (STEP_MS * 0.4 / 1000).toFixed(2) + "s");
-          dot.style.setProperty("--delay", (i * STEP_MS * 0.5 / 1000).toFixed(2) + "s");
-          v.appendChild(dot);
-        }
+    }
+    function reset() {
+      panel.classList.remove("is-done");
+      cap.textContent = capRaw;
+      head.forEach(function (c, i) {
+        c.textContent = i < 5 ? cols[i] : "dynamicProperties";
+        c.className = "lp-cell" + (i === 5 ? " lp-dyn" : "");
       });
+      cells.forEach(function (line, r) {
+        line.forEach(function (c, i) {
+          c.className = "lp-cell";
+          if (i < 5) fill(c, ROWS[r].raw[i], "lp-bad");
+          else { c.textContent = dyn(r); c.classList.add("lp-dyn"); }
+        });
+      });
+      setTabs(-1);
+      status.textContent = panel.getAttribute("data-raw");
+    }
+    // reduced motion: the finished file, with no controls
+    function finished() {
+      head.forEach(function (c, i) { c.textContent = i < 5 ? TERMS[i] : "dynamicProperties"; });
+      cells.forEach(function (line, r) {
+        var d = ROWS[r];
+        [d.fix[0], d.gen[0], d.gen[1], d.fix[3], d.fix[4], dyn(r)].forEach(function (v, i) { line[i].textContent = v; });
+        line[0].classList.add("lp-italic");
+        line[5].classList.add("is-open");
+      });
+      head[5].classList.add("is-open");
+      setTabs(tabs.length);
+      cap.textContent = "occurrence.txt";
+      status.textContent = panel.getAttribute("data-done");
+      panel.classList.add("is-done");
     }
 
-    function tick() {
-      lane = lane >= last ? -1 : lane + 1;
-      render();
+    function hot(cell) {
+      cell.classList.add("is-hot");
+      setTimeout(function () { cell.classList.remove("is-hot"); }, 900);
     }
+    // one column, row after row; `rows` are the rows that change at this tab
+    async function col(tok, c, rows, value, extra) {
+      for (var i = 0; i < rows.length; i++) {
+        var cell = cells[rows[i]][c];
+        hot(cell);
+        if (extra) cell.classList.add(extra);
+        scramble(cell, cell.textContent, value(rows[i]), null, 650);
+        await C.wait(tok, 140);
+      }
+    }
+    function bad(c) { return ALL.filter(function (r) { return !!ROWS[r].raw[c][1]; }); }
+    function pick(k, field) { return function (r) { return ROWS[r][field][k]; }; }
+
+    async function step(tok, L) {
+      if (L === 0) await col(tok, 4, bad(4), pick(4, "fix"));
+      if (L === 1) {
+        for (var k = 0; k < 5; k++) { hot(head[k]); scramble(head[k], head[k].textContent, TERMS[k], null, 650); await C.wait(tok, 130); }
+      }
+      if (L === 2) {
+        for (var r = 0; r < cells.length; r++) {
+          cells[r].slice(0, 5).forEach(function (c) { c.classList.add("is-hot"); });
+          await C.wait(tok, 170);
+          cells[r].forEach(function (c) { c.classList.remove("is-hot"); });
+        }
+      }
+      if (L === 3) await col(tok, 0, ALL, pick(0, "fix"), "lp-italic");
+      if (L === 4 || L === 5) {
+        var field = L === 4 ? "fix" : "gen";
+        col(tok, 1, ALL, pick(L === 4 ? 1 : 0, field)).catch(quiet);
+        await C.wait(tok, 80);
+        await col(tok, 2, ALL, pick(L === 4 ? 2 : 1, field));
+      }
+      if (L === 6) {
+        await col(tok, 3, ALL, pick(3, "fix"));
+        head[5].classList.add("is-open");
+        for (var d = 0; d < cells.length; d++) { cells[d][5].classList.add("is-open"); await C.wait(tok, 110); }
+      }
+    }
+
+    async function run(tok) {
+      for (;;) {
+        reset();
+        await C.wait(tok, 1000);
+        for (var L = 0; L < tabs.length; L++) {
+          setTabs(L);
+          var t0 = performance.now();
+          await step(tok, L);
+          // each tab stays at least 1.9 s, so the reader can follow the verb
+          await C.wait(tok, Math.max(300, 1900 - (performance.now() - t0)));
+        }
+        setTabs(tabs.length);
+        scramble(cap, cap.textContent, "occurrence.txt", null, 700);
+        panel.classList.add("is-done");
+        status.textContent = panel.getAttribute("data-done");
+        await C.wait(tok, 4500);
+      }
+    }
+
     function sync() {
-      var run = playing && visible;
-      if (run && !timer) timer = setInterval(tick, STEP_MS);
-      if (!run && timer) { clearInterval(timer); timer = null; }
+      C.live = playing && visible;
+      if (C.live && !started) { started = true; run(++C.token).catch(quiet); }
       toggle.textContent = toggle.getAttribute(playing ? "data-pause" : "data-play");
       panel.classList.toggle("is-paused", !playing);
     }
 
+    if (reduce) { reset(); finished(); toggle.hidden = true; return; }
+    reset();
     toggle.addEventListener("click", function () { playing = !playing; sync(); });
-    // reduced motion: show the finished file and no controls
-    if (reduce) { lane = tabs.length; toggle.hidden = true; }
-    render();
     if ("IntersectionObserver" in window) {
       new IntersectionObserver(function (entries) {
         visible = entries[0].isIntersecting;
         sync();
-      }, { threshold: 0.2 }).observe(panel);
+      }, { threshold: 0.25 }).observe(panel);
     } else {
       visible = true;
     }
@@ -237,60 +269,328 @@
     }
     if (reduce || !("IntersectionObserver" in window)) return;
 
-    // typed lines keep their prompt span and receive the rest one character at a time
-    var lines = [].slice.call(term.querySelectorAll(".lp-term-line")).map(function (node) {
-      var parts = [].map.call(node.children, function (s) { return { text: s.textContent, cls: s.className }; });
-      return { node: node, cmd: node.hasAttribute("data-cmd"), wait: Number(node.getAttribute("data-wait")) || 300, prompt: parts[0], parts: parts.slice(1) };
-    });
-    var cursor = make("span", "lp-cursor");
-    lines.forEach(function (l) { l.node.classList.add("is-hidden"); });
+    // the script is on screen from the start; only the output replays, in about 3 s
+    var outs = [].slice.call(term.querySelectorAll("[data-out]"));
+    outs.forEach(function (l) { l.classList.add("is-hidden"); });
 
-    function type(l, n) {
-      l.node.textContent = "";
-      l.node.appendChild(make("span", l.prompt.cls, l.prompt.text));
-      var left = n;
-      l.parts.forEach(function (p) {
-        if (left <= 0) return;
-        var piece = p.text.slice(0, left);
-        left -= piece.length;
-        l.node.appendChild(make("span", p.cls, piece));
-      });
-      l.node.appendChild(cursor);
-    }
-
-    function play(i, n) {
-      if (i >= lines.length) return;
-      var l = lines[i];
-      l.node.classList.remove("is-hidden");
-      if (!l.cmd) {
-        setTimeout(function () { play(i + 1, 0); }, l.wait);
-        return;
-      }
-      var total = l.parts.reduce(function (sum, p) { return sum + p.text.length; }, 0);
-      type(l, n);
-      if (n < total) {
-        setTimeout(function () { play(i, n + 1); }, 30);
-      } else {
-        setTimeout(function () {
-          if (cursor.parentNode) cursor.parentNode.removeChild(cursor);
-          play(i + 1, 0);
-        }, l.wait);
-      }
+    function play(i) {
+      if (i >= outs.length) return;
+      var l = outs[i], bar = l.querySelector(".lp-term-prog");
+      l.classList.remove("is-hidden");
+      if (bar) { void bar.offsetWidth; bar.classList.add("is-on"); }
+      setTimeout(function () { play(i + 1); }, Number(l.getAttribute("data-wait")) || 0);
     }
 
     // plays once, when the window comes into view
     var seen = new IntersectionObserver(function (entries) {
       if (!entries[0].isIntersecting) return;
       seen.disconnect();
-      setTimeout(function () { play(0, 0); }, 400);
+      setTimeout(function () { play(0); }, 500);
     }, { threshold: 0.4 });
     seen.observe(term);
   }
 
+  // Why open data matters: each use lights in turn, then all five stay lit.
+  // The loop stops out of view and starts again from the first use.
+  function initWhy(sec) {
+    var uses = [].slice.call(sec.querySelectorAll(".lp-use"));
+    var num = sec.querySelector("[data-count]");
+    if (reduce || !("IntersectionObserver" in window)) {
+      uses.forEach(function (u) { u.classList.add("is-seen"); });
+      return;
+    }
+    var token = 0, counted = false;
+
+    function wait(tok, ms) {
+      return new Promise(function (res, rej) { setTimeout(function () { tok === token ? res() : rej(STOP); }, ms); });
+    }
+    function count() {
+      var to = Number(num.getAttribute("data-count")), t0 = performance.now();
+      (function step(now) {
+        var p = Math.min(1, (now - t0) / 1200);
+        num.textContent = "+" + Math.round(to * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(step);
+      })(t0);
+    }
+    async function loop(tok) {
+      for (;;) {
+        uses.forEach(function (u) { u.classList.remove("is-on", "is-seen", "is-drawn"); });
+        await wait(tok, 300);
+        for (var i = 0; i < uses.length; i++) {
+          void uses[i].offsetWidth;
+          uses[i].classList.add("is-drawn", "is-on");
+          await wait(tok, 1400);
+          uses[i].classList.remove("is-on");
+          uses[i].classList.add("is-seen");
+        }
+        await wait(tok, 2600);
+      }
+    }
+    new IntersectionObserver(function (entries) {
+      var tok = ++token;
+      if (!entries[0].isIntersecting) return;
+      if (!counted && num) { counted = true; count(); }
+      loop(tok).catch(quiet);
+    }, { threshold: 0.35 }).observe(sec);
+  }
+
+  // Hero: one photo per biome. A new photo comes in as a wave of hexagons
+  // from the bird's area while the record fields scramble to the new species.
+  var HEX_R = 52, WAVE_MS = 900, COMMIT_MS = 2400;
+
+  function initHero(hero) {
+    var photos = [].slice.call(hero.querySelectorAll(".lp-photo"));
+    var tabs = [].slice.call(hero.querySelectorAll(".lp-biome"));
+    var layer = hero.querySelector(".lp-hexes");
+    var rec = {
+      name: hero.querySelector(".lp-rec-name"), line: hero.querySelector(".lp-rec-line"),
+      cat: hero.querySelector(".lp-rec-cat"), credit: hero.querySelector(".lp-rec-credit span")
+    };
+    var dur = (Number(hero.getAttribute("data-seconds")) || 7) * 1000;
+    var i = 0, wave = 0, W = 0, H = 0, commit = null, timer = null, left = dur, t0 = 0, holds = {};
+    tabs.forEach(function (t, k) { if (t.getAttribute("aria-pressed") === "true") i = k; });
+    hero.style.setProperty("--dur", dur / 1000 + "s");
+
+    function record(k) {
+      var t = tabs[k];
+      return {
+        name: t.getAttribute("data-sci"),
+        line: t.getAttribute("data-fam") + " · " + t.getAttribute("data-uf"),
+        cat: t.getAttribute("data-cat"), code: t.getAttribute("data-code"), credit: t.getAttribute("data-credit")
+      };
+    }
+
+    // The grid is built once per size. Rebuilding it during a wave would
+    // restart every cell; a parity class on the layer restarts the wave.
+    function build() {
+      if (W === hero.clientWidth && H === hero.clientHeight) return;
+      W = hero.clientWidth; H = hero.clientHeight;
+      var hw = Math.sqrt(3) * HEX_R, vs = 1.5 * HEX_R;
+      var cx = W * 0.62, cy = H * 0.45, maxD = Math.sqrt(W * W + H * H) / 2;
+      var frag = document.createDocumentFragment();
+      for (var r = 0; r * vs - HEX_R < H; r++) {
+        for (var k = -1; k * hw < W + hw; k++) {
+          var x = Math.round(k * hw + (r % 2 ? hw / 2 : 0)), y = Math.round(r * vs - HEX_R);
+          var dx = x + hw / 2 - cx, dy = y + HEX_R - cy;
+          // a fixed jitter, so the wave edge is not a perfect circle
+          var d = Math.sqrt(dx * dx + dy * dy) / maxD * WAVE_MS + ((k * 7 + r * 13 + 50) % 5) * 10;
+          var cell = make("span", "lp-hex");
+          cell.style.cssText = "--x: " + (x - 1) + "px; --y: " + (y - 1) + "px; --d: " + Math.round(d) + "ms";
+          frag.appendChild(cell);
+        }
+      }
+      layer.textContent = "";
+      layer.style.setProperty("--hw", Math.ceil(hw) + 2 + "px");
+      layer.style.setProperty("--hh", 2 * HEX_R + 2 + "px");
+      layer.appendChild(frag);
+    }
+
+    // background geometry that matches object-fit: cover on the photo
+    function cover(img) {
+      var s = Math.max(W / img.naturalWidth, H / img.naturalHeight);
+      var bw = img.naturalWidth * s, bh = img.naturalHeight * s;
+      var pos = (img.style.objectPosition || "50% 50%").split(" ");
+      layer.style.setProperty("--img", 'url("' + img.currentSrc + '")');
+      layer.style.setProperty("--bw", bw + "px");
+      layer.style.setProperty("--bh", bh + "px");
+      layer.style.setProperty("--ox", (W - bw) * parseFloat(pos[0]) / 100 + "px");
+      layer.style.setProperty("--oy", (H - bh) * parseFloat(pos[1]) / 100 + "px");
+    }
+
+    function show(k) {
+      photos.forEach(function (p, j) {
+        p.classList.toggle("is-on", j === k);
+        if (j === k) p.removeAttribute("aria-hidden"); else p.setAttribute("aria-hidden", "true");
+      });
+    }
+
+    function go(n) {
+      if (n === i) return;
+      var from = record(i), to = record(n), img = photos[n];
+      clearTimeout(commit);
+      // a wave still running ends at once on its own photo
+      show(i);
+      layer.className = "lp-hexes";
+      i = n;
+      tabs.forEach(function (t, k) {
+        t.classList.toggle("is-on", k === i);
+        t.classList.toggle("is-done", k < i);
+        t.setAttribute("aria-pressed", k === i ? "true" : "false");
+      });
+      rec.credit.textContent = to.credit;
+      if (reduce || !img.complete || !img.naturalWidth) {
+        show(n);
+        rec.name.textContent = to.name; rec.line.textContent = to.line; rec.cat.textContent = to.cat; rec.cat.setAttribute("data-code", to.code);
+      } else {
+        build();
+        cover(img);
+        wave++;
+        layer.className = "lp-hexes p" + wave % 2;
+        commit = setTimeout(function () { show(n); layer.className = "lp-hexes"; }, COMMIT_MS);
+        scramble(rec.name, from.name, to.name);
+        scramble(rec.line, from.line, to.line, function (p) { if (p >= 0.6) { rec.cat.textContent = to.cat; rec.cat.setAttribute("data-code", to.code); } });
+      }
+      left = dur;
+      if (timer) { clearTimeout(timer); timer = null; run(); }
+    }
+
+    // Autoplay stops while the reader points at the tabs, scrolls away or
+    // leaves the page, and resumes with the time that was left.
+    function held() { for (var r in holds) if (holds[r]) return true; return false; }
+    function run() {
+      if (reduce || held()) return;
+      t0 = Date.now();
+      timer = setTimeout(function () { timer = null; go((i + 1) % tabs.length); run(); }, left);
+    }
+    function hold(reason, on) {
+      var was = held();
+      holds[reason] = on;
+      if (held() === was) return;
+      hero.classList.toggle("is-held", !was);
+      if (!was && timer) { clearTimeout(timer); timer = null; left = Math.max(0, left - (Date.now() - t0)); }
+      if (was) run();
+    }
+
+    tabs.forEach(function (t, k) {
+      t.addEventListener("click", function () { go(k); if (!timer) run(); });
+    });
+    var nav = hero.querySelector(".lp-biomes");
+    nav.addEventListener("mouseenter", function () { hold("hover", true); });
+    nav.addEventListener("mouseleave", function () { hold("hover", false); });
+    nav.addEventListener("focusin", function () { hold("focus", true); });
+    nav.addEventListener("focusout", function () { hold("focus", false); });
+    document.addEventListener("visibilitychange", function () { hold("page", document.hidden); });
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(function (entries) { hold("view", !entries[0].isIntersecting); }, { threshold: 0.2 }).observe(hero);
+    }
+    window.addEventListener("resize", function () { if (!layer.className.match(/p[01]/)) build(); });
+
+    tabs[i].classList.add("is-on");
+    tabs.forEach(function (t, k) { if (k < i) t.classList.add("is-done"); });
+    // the other photos load after the page, so the first paint stays light
+    function preload() { photos.forEach(function (p) { if (p.hasAttribute("data-src")) p.src = p.getAttribute("data-src"); }); }
+    if (document.readyState === "complete") preload(); else window.addEventListener("load", preload);
+    run();
+  }
+
+  // Map: faint sparks over the occurrence density and a crosshair that visits
+  // the six table species, one at a time, with their generalized coordinates.
+  function initMap(fig) {
+    var pins = [].slice.call(fig.querySelectorAll(".lp-pin"));
+    var cards = [].slice.call(fig.querySelectorAll(".lp-card"));
+    var light = fig.querySelector(".lp-map-light");
+    cards.forEach(function (c, i) { c.querySelector(".lp-card-xy").textContent = ROWS[i].gen.join(", "); });
+    if (reduce || !("IntersectionObserver" in window)) return;
+
+    var gh = make("span", "lp-guide is-h"), gv = make("span", "lp-guide is-v");
+    var al = make("span", "lp-axis is-lat"), ao = make("span", "lp-axis is-lon");
+    [gh, gv, al, ao].forEach(function (n) { n.setAttribute("aria-hidden", "true"); fig.appendChild(n); });
+    var cv = make("canvas", "lp-sparks");
+    cv.setAttribute("aria-hidden", "true");
+    fig.insertBefore(cv, pins[0]);
+    var C = clock(), started = false, drawing = false;
+
+    async function mira(tok) {
+      for (var i = 0; ; i = (i + 1) % pins.length) {
+        var x = pins[i].style.getPropertyValue("--x"), y = pins[i].style.getPropertyValue("--y");
+        pins.forEach(function (p, k) { p.classList.toggle("is-dim", k !== i); p.classList.remove("is-lock"); });
+        cards.forEach(function (c) { c.classList.remove("is-on"); });
+        gh.style.top = al.style.top = y;
+        gv.style.left = ao.style.left = x;
+        al.textContent = ROWS[i].gen[0] + "°";
+        ao.textContent = ROWS[i].gen[1] + "°";
+        [gh, gv, al, ao].forEach(function (n) { n.classList.add("is-on"); });
+        await C.wait(tok, 650);
+        void pins[i].offsetWidth;
+        pins[i].classList.add("is-lock");
+        await C.wait(tok, 500);
+        cards[i].classList.add("is-on");
+        await C.wait(tok, 2600);
+      }
+    }
+
+    // Sparks pick a 20 px square (about 1.5 degrees) that has data, then a
+    // pixel inside it. Pixel by pixel, the dense coast would get most sparks.
+    var squares = null, sparks = [], color = "", frames = 0;
+    function sample(done) {
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var W = 300, H = Math.round(W * img.naturalHeight / img.naturalWidth);
+          var c = make("canvas"); c.width = W; c.height = H;
+          var x = c.getContext("2d");
+          x.drawImage(img, 0, 0, W, H);
+          var px = x.getImageData(0, 0, W, H).data, by = {};
+          for (var yy = 0; yy < H; yy++) {
+            for (var xx = 0; xx < W; xx++) {
+              var k = (yy * W + xx) * 4;
+              // the density colors are blue; land and sea are not
+              if (px[k + 2] - px[k] > 70 && px[k + 2] > 140) {
+                var key = (xx / 20 | 0) + ":" + (yy / 20 | 0);
+                (by[key] = by[key] || []).push([xx / W, yy / H]);
+              }
+            }
+          }
+          squares = Object.keys(by).map(function (key) { return by[key]; });
+        } catch (e) { squares = []; }
+        done();
+      };
+      img.onerror = function () { squares = []; done(); };
+      img.src = light.currentSrc || light.src;
+    }
+    function frame() {
+      if (!C.live || !squares.length) { drawing = false; return; }
+      var W = cv.clientWidth, H = cv.clientHeight, dpr = window.devicePixelRatio || 1;
+      if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+      // the theme can change at any time, so the color is read again now and then
+      if (frames++ % 30 === 0) color = getComputedStyle(fig).getPropertyValue("--lp-glow").trim();
+      var x = cv.getContext("2d"), now = performance.now();
+      x.setTransform(dpr, 0, 0, dpr, 0, 0);
+      x.clearRect(0, 0, W, H);
+      for (var n = 0; n < 3; n++) {
+        var sq = squares[Math.random() * squares.length | 0], s = sq[Math.random() * sq.length | 0];
+        sparks.push([s[0] * W, s[1] * H, now, 700 + Math.random() * 900]);
+      }
+      sparks = sparks.filter(function (s) { return now - s[2] < s[3]; });
+      x.fillStyle = color;
+      sparks.forEach(function (s) {
+        var a = Math.sin((now - s[2]) / s[3] * Math.PI);
+        x.globalAlpha = a * 0.55;
+        x.beginPath();
+        x.arc(s[0], s[1], 1.2 + a * 1.3, 0, 7);
+        x.fill();
+      });
+      x.globalAlpha = 1;
+      requestAnimationFrame(frame);
+    }
+    function draw() {
+      if (drawing || !C.live || !squares) return;
+      drawing = true;
+      requestAnimationFrame(frame);
+    }
+
+    new IntersectionObserver(function (entries) {
+      C.live = entries[0].isIntersecting;
+      if (C.live && !started) {
+        started = true;
+        fig.classList.add("is-live");
+        mira(++C.token).catch(quiet);
+        sample(draw);
+      }
+      draw();
+    }, { threshold: 0.35 }).observe(fig);
+  }
+
   function init() {
+    var hero = document.querySelector(".lp-hero");
+    var map = document.querySelector(".lp-mapfig");
     var flow = document.querySelector(".lp-flow");
     var term = document.querySelector(".lp-term");
+    var why = document.querySelector(".lp-why");
+    if (hero) initHero(hero);
+    if (map) initMap(map);
     if (flow) initFlow(flow);
+    if (why) initWhy(why);
     if (term) initTerm(term);
   }
 

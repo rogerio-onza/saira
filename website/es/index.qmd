@@ -8,51 +8,57 @@ anchor-sections: false
 ```{=html}
 <div class="lp">
 
-<!-- ===================== HERO ===================== -->
-<section class="lp-hero">
+<!-- ===================== HERO: one MMA-threatened species per biome ===================== -->
+<section class="lp-hero" aria-label="Especies amenazadas de los seis biomas" data-seconds="7">
+  <img class="lp-photo" data-src="../assets/img/landing/podocnemis-sextuberculata.jpg" aria-hidden="true" width="1632" height="1224" style="object-position: 70% 40%" alt="Cabeza de un iaçá, tortuga de río con manchas amarillas, saliendo del caparazón">
+  <img class="lp-photo" data-src="../assets/img/landing/micranthocereus-polyanthus.jpg" aria-hidden="true" width="1920" height="1251" style="object-position: 45% 50%" alt="Botones de flor rosados en la cima lanosa de un cactus de la Caatinga">
+  <img class="lp-photo" data-src="../assets/img/landing/boana-buriti.jpg" aria-hidden="true" width="1920" height="1440" style="object-position: 50% 54%" alt="Rana arborícola con rayas doradas sobre una hoja seca, de noche">
+  <img class="lp-photo is-on" src="../assets/img/landing/tangara-fastuosa.jpg" fetchpriority="high" width="1920" height="1440" style="object-position: 50% 28%" alt="Saíra-pintor posada en un tallo verde, con hojas y fondo desenfocado">
+  <img class="lp-photo" data-src="../assets/img/landing/acanthochelys-macrocephala.jpg" aria-hidden="true" width="1920" height="1280" style="object-position: 62% 55%" alt="Tortuga del Pantanal cruzando un camino de tierra">
+  <img class="lp-photo" data-src="../assets/img/landing/leopardus-munoai.jpg" aria-hidden="true" width="1920" height="1215" style="object-position: 50% 65%" alt="Gato del pajonal pampeano caminando hacia la cámara, lamiéndose el hocico">
+  <div class="lp-hexes" aria-hidden="true"></div>
+  <div class="lp-scrim" aria-hidden="true"></div>
   <div class="lp-hero-text">
     <h1 class="lp-rise">Saíra</h1>
     <p class="lp-sub lp-rise" style="--d: .15s">Darwin Core para la biodiversidad brasileña.</p>
-    <p class="lp-lede lp-rise" style="--d: .3s">Una aplicación en R/Shiny que convierte hojas de cálculo de ocurrencias al formato del GBIF y del SiBBr. Usted la usa con menús y botones, y la hoja de cálculo no sale de su computadora.</p>
-    <div class="lp-actions lp-rise" style="--d: .45s">
+    <div class="lp-actions lp-rise" style="--d: .3s">
       <a class="lp-btn lp-btn-primary" href="tutoriales/01-instalacion.html">Ver los tutoriales</a>
       <a class="lp-btn" href="#instalar">Instalar</a>
     </div>
   </div>
-  <figure class="lp-fig">
-    <img class="lp-rise" style="--d: .1s" src="../assets/img/saira-sete-cores-Ester-Ramirez.jpg" width="736" height="736" fetchpriority="high" alt="Saíra-pintor (Tangara fastuosa) posada en una rama con flores amarillas al fondo">
-    <div class="lp-label lp-rise" style="--d: .6s" role="group" aria-label="Fila del occurrence.txt">
-      <div class="lp-label-head"><span class="lp-ring"></span>OCCURRENCE.TXT · FILA 1</div>
-      <dl>
-        <dt>kingdom</dt><dd>Animalia</dd>
-        <dt>family</dt><dd>Thraupidae</dd>
-        <dt>scientificName</dt><dd><em>Tangara fastuosa</em></dd>
-        <dt>scientificNameAuthorship</dt><dd>(Lesson, 1831)</dd>
-        <dt>vernacularName</dt><dd>saíra-pintor</dd>
-        <dt>dynamicProperties</dt><dd>{"mmaThreatStatus":"VU"}</dd>
-      </dl>
-    </div>
-    <figcaption class="lp-credit lp-rise" style="--d: .4s">Foto: Ester Ramirez</figcaption>
-  </figure>
+  <div class="lp-rec lp-rise" style="--d: .45s">
+    <div class="lp-rec-name">Tangara fastuosa</div>
+    <div class="lp-rec-line">Thraupidae · Paraíba</div>
+    <span class="lp-rec-cat" data-code="VU">Vulnerable · MMA</span>
+    <div class="lp-rec-credit">Foto: <span>Renato Bandeira · CC BY 4.0</span></div>
+  </div>
+  <nav class="lp-biomes lp-rise" style="--d: .6s" aria-label="Biomas">
+    <button type="button" class="lp-biome" aria-pressed="false" data-sci="Podocnemis sextuberculata" data-fam="Podocnemididae" data-uf="Amazonas" data-code="EN" data-cat="En peligro · MMA" data-credit="Rafael Bernhard · CC BY 4.0"><span class="lp-prog"></span><span class="lp-biome-name">Amazonía</span><span class="lp-biome-sp">iaçá</span></button>
+    <button type="button" class="lp-biome" aria-pressed="false" data-sci="Micranthocereus polyanthus" data-fam="Cactaceae" data-uf="Bahia" data-code="EN" data-cat="En peligro · MMA" data-credit="Brian Williams · CC BY 4.0"><span class="lp-prog"></span><span class="lp-biome-name">Caatinga</span><span class="lp-biome-sp">cactus de flor rosa</span></button>
+    <button type="button" class="lp-biome" aria-pressed="false" data-sci="Boana buriti" data-fam="Hylidae" data-uf="Goiás" data-code="VU" data-cat="Vulnerable · MMA" data-credit="Reuber Brandão · CC BY 4.0"><span class="lp-prog"></span><span class="lp-biome-name">Cerrado</span><span class="lp-biome-sp">rana arborícola del Cerrado</span></button>
+    <button type="button" class="lp-biome" aria-pressed="true" data-sci="Tangara fastuosa" data-fam="Thraupidae" data-uf="Paraíba" data-code="VU" data-cat="Vulnerable · MMA" data-credit="Renato Bandeira · CC BY 4.0"><span class="lp-prog"></span><span class="lp-biome-name">Mata Atlántica</span><span class="lp-biome-sp">tangara siete colores</span></button>
+    <button type="button" class="lp-biome" aria-pressed="false" data-sci="Acanthochelys macrocephala" data-fam="Chelidae" data-uf="Mato Grosso" data-code="VU" data-cat="Vulnerable · MMA" data-credit="Thomas Galewski · CC BY 4.0"><span class="lp-prog"></span><span class="lp-biome-name">Pantanal</span><span class="lp-biome-sp">tortuga del Pantanal</span></button>
+    <button type="button" class="lp-biome" aria-pressed="false" data-sci="Leopardus munoai" data-fam="Felidae" data-uf="Rio Grande do Sul" data-code="CR" data-cat="En peligro crítico · MMA" data-credit="Felipe Peters · CC BY-NC 4.0"><span class="lp-prog"></span><span class="lp-biome-name">Pampa</span><span class="lp-biome-sp">gato del pajonal pampeano</span></button>
+  </nav>
 </section>
 
-<!-- ===================== FLOW: sheet, app tabs, occurrence.txt ===================== -->
-<section class="lp-section" id="flujo" aria-labelledby="flujo-titulo">
+<!-- ===================== DATA: the demo sheet fixed tab by tab, then the network map ===================== -->
+<section class="lp-section lp-data" id="datos" aria-labelledby="datos-titulo">
   <div class="lp-head">
     <div>
-      <span class="lp-eyebrow">De la hoja de cálculo a Darwin Core</span>
-      <h2 id="flujo-titulo">Cada pestaña trata la hoja de cálculo entera</h2>
+      <span class="lp-eyebrow">De Saíra al SiBBr y al GBIF</span>
+      <h2 id="datos-titulo">De la hoja de cálculo al dato integrado.</h2>
+      <p class="lp-lede">Saíra convierte la hoja de cálculo a Darwin Core. El archivo exportado puede publicarse en el SiBBr, que comparte los registros con el GBIF.</p>
     </div>
   </div>
-  <div class="lp-panel lp-flow" data-step="Paso {n} de {total} · {tab}" data-raw="Hoja de cálculo tal como llegó" data-done="Listo. 4 filas en occurrence.txt, 2 con coordenadas generalizadas.">
-    <div class="lp-bar">
-      <span class="lp-file">felinos_2023.csv<small>4 registros · cámara trampa</small></span>
-      <button type="button" class="lp-toggle" data-pause="Pausar" data-play="Continuar">Pausar</button>
-    </div>
-    <div class="lp-stage">
-      <span class="lp-cap">Su hoja de cálculo</span>
-      <div class="lp-scroll"><div class="lp-grid lp-in" role="table" aria-label="Hoja de cálculo original" data-cols="Especie|Lat|Long|Fecha|Localidad"></div></div>
-      <div class="lp-vconn" aria-hidden="true"></div>
+  <div class="lp-mod">
+    <span class="lp-step"><b>01</b>En Saíra</span>
+    <h3>Cada pestaña trata la hoja de cálculo entera.</h3>
+    <div class="lp-panel lp-flow" data-step="Paso {n} de {total} · {tab}" data-raw="Hoja de cálculo tal como llegó" data-done="Listo. 6 filas en occurrence.txt, 6 con coordenadas generalizadas.">
+      <div class="lp-bar">
+        <span class="lp-file">seis_biomas.csv<small>6 registros · una especie amenazada por bioma</small></span>
+        <button type="button" class="lp-toggle" data-pause="Pausar" data-play="Continuar">Pausar</button>
+      </div>
       <ol class="lp-tabs" aria-label="Pestañas de Saíra">
         <li data-verb="lee el archivo y su codificación"><b>1</b>Inicio</li>
         <li data-verb="asocia columnas a términos"><b>2</b>Mapeo</li>
@@ -62,20 +68,65 @@ anchor-sections: false
         <li data-verb="protege especies amenazadas"><b>6</b>Generalización</li>
         <li data-verb="genera fechas ISO e IDs estables"><b>7</b>Exportación</li>
       </ol>
-      <p class="lp-verb"></p>
-      <div class="lp-vconn" aria-hidden="true"></div>
-      <span class="lp-cap">Darwin Core · <span>occurrence.txt</span></span>
-      <div class="lp-scroll"><div class="lp-grid lp-out" role="table" aria-label="occurrence.txt"></div></div>
+      <div class="lp-stage">
+        <span class="lp-cap">Su hoja de cálculo</span>
+        <div class="lp-scroll"><div class="lp-grid" role="table" aria-label="Hoja de cálculo de demostración" data-cols="Especie|Lat|Long|Fecha|Estado"></div></div>
+        <p class="lp-verb"></p>
+      </div>
+      <div class="lp-foot"><span class="lp-status">Hoja de cálculo tal como llegó</span></div>
     </div>
-    <div class="lp-foot">
-      <div class="lp-segs" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
-      <span class="lp-status">Hoja de cálculo tal como llegó</span>
-    </div>
+    <p class="lp-note">Registros reales del GBIF, con errores insertados para la demostración. Las seis especies están en la lista del MMA, por eso sus coordenadas salen en una grilla de 0,1°.</p>
   </div>
-  <p class="lp-note">Datos ficticios. La grilla de generalización depende de la evaluación de cada especie. Aquí, 0,1°.</p>
+  <div class="lp-mod lp-map">
+    <div class="lp-map-text">
+      <span class="lp-step"><b>02</b>En la red</span>
+      <h3>Ocurrencias de Brasil en el SiBBr y en el GBIF.</h3>
+      <p class="lp-big"><strong>45.020.973</strong><span>ocurrencias de especies en el SiBBr</span></p>
+      <p>El SiBBr es el nodo brasileño del GBIF y lleva estos datos a la red mundial.</p>
+      <p class="lp-src">Fuentes: <a href="https://sibbr.gov.br/">SiBBr</a> y <a href="https://www.gbif.org/country/BR/summary">GBIF.org</a>, 9 oct. 2026. Mapa base: <a href="https://openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/copyright">© colaboradores de OpenStreetMap</a>.</p>
+    </div>
+    <figure class="lp-mapfig">
+      <img class="lp-map-img lp-map-light" src="../assets/img/landing/brasil-light.jpg" width="1200" height="1209" loading="lazy" alt="Mapa de Brasil con la densidad de ocurrencias publicadas en el GBIF y las seis especies de la tabla">
+      <img class="lp-map-img lp-map-dark" src="../assets/img/landing/brasil-dark.jpg" width="1200" height="1209" loading="lazy" alt="Mapa de Brasil con la densidad de ocurrencias publicadas en el GBIF y las seis especies de la tabla">
+      <span class="lp-pin" style="--x: 24.72%; --y: 21.59%" aria-hidden="true"></span>
+      <span class="lp-pin" style="--x: 76.57%; --y: 48.49%" aria-hidden="true"></span>
+      <span class="lp-pin" style="--x: 64.51%; --y: 54.4%" aria-hidden="true"></span>
+      <span class="lp-pin" style="--x: 92.56%; --y: 31.11%" aria-hidden="true"></span>
+      <span class="lp-pin" style="--x: 43.5%; --y: 55.06%" aria-hidden="true"></span>
+      <span class="lp-pin" style="--x: 49.24%; --y: 88.34%" aria-hidden="true"></span>
+      <span class="lp-card" style="--x: 24.72%; --y: 21.59%" aria-hidden="true"><img src="../assets/img/landing/podocnemis-sextuberculata.jpg" loading="lazy" width="58" height="58" style="object-position: 70% 40%" alt=""><span><em>Podocnemis sextuberculata</em><span>iaçá</span><span class="lp-card-xy"></span><span class="lp-card-cat" data-code="EN">En peligro · MMA</span></span></span>
+      <span class="lp-card is-left" style="--x: 76.57%; --y: 48.49%" aria-hidden="true"><img src="../assets/img/landing/micranthocereus-polyanthus.jpg" loading="lazy" width="58" height="58" style="object-position: 45% 50%" alt=""><span><em>Micranthocereus polyanthus</em><span>cactus de flor rosa</span><span class="lp-card-xy"></span><span class="lp-card-cat" data-code="EN">En peligro · MMA</span></span></span>
+      <span class="lp-card is-left" style="--x: 64.51%; --y: 54.4%" aria-hidden="true"><img src="../assets/img/landing/boana-buriti.jpg" loading="lazy" width="58" height="58" style="object-position: 50% 54%" alt=""><span><em>Boana buriti</em><span>rana arborícola del Cerrado</span><span class="lp-card-xy"></span><span class="lp-card-cat" data-code="VU">Vulnerable · MMA</span></span></span>
+      <span class="lp-card is-left" style="--x: 92.56%; --y: 31.11%" aria-hidden="true"><img src="../assets/img/landing/tangara-fastuosa.jpg" loading="lazy" width="58" height="58" style="object-position: 50% 28%" alt=""><span><em>Tangara fastuosa</em><span>tangara siete colores</span><span class="lp-card-xy"></span><span class="lp-card-cat" data-code="VU">Vulnerable · MMA</span></span></span>
+      <span class="lp-card" style="--x: 43.5%; --y: 55.06%" aria-hidden="true"><img src="../assets/img/landing/acanthochelys-macrocephala.jpg" loading="lazy" width="58" height="58" style="object-position: 62% 55%" alt=""><span><em>Acanthochelys macrocephala</em><span>tortuga del Pantanal</span><span class="lp-card-xy"></span><span class="lp-card-cat" data-code="VU">Vulnerable · MMA</span></span></span>
+      <span class="lp-card" style="--x: 49.24%; --y: 88.34%" aria-hidden="true"><img src="../assets/img/landing/leopardus-munoai.jpg" loading="lazy" width="58" height="58" style="object-position: 50% 65%" alt=""><span><em>Leopardus munoai</em><span>gato del pajonal pampeano</span><span class="lp-card-xy"></span><span class="lp-card-cat" data-code="CR">En peligro crítico · MMA</span></span></span>
+    </figure>
+  </div>
 </section>
 
-<!-- ===================== INSTALL: macOS console replaying the install ===================== -->
+<!-- ===================== WHY: uses of open data (icons: Lucide, ISC license) ===================== -->
+<section class="lp-section lp-why" id="por-que" aria-labelledby="por-que-titulo">
+  <div class="lp-head">
+    <div>
+      <span class="lp-eyebrow">Datos abiertos</span>
+      <h2 id="por-que-titulo">¿Por qué importan los datos abiertos?</h2>
+      <p class="lp-lede">Cada registro publicado apoya decisiones de órganos ambientales y de salud, como:</p>
+    </div>
+  </div>
+  <div class="lp-why-row">
+    <ol class="lp-uses">
+      <li class="lp-use is-risk"><span class="lp-use-ic"><svg class="lp-use-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7" pathLength="1"/><polyline points="16 17 22 17 22 11" pathLength="1"/></svg><svg class="lp-use-ring" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="38" pathLength="1"/></svg></span><span class="lp-use-label">Riesgo de extinción</span></li>
+      <li class="lp-use is-area"><span class="lp-use-ic"><svg class="lp-use-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z" pathLength="1"/><path d="M7 16v6" pathLength="1"/><path d="M13 19v3" pathLength="1"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5" pathLength="1"/></svg><svg class="lp-use-ring" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="38" pathLength="1"/></svg></span><span class="lp-use-label">Áreas protegidas</span></li>
+      <li class="lp-use is-lic"><span class="lp-use-ic"><svg class="lp-use-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" pathLength="1"/><path d="M14 2v4a2 2 0 0 0 2 2h4" pathLength="1"/><path d="m9 15 2 2 4-4" pathLength="1"/></svg><svg class="lp-use-ring" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="38" pathLength="1"/></svg></span><span class="lp-use-label">Licenciamiento</span></li>
+      <li class="lp-use is-inv"><span class="lp-use-ic"><svg class="lp-use-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" pathLength="1"/><path d="M12 9v4" pathLength="1"/><path d="M12 17h.01" pathLength="1"/></svg><svg class="lp-use-ring" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="38" pathLength="1"/></svg></span><span class="lp-use-label">Especies invasoras</span></li>
+      <li class="lp-use is-zoo"><span class="lp-use-ic"><svg class="lp-use-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 2 1.88 1.88" pathLength="1"/><path d="M14.12 3.88 16 2" pathLength="1"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1" pathLength="1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6" pathLength="1"/><path d="M12 20v-9" pathLength="1"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5" pathLength="1"/><path d="M6 13H2" pathLength="1"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4" pathLength="1"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4" pathLength="1"/><path d="M22 13h-4" pathLength="1"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4" pathLength="1"/></svg><svg class="lp-use-ring" viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="38" pathLength="1"/></svg></span><span class="lp-use-label">Zoonosis</span></li>
+    </ol>
+    <p class="lp-why-num"><strong data-count="6">+6</strong><span>artículos revisados por pares al día usan datos del GBIF</span></p>
+  </div>
+  <p class="lp-note">Fuentes: <a href="https://www.metropoles.com/ciencia/plataforma-dados-sobre-biodiversidade">Metrópoles</a> (usos del SiBBr, en portugués); <a href="https://www.gbif.org/es/data-use">GBIF.org</a> (artículos al día).</p>
+</section>
+
+<!-- ===================== INSTALL: the script in a console window, then a short replay of the output ===================== -->
 <section class="lp-section lp-install" id="instalar" aria-labelledby="instalar-titulo">
   <div class="lp-install-text">
     <span class="lp-eyebrow">Instalación</span>
@@ -94,21 +145,18 @@ anchor-sections: false
     </div>
     <pre class="visually-hidden">options(repos = c(ropensci = "https://ropensci.r-universe.dev", CRAN = "https://cloud.r-project.org"))&#10;install.packages("pak")&#10;pak::pak("rogerio-onza/saira")&#10;saira::run_app()</pre>
     <div class="lp-term-body" aria-hidden="true">
-      <div class="lp-term-line" data-cmd data-wait="90"><span class="pr">&gt; </span><span class="fn">options</span><span>(repos = </span><span class="fn">c</span><span>(</span></div>
-      <div class="lp-term-line" data-cmd data-wait="90"><span class="pr">+ </span><span>  ropensci = </span><span class="str">"https://ropensci.r-universe.dev"</span><span>,</span></div>
-      <div class="lp-term-line" data-cmd data-wait="90"><span class="pr">+ </span><span>  CRAN     = </span><span class="str">"https://cloud.r-project.org"</span></div>
-      <div class="lp-term-line" data-cmd data-wait="500"><span class="pr">+ </span><span>))</span></div>
-      <div class="lp-term-line" data-cmd data-wait="900"><span class="pr">&gt; </span><span class="fn">install.packages</span><span>(</span><span class="str">"pak"</span><span>)</span></div>
-      <div class="lp-term-line" data-wait="120"><span class="out">The downloaded binary packages are in</span></div>
-      <div class="lp-term-line" data-wait="500"><span class="out">    /var/folders/…/downloaded_packages</span></div>
-      <div class="lp-term-line" data-cmd data-wait="700"><span class="pr">&gt; </span><span class="fn">pak::pak</span><span>(</span><span class="str">"rogerio-onza/saira"</span><span>)</span></div>
-      <div class="lp-term-line" data-wait="450"><span class="str">✔ </span><span class="out">Loading metadata database ... done</span></div>
-      <div class="lp-term-line" data-wait="350"><span class="out">→ Will install 128 packages.</span></div>
-      <div class="lp-term-line" data-wait="1600"><span class="pr">ℹ </span><span class="out">Getting 128 pkgs</span></div>
-      <div class="lp-term-line" data-wait="250"><span class="str">✔ </span><span class="out">Installed saira <span data-saira-version>0.11.2</span> (github::rogerio-onza/saira)</span></div>
-      <div class="lp-term-line" data-wait="500"><span class="str">✔ </span><span class="out">1 pkg + 127 deps: added 128</span></div>
-      <div class="lp-term-line" data-cmd data-wait="900"><span class="pr">&gt; </span><span class="fn">saira::run_app</span><span>()</span></div>
-      <div class="lp-term-line"><span class="out">Listening on </span><span>http://127.0.0.1:7346</span></div>
+      <div class="lp-term-line"><span class="pr">&gt; </span><span class="fn">options</span>(repos = <span class="fn">c</span>(</div>
+      <div class="lp-term-line"><span class="pr">+ </span>  ropensci = <span class="str">"https://ropensci.r-universe.dev"</span>,</div>
+      <div class="lp-term-line"><span class="pr">+ </span>  CRAN     = <span class="str">"https://cloud.r-project.org"</span></div>
+      <div class="lp-term-line"><span class="pr">+ </span>))</div>
+      <div class="lp-term-line"><span class="pr">&gt; </span><span class="fn">install.packages</span>(<span class="str">"pak"</span>)</div>
+      <div class="lp-term-line"><span class="pr">&gt; </span><span class="fn">pak::pak</span>(<span class="str">"rogerio-onza/saira"</span>)</div>
+      <div class="lp-term-line"><span class="pr">&gt; </span><span class="fn">saira::run_app</span>()</div>
+      <div class="lp-term-line" data-out data-wait="350"><span class="out">package ‘pak’ successfully unpacked and MD5 sums checked</span></div>
+      <div class="lp-term-line" data-out data-wait="250"><span class="out">→ Will install 128 packages.</span></div>
+      <div class="lp-term-line" data-out data-wait="1100"><span class="pr">ℹ </span><span class="out">Getting 128 pkgs</span><span class="lp-term-prog"><i></i></span></div>
+      <div class="lp-term-line" data-out data-wait="350"><span class="str">✔ </span><span class="out">Installed saira <span data-saira-version>0.11.2</span> (github::rogerio-onza/saira)</span></div>
+      <div class="lp-term-line" data-out><span class="out">Listening on </span><span>http://127.0.0.1:7346</span></div>
     </div>
   </figure>
 </section>
