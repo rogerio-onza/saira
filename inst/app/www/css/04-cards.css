@@ -23,3 +23,35 @@
   padding: var(--space-5);
 }
 
+
+/* Species photo with its credit (utils_species_photos.R). The parent sets
+   the size. The credit is light text on a dark chip in both themes, because
+   it sits on the photo. */
+.species-photo {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  background: var(--bg-subtle);
+}
+
+.species-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.species-photo-credit {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  max-width: calc(100% - 20px);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(18, 20, 27, 0.72);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  line-height: 1.3;
+}

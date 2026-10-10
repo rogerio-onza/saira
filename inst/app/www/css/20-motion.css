@@ -106,6 +106,22 @@
   .seg-enter.seg-back {
     animation-name: seg-slide-in-back;
   }
+
+  /* -- Names run: the bar fills smoothly, a first download slides a short
+     bar, and the report fades in when the run ends -- */
+  .vn-run-bar-fill {
+    transition: width 600ms ease;
+  }
+
+  .vn-run-bar.is-waiting::after {
+    width: 30%;
+    opacity: 1;
+    animation: run-wait 1400ms ease-in-out infinite;
+  }
+
+  .vn-report-panel.is-entering > * {
+    animation: fade-in 200ms ease-out;
+  }
 }
 
 @keyframes page-slide-in {
@@ -163,5 +179,21 @@
   from {
     opacity: 0;
     transform: translateY(-4px);
+  }
+}
+
+@keyframes run-wait {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(340%);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
 }

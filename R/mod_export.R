@@ -337,16 +337,25 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     shiny::tags$code(paste(unmapped_cols, collapse = ", "))
                 ), "go_map_unmapped", tr("export_action_mapping", lang)))
             }
-            pending_card <- shiny::div(
-                class = "export-card export-pending",
-                shiny::h2(class = "export-card-title", tr("export_pending_title", lang)),
-                if (length(rows) == 0L) {
-                    shiny::div(class = "export-pending-none", ph_icon("circle-check"), " ",
-                               tr("export_nothing_pending", lang))
-                } else {
+            # With nothing to review, the card shows the saira-pintor and says
+            # the package is ready.
+            pending_card <- if (length(rows) == 0L) {
+                shiny::div(
+                    class = "export-card export-ready",
+                    species_photo_tag(species_photo("tangara-fastuosa"), lang, class = "export-ready-photo"),
+                    shiny::div(
+                        class = "export-ready-body",
+                        shiny::div(class = "export-ready-eyebrow", ph_icon("check"), tr("export_ready_eyebrow", lang)),
+                        shiny::p(class = "export-ready-title", tr("export_ready_title", lang))
+                    )
+                )
+            } else {
+                shiny::div(
+                    class = "export-card export-pending",
+                    shiny::h2(class = "export-card-title", tr("export_pending_title", lang)),
                     rows
-                }
-            )
+                )
+            }
 
             # --- Generalized species (only when there are any) ----------------
             gen_card <- if (nrow(gen) > 0L) {

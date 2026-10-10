@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **ui:** Show the species photos of the site in the names run, the ready export package and the Help tutorials card, ADR-159
 - **names:** Ship Flora e Funga do Brasil and Fauna do Brasil with Saíra, so a new install validates names without the IPT download, ADR-153
 - **preview:** Add a Problems mode that lists cell errors in all records and fixes them in place, with undo, ADR-150 ([#181](https://github.com/rogerio-onza/saira/pull/181))
 - **mapping:** Convert common sex, lifeStage and occurrenceStatus values to the GBIF vocabulary ("M" to male, "visto" to present), ADR-150 ([#179](https://github.com/rogerio-onza/saira/pull/179))
@@ -77,6 +78,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **names:** Update the name list, the progress and the Cancel button during a run, not only at the end, ADR-159
+- **names:** Give a Flora BR homonym the same answer in any batch, ADR-159
 - **preview:** Slide Table | Problems with the content in place: Problems no longer grows in three steps during the slide, ADR-158
 - **mapping:** Show the card when "Next pending" goes to a term that the Mapped filter hides, ADR-157
 - **ui:** Remove the flash at the start of a theme switch: the circle starts in the first frame, and the cards no longer fade from the old color, ADR-144

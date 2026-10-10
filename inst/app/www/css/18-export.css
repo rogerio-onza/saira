@@ -320,9 +320,55 @@
   color: var(--badge-manual-fg);
 }
 
-.export-pending-none {
+/* Nothing to review: the saira-pintor fills the card above the message. */
+.export-card.export-ready {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.export-ready-photo {
+  flex: 1 1 auto;
+  min-height: 220px;
+}
+
+.export-ready-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-6) var(--space-6);
+}
+
+.export-ready-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--success-text);
-  font-size: var(--text-base-sm);
+}
+
+.export-ready-eyebrow .ph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-full);
+  background: var(--success-bg);
+  font-size: 13px;
+}
+
+.export-ready-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  line-height: 1.25;
+  color: var(--text-primary);
 }
 
 .export-ipt-note {

@@ -31,6 +31,21 @@ testthat::test_that("normalize_brprovider_result: empty input returns empty df",
     testthat::expect_true("validation_status" %in% names(out))
 })
 
+testthat::test_that("normalize_brprovider_result: a homonym tie keeps the accepted row in any order", {
+    raw <- data.frame(
+        input_name      = c("Victoria amazonica", "Victoria amazonica"),
+        Spelling        = c("Correct", "Correct"),
+        `Suggested name` = c("Victoria amazonica", "Victoria amazonica"),
+        Distance        = c(0, 0),
+        taxonomicStatus = c("Synonym", "Accepted"),
+        family          = "Nymphaeaceae",
+        stringsAsFactors = FALSE,
+        check.names     = FALSE
+    )
+    testthat::expect_equal(normalize_brprovider_result(raw, "florabr")$validation_status, "accepted")
+    testthat::expect_equal(normalize_brprovider_result(raw[2:1, ], "florabr")$validation_status, "accepted")
+})
+
 testthat::test_that("normalize_brprovider_result: Correct + Accepted -> accepted", {
     raw <- data.frame(
         input_name      = "Panthera onca",

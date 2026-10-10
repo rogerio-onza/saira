@@ -39,6 +39,24 @@ mod_validate_names_ui <- function(id) {
                         document.body.style.removeProperty('padding-right');
                         document.body.classList.remove('modal-open');
                     });
+                    // The run tick writes the photo card text in place, so
+                    // the report panel renders once per run (see vnRunProgress
+                    // in the server).
+                    Shiny.addCustomMessageHandler('vnRunProgress', function(msg) {
+                        var card = document.querySelector('.vn-run-card');
+                        if (!card) { return; }
+                        card.querySelector('.vn-run-eyebrow').textContent = msg.eyebrow;
+                        card.querySelector('.vn-run-count').textContent = msg.count;
+                        card.querySelector('.vn-run-bar').classList.toggle('is-waiting', !!msg.waiting);
+                        card.querySelector('.vn-run-bar-fill').style.width = msg.pct + '%';
+                        (msg.steps || []).forEach(function(step) {
+                            var row = card.querySelector('.vn-run-step[data-step=\"' + step.key + '\"]');
+                            if (!row) { return; }
+                            row.className = 'vn-run-step is-' + step.state;
+                            row.querySelector('.vn-run-step-label').textContent = step.label;
+                            row.querySelector('.vn-run-step-state').textContent = step.state_label;
+                        });
+                    });
                 });"
             ))
         )
@@ -130,6 +148,12 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             exiting_reviews = empty_exiting_reviews(),
             provider_runtime_status = initial_provider_runtime_status
         )
+        # Plain environment, not reactive: the run tick reads and writes it
+        # ~16 times a second, and no output may depend on that.
+        run_card <- new.env(parent = emptyenv())
+        run_card$photo <- NULL
+        run_card$last_sent <- NULL
+        run_card$fade_report <- FALSE
 
         provider_button_id <- function(provider_id) paste0("provider_card_", provider_id)
 
@@ -1375,11 +1399,23 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         })
 
         output$report_panel <- shiny::renderUI({
+            # During a run the panel shows a species photo and the progress.
+            # rv$running changes only at the start and the end of a run, and
+            # the run state is read under isolate(): vnRunProgress updates
+            # the card in place.
+            if (isTRUE(rv$running)) {
+                progress <- vn_run_progress(shiny::isolate(rv$run_state), lang_r())
+                return(vn_run_card_ui(progress, run_card$photo %||% species_photo(), lang_r()))
+            }
+
             report <- effective_report()
             has_report <- is.data.frame(report) && nrow(report) > 0L
+            # The report fades in once, when a run ends.
+            fade <- isTRUE(run_card$fade_report)
+            run_card$fade_report <- FALSE
 
             shiny::div(
-                class = "vn-report-panel",
+                class = paste("vn-report-panel", if (fade) "is-entering" else ""),
                 if (has_report) conservation_status_summary_ui(report, as.character(rv$selected_providers), br_provider_ids, lang_r()),
                 shiny::div(
                     class = "vn-report-header",
@@ -1814,6 +1850,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     return(invisible(NULL))
                 }
 
+                run_card$photo <- species_photo()
+                run_card$last_sent <- NULL
                 rv$running <- TRUE
                 rv$starting <- FALSE
                 rv$abort_requested <- FALSE
@@ -1836,12 +1874,16 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         )
 
         shiny::observe({
-            if (!isTRUE(rv$running) || is.null(rv$run_state)) {
+            # rv$run_state is read under isolate(): the tick writes it, and a
+            # dependency would start the next tick in the same flush. The
+            # session would then stay busy, and Shiny sends no output value
+            # until the run ends (ADR-159).
+            state <- shiny::isolate(rv$run_state)
+            if (!isTRUE(rv$running) || is.null(state)) {
                 return(invisible(NULL))
             }
             shiny::invalidateLater(60, session)
 
-            state <- rv$run_state
             if (isTRUE(rv$abort_requested)) state$aborted <- TRUE
 
             state <- tryCatch(next_taxadb_run_step(state), error = function(e) {
@@ -1854,9 +1896,16 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             rv$run_state <- state
             rv$stream_df <- state$stream_df
             if (!is_taxadb_run_done(state)) {
+                # Send only what changed: most ticks leave the count as it is.
+                progress <- vn_run_progress(state, shiny::isolate(lang_r()))
+                if (!identical(progress, run_card$last_sent)) {
+                    run_card$last_sent <- progress
+                    session$sendCustomMessage("vnRunProgress", progress)
+                }
                 return(invisible(NULL))
             }
 
+            run_card$fade_report <- TRUE
             rv$running <- FALSE
             rv$starting <- FALSE
             rv$abort_requested <- FALSE

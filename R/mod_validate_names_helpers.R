@@ -131,6 +131,101 @@ vn_phase_text <- function(state, lang = "pt") {
     phase_label(state, lang)
 }
 
+#' Progress of a names run, for the photo card of the report panel
+#'
+#' The count is the names that have an answer. Names that no provider finds
+#' get one at the end, so the count always reaches the total.
+#' @param state Run state object.
+#' @param lang Language code.
+#' @return List with \code{done}, \code{total}, \code{pct}, \code{waiting}
+#'   (a first Flora BR or Fauna BR download, with no count to show),
+#'   \code{eyebrow}, \code{count} and \code{steps}: one list per step with
+#'   \code{key}, \code{label}, \code{state} ("done", "active" or "next") and
+#'   \code{state_label}.
+#' @noRd
+vn_run_progress <- function(state, lang = "pt") {
+    phase <- as.character(state$phase %||% "")
+    provider <- as.character(state$current_provider %||% "")
+    types <- state$provider_types
+    br_ids <- names(types)[types == "br"]
+    total <- as.integer(state$total_unique %||% 0L)
+    in_report <- phase %in% c("consolidate", "done")
+    done <- if (in_report) total else as.integer(state$resolved_unique %||% 0L)
+
+    current <- if (in_report) {
+        "report"
+    } else if (identical(state$cascade_phase, "br")) {
+        "br"
+    } else {
+        "gbif"
+    }
+    keys <- c(if (length(br_ids) > 0L) "br", "gbif", "report")
+    labels <- c(
+        br = paste(format_provider_labels(br_ids), collapse = tr("validate_names_run_and", lang)),
+        gbif = tr(if (length(br_ids) > 0L) "validate_names_run_step_gbif_rest" else "validate_names_run_step_gbif", lang),
+        report = tr("validate_names_run_step_report", lang)
+    )
+    current_idx <- match(current, keys)
+    steps <- lapply(seq_along(keys), function(i) {
+        step_state <- if (i < current_idx) "done" else if (i == current_idx) "active" else "next"
+        list(
+            key = keys[i],
+            label = unname(labels[keys[i]]),
+            state = step_state,
+            state_label = tr(paste0("validate_names_run_state_", step_state), lang)
+        )
+    })
+
+    list(
+        done = done,
+        total = total,
+        pct = if (total > 0L) round(100 * done / total) else 0,
+        waiting = identical(phase, "provider_init") && provider %in% br_ids &&
+            !brprovider_data_available(provider),
+        eyebrow = tr(if (in_report) "validate_names_run_eyebrow_report" else "validate_names_run_eyebrow", lang),
+        count = sprintf(tr("validate_names_run_count", lang), format_count(done, lang), format_count(total, lang)),
+        steps = steps
+    )
+}
+
+#' Photo card of a names run
+#'
+#' The report panel renders this card once, at the start of a run.
+#' vnRunProgress then writes the text in place.
+#' @param progress List from \code{vn_run_progress()}.
+#' @param photo One photo from \code{species_photo()}.
+#' @param lang Language code.
+#' @return A \code{div} tag.
+#' @noRd
+vn_run_card_ui <- function(progress, photo, lang = "pt") {
+    shiny::div(
+        class = "vn-report-panel vn-run-card",
+        species_photo_tag(photo, lang, class = "vn-run-photo"),
+        shiny::div(
+            class = "vn-run-body",
+            `aria-live` = "polite",
+            shiny::div(class = "vn-run-eyebrow", progress$eyebrow),
+            shiny::p(class = "vn-run-count", progress$count),
+            shiny::div(
+                class = paste("vn-run-bar", if (isTRUE(progress$waiting)) "is-waiting" else ""),
+                shiny::div(class = "vn-run-bar-fill", style = paste0("width: ", progress$pct, "%;"))
+            ),
+            shiny::div(
+                class = "vn-run-steps",
+                lapply(progress$steps, function(step) {
+                    shiny::div(
+                        class = paste0("vn-run-step is-", step$state),
+                        `data-step` = step$key,
+                        shiny::span(class = "vn-run-step-dot", `aria-hidden` = "true"),
+                        shiny::span(class = "vn-run-step-label", step$label),
+                        shiny::span(class = "vn-run-step-state", step$state_label)
+                    )
+                })
+            )
+        )
+    )
+}
+
 #' Recommend stream filter after validation completes
 #' @param report_df Finalized validation report data frame
 #' @return Character: "all" or "problems"
