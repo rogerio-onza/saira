@@ -433,6 +433,37 @@ testthat::test_that("next_taxadb_run_step: only BR accepted names leave pending_
     )
 })
 
+testthat::test_that("next_taxadb_run_step: BR providers query in small batches, GBIF in large ones", {
+    input_df <- data.frame(
+        row_id      = 1:12,
+        input_name  = paste("Name", 1:12),
+        query_name  = paste("name", 1:12),
+        skip_reason = NA_character_,
+        stringsAsFactors = FALSE
+    )
+
+    testthat::with_mocked_bindings(
+        brprovider_ensure_data = function(provider_id, verbose = FALSE, ...) {
+            list(ok = TRUE, available = TRUE, provider_id = provider_id)
+        },
+        brprovider_load_data = function(provider_id, force_reload = FALSE) {
+            data.frame(provider = provider_id, stringsAsFactors = FALSE)
+        },
+        .package = "saira",
+        {
+            state <- init_taxadb_run_state(input_df, providers = c("florabr"), batch_size = 200L, br_batch_size = 5L)
+            state <- next_taxadb_run_step(state) # prepare -> provider_init
+            state <- next_taxadb_run_step(state) # init/load BR provider
+            testthat::expect_identical(state$provider_batch_total, 3L)
+            testthat::expect_identical(lengths(state$current_batches, use.names = FALSE), c(5L, 5L, 2L))
+            testthat::expect_identical(
+                saira:::split_query_batches(state$pending_queries, batch_size = state$batch_size) |> length(),
+                1L
+            )
+        }
+    )
+})
+
 testthat::test_that("next_taxadb_run_step: BR provider init uses ensure_data and loads cache", {
     input_df <- data.frame(
         row_id = 1L,

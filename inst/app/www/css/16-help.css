@@ -304,8 +304,29 @@ a.help-chip:hover {
 
 /* The action sits at the foot of the card, on one line with the others. */
 .help-card > .help-button,
+.help-card-main > .help-button,
 .help-faq-all {
   margin-top: auto;
+}
+
+/* Tutorials: the saira-pintor on top, the text in its own padding. */
+.help-card--photo {
+  padding: 0;
+  overflow: hidden;
+}
+
+.help-card-photo {
+  align-self: stretch;
+  height: 190px;
+}
+
+.help-card-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  align-self: stretch;
+  padding: 24px;
 }
 
 .help-faq {

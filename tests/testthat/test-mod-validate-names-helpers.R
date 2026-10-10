@@ -361,3 +361,65 @@ testthat::test_that("conservation summary renders short tags with the sentence a
     testthat::expect_true(grepl(tr("validate_names_conservation_label_invasive", "pt"), html, fixed = TRUE))
     testthat::expect_true(grepl("title=", html, fixed = TRUE))
 })
+
+testthat::test_that("vn_run_progress moves the active step with the cascade", {
+    testthat::local_mocked_bindings(brprovider_data_available = function(id) TRUE, .package = "saira")
+    state <- list(
+        phase = "provider_query_batch", current_provider = "florabr", cascade_phase = "br",
+        provider_types = c(florabr = "br", faunabr = "br", gbif = "taxadb"),
+        total_unique = 1200L, resolved_unique = 300L
+    )
+    br <- vn_run_progress(state, "pt")
+    testthat::expect_identical(vapply(br$steps, `[[`, "", "key"), c("br", "gbif", "report"))
+    testthat::expect_identical(vapply(br$steps, `[[`, "", "state"), c("active", "next", "next"))
+    testthat::expect_identical(br$steps[[1]]$label, "Flora BR e Fauna BR")
+    testthat::expect_identical(br$count, "300 de 1.200 nomes conferidos")
+    testthat::expect_equal(br$pct, 25)
+    testthat::expect_false(br$waiting)
+
+    state$cascade_phase <- "fallback"
+    state$current_provider <- "gbif"
+    gbif <- vn_run_progress(state, "en")
+    testthat::expect_identical(vapply(gbif$steps, `[[`, "", "state"), c("done", "active", "next"))
+
+    # The last step counts every name: not-found names get an answer too.
+    state$phase <- "consolidate"
+    report <- vn_run_progress(state, "en")
+    testthat::expect_identical(vapply(report$steps, `[[`, "", "state"), c("done", "done", "active"))
+    testthat::expect_equal(report$pct, 100)
+})
+
+testthat::test_that("vn_run_progress drops the BR step and flags a first download", {
+    testthat::local_mocked_bindings(brprovider_data_available = function(id) FALSE, .package = "saira")
+    gbif_only <- vn_run_progress(list(
+        phase = "provider_init", current_provider = "gbif", cascade_phase = "fallback",
+        provider_types = c(gbif = "taxadb"), total_unique = 0L, resolved_unique = 0L
+    ), "pt")
+    testthat::expect_identical(vapply(gbif_only$steps, `[[`, "", "key"), c("gbif", "report"))
+    testthat::expect_identical(gbif_only$steps[[1]]$label, "GBIF")
+    testthat::expect_equal(gbif_only$pct, 0)
+    testthat::expect_false(gbif_only$waiting)
+
+    download <- vn_run_progress(list(
+        phase = "provider_init", current_provider = "faunabr", cascade_phase = "br",
+        provider_types = c(faunabr = "br", gbif = "taxadb"), total_unique = 10L, resolved_unique = 0L
+    ), "pt")
+    testthat::expect_true(download$waiting)
+})
+
+test_that("vn_run_card_ui builds the photo card with one row per step", {
+    progress <- list(
+        pct = 25, waiting = TRUE, eyebrow = "E", count = "C",
+        steps = list(
+            list(key = "br", label = "Flora BR", state = "active", state_label = "now"),
+            list(key = "report", label = "Report", state = "next", state_label = "next")
+        )
+    )
+    html <- as.character(vn_run_card_ui(progress, species_photo("boana-buriti"), "en"))
+    expect_match(html, "vn-report-panel vn-run-card", fixed = TRUE)
+    expect_match(html, "boana-buriti.webp", fixed = TRUE)
+    expect_match(html, "vn-run-bar is-waiting", fixed = TRUE)
+    expect_match(html, "width: 25%;", fixed = TRUE)
+    expect_match(html, "class=\"vn-run-step is-active\" data-step=\"br\"", fixed = TRUE)
+    expect_match(html, "data-step=\"report\"", fixed = TRUE)
+})

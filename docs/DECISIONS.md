@@ -3062,3 +3062,18 @@ Formato: ADR leve (Architecture Decision Record).
   - O script do modulo troca o modo com a classe `is-off`, sem `conditionalPanel`. A parte desligada tem `height: 0`, `overflow: hidden` e `visibility: hidden`: ela mantem a largura, o Shiny nao a ve como oculta, e o DT mede as colunas mesmo desligado.
   - A coluna de vocabulario vazia sai do fluxo (`position: absolute`), nao tem mais `display: none`. Assim `vocab_section` suspende com a aba, como os outros outputs. Com `suspendWhenHidden = FALSE`, ele refaria a varredura a cada mudanca do Mapeamento, em qualquer aba.
 - **Consequencias**: a troca so manda `input$mode` ao servidor, que nao calcula nada. A altura final aparece no primeiro quadro do deslize nos dois sentidos, sem quadro longo na ida para Problemas. A entrada na aba renderiza os dois modos: o ultimo output chega em 867 ms (antes 897 ms), sem quadro maior. O deslize para Tabela ainda tem quadros de 33 a 50 ms no Firefox headless, como antes: o custo e o da tabela de 100 linhas. O E2E conta zero renders e zero checagens de outputs ocultos numa troca.
+
+## ADR-159: Fotos de especies no app
+
+- **Data**: 2026-10-10
+- **Status**: Aceito.
+- **Contexto**: as seis fotos da home do site (uma especie ameacada por bioma) entram no app em tres lugares escolhidos no canvas: Nomes (C), Exportacao (B) e Ajuda (B).
+- **Decisao**:
+  - `R/utils_species_photos.R` guarda as fotos e monta a figura com o credito (autor e licenca), que a licenca pede junto da foto. O nome popular vem do i18n (`species_common_<slug>`). As fotos sao WebP de 1200 px em `www/images/species/`, ~310 KB no total.
+  - Nomes: durante a rodada, o Relatorio mostra um card com uma foto sorteada, a contagem, a barra e as etapas. O card renderiza uma vez por rodada, e `vnRunProgress` reescreve o texto no lugar. No fim, o relatorio volta com um fade de 200 ms.
+  - O observer da rodada le `rv$run_state` com `isolate()`. Ele escrevia e lia o mesmo valor, entao cada tick disparava o seguinte no mesmo flush, sem passar pelo `invalidateLater`. A sessao nunca ficava ociosa, e o Shiny so mandava os outputs no fim: a lista da esquerda, a fase e o botao Cancelar nunca apareciam durante a rodada.
+  - Flora BR e Fauna BR consultam lotes de 5 nomes (`br_batch_size`), o GBIF segue com 200. A consulta BR custa ~0,3 s por nome: com um lote so, um tick de 17 s fazia a contagem pular de 0 para 10 e de 10 para 48. Com 5 nomes, a tela atualiza a cada ~1,5 s, e a consulta BR leva ~10% mais tempo.
+  - Num empate de distancia, `normalize_brprovider_result()` fica com a linha que nao e sinonimo. A Flora BR lista "Victoria amazonica" como aceito e como sinonimo ilegitimo, e a ordem das linhas muda com os outros nomes do lote.
+  - Durante a rodada, o Cancelar e a linha da fase deixam a barra 67 px mais alta. O workspace perde a mesma altura (`:has(.vn-cancel-btn)`).
+  - Exportacao: sem pendencias, o card de pendencias vira "pacote pronto" com o saira-pintor. Ajuda: o card Tutoriais leva o saira-pintor no topo.
+- **Consequencias**: a lista, a fase e o card mandam valores a cada tick. A linha da fase repete a etapa do card.

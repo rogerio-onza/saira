@@ -137,14 +137,18 @@ help_start_band <- function(lang, issues_url) {
             shiny::div(
                 class = "help-start",
                 shiny::div(
-                    class = "help-card",
-                    shiny::tags$h2(class = "help-card-title", tr("help_tutorials_title", lang)),
-                    shiny::tags$p(class = "help-card-body", tr("help_tutorials_body", lang)),
-                    help_external_link(
-                        help_site_url(lang, pt = "/tutoriais/", en = "/en/tutorials/", es = "/es/tutoriales/"),
-                        class = "help-button help-button--accent",
-                        tr("help_tutorials_link", lang),
-                        help_external_icon()
+                    class = "help-card help-card--photo",
+                    species_photo_tag(species_photo("tangara-fastuosa"), lang, class = "help-card-photo"),
+                    shiny::div(
+                        class = "help-card-main",
+                        shiny::tags$h2(class = "help-card-title", tr("help_tutorials_title", lang)),
+                        shiny::tags$p(class = "help-card-body", tr("help_tutorials_body", lang)),
+                        help_external_link(
+                            help_site_url(lang, pt = "/tutoriais/", en = "/en/tutorials/", es = "/es/tutoriales/"),
+                            class = "help-button help-button--accent",
+                            tr("help_tutorials_link", lang),
+                            help_external_icon()
+                        )
                     )
                 ),
                 shiny::div(

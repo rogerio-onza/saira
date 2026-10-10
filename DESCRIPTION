@@ -100,6 +100,7 @@ Collate:
     'utils_rostrum_engine.R'
     'utils_rostrum_templates.R'
     'utils_sensitive.R'
+    'utils_species_photos.R'
     'utils_taxadb.R'
     'utils_threat_status.R'
     'utils_version.R'

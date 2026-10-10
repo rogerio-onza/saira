@@ -184,11 +184,6 @@
     "en": "To review",
     "es": "Pendientes"
   },
-  "export_nothing_pending": {
-    "pt": "Nenhuma pendência. O pacote está pronto.",
-    "en": "Nothing to review. The package is ready.",
-    "es": "No hay pendientes. El paquete está listo."
-  },
   "export_sev_block": {
     "pt": "Bloqueia",
     "en": "Blocks",
@@ -4453,5 +4448,95 @@
     "pt": "Espécie exótica invasora no Brasil (Instituto Hórus, 2023).",
     "en": "Invasive alien species in Brazil (Instituto Hórus, 2023).",
     "es": "Especie exótica invasora en Brasil (Instituto Hórus, 2023)."
+  },
+  "validate_names_run_eyebrow": {
+    "pt": "Validando nomes",
+    "en": "Validating names",
+    "es": "Validando nombres"
+  },
+  "validate_names_run_eyebrow_report": {
+    "pt": "Montando o relatório",
+    "en": "Building the report",
+    "es": "Armando el informe"
+  },
+  "validate_names_run_count": {
+    "pt": "%s de %s nomes conferidos",
+    "en": "%s of %s names checked",
+    "es": "%s de %s nombres revisados"
+  },
+  "validate_names_run_and": {
+    "pt": " e ",
+    "en": " and ",
+    "es": " y "
+  },
+  "validate_names_run_step_gbif": {
+    "pt": "GBIF",
+    "en": "GBIF",
+    "es": "GBIF"
+  },
+  "validate_names_run_step_gbif_rest": {
+    "pt": "GBIF, só os nomes que sobraram",
+    "en": "GBIF, only the names left",
+    "es": "GBIF, solo los nombres restantes"
+  },
+  "validate_names_run_step_report": {
+    "pt": "Montar o relatório",
+    "en": "Build the report",
+    "es": "Armar el informe"
+  },
+  "validate_names_run_state_done": {
+    "pt": "concluído",
+    "en": "done",
+    "es": "listo"
+  },
+  "validate_names_run_state_active": {
+    "pt": "em andamento",
+    "en": "in progress",
+    "es": "en curso"
+  },
+  "validate_names_run_state_next": {
+    "pt": "a seguir",
+    "en": "next",
+    "es": "a continuación"
+  },
+  "export_ready_eyebrow": {
+    "pt": "Nenhuma pendência",
+    "en": "Nothing to review",
+    "es": "No hay pendientes"
+  },
+  "export_ready_title": {
+    "pt": "O pacote está pronto para o IPT.",
+    "en": "The package is ready for the IPT.",
+    "es": "El paquete está listo para el IPT."
+  },
+  "species_common_podocnemis_sextuberculata": {
+    "pt": "iaçá",
+    "en": "six-tubercled river turtle",
+    "es": "iaçá"
+  },
+  "species_common_micranthocereus_polyanthus": {
+    "pt": "cacto-de-flor-rosa",
+    "en": "pink-flowered cactus",
+    "es": "cactus de flor rosa"
+  },
+  "species_common_boana_buriti": {
+    "pt": "perereca-do-buriti",
+    "en": "Cerrado tree frog",
+    "es": "rana arborícola del Cerrado"
+  },
+  "species_common_tangara_fastuosa": {
+    "pt": "saíra-pintor",
+    "en": "seven-colored tanager",
+    "es": "tangara siete colores"
+  },
+  "species_common_acanthochelys_macrocephala": {
+    "pt": "cágado-do-pantanal",
+    "en": "Pantanal swamp turtle",
+    "es": "tortuga del Pantanal"
+  },
+  "species_common_leopardus_munoai": {
+    "pt": "gato-palheiro-pampeano",
+    "en": "Pampas cat",
+    "es": "gato del pajonal pampeano"
   }
 }

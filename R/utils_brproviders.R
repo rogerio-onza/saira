@@ -1251,10 +1251,18 @@ normalize_brprovider_result <- function(raw_df, provider_id) {
         dist_num <- suppressWarnings(as.numeric(raw_df[["Distance"]]))
         dist_num[is.na(dist_num)] <- Inf
         raw_df[["Distance"]] <- dist_num
+        # A homonym ties at the same distance: Flora BR lists "Victoria
+        # amazonica" as accepted and as an illegitimate synonym. The row order
+        # changes with the other names of the query, so the tie goes to the
+        # row that is not a synonym, not to the first row.
+        not_synonym <- !grepl("synonym", tolower(as.character(raw_df[["taxonomicStatus"]] %||% "")), fixed = TRUE)
         split_list <- split(seq_len(nrow(raw_df)), raw_df[["input_name"]])
         keep_rows <- vapply(split_list, function(idxs) {
             if (length(idxs) == 1L) return(idxs[[1L]])
-            idxs[[which.min(raw_df[["Distance"]][idxs])]]
+            dist <- raw_df[["Distance"]][idxs]
+            closest <- idxs[dist == min(dist)]
+            preferred <- closest[not_synonym[closest]]
+            if (length(preferred) > 0L) preferred[[1L]] else closest[[1L]]
         }, FUN.VALUE = integer(1))
         raw_df <- raw_df[keep_rows, , drop = FALSE]
         rownames(raw_df) <- NULL

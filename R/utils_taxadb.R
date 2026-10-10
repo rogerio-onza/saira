@@ -660,6 +660,7 @@ init_taxadb_run_state <- function(
   input_df,
   providers,
   batch_size = 200L,
+  br_batch_size = 5L,
   run_id = as.numeric(Sys.time()) * 1000
 ) {
     if (is.null(input_df) || !is.data.frame(input_df)) {
@@ -720,6 +721,10 @@ init_taxadb_run_state <- function(
         total_unique = length(valid_queries),
         resolved_unique = 0L,
         batch_size = suppressWarnings(as.integer(batch_size)),
+        # A Flora BR or Fauna BR query takes ~0.3 s per name, so a small
+        # batch keeps each run tick short and the progress moves in small
+        # steps. The cost is ~10% more time for the BR queries.
+        br_batch_size = suppressWarnings(as.integer(br_batch_size)),
         input_df = input_df,
         resolved_frames = list(),
         cascade_results = data.frame(),
@@ -794,7 +799,11 @@ next_taxadb_run_step <- function(state) {
         # Re-batch using current pending_queries (may differ from initial set).
         state$current_batches      <- split_query_batches(
             state$pending_queries,
-            batch_size = state$batch_size
+            batch_size = if (identical(provider_type, "br")) {
+                state$br_batch_size %||% state$batch_size
+            } else {
+                state$batch_size
+            }
         )
         state$provider_batch_total <- length(state$current_batches)
 
