@@ -21,21 +21,18 @@ a { color: inherit; }
 
 // =============================================================================
 //  Landing (index.qmd in PT, EN and ES). Flat like the app: borders, no
-//  shadows. assets/js/landing.js builds the two flow tables and types the
-//  console. Every rule sits under .lp to beat Quarto's main.content rules.
+//  shadows. assets/js/landing.js rotates the hero species, fixes the demo sheet
+//  in place, runs the map crosshair and types the console. Every rule sits under .lp to beat Quarto's
+//  main.content rules.
 // =============================================================================
 @keyframes lp-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-@keyframes lp-pop {
-  0%   { opacity: 0; transform: translateY(4px); background-color: var(--lp-ok-soft); }
-  35%  { opacity: 1; transform: none; background-color: var(--lp-ok-soft); }
-  100% { opacity: 1; transform: none; background-color: transparent; }
-}
-@keyframes lp-fall {
-  0% { top: 0; opacity: 0; }
-  15%, 85% { opacity: 1; }
-  100% { top: calc(100% - 8px); opacity: 0; }
-}
-@keyframes lp-blink { 50% { opacity: 0; } }
+// two names for one animation: a new class name restarts it on every swap
+@keyframes lp-hex-a { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes lp-hex-b { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes lp-fill { to { width: 100%; } }
+@keyframes lp-draw { to { stroke-dashoffset: 0; } }
+// the map pin blinks twice in hard steps, unlike a soft pulse
+@keyframes lp-lock { 0%, 30%, 60%, 100% { opacity: 1; } 15%, 45% { opacity: .1; } }
 
 .lp {
   // tints mixed from the theme tokens, so the dark theme needs no extra rules
@@ -48,61 +45,175 @@ a { color: inherit; }
   --lp-ok-soft: color-mix(in srgb, var(--success) 14%, var(--surface));
   --lp-bad: var(--important-title);
   --lp-bad-soft: color-mix(in srgb, var(--error) 9%, var(--surface));
+  --lp-pin: var(--accent);
+  --lp-glow: var(--primary);
+  // one color per use of open data; risk takes the red of the threat categories
+  --lp-c-risk: #C0392B; --lp-c-area: #0a7a4f; --lp-c-lic: var(--accent); --lp-c-inv: #b26a00; --lp-c-zoo: #6d28d9;
+  body.quarto-dark & {
+    --lp-pin: var(--primary); --lp-glow: var(--text);
+    --lp-c-risk: #ef8a7e; --lp-c-area: #66e0a8; --lp-c-lic: #8a93f0; --lp-c-inv: #ffb838; --lp-c-zoo: #b79cff;
+  }
 
   display: flex; flex-direction: column; gap: clamp(64px, 9vw, 120px);
-  // wider than --maxw so the seven sheet columns fit without scrolling at 1440px
-  max-width: 1240px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px) 72px;
+  padding: 0 0 72px;
+  // Quarto pads every child of #quarto-content; the hero starts under the navbar
+  #quarto-content > & { padding-top: 0; }
+  // the hero is full bleed; every other section keeps the column
+  > .lp-section {
+    box-sizing: border-box; width: 100%; margin-inline: auto; padding-inline: clamp(16px, 4vw, 40px);
+    // wider than --maxw so the seven sheet columns fit without scrolling at 1440px
+    max-width: 1240px;
+  }
 
   a:not(.lp-btn) { color: var(--accent); }
   a:not(.lp-btn):hover { color: var(--text); }
 
   .lp-rise { animation: lp-rise .8s ease-out var(--d, 0s) both; }
 
-  // ---------- hero ----------
-  .lp-hero { display: flex; flex-wrap: wrap; gap: 40px 56px; align-items: center; padding-top: clamp(24px, 4vw, 48px); }
-  .lp-hero-text { flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
-  h1 {
-    margin: 0; font-size: clamp(88px, 13vw, 168px); line-height: .9; font-style: italic;
-    font-weight: 600; letter-spacing: -0.03em; color: var(--accent);
+  // ---------- hero: one MMA-threatened species per biome ----------
+  // Text on the photo keeps fixed light colors in both themes.
+  .lp-hero {
+    --on: #f4f2ec; --on-soft: rgba(244, 242, 236, .78); --cyan: #38CFF6;
+    position: relative; overflow: hidden; height: clamp(560px, calc(100svh - 64px), 820px);
+    background: #0a0b10; color: var(--on);
   }
-  .lp-sub { margin: 0; max-width: 520px; font-size: clamp(24px, 2.6vw, 32px); line-height: 1.25; text-wrap: balance; }
-  .lp-lede { margin: 0; max-width: 500px; color: var(--lp-soft); }
-  .lp-actions { display: flex; flex-wrap: wrap; gap: 12px; padding-top: 4px; }
+  .lp-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
+  .lp-photo.is-on { opacity: 1; }
+  .lp-hexes {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none; visibility: hidden;
+    &.p0, &.p1 { visibility: visible; }
+  }
+  .lp-hex {
+    position: absolute; left: var(--x); top: var(--y); width: var(--hw); height: var(--hh);
+    background: var(--img) no-repeat; background-size: var(--bw) var(--bh);
+    background-position: calc(var(--ox) - var(--x)) calc(var(--oy) - var(--y));
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); opacity: 0;
+  }
+  .lp-hexes.p0 .lp-hex { animation: lp-hex-a 900ms ease-out var(--d) both; }
+  .lp-hexes.p1 .lp-hex { animation: lp-hex-b 900ms ease-out var(--d) both; }
+  // light shade only behind the text blocks, so the photo stays visible
+  .lp-scrim {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background:
+      radial-gradient(ellipse 34% 40% at 14% 16%, rgba(10, 11, 16, .5), rgba(10, 11, 16, 0) 100%),
+      radial-gradient(ellipse 26% 30% at 92% 14%, rgba(10, 11, 16, .4), rgba(10, 11, 16, 0) 100%),
+      linear-gradient(0deg, rgba(10, 11, 16, .5) 0%, rgba(10, 11, 16, 0) 18%);
+  }
+  .lp-hero-text, .lp-rec, .lp-biomes {
+    position: absolute; z-index: 3;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 2px 18px rgba(0, 0, 0, .35);
+  }
+  .lp-hero-text { left: clamp(16px, 5.6vw, 72px); top: clamp(24px, 3.2vw, 40px); display: flex; flex-direction: column; gap: 14px; }
+  h1 { margin: 0; font-size: clamp(64px, 8.2vw, 104px); line-height: .92; font-style: italic; font-weight: 600; letter-spacing: -0.02em; color: var(--cyan); }
+  .lp-sub { margin: 0; font-size: clamp(20px, 2vw, 26px); line-height: 1.2; text-wrap: balance; }
+  .lp-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px; }
   .lp-btn {
     display: inline-flex; align-items: center; min-height: 44px; padding: 10px 22px;
     border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text);
-    font-family: var(--mono); font-size: 14px; text-decoration: none;
+    font-family: var(--mono); font-size: 14px; text-decoration: none; text-shadow: none;
     transition: border-color .2s ease, background-color .2s ease;
   }
   .lp-btn:hover { border-color: var(--text); color: var(--text); }
-  .lp-btn-primary, .lp-btn-primary:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
-  .lp-btn-primary:hover { background: color-mix(in srgb, var(--accent) 85%, var(--text)); }
+  .lp-hero .lp-btn { border-color: rgba(244, 242, 236, .45); color: var(--on); }
+  .lp-hero .lp-btn:hover { border-color: var(--on); }
+  .lp-hero .lp-btn-primary, .lp-hero .lp-btn-primary:hover { background: var(--on); border-color: var(--on); color: #14151c; }
 
-  // photo with an occurrence.txt row pinned over its lower edge
-  .lp-fig { position: relative; flex: 1 1 480px; min-width: 0; margin: 0; padding-bottom: 128px; }
-  .lp-fig img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--r); }
-  .lp-label {
-    position: absolute; left: clamp(8px, 4%, 32px); bottom: 0; width: min(430px, 92%); box-sizing: border-box;
-    padding: 14px 18px 12px; background: var(--surface); border: 1px solid var(--text); border-radius: 6px;
-    font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  // the occurrence record of the species on screen
+  .lp-rec { right: clamp(16px, 5.6vw, 72px); top: clamp(24px, 3.4vw, 44px); text-align: right; font-family: var(--mono); font-size: 12px; line-height: 1.7; }
+  .lp-rec-name { font-family: var(--serif); font-size: 22px; font-style: italic; white-space: pre; }
+  .lp-rec-line { color: var(--on-soft); white-space: pre; }
+  .lp-rec-cat {
+    display: inline-flex; margin-top: 6px; padding: 2px 8px; border-radius: 5px;
+    font-size: 10px; font-weight: 700; letter-spacing: .06em; text-shadow: none;
   }
-  .lp-label-head {
-    display: flex; align-items: center; gap: 10px; padding-bottom: 8px; margin-bottom: 8px;
-    border-bottom: 1px solid var(--text); font-weight: 700; letter-spacing: .08em;
+  // IUCN Red List colors, which the MMA list shares; yellow and orange need dark text
+  .lp-rec-cat, .lp-card-cat {
+    &[data-code="CR"] { background: #D81E05; color: #fff; }
+    &[data-code="EN"] { background: #FC7F3F; color: #1c1c26; }
+    &[data-code="VU"] { background: #F9E814; color: #1c1c26; }
   }
-  .lp-ring { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--text); }
-  .lp-label dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 16px; margin: 0; }
-  .lp-label dt, .lp-label dd { margin: 0; font-weight: 400; animation: lp-rise .5s ease-out both; }
-  .lp-label dt { color: var(--lp-soft); }
-  .lp-label dd { min-width: 0; overflow-wrap: anywhere; }
-  @for $i from 1 through 6 {
-    .lp-label dt:nth-of-type(#{$i}), .lp-label dd:nth-of-type(#{$i}) { animation-delay: #{0.8 + ($i - 1) * 0.09}s; }
+  .lp-rec-credit { margin-top: 6px; font-size: 10px; color: var(--on-soft); }
+
+  .lp-biomes {
+    left: clamp(16px, 5.6vw, 72px); right: clamp(16px, 5.6vw, 72px); bottom: 44px;
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; font-family: var(--mono);
   }
-  .lp-credit {
-    position: absolute; top: 12px; right: 12px; margin: 0; padding: 3px 8px; border-radius: 4px;
-    background: color-mix(in srgb, var(--surface) 88%, transparent);
-    font-family: var(--mono); font-size: 11px; line-height: 1.6; color: var(--text);
+  .lp-biome {
+    position: relative; appearance: none; min-width: 0; padding: 14px 0 0; border: 0; background: transparent;
+    color: rgba(244, 242, 236, .66); font: inherit; text-align: left; text-shadow: inherit; cursor: pointer;
   }
+  .lp-biome::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: rgba(244, 242, 236, .25); }
+  .lp-biome:hover, .lp-biome.is-on { color: var(--on); }
+  .lp-biome:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
+  .lp-prog { position: absolute; left: 0; top: 0; width: 0; height: 2px; background: var(--cyan); }
+  .lp-biome.is-on .lp-prog { animation: lp-fill var(--dur) linear both; }
+  .lp-biome.is-done .lp-prog { width: 100%; }
+  .lp-hero.is-held .lp-biome.is-on .lp-prog { animation-play-state: paused; }
+  .lp-biome-name { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+  .lp-biome-sp { display: block; margin-top: 4px; overflow: hidden; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+
+  // ---------- data section: 01 the flow panel, 02 the network map ----------
+  .lp-section.lp-data { gap: clamp(48px, 6vw, 72px); }
+  .lp-lede { margin: 0; max-width: 40em; font-size: 19px; line-height: 1.6; color: var(--lp-soft); }
+  .lp-mod { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+  .lp-step {
+    display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 12px;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--lp-soft);
+  }
+  .lp-step b {
+    display: inline-grid; place-items: center; min-width: 30px; height: 22px; padding: 0 6px;
+    border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); font-weight: 400; letter-spacing: .04em;
+  }
+  h3 {
+    margin: 0; padding: 0; border: 0; max-width: 18em; text-wrap: balance;
+    font-size: clamp(26px, 2.8vw, 34px); line-height: 1.15; font-weight: 600;
+  }
+
+  // ---------- map: SiBBr total, sparks and a crosshair on the six species ----------
+  .lp-mod.lp-map { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 640px); gap: 40px 64px; align-items: center; }
+  .lp-map-text { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .lp-map-text p { margin: 0; color: var(--lp-soft); }
+  .lp-map-text .lp-big { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .lp-big strong { font-family: var(--mono); font-size: clamp(40px, 4.4vw, 56px); line-height: 1; font-weight: 700; letter-spacing: -.02em; color: var(--text); font-variant-numeric: tabular-nums; }
+  .lp-src { font-family: var(--mono); font-size: 11px; line-height: 1.6; }
+  .lp-mapfig { position: relative; margin: 0; overflow: hidden; border-radius: var(--r); }
+  .lp-map-img { display: block; width: 100%; height: auto; }
+  .lp-map-dark { display: none; }
+  body.quarto-dark & {
+    .lp-map-light { display: none; }
+    .lp-map-dark { display: block; }
+  }
+  .lp-sparks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .lp-pin {
+    position: absolute; z-index: 2; left: var(--x); top: var(--y); width: 10px; height: 10px; margin: -5px 0 0 -5px;
+    border-radius: 50%; background: var(--lp-pin); box-shadow: 0 0 0 2px var(--surface);
+    transition: opacity .4s ease, transform .4s ease;
+  }
+  .lp-pin.is-dim { opacity: .7; }
+  .lp-pin.is-lock { transform: scale(1.5); animation: lp-lock .7s steps(1, end) both; }
+  .lp-guide { position: absolute; z-index: 1; background: var(--lp-pin); opacity: 0; transition: opacity .3s ease, left .6s cubic-bezier(.5, 0, .2, 1), top .6s cubic-bezier(.5, 0, .2, 1); }
+  .lp-guide.is-h { left: 0; right: 0; height: 1px; }
+  .lp-guide.is-v { top: 0; bottom: 0; width: 1px; }
+  .lp-guide.is-on { opacity: .55; }
+  .lp-axis {
+    position: absolute; z-index: 3; padding: 2px 6px; border-radius: 4px; background: var(--lp-pin); color: var(--surface);
+    font-family: var(--mono); font-size: 11px; line-height: 1.5; opacity: 0;
+    transition: opacity .3s ease, left .6s cubic-bezier(.5, 0, .2, 1), top .6s cubic-bezier(.5, 0, .2, 1);
+  }
+  .lp-axis.is-lat { left: 8px; transform: translateY(-50%); }
+  .lp-axis.is-lon { bottom: 8px; transform: translateX(-50%); }
+  .lp-axis.is-on { opacity: 1; }
+  .lp-card {
+    position: absolute; z-index: 4; left: var(--x); top: var(--y); display: flex; gap: 10px; align-items: center; width: 268px; padding: 8px;
+    border: 1px solid var(--lp-line); border-radius: 10px; background: var(--surface); box-shadow: none;
+    transform: translate(18px, -50%); opacity: 0; transition: opacity .35s ease; pointer-events: none;
+  }
+  .lp-card.is-left { transform: translate(calc(-100% - 18px), -50%); }
+  .lp-card.is-on { opacity: 1; }
+  .lp-card img { width: 58px; height: 58px; flex: none; border-radius: 6px; object-fit: cover; }
+  .lp-card > span { display: flex; flex-direction: column; min-width: 0; font-family: var(--mono); font-size: 11px; line-height: 1.45; color: var(--lp-soft); }
+  .lp-card em { overflow: hidden; font-family: var(--serif); font-size: 15px; line-height: 1.25; color: var(--text); text-overflow: ellipsis; white-space: nowrap; }
+  .lp-card-cat { align-self: flex-start; margin-top: 2px; padding: 1px 6px; border-radius: 4px; font-weight: 700; }
 
   // ---------- sections ----------
   .lp-section { display: flex; flex-direction: column; gap: 28px; scroll-margin-top: 80px; }
@@ -114,8 +225,9 @@ a { color: inherit; }
     font-size: clamp(32px, 4vw, 48px); line-height: 1.1; font-weight: 600; letter-spacing: -0.01em;
   }
 
-  // ---------- flow panel ----------
-  .lp-panel { --px: 28px; background: var(--surface); border: 1px solid var(--lp-line); border-radius: var(--r); overflow: hidden; box-shadow: none; }
+  // ---------- flow panel: one sheet, fixed in place tab by tab ----------
+  .lp-panel { --px: 24px; background: var(--surface); border: 1px solid var(--lp-line); border-radius: var(--r); overflow: hidden; box-shadow: none; transition: border-color .6s ease; }
+  .lp-flow.is-done { border-color: color-mix(in srgb, var(--success) 45%, var(--surface)); }
   .lp-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 14px var(--px); border-bottom: 1px solid var(--lp-line); }
   .lp-file { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; font-family: var(--mono); font-size: 14px; }
   .lp-file small { font-size: 12px; color: var(--lp-soft); }
@@ -129,15 +241,14 @@ a { color: inherit; }
   .lp-toggle::before { content: ""; box-sizing: border-box; width: 9px; height: 10px; border: solid currentColor; border-width: 0 2px; }
   .lp-flow.is-paused .lp-toggle::before { width: 0; height: 0; border-width: 5px 0 5px 9px; border-color: transparent transparent transparent currentColor; }
 
-  .lp-stage { display: flex; flex-direction: column; padding: 24px var(--px) 28px; }
-  .lp-cap { display: block; margin-bottom: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--lp-soft); }
-  .lp-cap span { text-transform: none; letter-spacing: 0; }
+  .lp-stage { display: flex; flex-direction: column; padding: 22px var(--px) 26px; }
+  .lp-cap { display: block; min-height: 1.6em; margin-bottom: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--lp-soft); }
   .lp-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
   // column minimums fit the longest value, so cells scroll instead of clipping
   .lp-grid { min-width: 1100px; }
   .lp-row {
     display: grid;
-    grid-template-columns: 36px minmax(228px, 1.5fr) minmax(152px, 1fr) minmax(152px, 1fr) minmax(112px, .9fr) minmax(200px, 1.4fr) minmax(220px, 1.5fr);
+    grid-template-columns: 36px minmax(236px, 1.6fr) minmax(152px, 1fr) minmax(152px, 1fr) minmax(112px, .85fr) minmax(200px, 1.3fr) minmax(220px, 1.4fr);
   }
   .lp-num, .lp-cell { border-bottom: 1px solid var(--lp-line); font-family: var(--mono); }
   .lp-num {
@@ -145,41 +256,27 @@ a { color: inherit; }
     background: var(--lp-head); font-size: 11px; line-height: 1.7; color: var(--lp-soft);
   }
   .lp-cell {
-    padding: 8px 12px; border-right: 1px solid var(--lp-line); background: var(--surface);
+    min-height: 37px; padding: 8px 12px; border-right: 1px solid var(--lp-line); background: var(--surface);
     font-size: 13px; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    transition: background-color .35s ease;
+    transition: background-color .35s ease, color .35s ease;
   }
   .lp-row:first-child .lp-num, .lp-row:first-child .lp-cell { border-top: 1px solid var(--lp-line); }
   .lp-row:first-child .lp-cell { background: var(--lp-head); color: var(--lp-soft); font-size: 12px; }
   .lp-row .lp-cell.is-hot { background: var(--lp-hot); }
   .lp-row:first-child .lp-cell.is-hot { color: var(--accent); }
-  // dynamicProperties: a column the app adds, hidden until the terms exist
-  .lp-row .lp-cell.is-ghost { background: transparent; border-color: transparent; }
-  .lp-row .lp-cell.lp-slot { background: transparent; border-right-style: dashed; border-bottom-style: dashed; }
+  // dynamicProperties: a column the export adds, so it opens only at the last tab
+  .lp-row .lp-cell.lp-dyn { clip-path: inset(0 100% 0 0); transition: clip-path .6s ease; }
+  .lp-row .lp-cell.lp-dyn.is-open { clip-path: inset(0); }
   .lp-bad { padding: 0 2px; border-radius: 3px; background: var(--lp-bad-soft); color: var(--lp-bad); }
-  .lp-struck { color: var(--lp-soft); text-decoration: line-through; text-decoration-color: var(--lp-bad); }
-  .lp-pop { display: inline-block; margin-left: -4px; padding: 0 4px; border-radius: 4px; animation: lp-pop .9s ease-out both; }
   .lp-italic { font-style: italic; }
-  .lp-muted { color: var(--lp-soft); }
-  .lp-ph { display: inline-block; vertical-align: middle; width: var(--w); max-width: 100%; height: 9px; border-radius: 3px; background: var(--lp-line); }
-
-  .lp-vconn { position: relative; width: 8px; height: 36px; margin: 0 auto; }
-  .lp-vconn::before { content: ""; position: absolute; left: 3px; top: 0; bottom: 0; width: 1px; background: var(--lp-line); transition: background-color .35s ease; }
-  .lp-flow.is-moving .lp-vconn::before { background: var(--accent); }
-  .lp-flow.is-done .lp-vconn::before { background: color-mix(in srgb, var(--success) 35%, var(--surface)); }
-  .lp-drop {
-    position: absolute; left: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
-    animation: lp-fall var(--t) ease-in-out var(--delay) both;
-  }
-
-  .lp-tabs { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+  .lp-tabs { list-style: none; margin: 0; padding: 12px var(--px); display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--lp-line); }
   .lp-tabs li {
-    display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 6px 14px;
-    border: 1px solid var(--lp-line); border-radius: 8px; background: var(--surface); color: var(--text);
-    font-size: 16px; line-height: 1.2;
+    display: inline-flex; align-items: center; gap: 7px; min-height: 32px; padding: 4px 11px;
+    border: 1px solid var(--lp-line); border-radius: 7px; background: var(--surface); color: var(--text);
+    font-size: 15px; line-height: 1.2;
     transition: background-color .35s ease, border-color .35s ease, color .35s ease;
   }
-  .lp-tabs b { font-family: var(--mono); font-size: 12px; font-weight: 400; }
+  .lp-tabs b { font-family: var(--mono); font-size: 11px; font-weight: 400; }
   .lp-tabs li.is-active { background: var(--accent); border-color: var(--accent); color: var(--bg); }
   .lp-tabs li.is-done { background: var(--lp-ok-soft); border-color: var(--lp-ok-soft); color: var(--lp-ok); }
   // a finished tab swaps its number for a check mark
@@ -187,21 +284,43 @@ a { color: inherit; }
     display: inline-block; width: 11px; height: 6px; font-size: 0;
     border: solid currentColor; border-width: 0 0 2px 2px; transform: translateY(-2px) rotate(-45deg);
   }
-  .lp-verb { margin: 12px 0 0; min-height: 26px; text-align: center; font-size: 16px; line-height: 1.6; color: var(--lp-soft); }
+  .lp-verb { margin: 14px 0 0; min-height: 26px; font-size: 16px; line-height: 1.6; color: var(--lp-soft); }
   .lp-verb b { font-weight: 600; color: var(--accent); }
 
   .lp-foot {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; padding: 14px var(--px);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; min-height: 49px; padding: 14px var(--px);
     border-top: 1px solid var(--lp-line); background: var(--surface-2); font-family: var(--mono); font-size: 12px;
   }
-  .lp-segs { display: flex; gap: 4px; flex: 0 0 168px; }
-  .lp-segs span { flex: 1; height: 4px; border-radius: 9999px; background: var(--lp-line); transition: background-color .35s ease; }
-  .lp-segs .is-done { background: var(--lp-ok); }
-  .lp-segs .is-active { background: var(--accent); }
   .lp-status { color: var(--text); }
-  .lp-note { margin: -16px 0 0; font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--lp-soft); }
+  .lp-note { margin: -10px 0 0; font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--lp-soft); }
 
-  // ---------- install: macOS console window ----------
+  // ---------- why open data matters: five uses, lit one at a time ----------
+  .lp-why { gap: 32px; }
+  .lp-why-row { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 24px 56px; align-items: center; }
+  .lp-uses { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+  .lp-use { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+  .lp-use.is-risk { --c: var(--lp-c-risk); } .lp-use.is-area { --c: var(--lp-c-area); } .lp-use.is-lic { --c: var(--lp-c-lic); }
+  .lp-use.is-inv { --c: var(--lp-c-inv); } .lp-use.is-zoo { --c: var(--lp-c-zoo); }
+  .lp-use-ic {
+    position: relative; display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%;
+    background: color-mix(in srgb, var(--c) 12%, var(--surface)); color: var(--c);
+    transition: background-color .4s ease, color .4s ease, transform .4s cubic-bezier(.2, .8, .3, 1.4);
+  }
+  .lp-use-svg { width: 32px; height: 32px; }
+  .lp-use-ring { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); transform: rotate(-90deg); }
+  .lp-use-ring circle { fill: none; stroke: var(--c); stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 1; }
+  .lp-use-label { font-family: var(--mono); font-size: 13px; font-weight: 700; line-height: 1.35; color: var(--lp-soft); transition: color .4s ease; }
+  .lp-use.is-on .lp-use-ic, .lp-use.is-seen .lp-use-ic { background: var(--c); color: var(--surface); }
+  .lp-use.is-on .lp-use-ic { transform: scale(1.1); }
+  .lp-use.is-on .lp-use-label, .lp-use.is-seen .lp-use-label { color: var(--c); }
+  .lp-use.is-on .lp-use-ring circle { animation: lp-draw 1.3s linear forwards; }
+  .lp-use.is-drawn .lp-use-svg * { stroke-dasharray: 1; stroke-dashoffset: 1; animation: lp-draw 1s cubic-bezier(.5, 0, .2, 1) forwards; }
+  .lp-why-num { display: flex; flex-direction: column; gap: 8px; margin: 0; padding-left: 24px; border-left: 1px solid var(--lp-line); }
+  .lp-why-num strong { font-family: var(--mono); font-size: clamp(40px, 4.4vw, 56px); line-height: 1; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .lp-why-num span { font-size: 15px; line-height: 1.45; color: var(--lp-soft); }
+  .lp-why .lp-note { margin: 0; }
+
+  // ---------- install: the script in a console window ----------
   .lp-install { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 40px 64px; align-items: center; }
   .lp-install-text { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
   .lp-install-text p { margin: 0; color: var(--lp-soft); }
@@ -218,15 +337,16 @@ a { color: inherit; }
   .lp-tl span:nth-child(2) { background: #febc2e; }
   .lp-tl span:nth-child(3) { background: #28c840; }
   .lp-term-label { margin: 0 0 0 6px; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: rgba(233, 231, 223, .55); }
+  // the copy button is the first thing to find, so it takes the brand cyan
   .lp-copy {
-    margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px;
-    background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .12); border-radius: 6px;
-    color: var(--code-text); font-family: var(--mono); font-size: 12px; cursor: pointer;
-    transition: color .2s ease, border-color .2s ease;
+    margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px;
+    background: var(--primary); border: 1px solid var(--primary); border-radius: 8px;
+    color: var(--on-primary); font-family: var(--mono); font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: background-color .2s ease, border-color .2s ease;
   }
-  .lp-copy:hover { border-color: rgba(255, 255, 255, .3); }
-  .lp-copy svg { width: 13px; height: 13px; }
-  .lp-copy.is-copied { color: #6fe3ac; border-color: #6fe3ac; }
+  .lp-copy:hover { background: #5bd9f8; border-color: #5bd9f8; }
+  .lp-copy svg { width: 15px; height: 15px; }
+  .lp-copy.is-copied { background: #6fe3ac; border-color: #6fe3ac; }
   .lp-term-body {
     padding: 20px 22px 22px; overflow-x: auto; scrollbar-color: rgba(233, 231, 223, .25) transparent;
     font-family: var(--mono); font-size: 13px; line-height: 1.85; color: var(--code-text);
@@ -234,23 +354,40 @@ a { color: inherit; }
   // pre per line: on the body it would keep the markup indentation
   .lp-term-line { white-space: pre; min-height: 1.85em; }
   .lp-term-line.is-hidden { visibility: hidden; }
+  .lp-term-prog { display: inline-block; vertical-align: middle; width: 160px; height: 6px; margin-left: 10px; border-radius: 3px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+  .lp-term-prog i { display: block; width: 0; height: 100%; background: #6fe3ac; transition: width 1s cubic-bezier(.3, .6, .2, 1); }
+  .lp-term-prog.is-on i { width: 100%; }
   .lp-term-body .pr { color: #5bd9f8; }
   .lp-term-body .fn { color: #ffb838; }
   .lp-term-body .str { color: #6fe3ac; }
   .lp-term-body .out { color: rgba(233, 231, 223, .62); }
-  .lp-cursor { display: inline-block; width: .6em; height: 1.1em; vertical-align: text-bottom; background: var(--code-text); animation: lp-blink 1s steps(1) infinite; }
 
+  @media (max-width: 900px) {
+    .lp-mod.lp-map { grid-template-columns: minmax(0, 1fr); }
+  }
   @media (max-width: 820px) {
-    .lp-fig { padding-bottom: 0; }
-    .lp-label { position: relative; left: auto; bottom: auto; width: auto; margin: -56px 12px 0; }
-    .lp-label dl { grid-template-columns: minmax(0, 1fr); }
-    .lp-label dd { padding-bottom: 4px; }
+    // the record moves from the top right corner to just above the biome tabs
+    .lp-rec { top: auto; right: auto; left: clamp(16px, 5.6vw, 72px); bottom: 132px; text-align: left; }
+    .lp-scrim { background: linear-gradient(180deg, rgba(10, 11, 16, .55) 0%, rgba(10, 11, 16, 0) 38%), linear-gradient(0deg, rgba(10, 11, 16, .65) 0%, rgba(10, 11, 16, 0) 45%); }
+    .lp-biomes { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; bottom: 24px; }
+    .lp-biome { padding-top: 10px; }
+    .lp-biome-sp { display: none; }
     .lp-panel { --px: 16px; }
     .lp-install { grid-template-columns: minmax(0, 1fr); }
+    .lp-why-row { grid-template-columns: minmax(0, 1fr); }
+    .lp-why-num { padding: 20px 0 0; border-left: 0; border-top: 1px solid var(--lp-line); }
+    .lp-uses { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 24px; }
     .lp-term-body { padding: 16px; font-size: 12px; }
   }
+  // a narrow map has no room beside the pin, so the card sits in the top right corner (sea)
+  @media (max-width: 560px) {
+    .lp-card, .lp-card.is-left { left: auto; right: 8px; top: 8px; width: 210px; transform: none; }
+    .lp-card img { width: 44px; height: 44px; }
+  }
   @media (prefers-reduced-motion: reduce) {
-    .lp-rise, .lp-label dt, .lp-label dd, .lp-cursor { animation: none; }
+    // landing.js skips the photo waves, the flow loop and the map motion here
+    .lp-rise { animation: none; }
+    .lp-biome.is-on .lp-prog { animation: none; width: 100%; }
   }
 }
 
