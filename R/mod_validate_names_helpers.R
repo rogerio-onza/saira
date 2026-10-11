@@ -72,76 +72,53 @@ stream_window <- function(stream_df, limit = .vn_stream_window_limit) {
     out
 }
 
-#' Get phase label string for a run state
-#' @param state Run state object with $phase field
-#' @param lang Language code ("pt" or "en")
-#' @return Character string
+#' Status of each name during a run, for the run grid
+#'
+#' One character per name, in sheet order: "a" accepted, "s" synonym, "m"
+#' ambiguous, "n" not found, "q" in the next batch and "." waiting. A name
+#' that a Brazilian provider finds but does not accept waits for GBIF, so it
+#' stays "." until it has its last answer.
+#' @param state Run state object.
+#' @return Character scalar.
 #' @noRd
-phase_label <- function(state, lang = "pt") {
-    phase_value <- as.character(state$phase %||% "")
-    switch(phase_value,
-        prepare = tr("validate_names_progress_phase_prepare", lang),
-        provider_init = tr("validate_names_progress_phase_provider_init", lang),
-        provider_query_batch = tr("validate_names_progress_phase_provider_query_batch", lang),
-        provider_finalize = tr("validate_names_progress_phase_provider_finalize", lang),
-        consolidate = tr("validate_names_progress_phase_consolidate", lang),
-        done = tr("validate_names_progress_phase_done", lang),
-        failed = tr("validate_names_progress_phase_failed", lang),
-        tr("validate_names_progress_phase_prepare", lang)
-    )
-}
-
-#' Get FA icon name for current validation phase
-#' @param state Run state object with $phase and $current_provider fields
-#' @return Character string with FA icon name
-#' @noRd
-vn_phase_icon <- function(state) {
-    phase <- as.character(state$phase %||% "")
-    provider <- as.character(state$current_provider %||% "")
-    is_br <- provider %in% c("florabr", "faunabr")
-
-    if (identical(phase, "provider_init") && is_br && !brprovider_data_available(provider)) {
-        return("download")
+vn_run_cells <- function(state) {
+    queries <- as.character(state$query_order %||% character(0))
+    if (length(queries) == 0L) {
+        return("")
     }
-    switch(phase,
-        prepare              = "gears",
-        provider_init        = "plug",
-        provider_query_batch = "microscope",
-        provider_finalize    = "circle-notch",
-        consolidate          = "layer-group",
-        done                 = "flag-checkered",
-        failed               = "triangle-exclamation",
-        "spinner"
-    )
-}
-
-#' Get phase text with BR download detection
-#' @param state Run state object
-#' @param lang Language code ("pt" or "en")
-#' @return Character string with phase description
-#' @noRd
-vn_phase_text <- function(state, lang = "pt") {
-    phase <- as.character(state$phase %||% "")
-    provider <- as.character(state$current_provider %||% "")
-    is_br <- provider %in% c("florabr", "faunabr")
-
-    if (identical(phase, "provider_init") && is_br && !brprovider_data_available(provider)) {
-        return(sprintf(tr("validate_names_loading_phase_provider_download", lang), provider))
+    stream <- state$stream_df
+    status <- if (is.data.frame(stream) && nrow(stream) > 0L) {
+        stream$validation_status[match(queries, stream$query_name)]
+    } else {
+        rep(NA_character_, length(queries))
     }
-    phase_label(state, lang)
+    code <- rep("n", length(queries))
+    code[status %in% "accepted"] <- "a"
+    code[status %in% "synonym"] <- "s"
+    code[status %in% c("ambiguous", "unresolved")] <- "m"
+
+    pending <- queries %in% as.character(state$pending_queries %||% character(0))
+    code[pending] <- "."
+    next_idx <- as.integer(state$provider_batch_idx %||% 0L) + 1L
+    batches <- state$current_batches
+    if (identical(state$phase, "provider_query_batch") && next_idx <= length(batches)) {
+        code[pending & queries %in% batches[[next_idx]]] <- "q"
+    }
+    paste(code, collapse = "")
 }
 
-#' Progress of a names run, for the photo card of the report panel
+#' Progress of a names run, for the run card of the report panel
 #'
 #' The count is the names that have an answer. Names that no provider finds
 #' get one at the end, so the count always reaches the total.
 #' @param state Run state object.
 #' @param lang Language code.
-#' @return List with \code{done}, \code{total}, \code{pct}, \code{waiting}
-#'   (a first Flora BR or Fauna BR download, with no count to show),
-#'   \code{eyebrow}, \code{count} and \code{steps}: one list per step with
-#'   \code{key}, \code{label}, \code{state} ("done", "active" or "next") and
-#'   \code{state_label}.
+#' @return List with \code{run_id}, \code{done}, \code{total}, \code{pct},
+#'   \code{waiting} (a first Flora BR or Fauna BR download, with no count to
+#'   show), \code{eyebrow}, \code{count}, \code{cells} (from
+#'   \code{vn_run_cells()}), \code{tally} (formatted count per cell status)
+#'   and \code{steps}: one list per step with \code{key}, \code{label},
+#'   \code{state} ("done", "active" or "next") and \code{state_label}.
 #' @noRd
 vn_run_progress <- function(state, lang = "pt") {
     phase <- as.character(state$phase %||% "")
@@ -176,7 +153,14 @@ vn_run_progress <- function(state, lang = "pt") {
         )
     })
 
+    cells <- vn_run_cells(state)
+    codes <- strsplit(cells, "", fixed = TRUE)[[1]]
+    tally <- lapply(c(a = "a", s = "s", m = "m", n = "n"), function(code) {
+        format_count(sum(codes == code), lang)
+    })
+
     list(
+        run_id = as.character(state$run_id %||% ""),
         done = done,
         total = total,
         pct = if (total > 0L) round(100 * done / total) else 0,
@@ -184,23 +168,50 @@ vn_run_progress <- function(state, lang = "pt") {
             !brprovider_data_available(provider),
         eyebrow = tr(if (in_report) "validate_names_run_eyebrow_report" else "validate_names_run_eyebrow", lang),
         count = sprintf(tr("validate_names_run_count", lang), format_count(done, lang), format_count(total, lang)),
+        cells = cells,
+        tally = tally,
         steps = steps
     )
 }
 
-#' Photo card of a names run
+#' Run card of a names run
 #'
 #' The report panel renders this card once, at the start of a run.
-#' vnRunProgress then writes the text in place.
+#' vnRunProgress (run-progress.js) then writes the text and draws the grid
+#' in place.
 #' @param progress List from \code{vn_run_progress()}.
-#' @param photo One photo from \code{species_photo()}.
 #' @param lang Language code.
 #' @return A \code{div} tag.
 #' @noRd
-vn_run_card_ui <- function(progress, photo, lang = "pt") {
+vn_run_card_ui <- function(progress, lang = "pt") {
+    legend <- c(
+        a = "validate_names_run_legend_accepted",
+        s = "validate_names_run_legend_synonym",
+        m = "validate_names_run_legend_ambiguous",
+        n = "validate_names_run_legend_not_found"
+    )
     shiny::div(
         class = "vn-report-panel vn-run-card",
-        species_photo_tag(photo, lang, class = "vn-run-photo"),
+        shiny::div(
+            class = "vn-run-grid",
+            `data-run` = progress$run_id,
+            `data-cells` = progress$cells,
+            `data-per` = tr("validate_names_run_grid_per", lang),
+            shiny::div(class = "vn-run-grid-area", shiny::tags$canvas(`aria-hidden` = "true")),
+            shiny::div(
+                class = "vn-run-legend",
+                lapply(names(legend), function(code) {
+                    shiny::span(
+                        class = "vn-run-legend-item",
+                        `data-code` = code,
+                        shiny::span(class = paste0("vn-run-legend-dot is-", code), `aria-hidden` = "true"),
+                        tr(legend[[code]], lang),
+                        shiny::tags$b(progress$tally[[code]] %||% "0")
+                    )
+                }),
+                shiny::span(class = "vn-run-grid-per")
+            )
+        ),
         shiny::div(
             class = "vn-run-body",
             `aria-live` = "polite",

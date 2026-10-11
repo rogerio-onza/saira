@@ -8,7 +8,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- **ui:** Show the species photos of the site in the names run, the ready export package and the Help tutorials card, ADR-159
+- **names:** Show one hexagon per name during a run, colored by its answer, ADR-160
+- **coords:** Replace the run dialog with a map that scans the points and marks each flag, ADR-160
+- **ui:** Draw the points of the Coordinates and Generalization maps and their legends as hexagons, ADR-160
+- **ui:** Show the species photos of the site in the ready export package and the Help tutorials card, ADR-159
 - **names:** Ship Flora e Funga do Brasil and Fauna do Brasil with Saíra, so a new install validates names without the IPT download, ADR-153
 - **preview:** Add a Problems mode that lists cell errors in all records and fixes them in place, with undo, ADR-150 ([#181](https://github.com/rogerio-onza/saira/pull/181))
 - **mapping:** Convert common sex, lifeStage and occurrenceStatus values to the GBIF vocabulary ("M" to male, "visto" to present), ADR-150 ([#179](https://github.com/rogerio-onza/saira/pull/179))
@@ -27,6 +30,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - **mapping:** Run the auto-map on every upload, not only on Camtrap DP, ADR-154
+- **names:** Remove the Cancel button and the phase line from a run. The run card shows the progress, ADR-160
 - **ui:** Show the open Preview problems on menu step 3, and counts on the Mapping filter and the Table/Problems switch, ADR-155
 - **mapping:** Show only the terms that need the user under Pending, the same queue as "Next pending", ADR-155
 - **ui:** Slide the new content in when the Mapping filter or the Table/Problems switch changes, ADR-156

@@ -888,6 +888,9 @@ coords_empty_cc_result <- function() {
 #' @param country_col Country column name
 #' @param profile Validation profile (`"complete"` or `"fast"`)
 #' @param seas_scale Landmass resolution for sea test (10 = embedded Americas detail, 50 = medium global fallback, 110 = coarse global). Default `10` uses the embedded Americas reference and falls back to `50` only for points outside that coverage.
+#' @param on_step Optional function `(key, rows, lat, lon)` called after each
+#'   step, in the order of `coords_run_step_keys()`. `rows` holds the rows that
+#'   the test flags, and `lat` and `lon` are the parsed coordinates.
 #' @return Data frame preserving input cardinality with flags and final diagnosis
 #' @export
 validate_coords_cc_df <- function(
@@ -896,7 +899,8 @@ validate_coords_cc_df <- function(
   lon_col,
   country_col,
   profile = c("complete", "fast"),
-  seas_scale = 10L
+  seas_scale = 10L,
+  on_step = NULL
 ) {
     if (!is.data.frame(df)) {
         stop("df must be a data.frame.", call. = FALSE)
@@ -935,6 +939,16 @@ validate_coords_cc_df <- function(
         NULL
     }
     .plog <- function(phase) if (!is.null(.perf)) .perf$log(phase)
+    # The run stage of the Coordinates page shows each step (ADR-160). A
+    # test that does not run still reports, with no rows. The stage only
+    # shows progress, so an error there must not stop the validation.
+    reported <- character(0)
+    .step <- function(key, rows = integer(0)) {
+        reported <<- c(reported, key)
+        if (is.function(on_step)) {
+            tryCatch(on_step(key, rows, lat_num, lon_num), error = function(e) NULL)
+        }
+    }
 
     n <- nrow(df)
     if (n == 0L) {
@@ -951,12 +965,14 @@ validate_coords_cc_df <- function(
     lat_num <- lat_parsed$num
     lon_num <- lon_parsed$num
     .plog("parse lat/lon")
+    .step("parse")
 
     country_raw <- as.character(df[[country_col]])
     country_raw[is.na(country_raw)] <- ""
     country_raw <- trimws(country_raw)
     country_iso3 <- coords_country_to_iso3(country_raw)
     .plog("country_to_iso3")
+    .step("iso3")
 
     validity_missing <- is.na(lat_num) | is.na(lon_num)
     swapped <- !validity_missing &
@@ -990,6 +1006,7 @@ validate_coords_cc_df <- function(
         if (length(rows_val_fail) > 0L) {
             validity_bounds[rows_val_fail] <- TRUE
         }
+        .step("validity", which(validity_missing | validity_bounds | swapped))
 
         rows_clean <- rows_candidate[flag_val]
         if (length(rows_clean) > 0L) {
@@ -1005,6 +1022,7 @@ validate_coords_cc_df <- function(
             )
             sea_flag[rows_clean] <- !flag_sea
             .plog("cc_sea")
+            .step("sea", which(sea_flag))
 
             flag_zero <- coords_cc_flagged(
                 "cc_zero",
@@ -1022,6 +1040,7 @@ validate_coords_cc_df <- function(
             )
             zero_equal[rows_clean] <- (!flag_zero | !flag_equal)
             .plog("cc_zero + cc_equ")
+            .step("zero_equal", which(zero_equal))
 
             if (identical(profile, "complete")) {
                 flag_cap <- coords_cc_flagged(
@@ -1054,9 +1073,14 @@ validate_coords_cc_df <- function(
                     flag_cap & flag_cen & flag_gbif & flag_inst
                 )
                 .plog("cc_cap + cc_cen + cc_gbif + cc_inst")
+                .step("reference", which(reference_flag))
             }
         }
     }
+    if (!"validity" %in% reported) {
+        .step("validity", which(validity_missing | validity_bounds | swapped))
+    }
+    for (key in setdiff(c("sea", "zero_equal", "reference"), reported)) .step(key)
 
     diagnostic <- rep("ok", n)
     diagnostic[reference_flag] <- "reference"

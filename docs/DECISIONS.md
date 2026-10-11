@@ -3066,7 +3066,7 @@ Formato: ADR leve (Architecture Decision Record).
 ## ADR-159: Fotos de especies no app
 
 - **Data**: 2026-10-10
-- **Status**: Aceito.
+- **Status**: Aceito. A foto da rodada de Nomes saiu no ADR-160.
 - **Contexto**: as seis fotos da home do site (uma especie ameacada por bioma) entram no app em tres lugares escolhidos no canvas: Nomes (C), Exportacao (B) e Ajuda (B).
 - **Decisao**:
   - `R/utils_species_photos.R` guarda as fotos e monta a figura com o credito (autor e licenca), que a licenca pede junto da foto. O nome popular vem do i18n (`species_common_<slug>`). As fotos sao WebP de 1200 px em `www/images/species/`, ~310 KB no total.
@@ -3077,3 +3077,20 @@ Formato: ADR leve (Architecture Decision Record).
   - Durante a rodada, o Cancelar e a linha da fase deixam a barra 67 px mais alta. O workspace perde a mesma altura (`:has(.vn-cancel-btn)`).
   - Exportacao: sem pendencias, o card de pendencias vira "pacote pronto" com o saira-pintor. Ajuda: o card Tutoriais leva o saira-pintor no topo.
 - **Consequencias**: a lista, a fase e o card mandam valores a cada tick. A linha da fase repete a etapa do card.
+
+## ADR-160: Progresso das rodadas de Nomes e Coordenadas
+
+- **Data**: 2026-10-11
+- **Status**: Aceito.
+- **Contexto**: a foto da rodada de Nomes nao dizia nada sobre a rodada, e a de Coordenadas era um modal com barra animada no cliente (0 a 92%), sem relacao com o trabalho. Escolhas no canvas: Nomes C (grade) e Coordenadas A (mapa com radar), com hexagonos como no hero do site.
+- **Decisao**:
+  - `www/run-progress.js` desenha as duas rodadas em canvas a partir de mensagens pequenas. Os cards nao re-renderizam durante a rodada.
+  - Nomes: uma casa hexagonal por nome, na ordem da planilha (`vn_run_cells()`, um caractere por nome). O raio vai de 24 px a 3,5 px conforme a area e a contagem. Se nem 3,5 px cabe, uma casa vale varios nomes e a legenda diz quantos. O proximo lote pulsa. Um nome que a Flora BR acha mas nao aceita espera o GBIF.
+  - Coordenadas: `validate_coords_cc_df(on_step =)` avisa o fim de cada uma das 6 etapas. `coords_run_reporter()` manda os pontos e a terra recortada (Natural Earth 10m das Americas, simplificada a ~1 px) depois da leitura, e as linhas marcadas a cada teste. Um registro fica com a familia do primeiro teste que o marca, como no diagnostico final, entao as contagens batem com os filtros.
+  - Uma linha vertical varre o mapa a cada 2,4 s com um rastro de hexagonos de 5 px. Uma marca aparece quando a linha passa por ela. Quando o ultimo teste acaba, a linha para e as marcas que faltam aparecem juntas. O palco segura 600 ms e some em 400 ms. Depois os filtros, o mapa e a tabela entram um apos o outro. Uma troca cruzada dos dois layouts parecia brusca.
+  - O palco cobre o layout dos resultados com `position: absolute`, e os resultados ficam com `visibility: hidden`. O Leaflet monta com o tamanho real.
+  - Mensagens customizadas saem na hora, mesmo com o observer sincrono ocupando a sessao. Medido no Firefox com a planilha demo: as etapas chegaram em 1,4 s, 10,6 s e 11,5 s.
+  - O modal (`mod_validate_coords_loading.R`) e suas chaves de i18n sairam.
+  - Em Nomes, o botao Cancelar e a linha de fase ("Consultando lote") sairam, com `vn_phase_icon()`, `vn_phase_text()`, `phase_label()` e as chaves deles. O card da rodada mostra o progresso.
+  - Pontos sao hexagonos em todo o app: no radar, nos mapas de Coordenadas e Generalizacao e nas legendas. `www/leaflet-hex.js` troca o desenho do circle marker no canvas quando ele tem `hex = TRUE` (`leaflet::pathOptions()`). O circulo de incerteza (`L.Circle`) fica redondo, porque o raio dele e uma distancia no terreno. As legendas usam o token `--hex-clip`.
+- **Consequencias**: ate 20 mil pontos e 5 mil marcas por teste vao ao navegador. Fora da cobertura das Americas, o mapa mostra so os pontos.

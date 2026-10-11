@@ -100,7 +100,7 @@ testthat::test_that("validate coords does not auto-run on initialization", {
     runs <- 0L
 
     testthat::local_mocked_bindings(
-        validate_coords_cc_df = function(df, lat_col, lon_col, country_col, profile, seas_scale) {
+        validate_coords_cc_df = function(df, lat_col, lon_col, country_col, profile, seas_scale, ...) {
             runs <<- runs + 1L
             data.frame(
                 .row_index = seq_len(nrow(df)),
@@ -160,7 +160,7 @@ testthat::test_that("validate coords runs with lat/lon/country and always uses t
     captured_profile <- NULL
 
     testthat::local_mocked_bindings(
-        validate_coords_cc_df = function(df, lat_col, lon_col, country_col, profile, seas_scale) {
+        validate_coords_cc_df = function(df, lat_col, lon_col, country_col, profile, seas_scale, ...) {
             captured_profile <<- profile
             data.frame(
                 .row_index = seq_len(nrow(df)),
@@ -222,7 +222,7 @@ testthat::test_that("family filter changes filtered output for map and table", {
     )
 
     testthat::local_mocked_bindings(
-        validate_coords_cc_df = function(df, lat_col, lon_col, country_col, profile, seas_scale) {
+        validate_coords_cc_df = function(df, lat_col, lon_col, country_col, profile, seas_scale, ...) {
             data.frame(
                 .row_index = seq_len(nrow(df)),
                 lat_num = as.numeric(df[[lat_col]]),
@@ -298,7 +298,7 @@ testthat::test_that("validate coords keeps running when loading modal fails", {
     runs <- 0L
 
     testthat::local_mocked_bindings(
-        validate_coords_cc_df = function(df, lat_col, lon_col, country_col, profile, seas_scale) {
+        validate_coords_cc_df = function(df, lat_col, lon_col, country_col, profile, seas_scale, ...) {
             runs <<- runs + 1L
             data.frame(
                 .row_index = seq_len(nrow(df)),
@@ -425,7 +425,7 @@ testthat::test_that("a manual edit reaches the payload, survives a new validatio
     # A point north of the equator reads as sea, south of it as ok. The same
     # mock answers the full run and the one-row revalidation of an edit.
     testthat::local_mocked_bindings(
-        validate_coords_cc_df = function(df, lat_col, lon_col, country_col, profile, seas_scale = 10L) {
+        validate_coords_cc_df = function(df, lat_col, lon_col, country_col, profile, seas_scale = 10L, ...) {
             lat <- as.numeric(df[[lat_col]])
             diag <- ifelse(lat < 0, "ok", "sea")
             data.frame(

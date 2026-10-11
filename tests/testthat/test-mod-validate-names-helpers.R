@@ -407,19 +407,44 @@ testthat::test_that("vn_run_progress drops the BR step and flags a first downloa
     testthat::expect_true(download$waiting)
 })
 
-test_that("vn_run_card_ui builds the photo card with one row per step", {
+test_that("vn_run_card_ui builds the grid card with one row per step", {
     progress <- list(
-        pct = 25, waiting = TRUE, eyebrow = "E", count = "C",
+        run_id = "42", pct = 25, waiting = TRUE, eyebrow = "E", count = "C",
+        cells = "aq.", tally = list(a = "1", s = "0", m = "0", n = "0"),
         steps = list(
             list(key = "br", label = "Flora BR", state = "active", state_label = "now"),
             list(key = "report", label = "Report", state = "next", state_label = "next")
         )
     )
-    html <- as.character(vn_run_card_ui(progress, species_photo("boana-buriti"), "en"))
+    html <- as.character(vn_run_card_ui(progress, "en"))
     expect_match(html, "vn-report-panel vn-run-card", fixed = TRUE)
-    expect_match(html, "boana-buriti.webp", fixed = TRUE)
+    expect_match(html, "data-run=\"42\" data-cells=\"aq.\"", fixed = TRUE)
+    expect_match(html, "1 cell = %s names", fixed = TRUE)
+    expect_match(html, "data-code=\"a\"", fixed = TRUE)
+    expect_false(grepl("<img", html, fixed = TRUE))
     expect_match(html, "vn-run-bar is-waiting", fixed = TRUE)
     expect_match(html, "width: 25%;", fixed = TRUE)
     expect_match(html, "class=\"vn-run-step is-active\" data-step=\"br\"", fixed = TRUE)
     expect_match(html, "data-step=\"report\"", fixed = TRUE)
+})
+
+test_that("vn_run_cells keeps sheet order and waits for the last answer", {
+    state <- list(
+        phase = "provider_query_batch",
+        query_order = c("A a", "B b", "C c", "D d", "E e", "F f"),
+        pending_queries = c("B b", "E e", "F f"),
+        current_batches = list(c("B b"), c("E e")),
+        provider_batch_idx = 1L,
+        stream_df = data.frame(
+            query_name = c("A a", "B b", "C c", "D d"),
+            validation_status = c("accepted", "synonym", "ambiguous", "not_found"),
+            stringsAsFactors = FALSE
+        )
+    )
+    # "B b" has a Flora BR synonym but waits for GBIF, so it stays ".".
+    expect_identical(vn_run_cells(state), "a.mnq.")
+
+    state$phase <- "provider_init"
+    expect_identical(vn_run_cells(state), "a.mn..")
+    expect_identical(vn_run_cells(list(query_order = character(0))), "")
 })

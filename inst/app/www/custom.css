@@ -158,6 +158,8 @@
   --radius-xl: 14px;
   --radius-full: 9999px;
   --radius-chip: 6px; /* filter chips and status tags (ADR-130) */
+  /* Pointy-top hexagon: map points and their legends (ADR-160). */
+  --hex-clip: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
 
   /* Shadows: the design is flat (ADR-127). The tokens stay so a rule can
      name its intent, but every one resolves to none. Focus rings stay. */
@@ -5945,35 +5947,45 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 }
 
 .coords-map-legend-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  position: relative;
+  width: 11px;
+  height: 12px;
+  background: var(--dot-ring, rgba(0, 0, 0, 0.08));
+  clip-path: var(--hex-clip);
+}
+
+/* A clip cuts a border, so the ring is the box and the fill sits inside. */
+.coords-map-legend-dot::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  background: var(--dot);
+  clip-path: var(--hex-clip);
 }
 
 .coords-map-legend-dot-ok {
-  background: var(--coord-ok);
+  --dot: var(--coord-ok);
 }
 
 .coords-map-legend-dot-error,
 .coords-map-legend-dot-validity {
-  background: var(--error-fill);
+  --dot: var(--error-fill);
 }
 
 .coords-map-legend-dot-sea {
-  background: var(--info-fill);
+  --dot: var(--info-fill);
 }
 
 .coords-map-legend-dot-zero-equal {
-  background: var(--warning);
+  --dot: var(--warning);
 }
 
 .coords-map-legend-dot-reference {
-  background: var(--coord-swapped);
+  --dot: var(--coord-swapped);
 }
 
 .coords-map-legend-dot-corrected {
-  background: var(--coord-corrected);
+  --dot: var(--coord-corrected);
 }
 
 .coords-cluster-note {
@@ -6291,23 +6303,6 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   font-size: var(--text-sm);
 }
 
-.vn-progress-phrase-row {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  margin-top: 0.4rem;
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  line-height: var(--leading-normal);
-}
-
-.vn-progress-phrase-icon {
-  color: var(--accent);
-  margin-top: 2px;
-  flex-shrink: 0;
-  animation: automap-pulse 1.2s ease-in-out infinite; /* keyframe defined in 14-mapping.css */
-}
-
 .validate-summary-box {
   margin-bottom: var(--space-3);
 }
@@ -6395,12 +6390,6 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
 
 .validate-names-page .validate-names-workspace > * {
   min-width: 0;
-}
-
-/* During a run the Cancel button and the phase line make the toolbar 67px
-   taller, so the workspace gives up the same height (ADR-159). */
-.validate-names-page:has(.vn-cancel-btn) {
-  --validate-names-header-offset: calc(var(--app-header-height) + 9rem + 67px);
 }
 
 /* Toolbar on top of the page (ADR-132): providers, options and the run
@@ -6622,13 +6611,6 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   background: var(--primary-hover);
   transform: var(--lift-sm);
   box-shadow: none;
-}
-
-.vn-cancel-btn.btn,
-.vn-cancel-btn.action-button {
-  border-radius: var(--radius);
-  font-family: var(--font-ui);
-  font-size: var(--text-xs);
 }
 
 .vn-action-helper {
@@ -7167,12 +7149,66 @@ body.vn-review-open .modal-backdrop.show {
   box-shadow: none;
 }
 
-/* During a run the report panel shows a species photo and the progress.
-   vnRunProgress writes the text, the bar and the steps in place. The photo
-   takes the height that the progress leaves. */
-.vn-run-photo {
+/* During a run the report panel shows one cell per name and the progress.
+   vnRunProgress (run-progress.js) writes the text and draws the grid in
+   place. The grid takes the height that the progress leaves. */
+.vn-run-grid {
   flex: 1 1 330px;
   min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-6) 28px 0;
+}
+
+.vn-run-grid-area {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.vn-run-grid-area canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.vn-run-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.vn-run-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vn-run-legend-item b {
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.vn-run-legend-dot {
+  width: 9px;
+  height: 10px;
+  clip-path: var(--hex-clip);
+}
+
+.vn-run-legend-dot.is-a { background: var(--success); }
+.vn-run-legend-dot.is-s { background: var(--info); }
+.vn-run-legend-dot.is-m { background: var(--warning); }
+.vn-run-legend-dot.is-n { background: var(--error); }
+
+.vn-run-grid-per {
+  margin-left: auto;
 }
 
 .vn-run-body {
@@ -7260,10 +7296,89 @@ body.vn-review-open .modal-backdrop.show {
   background: var(--success);
 }
 
+.vn-run-step-label {
+  min-width: 0;
+}
+
 .vn-run-step-state {
   margin-left: auto;
   font-size: 12px;
+  white-space: nowrap;
   color: var(--text-muted);
+}
+
+.vn-run-step.is-hit .vn-run-step-state {
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+}
+
+/* Coordinates run stage (ADR-160): the radar map and the progress, below
+   the toolbar. It covers the results while the run ends, then fades. The
+   results stay in the layout, so Leaflet gets its real size. */
+.validate-coords-layout {
+  --coords-stage-h: clamp(420px, calc(100vh - 17rem), 620px);
+  position: relative;
+  /* During a run the results row is empty, and its -16px gutter margin
+     went through the layout. The stage then covered the toolbar. */
+  display: flow-root;
+}
+
+.validate-coords-layout.is-coords-running {
+  min-height: var(--coords-stage-h);
+}
+
+.validate-coords-layout.is-coords-running > .validate-coords-right {
+  visibility: hidden;
+}
+
+.coords-run-stage {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  height: var(--coords-stage-h);
+  display: flex;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+
+.coords-run-stage[hidden] {
+  display: none;
+}
+
+.coords-run-map {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: var(--space-4);
+}
+
+.coords-run-map canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.coords-run-body {
+  flex: 0 0 360px;
+  border-left: 1px solid var(--border-light);
+}
+
+@media (max-width: 767.98px) {
+  .coords-run-stage {
+    flex-direction: column;
+  }
+
+  .coords-run-body {
+    flex: none;
+    border-top: 1px solid var(--border-light);
+    border-left: 0;
+  }
 }
 
 /* The panel is a flex column that clips: without flex-shrink: 0 a tall
@@ -9147,10 +9262,38 @@ a.help-chip:hover {
     flex: 0 0 auto;
 }
 
-.sc-legend-mark--real {
-    border: 3px solid #1c1c26;
-    border-radius: var(--radius-full);
-    background: #ffffff;
+/* Points are hexagons, as on the map (ADR-160). A clip cuts a border, so
+   the box is the dark ring and the fill sits inside. */
+.sc-legend-mark--real,
+.sc-legend-mark--pending,
+.sc-legend-mark--threat-crpex,
+.sc-legend-mark--threat-cr,
+.sc-legend-mark--threat-en,
+.sc-legend-mark--threat-vu,
+.sc-legend-mark--threat-other {
+    position: relative;
+    width: 14px;
+    height: 15px;
+    background: #1c1c26;
+    clip-path: var(--hex-clip);
+}
+
+.sc-legend-mark--real::after,
+.sc-legend-mark--pending::after,
+.sc-legend-mark--threat-crpex::after,
+.sc-legend-mark--threat-cr::after,
+.sc-legend-mark--threat-en::after,
+.sc-legend-mark--threat-vu::after,
+.sc-legend-mark--threat-other::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    background: var(--mark-fill, #ffffff);
+    clip-path: var(--hex-clip);
+}
+
+.sc-legend-mark--real::after {
+    inset: 3px;
 }
 
 /* Neutral cells; a cell that leaves the country is dashed red (ADR-132). */
@@ -9165,22 +9308,11 @@ a.help-chip:hover {
 }
 
 /* Points: the threat group's colour once decided, white while waiting. */
-.sc-legend-mark--pending,
-.sc-legend-mark--threat-crpex,
-.sc-legend-mark--threat-cr,
-.sc-legend-mark--threat-en,
-.sc-legend-mark--threat-vu,
-.sc-legend-mark--threat-other {
-    border: 2px solid #1c1c26;
-    border-radius: var(--radius-full);
-    background: #ffffff;
-}
-
-.sc-legend-mark--threat-crpex { background: #a33b57; }
-.sc-legend-mark--threat-cr { background: #c0392b; }
-.sc-legend-mark--threat-en { background: #e6873c; }
-.sc-legend-mark--threat-vu { background: #e6c84d; }
-.sc-legend-mark--threat-other { background: #9aa0a6; }
+.sc-legend-mark--threat-crpex { --mark-fill: #a33b57; }
+.sc-legend-mark--threat-cr { --mark-fill: #c0392b; }
+.sc-legend-mark--threat-en { --mark-fill: #e6873c; }
+.sc-legend-mark--threat-vu { --mark-fill: #e6c84d; }
+.sc-legend-mark--threat-other { --mark-fill: #9aa0a6; }
 
 .sc-legend-mark--uncertainty {
     border: 1.5px dashed #6d28d9;
@@ -10323,7 +10455,7 @@ button.sc-scale-chip:hover .sc-level-chip {
 /* The sea dot is deep navy, as on the map. A light ring keeps it visible on
    the dark legend. */
 [data-bs-theme="dark"] .coords-map-legend-dot {
-  border-color: rgba(var(--ink-rgb), 0.35);
+  --dot-ring: rgba(var(--ink-rgb), 0.35);
 }
 
 /* -- Theme switch: light, dark, follow the system (navbar) -- */
@@ -10418,6 +10550,18 @@ html.theme-reveal *::after {
    without the API gets a short rise of the new page. Reduced motion turns
    all of it off.
    ============================================================================= */
+
+@keyframes coords-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 
 @media (prefers-reduced-motion: no-preference) {
   /* -- Page slide: only the page area moves, the header changes at once -- */
@@ -10532,6 +10676,30 @@ html.theme-reveal *::after {
 
   .vn-report-panel.is-entering > * {
     animation: fade-in 200ms ease-out;
+  }
+
+  /* -- Coordinates run: the stage fades out, then the filters, the map and
+     the table come in one after the other (ADR-160) -- */
+  .coords-run-stage {
+    transition: opacity 400ms ease, transform 400ms ease;
+  }
+
+  .coords-run-stage.is-leaving {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+
+  .validate-coords-layout.is-revealing .validate-coords-right > *,
+  .validate-coords-layout.is-revealing .validate-coords-results-row > * {
+    animation: coords-reveal 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .validate-coords-layout.is-revealing .validate-coords-results-row > :first-child {
+    animation-delay: 80ms;
+  }
+
+  .validate-coords-layout.is-revealing .validate-coords-results-row > :nth-child(2) {
+    animation-delay: 160ms;
   }
 }
 
