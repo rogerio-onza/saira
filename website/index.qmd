@@ -48,12 +48,12 @@ anchor-sections: false
     <div>
       <span class="lp-eyebrow">Do Saíra ao SiBBr e ao GBIF</span>
       <h2 id="dados-titulo">Da planilha ao dado integrado.</h2>
-      <p class="lp-lede">O Saíra converte a planilha para Darwin Core. O arquivo exportado pode ser publicado no SiBBr, que compartilha os registros com o GBIF.</p>
+      <p class="lp-lede">O Saíra converte a planilha para Darwin Core. O arquivo exportado pode ser publicado no SiBBr e no GBIF.</p>
     </div>
   </div>
   <div class="lp-mod">
     <span class="lp-step"><b>01</b>No Saíra</span>
-    <h3>Cada aba trata a planilha inteira.</h3>
+    <h3>Cada etapa traduz sua planilha para Darwin Core.</h3>
     <div class="lp-panel lp-flow" data-step="Etapa {n} de {total} · {tab}" data-raw="Planilha como chegou" data-done="Pronto. 6 linhas no occurrence.txt, 6 com coordenadas generalizadas.">
       <div class="lp-bar">
         <span class="lp-file">seis_biomas.csv<small>6 registros · uma espécie ameaçada por bioma</small></span>
@@ -80,9 +80,9 @@ anchor-sections: false
   <div class="lp-mod lp-map">
     <div class="lp-map-text">
       <span class="lp-step"><b>02</b>Na rede</span>
-      <h3>Ocorrências do Brasil no SiBBr e no GBIF.</h3>
+      <h3>Ocorrências no SiBBr.</h3>
       <p class="lp-big"><strong>45.020.973</strong><span>ocorrências de espécies no SiBBr</span></p>
-      <p>O SiBBr é o nó brasileiro do GBIF e leva esses dados para a rede mundial.</p>
+      <p>O SiBBr é o nó brasileiro do GBIF.</p>
       <p class="lp-src">Fontes: <a href="https://sibbr.gov.br/">SiBBr</a> e <a href="https://www.gbif.org/country/BR/summary">GBIF.org</a>, 9 out. 2026. Mapa base: <a href="https://openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/copyright">© colaboradores do OpenStreetMap</a>.</p>
     </div>
     <figure class="lp-mapfig">

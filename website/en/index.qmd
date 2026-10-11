@@ -48,12 +48,12 @@ anchor-sections: false
     <div>
       <span class="lp-eyebrow">From Saíra to SiBBr and GBIF</span>
       <h2 id="data-title">From spreadsheet to integrated data.</h2>
-      <p class="lp-lede">Saíra converts the spreadsheet to Darwin Core. The exported file can be published in SiBBr, which shares the records with GBIF.</p>
+      <p class="lp-lede">Saíra converts the spreadsheet to Darwin Core. The exported file can be published in SiBBr and GBIF.</p>
     </div>
   </div>
   <div class="lp-mod">
     <span class="lp-step"><b>01</b>In Saíra</span>
-    <h3>Each tab works on the whole spreadsheet.</h3>
+    <h3>Each step translates your spreadsheet to Darwin Core.</h3>
     <div class="lp-panel lp-flow" data-step="Step {n} of {total} · {tab}" data-raw="Spreadsheet as it arrived" data-done="Done. 6 rows in occurrence.txt, 6 with generalized coordinates.">
       <div class="lp-bar">
         <span class="lp-file">seis_biomas.csv<small>6 records · one threatened species per biome</small></span>
@@ -80,9 +80,9 @@ anchor-sections: false
   <div class="lp-mod lp-map">
     <div class="lp-map-text">
       <span class="lp-step"><b>02</b>In the network</span>
-      <h3>Occurrences from Brazil in SiBBr and GBIF.</h3>
+      <h3>Occurrences in SiBBr.</h3>
       <p class="lp-big"><strong>45,020,973</strong><span>species occurrences in SiBBr</span></p>
-      <p>SiBBr is the Brazilian GBIF node and sends this data to the global network.</p>
+      <p>SiBBr is the Brazilian GBIF node.</p>
       <p class="lp-src">Sources: <a href="https://sibbr.gov.br/">SiBBr</a> and <a href="https://www.gbif.org/country/BR/summary">GBIF.org</a>, 9 Oct 2026. Base map: <a href="https://openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>.</p>
     </div>
     <figure class="lp-mapfig">

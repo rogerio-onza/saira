@@ -27,16 +27,10 @@ website:
     pinned: true
     title: "Saíra"
     right:
-      - text: "Projeto"
-        href: index.qmd
       - text: "Tutoriais"
         href: tutoriais/01-instalacao.qmd
       - text: "FAQ"
         href: faq.qmd
-      - text: "Glossário"
-        href: glossario.qmd
-      - text: "Tecnologias"
-        href: tecnologias.qmd
       - text: "Atualizações"
         href: novidades.qmd
       - icon: github
