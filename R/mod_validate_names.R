@@ -39,24 +39,6 @@ mod_validate_names_ui <- function(id) {
                         document.body.style.removeProperty('padding-right');
                         document.body.classList.remove('modal-open');
                     });
-                    // The run tick writes the photo card text in place, so
-                    // the report panel renders once per run (see vnRunProgress
-                    // in the server).
-                    Shiny.addCustomMessageHandler('vnRunProgress', function(msg) {
-                        var card = document.querySelector('.vn-run-card');
-                        if (!card) { return; }
-                        card.querySelector('.vn-run-eyebrow').textContent = msg.eyebrow;
-                        card.querySelector('.vn-run-count').textContent = msg.count;
-                        card.querySelector('.vn-run-bar').classList.toggle('is-waiting', !!msg.waiting);
-                        card.querySelector('.vn-run-bar-fill').style.width = msg.pct + '%';
-                        (msg.steps || []).forEach(function(step) {
-                            var row = card.querySelector('.vn-run-step[data-step=\"' + step.key + '\"]');
-                            if (!row) { return; }
-                            row.className = 'vn-run-step is-' + step.state;
-                            row.querySelector('.vn-run-step-label').textContent = step.label;
-                            row.querySelector('.vn-run-step-state').textContent = step.state_label;
-                        });
-                    });
                 });"
             ))
         )
@@ -135,7 +117,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             starting = FALSE,
             start_requested = FALSE,
             running = FALSE,
-            abort_requested = FALSE,
             run_state = NULL,
             stream_df = empty_validation_stream(),
             stream_filter = "all",
@@ -151,7 +132,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         # Plain environment, not reactive: the run tick reads and writes it
         # ~16 times a second, and no output may depend on that.
         run_card <- new.env(parent = emptyenv())
-        run_card$photo <- NULL
         run_card$last_sent <- NULL
         run_card$fade_report <- FALSE
 
@@ -1097,15 +1077,12 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             # invalidate on write whether or not the value changed -- so a
             # single read here, even one whose result is thrown away, rebuilds
             # this whole panel ~16 times a second during a run, recreating the
-            # two option checkboxes below each time. The phase line lives in
-            # output$run_phase for exactly this reason; keep the two
-            # dependency sets apart.
+            # two option checkboxes below each time. The run card shows the
+            # progress (ADR-160).
             run_label <- if (is_busy) tr("validate_names_run_running", lang_r()) else tr("validate_names_run_cta", lang_r())
             can_run <- isTRUE(can_run_validation())
 
-            helper_text <- if (isTRUE(rv$running) && isTRUE(rv$abort_requested)) {
-                tr("validate_names_cancel_requested", lang_r())
-            } else if (length(selected) == 0L) {
+            helper_text <- if (length(selected) == 0L) {
                 tr("validate_names_providers_required", lang_r())
             } else if (!identical(quick$status, "ok")) {
                 if (identical(quick$status, "missing_scientific")) {
@@ -1231,35 +1208,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                         class = "vn-run-btn",
                         disabled = !can_run
                     ),
-                    if (isTRUE(rv$running)) {
-                        shiny::actionButton(
-                            inputId = ns("cancel_validation"),
-                            label = tr("validate_names_cancel", lang_r()),
-                            icon = ph_icon("stop"),
-                            class = "vn-cancel-btn",
-                            disabled = isTRUE(rv$abort_requested)
-                        )
-                    },
-                    shiny::uiOutput(ns("run_phase")),
                     if (nzchar(helper_text)) shiny::div(class = "vn-action-helper", helper_text)
                 )
-            )
-        })
-
-        # Split out of output$config_panel so the 60ms run tick repaints only
-        # this line. This is the ONLY output allowed to depend on rv$run_state;
-        # keeping it small is the whole point. It shows the phase during a run
-        # (a first Flora BR or Fauna BR download takes minutes) and nothing
-        # otherwise: the percentage bar jumped from 0 to 100 and was removed.
-        output$run_phase <- shiny::renderUI({
-            state <- rv$run_state
-            if (!isTRUE(rv$running) || is.null(state)) {
-                return(NULL)
-            }
-            shiny::div(
-                class = "vn-progress-phrase-row",
-                ph_icon(vn_phase_icon(state), class = "vn-progress-phrase-icon"),
-                shiny::span(class = "vn-progress-phrase-text", vn_phase_text(state, lang_r()))
             )
         })
 
@@ -1399,13 +1349,13 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         })
 
         output$report_panel <- shiny::renderUI({
-            # During a run the panel shows a species photo and the progress.
+            # During a run the panel shows the name grid and the progress.
             # rv$running changes only at the start and the end of a run, and
             # the run state is read under isolate(): vnRunProgress updates
             # the card in place.
             if (isTRUE(rv$running)) {
                 progress <- vn_run_progress(shiny::isolate(rv$run_state), lang_r())
-                return(vn_run_card_ui(progress, run_card$photo %||% species_photo(), lang_r()))
+                return(vn_run_card_ui(progress, lang_r()))
             }
 
             report <- effective_report()
@@ -1850,25 +1800,13 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     return(invisible(NULL))
                 }
 
-                run_card$photo <- species_photo()
                 run_card$last_sent <- NULL
                 rv$running <- TRUE
                 rv$starting <- FALSE
-                rv$abort_requested <- FALSE
                 rv$run_state <- run_state
                 rv$stream_df <- empty_validation_stream()
                 rv$last_run_status <- "running"
                 rv$last_error <- NA_character_
-            },
-            ignoreInit = TRUE
-        )
-
-        shiny::observeEvent(input$cancel_validation,
-            {
-                if (!isTRUE(rv$running)) {
-                    return(invisible(NULL))
-                }
-                rv$abort_requested <- TRUE
             },
             ignoreInit = TRUE
         )
@@ -1883,8 +1821,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 return(invisible(NULL))
             }
             shiny::invalidateLater(60, session)
-
-            if (isTRUE(rv$abort_requested)) state$aborted <- TRUE
 
             state <- tryCatch(next_taxadb_run_step(state), error = function(e) {
                 state$error_message <- as.character(e$message)
@@ -1908,7 +1844,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             run_card$fade_report <- TRUE
             rv$running <- FALSE
             rv$starting <- FALSE
-            rv$abort_requested <- FALSE
 
             if (identical(state$phase, "failed")) {
                 rv$last_run_status <- "failed"
@@ -1923,12 +1858,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             rv$stream_df <- finalized$stream_df
             rv$stream_filter <- stream_filter_after_completion(finalized$report)
 
-            if (isTRUE(finalized$meta$aborted)) {
-                rv$last_run_status <- "cancelled"
-                shiny::showNotification(tr("validate_names_cancelled_notice", lang_r()), type = "warning")
-            } else {
-                rv$last_run_status <- "success"
-            }
+            rv$last_run_status <- "success"
         })
 
         review_export_payload <- shiny::reactive({
@@ -1994,7 +1924,6 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 rv$starting <- FALSE
                 rv$running <- FALSE
                 rv$start_requested <- FALSE
-                rv$abort_requested <- FALSE
             }, ignoreInit = TRUE)
         }
 

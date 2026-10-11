@@ -957,10 +957,38 @@
     flex: 0 0 auto;
 }
 
-.sc-legend-mark--real {
-    border: 3px solid #1c1c26;
-    border-radius: var(--radius-full);
-    background: #ffffff;
+/* Points are hexagons, as on the map (ADR-160). A clip cuts a border, so
+   the box is the dark ring and the fill sits inside. */
+.sc-legend-mark--real,
+.sc-legend-mark--pending,
+.sc-legend-mark--threat-crpex,
+.sc-legend-mark--threat-cr,
+.sc-legend-mark--threat-en,
+.sc-legend-mark--threat-vu,
+.sc-legend-mark--threat-other {
+    position: relative;
+    width: 14px;
+    height: 15px;
+    background: #1c1c26;
+    clip-path: var(--hex-clip);
+}
+
+.sc-legend-mark--real::after,
+.sc-legend-mark--pending::after,
+.sc-legend-mark--threat-crpex::after,
+.sc-legend-mark--threat-cr::after,
+.sc-legend-mark--threat-en::after,
+.sc-legend-mark--threat-vu::after,
+.sc-legend-mark--threat-other::after {
+    content: "";
+    position: absolute;
+    inset: 2px;
+    background: var(--mark-fill, #ffffff);
+    clip-path: var(--hex-clip);
+}
+
+.sc-legend-mark--real::after {
+    inset: 3px;
 }
 
 /* Neutral cells; a cell that leaves the country is dashed red (ADR-132). */
@@ -975,22 +1003,11 @@
 }
 
 /* Points: the threat group's colour once decided, white while waiting. */
-.sc-legend-mark--pending,
-.sc-legend-mark--threat-crpex,
-.sc-legend-mark--threat-cr,
-.sc-legend-mark--threat-en,
-.sc-legend-mark--threat-vu,
-.sc-legend-mark--threat-other {
-    border: 2px solid #1c1c26;
-    border-radius: var(--radius-full);
-    background: #ffffff;
-}
-
-.sc-legend-mark--threat-crpex { background: #a33b57; }
-.sc-legend-mark--threat-cr { background: #c0392b; }
-.sc-legend-mark--threat-en { background: #e6873c; }
-.sc-legend-mark--threat-vu { background: #e6c84d; }
-.sc-legend-mark--threat-other { background: #9aa0a6; }
+.sc-legend-mark--threat-crpex { --mark-fill: #a33b57; }
+.sc-legend-mark--threat-cr { --mark-fill: #c0392b; }
+.sc-legend-mark--threat-en { --mark-fill: #e6873c; }
+.sc-legend-mark--threat-vu { --mark-fill: #e6c84d; }
+.sc-legend-mark--threat-other { --mark-fill: #9aa0a6; }
 
 .sc-legend-mark--uncertainty {
     border: 1.5px dashed #6d28d9;

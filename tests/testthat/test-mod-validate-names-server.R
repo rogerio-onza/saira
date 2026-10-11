@@ -717,40 +717,6 @@ testthat::test_that("sensitivity payload reflects per-species overrides", {
     )
 })
 
-# ADR-113: the run tick repaints the phase line, not the config panel ---------
-
-testthat::test_that("run_phase shows the phase only during a run", {
-    gate <- list(status = "ok", has_data = TRUE, scientific_col = "scientificName")
-    # Hold the run on its current step, so the phase stays on screen.
-    testthat::local_mocked_bindings(next_taxadb_run_step = function(state) state, .package = "saira")
-
-    shiny::testServer(
-        mod_validate_names_server,
-        args = list(
-            mapped_data_r = shiny::reactive(
-                data.frame(scientificName = "Puma concolor", stringsAsFactors = FALSE)
-            ),
-            lang_r = shiny::reactive("en"),
-            validation_gate_r = shiny::reactive(gate)
-        ),
-        {
-            testthat::expect_null(output$run_phase)
-
-            rv$running <- TRUE
-            rv$run_state <- list(phase = "provider_query_batch", current_provider = "gbif")
-            session$flushReact()
-
-            phase_html <- paste(output$run_phase$html, collapse = " ")
-            config_html <- paste(output$config_panel$html, collapse = " ")
-            testthat::expect_true(grepl("vn-progress-phrase-text", phase_html, fixed = TRUE))
-
-            # config_panel hosts only the placeholder, and no bar is left.
-            testthat::expect_false(grepl("vn-progress-phrase-text", config_html, fixed = TRUE))
-            testthat::expect_false(grepl("vn-progress-fill", config_html, fixed = TRUE))
-        }
-    )
-})
-
 testthat::test_that("config panel keeps the option switches across a language switch", {
     gate <- list(status = "ok", has_data = TRUE, scientific_col = "scientificName")
     lang <- shiny::reactiveVal("pt")

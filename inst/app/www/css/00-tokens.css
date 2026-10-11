@@ -157,6 +157,8 @@
   --radius-xl: 14px;
   --radius-full: 9999px;
   --radius-chip: 6px; /* filter chips and status tags (ADR-130) */
+  /* Pointy-top hexagon: map points and their legends (ADR-160). */
+  --hex-clip: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
 
   /* Shadows: the design is flat (ADR-127). The tokens stay so a rule can
      name its intent, but every one resolves to none. Focus rings stay. */

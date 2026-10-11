@@ -1924,21 +1924,6 @@
     "en": "Validating names...",
     "es": "Validando nombres..."
   },
-  "validate_names_cancel": {
-    "pt": "Cancelar",
-    "en": "Cancel",
-    "es": "Cancelar"
-  },
-  "validate_names_cancel_requested": {
-    "pt": "Cancelamento solicitado. Encerrando no próximo passo seguro.",
-    "en": "Cancellation requested. Stopping at the next safe step.",
-    "es": "Cancelación solicitada. Se detendrá en el próximo paso seguro."
-  },
-  "validate_names_cancelled_notice": {
-    "pt": "Validação cancelada. Os nomes restantes foram marcados como não encontrados.",
-    "en": "Validation cancelled. Remaining names were marked as not found.",
-    "es": "Validación cancelada. Los nombres restantes se marcaron como no encontrados."
-  },
   "validate_names_no_data": {
     "pt": "Carregue e mapeie dados antes de validar.",
     "en": "No mapped data available for validation.",
@@ -1958,41 +1943,6 @@
     "pt": "Executando",
     "en": "Running",
     "es": "En ejecución"
-  },
-  "validate_names_progress_phase_prepare": {
-    "pt": "Preparando nomes",
-    "en": "Preparing names",
-    "es": "Preparando los nombres"
-  },
-  "validate_names_progress_phase_provider_init": {
-    "pt": "Inicializando provedor",
-    "en": "Initializing provider",
-    "es": "Iniciando el proveedor"
-  },
-  "validate_names_progress_phase_provider_query_batch": {
-    "pt": "Consultando lote",
-    "en": "Querying batch",
-    "es": "Consultando el lote"
-  },
-  "validate_names_progress_phase_provider_finalize": {
-    "pt": "Finalizando provedor",
-    "en": "Finalizing provider",
-    "es": "Finalizando el proveedor"
-  },
-  "validate_names_progress_phase_consolidate": {
-    "pt": "Consolidando resultados",
-    "en": "Consolidating results",
-    "es": "Consolidando los resultados"
-  },
-  "validate_names_progress_phase_done": {
-    "pt": "Validação concluída",
-    "en": "Validation finished",
-    "es": "Validación concluida"
-  },
-  "validate_names_progress_phase_failed": {
-    "pt": "Falha na validação",
-    "en": "Validation failed",
-    "es": "Falló la validación"
   },
   "validate_names_stream_panel_title": {
     "pt": "Nomes Processados",
@@ -2083,11 +2033,6 @@
     "pt": "Provedor",
     "en": "Provider",
     "es": "Proveedor"
-  },
-  "validate_names_loading_phase_provider_download": {
-    "pt": "Baixando base de dados %s (pode demorar alguns minutos)...",
-    "en": "Downloading %s database (may take a few minutes)...",
-    "es": "Descargando la base de datos %s (puede tardar algunos minutos)..."
   },
   "validate_names_conservation_label_mma": {
     "pt": "Lista MMA",
@@ -2968,41 +2913,6 @@
     "pt": " na aba Mapeamento, depois clique em Validar.",
     "en": " in the Mapping tab, then click Validate.",
     "es": " en la pestaña Mapeo y luego haga clic en Validar."
-  },
-  "validate_coords_loading_title": {
-    "pt": "Validando Coordenadas",
-    "en": "Validating Coordinates",
-    "es": "Validando coordenadas"
-  },
-  "validate_coords_modal_fallback": {
-    "pt": "Falha ao exibir a animação de carregamento. A validação continuará normalmente.",
-    "en": "Failed to display loading animation. Validation will continue normally.",
-    "es": "No fue posible mostrar la animación de carga. La validación continuará normalmente."
-  },
-  "validate_coords_loading_status": {
-    "pt": "Analisando... %s%%",
-    "en": "Analyzing... %s%%",
-    "es": "Analizando... %s%%"
-  },
-  "loading_coords_phrase_1": {
-    "pt": "Procurando coordenadas zeradas, inválidas ou com latitude igual à longitude.",
-    "en": "Looking for zero, invalid or equal latitude and longitude values.",
-    "es": "Buscando coordenadas en cero, inválidas o con latitud igual a la longitud."
-  },
-  "loading_coords_phrase_2": {
-    "pt": "Conferindo se algum ponto cai no mar.",
-    "en": "Checking whether a point falls in the sea.",
-    "es": "Verificando si algún punto cae en el mar."
-  },
-  "loading_coords_phrase_3": {
-    "pt": "Procurando coordenadas trocadas ou com sinal invertido.",
-    "en": "Looking for swapped or sign-flipped coordinates.",
-    "es": "Buscando coordenadas invertidas o con el signo cambiado."
-  },
-  "loading_coords_phrase_4": {
-    "pt": "Procurando centroides de país, capitais e sedes de instituições.",
-    "en": "Looking for country centroids, capitals and institution sites.",
-    "es": "Buscando centroides de país, capitales y sedes de instituciones."
   },
   "validate_coords_failed": {
     "pt": "Falha na validação de coordenadas: %s",
@@ -4498,6 +4408,111 @@
     "pt": "a seguir",
     "en": "next",
     "es": "a continuación"
+  },
+  "validate_names_run_legend_accepted": {
+    "pt": "Aceitos",
+    "en": "Accepted",
+    "es": "Aceptados"
+  },
+  "validate_names_run_legend_synonym": {
+    "pt": "Sinônimos",
+    "en": "Synonyms",
+    "es": "Sinónimos"
+  },
+  "validate_names_run_legend_ambiguous": {
+    "pt": "Ambíguos",
+    "en": "Ambiguous",
+    "es": "Ambiguos"
+  },
+  "validate_names_run_legend_not_found": {
+    "pt": "Não encontrados",
+    "en": "Not found",
+    "es": "No encontrados"
+  },
+  "validate_names_run_grid_per": {
+    "pt": "1 casa = %s nomes",
+    "en": "1 cell = %s names",
+    "es": "1 celda = %s nombres"
+  },
+  "validate_coords_run_eyebrow": {
+    "pt": "Validando coordenadas",
+    "en": "Validating coordinates",
+    "es": "Validando coordenadas"
+  },
+  "validate_coords_run_eyebrow_done": {
+    "pt": "Pronto",
+    "en": "Done",
+    "es": "Listo"
+  },
+  "validate_coords_run_count_prep": {
+    "pt": "Lendo %s registros",
+    "en": "Reading %s records",
+    "es": "Leyendo %s registros"
+  },
+  "validate_coords_run_count": {
+    "pt": "Teste %s de 4 · %s registros",
+    "en": "Test %s of 4 · %s records",
+    "es": "Prueba %s de 4 · %s registros"
+  },
+  "validate_coords_run_count_done": {
+    "pt": "%s de %s registros com problema",
+    "en": "%s of %s records with a problem",
+    "es": "%s de %s registros con problemas"
+  },
+  "validate_coords_run_step_parse": {
+    "pt": "Ler latitude e longitude",
+    "en": "Read latitude and longitude",
+    "es": "Leer latitud y longitud"
+  },
+  "validate_coords_run_step_iso3": {
+    "pt": "País para código ISO",
+    "en": "Country to ISO code",
+    "es": "País a código ISO"
+  },
+  "validate_coords_run_step_validity": {
+    "pt": "Intervalo válido e inversão",
+    "en": "Valid range and swapped axes",
+    "es": "Rango válido e inversión"
+  },
+  "validate_coords_run_step_sea": {
+    "pt": "Pontos no mar",
+    "en": "Points at sea",
+    "es": "Puntos en el mar"
+  },
+  "validate_coords_run_step_zero_equal": {
+    "pt": "Zero e latitude igual à longitude",
+    "en": "Zero and latitude equal to longitude",
+    "es": "Cero y latitud igual a longitud"
+  },
+  "validate_coords_run_step_reference": {
+    "pt": "Capitais, centroides e instituições",
+    "en": "Capitals, centroids and institutions",
+    "es": "Capitales, centroides e instituciones"
+  },
+  "validate_coords_run_hits_validity": {
+    "pt": "%s inválidas",
+    "en": "%s invalid",
+    "es": "%s inválidas"
+  },
+  "validate_coords_run_hits_sea": {
+    "pt": "%s no mar",
+    "en": "%s at sea",
+    "es": "%s en el mar"
+  },
+  "validate_coords_run_hits_zero_equal": {
+    "pt": "%s zero ou igual",
+    "en": "%s zero or equal",
+    "es": "%s cero o igual"
+  },
+  "validate_coords_run_hits_reference": {
+    "pt": "%s referências",
+    "en": "%s references",
+    "es": "%s referencias"
+  },
+  "validate_coords_run_map_label": {
+    "pt": "Mapa dos pontos durante a validação",
+    "en": "Map of the points during the validation",
+    "es": "Mapa de los puntos durante la validación"
   },
   "export_ready_eyebrow": {
     "pt": "Nenhuma pendência",

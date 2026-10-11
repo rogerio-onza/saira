@@ -46,6 +46,12 @@ app_ui <- function() {
             shiny::tags$script(
                 src = paste0("www/copy-button.js?v=", css_version)
             ),
+            shiny::tags$script(
+                src = paste0("www/run-progress.js?v=", css_version)
+            ),
+            shiny::tags$script(
+                src = paste0("www/leaflet-hex.js?v=", css_version)
+            ),
             # Keep <html lang> in step with the language selector, so screen
             # readers and the browser's hyphenation follow the interface.
             shiny::tags$script(shiny::HTML(

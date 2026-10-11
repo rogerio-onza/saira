@@ -26,6 +26,25 @@ mod_validate_coords_ui <- function(id) {
             shiny::uiOutput(ns("utm_panel")),
             shiny::div(
                 class = "validate-coords-layout",
+                # Run stage (ADR-160): run-progress.js shows it during a run
+                # and draws the radar. It covers the results until it fades.
+                shiny::div(
+                    id = ns("run_stage"),
+                    class = "coords-run-stage",
+                    hidden = NA,
+                    shiny::div(
+                        class = "coords-run-map",
+                        shiny::tags$canvas(role = "img")
+                    ),
+                    shiny::div(
+                        class = "vn-run-body coords-run-body",
+                        `aria-live` = "polite",
+                        shiny::div(class = "vn-run-eyebrow"),
+                        shiny::p(class = "vn-run-count"),
+                        shiny::div(class = "vn-run-bar", shiny::div(class = "vn-run-bar-fill")),
+                        shiny::div(class = "vn-run-steps")
+                    )
+                ),
                 shiny::div(
                     class = "validate-coords-right",
                     shiny::uiOutput(ns("pre_right_hint")),
@@ -680,7 +699,9 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 fillColor = ~color,
                 fillOpacity = 0.85,
                 popup = ~popup_html,
-                layerId = ~paste0("r", .row_index)
+                layerId = ~paste0("r", .row_index),
+                # leaflet-hex.js draws the point as a hexagon (ADR-160).
+                options = leaflet::pathOptions(hex = TRUE)
             )
 
             if (!fit_view) {
@@ -736,7 +757,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 map = proxy, data = md, lat = ~lat_num, lng = ~lon_num,
                 radius = 6, stroke = TRUE, weight = 1, color = ~color,
                 fillColor = ~color, fillOpacity = 0.85, popup = ~popup_html,
-                layerId = ~paste0("r", .row_index)
+                layerId = ~paste0("r", .row_index),
+                options = leaflet::pathOptions(hex = TRUE)
             )
         }
 
@@ -1032,16 +1054,12 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rv$running <- TRUE
                 rv$starting <- FALSE
                 rv$last_run_status <- "running"
-                tryCatch(
-                    show_validate_coords_loading_modal(ns, lang_r),
-                    error = function(e) {
-                        notify_saira(
-                            message = tr("validate_coords_modal_fallback", lang_r()),
-                            type = "warning",
-                            key = "coords_modal_fallback"
-                        )
-                    }
-                )
+                df <- mapped_data_r()
+                session$sendCustomMessage("coordsRun", list(
+                    stage = "start",
+                    id = ns("run_stage"),
+                    progress = coords_run_progress(1L, integer(0), if (is.data.frame(df)) nrow(df) else 0L, lang_r())
+                ))
 
                 session$onFlushed(function() {
                     rv$run_requested <- TRUE
@@ -1056,17 +1074,21 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     return(invisible(NULL))
                 }
                 rv$run_requested <- FALSE
-                if (!isTRUE(rv$running)) {
-                    return(invisible(NULL))
-                }
-
+                # Registered before the early return, so the run stage never
+                # stays on the page.
                 on.exit(
                     {
-                        hide_validate_coords_loading_modal()
+                        session$sendCustomMessage("coordsRun", list(
+                            stage = "end",
+                            failed = !identical(rv$last_run_status, "success")
+                        ))
                         rv$running <- FALSE
                     },
                     add = TRUE
                 )
+                if (!isTRUE(rv$running)) {
+                    return(invisible(NULL))
+                }
 
                 result <- tryCatch(
                     {
@@ -1086,7 +1108,14 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                             lon_col = "decimalLongitude",
                             country_col = "country",
                             profile = profile_value,
-                            seas_scale = 10L
+                            seas_scale = 10L,
+                            # Custom messages leave at once, even while this
+                            # observer holds the session.
+                            on_step = coords_run_reporter(
+                                function(msg) session$sendCustomMessage("coordsRun", msg),
+                                n_records = nrow(df),
+                                lang = lang_r()
+                            )
                         )
                     },
                     error = function(e) {

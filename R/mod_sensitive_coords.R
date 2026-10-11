@@ -1072,6 +1072,10 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     radius = 6, stroke = TRUE, weight = 2, color = "#1C1C26",
                     fillColor = unname(fill), fillOpacity = 1, opacity = 1,
                     group = "orig_points",
+                    # leaflet-hex.js draws the point as a hexagon (ADR-160).
+                    # The uncertainty circle above stays round: its radius is
+                    # a distance on the ground.
+                    options = leaflet::pathOptions(hex = TRUE),
                     popup = sprintf("<strong>%s</strong><br>%s",
                                     htmltools::htmlEscape(s_sci[keep]), tr("sc_popup_original", lang))
                 )

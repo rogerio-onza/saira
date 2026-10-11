@@ -160,7 +160,7 @@
 /* The sea dot is deep navy, as on the map. A light ring keeps it visible on
    the dark legend. */
 [data-bs-theme="dark"] .coords-map-legend-dot {
-  border-color: rgba(var(--ink-rgb), 0.35);
+  --dot-ring: rgba(var(--ink-rgb), 0.35);
 }
 
 /* -- Theme switch: light, dark, follow the system (navbar) -- */

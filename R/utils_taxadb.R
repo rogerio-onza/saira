@@ -718,6 +718,8 @@ init_taxadb_run_state <- function(
         provider_batch_idx = 0L,
         provider_batch_total = length(batches),
         pending_queries = valid_queries,
+        # Sheet order of the names, for the cells of the run grid.
+        query_order = valid_queries,
         total_unique = length(valid_queries),
         resolved_unique = 0L,
         batch_size = suppressWarnings(as.integer(batch_size)),
