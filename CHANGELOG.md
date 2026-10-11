@@ -29,6 +29,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **site:** Remove the Project, Glossary and Technologies tabs from the menu, give the version pill a soft indigo fill, and update the home page copy (italic subtitle, publish to SiBBr and GBIF, the number block names SiBBr only)
 - **mapping:** Run the auto-map on every upload, not only on Camtrap DP, ADR-154
 - **names:** Remove the Cancel button and the phase line from a run. The run card shows the progress, ADR-160
 - **ui:** Show the open Preview problems on menu step 3, and counts on the Mapping filter and the Table/Problems switch, ADR-155

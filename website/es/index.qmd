@@ -48,12 +48,12 @@ anchor-sections: false
     <div>
       <span class="lp-eyebrow">De Saíra al SiBBr y al GBIF</span>
       <h2 id="datos-titulo">De la hoja de cálculo al dato integrado.</h2>
-      <p class="lp-lede">Saíra convierte la hoja de cálculo a Darwin Core. El archivo exportado puede publicarse en el SiBBr, que comparte los registros con el GBIF.</p>
+      <p class="lp-lede">Saíra convierte la hoja de cálculo a Darwin Core. El archivo exportado puede publicarse en el SiBBr y en el GBIF.</p>
     </div>
   </div>
   <div class="lp-mod">
     <span class="lp-step"><b>01</b>En Saíra</span>
-    <h3>Cada pestaña trata la hoja de cálculo entera.</h3>
+    <h3>Cada etapa traduce su hoja de cálculo a Darwin Core.</h3>
     <div class="lp-panel lp-flow" data-step="Paso {n} de {total} · {tab}" data-raw="Hoja de cálculo tal como llegó" data-done="Listo. 6 filas en occurrence.txt, 6 con coordenadas generalizadas.">
       <div class="lp-bar">
         <span class="lp-file">seis_biomas.csv<small>6 registros · una especie amenazada por bioma</small></span>
@@ -80,9 +80,9 @@ anchor-sections: false
   <div class="lp-mod lp-map">
     <div class="lp-map-text">
       <span class="lp-step"><b>02</b>En la red</span>
-      <h3>Ocurrencias de Brasil en el SiBBr y en el GBIF.</h3>
+      <h3>Ocurrencias en el SiBBr.</h3>
       <p class="lp-big"><strong>45.020.973</strong><span>ocurrencias de especies en el SiBBr</span></p>
-      <p>El SiBBr es el nodo brasileño del GBIF y lleva estos datos a la red mundial.</p>
+      <p>El SiBBr es el nodo brasileño del GBIF.</p>
       <p class="lp-src">Fuentes: <a href="https://sibbr.gov.br/">SiBBr</a> y <a href="https://www.gbif.org/country/BR/summary">GBIF.org</a>, 9 oct. 2026. Mapa base: <a href="https://openmaptiles.org/">© OpenMapTiles</a> <a href="https://www.openstreetmap.org/copyright">© colaboradores de OpenStreetMap</a>.</p>
     </div>
     <figure class="lp-mapfig">
