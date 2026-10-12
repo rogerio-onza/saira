@@ -2,6 +2,8 @@
 //  SAÍRA — regras compartilhadas (claro + escuro)
 //  Usa apenas custom properties (var(--*)) definidas no :root de cada tema.
 //  Paleta da Tangara fastuosa — alinhada a inst/app/www/css/00-tokens.css do app.
+//  Fonts as in the app (ADR-134): serif for text, --sans for UI labels,
+//  --mono only for code, terms and values from a dataset.
 // =============================================================================
 
 // ---------- base ----------
@@ -110,7 +112,7 @@ a { color: inherit; }
   .lp-btn {
     display: inline-flex; align-items: center; min-height: 44px; padding: 10px 22px;
     border: 1px solid var(--border-strong); border-radius: 8px; color: var(--text);
-    font-family: var(--mono); font-size: 14px; text-decoration: none; text-shadow: none;
+    font-family: var(--sans); font-size: 14px; text-decoration: none; text-shadow: none;
     transition: border-color .2s ease, background-color .2s ease;
   }
   .lp-btn:hover { border-color: var(--text); color: var(--text); }
@@ -136,7 +138,7 @@ a { color: inherit; }
 
   .lp-biomes {
     left: clamp(16px, 5.6vw, 72px); right: clamp(16px, 5.6vw, 72px); bottom: 44px;
-    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; font-family: var(--mono);
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 18px; font-family: var(--sans);
   }
   .lp-biome {
     position: relative; appearance: none; min-width: 0; padding: 14px 0 0; border: 0; background: transparent;
@@ -151,13 +153,14 @@ a { color: inherit; }
   .lp-hero.is-held .lp-biome.is-on .lp-prog { animation-play-state: paused; }
   .lp-biome-name { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
   .lp-biome-sp { display: block; margin-top: 4px; overflow: hidden; font-size: 15px; text-overflow: ellipsis; white-space: nowrap; }
+  .lp-biome-sp em { font-family: var(--serif); font-size: 16px; }
 
   // ---------- data section: 01 the flow panel, 02 the network map ----------
   .lp-section.lp-data { gap: clamp(48px, 6vw, 72px); }
   .lp-lede { margin: 0; max-width: 40em; font-size: 19px; line-height: 1.6; color: var(--lp-soft); }
   .lp-mod { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
   .lp-step {
-    display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 12px;
+    display: inline-flex; align-items: center; gap: 10px; font-family: var(--sans); font-size: 12px;
     letter-spacing: .14em; text-transform: uppercase; color: var(--lp-soft);
   }
   .lp-step b {
@@ -174,8 +177,8 @@ a { color: inherit; }
   .lp-map-text { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
   .lp-map-text p { margin: 0; color: var(--lp-soft); }
   .lp-map-text .lp-big { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-  .lp-big strong { font-family: var(--mono); font-size: clamp(40px, 4.4vw, 56px); line-height: 1; font-weight: 700; letter-spacing: -.02em; color: var(--text); font-variant-numeric: tabular-nums; }
-  .lp-src { font-family: var(--mono); font-size: 11px; line-height: 1.6; }
+  .lp-big strong { font-family: var(--sans); font-size: clamp(40px, 4.4vw, 56px); line-height: 1; font-weight: 700; letter-spacing: -.02em; color: var(--text); font-variant-numeric: tabular-nums; }
+  .lp-src { font-family: var(--sans); font-size: 11px; line-height: 1.6; }
   .lp-mapfig { position: relative; margin: 0; overflow: hidden; border-radius: var(--r); }
   .lp-map-img { display: block; width: 100%; height: auto; }
   .lp-map-dark { display: none; }
@@ -219,7 +222,7 @@ a { color: inherit; }
   .lp-section { display: flex; flex-direction: column; gap: 28px; scroll-margin-top: 80px; }
   .lp-head { display: flex; flex-wrap: wrap; gap: 16px 64px; align-items: flex-end; }
   .lp-head > div { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
-  .lp-eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--lp-soft); }
+  .lp-eyebrow { font-family: var(--sans); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--lp-soft); }
   h2 {
     margin: 0; padding: 0; border: 0; max-width: 15em;
     font-size: clamp(32px, 4vw, 48px); line-height: 1.1; font-weight: 600; letter-spacing: -0.01em;
@@ -234,7 +237,7 @@ a { color: inherit; }
   .lp-toggle {
     margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 12px;
     background: var(--surface); border: 1px solid var(--lp-line); border-radius: 8px; color: var(--lp-soft);
-    font-family: var(--mono); font-size: 12px; cursor: pointer;
+    font-family: var(--sans); font-size: 12px; cursor: pointer;
   }
   .lp-toggle:hover { border-color: var(--border-strong); color: var(--text); }
   // pause bars, then a play triangle while paused
@@ -242,7 +245,7 @@ a { color: inherit; }
   .lp-flow.is-paused .lp-toggle::before { width: 0; height: 0; border-width: 5px 0 5px 9px; border-color: transparent transparent transparent currentColor; }
 
   .lp-stage { display: flex; flex-direction: column; padding: 22px var(--px) 26px; }
-  .lp-cap { display: block; min-height: 1.6em; margin-bottom: 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--lp-soft); }
+  .lp-cap { display: block; min-height: 1.6em; margin-bottom: 10px; font-family: var(--sans); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--lp-soft); }
   .lp-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
   // column minimums fit the longest value, so cells scroll instead of clipping
   .lp-grid { min-width: 1100px; }
@@ -276,7 +279,7 @@ a { color: inherit; }
     font-size: 15px; line-height: 1.2;
     transition: background-color .35s ease, border-color .35s ease, color .35s ease;
   }
-  .lp-tabs b { font-family: var(--mono); font-size: 11px; font-weight: 400; }
+  .lp-tabs b { font-family: var(--sans); font-size: 11px; font-weight: 400; }
   .lp-tabs li.is-active { background: var(--accent); border-color: var(--accent); color: var(--bg); }
   .lp-tabs li.is-done { background: var(--lp-ok-soft); border-color: var(--lp-ok-soft); color: var(--lp-ok); }
   // a finished tab swaps its number for a check mark
@@ -289,34 +292,41 @@ a { color: inherit; }
 
   .lp-foot {
     display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; min-height: 49px; padding: 14px var(--px);
-    border-top: 1px solid var(--lp-line); background: var(--surface-2); font-family: var(--mono); font-size: 12px;
+    border-top: 1px solid var(--lp-line); background: var(--surface-2); font-family: var(--sans); font-size: 12px;
   }
   .lp-status { color: var(--text); }
-  .lp-note { margin: -10px 0 0; font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--lp-soft); }
+  .lp-note { margin: -10px 0 0; font-family: var(--sans); font-size: 12px; line-height: 1.6; color: var(--lp-soft); }
 
   // ---------- why open data matters: five uses, lit one at a time ----------
+  // hex badges echo the run progress grid of the app
   .lp-why { gap: 32px; }
-  .lp-why-row { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 24px 56px; align-items: center; }
-  .lp-uses { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
-  .lp-use { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+  .lp-why-row { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 24px 0; align-items: stretch; }
+  .lp-uses { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .lp-use { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 4px 24px; border-left: 1px solid var(--lp-line); }
+  .lp-use:first-child { padding-left: 0; border-left: 0; }
   .lp-use.is-risk { --c: var(--lp-c-risk); } .lp-use.is-area { --c: var(--lp-c-area); } .lp-use.is-lic { --c: var(--lp-c-lic); }
   .lp-use.is-inv { --c: var(--lp-c-inv); } .lp-use.is-zoo { --c: var(--lp-c-zoo); }
   .lp-use-ic {
-    position: relative; display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%;
-    background: color-mix(in srgb, var(--c) 12%, var(--surface)); color: var(--c);
-    transition: background-color .4s ease, color .4s ease, transform .4s cubic-bezier(.2, .8, .3, 1.4);
+    position: relative; display: grid; place-items: center; width: 72px; height: 80px; margin: 6px 0 8px 6px; color: var(--c);
+    transition: color .4s ease, transform .4s cubic-bezier(.2, .8, .3, 1.4);
   }
-  .lp-use-svg { width: 32px; height: 32px; }
-  .lp-use-ring { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); transform: rotate(-90deg); }
-  .lp-use-ring circle { fill: none; stroke: var(--c); stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 1; }
-  .lp-use-label { font-family: var(--mono); font-size: 13px; font-weight: 700; line-height: 1.35; color: var(--lp-soft); transition: color .4s ease; }
-  .lp-use.is-on .lp-use-ic, .lp-use.is-seen .lp-use-ic { background: var(--c); color: var(--surface); }
+  .lp-use-ic::before {
+    content: ""; position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    background: color-mix(in srgb, var(--c) 12%, var(--surface)); transition: background-color .4s ease;
+  }
+  .lp-use-svg { position: relative; width: 32px; height: 32px; }
+  .lp-use-ring { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); }
+  .lp-use-ring polygon { fill: none; stroke: var(--c); stroke-width: 2; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+  .lp-use-label { font-family: var(--sans); font-size: 13px; font-weight: 600; letter-spacing: .08em; line-height: 1.35; text-transform: uppercase; color: var(--lp-soft); transition: color .4s ease; }
+  .lp-use-text { font-size: 15px; line-height: 1.5; color: var(--lp-soft); }
+  .lp-use.is-on .lp-use-ic, .lp-use.is-seen .lp-use-ic { color: var(--surface); }
+  .lp-use.is-on .lp-use-ic::before, .lp-use.is-seen .lp-use-ic::before { background: var(--c); }
   .lp-use.is-on .lp-use-ic { transform: scale(1.1); }
   .lp-use.is-on .lp-use-label, .lp-use.is-seen .lp-use-label { color: var(--c); }
-  .lp-use.is-on .lp-use-ring circle { animation: lp-draw 1.3s linear forwards; }
+  .lp-use.is-on .lp-use-ring polygon { animation: lp-draw 1.3s linear forwards; }
   .lp-use.is-drawn .lp-use-svg * { stroke-dasharray: 1; stroke-dashoffset: 1; animation: lp-draw 1s cubic-bezier(.5, 0, .2, 1) forwards; }
-  .lp-why-num { display: flex; flex-direction: column; gap: 8px; margin: 0; padding-left: 24px; border-left: 1px solid var(--lp-line); }
-  .lp-why-num strong { font-family: var(--mono); font-size: clamp(40px, 4.4vw, 56px); line-height: 1; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+  .lp-why-num { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 4px 0 0 24px; border-left: 1px solid var(--lp-line); }
+  .lp-why-num strong { font-family: var(--sans); font-size: clamp(40px, 4.4vw, 56px); line-height: 1; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
   .lp-why-num span { font-size: 15px; line-height: 1.45; color: var(--lp-soft); }
   .lp-why .lp-note { margin: 0; }
 
@@ -336,12 +346,12 @@ a { color: inherit; }
   .lp-tl span { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; }
   .lp-tl span:nth-child(2) { background: #febc2e; }
   .lp-tl span:nth-child(3) { background: #28c840; }
-  .lp-term-label { margin: 0 0 0 6px; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: rgba(233, 231, 223, .55); }
+  .lp-term-label { margin: 0 0 0 6px; font-family: var(--sans); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: rgba(233, 231, 223, .55); }
   // the copy button is the first thing to find, so it takes the brand cyan
   .lp-copy {
     margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px;
     background: var(--primary); border: 1px solid var(--primary); border-radius: 8px;
-    color: var(--on-primary); font-family: var(--mono); font-size: 13px; font-weight: 700; cursor: pointer;
+    color: var(--on-primary); font-family: var(--sans); font-size: 13px; font-weight: 700; cursor: pointer;
     transition: background-color .2s ease, border-color .2s ease;
   }
   .lp-copy:hover { background: #5bd9f8; border-color: #5bd9f8; }
@@ -376,7 +386,8 @@ a { color: inherit; }
     .lp-install { grid-template-columns: minmax(0, 1fr); }
     .lp-why-row { grid-template-columns: minmax(0, 1fr); }
     .lp-why-num { padding: 20px 0 0; border-left: 0; border-top: 1px solid var(--lp-line); }
-    .lp-uses { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 24px; }
+    .lp-uses { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 24px; }
+    .lp-use { padding: 0; border-left: 0; }
     .lp-term-body { padding: 16px; font-size: 12px; }
   }
   // a narrow map has no room beside the pin, so the card sits in the top right corner (sea)
@@ -400,7 +411,7 @@ a { color: inherit; }
   counter-increment: step; content: counter(step);
   position: absolute; left: 0; top: -2px; width: 36px; height: 36px; border-radius: 50%;
   background: var(--surface); border: 1px solid var(--border-strong);
-  display: grid; place-items: center; font-family: var(--mono); font-size: 0.85rem; font-weight: 700; color: var(--accent);
+  display: grid; place-items: center; font-family: var(--sans); font-size: 0.85rem; font-weight: 700; color: var(--accent);
 }
 .steps li strong { font-weight: 600; }
 .steps li p { margin: 0.2em 0 0; font-size: 1.04rem; }
@@ -416,7 +427,7 @@ a { color: inherit; }
   content: counter(step);
   position: absolute; left: 18px; top: 16px; width: 34px; height: 34px; border-radius: 50%;
   background: var(--accent-soft); border: 1px solid var(--accent);
-  display: grid; place-items: center; font-family: var(--mono); font-size: 0.9rem; font-weight: 700; color: var(--accent);
+  display: grid; place-items: center; font-family: var(--sans); font-size: 0.9rem; font-weight: 700; color: var(--accent);
 }
 .fix-steps li strong { font-weight: 600; }
 .fix-steps li p { margin: 0.3em 0 0; font-size: 1.02rem; color: var(--text-soft); }
@@ -430,7 +441,7 @@ a { color: inherit; }
   content: counter(mark);
   position: absolute; left: 0; top: 0.15em; width: 1.5em; height: 1.5em; border-radius: 50%;
   background: #e0157a; color: #fff;
-  display: grid; place-items: center; font-family: var(--mono); font-size: 0.8rem; font-weight: 700;
+  display: grid; place-items: center; font-family: var(--sans); font-size: 0.8rem; font-weight: 700;
 }
 
 // FAQ answers as flat cards — the question stays as a heading above the card
@@ -453,7 +464,7 @@ a { color: inherit; }
 .chip-row .term { font-size: 0.82rem; padding: 0.32em 0.62em; }
 
 .maptable { width: 100%; border-collapse: collapse; margin: 1.4em 0; font-size: 0.95rem; }
-.maptable th { text-align: left; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-soft); padding: 10px 14px; border-bottom: 1px solid var(--border-strong); background: var(--table-bg); }
+.maptable th { text-align: left; font-family: var(--sans); font-size: 0.64rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-soft); padding: 10px 14px; border-bottom: 1px solid var(--border-strong); background: var(--table-bg); }
 .maptable td { padding: 12px 14px; border-bottom: 1px solid var(--border); background: var(--table-bg); }
 .maptable td:first-child { font-family: var(--mono); font-size: 0.82rem; color: var(--text-soft); }
 .maptable td .arrow { color: var(--primary-dark); }
@@ -469,7 +480,7 @@ table.table:not(.maptable) {
 }
 table.table:not(.maptable) > :not(caption) > * > th,
 table.table:not(.maptable) thead th {
-  text-align: left; font-family: var(--mono); font-size: 0.64rem; letter-spacing: 0.12em;
+  text-align: left; font-family: var(--sans); font-size: 0.64rem; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--text-soft); padding: 10px 14px;
   border-bottom: 1px solid var(--border-strong); background: var(--table-bg); box-shadow: none;
 }
@@ -488,13 +499,13 @@ table.table:not(.maptable) code { font-family: var(--mono); }
   background-image: repeating-linear-gradient(135deg, transparent, transparent 11px, rgba(127,127,140,0.07) 11px, rgba(127,127,140,0.07) 12px);
   display: grid; place-items: center;
 }
-.shot .frame .ph-label { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft); background: var(--surface); border: 1px solid var(--border); padding: 0.6em 1em; border-radius: 100px; box-shadow: var(--shadow-sm); }
+.shot .frame .ph-label { font-family: var(--sans); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft); background: var(--surface); border: 1px solid var(--border); padding: 0.6em 1em; border-radius: 100px; box-shadow: var(--shadow-sm); }
 .shot img {
   max-width: 100%; height: auto; display: block; margin: 0 auto;
   border: 1px solid var(--border); border-radius: var(--r);
   box-shadow: var(--shadow-sm);
 }
-.shot figcaption { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.04em; color: var(--text-soft); margin-top: 12px; text-align: center; }
+.shot figcaption { font-family: var(--sans); font-size: 0.7rem; letter-spacing: 0.04em; color: var(--text-soft); margin-top: 12px; text-align: center; }
 .shot figcaption b { color: var(--text); font-weight: 700; }
 // screenshots are downscaled inline (tab captures are ~1900px wide); invite the
 // click-to-zoom lightbox built in assets/head.html.
@@ -524,7 +535,7 @@ table.table:not(.maptable) code { font-family: var(--mono); }
   width: 42px; height: 42px; display: grid; place-items: center;
   border: none; border-radius: 100px;
   background: rgba(244, 243, 238, 0.14); color: #f4f3ee;
-  font-family: var(--mono); font-size: 1.5rem; line-height: 1;
+  font-family: var(--sans); font-size: 1.5rem; line-height: 1;
   cursor: pointer; transition: background 0.15s ease;
 }
 .lightbox-close:hover { background: rgba(244, 243, 238, 0.26); }
@@ -561,7 +572,7 @@ table.table:not(.maptable) code { font-family: var(--mono); }
 .release-changes { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.6rem; }
 .rel-item { display: grid; grid-template-columns: auto 1fr; gap: 0.75rem; align-items: start; }
 .rel-tag {
-  font-family: var(--mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.09em;
+  font-family: var(--sans); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.09em;
   font-weight: 700; padding: 0.32em 0.65em; border-radius: 100px; white-space: nowrap; margin-top: 0.12em;
 }
 .rel-added   { color: var(--tip-title);  background: color-mix(in srgb, var(--success) 14%, var(--surface)); }
@@ -588,7 +599,7 @@ table.table:not(.maptable) code { font-family: var(--mono); }
   display: flex; align-items: center;
 }
 .navbar .navbar-nav .nav-link {
-  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.10em; text-transform: uppercase;
+  font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.10em; text-transform: uppercase;
   color: var(--text-soft) !important; padding: 0.6em 0.9em !important; border-radius: 8px;
   transition: color .2s ease, background-color .2s ease;
 }
@@ -636,14 +647,14 @@ table.table:not(.maptable) code { font-family: var(--mono); }
   }
 }
 .sidebar-title, #quarto-sidebar .sidebar-title {
-  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-soft);
+  font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-soft);
 }
 
 // ---------- right TOC ----------
 #TOC, .toc-active #TOC {
-  .toc-title { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-soft); }
+  .toc-title { font-family: var(--sans); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-soft); }
 }
-#toc-title { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-soft); }
+#toc-title { font-family: var(--sans); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-soft); }
 nav[role="doc-toc"] ul > li > a {
   color: var(--text-soft); font-size: 0.88rem; border-left: 1px solid var(--border);
 }
@@ -673,7 +684,7 @@ main.content p { font-size: 1.1rem; }
 }
 .callout.callout-style-default .callout-body { background: transparent !important; }
 .callout .callout-title-container {
-  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.12em;
+  font-family: var(--sans); font-size: 0.72rem; letter-spacing: 0.12em;
   text-transform: uppercase; font-weight: 700; color: var(--cc-title, var(--cc));
 }
 // Quarto bakes a fixed Bootstrap fill into each callout-icon SVG (note = blue,
@@ -740,7 +751,7 @@ main.content p { font-size: 1.1rem; }
 .lang-select {
   height: 1.75rem; margin: 0; padding: 0 1.45rem 0 0.6rem;
   border: 1px solid var(--border-strong); border-radius: 6px;
-  font-family: var(--mono); font-size: 0.72rem; font-weight: 700; line-height: 1;
+  font-family: var(--sans); font-size: 0.72rem; font-weight: 700; line-height: 1;
   color: var(--text); cursor: pointer;
   // The native arrow differs per browser, so draw the app arrow.
   appearance: none;
@@ -783,7 +794,7 @@ code span.an, code span.cv, code span.in, code span.do { color: rgba(233,231,223
 .code-copy-button:hover { color: #fff !important; }
 
 // ---------- page footer ----------
-.nav-footer { border-top: 1px solid var(--border); background: var(--bg); color: var(--text-soft); font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.nav-footer { border-top: 1px solid var(--border); background: var(--bg); color: var(--text-soft); font-family: var(--sans); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .nav-footer a { color: var(--text); }
 .nav-footer a:hover { color: var(--primary-dark); }
 
@@ -804,7 +815,7 @@ body.tut-page {
   }
   #quarto-sidebar .sidebar-item-section > .sidebar-item-container {
     .sidebar-link { pointer-events: none; padding: 0 10px 8px; }
-    .menu-text { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft); }
+    .menu-text { font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft); }
     .sidebar-item-toggle { display: none; }
   }
   #quarto-sidebar .sidebar-section { counter-reset: tut; padding-left: 0; }
@@ -817,7 +828,7 @@ body.tut-page {
   #quarto-sidebar .sidebar-section .menu-text { display: flex; gap: 12px; align-items: baseline; color: var(--text); font-size: 0.96rem; }
   #quarto-sidebar .sidebar-section .menu-text::before {
     content: counter(tut, decimal-leading-zero);
-    font-family: var(--mono); font-size: 0.74rem; color: var(--text-soft);
+    font-family: var(--sans); font-size: 0.74rem; color: var(--text-soft);
   }
   #quarto-sidebar .sidebar-section .sidebar-link.active { background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
   #quarto-sidebar .sidebar-section .sidebar-link.active .menu-text,
@@ -839,7 +850,7 @@ body.tut-page {
   .quarto-title-breadcrumbs { margin-bottom: 8px; }
   .quarto-title-breadcrumbs .breadcrumb { margin: 0; }
   .quarto-title-breadcrumbs .breadcrumb-item:last-child { display: none; }
-  .quarto-title-breadcrumbs a { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft); }
+  .quarto-title-breadcrumbs a { font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-soft); }
   #title-block-header .title { margin: 0; font-size: 2.5rem; line-height: 1.12; }
   #title-block-header .quarto-title-meta { display: none; }
   .tut-standfirst {
@@ -897,7 +908,7 @@ body.tut-page {
   .page-navigation .pagination-link .bi { display: none; }
   .page-navigation .nav-page-text { font-size: 1.15rem; font-weight: 600; }
   .page-navigation .pagination-link::before {
-    display: block; font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.14em;
+    display: block; font-family: var(--sans); font-size: 0.68rem; letter-spacing: 0.14em;
     text-transform: uppercase; color: var(--text-soft); margin-bottom: 2px;
   }
   .nav-page-previous .pagination-link::before { content: "\2190  Anterior"; }
