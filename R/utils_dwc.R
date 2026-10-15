@@ -591,15 +591,16 @@ detect_extra_dwc_terms <- function(columns) {
 #' the card builder, the value collector, the meta observers and the export
 #' injector. `datasetName`/`modified`/`license`/`language` keep their own
 #' dedicated inputs and are intentionally excluded here; `countryCode` is
-#' derived during coordinate validation and `basisOfRecord` has the per-value
-#' assistant, so both are excluded too.
+#' derived from country at export, so it is excluded too. `basisOfRecord` keeps
+#' its per-value assistant and takes a fixed value only for a sheet with no
+#' column to read (D02).
 #'
 #' @return Character vector of DwC term names.
 #' @noRd
 constant_value_terms <- function() {
     c(
         "rightsHolder", "institutionCode", "collectionCode", "country",
-        "references", "bibliographicCitation", "geodeticDatum"
+        "references", "bibliographicCitation", "geodeticDatum", "basisOfRecord"
     )
 }
 

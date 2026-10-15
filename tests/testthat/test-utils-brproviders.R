@@ -536,3 +536,13 @@ testthat::test_that("bundled snapshot never replaces a user cache", {
         }
     )
 })
+
+testthat::test_that("brprovider_keep_queried() drops rows for names that were not queried (B43)", {
+    res <- data.frame(
+        query_name = c("Canis lupus", "panthera onca"),
+        validation_status = c("accepted", "accepted"),
+        stringsAsFactors = FALSE
+    )
+    out <- saira:::brprovider_keep_queried(res, c("Canis lupus familiaris", "Panthera onca"))
+    testthat::expect_equal(out$query_name, "Panthera onca")
+})

@@ -198,8 +198,8 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 return(NULL)
             }
             sci <- as.character(df$scientificName)
-            lat <- suppressWarnings(as.numeric(df$decimalLatitude))
-            lon <- suppressWarnings(as.numeric(df$decimalLongitude))
+            lat <- as_coord_numeric(df$decimalLatitude)$num
+            lon <- as_coord_numeric(df$decimalLongitude)$num
             keep <- !is.na(sci) & nzchar(sci)
             u <- unique(sci[keep])
             if (length(u) == 0L) return(NULL)
@@ -627,7 +627,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 shiny::div(
                     class = "sc-mode-card sc-card",
                     shiny::span(class = "sc-mode-summary",
-                                sprintf(tr("sc_mode_summary", lang), n, nrow(ov))),
+                                sprintf(tr("sc_mode_summary", lang), n, count_distinct_species(ov$scientificName))),
                     shiny::div(
                         class = "sp-mode-radio",
                         shiny::radioButtons(
@@ -726,15 +726,25 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             if (is.null(prev)) return(NULL)
             n_locked <- (attr(prev, "n_clamped_to_precision") %||% 0L) +
                 (attr(prev, "n_upstream_preserved") %||% 0L)
-            if (n_locked == 0L) return(NULL)
+            n_withheld <- attr(prev, "n_withheld") %||% 0L
+            if (n_locked == 0L && n_withheld == 0L) return(NULL)
             lang <- lang_r()
             shiny::div(
                 class = "sc-precision-lock-alert",
                 ph_icon("lock"), " ",
-                shiny::span(
-                    class = "sc-precision-lock-text",
-                    sprintf(tr("sc_precision_lock_desc", lang), n_locked)
-                )
+                if (n_locked > 0L) {
+                    shiny::span(
+                        class = "sc-precision-lock-text",
+                        sprintf(tr("sc_precision_lock_desc", lang), n_locked)
+                    )
+                },
+                # B09/B23: a sensitive point the grid cannot move.
+                if (n_withheld > 0L) {
+                    shiny::span(
+                        class = "sc-precision-lock-text",
+                        sprintf(tr("sc_withheld_invalid_desc", lang), n_withheld)
+                    )
+                }
             )
         })
 
@@ -748,10 +758,14 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             lang <- lang_r()
             crossing <- prev[!is.na(cr) & cr, , drop = FALSE]
             crossing <- crossing[!duplicated(crossing$scientificName), , drop = FALSE]
+            # Country names in the UI language, and "sea" for no country (B42).
+            none <- tr("sc_border_no_country", lang)
+            orig <- country_display_name(crossing$country_orig, lang, none)
+            gen <- country_display_name(crossing$country_gen, lang, none)
             items <- lapply(seq_len(nrow(crossing)), function(i) {
                 shiny::tags$li(
                     shiny::tags$em(crossing$scientificName[i]), ": ",
-                    sprintf("%s \u2192 %s", crossing$country_orig[i] %||% "?", crossing$country_gen[i] %||% "?")
+                    sprintf("%s \u2192 %s", orig[i], gen[i])
                 )
             })
             # Backing off means a HIGHER category number (a finer grid), and the
@@ -1056,8 +1070,8 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             # same camera location across thousands of records, so one marker per
             # distinct point keeps the canvas light without changing the view.
             sci <- as.character(df$scientificName)
-            lat <- suppressWarnings(as.numeric(df$decimalLatitude))
-            lon <- suppressWarnings(as.numeric(df$decimalLongitude))
+            lat <- as_coord_numeric(df$decimalLatitude)$num
+            lon <- as_coord_numeric(df$decimalLongitude)$num
             # A point outside the valid range has no place on the map; the
             # Coordinates tab lists it.
             sel <- sci %in% ov$scientificName & coords_plottable(lat, lon)
@@ -1099,8 +1113,8 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             df <- d$df
             if (is.null(ov) || !is.data.frame(df)) return(invisible(NULL))
             sci <- as.character(df$scientificName)
-            lat <- suppressWarnings(as.numeric(df$decimalLatitude))
-            lon <- suppressWarnings(as.numeric(df$decimalLongitude))
+            lat <- as_coord_numeric(df$decimalLatitude)$num
+            lon <- as_coord_numeric(df$decimalLongitude)$num
             sel <- sci %in% ov$scientificName & coords_plottable(lat, lon)
             if (!any(sel)) return(invisible(NULL))
             sig <- paste0(sprintf("%.6f,%.6f", lon[sel], lat[sel]), collapse = ";")

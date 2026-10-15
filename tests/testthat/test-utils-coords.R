@@ -134,6 +134,8 @@ testthat::test_that("validate_coords_cc_df maps cc flags to sea, zero_equal and 
             if (fun_name %in% c("cc_cen", "cc_gbif", "cc_inst")) return(rep(TRUE, n))
             rep(TRUE, n)
         },
+        # The mock calls inland points sea; the real coastline would undo that.
+        coords_coastal_tolerance = function(x, land, ...) land,
         .package = "saira"
     )
 
@@ -203,6 +205,8 @@ testthat::test_that("validate_coords_cc_df prioritizes sea without country diagn
             }
             rep(TRUE, nrow(x))
         },
+        # The mock calls inland points sea; the real coastline would undo that.
+        coords_coastal_tolerance = function(x, land, ...) land,
         .package = "saira"
     )
 
@@ -617,4 +621,35 @@ testthat::test_that("coords_match_country_case ignores blanks and uncased values
         saira:::coords_match_country_case(c("Peru"), c("1234", "5678")),
         "Peru"
     )
+})
+
+test_that("parse_coordinate_text() reads DMS, hemisphere letters and the Unicode minus (B08)", {
+  v <- c("23°33'S", "23°33'44\"S", "23.5505 S", "-23.5°", "−23.5", "29°58' N",
+         "aprox. -23.5", "-23.5,-46.6", "-23.5", "-23.5 N", "23.5 E", "99° S")
+  expect_equal(parse_coordinate_text(v, "lat"),
+               c(-23.55, -23.562222, -23.5505, -23.5, -23.5, 29.966667, rep(NA, 6)))
+  expect_equal(parse_coordinate_text(c("46°38'W", "46.6 O", "46,6 L"), "lon"),
+               c(-46.633333, -46.6, 46.6))
+  df <- data.frame(a = c("23°33'S", "-46,6559"), stringsAsFactors = FALSE)
+  expect_equal(build_term_value("decimalLatitude", df, "a")$values, c("-23.55", "-46,6559"))
+})
+
+test_that("coords_transposed_corrections() marks points outside the country with no fix (B04)", {
+  skip_if_not_installed("terra")
+  df <- data.frame(decimalLatitude = c("23.5", "40.713", "-23.5"),
+                   decimalLongitude = c("46.6", "-74.0", "-46.6"),
+                   country = rep("Brasil", 3), stringsAsFactors = FALSE)
+  r <- coords_transposed_corrections(df)
+  skip_if_not(isTRUE(r$available), "country layer not available")
+  expect_equal(r$corrected, c(TRUE, FALSE, FALSE))
+  expect_equal(r$outside, c(FALSE, TRUE, FALSE))
+})
+
+test_that("a point next to a generalized coastline is not sea (B13)", {
+  ref <- tryCatch(coords_load_ne_land(10L), error = function(e) NULL)
+  skip_if(is.null(ref), "land layer not available")
+  x <- data.frame(decimalLatitude = c(-1.4558, -15.79, -10, 0),
+                  decimalLongitude = c(-48.5039, -47.88, -30, -48.5039 + 30), species = "a")
+  land <- c(FALSE, TRUE, FALSE, FALSE)
+  expect_equal(coords_coastal_tolerance(x, land, ref, 10L), c(TRUE, TRUE, FALSE, FALSE))
 })

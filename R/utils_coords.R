@@ -335,6 +335,39 @@ coords_with_optional_time_limit <- function(fn, timeout = NULL) {
     fn()
 }
 
+# Natural Earth coastlines are generalized: Belem sits 0.4 km off the 10m
+# land, Copenhagen 0.3 km off the 50m land, and cc_sea called both "sea"
+# (B13). A sea point with land within the tolerance of its scale counts as
+# land. The test samples two rings of 8 points around it, which is far
+# cheaper than a distance to every coastline vertex. A small island far
+# from the coast (Queimada Grande, 34 km) is not in the layer and stays sea.
+coords_coastal_tolerance_km <- c("10" = 1, "50" = 5, "110" = 10)
+
+coords_coastal_tolerance <- function(x, land, ref, scale) {
+    km <- coords_coastal_tolerance_km[as.character(scale)]
+    sea <- which(!land)
+    if (!length(sea) || length(km) != 1L || is.na(km) || is.null(ref)) {
+        return(land)
+    }
+    lat <- as.numeric(x$decimalLatitude[sea])
+    lon <- as.numeric(x$decimalLongitude[sea])
+    angle <- seq(0, 2 * pi, length.out = 9L)[-9L]
+    ring <- expand.grid(i = seq_along(sea), a = angle, r = c(0.5, 1) * km)
+    dlat <- ring$r / 111.32 * sin(ring$a)
+    dlon <- ring$r / (111.32 * pmax(cos(lat[ring$i] * pi / 180), 0.01)) * cos(ring$a)
+    plat <- lat[ring$i] + dlat
+    plon <- lon[ring$i] + dlon
+    ok <- is.finite(plat) & is.finite(plon) & abs(plat) <= 90 & abs(plon) <= 180
+    if (!any(ok)) {
+        return(land)
+    }
+    on_land <- rep(FALSE, nrow(ring))
+    on_land[ok] <- coords_points_in_poly(plon[ok], plat[ok], ref)
+    near <- tapply(on_land, ring$i, any)
+    land[sea[as.integer(names(near))[near]]] <- TRUE
+    land
+}
+
 coords_cc_sea_run <- function(x, ref = NULL, scale = NULL, timeout = NULL, crop_ref = FALSE) {
     if (nrow(x) == 0L) {
         return(logical(0))
@@ -357,7 +390,8 @@ coords_cc_sea_run <- function(x, ref = NULL, scale = NULL, timeout = NULL, crop_
         } else {
             dots$ref <- ref_to_use
         }
-        do.call(coords_cc_flagged, dots)
+        land <- do.call(coords_cc_flagged, dots)
+        if (is.null(ref_to_use)) land else coords_coastal_tolerance(x, land, ref_to_use, scale)
     }
 
     tryCatch(
@@ -1208,7 +1242,8 @@ coords_points_in_poly <- function(lon, lat, poly) {
 #' @param iso_col ISO3 attribute column name in \code{ref}.
 #' @return Named list: \code{corrected} (logical), \code{lat_new}/\code{lon_new}
 #'   (numeric, equal to originals where not corrected), \code{transform}
-#'   (character key or NA), \code{informed_country} (ISO3), \code{n_corrected},
+#'   (character key or NA), \code{informed_country} (ISO3), \code{outside}
+#'   (logical, outside the country with no fix), \code{n_corrected},
 #'   \code{n_candidates}, \code{available} (FALSE when no country layer could be
 #'   loaded, e.g. offline).
 #' @export
@@ -1229,6 +1264,7 @@ coords_transposed_corrections <- function(df,
         lat_new = lat0, lon_new = lon0,
         transform = rep(NA_character_, n),
         informed_country = rep(NA_character_, n),
+        outside = rep(FALSE, n),
         n_corrected = 0L, n_candidates = 0L, available = TRUE
     )
     if (n == 0L) return(base_out)
@@ -1299,6 +1335,9 @@ coords_transposed_corrections <- function(df,
         lat_new = lat_new, lon_new = lon_new,
         transform = transform,
         informed_country = country_iso3,
+        # Outside the informed country with no swap or sign fix that lands
+        # inside it: Rome or New York with country Brasil (B04).
+        outside = candidate & !corrected,
         n_corrected = sum(corrected),
         n_candidates = sum(candidate),
         available = TRUE
@@ -2282,4 +2321,88 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
         popup_html = popup_html,
         stringsAsFactors = FALSE
     )
+}
+
+# A Natural Earth country name ("Brazil") in the UI language ("Brasil"). NA
+# (a point in the sea or outside every country) reads as `none_label`.
+country_display_name <- function(admin, lang = "en", none_label = NA_character_) {
+    admin <- as.character(admin)
+    out <- admin
+    iso3 <- tryCatch(coords_country_to_iso3(admin), error = function(e) rep(NA_character_, length(admin)))
+    col <- paste0("cldr.name.", lang)
+    codelist <- countrycode::codelist
+    if (col %in% names(codelist)) {
+        local <- codelist[[col]][match(iso3, codelist$iso3c)]
+        out[!is.na(local)] <- local[!is.na(local)]
+    }
+    out[is.na(admin) | !nzchar(admin)] <- none_label
+    out
+}
+
+# Coordinate text a person types or a GPS writes, as a decimal degree (B08):
+# "23°33'44\"S", "29°58' N", "23.5505 S", "-23.5°" and the Unicode
+# minus. A plain number, a value with words ("aprox. -23.5") or two numbers
+# in one cell give NA: the Preview flags those for the person to fix.
+# `axis` is "lat" or "lon". A hemisphere letter of the other axis gives NA.
+# Portuguese and Spanish use O (oeste) for west, and Portuguese uses L
+# (leste) for east.
+parse_coordinate_text <- function(x, axis = c("lat", "lon")) {
+    axis <- match.arg(axis)
+    s <- trimws(as.character(x))
+    s[is.na(s)] <- ""
+    # Only text with a degree, minute or hemisphere mark, or a Unicode minus:
+    # a plain number keeps its own text and its own decimals.
+    cand <- grepl("[\u2212\u2013\u2014\u00b0\u00ba'\u2032\u2019\u00b4`\"\u2033\u201d]", s) |
+        grepl("^[NSEWOL]\\b|[NSEWOL]\\.?$", toupper(s))
+    s <- gsub("[\u2212\u2013\u2014]", "-", s)
+    s <- gsub("[\u2032\u2019\u00b4`]", "'", s)
+    s <- gsub("[\u2033\u201d]|''", "\"", s)
+    s <- gsub("\u00ba", "\u00b0", s, fixed = TRUE)
+    out <- rep(NA_real_, length(s))
+    re <- paste0(
+        "^([NSEWOL])?\\s*([-+])?\\s*(\\d+(?:[.,]\\d+)?)\\s*\u00b0?\\s*",
+        "(?:(\\d+(?:[.,]\\d+)?)\\s*'\\s*)?(?:(\\d+(?:[.,]\\d+)?)\\s*\"\\s*)?",
+        "([NSEWOL])?\\.?$"
+    )
+    hit <- which(cand & grepl(re, toupper(s), perl = TRUE))
+    if (!length(hit)) {
+        return(out)
+    }
+    parts <- regmatches(toupper(s[hit]), regexec(re, toupper(s[hit]), perl = TRUE))
+    num <- function(v) suppressWarnings(as.numeric(sub(",", ".", v, fixed = TRUE)))
+    allowed <- if (axis == "lat") c("N", "S") else c("E", "W", "O", "L")
+    negative <- c("S", "W", "O")
+    limit <- if (axis == "lat") 90 else 180
+    out[hit] <- vapply(parts, function(p) {
+        hemi <- unique(p[c(2L, 7L)][nzchar(p[c(2L, 7L)])])
+        if (length(hemi) > 1L || (length(hemi) == 1L && !hemi %in% allowed)) {
+            return(NA_real_)
+        }
+        deg <- num(p[[4]])
+        mins <- if (nzchar(p[[5]])) num(p[[5]]) else 0
+        secs <- if (nzchar(p[[6]])) num(p[[6]]) else 0
+        if (is.na(deg) || mins >= 60 || secs >= 60 ||
+            ((nzchar(p[[5]]) || nzchar(p[[6]])) && deg != round(deg))) {
+            return(NA_real_)
+        }
+        value <- deg + mins / 60 + secs / 3600
+        minus <- identical(p[[3]], "-")
+        south_west <- length(hemi) == 1L && hemi %in% negative
+        # "-23.5 N" says two things at once.
+        if (minus && length(hemi) == 1L && !south_west) {
+            return(NA_real_)
+        }
+        value <- if (minus || south_west) -value else value
+        if (abs(value) > limit) NA_real_ else round(value, 6)
+    }, numeric(1))
+    out
+}
+
+# Mapped coordinate values with the text forms converted, and the other
+# values as they were.
+convert_coordinate_text <- function(values, axis) {
+    parsed <- parse_coordinate_text(values, axis)
+    ok <- !is.na(parsed)
+    values[ok] <- format(parsed[ok], scientific = FALSE, drop0trailing = TRUE, trim = TRUE)
+    values
 }

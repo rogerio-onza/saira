@@ -392,7 +392,10 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             lang <- lang_r()
             classes <- c(problems = "pill-problems", vocab = "pill-info", date = "pill-error",
                          year = "pill-warning", interval = "pill-warning",
-                         date_mismatch = "pill-warning", count = "pill-warning",
+                         date_mismatch = "pill-warning", time = "pill-warning",
+                         count = "pill-warning", uncertainty = "pill-warning",
+                         coord = "pill-error", name = "pill-warning", country = "pill-warning",
+                         formula = "pill-error",
                          empty = "pill-error", id = "pill-reference", edited = "pill-edited")
             # Only the types with something left to correct, plus the active one.
             keys <- c("problems", unique(preview_problem_types$family), "edited")
@@ -425,16 +428,26 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             info <- preview_problem_banner(p, nrow(full_data_r()))
             if (is.null(info)) return(NULL)
             lang <- lang_r()
-            shiny::div(
-                class = "preview-fix-banner", role = "status",
-                ph_icon("triangle-exclamation"),
-                shiny::p(shiny::HTML(sprintf(
+            # A blank cell is not a format problem and has no example (B49).
+            message <- if (identical(info$type, "required_empty")) {
+                sprintf(
+                    tr("preview_fix_banner_empty", lang),
+                    format(round(100 * info$share)), info$count,
+                    htmltools::htmlEscape(info$term)
+                )
+            } else {
+                sprintf(
                     tr("preview_fix_banner", lang),
                     format(round(100 * info$share)),
                     htmltools::htmlEscape(tr(paste0("preview_fix_diag_", info$type), lang)),
                     htmltools::htmlEscape(info$term),
                     htmltools::htmlEscape(info$example)
-                ))),
+                )
+            }
+            shiny::div(
+                class = "preview-fix-banner", role = "status",
+                ph_icon("triangle-exclamation"),
+                shiny::p(shiny::HTML(message)),
                 if (is.function(on_navigate)) {
                     shiny::actionButton(ns("go_mapping"), tr("preview_fix_banner_go", lang),
                                         class = "btn btn-primary btn-sm")

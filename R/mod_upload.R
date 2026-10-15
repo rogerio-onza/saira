@@ -278,6 +278,35 @@ mod_upload_server <- function(id, lang_r) {
         # by the observers below (modal + alias import), and produce NULL
         # so downstream req(raw_data()) keeps the app in "no data" state
         # until the user uploads a real planilha.
+        # The datapath of the upload the user marked as "first line is a
+        # record". A new upload has a new datapath, so it starts with a header.
+        no_header_for <- shiny::reactiveVal(NULL)
+
+        show_headerless_modal <- function(col_names, lang) {
+            shown <- utils::head(col_names[!grepl("^col_[0-9]+$", col_names)], 4L)
+            shiny::showModal(shiny::modalDialog(
+                title = tr("upload_headerless_title", lang),
+                shiny::p(sprintf(
+                    tr("upload_headerless_message", lang),
+                    paste0("\u201c", shown, "\u201d", collapse = ", ")
+                )),
+                easyClose = TRUE,
+                footer = shiny::tagList(
+                    shiny::modalButton(tr("upload_headerless_keep_btn", lang)),
+                    shiny::actionButton(
+                        ns("use_no_header"),
+                        tr("upload_headerless_data_btn", lang),
+                        class = "btn-primary"
+                    )
+                )
+            ))
+        }
+
+        shiny::observeEvent(input$use_no_header, {
+            shiny::removeModal()
+            no_header_for(input$file$datapath)
+        })
+
         raw_data <- shiny::reactive({
             shiny::req(input$file)
 
@@ -325,6 +354,7 @@ mod_upload_server <- function(id, lang_r) {
                         shiny::showNotification(
                             msg, type = "message", duration = 4
                         )
+                        attr(df, "source_file") <- input$file$name
                         df
                     },
                     error = function(e) {
@@ -338,18 +368,36 @@ mod_upload_server <- function(id, lang_r) {
                 ))
             }
 
+            header <- !identical(no_header_for(), input$file$datapath)
             tryCatch(
                 {
                     df <- if (identical(tolower(tools::file_ext(input$file$name)), "xlsx")) {
-                        read_biodiversity_xlsx(input$file$datapath)
+                        read_biodiversity_xlsx(input$file$datapath, header = header)
                     } else {
-                        read_biodiversity_csv(input$file$datapath)
+                        read_biodiversity_csv(input$file$datapath, header = header)
                     }
                     shiny::showNotification(
                         tr("success_upload", lang),
                         type = "message",
                         duration = 3
                     )
+                    report <- attr(df, "read_report")
+                    notes <- upload_read_notes(report, lang)
+                    if (length(notes) > 0L) {
+                        shiny::showNotification(
+                            shiny::tagList(
+                                shiny::strong(tr("upload_report_title", lang)),
+                                shiny::tags$ul(lapply(notes, shiny::tags$li))
+                            ),
+                            type = "warning",
+                            duration = 20
+                        )
+                    }
+                    if (header && isTRUE(report$headerless_suspect)) {
+                        show_headerless_modal(names(df), lang)
+                    }
+                    # The mapping guide names the file it was built from.
+                    attr(df, "source_file") <- input$file$name
                     return(df)
                 },
                 error = function(e) {

@@ -12,11 +12,16 @@ NULL
 # problem, the same value takes the same fix. An empty name or a duplicate
 # identifier is not like that.
 preview_problem_types <- data.frame(
-    type = c("vocab_unknown", "date_unparsed", "year_range", "interval_inverted",
-             "date_mismatch", "count_invalid", "required_empty", "id_duplicate"),
-    family = c("vocab", "date", "year", "interval", "date_mismatch", "count",
-               "empty", "id"),
-    bulk = c(TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, FALSE),
+    type = c("vocab_unknown", "date_unparsed", "date_ambiguous", "year_range", "interval_inverted",
+             "date_mismatch", "time_invalid", "count_invalid", "count_present_zero",
+             "uncertainty_invalid",
+             "coord_invalid", "name_hybrid", "name_multiple", "name_abbreviated",
+             "name_placeholder", "name_extra_text", "name_authorship", "country_threat_code",
+             "country_conflict", "cell_formula", "required_empty", "id_duplicate"),
+    family = c("vocab", "date", "date", "year", "interval", "date_mismatch", "time", "count",
+               "count", "uncertainty", "coord", "name", "name", "name", "name", "name", "name",
+               "country", "country", "formula", "empty", "id"),
+    bulk = c(rep(TRUE, 8L), FALSE, rep(TRUE, 9L), FALSE, TRUE, FALSE, FALSE),
     stringsAsFactors = FALSE
 )
 
@@ -24,7 +29,9 @@ preview_date_terms <- c("eventDate", "dateIdentified", "modified")
 
 # Terms a correction may not leave empty. The other terms the Preview fixes
 # are optional in Darwin Core, so an empty cell is a valid fix for them.
-preview_required_terms <- c("scientificName", "eventDate", "occurrenceID")
+# eventDate is recommended, not required: the Export does not block a blank
+# one, so the Preview does not call it required (B24).
+preview_required_terms <- c("scientificName", "basisOfRecord", "occurrenceID")
 
 # ISO 8601 as Darwin Core takes it: a year, a month or a day, an optional time,
 # and an interval of two of those. The end of an interval may drop the parts it
@@ -51,6 +58,56 @@ is_dwc_date_value <- function(x) {
     part_ok(start) & (!has_slash | (end_ok & !grepl("/", end, fixed = TRUE)))
 }
 
+# Date cells that are not ISO 8601 after the conversion, for the Export
+# pending list. `count` counts cells, `sample` shows the first ones.
+unparsed_date_cells <- function(df, sample_n = 5L) {
+    empty <- data.frame(row = integer(), column = character(), value = character(),
+                        stringsAsFactors = FALSE)
+    found <- lapply(intersect(preview_date_terms, names(df)), function(term) {
+        v <- trimws(as.character(df[[term]]))
+        v[is.na(v)] <- ""
+        rows <- which(nzchar(v) & !is_dwc_date_value(v))
+        data.frame(row = rows, column = rep(term, length(rows)), value = v[rows],
+                   stringsAsFactors = FALSE)
+    })
+    bad <- do.call(rbind, c(list(empty), found))
+    list(count = nrow(bad), sample = utils::head(bad, sample_n))
+}
+
+# A cell that a spreadsheet runs as a formula when a person opens
+# occurrence.txt (B48). "=1+1" and "@SUM(A1)" always are. A sign starts a
+# formula only with an operator after it, so "-23.5" and "-23\u00b033'S" pass.
+is_formula_like <- function(x) {
+    x <- trimws(as.character(x))
+    x[is.na(x)] <- ""
+    grepl("^[=@]", x) |
+        (grepl("^[+-]", x) & grepl("[=*/^(!|&]|^[+-][0-9.]+[+-][0-9]", x) &
+            is.na(suppressWarnings(as.numeric(x))))
+}
+
+# The value with no leading formula marker, or NA when nothing is left.
+suggest_formula_fix <- function(x) {
+    out <- trimws(sub("^[=@+]+", "", trimws(as.character(x))))
+    out[!nzchar(out) | out == trimws(as.character(x))] <- NA_character_
+    out
+}
+
+# Formula-like cells in every column, for the Export pending list. Same
+# shape as unparsed_date_cells().
+formula_like_cells <- function(df, sample_n = 5L) {
+    empty <- data.frame(row = integer(), column = character(), value = character(),
+                        stringsAsFactors = FALSE)
+    cols <- if (is.data.frame(df)) names(df) else character(0)
+    found <- lapply(cols, function(term) {
+        v <- as.character(df[[term]])
+        rows <- which(is_formula_like(v))
+        data.frame(row = rows, column = rep(term, length(rows)), value = trimws(v[rows]),
+                   stringsAsFactors = FALSE)
+    })
+    bad <- do.call(rbind, c(list(empty), found))
+    list(count = nrow(bad), sample = utils::head(bad, sample_n))
+}
+
 is_blank_cell <- function(x) {
     x <- as.character(x)
     is.na(x) | !nzchar(trimws(x))
@@ -61,7 +118,7 @@ problem_rows <- function(rows, term, type, value, suggestion = NA_character_) {
     data.frame(
         row = as.integer(rows),
         term = rep(term, n),
-        type = rep(type, n),
+        type = if (length(type) == n) type else rep(type, n),
         value = as.character(value),
         suggestion = if (length(suggestion) == n) as.character(suggestion) else rep(NA_character_, n),
         stringsAsFactors = FALSE
@@ -78,6 +135,100 @@ suggest_individual_count <- function(values) {
     found <- regmatches(values[rest], gregexpr("\\d+", values[rest]))
     out[rest] <- vapply(found, function(d) if (length(d) == 1L) d else NA_character_, character(1))
     out
+}
+
+# ISO 8601 time as Darwin Core takes it for eventTime, with an optional zone
+# and an interval of two times.
+is_dwc_time_value <- function(x) {
+    x <- trimws(as.character(x))
+    x[is.na(x)] <- ""
+    one <- "([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\\.[0-9]+)?)?(Z|[+-][0-9]{2}(:?[0-9]{2})?)?"
+    grepl(paste0("^", one, "(/", one, ")?$"), x)
+}
+
+# The 24-hour form of a time typed as "8:30", "12h30", "14h" or "08:30 PM",
+# or NA when the hour or the minute is out of range.
+suggest_event_time <- function(values) {
+    v <- tolower(gsub("\\s+", "", trimws(as.character(values))))
+    v[is.na(v)] <- ""
+    re <- "^([0-9]{1,2})(?:[:h]([0-9]{2}))?(?::([0-9]{2}))?h?(am|pm|a\\.m\\.|p\\.m\\.)?$"
+    m <- regmatches(v, regexec(re, v, perl = TRUE))
+    vapply(m, function(p) {
+        if (length(p) != 5L) return(NA_character_)
+        hour <- as.integer(p[2])
+        minute <- if (nzchar(p[3])) as.integer(p[3]) else 0L
+        ampm <- substr(p[5], 1L, 1L)
+        has_sep <- nzchar(p[3]) || nzchar(ampm) || grepl("h", p[1], fixed = TRUE)
+        if (!has_sep) return(NA_character_)
+        if (nzchar(ampm)) {
+            if (hour < 1L || hour > 12L) return(NA_character_)
+            hour <- hour %% 12L + if (ampm == "p") 12L else 0L
+        }
+        if (hour > 23L || minute > 59L) return(NA_character_)
+        out <- sprintf("%02d:%02d", hour, minute)
+        if (nzchar(p[4])) {
+            if (as.integer(p[4]) > 59L) return(NA_character_)
+            out <- paste0(out, ":", p[4])
+        }
+        out
+    }, character(1))
+}
+
+# Half the length of the equator: no point is farther from another one.
+max_uncertainty_m <- 20037509
+
+# "1.000" is 1000 in a Brazilian sheet and 1 to the export, so it is not valid.
+is_valid_uncertainty <- function(x) {
+    x <- trimws(as.character(x))
+    num <- suppressWarnings(as.numeric(x))
+    grepl("^[0-9]+(\\.[0-9]+)?$", x) & !grepl("^[0-9]{1,3}\\.[0-9]{3}$", x) &
+        !is.na(num) & num > 0 & num <= max_uncertainty_m
+}
+
+# A number of meters from "30 m", "aprox. 100 m", "1.000" (a thousands dot),
+# "1,5" or "2 km", or NA when no valid number comes out.
+suggest_uncertainty <- function(values) {
+    v <- tolower(trimws(as.character(values)))
+    v[is.na(v)] <- ""
+    km <- grepl("[0-9 ]km$", v)
+    v <- sub("^(aprox\\.?|approx\\.?|ca\\.?|cerca de|~|\\+/-|\u00b1)\\s*", "", v)
+    v <- trimws(sub("\\s*(km|m|metros|meters|metres)$", "", v))
+    thousands <- grepl("^[0-9]{1,3}(\\.[0-9]{3})+$", v)
+    v[thousands] <- gsub(".", "", v[thousands], fixed = TRUE)
+    v <- sub(",", ".", v, fixed = TRUE)
+    num <- suppressWarnings(as.numeric(v))
+    num[km] <- num[km] * 1000
+    out <- format(num, scientific = FALSE, trim = TRUE, drop0trailing = TRUE)
+    out[!is_valid_uncertainty(out)] <- NA_character_
+    out
+}
+
+# A coordinate the export can read: a number, with a comma or a dot, in range.
+coord_value_ok <- function(x, limit) {
+    parsed <- as_coord_numeric(trimws(as.character(x)))
+    !parsed$parse_failed & !is.na(parsed$num) & abs(parsed$num) <= limit
+}
+
+# The number in a coordinate typed with a degree sign or a comma, or NA.
+suggest_coordinate <- function(values, limit) {
+    v <- trimws(sub("\\s*\u00b0$", "", trimws(as.character(values))))
+    v <- sub(",", ".", sub("^\u2212", "-", v), fixed = TRUE)
+    num <- suppressWarnings(as.numeric(v))
+    ifelse(!is.na(num) & abs(num) <= limit, v, NA_character_)
+}
+
+# The name issues extract_scientific_name_components() finds, as Preview
+# types. An issue keeps the typed name, so the record is not matched to a
+# taxon and is not generalized.
+name_issue_types <- c(
+    hybrid = "name_hybrid", multiple = "name_multiple",
+    abbreviated = "name_abbreviated", placeholder = "name_placeholder",
+    extra_text = "name_extra_text"
+)
+
+has_unbalanced_brackets <- function(x) {
+    count <- function(ch) lengths(regmatches(x, gregexpr(ch, x, fixed = TRUE)))
+    count("(") != count(")") | count("[") != count("]")
 }
 
 #' Find the cells the Preview can fix
@@ -100,6 +251,16 @@ detect_preview_problems <- function(df, max_year = NULL) {
         v
     }
 
+    # First, so a formula in a name or a date shows as a formula.
+    for (term in cols) {
+        v <- text(term)
+        bad <- which(is_formula_like(v))
+        if (length(bad)) {
+            out[[length(out) + 1L]] <- problem_rows(bad, term, "cell_formula", v[bad],
+                                                    suggest_formula_fix(v[bad]))
+        }
+    }
+
     for (term in intersect(vocabulary_terms, cols)) {
         v <- text(term)
         bad <- which(nzchar(v) & !v %in% vocabulary_concepts(term))
@@ -116,6 +277,12 @@ detect_preview_problems <- function(df, max_year = NULL) {
     for (term in intersect(preview_date_terms, cols)) {
         v <- text(term)
         bad <- which(nzchar(v) & !is_dwc_date_value(v))
+        # The column vote left these raw: "03/04/2021" reads two ways.
+        ambiguous <- bad[is_ambiguous_dmy(v[bad])]
+        bad <- setdiff(bad, ambiguous)
+        if (length(ambiguous)) {
+            out[[length(out) + 1L]] <- problem_rows(ambiguous, term, "date_ambiguous", v[ambiguous])
+        }
         if (length(bad)) {
             out[[length(out) + 1L]] <- problem_rows(bad, term, "date_unparsed", v[bad])
         }
@@ -168,12 +335,104 @@ detect_preview_problems <- function(df, max_year = NULL) {
             out[[length(out) + 1L]] <- problem_rows(bad, "individualCount", "count_invalid", v[bad],
                                                     suggest_individual_count(v[bad]))
         }
+        # A count of 0 says absence, so "present" contradicts it (D07). The row
+        # needs a person to say which one is right.
+        if ("occurrenceStatus" %in% cols) {
+            status <- tolower(text("occurrenceStatus"))
+            bad <- which(grepl("^0+$", v) & status %in% c("present", "presente"))
+            if (length(bad)) {
+                out[[length(out) + 1L]] <- problem_rows(bad, "individualCount", "count_present_zero",
+                                                        v[bad])
+            }
+        }
     }
 
-    for (term in intersect(c("scientificName", "eventDate"), cols)) {
+    if ("eventTime" %in% cols) {
+        v <- text("eventTime")
+        bad <- which(nzchar(v) & !is_dwc_time_value(v))
+        if (length(bad)) {
+            out[[length(out) + 1L]] <- problem_rows(bad, "eventTime", "time_invalid", v[bad],
+                                                    suggest_event_time(v[bad]))
+        }
+    }
+
+    if ("coordinateUncertaintyInMeters" %in% cols) {
+        v <- text("coordinateUncertaintyInMeters")
+        bad <- which(nzchar(v) & !is_valid_uncertainty(v))
+        if (length(bad)) {
+            out[[length(out) + 1L]] <- problem_rows(bad, "coordinateUncertaintyInMeters",
+                                                    "uncertainty_invalid", v[bad],
+                                                    suggest_uncertainty(v[bad]))
+        }
+    }
+
+    for (term in intersect(c("decimalLatitude", "decimalLongitude"), cols)) {
+        limit <- if (term == "decimalLatitude") 90 else 180
+        v <- text(term)
+        bad <- which(nzchar(v) & !coord_value_ok(v, limit))
+        if (length(bad)) {
+            out[[length(out) + 1L]] <- problem_rows(bad, term, "coord_invalid", v[bad],
+                                                    suggest_coordinate(v[bad], limit))
+        }
+    }
+
+    if ("scientificName" %in% cols) {
+        v <- text("scientificName")
+        uniq <- unique(v[nzchar(v)])
+        if (length(uniq)) {
+            issue <- extract_scientific_name_components(uniq)$nameIssue
+            type <- unname(name_issue_types[issue])
+            bad <- which(v %in% uniq[!is.na(type)])
+            if (length(bad)) {
+                out[[length(out) + 1L]] <- problem_rows(bad, "scientificName",
+                                                        type[match(v[bad], uniq)], v[bad])
+            }
+        }
+    }
+
+    if ("scientificNameAuthorship" %in% cols) {
+        v <- text("scientificNameAuthorship")
+        bad <- which(nzchar(v) & has_unbalanced_brackets(v))
+        if (length(bad)) {
+            out[[length(out) + 1L]] <- problem_rows(bad, "scientificNameAuthorship",
+                                                    "name_authorship", v[bad])
+        }
+    }
+
+    for (term in intersect(c("scientificName", "basisOfRecord"), cols)) {
         bad <- which(is_blank_cell(df[[term]]))
         if (length(bad)) {
             out[[length(out) + 1L]] <- problem_rows(bad, term, "required_empty", rep("", length(bad)))
+        }
+    }
+
+    # A threat category in the country column is a shifted column, not a
+    # country: "VU" reads as Vanuatu (B33). "CR" stays out, it is Costa Rica.
+    if ("country" %in% cols) {
+        v <- text("country")
+        bad <- which(toupper(v) %in% c("EX", "EW", "EN", "VU", "NT", "LC", "DD"))
+        if (length(bad)) {
+            out[[length(out) + 1L]] <- problem_rows(bad, "country", "country_threat_code", v[bad])
+        }
+    }
+
+    # MIX-065: country "Argentina", countryCode "BR" (B04). The row needs a
+    # person to say which one is right, so one fix does not serve all rows.
+    if (all(c("country", "countryCode") %in% cols)) {
+        both <- which(nzchar(text("country")) & nzchar(text("countryCode")))
+        if (length(both)) {
+            iso <- tryCatch(
+                list(coords_country_to_iso3(text("country")[both]),
+                     coords_country_to_iso3(text("countryCode")[both])),
+                error = function(e) NULL
+            )
+            if (!is.null(iso)) {
+                bad <- both[!is.na(iso[[1]]) & !is.na(iso[[2]]) & iso[[1]] != iso[[2]]]
+                if (length(bad)) {
+                    out[[length(out) + 1L]] <- problem_rows(bad, "countryCode", "country_conflict",
+                                                            text("countryCode")[bad])
+                }
+            }
         }
     }
 
@@ -354,11 +613,37 @@ parse_preview_edit <- function(term, value, taken = character(0)) {
         if (term %in% preview_required_terms) return(fail("preview_fix_err_blank"))
         return(list(value = "", error = NULL))
     }
-    if (term %in% preview_date_terms) {
+    if (term == "basisOfRecord") {
+        # A label ("Observação humana") or any case of the term is accepted.
+        v <- auto_suggest_basis_of_record_terms(v)
+        if (!nzchar(v)) return(fail("preview_fix_err_bor"))
+    } else if (term %in% preview_date_terms) {
         if (!is_dwc_date_value(v)) {
+            # One value carries no column vote, so "05/07/2016" would be read
+            # month-first. Ask for ISO instead of guessing the order.
+            dm <- regmatches(v, regexec("^(\\d{1,2})[/.-](\\d{1,2})[/.-]\\d{2,4}$", v))[[1]]
+            if (length(dm) == 3L && max(as.integer(dm[2:3])) <= 12L && dm[2] != dm[3]) {
+                return(fail("preview_fix_err_date_ambiguous"))
+            }
             iso <- parse_dates_to_iso(v)
             if (is.na(iso)) return(fail("preview_fix_err_date"))
             v <- iso
+        }
+    } else if (term == "eventTime") {
+        if (!is_dwc_time_value(v)) {
+            v <- suggest_event_time(v)
+            if (is.na(v)) return(fail("preview_fix_err_time"))
+        }
+    } else if (term == "coordinateUncertaintyInMeters") {
+        if (!is_valid_uncertainty(v)) {
+            v <- suggest_uncertainty(v)
+            if (is.na(v)) return(fail("preview_fix_err_uncertainty"))
+        }
+    } else if (term %in% c("decimalLatitude", "decimalLongitude")) {
+        limit <- if (term == "decimalLatitude") 90 else 180
+        if (!coord_value_ok(v, limit)) {
+            v <- suggest_coordinate(v, limit)
+            if (is.na(v)) return(fail("preview_fix_err_coord"))
         }
     } else if (term == "individualCount") {
         if (!grepl("^\\d+$", v)) return(fail("preview_fix_err_count"))

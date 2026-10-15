@@ -442,6 +442,33 @@ testthat::test_that("reactive mapping state remains consistent after filter togg
     )
 })
 
+# D02: a sheet with no basisOfRecord column exports with one fixed value.
+testthat::test_that("basisOfRecord takes a fixed value when no column is mapped", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Puma concolor"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(
+                usecustom_basisOfRecord = TRUE,
+                custom_basisOfRecord = "HumanObservation"
+            )
+            session$flushReact()
+
+            out <- processed_data()
+            testthat::expect_identical(out$basisOfRecord, rep("HumanObservation", 2L))
+        }
+    )
+})
+
 testthat::test_that("fixed-value constant term flows to every row, custom_values_r, and meta", {
     df <- data.frame(
         scientificName = c("Panthera onca", "Leopardus pardalis", "Puma concolor"),

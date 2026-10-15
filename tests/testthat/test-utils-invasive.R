@@ -10,10 +10,10 @@ test_that("flag_invasive_species strips authorship and qualifiers", {
     expect_true(flag_invasive_species("Felis catus (Linnaeus, 1758)"))
     expect_true(flag_invasive_species("Sus scrofa Linnaeus, 1758"))
     expect_true(flag_invasive_species("sus scrofa"))
-    # Deliberately shared with the validator: a capitalized second word is read
-    # as authorship ("Sus Scrofa" -> "Sus"), so the list behaves exactly like
-    # name validation rather than matching more loosely than it does.
-    expect_false(flag_invasive_species("Sus Scrofa"))
+    # Shared with the validator: a capitalized second word with no comma or
+    # year after it is the epithet ("Sus Scrofa" -> "Sus scrofa").
+    expect_true(flag_invasive_species("Sus Scrofa"))
+    expect_false(flag_invasive_species("Sus Linnaeus, 1758"))
 })
 
 test_that("flag_invasive_species handles blank, NA and empty input", {

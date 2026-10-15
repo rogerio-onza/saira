@@ -155,9 +155,9 @@
     "es": "Correcciones: %s"
   },
   "export_kpi_generalized": {
-    "pt": "Generalizadas",
-    "en": "Generalized",
-    "es": "Generalizadas"
+    "pt": "Espécies generalizadas",
+    "en": "Generalized species",
+    "es": "Especies generalizadas"
   },
   "export_kpi_generalized_sub": {
     "pt": "espécies com coordenada generalizada",
@@ -275,9 +275,9 @@
     "es": "Hay especies generalizadas sin la justificación escrita que exigen las categorías 1–3."
   },
   "export_blocked_bor_blank": {
-    "pt": "basisOfRecord vazio em %d registro(s): há valores sem termo DwC. Converta-os no assistente do card basisOfRecord.",
-    "en": "basisOfRecord is empty in %d record(s): some values have no DwC term. Convert them with the assistant on the basisOfRecord card.",
-    "es": "basisOfRecord vacío en %d registro(s): hay valores sin término DwC. Conviértalos con el asistente de la tarjeta basisOfRecord."
+    "pt": "basisOfRecord vazio em %d registro(s). A célula da planilha está vazia ou tem um valor sem termo DwC. Escolha o termo no assistente do card basisOfRecord. Linhas:",
+    "en": "basisOfRecord is empty in %d record(s). The spreadsheet cell is empty or has a value with no DwC term. Select the term with the assistant on the basisOfRecord card. Rows:",
+    "es": "basisOfRecord vacío en %d registro(s). La celda de la hoja está vacía o tiene un valor sin término DwC. Elija el término con el asistente de la tarjeta basisOfRecord. Filas:"
   },
   "export_date_range_title": {
     "pt": "Datas com ano fora do intervalo esperado",
@@ -839,6 +839,11 @@
     "en": "%d unmapped column(s) stay in the file but outside meta.xml, so GBIF will ignore them. Map them to a DwC term or add them to dynamicProperties to publish them.",
     "es": "%d columna(s) sin mapear siguen en el archivo, pero fuera del meta.xml: GBIF las ignorará. Mapéelas a un término DwC o inclúyalas en dynamicProperties para publicarlas."
   },
+  "export_zero_count_absent": {
+    "pt": "%d linha(s) com contagem 0 vão aparecer como ausência no GBIF, porque o occurrenceStatus está vazio. Se 0 quer dizer \"não contado\", deixe a contagem vazia.",
+    "en": "%d row(s) with a count of 0 will show as absences on GBIF, because occurrenceStatus is empty. If 0 means \"not counted\", leave the count empty.",
+    "es": "%d fila(s) con conteo 0 aparecerán como ausencias en GBIF, porque occurrenceStatus está vacío. Si 0 significa \"no contado\", deje el conteo vacío."
+  },
   "export_establishment_dropped": {
     "pt": "%d valor(es) da sua coluna de %s estão fora do vocabulário controlado do Darwin Core e ficaram vazios em %d registro(s). Traduza cada um no assistente do card.",
     "en": "%d value(s) from your %s column are outside the Darwin Core controlled vocabulary and were left blank in %d record(s). Translate each one in the card's assistant.",
@@ -1269,6 +1274,11 @@
     "en": "Ex: EPSG:4326",
     "es": "Ej.: EPSG:4326"
   },
+  "const_placeholder_basisOfRecord": {
+    "pt": "-- Escolha um termo --",
+    "en": "-- Choose a term --",
+    "es": "-- Elija un término --"
+  },
   "preview_title": {
     "pt": "Pré-visualização dos Dados",
     "en": "Data Preview",
@@ -1583,6 +1593,11 @@
     "pt": "Data não reconhecida. Escreva como AAAA-MM-DD.",
     "en": "Date not recognized. Write it as YYYY-MM-DD.",
     "es": "Fecha no reconocida. Escríbala como AAAA-MM-DD."
+  },
+  "preview_fix_err_date_ambiguous": {
+    "pt": "Dia e mês podem estar trocados. Escreva como AAAA-MM-DD.",
+    "en": "Day and month may be swapped. Write it as YYYY-MM-DD.",
+    "es": "El día y el mes pueden estar invertidos. Escríbala como AAAA-MM-DD."
   },
   "preview_fix_err_count": {
     "pt": "Use um número inteiro, como 10.",
@@ -2178,6 +2193,16 @@
     "pt": "| Precisão original retida pelo custodiante: %s grau.",
     "en": "| Original precision retained by the custodian: %s degree.",
     "es": "| Precisión original conservada por el custodio: %s grado."
+  },
+  "sensitive_grid_clamped": {
+    "pt": "| A Categoria %s pede a grade de %s grau, mais fina que a precisão original, então as coordenadas ficam na grade de %s grau.",
+    "en": "| Category %s asks for a %s degree grid, finer than the original precision, so the coordinates keep the %s degree grid.",
+    "es": "| La Categoría %s pide la cuadrícula de %s grado, más fina que la precisión original, por eso las coordenadas quedan en la cuadrícula de %s grado."
+  },
+  "sensitive_grid_from_uncertainty": {
+    "pt": "| As coordenadas usam a grade de %s grau, que cabe na incerteza declarada de %s m.",
+    "en": "| The coordinates use the %s degree grid, which fits the declared uncertainty of %s m.",
+    "es": "| Las coordenadas usan la cuadrícula de %s grado, que cabe en la incertidumbre declarada de %s m."
   },
   "sensitive_information_withheld": {
     "pt": "Coordenadas precisas omitidas por se tratar de espécie ameaçada | Disponíveis com o publicador dos dados mediante solicitação.",
@@ -4553,5 +4578,250 @@
     "pt": "gato-palheiro-pampeano",
     "en": "Pampas cat",
     "es": "gato del pajonal pampeano"
+  },
+  "upload_report_title": {
+    "pt": "O arquivo foi lido com ajustes:",
+    "en": "The file was read with adjustments:",
+    "es": "El archivo se leyó con ajustes:"
+  },
+  "upload_report_utf16": {
+    "pt": "O arquivo estava em UTF-16 e foi convertido para UTF-8.",
+    "en": "The file was in UTF-16 and was converted to UTF-8.",
+    "es": "El archivo estaba en UTF-16 y se convirtió a UTF-8."
+  },
+  "upload_report_encoding": {
+    "pt": "%d linha(s) não estavam em UTF-8 e foram lidas como %s.",
+    "en": "%d line(s) were not UTF-8 and were read as %s.",
+    "es": "%d línea(s) no estaban en UTF-8 y se leyeron como %s."
+  },
+  "upload_report_sep_line": {
+    "pt": "A primeira linha \"sep=\" definiu o separador e foi ignorada.",
+    "en": "The first line \"sep=\" set the delimiter and was skipped.",
+    "es": "La primera línea \"sep=\" definió el separador y se omitió."
+  },
+  "upload_report_ragged": {
+    "pt": "%d linha(s) do arquivo têm um número de campos diferente do cabeçalho (linhas %s). Confira essas linhas na planilha.",
+    "en": "%d file line(s) have a field count different from the header (lines %s). Check these lines in the spreadsheet.",
+    "es": "%d línea(s) del archivo tienen un número de campos distinto del encabezado (líneas %s). Revise esas líneas en la planilla."
+  },
+  "upload_report_empty_rows": {
+    "pt": "%d linha(s) vazia(s) foram removidas.",
+    "en": "%d empty row(s) were removed.",
+    "es": "Se eliminaron %d fila(s) vacía(s)."
+  },
+  "upload_report_footer": {
+    "pt": "%d registro(s) têm só uma célula preenchida e podem ser rodapé ou título (registros %s).",
+    "en": "%d record(s) have only one filled cell and can be a footer or a title (records %s).",
+    "es": "%d registro(s) tienen solo una celda llena y pueden ser pie o título (registros %s)."
+  },
+  "upload_report_invisible": {
+    "pt": "%d célula(s) tinham caracteres invisíveis (espaço não separável, espaço de largura zero, controle de direção) e foram limpas.",
+    "en": "%d cell(s) had invisible characters (non-breaking space, zero-width space, direction control) and were cleaned.",
+    "es": "%d celda(s) tenían caracteres invisibles (espacio de no separación, espacio de ancho cero, control de dirección) y se limpiaron."
+  },
+  "upload_report_dup_names": {
+    "pt": "Cabeçalho repetido: %s. As cópias receberam um sufixo (_1, _2).",
+    "en": "Repeated header: %s. The copies got a suffix (_1, _2).",
+    "es": "Encabezado repetido: %s. Las copias recibieron un sufijo (_1, _2)."
+  },
+  "upload_report_blank_names": {
+    "pt": "%d coluna(s) sem nome receberam o nome col_N, pela posição.",
+    "en": "%d column(s) with no name got the name col_N, by position.",
+    "es": "%d columna(s) sin nombre recibieron el nombre col_N, por posición."
+  },
+  "upload_headerless_title": {
+    "pt": "A primeira linha parece um registro",
+    "en": "The first line looks like a record",
+    "es": "La primera línea parece un registro"
+  },
+  "upload_headerless_message": {
+    "pt": "Os nomes das colunas parecem dados: %s. Se o arquivo não tem linha de cabeçalho, a primeira linha é um registro, e as colunas recebem os nomes col_1, col_2...",
+    "en": "The column names look like data: %s. If the file has no header line, the first line is a record, and the columns get the names col_1, col_2...",
+    "es": "Los nombres de las columnas parecen datos: %s. Si el archivo no tiene línea de encabezado, la primera línea es un registro, y las columnas reciben los nombres col_1, col_2..."
+  },
+  "upload_headerless_keep_btn": {
+    "pt": "Manter como cabeçalho",
+    "en": "Keep as header",
+    "es": "Mantener como encabezado"
+  },
+  "upload_headerless_data_btn": {
+    "pt": "A primeira linha é um registro",
+    "en": "The first line is a record",
+    "es": "La primera línea es un registro"
+  },
+  "preview_fix_diag_date_ambiguous": {
+    "pt": "Dia e mês podem estar trocados. Escreva como AAAA-MM-DD.",
+    "en": "Day and month may be swapped. Write it as YYYY-MM-DD.",
+    "es": "El día y el mes pueden estar invertidos. Escríbala como AAAA-MM-DD."
+  },
+  "export_date_invalid_title": {
+    "pt": "Datas não reconhecidas",
+    "en": "Dates not recognized",
+    "es": "Fechas no reconocidas"
+  },
+  "export_date_invalid_body": {
+    "pt": "%d valor(es) de data não estão em ISO 8601 e vão ao GBIF como texto. Corrija na pré-visualização. O download continua liberado.",
+    "en": "%d date value(s) are not ISO 8601 and go to GBIF as text. Correct them in the preview. The download stays available.",
+    "es": "%d valor(es) de fecha no están en ISO 8601 y van a GBIF como texto. Corríjalos en la vista previa. La descarga sigue disponible."
+  },
+  "bor_assistant_blank_cells": {
+    "pt": "(células vazias)",
+    "en": "(empty cells)",
+    "es": "(celdas vacías)"
+  },
+  "preview_fix_err_bor": {
+    "pt": "Use um termo de basisOfRecord, como HumanObservation ou PreservedSpecimen.",
+    "en": "Use a basisOfRecord term, such as HumanObservation or PreservedSpecimen.",
+    "es": "Use un término de basisOfRecord, como HumanObservation o PreservedSpecimen."
+  },
+  "preview_fix_banner_empty": {
+    "pt": "<b>%s%% dos registros (%d) têm %s vazio.</b> O campo é obrigatório. Preencha na planilha, ou confira no Mapeamento se a coluna certa está mapeada.",
+    "en": "<b>%s%% of the records (%d) have an empty %s.</b> The field is required. Fill it in the spreadsheet, or check in the Mapping that the correct column is mapped.",
+    "es": "<b>El %s%% de los registros (%d) tiene %s vacío.</b> El campo es obligatorio. Complételo en la hoja de cálculo, o revise en el Mapeo que la columna correcta esté mapeada."
+  },
+  "preview_fix_pill_time": {
+    "pt": "Hora",
+    "en": "Time",
+    "es": "Hora"
+  },
+  "preview_fix_pill_uncertainty": {
+    "pt": "Incerteza",
+    "en": "Uncertainty",
+    "es": "Incertidumbre"
+  },
+  "preview_fix_pill_coord": {
+    "pt": "Coordenada",
+    "en": "Coordinate",
+    "es": "Coordenada"
+  },
+  "preview_fix_pill_name": {
+    "pt": "Nome",
+    "en": "Name",
+    "es": "Nombre"
+  },
+  "preview_fix_diag_time_invalid": {
+    "pt": "Hora fora do formato HH:MM",
+    "en": "Time not in HH:MM format",
+    "es": "Hora fuera del formato HH:MM"
+  },
+  "preview_fix_diag_uncertainty_invalid": {
+    "pt": "Incerteza deve ser um número de metros maior que 0",
+    "en": "Uncertainty must be a number of meters above 0",
+    "es": "La incertidumbre debe ser un número de metros mayor que 0"
+  },
+  "preview_fix_diag_coord_invalid": {
+    "pt": "Coordenada não numérica ou fora do intervalo",
+    "en": "Coordinate not numeric or out of range",
+    "es": "Coordenada no numérica o fuera del intervalo"
+  },
+  "preview_fix_diag_name_hybrid": {
+    "pt": "Híbrido: não consulta táxon nem generaliza",
+    "en": "Hybrid: no taxon match and no generalization",
+    "es": "Híbrido: no consulta taxón ni generaliza"
+  },
+  "preview_fix_diag_name_multiple": {
+    "pt": "Dois nomes na mesma célula",
+    "en": "Two names in one cell",
+    "es": "Dos nombres en la misma celda"
+  },
+  "preview_fix_diag_name_abbreviated": {
+    "pt": "Gênero abreviado",
+    "en": "Abbreviated genus",
+    "es": "Género abreviado"
+  },
+  "preview_fix_diag_name_placeholder": {
+    "pt": "Nome não identificado",
+    "en": "Name not identified",
+    "es": "Nombre no identificado"
+  },
+  "preview_fix_diag_name_extra_text": {
+    "pt": "Texto extra depois do nome",
+    "en": "Extra text after the name",
+    "es": "Texto extra después del nombre"
+  },
+  "preview_fix_diag_name_authorship": {
+    "pt": "Parênteses não fechados no autor",
+    "en": "Unclosed brackets in the authorship",
+    "es": "Paréntesis sin cerrar en el autor"
+  },
+  "preview_fix_err_time": {
+    "pt": "Escreva a hora como HH:MM, de 00:00 a 23:59.",
+    "en": "Write the time as HH:MM, from 00:00 to 23:59.",
+    "es": "Escriba la hora como HH:MM, de 00:00 a 23:59."
+  },
+  "preview_fix_err_uncertainty": {
+    "pt": "Escreva um número de metros maior que 0 e até 20037509.",
+    "en": "Write a number of meters above 0 and up to 20037509.",
+    "es": "Escriba un número de metros mayor que 0 y hasta 20037509."
+  },
+  "preview_fix_err_coord": {
+    "pt": "Escreva um número decimal: latitude de -90 a 90, longitude de -180 a 180.",
+    "en": "Write a decimal number: latitude from -90 to 90, longitude from -180 to 180.",
+    "es": "Escriba un número decimal: latitud de -90 a 90, longitud de -180 a 180."
+  },
+  "sensitive_withheld_invalid": {
+    "pt": "Coordenada de espécie %s (lista nacional MMA) removida: o valor é inválido ou incompleto e não pode ser generalizado. O custodiante guarda o valor original.",
+    "en": "Coordinates of a %s species (MMA national red list) removed: the value is invalid or incomplete and cannot be generalized. The custodian keeps the original value.",
+    "es": "Coordenadas de una especie %s (lista roja nacional MMA) eliminadas: el valor es inválido o incompleto y no se puede generalizar. El custodio conserva el valor original."
+  },
+  "sc_border_no_country": {
+    "pt": "mar ou fora de um país",
+    "en": "sea or outside a country",
+    "es": "mar o fuera de un país"
+  },
+  "sc_withheld_invalid_desc": {
+    "pt": "%d registro(s) de espécie sensível têm coordenada inválida ou incompleta. O Saíra remove a coordenada na exportação e guarda o valor original no arquivo privado. Corrija na aba Coordenadas para generalizar.",
+    "en": "%d sensitive record(s) have an invalid or incomplete coordinate. Saíra removes the coordinate in the export and keeps the original value in the private file. Correct it in the Coordinates tab to generalize it.",
+    "es": "%d registro(s) de especie sensible tienen una coordenada inválida o incompleta. Saíra elimina la coordenada en la exportación y guarda el valor original en el archivo privado. Corríjala en la pestaña Coordenadas para generalizarla."
+  },
+  "preview_fix_pill_formula": {
+    "pt": "Fórmula",
+    "en": "Formula",
+    "es": "Fórmula"
+  },
+  "preview_fix_diag_cell_formula": {
+    "pt": "Parece fórmula de planilha",
+    "en": "Looks like a spreadsheet formula",
+    "es": "Parece fórmula de hoja de cálculo"
+  },
+  "export_formula_title": {
+    "pt": "Valores que parecem fórmula",
+    "en": "Values that look like formulas",
+    "es": "Valores que parecen fórmula"
+  },
+  "export_formula_body": {
+    "pt": "%d célula(s) começam com =, +, - ou @. Uma planilha executa esse valor como fórmula quando alguém abre o occurrence.txt. Corrija na pré-visualização.",
+    "en": "%d cell(s) start with =, +, - or @. A spreadsheet runs the value as a formula when a person opens occurrence.txt. Correct them in the preview.",
+    "es": "%d celda(s) empiezan con =, +, - o @. Una hoja de cálculo ejecuta el valor como fórmula cuando alguien abre occurrence.txt. Corríjalas en la vista previa."
+  },
+  "preview_fix_pill_country": {
+    "pt": "País",
+    "en": "Country",
+    "es": "País"
+  },
+  "preview_fix_diag_country_threat_code": {
+    "pt": "Parece categoria de ameaça, não país",
+    "en": "Looks like a threat category, not a country",
+    "es": "Parece categoría de amenaza, no país"
+  },
+  "validate_coords_outside_short": {
+    "pt": "%d fora do país informado",
+    "en": "%d outside the stated country",
+    "es": "%d fuera del país informado"
+  },
+  "validate_coords_outside_row": {
+    "pt": "linha %d: %s (%.4f, %.4f)",
+    "en": "row %d: %s (%.4f, %.4f)",
+    "es": "fila %d: %s (%.4f, %.4f)"
+  },
+  "preview_fix_diag_country_conflict": {
+    "pt": "country e countryCode indicam países diferentes",
+    "en": "country and countryCode name different countries",
+    "es": "country y countryCode indican países diferentes"
+  },
+  "preview_fix_diag_count_present_zero": {
+    "pt": "Contagem 0 com occurrenceStatus present: 0 indica ausência",
+    "en": "Count 0 with occurrenceStatus present: 0 means absence",
+    "es": "Conteo 0 con occurrenceStatus present: 0 indica ausencia"
   }
 }

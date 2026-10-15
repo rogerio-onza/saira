@@ -157,7 +157,7 @@ testthat::test_that("parse_dates_to_iso parses supported formats and keeps inval
     testthat::expect_identical(out, expected)
 })
 
-testthat::test_that("read_biodiversity_csv retries Latin-1 when UTF-8 detection misses late encoding", {
+testthat::test_that("read_biodiversity_csv decodes a late Latin-1 line on its own", {
     header <- "MUNICIPALITY,COUNT"
     ascii_rows <- paste0("CityASCII_", seq_len(100), ",", seq_len(100))
     ascii_payload <- charToRaw(paste(c(header, ascii_rows), collapse = "\n"))
@@ -168,9 +168,9 @@ testthat::test_that("read_biodiversity_csv retries Latin-1 when UTF-8 detection 
     on.exit(unlink(tmp), add = TRUE)
     writeBin(c(ascii_payload, charToRaw("\n"), latin1_row), tmp)
 
-    testthat::expect_warning(
-        out <- read_biodiversity_csv(tmp),
-        "retrying with alternative encoding"
+    out <- read_biodiversity_csv(tmp)
+    testthat::expect_identical(
+        attr(out, "read_report")$encoding_lines[["Windows-1252"]], 1L
     )
 
     testthat::expect_s3_class(out, "data.frame")
@@ -264,6 +264,27 @@ testthat::test_that("parse_dates_to_iso keeps the day-first vote when the column
     )
 })
 
+testthat::test_that("parse_dates_to_iso leaves day/month values raw when the column vote ties", {
+    # One valid vote each way: the order of "03/04/2021" is unknown.
+    tie <- c("03/04/2021", "25/12/2020", "10/15/2020", "05/05/2020")
+    testthat::expect_identical(
+        parse_dates_to_iso(tie),
+        c(NA, "2020-12-25", "2020-10-15", "2020-05-05")
+    )
+    # An invalid date does not vote, so the valid month-first one decides.
+    testthat::expect_identical(
+        parse_dates_to_iso(c("03/04/2021", "31/04/2020", "10/15/2020")),
+        c("2021-03-04", NA, "2020-10-15")
+    )
+    # A second pass over the raw leftovers converts nothing more, so the
+    # export agrees with the Preview.
+    first <- parse_dates_to_iso(tie)
+    again <- parse_dates_to_iso(ifelse(is.na(first), tie, first))
+    testthat::expect_identical(again, first)
+    testthat::expect_identical(is_ambiguous_dmy(c("03/04/2021", "25/12/2020", NA, "05/05/2020")),
+                               c(TRUE, FALSE, FALSE, FALSE))
+})
+
 testthat::test_that("date_year_issues flags future and ancient years without touching valid ones", {
     df <- data.frame(
         eventDate = c("2023-12-25", "2098-05-01", "1450-01-01", "20231225"),
@@ -322,4 +343,126 @@ testthat::test_that("read_biodiversity_xlsx returns text with ISO dates and plai
     testthat::expect_identical(df$data, c("2024-03-22", NA))
     testthat::expect_identical(df$hora, c("2024-03-22T14:30:00", NA))
     testthat::expect_identical(df$latitude, c("-19.91491", "100000"))
+})
+
+testthat::test_that("read_biodiversity_csv reads a Latin-1 file with accents in the header", {
+    # Excel in Portuguese saves "CSV (separado por ponto e virgula)" this way.
+    payload <- iconv("espécie;município\nPuma concolor;Belém\n", "UTF-8", "latin1", toRaw = TRUE)[[1]]
+    tmp <- tempfile(fileext = ".csv")
+    on.exit(unlink(tmp), add = TRUE)
+    writeBin(payload, tmp)
+
+    testthat::expect_identical(detect_delimiter(tmp), ";")
+    out <- suppressWarnings(read_biodiversity_csv(tmp))
+    testthat::expect_identical(names(out), c("espécie", "município"))
+    testthat::expect_identical(out[[2]], "Belém")
+})
+
+testthat::test_that("detect_delimiter ignores delimiters inside quoted column names", {
+    tmp <- tempfile(fileext = ".csv")
+    on.exit(unlink(tmp), add = TRUE)
+    writeLines(c('"nome, autor";"lat"', '"X, 1900";"-10,5"'), tmp)
+
+    testthat::expect_identical(detect_delimiter(tmp), ";")
+})
+
+testthat::test_that("read_biodiversity_csv decodes each line in its own encoding", {
+    tmp <- tempfile(fileext = ".csv")
+    on.exit(unlink(tmp), add = TRUE)
+    # Line 2 is UTF-8, line 3 is Windows-1252 with a curly quote (0x92).
+    writeBin(c(
+        charToRaw("nome;local\nAra;S"), as.raw(c(0xc3, 0xa3)), charToRaw("o Paulo\nPuma;D"),
+        as.raw(0x92), charToRaw("Avila\n")
+    ), tmp)
+
+    out <- read_biodiversity_csv(tmp)
+
+    testthat::expect_identical(out$local, c("São Paulo", "D’Avila"))
+    testthat::expect_false(any(grepl("[\u0080-\u009f]", out$local)))
+})
+
+testthat::test_that("read_biodiversity_csv splits records on a lone CR", {
+    tmp <- tempfile(fileext = ".csv")
+    on.exit(unlink(tmp), add = TRUE)
+    writeBin(charToRaw("a;b\r\n1;2\r3;4\n5;6\r\n"), tmp)
+
+    out <- read_biodiversity_csv(tmp)
+
+    testthat::expect_identical(out$a, c("1", "3", "5"))
+    testthat::expect_identical(out$b, c("2", "4", "6"))
+})
+
+testthat::test_that("read_biodiversity_csv uses a sep= first line as the delimiter", {
+    tmp <- write_temp_text_file(c("sep=;", "a;b,c", "1;2,3"))
+    on.exit(unlink(tmp), add = TRUE)
+
+    out <- read_biodiversity_csv(tmp)
+
+    testthat::expect_identical(names(out), c("a", "b,c"))
+    testthat::expect_true(attr(out, "read_report")$sep_line)
+})
+
+testthat::test_that("read_biodiversity_csv reads a UTF-16 LE file with a BOM", {
+    tmp <- tempfile(fileext = ".tsv")
+    on.exit(unlink(tmp), add = TRUE)
+    body <- iconv("nome\tlocal\nAra\tSão Paulo\n", "UTF-8", "UTF-16LE", toRaw = TRUE)[[1]]
+    writeBin(c(as.raw(c(0xff, 0xfe)), body), tmp)
+
+    out <- read_biodiversity_csv(tmp)
+
+    testthat::expect_identical(names(out), c("nome", "local"))
+    testthat::expect_identical(out$local, "São Paulo")
+    testthat::expect_true(attr(out, "read_report")$utf16)
+})
+
+testthat::test_that("read_biodiversity_csv cleans invisible characters and blank rows", {
+    tmp <- write_temp_text_file(c(
+        "nome;local;nota;obs",
+        "Panthera onca;x;y;z",
+        "B​othrops insularis;x;y;z",
+        ";;;",
+        "Total de registros: 2;;;"
+    ))
+    on.exit(unlink(tmp), add = TRUE)
+
+    out <- read_biodiversity_csv(tmp)
+    report <- attr(out, "read_report")
+
+    testthat::expect_identical(out$nome[1:2], c("Panthera onca", "Bothrops insularis"))
+    testthat::expect_equal(nrow(out), 3L)
+    testthat::expect_identical(report$invisible_cells, 2L)
+    testthat::expect_identical(report$empty_rows, 1L)
+    testthat::expect_identical(report$footer_rows, 3L)
+})
+
+testthat::test_that("read_biodiversity_csv reports ragged lines and repairs names", {
+    tmp <- write_temp_text_file(c(
+        "Local; Notas ;;Local",
+        "a;b;c;d",
+        "a;b;c;d;e",
+        "a;b"
+    ))
+    on.exit(unlink(tmp), add = TRUE)
+
+    out <- read_biodiversity_csv(tmp)
+    report <- attr(out, "read_report")
+
+    testthat::expect_identical(names(out), c("Local", "Notas", "col_3", "Local_1"))
+    testthat::expect_identical(report$duplicated_names, "Local")
+    testthat::expect_identical(report$ragged_count, 2L)
+    testthat::expect_identical(report$ragged_lines, c(3L, 4L))
+})
+
+testthat::test_that("a data row read as the header is detected and can be read as data", {
+    tmp <- write_temp_text_file(c(
+        "Felis concolor;-30.0330;-51.2300;10/15/2020",
+        "Puma concolor;-29.1;-50.2;11/15/2020"
+    ))
+    on.exit(unlink(tmp), add = TRUE)
+
+    testthat::expect_true(attr(read_biodiversity_csv(tmp), "read_report")$headerless_suspect)
+    out <- read_biodiversity_csv(tmp, header = FALSE)
+    testthat::expect_equal(nrow(out), 2L)
+    testthat::expect_identical(names(out), paste0("col_", 1:4))
+    testthat::expect_false(probable_data_header(c("scientificName", "decimalLatitude", "Data")))
 })

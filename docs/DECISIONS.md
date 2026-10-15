@@ -3094,3 +3094,28 @@ Formato: ADR leve (Architecture Decision Record).
   - Em Nomes, o botao Cancelar e a linha de fase ("Consultando lote") sairam, com `vn_phase_icon()`, `vn_phase_text()`, `phase_label()` e as chaves deles. O card da rodada mostra o progresso.
   - Pontos sao hexagonos em todo o app: no radar, nos mapas de Coordenadas e Generalizacao e nas legendas. `www/leaflet-hex.js` troca o desenho do circle marker no canvas quando ele tem `hex = TRUE` (`leaflet::pathOptions()`). O circulo de incerteza (`L.Circle`) fica redondo, porque o raio dele e uma distancia no terreno. As legendas usam o token `--hex-clip`.
 - **Consequencias**: ate 20 mil pontos e 5 mil marcas por teste vao ao navegador. Fora da cobertura das Americas, o mapa mostra so os pontos.
+
+## ADR-161: Regras da caca a bugs de 2026-10-12
+
+- **Data**: 2026-10-14
+- **Status**: Aceito.
+- **Contexto**: a caca a bugs com planilhas sinteticas (S1 a S11) achou 49 falhas na leitura, nos nomes, na generalizacao e no export. Varias pedem uma regra que vale para o app todo.
+- **Decisao**:
+  - Leitura: cada linha decodifica sozinha (UTF-8, Windows-1252, Latin-1). O aviso do upload lista o que o leitor ajustou: nomes de coluna, caracteres invisiveis, linhas tortas, vazias e de rodape.
+  - Data dia/mes: decide o voto da coluna, so com datas validas. Sem voto, o valor fica cru e o Preview marca (dono, D05).
+  - Nome: uma palavra com maiuscula apos o genero so e autor com evidencia (virgula, ponto, ano, conector). O nome lido substitui o digitado em scientificName. `cf.`, `aff.`, `sp.` e `?` vao para identificationQualifier (dono).
+  - Sensibilidade: o sinonimo de uma especie da lista MMA herda a categoria, pelo id aceito do GBIF no taxadb local. A subespecie nao herda a categoria da especie (dono, D03).
+  - Ponto sensivel que a grade nao move (fora da faixa, um eixo so, (0, 0), eixo copiado, UTM) sai do export e fica no arquivo privado. Colunas cruas com cara de coordenada ficam em branco nessas linhas.
+  - Contagem de especies: por nome canonico, nas tres abas.
+  - Coordenada em texto (DMS, letra de hemisferio, menos Unicode) vira grau decimal no mapeamento. Texto com palavras fica cru.
+  - cc_sea: ponto a ate 1, 5 ou 10 km de terra (pela escala) nao e mar.
+  - basisOfRecord: foto e audio sao HumanObservation, gravador autonomo e armadilha fotografica sao MachineObservation, especime e PreservedSpecimen.
+  - Rostrum: com notas de nome iguais, ganha a coluna muito mais cheia (>= 50% e mais do que o dobro). Um alias nao troca uma coluna muito mais cheia. Benchmark dev: top1 91/107, igual ao anterior.
+  - `" | "` so nos termos DwC de lista. Nos outros, `;` e texto.
+  - Celula com cara de formula (`=`, `@`, sinal com operador) e pendencia no Preview e no Export.
+  - countryCode: o export deriva o alpha-2 de country quando countryCode esta vazio. Um countryCode mapeado nao muda (D08).
+  - basisOfRecord aceita valor fixo, que exclui a coluna no card. O assistente segue para a coluna mapeada (D02, revisa ADR-098).
+  - Grade da generalizacao: a trava de precisao fica (o eixo mais grosso decide). O dataGeneralizations diz a grade da categoria e a grade usada quando as duas diferem (D01).
+  - Linha que so a incerteza (>= 1000 m) marca como ja mascarada, com mais casas que a incerteza justifica, vai para a grade mais grossa cujo raio cabe na incerteza. A incerteza soma o raio da celula. Um dataGeneralizations preenchido segue como pulo total, e a segunda passada nao muda nada (D04).
+  - individualCount 0: o Preview marca 0 com occurrenceStatus `present`. O Export lista 0 com status vazio, que o GBIF le como ausencia. O app nao muda valor (D07).
+- **Consequencias**: ilha longe da costa (Queimada Grande) segue como mar na escala grossa. "S 23 33" sem marcas nao converte. Uma longitude digitada como `-60` leva a grade de 1 grau.

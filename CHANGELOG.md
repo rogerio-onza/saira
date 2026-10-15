@@ -84,6 +84,44 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **upload:** Read a Latin-1 file with accents in the header instead of failing
+- **upload:** Ignore delimiters inside quoted column names when detecting the delimiter
+- **names:** Update genus and epithets when a name review corrects scientificName
+- **generalization:** Export the same generalized coordinates the tab shows when the source keeps trailing zeros
+- **generalization:** Keep records with a decimal comma in their coordinates
+- **preview:** Refuse an edited date whose day and month can swap, and ask for YYYY-MM-DD
+- **export:** Count missing required terms as one pending item, as the list shows them
+- **export:** Use datasetName as the EML title
+- **export:** Write the uploaded file name in the mapping guide
+- **upload:** Decode each line on its own, so one Latin-1 line no longer turns UTF-8 lines into mojibake
+- **upload:** Read Windows-1252 before Latin-1, UTF-16 files, lone CR line ends and an Excel `sep=;` first line
+- **upload:** Ask when the first line looks like a record, and show ragged, blank and footer rows in the read notice
+- **upload:** Remove invisible characters and readr name suffixes such as `...18` from the data and the headers
+- **names:** Keep accented epithets, hybrids, `sp.` markers and capitalized epithets, and fold diacritics in the name
+- **names:** Ignore null words and footer text, and send higher taxa to taxonRank instead of genus
+- **names:** Write the parsed name to scientificName and move `cf.`, `aff.` and `sp.` to identificationQualifier, ADR-161
+- **names:** Generalize a synonym of an MMA-listed species, ADR-161
+- **names:** Stop listing a species name that Fauna BR returns for a subspecies the user typed
+- **generalization:** Withhold a sensitive point the grid cannot move, and keep it in the private file, ADR-161
+- **generalization:** Ignore an invalid declared uncertainty, and stop plotting withheld points on the map
+- **generalization:** Count species by canonical name, so Export, Generalization and Names agree
+- **coords:** Convert DMS, hemisphere letters and the Unicode minus to decimal degrees
+- **coords:** Flag points outside the country that no swap fixes, and accept coastal points on land
+- **mapping:** Keep a semicolon in free text, and use ` | ` only in Darwin Core list terms
+- **mapping:** Suggest basisOfRecord for photo, audio and specimen, and sex for `F | M` and hermaphrodite
+- **mapping:** Prefer a filled column to a near-empty one with the same name score
+- **mapping:** Show the full card when an imported guide turns on a fixed value
+- **mapping:** Suggest eventDate for a column named "data registro", as in the demo sheet
+- **mapping:** Accept a fixed basisOfRecord value for a sheet with no basisOfRecord column, ADR-161
+- **export:** Fill countryCode from country when no countryCode is mapped, ADR-161
+- **generalization:** Round a point to the grid of its declared uncertainty when it has more decimals, ADR-161
+- **generalization:** Name the category grid and the grid used in dataGeneralizations when they differ, ADR-161
+- **preview:** Flag a count of 0 with occurrenceStatus present, and list counts of 0 that GBIF reads as absence, ADR-161
+- **preview:** Flag formula-like cells, threat codes in country, and country and countryCode that disagree
+- **preview:** Flag invalid uncertainty, time and coordinate values, and show the example in the pattern message
+- **export:** Blank raw coordinate columns of generalized rows, and keep raw columns named like a Darwin Core term
+- **export:** Build the EML bounding box from valid points only, and drop future dates from the temporal extent
+- **export:** Show the border warning with the country name in the app language
 - **names:** Update the name list, the progress and the Cancel button during a run, not only at the end, ADR-159
 - **names:** Give a Flora BR homonym the same answer in any batch, ADR-159
 - **preview:** Slide Table | Problems with the content in place: Problems no longer grows in three steps during the slide, ADR-158
@@ -146,6 +184,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **build:** Serve the E2E app through run_app() and keep Chrome timers unthrottled in long runs
 - **build:** Guard the mapping reactivity fixes and run the full flow end to end in the release gate
 - **build:** Complete the roadkill benchmark export again, now that the server refuses a blocked download ([#172](https://github.com/rogerio-onza/saira/pull/172))
+- **build:** Run the E2E flows again: isolate the app builder, and update three flows for required license and blank basisOfRecord
 
 ## [0.11.2] - 2026-09-11
 

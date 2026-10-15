@@ -26,8 +26,11 @@
 #'   `generalization` (data.frame `scientificName`/`category`/`tier`),
 #'   `readiness` (data.frame `term`/`present`), `readiness_pct`,
 #'   `missing_required`, `occurrence_id_present`, `bor_blank_count`,
+#'   `bor_blank_rows`,
 #'   `justification_pending`,
-#'   `date_issues` (from `date_year_issues()`),
+#'   `date_issues` (from `date_year_issues()`), `date_unparsed` (from
+#'   `unparsed_date_cells()`), `formula_cells` (from `formula_like_cells()`),
+#'   `zero_count_rows` (count 0 with a blank occurrenceStatus),
 #'   `all_required_present`, `export_blocked`, and `files`
 #'   (list `dwca` + `auxiliary`).
 #' @noRd
@@ -111,17 +114,35 @@ build_export_summary <- function(mapped_data,
 
     # GBIF needs basisOfRecord on every record. A mapped column can still hold
     # values with no DwC term (e.g. "Coleta"), which the conversion leaves empty.
-    bor_blank_count <- if ("basisOfRecord" %in% missing_required) {
-        0L
+    bor_blank_rows <- if ("basisOfRecord" %in% missing_required) {
+        integer(0)
     } else {
         bor <- as.character(df[["basisOfRecord"]])
-        sum(is.na(bor) | !nzchar(trimws(bor)))
+        which(is.na(bor) | !nzchar(trimws(bor)))
     }
+    bor_blank_count <- length(bor_blank_rows)
 
     # A year outside the plausible range is a typo the format conversion cannot
     # catch, so it is reported here rather than blocking: a historical record
     # can legitimately predate 1600, and only the publisher knows which is which.
     date_issues <- date_year_issues(df)
+    # A date the parser could not read goes to GBIF as text, and GBIF then
+    # has no event date for the record. The Preview lists these rows.
+    date_unparsed <- unparsed_date_cells(df)
+    formula_cells <- formula_like_cells(df)
+    # GBIF reads a count of 0 with no occurrenceStatus as an absence (D07).
+    # Some field sheets use 0 for "not counted", so the user sees the rows.
+    zero_count_rows <- if ("individualCount" %in% names(df)) {
+        cnt <- trimws(as.character(df[["individualCount"]]))
+        status <- if ("occurrenceStatus" %in% names(df)) {
+            as.character(df[["occurrenceStatus"]])
+        } else {
+            rep(NA_character_, n_records)
+        }
+        which(!is.na(cnt) & grepl("^0+$", cnt) & (is.na(status) | !nzchar(trimws(status))))
+    } else {
+        integer(0)
+    }
 
     # Generalization to Category 1/2/3 needs a written justification; export is
     # blocked until it is provided (mirrors the download handler's hard gate).
@@ -148,10 +169,21 @@ build_export_summary <- function(mapped_data,
         missing_required = missing_required,
         occurrence_id_present = occurrence_id_present,
         bor_blank_count = bor_blank_count,
+        bor_blank_rows = bor_blank_rows,
         justification_pending = justification_pending,
         date_issues = date_issues,
+        date_unparsed = date_unparsed,
+        formula_cells = formula_cells,
+        zero_count_rows = zero_count_rows,
         all_required_present = all_required_present,
         export_blocked = export_blocked,
         files = files
     )
+}
+
+# Row numbers for a pending item: the first ones, then how many more.
+format_row_list <- function(rows, max_n = 10L) {
+    shown <- paste(utils::head(rows, max_n), collapse = ", ")
+    extra <- length(rows) - max_n
+    if (extra > 0L) paste0(shown, " (+", extra, ")") else shown
 }

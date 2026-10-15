@@ -166,6 +166,7 @@ testthat::test_that("mod_upload_server reads valid CSV with recognizable columns
             testthat::expect_true(is.data.frame(df))
             testthat::expect_equal(nrow(df), 2L)
             testthat::expect_true("scientificName" %in% names(df))
+            testthat::expect_identical(attr(df, "source_file"), "test.csv")
         }
     )
 })

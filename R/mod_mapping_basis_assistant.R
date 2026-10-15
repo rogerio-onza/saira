@@ -113,19 +113,24 @@ setup_basis_of_record_assistant <- function(
                     if (is.null(current_target)) {
                         current_target <- ""
                     }
+                    raw_label <- if (identical(entry$key[[1]], bor_blank_key)) {
+                        tr("bor_assistant_blank_cells", lang_r())
+                    } else {
+                        entry$raw[[1]]
+                    }
 
                     shiny::tags$tr(
                         shiny::tags$td(
                             shiny::div(
                                 class = "bor-assistant-raw-value",
-                                entry$raw[[1]]
+                                raw_label
                             )
                         ),
                         shiny::tags$td(
                             shiny::selectInput(
                                 ns(paste0("basis_of_record_target_", entry$idx[[1]])),
                                 label = shiny::tags$span(
-                                    sprintf(tr("a11y_bor_target_label", lang_r()), entry$raw[[1]]),
+                                    sprintf(tr("a11y_bor_target_label", lang_r()), raw_label),
                                     class = "visually-hidden"
                                 ),
                                 choices = choices,
@@ -169,7 +174,7 @@ setup_basis_of_record_assistant <- function(
             tr("bor_assistant_empty_value", lang_r())
         )
 
-        keys <- normalize_basis_of_record_keys(all_raw)
+        keys <- bor_value_keys(all_raw)
         clean_map <- sanitize_basis_of_record_map(effective_map)
         mapped_all <- unname(clean_map[keys])
         mapped_all[is.na(mapped_all)] <- ""

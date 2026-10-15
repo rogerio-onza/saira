@@ -232,7 +232,9 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 ""
             }
 
-            shiny::tagList(
+            # A sheet with no basisOfRecord column has nothing for the assistant
+            # to read, so the card also takes one fixed value (D02).
+            wrap_constant_value_block(term, shiny::tagList(
                 shiny::selectInput(
                     ns(paste0("map_", term)),
                     NULL,
@@ -243,7 +245,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                     width = "100%"
                 ),
                 shiny::uiOutput(ns("carddyn_basisOfRecord"))
-            )
+            ), ns, lang_r, input)
         } else if (term == "dynamicProperties") {
             selected_cols <- if (has_selected_value(current_val)) {
                 as.character(current_val)
@@ -297,43 +299,51 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 ),
                 shiny::uiOutput(ns(paste0("carddyn_", term)))
             )
-            shiny::tagList(
-                if (is_const_term) {
-                    # Mutually exclusive with the fixed value: while "use a fixed
-                    # value" is on, hide the column selector (and its sample, plus
-                    # the "OU" divider) so a mapped column cannot be silently
-                    # overwritten by the constant at export -- the constant takes
-                    # precedence in build_processed_mapping_df. Client-side toggle,
-                    # no re-render.
-                    shiny::conditionalPanel(
-                        condition = paste0("!input.usecustom_", term),
-                        ns = ns,
-                        map_block,
-                        shiny::div(
-                            class = "field-or-divider",
-                            shiny::span(tr("mapping_or_separator", lang_r))
-                        )
-                    )
-                } else {
-                    map_block
-                },
-                if (is_const_term) {
-                    build_constant_value_input(term, ns, lang_r, input)
-                },
-                # A compact row hides the fixed-value checkbox. This button
-                # removes the compact class in place (client-side), so the full
-                # card with the checkbox opens where the row was. Every card
-                # has it, because the browser decides which cards are compact
-                # (ADR-157). CSS shows it on a compact row only.
-                if (is_const_term) {
-                    shiny::tags$button(
-                        type = "button",
-                        class = "field-compact-expand",
-                        tr("mapping_fixed_value_link", lang_r)
-                    )
-                }
-            )
+            if (is_const_term) {
+                wrap_constant_value_block(term, map_block, ns, lang_r, input)
+            } else {
+                map_block
+            }
         }
+    )
+}
+
+#' Wrap a card's column selector with the opt-in fixed-value input
+#'
+#' Mutually exclusive with the fixed value: while "use a fixed value" is on,
+#' hide the column selector (and its sample, plus the "OU" divider) so a mapped
+#' column cannot be silently overwritten by the constant at export -- the
+#' constant takes precedence in build_processed_mapping_df. Client-side toggle,
+#' no re-render.
+#'
+#' @param term DwC term name (must be in `constant_value_terms()`).
+#' @param map_block The column selector UI of the card.
+#' @param ns Namespace function.
+#' @param lang_r Reactive language code (already evaluated).
+#' @param input Shiny input from parent module.
+#' @noRd
+wrap_constant_value_block <- function(term, map_block, ns, lang_r, input) {
+    shiny::tagList(
+        shiny::conditionalPanel(
+            condition = paste0("!input.usecustom_", term),
+            ns = ns,
+            map_block,
+            shiny::div(
+                class = "field-or-divider",
+                shiny::span(tr("mapping_or_separator", lang_r))
+            )
+        ),
+        build_constant_value_input(term, ns, lang_r, input),
+        # A compact row hides the fixed-value checkbox. This button removes the
+        # compact class in place (client-side), so the full card with the
+        # checkbox opens where the row was. Every card has it, because the
+        # browser decides which cards are compact (ADR-157). CSS shows it on a
+        # compact row only.
+        shiny::tags$button(
+            type = "button",
+            class = "field-compact-expand",
+            tr("mapping_fixed_value_link", lang_r)
+        )
     )
 }
 
@@ -381,13 +391,28 @@ build_constant_value_input <- function(term, ns, lang_r, input) {
                 ph_icon("info-circle"),
                 " ", tr("mapping_fills_every_row", lang_r)
             ),
-            shiny::textInput(
-                ns(paste0("custom_", term)),
-                NULL,
-                value = if (!is.null(saved_val)) saved_val else "",
-                placeholder = tr(paste0("const_placeholder_", term), lang_r),
-                width = "100%"
-            )
+            # basisOfRecord takes only a vocabulary term, so it gets a list
+            # instead of free text.
+            if (identical(term, "basisOfRecord")) {
+                shiny::selectInput(
+                    ns(paste0("custom_", term)),
+                    NULL,
+                    choices = get_basis_of_record_term_choices(
+                        lang = lang_r,
+                        skip_label = tr("const_placeholder_basisOfRecord", lang_r)
+                    ),
+                    selected = if (!is.null(saved_val)) saved_val else "",
+                    width = "100%"
+                )
+            } else {
+                shiny::textInput(
+                    ns(paste0("custom_", term)),
+                    NULL,
+                    value = if (!is.null(saved_val)) saved_val else "",
+                    placeholder = tr(paste0("const_placeholder_", term), lang_r),
+                    width = "100%"
+                )
+            }
         )
     )
 }
