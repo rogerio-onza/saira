@@ -116,7 +116,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Fill countryCode from country when no countryCode is mapped, ADR-161
 - **generalization:** Round a point to the grid of its declared uncertainty when it has more decimals, ADR-161
 - **generalization:** Name the category grid and the grid used in dataGeneralizations when they differ, ADR-161
-- **preview:** Flag a count of 0 with occurrenceStatus present, and list counts of 0 that GBIF reads as absence, ADR-161
+- **preview:** Flag a count of 0 with occurrenceStatus present, and mark those rows absent in one step, ADR-161
+- **export:** List the counts of 0 that GBIF reads as absence, ADR-161
 - **preview:** Flag formula-like cells, threat codes in country, and country and countryCode that disagree
 - **preview:** Flag invalid uncertainty, time and coordinate values, and show the example in the pattern message
 - **export:** Blank raw coordinate columns of generalized rows, and keep raw columns named like a Darwin Core term

@@ -3114,8 +3114,8 @@ Formato: ADR leve (Architecture Decision Record).
   - `" | "` so nos termos DwC de lista. Nos outros, `;` e texto.
   - Celula com cara de formula (`=`, `@`, sinal com operador) e pendencia no Preview e no Export.
   - countryCode: o export deriva o alpha-2 de country quando countryCode esta vazio. Um countryCode mapeado nao muda (D08).
-  - basisOfRecord aceita valor fixo, que exclui a coluna no card. O assistente segue para a coluna mapeada (D02, revisa ADR-098).
+  - basisOfRecord aceita valor fixo, que exclui a coluna no card. O assistente segue para a coluna mapeada (D02, revisa ADR-106).
   - Grade da generalizacao: a trava de precisao fica (o eixo mais grosso decide). O dataGeneralizations diz a grade da categoria e a grade usada quando as duas diferem (D01).
   - Linha que so a incerteza (>= 1000 m) marca como ja mascarada, com mais casas que a incerteza justifica, vai para a grade mais grossa cujo raio cabe na incerteza. A incerteza soma o raio da celula. Um dataGeneralizations preenchido segue como pulo total, e a segunda passada nao muda nada (D04).
-  - individualCount 0: o Preview marca 0 com occurrenceStatus `present`. O Export lista 0 com status vazio, que o GBIF le como ausencia. O app nao muda valor (D07).
+  - individualCount 0: o Preview marca 0 com occurrenceStatus `present`. A linha edita a contagem ou marca `absent` no status, em lote so nas linhas marcadas. Desfazer desfaz o clique inteiro, tambem no lote por linha do ano. O Export lista 0 com status vazio, que o GBIF le como ausencia, sem botao. O app nao muda valor sozinho (D07).
 - **Consequencias**: ilha longe da costa (Queimada Grande) segue como mar na escala grossa. "S 23 33" sem marcas nao converte. Uma longitude digitada como `-60` leva a grade de 1 grau.

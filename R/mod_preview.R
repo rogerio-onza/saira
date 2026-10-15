@@ -31,6 +31,10 @@ mod_preview_ui <- function(id) {
                e.preventDefault();
                Shiny.setInputValue('%s', parseInt(this.dataset.id, 10), {priority: 'event'});
              });
+             $(document).on('click', '.preview-fix-other', function(e) {
+               e.preventDefault();
+               Shiny.setInputValue('%s', parseInt(this.dataset.id, 10), {priority: 'event'});
+             });
              $(document).on('click', '.preview-vocab-apply', function(e) {
                e.preventDefault();
                var sel = $(this).closest('.preview-vocab-item').find('select')[0];
@@ -104,7 +108,7 @@ mod_preview_ui <- function(id) {
                  this.classList.toggle('is-off', this.getAttribute('data-mode') !== mode);
                });
              });",
-            ns("use"), ns("blank"), ns("undo"), ns("vocab_apply"), ns("vocab_section"), ns("focus"),
+            ns("use"), ns("blank"), ns("undo"), ns("other"), ns("vocab_apply"), ns("vocab_section"), ns("focus"),
             ns("fix_next"), ns("rows_table"), ns("focus"), ns("mode"), ns("table_or_message")
         )))
     )
@@ -596,6 +600,9 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                            "</span>")
             fixed <- !is.na(hit)
             fix <- ifelse(fixed, edits$to[hit], "")
+            # A fix in another cell names that cell's term.
+            moved <- fixed & edits$term[hit] != p$term
+            fix[moved] <- paste0(edits$term[hit[moved]], ": ", fix[moved])
             action <- rep("", length(ids))
             action[fixed] <- paste0(
                 "<span class=\"coord-issue-badge coord-issue-badge-edited\">", tr("preview_fix_edited", lang),
@@ -616,13 +623,24 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                 "<button type=\"button\" class=\"btn btn-outline-secondary btn-sm preview-fix-blank\" data-id=\"",
                 ids[blank], "\">", tr("preview_fix_leave_empty", lang), "</button>"
             )
+            other <- match(p$type, preview_other_fix$type)
+            other_ok <- !fixed & !is.na(other)
+            if (any(other_ok)) {
+                action[other_ok] <- paste0(
+                    action[other_ok], ifelse(nzchar(action[other_ok]), " ", ""),
+                    "<button type=\"button\" class=\"btn btn-primary btn-sm preview-fix-other\" data-id=\"",
+                    ids[other_ok], "\">",
+                    vapply(preview_other_fix$label[other[other_ok]], tr, character(1), lang = lang),
+                    "</button>"
+                )
+            }
             # A repeated id left as it is shows the id the export writes.
             auto <- rep("", length(ids))
             open_id <- !fixed & p$type == "id_duplicate"
             if (any(open_id)) {
                 auto[open_id] <- as.character(edited_data_r()$occurrenceID[p$row[open_id]])
             }
-            many <- !fixed & p$bulk & same_n > 0L
+            many <- !fixed & (p$bulk | other_ok) & same_n > 0L
             action[many] <- paste0(action[many], " <span class=\"pf-muted\">",
                                    sprintf(tr("preview_fix_same_n", lang), same_n[many]), "</span>")
 
@@ -811,11 +829,12 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
 
         # Store one correction for each of `rows`. A fix for every cell with
         # the same value (row NA) replaces the per-row fixes of that value.
+        # The edits of one click share a batch, so Undo removes them together.
         # Returns the rows it reaches.
-        add_edit <- function(rows, term, from, to) {
+        add_edit <- function(rows, term, from, to, batch = next_batch()) {
             edits <- edits_rv()
             new <- data.frame(row = as.integer(rows), term = term, from = from, to = to,
-                              stringsAsFactors = FALSE)
+                              batch = batch, stringsAsFactors = FALSE)
             if (is.data.frame(edits)) {
                 same <- edits$term == term & edits$from == from &
                     (anyNA(rows) | (!is.na(edits$row) & edits$row %in% rows))
@@ -826,6 +845,11 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             edits_rv(edits)
             p <- shiny::isolate(problems_r())
             if (anyNA(rows)) sum(p$term == term & p$value == from) else length(rows)
+        }
+
+        next_batch <- function() {
+            edits <- shiny::isolate(edits_rv())
+            if (is.data.frame(edits)) max(edits$batch) + 1L else 1L
         }
 
         save_problem_fix <- function(id, value) {
@@ -898,11 +922,39 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             save_problem_fix(id, "")
         }, ignoreInit = TRUE)
 
+        # The fix for the other cell of the row (D07). With the same-value box
+        # on, it reaches each open row of the same problem, one row at a time.
+        shiny::observeEvent(input$other, {
+            id <- suppressWarnings(as.integer(input$other))
+            p <- problems_r()
+            if (length(id) != 1L || is.na(id) || id > nrow(p)) return(invisible(NULL))
+            k <- match(p$type[id], preview_other_fix$type)
+            if (is.na(k)) return(invisible(NULL))
+            term <- preview_other_fix$term[k]
+            rows <- if (isTRUE(input$same_value %||% TRUE)) {
+                open <- is.na(problem_edit_r())
+                p$row[open & preview_fix_key(p) == preview_fix_key(p[id, , drop = FALSE])]
+            } else {
+                p$row[id]
+            }
+            from <- trimws(as.character(full_data_r()[[term]][rows]))
+            from[is.na(from)] <- ""
+            n <- 0L
+            batch <- next_batch()
+            for (f in unique(from)) {
+                n <- n + add_edit(rows[from == f], term, f, preview_other_fix$to[k], batch)
+            }
+            refresh_rows()
+            focus_next_open(id)
+            notify_fix(sprintf(tr("preview_fix_saved", lang_r()), n), "message")
+        }, ignoreInit = TRUE)
+
         shiny::observeEvent(input$undo, {
             id <- suppressWarnings(as.integer(input$undo))
             hit <- problem_edit_r()
             if (length(id) != 1L || is.na(id) || id > length(hit) || is.na(hit[id])) return(invisible(NULL))
-            edits <- edits_rv()[-hit[id], , drop = FALSE]
+            edits <- edits_rv()
+            edits <- edits[edits$batch != edits$batch[hit[id]], , drop = FALSE]
             edits_rv(if (nrow(edits)) edits else NULL)
             refresh_rows()
             notify_fix(tr("preview_fix_undone", lang_r()), "message")

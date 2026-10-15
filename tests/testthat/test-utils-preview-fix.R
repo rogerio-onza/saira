@@ -258,6 +258,22 @@ test_that("a count of 0 with occurrenceStatus present is flagged (D07)", {
   expect_false(p$bulk[p$type == "count_present_zero"])
 })
 
+test_that("absent in occurrenceStatus corrects a count of 0 with present (D07)", {
+  df <- data.frame(individualCount = c("0", "0", "3"),
+                   occurrenceStatus = c("present", "present", "present"),
+                   stringsAsFactors = FALSE)
+  p <- detect_preview_problems(df)
+  edits <- data.frame(row = 1L, term = "occurrenceStatus", from = "present", to = "absent",
+                      stringsAsFactors = FALSE)
+  hit <- preview_problem_edit(p, edits)
+  expect_equal(hit, c(1L, NA_integer_))
+  # The edit reaches its row only, not row 3, which is right as present.
+  expect_equal(apply_preview_edits(df, edits)$occurrenceStatus, c("absent", "present", "present"))
+  # Another status value does not close the problem.
+  edits$to <- "present"
+  expect_true(all(is.na(preview_problem_edit(p, edits))))
+})
+
 test_that("country and countryCode that disagree are flagged (B04)", {
   df <- data.frame(country = c("Argentina", "Brasil", "Brasil"),
                    countryCode = c("BR", "BR", ""), stringsAsFactors = FALSE)

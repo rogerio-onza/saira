@@ -4823,5 +4823,10 @@
     "pt": "Contagem 0 com occurrenceStatus present: 0 indica ausência",
     "en": "Count 0 with occurrenceStatus present: 0 means absence",
     "es": "Conteo 0 con occurrenceStatus present: 0 indica ausencia"
+  },
+  "preview_fix_mark_absent": {
+    "pt": "Marcar ausente",
+    "en": "Mark absent",
+    "es": "Marcar ausente"
   }
 }

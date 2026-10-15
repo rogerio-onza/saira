@@ -359,7 +359,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 add(pending_row("info", shiny::tagList(
                     sprintf(tr("export_zero_count_absent", lang), length(s$zero_count_rows)), " ",
                     shiny::tags$code(format_row_list(s$zero_count_rows))
-                ), "go_preview", tr("export_action_preview", lang)))
+                )))
             }
             if (length(unmapped_cols) > 0L) {
                 add(pending_row("info", shiny::tagList(

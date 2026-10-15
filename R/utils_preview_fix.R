@@ -25,7 +25,15 @@ preview_problem_types <- data.frame(
     stringsAsFactors = FALSE
 )
 
-preview_date_terms <- c("eventDate", "dateIdentified", "modified")
+# Problems where the other cell may be the wrong one. The row also offers this
+# fix for that cell: a count of 0 with "present" can have the wrong status,
+# not the wrong count (D07).
+preview_other_fix <- data.frame(
+    type = "count_present_zero", term = "occurrenceStatus", to = "absent",
+    label = "preview_fix_mark_absent", stringsAsFactors = FALSE
+)
+
+preview_date_terms <-c("eventDate", "dateIdentified", "modified")
 
 # Terms a correction may not leave empty. The other terms the Preview fixes
 # are optional in Darwin Core, so an empty cell is a valid fix for them.
@@ -555,6 +563,13 @@ preview_problem_edit <- function(problems, edits) {
     rest <- is.na(hit)
     hit[rest] <- match(paste(NA, problems$term[rest], problems$value[rest], sep = "\r"),
                        all_key)
+    other <- match(problems$type, preview_other_fix$type)
+    rest <- is.na(hit) & !is.na(other)
+    if (any(rest)) {
+        other_key <- paste(edits$row, edits$term, edits$to, sep = "\r")
+        hit[rest] <- match(paste(problems$row[rest], preview_other_fix$term[other[rest]],
+                                 preview_other_fix$to[other[rest]], sep = "\r"), other_key)
+    }
     hit
 }
 
