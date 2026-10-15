@@ -73,6 +73,10 @@ mod_export_ui <- function(id) {
 #'   counts from `resolve_occurrence_ids()`.
 #' @param alias_receipt_r Optional reactive with what the last export taught the
 #'   alias store (`alias_export_receipt()`), shown with an undo (ADR-141).
+#' @param coord_validation_r Optional reactive with the Coordinates-tab result
+#'   (`validate_coords_cc_df()`), NULL before the tab runs.
+#' @param preview_problems_n_r Optional reactive with the count of open Preview
+#'   problems.
 #' @param on_navigate Optional callback `function(tab)` to switch the top-level
 #'   navbar (used by the "fix missing terms" banner action).
 #' @param on_export_success Optional callback fired after a successful export,
@@ -93,6 +97,8 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                               establishment_dropped_r = NULL,
                               occurrence_id_info_r = NULL,
                               alias_receipt_r = NULL,
+                              coord_validation_r = NULL,
+                              preview_problems_n_r = NULL,
                               on_navigate = NULL,
                               on_export_success = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
@@ -119,7 +125,9 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 country_fill_payload = call_r(country_fill_payload_r),
                 sensitivity_payload = call_r(sensitivity_payload_r),
                 generalization_payload = call_r(sensitive_generalization_payload_r),
-                dataset_name = dataset_name_r()
+                dataset_name = dataset_name_r(),
+                coord_validation = call_r(coord_validation_r),
+                preview_problems_n = call_r(preview_problems_n_r)
             )
         })
 
@@ -176,6 +184,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
         }
         navigate_on("go_fix_justification", "sensitive_coords")
         navigate_on("go_preview", "preview")
+        navigate_on("go_coords", "validate_coords")
         navigate_on("go_map_unmapped", "mapping")
         navigate_on("go_map_establishment", "mapping", term = "establishmentMeans")
         navigate_on("go_map_occid", "mapping", term = "occurrenceID")
@@ -287,6 +296,12 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                                 if (length(s$missing_required) == 0L) "go_fix_terms",
                                 tr("export_action_mapping", lang)))
             }
+            if (length(s$coord_invalid_rows) > 0L) {
+                add(pending_row("block", shiny::tagList(
+                    sprintf(tr("export_blocked_coord_invalid", lang), length(s$coord_invalid_rows)), " ",
+                    shiny::tags$code(format_row_list(s$coord_invalid_rows))
+                ), "go_preview", tr("export_action_preview", lang)))
+            }
             if (isTRUE(s$justification_pending)) {
                 add(pending_row("block", tr("export_blocked_justification", lang),
                                 "go_fix_justification", tr("export_fix_justification_cta", lang)))
@@ -320,7 +335,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }
             fc <- s$formula_cells
             if (is.list(fc) && isTRUE(fc$count > 0L)) {
-                add(pending_row("warn", shiny::tagList(
+                add(pending_row("block", shiny::tagList(
                     shiny::strong(tr("export_formula_title", lang)), " ",
                     sprintf(tr("export_formula_body", lang), fc$count), " ",
                     shiny::tags$code(paste(
@@ -328,6 +343,20 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                                 fc$sample$row, fc$sample$column, fc$sample$value),
                         collapse = ", "
                     ))
+                ), "go_preview", tr("export_action_preview", lang)))
+            }
+            cf <- s$coord_flags
+            if (is.list(cf) && isTRUE(cf$count > 0L)) {
+                add(pending_row("warn", shiny::tagList(
+                    shiny::strong(tr("export_coord_flags_title", lang)), " ",
+                    sprintf(tr("export_coord_flags_body", lang), cf$count), " ",
+                    shiny::tags$code(format_row_list(cf$rows))
+                ), "go_coords", tr("export_action_coords", lang)))
+            }
+            if (isTRUE(s$preview_problems_n > 0L)) {
+                add(pending_row("warn", shiny::tagList(
+                    shiny::strong(tr("export_preview_open_title", lang)), " ",
+                    sprintf(tr("export_preview_open_body", lang), s$preview_problems_n)
                 ), "go_preview", tr("export_action_preview", lang)))
             }
             # A value outside the TDWG vocabulary leaves its row blank rather

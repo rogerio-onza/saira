@@ -281,3 +281,13 @@ test_that("country and countryCode that disagree are flagged (B04)", {
   expect_equal(p$row[p$type == "country_conflict"], 1L)
   expect_false(p$bulk[p$type == "country_conflict"])
 })
+
+testthat::test_that("detect_preview_problems flags a (0, 0) filler on both axes (B50)", {
+    df <- data.frame(decimalLatitude = c("0", "0", "", "-23.5"),
+                     decimalLongitude = c("0,0", "-46.6", "0", "0"),
+                     stringsAsFactors = FALSE)
+    p <- detect_preview_problems(df)
+    z <- p[p$type == "coord_zero", ]
+    testthat::expect_equal(z$row[z$term == "decimalLatitude"], 1L)
+    testthat::expect_equal(sort(z$row[z$term == "decimalLongitude"]), c(1L, 3L))
+})

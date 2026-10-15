@@ -234,3 +234,39 @@ testthat::test_that("build_export_summary lists counts of 0 with no occurrenceSt
     df$occurrenceStatus <- NULL
     testthat::expect_equal(saira:::build_export_summary(df)$zero_count_rows, c(1L, 2L))
 })
+
+testthat::test_that("build_export_summary blocks an invalid coordinate and a formula (B50, B55)", {
+    df <- sample_mapped()
+    df$occurrenceID <- c("a", "b")
+    df$decimalLatitude <- c("95", "-23.5")
+    s <- saira:::build_export_summary(df)
+    testthat::expect_equal(s$coord_invalid_rows, 1L)
+    testthat::expect_true(s$export_blocked)
+
+    # A correction accepted in the Coordinates tab clears the block.
+    fix <- list(corrections = data.frame(occurrenceID = "a", decimalLatitude = "-25",
+                                         decimalLongitude = "-53.9", stringsAsFactors = FALSE))
+    s <- saira:::build_export_summary(df, coords_correction_payload = fix)
+    testthat::expect_length(s$coord_invalid_rows, 0L)
+    testthat::expect_false(s$export_blocked)
+
+    df <- sample_mapped()
+    df$scientificName[2] <- "=1+1"
+    testthat::expect_true(saira:::build_export_summary(df)$export_blocked)
+})
+
+testthat::test_that("build_export_summary lists Coordinates flags with no correction (B50)", {
+    df <- sample_mapped()
+    df$occurrenceID <- c("a", "b")
+    cv <- data.frame(.row_index = 1:2, diagnostic_family = c("sea", "ok"))
+    s <- saira:::build_export_summary(df, coord_validation = cv, preview_problems_n = 3L)
+    testthat::expect_equal(s$coord_flags$rows, 1L)
+    testthat::expect_equal(s$preview_problems_n, 3L)
+    testthat::expect_false(s$export_blocked)
+
+    fix <- list(corrections = data.frame(occurrenceID = "a", decimalLatitude = "-27.17",
+                                         decimalLongitude = "-53.9", stringsAsFactors = FALSE))
+    s <- saira:::build_export_summary(df, coords_correction_payload = fix, coord_validation = cv)
+    testthat::expect_equal(s$coord_flags$count, 0L)
+    testthat::expect_null(saira:::build_export_summary(df)$coord_flags)
+})

@@ -731,6 +731,20 @@ testthat::test_that("E2E: full flow on the demo dataset, with step timings", {
 
     timed("open preview", go_to("preview"))
     testthat::expect_true(nchar(app$get_html("#preview-datatable")) > 0L)
+    # The demo has two out-of-range coordinates, and they block the Export
+    # (ADR-162). Blank both cells in the Problems mode, as a user does.
+    app$set_inputs(`preview-mode` = "problems", wait_ = FALSE)
+    app$wait_for_idle(duration = 800, timeout = 30000)
+    for (value in c("-95.24310", "-198.40220")) {
+        app$run_js(sprintf("$('#preview-rows_table table').DataTable().search('%s').draw();", value))
+        wait_until_js(app, sprintf(
+            "Array.from(document.querySelectorAll('#preview-rows_table tbody tr')).some(function (r) {
+               return r.innerText.indexOf('%s') >= 0 && r.querySelector('.preview-fix-blank'); })", value))
+        app$run_js(sprintf(
+            "Array.from(document.querySelectorAll('#preview-rows_table tbody tr')).filter(function (r) {
+               return r.innerText.indexOf('%s') >= 0; })[0].querySelector('.preview-fix-blank').click();", value))
+        app$wait_for_idle(duration = 800, timeout = 30000)
+    }
 
     timed("open coordinates", go_to("validate_coords"))
     timed("validate coordinates", function() app$click(selector = "#validate_coords-validate"),

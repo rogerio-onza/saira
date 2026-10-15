@@ -514,6 +514,11 @@ find_csv_root <- function(dest, signature_predicate) {
 
 # --- Read + dispatch ----------------------------------------------------
 
+# Saira reads the descriptor and the tables only. Above these limits the zip
+# is refused before it is unzipped (P02).
+camtrap_zip_max_files <- 1000L
+camtrap_zip_max_bytes <- 2 * 1024^3
+
 read_camtrap_dp_zip <- function(path, lang = "en") {
     source <- detect_camtrap_source(path)
     if (is.na(source)) {
@@ -525,7 +530,15 @@ read_camtrap_dp_zip <- function(path, lang = "en") {
     dest <- tempfile("camtrapdp_")
     dir.create(dest)
     on.exit(unlink(dest, recursive = TRUE), add = TRUE)
-    utils::unzip(path, exdir = dest)
+    # A package can carry its photos and videos (many GB), and a small zip can
+    # expand past the free disk. Only the tables go out of the zip.
+    listing <- utils::unzip(path, list = TRUE)
+    tables <- grepl("\\.(json|csv|tsv|txt|gz)$", listing$Name, ignore.case = TRUE)
+    if (sum(tables) > camtrap_zip_max_files ||
+        sum(as.numeric(listing$Length[tables])) > camtrap_zip_max_bytes) {
+        camtrap_stop("err_camtrap_zip_too_large", lang)
+    }
+    utils::unzip(path, files = listing$Name[tables], exdir = dest)
 
     if (source == "datapackage_zip") {
         descriptor <- list.files(

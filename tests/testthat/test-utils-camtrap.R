@@ -839,3 +839,12 @@ testthat::test_that("camtrap_error_message shows the root cause of other errors"
     )
 })
 
+
+testthat::test_that("read_camtrap_dp_zip refuses a zip whose tables pass the limit (P02)", {
+    many <- stats::setNames(as.list(rep("x", 1001L)), sprintf("extra_%04d.csv", 1:1001))
+    fx <- build_zip_fixture(c(list("deployments.csv" = "deploymentID\nd1",
+                                   "observations.csv" = "observationID\no1"), many))
+    err <- testthat::expect_error(saira:::read_camtrap_dp_zip(fx$zip, lang = "en"),
+                                  class = "saira_camtrap_error")
+    testthat::expect_match(conditionMessage(err), "too large")
+})

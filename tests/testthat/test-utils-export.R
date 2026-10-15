@@ -1401,11 +1401,29 @@ testthat::test_that("unmapped raw coordinates are blanked on generalized rows (B
     out <- process_for_export_with_unmapped(df_processed, raw, mv, sensitive_rows = 1L)
     testthat::expect_true(is.na(out$Latitude[1]))
     testthat::expect_true(is.na(out$CoordX[1]))
-    testthat::expect_true(is.na(out$Plataforma[1]))
+    testthat::expect_equal(out$Plataforma[1], "2.5")
     testthat::expect_equal(out$Nota[1], "ponto -46.6333")
     testthat::expect_equal(out$Peso[1], "3")
     testthat::expect_equal(out$Latitude[2], "-10.1234")
     testthat::expect_equal(out$Plataforma[2], "2.5")
+})
+
+testthat::test_that("the scrubber blanks copies of the point, not measurements (B52, B59)", {
+    extras <- data.frame(pH = c("6.5", "7"), ponto_sul = c("-23.5505", "-10"),
+                         perto = c("-23.55", "-10"), Y_sul = c("-23", "-10"),
+                         Longo = c("2.5", "2.5"), stringsAsFactors = FALSE)
+    points <- data.frame(decimalLatitude = "-23.5505", decimalLongitude = "-46.6333", grid = 0.1)
+    out <- saira:::blank_coordinate_like_cells(extras, 1L, points)
+    testthat::expect_equal(out$pH, c("6.5", "7"))
+    testthat::expect_equal(out$ponto_sul, c(NA, "-10"))
+    testthat::expect_equal(out$perto, c(NA, "-10"))
+    testthat::expect_equal(out$Y_sul, c(NA, "-10"))
+    testthat::expect_equal(out$Longo, c("2.5", "2.5"))
+    testthat::expect_equal(
+        saira:::coordinate_like_column(c("Longo", "Lontra", "Lateral", "Latitude", "CoordX",
+                                         "LatGPS", "decimalLongitude_original", "x")),
+        c(FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE)
+    )
 })
 
 testthat::test_that("a raw column named like a used DwC term is kept with a suffix (B22)", {

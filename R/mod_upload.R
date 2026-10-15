@@ -39,7 +39,10 @@ mod_upload_ui <- function(id) {
                 # visible tab clicks to the matching radio input.
                 shiny::div(
                     class = "upload-mode-tabs",
-                    role  = "tablist",
+                    # The native radios are the control for the keyboard and
+                    # screen readers (ADR-097). The buttons below only take
+                    # the mouse, so they stay out of the a11y tree (B56).
+                    role  = "group",
                     `aria-labelledby` = ns("mode_tabs_label"),
                     shiny::tags$span(
                         id = ns("mode_tabs_label"),
@@ -55,7 +58,8 @@ mod_upload_ui <- function(id) {
                         shiny::radioButtons(
                             inputId = ns("upload_mode"),
                             label = NULL,
-                            choices = c("csv" = "csv", "camtrap" = "camtrap"),
+                            choiceNames = c("CSV \u00B7 XLSX \u00B7 TXT", "Camtrap DP \u00B7 ZIP"),
+                            choiceValues = c("csv", "camtrap"),
                             selected = "csv",
                             inline = TRUE
                         )
@@ -64,7 +68,8 @@ mod_upload_ui <- function(id) {
                         type = "button",
                         class = "upload-mode-tab",
                         `data-mode` = "csv",
-                        `aria-controls` = ns("upload_mode"),
+                        tabindex = "-1",
+                        `aria-hidden` = "true",
                         ph_icon("file-csv"),
                         shiny::tags$span(
                             class = "upload-mode-tab-text",
@@ -83,7 +88,8 @@ mod_upload_ui <- function(id) {
                         type = "button",
                         class = "upload-mode-tab",
                         `data-mode` = "camtrap",
-                        `aria-controls` = ns("upload_mode"),
+                        tabindex = "-1",
+                        `aria-hidden` = "true",
                         ph_icon("box-archive"),
                         shiny::tags$span(
                             class = "upload-mode-tab-text",

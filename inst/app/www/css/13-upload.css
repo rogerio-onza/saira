@@ -535,7 +535,9 @@
 }
 
 @media (max-width: 576px) {
-  .upload-dropzone {
+  .upload-dropzone,
+  .home-upload-panel .upload-dropzone {
+    height: auto;
     min-height: 162px;
   }
 
