@@ -562,7 +562,6 @@ mount_export_download <- function(input, output, session, lang_r,
                         } else {
                             NULL
                         }
-                        review_ready <- apply_conservation_status(review_ready, conservation_payload)
 
                         raw_df <- if (!is.null(raw_data_r) && shiny::is.reactive(raw_data_r)) {
                             tryCatch(raw_data_r(), error = function(e) data.frame())
@@ -579,13 +578,6 @@ mount_export_download <- function(input, output, session, lang_r,
                         } else {
                             list()
                         }
-
-                        full_data <- process_for_export_with_unmapped(
-                            review_ready,
-                            raw_data = raw_df,
-                            map_values = mv,
-                            overridden_terms = overridden_mapping_terms(cv)
-                        )
 
                         # Generalize coordinates of sensitive/threatened species
                         # before they reach the IPT bundle, each to the grid its
@@ -615,15 +607,31 @@ mount_export_download <- function(input, output, session, lang_r,
                         } else {
                             stats::setNames(character(0), character(0))
                         }
+                        # Masks before process_for_export_with_unmapped(): that
+                        # step turns the coordinates into numbers, "-19.900"
+                        # loses its trailing zeros, and the precision clamp then
+                        # picks a coarser grid than the Generalization tab shows.
                         masked <- mask_sensitive_coordinates(
-                            full_data,
+                            review_ready,
                             decisions = export_sensitivity_payload(),
                             generalization = gen_levels,
                             enabled = is.list(gen) && isTRUE(gen$enabled),
                             lang = lang_r(),
                             justification = if (is.list(gen)) gen$justification else NULL
                         )
-                        export_data <- masked$masked
+                        # After the mask, so a generalized row outside Brazil
+                        # still gets the MMA category its dataGeneralizations cites.
+                        masked$masked <- apply_conservation_status(
+                            masked$masked, conservation_payload,
+                            generalized = seq_len(nrow(masked$masked)) %in% masked$rows
+                        )
+                        export_data <- process_for_export_with_unmapped(
+                            masked$masked,
+                            raw_data = raw_df,
+                            map_values = mv,
+                            overridden_terms = overridden_mapping_terms(cv),
+                            sensitive_rows = masked$rows
+                        )
 
                         tmpdir <- tempfile("saira_export_")
                         dir.create(tmpdir, showWarnings = FALSE, recursive = TRUE)
@@ -638,7 +646,7 @@ mount_export_download <- function(input, output, session, lang_r,
                         # the archive.
                         fnames <- export_bundle_filenames(
                             dataset_name = cv$datasetName,
-                            has_sensitive = masked$n_masked > 0L
+                            has_sensitive = nrow(masked$real) > 0L
                         )
                         core_path  <- file.path(tmpdir, "occurrence.txt")
                         meta_path  <- file.path(tmpdir, "meta.xml")
@@ -691,13 +699,25 @@ mount_export_download <- function(input, output, session, lang_r,
                                 )[[1]]
                             }
                         }
-                        if (masked$n_masked > 0L) {
+                        # The EML title is the dataset name the user gave
+                        # (constant card or mapped column), not "Saira export".
+                        if ("datasetName" %in% names(export_data)) {
+                            ds_vals <- trimws(as.character(export_data[["datasetName"]]))
+                            ds_vals <- ds_vals[!is.na(ds_vals) & nzchar(ds_vals)]
+                            if (length(ds_vals) > 0L) {
+                                eml_metadata$title <- names(
+                                    sort(table(ds_vals), decreasing = TRUE)
+                                )[[1]]
+                            }
+                        }
+                        # The private file also holds the withheld rows.
+                        if (nrow(masked$real) > 0L) {
                             review_date <- if (is.list(gen)) gen$review_date else NULL
                             if (is.null(review_date) || length(review_date) == 0L) {
                                 review_date <- Sys.Date() + 730
                             }
                             eml_metadata$sensitivity <- list(
-                                n_masked = masked$n_masked,
+                                n_masked = nrow(masked$real),
                                 review_date = format(as.Date(review_date), "%Y-%m-%d"),
                                 lang = lang_r()
                             )
@@ -714,7 +734,8 @@ mount_export_download <- function(input, output, session, lang_r,
                                 lang = lang_r(),
                                 id_strategy = id_strategy,
                                 constants = cv,
-                                id_counts = id_counts
+                                id_counts = id_counts,
+                                source_file = attr(raw_df, "source_file") %||% NA_character_
                             ),
                             guide_path,
                             useBytes = TRUE
@@ -722,24 +743,22 @@ mount_export_download <- function(input, output, session, lang_r,
 
                         zip_files <- c(core_path, meta_path, eml_path,
                                        xlsx_path, guide_path)
-                        if (masked$n_masked > 0L) {
+                        if (nrow(masked$real) > 0L) {
                             real_path <- file.path(
                                 tmpdir,
                                 fnames$auxiliary[["sensitive_coords"]]
                             )
-                            real_csv <- readr::format_csv(masked$real, na = "")
+                            readme_path <- file.path(
+                                tmpdir,
+                                fnames$auxiliary[["sensitive_readme"]]
+                            )
+                            readr::write_csv(masked$real, real_path, na = "")
                             writeLines(
-                                c(
-                                    paste0(
-                                        "# ",
-                                        tr("sensitive_real_coords_notice", lang_r())
-                                    ),
-                                    real_csv
-                                ),
-                                real_path,
+                                enc2utf8(tr("sensitive_real_coords_notice", lang_r())),
+                                readme_path,
                                 useBytes = TRUE
                             )
-                            zip_files <- c(zip_files, real_path)
+                            zip_files <- c(zip_files, real_path, readme_path)
                         }
 
                         zip::zipr(

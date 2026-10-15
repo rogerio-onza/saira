@@ -246,7 +246,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     class = "export-kpis",
                     kpi(s$record_count, tr("export_kpi_records", lang), records_sub),
                     kpi(n_fix, tr("export_kpi_corrections", lang), fixes_sub),
-                    kpi(nrow(gen), tr("export_kpi_generalized", lang),
+                    kpi(count_distinct_species(gen$scientificName), tr("export_kpi_generalized", lang),
                         if (nrow(gen) == 0L) tr("export_gen_none_short", lang) else tr("export_kpi_generalized_sub", lang)),
                     kpi(length(s$files$dwca) + n_aux, tr("export_kpi_files", lang),
                         sprintf(tr("export_kpi_files_sub", lang), length(s$files$dwca), n_aux))
@@ -280,7 +280,10 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 ), "go_fix_terms", tr("export_fix_terms_cta", lang)))
             }
             if (isTRUE(s$bor_blank_count > 0L)) {
-                add(pending_row("block", sprintf(tr("export_blocked_bor_blank", lang), s$bor_blank_count),
+                add(pending_row("block", shiny::tagList(
+                    sprintf(tr("export_blocked_bor_blank", lang), s$bor_blank_count), " ",
+                    shiny::tags$code(format_row_list(s$bor_blank_rows))
+                ),
                                 if (length(s$missing_required) == 0L) "go_fix_terms",
                                 tr("export_action_mapping", lang)))
             }
@@ -299,6 +302,30 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     shiny::tags$code(paste(
                         sprintf(tr("export_date_range_row", lang),
                                 di$sample$row, di$sample$column, di$sample$value),
+                        collapse = ", "
+                    ))
+                ), "go_preview", tr("export_action_preview", lang)))
+            }
+            du <- s$date_unparsed
+            if (is.list(du) && isTRUE(du$count > 0L)) {
+                add(pending_row("warn", shiny::tagList(
+                    shiny::strong(tr("export_date_invalid_title", lang)), " ",
+                    sprintf(tr("export_date_invalid_body", lang), du$count), " ",
+                    shiny::tags$code(paste(
+                        sprintf(tr("export_date_range_row", lang),
+                                du$sample$row, du$sample$column, du$sample$value),
+                        collapse = ", "
+                    ))
+                ), "go_preview", tr("export_action_preview", lang)))
+            }
+            fc <- s$formula_cells
+            if (is.list(fc) && isTRUE(fc$count > 0L)) {
+                add(pending_row("warn", shiny::tagList(
+                    shiny::strong(tr("export_formula_title", lang)), " ",
+                    sprintf(tr("export_formula_body", lang), fc$count), " ",
+                    shiny::tags$code(paste(
+                        sprintf(tr("export_date_range_row", lang),
+                                fc$sample$row, fc$sample$column, fc$sample$value),
                         collapse = ", "
                     ))
                 ), "go_preview", tr("export_action_preview", lang)))
@@ -323,14 +350,17 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }
             # Preserving unmapped columns in the CSV does not publish them:
             # meta.xml declares only recognized DwC terms, so GBIF drops the
-            # rest. `exclude` must stay in step with
-            # process_for_export_with_unmapped(): a raw column whose name is
-            # already an export column is published under that name.
+            # rest. The call stays in step with process_for_export_with_unmapped().
             unmapped_cols <- unmapped_raw_columns(
                 call_r(raw_data_r), call_r(map_values_r),
-                exclude = names(call_r(mapped_data_r)),
                 overridden_terms = overridden_mapping_terms(call_r(custom_values_r))
             )
+            if (length(s$zero_count_rows) > 0L) {
+                add(pending_row("info", shiny::tagList(
+                    sprintf(tr("export_zero_count_absent", lang), length(s$zero_count_rows)), " ",
+                    shiny::tags$code(format_row_list(s$zero_count_rows))
+                )))
+            }
             if (length(unmapped_cols) > 0L) {
                 add(pending_row("info", shiny::tagList(
                     sprintf(tr("export_unmapped_not_published", lang), length(unmapped_cols)), " ",
@@ -490,7 +520,8 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             s <- summary_r()
             if (is.null(s) || !is.list(s) || s$record_count == 0L) return(NULL)
             lang <- lang_r()
-            n_block <- length(s$missing_required) + isTRUE(s$bor_blank_count > 0L) +
+            # One per pending row: the missing terms share a single row.
+            n_block <- isTRUE(length(s$missing_required) > 0L) + isTRUE(s$bor_blank_count > 0L) +
                 isTRUE(s$justification_pending)
             shiny::tagList(
                 ph_icon("file-zipper"),

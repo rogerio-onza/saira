@@ -40,6 +40,21 @@ build_e2e_app <- function() {
 # A padded copy of one flow failed the same way, so the file size is the
 # trigger. The mechanism is not known.
 build_e2e_app <- utils::removeSource(build_e2e_app)
+# The function also carries its environment chain, and its parent holds the
+# package functions that helper-source-utils.R copies, with their sources.
+# After ADR-160 the same startup failure came back in every flow. Only
+# app_root goes with it now.
+environment(build_e2e_app) <- list2env(list(app_root = app_root), parent = globalenv())
+# Poll from R. wait_for_js() polls with timers inside the page, and late in a
+# long run Chrome stopped them: a button that was already enabled timed out.
+wait_until_js <- function(app, script, timeout = 30000) {
+    deadline <- Sys.time() + timeout / 1000
+    repeat {
+        if (isTRUE(app$get_js(script))) return(invisible(TRUE))
+        if (Sys.time() > deadline) stop("Timed out waiting for: ", script, call. = FALSE)
+        Sys.sleep(0.25)
+    }
+}
 
 # --- Flow 1: Upload -> Mapping -> Preview -> Download ---
 
@@ -401,6 +416,8 @@ testthat::test_that("E2E: slash dates export as ISO and an out-of-range year is 
     app$wait_for_idle(timeout = 10000)
     app$click(selector = "#mapping-auto_map")
     app$wait_for_idle(timeout = 20000)
+    # license is required since #143, and the sheet has no license column.
+    app$set_inputs(`mapping-custom_license` = "CC BY 4.0")
 
     app$click(selector = "a[data-value='export']")
     app$wait_for_idle(timeout = 15000)
@@ -411,6 +428,12 @@ testthat::test_that("E2E: slash dates export as ISO and an out-of-range year is 
     testthat::expect_true(grepl("eventDate", summary_html, fixed = TRUE))
 
     # ... and the export is not blocked by it.
+    # A user can click only an enabled button. The gate can still be catching
+    # up with the last mapping change when the tab opens.
+    wait_until_js(
+        app,
+        "(function () { var b = document.getElementById('export-download_trigger'); return !!b && !b.disabled; })()"
+    )
     zip_path <- app$get_download("export-download_real")
     on.exit(unlink(zip_path), add = TRUE)
 
@@ -587,12 +610,13 @@ testthat::test_that("E2E: Table | Problems in the Preview switches in the browse
 
     app$wait_for_idle(timeout = 10000)
 
-    # An empty eventDate is a problem, so the tab opens in Problems.
+    # A date that does not exist is a problem, so the tab opens in Problems.
+    # A blank eventDate is not one: the Export does not block it (B24).
     csv_path <- tempfile(fileext = ".csv")
     writeLines(
         c("scientificName,decimalLatitude,decimalLongitude,eventDate",
           "Panthera onca,-10.5,-55.2,2024-01-15",
-          "Leopardus pardalis,-11.3,-54.8,"),
+          "Leopardus pardalis,-11.3,-54.8,2024-02-30"),
         csv_path
     )
     on.exit(unlink(csv_path), add = TRUE)
@@ -680,6 +704,30 @@ testthat::test_that("E2E: full flow on the demo dataset, with step timings", {
     timed("auto-map", function() app$click(selector = "#mapping-auto_map"))
     mapped <- app$get_values(input = "mapping-map_scientificName")$input
     testthat::expect_true(nzchar(mapped[["mapping-map_scientificName"]]))
+    # license is required since #143, and the demo sheet has no license column.
+    app$set_inputs(`mapping-custom_license` = "CC BY 4.0")
+    # The suite runs on an empty alias store, so this checks that auto-map
+    # finds the demo date column through the bundled synonyms alone.
+    mapped_date <- app$get_values(input = "mapping-map_eventDate")$input
+    testthat::expect_identical(mapped_date[["mapping-map_eventDate"]], "data_registro")
+    # A blank basisOfRecord blocks the download since #161. "Coleta" can name
+    # more than one term, so the assistant asks, as a user would answer it.
+    app$click("mapping-open_basis_of_record_assistant")
+    wait_until_js(app, "document.querySelectorAll('.bor-assistant-raw-value').length > 0")
+    coleta_id <- app$get_js("(function () {
+      var cells = document.querySelectorAll('.bor-assistant-raw-value');
+      for (var i = 0; i < cells.length; i++) {
+        if (cells[i].textContent.trim() === 'Coleta') {
+          return cells[i].closest('tr').querySelector('select').id;
+        }
+      }
+      return '';
+    })()")
+    testthat::expect_true(nzchar(coleta_id))
+    do.call(app$set_inputs, stats::setNames(list("PreservedSpecimen"), coleta_id))
+    app$click("mapping-save_basis_of_record_assistant")
+    wait_until_js(app, "document.querySelector('.bor-assistant-modal') === null")
+    app$wait_for_idle(timeout = 10000)
 
     timed("open preview", go_to("preview"))
     testthat::expect_true(nchar(app$get_html("#preview-datatable")) > 0L)
@@ -693,6 +741,12 @@ testthat::test_that("E2E: full flow on the demo dataset, with step timings", {
     testthat::expect_true(nchar(app$get_html(".sensitive-coords-page")) > 0L)
 
     timed("open export", go_to("export"))
+    # A user can click only an enabled button. The gate can still be catching
+    # up with the last mapping change when the tab opens.
+    wait_until_js(
+        app,
+        "(function () { var b = document.getElementById('export-download_trigger'); return !!b && !b.disabled; })()"
+    )
     started <- Sys.time()
     zip_path <- app$get_download("export-download_real")
     timings[nrow(timings) + 1L, ] <- list(

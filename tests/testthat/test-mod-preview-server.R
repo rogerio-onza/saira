@@ -150,6 +150,48 @@ testthat::test_that("mod_preview_server fixes a differing year per row and repla
     )
 })
 
+testthat::test_that("mod_preview_server marks a count of 0 with present as absent (D07)", {
+    df <- data.frame(
+        occurrenceID = c("a1", "a2", "a3", "a4"),
+        scientificName = "Puma concolor",
+        individualCount = c("0", "0", "3", "0"),
+        occurrenceStatus = "present",
+        stringsAsFactors = FALSE
+    )
+    shiny::testServer(
+        mod_preview_server,
+        args = list(mapped_data_r = shiny::reactive(df), lang_r = shiny::reactive("en")),
+        {
+            edited_r <- attr(session$getReturned(), "edited_data_r")
+            session$setInputs(mode = "problems")
+            p <- problems_r()
+            zero <- which(p$type == "count_present_zero")
+            testthat::expect_true(grepl("Mark absent", build_rows_df(zero)$action[1], fixed = TRUE))
+
+            # One row only with the same-value box off.
+            session$setInputs(same_value = FALSE, other = zero[1])
+            testthat::expect_equal(edited_r()$occurrenceStatus, c("absent", "present", "present", "present"))
+            testthat::expect_equal(build_rows_df(zero[1])$fix, "occurrenceStatus: absent")
+
+            # The other open rows of the problem, and not row 3 (count 3).
+            session$setInputs(same_value = TRUE, other = zero[2])
+            testthat::expect_equal(edited_r()$occurrenceStatus, c("absent", "absent", "present", "absent"))
+            testthat::expect_true(all(!is.na(problem_edit_r()[zero])))
+
+            # Undo on one row of that click undoes the whole click.
+            session$setInputs(undo = zero[2])
+            testthat::expect_equal(edited_r()$occurrenceStatus, c("absent", "present", "present", "present"))
+            testthat::expect_true(all(is.na(problem_edit_r()[zero[2:3]])))
+
+            # A typed count still corrects the row the other way.
+            pos <- match(zero[2], rows_base_r())
+            session$setInputs(rows_table_cell_edit = list(row = pos, col = 4L, value = "10"))
+            testthat::expect_equal(edited_r()$individualCount, c("0", "10", "3", "0"))
+            testthat::expect_false(is.na(problem_edit_r()[zero[2]]))
+        }
+    )
+})
+
 testthat::test_that("mod_preview_server record panel shows taxon clues for a scientificName row", {
     df <- data.frame(
         occurrenceID = c("a1", "a2"),

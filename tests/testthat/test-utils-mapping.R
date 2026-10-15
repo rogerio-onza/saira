@@ -589,6 +589,20 @@ testthat::test_that("run_rostrum_stage1 caps a non-exact eventDate name at SUGER
     testthat::expect_identical(out_exact$selected_col[[1]], "eventDate")
 })
 
+testthat::test_that("the bundled synonyms suggest data_registro for eventDate", {
+    # The demo sheet names its date column data_registro. Without this synonym,
+    # a new install left eventDate blank and the export blocked.
+    syn <- load_dwc_synonyms_v1(path = test_data_path("dwc_synonyms_v1.rds"))
+    dwc_terms <- data.frame(term = c("eventDate"), stringsAsFactors = FALSE)
+    df <- data.frame(
+        data_registro = c("22/03/2024", "26/04/2020"),
+        stringsAsFactors = FALSE
+    )
+    out <- run_rostrum_stage1(df, dwc_terms, syn, options = rostrum_options())
+    testthat::expect_identical(out$status[[1]], "SUGERIDO")
+    testthat::expect_identical(out$selected_col[[1]], "data_registro")
+})
+
 testthat::test_that("run_rostrum_stage1 resolves conflicts by strongest score", {
     syn <- data.frame(
         term = c("individualCount", "samplingEffort"),
@@ -850,8 +864,8 @@ testthat::test_that("auto_suggest_basis_of_record_terms matches Spanish labels a
 })
 
 testthat::test_that("auto_suggest_basis_of_record_terms leaves ambiguous and blank values empty", {
-    raw <- c("Coleta", "Registro fotográfico", "Unknown method", "", NA_character_)
-    testthat::expect_identical(auto_suggest_basis_of_record_terms(raw), rep("", 5L))
+    raw <- c("Coleta", "Unknown method", "", NA_character_)
+    testthat::expect_identical(auto_suggest_basis_of_record_terms(raw), rep("", 4L))
 })
 
 testthat::test_that("map_basis_of_record_values converts without the assistant and keeps its decisions", {
@@ -2101,7 +2115,7 @@ testthat::test_that("extract_scientific_name_components separates authorship fro
     )
     testthat::expect_identical(
         scientific_name_without_authorship(parts),
-        c("Panthera onca", "Puma concolor", "Panthera onca palustris",
+        c("Panthera onca", "Puma concolor", "Panthera onca subsp. palustris",
           "Dasypus septemcinctus hybridus", "Panthera onca")
     )
 })
@@ -2190,4 +2204,36 @@ testthat::test_that("a mapped authorship column wins over the parsed one", {
 
     testthat::expect_identical(res$data$scientificNameAuthorship, "Linnaeus")
     testthat::expect_identical(res$data$scientificName, "Panthera onca")
+})
+
+testthat::test_that("the basisOfRecord assistant lists blank cells last and maps them", {
+    raw <- c("Coleta", "", NA, "coleta", "Observa\u00e7\u00e3o")
+    entries <- extract_basis_of_record_unique_entries(raw)
+    testthat::expect_identical(entries$key, c("coleta", "observa\u00e7\u00e3o", saira:::bor_blank_key))
+    testthat::expect_identical(entries$raw[[3]], "")
+
+    out <- map_basis_of_record_values(raw, c(coleta = "PreservedSpecimen", "\u2205" = "HumanObservation"))
+    testthat::expect_identical(out[2:3], c("HumanObservation", "HumanObservation"))
+    # With no decision, a blank cell stays blank.
+    testthat::expect_identical(map_basis_of_record_values(c("", NA)), c("", ""))
+})
+
+testthat::test_that("a semicolon splits list terms only (B40)", {
+    df <- data.frame(a = "linha 2 com; separador", stringsAsFactors = FALSE)
+    testthat::expect_equal(build_term_value("occurrenceRemarks", df, "a")$values, "linha 2 com; separador")
+    testthat::expect_equal(build_term_value("recordedBy", df, "a")$values, "linha 2 com | separador")
+})
+
+testthat::test_that("photo, audio and specimen get a basisOfRecord suggestion (B30)", {
+    testthat::expect_equal(
+        auto_suggest_basis_of_record_terms(c("Foto", "Áudio", "Specimen", "gravador autônomo", "Registro fotográfico")),
+        c("HumanObservation", "HumanObservation", "PreservedSpecimen", "MachineObservation", "HumanObservation")
+    )
+    # "Coleta" names a specimen or a tissue sample, so the assistant asks.
+    testthat::expect_equal(auto_suggest_basis_of_record_terms("Coleta"), "")
+})
+
+testthat::test_that("sex values with both sexes or a hermaphrodite get a suggestion (B31)", {
+    testthat::expect_equal(vocabulary_suggestions("sex", "F | M"), "mixed")
+    testthat::expect_equal(vocabulary_suggestions("sex", "Hermafrodita"), "other")
 })

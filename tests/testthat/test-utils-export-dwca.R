@@ -323,3 +323,15 @@ testthat::test_that("process_for_export preserves id_strategy attribute through 
     out <- process_for_export(df)
     testthat::expect_identical(attr(out, "id_strategy"), "generated")
 })
+
+testthat::test_that("compute_dataset_extents skips placeholder points and future dates (B41)", {
+    df <- data.frame(
+        decimalLatitude = c("-23.5", "0", "-90", "-10", "12"),
+        decimalLongitude = c("-46.6", "0", "-180", "-40", "12"),
+        eventDate = c("2020-01-01", "2021-05-01", "2999-01-10", "", "2019-03-02"),
+        stringsAsFactors = FALSE
+    )
+    ext <- compute_dataset_extents(df)
+    testthat::expect_equal(unname(ext$bbox), c(-46.6, -40, -10, -23.5))
+    testthat::expect_equal(unname(ext$dates), c("2019-03-02", "2021-05-01"))
+})

@@ -89,6 +89,13 @@ sex,f/m,mixed,FALSE
 sex,m e f,mixed,FALSE
 sex,m y f,mixed,FALSE
 sex,ambos,mixed,FALSE
+sex,f | m,mixed,FALSE
+sex,m | f,mixed,FALSE
+sex,f|m,mixed,FALSE
+sex,m|f,mixed,FALSE
+sex,hermafrodita,other,FALSE
+sex,hermafrodito,other,FALSE
+sex,hermaphrodite,other,FALSE
 sex,outro,other,TRUE
 sex,otro,other,TRUE
 lifeStage,adult,adult,TRUE

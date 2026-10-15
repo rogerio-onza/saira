@@ -1416,7 +1416,24 @@ query_brprovider <- function(query_names, provider_id,
     normalize_brprovider_result(
         as.data.frame(raw, stringsAsFactors = FALSE),
         provider_id
-    )
+    ) |>
+        brprovider_keep_queried(names_chr)
+}
+
+# Rows that answer one of the queried names. faunabr answers a trinomial it
+# does not hold with the binomial in input_name ("Canis lupus familiaris" ->
+# "Canis lupus"). That row named a taxon the user did not type, so the names
+# list showed one name more than the report (B43). The trinomial stays
+# pending and goes to GBIF.
+brprovider_keep_queried <- function(result_df, query_names) {
+    if (!is.data.frame(result_df) || nrow(result_df) == 0L) {
+        return(result_df)
+    }
+    idx <- match(tolower(result_df$query_name), tolower(query_names))
+    result_df$query_name <- query_names[idx]
+    out <- result_df[!is.na(idx), , drop = FALSE]
+    rownames(out) <- NULL
+    out
 }
 
 # ---------------------------------------------------------------------------

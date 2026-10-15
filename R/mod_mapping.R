@@ -146,17 +146,38 @@ mod_mapping_ui <- function(id) {
                 card.classList.toggle('field-card-collapsed', collapse);
                 if (collapse) { terms.push(cardTerm(card, prefix)); }
               });
-              setHidden(group, terms.length === 0);
-              setText(group.querySelector('.mapping-more-label'), terms.length + ' ' +
-                (terms.length === 1 ? group.dataset.one : group.dataset.other));
-              setText(group.querySelector('.mapping-more-terms'), terms.join(', '));
+              setMoreGroupText(group, terms);
             });
+          }
+          function setMoreGroupText(group, terms) {
+            setHidden(group, terms.length === 0);
+            setText(group.querySelector('.mapping-more-label'), terms.length + ' ' +
+              (terms.length === 1 ? group.dataset.one : group.dataset.other));
+            setText(group.querySelector('.mapping-more-terms'), terms.join(', '));
           }
           // jQuery, not addEventListener: a server update of the radio
           // triggers a jQuery change event, which a native listener misses.
           window.jQuery(document).on('change', '.shiny-input-radiogroup', function () {
             var m = /^(.*-)mapped_filter$/.exec(this.id || '');
             if (m) { applyMappingFilter(m[1]); }
+          });
+          // A fixed value turned on by a guide import does not change the
+          // filter, so the row stayed collapsed with the value out of sight.
+          // Only that row opens: a row that got a column stays a row (ADR-137).
+          window.jQuery(document).on('change', 'input[type=\"checkbox\"]', function () {
+            var m = /^(.*-)usecustom_(.*)$/.exec(this.id || '');
+            if (!m || !this.checked) { return; }
+            var card = document.getElementById(m[1] + 'fieldcard_' + m[2]);
+            if (!card || !card.classList.contains('field-card-collapsed')) { return; }
+            card.classList.remove('field-card-compact', 'field-card-collapsed');
+            var grid = card.parentElement;
+            var group = grid.querySelector(':scope > .mapping-more-group');
+            if (!group) { return; }
+            var terms = [];
+            grid.querySelectorAll(':scope > .field-card.field-card-collapsed').forEach(function (c) {
+              terms.push(cardTerm(c, m[1]));
+            });
+            setMoreGroupText(group, terms);
           });
           // A rebuild can start before the server gets a filter switch, so
           // the new grid gets the filter on screen.
@@ -2062,7 +2083,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # it nowhere and the term leaves the next export.
             for (term in intersect(names(consts), constant_value_terms())) {
                 shiny::updateCheckboxInput(session, paste0("usecustom_", term), value = TRUE)
-                shiny::updateTextInput(session, paste0("custom_", term), value = consts[[term]])
+                if (identical(term, "basisOfRecord")) {
+                    shiny::updateSelectInput(session, "custom_basisOfRecord", selected = consts[[term]])
+                } else {
+                    shiny::updateTextInput(session, paste0("custom_", term), value = consts[[term]])
+                }
             }
 
             # Seed personal aliases for cross-dataset auto-mapping (ADR-087);

@@ -662,7 +662,7 @@ field_names <- data.frame(
         rep("establishmentMeans", 4),
         rep("locationID", 3),
         rep("associatedMedia", 6),
-        rep("eventDate", 6),
+        rep("eventDate", 9),
         rep("individualCount", 2)
     ),
     synonym = c(
@@ -677,6 +677,7 @@ field_names <- data.frame(
         "station", "estacao", "estacion",
         "photo", "photo id", "foto", "image", "imagem", "imagen",
         "date", "fecha", "timestamp", "datetime", "data hora", "fecha hora",
+        "data registro", "data de registro", "data do registro",
         "individuals", "number of individuals"
     ),
     name_score = c(
@@ -691,6 +692,7 @@ field_names <- data.frame(
         0.91, 0.91, 0.91,
         0.92, 0.92, 0.92, 0.92, 0.92, 0.92,
         0.93, 0.93, 0.93, 0.93, 0.93, 0.93,
+        0.93, 0.93, 0.93,
         0.92, 0.94
     ),
     lang = c(
@@ -705,6 +707,7 @@ field_names <- data.frame(
         "en", "pt", "es",
         "en", "en", "pt", "en", "pt", "es",
         "en", "es", "en", "en", "pt", "es",
+        "pt", "pt", "pt",
         "en", "en"
     ),
     active = TRUE,

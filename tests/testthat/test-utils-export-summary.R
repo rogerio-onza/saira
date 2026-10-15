@@ -171,7 +171,9 @@ testthat::test_that("build_export_summary blocks export when some basisOfRecord 
     s <- saira:::build_export_summary(mapped_data = df)
     testthat::expect_true(s$all_required_present)
     testthat::expect_identical(s$bor_blank_count, 1L)
+    testthat::expect_identical(s$bor_blank_rows, 1L)
     testthat::expect_true(s$export_blocked)
+    testthat::expect_identical(saira:::format_row_list(1:12), "1, 2, 3, 4, 5, 6, 7, 8, 9, 10 (+2)")
 })
 
 testthat::test_that("slugify_dataset_name folds accents and collapses separators", {
@@ -208,4 +210,27 @@ testthat::test_that("build_export_summary reports out-of-range years without blo
 
     clean <- saira:::build_export_summary(sample_mapped())
     testthat::expect_identical(clean$date_issues$count, 0L)
+})
+
+testthat::test_that("build_export_summary counts the dates the conversion left raw", {
+    df <- sample_mapped()
+    df$eventDate <- c("2020-13-45", "2024-02-02")
+
+    summary <- saira:::build_export_summary(df)
+
+    testthat::expect_identical(summary$date_unparsed$count, 1L)
+    testthat::expect_identical(summary$date_unparsed$sample$value, "2020-13-45")
+    testthat::expect_false(summary$export_blocked)
+    testthat::expect_identical(saira:::build_export_summary(sample_mapped())$date_unparsed$count, 0L)
+})
+
+testthat::test_that("build_export_summary lists counts of 0 with no occurrenceStatus (D07)", {
+    df <- sample_mapped()
+    df$individualCount <- c("0", "0")
+    df$occurrenceStatus <- c("", "absent")
+    s <- saira:::build_export_summary(df)
+    testthat::expect_equal(s$zero_count_rows, 1L)
+    testthat::expect_false(s$export_blocked)
+    df$occurrenceStatus <- NULL
+    testthat::expect_equal(saira:::build_export_summary(df)$zero_count_rows, c(1L, 2L))
 })

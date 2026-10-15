@@ -20,6 +20,7 @@ mod_validate_coords_ui <- function(id) {
                 class = "validate-coords-toolbar",
                 shiny::uiOutput(ns("action_card")),
                 shiny::uiOutput(ns("transposed_panel")),
+                shiny::uiOutput(ns("outside_panel")),
                 shiny::uiOutput(ns("swap_fill_panel")),
                 shiny::uiOutput(ns("country_panel"))
             ),
@@ -149,6 +150,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             stream_filter = "all",
             last_run_status = "idle",
             transposed_table = NULL,     # data.frame of correctable rows (preview)
+            outside_table = NULL,        # rows outside the informed country, no fix
             transposed_applied = FALSE,
             coords_corrections = NULL,    # transposed payload applied at export
             country_fill_table = NULL,    # data.frame of fillable rows (preview)
@@ -1164,6 +1166,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rv$transposed_applied <- FALSE
                 rv$coords_corrections <- NULL
                 rv$transposed_table <- NULL
+                rv$outside_table <- NULL
                 tr_res <- tryCatch(
                     coords_transposed_corrections(
                         df,
@@ -1193,6 +1196,17 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                         decimalLatitude = tr_res$lat_new[ci],
                         decimalLongitude = tr_res$lon_new[ci],
                         transform = tr_res$transform[ci],
+                        stringsAsFactors = FALSE
+                    )
+                }
+
+                if (!is.null(tr_res) && isTRUE(tr_res$available) && any(tr_res$outside)) {
+                    oi <- which(tr_res$outside)
+                    rv$outside_table <- data.frame(
+                        row = oi,
+                        country = as.character(df$country)[oi],
+                        lat = as_coord_numeric(df$decimalLatitude)$num[oi],
+                        lon = as_coord_numeric(df$decimalLongitude)$num[oi],
                         stringsAsFactors = FALSE
                     )
                 }
@@ -1318,6 +1332,26 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     icon = ph_icon("wand-magic-sparkles"),
                     class = "btn btn-primary btn-sm"
                 )
+            )
+        })
+
+        # Points outside the informed country that no swap or sign fix brings
+        # back. Only the person can say which value is wrong, so no button.
+        output$outside_panel <- shiny::renderUI({
+            tbl <- rv$outside_table
+            if (is.null(tbl) || nrow(tbl) == 0L) return(NULL)
+            lang <- lang_r()
+            n <- nrow(tbl)
+            ex <- utils::head(tbl, 5L)
+            detail <- paste(sprintf(tr("validate_coords_outside_row", lang), ex$row, ex$country, ex$lat, ex$lon),
+                            collapse = " \u00b7 ")
+            if (n > 5L) {
+                detail <- paste0(detail, " \u00b7 ", sprintf(tr("validate_coords_transposed_more", lang), n - 5L))
+            }
+            coords_fix_chip(
+                applied = FALSE, icon = "triangle-exclamation", detail = detail,
+                label = sprintf(tr("validate_coords_outside_short", lang), n),
+                button = NULL
             )
         })
 
@@ -1615,6 +1649,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rv$stream_filter <- "all"
                 rv$last_run_status <- "idle"
                 rv$transposed_table <- NULL
+                rv$outside_table <- NULL
                 rv$transposed_applied <- FALSE
                 rv$coords_corrections <- NULL
                 rv$country_fill_table <- NULL

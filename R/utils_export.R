@@ -114,7 +114,11 @@ apply_name_review_payload <- function(df, payload = NULL) {
         replacement <- corrected_name
         replacement[is.na(replacement) | !nzchar(replacement)] <- original_name[is.na(replacement) | !nzchar(replacement)]
         replacement[is.na(replacement) | !nzchar(replacement)] <- current_name[is.na(replacement) | !nzchar(replacement)]
+        old_names <- out$scientificName
         out$scientificName[correct_mask] <- replacement
+        # genus and the epithets came from the old name. Without this, a
+        # synonym fix exports "Puma concolor" with genus "Felis".
+        out <- refresh_taxon_terms(out, old_names)
     }
 
     out
@@ -221,10 +225,12 @@ is_brazilian_record <- function(df) {
 #' @param df Data frame to export (post name review).
 #' @param payload Optional list with `include_mma`, `include_iucn` (logical) and
 #'   `taxon_keys` (data.frame of `scientificName`, `taxonID`, `provider`).
+#' @param generalized Optional logical vector, one per row: TRUE where
+#'   `mask_sensitive_coordinates()` protected the row.
 #' @return `df` with an updated `dynamicProperties` column.
 #' @keywords internal
 #' @noRd
-apply_conservation_status <- function(df, payload = NULL) {
+apply_conservation_status <- function(df, payload = NULL, generalized = NULL) {
     if (!is.data.frame(df) || nrow(df) == 0L ||
         !("scientificName" %in% names(df)) ||
         is.null(payload) || !is.list(payload)) {
@@ -251,6 +257,9 @@ apply_conservation_status <- function(df, payload = NULL) {
                 # National list: blank the keys outside Brazil so
                 # merge_dynamic_property() leaves those rows untouched.
                 br <- is_brazilian_record(df)
+                # A row Saira generalized cites its MMA category in
+                # dataGeneralizations, so dynamicProperties carries it too (B12).
+                if (length(generalized) == length(br)) br <- br | generalized
                 mma_category <- sensitive_category_for(names_vec)
                 mma_category[!br] <- NA_character_
                 mma_source <- sensitive_source_for(names_vec)
@@ -356,6 +365,7 @@ process_for_export <- function(df) {
     # Convert countryCode from internal ISO alpha-3 to DwC-required alpha-2.
     # Internal pipeline keeps alpha-3 for CoordinateCleaner compatibility;
     # this is the single export-time boundary that emits alpha-2.
+    df <- derive_country_code(df)
     df <- convert_country_code_to_alpha2(df)
 
     # Reorder columns to canonical DwC sequence (occurrenceID first,
@@ -457,18 +467,23 @@ map_value_sources <- function(map_values) {
 #'   source column names.
 #' @param overridden_terms Character vector of terms whose fixed value won over
 #'   their column mapping (`overridden_mapping_terms()`).
+#' @param sensitive_rows Integer rows whose coordinates the mask generalized or
+#'   withheld. Their coordinate-like raw values are blanked.
 #' @return Data frame: process_for_export(df_processed) + tail of unused raw cols.
 #' @export
 process_for_export_with_unmapped <- function(df_processed, raw_data, map_values,
-                                             overridden_terms = character(0)) {
+                                             overridden_terms = character(0),
+                                             sensitive_rows = integer(0)) {
     out <- process_for_export(df_processed)
     id_strategy <- attr(out, "id_strategy")
 
-    extra_cols <- unmapped_raw_columns(raw_data, map_values, exclude = names(out),
+    # No `exclude`: a raw `decimalLatitude` column that the mapping did not
+    # read keeps its values as `decimalLatitude_original` (B22).
+    extra_cols <- unmapped_raw_columns(raw_data, map_values,
                                        overridden_terms = overridden_terms)
     if (length(extra_cols) == 0L) return(out)
 
-    extras <- raw_data[, extra_cols, drop = FALSE]
+    extras <- blank_coordinate_like_cells(raw_data[, extra_cols, drop = FALSE], sensitive_rows)
     # A rescued column can carry the same name as the DwC term whose fixed
     # value replaced it. Both belong in the file, so the raw one takes an
     # `_original` suffix rather than a duplicate header the IPT cannot read.
@@ -479,6 +494,46 @@ process_for_export_with_unmapped <- function(df_processed, raw_data, map_values,
     combined <- cbind(out, extras)
     attr(combined, "id_strategy") <- id_strategy
     combined
+}
+
+# A raw column whose name says coordinate ("Latitude", "CoordX", "lng",
+# "decimalLongitude", "UTM", "WKT"). "Plataforma" and "Longo" do not match.
+coordinate_like_column <- function(names) {
+    lower <- tolower(names)
+    grepl("(^|[^a-z])(lat|lon|lng|long)", lower) |
+        grepl("[a-z](Lat|Lon|Lng)", names) |
+        grepl("coord|utm|wkt|gps|footprint", lower) |
+        grepl("^[xy]$", lower)
+}
+
+# On the rows the mask generalized or withheld, blank every unmapped value
+# that can hold the exact point (B45): all cells of a coordinate-like column,
+# and in the other columns a decimal number in the coordinate range or a
+# degree sign. An exact "Latitude" next to the generalized decimalLatitude
+# gave the point away to any person who opened the file.
+blank_coordinate_like_cells <- function(extras, rows) {
+    rows <- rows[!is.na(rows) & rows >= 1L & rows <= nrow(extras)]
+    if (!length(rows) || ncol(extras) == 0L) {
+        return(extras)
+    }
+    by_name <- coordinate_like_column(names(extras))
+    for (j in seq_along(extras)) {
+        v <- as.character(extras[[j]])
+        hit <- if (by_name[[j]]) {
+            rep(TRUE, length(rows))
+        } else {
+            cell <- trimws(v[rows])
+            num <- suppressWarnings(as.numeric(sub(",", ".", cell, fixed = TRUE)))
+            (!is.na(num) & abs(num) <= 180 & num != round(num)) |
+                grepl("\u00b0", cell, fixed = TRUE)
+        }
+        hit[is.na(hit)] <- FALSE
+        if (any(hit)) {
+            v[rows[hit]] <- NA_character_
+            extras[[j]] <- v
+        }
+    }
+    extras
 }
 
 #' Write a data frame to .xlsx with every cell forced to text
@@ -1243,6 +1298,35 @@ apply_geodetic_datum <- function(df) {
     df
 }
 
+# Fill a blank countryCode from country (D08). The Coordinates tab resolves
+# each country to ISO3 but never wrote the code, so a sheet with only a country
+# column published no countryCode. A value the publisher mapped stays, and a
+# country the cascade cannot resolve leaves the cell blank.
+derive_country_code <- function(df) {
+    if (!is.data.frame(df) || nrow(df) == 0L || !"country" %in% names(df)) {
+        return(df)
+    }
+    code <- if ("countryCode" %in% names(df)) {
+        as.character(df$countryCode)
+    } else {
+        rep(NA_character_, nrow(df))
+    }
+    blank <- is.na(code) | !nzchar(trimws(code))
+    if (!any(blank)) {
+        return(df)
+    }
+    iso3 <- tryCatch(coords_country_to_iso3(df$country[blank]), error = function(e) NULL)
+    if (is.null(iso3)) {
+        return(df)
+    }
+    code[blank] <- iso3
+    if (!"countryCode" %in% names(df) && all(is.na(code))) {
+        return(df)
+    }
+    df$countryCode <- code
+    df
+}
+
 #' Convert countryCode to ISO 3166-1 alpha-2 for DwC export
 #'
 #' Saira's internal pipeline keeps `countryCode` in ISO alpha-3 ("BRA") for
@@ -1370,8 +1454,8 @@ build_meta_xml <- function(df, core_filename = "occurrence.txt") {
 #' Compute geographic and temporal extents for EML coverage
 #'
 #' Reads `decimalLatitude`/`decimalLongitude` for the geographic bounding box
-#' and `eventDate` for the temporal range. Returns NA for any extent that
-#' cannot be derived from the data.
+#' and `eventDate` for the temporal range. Placeholder points and future dates
+#' are skipped. Returns NA for any extent that cannot be derived from the data.
 #'
 #' @param df Data frame.
 #' @return Named list with `bbox` (named numeric vector: west/east/north/south)
@@ -1382,8 +1466,10 @@ compute_dataset_extents <- function(df) {
     if (all(c("decimalLatitude", "decimalLongitude") %in% names(df))) {
         lat <- suppressWarnings(as.numeric(df$decimalLatitude))
         lon <- suppressWarnings(as.numeric(df$decimalLongitude))
-        valid <- is.finite(lat) & is.finite(lon) &
-            lat >= -90 & lat <= 90 & lon >= -180 & lon <= 180
+        # The same test the mask uses, so (0,0) and a lat == lon placeholder
+        # do not stretch the box. A pole or antimeridian corner is a filler
+        # value, not a collecting site (B41).
+        valid <- sensitive_point_ok(lat, lon) & abs(lat) < 90 & abs(lon) < 180
         if (any(valid)) {
             bbox[["west"]]  <- min(lon[valid])
             bbox[["east"]]  <- max(lon[valid])
@@ -1397,6 +1483,8 @@ compute_dataset_extents <- function(df) {
         raw <- as.character(df$eventDate)
         iso <- substr(trimws(raw), 1L, 10L)
         parsed <- suppressWarnings(as.Date(iso, format = "%Y-%m-%d"))
+        # A future date is a typing error, and it must not end the coverage.
+        parsed[!is.na(parsed) & parsed > Sys.Date()] <- NA
         if (any(!is.na(parsed))) {
             dates[["begin"]] <- format(min(parsed, na.rm = TRUE), "%Y-%m-%d")
             dates[["end"]]   <- format(max(parsed, na.rm = TRUE), "%Y-%m-%d")
@@ -1728,6 +1816,8 @@ export_bundle_filenames <- function(dataset_name = NULL, has_sensitive = FALSE) 
     )
     if (isTRUE(has_sensitive)) {
         auxiliary[["sensitive_coords"]] <- paste0(slug, "-sensitive-coords.csv")
+        # The notice lives in its own file, so the CSV opens with read.csv() (B44).
+        auxiliary[["sensitive_readme"]] <- paste0(slug, "-sensitive-coords-README.txt")
     }
 
     list(

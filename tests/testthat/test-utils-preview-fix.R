@@ -16,6 +16,13 @@ fix_frame <- function() {
     )
 }
 
+testthat::test_that("detect_preview_problems tells an ambiguous date from an unreadable one", {
+    df <- data.frame(eventDate = c("03/04/2021", "sem data", "2020-01-01"), stringsAsFactors = FALSE)
+    p <- detect_preview_problems(df, max_year = 2026)
+    testthat::expect_setequal(paste(p$row, p$type), c("1 date_ambiguous", "2 date_unparsed"))
+    testthat::expect_identical(unique(preview_problem_types$family[preview_problem_types$type %in% p$type]), "date")
+})
+
 testthat::test_that("detect_preview_problems finds each problem type once per cell", {
     p <- detect_preview_problems(fix_frame(), max_year = 2026)
     key <- paste(p$row, p$term, p$type)
@@ -128,9 +135,16 @@ testthat::test_that("parse_preview_edit leaves an optional term empty", {
         testthat::expect_identical(out$value, "")
         testthat::expect_null(out$error)
     }
-    for (term in c("eventDate", "occurrenceID")) {
+    for (term in c("basisOfRecord", "occurrenceID")) {
         testthat::expect_equal(parse_preview_edit(term, "")$error, "preview_fix_err_blank")
     }
+    # eventDate is recommended, and the Export does not block a blank one.
+    testthat::expect_identical(parse_preview_edit("eventDate", "")$value, "")
+})
+
+testthat::test_that("parse_preview_edit takes a basisOfRecord term in any case", {
+    testthat::expect_identical(parse_preview_edit("basisOfRecord", "humanobservation")$value, "HumanObservation")
+    testthat::expect_identical(parse_preview_edit("basisOfRecord", "Coleta")$error, "preview_fix_err_bor")
 })
 
 testthat::test_that("parse_preview_edit checks the value for each term", {
@@ -159,6 +173,14 @@ testthat::test_that("preview_problem_banner flags only a large share of one prob
     testthat::expect_null(preview_problem_banner(p[1:10, ], n_rows = 20))
 })
 
+testthat::test_that("the banner for blank cells has no example", {
+    p <- data.frame(row = 1:30, term = "scientificName", type = "required_empty",
+                    value = "", stringsAsFactors = FALSE)
+    b <- preview_problem_banner(p, n_rows = 50)
+    testthat::expect_identical(b$type, "required_empty")
+    testthat::expect_identical(b$example, "")
+})
+
 testthat::test_that("a scientificName correction updates the derived taxon terms", {
     df <- data.frame(
         scientificName = c("", "Puma concolor", ""),
@@ -181,4 +203,81 @@ testthat::test_that("a scientificName correction updates the derived taxon terms
     testthat::expect_equal(out$scientificNameAuthorship, c("(Linnaeus, 1766)", NA, NA))
     # No empty column for a term that no new name uses.
     testthat::expect_false("infraspecificEpithet" %in% names(out))
+})
+
+testthat::test_that("parse_preview_edit refuses a date whose day and month can swap", {
+    testthat::expect_identical(parse_preview_edit("eventDate", "05/07/2016")$error, "preview_fix_err_date_ambiguous")
+    testthat::expect_identical(parse_preview_edit("eventDate", "25/07/2016")$value, "2016-07-25")
+    testthat::expect_identical(parse_preview_edit("eventDate", "05/05/2016")$value, "2016-05-05")
+})
+
+testthat::test_that("detect_preview_problems checks eventTime, uncertainty, coordinates and names", {
+    df <- data.frame(
+        scientificName = c("Panthera onca", "P. onca", "Panthera onca x Panthera pardus", "indet."),
+        scientificNameAuthorship = c("(Linnaeus 1758", "", "", ""),
+        eventTime = c("08:30 PM", "14:70", "12:00", "12h30"),
+        coordinateUncertaintyInMeters = c("30 m", "0", "100", "1.000"),
+        decimalLatitude = c("-23.6°", "vinte e dois", "-46,6559", "95"),
+        stringsAsFactors = FALSE
+    )
+    p <- detect_preview_problems(df, max_year = 2026)
+    got <- function(term) { g <- p[p$term == term, c("row", "type", "suggestion")]; g[order(g$row), ] }
+
+    testthat::expect_identical(got("eventTime")$suggestion, c("20:30", NA, "12:30"))
+    testthat::expect_identical(got("coordinateUncertaintyInMeters")$suggestion, c("30", NA, "1000"))
+    testthat::expect_identical(got("decimalLatitude")$row, c(1L, 2L, 4L))
+    testthat::expect_identical(got("decimalLatitude")$suggestion[[1]], "-23.6")
+    testthat::expect_identical(got("scientificName")$type,
+                               c("name_abbreviated", "name_hybrid", "name_placeholder"))
+    testthat::expect_identical(got("scientificNameAuthorship")$type, "name_authorship")
+    testthat::expect_true(all(p$family[startsWith(p$type, "name_")] == "name"))
+})
+
+testthat::test_that("parse_preview_edit converts eventTime, uncertainty and coordinates", {
+    testthat::expect_identical(parse_preview_edit("eventTime", "8:30 pm")$value, "20:30")
+    testthat::expect_identical(parse_preview_edit("eventTime", "25:00")$error, "preview_fix_err_time")
+    testthat::expect_identical(parse_preview_edit("coordinateUncertaintyInMeters", "30 m")$value, "30")
+    testthat::expect_identical(parse_preview_edit("coordinateUncertaintyInMeters", "-5")$error,
+                               "preview_fix_err_uncertainty")
+    testthat::expect_identical(parse_preview_edit("decimalLatitude", "-23,5")$value, "-23,5")
+    testthat::expect_identical(parse_preview_edit("decimalLatitude", "91")$error, "preview_fix_err_coord")
+})
+
+test_that("a threat category in country is flagged (B33)", {
+  df <- data.frame(country = c("VU", "Brasil", "CR", "en"), stringsAsFactors = FALSE)
+  p <- detect_preview_problems(df)
+  expect_equal(p$row[p$type == "country_threat_code"], c(1L, 4L))
+})
+
+test_that("a count of 0 with occurrenceStatus present is flagged (D07)", {
+  df <- data.frame(individualCount = c("0", "0", "3", "0"),
+                   occurrenceStatus = c("present", "absent", "present", ""),
+                   stringsAsFactors = FALSE)
+  p <- detect_preview_problems(df)
+  expect_equal(p$row[p$type == "count_present_zero"], 1L)
+  expect_false(p$bulk[p$type == "count_present_zero"])
+})
+
+test_that("absent in occurrenceStatus corrects a count of 0 with present (D07)", {
+  df <- data.frame(individualCount = c("0", "0", "3"),
+                   occurrenceStatus = c("present", "present", "present"),
+                   stringsAsFactors = FALSE)
+  p <- detect_preview_problems(df)
+  edits <- data.frame(row = 1L, term = "occurrenceStatus", from = "present", to = "absent",
+                      stringsAsFactors = FALSE)
+  hit <- preview_problem_edit(p, edits)
+  expect_equal(hit, c(1L, NA_integer_))
+  # The edit reaches its row only, not row 3, which is right as present.
+  expect_equal(apply_preview_edits(df, edits)$occurrenceStatus, c("absent", "present", "present"))
+  # Another status value does not close the problem.
+  edits$to <- "present"
+  expect_true(all(is.na(preview_problem_edit(p, edits))))
+})
+
+test_that("country and countryCode that disagree are flagged (B04)", {
+  df <- data.frame(country = c("Argentina", "Brasil", "Brasil"),
+                   countryCode = c("BR", "BR", ""), stringsAsFactors = FALSE)
+  p <- detect_preview_problems(df)
+  expect_equal(p$row[p$type == "country_conflict"], 1L)
+  expect_false(p$bulk[p$type == "country_conflict"])
 })

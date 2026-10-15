@@ -261,7 +261,24 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         # `mask_sensitive_coordinates()`. Only the boolean "treat as
         # sensitive" survives -- the masking grid is global (chosen on the
         # Preview tab), so per-species category is no longer editable here.
+        # Synonyms of MMA-listed species (B18), resolved once per validation.
+        synonym_entries_r <- shiny::reactive({
+            synonym_sensitivity_entries(validation_result())
+        })
+
+        # The manual overrides win over a synonym entry for the same name.
         sensitivity_entries_df <- function() {
+            manual <- manual_sensitivity_entries_df()
+            syn <- tryCatch(synonym_entries_r(), error = function(e) NULL)
+            if (!is.data.frame(syn) || nrow(syn) == 0L) {
+                return(manual)
+            }
+            taken <- build_sensitive_match_keys(manual$scientificName)
+            syn <- syn[!build_sensitive_match_keys(syn$scientificName) %in% taken, , drop = FALSE]
+            rbind(manual, syn)
+        }
+
+        manual_sensitivity_entries_df <- function() {
             store <- rv$sensitivity_overrides
             empty <- data.frame(
                 scientificName = character(0),

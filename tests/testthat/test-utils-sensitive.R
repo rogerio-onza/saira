@@ -294,9 +294,12 @@ testthat::test_that("mask generalizes only sensitive rows that have coords", {
     # Row 2 not sensitive -> byte-identical.
     testthat::expect_equal(res$masked$decimalLatitude[2], "10.0")
     testthat::expect_equal(res$masked$decimalLongitude[2], "20.0")
-    # Row 3 sensitive but no latitude -> untouched, not in companion.
-    testthat::expect_equal(res$masked$decimalLatitude[3], "")
-    testthat::expect_false("a3" %in% res$real$occurrenceID)
+    # Row 3 sensitive with the longitude only: the grid cannot move it, so the
+    # axis is removed and kept in the companion (B23).
+    testthat::expect_equal(res$masked$decimalLongitude[3], "")
+    testthat::expect_true("a3" %in% res$real$occurrenceID)
+    testthat::expect_equal(res$n_withheld, 1L)
+    testthat::expect_match(res$masked$dataGeneralizations[3], "removed")
     # Row 4 sensitive + coords -> generalized.
     testthat::expect_equal(res$masked$decimalLatitude[4], "-5.123")
 })
@@ -562,14 +565,64 @@ testthat::test_that("mask skips rows with dataGeneralizations even when uncertai
     testthat::expect_true("c2" %in% res$real$occurrenceID)
 })
 
+testthat::test_that("mask rounds a point finer than its declared uncertainty, once (D04)", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = c("d1", "d2", "d3"),
+        scientificName = "Panthera onca",
+        decimalLatitude = c("-24.4873", "-24.5", "-24.4873"),
+        decimalLongitude = c("-46.6741", "-46.7", "-46.6741"),
+        coordinateUncertaintyInMeters = c("2500", "10000", "2500"),
+        dataGeneralizations = c("", "", "rounded upstream"),
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "extreme", lang = "en")
+    # d1: 4 decimals with 2500 m -> the 0.01 grid fits, not the tier grid.
+    testthat::expect_equal(res$masked$decimalLatitude[1], "-24.49")
+    testthat::expect_equal(res$masked$decimalLongitude[1], "-46.67")
+    testthat::expect_equal(res$masked$coordinatePrecision[1], "0.01")
+    testthat::expect_gt(as.numeric(res$masked$coordinateUncertaintyInMeters[1]), 2500)
+    testthat::expect_match(res$masked$dataGeneralizations[1], "declared uncertainty of 2500 m", fixed = TRUE)
+    testthat::expect_true("d1" %in% res$real$occurrenceID)
+    # d2 already sits on the 0.1 grid that 10 km fits; d3 has publisher text.
+    testthat::expect_equal(res$masked$decimalLatitude[2:3], c("-24.5", "-24.4873"))
+    testthat::expect_equal(res$n_snapped_to_uncertainty, 1L)
+    testthat::expect_equal(res$n_skipped_already_masked, 2L)
+    testthat::expect_equal(nrow(saira:::generalization_map_preview(df, "extreme")), 1L)
+
+    # A second pass changes nothing.
+    again <- saira:::mask_sensitive_coordinates(res$masked, generalization = "extreme", lang = "en")
+    testthat::expect_identical(again$masked$decimalLatitude, res$masked$decimalLatitude)
+    testthat::expect_identical(again$masked$dataGeneralizations, res$masked$dataGeneralizations)
+    testthat::expect_equal(again$n_masked, 0L)
+})
+
+testthat::test_that("dataGeneralizations names the clamped grid apart from the category (D01)", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = "c1", scientificName = "Panthera onca",
+        decimalLatitude = "-23.5", decimalLongitude = "-60",
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "low", lang = "en")
+    testthat::expect_equal(res$masked$coordinatePrecision[1], "1")
+    testthat::expect_match(res$masked$dataGeneralizations[1],
+                           "Category 4 asks for a 0.001 degree grid", fixed = TRUE)
+    testthat::expect_match(res$masked$dataGeneralizations[1],
+                           "keep the 1 degree grid", fixed = TRUE)
+    # No clamp, no note.
+    res_x <- saira:::mask_sensitive_coordinates(df, generalization = "extreme", lang = "en")
+    testthat::expect_no_match(res_x$masked$dataGeneralizations[1], "asks for", fixed = TRUE)
+})
+
 testthat::test_that("mask companion holds original coords + MMA category", {
     local_sensitive_fixture(c("Panthera onca", "Hippocampus reidi"))
     res <- saira:::mask_sensitive_coordinates(make_df(), lang = "en")
 
-    testthat::expect_equal(res$real$occurrenceID, c("a1", "a4"))
-    testthat::expect_equal(res$real$decimalLatitude, c("-23.5612", "-5.1234"))
-    testthat::expect_equal(res$real$decimalLongitude, c("-46.6543", "-39.9876"))
-    testthat::expect_equal(res$real$category, c("CR", "CR"))
+    testthat::expect_equal(res$real$occurrenceID, c("a1", "a3", "a4"))
+    testthat::expect_equal(res$real$decimalLatitude, c("-23.5612", "", "-5.1234"))
+    testthat::expect_equal(res$real$decimalLongitude, c("-46.6543", "-40.0", "-39.9876"))
+    testthat::expect_equal(res$real$category, c("CR", "CR", "CR"))
     testthat::expect_setequal(
         names(res$real),
         c("occurrenceID", "scientificName", "category",
@@ -848,4 +901,86 @@ testthat::test_that("sensitive_reason_statement returns character(0) for empty i
     testthat::expect_equal(
         saira:::sensitive_reason_statement(character(0), "en"), character(0)
     )
+})
+
+testthat::test_that("generalization accepts a decimal comma and keeps trailing zeros", {
+    df <- data.frame(
+        occurrenceID = c("a", "b"),
+        scientificName = "Anodorhynchus hyacinthinus",
+        decimalLatitude = c("-19,91491", "-19.900"),
+        decimalLongitude = c("-56,31851", "-56.310"),
+        stringsAsFactors = FALSE
+    )
+    levels <- c("Anodorhynchus hyacinthinus" = "low")
+
+    testthat::expect_identical(coordinate_decimal_grid(c("-19,91491", "-19.900")), c(1e-05, 1e-03))
+
+    preview <- generalization_map_preview(df, levels)
+    masked <- mask_sensitive_coordinates(df, generalization = levels)
+
+    # Both rows reach the tab, and the export writes what the tab shows.
+    testthat::expect_identical(nrow(preview), 2L)
+    testthat::expect_identical(masked$n_masked, 2L)
+    testthat::expect_equal(as.numeric(masked$masked$decimalLatitude), preview$gen_lat)
+    testthat::expect_equal(as.numeric(masked$masked$decimalLongitude), preview$gen_lon)
+    testthat::expect_equal(as.numeric(masked$masked$coordinateUncertaintyInMeters), preview$unc_m)
+})
+
+testthat::test_that("mask withholds out-of-range points and ignores an invalid uncertainty", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = c("o1", "o2", "o3", "o4"),
+        scientificName = "Panthera onca",
+        decimalLatitude = c("95", "7432000", "0", "-23,5612"),
+        decimalLongitude = c("-46.6", "345000", "0", "-46,6543"),
+        coordinateUncertaintyInMeters = c("", "", "", "999999999"),
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+
+    # B09: the grid cannot move these, so they leave the export.
+    testthat::expect_equal(res$masked$decimalLatitude[1:3], c("", "", ""))
+    testthat::expect_equal(res$n_withheld, 3L)
+    # B34: 999999999 m is larger than the Earth, so it is no generalization.
+    testthat::expect_equal(res$n_skipped_already_masked, 0L)
+    testthat::expect_equal(res$masked$decimalLatitude[4], "-23.6")
+    # B44: one numeric format in the private file.
+    testthat::expect_equal(res$real$decimalLatitude[4], "-23.5612")
+    testthat::expect_true(all(saira:::generalization_map_preview(df, "high")$lat == -23.5612))
+})
+
+testthat::test_that("the stored precision note formats each value on its own", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = c("p1", "p2"), scientificName = "Panthera onca",
+        decimalLatitude = c("-23.5612", "-23.561234567891"),
+        decimalLongitude = c("-46.6543", "-46.654321234567"),
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    testthat::expect_match(res$masked$dataGeneralizations[1], "custodian: 1e-04 degree|custodian: 0.0001 degree")
+    testthat::expect_false(grepl("0.000100000000", res$masked$dataGeneralizations[1], fixed = TRUE))
+})
+
+test_that("synonym_sensitivity_entries() flags synonyms of MMA-listed species", {
+  listed <- "Paubrasilia echinata"
+  skip_if(is.na(sensitive_category_for(listed)), "Paubrasilia echinata not on the bundled MMA list")
+  report <- data.frame(
+    input_name = c("Caesalpinia echinata", "Felis catus", "Caesalpinia echinata", "Puma concolor"),
+    validation_status = c("synonym", "synonym", "synonym", "accepted"),
+    acceptedNameUsageID = c("GBIF:1", "GBIF:2", "GBIF:1", ""),
+    stringsAsFactors = FALSE
+  )
+  lookup <- function(ids) c("GBIF:1" = listed, "GBIF:2" = "Felis silvestris")[ids]
+  out <- synonym_sensitivity_entries(report, lookup = lookup)
+  expect_equal(out$scientificName, "Caesalpinia echinata")
+  expect_true(out$sensitive)
+  expect_equal(out$category, sensitive_category_for(listed))
+  expect_equal(nrow(synonym_sensitivity_entries(NULL, lookup = lookup)), 0L)
+})
+
+test_that("count_distinct_species() groups name variants by canonical name", {
+  expect_equal(count_distinct_species(c("Panthera onca", "panthera onca", "Panthera cf. onca",
+                                        "Panthera aff. onca", "Puma concolor", NA, "")), 2L)
+  expect_equal(count_distinct_species(character(0)), 0L)
 })
