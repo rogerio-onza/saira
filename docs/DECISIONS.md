@@ -3119,3 +3119,17 @@ Formato: ADR leve (Architecture Decision Record).
   - Linha que so a incerteza (>= 1000 m) marca como ja mascarada, com mais casas que a incerteza justifica, vai para a grade mais grossa cujo raio cabe na incerteza. A incerteza soma o raio da celula. Um dataGeneralizations preenchido segue como pulo total, e a segunda passada nao muda nada (D04).
   - individualCount 0: o Preview marca 0 com occurrenceStatus `present`. A linha edita a contagem ou marca `absent` no status, em lote so nas linhas marcadas. Desfazer desfaz o clique inteiro, tambem no lote por linha do ano. O Export lista 0 com status vazio, que o GBIF le como ausencia, sem botao. O app nao muda valor sozinho (D07).
 - **Consequencias**: ilha longe da costa (Queimada Grande) segue como mar na escala grossa. "S 23 33" sem marcas nao converte. Uma longitude digitada como `-60` leva a grade de 1 grau.
+
+## ADR-162: O Export reune os alertas de coordenada e de formula
+
+- **Data**: 2026-10-15
+- **Status**: Aceito.
+- **Contexto**: a revisao de 2026-10-15 achou que o Export nao via a aba Coordenadas nem a contagem do Preview. Um ponto fora da faixa de uma especie nao sensivel ia ao zip sem aviso (B50). O filtro das colunas nao mapeadas apagava medidas como pH (B52) e colunas como `Longo` (B59).
+- **Decisao**:
+  - A ordem das abas fica. O Preview limpa o formato antes das validacoes, e o Export e a etapa que recebe tudo, entao ele reune os alertas.
+  - Bloqueiam o download: coordenada que nao e numero ou esta fora da faixa depois das correcoes aceitas em Coordenadas, e celula com cara de formula (B55, revisa ADR-161).
+  - Avisam sem bloquear: linhas que a aba Coordenadas marcou (mar, 0/0, referencia) sem correcao, e a contagem de problemas abertos no Preview.
+  - O Preview marca `(0, 0)` como valor de preenchimento nos dois eixos.
+  - Nas linhas generalizadas, uma coluna nao mapeada perde a celula quando o nome tem uma palavra de coordenada inteira (`lat`, `long`, `coord*`, `x`, `y`, `utm`...) ou quando o numero fica mais perto do ponto real do que a grade da linha. O simbolo de grau segue apagado.
+  - Os limites de 2 GB e 1000 arquivos valem so para as tabelas do ZIP Camtrap DP, que e tudo o que sai do ZIP.
+- **Consequencias**: a aba Coordenadas precisa rodar para o Export listar os seus alertas. Uma copia do ponto arredondada para mais longe que a grade fica no arquivo, e ela nao revela mais do que o ponto publicado.

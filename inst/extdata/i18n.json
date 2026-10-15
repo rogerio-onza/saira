@@ -279,6 +279,36 @@
     "en": "basisOfRecord is empty in %d record(s). The spreadsheet cell is empty or has a value with no DwC term. Select the term with the assistant on the basisOfRecord card. Rows:",
     "es": "basisOfRecord vacío en %d registro(s). La celda de la hoja está vacía o tiene un valor sin término DwC. Elija el término con el asistente de la tarjeta basisOfRecord. Filas:"
   },
+  "export_blocked_coord_invalid": {
+    "pt": "Coordenada inválida em %d registro(s): não é um número ou está fora da faixa (latitude de -90 a 90, longitude de -180 a 180). Corrija ou apague o valor na prévia. Linhas:",
+    "en": "Invalid coordinate in %d record(s): it is not a number or it is out of range (latitude -90 to 90, longitude -180 to 180). Correct or clear the value in the preview. Rows:",
+    "es": "Coordenada no válida en %d registro(s): no es un número o está fuera del intervalo (latitud de -90 a 90, longitud de -180 a 180). Corrija o borre el valor en la vista previa. Filas:"
+  },
+  "export_coord_flags_title": {
+    "pt": "Coordenadas com alerta",
+    "en": "Flagged coordinates",
+    "es": "Coordenadas con alerta"
+  },
+  "export_coord_flags_body": {
+    "pt": "%d registro(s) seguem com alerta na aba Coordenadas (no mar, 0/0 ou ponto de referência) e sem correção. Linhas:",
+    "en": "%d record(s) still have a flag in the Coordinates tab (at sea, 0/0 or a reference point) and no correction. Rows:",
+    "es": "%d registro(s) siguen con alerta en la pestaña Coordenadas (en el mar, 0/0 o punto de referencia) y sin corrección. Filas:"
+  },
+  "export_action_coords": {
+    "pt": "Ver em Coordenadas",
+    "en": "See in Coordinates",
+    "es": "Ver en Coordenadas"
+  },
+  "export_preview_open_title": {
+    "pt": "Problemas na prévia",
+    "en": "Problems in the preview",
+    "es": "Problemas en la vista previa"
+  },
+  "export_preview_open_body": {
+    "pt": "%d problema(s) seguem abertos na aba Problemas da prévia.",
+    "en": "%d problem(s) are still open in the preview Problems tab.",
+    "es": "%d problema(s) siguen abiertos en la pestaña Problemas de la vista previa."
+  },
   "export_date_range_title": {
     "pt": "Datas com ano fora do intervalo esperado",
     "en": "Dates with a year outside the expected range",
@@ -4204,6 +4234,11 @@
     "en": "Converted to Darwin Core: %d animal occurrences (human, vehicle, blank and unclassified observations are excluded per write_dwc() standard).",
     "es": "Convertido a Darwin Core: %d ocurrencias de animales (las observaciones de humanos, vehículos, vacías y sin clasificar se excluyen según el estándar write_dwc())."
   },
+  "err_camtrap_zip_too_large": {
+    "pt": "ZIP grande demais: as tabelas passam de 2 GB ou de 1000 arquivos depois de descompactadas. Envie só o datapackage.json e os CSVs, sem as fotos.",
+    "en": "ZIP too large: the tables exceed 2 GB or 1000 files once unzipped. Upload only datapackage.json and the CSVs, with no photos.",
+    "es": "ZIP demasiado grande: las tablas superan 2 GB o 1000 archivos al descomprimirlas. Envíe solo datapackage.json y los CSV, sin las fotos."
+  },
   "err_camtrap_invalid_zip": {
     "pt": "ZIP não reconhecido: precisa de CSVs do Camtrap DP (deployments + observations) ou de um export do Wildlife Insights (deployments + projects + images_*).",
     "en": "Unrecognized ZIP: expects Camtrap DP CSVs (deployments + observations) or a Wildlife Insights export (deployments + projects + images_*).",
@@ -4713,6 +4748,11 @@
     "pt": "Coordenada não numérica ou fora do intervalo",
     "en": "Coordinate not numeric or out of range",
     "es": "Coordenada no numérica o fuera del intervalo"
+  },
+  "preview_fix_diag_coord_zero": {
+    "pt": "Coordenada 0, 0: valor de preenchimento, não um ponto",
+    "en": "Coordinate 0, 0: a filler value, not a point",
+    "es": "Coordenada 0, 0: valor de relleno, no un punto"
   },
   "preview_fix_diag_name_hybrid": {
     "pt": "Híbrido: não consulta táxon nem generaliza",

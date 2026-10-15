@@ -481,6 +481,7 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
         n_masked = 0L,
         n_withheld = 0L,
         rows = integer(0),
+        grid = numeric(0),
         n_skipped_already_masked = 0L,
         n_snapped_to_uncertainty = 0L,
         n_clamped_to_precision = 0L
@@ -719,6 +720,9 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     result$n_masked <- length(gen_idx)
     result$n_withheld <- length(wh)
     result$rows <- idx
+    # The grid of each row in `rows`, so the export knows how close a raw copy
+    # of the point may be before it gives the point away (B52).
+    result$grid <- eff_grid[idx]
     result
 }
 

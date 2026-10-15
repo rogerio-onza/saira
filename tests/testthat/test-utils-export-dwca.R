@@ -103,6 +103,17 @@ testthat::test_that("compute_dataset_extents derives bbox and date range from va
     testthat::expect_identical(ext$dates[["end"]], "2024-03-01")
 })
 
+testthat::test_that("compute_dataset_extents reads both ends of an interval and partial dates (B53)", {
+    df <- data.frame(eventDate = c("2019-05-01/2020-11-30", "2018", "2007-11-13/15",
+                                   "2021-02", "2020-13-45"),
+                     stringsAsFactors = FALSE)
+    ext <- compute_dataset_extents(df)
+    testthat::expect_identical(ext$dates[["begin"]], "2007-11-13")
+    testthat::expect_identical(ext$dates[["end"]], "2021-02-28")
+    ext <- compute_dataset_extents(data.frame(eventDate = "2019-05-01/2020-11-30"))
+    testthat::expect_identical(unname(ext$dates), c("2019-05-01", "2020-11-30"))
+})
+
 testthat::test_that("compute_dataset_extents returns NA bbox/dates when columns absent", {
     df <- data.frame(scientificName = c("A"), stringsAsFactors = FALSE)
     ext <- compute_dataset_extents(df)

@@ -15,13 +15,13 @@ preview_problem_types <- data.frame(
     type = c("vocab_unknown", "date_unparsed", "date_ambiguous", "year_range", "interval_inverted",
              "date_mismatch", "time_invalid", "count_invalid", "count_present_zero",
              "uncertainty_invalid",
-             "coord_invalid", "name_hybrid", "name_multiple", "name_abbreviated",
+             "coord_invalid", "coord_zero", "name_hybrid", "name_multiple", "name_abbreviated",
              "name_placeholder", "name_extra_text", "name_authorship", "country_threat_code",
              "country_conflict", "cell_formula", "required_empty", "id_duplicate"),
     family = c("vocab", "date", "date", "year", "interval", "date_mismatch", "time", "count",
-               "count", "uncertainty", "coord", "name", "name", "name", "name", "name", "name",
+               "count", "uncertainty", "coord", "coord", "name", "name", "name", "name", "name", "name",
                "country", "country", "formula", "empty", "id"),
-    bulk = c(rep(TRUE, 8L), FALSE, rep(TRUE, 9L), FALSE, TRUE, FALSE, FALSE),
+    bulk = c(rep(TRUE, 8L), FALSE, rep(TRUE, 10L), FALSE, TRUE, FALSE, FALSE),
     stringsAsFactors = FALSE
 )
 
@@ -37,8 +37,9 @@ preview_date_terms <-c("eventDate", "dateIdentified", "modified")
 
 # Terms a correction may not leave empty. The other terms the Preview fixes
 # are optional in Darwin Core, so an empty cell is a valid fix for them.
-# eventDate is recommended, not required: the Export does not block a blank
-# one, so the Preview does not call it required (B24).
+# eventDate is not here: a blank eventDate cell does not block the Export,
+# so the Preview does not call it required (B24). A fully blank eventDate
+# column still blocks, as one of the six required terms of the mapping.
 preview_required_terms <- c("scientificName", "basisOfRecord", "occurrenceID")
 
 # ISO 8601 as Darwin Core takes it: a year, a month or a day, an optional time,
@@ -381,6 +382,25 @@ detect_preview_problems <- function(df, max_year = NULL) {
         if (length(bad)) {
             out[[length(out) + 1L]] <- problem_rows(bad, term, "coord_invalid", v[bad],
                                                     suggest_coordinate(v[bad], limit))
+        }
+    }
+
+    # (0, 0) is a filler, not a point in the Gulf of Guinea. A 0 next to a
+    # blank axis stays flagged, so blanking one axis does not hide the other.
+    if (all(c("decimalLatitude", "decimalLongitude") %in% cols)) {
+        lat <- text("decimalLatitude")
+        lon <- text("decimalLongitude")
+        zero <- function(v) {
+            num <- as_coord_numeric(v)$num
+            !is.na(num) & num == 0
+        }
+        filler <- (zero(lat) | !nzchar(lat)) & (zero(lon) | !nzchar(lon))
+        for (term in c("decimalLatitude", "decimalLongitude")) {
+            v <- text(term)
+            bad <- which(filler & zero(v))
+            if (length(bad)) {
+                out[[length(out) + 1L]] <- problem_rows(bad, term, "coord_zero", v[bad])
+            }
         }
     }
 

@@ -469,11 +469,14 @@ map_value_sources <- function(map_values) {
 #'   their column mapping (`overridden_mapping_terms()`).
 #' @param sensitive_rows Integer rows whose coordinates the mask generalized or
 #'   withheld. Their coordinate-like raw values are blanked.
+#' @param sensitive_points Optional data frame aligned with `sensitive_rows`:
+#'   the real `decimalLatitude`, `decimalLongitude` and the mask `grid`.
 #' @return Data frame: process_for_export(df_processed) + tail of unused raw cols.
 #' @export
 process_for_export_with_unmapped <- function(df_processed, raw_data, map_values,
                                              overridden_terms = character(0),
-                                             sensitive_rows = integer(0)) {
+                                             sensitive_rows = integer(0),
+                                             sensitive_points = NULL) {
     out <- process_for_export(df_processed)
     id_strategy <- attr(out, "id_strategy")
 
@@ -483,7 +486,8 @@ process_for_export_with_unmapped <- function(df_processed, raw_data, map_values,
                                        overridden_terms = overridden_terms)
     if (length(extra_cols) == 0L) return(out)
 
-    extras <- blank_coordinate_like_cells(raw_data[, extra_cols, drop = FALSE], sensitive_rows)
+    extras <- blank_coordinate_like_cells(raw_data[, extra_cols, drop = FALSE], sensitive_rows,
+                                          sensitive_points)
     # A rescued column can carry the same name as the DwC term whose fixed
     # value replaced it. Both belong in the file, so the raw one takes an
     # `_original` suffix rather than a duplicate header the IPT cannot read.
@@ -496,25 +500,38 @@ process_for_export_with_unmapped <- function(df_processed, raw_data, map_values,
     combined
 }
 
-# A raw column whose name says coordinate ("Latitude", "CoordX", "lng",
-# "decimalLongitude", "UTM", "WKT"). "Plataforma" and "Longo" do not match.
+# A raw column whose name has a coordinate word ("Latitude", "CoordX",
+# "Lat_GPS", "decimalLongitude", "UTM", "WKT", "Y_sul"). The test reads whole
+# words, so "Longo", "Lontra" and "Lateral" do not match (B59).
 coordinate_like_column <- function(names) {
-    lower <- tolower(names)
-    grepl("(^|[^a-z])(lat|lon|lng|long)", lower) |
-        grepl("[a-z](Lat|Lon|Lng)", names) |
-        grepl("coord|utm|wkt|gps|footprint", lower) |
-        grepl("^[xy]$", lower)
+    words <- c("lat", "latitude", "latitud", "lon", "long", "longitude", "longitud",
+               "lng", "x", "y", "utm", "wkt", "gps", "easting", "northing", "footprint")
+    split <- tolower(gsub("([a-z])([A-Z])", "\\1 \\2", names))
+    tokens <- strsplit(split, "[^a-z0-9]+")
+    vapply(tokens, function(t) any(t %in% words) || any(startsWith(t, "coord")), logical(1))
 }
 
 # On the rows the mask generalized or withheld, blank every unmapped value
 # that can hold the exact point (B45): all cells of a coordinate-like column,
-# and in the other columns a decimal number in the coordinate range or a
-# degree sign. An exact "Latitude" next to the generalized decimalLatitude
-# gave the point away to any person who opened the file.
-blank_coordinate_like_cells <- function(extras, rows) {
-    rows <- rows[!is.na(rows) & rows >= 1L & rows <= nrow(extras)]
+# and in the other columns a degree sign or a number closer to the real point
+# than the row grid. A pH of 6.5 stays, a copy of -23.5505 goes (B52).
+blank_coordinate_like_cells <- function(extras, rows, points = NULL) {
+    ok <- !is.na(rows) & rows >= 1L & rows <= nrow(extras)
+    rows <- rows[ok]
     if (!length(rows) || ncol(extras) == 0L) {
         return(extras)
+    }
+    near_point <- function(num) rep(FALSE, length(num))
+    if (is.data.frame(points) && nrow(points) == length(ok)) {
+        points <- points[ok, , drop = FALSE]
+        lat <- as_coord_numeric(points$decimalLatitude)$num
+        lon <- as_coord_numeric(points$decimalLongitude)$num
+        tol <- suppressWarnings(as.numeric(points$grid))
+        tol[is.na(tol) | tol <= 0] <- 1e-6
+        near_point <- function(num) {
+            !is.na(num) & ((!is.na(lat) & abs(num - lat) < tol) |
+                               (!is.na(lon) & abs(num - lon) < tol))
+        }
     }
     by_name <- coordinate_like_column(names(extras))
     for (j in seq_along(extras)) {
@@ -524,8 +541,7 @@ blank_coordinate_like_cells <- function(extras, rows) {
         } else {
             cell <- trimws(v[rows])
             num <- suppressWarnings(as.numeric(sub(",", ".", cell, fixed = TRUE)))
-            (!is.na(num) & abs(num) <= 180 & num != round(num)) |
-                grepl("\u00b0", cell, fixed = TRUE)
+            near_point(num) | grepl("\u00b0", cell, fixed = TRUE)
         }
         hit[is.na(hit)] <- FALSE
         if (any(hit)) {
@@ -1480,9 +1496,18 @@ compute_dataset_extents <- function(df) {
 
     dates <- c(begin = NA_character_, end = NA_character_)
     if ("eventDate" %in% names(df)) {
-        raw <- as.character(df$eventDate)
-        iso <- substr(trimws(raw), 1L, 10L)
-        parsed <- suppressWarnings(as.Date(iso, format = "%Y-%m-%d"))
+        raw <- trimws(as.character(df$eventDate))
+        raw <- raw[!is.na(raw) & nzchar(raw) & is_dwc_date_value(raw)]
+        # An interval counts by both ends, and "2020" or "2020-05" by the
+        # first and last day it covers (B53).
+        parts <- strsplit(raw, "/", fixed = TRUE)
+        start <- vapply(parts, `[`, character(1), 1L)
+        end <- vapply(parts, function(p) p[length(p)], character(1))
+        # "2007-11-13/15": the end drops the parts it shares with the start.
+        short <- nchar(end) < nchar(substr(start, 1L, 10L))
+        end[short] <- paste0(substr(start[short], 1L, nchar(substr(start[short], 1L, 10L)) - nchar(end[short])),
+                             end[short])
+        parsed <- c(iso_date_bound(start, last = FALSE), iso_date_bound(end, last = TRUE))
         # A future date is a typing error, and it must not end the coverage.
         parsed[!is.na(parsed) & parsed > Sys.Date()] <- NA
         if (any(!is.na(parsed))) {
@@ -1492,6 +1517,20 @@ compute_dataset_extents <- function(df) {
     }
 
     list(bbox = bbox, dates = dates)
+}
+
+# The first (or last) day an ISO date covers: "2020" -> 2020-01-01 or
+# 2020-12-31, "2020-02" -> 2020-02-01 or 2020-02-29. The time part is dropped.
+iso_date_bound <- function(x, last) {
+    x <- substr(x, 1L, 10L)
+    out <- suppressWarnings(as.Date(x, format = "%Y-%m-%d"))
+    out[!grepl("^\\d{4}-\\d{2}-\\d{2}$", x)] <- NA
+    month <- grepl("^\\d{4}-\\d{2}$", x)
+    year <- grepl("^\\d{4}$", x)
+    first <- suppressWarnings(as.Date(paste0(x[month], "-01"), format = "%Y-%m-%d"))
+    out[month] <- if (last) as.Date(format(first + 31L, "%Y-%m-01")) - 1L else first
+    out[year] <- as.Date(paste0(x[year], if (last) "-12-31" else "-01-01"), format = "%Y-%m-%d")
+    out
 }
 
 # Escape text for safe insertion into XML content or a double-quoted attribute.

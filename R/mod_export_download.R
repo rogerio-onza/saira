@@ -630,7 +630,12 @@ mount_export_download <- function(input, output, session, lang_r,
                             raw_data = raw_df,
                             map_values = mv,
                             overridden_terms = overridden_mapping_terms(cv),
-                            sensitive_rows = masked$rows
+                            sensitive_rows = masked$rows,
+                            sensitive_points = data.frame(
+                                decimalLatitude = masked$real$decimalLatitude,
+                                decimalLongitude = masked$real$decimalLongitude,
+                                grid = masked$grid
+                            )
                         )
 
                         tmpdir <- tempfile("saira_export_")

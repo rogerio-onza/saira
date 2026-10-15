@@ -175,6 +175,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **coords:** Draw the map points right after validation, not only after a filter click
 - **coords:** Keep the original of a transposed fix in verbatimLatitude/Longitude when the same export converts UTM points
 - **tests:** Pin the name validation batch test to GBIF so a local Fauna BR cache does not exhaust memory ([#131](https://github.com/rogerio-onza/saira/pull/131))
+- **export:** Block the download on an invalid coordinate or a formula cell, and list open Preview and Coordinates flags, ADR-162
+- **preview:** Flag a (0, 0) coordinate as a filler value
+- **export:** Keep measurements in unmapped columns of generalized rows and blank only copies of the point, ADR-162
+- **export:** Read both ends of an eventDate interval and partial dates for the EML temporal coverage
+- **upload:** Expose the format switch to screen readers as one radio group
+- **upload:** Shrink the home drop zone on a phone
+- **upload:** Refuse a Camtrap DP zip whose tables pass 2 GB or 1000 files, and unzip only the tables
 
 ### Performance
 - **mapping:** Switch the Mapping filter in the browser, with no grid rebuild and no card moves: Relevant and All now change at once, not after 2 s, ADR-157
