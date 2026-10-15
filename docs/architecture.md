@@ -174,8 +174,8 @@ categoria mapeia, preenche `dataGeneralizations` / `informationWithheld` /
 verbatim/locality que reverteriam a generalização (Chapman sec. 3). As
 coordenadas reais saem num `sensitive_real_coords_<data>.csv` separado no ZIP
 (chaveado por `occurrenceID`, agora com `category`); sem registro sensível ou
-com masking desativado o ZIP é byte-idêntico ao anterior. `flag_sensitive_species()`
-delega a `sensitive_category_for()` e alimenta a pill na aba Validação > Nomes.
+com masking desativado o ZIP é byte-idêntico ao anterior. `sensitive_category_for()`
+também alimenta a pill na aba Validação > Nomes.
 
 **Benefício**: Toda lógica de export é testável fora do Shiny:
 ```r
@@ -324,7 +324,7 @@ app_server <- function(input, output, session) {
 Package: saira
 Title: Biodiversity Data Standardization to Darwin Core
 Version: 0.1.0
-Authors@R: person("Rogério", "Nunes Oliveira", email = "rogerio@sibbr.gov.br", role = c("aut", "cre"))
+Authors@R: person("Rogério", "Nunes Oliveira", email = "rogerio.onza@outlook.com", role = c("aut", "cre"))
 Description: Shiny application for standardizing biodiversity datasets to the
     Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools
     for data validation, column mapping, and taxonomic verification.

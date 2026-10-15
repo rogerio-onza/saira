@@ -33,7 +33,7 @@ from a fixed value rather than a column, are skipped.}
 }
 \value{
 Invisibly, a data frame of the committed pairs (zero rows when there
-  was nothing to learn).
+  was nothing to learn), with the upsert \code{action} of each pair.
 }
 \description{
 Learns column-to-term aliases from a mapping the user has confirmed by

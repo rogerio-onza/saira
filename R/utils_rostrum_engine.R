@@ -781,6 +781,33 @@ rostrum_candidates_from_row <- function(row_data) {
     candidate_df
 }
 
+# A column filled in at least half of the rows, against one filled in less
+# than half as many: "Nome cientifico" (133 of 139) against "scientificName"
+# (2 of 139). The exact DwC name of an almost empty column must not win (B17).
+rostrum_much_fuller <- function(big, small) {
+    big <- suppressWarnings(as.numeric(big))
+    small <- suppressWarnings(as.numeric(small))
+    length(big) == 1L && length(small) == 1L && is.finite(big) && is.finite(small) &&
+        big >= 0.5 && small < 0.5 * big
+}
+
+# Puts the fullest confident candidate first when the top one is much emptier.
+rostrum_prefer_filled_candidate <- function(candidate_df, options) {
+    if (!is.data.frame(candidate_df) || nrow(candidate_df) < 2L) {
+        return(candidate_df)
+    }
+    confident <- which(candidate_df$final_score >= options$suggest_threshold)
+    if (length(confident) < 2L) {
+        return(candidate_df)
+    }
+    fullest <- confident[which.max(candidate_df$completeness[confident])]
+    if (fullest == 1L ||
+        !rostrum_much_fuller(candidate_df$completeness[[fullest]], candidate_df$completeness[[1]])) {
+        return(candidate_df)
+    }
+    candidate_df[c(fullest, setdiff(seq_len(nrow(candidate_df)), fullest)), , drop = FALSE]
+}
+
 rostrum_rank_candidate_rows <- function(candidate_df, tie_label = "column_name") {
     if (!is.data.frame(candidate_df) || nrow(candidate_df) == 0L) {
         return(integer(0))
@@ -832,16 +859,32 @@ rostrum_is_technical_tie <- function(first_row, second_row, ambiguity_gap) {
     if (!is.finite(score_gap) || score_gap >= ambiguity_gap) {
         return(FALSE)
     }
+    # Same score, but one column holds the data: no question to ask.
+    if (all(c("completeness") %in% names(first_row)) &&
+        rostrum_much_fuller(first_row$completeness[[1]], second_row$completeness[[1]])) {
+        return(FALSE)
+    }
     TRUE
 }
 
-rostrum_build_stage3_candidate_df <- function(term, candidate_df, df) {
+rostrum_build_stage3_candidate_df <- function(term, candidate_df, df, metric_cache = NULL) {
     if (!is.data.frame(candidate_df) || nrow(candidate_df) == 0L) {
         return(candidate_df)
     }
 
     out <- candidate_df
-    metrics <- lapply(out$column_name, function(col_name) rostrum_column_quality_metrics(df, col_name))
+    # The metric scans the whole column, and the same column is a candidate
+    # for many terms: a run-wide cache computes it once per column.
+    column_metrics <- function(col_name) {
+        key <- paste0("col:", col_name)
+        if (!is.null(metric_cache) && exists(key, envir = metric_cache, inherits = FALSE)) {
+            return(get(key, envir = metric_cache, inherits = FALSE))
+        }
+        m <- rostrum_column_quality_metrics(df, col_name)
+        if (!is.null(metric_cache)) assign(key, m, envir = metric_cache)
+        m
+    }
+    metrics <- lapply(out$column_name, column_metrics)
     overlap <- lapply(out$column_name, function(col_name) {
         score_token_overlap(col_name = col_name, term = term, with_details = TRUE)
     })
@@ -935,6 +978,7 @@ rostrum_apply_stage3_candidates <- function(stage2_data, df, options) {
     loser_pool <- list()
     terms_with_alternatives <- character(0)
     ambiguity_gap <- rostrum_ambiguity_gap_epsilon(options)
+    metric_cache <- new.env(parent = emptyenv())
 
     if (nrow(data) == 0L) {
         return(list(
@@ -952,9 +996,11 @@ rostrum_apply_stage3_candidates <- function(stage2_data, df, options) {
             next
         }
 
-        candidate_df <- rostrum_build_stage3_candidate_df(term = term, candidate_df = candidate_seed, df = df)
+        candidate_df <- rostrum_build_stage3_candidate_df(
+            term = term, candidate_df = candidate_seed, df = df, metric_cache = metric_cache
+        )
         ranking <- rostrum_rank_candidate_rows(candidate_df, tie_label = "column_name")
-        candidate_df <- candidate_df[ranking, , drop = FALSE]
+        candidate_df <- rostrum_prefer_filled_candidate(candidate_df[ranking, , drop = FALSE], options)
         rownames(candidate_df) <- NULL
 
         data$alternatives_json[[idx]] <- rostrum_serialize_top_candidates(candidate_df, top_n = 3L)
@@ -1391,6 +1437,14 @@ rostrum_apply_alias_overrides <- function(stage1_data, df, conn, options = rostr
         if (is.finite(current_score) &&
             identical(toupper(as.character(data$status[[idx]])), "ALIAS") &&
             current_score > confidence) {
+            next
+        }
+        # An alias does not replace a column that holds the data with an
+        # almost empty one (B17).
+        current_col <- as.character(data$selected_col[[idx]])
+        if (isTRUE(data$applied[[idx]]) && !is.na(current_col) && current_col %in% names(df) &&
+            rostrum_much_fuller(rostrum_column_quality_metrics(df, current_col)$completeness,
+                                rostrum_column_quality_metrics(df, col_name)$completeness)) {
             next
         }
 

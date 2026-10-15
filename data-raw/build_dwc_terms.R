@@ -19,6 +19,9 @@
 #     terms group under Identification).
 #   - The 17 new template terms are pulled entirely from
 #     inst/extdata/dwc_full_catalog.rds (PT definition guaranteed).
+#   - Spanish definitions and card hints come from
+#     data-raw/dwc_definitions_es.csv. Run build_dwc_definitions_es.R after
+#     this script if a term is new.
 #
 # To regenerate (from the project root):
 #   Rscript data-raw/build_dwc_terms.R

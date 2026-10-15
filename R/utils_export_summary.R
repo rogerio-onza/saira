@@ -25,8 +25,15 @@
 #'   (`names_corrected`/`names_confirmed`/`coord_fixes`/`country_fills`),
 #'   `generalization` (data.frame `scientificName`/`category`/`tier`),
 #'   `readiness` (data.frame `term`/`present`), `readiness_pct`,
-#'   `missing_required`, `occurrence_id_present`, `justification_pending`,
-#'   `date_issues` (from `date_year_issues()`),
+#'   `missing_required`, `occurrence_id_present`, `bor_blank_count`,
+#'   `bor_blank_rows`,
+#'   `justification_pending`,
+#'   `date_issues` (from `date_year_issues()`), `date_unparsed` (from
+#'   `unparsed_date_cells()`), `formula_cells` (from `formula_like_cells()`),
+#'   `zero_count_rows` (count 0 with a blank occurrenceStatus),
+#'   `coord_invalid_rows` (a coordinate the export cannot read, after the
+#'   accepted corrections), `coord_flags` (Coordinates-tab flags with no
+#'   correction, NULL when the tab did not run), `preview_problems_n`,
 #'   `all_required_present`, `export_blocked`, and `files`
 #'   (list `dwca` + `auxiliary`).
 #' @noRd
@@ -36,7 +43,9 @@ build_export_summary <- function(mapped_data,
                                  country_fill_payload = NULL,
                                  sensitivity_payload = NULL,
                                  generalization_payload = NULL,
-                                 dataset_name = NULL) {
+                                 dataset_name = NULL,
+                                 coord_validation = NULL,
+                                 preview_problems_n = NULL) {
     df <- if (is.data.frame(mapped_data)) mapped_data else data.frame()
     n_records <- nrow(df)
     term_count <- ncol(df)
@@ -89,7 +98,7 @@ build_export_summary <- function(mapped_data,
     # --- Readiness (required DwC terms present and non-empty) ---------------
     required <- c(
         "scientificName", "eventDate", "decimalLatitude",
-        "decimalLongitude", "basisOfRecord"
+        "decimalLongitude", "basisOfRecord", "license"
     )
     term_present <- function(term) {
         term %in% names(df) &&
@@ -108,17 +117,48 @@ build_export_summary <- function(mapped_data,
     missing_required <- required[!present]
     occurrence_id_present <- term_present("occurrenceID")
 
+    # GBIF needs basisOfRecord on every record. A mapped column can still hold
+    # values with no DwC term (e.g. "Coleta"), which the conversion leaves empty.
+    bor_blank_rows <- if ("basisOfRecord" %in% missing_required) {
+        integer(0)
+    } else {
+        bor <- as.character(df[["basisOfRecord"]])
+        which(is.na(bor) | !nzchar(trimws(bor)))
+    }
+    bor_blank_count <- length(bor_blank_rows)
+
     # A year outside the plausible range is a typo the format conversion cannot
     # catch, so it is reported here rather than blocking: a historical record
     # can legitimately predate 1600, and only the publisher knows which is which.
     date_issues <- date_year_issues(df)
+    # A date the parser could not read goes to GBIF as text, and GBIF then
+    # has no event date for the record. The Preview lists these rows.
+    date_unparsed <- unparsed_date_cells(df)
+    formula_cells <- formula_like_cells(df)
+    coords <- coord_export_issues(df, coords_correction_payload, coord_validation)
+    # GBIF reads a count of 0 with no occurrenceStatus as an absence (D07).
+    # Some field sheets use 0 for "not counted", so the user sees the rows.
+    zero_count_rows <- if ("individualCount" %in% names(df)) {
+        cnt <- trimws(as.character(df[["individualCount"]]))
+        status <- if ("occurrenceStatus" %in% names(df)) {
+            as.character(df[["occurrenceStatus"]])
+        } else {
+            rep(NA_character_, n_records)
+        }
+        which(!is.na(cnt) & grepl("^0+$", cnt) & (is.na(status) | !nzchar(trimws(status))))
+    } else {
+        integer(0)
+    }
 
     # Generalization to Category 1/2/3 needs a written justification; export is
     # blocked until it is provided (mirrors the download handler's hard gate).
     justification_pending <- is.list(gp) && isTRUE(gp$enabled) &&
         isTRUE(gp$needs_justification) &&
         !nzchar(trimws(gp$justification %||% ""))
-    export_blocked <- !all_required_present || justification_pending
+    # A formula cell runs when a person opens occurrence.txt in a spreadsheet,
+    # and a coordinate out of range is not a point: both block (B50, B55).
+    export_blocked <- !all_required_present || bor_blank_count > 0L || justification_pending ||
+        isTRUE(formula_cells$count > 0L) || length(coords$invalid_rows) > 0L
 
     # --- Files the bundle will contain -------------------------------------
     # Single source of truth shared with the download handler. The real-coords
@@ -137,10 +177,68 @@ build_export_summary <- function(mapped_data,
         readiness_pct = readiness_pct,
         missing_required = missing_required,
         occurrence_id_present = occurrence_id_present,
+        bor_blank_count = bor_blank_count,
+        bor_blank_rows = bor_blank_rows,
         justification_pending = justification_pending,
         date_issues = date_issues,
+        date_unparsed = date_unparsed,
+        formula_cells = formula_cells,
+        zero_count_rows = zero_count_rows,
+        coord_invalid_rows = coords$invalid_rows,
+        coord_flags = coords$flags,
+        preview_problems_n = as.integer(preview_problems_n %||% 0L),
         all_required_present = all_required_present,
         export_blocked = export_blocked,
         files = files
     )
+}
+
+# The coordinate rows Export reports (B50). `invalid_rows`: a coordinate that
+# is not a number in range once the corrections of the Coordinates tab are
+# applied, as the Preview flags it. `flags`: the rows the Coordinates tab
+# flagged (sea, (0, 0), reference point) and nobody corrected. A blank
+# coordinate is not a flag, and out-of-range rows are already in `invalid_rows`.
+coord_export_issues <- function(df, coords_correction_payload = NULL, coord_validation = NULL) {
+    out <- list(invalid_rows = integer(0), flags = NULL)
+    axes <- c(decimalLatitude = 90, decimalLongitude = 180)
+    if (!is.data.frame(df) || nrow(df) == 0L || !all(names(axes) %in% names(df))) {
+        return(out)
+    }
+    fixed <- tryCatch(apply_coords_correction_payload(df, coords_correction_payload),
+                      error = function(e) df)
+    bad <- rep(FALSE, nrow(df))
+    for (term in names(axes)) {
+        v <- trimws(as.character(fixed[[term]]))
+        v[is.na(v)] <- ""
+        bad <- bad | (nzchar(v) & !coord_value_ok(v, axes[[term]]))
+    }
+    out$invalid_rows <- which(bad)
+
+    cv <- coord_validation
+    if (is.data.frame(cv) && all(c(".row_index", "diagnostic_family") %in% names(cv))) {
+        idx <- as.integer(cv$.row_index)
+        fam <- as.character(cv$diagnostic_family)
+        keep <- !is.na(idx) & idx >= 1L & idx <= nrow(df) &
+            !is.na(fam) & fam %in% c("sea", "zero_equal", "reference")
+        rows <- sort(unique(idx[keep]))
+        corrected <- as.character(slot_df(coords_correction_payload, "corrections")$occurrenceID)
+        if (length(corrected) && "occurrenceID" %in% names(df)) {
+            rows <- rows[!as.character(df$occurrenceID[rows]) %in% corrected]
+        }
+        rows <- setdiff(rows, out$invalid_rows)
+        out$flags <- list(count = length(rows), rows = rows)
+    }
+    out
+}
+
+slot_df <- function(payload, name) {
+    x <- if (is.list(payload)) payload[[name]] else NULL
+    if (is.data.frame(x)) x else data.frame(occurrenceID = character(0))
+}
+
+# Row numbers for a pending item: the first ones, then how many more.
+format_row_list <- function(rows, max_n = 10L) {
+    shown <- paste(utils::head(rows, max_n), collapse = ", ")
+    extra <- length(rows) - max_n
+    if (extra > 0L) paste0(shown, " (+", extra, ")") else shown
 }

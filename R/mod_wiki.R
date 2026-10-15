@@ -134,7 +134,7 @@ mod_wiki_server <- function(id, lang_r) {
             class_count <- length(unique(as.character(dwc_terms$class)))
 
             title_text <- tr("wiki_title", lang_r())
-            highlight_word <- if (identical(lang_r(), "pt")) "Termos" else "Terms"
+            highlight_word <- tr("wiki_title_accent", lang_r())
             highlighted_title <- title_text
             if (grepl(highlight_word, title_text, fixed = TRUE)) {
                 highlighted_title <- sub(
@@ -279,14 +279,8 @@ mod_wiki_server <- function(id, lang_r) {
         terms_table_data <- shiny::reactive({
             df <- dwc_terms
 
-            definition_col <- switch(
-                lang_r(),
-                pt = "definition_pt",
-                en = "definition_en",
-                "definition_en"
-            )
-
-            df <- df[, c("term", "class", definition_col, "required")]
+            df$definition <- lang_col(df, "definition", lang_r())
+            df <- df[, c("term", "class", "definition", "required")]
             names(df) <- c(
                 tr("wiki_term", lang_r()),
                 tr("wiki_class", lang_r()),

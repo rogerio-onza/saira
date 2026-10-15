@@ -20,6 +20,7 @@ mod_export_server(
   custom_values_r = NULL,
   establishment_dropped_r = NULL,
   occurrence_id_info_r = NULL,
+  alias_receipt_r = NULL,
   on_navigate = NULL,
   on_export_success = NULL
 )
@@ -57,6 +58,9 @@ whose column carried values outside the controlled vocabulary.}
 
 \item{occurrence_id_info_r}{Optional reactive with the identifier strategy and
 counts from `resolve_occurrence_ids()`.}
+
+\item{alias_receipt_r}{Optional reactive with what the last export taught the
+alias store (`alias_export_receipt()`), shown with an undo (ADR-141).}
 
 \item{on_navigate}{Optional callback `function(tab)` to switch the top-level
 navbar (used by the "fix missing terms" banner action).}

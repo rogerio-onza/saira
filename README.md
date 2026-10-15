@@ -54,8 +54,8 @@ instalação.
 - `occurrenceID` estável: preenche IDs faltantes de forma determinística (a mesma
   combinação gera sempre o mesmo ID), então republicar no GBIF conta como
   atualização, não como registro novo.
-- Armadilhas fotográficas (opcional): importa pacotes Camtrap DP e exportações do
-  Wildlife Insights. Requer o pacote `camtrapdp` (`install.packages("camtrapdp")`).
+- Armadilhas fotográficas: importa pacotes Camtrap DP e exportações do
+  Wildlife Insights.
 
 ### 📦 Instalação
 
@@ -187,8 +187,8 @@ only at install time.
 - Stable `occurrenceID`: fills missing IDs deterministically (the same combination
   always yields the same ID), so republishing to GBIF counts as an update, not a
   new record.
-- Camera-trap data (optional): imports Camtrap DP packages and Wildlife Insights
-  exports. Requires the `camtrapdp` package (`install.packages("camtrapdp")`).
+- Camera-trap data: imports Camtrap DP packages and Wildlife Insights
+  exports.
 
 ### 📦 Installation
 

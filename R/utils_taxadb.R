@@ -75,38 +75,48 @@ normalize_scientific_name <- function(
         return(NA_character_)
     }
 
-    value <- as.character(name)
-    value <- gsub("\\|", " ", value)
-    value <- gsub("\\s+", " ", trimws(value))
+    value <- gsub("\\s+", " ", trimws(as.character(name)))
 
-    if (!nzchar(value)) {
+    # A placeholder, two names in one cell, a hybrid formula or an
+    # abbreviated genus has no single name to query. "P. onca" finds
+    # nothing, and a hybrid must not match one of its parents.
+    if (scientific_name_kind(value) != "name") {
         return(NA_character_)
     }
+    value <- trimws(sub("\\?+$", "", value))
+    value <- sub(name_unidentified_prefix_re, "", fold_name_diacritics(value), ignore.case = TRUE)
 
     if (remove_authors) {
-        value <- gsub("\\([^\\)]*\\)", " ", value)
+        value <- gsub("\\([^\\)]*\\)|\\[[^]]*\\]", " ", value)
     }
 
     value <- gsub("\\s+", " ", trimws(value))
     if (!nzchar(value)) {
-        return(NA_character_)
-    }
-
-    tokens <- strsplit(value, " ", fixed = TRUE)[[1]]
-    tokens <- trimws(tokens)
-    tokens <- vapply(tokens, strip_taxadb_token, FUN.VALUE = character(1))
-    tokens <- tokens[nzchar(tokens)]
-
-    if (length(tokens) == 0L) {
         return(NA_character_)
     }
 
     rank_tokens <- c("subsp", "subsp.", "var", "var.", "f", "f.", "forma")
     qualifier_tokens <- c("cf", "cf.", "aff", "aff.", "nr", "nr.", "sp", "sp.", "spp", "spp.")
+    # A life stage or a sex typed after the name is not an epithet.
+    noise_tokens <- setdiff(name_non_epithet_words, c(qualifier_tokens, "x"))
+
+    raw_tokens <- strsplit(value, " ", fixed = TRUE)[[1]]
+    tokens <- unname(vapply(raw_tokens, strip_taxadb_token, FUN.VALUE = character(1)))
+    # The author test needs the comma or the year that strip_taxadb_token()
+    # removes, so it reads the typed tokens.
+    evidence <- vapply(seq_along(raw_tokens), function(i) author_evidence(raw_tokens, i), logical(1))
+    kept <- nzchar(tokens) & !(tolower(tokens) %in% noise_tokens)
+    tokens <- tokens[kept]
+    evidence <- evidence[kept]
+
+    if (length(tokens) == 0L) {
+        return(NA_character_)
+    }
 
     if (remove_authors) {
         author_connectors <- c("ex", "in", "et", "al.", "and", "&")
         keep <- logical(length(tokens))
+        epithet_seen <- FALSE
         for (idx in seq_along(tokens)) {
             token <- tokens[[idx]]
             lower <- tolower(token)
@@ -116,7 +126,7 @@ normalize_scientific_name <- function(
                 next
             }
 
-            if (lower %in% rank_tokens) {
+            if (lower %in% c(rank_tokens, qualifier_tokens)) {
                 keep[[idx]] <- TRUE
                 next
             }
@@ -131,12 +141,16 @@ normalize_scientific_name <- function(
                 next
             }
 
-            if (grepl("^[A-Z]", token)) {
+            # The first word after the genus is the epithet even with a
+            # capital ("Mimus Saturninus", "PANTHERA ONCA"), unless
+            # author_evidence() finds a comma or a year ("Panthera Oken, 1816").
+            if (grepl("^[A-Z]", token) && (epithet_seen || evidence[[idx]])) {
                 keep[[idx]] <- FALSE
                 next
             }
 
             keep[[idx]] <- TRUE
+            epithet_seen <- TRUE
         }
         tokens <- tokens[keep]
     }
@@ -146,7 +160,10 @@ normalize_scientific_name <- function(
     }
 
     if (ignore_qualifiers) {
-        had_sp_marker <- any(tolower(tokens) %in% c("sp", "sp.", "spp", "spp."))
+        sp_at <- which(tolower(tokens) %in% c("sp", "sp.", "spp", "spp."))
+        had_sp_marker <- length(sp_at) > 0L
+        # "Scinax sp. nov. 1": what follows the marker is not part of a name.
+        if (had_sp_marker) tokens <- tokens[seq_len(sp_at[[1L]] - 1L)]
         tokens <- tokens[!(tolower(tokens) %in% qualifier_tokens)]
         if (length(tokens) == 1L && had_sp_marker) {
             return(NA_character_)
@@ -158,6 +175,11 @@ normalize_scientific_name <- function(
         return(NA_character_)
     }
 
+    # "Panthera onca." ends a sentence, not an abbreviation.
+    last <- length(tokens)
+    if (!tolower(tokens[[last]]) %in% c(rank_tokens, qualifier_tokens)) {
+        tokens[[last]] <- sub("\\.$", "", tokens[[last]])
+    }
     tokens <- format_scientific_tokens(tokens, rank_tokens)
     normalized <- gsub("\\s+", " ", trimws(paste(tokens, collapse = " ")))
 
@@ -468,101 +490,6 @@ collapse_cascade_results <- function(cascade_results) {
     out
 }
 
-run_taxadb_cascade <- function(
-  query_names,
-  providers,
-  fetch_fun = fetch_taxadb_matches
-) {
-    empty_failures_df <- function() {
-        data.frame(provider = character(0), error = character(0), stringsAsFactors = FALSE)
-    }
-
-    failure_list <- list()
-
-    attach_metadata <- function(df, attempted, failures) {
-        attr(df, "provider_attempted") <- attempted
-        attr(df, "provider_failures") <- failures
-        df
-    }
-
-    build_failures_df <- function() {
-        if (length(failure_list) == 0L) return(empty_failures_df())
-        do.call(rbind, failure_list)
-    }
-
-    if (length(query_names) == 0L) {
-        return(attach_metadata(data.frame(), character(0), empty_failures_df()))
-    }
-
-    providers <- providers[!is.na(providers) & nzchar(providers)]
-    if (length(providers) == 0L) {
-        stop("providers must include at least one provider.")
-    }
-
-    remaining <- unique(as.character(query_names))
-    remaining <- remaining[!is.na(remaining) & nzchar(remaining)]
-
-    resolved_list <- list()
-
-    for (provider in providers) {
-        if (length(remaining) == 0L) {
-            break
-        }
-
-        matches <- tryCatch(
-            fetch_fun(remaining, provider),
-            error = function(e) e
-        )
-        if (inherits(matches, "error")) {
-            failure_list[[length(failure_list) + 1L]] <- data.frame(
-                provider = as.character(provider),
-                error    = as.character(matches$message),
-                stringsAsFactors = FALSE
-            )
-            next
-        }
-        if (is.null(matches) || nrow(matches) == 0L) {
-            next
-        }
-
-        resolved <- resolve_taxadb_matches(matches)
-        if (nrow(resolved) == 0L) {
-            next
-        }
-
-        resolved_list[[length(resolved_list) + 1L]] <- resolved
-        resolved_names <- unique(resolved$query_name)
-        remaining <- setdiff(remaining, resolved_names)
-    }
-
-    if (length(remaining) > 0L) {
-        resolved_list[[length(resolved_list) + 1L]] <- build_taxadb_placeholder(
-            remaining,
-            status = "not_found"
-        )
-    }
-
-    if (length(resolved_list) == 0L) {
-        return(attach_metadata(data.frame(), providers, build_failures_df()))
-    }
-
-    all_cols <- unique(unlist(lapply(resolved_list, names), use.names = FALSE))
-    resolved_list <- lapply(resolved_list, function(df) {
-        missing_cols <- setdiff(all_cols, names(df))
-        if (length(missing_cols) > 0L) {
-            for (col_name in missing_cols) {
-                df[[col_name]] <- NA
-            }
-        }
-        df <- df[, all_cols, drop = FALSE]
-        rownames(df) <- NULL
-        df
-    })
-
-    combined <- do.call(rbind, resolved_list)
-    attach_metadata(combined, providers, build_failures_df())
-}
-
 clean_provider_ids <- function(providers) {
     providers_chr <- as.character(providers)
     providers_chr <- providers_chr[!is.na(providers_chr) & nzchar(providers_chr)]
@@ -755,6 +682,7 @@ init_taxadb_run_state <- function(
   input_df,
   providers,
   batch_size = 200L,
+  br_batch_size = 5L,
   run_id = as.numeric(Sys.time()) * 1000
 ) {
     if (is.null(input_df) || !is.data.frame(input_df)) {
@@ -812,9 +740,15 @@ init_taxadb_run_state <- function(
         provider_batch_idx = 0L,
         provider_batch_total = length(batches),
         pending_queries = valid_queries,
+        # Sheet order of the names, for the cells of the run grid.
+        query_order = valid_queries,
         total_unique = length(valid_queries),
         resolved_unique = 0L,
         batch_size = suppressWarnings(as.integer(batch_size)),
+        # A Flora BR or Fauna BR query takes ~0.3 s per name, so a small
+        # batch keeps each run tick short and the progress moves in small
+        # steps. The cost is ~10% more time for the BR queries.
+        br_batch_size = suppressWarnings(as.integer(br_batch_size)),
         input_df = input_df,
         resolved_frames = list(),
         cascade_results = data.frame(),
@@ -889,7 +823,11 @@ next_taxadb_run_step <- function(state) {
         # Re-batch using current pending_queries (may differ from initial set).
         state$current_batches      <- split_query_batches(
             state$pending_queries,
-            batch_size = state$batch_size
+            batch_size = if (identical(provider_type, "br")) {
+                state$br_batch_size %||% state$batch_size
+            } else {
+                state$batch_size
+            }
         )
         state$provider_batch_total <- length(state$current_batches)
 

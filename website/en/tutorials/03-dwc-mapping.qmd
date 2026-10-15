@@ -4,279 +4,135 @@ pagetitle: "Darwin Core mapping · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-How to match your spreadsheet columns to the terms of the Darwin Core standard using Saíra's visual mapper.
+Match each spreadsheet column to a Darwin Core term in the **Mapping** step.
 :::
 
-## Overview
-
-After importing your data (see [Importing your data](02-upload.qmd)), each column still carries the name you use day to day: <span class="term">numero_tombo</span>, <span class="term">especie</span>, <span class="term">data_coleta</span>. Mapping tells Saíra which Darwin Core term matches each of them, starting from automatic suggestions based on each column's name and content.
+## Run Auto-map
 
 ```{=html}
-<figure class="shot">
-  <img src="../../assets/img/6-aba-mapeamento-EN.png" alt="Saíra's Mapping tab right after import, with the Darwin Core term cards still empty">
-  <figcaption><b>Figure 1.</b> The <b>Mapping</b> tab right after import, before any mapping: on the left, the required-fields panel and the actions bar (Auto-map, Reset, Add term, Import template); on the right, the Darwin Core term cards grouped by class (here, Occurrence).</figcaption>
-</figure>
+<figure class="shot"><img src="../../assets/img/t03-automap-EN.png" width="1440" alt="Mapping step after Auto-map, with the Auto-map button, the Next pending button and a suggested card highlighted"></figure>
 ```
 
-::: {.callout-note}
-## The final decision is always yours
-Saíra **suggests**, but you decide. Every suggestion can be confirmed, changed or discarded; nothing is applied without your review.
+::: {.marks}
+1. Click **Auto-map**. Saíra proposes a term for each column.
+2. **Next pending** jumps to the next card that needs review. The number tells how many are left. In the class filters, a red dot is an empty required term, orange is review.
+3. A yellow card is **SUGGESTED**: confirm or change it.
 :::
 
-## Auto-mapping
-
-The **Auto-map** button, in the actions bar, sweeps every column at once and proposes a term for each one, assigning a **status** that signals how confident the suggestion is:
+## Review each card
 
 ```{=html}
-<figure class="shot">
-  <img src="../../assets/img/3-auto-mapear-botao-EN.png" alt="Mapper actions bar with the Auto-map button highlighted">
-  <figcaption><b>Figure 2.</b> The <b>Auto-map</b> button in the actions bar, next to Reset, Add term and Import template.</figcaption>
-</figure>
+<figure class="shot"><img src="../../assets/img/t03-card-EN.png" width="425" alt="recordedBy card with the SUGGESTED badge, the column selector and the sample row highlighted"></figure>
 ```
 
-Each card gets a **status badge**. You will see seven, depending on where the match came from:
-
-```{=html}
-<table class="maptable">
-  <thead><tr><th>Badge</th><th>What it means</th></tr></thead>
-  <tbody>
-    <tr><td><span class="swatch" style="background:var(--success)"></span>AUTO</td><td>High confidence (high score and compatible data type). Already filled in.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--warning)"></span>SUGGESTED</td><td>A likely match. Confirm or adjust before moving on.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--coord-reference)"></span>AMBIGUOUS</td><td>Two or more terms with similar confidence. Saíra will not choose for you.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--info)"></span>EDITED</td><td>You adjusted it manually. Your choice overrides the suggestions.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--primary)"></span>ALIAS</td><td>Recognized by a saved alias from an earlier mapping.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--primary-dark)"></span>TEMPLATE</td><td>Came from an imported template.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--coord-missing)"></span>MANUAL</td><td>Set by you, or left unmapped, with no automatic suggestion.</td></tr>
-  </tbody>
-</table>
-```
-
-At the end, Saíra shows a summary (for example, "12 AUTO, 5 SUGGESTED"). Review the SUGGESTED ones carefully and confirm or correct each.
-
-```{=html}
-<ol class="fix-steps">
-  <li><strong>Run auto-mapping.</strong>
-    <p>Click <span class="term">Auto-map</span>. High-confidence fields appear filled in and marked AUTO.</p></li>
-  <li><strong>Review the suggested ones.</strong>
-    <p>For each column marked SUGGESTED, confirm the term or change it in the selector.</p></li>
-  <li><strong>Resolve unmapped fields.</strong>
-    <p>Columns without a clear match are highlighted. Pick the matching Darwin Core term or <strong>leave the column unmapped</strong>: it is preserved on export (see below).</p></li>
-  <li><strong>Set the basisOfRecord.</strong>
-    <p>Use the assistant (see below) to map the record type from a column (e.g. <span class="term">tipo_de_registro</span>), pairing each value (Specimen, Observation, Camera trap) with its Darwin Core term.</p></li>
-  <li><strong>Check the preview.</strong>
-    <p>The bottom panel shows the first rows already with Darwin Core names, so you can validate before moving on.</p></li>
-</ol>
-```
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/4.2-exemplo-sugerido-EN.png" alt="Two mapping cards: scientificName mapped from the especie column with an ALIAS badge, and specificEpithet auto-inferred from scientificName">
-  <figcaption><b>Figure 3.</b> Mapping cards after Auto-map: <span class="term">especie</span> → <span class="term">scientificName</span>, marked <b>ALIAS</b> (matched from a remembered mapping), while <span class="term">specificEpithet</span> is <b>auto-inferred from scientificName</b>.</figcaption>
-</figure>
-```
-
-::: {.callout-warning}
-## Do not map two columns to the same term
-If <span class="term">especie</span> and <span class="term">nome_cientifico</span> both point to <span class="term">scientificName</span>, Saíra flags the conflict and asks you to choose a single source before proceeding.
+::: {.marks}
+1. The badge tells where the term came from.
+2. Wrong column? Change it in the selector.
+3. `e.g.:` shows the first value read from the column.
 :::
 
-## Term catalog and search
+| Badge | Meaning |
+|---|---|
+| AUTO | High confidence. Already filled in. |
+| SUGGESTED | Likely. Confirm it. |
+| AMBIGUOUS | Two terms tie. You choose. |
+| EDITED | You changed it. Your choice wins. |
+| ALIAS | Came from an earlier mapping. |
+| TEMPLATE | Came from an imported template. |
+| MANUAL | No automatic suggestion. |
 
-The mapper works with a base set of the most-used Darwin Core terms, but the full catalog has about **218 terms** (`dwc:` and `dcterms:` properties). If the column you need is not in the list, use **Add term** to find and include any property in the standard, such as <span class="term">coordinateUncertaintyInMeters</span>, <span class="term">samplingProtocol</span> or <span class="term">organismQuantity</span>.
+If the same column goes to more than one term, Saíra warns you. Check that this is intentional.
 
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/4-adicionar-termo-EN.png" alt="Actions bar with the Add term button highlighted">
-  <figcaption><b>Figure 4.</b> The <b>Add term</b> button in the actions bar.</figcaption>
-</figure>
-<figure class="shot">
-  <img src="../../assets/img/4.1-adicionar-termo-pop-up-EN.png" alt="'Add DwC term' dialog with the term selector">
-  <figcaption><b>Figure 5.</b> The <b>Add DwC term</b> dialog: pick the term in the selector and confirm to add it as a new card.</figcaption>
-</figure>
-```
-
-### Example mapping
-
-The table below shows a typical mapping for an ornithological collection:
+## Set basisOfRecord
 
 ```{=html}
-<table class="maptable">
-  <thead><tr><th>Spreadsheet column</th><th></th><th>Darwin Core term</th></tr></thead>
-  <tbody>
-    <tr><td>numero_tombo</td><td><span class="arrow">→</span></td><td>catalogNumber</td></tr>
-    <tr><td>especie</td><td><span class="arrow">→</span></td><td>scientificName</td></tr>
-    <tr><td>data_coleta</td><td><span class="arrow">→</span></td><td>eventDate</td></tr>
-    <tr><td>coletor</td><td><span class="arrow">→</span></td><td>recordedBy</td></tr>
-    <tr><td>latitude</td><td><span class="arrow">→</span></td><td>decimalLatitude</td></tr>
-    <tr><td>longitude</td><td><span class="arrow">→</span></td><td>decimalLongitude</td></tr>
-  </tbody>
-</table>
+<figure class="shot"><img src="../../assets/img/t03-bor-card-EN.png" width="425" alt="basisOfRecord card with the column selector and the assistant button highlighted"></figure>
 ```
 
-## Templates
-
-You don't need to save the mapping by hand. When you download the standardized spreadsheet (see [Preview and export](07-preview-export.qmd)), Saíra includes a **template** in the `.zip` (`<dataset>-mapping-guide.txt`): just the "your column → Darwin Core term" vocabulary, with no data. It is your mapping saved, ready to reuse or hand to a colleague.
-
-To reuse it, open the mapping for a new spreadsheet and click **Import template**. Each line becomes an alias in your local Rostrum, so columns with the same name are mapped automatically and you only review what changed. Handy for collections that re-import spreadsheets with the same structure.
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/7-importar-modelo-EN.png" alt="Actions bar with the Import template button highlighted">
-  <figcaption><b>Figure 6.</b> The <b>Import template</b> button, in the actions bar, brings back a template saved from an earlier export.</figcaption>
-</figure>
-<figure class="shot">
-  <img src="../../assets/img/7.1-importar-modelo-pop-up-EN.png" alt="'Import mapping template' dialog with the .txt file selector">
-  <figcaption><b>Figure 7.</b> The <b>Import mapping template</b> dialog: pick the <code><dataset>-mapping-guide.txt</code> file that came in the <code>.zip</code> and confirm. Each line becomes an alias to auto-map future spreadsheets.</figcaption>
-</figure>
-```
-
-## The basisOfRecord assistant
-
-The term <span class="term">basisOfRecord</span> describes the nature of the record (preserved specimen, human observation, fossil material, machine record…). Rather than a single value for the whole batch, Saíra includes an **assistant**: starting from a column of your spreadsheet (for example, <span class="term">tipo_de_registro</span>), you pair **each distinct value** with its Darwin Core term, with a plain-language explanation of each option.
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/5-basisOfRecord-selection-EN.png" alt="basisOfRecord card with the tipo_de_registro column selected and the basisOfRecord assistant button highlighted">
-  <figcaption><b>Figure 8.</b> In the <span class="term">basisOfRecord</span> card, pick the source column (here, <span class="term">tipo_de_registro</span>) and open the <b>basisOfRecord assistant</b>.</figcaption>
-</figure>
-```
-
-```{=html}
-<table class="maptable">
-  <thead><tr><th>Your value in the spreadsheet</th><th></th><th>Darwin Core term</th></tr></thead>
-  <tbody>
-    <tr><td>Material cataloged in a collection</td><td><span class="arrow">→</span></td><td>PreservedSpecimen</td></tr>
-    <tr><td>Field observation (no collection)</td><td><span class="arrow">→</span></td><td>HumanObservation</td></tr>
-    <tr><td>Camera-trap photo</td><td><span class="arrow">→</span></td><td>MachineObservation</td></tr>
-    <tr><td>Fossil material</td><td><span class="arrow">→</span></td><td>FossilSpecimen</td></tr>
-  </tbody>
-</table>
-```
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/5.1-assistente-basisOfRecord-EN.png" alt="basisOfRecord assistant dialog mapping each raw value to a DwC term, with a live preview">
-  <figcaption><b>Figure 9.</b> The assistant maps <b>each value</b> to a DwC term (Espécime preservado → PreservedSpecimen, Observação → HumanObservation, Armadilha fotográfica → MachineObservation), with a live preview before saving.</figcaption>
-</figure>
-```
-
-## The establishmentMeans and degreeOfEstablishment assistant
-
-<span class="term">establishmentMeans</span> says **how the taxon got there** (native, introduced, vagrant…) and <span class="term">degreeOfEstablishment</span>, **what situation it is in** (captive, cultivated, released, invasive…). Both are TDWG controlled vocabularies, 7 and 11 values, and both describe the **species**, not the row.
-
-So the assistant asks **once per taxon**, not per column value: it lists the distinct species from the column mapped to <span class="term">scientificName</span>, ordered by how many records each one covers, and expands your answer to every record of that species.
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/5.2-card-assistente-establishment-EN.png" alt="establishmentMeans card with no column selected, with the ASSISTANT badge and the assistant button highlighted in green">
-  <figcaption><b>Figure 10.</b> The button sits on the <span class="term">establishmentMeans</span> card and is always shown, even with no column selected: the assistant exists precisely for people whose spreadsheet has no such column.</figcaption>
-</figure>
-```
-
-::: {.callout-note}
-## `scientificName` must be mapped
-The assistant works over the species in the column mapped to <span class="term">scientificName</span>. Without that mapping it notifies you and does not open.
+::: {.marks}
+1. Choose the column with the record type, such as <span class="term">tipo_de_registro</span>.
+2. Open the **basisOfRecord Assistant**.
 :::
 
-Species on the invasive alien species list (the same one used in **[name validation](04-name-validation.qmd)**) arrive **pre-filled as `introduced`** and carry a badge inside the assistant. The **degree is never suggested**: by the TDWG definition it is a property of the **record**, not of the species. A captive <span class="term">Sus scrofa</span> and a feral one are the same species at different degrees, and only you know which case your data is.
-
 ```{=html}
-<table class="maptable">
-  <thead><tr><th>Species</th><th></th><th>establishmentMeans</th><th>degreeOfEstablishment</th></tr></thead>
-  <tbody>
-    <tr><td>Sus scrofa</td><td><span class="arrow">→</span></td><td>introduced</td><td>invasive</td></tr>
-    <tr><td>Canis familiaris</td><td><span class="arrow">→</span></td><td>introduced</td><td>released</td></tr>
-    <tr><td>Bos taurus</td><td><span class="arrow">→</span></td><td>introduced</td><td>captive</td></tr>
-    <tr><td>Panthera onca</td><td><span class="arrow">→</span></td><td>native</td><td>native</td></tr>
-  </tbody>
-</table>
+<figure class="shot"><img src="../../assets/img/t03-bor-modal-EN.png" width="872" alt="basisOfRecord Assistant with a spreadsheet value, the term selector and the Save button highlighted"></figure>
 ```
 
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/5.3-assistente-establishment-EN.png" alt="Assistant window listing unique species with record counts, a progress bar, the missing-degree warning and green arrows pointing at the establishmentMeans selectors">
-  <figcaption><b>Figure 11.</b> One row per species, with the record count each answer covers. Both selectors offer the full controlled vocabulary with the TDWG definition next to each value.</figcaption>
-</figure>
-```
-
-### Your own data always wins
-
-If you **also** map a column to either term, the column's values are kept and the assistant only fills the rows you left blank.
-
-A species left unanswered comes out blank, and a term with no answers at all produces no column in the export. Saíra invents nothing.
-
-### The card shows what the assistant did
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/5.4-cards-establishment-preenchidos-EN.png" alt="establishmentMeans card after saving the assistant, with the mapped-field border, an ASSISTANT badge and a green arrow pointing at the note 'Filled by the assistant: 18 species', followed by the example line">
-  <figcaption><b>Figure 12.</b> After saving, the card counts as filled even with no column selected: green border, an <span class="term">ASSISTANT</span> badge and a note stating how many species were answered, with the example line showing the generated value.</figcaption>
-</figure>
-```
-
-The assistant button sits on the <span class="term">establishmentMeans</span> card **only**, because one window fills both terms. The <span class="term">degreeOfEstablishment</span> card still exists with its own column selector, which is how your own data wins there, plus a note pointing at the card that owns the assistant.
-
-A degree saved without a means is dropped: on its own it says nothing. The other way round, a means without a degree, Saíra **warns but never blocks**, with a running count while you work and a warning on save. Darwin Core does not require <span class="term">degreeOfEstablishment</span>, and a taxon whose degree is genuinely unknown must stay publishable.
-
-::: {.callout-note}
-## In the exported sheet both sit next to the name
-Both are **Occurrence** class terms, which would place them at the very front of the file, far from the species they describe. The export relocates them to the end of the **Taxon** block, just after <span class="term">vernacularName</span>: you open the file, see the scientific name and, right beside it, whether that species is native or introduced. Display order only, `meta.xml` still declares the real term URIs.
+::: {.marks}
+1. Each distinct value of the column shows once.
+2. Choose the Darwin Core term. The preview below shows the result.
+3. **Save mapping**.
 :::
 
-## Fixed values for the whole dataset
+## Answer establishmentMeans per species
 
-Some terms describe the **whole dataset**, not each record. Instead of repeating the value in every row of your spreadsheet, tick **Use a fixed value** on the term's card and type the value once: Saíra writes it to **every row** at export.
-
-Seven terms accept a fixed value:
+Optional. The assistant is on the <span class="term">establishmentMeans</span> card and needs <span class="term">scientificName</span> mapped.
 
 ```{=html}
-<p class="chip-row">
-  <span class="term">rightsHolder</span>
-  <span class="term">institutionCode</span>
-  <span class="term">collectionCode</span>
-  <span class="term">country</span>
-  <span class="term">references</span>
-  <span class="term">bibliographicCitation</span>
-  <span class="term">geodeticDatum</span>
-</p>
+<figure class="shot"><img src="../../assets/img/t03-est-modal-EN.png" width="872" alt="establishmentMeans assistant with one species, the establishmentMeans selector and the Save answers button highlighted"></figure>
 ```
 
-Mapping a column and using a fixed value are alternatives (an **OR** separates them): ticking the box hides the column selector, so the constant can never silently overwrite a column you had already mapped. The text field appears only after you tick the box.
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/8-valor-fixo-checkbox-EN.png" alt="rightsHolder card with the 'Use a fixed value' option ticked, pointed at by a green arrow, revealing the warning strip and the text field filled with GBIF">
-  <figcaption><b>Figure 13.</b> On an eligible term's card, tick <b>Use a fixed value</b> and type the value once. The warning strip makes clear it fills <b>every row</b> of that field.</figcaption>
-</figure>
-```
-
-::: {.callout-note}
-## Terms not shown by default
-<span class="term">references</span>, <span class="term">bibliographicCitation</span> and <span class="term">geodeticDatum</span> are not in the base set of cards. Add them with **Add term** (see above) and the fixed-value option appears on the card as soon as the term is added. <span class="term">countryCode</span> is filled automatically during coordinate validation, and <span class="term">basisOfRecord</span> has its own assistant, so those two do not use a fixed value.
+::: {.marks}
+1. One row per species, with the number of records the answer covers.
+2. Choose <span class="term">establishmentMeans</span>. Next to it, the <span class="term">degreeOfEstablishment</span>.
+3. **Save answers**.
 :::
 
-## dynamicProperties: what the standard terms do not cover
+Invasive species already arrive as `introduced`. The degree is never suggested: only you know if the animal is captive or free. If a spreadsheet column also fills the term, the column wins.
 
-Not every measurement fits a Darwin Core term. Coat colour, apparent sex, reproductive condition, weight, an internal project code: Darwin Core reserves <span class="term">dynamicProperties</span> for these, in a single JSON-formatted field.
-
-On the <span class="term">dynamicProperties</span> card you pick the columns you want to carry over and set the **key** for each one. Saíra assembles the JSON object from those keys, one entry per column, and the card shows **the result assembled for the first row**, updating as you edit the keys. You can check the output right there instead of finding out at export time.
+## Use a fixed value for the dataset
 
 ```{=html}
-<figure class="shot">
-  <img src="../../assets/img/6.1-card-dynamicproperties-previa-EN.png" alt="dynamicProperties card with the Cor column mapped, the per-column key editor showing the automatic key cor, and a green arrow pointing at the JSON preview assembled for the first row">
-  <figcaption><b>Figure 14.</b> With the <span class="term">Cor</span> column mapped, the editor derives the key <code>cor</code> and, underneath, shows the JSON assembled for the first row (<code>{"cor":"Melânico"}</code>), refreshed on every key edit. The key and the value come from your spreadsheet, so they stay in its language.</figcaption>
-</figure>
+<figure class="shot"><img src="../../assets/img/t03-fixed-EN.png" width="425" alt="rightsHolder card with the Use a fixed value option checked and the value Museu Nacional highlighted"></figure>
 ```
 
-::: {.callout-note}
-## A card always says what it did with your column
-The example line under the selector (<code>e.g.: Panthera onca</code>) shows what Saíra read from the column you picked. When the column is mapped but its first rows are empty, the card says so explicitly instead of rendering nothing, so that **"mapped and empty"** never looks like **"not mapped"**. The exported cell stays blank, which is the Darwin Core convention for missing information.
+::: {.marks}
+1. Check **Use a fixed value**.
+2. Type the value once. It goes to all rows.
 :::
 
-Conservation status (MMA and IUCN categories) is also written into <span class="term">dynamicProperties</span>, but by a different route: it comes from **[name validation](04-name-validation.qmd)** and is added without erasing the keys you set here. See **[export](07-preview-export.qmd)**.
+These terms accept a fixed value: <span class="term">rightsHolder</span> <span class="term">institutionCode</span> <span class="term">collectionCode</span> <span class="term">country</span> <span class="term">references</span> <span class="term">bibliographicCitation</span> <span class="term">geodeticDatum</span>. The last three come in with **Add term**.
 
-## Unmapped columns
+## Choose the license
 
-Not every column has to become a Darwin Core term: just leave it unmapped. At export, Saíra **appends to the right** the columns you did not use as a source for any term, preserving their original names and order, so no data is lost: you can edit them by hand later, already in the IPT.
+The <span class="term">license</span> card is required. Choose CC0, CC-BY or CC-BY-NC, the three licenses GBIF accepts. Without a license, the export blocks.
 
-With the fields mapped, your data is already in Darwin Core vocabulary, but it has not been verified yet. Go to **[Validating scientific names](04-name-validation.qmd)**.
+## Add a term that is not shown
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t03-add-EN.png" width="872" alt="Add term window with the term search and the Add button highlighted"></figure>
+```
+
+::: {.marks}
+1. Search for the term. The catalog has about 218.
+2. **Add**. The term becomes a new card.
+:::
+
+## Put extra columns in dynamicProperties
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t03-dyn-EN.png" width="775" alt="dynamicProperties card with two columns, a renamed key and the JSON of the first row highlighted"></figure>
+```
+
+::: {.marks}
+1. Choose the columns.
+2. Rename the key, if you want.
+3. Check the JSON of the first row.
+:::
+
+The conservation status goes into the same field, from [name validation](04-name-validation.qmd).
+
+## Reuse the mapping
+
+The exported `.zip` has the `<dataset>-mapping-guide.txt`. On the next spreadsheet, click **Import template**:
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t03-import-EN.png" width="572" alt="Import mapping template window with the upload area and the Import button highlighted"></figure>
+```
+
+::: {.marks}
+1. Send the file.
+2. **Import**. Columns with the same name map automatically.
+:::
+
+Columns that you do not map go at the end of the file, with the original name. GBIF ignores these columns.

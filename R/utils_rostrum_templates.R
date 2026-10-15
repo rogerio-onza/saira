@@ -220,7 +220,7 @@ import_mapping_guide_to_aliases <- function(
                 error = function(e) {
                     warning(
                         "import_mapping_guide_to_aliases: skipping ('",
-                        src, "' -> '", term, "') \u2014 ", conditionMessage(e)
+                        src, "' -> '", term, "'): ", conditionMessage(e)
                     )
                 }
             )

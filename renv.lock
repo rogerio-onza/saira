@@ -3121,33 +3121,6 @@
       "Maintainer": "Hadley Wickham <hadley@posit.co>",
       "Repository": "CRAN"
     },
-    "ids": {
-      "Package": "ids",
-      "Version": "1.0.1",
-      "Source": "Repository",
-      "Title": "Generate Random Identifiers",
-      "Authors@R": "person(\"Rich\", \"FitzJohn\", role = c(\"aut\", \"cre\"), email = \"rich.fitzjohn@gmail.com\")",
-      "Description": "Generate random or human readable and pronounceable identifiers.",
-      "License": "MIT + file LICENSE",
-      "URL": "https://github.com/richfitz/ids",
-      "BugReports": "https://github.com/richfitz/ids/issues",
-      "Imports": [
-        "openssl",
-        "uuid"
-      ],
-      "Suggests": [
-        "knitr",
-        "rcorpora",
-        "rmarkdown",
-        "testthat"
-      ],
-      "RoxygenNote": "6.0.1",
-      "VignetteBuilder": "knitr",
-      "NeedsCompilation": "no",
-      "Author": "Rich FitzJohn [aut, cre]",
-      "Maintainer": "Rich FitzJohn <rich.fitzjohn@gmail.com>",
-      "Repository": "CRAN"
-    },
     "ini": {
       "Package": "ini",
       "Version": "0.3.1",

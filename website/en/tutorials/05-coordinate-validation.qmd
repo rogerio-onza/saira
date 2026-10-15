@@ -4,138 +4,72 @@ pagetitle: "Coordinate validation · Saíra Tutorials"
 ---
 
 ::: {.tut-standfirst}
-Inverted, swapped or (0, 0) coordinates are among the most common errors in field spreadsheets. Saíra runs a deterministic diagnosis, shows every record on a map and in a table, and **proposes safe corrections**, applied only on export, never silently over your data.
+Find coordinates that are swapped, at sea or outside the country in the **Coordinates** step. Saíra proposes fixes. You decide which ones to apply.
 :::
 
-## Before validating: what must be mapped
+## Run the validation
 
-Coordinate validation only runs once three Darwin Core terms are mapped (see **[Mapping](03-dwc-mapping.qmd)**):
-
-- <span class="term">decimalLatitude</span>
-- <span class="term">decimalLongitude</span>
-- <span class="term">country</span>
-
-The left panel shows the column associated with each term. While any is missing, the **Validate Coordinates** button stays disabled.
-
-Before running, choose the **Profile**:
-
-- **Complete**: runs every test, including the detection of *reference hotspots* (suspicious points on capitals, country centroids, the GBIF HQ and biodiversity institutions).
-- **Fast**: skips the reference tests; handy for a first pass over large datasets.
-
-Click **Validate Coordinates**. Validation is triggered by you, not on every change to the data.
+The validation needs <span class="term">decimalLatitude</span>, <span class="term">decimalLongitude</span> and <span class="term">country</span> mapped. If one is missing, the **Validate Coordinates** button stays disabled.
 
 ```{=html}
-<figure class="shot">
-  <img src="../../assets/img/9-painel-validação-EN.png" alt="Left panel of coordinate validation: status of the mapped columns (latitude, longitude, country), the Complete/Fast Profile selector and the Validate Coordinates button">
-  <figcaption><b>Figure 1.</b> Left panel: status of the mapped columns (latitude, longitude, country), the Profile selector (Complete / Fast) and the Validate Coordinates button.</figcaption>
-</figure>
+<figure class="shot"><img src="../../assets/img/t05-results-EN.png" width="1440" alt="Coordinates step after the validation, with the column bar, the fix panels, the filters and the diagnosis table highlighted"></figure>
 ```
 
-## What Saíra checks
+::: {.marks}
+1. The mapped columns and the **Validate Coordinates** button.
+2. Transposed coordinates. **Fix** applies the swap.
+3. Missing countries. **Fill** uses the country where the point falls.
+4. The filters change the map and the table together.
+5. The table lists each record with its diagnosis.
+:::
 
-From <span class="term">decimalLatitude</span>, <span class="term">decimalLongitude</span> and <span class="term">country</span>, each record gets **one diagnosis**, in the same color shown on the map and in the table badges:
+| Diagnosis | Meaning |
+|---|---|
+| Missing coordinate | Latitude or longitude is empty or not a number. |
+| Invalid | Latitude beyond ±90 or longitude beyond ±180. |
+| Possible swap | Latitude and longitude look swapped. |
+| At sea | The point falls in water. |
+| Zero/Equal | Point at (0, 0) or latitude equal to longitude. |
+| Reference hotspot | Point near a capital, a country centroid, the GBIF headquarters or a biological institution. |
 
-```{=html}
-<table class="maptable">
-  <thead><tr><th>Diagnosis</th><th>What it means</th></tr></thead>
-  <tbody>
-    <tr><td><span class="swatch" style="background:var(--success)"></span>OK</td><td>Passed every test.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--coord-missing)"></span>Missing coordinate</td><td>Latitude or longitude empty or non-numeric.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--error)"></span>Out of bounds</td><td>Impossible values (latitude beyond ±90, longitude beyond ±180) or a zeroed coordinate.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--coord-swap)"></span>Possible swap</td><td>Latitude and longitude appear switched.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--info)"></span>At sea</td><td>The point falls in the water according to the coastline layer, when it should be on land.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--warning)"></span>Zero/Equal</td><td>Coordinate at (0, 0) or with identical latitude and longitude.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--coord-identical)"></span>All identical</td><td>Every valid record shares the same coordinate pair: a sign of a collective placeholder.</td></tr>
-    <tr><td><span class="swatch" style="background:var(--coord-reference)"></span>Reference hotspot</td><td>Point near a capital, country centroid, GBIF HQ or biological institution (<b>Complete</b> profile only).</td></tr>
-  </tbody>
-</table>
-```
-
-The tests are deterministic (in the style of `CoordinateCleaner`) and use the Natural Earth country layer bundled with Saíra: they run without depending on external services.
-
-## Reading the results
-
-Once validation finishes, the results appear on the right.
-
-**Filters.** Above the map, buttons filter the view by category: **All**, **Problems**, **Invalid**, **Sea**, **Zero/Equal** and **Reference**. Clicking one filters the map and the table at once.
-
-**Map: Geographic Distribution.** Each record becomes a point, colored by situation. Click a point to see its row, diagnosis and coordinates; clusters outside the expected area stand out.
-
-```{=html}
-<table class="maptable">
-  <thead><tr><th>Map color</th><th>Situation</th></tr></thead>
-  <tbody>
-    <tr><td><span class="swatch" style="background:var(--success)"></span>Green</td><td>Valid</td></tr>
-    <tr><td><span class="swatch" style="background:var(--error)"></span>Red</td><td>Invalid</td></tr>
-    <tr><td><span class="swatch" style="background:var(--info)"></span>Navy</td><td>Sea</td></tr>
-    <tr><td><span class="swatch" style="background:var(--warning)"></span>Orange</td><td>Zero/Equal</td></tr>
-    <tr><td><span class="swatch" style="background:var(--coord-reference)"></span>Violet</td><td>Reference hotspot</td></tr>
-  </tbody>
-</table>
-```
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/9.1-mapa-pontos-validados-EN.png" alt="Geographic Distribution map with records as points colored by situation (valid, invalid, sea, zero/equal, reference) and the color legend below the map">
-  <figcaption><b>Figure 2.</b> Geographic Distribution: points colored by situation, with the color legend below the map.</figcaption>
-</figure>
-```
+The tests run offline, with the Natural Earth country layer embedded in Saíra.
 
 ::: {.callout-warning}
 ## The sea test is approximate
-The sea test uses simplified coastline data. Points very close to the coast may be incorrectly flagged. **Verify visually on the map before discarding** a record marked *At sea*.
+The coastline is simplified. A point very near the coast can show as **At sea**. Check it on the map before you discard the record.
 :::
 
-**Table: Coordinate Diagnostics.** Below the map, a table lists each record with the columns **Row**, **Diagnosis** (colored badge), **Latitude**, **Longitude**, **Country** and **ISO3** (the resolved country code). It is searchable, paginated and follows the active filter.
+## Apply the proposed fixes
+
+The panels show only when there are candidates:
+
+| Panel | What Saíra does |
+|---|---|
+| **Fix** transposed | Tries swaps of latitude and longitude and of sign. Accepts the first that falls in the given country (~22 km margin). |
+| **Fill** countries | Fills an empty <span class="term">country</span> with the country where the point falls. Does not replace a country already given. |
+| **Swap** at sea without country | Swaps latitude and longitude and fills the country, if the new point falls in only one country. |
+
+The fixes apply on export. The original data does not change. If <span class="term">verbatimLatitude</span> and <span class="term">verbatimLongitude</span> are empty, the original value goes to them.
+
+## Fix a point in the table
 
 ```{=html}
-<figure class="shot">
-  <img src="../../assets/img/9.2-diagnostico-coordenadas-pilulas-EN.png" alt="Filter buttons above the Coordinate Diagnostics table, with the Row, Diagnosis, Latitude, Longitude, Country and ISO3 columns">
-  <figcaption><b>Figure 3.</b> The filters and the Coordinate Diagnostics table (Row, Diagnosis, Latitude, Longitude, Country, ISO3).</figcaption>
-</figure>
+<figure class="shot"><img src="../../assets/img/t05-edit-EN.png" width="730" alt="Diagnosis table with a corrected longitude, the Edited filter and the edit hint highlighted"></figure>
 ```
 
-## Assisted corrections
+::: {.marks}
+1. Double-click the latitude or the longitude. Type the value in decimal degrees, with a comma or a period. Enter saves.
+2. The **Edited** filter shows only the rows you fixed.
+3. The new value. Saíra validates the point again. **Undo** restores the original value.
+:::
 
-Saíra **proposes the correction** for you to apply explicitly. The original coordinates are never silently overwritten, and accepted corrections are **applied on export**, not in the preview. When the export template has empty <span class="term">verbatimLatitude</span> and <span class="term">verbatimLongitude</span> columns, the original values are preserved there.
+Validating again does not remove the manual fixes. A row without a unique <span class="term">occurrenceID</span> does not accept edits.
 
-When candidates exist, panels appear on the left. Each shows the count and one example, and turns green with a ✓ once applied:
-
-```{=html}
-<ol class="fix-steps">
-  <li><strong>Fix transpositions and swaps.</strong>
-    <p>For points outside the informed country, Saíra tries lat/lon swaps and sign flips and accepts the first that lands inside the country (~22 km border margin). Button: <strong>Correct transposed coordinates</strong>.</p></li>
-  <li><strong>Fill the country from the point.</strong>
-    <p>When <span class="term">country</span> is blank and the coordinate is valid, Saíra derives the country the point falls in. Country values you already provided are never overwritten. Button: <strong>Fill country from coordinates</strong>.</p></li>
-  <li><strong>Handle sea points with no country.</strong>
-    <p>Blank country + sea point is a strong sign of a lat/lon swap. Saíra tries the swap and, when the corrected point lands unambiguously in a country, proposes the coordinate and the country together. Button: <strong>Swap lat/lon and fill country</strong>.</p></li>
-</ol>
-```
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/9.3-correcao-coordenadas-transpostas-EN.png" alt="Transposed-coordinate correction panel, with the record count, an old → new example and the Correct transposed coordinates button">
-  <figcaption><b>Figure 4.</b> Transposed-coordinate correction panel: count, example (old → new) and the Correct transposed coordinates button.</figcaption>
-</figure>
-```
-
-```{=html}
-<figure class="shot">
-  <img src="../../assets/img/9.4-correcao-pais-faltando-coordenadas-EN.png" alt="Fill-country-from-coordinates panel, with the count, an example and the Fill country from coordinates button">
-  <figcaption><b>Figure 5.</b> Country-fillable-from-coordinates panel (and the "sea + blank country → fixable by lat/lon swap" variant).</figcaption>
-</figure>
-```
-
-**Records with no coordinate** are marked *Missing coordinate*. Saíra does not invent a point from the locality text: those records are left to your judgement. Keep them ungeoreferenced as a conscious choice, or fill in the coordinates before upload.
+Saíra does not make a coordinate from the locality text. A record without coordinates stays as it is, unless you type both coordinates in the table.
 
 ::: {.callout-tip}
-## Datum and precision
-Record the <span class="term">geodeticDatum</span> (for example, <em>WGS84</em>) and, when known, the uncertainty in meters (<span class="term">coordinateUncertaintyInMeters</span>). Without these two fields, whoever reuses the record cannot tell whether the point is reliable to 10 m or to 10 km. Many analyses, such as distribution modeling, filter precisely on <span class="term">coordinateUncertaintyInMeters</span>.
+## Sign of coordinates in Brazil
+Almost all of Brazil has negative latitude and longitude. `-34.87, -8.04` (lat, lon) instead of `-8.04, -34.87` puts a point from Pernambuco in the middle of the Atlantic.
 :::
 
-::: {.callout-warning}
-## Coordinate signs in Brazil
-Most of Brazil has **negative latitude and longitude**. Positive coordinates where the south/west hemisphere was expected are a strong sign of a sign error or a swap. The classic example: `-34.87, -8.04` (lat, lon) instead of `-8.04, -34.87` throws a point from Pernambuco into the middle of the Atlantic.
-:::
-
-Data mapped, names resolved and coordinates reviewed. If there are threatened species, the next step decides how to protect them: go to **[Generalizing sensitive species](06-generalization.qmd)**.
+Also record the <span class="term">geodeticDatum</span> (for example, `WGS84`) and, if you know it, <span class="term">coordinateUncertaintyInMeters</span>. Many analyses filter records by this field.

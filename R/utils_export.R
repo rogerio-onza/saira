@@ -114,10 +114,67 @@ apply_name_review_payload <- function(df, payload = NULL) {
         replacement <- corrected_name
         replacement[is.na(replacement) | !nzchar(replacement)] <- original_name[is.na(replacement) | !nzchar(replacement)]
         replacement[is.na(replacement) | !nzchar(replacement)] <- current_name[is.na(replacement) | !nzchar(replacement)]
+        old_names <- out$scientificName
         out$scientificName[correct_mask] <- replacement
+        # genus and the epithets came from the old name. Without this, a
+        # synonym fix exports "Puma concolor" with genus "Felis".
+        out <- refresh_taxon_terms(out, old_names)
     }
 
     out
+}
+
+#' Rank of each name the Names tab validated
+#'
+#' @param report Validation report (`validation_result()` of the Names tab).
+#' @return Data frame `query_name`, `taxonRank` (lowercase), or NULL.
+#' @noRd
+name_rank_table <- function(report) {
+    cols <- c("query_name", "taxonRank", "validation_status")
+    if (!is.data.frame(report) || !all(cols %in% names(report))) {
+        return(NULL)
+    }
+    rank <- tolower(trimws(as.character(report$taxonRank)))
+    keep <- report$validation_status %in% c("accepted", "synonym") &
+        !is.na(report$query_name) & !is.na(rank) & nzchar(rank)
+    out <- data.frame(query_name = as.character(report$query_name[keep]),
+                      taxonRank = rank[keep], stringsAsFactors = FALSE)
+    out[!duplicated(out$query_name), , drop = FALSE]
+}
+
+#' Put the validated rank on one-word names (ADR-151)
+#'
+#' The mapping reads every one-word name as a genus, so "Felidae" leaves with
+#' `taxonRank = genus` and `genus = Felidae`, and the GBIF match then fails. The
+#' name provider knows the real rank. Only a blank or "genus" rank changes, so a
+#' rank the user mapped from a column stays.
+#'
+#' @param df Data frame to export.
+#' @param ranks Output of `name_rank_table()`.
+#' @return `df` with the rank of higher taxa corrected.
+#' @noRd
+apply_name_rank_payload <- function(df, ranks) {
+    if (!is.data.frame(df) || !is.data.frame(ranks) || nrow(ranks) == 0L ||
+            !"scientificName" %in% names(df)) {
+        return(df)
+    }
+    name <- trimws(as.character(df$scientificName))
+    name[is.na(name)] <- ""
+    rank <- ranks$taxonRank[match(name, ranks$query_name)]
+    current <- if ("taxonRank" %in% names(df)) as.character(df$taxonRank) else rep(NA_character_, nrow(df))
+    fix <- nzchar(name) & !grepl(" ", name, fixed = TRUE) & !is.na(rank) & rank != "genus" &
+        (is.na(current) | !nzchar(trimws(current)) | current == "genus")
+    if (!any(fix)) {
+        return(df)
+    }
+    current[fix] <- rank[fix]
+    df$taxonRank <- current
+    if ("genus" %in% names(df)) {
+        genus <- as.character(df$genus)
+        genus[fix & !is.na(genus) & genus == name] <- ""
+        df$genus <- genus
+    }
+    df
 }
 
 # Rows whose country resolves to Brazil. The MMA portaria is a *national* legal
@@ -168,10 +225,12 @@ is_brazilian_record <- function(df) {
 #' @param df Data frame to export (post name review).
 #' @param payload Optional list with `include_mma`, `include_iucn` (logical) and
 #'   `taxon_keys` (data.frame of `scientificName`, `taxonID`, `provider`).
+#' @param generalized Optional logical vector, one per row: TRUE where
+#'   `mask_sensitive_coordinates()` protected the row.
 #' @return `df` with an updated `dynamicProperties` column.
 #' @keywords internal
 #' @noRd
-apply_conservation_status <- function(df, payload = NULL) {
+apply_conservation_status <- function(df, payload = NULL, generalized = NULL) {
     if (!is.data.frame(df) || nrow(df) == 0L ||
         !("scientificName" %in% names(df)) ||
         is.null(payload) || !is.list(payload)) {
@@ -198,6 +257,9 @@ apply_conservation_status <- function(df, payload = NULL) {
                 # National list: blank the keys outside Brazil so
                 # merge_dynamic_property() leaves those rows untouched.
                 br <- is_brazilian_record(df)
+                # A row Saira generalized cites its MMA category in
+                # dataGeneralizations, so dynamicProperties carries it too (B12).
+                if (length(generalized) == length(br)) br <- br | generalized
                 mma_category <- sensitive_category_for(names_vec)
                 mma_category[!br] <- NA_character_
                 mma_source <- sensitive_source_for(names_vec)
@@ -303,6 +365,7 @@ process_for_export <- function(df) {
     # Convert countryCode from internal ISO alpha-3 to DwC-required alpha-2.
     # Internal pipeline keeps alpha-3 for CoordinateCleaner compatibility;
     # this is the single export-time boundary that emits alpha-2.
+    df <- derive_country_code(df)
     df <- convert_country_code_to_alpha2(df)
 
     # Reorder columns to canonical DwC sequence (occurrenceID first,
@@ -404,18 +467,27 @@ map_value_sources <- function(map_values) {
 #'   source column names.
 #' @param overridden_terms Character vector of terms whose fixed value won over
 #'   their column mapping (`overridden_mapping_terms()`).
+#' @param sensitive_rows Integer rows whose coordinates the mask generalized or
+#'   withheld. Their coordinate-like raw values are blanked.
+#' @param sensitive_points Optional data frame aligned with `sensitive_rows`:
+#'   the real `decimalLatitude`, `decimalLongitude` and the mask `grid`.
 #' @return Data frame: process_for_export(df_processed) + tail of unused raw cols.
 #' @export
 process_for_export_with_unmapped <- function(df_processed, raw_data, map_values,
-                                             overridden_terms = character(0)) {
+                                             overridden_terms = character(0),
+                                             sensitive_rows = integer(0),
+                                             sensitive_points = NULL) {
     out <- process_for_export(df_processed)
     id_strategy <- attr(out, "id_strategy")
 
-    extra_cols <- unmapped_raw_columns(raw_data, map_values, exclude = names(out),
+    # No `exclude`: a raw `decimalLatitude` column that the mapping did not
+    # read keeps its values as `decimalLatitude_original` (B22).
+    extra_cols <- unmapped_raw_columns(raw_data, map_values,
                                        overridden_terms = overridden_terms)
     if (length(extra_cols) == 0L) return(out)
 
-    extras <- raw_data[, extra_cols, drop = FALSE]
+    extras <- blank_coordinate_like_cells(raw_data[, extra_cols, drop = FALSE], sensitive_rows,
+                                          sensitive_points)
     # A rescued column can carry the same name as the DwC term whose fixed
     # value replaced it. Both belong in the file, so the raw one takes an
     # `_original` suffix rather than a duplicate header the IPT cannot read.
@@ -426,6 +498,58 @@ process_for_export_with_unmapped <- function(df_processed, raw_data, map_values,
     combined <- cbind(out, extras)
     attr(combined, "id_strategy") <- id_strategy
     combined
+}
+
+# A raw column whose name has a coordinate word ("Latitude", "CoordX",
+# "Lat_GPS", "decimalLongitude", "UTM", "WKT", "Y_sul"). The test reads whole
+# words, so "Longo", "Lontra" and "Lateral" do not match (B59).
+coordinate_like_column <- function(names) {
+    words <- c("lat", "latitude", "latitud", "lon", "long", "longitude", "longitud",
+               "lng", "x", "y", "utm", "wkt", "gps", "easting", "northing", "footprint")
+    split <- tolower(gsub("([a-z])([A-Z])", "\\1 \\2", names))
+    tokens <- strsplit(split, "[^a-z0-9]+")
+    vapply(tokens, function(t) any(t %in% words) || any(startsWith(t, "coord")), logical(1))
+}
+
+# On the rows the mask generalized or withheld, blank every unmapped value
+# that can hold the exact point (B45): all cells of a coordinate-like column,
+# and in the other columns a degree sign or a number closer to the real point
+# than the row grid. A pH of 6.5 stays, a copy of -23.5505 goes (B52).
+blank_coordinate_like_cells <- function(extras, rows, points = NULL) {
+    ok <- !is.na(rows) & rows >= 1L & rows <= nrow(extras)
+    rows <- rows[ok]
+    if (!length(rows) || ncol(extras) == 0L) {
+        return(extras)
+    }
+    near_point <- function(num) rep(FALSE, length(num))
+    if (is.data.frame(points) && nrow(points) == length(ok)) {
+        points <- points[ok, , drop = FALSE]
+        lat <- as_coord_numeric(points$decimalLatitude)$num
+        lon <- as_coord_numeric(points$decimalLongitude)$num
+        tol <- suppressWarnings(as.numeric(points$grid))
+        tol[is.na(tol) | tol <= 0] <- 1e-6
+        near_point <- function(num) {
+            !is.na(num) & ((!is.na(lat) & abs(num - lat) < tol) |
+                               (!is.na(lon) & abs(num - lon) < tol))
+        }
+    }
+    by_name <- coordinate_like_column(names(extras))
+    for (j in seq_along(extras)) {
+        v <- as.character(extras[[j]])
+        hit <- if (by_name[[j]]) {
+            rep(TRUE, length(rows))
+        } else {
+            cell <- trimws(v[rows])
+            num <- suppressWarnings(as.numeric(sub(",", ".", cell, fixed = TRUE)))
+            near_point(num) | grepl("\u00b0", cell, fixed = TRUE)
+        }
+        hit[is.na(hit)] <- FALSE
+        if (any(hit)) {
+            v[rows[hit]] <- NA_character_
+            extras[[j]] <- v
+        }
+    }
+    extras
 }
 
 #' Write a data frame to .xlsx with every cell forced to text
@@ -471,7 +595,7 @@ write_xlsx_text_only <- function(df, path) {
 #' @param map_values Named list: nome = termo DwC, valor = char vec de colunas
 #'   fonte (multi-coluna serializa como "colA + colB").
 #' @param raw_data data.frame original (para listar colunas nao usadas).
-#' @param lang Character scalar "pt" ou "en" (ou reactive — extraido com `()` se for).
+#' @param lang Character scalar from `get_languages()` (ou reactive — extraido com `()` se for).
 #' @param required_terms Character vector de termos DwC obrigatorios (default = required do preview).
 #' @param source_file Optional character: nome do arquivo de origem para metadados.
 #' @param id_strategy Optional character: occurrenceID strategy used at export,
@@ -497,7 +621,7 @@ build_mapping_guide_txt <- function(map_values,
                                     id_counts = NULL) {
     if (is.function(lang)) lang <- lang()
     lang <- as.character(lang)[1L]
-    if (!lang %in% c("pt", "en")) lang <- "pt"
+    if (!lang %in% get_languages()) lang <- "en"
 
     if (!is.list(map_values)) map_values <- list()
     if (!is.data.frame(raw_data)) raw_data <- data.frame()
@@ -567,6 +691,8 @@ build_mapping_guide_txt <- function(map_values,
         if (is.na(cl) || !nzchar(cl)) "Other" else cl
     }
 
+    # Like the Portuguese text, the Spanish text stays ASCII: the guide is a
+    # plain .txt that people open in any editor.
     L <- if (lang == "pt") {
         list(
             title        = "#   SAIRA \u00b7 Guia de Mapeamento Darwin Core",
@@ -588,6 +714,28 @@ build_mapping_guide_txt <- function(map_values,
             unmp_note_3  = "#     um termo DwC ou inclua o conteudo em dynamicProperties.",
             coverage     = "# cobertura: %d termo(s) DwC mapeado(s), %d constante(s), %d obrigatorio(s) faltando",
             none         = "(nenhum)"
+        )
+    } else if (lang == "es") {
+        list(
+            title        = "#   SAIRA \u00b7 Guia de Mapeo Darwin Core",
+            url          = "#   github.com/sibbr/saira",
+            tagline      = "#   Vocabulario de mapeo compartible - sin datos de registros",
+            how_to_use   = "#   como usar",
+            step_1       = "#     1. Cargue su CSV de datos en Saira y abra la pestana Mapeo.",
+            step_2       = "#     2. En la barra lateral, haga clic en Importar modelo y elija este .txt.",
+            step_3       = "#     3. El mapeo se reconstruye en las tarjetas (concatenaciones y constantes).",
+            step_4       = "#     4. Revise y exporte. (Cada columna tambien se vuelve un alias personal reutilizable.)",
+            section_map  = "#   mapeos por clase DwC   (columna_origen -> termino_DwC)",
+            legend       = "#   las concatenaciones de columnas se unen con el separador \" | \"",
+            section_const= "#   constantes   (valor escrito/elegido aplicado a todas las filas)",
+            section_miss = "#   terminos DwC obligatorios todavia sin mapear",
+            section_unmp = "#   columnas originales sin usar (se mantienen al final del CSV)",
+            unmp_empty   = "#     Vacias en todas las filas, por eso quedan fuera del archivo:",
+            unmp_note_1  = "#     Estas columnas siguen en el archivo, pero NO se declaran en meta.xml,",
+            unmp_note_2  = "#     por eso GBIF las va a ignorar. Para publicarlas, mapee cada una a un",
+            unmp_note_3  = "#     termino DwC o incluya su contenido en dynamicProperties.",
+            coverage     = "# cobertura: %d termino(s) DwC mapeado(s), %d constante(s), %d obligatorio(s) faltante(s)",
+            none         = "(ninguno)"
         )
     } else {
         list(
@@ -702,13 +850,30 @@ build_mapping_guide_txt <- function(map_values,
     }
 
     if (!is.na(id_strategy) && nzchar(id_strategy)) {
-        strategy_section <- if (lang == "pt") {
+        strategy_section <- if (lang == "es") {
+            list(
+                header = "#   estrategia de occurrenceID",
+                explainers = list(
+                    user_supplied = "#     Estrategia: user_supplied. Todos los occurrenceID vinieron de sus datos y se conservaron literalmente.",
+                    user_supplied_with_generated = "#     Estrategia: user_supplied_with_generated. Los identificadores de sus datos se conservaron; las filas que no tenian uno, o que lo repetian, recibieron un identificador generado por Saira.",
+                    generated = "#     Estrategia: generated. Sus datos no tenian identificadores unicos, por eso Saira derivo uno del contenido de cada fila. Volver a cargar la misma hoja de calculo reproduce los mismos identificadores; corregir un valor cambia el identificador de esa fila."
+                ),
+                counts = "#     Conteo: %d de %d conservados de sus datos, %d generados.",
+                roundtrip = c(
+                    "#",
+                    "#     Para mantener estos identificadores en la proxima exportacion, vuelva a",
+                    "#     importar ESTE archivo (o copie la columna occurrenceID a su hoja de",
+                    "#     calculo) y mapee occurrenceID. Los existentes se conservan y solo las",
+                    "#     ocurrencias nuevas reciben un ID."
+                )
+            )
+        } else if (lang == "pt") {
             list(
                 header = "#   estrategia de occurrenceID",
                 explainers = list(
                     user_supplied = "#     Estrategia: user_supplied. Todos os occurrenceID vieram dos seus dados e foram preservados literalmente.",
-                    user_supplied_with_generated = "#     Estrategia: user_supplied_with_generated. Os identificadores do seu dado foram preservados; as linhas que estavam sem um receberam um identificador gerado pela Saira.",
-                    generated = "#     Estrategia: generated. Nenhuma coluna do seu dado carregava identificador, entao a Saira derivou um do conteudo de cada linha. Reenviar a mesma planilha reproduz os mesmos identificadores; corrigir um valor muda o identificador daquela linha."
+                    user_supplied_with_generated = "#     Estrategia: user_supplied_with_generated. Os identificadores do seu dado foram preservados; as linhas que estavam sem um, ou que repetiam um, receberam um identificador gerado pela Saira.",
+                    generated = "#     Estrategia: generated. O seu dado nao carregava identificadores unicos, entao a Saira derivou um do conteudo de cada linha. Reenviar a mesma planilha reproduz os mesmos identificadores; corrigir um valor muda o identificador daquela linha."
                 ),
                 counts = "#     Contagem: %d de %d preservados do seu dado, %d gerados.",
                 roundtrip = c(
@@ -724,8 +889,8 @@ build_mapping_guide_txt <- function(map_values,
                 header = "#   identifier strategy (occurrenceID)",
                 explainers = list(
                     user_supplied = "#     Strategy: user_supplied. Every occurrenceID came from your data and was preserved verbatim.",
-                    user_supplied_with_generated = "#     Strategy: user_supplied_with_generated. Identifiers from your data were preserved; rows that had none received one generated by Saira.",
-                    generated = "#     Strategy: generated. No column in your data carried an identifier, so Saira derived one from each row content. Re-uploading the same spreadsheet reproduces the same identifiers; correcting a value changes that row identifier."
+                    user_supplied_with_generated = "#     Strategy: user_supplied_with_generated. Identifiers from your data were preserved; rows that had none, or repeated one, received one generated by Saira.",
+                    generated = "#     Strategy: generated. Your data carried no unique identifiers, so Saira derived one from each row content. Re-uploading the same spreadsheet reproduces the same identifiers; correcting a value changes that row identifier."
                 ),
                 counts = "#     Counts: %d of %d preserved from your data, %d generated.",
                 roundtrip = c(
@@ -1149,6 +1314,35 @@ apply_geodetic_datum <- function(df) {
     df
 }
 
+# Fill a blank countryCode from country (D08). The Coordinates tab resolves
+# each country to ISO3 but never wrote the code, so a sheet with only a country
+# column published no countryCode. A value the publisher mapped stays, and a
+# country the cascade cannot resolve leaves the cell blank.
+derive_country_code <- function(df) {
+    if (!is.data.frame(df) || nrow(df) == 0L || !"country" %in% names(df)) {
+        return(df)
+    }
+    code <- if ("countryCode" %in% names(df)) {
+        as.character(df$countryCode)
+    } else {
+        rep(NA_character_, nrow(df))
+    }
+    blank <- is.na(code) | !nzchar(trimws(code))
+    if (!any(blank)) {
+        return(df)
+    }
+    iso3 <- tryCatch(coords_country_to_iso3(df$country[blank]), error = function(e) NULL)
+    if (is.null(iso3)) {
+        return(df)
+    }
+    code[blank] <- iso3
+    if (!"countryCode" %in% names(df) && all(is.na(code))) {
+        return(df)
+    }
+    df$countryCode <- code
+    df
+}
+
 #' Convert countryCode to ISO 3166-1 alpha-2 for DwC export
 #'
 #' Saira's internal pipeline keeps `countryCode` in ISO alpha-3 ("BRA") for
@@ -1276,8 +1470,8 @@ build_meta_xml <- function(df, core_filename = "occurrence.txt") {
 #' Compute geographic and temporal extents for EML coverage
 #'
 #' Reads `decimalLatitude`/`decimalLongitude` for the geographic bounding box
-#' and `eventDate` for the temporal range. Returns NA for any extent that
-#' cannot be derived from the data.
+#' and `eventDate` for the temporal range. Placeholder points and future dates
+#' are skipped. Returns NA for any extent that cannot be derived from the data.
 #'
 #' @param df Data frame.
 #' @return Named list with `bbox` (named numeric vector: west/east/north/south)
@@ -1288,8 +1482,10 @@ compute_dataset_extents <- function(df) {
     if (all(c("decimalLatitude", "decimalLongitude") %in% names(df))) {
         lat <- suppressWarnings(as.numeric(df$decimalLatitude))
         lon <- suppressWarnings(as.numeric(df$decimalLongitude))
-        valid <- is.finite(lat) & is.finite(lon) &
-            lat >= -90 & lat <= 90 & lon >= -180 & lon <= 180
+        # The same test the mask uses, so (0,0) and a lat == lon placeholder
+        # do not stretch the box. A pole or antimeridian corner is a filler
+        # value, not a collecting site (B41).
+        valid <- sensitive_point_ok(lat, lon) & abs(lat) < 90 & abs(lon) < 180
         if (any(valid)) {
             bbox[["west"]]  <- min(lon[valid])
             bbox[["east"]]  <- max(lon[valid])
@@ -1300,9 +1496,20 @@ compute_dataset_extents <- function(df) {
 
     dates <- c(begin = NA_character_, end = NA_character_)
     if ("eventDate" %in% names(df)) {
-        raw <- as.character(df$eventDate)
-        iso <- substr(trimws(raw), 1L, 10L)
-        parsed <- suppressWarnings(as.Date(iso, format = "%Y-%m-%d"))
+        raw <- trimws(as.character(df$eventDate))
+        raw <- raw[!is.na(raw) & nzchar(raw) & is_dwc_date_value(raw)]
+        # An interval counts by both ends, and "2020" or "2020-05" by the
+        # first and last day it covers (B53).
+        parts <- strsplit(raw, "/", fixed = TRUE)
+        start <- vapply(parts, `[`, character(1), 1L)
+        end <- vapply(parts, function(p) p[length(p)], character(1))
+        # "2007-11-13/15": the end drops the parts it shares with the start.
+        short <- nchar(end) < nchar(substr(start, 1L, 10L))
+        end[short] <- paste0(substr(start[short], 1L, nchar(substr(start[short], 1L, 10L)) - nchar(end[short])),
+                             end[short])
+        parsed <- c(iso_date_bound(start, last = FALSE), iso_date_bound(end, last = TRUE))
+        # A future date is a typing error, and it must not end the coverage.
+        parsed[!is.na(parsed) & parsed > Sys.Date()] <- NA
         if (any(!is.na(parsed))) {
             dates[["begin"]] <- format(min(parsed, na.rm = TRUE), "%Y-%m-%d")
             dates[["end"]]   <- format(max(parsed, na.rm = TRUE), "%Y-%m-%d")
@@ -1310,6 +1517,20 @@ compute_dataset_extents <- function(df) {
     }
 
     list(bbox = bbox, dates = dates)
+}
+
+# The first (or last) day an ISO date covers: "2020" -> 2020-01-01 or
+# 2020-12-31, "2020-02" -> 2020-02-01 or 2020-02-29. The time part is dropped.
+iso_date_bound <- function(x, last) {
+    x <- substr(x, 1L, 10L)
+    out <- suppressWarnings(as.Date(x, format = "%Y-%m-%d"))
+    out[!grepl("^\\d{4}-\\d{2}-\\d{2}$", x)] <- NA
+    month <- grepl("^\\d{4}-\\d{2}$", x)
+    year <- grepl("^\\d{4}$", x)
+    first <- suppressWarnings(as.Date(paste0(x[month], "-01"), format = "%Y-%m-%d"))
+    out[month] <- if (last) as.Date(format(first + 31L, "%Y-%m-01")) - 1L else first
+    out[year] <- as.Date(paste0(x[year], if (last) "-12-31" else "-01-01"), format = "%Y-%m-%d")
+    out
 }
 
 # Escape text for safe insertion into XML content or a double-quoted attribute.
@@ -1404,7 +1625,7 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
         "Biodiversity occurrence dataset standardized to Darwin Core via Saira v%s.",
         utils::packageVersion("saira")
     )
-    pkg_id <- package_id %||% paste0("urn:uuid:", ids::uuid())
+    pkg_id <- package_id %||% paste0("urn:uuid:", uuid::UUIDgenerate())
 
     # Split creator name into given/sur for EML structure.
     name_parts <- strsplit(trimws(creator$name), "\\s+")[[1]]
@@ -1634,6 +1855,8 @@ export_bundle_filenames <- function(dataset_name = NULL, has_sensitive = FALSE) 
     )
     if (isTRUE(has_sensitive)) {
         auxiliary[["sensitive_coords"]] <- paste0(slug, "-sensitive-coords.csv")
+        # The notice lives in its own file, so the CSV opens with read.csv() (B44).
+        auxiliary[["sensitive_readme"]] <- paste0(slug, "-sensitive-coords-README.txt")
     }
 
     list(

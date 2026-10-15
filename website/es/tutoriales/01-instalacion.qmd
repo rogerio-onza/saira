@@ -1,0 +1,84 @@
+---
+title: "Instalación y primeros pasos"
+pagetitle: "Instalación · Tutoriales de Saíra"
+aliases:
+  - index.html
+---
+
+::: {.tut-standfirst}
+Instale R y Saíra, y abra la aplicación en el navegador. No necesita saber programar.
+:::
+
+## Instale R
+
+Necesita R 4.1 o superior. Descárguelo de **[CRAN](https://cran.r-project.org/)**. Los pasos de abajo son para Windows. En macOS, elija **Download R for macOS**.
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/01-r-instalacao-cran.png" alt="Página de CRAN con la opción Download R for Windows resaltada"></figure>
+<figure class="shot"><img src="../../assets/img/01.1-r-instalacao-cran.png" alt="Página R for Windows con el enlace base resaltado"></figure>
+<figure class="shot"><img src="../../assets/img/01.2-r-instalacao-cran-final.png" alt="Enlace de descarga del instalador de R para Windows"></figure>
+```
+
+1. Haga clic en **Download R for Windows**.
+2. Haga clic en **base**.
+3. Descargue el instalador y ejecútelo con las opciones predeterminadas.
+
+## Instale RStudio (opcional)
+
+**[RStudio Desktop](https://posit.co/download/rstudio-desktop)** hace más cómodo el uso. Cualquier consola de R también sirve.
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/02-r-studio-instalacao.png" alt="Botón de descarga de RStudio Desktop para Windows en el sitio de Posit"></figure>
+```
+
+## Windows: instale Rtools
+
+Saíra no está en CRAN. En Windows, la instalación desde GitHub necesita **Rtools** de la misma versión de R. En macOS y Linux, omita este paso.
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/0.3-r-tools-instalacao.png" alt="Página R for Windows con el enlace Rtools resaltado"></figure>
+<figure class="shot"><img src="../../assets/img/0.3.1-r-tools-instalacao.png" alt="Lista de versiones de Rtools"></figure>
+<figure class="shot"><img src="../../assets/img/0.3.2-r-tools-instalacao-final.png" alt="Página con el enlace del instalador de Rtools"></figure>
+```
+
+1. En la página R for Windows, abra **Rtools**.
+2. Elija la versión de su R, por ejemplo **RTools 4.5** para R 4.5.
+3. Descargue el instalador y ejecútelo con las opciones predeterminadas.
+
+En Linux, los paquetes espaciales necesitan las bibliotecas de sistema `GDAL`, `GEOS` y `PROJ`.
+
+## Instale Saíra
+
+En R o en RStudio, ejecute:
+
+```r
+install.packages("pak")
+pak::pak("rogerio-onza/saira")
+```
+
+La primera instalación descarga y compila las dependencias. Puede tardar algunos minutos.
+
+## Abra la aplicación
+
+```r
+saira::run_app()
+```
+
+La aplicación se abre en una pestaña del navegador. Para cerrarla, cierre la pestaña y detenga la sesión de R (`Esc` en la consola o el botón de detener de RStudio).
+
+::: {.callout-warning}
+## ¿No se abrió la pestaña?
+`run_app()` muestra una dirección como `http://127.0.0.1:xxxx`. Abra esa dirección en el navegador. Para servir a otras computadoras de la red, ejecute `saira::run_app(options = list(host = "0.0.0.0", port = 3838))`.
+:::
+
+El selector de la esquina superior cambia el idioma entre PT, EN y ES en cualquier momento, sin perder el trabajo. La aplicación acepta archivos de hasta 500 MB.
+
+## Actualice
+
+Cierre la aplicación y ejecute de nuevo:
+
+```r
+pak::pak("rogerio-onza/saira")
+```
+
+Para ver la versión instalada, ejecute `packageVersion("saira")`.

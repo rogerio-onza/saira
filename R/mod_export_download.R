@@ -31,7 +31,8 @@ mount_export_download <- function(input, output, session, lang_r,
             "eventDate",
             "decimalLatitude",
             "decimalLongitude",
-            "basisOfRecord"
+            "basisOfRecord",
+            "license"
         )
         warning_download_fields <- c("occurrenceID")
         download_click_channel <- paste0("preview-download-click-", ns("download_real"))
@@ -43,12 +44,25 @@ mount_export_download <- function(input, output, session, lang_r,
             list(key = "preview_export_phrase_3", icon = "calendar-days"),
             list(key = "preview_export_phrase_4", icon = "earth-americas"),
             list(key = "preview_export_phrase_5", icon = "list-check"),
-            list(key = "preview_export_phrase_6", icon = "flask"),
-            list(key = "preview_export_phrase_7", icon = "box-archive"),
+            list(key = "preview_export_phrase_6", icon = "circle-check"),
+            list(key = "preview_export_phrase_7", icon = "lock"),
             list(key = "preview_export_phrase_8", icon = "shield-check"),
-            list(key = "preview_export_phrase_9", icon = "file-csv"),
+            list(key = "preview_export_phrase_9", icon = "file-zipper"),
             list(key = "preview_export_phrase_10", icon = "download")
         )
+        # Disabled until the dataset is publishable. Uses the module-level
+        # readiness (the same `export_blocked` the banner shows) so the
+        # button and the banner never contradict each other; falls back to
+        # the local required-term check when no readiness reactive is given.
+        # The server checks it again before it writes the bundle, because the
+        # hidden download link works without the button.
+        export_blocked <- shiny::reactive({
+            if (!is.null(blocked_r) && shiny::is.reactive(blocked_r)) {
+                isTRUE(blocked_r())
+            } else {
+                !isTRUE(download_validation()$ok)
+            }
+        })
         output$download_btn_container <- shiny::renderUI({
             register_handlers_script <- sprintf(
                 "(function () {
@@ -93,7 +107,7 @@ mount_export_download <- function(input, output, session, lang_r,
                             statusEl.textContent = payload.status_text;
                         }
                         if (phraseIconEl && payload.final_icon) {
-                            phraseIconEl.className = 'fa-solid fa-' + payload.final_icon + ' automap-loading-phrase-icon';
+                            phraseIconEl.className = 'ph ph-' + payload.final_icon + ' automap-loading-phrase-icon';
                         }
                         if (phraseTextEl && payload.final_phrase) {
                             phraseTextEl.textContent = payload.final_phrase;
@@ -120,22 +134,13 @@ mount_export_download <- function(input, output, session, lang_r,
                 jsonlite::toJSON(download_finish_channel, auto_unbox = TRUE)
             )
 
-            # Disabled until the dataset is publishable. Uses the module-level
-            # readiness (the same `export_blocked` the banner shows) so the
-            # button and the banner never contradict each other; falls back to
-            # the local required-term check when no readiness reactive is given.
-            blocked <- if (!is.null(blocked_r) && shiny::is.reactive(blocked_r)) {
-                isTRUE(blocked_r())
-            } else {
-                !isTRUE(download_validation()$ok)
-            }
-            inert <- isTRUE(is_exporting()) || blocked
+            inert <- isTRUE(is_exporting()) || export_blocked()
 
             shiny::tagList(
                 shiny::actionButton(
                     inputId = ns("download_trigger"),
                     label = shiny::tagList(
-                        shiny::icon("file-zipper"),
+                        ph_icon("file-zipper"),
                         " ",
                         tr("export_download_zip", lang_r())
                     ),
@@ -143,7 +148,7 @@ mount_export_download <- function(input, output, session, lang_r,
                         "btn action-button preview-download-btn export-download-btn",
                         if (inert) "is-inert" else "btn-success"
                     ),
-                    disabled = if (inert) "disabled" else NULL
+                    disabled = inert
                 ),
                 shiny::div(
                     style = "display: none;",
@@ -221,7 +226,7 @@ mount_export_download <- function(input, output, session, lang_r,
             if (length(validation_result$warning_missing) > 0L) {
                 body_blocks[[length(body_blocks) + 1L]] <- shiny::p(
                     class = "text-accent mb-0",
-                    shiny::icon("info-circle"),
+                    ph_icon("info-circle"),
                     " ",
                     tr("preview_download_validation_warning", lang_r())
                 )
@@ -253,14 +258,14 @@ mount_export_download <- function(input, output, session, lang_r,
                     ),
                     shiny::p(
                         class = "preview-export-confirm-warning mb-0",
-                        shiny::icon("triangle-exclamation"),
+                        ph_icon("triangle-exclamation"),
                         " ",
                         tr("preview_download_confirm_warning", lang_r())
                     ),
                     if (length(validation_result$warning_missing) > 0L) {
                         shiny::p(
                             class = "text-accent mt-2 mb-0",
-                            shiny::icon("info-circle"),
+                            ph_icon("info-circle"),
                             " ",
                             tr("preview_download_validation_warning", lang_r())
                         )
@@ -312,8 +317,8 @@ mount_export_download <- function(input, output, session, lang_r,
                     var applyPhrase = function (index) {
                         var item = items[index];
                         if (!item) { return; }
-                        var nextIcon = item.getAttribute('data-icon') || 'gears';
-                        iconEl.className = 'fa-solid fa-' + nextIcon + ' automap-loading-phrase-icon';
+                        var nextIcon = item.getAttribute('data-icon') || 'gear-six';
+                        iconEl.className = 'ph ph-' + nextIcon + ' automap-loading-phrase-icon';
                         textEl.textContent = item.textContent || '';
                     };
 
@@ -382,7 +387,7 @@ mount_export_download <- function(input, output, session, lang_r,
                     class = "automap-loading-modal preview-export-loading-modal",
                     shiny::div(
                         class = "automap-loading-brand-row",
-                        shiny::icon("dove", class = "fa-solid automap-loading-brand-icon")
+                        ph_icon("dove", class = "automap-loading-brand-icon")
                     ),
                     shiny::div(
                         class = "automap-loading-title",
@@ -407,10 +412,10 @@ mount_export_download <- function(input, output, session, lang_r,
                         class = "automap-loading-phrase",
                         shiny::div(
                             class = "automap-loading-phrase-row",
-                            shiny::icon(
+                            ph_icon(
                                 first_spec$icon,
                                 id = ns("preview_export_phrase_icon"),
-                                class = "fa-solid automap-loading-phrase-icon"
+                                class = "automap-loading-phrase-icon"
                             ),
                             shiny::span(
                                 tr(first_spec$key, lang_r()),
@@ -423,7 +428,7 @@ mount_export_download <- function(input, output, session, lang_r,
                             lapply(loading_phrase_specs, function(spec) {
                                 shiny::span(
                                     class = "automap-loading-phrase-item",
-                                    `data-icon` = spec$icon,
+                                    `data-icon` = ph_icon_name(spec$icon),
                                     tr(spec$key, lang_r())
                                 )
                             })
@@ -450,12 +455,15 @@ mount_export_download <- function(input, output, session, lang_r,
                 show_download_validation_modal(validation_result)
                 return(invisible(NULL))
             }
+            if (isTRUE(export_blocked())) {
+                return(invisible(NULL))
+            }
 
             show_download_confirmation_modal(validation_result)
         }, ignoreInit = TRUE)
 
         shiny::observeEvent(input$confirm_download_yes, {
-            if (isTRUE(is_exporting())) {
+            if (isTRUE(is_exporting()) || isTRUE(export_blocked())) {
                 return(invisible(NULL))
             }
 
@@ -503,16 +511,24 @@ mount_export_download <- function(input, output, session, lang_r,
                     modal_root_id = ns("preview_export_phrase_pool"),
                     timer_key = ns("preview_export_phrase_timer"),
                     status_text = status_100,
-                    final_icon = "download",
+                    final_icon = ph_icon_name("download"),
                     final_phrase = tr("preview_export_phrase_10", lang_r()),
                     delay_ms = 320
                 )
 
                 tryCatch(
                     {
+                        # The error branch below writes an error zip, so a
+                        # blocked dataset never ships and never teaches aliases.
+                        if (isTRUE(export_blocked())) {
+                            stop(tr("export_download_blocked", lang_r()), call. = FALSE)
+                        }
                         review_ready <- apply_name_review_payload(
                             download_data(),
                             payload = export_name_review_payload()
+                        )
+                        review_ready <- apply_name_rank_payload(
+                            review_ready, export_name_review_payload()$ranks
                         )
 
                         # Apply transposed-coordinate corrections approved in the
@@ -546,7 +562,6 @@ mount_export_download <- function(input, output, session, lang_r,
                         } else {
                             NULL
                         }
-                        review_ready <- apply_conservation_status(review_ready, conservation_payload)
 
                         raw_df <- if (!is.null(raw_data_r) && shiny::is.reactive(raw_data_r)) {
                             tryCatch(raw_data_r(), error = function(e) data.frame())
@@ -563,13 +578,6 @@ mount_export_download <- function(input, output, session, lang_r,
                         } else {
                             list()
                         }
-
-                        full_data <- process_for_export_with_unmapped(
-                            review_ready,
-                            raw_data = raw_df,
-                            map_values = mv,
-                            overridden_terms = overridden_mapping_terms(cv)
-                        )
 
                         # Generalize coordinates of sensitive/threatened species
                         # before they reach the IPT bundle, each to the grid its
@@ -599,15 +607,36 @@ mount_export_download <- function(input, output, session, lang_r,
                         } else {
                             stats::setNames(character(0), character(0))
                         }
+                        # Masks before process_for_export_with_unmapped(): that
+                        # step turns the coordinates into numbers, "-19.900"
+                        # loses its trailing zeros, and the precision clamp then
+                        # picks a coarser grid than the Generalization tab shows.
                         masked <- mask_sensitive_coordinates(
-                            full_data,
+                            review_ready,
                             decisions = export_sensitivity_payload(),
                             generalization = gen_levels,
                             enabled = is.list(gen) && isTRUE(gen$enabled),
                             lang = lang_r(),
                             justification = if (is.list(gen)) gen$justification else NULL
                         )
-                        export_data <- masked$masked
+                        # After the mask, so a generalized row outside Brazil
+                        # still gets the MMA category its dataGeneralizations cites.
+                        masked$masked <- apply_conservation_status(
+                            masked$masked, conservation_payload,
+                            generalized = seq_len(nrow(masked$masked)) %in% masked$rows
+                        )
+                        export_data <- process_for_export_with_unmapped(
+                            masked$masked,
+                            raw_data = raw_df,
+                            map_values = mv,
+                            overridden_terms = overridden_mapping_terms(cv),
+                            sensitive_rows = masked$rows,
+                            sensitive_points = data.frame(
+                                decimalLatitude = masked$real$decimalLatitude,
+                                decimalLongitude = masked$real$decimalLongitude,
+                                grid = masked$grid
+                            )
+                        )
 
                         tmpdir <- tempfile("saira_export_")
                         dir.create(tmpdir, showWarnings = FALSE, recursive = TRUE)
@@ -622,7 +651,7 @@ mount_export_download <- function(input, output, session, lang_r,
                         # the archive.
                         fnames <- export_bundle_filenames(
                             dataset_name = cv$datasetName,
-                            has_sensitive = masked$n_masked > 0L
+                            has_sensitive = nrow(masked$real) > 0L
                         )
                         core_path  <- file.path(tmpdir, "occurrence.txt")
                         meta_path  <- file.path(tmpdir, "meta.xml")
@@ -643,7 +672,14 @@ mount_export_download <- function(input, output, session, lang_r,
                         }
                         id_strategy <- id_info$strategy %||% attr(export_data, "id_strategy")
                         if (is.null(id_strategy)) id_strategy <- NA_character_
-                        id_counts <- id_info$counts
+                        # The Preview replaces the ids that still repeat
+                        # after its corrections (ADR-152).
+                        id_counts <- occurrence_id_counts_after_repeats(
+                            id_info$counts, attr(download_data(), "ids_replaced")
+                        )
+                        if (!identical(id_counts, id_info$counts)) {
+                            id_strategy <- occurrence_id_strategy_label(id_counts$preserved, id_counts$total)
+                        }
 
                         readr::write_csv(export_data, core_path, na = "")
                         writeLines(
@@ -668,13 +704,25 @@ mount_export_download <- function(input, output, session, lang_r,
                                 )[[1]]
                             }
                         }
-                        if (masked$n_masked > 0L) {
+                        # The EML title is the dataset name the user gave
+                        # (constant card or mapped column), not "Saira export".
+                        if ("datasetName" %in% names(export_data)) {
+                            ds_vals <- trimws(as.character(export_data[["datasetName"]]))
+                            ds_vals <- ds_vals[!is.na(ds_vals) & nzchar(ds_vals)]
+                            if (length(ds_vals) > 0L) {
+                                eml_metadata$title <- names(
+                                    sort(table(ds_vals), decreasing = TRUE)
+                                )[[1]]
+                            }
+                        }
+                        # The private file also holds the withheld rows.
+                        if (nrow(masked$real) > 0L) {
                             review_date <- if (is.list(gen)) gen$review_date else NULL
                             if (is.null(review_date) || length(review_date) == 0L) {
                                 review_date <- Sys.Date() + 730
                             }
                             eml_metadata$sensitivity <- list(
-                                n_masked = masked$n_masked,
+                                n_masked = nrow(masked$real),
                                 review_date = format(as.Date(review_date), "%Y-%m-%d"),
                                 lang = lang_r()
                             )
@@ -691,7 +739,8 @@ mount_export_download <- function(input, output, session, lang_r,
                                 lang = lang_r(),
                                 id_strategy = id_strategy,
                                 constants = cv,
-                                id_counts = id_counts
+                                id_counts = id_counts,
+                                source_file = attr(raw_df, "source_file") %||% NA_character_
                             ),
                             guide_path,
                             useBytes = TRUE
@@ -699,24 +748,22 @@ mount_export_download <- function(input, output, session, lang_r,
 
                         zip_files <- c(core_path, meta_path, eml_path,
                                        xlsx_path, guide_path)
-                        if (masked$n_masked > 0L) {
+                        if (nrow(masked$real) > 0L) {
                             real_path <- file.path(
                                 tmpdir,
                                 fnames$auxiliary[["sensitive_coords"]]
                             )
-                            real_csv <- readr::format_csv(masked$real, na = "")
+                            readme_path <- file.path(
+                                tmpdir,
+                                fnames$auxiliary[["sensitive_readme"]]
+                            )
+                            readr::write_csv(masked$real, real_path, na = "")
                             writeLines(
-                                c(
-                                    paste0(
-                                        "# ",
-                                        tr("sensitive_real_coords_notice", lang_r())
-                                    ),
-                                    real_csv
-                                ),
-                                real_path,
+                                enc2utf8(tr("sensitive_real_coords_notice", lang_r())),
+                                readme_path,
                                 useBytes = TRUE
                             )
-                            zip_files <- c(zip_files, real_path)
+                            zip_files <- c(zip_files, real_path, readme_path)
                         }
 
                         zip::zipr(
@@ -747,7 +794,7 @@ mount_export_download <- function(input, output, session, lang_r,
                     },
                     error = function(e) {
                         fail_payload <- finish_payload
-                        fail_payload$final_icon <- "triangle-exclamation"
+                        fail_payload$final_icon <- ph_icon_name("triangle-exclamation")
                         fail_payload$final_phrase <- tr("preview_export_failed_phrase", lang_r())
                         session$sendCustomMessage(download_finish_channel, fail_payload)
                         shiny::showNotification(
