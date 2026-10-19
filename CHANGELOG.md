@@ -29,6 +29,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **export:** Download the real coordinates of the generalized records as a private Excel file from the Package card, outside the IPT `.zip`, ADR-163
 - **site:** Show each use of open data as a hex badge with a short text, use the app UI font (IBM Plex Sans) for labels and menus, and give the Caatinga species its scientific name, ADR-134
 - **site:** Remove the Project, Glossary and Technologies tabs from the menu, give the version pill a soft indigo fill, and update the home page copy (italic subtitle, publish to SiBBr and GBIF, the number block names SiBBr only)
 - **mapping:** Run the auto-map on every upload, not only on Camtrap DP, ADR-154
@@ -84,6 +85,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **export:** Count the formula and out-of-range coordinate blocks in the download bar, which said "Ready to download" while the button was off
 - **upload:** Read a Latin-1 file with accents in the header instead of failing
 - **upload:** Ignore delimiters inside quoted column names when detecting the delimiter
 - **names:** Update genus and epithets when a name review corrects scientificName

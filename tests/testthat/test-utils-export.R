@@ -582,6 +582,27 @@ testthat::test_that("write_xlsx_text_only writes a readable xlsx with text-only 
     testthat::expect_type(back$decimalLatitude, "character")
 })
 
+testthat::test_that("write_sensitive_coords_xlsx writes the points and the notice in one workbook", {
+    if (!requireNamespace("readxl", quietly = TRUE)) testthat::skip("readxl not installed (test-only dep)")
+
+    real <- data.frame(
+        occurrenceID = "o1",
+        decimalLatitude = "-19.900",
+        decimalLongitude = NA_character_,
+        stringsAsFactors = FALSE
+    )
+    tmp <- tempfile(fileext = ".xlsx")
+    on.exit(unlink(tmp), add = TRUE)
+    write_sensitive_coords_xlsx(real, notice = "Private file.", path = tmp)
+
+    testthat::expect_equal(readxl::excel_sheets(tmp), c("coordinates", "README"))
+    back <- readxl::read_xlsx(tmp, sheet = "coordinates", col_types = "text")
+    # Text cells keep the trailing zeros, and a blank stays blank.
+    testthat::expect_identical(back$decimalLatitude, "-19.900")
+    testthat::expect_true(is.na(back$decimalLongitude))
+    testthat::expect_identical(readxl::read_xlsx(tmp, sheet = "README")$README, "Private file.")
+})
+
 testthat::test_that("build_mapping_guide_txt emits magic header, mapping pairs, no data", {
     raw <- data.frame(
         Lat = c(-15.5),

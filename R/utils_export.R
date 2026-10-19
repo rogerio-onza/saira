@@ -568,6 +568,11 @@ write_xlsx_text_only <- function(df, path) {
         stop("write_xlsx_text_only: 'df' must be a data.frame.")
     }
 
+    writexl::write_xlsx(text_only_frame(df), path = path, format_headers = TRUE)
+    invisible(path)
+}
+
+text_only_frame <- function(df) {
     df_text <- as.data.frame(
         lapply(df, function(col) {
             x <- as.character(col)
@@ -578,8 +583,25 @@ write_xlsx_text_only <- function(df, path) {
         check.names = FALSE
     )
     names(df_text) <- names(df)
+    df_text
+}
 
-    writexl::write_xlsx(df_text, path = path, format_headers = TRUE)
+#' Write the private real-coordinates file
+#'
+#' One workbook: the exact points on the first sheet, the notice on the
+#' second. The user downloads it apart from the IPT bundle (ADR-163).
+#'
+#' @param real Data frame of real coordinates (`mask_sensitive_coordinates()$real`).
+#' @param notice Character notice text, one line per element.
+#' @param path Destination `.xlsx` path.
+#' @return Invisibly returns `path`.
+#' @noRd
+write_sensitive_coords_xlsx <- function(real, notice, path) {
+    sheets <- list(
+        coordinates = text_only_frame(real),
+        README = data.frame(README = enc2utf8(notice), stringsAsFactors = FALSE)
+    )
+    writexl::write_xlsx(sheets, path = path, format_headers = TRUE)
     invisible(path)
 }
 
@@ -1747,8 +1769,7 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
 #'
 #' Lays out the archive with `occurrence.txt`, `meta.xml`, `eml.xml` at the
 #' ZIP root, plus any provided sibling files (`mapping_guide.txt`, the
-#' Excel mirror, the private sensitive-coordinates CSV). The bundle is
-#' GBIF/IPT-compatible.
+#' Excel mirror). The bundle is GBIF/IPT-compatible.
 #'
 #' @param df Data frame of DwC-ready records (output of
 #'   `process_for_export()` or `process_for_export_with_unmapped()`).
@@ -1834,14 +1855,16 @@ slugify_dataset_name <- function(x) {
 #' tab summary and the download handler never drift apart. The Darwin Core
 #' Archive core trio keeps its standard names (IPT/GBIF require them); the
 #' convenience siblings are renamed after the dataset so a user can tell whose
-#' files these are once unzipped (e.g. `meu-data-set-sensitive-coords.csv`).
+#' files these are once unzipped (e.g. `meu-data-set-occurrences.xlsx`).
 #'
 #' @param dataset_name Dataset name (from the `datasetName` constant), or NULL.
 #' @param has_sensitive Whether any record was generalized (adds the private
-#'   real-coordinates CSV to the auxiliary group).
+#'   real-coordinates download).
 #' @return List with `slug`, `zip` (download file name), `dwca` (standard core
-#'   trio) and `auxiliary` (named character vector: `xlsx`, `mapping_guide`,
-#'   and `sensitive_coords` when `has_sensitive`).
+#'   trio), `auxiliary` (list: `xlsx`, `mapping_guide`) and, when
+#'   `has_sensitive`, `private` (the real-coordinates `.xlsx`). The private
+#'   file has its own download, so a shared bundle never carries the exact
+#'   points (ADR-163).
 #' @noRd
 export_bundle_filenames <- function(dataset_name = NULL, has_sensitive = FALSE) {
     slug <- slugify_dataset_name(dataset_name)
@@ -1853,16 +1876,13 @@ export_bundle_filenames <- function(dataset_name = NULL, has_sensitive = FALSE) 
         xlsx = paste0(slug, "-occurrences.xlsx"),
         mapping_guide = paste0(slug, "-mapping-guide.txt")
     )
-    if (isTRUE(has_sensitive)) {
-        auxiliary[["sensitive_coords"]] <- paste0(slug, "-sensitive-coords.csv")
-        # The notice lives in its own file, so the CSV opens with read.csv() (B44).
-        auxiliary[["sensitive_readme"]] <- paste0(slug, "-sensitive-coords-README.txt")
-    }
+    private <- if (isTRUE(has_sensitive)) paste0(slug, "-sensitive-coords.xlsx")
 
     list(
         slug = slug,
         zip = paste0(slug, "-dwc-archive.zip"),
         dwca = c("occurrence.txt", "meta.xml", "eml.xml"),
-        auxiliary = auxiliary
+        auxiliary = auxiliary,
+        private = private
     )
 }

@@ -88,7 +88,7 @@ En los registros generalizados, Saíra:
 - publica la coordenada de la celda, no la original;
 - completa <span class="term">coordinateUncertaintyInMeters</span>, <span class="term">dataGeneralizations</span> e <span class="term">informationWithheld</span>;
 - borra los campos que revelan la localidad exacta, como las coordenadas verbatim;
-- guarda las coordenadas originales en `<dataset>-sensitive-coords.csv`, dentro del `.zip`, fuera del `occurrence.txt`.
+- guarda las coordenadas originales en `<dataset>-sensitive-coords.xlsx`, un archivo privado que descarga aparte, fuera del `.zip`.
 
 ## Referencias
 

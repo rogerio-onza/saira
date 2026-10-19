@@ -88,7 +88,7 @@ In the generalized records, Saíra:
 - publishes the coordinate of the cell, not the original;
 - fills <span class="term">coordinateUncertaintyInMeters</span>, <span class="term">dataGeneralizations</span> and <span class="term">informationWithheld</span>;
 - clears the fields that reveal the exact locality, such as the verbatim coordinates;
-- keeps the original coordinates in `<dataset>-sensitive-coords.csv`, inside the `.zip`, outside `occurrence.txt`.
+- keeps the original coordinates in `<dataset>-sensitive-coords.xlsx`, a private file that you download apart, outside the `.zip`.
 
 ## References
 
