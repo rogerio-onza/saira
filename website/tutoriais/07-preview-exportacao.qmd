@@ -75,7 +75,8 @@ O `.zip` (`<dataset>-dwc-archive.zip`) tem o Darwin Core Archive e os arquivos a
 | `eml.xml` | Metadados: título, extensão geográfica, período e licença. Vai para o IPT. |
 | `<dataset>-occurrences.xlsx` | Cópia em Excel, com todas as células como texto. |
 | `<dataset>-mapping-guide.txt` | O mapeamento, para [reaproveitar](03-mapeamento-dwc.qmd#reaproveite-o-mapeamento). |
-| `<dataset>-sensitive-coords.csv` | Coordenadas originais dos registros generalizados. Guarde, não publique. |
+
+Se você generalizou registros, o cartão **Pacote** mostra um botão próprio para `<dataset>-sensitive-coords.xlsx`. Essa planilha tem as coordenadas originais e fica fora do `.zip`. Guarde, não publique.
 
 ## Publique pelo IPT
 

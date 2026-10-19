@@ -449,6 +449,20 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 kpis,
                 file_group(tr("export_section_files_dwca", lang), s$files$dwca),
                 file_group(tr("export_section_files_aux", lang), unname(s$files$auxiliary)),
+                if (!is.null(s$files$private)) {
+                    shiny::div(
+                        class = "export-private",
+                        shiny::div(class = "export-private-title",
+                                   ph_icon("lock"), tr("export_private_title", lang)),
+                        shiny::p(class = "export-private-body", tr("export_private_body", lang)),
+                        shiny::downloadButton(
+                            ns("download_private"),
+                            sprintf(tr("export_private_download", lang), s$files$private),
+                            icon = ph_icon("download"),
+                            class = "btn export-private-btn"
+                        )
+                    )
+                },
                 shiny::uiOutput(ns("alias_memory")),
                 shiny::div(
                     class = "export-ipt-note",
@@ -551,7 +565,9 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             lang <- lang_r()
             # One per pending row: the missing terms share a single row.
             n_block <- isTRUE(length(s$missing_required) > 0L) + isTRUE(s$bor_blank_count > 0L) +
-                isTRUE(s$justification_pending)
+                isTRUE(s$justification_pending) +
+                isTRUE(is.list(s$formula_cells) && s$formula_cells$count > 0L) +
+                isTRUE(length(s$coord_invalid_rows) > 0L)
             shiny::tagList(
                 ph_icon("file-zipper"),
                 shiny::span(class = "export-zip-name", s$files$zip),

@@ -219,6 +219,21 @@
     "en": "Upload the .zip to the IPT and complete the metadata there (title, abstract, contacts, coverage). Saíra does not publish to GBIF.",
     "es": "Suba el .zip al IPT y complete allí los metadatos (título, resumen, contactos, cobertura). Saíra no publica en GBIF."
   },
+  "export_private_title": {
+    "pt": "Coordenadas reais: arquivo privado",
+    "en": "Real coordinates: private file",
+    "es": "Coordenadas reales: archivo privado"
+  },
+  "export_private_body": {
+    "pt": "Os pontos exatos dos registros generalizados, numa planilha Excel. Este arquivo não vai no pacote. Guarde com você e não envie ao IPT.",
+    "en": "The exact points of the generalized records, in an Excel sheet. This file is not in the package. Keep it and do not upload it to the IPT.",
+    "es": "Los puntos exactos de los registros generalizados, en una hoja de Excel. Este archivo no va en el paquete. Guárdelo y no lo envíe al IPT."
+  },
+  "export_private_download": {
+    "pt": "Baixar %s",
+    "en": "Download %s",
+    "es": "Descargar %s"
+  },
   "export_memory_title": {
     "pt": "Memória do Rostrum",
     "en": "Rostrum memory",

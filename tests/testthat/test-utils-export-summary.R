@@ -89,11 +89,13 @@ testthat::test_that("build_export_summary aggregates corrections, generalization
     )
 
     # Files: DwC-A core trio keeps standard names; auxiliary files are renamed
-    # after the dataset (hyphenated) and include the real-coords CSV.
+    # after the dataset (hyphenated). The real coordinates are a private file
+    # outside the bundle (ADR-163).
     testthat::expect_equal(s$files$dwca, c("occurrence.txt", "meta.xml", "eml.xml"))
     testthat::expect_equal(unname(s$files$auxiliary[["xlsx"]]), "meu-data-set-occurrences.xlsx")
     testthat::expect_equal(unname(s$files$auxiliary[["mapping_guide"]]), "meu-data-set-mapping-guide.txt")
-    testthat::expect_equal(unname(s$files$auxiliary[["sensitive_coords"]]), "meu-data-set-sensitive-coords.csv")
+    testthat::expect_length(s$files$auxiliary, 2L)
+    testthat::expect_equal(s$files$private, "meu-data-set-sensitive-coords.xlsx")
 })
 
 testthat::test_that("build_export_summary handles empty payloads and missing required terms", {
@@ -123,7 +125,7 @@ testthat::test_that("build_export_summary handles empty payloads and missing req
     testthat::expect_false("eventDate" %in% present_terms)
 
     # No masking -> no real-coords CSV; fallback slug used (no dataset name).
-    testthat::expect_null(s$files$auxiliary[["sensitive_coords"]])
+    testthat::expect_null(s$files$private)
     testthat::expect_equal(unname(s$files$auxiliary[["xlsx"]]), "saira-occurrences.xlsx")
 })
 
@@ -145,7 +147,7 @@ testthat::test_that("build_export_summary excludes generalization when disabled"
         generalization_payload = gen_payload
     )
     testthat::expect_equal(nrow(s$generalization), 0L)
-    testthat::expect_null(s$files$auxiliary[["sensitive_coords"]])
+    testthat::expect_null(s$files$private)
 })
 
 testthat::test_that("build_export_summary blocks export when justification is pending", {
@@ -189,12 +191,12 @@ testthat::test_that("export_bundle_filenames keeps the DwC-A trio and renames au
     testthat::expect_equal(f$slug, "meu-data-set")
     testthat::expect_equal(f$zip, "meu-data-set-dwc-archive.zip")
     testthat::expect_equal(f$dwca, c("occurrence.txt", "meta.xml", "eml.xml"))
-    testthat::expect_equal(unname(f$auxiliary[["sensitive_coords"]]), "meu-data-set-sensitive-coords.csv")
+    testthat::expect_equal(f$private, "meu-data-set-sensitive-coords.xlsx")
 
-    # No dataset name + no masking -> fallback slug, no real-coords CSV.
+    # No dataset name + no masking -> fallback slug, no private file.
     f2 <- saira:::export_bundle_filenames(dataset_name = NULL, has_sensitive = FALSE)
     testthat::expect_equal(f2$slug, "saira")
-    testthat::expect_null(f2$auxiliary[["sensitive_coords"]])
+    testthat::expect_null(f2$private)
 })
 
 testthat::test_that("build_export_summary reports out-of-range years without blocking the export", {

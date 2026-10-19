@@ -161,8 +161,8 @@ build_export_summary <- function(mapped_data,
         isTRUE(formula_cells$count > 0L) || length(coords$invalid_rows) > 0L
 
     # --- Files the bundle will contain -------------------------------------
-    # Single source of truth shared with the download handler. The real-coords
-    # CSV only ships when a species is actually generalized.
+    # Single source of truth shared with the download handler. The private
+    # real-coordinates file exists only when a species is generalized.
     files <- export_bundle_filenames(
         dataset_name = dataset_name,
         has_sensitive = nrow(gen) > 0L

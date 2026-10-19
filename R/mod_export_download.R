@@ -491,6 +491,96 @@ mount_export_download <- function(input, output, session, lang_r,
                 type = "warning"
             )
         }, ignoreInit = TRUE)
+        # The steps both downloads share. The private file must hold the same
+        # real points that the bundle generalizes.
+        prepare_masked_rows <- function() {
+            review_ready <- apply_name_review_payload(
+                download_data(),
+                payload = export_name_review_payload()
+            )
+            review_ready <- apply_name_rank_payload(
+                review_ready, export_name_review_payload()$ranks
+            )
+
+            # Apply transposed-coordinate corrections approved in the
+            # coordinate validation tab (preserves verbatim coords).
+            coords_payload <- if (!is.null(coords_correction_payload_r) &&
+                                  shiny::is.reactive(coords_correction_payload_r)) {
+                tryCatch(coords_correction_payload_r(), error = function(e) NULL)
+            } else {
+                NULL
+            }
+            review_ready <- apply_coords_correction_payload(review_ready, coords_payload)
+
+            # Fill country derived from coordinates (where missing).
+            country_payload <- if (!is.null(country_fill_payload_r) &&
+                                   shiny::is.reactive(country_fill_payload_r)) {
+                tryCatch(country_fill_payload_r(), error = function(e) NULL)
+            } else {
+                NULL
+            }
+            review_ready <- apply_country_fill_payload(review_ready, country_payload)
+
+
+            raw_df <- if (!is.null(raw_data_r) && shiny::is.reactive(raw_data_r)) {
+                tryCatch(raw_data_r(), error = function(e) data.frame())
+            } else {
+                data.frame()
+            }
+            mv <- if (!is.null(map_values_r) && shiny::is.reactive(map_values_r)) {
+                tryCatch(map_values_r(), error = function(e) list())
+            } else {
+                list()
+            }
+            cv <- if (!is.null(custom_values_r) && shiny::is.reactive(custom_values_r)) {
+                tryCatch(custom_values_r(), error = function(e) list())
+            } else {
+                list()
+            }
+
+            # Generalize coordinates of sensitive/threatened species
+            # before they reach the IPT bundle, each to the grid its
+            # Chapman assessment derived (decided in the Validation >
+            # Coordinates tab, ADR-100); the real coordinates go to a
+            # separate companion file.
+            gen <- if (is.null(sensitive_generalization_payload_r) ||
+                       !shiny::is.reactive(sensitive_generalization_payload_r)) {
+                NULL
+            } else {
+                sensitive_generalization_payload_r()
+            }
+            # Mandatory justification: block export when any record is
+            # generalized to Category 1/2/3 without a written reason
+            # (decided in the Generalization tab).
+            if (is.list(gen) && isTRUE(gen$enabled) &&
+                isTRUE(gen$needs_justification) &&
+                !nzchar(trimws(gen$justification %||% ""))) {
+                shiny::showNotification(
+                    tr("preview_export_needs_justification", lang_r()),
+                    type = "error", duration = 8
+                )
+                shiny::req(FALSE)
+            }
+            gen_levels <- if (is.list(gen) && !is.null(gen$levels)) {
+                gen$levels
+            } else {
+                stats::setNames(character(0), character(0))
+            }
+            # Masks before process_for_export_with_unmapped(): that
+            # step turns the coordinates into numbers, "-19.900"
+            # loses its trailing zeros, and the precision clamp then
+            # picks a coarser grid than the Generalization tab shows.
+            masked <- mask_sensitive_coordinates(
+                review_ready,
+                decisions = export_sensitivity_payload(),
+                generalization = gen_levels,
+                enabled = is.list(gen) && isTRUE(gen$enabled),
+                lang = lang_r(),
+                justification = if (is.list(gen)) gen$justification else NULL
+            )
+            list(masked = masked, gen = gen, cv = cv, raw_df = raw_df, mv = mv)
+        }
+
         output$download_real <- shiny::downloadHandler(
             filename = function() {
                 cv_fn <- if (!is.null(custom_values_r) && shiny::is.reactive(custom_values_r)) {
@@ -523,32 +613,12 @@ mount_export_download <- function(input, output, session, lang_r,
                         if (isTRUE(export_blocked())) {
                             stop(tr("export_download_blocked", lang_r()), call. = FALSE)
                         }
-                        review_ready <- apply_name_review_payload(
-                            download_data(),
-                            payload = export_name_review_payload()
-                        )
-                        review_ready <- apply_name_rank_payload(
-                            review_ready, export_name_review_payload()$ranks
-                        )
-
-                        # Apply transposed-coordinate corrections approved in the
-                        # coordinate validation tab (preserves verbatim coords).
-                        coords_payload <- if (!is.null(coords_correction_payload_r) &&
-                                              shiny::is.reactive(coords_correction_payload_r)) {
-                            tryCatch(coords_correction_payload_r(), error = function(e) NULL)
-                        } else {
-                            NULL
-                        }
-                        review_ready <- apply_coords_correction_payload(review_ready, coords_payload)
-
-                        # Fill country derived from coordinates (where missing).
-                        country_payload <- if (!is.null(country_fill_payload_r) &&
-                                               shiny::is.reactive(country_fill_payload_r)) {
-                            tryCatch(country_fill_payload_r(), error = function(e) NULL)
-                        } else {
-                            NULL
-                        }
-                        review_ready <- apply_country_fill_payload(review_ready, country_payload)
+                        prep <- prepare_masked_rows()
+                        masked <- prep$masked
+                        gen <- prep$gen
+                        cv <- prep$cv
+                        raw_df <- prep$raw_df
+                        mv <- prep$mv
 
                         # Add conservation status (MMA and/or IUCN) to
                         # dynamicProperties, keyed to the providers chosen in the
@@ -562,63 +632,6 @@ mount_export_download <- function(input, output, session, lang_r,
                         } else {
                             NULL
                         }
-
-                        raw_df <- if (!is.null(raw_data_r) && shiny::is.reactive(raw_data_r)) {
-                            tryCatch(raw_data_r(), error = function(e) data.frame())
-                        } else {
-                            data.frame()
-                        }
-                        mv <- if (!is.null(map_values_r) && shiny::is.reactive(map_values_r)) {
-                            tryCatch(map_values_r(), error = function(e) list())
-                        } else {
-                            list()
-                        }
-                        cv <- if (!is.null(custom_values_r) && shiny::is.reactive(custom_values_r)) {
-                            tryCatch(custom_values_r(), error = function(e) list())
-                        } else {
-                            list()
-                        }
-
-                        # Generalize coordinates of sensitive/threatened species
-                        # before they reach the IPT bundle, each to the grid its
-                        # Chapman assessment derived (decided in the Validation >
-                        # Coordinates tab, ADR-100); the real coordinates go to a
-                        # separate companion file.
-                        gen <- if (is.null(sensitive_generalization_payload_r) ||
-                                   !shiny::is.reactive(sensitive_generalization_payload_r)) {
-                            NULL
-                        } else {
-                            sensitive_generalization_payload_r()
-                        }
-                        # Mandatory justification: block export when any record is
-                        # generalized to Category 1/2/3 without a written reason
-                        # (decided in the Generalization tab).
-                        if (is.list(gen) && isTRUE(gen$enabled) &&
-                            isTRUE(gen$needs_justification) &&
-                            !nzchar(trimws(gen$justification %||% ""))) {
-                            shiny::showNotification(
-                                tr("preview_export_needs_justification", lang_r()),
-                                type = "error", duration = 8
-                            )
-                            shiny::req(FALSE)
-                        }
-                        gen_levels <- if (is.list(gen) && !is.null(gen$levels)) {
-                            gen$levels
-                        } else {
-                            stats::setNames(character(0), character(0))
-                        }
-                        # Masks before process_for_export_with_unmapped(): that
-                        # step turns the coordinates into numbers, "-19.900"
-                        # loses its trailing zeros, and the precision clamp then
-                        # picks a coarser grid than the Generalization tab shows.
-                        masked <- mask_sensitive_coordinates(
-                            review_ready,
-                            decisions = export_sensitivity_payload(),
-                            generalization = gen_levels,
-                            enabled = is.list(gen) && isTRUE(gen$enabled),
-                            lang = lang_r(),
-                            justification = if (is.list(gen)) gen$justification else NULL
-                        )
                         # After the mask, so a generalized row outside Brazil
                         # still gets the MMA category its dataGeneralizations cites.
                         masked$masked <- apply_conservation_status(
@@ -645,14 +658,9 @@ mount_export_download <- function(input, output, session, lang_r,
                         # File names shared with the Export tab summary: the
                         # DwC-A core trio (occurrence.txt + meta.xml + eml.xml)
                         # keeps its standard names at archive root; the Excel
-                        # mirror, mapping guide and private sensitive-coords CSV
-                        # are renamed after the dataset. The sensitive CSV stays
-                        # out of meta.xml so it is never advertised as part of
-                        # the archive.
-                        fnames <- export_bundle_filenames(
-                            dataset_name = cv$datasetName,
-                            has_sensitive = nrow(masked$real) > 0L
-                        )
+                        # mirror and mapping guide are renamed after the dataset.
+                        # The real coordinates have their own download (ADR-163).
+                        fnames <- export_bundle_filenames(dataset_name = cv$datasetName)
                         core_path  <- file.path(tmpdir, "occurrence.txt")
                         meta_path  <- file.path(tmpdir, "meta.xml")
                         eml_path   <- file.path(tmpdir, "eml.xml")
@@ -748,23 +756,6 @@ mount_export_download <- function(input, output, session, lang_r,
 
                         zip_files <- c(core_path, meta_path, eml_path,
                                        xlsx_path, guide_path)
-                        if (nrow(masked$real) > 0L) {
-                            real_path <- file.path(
-                                tmpdir,
-                                fnames$auxiliary[["sensitive_coords"]]
-                            )
-                            readme_path <- file.path(
-                                tmpdir,
-                                fnames$auxiliary[["sensitive_readme"]]
-                            )
-                            readr::write_csv(masked$real, real_path, na = "")
-                            writeLines(
-                                enc2utf8(tr("sensitive_real_coords_notice", lang_r())),
-                                readme_path,
-                                useBytes = TRUE
-                            )
-                            zip_files <- c(zip_files, real_path, readme_path)
-                        }
 
                         zip::zipr(
                             zipfile = file,
@@ -836,6 +827,31 @@ mount_export_download <- function(input, output, session, lang_r,
         # output, the <a href> stays empty, and clicking it downloads the
         # current page (the app's own HTML) as the .csv filename.
         shiny::outputOptions(output, "download_real", suspendWhenHidden = FALSE)
+
+        # The real coordinates of the generalized records, apart from the IPT
+        # bundle, so a shared .zip never carries the exact points (ADR-163).
+        output$download_private <- shiny::downloadHandler(
+            filename = function() {
+                cv_fn <- if (!is.null(custom_values_r) && shiny::is.reactive(custom_values_r)) {
+                    tryCatch(custom_values_r(), error = function(e) list())
+                } else {
+                    list()
+                }
+                export_bundle_filenames(dataset_name = cv_fn$datasetName, has_sensitive = TRUE)$private
+            },
+            content = function(file) {
+                shiny::req(download_data())
+                if (isTRUE(export_blocked())) {
+                    stop(tr("export_download_blocked", lang_r()), call. = FALSE)
+                }
+                prep <- prepare_masked_rows()
+                write_sensitive_coords_xlsx(
+                    prep$masked$real,
+                    notice = tr("sensitive_real_coords_notice", lang_r()),
+                    path = file
+                )
+            }
+        )
 
     invisible(NULL)
 }

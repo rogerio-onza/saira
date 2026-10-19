@@ -3133,3 +3133,16 @@ Formato: ADR leve (Architecture Decision Record).
   - Nas linhas generalizadas, uma coluna nao mapeada perde a celula quando o nome tem uma palavra de coordenada inteira (`lat`, `long`, `coord*`, `x`, `y`, `utm`...) ou quando o numero fica mais perto do ponto real do que a grade da linha. O simbolo de grau segue apagado.
   - Os limites de 2 GB e 1000 arquivos valem so para as tabelas do ZIP Camtrap DP, que e tudo o que sai do ZIP.
 - **Consequencias**: a aba Coordenadas precisa rodar para o Export listar os seus alertas. Uma copia do ponto arredondada para mais longe que a grade fica no arquivo, e ela nao revela mais do que o ponto publicado.
+
+## ADR-163: As coordenadas reais saem num arquivo privado, fora do pacote
+
+- **Data**: 2026-10-15
+- **Status**: Aceito. Revisa ADR-100 e B44 (ADR-161) no destino do arquivo.
+- **Contexto**: o zip do IPT levava `<slug>-sensitive-coords.csv` e o README com os pontos exatos. Quem passa o zip adiante, ou envia o zip inteiro ao IPT, entrega os pontos que a generalizacao esconde (D10).
+- **Decisao**:
+  - O zip leva so o Darwin Core Archive, a copia em Excel e o guia de mapeamento.
+  - Quando um registro e generalizado, o cartao Pacote mostra um bloco privado com botao proprio. O botao baixa `<slug>-sensitive-coords.xlsx`: os pontos na planilha `coordinates`, o aviso na planilha `README`. Celulas em texto, como a copia em Excel.
+  - Um arquivo Excel, sem zip, para o usuario nao confundir o arquivo privado com o pacote do IPT.
+  - Os dois downloads usam o mesmo passo de mascara (`prepare_masked_rows()`), entao a planilha tem os pontos que o zip generaliza. O bloqueio do Export vale para os dois.
+  - O KPI Arquivos nao conta o arquivo privado.
+- **Consequencias**: quem quer os pontos reais precisa clicar no segundo botao. O zip baixado antes desta versao ainda tem o CSV privado.
