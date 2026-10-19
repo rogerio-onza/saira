@@ -186,6 +186,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **upload:** Refuse a Camtrap DP zip whose tables pass 2 GB or 1000 files, and unzip only the tables
 
 ### Performance
+- **upload:** Read a large CSV in a third of the time and about half the peak memory
 - **mapping:** Switch the Mapping filter in the browser, with no grid rebuild and no card moves: Relevant and All now change at once, not after 2 s, ADR-157
 - **names:** Check the Brazilian provider status only during a run or a provider update ([#168](https://github.com/rogerio-onza/saira/pull/168))
 - **ui:** Stop loading the unused Lottie player on every page, and remove 9 MB of unused images from the package ([#168](https://github.com/rogerio-onza/saira/pull/168))
