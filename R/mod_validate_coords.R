@@ -153,6 +153,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             outside_table = NULL,        # rows outside the informed country, no fix
             transposed_applied = FALSE,
             coords_corrections = NULL,    # transposed payload applied at export
+            validated_coords = NULL,      # the lat/lon text the last validation read
             country_fill_table = NULL,    # data.frame of fillable rows (preview)
             country_fill_applied = FALSE,
             country_fills = NULL,         # country-fill payload applied at export
@@ -826,13 +827,20 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             lat_display <- ifelse(is.na(res$lat_num), "", format(round(res$lat_num, 6), trim = TRUE))
             lon_display <- ifelse(is.na(res$lon_num), "", format(round(res$lon_num, 6), trim = TRUE))
 
+            # The table renders HTML for the badges, so the country typed in the
+            # spreadsheet goes in as text (SEG-01).
+            as_text <- function(col) {
+                if (!col %in% names(res)) return("")
+                x <- as.character(res[[col]])
+                ifelse(is.na(x), NA_character_, htmltools::htmlEscape(x))
+            }
             table_df <- data.frame(
                 row_col = res$.row_index,
                 diag_col = badges,
                 lat_col = lat_display,
                 lon_col = lon_display,
-                country_col = if ("country" %in% names(res)) as.character(res$country) else "",
-                iso3_col = if ("country_iso3" %in% names(res)) as.character(res$country_iso3) else "",
+                country_col = as_text("country"),
+                iso3_col = as_text("country_iso3"),
                 stringsAsFactors = FALSE
             )
 
@@ -984,6 +992,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 valid = isTRUE(reval$valid[[1]]),
                 stringsAsFactors = FALSE
             )
+            new_row <- with_coord_source(new_row)
             edits <- manual_edits_rv()
             edits <- if (is.data.frame(edits)) {
                 rbind(edits[edits$row_index != row_index, , drop = FALSE], new_row)
@@ -1145,6 +1154,11 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 } else {
                     character(0)
                 }
+                rv$validated_coords <- data.frame(
+                    decimalLatitude = coord_source_text(df$decimalLatitude),
+                    decimalLongitude = coord_source_text(df$decimalLongitude),
+                    stringsAsFactors = FALSE
+                )
 
                 # Manual edits survive a new validation. The row of each is
                 # looked up again by occurrenceID, and an edit whose record
@@ -1153,11 +1167,22 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 if (is.data.frame(kept$edits)) {
                     kept$edits$row_index <- match(kept$edits$occurrenceID, rv$validation_occ_ids)
                 }
+                # So is an edit whose point changed after it (AUD-05).
+                stale <- stale_coord_rows(kept$edits, df)
+                if (any(stale)) {
+                    kept$edits <- if (all(stale)) NULL else kept$edits[!stale, , drop = FALSE]
+                }
                 manual_edits_rv(kept$edits)
                 if (kept$dropped > 0L) {
                     notify_saira(
                         sprintf(tr("validate_coords_edit_orphans", lang_r()), kept$dropped),
                         type = "warning", key = "coords_edit_orphans"
+                    )
+                }
+                if (any(stale)) {
+                    notify_saira(
+                        sprintf(tr("validate_coords_edit_stale", lang_r()), sum(stale)),
+                        type = "warning", key = "coords_edit_stale"
                     )
                 }
 
@@ -1509,10 +1534,21 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             }
         })
 
+        # Each fix keeps the values it replaces, so a later change of the same
+        # point drops it from the export (AUD-05, ADR-166).
+        with_coord_source <- function(tbl) {
+            src <- rv$validated_coords
+            i <- match(as.character(tbl$occurrenceID), rv$validation_occ_ids)
+            tbl$from_decimalLatitude <- if (is.data.frame(src)) src$decimalLatitude[i] else NA_character_
+            tbl$from_decimalLongitude <- if (is.data.frame(src)) src$decimalLongitude[i] else NA_character_
+            tbl
+        }
+
         # Payload merge helpers: the transposed, swap-fill and country cards act
         # on disjoint rows but two of them write coordinate/country payloads, so
         # we accumulate (dedupe by occurrenceID) instead of overwriting.
         merge_coords_corrections <- function(new_df) {
+            new_df <- with_coord_source(new_df)
             cur <- rv$coords_corrections$corrections
             # The UTM card carries verbatim columns the other cards do not, so
             # the two payloads no longer share a column set. Align on the union
@@ -1652,6 +1688,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rv$outside_table <- NULL
                 rv$transposed_applied <- FALSE
                 rv$coords_corrections <- NULL
+                rv$validated_coords <- NULL
                 rv$country_fill_table <- NULL
                 rv$country_fill_applied <- FALSE
                 rv$country_fills <- NULL
@@ -1677,11 +1714,17 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
         attr(result_r, "coords_correction_payload") <- shiny::reactive({
             edits <- manual_edits_rv()
             manual <- if (is.data.frame(edits)) {
-                edits[, c("occurrenceID", "decimalLatitude", "decimalLongitude"), drop = FALSE]
+                keep <- c("occurrenceID", "decimalLatitude", "decimalLongitude", coord_source_cols)
+                edits[, intersect(keep, names(edits)), drop = FALSE]
             } else {
                 NULL
             }
-            merge_manual_coord_edits(rv$coords_corrections, manual)
+            payload <- merge_manual_coord_edits(rv$coords_corrections, manual)
+            if (!is.list(payload) || !is.data.frame(payload$corrections) ||
+                    nrow(payload$corrections) == 0L) {
+                return(payload)
+            }
+            drop_stale_coord_corrections(payload, mapped_data_r())
         })
         attr(result_r, "country_fill_payload") <- shiny::reactive(rv$country_fills)
         return(result_r)

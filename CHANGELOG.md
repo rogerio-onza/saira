@@ -96,6 +96,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Leave out the Excel copy above 1,048,575 records instead of failing the whole package, ADR-165
 - **dynamicProperties:** Keep the keys of a column that already holds a JSON object, instead of nesting it as text, ADR-165
 - **dynamicProperties:** Replace an old threat category with the official MMA or IUCN value, instead of adding a second key, ADR-165
+- **coords:** Drop a coordinate fix from the package when its point changes later, and show the count, ADR-166
+- **coords:** Show the country of the spreadsheet as text in the coordinates table, not as HTML
 - **upload:** Read a Latin-1 file with accents in the header instead of failing
 - **upload:** Ignore delimiters inside quoted column names when detecting the delimiter
 - **names:** Update genus and epithets when a name review corrects scientificName

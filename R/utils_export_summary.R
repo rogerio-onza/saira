@@ -12,7 +12,8 @@
 #' @param mapped_data Processed Darwin Core data frame (`processed_data_r`).
 #' @param name_review_payload List with `entries` (the manual name reviews), or NULL.
 #' @param coords_correction_payload List with `corrections` (occurrenceID + new
-#'   coordinates), or NULL.
+#'   coordinates) and `stale` (the fixes dropped because the point changed),
+#'   or NULL.
 #' @param country_fill_payload List with `country` (occurrenceID + filled country),
 #'   or NULL.
 #' @param sensitivity_payload Per-species sensitivity marks (for the threat
@@ -25,7 +26,7 @@
 #'   terms whose fixed value won (`overridden_mapping_terms()`). They give the
 #'   unmapped columns the download adds to the file.
 #' @return Named list: `record_count`, `term_count`, `corrections`
-#'   (`names_corrected`/`names_confirmed`/`coord_fixes`/`country_fills`),
+#'   (`names_corrected`/`names_confirmed`/`coord_fixes`/`coord_fixes_stale`/`country_fills`),
 #'   `generalization` (data.frame `scientificName`/`category`/`tier`),
 #'   `readiness` (data.frame `term`/`present`), `readiness_pct`,
 #'   `missing_required`, `occurrence_id_present`, `bor_blank_count`,
@@ -73,6 +74,8 @@ build_export_summary <- function(mapped_data,
         names_corrected = sum(review_type == "correct"),
         names_confirmed = sum(review_type == "confirm"),
         coord_fixes = nrows_of(slot(coords_correction_payload, "corrections")),
+        # Fixes the Coordinates tab dropped: the point changed after the fix.
+        coord_fixes_stale = as.integer(slot(coords_correction_payload, "stale") %||% 0L),
         country_fills = nrows_of(slot(country_fill_payload, "country"))
     )
 

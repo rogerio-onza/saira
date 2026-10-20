@@ -492,6 +492,78 @@ testthat::test_that("a manual edit reaches the payload, survives a new validatio
     )
 })
 
+testthat::test_that("a fix leaves the payload when its point changes later (AUD-05, SEG-01)", {
+    base_df <- data.frame(
+        occurrenceID = c("a", "b"),
+        decimalLatitude = c("-10", "20"),
+        decimalLongitude = c("-50", "-30"),
+        country = c("<b data-audit=\"country\">Brasil</b>", "Brasil"),
+        stringsAsFactors = FALSE
+    )
+    dat <- shiny::reactiveVal(base_df)
+    testthat::local_mocked_bindings(
+        validate_coords_cc_df = function(df, lat_col, lon_col, country_col, profile, seas_scale = 10L, ...) {
+            lat <- as.numeric(df[[lat_col]])
+            diag <- ifelse(lat < 0, "ok", "sea")
+            data.frame(
+                .row_index = seq_len(nrow(df)), lat_num = lat, lon_num = as.numeric(df[[lon_col]]),
+                country = as.character(df[[country_col]]), country_iso3 = rep("BRA", nrow(df)),
+                diagnostic = diag, diagnostic_family = diag, valid = lat < 0,
+                stringsAsFactors = FALSE
+            )
+        },
+        .package = "saira"
+    )
+    gate_r <- shiny::reactive(list(
+        coords_status = "ok", has_data = TRUE, lat_col = "decimalLatitude",
+        lon_col = "decimalLongitude", country_col = "country",
+        has_lat = TRUE, has_lon = TRUE, has_country = TRUE
+    ))
+
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(mapped_data_r = dat, lang_r = shiny::reactive("en"), validation_gate_r = gate_r),
+        {
+            payload_r <- attr(session$getReturned(), "coords_correction_payload")
+            prime_validate_button(session)
+            session$setInputs(validate = 1)
+            flush_validation_cycle(session)
+
+            # The country typed in the spreadsheet reaches the table as text.
+            country <- build_issues_table_df(effective_validation_r())[[5]][[1]]
+            testthat::expect_identical(country, "&lt;b data-audit=\"country\"&gt;Brasil&lt;/b&gt;")
+
+            # A manual edit of "b" and an automatic fix of "a" keep the values
+            # they replace.
+            session$setInputs(issues_table_cell_edit = list(row = 1L, col = 2L, value = "-20,5"))
+            rv$transposed_table <- data.frame(occurrenceID = "a", decimalLatitude = -50,
+                                              decimalLongitude = -10, stringsAsFactors = FALSE)
+            session$setInputs(apply_transposed = 1)
+            testthat::expect_identical(rv$coords_corrections$corrections$from_decimalLatitude, "-10")
+            testthat::expect_identical(manual_edits_rv()$from_decimalLatitude, "20")
+            testthat::expect_identical(payload_r()$corrections$occurrenceID, c("a", "b"))
+            testthat::expect_identical(payload_r()$stale, 0L)
+
+            # A later Preview edit of "b" wins over the older fix.
+            newer <- base_df
+            newer$decimalLatitude[2] <- "-25"
+            dat(newer)
+            session$flushReact()
+            testthat::expect_identical(payload_r()$corrections$occurrenceID, "a")
+            testthat::expect_identical(payload_r()$stale, 1L)
+            testthat::expect_identical(
+                apply_coords_correction_payload(newer, payload_r())$decimalLatitude, c("-50", "-25")
+            )
+
+            # A new validation drops the stale edit, so nothing stays stale.
+            session$setInputs(validate = 2)
+            flush_validation_cycle(session)
+            testthat::expect_null(manual_edits_rv())
+            testthat::expect_null(payload_r())
+        }
+    )
+})
+
 testthat::test_that("a language switch keeps the map widget and translates the legend", {
     mapped_df <- data.frame(
         decimalLatitude = c(-10),

@@ -372,6 +372,10 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     ))
                 ), "go_map_unmapped", tr("export_action_mapping", lang)))
             }
+            if (isTRUE(s$corrections$coord_fixes_stale > 0L)) {
+                add(pending_row("warn", sprintf(tr("export_coord_fixes_stale", lang), s$corrections$coord_fixes_stale),
+                                "go_coords", tr("export_action_coords", lang)))
+            }
             cf <- s$coord_flags
             if (is.list(cf) && isTRUE(cf$count > 0L)) {
                 add(pending_row("warn", shiny::tagList(
