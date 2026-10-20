@@ -915,10 +915,15 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             input_id <- paste0("map_", term)
             old_input <- shiny::isolate(input[[input_id]])
-            if (isTRUE(update_input) && !is.null(old_input)) {
+            # A select the user cleared reports NULL, like one not rendered yet.
+            # It needs the update too, or a restored card stays blank while the
+            # export maps the column.
+            rendered <- !is.null(old_input) || isTRUE(rendered_map_inputs[[term]])
+            if (isTRUE(update_input) && rendered) {
                 rv$programmatic_terms <- unique(c(rv$programmatic_terms, term))
                 if (!identical(sanitize_map_selection(term, old_input), sanitized_value)) {
-                    pending_map_echo[[term]] <- old_input
+                    # The input-sync observer reads a cleared select as "".
+                    pending_map_echo[[term]] <- if (is.null(old_input)) "" else old_input
                 }
                 shiny::updateSelectInput(session, input_id, selected = sanitized_value)
             }
@@ -2096,7 +2101,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # file re-runs the schema migration check and makes the two contend
             # for the same write lock through BEGIN IMMEDIATE.
             tryCatch(
-                import_mapping_guide_to_aliases(payload, conn = conn),
+                import_mapping_guide_to_aliases(payload, conn = conn, available_columns = available_columns),
                 error = function(e) NULL
             )
 

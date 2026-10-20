@@ -102,6 +102,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **upload:** Keep the leading zeros of Wildlife Insights IDs such as `000123`, ADR-124
 - **preview:** Flag a date with an impossible time, time zone or interval end, such as `T25:61` or `2024-02-01/02-30`, and keep it as typed
 - **export:** Keep a full month at the end of an eventDate interval, such as `2024-02-15/2024-03`, in the EML temporal coverage
+- **upload:** Read an Excel time-only cell as a time such as `12:30:00`, not as a date in 1899
+- **upload:** Find the CSV delimiter when a quoted header name has a line break
+- **mapping:** Restore a guide column whose name has a `+`, such as `lat + gps`, as one column and one alias
+- **mapping:** Show the column a guide restores on a card the user cleared, not a blank card while the export maps it
 - **upload:** Read a Latin-1 file with accents in the header instead of failing
 - **upload:** Ignore delimiters inside quoted column names when detecting the delimiter
 - **names:** Update genus and epithets when a name review corrects scientificName

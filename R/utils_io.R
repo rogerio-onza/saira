@@ -34,7 +34,7 @@ read_biodiversity_csv <- function(file_path, encoding = NULL, header = TRUE) {
         lines <- lines[-1L]
         report$sep_line <- TRUE
     }
-    if (is.null(delimiter)) delimiter <- delimiter_from_line(lines[1L])
+    if (is.null(delimiter)) delimiter <- delimiter_from_line(header_record(lines))
 
     tmp <- tempfile(fileext = ".csv")
     on.exit(unlink(tmp), add = TRUE)
@@ -153,6 +153,18 @@ decode_text_file <- function(file_path, encoding = NULL) {
     counts <- table(enc)
     report$encoding_lines <- stats::setNames(as.integer(counts), names(counts))
     list(lines = lines, report = report)
+}
+
+# The header record: a quoted column name can hold a line break, so the lines
+# join until the quotes close (AUD-14). After 50 lines with an open quote, the
+# first line is the header.
+header_record <- function(lines) {
+    quotes <- 0L
+    for (i in seq_len(min(length(lines), 50L))) {
+        quotes <- quotes + nchar(gsub("[^\"]", "", lines[[i]], useBytes = TRUE), type = "bytes")
+        if (quotes %% 2L == 0L) return(paste(lines[seq_len(i)], collapse = "\n"))
+    }
+    lines[1L]
 }
 
 # Delimiter from the header line: the most frequent of tab, ";" and ",",
@@ -339,6 +351,9 @@ read_biodiversity_xlsx <- function(file_path, header = TRUE) {
 xlsx_cell_to_text <- function(x) {
     if (length(x) == 0L || is.na(x)) return(NA_character_)
     if (inherits(x, "POSIXt")) {
+        # A time-only cell ("h:mm") is a fraction of a day, which readxl reads
+        # as a time on 1899-12-31. No date cell has that day (AUD-13).
+        if (format(x, "%Y-%m-%d", tz = "UTC") == "1899-12-31") return(format(x, "%H:%M:%S", tz = "UTC"))
         fmt <- if (format(x, "%H:%M:%S", tz = "UTC") == "00:00:00") "%Y-%m-%d" else "%Y-%m-%dT%H:%M:%S"
         return(format(x, fmt, tz = "UTC"))
     }
