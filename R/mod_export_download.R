@@ -134,16 +134,18 @@ mount_export_download <- function(input, output, session, lang_r,
                 jsonlite::toJSON(download_finish_channel, auto_unbox = TRUE)
             )
 
-            inert <- isTRUE(is_exporting()) || export_blocked()
+            blocked <- export_blocked()
+            inert <- isTRUE(is_exporting()) || blocked
 
             shiny::tagList(
                 shiny::actionButton(
                     inputId = ns("download_trigger"),
-                    label = shiny::tagList(
-                        ph_icon("file-zipper"),
-                        " ",
-                        tr("export_download_zip", lang_r())
-                    ),
+                    # A blocked bundle says what to do, the Pending card says what.
+                    label = if (blocked) {
+                        shiny::tagList(ph_icon("lock"), " ", tr("export_download_resolve", lang_r()))
+                    } else {
+                        shiny::tagList(ph_icon("file-zipper"), " ", tr("export_download_zip", lang_r()))
+                    },
                     class = paste(
                         "btn action-button preview-download-btn export-download-btn",
                         if (inert) "is-inert" else "btn-success"

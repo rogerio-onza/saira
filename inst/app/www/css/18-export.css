@@ -23,8 +23,8 @@
 /* Inert (blocked) state: clearly grey and unclickable, never green — the
    actionable CTA lives in the red banner instead. */
 .export-download-btn.is-inert {
-  background: var(--border-default);
-  border-color: var(--border-default);
+  background: var(--bg-main);
+  border: 1px dashed var(--border-strong);
   color: var(--text-muted);
   cursor: not-allowed;
   opacity: 1;
@@ -434,20 +434,31 @@
   color: var(--accent);
 }
 
-/* The download bar: fixed to the bottom of the page while it scrolls. */
-.export-download-bar {
+/* The download dock: a solid band fixed to the bottom of the page while it
+   scrolls, with the bar as a flat card inside it. */
+.export-download-dock {
   position: sticky;
-  bottom: 0;
+  /* The tab pane has a 1rem bottom padding, and sticky stops at it, so the
+     cards showed in the gap under the dock. */
+  bottom: calc(-1 * var(--space-4));
   margin-top: auto;
   z-index: 10;
+  margin-right: calc(-1 * var(--space-1));
+  margin-left: calc(-1 * var(--space-1));
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  background: var(--bg-main);
+  border-top: 1px solid var(--border-default);
+}
+
+.export-download-bar {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  margin-right: calc(-1 * var(--space-1));
-  margin-left: calc(-1 * var(--space-1));
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
   background: var(--bg-card);
-  border-top: 1px solid var(--border-default);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: none;
 }
 
 .export-download-status {
@@ -463,16 +474,4 @@
   font-size: var(--text-sm);
   font-weight: 700;
   overflow-wrap: anywhere;
-}
-
-.export-bar-state {
-  font-size: var(--text-sm);
-}
-
-.export-bar-state.is-blocked {
-  color: var(--error-text);
-}
-
-.export-bar-state.is-ready {
-  color: var(--success-text);
 }

@@ -37,12 +37,17 @@ mod_export_ui <- function(id) {
         shiny::div(
             class = "container-fluid export-page",
             shiny::uiOutput(ns("summary")),
-            # The download sits in a bar fixed to the bottom of the page, with
-            # the bundle name and what still blocks it (ADR-132).
+            # The download sits in a card fixed to the bottom of the page
+            # (ADR-132). The dock is a solid band, so the cards that scroll
+            # under it never show around the bar. What blocks the download is
+            # in the Pending card, not here.
             shiny::div(
-                class = "export-download-bar",
-                shiny::uiOutput(ns("download_status"), class = "export-download-status"),
-                shiny::uiOutput(ns("download_btn_container"))
+                class = "export-download-dock",
+                shiny::div(
+                    class = "export-download-bar",
+                    shiny::uiOutput(ns("download_status"), class = "export-download-status"),
+                    shiny::uiOutput(ns("download_btn_container"))
+                )
             )
         )
     )
@@ -558,25 +563,13 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }
         })
 
-        # The bar under the page: bundle name and whether it can go out yet.
+        # The bar under the page: the bundle name. The button says if it can go out.
         output$download_status <- shiny::renderUI({
             s <- summary_r()
             if (is.null(s) || !is.list(s) || s$record_count == 0L) return(NULL)
-            lang <- lang_r()
-            # One per pending row: the missing terms share a single row.
-            n_block <- isTRUE(length(s$missing_required) > 0L) + isTRUE(s$bor_blank_count > 0L) +
-                isTRUE(s$justification_pending) +
-                isTRUE(is.list(s$formula_cells) && s$formula_cells$count > 0L) +
-                isTRUE(length(s$coord_invalid_rows) > 0L)
             shiny::tagList(
                 ph_icon("file-zipper"),
-                shiny::span(class = "export-zip-name", s$files$zip),
-                if (n_block > 0L) {
-                    shiny::span(class = "export-bar-state is-blocked",
-                                sprintf(tr("export_bar_blocked", lang), n_block))
-                } else {
-                    shiny::span(class = "export-bar-state is-ready", tr("export_bar_ready", lang))
-                }
+                shiny::span(class = "export-zip-name", s$files$zip)
             )
         })
 
