@@ -4,20 +4,50 @@
 \alias{mod_preview_server}
 \title{Preview Module Server}
 \usage{
-mod_preview_server(id, mapped_data_r, lang_r)
+mod_preview_server(
+  id,
+  mapped_data_r,
+  lang_r,
+  full_data_r = mapped_data_r,
+  raw_data_r = NULL,
+  reset_signal_r = NULL,
+  on_navigate = NULL,
+  active_r = NULL,
+  refresh_r = NULL
+)
 }
 \arguments{
 \item{id}{Module ID}
 
-\item{mapped_data_r}{Reactive data frame with mapped data}
+\item{mapped_data_r}{Reactive data frame with the lightweight mapped preview}
 
 \item{lang_r}{Reactive language value}
+
+\item{full_data_r}{Reactive full mapped data frame. Read only while the
+tab shows and for the nav count, because building it costs the full
+mapping pipeline (ADR-021).}
+
+\item{raw_data_r}{Reactive uploaded data frame, for the record panel.}
+
+\item{reset_signal_r}{Reactive that changes on re-upload or a Mapping reset.}
+
+\item{on_navigate}{Function(tab, term) that opens another tab.}
+
+\item{active_r}{Reactive, TRUE while the Preview tab is open. On each entry
+the tab opens Problems when there is something to correct.}
+
+\item{refresh_r}{Reactive whose change recounts the open problems for the
+nav badge, or NULL to count on every change of the full data.}
 }
 \value{
-Reactive preview data frame
+Reactive preview data frame, with the corrected full data frame in
+  attribute `edited_data_r` and the open-problem count (NA without data) in
+  attribute `problems_n_r`.
 }
 \description{
-Read-only preview of the mapped Darwin Core data. The download/export flow
-lives in the dedicated Export tab (ADR-103), so this module only renders the
-preview table.
+Shows the first 100 mapped records (Table) and, on request, every cell
+problem in the full dataset (Problems), where the user can correct it. The
+corrections are kept as edits over the mapped frame, so the downstream tabs
+and the export read the corrected data. The download/export flow lives in
+the Export tab (ADR-103).
 }

@@ -13,6 +13,8 @@
 #'
 #' @param file_path Path to CSV file
 #' @param encoding Optional encoding override
+#' @param header If FALSE, the first line is a data row and the columns are
+#'   named col_1, col_2, ...
 #' @return Data frame
 #' @examples
 #' \dontrun{
@@ -330,6 +332,8 @@ finish_upload_frame <- function(df, report = list()) {
 #' notation.
 #'
 #' @param file_path Path to the .xlsx file
+#' @param header If FALSE, the first row is a data row and the columns are
+#'   named col_1, col_2, ...
 #' @return Data frame of character columns
 #' @export
 read_biodiversity_xlsx <- function(file_path, header = TRUE) {

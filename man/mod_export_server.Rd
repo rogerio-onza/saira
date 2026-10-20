@@ -21,6 +21,8 @@ mod_export_server(
   establishment_dropped_r = NULL,
   occurrence_id_info_r = NULL,
   alias_receipt_r = NULL,
+  coord_validation_r = NULL,
+  preview_problems_n_r = NULL,
   on_navigate = NULL,
   on_export_success = NULL
 )
@@ -61,6 +63,12 @@ counts from `resolve_occurrence_ids()`.}
 
 \item{alias_receipt_r}{Optional reactive with what the last export taught the
 alias store (`alias_export_receipt()`), shown with an undo (ADR-141).}
+
+\item{coord_validation_r}{Optional reactive with the Coordinates-tab result
+(`validate_coords_cc_df()`), NULL before the tab runs.}
+
+\item{preview_problems_n_r}{Optional reactive with the count of open Preview
+problems.}
 
 \item{on_navigate}{Optional callback `function(tab)` to switch the top-level
 navbar (used by the "fix missing terms" banner action).}

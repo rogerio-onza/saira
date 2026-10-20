@@ -13,7 +13,7 @@ map_occurrence_status_values(raw_values)
 Character vector of the same length.
 }
 \description{
-Coerces common presence/absence representations (0/1, sim/nao, yes/no,
+Coerces common presence/absence representations (0/1, sim/nao, si/no, yes/no,
 presente/ausente, present/absent, TRUE/FALSE) to canonical DwC values
 "present" or "absent" for export. Convention: 0 = absent, 1 = present.
 Unrecognized non-empty values pass through after trim. NA / empty stay NA.

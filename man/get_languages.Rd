@@ -10,5 +10,7 @@ get_languages()
 Character vector of language codes
 }
 \description{
-Get all available languages
+The single list of interface languages. Everything that branches on the
+language (dictionary validation, per-language data columns, the selector)
+reads this list, so a new language is added here once.
 }

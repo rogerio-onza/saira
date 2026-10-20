@@ -211,7 +211,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **names:** Check the Brazilian provider status only during a run or a provider update ([#168](https://github.com/rogerio-onza/saira/pull/168))
 - **ui:** Stop loading the unused Lottie player on every page, and remove 9 MB of unused images from the package ([#168](https://github.com/rogerio-onza/saira/pull/168))
 
+### Documentation
+- **docs:** Describe the current tabs, export files and CI in the architecture and contributing guides
+
 ### Tests
+- **build:** Stop the release gate on a stale Rd file or an R CMD check warning
 - **build:** Serve the E2E app through run_app() and keep Chrome timers unthrottled in long runs
 - **build:** Guard the mapping reactivity fixes and run the full flow end to end in the release gate
 - **build:** Complete the roadkill benchmark export again, now that the server refuses a blocked download ([#172](https://github.com/rogerio-onza/saira/pull/172))
