@@ -2878,7 +2878,12 @@ build_dynamic_properties_json <- function(df, cols, keys = NULL) {
         blank <- is.na(v) | !nzchar(trimws(as.character(v)))
         escaped <- json_escape_string(v)
         piece <- paste0("\"", resolved_keys[[j]], "\":\"", escaped, "\"")
-        piece[blank] <- ""
+        # A cell that already holds an object (a re-imported
+        # dynamicProperties) gives its members, not one escaped string (AUD-08).
+        members <- json_object_members(v)
+        is_obj <- !is.na(members)
+        piece[is_obj] <- members[is_obj]
+        piece[blank | (is_obj & !nzchar(members))] <- ""
         parts_per_col[[j]] <- piece
     }
 
@@ -2895,6 +2900,36 @@ build_dynamic_properties_json <- function(df, cols, keys = NULL) {
     out
 }
 
+# A JSON string, and a flat JSON object: string, number, boolean or null
+# values, no nesting.
+json_str_re <- "\"(?:[^\"\\\\]|\\\\.)*\""
+json_flat_object_re <- local({
+    val <- paste0("(?:", json_str_re,
+                  "|-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?|true|false|null)")
+    mem <- paste0("\\s*", json_str_re, "\\s*:\\s*", val, "\\s*")
+    paste0("^\\{(?:", mem, "(?:,", mem, ")*|\\s*)\\}$")
+})
+
+# The members of a cell that holds a JSON object, minified and without the
+# outer braces ("" for `{}`), or NA for any other value. A regex reads the
+# flat objects in one pass. jsonlite reads the nested ones, one at a time.
+json_object_members <- function(x) {
+    x <- as.character(x)
+    out <- rep(NA_character_, length(x))
+    cand <- which(grepl("{", x, fixed = TRUE))
+    if (!length(cand)) return(out)
+    cell <- trimws(x[cand])
+    flat <- grepl(json_flat_object_re, cell, perl = TRUE)
+    tight <- gsub(paste0("(", json_str_re, ")|\\s+"), "\\1", cell[flat], perl = TRUE)
+    out[cand[flat]] <- substr(tight, 2L, nchar(tight) - 1L)
+    for (i in which(!flat & startsWith(cell, "{") & endsWith(cell, "}"))) {
+        if (isTRUE(jsonlite::validate(cell[[i]]))) {
+            out[[cand[[i]]]] <- sub("^\\{(.*)\\}$", "\\1", as.character(jsonlite::minify(cell[[i]])))
+        }
+    }
+    out
+}
+
 #' Merge one key/value pair into existing dynamicProperties JSON
 #'
 #' Folds `"key":"value"` into each element of `existing` — a vector of flat
@@ -2902,7 +2937,8 @@ build_dynamic_properties_json <- function(df, cols, keys = NULL) {
 #' (`{"k":"v"}`) or `""`/NA. Used on export to add conservation-status entries
 #' without hand-concatenating strings: the value is JSON-escaped and the object
 #' reserialized (same no-whitespace convention). Rows whose `value` is NA or
-#' blank are returned unchanged, so empty keys are never emitted.
+#' blank are returned unchanged, so empty keys are never emitted. A key the
+#' object already has at the top level takes the new value.
 #'
 #' @param existing Character vector of dynamicProperties JSON strings.
 #' @param key Single JSON key, assumed ASCII-safe (e.g. a DwC-style term).
@@ -2930,8 +2966,36 @@ merge_dynamic_property <- function(existing, key, value) {
     # Empty target -> wrap the pair as a fresh object.
     fresh <- add & !nzchar(existing)
     out[fresh] <- paste0("{", pair[fresh], "}")
-    # Existing object -> splice the pair in before the closing brace.
     obj <- add & nzchar(existing)
+    # A key the object already has takes the new value, so a reader never
+    # finds two values for it (AUD-09). In a flat object a regex marks each
+    # copy of the key, the first mark takes the pair and the others go.
+    has_key <- obj & grepl(paste0("\"", key, "\":"), existing, fixed = TRUE)
+    flat <- which(has_key & grepl(json_flat_object_re, existing, perl = TRUE))
+    if (length(flat)) {
+        member <- paste0("(?<=[{,])\"", key, "\":(?:", json_str_re, "|[^,}]*)")
+        marked <- gsub(member, "\x02", existing[flat], perl = TRUE)
+        at <- regexpr("\x02", marked, fixed = TRUE)
+        hit <- at > 0L
+        flat <- flat[hit]
+        out[flat] <- gsub(",\x02", "", paste0(
+            substr(marked[hit], 1L, at[hit] - 1L), pair[flat], substring(marked[hit], at[hit] + 1L)
+        ), fixed = TRUE)
+        obj[flat] <- FALSE
+        has_key[flat] <- FALSE
+    }
+    for (i in which(has_key & obj)) {
+        parsed <- tryCatch(jsonlite::parse_json(existing[[i]]), error = function(e) NULL)
+        if (is.list(parsed) && key %in% names(parsed)) {
+            parsed <- parsed[names(parsed) != key | seq_along(parsed) == match(key, names(parsed))]
+            parsed[[key]] <- value[[i]]
+            out[[i]] <- as.character(jsonlite::toJSON(
+                parsed, auto_unbox = TRUE, digits = NA, null = "null", na = "null"
+            ))
+            obj[[i]] <- FALSE
+        }
+    }
+    # Existing object -> splice the pair in before the closing brace.
     inner <- sub("\\}$", "", sub("^\\{", "", existing[obj]))
     joined <- ifelse(nzchar(inner), paste0(inner, ",", pair[obj]), pair[obj])
     out[obj] <- paste0("{", joined, "}")

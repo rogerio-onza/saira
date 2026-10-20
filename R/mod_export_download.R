@@ -654,11 +654,14 @@ mount_export_download <- function(input, output, session, lang_r,
                         # keeps its standard names at archive root; the Excel
                         # mirror and mapping guide are renamed after the dataset.
                         # The real coordinates have their own download (ADR-163).
-                        fnames <- export_bundle_filenames(dataset_name = cv$datasetName)
+                        fnames <- export_bundle_filenames(dataset_name = cv$datasetName,
+                                                          n_records = nrow(export_data))
                         core_path  <- file.path(tmpdir, "occurrence.txt")
                         meta_path  <- file.path(tmpdir, "meta.xml")
                         eml_path   <- file.path(tmpdir, "eml.xml")
-                        xlsx_path  <- file.path(tmpdir, fnames$auxiliary[["xlsx"]])
+                        xlsx_path  <- if (!is.null(fnames$auxiliary$xlsx)) {
+                            file.path(tmpdir, fnames$auxiliary$xlsx)
+                        }
                         guide_path <- file.path(tmpdir, fnames$auxiliary[["mapping_guide"]])
 
                         # The mapping stage is what actually resolves the
@@ -734,7 +737,7 @@ mount_export_download <- function(input, output, session, lang_r,
                             eml_path,
                             useBytes = TRUE
                         )
-                        write_xlsx_text_only(export_data, xlsx_path)
+                        if (!is.null(xlsx_path)) write_xlsx_text_only(export_data, xlsx_path)
                         writeLines(
                             build_mapping_guide_txt(
                                 mv, raw_df,

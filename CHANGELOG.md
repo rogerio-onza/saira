@@ -91,6 +91,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **generalization:** Replace copies of the exact point in text and JSON fields with the generalized value, ADR-164
 - **generalization:** Generalize a record whose dataGeneralizations note is about other data, and blank its verbatim coordinates, ADR-164
 - **generalization:** Keep the cell polygon inside the latitude and longitude bounds, ADR-164
+- **export:** Block the download when an unmapped column has a value that looks like a formula, ADR-165
+- **export:** Block the download when a record has no scientificName, ADR-165
+- **export:** Leave out the Excel copy above 1,048,575 records instead of failing the whole package, ADR-165
+- **dynamicProperties:** Keep the keys of a column that already holds a JSON object, instead of nesting it as text, ADR-165
+- **dynamicProperties:** Replace an old threat category with the official MMA or IUCN value, instead of adding a second key, ADR-165
 - **upload:** Read a Latin-1 file with accents in the header instead of failing
 - **upload:** Ignore delimiters inside quoted column names when detecting the delimiter
 - **names:** Update genus and epithets when a name review corrects scientificName

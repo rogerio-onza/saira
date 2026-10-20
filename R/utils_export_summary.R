@@ -21,15 +21,19 @@
 #'   Generalization stage, or NULL.
 #' @param dataset_name Dataset name (the `datasetName` constant), used to name
 #'   the auxiliary bundle files. NULL falls back to a generic slug.
+#' @param raw_data,map_values,overridden_terms The upload, the mapping and the
+#'   terms whose fixed value won (`overridden_mapping_terms()`). They give the
+#'   unmapped columns the download adds to the file.
 #' @return Named list: `record_count`, `term_count`, `corrections`
 #'   (`names_corrected`/`names_confirmed`/`coord_fixes`/`country_fills`),
 #'   `generalization` (data.frame `scientificName`/`category`/`tier`),
 #'   `readiness` (data.frame `term`/`present`), `readiness_pct`,
 #'   `missing_required`, `occurrence_id_present`, `bor_blank_count`,
-#'   `bor_blank_rows`,
+#'   `bor_blank_rows`, `sci_blank_rows` (records with no scientificName),
 #'   `justification_pending`,
 #'   `date_issues` (from `date_year_issues()`), `date_unparsed` (from
 #'   `unparsed_date_cells()`), `formula_cells` (from `formula_like_cells()`),
+#'   `formula_cells_unmapped` (the same check on the unmapped raw columns),
 #'   `zero_count_rows` (count 0 with a blank occurrenceStatus),
 #'   `coord_invalid_rows` (a coordinate the export cannot read, after the
 #'   accepted corrections), `coord_flags` (Coordinates-tab flags with no
@@ -45,7 +49,10 @@ build_export_summary <- function(mapped_data,
                                  generalization_payload = NULL,
                                  dataset_name = NULL,
                                  coord_validation = NULL,
-                                 preview_problems_n = NULL) {
+                                 preview_problems_n = NULL,
+                                 raw_data = NULL,
+                                 map_values = NULL,
+                                 overridden_terms = character(0)) {
     df <- if (is.data.frame(mapped_data)) mapped_data else data.frame()
     n_records <- nrow(df)
     term_count <- ncol(df)
@@ -129,6 +136,12 @@ build_export_summary <- function(mapped_data,
         which(is.na(bor) | !nzchar(trimws(bor)))
     }
     bor_blank_count <- length(bor_blank_rows)
+    # One record with no name is enough for GBIF to reject it (AUD-12).
+    sci_blank_rows <- if ("scientificName" %in% missing_required) {
+        integer(0)
+    } else {
+        which(is_blank_cell(df[["scientificName"]]))
+    }
 
     # A year outside the plausible range is a typo the format conversion cannot
     # catch, so it is reported here rather than blocking: a historical record
@@ -138,6 +151,12 @@ build_export_summary <- function(mapped_data,
     # has no event date for the record. The Preview lists these rows.
     date_unparsed <- unparsed_date_cells(df)
     formula_cells <- formula_like_cells(df)
+    # The unmapped columns join the file after this check, so they are
+    # checked here too (AUD-04). Same call as process_for_export_with_unmapped().
+    unmapped <- unmapped_raw_columns(raw_data, map_values, overridden_terms = overridden_terms)
+    formula_cells_unmapped <- formula_like_cells(
+        if (length(unmapped)) raw_data[, unmapped, drop = FALSE] else NULL
+    )
     coords <- coord_export_issues(df, coords_correction_payload, coord_validation)
     # GBIF reads a count of 0 with no occurrenceStatus as an absence (D07).
     # Some field sheets use 0 for "not counted", so the user sees the rows.
@@ -160,15 +179,18 @@ build_export_summary <- function(mapped_data,
         !nzchar(trimws(gp$justification %||% ""))
     # A formula cell runs when a person opens occurrence.txt in a spreadsheet,
     # and a coordinate out of range is not a point: both block (B50, B55).
-    export_blocked <- !all_required_present || bor_blank_count > 0L || justification_pending ||
-        isTRUE(formula_cells$count > 0L) || length(coords$invalid_rows) > 0L
+    export_blocked <- !all_required_present || bor_blank_count > 0L ||
+        length(sci_blank_rows) > 0L || justification_pending ||
+        isTRUE(formula_cells$count > 0L) || isTRUE(formula_cells_unmapped$count > 0L) ||
+        length(coords$invalid_rows) > 0L
 
     # --- Files the bundle will contain -------------------------------------
     # Single source of truth shared with the download handler. The private
     # real-coordinates file exists only when a species is generalized.
     files <- export_bundle_filenames(
         dataset_name = dataset_name,
-        has_sensitive = nrow(gen) > 0L
+        has_sensitive = nrow(gen) > 0L,
+        n_records = n_records
     )
 
     list(
@@ -182,10 +204,12 @@ build_export_summary <- function(mapped_data,
         occurrence_id_present = occurrence_id_present,
         bor_blank_count = bor_blank_count,
         bor_blank_rows = bor_blank_rows,
+        sci_blank_rows = sci_blank_rows,
         justification_pending = justification_pending,
         date_issues = date_issues,
         date_unparsed = date_unparsed,
         formula_cells = formula_cells,
+        formula_cells_unmapped = formula_cells_unmapped,
         zero_count_rows = zero_count_rows,
         coord_invalid_rows = coords$invalid_rows,
         coord_flags = coords$flags,
