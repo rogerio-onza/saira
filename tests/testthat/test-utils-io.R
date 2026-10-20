@@ -255,6 +255,15 @@ testthat::test_that("parse_dates_to_iso normalises year-first, month-year and da
     testthat::expect_identical(parse_dates_to_iso(input), expected)
 })
 
+testthat::test_that("parse_dates_to_iso leaves an impossible time unparsed (AUD-10)", {
+    input <- c("2024-01-01T25:61:61Z", "25/12/2023 14:75", "2024-01-01T12:30:00+99:99",
+               "2024-01-01T23:59:59+14:00")
+    testthat::expect_identical(
+        parse_dates_to_iso(input),
+        c(NA, NA, NA, "2024-01-01T23:59:59+14:00")
+    )
+})
+
 testthat::test_that("parse_dates_to_iso keeps the day-first vote when the column carries times", {
     # 25 > 12 proves day-first, and the vote has to survive the time suffix.
     input <- c("25/12/2023 08:00", "05/06/2023 08:00")

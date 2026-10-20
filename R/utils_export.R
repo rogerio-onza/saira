@@ -1561,10 +1561,7 @@ compute_dataset_extents <- function(df) {
         parts <- strsplit(raw, "/", fixed = TRUE)
         start <- vapply(parts, `[`, character(1), 1L)
         end <- vapply(parts, function(p) p[length(p)], character(1))
-        # "2007-11-13/15": the end drops the parts it shares with the start.
-        short <- nchar(end) < nchar(substr(start, 1L, 10L))
-        end[short] <- paste0(substr(start[short], 1L, nchar(substr(start[short], 1L, 10L)) - nchar(end[short])),
-                             end[short])
+        end <- expand_interval_end(start, end)
         parsed <- c(iso_date_bound(start, last = FALSE), iso_date_bound(end, last = TRUE))
         # A future date is a typing error, and it must not end the coverage.
         parsed[!is.na(parsed) & parsed > Sys.Date()] <- NA

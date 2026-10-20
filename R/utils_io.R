@@ -518,10 +518,12 @@ is_ambiguous_dmy <- function(date_chr) {
 # ("25/12/2023 14:30"), and only the date half needs normalising. Splitting the
 # time off here is what lets the day-first vote and every format spec below see
 # a bare date; the time half is re-attached with the ISO "T" separator, so an
-# hour the collector recorded is never dropped on the way to the export.
+# hour the collector recorded is never dropped on the way to the export. An
+# impossible time ("25:61") does not split, so the value stays as typed and the
+# Preview flags it (AUD-10).
 .datetime_split_re <- paste0(
-    "^(.+?)[ T]([0-9]{1,2}:[0-9]{2}(:[0-9]{2})?)",
-    "[[:space:]]*(Z|[+-][0-9]{2}:?[0-9]{2})?$"
+    "^(.+?)[ T](([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?)",
+    "[[:space:]]*(Z|[+-](0[0-9]|1[0-4]):?[0-5][0-9])?$"
 )
 
 split_time_suffix <- function(x) {
@@ -537,7 +539,7 @@ split_time_suffix <- function(x) {
     date_part[has_time] <- trimws(sub(.datetime_split_re, "\\1", with_time, perl = TRUE))
     time_part[has_time] <- paste0(
         sub("^([0-9]):", "0\\1:", sub(.datetime_split_re, "\\2", with_time, perl = TRUE)),
-        sub(.datetime_split_re, "\\4", with_time, perl = TRUE)
+        sub(.datetime_split_re, "\\5", with_time, perl = TRUE)
     )
 
     list(date = date_part, time = time_part)

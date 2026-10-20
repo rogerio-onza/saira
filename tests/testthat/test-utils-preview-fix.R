@@ -65,6 +65,17 @@ testthat::test_that("is_dwc_date_value accepts Darwin Core dates and rejects the
     testthat::expect_false(any(is_dwc_date_value(bad)))
 })
 
+testthat::test_that("is_dwc_date_value rejects an impossible time, offset or interval end (AUD-10)", {
+    bad <- c("2024-01-01T25:61:61Z", "2024-01-01T12:30:00+99:99", "2024-01-01/99",
+             "2024-02-01/02-30", "2024-01-01T12:60")
+    testthat::expect_false(any(is_dwc_date_value(bad)))
+    ok <- c("2024-01-01T23:59:59-03:00", "2024-01-01T00:00+14:00", "2024-02-01/02-29",
+            "2024-01-31/02-01")
+    testthat::expect_true(all(is_dwc_date_value(ok)))
+    found <- unparsed_date_cells(data.frame(eventDate = bad))
+    testthat::expect_identical(found$count, length(bad))
+})
+
 testthat::test_that("apply_preview_edits writes only over the value it replaces", {
     df <- fix_frame()
     edits <- data.frame(row = c(2L, 3L), term = c("individualCount", "individualCount"),

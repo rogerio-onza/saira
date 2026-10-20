@@ -114,6 +114,13 @@ testthat::test_that("compute_dataset_extents reads both ends of an interval and 
     testthat::expect_identical(unname(ext$dates), c("2019-05-01", "2020-11-30"))
 })
 
+testthat::test_that("compute_dataset_extents keeps a full month at the end of an interval (AUD-11)", {
+    ext <- compute_dataset_extents(data.frame(eventDate = c("2024-01", "2024-02-15/2024-03")))
+    testthat::expect_identical(unname(ext$dates), c("2024-01-01", "2024-03-31"))
+    ext <- compute_dataset_extents(data.frame(eventDate = "2024-02-15/03-10"))
+    testthat::expect_identical(unname(ext$dates), c("2024-02-15", "2024-03-10"))
+})
+
 testthat::test_that("compute_dataset_extents returns NA bbox/dates when columns absent", {
     df <- data.frame(scientificName = c("A"), stringsAsFactors = FALSE)
     ext <- compute_dataset_extents(df)
