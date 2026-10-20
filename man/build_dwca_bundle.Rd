@@ -23,6 +23,5 @@ Invisibly returns `zip_path`.
 \description{
 Lays out the archive with `occurrence.txt`, `meta.xml`, `eml.xml` at the
 ZIP root, plus any provided sibling files (`mapping_guide.txt`, the
-Excel mirror, the private sensitive-coordinates CSV). The bundle is
-GBIF/IPT-compatible.
+Excel mirror). The bundle is GBIF/IPT-compatible.
 }

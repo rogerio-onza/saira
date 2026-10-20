@@ -68,9 +68,9 @@ not accepted — branch protection enforces this on the remote.
    RUN_PERF=true R -e "devtools::test(filter = 'performance')"
 
    # End-to-end tests (requires shinytest2 + browser)
-   RUN_E2E=true R -e "devtools::test(filter = 'e2e')"
+   RUN_E2E=true NOT_CRAN=true R -e "devtools::test(filter = 'e2e')"
 
-   # Full release gate (mirrors CI)
+   # Full release gate (local only, CI does not run it)
    Rscript scripts/release_gate.R
    ```
 
@@ -84,9 +84,10 @@ not accepted — branch protection enforces this on the remote.
    The PR template (in `.github/pull_request_template.md`) will populate the
    body. Fill in the Summary, Why, How-to-test, and Checklist sections.
 
-5. **Wait for CI.** Every push to your PR branch triggers `R CMD check` plus
-   the targeted gates from `scripts/release_gate.R`. Never merge a PR with
-   failing CI — investigate first.
+5. **Wait for CI.** CI runs `R CMD check` on pull requests to `main` and on
+   pushes to `main`. It does not run `scripts/release_gate.R` or the E2E
+   tests, so run them locally. Never merge a PR with failing CI — investigate
+   first.
 
 6. **Address review feedback** with follow-up commits on the same branch.
    Don't force-push during review.
@@ -124,7 +125,8 @@ Open an issue at https://github.com/rogerio-onza/saira/issues with:
 - A short reproduction (input CSV snippet or steps to trigger).
 - Expected vs actual behavior.
 - Your R version (`R.version.string`) and OS.
-- The relevant section of the Saira app (Upload, Mapping, Validation, Preview).
+- The relevant section of the Saira app (Home, Mapping, Preview, Names,
+  Coordinates, Generalization, Export).
 
 ## License
 

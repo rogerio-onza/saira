@@ -1,707 +1,242 @@
-# Saira Project - Architecture Documentation
+# Saíra: arquitetura
 
-> **Documento de Arquitetura Revisado** | Versão 2.0 | 07/02/2026  
-> Conformidade estrita com `claude.md` (Diretrizes de Desenvolvimento)
-
----
-
-## 1. Visão Geral
-
-### 1.1 Objetivo
-Ferramenta para padronização de dados de biodiversidade segundo o padrão **Darwin Core (DwC)**.
-
-### 1.2 Stack Tecnológico
-- **Framework**: Shiny (R) com `bslib` (Bootstrap 5, tema `flatly`)
-- **Estrutura**: Package-based (estilo `golem`)
-- **Testes**: `testthat` para lógica pura, `shinytest2` para integração (planejado)
-- **Internacionalização**: Bilingual (PT-BR / EN-US) via sistema `i18n` customizado
-
-### 1.3 Filosofia de Design
-- **Strict Modularization**: Sem lógica de negócios em `app_server.R`
-- **Pure Functions First**: Toda lógica reside em `utils_*.R`, módulos são apenas pontes
-- **Test-Driven**: Funções puras testadas antes de serem usadas em módulos
-- **Bilingual by Design**: Nenhum texto hardcoded, tudo via `tr(key, lang)`
+> Estado atual do app (rumo à v1.0.0). Revisado em 20/10/2026.
+> Este documento descreve o que o código faz hoje. O motivo e o histórico de
+> cada escolha estão em `docs/DECISIONS.md` (ADR-NNN).
 
 ---
 
-## 2. Estrutura de Arquivos (Package-based)
+## 1. Visão geral
+
+Saíra padroniza planilhas de biodiversidade para Darwin Core (DwC) e gera um
+DwC-A pronto para IPT, GBIF e SiBBr.
+
+- **Framework**: Shiny com `bslib` (Bootstrap 5), pacote R no estilo `golem`.
+- **Idiomas**: PT-BR, EN-US e ES (ADR-133), via `tr(key, lang)` e
+  `inst/extdata/i18n.json`.
+- **Testes**: `testthat` para funções puras e `testServer()`, `shinytest2` para
+  E2E no navegador (seção 8).
+
+Princípios:
+
+- Sem `global.R`, sem `library()` e sem `source()` em `R/` (ADR-001).
+  Dependências ficam no `DESCRIPTION` e o código usa `pkg::fun()` ou imports
+  roxygen.
+- Regra de negócio fica em funções puras `R/utils_*.R`. Os módulos `R/mod_*.R`
+  só ligam UI e reatividade a essas funções.
+- `R/app_server.R` só liga os módulos e repassa reactives.
+- Nenhum texto de UI fixo no código: tudo passa por `tr()`.
+
+---
+
+## 2. Estrutura de arquivos
+
 ```text
 saira/
-├── DESCRIPTION             # Metadados + Dependências (Imports/Suggests)
-├── NAMESPACE               # Auto-gerado via roxygen2
-├── LICENSE
-│
-├── app.R                   # Entry point: pkgload::load_all(); run_app()
+├── DESCRIPTION               # Metadados e dependências
+├── NAMESPACE, man/           # Gerados por roxygen2 (devtools::document())
+├── app.R                     # pkgload::load_all(); run_app()
 ├── R/
-│   ├── run_app.R           # Função exportada: run_app() -> shinyApp()
-│   ├── app_ui.R            # UI principal (page_navbar)
-│   ├── app_server.R        # Server orquestrador (apenas chamadas de módulos)
-│   ├── saira-package.R     # @importFrom declarations (roxygen2-managed)
-│   │
-│   ├── mod_upload.R        # Módulo: Upload de arquivos CSV
-│   ├── mod_mapping.R       # Módulo: Mapeamento de colunas DwC
-│   ├── mod_mapping_cards.R       # Sub-módulo: Card UI builder
-│   ├── mod_mapping_loading.R     # Sub-módulo: Auto-map loading modal
-│   ├── mod_mapping_basis_assistant.R  # Sub-módulo: BasisOfRecord assistant
-│   ├── mod_preview.R       # Módulo: Pré-visualização (leve, vetorizada)
-│   ├── mod_validate_names.R  # Módulo: Validação taxonômica
-│   ├── mod_validate_coords.R # Módulo: Validação geográfica
-│   ├── mod_wiki.R          # Módulo: Documentação de termos DwC
-│   ├── mod_help.R          # Módulo: Tutorial e ajuda
-│   │
-│   ├── utils_io.R          # 🔧 Puras: Leitura de arquivos (encoding, dates)
-│   ├── utils_dwc.R         # 🔧 Puras: Definições DwC, basisOfRecord vocab
-│   ├── utils_mapping.R     # 🔧 Puras: Scoring, sinônimos, sanitização, composição
-│   ├── utils_export.R      # 🔧 Puras: Processamento para exportação
-│   ├── utils_preview.R     # 🔧 Puras: Preview readiness, download validation
-│   ├── utils_common.R      # 🔧 Puras: Helpers compartilhados (is_blank_value)
-│   ├── utils_coords.R      # 🔧 Puras: Validação de coordenadas (CoordinateCleaner)
-│   ├── utils_taxadb.R      # 🔧 Puras: Validação taxonômica via taxadb
-│   ├── utils_i18n.R        # 🔧 Puras: Sistema de tradução (tr())
-│   ├── utils_rostrum_engine.R    # 🔧 Puras: Motor auto-mapping (multi-stage)
-│   ├── utils_rostrum_db.R        # 🔧 Puras: Persistência SQLite do Rostrum
-│   ├── utils_rostrum_templates.R # 🔧 Puras: Import/export de templates
-│   ├── utils_rostrum_contracts.R # 🔧 Puras: Validação de contratos (data frames)
-│   │
-│   └── data_dictionary.R   # 📚 Loader do dicionário i18n (inst/extdata/i18n.json)
-│
-├── tests/
-│   ├── testthat.R          # Test runner
-│   └── testthat/           # 31 arquivos de teste (utils, modules, e2e, perf)
-│
+│   ├── run_app.R, app_ui.R, app_server.R, saira-package.R
+│   ├── mod_upload.R          # Início: CSV/TSV/TXT/XLSX, Camtrap DP e Wildlife Insights (.zip)
+│   ├── mod_mapping*.R        # Mapeamento: cards, loading, assistentes basisOfRecord e establishmentMeans
+│   ├── mod_preview.R         # Pré-visualização: tabela e modo Problemas com correção de célula
+│   ├── mod_validate_names*.R # Nomes
+│   ├── mod_validate_coords.R # Coordenadas
+│   ├── mod_sensitive_coords.R  # Generalização de espécies sensíveis
+│   ├── mod_export.R          # Exportação: resumo, alertas e bloqueios
+│   ├── mod_export_download.R # Exportação: download do DwC-A e do arquivo privado
+│   ├── mod_wiki.R, mod_help.R
+│   ├── utils_*.R             # Funções puras (tabela abaixo)
+│   └── data_dictionary.R     # Loader com cache do i18n.json
 ├── inst/
-│   ├── extdata/            # Dados estáticos
-│   │   ├── i18n.json       # Dicionário de traduções (PT/EN)
-│   │   ├── dwc_terms.rds   # Vocabulário DwC
-│   │   ├── dwc_synonyms_v1.rds  # Tabela de sinônimos
-│   │   └── country_aliases.rds  # Aliases de nomes de países
-│   └── app/www/            # 🎨 Assets estáticos (CSS, JS, images)
-│
-└── man/                    # Documentação (gerada via roxygen2)
+│   ├── extdata/              # Dados embarcados (seção 6)
+│   └── app/www/              # CSS (fontes modulares + bundle custom.css), JS, imagens
+├── data-raw/                 # Scripts que geram dados embarcados e o bundle CSS
+├── scripts/release_gate.R    # Gate local antes de uma release (seção 8)
+├── tests/testthat/           # Testes, fixtures e setup.R
+└── website/                  # Site de ajuda em Quarto (PT, EN, ES)
 ```
+
+| Área | Arquivos `R/utils_*.R` |
+|---|---|
+| Leitura | `utils_io.R`, `utils_camtrap.R` |
+| DwC e vocabulário | `utils_dwc.R`, `utils_vocabulary.R` |
+| Mapeamento (Rostrum) | `utils_mapping.R`, `utils_rostrum_engine.R`, `utils_rostrum_db.R`, `utils_rostrum_templates.R`, `utils_rostrum_contracts.R`, `utils_oceanic_islands.R` |
+| Pré-visualização | `utils_preview.R`, `utils_preview_fix.R` |
+| Nomes | `utils_taxadb.R`, `utils_brproviders.R`, `utils_threat_status.R`, `utils_invasive.R`, `utils_species_photos.R` |
+| Coordenadas | `utils_coords.R`, `utils_coords_run.R`, `utils_coords_utm.R` |
+| Generalização | `utils_sensitive.R` |
+| Exportação | `utils_export.R`, `utils_export_summary.R` |
+| Comum | `utils_common.R`, `utils_i18n.R`, `utils_icons.R`, `utils_credits.R`, `utils_version.R` |
+
+O motor de mapeamento está descrito em `docs/rostrum_engine.md`.
 
 ---
 
-## 3. Decisões de Arquitetura Críticas
+## 3. Fluxo de dados
 
-### 3.1 ❌ **ELIMINADO: `global.R`**
-
-**Problema identificado**: `global.R` com `library()` conflita com estrutura de pacote.
-
-**Solução adotada**:
-1. **Dependências**: Declaradas no `DESCRIPTION` (seção `Imports`)
-2. **Uso no código**: Sempre via `::` (ex: `dplyr::mutate()`)
-3. **Dados estáticos**: Carregados via `sysdata.rda` (ver seção 5.2)
-```r
-# ❌ ANTES (global.R - REMOVIDO)
-library(shiny)
-library(dplyr)
-dwc_terms <- readRDS("data/dwc_terms.rds")
-
-# ✅ AGORA (sem global.R)
-# - Pacotes chamados via :: no código
-# - dwc_terms disponível internamente via sysdata.rda
-```
-
----
-
-### 3.2 🎯 **SEPARAÇÃO: Preview (Fast) vs Export (Complete)**
-
-**Contexto**: Com datasets de 99k+ registros, processar tudo para preview trava a UI.
-
-**Estratégia implementada**:
-
-| Operação | Onde | Função | Estratégia |
-|----------|------|--------|------------|
-| **Preview** | `mod_preview.R` | `prepare_preview()` | Vetorização pura, sem loops |
-| **Export** | `utils_export.R` | `process_for_export()` | Processamento completo (ISO dates, UUIDs) |
-
-**Fluxo correto**:
-```r
-# R/mod_preview.R (apenas ponte)
-mod_preview_server <- function(id, mapped_data, lang_r) {
-  moduleServer(id, function(input, output, session) {
-    
-    # Preview: Primeiras 100 linhas, vetorizado
-    preview_df <- reactive({
-      req(mapped_data())
-      head(mapped_data(), 100)  # Sem processamento pesado
-    })
-    
-    output$table <- DT::renderDataTable({ preview_df() })
-    
-    # Export: Processamento completo via função pura
-    output$download <- downloadHandler(
-      filename = function() paste0("dwc_export_", Sys.Date(), ".csv"),
-      content = function(file) {
-        full_data <- process_for_export(mapped_data())  # utils_export.R
-        readr::write_csv(full_data, file)
-      }
-    )
-    
-    return(preview_df)  # Retorno explícito
-  })
-}
-```
-```r
-# R/utils_export.R (lógica pura, testável)
-#' Process data for DwC-compliant export
-#' @param df Data frame with mapped columns
-#' @return Data frame with ISO dates, UUIDs, cleaned separators
-#' @export
-process_for_export <- function(df) {
-  df <- fix_dates_to_iso(df)           # DD/MM/YYYY -> YYYY-MM-DD
-  df <- clean_coordinate_separators(df) # "," -> "."
-  df <- add_occurrence_ids(df)         # Gera UUIDs se ausentes
-  return(df)
-}
-```
-
-**Mascaramento de espécies sensíveis (ADR-090, ADR-092)**: generalização
-graduada pelo método de 4 categorias do Chapman 2020 (GBIF). A decisão por
-espécie nasce na aba Validação > Nomes — o auto-match da Lista Nacional MMA
-(`inst/extdata/sensitive_species.rds`, com `category` VU/EN/CR/CR (PEX))
-mesclado às marcações do pesquisador (pill clicável + modal marcar/desmarcar +
-categoria). Essas decisões fluem via `attr(result_r, "sensitivity_payload")`
-(mesmo padrão de `review_export_payload`), `app_server` repassa
-`sensitivity_payload_r` ao `mod_preview`. Na Pré-visualização um painel
-escolhe o esquema (`conservador` padrão / `cat1_omit` / `cautela`) e pode
-desativar. No handler de download, após `process_for_export_with_unmapped()`,
-`mask_sensitive_coordinates(df, decisions, scheme, enabled, lang)`
-(`R/utils_sensitive.R`, função pura) generaliza lat/lon na grade que a
-categoria mapeia, preenche `dataGeneralizations` / `informationWithheld` /
-`coordinateUncertaintyInMeters` / `coordinatePrecision` e substitui os campos
-verbatim/locality que reverteriam a generalização (Chapman sec. 3). As
-coordenadas reais saem num `sensitive_real_coords_<data>.csv` separado no ZIP
-(chaveado por `occurrenceID`, agora com `category`); sem registro sensível ou
-com masking desativado o ZIP é byte-idêntico ao anterior. `sensitive_category_for()`
-também alimenta a pill na aba Validação > Nomes.
-
-**Benefício**: Toda lógica de export é testável fora do Shiny:
-```r
-# tests/testthat/test-utils-export.R
-test_that("Export converts Brazilian dates to ISO", {
-  input <- data.frame(eventDate = "25/12/2023")
-  result <- process_for_export(input)
-  expect_equal(result$eventDate, "2023-12-25")
-})
-```
-
-#### 3.2.1 Bundle ZIP do export (ADR-087)
-
-A partir da v0.2.2, o `downloadHandler` em `mod_preview.R` não emite mais
-um único `.csv`. Emite `dwc_export_<data>.zip` contendo TRÊS arquivos
-montados na pasta tmp e zipados via `zip::zipr()`:
-
-| Arquivo | Função geradora | Propósito |
-|---|---|---|
-| `dwc_export_<data>.csv` | `process_for_export_with_unmapped()` + `readr::write_csv(na = "")` | IPT-ready, UTF-8 sem BOM, com colunas brutas não-mapeadas preservadas no fim |
-| `dwc_export_<data>.xlsx` | `write_xlsx_text_only()` (via `writexl::write_xlsx`) | Excel-safe (todas células coercidas a `character` antes da escrita), sobrevive duplo-clique |
-| `mapping_guide_<data>.txt` | `build_mapping_guide_txt()` | Texto plano dual-purpose: legível por humano + parseável por Saíra (header mágico `# saira:mapping:v1`) |
-
-O `mapping_guide.txt` viabiliza um **round-trip de mapeamento via aliases**:
-quando subido na aba Início (mesmo dropzone do CSV de dados) ou via botão
-**Importar modelo** na sidebar do Mapeamento, o app detecta o magic header,
-parseia os pares `Coluna -> Termo` e popula `rostrum_aliases` (scope=personal,
-confidence=1.0) via `import_mapping_guide_to_aliases()`. Aliases ficam no
-`rostrum.sqlite` local do usuário e são consultados pelo motor em todo
-automap subsequente — próximas planilhas com colunas de mesmo nome ganham
-badge **ALIAS**.
-
-**Crítico**: o hidden `downloadButton` (wrapper `display: none;`) precisa
-de `shiny::outputOptions(output, "download_real", suspendWhenHidden = FALSE)`
-explícito após a registração do handler. Sem isso, o `<a href>` fica vazio
-e o navegador baixa a página atual do app como `.csv` (mesmo padrão usado
-em `mod_mapping.R:553` para `file_uploaded`). Veja LESSONS.md.
-
----
-
-### 3.3 📊 **ORGANIZAÇÃO: Dados Estáticos**
-
-**Problema identificado**: Redundância entre `data/`, `R/data_*.R` e `global.R`.
-
-**Solução documentada**:
-
-| Tipo de Dado | Localização | Formato | Quando Usar |
-|--------------|-------------|---------|-------------|
-| **Vocabulário DwC** | `inst/extdata/dwc_terms.rds` | RDS | Definições de termos DwC, cached em memória |
-| **Sinônimos** | `inst/extdata/dwc_synonyms_v1.rds` | RDS | Tabela de sinônimos para auto-mapping |
-| **Aliases de Países** | `inst/extdata/country_aliases.rds` | RDS | Nomes alternativos para conversão ISO3 |
-| **Dicionário i18n** | `inst/extdata/i18n.json` | JSON | Traduções PT/EN (carregado por `data_dictionary.R`) |
-
-**Carregamento com cache em memória**:
-```r
-# Padrão ADR-014 (create_rds_cache factory): load_dwc_terms_rds(), coords_load_aliases(), etc.
-# Cache na primeira chamada, retorna da memória nas subsequentes.
-dwc_terms_cache <- create_rds_cache("dwc_terms")  # Factory da utils_common.R
-
-load_dwc_terms_rds <- function(force = FALSE) {
-  if (!force && !is.null(dwc_terms_cache$get())) {
-    return(dwc_terms_cache$get())
-  }
-  path <- system.file("extdata", "dwc_terms.rds", package = "saira")
-  dict <- readRDS(path)
-  dwc_terms_cache$set(dict, path = path)
-  dict
-}
-```
-
----
-
-### 3.4 Guardrails de UI: caixas, navbar e indicadores de dropdown
-
-**Contexto**: Regressões visuais mostraram instabilidade em navegação, alinhamento de header e caixas de status.
-
-**Regras obrigatórias**:
-- Caixas de status/informação (`alert`, `notification` e caixas de suporte) não devem usar borda grossa em apenas um lado.
-  Usar borda fina completa com fundo semântico.
-- Links do navbar e seletor de idioma devem manter alinhamento vertical consistente e espaçamento horizontal mínimo entre itens.
-- Indicador de dropdown em CSS não deve usar glifo Unicode literal sujeito a corrupção de encoding.
-  Preferir escape CSS (`\25BE`) ou ícone em SVG/background-image.
-
-**Consequência arquitetural**: estas regras são contrato de estabilidade visual e devem ser tratadas como regressão quando violadas.
-
----
-
-## 4. Fluxo de Dados (Chain of Reactivity)
-
-### 4.1 Diagrama de Comunicação
 ```mermaid
 graph LR
-    A[mod_upload] -->|reactive: raw_data| B[mod_mapping]
-    B -->|reactive: mapped_data| C[mod_preview]
-    B -->|reactive: mapped_data| D[mod_validate_names]
-    B -->|reactive: mapped_data| E[mod_validate_coords]
-    
-    style A fill:#3498db,stroke:#2c3e50,color:#fff
-    style B fill:#9b59b6,stroke:#2c3e50,color:#fff
-    style C fill:#2ecc71,stroke:#2c3e50,color:#fff
-    style D fill:#e74c3c,stroke:#2c3e50,color:#fff
-    style E fill:#e74c3c,stroke:#2c3e50,color:#fff
+    U[mod_upload] -->|raw_data| M[mod_mapping]
+    M -->|preview_data_r, processed_data_r| P[mod_preview]
+    P -->|edited_data_r| N[mod_validate_names]
+    P -->|edited_data_r| C[mod_validate_coords]
+    P -->|edited_data_r| G[mod_sensitive_coords]
+    P -->|edited_data_r| E[mod_export]
+    N -->|payloads| G
+    C -->|payloads| G
+    N -->|payloads| E
+    C -->|payloads| E
+    G -->|payload| E
+    E -.->|export_signal_r| M
 ```
 
-### 4.2 Implementação no Orquestrador
-```r
-# R/app_server.R (APENAS orquestração, zero lógica de negócios)
-app_server <- function(input, output, session) {
-  
-  # Reactive: Idioma selecionado (com debounce inteligente)
-  lang_r <- reactive(input$lang_switch)
-  
-  # Data Flow: Chain of Reactivity
-  raw_data       <- mod_upload_server("upload", lang_r)
-  mapping_result <- mod_mapping_server("mapping", raw_data, lang_r)
-  
-  # mapping_result é uma named list de reactives (ADR-054):
-  #   processed_data_r, preview_data_r, validation_gate_r,
-  #   validation_gate_coords_r, rostrum_decisions_r, etc.
-  
-  mod_preview_server("preview", mapping_result$preview_data_r, lang_r,
-    download_data_r = mapping_result$processed_data_r)
-  mod_validate_names_server("validate_names", mapping_result$processed_data_r, lang_r,
-    validation_gate_r = mapping_result$validation_gate_r)
-  mod_validate_coords_server("validate_coords", mapping_result$processed_data_r, lang_r,
-    validation_gate_r = mapping_result$validation_gate_coords_r)
-  
-  # Wiki e Help não dependem de dados
-  mod_wiki_server("wiki", lang_r)
-  mod_help_server("help", lang_r)
-}
-```
-
-**Princípios obedecidos**:
-1. ✅ Sem `library()` (pacote carregado via `DESCRIPTION`)
-2. ✅ Sem lógica de negócios (apenas chamadas de módulos)
-3. ✅ Reactives passados como **expressões** (`raw_data`), não valores (`raw_data()`)
-4. ✅ `mod_mapping` retorna **named list** de reactives (ADR-054)
+- `mod_mapping_server()` devolve uma lista nomeada de reactives (ADR-054):
+  `processed_data_r` (quadro completo), `preview_data_r` (100 primeiras linhas),
+  `validation_gate_r`, `validation_gate_coords_r`, `map_values_r`,
+  `custom_values_r`, `reset_signal_r` e outros.
+- A Pré-visualização aplica as correções de célula sobre o quadro mapeado.
+  `attr(preview_r, "edited_data_r")` alimenta todas as abas seguintes.
+- Nomes e Coordenadas são validações que o usuário dispara por botão. As
+  decisões saem como atributos do retorno: `review_export_payload`,
+  `sensitivity_payload`, `conservation_payload`, `coords_correction_payload`,
+  `country_fill_payload`.
+- A Generalização lê as marcações e correções acima e devolve a decisão de
+  publicação. A Exportação aplica todos os payloads no arquivo.
+- `reset_signal_r` muda num novo upload ou num reset confirmado do Mapeamento.
+  As abas seguintes descartam então as decisões do conjunto anterior.
+- O Rostrum só aprende aliases depois de uma exportação com sucesso
+  (`export_signal_r`, ADR-115).
+- Shiny suspende outputs de abas ocultas, mas não observers (ADR-114). Por
+  isso as abas com observers pesados recebem `active_r` e pulam trabalho quando
+  ocultas.
 
 ---
 
-## 5. Sistema de Dependências
+## 4. Abas
 
-### 5.1 DESCRIPTION (Configuração Completa)
-```r
-Package: saira
-Title: Biodiversity Data Standardization to Darwin Core
-Version: 0.1.0
-Authors@R: person("Rogério", "Nunes Oliveira", email = "rogerio.onza@outlook.com", role = c("aut", "cre"))
-Description: Shiny application for standardizing biodiversity datasets to the
-    Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools
-    for data validation, column mapping, and taxonomic verification.
-License: GPL-3
-Encoding: UTF-8
-Depends: R (>= 4.1.0)
-RoxygenNote: 7.3.3
-
-Imports:
-    shiny (>= 1.7.0),
-    htmltools,
-    bslib (>= 0.5.0),
-    readr (>= 2.1.0),
-    stringr (>= 1.5.0),
-    taxadb (>= 0.2.0),
-    CoordinateCleaner (>= 3.0.0),
-    countrycode (>= 1.6.0),
-    sf (>= 1.0.0),
-    rnaturalearth (>= 1.0.0),
-    rnaturalearthdata (>= 1.0.0),
-    rnaturalearthhires (>= 1.0.0),
-    DT (>= 0.28),
-    leaflet (>= 2.1.0),
-    ids (>= 1.0.0),
-    jsonlite (>= 1.8.0),
-    DBI (>= 1.0.0),
-    RSQLite (>= 2.2.0),
-    digest (>= 0.6.0),
-    withr (>= 2.5.0)
-
-Suggests:
-    testthat (>= 3.0.0),
-    shinytest2 (>= 0.3.0),
-    devtools,
-    future,
-    furrr,
-    roxygen2,
-    pkgload
-```
-
-### 5.2 Uso Correto no Código
-```r
-# ✅ CORRETO: Uso explícito com ::
-validate_scientific_names <- function(names_vector) {
-  db <- taxadb::td_create("gbif")
-  results <- taxadb::filter_name(names_vector, provider = "gbif", db = db)
-  
-  cleaned <- results |>
-    dplyr::filter(!is.na(scientificName)) |>
-    dplyr::select(scientificName, taxonomicStatus, acceptedNameUsageID)
-  
-  return(cleaned)
-}
-
-# ❌ ERRADO: Nunca faça isso em pacotes
-library(taxadb)  # Proibido em R/*.R
-validate_names <- function(x) filter_name(x)  # Namespace poluído
-```
+| # | Tab ID | Módulo | Responsabilidade |
+|---|---|---|---|
+| 1 | `upload` | `mod_upload` | Leitura com detecção de encoding e delimitador; Camtrap DP e Wildlife Insights |
+| 2 | `mapping` | `mod_mapping` | Colunas para termos DwC, valores fixos, auto-map do Rostrum, guia de mapeamento |
+| 3 | `preview` | `mod_preview` | Tabela DwC e modo Problemas com correção de célula (ADR-150) |
+| 4 | `validate_names` | `mod_validate_names` | Nomes (Flora BR, Fauna BR, GBIF), ameaça MMA/IUCN, invasoras, marcação de sensíveis |
+| 5 | `validate_coords` | `mod_validate_coords` | Coordenadas: CoordinateCleaner, troca lat/lon, país |
+| 6 | `sensitive_coords` | `mod_sensitive_coords` | Generalização por espécie (Chapman 2020) com mapa (ADR-100) |
+| 7 | `export` | `mod_export` | Resumo, alertas, bloqueios e download (ADR-103) |
+| - | `wiki` | `mod_wiki` | Termos DwC |
+| - | `help` | `mod_help` | Ajuda e créditos |
 
 ---
 
-## 6. Tabs da Aplicação (UI Structure)
+## 5. Exportação
 
-| # | Tab ID | Módulo | Responsabilidade | Retorno |
-|---|--------|--------|------------------|---------|
-| 1 | `upload` | `mod_upload` | Importação CSV com detecção de encoding | `reactive(raw_data)` |
-| 2 | `mapping` | `mod_mapping` | Mapeamento de colunas para termos DwC | `reactive(mapped_data)` |
-| 3 | `preview` | `mod_preview` | Visualização rápida + Download completo | `reactive(preview_data)` |
-| 4a | `validate_names` | `mod_validate_names` | Validação taxonômica via taxadb (GBIF/ITIS/COL/NCBI) | `reactive(validation_report)` |
-| 4b | `validate_coords` | `mod_validate_coords` | Validação geográfica (WGS84, outliers) | `reactive(coord_issues)` |
-| 5 | `wiki` | `mod_wiki` | Documentação interativa de termos DwC | - |
-| 6 | `help` | `mod_help` | Tutorial do sistema | - |
+O download fica na aba Exportação (ADR-103), não na Pré-visualização.
+`mod_export_download.R` monta o arquivo a partir de `edited_data` e aplica os
+payloads de nome, coordenada, país, generalização e status de conservação. O
+bloqueio do download lê o mesmo arquivo que o download escreve (ADR-165).
 
-**Nota sobre separação de validações**: 
-- Validação taxonômica (API calls, string matching) tem performance diferente de validação de coordenadas (geometria, matemática).
-- Separar em tabs permite feedback granular e não bloqueia a UI.
+O ZIP `<slug>-dwc-archive.zip` contém (nomes em `export_bundle_filenames()`):
 
----
+| Arquivo | Gerador | Propósito |
+|---|---|---|
+| `occurrence.txt` | `process_for_export_with_unmapped()` | Core DwC-A, UTF-8 |
+| `meta.xml` | `build_meta_xml()` | Descritor do arquivo |
+| `eml.xml` | `build_eml_xml()` | Metadados: título, licença, cobertura, nota de sensibilidade |
+| `<slug>-occurrences.xlsx` | `write_xlsx_text_only()` | Cópia para Excel, todas as células como texto; omitida acima do limite de linhas do Excel |
+| `<slug>-mapping-guide.txt` | `build_mapping_guide_txt()` | Guia legível e reimportável (cabeçalho `# saira:mapping:v1`) |
 
-## 7. Testing Strategy
+**Arquivo privado (ADR-163)**: quando há registro sensível generalizado, o ZIP
+só leva a coordenada generalizada (`mask_sensitive_coordinates()` em
+`utils_sensitive.R`). As coordenadas reais saem em
+`<slug>-sensitive-coords.xlsx`, num download separado, fora do ZIP.
 
-### 7.1 Hierarquia de Testes
-```text
-tests/testthat/
-├── test-utils-io.R           # Prioridade 1: Leitura de arquivos
-│   ├── Encoding detection (UTF-8, Latin1, Windows-1252)
-│   ├── Date parsing (DD/MM/YYYY -> YYYY-MM-DD)
-│   └── Delimiter detection (,; tab)
-│
-├── test-utils-dwc.R          # Prioridade 1: Regras DwC
-│   ├── Coordinate validation (-90 to 90 Lat, -180 to 180 Lon)
-│   ├── Date format validation (ISO 8601)
-│   └── Unique occurrenceID check
-│
-├── test-utils-export.R       # Prioridade 2: Processamento de export
-│   ├── ISO date conversion
-│   ├── UUID generation
-│   └── Separator cleaning (comma to dot in decimals)
-│
-├── test-utils-taxadb.R       # Prioridade 2: Validação taxonômica
-│   ├── GBIF name matching
-│   ├── Fuzzy matching tolerance
-│   └── Synonym resolution
-│
-└── test-utils-i18n.R         # Prioridade 3: Sistema de tradução
-    ├── Key existence for PT/EN
-    ├── Missing translation detection
-    └── tr() function correctness
-```
+**Guia de mapeamento**: o usuário pode reimportar o guia no Início ou no botão
+Importar modelo do Mapeamento. O app restaura os cards e grava aliases
+pessoais em `rostrum.sqlite` via `import_mapping_guide_to_aliases()`.
 
-### 7.2 Exemplo de Teste Robusto
-```r
-# tests/testthat/test-utils-dwc.R
-test_that("validate_coords rejects out-of-bounds coordinates", {
-  # Arrange
-  input_df <- data.frame(
-    decimalLatitude = c(-23.5, 91, -100, 0),
-    decimalLongitude = c(-46.6, 0, 0, 200)
-  )
-  
-  # Act
-  result <- validate_coords(input_df)
-  
-  # Assert
-  expect_equal(result$valid, c(TRUE, FALSE, FALSE, FALSE))
-  expect_match(result$error[2], "Latitude.*range")
-  expect_match(result$error[4], "Longitude.*range")
-})
-
-test_that("fix_dates_to_iso handles Brazilian format", {
-  input <- data.frame(eventDate = c("25/12/2023", "01/02/2024", NA))
-  result <- fix_dates_to_iso(input)
-  
-  expect_equal(result$eventDate[1], "2023-12-25")
-  expect_equal(result$eventDate[2], "2024-02-01")
-  expect_true(is.na(result$eventDate[3]))
-})
-```
-
-### 7.3 Cobertura de Código
-```r
-# Verificar cobertura
-covr::package_coverage()
-
-# Meta: >80% de cobertura nas utils_*.R
-# Meta: >60% de cobertura geral (módulos Shiny são mais difíceis)
-```
+**Crítico**: o `downloadButton` oculto precisa de
+`shiny::outputOptions(output, "download_real", suspendWhenHidden = FALSE)`.
+Sem isso o `<a href>` fica vazio e o navegador baixa a página do app. Veja
+`docs/LESSONS.md`.
 
 ---
 
-## 8. Sistema de Internacionalização (i18n)
+## 6. Dados embarcados e estado local
 
-### 8.1 Arquitetura
-```r
-# R/data_dictionary.R (base de traduções)
-i18n_dict <- list(
-  # Upload module
-  upload_title = list(
-    pt = "Carregar Dados",
-    en = "Upload Data"
-  ),
-  upload_help = list(
-    pt = "Selecione um arquivo CSV com seus dados de biodiversidade",
-    en = "Select a CSV file with your biodiversity data"
-  ),
-  
-  # Validation messages
-  err_invalid_coords = list(
-    pt = "Coordenadas fora do intervalo válido (Lat: -90 a 90, Lon: -180 a 180)",
-    en = "Coordinates out of valid range (Lat: -90 to 90, Lon: -180 to 180)"
-  ),
-  
-  # DwC terms (example)
-  dwc_scientificName = list(
-    pt = "Nome Científico",
-    en = "Scientific Name"
-  )
-)
-```
-```r
-# R/utils_i18n.R (função de tradução)
-#' Translate a key to current language
-#' @param key Character. Key from i18n_dict
-#' @param lang Character. "pt" or "en"
-#' @return Character. Translated string
-#' @export
-tr <- function(key, lang = "en") {
-  # Fallback para inglês se chave não existir
-  if (!key %in% names(i18n_dict)) {
-    warning(paste("Translation key not found:", key))
-    return(paste0("[", key, "]"))
-  }
-  
-  translation <- i18n_dict[[key]][[lang]]
-  
-  if (is.null(translation)) {
-    warning(paste("Translation missing for", key, "in", lang))
-    return(i18n_dict[[key]][["en"]])  # Fallback para inglês
-  }
-  
-  return(translation)
-}
-```
+| Arquivo em `inst/extdata/` | Conteúdo |
+|---|---|
+| `dwc_terms.rds`, `dwc_full_catalog.rds` | Termos DwC e catálogo completo |
+| `dwc_synonyms_v1.rds` | Sinônimos de campo para o Rostrum |
+| `vocabulary_values.csv` | Valores de vocabulário controlado |
+| `country_aliases.rds`, `ne_land_10m_americas.rds` | Países e massa de terra para Coordenadas |
+| `sensitive_species.rds` | Lista MMA de espécies ameaçadas, com categoria |
+| `invasive_species.rds` | Espécies exóticas invasoras (Instituto Hórus 2023) |
+| `brproviders/` | Snapshot da Flora e da Fauna do Brasil (ADR-153) |
+| `camtrap-dp/` | Esquemas Camtrap DP 1.0, 1.0.1 e 1.0.2 |
+| `i18n.json` | Dicionário de tradução |
 
-### 8.2 Uso em Módulos
-```r
-# R/mod_upload.R
-mod_upload_ui <- function(id, lang = "en") {
-  ns <- NS(id)
-  
-  tagList(
-    h3(tr("upload_title", lang)),
-    p(tr("upload_help", lang)),
-    fileInput(ns("file"), tr("select_file", lang), accept = ".csv")
-  )
-}
-
-mod_upload_server <- function(id, lang_r) {
-  moduleServer(id, function(input, output, session) {
-    
-    raw_data <- reactive({
-      req(input$file)
-      
-      # Validação com mensagem bilíngue
-      shiny::validate(
-        need(
-          tools::file_ext(input$file$name) == "csv",
-          tr("err_invalid_format", lang_r())
-        )
-      )
-      
-      # Lógica pura
-      tryCatch(
-        read_biodiversity_csv(input$file$datapath),
-        error = function(e) {
-          showNotification(
-            tr("err_read_failed", lang_r()),
-            type = "error"
-          )
-          NULL
-        }
-      )
-    })
-    
-    return(raw_data)  # Retorno explícito
-  })
-}
-```
+- `create_rds_cache()` (ADR-014, `utils_common.R`) guarda cada dado em memória
+  na primeira leitura. `.onLoad()` pré-carrega o i18n, os termos DwC, as
+  invasoras e os aliases de país.
+- As consultas de rede (IUCN via GBIF) ficam em cache só na memória do
+  processo. Um cache em disco publicaria um status de ameaça velho.
+- O único estado persistente do usuário é `rostrum.sqlite` (aliases e
+  modelos), em `tools::R_user_dir("saira", "data")`. A variável
+  `SAIRA_DATA_DIR` troca essa pasta.
 
 ---
 
-## 9. Conformidade com `claude.md` (Checklist Final)
+## 7. Internacionalização (i18n)
 
-### ✅ Estrutura e Organização
-
-| Diretriz | Status | Evidência |
-|----------|--------|-----------|
-| Estrutura modular em `R/` | ✅ | 16 arquivos organizados por responsabilidade |
-| `app_server.R` como orquestrador puro | ✅ | Apenas chamadas de módulos, zero lógica |
-| Chain of Reactivity | ✅ | Dados fluem via reactives explícitos |
-| Funções puras em `utils_*.R` | ✅ | 5 arquivos de utils separados |
-| Sistema i18n com `tr()` | ✅ | `data_dictionary.R` + `utils_i18n.R` |
-| Testes unitários para utils | ✅ | 5 arquivos de teste (cobertura >80%) |
-
-### ✅ Boas Práticas de Código
-
-| Diretriz | Status | Evidência |
-|----------|--------|-----------|
-| Uso de `here::here()` | ✅ | Caminhos relativos em todo projeto |
-| Sem `setwd()` | ✅ | Não encontrado no código |
-| Sem `library()` em módulos | ✅ | Apenas `::` ou imports via roxygen2 |
-| Retornos explícitos em módulos | ✅ | Todos os módulos usam `return()` |
-| Validação com `shiny::validate()` | ✅ | Usado em todos os módulos reativos |
-| Feedback ao usuário (`shinyFeedback`) | ✅ | Avisos visuais em inputs problemáticos |
-
-### ✅ Performance e Escalabilidade
-
-| Diretriz | Status | Evidência |
-|----------|--------|-----------|
-| Dados estáticos carregados uma vez | ✅ | `dwc_terms.rds` via `sysdata.rda` |
-| Preview vetorizada (sem loops) | ✅ | `head()` + atribuição direta |
-| Export separado do preview | ✅ | `utils_export.R` com lógica isolada |
-| Sem operações pesadas no server | ✅ | Toda lógica em funções puras testáveis |
-
-### ✅ Dependências e Deployment
-
-| Diretriz | Status | Evidência |
-|----------|--------|-----------|
-| `DESCRIPTION` completo | ✅ | Todos os pacotes listados em `Imports` |
-| `NAMESPACE` gerado via roxygen2 | ✅ | `devtools::document()` |
-| Instalável via `remotes::install_github()` | ✅ | Estrutura de pacote completa |
-| Assets em `inst/app/www/` | ✅ | Acessíveis via `system.file()` |
+- `inst/extdata/i18n.json` tem um objeto por chave, com `pt`, `en` e `es`.
+  `load_i18n_dict()` (`data_dictionary.R`) valida as línguas e guarda o
+  dicionário em cache.
+- `tr(key, lang)`: chave ausente dá aviso e `[key]`; língua ausente dá aviso e
+  o texto em inglês.
+- `app_server.R` lê `input$lang_switch` com `debounce(150)`.
+- Código em `R/` usa escapes `\uXXXX` para texto não ASCII.
+  `test-ascii-source.R` protege essa regra.
 
 ---
 
-## 10. Execução e Deploy
+## 8. Testes e verificação
 
-### 10.1 Desenvolvimento Local
+| Camada | Onde | Como rodar |
+|---|---|---|
+| Funções puras | `test-utils-*.R` | `devtools::test()` |
+| Servidor de módulo | `test-mod-*.R` (`testServer()`) | `devtools::test()` |
+| Desempenho | `test-performance-regression.R` e testes marcados | `RUN_PERF=true` |
+| Navegador (E2E) | `test-e2e-flows.R` (`shinytest2`) | `RUN_E2E=true` e `NOT_CRAN=true` |
+| Gate local | `scripts/release_gate.R` | `Rscript scripts/release_gate.R` |
+
+- `tests/testthat/setup.R` define `SAIRA_DATA_DIR` numa pasta temporária. Assim
+  a suíte nunca escreve no `rostrum.sqlite` real.
+- `testServer()` não simula unbind e rebind de inputs no navegador. Mudanças de
+  idioma, cards e downloads precisam também do E2E.
+- A CI (`.github/workflows/R-CMD-check.yml`) roda `R CMD check` em PRs para
+  `main` e em pushes para `main`. Ela não roda `release_gate.R` nem o E2E:
+  rode os dois localmente antes de uma release.
+
+---
+
+## 9. Guardrails de UI
+
+As regras de caixas, navbar e seta de dropdown estão no ADR-040. Cores,
+tipografia e estados visuais estão em `docs/design.md`. Edite o CSS nas fontes
+modulares de `inst/app/www/css/` e gere o bundle com
+`Rscript data-raw/build_css.R`.
+
+---
+
+## 10. Execução
+
 ```r
-# Instalar dependências
-devtools::install_deps()
+# Desenvolvimento, na raiz do repositório
+pkgload::load_all(); run_app()
 
-# Carregar pacote
-devtools::load_all()
-
-# Rodar aplicação
-run_app()
-
-# Rodar testes
-devtools::test()
-
-# Verificar conformidade
-devtools::check()
+# Instalação como pacote
+remotes::install_github("rogerio-onza/saira")
+saira::run_app()
 ```
-
-### 10.2 Instalação como Pacote
-```r
-# Via GitHub
-remotes::install_github("seu_usuario/saira")
-
-# Uso
-library(saira)
-run_app()
-```
-
-### 10.3 Deploy em Servidor Shiny
-```r
-# shinyapps.io
-rsconnect::deployApp(
-  appDir = system.file("app", package = "saira"),
-  appName = "saira-biodiversity"
-)
-
-# Shiny Server (open-source)
-# Copiar o pacote instalado para /srv/shiny-server/saira/
-# Criar app.R que chama library(saira); run_app()
-```
-
----
-
-## 11. Roadmap de Melhorias
-
-### 11.1 Curto Prazo (Sprint Atual)
-- [ ] Adicionar `test-utils-taxadb.R`
-- [ ] Documentar todas as funções puras com roxygen2
-- [ ] Criar vignette "Getting Started"
-- [ ] Adicionar progresso com `shiny::Progress` em operações pesadas
-
-### 11.2 Médio Prazo (Próximo Mês)
-- [ ] Implementar `shinytest2` para testes E2E
-- [ ] Adicionar cache de validações taxonômicas (evitar re-consultas)
-- [ ] Suporte a múltiplos arquivos (batch processing)
-- [ ] Exportação em múltiplos formatos (CSV, Excel, JSON-LD)
-
-### 11.3 Longo Prazo (Roadmap)
-- [ ] Integração com APIs de repositórios (GBIF, SiBBr)
-- [ ] Modo "Expert" com edição manual de registros
-- [ ] Sistema de templates (salvar mapeamentos comuns)
-- [ ] Suporte a outros padrões (EML, ABCD)
-
----
-
-## 12. Contato e Contribuição
-
-**Mantenedor**: [Seu Nome]  
-**Repositório**: `https://github.com/seu_usuario/saira`  
-**Licença**: GPL-3
-
-### Como Contribuir
-1. Fork o repositório
-2. Crie uma branch: `git checkout -b feature/nova-funcionalidade`
-3. Siga as diretrizes do `claude.md`
-4. Escreva testes para novas funções
-5. Execute `devtools::check()` antes de submeter
-6. Abra um Pull Request
-
----
-
-**Última Revisão**: 07/02/2026  
-**Conformidade**: 100% com `claude.md` v2.0

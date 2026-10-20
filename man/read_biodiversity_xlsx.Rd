@@ -4,10 +4,13 @@
 \alias{read_biodiversity_xlsx}
 \title{Read the first sheet of an Excel .xlsx file as text}
 \usage{
-read_biodiversity_xlsx(file_path)
+read_biodiversity_xlsx(file_path, header = TRUE)
 }
 \arguments{
 \item{file_path}{Path to the .xlsx file}
+
+\item{header}{If FALSE, the first row is a data row and the columns are
+named col_1, col_2, ...}
 }
 \value{
 Data frame of character columns

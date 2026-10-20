@@ -15,6 +15,6 @@ Named list with `bbox` (named numeric vector: west/east/north/south)
 }
 \description{
 Reads `decimalLatitude`/`decimalLongitude` for the geographic bounding box
-and `eventDate` for the temporal range. Returns NA for any extent that
-cannot be derived from the data.
+and `eventDate` for the temporal range. Placeholder points and future dates
+are skipped. Returns NA for any extent that cannot be derived from the data.
 }
