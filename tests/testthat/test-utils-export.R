@@ -1468,3 +1468,20 @@ testthat::test_that("formula-like cells are found and get a fix (B48)", {
     testthat::expect_equal(p$type[p$row == 1L], "cell_formula")
     testthat::expect_equal(p$suggestion[p$row == 1L], "1+1")
 })
+
+testthat::test_that("unmapped text with a copy of the point gets the published value (AUD-02)", {
+    df_processed <- data.frame(scientificName = c("Panthera onca", "Panthera onca"),
+                               decimalLatitude = c("-23.6", ""), decimalLongitude = c("-46.6", ""),
+                               stringsAsFactors = FALSE)
+    raw <- data.frame(Especie = df_processed$scientificName,
+                      anotacao = c("GPS: -23.55052, -46.63331", "UTM 7400000.25 330000.75"),
+                      ponto = c("-23.55052,-46.63331", "ok"), stringsAsFactors = FALSE)
+    mv <- list(scientificName = "Especie")
+    # Row 2 was withheld: its point cannot be generalized, so the number goes.
+    points <- data.frame(decimalLatitude = c("-23.55052", "7400000.25"),
+                         decimalLongitude = c("-46.63331", "330000.75"), grid = c(0.1, 0.1))
+    out <- process_for_export_with_unmapped(df_processed, raw, mv,
+                                            sensitive_rows = 1:2, sensitive_points = points)
+    testthat::expect_equal(out$anotacao, c("GPS: -23.6, -46.6", "UTM  "))
+    testthat::expect_equal(out$ponto, c("-23.6,-46.6", "ok"))
+})

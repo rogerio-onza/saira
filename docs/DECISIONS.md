@@ -3146,3 +3146,17 @@ Formato: ADR leve (Architecture Decision Record).
   - Os dois downloads usam o mesmo passo de mascara (`prepare_masked_rows()`), entao a planilha tem os pontos que o zip generaliza. O bloqueio do Export vale para os dois.
   - O KPI Arquivos nao conta o arquivo privado.
 - **Consequencias**: quem quer os pontos reais precisa clicar no segundo botao. O zip baixado antes desta versao ainda tem o CSV privado.
+
+## ADR-164: A protecao segue o registro ate o arquivo publicado
+
+- **Data**: 2026-10-19
+- **Status**: Aceito. Revisa ADR-095 (sinal de `dataGeneralizations`) e B52 (ADR-161).
+- **Contexto**: a auditoria de 2026-10-16 achou tres caminhos que publicavam o ponto exato de uma especie protegida (AUD-01, AUD-02, AUD-03) e um poligono fora dos limites do mundo (AUD-17).
+- **Decisao**:
+  - A aba Generalizacao le os dados pelo mesmo passo do download, `apply_validation_payloads()`: revisao de nomes, rank, correcao de coordenadas, pais. A aba avalia o nome que o arquivo leva.
+  - `rekey_sensitivity_decisions()` copia a marca da aba Nomes para o nome corrigido. Quando um nome tem duas marcas, vale a que protege.
+  - So uma nota de coordenada conta como generalizacao anterior: a nota da Saira em pt, en ou es, ou "coordinates rounded to" do camtrapdp. Outra nota fica na frente da nota da Saira, separada por " | ".
+  - Uma linha que fica como esta (incerteza >= 1000 m ou nota de coordenada) perde os campos verbatim, e suas colunas nao mapeadas passam pela limpeza.
+  - Num texto ou JSON, um numero com mais casas que a grade e a menos de uma grade de um eixo recebe o valor publicado. O teste ignora o sinal, porque "23.55 S" tambem e o ponto. Uma celula que e so um numero fica: e o valor do proprio termo.
+  - Os cantos do poligono param em 90 e 180 graus.
+- **Consequencias**: um numero de outro dado perto do ponto tambem muda, como "23.5 C" numa grade de 1 grau. A protecao pesa mais que esse valor.

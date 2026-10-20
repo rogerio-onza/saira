@@ -407,3 +407,31 @@ testthat::test_that("the map overlay stays empty while the tab is hidden (ADR-11
         }
     )
 })
+
+testthat::test_that("the tab assesses the corrected name with its Names mark (AUD-01)", {
+    local_sensitive_fixture("Puma concolor")
+    df <- sample_occurrence_df()
+    df$scientificName[1:2] <- "Felis onca"
+    names_payload <- list(entries = data.frame(
+        query_name = "Felis onca", review_type = "correct", original_name = "Felis onca",
+        corrected_name = "Panthera onca", reason = "synonym",
+        reviewed_at = as.POSIXct("2026-10-16", tz = "UTC"), stringsAsFactors = FALSE
+    ))
+    marks <- data.frame(scientificName = "Felis onca", sensitive = TRUE, category = "VU",
+                        stringsAsFactors = FALSE)
+    shiny::testServer(
+        saira:::mod_sensitive_coords_server,
+        args = list(
+            data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en"),
+            sensitivity_payload_r = shiny::reactive(marks),
+            name_review_payload_r = shiny::reactive(names_payload)
+        ),
+        {
+            session$flushReact()
+            ov <- sensitive_species_overview()
+            testthat::expect_equal(ov$scientificName, "Panthera onca")
+            testthat::expect_equal(as.character(ov$category), "VU")
+        }
+    )
+})

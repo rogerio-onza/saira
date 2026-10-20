@@ -11,6 +11,7 @@ mod_sensitive_coords_server(
   sensitivity_payload_r = NULL,
   coords_correction_payload_r = NULL,
   country_fill_payload_r = NULL,
+  name_review_payload_r = NULL,
   reset_signal_r = NULL,
   active_r = NULL,
   on_navigate = NULL
@@ -30,6 +31,9 @@ sensitivity decisions from Validation > Names (researcher mark/unmark).}
 correction payload, applied so the preview matches the published point.}
 
 \item{country_fill_payload_r}{Optional reactive country-fill payload.}
+
+\item{name_review_payload_r}{Optional reactive Names-tab review payload,
+applied so the tab assesses the corrected names that the export writes.}
 
 \item{reset_signal_r}{Optional reactive reset signal from the mapping module.
 When it fires, module-local state and inputs are cleared.}
