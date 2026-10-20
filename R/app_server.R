@@ -182,7 +182,8 @@ app_server <- function(input, output, session) {
         # Its map path is observer-driven, and observers ignore tab visibility,
         # so without this every mapping edit rebuilds the whole mapped frame for
         # a map nobody is looking at.
-        active_r = shiny::reactive(identical(input$main_nav, "sensitive_coords"))
+        active_r = shiny::reactive(identical(input$main_nav, "sensitive_coords")),
+        on_navigate = navigate_to
     )
 
     # Export review + publish hub: the same validation/generalization payloads

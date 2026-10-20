@@ -85,6 +85,8 @@ restore_choice <- function(saved, choices) {
 #'   driven by observers, and observers are never suspended by tab visibility,
 #'   so without this every mapping edit pays a whole-dataset rebuild here.
 #'   Defaults to always-active when not supplied.
+#' @param on_navigate Optional callback `function(tab)` that switches the
+#'   top-level tab. The invalid-coordinate alert uses it to open Coordinates.
 #' @return Reactive list `{ levels, justification, review_date, enabled }`
 #'   consumed by the export (Preview tab).
 #' @export
@@ -93,7 +95,8 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                                         coords_correction_payload_r = NULL,
                                         country_fill_payload_r = NULL,
                                         reset_signal_r = NULL,
-                                        active_r = NULL) {
+                                        active_r = NULL,
+                                        on_navigate = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
@@ -610,6 +613,42 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                 shiny::uiOutput(ns("justification_warn"))
             )
 
+            # How the table works (Chapman 2020): a "?" beside the title opens
+            # it over the table, so it takes no room when closed.
+            about_row <- function(code, q_key, grid_key) {
+                shiny::tagList(
+                    shiny::span(class = "sc-about-code", code),
+                    shiny::span(tr(q_key, lang)),
+                    shiny::span(class = "sc-about-grid-value", tr(grid_key, lang))
+                )
+            }
+            about_tip <- shiny::tags$details(
+                class = "sc-about",
+                shiny::tags$summary(
+                    class = "sc-about-toggle",
+                    title = tr("sc_about_toggle", lang),
+                    `aria-label` = tr("sc_about_toggle", lang),
+                    "?"
+                ),
+                shiny::div(
+                    class = "sc-about-pop",
+                    shiny::p(class = "sc-about-text", tr("sc_about_text", lang)),
+                    shiny::div(
+                        class = "sc-about-grid",
+                        about_row("4.3", "sc_matrix_q43_short", "sc_about_g43"),
+                        about_row("4.4", "sc_matrix_q44_short", "sc_about_g44"),
+                        about_row("4.5", "sc_matrix_q45_short", "sc_about_g45"),
+                        about_row("\u2014", "sc_about_none", "sc_about_as_is")
+                    ),
+                    shiny::tags$a(
+                        class = "sc-about-ref",
+                        href = "https://doi.org/10.15468/doc-5jp4-5g10",
+                        target = "_blank", rel = "noopener",
+                        tr("sc_about_ref", lang)
+                    )
+                )
+            )
+
             # Each mode is a card: title, badge and one line on what it does.
             mode_label <- function(title_key, desc_key, recommended) {
                 shiny::tagList(
@@ -650,6 +689,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                         shiny::div(
                             class = "sc-matrix-head",
                             shiny::h2(class = "sc-matrix-title", tr("sc_matrix_title", lang)),
+                            about_tip,
                             shiny::span(class = "sc-matrix-hint", tr("sc_matrix_hint", lang))
                         ),
                         decision_table,
@@ -657,20 +697,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                     ),
                     shiny::uiOutput(ns("cat1_alert")),
                     exceptions_block,
-                    confirm_block,
-                    shiny::div(
-                        class = "sc-about",
-                        ph_icon("book-open"),
-                        shiny::div(
-                            shiny::p(class = "sc-about-text", tr("sc_about_text", lang)),
-                            shiny::tags$a(
-                                class = "sc-about-ref",
-                                href = "https://doi.org/10.15468/doc-5jp4-5g10",
-                                target = "_blank", rel = "noopener",
-                                tr("sc_about_ref", lang)
-                            )
-                        )
-                    )
+                    confirm_block
                 )
             )
         })
@@ -731,22 +758,38 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             lang <- lang_r()
             shiny::div(
                 class = "sc-precision-lock-alert",
-                ph_icon("lock"), " ",
                 if (n_locked > 0L) {
-                    shiny::span(
-                        class = "sc-precision-lock-text",
-                        sprintf(tr("sc_precision_lock_desc", lang), n_locked)
+                    shiny::div(
+                        class = "sc-precision-lock-row",
+                        ph_icon("lock"),
+                        shiny::span(shiny::tags$b(n_locked), " ", tr("sc_precision_lock_desc", lang)),
+                        shiny::span(
+                            class = "sc-precision-lock-tip", tabindex = "0",
+                            title = tr("sc_precision_lock_tip", lang),
+                            `aria-label` = tr("sc_precision_lock_tip", lang),
+                            ph_icon("info-circle")
+                        )
                     )
                 },
                 # B09/B23: a sensitive point the grid cannot move.
                 if (n_withheld > 0L) {
-                    shiny::span(
-                        class = "sc-precision-lock-text",
-                        sprintf(tr("sc_withheld_invalid_desc", lang), n_withheld)
+                    shiny::div(
+                        class = "sc-precision-lock-row is-invalid",
+                        ph_icon("triangle-exclamation"),
+                        shiny::span(shiny::tags$b(n_withheld), " ", tr("sc_withheld_invalid_desc", lang)),
+                        if (is.function(on_navigate)) {
+                            shiny::tagList(
+                                shiny::span(class = "sc-precision-lock-sep", `aria-hidden` = "true", "\u00B7"),
+                                shiny::actionLink(ns("go_fix_coords"), tr("sc_withheld_fix", lang))
+                            )
+                        }
                     )
                 }
             )
         })
+        shiny::observeEvent(input$go_fix_coords, {
+            if (is.function(on_navigate)) on_navigate("validate_coords")
+        }, ignoreInit = TRUE)
 
         output$border_alert <- shiny::renderUI({
             if (!identical(input$sensitive_mode %||% "publish", "generalize")) return(NULL)

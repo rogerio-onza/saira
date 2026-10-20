@@ -264,20 +264,15 @@
     "en": "Could not undo the learning.",
     "es": "No fue posible deshacer el aprendizaje."
   },
-  "export_bar_blocked": {
-    "pt": "%d pendência(s) bloqueiam o download",
-    "en": "%d item(s) block the download",
-    "es": "%d pendiente(s) bloquean la descarga"
-  },
   "export_download_blocked": {
     "pt": "Resolva as pendências da exportação antes de baixar o pacote.",
     "en": "Resolve the export pending items before you download the package.",
     "es": "Resuelva los pendientes de la exportación antes de descargar el paquete."
   },
-  "export_bar_ready": {
-    "pt": "Pronto para baixar",
-    "en": "Ready to download",
-    "es": "Listo para descargar"
+  "export_download_resolve": {
+    "pt": "Resolva as pendências",
+    "en": "Fix the items to review",
+    "es": "Resuelva los pendientes"
   },
   "export_blocked_missing": {
     "pt": "Termos obrigatórios faltando:",
@@ -2610,14 +2605,44 @@
     "es": "Esperando una decisión"
   },
   "sc_about_text": {
-    "pt": "A tabela vem de Chapman (2020), o guia do GBIF para publicar dados de espécies sensíveis. Responda às perguntas de cada grupo na ordem. O primeiro Sim define a grade: a coordenada publicada é arredondada para 0,1° (~11 km), 0,01° (~1 km) ou 0,001° (~100 m). Se as três respostas forem Não, as coordenadas saem como estão.",
-    "en": "The table comes from Chapman (2020), the GBIF guide to publishing sensitive species data. Answer each group's questions in order. The first Yes sets the grid: the published coordinate is rounded to 0.1° (~11 km), 0.01° (~1 km) or 0.001° (~100 m). If all three answers are No, the coordinates are published as they are.",
-    "es": "La tabla viene de Chapman (2020), la guía de GBIF para publicar datos de especies sensibles. Responda las preguntas de cada grupo en orden. El primer Sí define la grilla: la coordenada publicada se redondea a 0,1° (~11 km), 0,01° (~1 km) o 0,001° (~100 m). Si las tres respuestas son No, las coordenadas se publican tal como están."
+    "pt": "Responda por grupo, na ordem. O primeiro Sim define a grade.",
+    "en": "Answer by group, in order. The first Yes sets the grid.",
+    "es": "Responda por grupo, en orden. El primer Sí define la grilla."
+  },
+  "sc_about_toggle": {
+    "pt": "Como funciona a tabela",
+    "en": "How the table works",
+    "es": "Cómo funciona la tabla"
+  },
+  "sc_about_g43": {
+    "pt": "0,1° · ~11 km",
+    "en": "0.1° · ~11 km",
+    "es": "0,1° · ~11 km"
+  },
+  "sc_about_g44": {
+    "pt": "0,01° · ~1 km",
+    "en": "0.01° · ~1 km",
+    "es": "0,01° · ~1 km"
+  },
+  "sc_about_g45": {
+    "pt": "0,001° · ~100 m",
+    "en": "0.001° · ~100 m",
+    "es": "0,001° · ~100 m"
+  },
+  "sc_about_none": {
+    "pt": "três Não",
+    "en": "three No",
+    "es": "tres No"
+  },
+  "sc_about_as_is": {
+    "pt": "como está",
+    "en": "as is",
+    "es": "tal cual"
   },
   "sc_about_ref": {
-    "pt": "Chapman, A. D. (2020). Current Best Practices for Generalizing Sensitive Species Occurrence Data. GBIF Secretariat. doi:10.15468/doc-5jp4-5g10",
-    "en": "Chapman, A. D. (2020). Current Best Practices for Generalizing Sensitive Species Occurrence Data. GBIF Secretariat. doi:10.15468/doc-5jp4-5g10",
-    "es": "Chapman, A. D. (2020). Current Best Practices for Generalizing Sensitive Species Occurrence Data. GBIF Secretariat. doi:10.15468/doc-5jp4-5g10"
+    "pt": "Chapman (2020), guia do GBIF para espécies sensíveis",
+    "en": "Chapman (2020), the GBIF guide for sensitive species",
+    "es": "Chapman (2020), guía de GBIF para especies sensibles"
   },
   "sc_legend_area": {
     "pt": "Área de generalização",
@@ -2690,9 +2715,14 @@
     "es": "Los puntos ya están en la categoría menos agresiva y todavía cruzan la frontera. Revise las coordenadas o publique sin generalizar."
   },
   "sc_precision_lock_desc": {
-    "pt": "%d registro(s) mantidos na precisão real do dado: generalizar nunca aumenta a precisão (Chapman 2020). Inclui dados já generalizados pela fonte e casos em que o nível escolhido era mais fino que o dado.",
-    "en": "%d record(s) kept at the data's real precision: generalization never increases precision (Chapman 2020). Includes data already generalized by the source, and cases where the chosen level was finer than the data.",
-    "es": "%d registro(s) se mantuvieron en la precisión real del dato: generalizar nunca aumenta la precisión (Chapman 2020). Incluye datos ya generalizados por la fuente y casos en que el nivel elegido era más fino que el dato."
+    "pt": "registro(s) mantêm a precisão do dado original",
+    "en": "record(s) keep the precision of the original data",
+    "es": "registro(s) mantienen la precisión del dato original"
+  },
+  "sc_precision_lock_tip": {
+    "pt": "Generalizar nunca aumenta a precisão (Chapman 2020). O dado já era menos preciso que a grade ou já veio generalizado da fonte.",
+    "en": "Generalization never increases precision (Chapman 2020). The data was already coarser than the grid, or the source already generalized it.",
+    "es": "Generalizar nunca aumenta la precisión (Chapman 2020). El dato ya era menos preciso que la grilla o ya venía generalizado de la fuente."
   },
   "sensitive_eml_access_note": {
     "pt": "Este conjunto de dados contém %s registro(s) de espécies sensíveis cujas coordenadas foram generalizadas seguindo as melhores práticas do Chapman (2020). Os dados precisos podem ser disponibilizados sob solicitação ao publicador. Revisão da sensibilidade prevista para %s.",
@@ -4825,9 +4855,14 @@
     "es": "mar o fuera de un país"
   },
   "sc_withheld_invalid_desc": {
-    "pt": "%d registro(s) de espécie sensível têm coordenada inválida ou incompleta. O Saíra remove a coordenada na exportação e guarda o valor original no arquivo privado. Corrija na aba Coordenadas para generalizar.",
-    "en": "%d sensitive record(s) have an invalid or incomplete coordinate. Saíra removes the coordinate in the export and keeps the original value in the private file. Correct it in the Coordinates tab to generalize it.",
-    "es": "%d registro(s) de especie sensible tienen una coordenada inválida o incompleta. Saíra elimina la coordenada en la exportación y guarda el valor original en el archivo privado. Corríjala en la pestaña Coordenadas para generalizarla."
+    "pt": "registro(s) têm coordenada inválida",
+    "en": "record(s) have an invalid coordinate",
+    "es": "registro(s) tienen una coordenada inválida"
+  },
+  "sc_withheld_fix": {
+    "pt": "Corrigir em Coordenadas",
+    "en": "Correct in Coordinates",
+    "es": "Corregir en Coordenadas"
   },
   "preview_fix_pill_formula": {
     "pt": "Fórmula",

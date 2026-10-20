@@ -147,7 +147,7 @@ testthat::test_that("precision-lock banner appears when the chosen tier is finer
             banner <- output$precision_lock_alert
             banner_html <- if (is.list(banner)) banner$html else as.character(banner)
             testthat::expect_true(nzchar(banner_html))
-            testthat::expect_match(banner_html, "real precision", fixed = TRUE)
+            testthat::expect_match(banner_html, "keep the precision", fixed = TRUE)
         }
     )
 })
