@@ -802,6 +802,95 @@ testthat::test_that("WI projects.csv without a final newline reads without a war
     testthat::expect_true(all(obs$observationLevel == "event"))
 })
 
+testthat::test_that("wi_read_csv keeps the zeros of an identifier (AUD-07)", {
+    f <- withr::local_tempfile(fileext = ".csv")
+    writeLines(c("deployment_id,image_id,latitude", "001,000123,-8.5", "002,000124,"), f)
+    out <- saira:::wi_read_csv(f)
+    testthat::expect_identical(out$deployment_id, c("001", "002"))
+    testthat::expect_identical(out$image_id, c("000123", "000124"))
+    testthat::expect_identical(out$latitude, c("-8.5", NA))
+})
+
+testthat::test_that("wi_to_camtrap_csv reads every images file of the export (AUD-06)", {
+    fx <- wi_zip_fixture()
+    dest <- tempfile("wi_unzip_")
+    dir.create(dest)
+    utils::unzip(fx$zip, exdir = dest)
+    withr::defer(unlink(c(fx$dir, fx$zip, dest), recursive = TRUE))
+    # WI splits a large export. The second file here has one column less
+    # and a zero-padded image_id.
+    path <- file.path(dest, "images_2004252.csv")
+    lines <- readLines(path)
+    writeLines(lines[1:3], path)
+    second <- utils::read.csv(text = lines[c(1L, 4L, 5L)], colClasses = "character",
+                              check.names = FALSE)
+    second$image_id[second$image_id == "img-jaguar"] <- "000123"
+    second$highlighted <- NULL
+    utils::write.csv(second, file.path(dest, "images_2004252_2.csv"), row.names = FALSE, na = "")
+
+    norm_dir <- saira:::wi_to_camtrap_csv(dest, lang = "en")
+    obs <- utils::read.csv(file.path(norm_dir, "observations.csv"),
+                           colClasses = "character", na.strings = "")
+    testthat::expect_setequal(obs$mediaID, c("img-blank", "img-human", "000123", "img-unknown"))
+    testthat::expect_identical(obs$observationType[obs$mediaID == "000123"], "animal")
+})
+
+testthat::test_that("wi_to_camtrap_csv reads every sequences file of the export (AUD-06)", {
+    fx <- wi_sequence_zip_fixture()
+    dest <- tempfile("wi_seq_unzip_")
+    dir.create(dest)
+    utils::unzip(fx$zip, exdir = dest)
+    withr::defer(unlink(c(fx$dir, fx$zip, dest), recursive = TRUE))
+    path <- file.path(dest, "sequences.csv")
+    lines <- readLines(path)
+    writeLines(lines[1:3], path)
+    writeLines(lines[c(1L, 4:6)], file.path(dest, "sequences_2.csv"))
+
+    norm_dir <- saira:::wi_to_camtrap_csv(dest, lang = "en")
+    obs <- utils::read.csv(file.path(norm_dir, "observations.csv"),
+                           stringsAsFactors = FALSE, na.strings = "")
+    testthat::expect_setequal(
+        obs$observationID,
+        c("seq-blank-obs-1", "seq-jaguar-obs-1", "seq-mixed-obs-1",
+          "seq-mixed-obs-2", "seq-human-obs-1")
+    )
+})
+
+testthat::test_that("wi_to_camtrap_csv stops when one images file lacks a required column", {
+    fx <- wi_zip_fixture()
+    dest <- tempfile("wi_unzip_")
+    dir.create(dest)
+    utils::unzip(fx$zip, exdir = dest)
+    withr::defer(unlink(c(fx$dir, fx$zip, dest), recursive = TRUE))
+    writeLines(c("deployment_id,timestamp", "DEP1,2021-08-26 10:00:00"),
+               file.path(dest, "images_2004252_2.csv"))
+    testthat::expect_error(saira:::wi_to_camtrap_csv(dest, lang = "en"), regexp = "Wildlife Insights")
+})
+
+testthat::test_that("a WI export split in two files keeps its zero-padded IDs in Darwin Core (AUD-06, AUD-07)", {
+    header <- paste0("project_id,deployment_id,image_id,is_blank,identified_by,class,order,",
+                     "family,genus,species,timestamp,number_of_objects")
+    fx <- build_zip_fixture(list(
+        "deployments.csv" = c(
+            "project_id,deployment_id,placename,longitude,latitude,start_date,end_date,camera_id",
+            "1,001,site-a,-62.94,-8.57,2021-08-26 00:00:00,2022-01-19 00:00:00,0042"
+        ),
+        "projects.csv" = c("project_id,project_name,project_short_name", "1,P,TP"),
+        "images_1.csv" = c(header, "1,001,000123,0,Ana,Mammalia,Carnivora,Felidae,Panthera,onca,2021-09-15 23:12:00,1"),
+        "images_2.csv" = c(header, "1,001,000124,0,Ana,Mammalia,Carnivora,Felidae,Puma,concolor,2021-09-16 23:12:00,1")
+    ), prefix = "wi_split_zip_")
+    withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
+
+    pkg <- tryCatch(suppressWarnings(saira:::read_camtrap_dp_zip(fx$zip, lang = "en")),
+                    error = function(e) e)
+    if (inherits(pkg, "error")) {
+        testthat::skip(paste("camtrapdp could not parse synthesized descriptor:", conditionMessage(pkg)))
+    }
+    df <- suppressWarnings(saira:::convert_camtrap_to_dwc_occurrence(pkg, lang = "en"))
+    testthat::expect_identical(sort(df$occurrenceID), c("000123-obs-1", "000124-obs-1"))
+    testthat::expect_identical(unique(df$parentEventID), "001")
+})
+
 # camtrap_error_message ---------------------------------------------------
 
 testthat::test_that("camtrap_error_message shows Saira errors without a prefix", {

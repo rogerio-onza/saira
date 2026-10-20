@@ -74,14 +74,31 @@ WI_REQUIRED_DEP_COLS <- c(
 WI_REQUIRED_IMG_COLS <- c("deployment_id", "image_id", "timestamp")
 WI_REQUIRED_SEQ_COLS <- c("deployment_id", "sequence_id", "start_time", "end_time")
 
+# Every column is text, so an ID such as "000123" keeps its zeros (AUD-07).
+# The normalizer converts the numeric fields itself.
 wi_read_csv <- function(path) {
     utils::read.csv(
         path,
         stringsAsFactors = FALSE,
+        colClasses = "character",
         na.strings = c("", "NA"),
         check.names = FALSE,
         encoding = "UTF-8"
     )
+}
+
+# WI splits a large export into several files (images_1.csv, images_2.csv),
+# so the rows of all of them count (AUD-06). NULL when a file has no
+# `required` column.
+wi_read_split_csv <- function(paths, required) {
+    parts <- lapply(paths, wi_read_csv)
+    if (!all(vapply(parts, function(p) all(required %in% names(p)), logical(1)))) return(NULL)
+    cols <- unique(unlist(lapply(parts, names)))
+    parts <- lapply(parts, function(p) {
+        p[setdiff(cols, names(p))] <- NA_character_
+        p[cols]
+    })
+    do.call(rbind, parts)
 }
 
 # Parse WI timestamps ("YYYY-MM-DD HH:MM:SS", "YYYY-MM-DD", etc.) into ISO 8601
@@ -205,12 +222,11 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
         camtrap_stop("err_camtrap_wi_columns_missing", lang)
     }
     wi_dep <- wi_read_csv(dep_paths[1])
-    wi_img <- wi_read_csv(img_paths[1])
+    wi_img <- wi_read_split_csv(img_paths, WI_REQUIRED_IMG_COLS)
     wi_cam <- if (length(cam_paths) > 0L) wi_read_csv(cam_paths[1]) else NULL
 
     missing_dep <- setdiff(WI_REQUIRED_DEP_COLS, names(wi_dep))
-    missing_img <- setdiff(WI_REQUIRED_IMG_COLS, names(wi_img))
-    if (length(missing_dep) > 0L || length(missing_img) > 0L) {
+    if (length(missing_dep) > 0L || is.null(wi_img)) {
         camtrap_stop("err_camtrap_wi_columns_missing", lang)
     }
 
@@ -229,8 +245,8 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
         seq_paths <- list.files(input_dir, pattern = "^sequences.*\\.csv$",
                                 recursive = TRUE, full.names = TRUE,
                                 ignore.case = TRUE)
-        wi_seq <- if (length(seq_paths) > 0L) wi_read_csv(seq_paths[1]) else NULL
-        if (is.null(wi_seq) || !all(WI_REQUIRED_SEQ_COLS %in% names(wi_seq))) {
+        wi_seq <- if (length(seq_paths) > 0L) wi_read_split_csv(seq_paths, WI_REQUIRED_SEQ_COLS) else NULL
+        if (is.null(wi_seq)) {
             camtrap_stop("err_camtrap_wi_sequences_missing", lang)
         }
     }

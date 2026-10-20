@@ -98,6 +98,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **dynamicProperties:** Replace an old threat category with the official MMA or IUCN value, instead of adding a second key, ADR-165
 - **coords:** Drop a coordinate fix from the package when its point changes later, and show the count, ADR-166
 - **coords:** Show the country of the spreadsheet as text in the coordinates table, not as HTML
+- **upload:** Read every images and sequences file of a Wildlife Insights export, not only the first one
+- **upload:** Keep the leading zeros of Wildlife Insights IDs such as `000123`, ADR-124
 - **upload:** Read a Latin-1 file with accents in the header instead of failing
 - **upload:** Ignore delimiters inside quoted column names when detecting the delimiter
 - **names:** Update genus and epithets when a name review corrects scientificName
