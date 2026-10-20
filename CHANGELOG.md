@@ -100,6 +100,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **coords:** Show the country of the spreadsheet as text in the coordinates table, not as HTML
 - **upload:** Read every images and sequences file of a Wildlife Insights export, not only the first one
 - **upload:** Keep the leading zeros of Wildlife Insights IDs such as `000123`, ADR-124
+- **preview:** Flag a date with an impossible time, time zone or interval end, such as `T25:61` or `2024-02-01/02-30`, and keep it as typed
+- **export:** Keep a full month at the end of an eventDate interval, such as `2024-02-15/2024-03`, in the EML temporal coverage
 - **upload:** Read a Latin-1 file with accents in the header instead of failing
 - **upload:** Ignore delimiters inside quoted column names when detecting the delimiter
 - **names:** Update genus and epithets when a name review corrects scientificName

@@ -42,15 +42,25 @@ preview_date_terms <-c("eventDate", "dateIdentified", "modified")
 # column still blocks, as one of the six required terms of the mapping.
 preview_required_terms <- c("scientificName", "basisOfRecord", "occurrenceID")
 
+# "2007-11-13/15": the end of an interval may drop the parts it shares with the
+# start. A full end ("2024-03") has its own year and stays as it is (AUD-11).
+expand_interval_end <- function(start, end) {
+    short <- grepl("^\\d{2}(-\\d{2})?$", end)
+    day <- substr(start[short], 1L, 10L)
+    end[short] <- paste0(substr(day, 1L, nchar(day) - nchar(end[short])), end[short])
+    end
+}
+
 # ISO 8601 as Darwin Core takes it: a year, a month or a day, an optional time,
-# and an interval of two of those. The end of an interval may drop the parts it
-# shares with the start ("2007-11-13/15").
+# and an interval of two of those. The time keeps its real ranges: hour 00-23,
+# minute and second 00-59, offset up to 14 hours (AUD-10).
 is_dwc_date_value <- function(x) {
     x <- trimws(as.character(x))
     x[is.na(x)] <- ""
     part_ok <- function(p) {
         ok <- grepl(
-            "^\\d{4}(-\\d{2}(-\\d{2})?)?(T\\d{2}(:\\d{2}(:\\d{2}(\\.\\d+)?)?)?(Z|[+-]\\d{2}(:?\\d{2})?)?)?$",
+            paste0("^\\d{4}(-\\d{2}(-\\d{2})?)?(T([01]\\d|2[0-3])(:[0-5]\\d(:[0-5]\\d(\\.\\d+)?)?)?",
+                   "(Z|[+-](0\\d|1[0-4])(:?[0-5]\\d)?)?)?$"),
             p
         )
         ym <- ok & grepl("^\\d{4}-\\d{2}", p)
@@ -63,7 +73,8 @@ is_dwc_date_value <- function(x) {
     has_slash <- grepl("/", x, fixed = TRUE)
     start <- sub("/.*$", "", x)
     end <- ifelse(has_slash, sub("^[^/]*/", "", x), "")
-    end_ok <- part_ok(end) | grepl("^\\d{2}(-\\d{2})?$", end)
+    # "2024-01-01/99" becomes "2024-01-99", so the day it names must exist.
+    end_ok <- part_ok(expand_interval_end(start, end))
     part_ok(start) & (!has_slash | (end_ok & !grepl("/", end, fixed = TRUE)))
 }
 
