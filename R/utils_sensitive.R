@@ -291,9 +291,24 @@ sensitive_point_ok <- function(lat, lon) {
         !(abs(lat) < 0.5 & abs(lon) < 0.5) & lat != lon
 }
 
+# A `dataGeneralizations` note that says the coordinates were generalized: the
+# Saira note in any interface language, or the camtrapdp `write_dwc()` note
+# "coordinates rounded to ...". A note about other data, such as "Dates
+# normalized", says nothing about the point (AUD-03). Vectorized.
+coordinate_generalization_note <- function(x) {
+    prefixes <- vapply(get_languages(), function(l) {
+        sub("%s.*$", "", tr("sensitive_data_generalizations", l))
+    }, character(1))
+    escaped <- gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", c(prefixes, "coordinates rounded to"))
+    pattern <- paste0("(^|\\| )(", paste(escaped, collapse = "|"), ")")
+    x <- trimws(as.character(x))
+    !is.na(x) & grepl(pattern, x, ignore.case = TRUE)
+}
+
 # Rows the publisher already generalized (ADR-095): `coordinateUncertaintyInMeters`
-# at/above the threshold, OR a non-empty `dataGeneralizations`. The export leaves
-# these intact and the generalization preview drops them. Vectorized over rows.
+# at/above the threshold, OR a coordinate generalization note in
+# `dataGeneralizations`. The export leaves these intact and the generalization
+# preview drops them. Vectorized over rows.
 sensitive_already_masked_rows <- function(df) {
     n <- if (is.data.frame(df)) nrow(df) else 0L
     unc <- if (is.data.frame(df) && "coordinateUncertaintyInMeters" %in% names(df)) {
@@ -302,12 +317,12 @@ sensitive_already_masked_rows <- function(df) {
         rep(NA_real_, n)
     }
     dg <- if (is.data.frame(df) && "dataGeneralizations" %in% names(df)) {
-        trimws(as.character(df$dataGeneralizations))
+        df$dataGeneralizations
     } else {
         rep("", n)
     }
-    dg[is.na(dg)] <- ""
-    (!is.na(unc) & unc >= SENSITIVE_ALREADY_MASKED_THRESHOLD_M) | nzchar(dg)
+    (!is.na(unc) & unc >= SENSITIVE_ALREADY_MASKED_THRESHOLD_M) |
+        coordinate_generalization_note(dg)
 }
 
 # Grid for a row that only the declared uncertainty marks as already masked, but
@@ -315,7 +330,7 @@ sensitive_already_masked_rows <- function(df) {
 # -24.4873 with 2500 m shows a ~11 m point. The grid is the coarsest tier grid
 # whose cell radius fits inside the declared uncertainty, so a point already on
 # that grid (-24.5 with 10 km) gets NA and stays as typed. NA for every other
-# row. A non-empty `dataGeneralizations` keeps the full skip of ADR-095.
+# row. A coordinate generalization note keeps the full skip of ADR-095.
 sensitive_uncertainty_snap_grid <- function(df, lat, lon) {
     n <- length(lat)
     out <- rep(NA_real_, n)
@@ -323,14 +338,9 @@ sensitive_uncertainty_snap_grid <- function(df, lat, lon) {
         return(out)
     }
     unc <- uncertainty_meters(df$coordinateUncertaintyInMeters)
-    dg <- if ("dataGeneralizations" %in% names(df)) {
-        trimws(as.character(df$dataGeneralizations))
-    } else {
-        rep("", n)
-    }
-    dg[is.na(dg)] <- ""
-    cand <- !is.na(unc) & unc >= SENSITIVE_ALREADY_MASKED_THRESHOLD_M & !nzchar(dg) &
-        is.finite(lat) & is.finite(lon)
+    dg <- if ("dataGeneralizations" %in% names(df)) df$dataGeneralizations else rep("", n)
+    cand <- !is.na(unc) & unc >= SENSITIVE_ALREADY_MASKED_THRESHOLD_M &
+        !coordinate_generalization_note(dg) & is.finite(lat) & is.finite(lon)
     if (!any(cand)) {
         return(out)
     }
@@ -442,6 +452,68 @@ sensitive_resolve <- function(names, decisions = NULL) {
     list(sensitive = sensitive, category = category)
 }
 
+# Sensitivity decisions keyed by the name each record leaves with. The Names
+# tab marks the name as typed, and a name correction renames the record before
+# the Generalization tab and the export read it. So each decision on a corrected
+# name is copied to the new name. A name with two decisions is sensitive when
+# either one says so (AUD-01).
+rekey_sensitivity_decisions <- function(decisions, name_payload = NULL) {
+    entries <- if (is.list(name_payload)) name_payload$entries else NULL
+    if (!is.data.frame(decisions) || nrow(decisions) == 0L ||
+            !all(c("scientificName", "sensitive") %in% names(decisions)) ||
+            !is.data.frame(entries) || nrow(entries) == 0L ||
+            !all(c("query_name", "review_type", "corrected_name") %in% names(entries))) {
+        return(decisions)
+    }
+    entries <- entries[tolower(entries$review_type) %in% c("confirm", "correct"), , drop = FALSE]
+    # The last review of a name wins, as in apply_name_review_payload().
+    when <- if ("reviewed_at" %in% names(entries)) entries$reviewed_at else rep(NA, nrow(entries))
+    entries <- entries[order(entries$query_name, when, seq_len(nrow(entries)), na.last = TRUE), ,
+                       drop = FALSE]
+    entries <- entries[!duplicated(entries$query_name, fromLast = TRUE), , drop = FALSE]
+    fix <- entries[tolower(entries$review_type) == "correct" &
+                       !is_blank_cell(entries$corrected_name), , drop = FALSE]
+    if (nrow(fix) == 0L) {
+        return(decisions)
+    }
+    dkey <- build_sensitive_match_keys(decisions$scientificName)
+    m <- match(dkey, build_sensitive_match_keys(fix$query_name))
+    if ("original_name" %in% names(fix)) {
+        m_orig <- match(dkey, build_sensitive_match_keys(fix$original_name))
+        m[is.na(m)] <- m_orig[is.na(m)]
+    }
+    hit <- which(!is.na(m))
+    if (!length(hit)) {
+        return(decisions)
+    }
+    as_bool <- function(x) tolower(trimws(as.character(x))) %in% c("true", "1", "yes", "t")
+    category <- if ("category" %in% names(decisions)) {
+        as.character(decisions$category)
+    } else {
+        rep(NA_character_, nrow(decisions))
+    }
+    rows <- data.frame(
+        scientificName = c(as.character(decisions$scientificName),
+                           trimws(as.character(fix$corrected_name[m[hit]]))),
+        sensitive = c(as_bool(decisions$sensitive), as_bool(decisions$sensitive[hit])),
+        category = c(category, category[hit]),
+        stringsAsFactors = FALSE
+    )
+    key <- build_sensitive_match_keys(rows$scientificName)
+    no_key <- is.na(key) | !nzchar(key)
+    key[no_key] <- rows$scientificName[no_key]
+    groups <- unique(key)
+    # The category of a sensitive decision goes into the published note.
+    with_cat <- rows$sensitive & !is_blank_cell(rows$category)
+    data.frame(
+        scientificName = rows$scientificName[match(groups, key)],
+        sensitive = vapply(groups, function(g) any(rows$sensitive[key == g]), logical(1),
+                           USE.NAMES = FALSE),
+        category = rows$category[with_cat][match(groups, key[with_cat])],
+        stringsAsFactors = FALSE
+    )
+}
+
 # Mask sensitive records on the post-process_for_export frame (which already
 # carries occurrenceID, scientificName and the coordinate columns).
 #
@@ -484,7 +556,9 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
         grid = numeric(0),
         n_skipped_already_masked = 0L,
         n_snapped_to_uncertainty = 0L,
-        n_clamped_to_precision = 0L
+        n_clamped_to_precision = 0L,
+        scrub_rows = integer(0),
+        scrub_points = NULL
     )
 
     if (!isTRUE(enabled)) {
@@ -518,8 +592,8 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     # Honour upstream generalization (ADR-095). Two signals:
     #   1. `coordinateUncertaintyInMeters` >= 1000 m -- publisher who fuzzed
     #      via grid >= 0.01 deg, or who explicitly set a wide uncertainty.
-    #   2. `dataGeneralizations` non-empty -- guaranteed by
-    #      `camtrapdp::write_dwc()` when the publisher set
+    #   2. A coordinate note in `dataGeneralizations`: the Saira note, or the
+    #      one `camtrapdp::write_dwc()` writes when the publisher set
     #      `coordinatePrecision` (PDF p.26), covering Chapman category 4
     #      generalization (3 digits -> ~150 m uncertainty, below 1000 m).
     # Skip those rows so we neither overwrite their values nor leak them
@@ -532,6 +606,9 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     result$n_skipped_already_masked <- sum(target & already_masked)
     result$n_snapped_to_uncertainty <- sum(snap)
     target <- target & !already_masked
+    # A skipped row keeps its point, but its verbatim and unmapped copies of
+    # the original point still go (AUD-03).
+    kept <- which(decided$sensitive & !is.na(row_grid) & row_grid > 0 & already_masked)
     base_grid <- row_grid
     base_grid[snap] <- snap_grid[snap]
     # A sensitive point the grid cannot move (out of range, one axis only, a
@@ -554,7 +631,40 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     eff_grid[has_prec] <- pmax(base_grid[has_prec], exist_prec[has_prec])
     result$n_clamped_to_precision <- sum(target & has_prec & base_grid < exist_prec)
 
+    # Verbatim coordinate fields must be blank (Darwin Core forbids prose
+    # there), the other locality/remarks fields carry replacement wording
+    # (Chapman sec. 3).
+    blank_cols <- c("verbatimLatitude", "verbatimLongitude",
+                    "verbatimCoordinates")
+    scrub_cols <- c("locality", "verbatimLocality",
+                    "georeferenceRemarks", "locationRemarks")
+    blank_verbatim <- function(d, rows) {
+        for (col in intersect(blank_cols, names(d))) {
+            d[[col]] <- as.character(d[[col]])
+            d[[col]][rows] <- ""
+        }
+        d
+    }
+    # The unmapped columns of these rows are scrubbed at export. Only the
+    # generalized and withheld rows have a real point to look for.
+    set_scrub <- function(res, idx, real_lat, real_lon, grid) {
+        res$scrub_rows <- c(idx, kept)
+        if (length(res$scrub_rows)) {
+            res$scrub_points <- data.frame(
+                decimalLatitude = c(real_lat, rep(NA_character_, length(kept))),
+                decimalLongitude = c(real_lon, rep(NA_character_, length(kept))),
+                grid = c(grid, rep(NA_real_, length(kept))),
+                stringsAsFactors = FALSE
+            )
+        }
+        res
+    }
+
     if (!any(target | withheld)) {
+        if (length(kept)) {
+            result$masked <- blank_verbatim(df, kept)
+            result <- set_scrub(result, integer(0), character(0), character(0), numeric(0))
+        }
         return(result)
     }
     idx <- which(target | withheld)
@@ -624,14 +734,16 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
         # Capture the cell as a polygon (Best Practices sec. 2.3.4: "the ideal
         # way to record [a grid cell] ... is the polygon consisting of the
         # corners"). Safe to publish -- it is the coarse cell, not the point.
+        # A cell at a pole or at the antimeridian stops at the world bounds,
+        # because EPSG:4326 has no latitude past 90 (AUD-17).
         half <- g / 2
+        west <- wkt_num(pmax(gen_lon - half, -180))
+        east <- wkt_num(pmin(gen_lon + half, 180))
+        south <- wkt_num(pmax(gen_lat - half, -90))
+        north <- wkt_num(pmin(gen_lat + half, 90))
         masked$footprintWKT[rows] <- sprintf(
             "POLYGON ((%s %s, %s %s, %s %s, %s %s, %s %s))",
-            wkt_num(gen_lon - half), wkt_num(gen_lat - half),
-            wkt_num(gen_lon + half), wkt_num(gen_lat - half),
-            wkt_num(gen_lon + half), wkt_num(gen_lat + half),
-            wkt_num(gen_lon - half), wkt_num(gen_lat + half),
-            wkt_num(gen_lon - half), wkt_num(gen_lat - half)
+            west, south, east, south, east, north, west, north, west, south
         )
         masked$footprintSRS[rows] <- "EPSG:4326"
         # Chapman sec. 4.3 / 5.1: record BOTH the precision provided (the grid,
@@ -664,17 +776,20 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
                 ""
             )
         )
-        masked$dataGeneralizations[rows] <- trimws(paste(
-            sprintf(
-                tr("sensitive_data_generalizations", lang),
-                cat_disp,
-                g_text
-            ),
-            sensitive_reason_statement(row_tier[rows], lang),
-            grid_note,
-            stored_note,
-            just_text
-        ))
+        masked$dataGeneralizations[rows] <- after_prior_note(
+            masked$dataGeneralizations[rows],
+            trimws(paste(
+                sprintf(
+                    tr("sensitive_data_generalizations", lang),
+                    cat_disp,
+                    g_text
+                ),
+                sensitive_reason_statement(row_tier[rows], lang),
+                grid_note,
+                stored_note,
+                just_text
+            ))
+        )
     }
     wh <- which(withheld)
     if (length(wh)) {
@@ -684,30 +799,43 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
         masked$coordinatePrecision[wh] <- ""
         masked$footprintWKT[wh] <- ""
         masked$footprintSRS[wh] <- ""
-        masked$dataGeneralizations[wh] <- trimws(paste(
-            sprintf(tr("sensitive_withheld_invalid", lang),
-                    row_cat_display[match(wh, idx)]),
-            just_text
-        ))
+        masked$dataGeneralizations[wh] <- after_prior_note(
+            masked$dataGeneralizations[wh],
+            trimws(paste(
+                sprintf(tr("sensitive_withheld_invalid", lang),
+                        row_cat_display[match(wh, idx)]),
+                just_text
+            ))
+        )
     }
     masked$informationWithheld[idx] <- iw_text
 
-    # Scrub fields that could reverse the generalization. Verbatim coordinate
-    # fields must be blank (Darwin Core forbids prose there); the remaining
-    # locality/remarks fields carry replacement wording (Chapman sec. 3).
-    # footprintWKT is NOT scrubbed here: the loop above already replaced it with
-    # the generalized cell polygon (safe, coarse) on every masked row.
-    blank_cols <- c("verbatimLatitude", "verbatimLongitude",
-                    "verbatimCoordinates")
-    scrub_cols <- c("locality", "verbatimLocality",
-                    "georeferenceRemarks", "locationRemarks")
-    for (col in intersect(blank_cols, names(masked))) {
-        masked[[col]] <- as.character(masked[[col]])
-        masked[[col]][idx] <- ""
-    }
+    # Scrub fields that could reverse the generalization. footprintWKT is NOT
+    # scrubbed here: the loop above already replaced it with the generalized
+    # cell polygon (safe, coarse) on every masked row.
+    masked <- blank_verbatim(masked, c(idx, kept))
     for (col in intersect(scrub_cols, names(masked))) {
         masked[[col]] <- as.character(masked[[col]])
         masked[[col]][idx] <- iw_text
+    }
+    # Copies of the point in the other mapped fields, such as a GPS pair in
+    # dynamicProperties or occurrenceRemarks, get the published value (AUD-02).
+    # A cell that is one number is the value of its own term and stays.
+    managed <- c("occurrenceID", "scientificName", "decimalLatitude", "decimalLongitude",
+                 ensure_cols, blank_cols, scrub_cols)
+    pub_lat <- as.character(masked$decimalLatitude[idx])
+    pub_lon <- as.character(masked$decimalLongitude[idx])
+    for (col in setdiff(names(masked), managed)) {
+        cell <- as.character(masked[[col]][idx])
+        text <- which(is.na(suppressWarnings(as.numeric(sub(",", ".", trimws(cell), fixed = TRUE)))))
+        if (!length(text)) next
+        new <- cell
+        new[text] <- redact_point_numbers(cell[text], lat_num[idx][text], lon_num[idx][text],
+                                          eff_grid[idx][text], pub_lat[text], pub_lon[text])
+        if (!identical(new, cell)) {
+            masked[[col]] <- as.character(masked[[col]])
+            masked[[col]][idx] <- new
+        }
     }
 
     # Newly created columns land at the right side; re-sort into their DwC
@@ -723,7 +851,58 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     # The grid of each row in `rows`, so the export knows how close a raw copy
     # of the point may be before it gives the point away (B52).
     result$grid <- eff_grid[idx]
-    result
+    set_scrub(result, idx, result$real$decimalLatitude, result$real$decimalLongitude,
+              result$grid)
+}
+
+# A publisher note in `dataGeneralizations` stays in front of the Saira note,
+# joined with the Darwin Core list separator (AUD-03).
+after_prior_note <- function(prior, note) {
+    prior <- trimws(as.character(prior))
+    prior[is.na(prior)] <- ""
+    ifelse(nzchar(prior), paste(prior, note, sep = " | "), note)
+}
+
+# Replace each copy of the real point inside a text cell, such as
+# '{"gps":"-23.55052,-46.63331"}' or "23.55052 S", with the published value.
+# A copy is a number with more decimals than the grid, less than one grid step
+# from either axis. The test ignores the sign, because a hemisphere letter can
+# replace it. A blank published value removes the copy. Vectorized over cells,
+# and every argument has one value per cell (AUD-02).
+redact_point_numbers <- function(x, lat, lon, grid, pub_lat, pub_lon) {
+    x <- as.character(x)
+    cand <- which(!is.na(x) & grepl("[0-9][.,][0-9]", x))
+    if (!length(cand)) {
+        return(x)
+    }
+    pub_lat[is.na(pub_lat)] <- ""
+    pub_lon[is.na(pub_lon)] <- ""
+    places <- pmax(0, round(-log10(grid)))
+    cells <- x[cand]
+    found <- gregexpr("[-+]?[0-9]+[.,][0-9]+", cells)
+    tokens <- regmatches(cells, found)
+    regmatches(cells, found) <- lapply(seq_along(cand), function(k) {
+        i <- cand[k]
+        tok <- tokens[[k]]
+        num <- abs(as.numeric(sub(",", ".", tok, fixed = TRUE)))
+        decimals <- nchar(sub("^[^.,]*[.,]", "", tok))
+        near_lat <- !is.na(lat[i]) & abs(num - abs(lat[i])) < grid[i]
+        near_lon <- !is.na(lon[i]) & abs(num - abs(lon[i])) < grid[i]
+        hit <- decimals > places[i] & (near_lat | near_lon)
+        hit[is.na(hit)] <- FALSE
+        if (!any(hit)) {
+            return(tok)
+        }
+        pub <- ifelse(near_lat, pub_lat[i], pub_lon[i])[hit]
+        value <- sub("^-", "", pub)
+        comma <- grepl(",", tok[hit], fixed = TRUE)
+        value[comma] <- sub(".", ",", value[comma], fixed = TRUE)
+        sign <- ifelse(startsWith(tok[hit], "-") & nzchar(value), "-", "")
+        tok[hit] <- paste0(sign, value)
+        tok
+    })
+    x[cand] <- cells
+    x
 }
 
 # A coordinate as typed, with a decimal comma turned into a dot when the value

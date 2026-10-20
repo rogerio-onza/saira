@@ -502,8 +502,10 @@ testthat::test_that("mask skips rows already generalized upstream (ADR-095)", {
     df <- data.frame(
         occurrenceID = c("u1", "u2"),
         scientificName = c("Panthera onca", "Panthera onca"),
-        decimalLatitude = c("-23.5612", "-10.1234"),
-        decimalLongitude = c("-46.6543", "-40.5678"),
+        # Row 2 sits on the 0.01 grid that 1500 m fits, so the uncertainty
+        # alone keeps it. Its note is not a coordinate note (AUD-03).
+        decimalLatitude = c("-23.5612", "-10.12"),
+        decimalLongitude = c("-46.6543", "-40.57"),
         coordinateUncertaintyInMeters = c(NA, "1500"),
         dataGeneralizations = c("", "rounded to 0.1 deg upstream"),
         informationWithheld = c("", "publisher generalization"),
@@ -515,8 +517,8 @@ testthat::test_that("mask skips rows already generalized upstream (ADR-095)", {
     # Row 1: untouched upstream -> Saira masks it.
     testthat::expect_equal(res$masked$decimalLatitude[1], "-23.6")
     # Row 2: upstream uncertainty >= 1000 m -> Saira leaves it intact.
-    testthat::expect_equal(res$masked$decimalLatitude[2], "-10.1234")
-    testthat::expect_equal(res$masked$decimalLongitude[2], "-40.5678")
+    testthat::expect_equal(res$masked$decimalLatitude[2], "-10.12")
+    testthat::expect_equal(res$masked$decimalLongitude[2], "-40.57")
     testthat::expect_equal(res$masked$coordinateUncertaintyInMeters[2], "1500")
     testthat::expect_equal(
         res$masked$dataGeneralizations[2], "rounded to 0.1 deg upstream"
@@ -584,11 +586,13 @@ testthat::test_that("mask rounds a point finer than its declared uncertainty, on
     testthat::expect_gt(as.numeric(res$masked$coordinateUncertaintyInMeters[1]), 2500)
     testthat::expect_match(res$masked$dataGeneralizations[1], "declared uncertainty of 2500 m", fixed = TRUE)
     testthat::expect_true("d1" %in% res$real$occurrenceID)
-    # d2 already sits on the 0.1 grid that 10 km fits; d3 has publisher text.
-    testthat::expect_equal(res$masked$decimalLatitude[2:3], c("-24.5", "-24.4873"))
-    testthat::expect_equal(res$n_snapped_to_uncertainty, 1L)
-    testthat::expect_equal(res$n_skipped_already_masked, 2L)
-    testthat::expect_equal(nrow(saira:::generalization_map_preview(df, "extreme")), 1L)
+    # d2 already sits on the 0.1 grid that 10 km fits. The d3 note is about
+    # other data, so d3 snaps like d1 and keeps its note in front (AUD-03).
+    testthat::expect_equal(res$masked$decimalLatitude[2:3], c("-24.5", "-24.49"))
+    testthat::expect_match(res$masked$dataGeneralizations[3], "^rounded upstream \\| ")
+    testthat::expect_equal(res$n_snapped_to_uncertainty, 2L)
+    testthat::expect_equal(res$n_skipped_already_masked, 1L)
+    testthat::expect_equal(nrow(saira:::generalization_map_preview(df, "extreme")), 2L)
 
     # A second pass changes nothing.
     again <- saira:::mask_sensitive_coordinates(res$masked, generalization = "extreme", lang = "en")
@@ -983,4 +987,108 @@ test_that("count_distinct_species() groups name variants by canonical name", {
   expect_equal(count_distinct_species(c("Panthera onca", "panthera onca", "Panthera cf. onca",
                                         "Panthera aff. onca", "Puma concolor", NA, "")), 2L)
   expect_equal(count_distinct_species(character(0)), 0L)
+})
+
+# 2026-10-16 audit ----------------------------------------------------------
+
+audit_name_payload <- function(from = "Felis onca", to = "Panthera onca") {
+    list(entries = data.frame(
+        query_name = from, review_type = "correct", original_name = from,
+        corrected_name = to, reason = "synonym",
+        reviewed_at = as.POSIXct("2026-10-16", tz = "UTC"), stringsAsFactors = FALSE
+    ))
+}
+
+testthat::test_that("a corrected name keeps the protection marked for it (AUD-01)", {
+    # Neither name is on the list: only the Names tab mark protects the record.
+    local_sensitive_fixture("Puma concolor")
+    df <- data.frame(occurrenceID = "id-1", scientificName = "Felis onca",
+                     decimalLatitude = "-23.55052", decimalLongitude = "-46.63331",
+                     stringsAsFactors = FALSE)
+    payload <- audit_name_payload()
+    marks <- data.frame(scientificName = "Felis onca", sensitive = TRUE, category = "VU",
+                        stringsAsFactors = FALSE)
+    ready <- saira:::apply_validation_payloads(df, payload)
+    rekeyed <- saira:::rekey_sensitivity_decisions(marks, payload)
+    testthat::expect_equal(ready$scientificName, "Panthera onca")
+    testthat::expect_true(saira:::sensitive_resolve("Panthera onca", rekeyed)$sensitive)
+    # The Generalization tab now assesses the name the export writes.
+    res <- saira:::mask_sensitive_coordinates(ready, decisions = rekeyed,
+                                              generalization = c("Panthera onca" = "high"))
+    testthat::expect_equal(res$n_masked, 1L)
+    testthat::expect_equal(res$masked$decimalLatitude, "-23.6")
+})
+
+testthat::test_that("two names corrected into one keep the protection of either (AUD-01)", {
+    local_sensitive_fixture("Puma concolor")
+    marks <- data.frame(scientificName = c("Panthera onca", "Felis onca"),
+                        sensitive = c(FALSE, TRUE), category = c(NA, "VU"),
+                        stringsAsFactors = FALSE)
+    out <- saira:::rekey_sensitivity_decisions(marks, audit_name_payload())
+    testthat::expect_true(saira:::sensitive_resolve("Panthera onca", out)$sensitive)
+    testthat::expect_true(saira:::sensitive_resolve("Felis onca", out)$sensitive)
+    testthat::expect_identical(saira:::rekey_sensitivity_decisions(marks, NULL), marks)
+})
+
+testthat::test_that("copies of the point inside mapped text and JSON are generalized (AUD-02)", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = "id-1", scientificName = "Panthera onca",
+        decimalLatitude = "-23.55052", decimalLongitude = "-46.63331",
+        dynamicProperties = '{"gps":"-23.55052,-46.63331"}',
+        occurrenceRemarks = "GPS 23.55052 S 46.63331 W, 23.5 C",
+        minimumElevationInMeters = "23.551",
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    testthat::expect_equal(res$masked$dynamicProperties, '{"gps":"-23.6,-46.6"}')
+    # The hemisphere letter keeps the sign out; 23.5 C is no finer than the grid.
+    testthat::expect_equal(res$masked$occurrenceRemarks, "GPS 23.6 S 46.6 W, 23.5 C")
+    # A number typed in a numeric term is that term's value.
+    testthat::expect_equal(res$masked$minimumElevationInMeters, "23.551")
+})
+
+testthat::test_that("a note about other data does not stop the generalization (AUD-03)", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = "id-1", scientificName = "Panthera onca",
+        decimalLatitude = "-23.55052", decimalLongitude = "-46.63331",
+        dataGeneralizations = "Dates normalized", verbatimLatitude = "-23.55052",
+        locality = "GPS -23.55052,-46.63331", stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    testthat::expect_equal(res$n_masked, 1L)
+    testthat::expect_equal(res$n_skipped_already_masked, 0L)
+    testthat::expect_equal(res$masked$decimalLatitude, "-23.6")
+    testthat::expect_equal(res$masked$verbatimLatitude, "")
+    testthat::expect_false(grepl("23.55052", res$masked$locality, fixed = TRUE))
+    # The publisher note stays next to the Saira one.
+    testthat::expect_match(res$masked$dataGeneralizations, "^Dates normalized \\| Coordinates of a ")
+
+    # A row Saira generalized before keeps its point, but not its verbatim copy.
+    df2 <- res$masked
+    df2$verbatimLatitude <- "-23.55052"
+    again <- saira:::mask_sensitive_coordinates(df2, generalization = "high", lang = "en")
+    testthat::expect_equal(again$n_masked, 0L)
+    testthat::expect_equal(again$n_skipped_already_masked, 1L)
+    testthat::expect_equal(again$masked$decimalLatitude, "-23.6")
+    testthat::expect_equal(again$masked$verbatimLatitude, "")
+    testthat::expect_true(saira:::coordinate_generalization_note(
+        c(res$masked$dataGeneralizations, "coordinates rounded to 0.001 degree", "Dates normalized", NA)
+    ) |> identical(c(TRUE, TRUE, FALSE, FALSE)))
+})
+
+testthat::test_that("the cell polygon stays inside the world bounds (AUD-17)", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(occurrenceID = "id-1", scientificName = "Panthera onca",
+                     decimalLatitude = "89.9999", decimalLongitude = "179.9999",
+                     stringsAsFactors = FALSE)
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    nums <- as.numeric(regmatches(res$masked$footprintWKT,
+                                  gregexpr("-?[0-9]+\\.[0-9]+", res$masked$footprintWKT))[[1]])
+    lon <- nums[c(TRUE, FALSE)]
+    lat <- nums[c(FALSE, TRUE)]
+    testthat::expect_true(all(abs(lat) <= 90))
+    testthat::expect_true(all(abs(lon) <= 180))
+    testthat::expect_equal(res$masked$decimalLatitude, "90")
 })

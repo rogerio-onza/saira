@@ -81,8 +81,11 @@ build_export_summary <- function(mapped_data,
         keep <- !is.na(lv) & lv %in% masking_tiers
         sp <- names(lv)[keep]
         if (length(sp) > 0L) {
+            # The levels carry the corrected names (AUD-01).
             cats <- tryCatch(
-                sensitive_resolve(sp, sensitivity_payload)$category,
+                sensitive_resolve(
+                    sp, rekey_sensitivity_decisions(sensitivity_payload, name_review_payload)
+                )$category,
                 error = function(e) rep(NA_character_, length(sp))
             )
             cats[is.na(cats) | !nzchar(cats)] <- "\u2014"

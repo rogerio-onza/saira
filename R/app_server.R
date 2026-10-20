@@ -169,8 +169,9 @@ app_server <- function(input, output, session) {
     country_fill_payload_r <- attr(coord_validation_r, "country_fill_payload")
 
     # Dedicated sensitive-species generalization stage (Chapman 2020, Table 5).
-    # Consumes the Name-tab sensitivity marks plus the coordinate corrections so
-    # its map preview matches the published point; returns the export decision.
+    # Consumes the Name-tab sensitivity marks and name corrections plus the
+    # coordinate corrections, so its map preview matches the published record;
+    # returns the export decision.
     sensitive_generalization_payload_r <- mod_sensitive_coords_server(
         "sensitive_coords",
         edited_data,
@@ -178,6 +179,7 @@ app_server <- function(input, output, session) {
         sensitivity_payload_r = sensitivity_payload_r,
         coords_correction_payload_r = coords_correction_payload_r,
         country_fill_payload_r = country_fill_payload_r,
+        name_review_payload_r = name_review_payload_r,
         reset_signal_r = reset_signal,
         # Its map path is observer-driven, and observers ignore tab visibility,
         # so without this every mapping edit rebuilds the whole mapped frame for

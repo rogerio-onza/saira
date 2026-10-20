@@ -496,32 +496,27 @@ mount_export_download <- function(input, output, session, lang_r,
         # The steps both downloads share. The private file must hold the same
         # real points that the bundle generalizes.
         prepare_masked_rows <- function() {
-            review_ready <- apply_name_review_payload(
-                download_data(),
-                payload = export_name_review_payload()
-            )
-            review_ready <- apply_name_rank_payload(
-                review_ready, export_name_review_payload()$ranks
-            )
-
-            # Apply transposed-coordinate corrections approved in the
-            # coordinate validation tab (preserves verbatim coords).
+            # Transposed-coordinate corrections approved in the coordinate
+            # validation tab (preserves verbatim coords), and the country
+            # derived from coordinates where missing.
             coords_payload <- if (!is.null(coords_correction_payload_r) &&
                                   shiny::is.reactive(coords_correction_payload_r)) {
                 tryCatch(coords_correction_payload_r(), error = function(e) NULL)
             } else {
                 NULL
             }
-            review_ready <- apply_coords_correction_payload(review_ready, coords_payload)
-
-            # Fill country derived from coordinates (where missing).
             country_payload <- if (!is.null(country_fill_payload_r) &&
                                    shiny::is.reactive(country_fill_payload_r)) {
                 tryCatch(country_fill_payload_r(), error = function(e) NULL)
             } else {
                 NULL
             }
-            review_ready <- apply_country_fill_payload(review_ready, country_payload)
+            review_ready <- apply_validation_payloads(
+                download_data(),
+                name_payload = export_name_review_payload(),
+                coords_payload = coords_payload,
+                country_payload = country_payload
+            )
 
 
             raw_df <- if (!is.null(raw_data_r) && shiny::is.reactive(raw_data_r)) {
@@ -574,7 +569,8 @@ mount_export_download <- function(input, output, session, lang_r,
             # picks a coarser grid than the Generalization tab shows.
             masked <- mask_sensitive_coordinates(
                 review_ready,
-                decisions = export_sensitivity_payload(),
+                decisions = rekey_sensitivity_decisions(export_sensitivity_payload(),
+                                                        export_name_review_payload()),
                 generalization = gen_levels,
                 enabled = is.list(gen) && isTRUE(gen$enabled),
                 lang = lang_r(),
@@ -645,12 +641,8 @@ mount_export_download <- function(input, output, session, lang_r,
                             raw_data = raw_df,
                             map_values = mv,
                             overridden_terms = overridden_mapping_terms(cv),
-                            sensitive_rows = masked$rows,
-                            sensitive_points = data.frame(
-                                decimalLatitude = masked$real$decimalLatitude,
-                                decimalLongitude = masked$real$decimalLongitude,
-                                grid = masked$grid
-                            )
+                            sensitive_rows = masked$scrub_rows,
+                            sensitive_points = masked$scrub_points
                         )
 
                         tmpdir <- tempfile("saira_export_")

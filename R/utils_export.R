@@ -124,6 +124,27 @@ apply_name_review_payload <- function(df, payload = NULL) {
     out
 }
 
+#' Apply the validation payloads in export order
+#'
+#' The Generalization tab and the download both read the data through this
+#' function, so the tab assesses the names and points the export writes
+#' (AUD-01).
+#'
+#' @param df Data frame to export.
+#' @param name_payload Names-tab payload (`entries`, `ranks`, `normalize_opts`).
+#' @param coords_payload Coordinates-tab correction payload.
+#' @param country_payload Coordinates-tab country-fill payload.
+#' @return `df` with the name reviews, ranks, coordinate corrections and
+#'   country fills applied.
+#' @noRd
+apply_validation_payloads <- function(df, name_payload = NULL, coords_payload = NULL,
+                                      country_payload = NULL) {
+    df <- apply_name_review_payload(df, payload = name_payload)
+    df <- apply_name_rank_payload(df, name_payload$ranks)
+    df <- apply_coords_correction_payload(df, coords_payload)
+    apply_country_fill_payload(df, country_payload)
+}
+
 #' Rank of each name the Names tab validated
 #'
 #' @param report Validation report (`validation_result()` of the Names tab).
@@ -514,7 +535,9 @@ coordinate_like_column <- function(names) {
 # On the rows the mask generalized or withheld, blank every unmapped value
 # that can hold the exact point (B45): all cells of a coordinate-like column,
 # and in the other columns a degree sign or a number closer to the real point
-# than the row grid. A pH of 6.5 stays, a copy of -23.5505 goes (B52).
+# than the row grid. A pH of 6.5 stays, a copy of -23.5505 goes (B52). A copy
+# inside a longer text, such as "GPS -23.5505, -46.6333", gets the published
+# value (AUD-02).
 blank_coordinate_like_cells <- function(extras, rows, points = NULL) {
     ok <- !is.na(rows) & rows >= 1L & rows <= nrow(extras)
     rows <- rows[ok]
@@ -522,6 +545,7 @@ blank_coordinate_like_cells <- function(extras, rows, points = NULL) {
         return(extras)
     }
     near_point <- function(num) rep(FALSE, length(num))
+    redact <- function(cell) cell
     if (is.data.frame(points) && nrow(points) == length(ok)) {
         points <- points[ok, , drop = FALSE]
         lat <- as_coord_numeric(points$decimalLatitude)$num
@@ -532,6 +556,15 @@ blank_coordinate_like_cells <- function(extras, rows, points = NULL) {
             !is.na(num) & ((!is.na(lat) & abs(num - lat) < tol) |
                                (!is.na(lon) & abs(num - lon) < tol))
         }
+        # The published point, or "" for a point the mask withheld.
+        pub_lat <- pub_lon <- rep("", length(rows))
+        movable <- sensitive_point_ok(lat, lon)
+        for (g in unique(tol[movable])) {
+            at <- movable & tol == g
+            pub_lat[at] <- as.character(generalize_coord(lat[at], g))
+            pub_lon[at] <- as.character(generalize_coord(lon[at], g))
+        }
+        redact <- function(cell) redact_point_numbers(cell, lat, lon, tol, pub_lat, pub_lon)
     }
     by_name <- coordinate_like_column(names(extras))
     for (j in seq_along(extras)) {
@@ -544,8 +577,11 @@ blank_coordinate_like_cells <- function(extras, rows, points = NULL) {
             near_point(num) | grepl("\u00b0", cell, fixed = TRUE)
         }
         hit[is.na(hit)] <- FALSE
-        if (any(hit)) {
-            v[rows[hit]] <- NA_character_
+        cell <- v[rows]
+        cell[hit] <- NA_character_
+        cell[!hit] <- redact(cell)[!hit]
+        if (!identical(cell, v[rows])) {
+            v[rows] <- cell
             extras[[j]] <- v
         }
     }

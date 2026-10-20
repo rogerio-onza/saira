@@ -78,6 +78,8 @@ restore_choice <- function(saved, choices) {
 #' @param coords_correction_payload_r Optional reactive transposed-coordinate
 #'   correction payload, applied so the preview matches the published point.
 #' @param country_fill_payload_r Optional reactive country-fill payload.
+#' @param name_review_payload_r Optional reactive Names-tab review payload,
+#'   applied so the tab assesses the corrected names that the export writes.
 #' @param reset_signal_r Optional reactive reset signal from the mapping module.
 #'   When it fires, module-local state and inputs are cleared.
 #' @param active_r Optional reactive flagging whether this tab is the one on
@@ -94,6 +96,7 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
                                         sensitivity_payload_r = NULL,
                                         coords_correction_payload_r = NULL,
                                         country_fill_payload_r = NULL,
+                                        name_review_payload_r = NULL,
                                         reset_signal_r = NULL,
                                         active_r = NULL,
                                         on_navigate = NULL) {
@@ -105,33 +108,32 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             isTRUE(tryCatch(active_r(), error = function(e) TRUE))
         }
 
+        optional_payload <- function(payload_r) {
+            if (is.null(payload_r) || !shiny::is.reactive(payload_r)) return(NULL)
+            tryCatch(payload_r(), error = function(e) NULL)
+        }
+
         # Effective data: apply the same corrections the export applies, so the
-        # generalization preview shows the *published* coordinate, not the raw one.
+        # generalization preview shows the *published* name and coordinate.
         effective_data_r <- shiny::reactive({
             df <- tryCatch(data_r(), error = function(e) NULL)
             if (!is.data.frame(df)) return(NULL)
-            cp <- if (!is.null(coords_correction_payload_r) &&
-                      shiny::is.reactive(coords_correction_payload_r)) {
-                tryCatch(coords_correction_payload_r(), error = function(e) NULL)
-            } else {
-                NULL
-            }
-            df <- apply_coords_correction_payload(df, cp)
-            fp <- if (!is.null(country_fill_payload_r) &&
-                      shiny::is.reactive(country_fill_payload_r)) {
-                tryCatch(country_fill_payload_r(), error = function(e) NULL)
-            } else {
-                NULL
-            }
-            apply_country_fill_payload(df, fp)
+            apply_validation_payloads(
+                df,
+                name_payload = optional_payload(name_review_payload_r),
+                coords_payload = optional_payload(coords_correction_payload_r),
+                country_payload = optional_payload(country_fill_payload_r)
+            )
         })
 
+        # The Names-tab marks, keyed by the corrected names (AUD-01).
         export_sensitivity_payload <- shiny::reactive({
             if (is.null(sensitivity_payload_r) ||
                 !shiny::is.reactive(sensitivity_payload_r)) {
                 return(NULL)
             }
-            sensitivity_payload_r()
+            rekey_sensitivity_decisions(sensitivity_payload_r(),
+                                        optional_payload(name_review_payload_r))
         })
 
         sensitive_codes <- c("crpex", "cr", "en", "vu", "other")

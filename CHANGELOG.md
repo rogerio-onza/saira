@@ -87,6 +87,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **generalization:** Keep the protection of a species after its name is corrected in the Names tab, ADR-164
+- **generalization:** Replace copies of the exact point in text and JSON fields with the generalized value, ADR-164
+- **generalization:** Generalize a record whose dataGeneralizations note is about other data, and blank its verbatim coordinates, ADR-164
+- **generalization:** Keep the cell polygon inside the latitude and longitude bounds, ADR-164
 - **upload:** Read a Latin-1 file with accents in the header instead of failing
 - **upload:** Ignore delimiters inside quoted column names when detecting the delimiter
 - **names:** Update genus and epithets when a name review corrects scientificName
