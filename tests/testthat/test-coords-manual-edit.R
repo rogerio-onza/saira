@@ -97,6 +97,55 @@ testthat::test_that("drop_orphan_coord_edits keeps edits whose record is still t
     testthat::expect_null(drop_orphan_coord_edits(edits, character(0))$edits)
 })
 
+testthat::test_that("a fix whose point changed after it leaves the payload (AUD-05)", {
+    df <- data.frame(
+        occurrenceID = c("same", "edited", "blank", "legacy"),
+        decimalLatitude = c("-22", "-21", NA, "5"), decimalLongitude = c("-45", "-44", "", "6"),
+        stringsAsFactors = FALSE
+    )
+    payload <- list(corrections = data.frame(
+        occurrenceID = c("same", "edited", "gone", "blank", "legacy"),
+        decimalLatitude = c("-23", "-23", "1", "-3", "7"),
+        decimalLongitude = c("-46", "-46", "2", "-60", "8"),
+        from_decimalLatitude = c("-22", "-22", "1", "", NA),
+        from_decimalLongitude = c("-45", "-45", "2", "", NA),
+        stringsAsFactors = FALSE
+    ))
+    # "edited" changed after the fix and "gone" left the data. A blank source
+    # still matches a blank cell, and a row without source values stays.
+    testthat::expect_identical(stale_coord_rows(payload$corrections, df),
+                               c(FALSE, TRUE, TRUE, FALSE, FALSE))
+
+    out <- drop_stale_coord_corrections(payload, df)
+    testthat::expect_identical(out$corrections$occurrenceID, c("same", "blank", "legacy"))
+    testthat::expect_identical(out$stale, 2L)
+    testthat::expect_false(any(coord_source_cols %in% names(out$corrections)))
+    testthat::expect_identical(
+        apply_coords_correction_payload(df, out)$decimalLatitude, c("-23", "-21", "-3", "7")
+    )
+
+    # A payload without source values passes unchanged.
+    old <- list(corrections = payload$corrections[, 1:3])
+    testthat::expect_identical(drop_stale_coord_corrections(old, df)$stale, 0L)
+    testthat::expect_null(drop_stale_coord_corrections(NULL, df))
+})
+
+testthat::test_that("merge_manual_coord_edits carries the source values of the edit", {
+    auto <- list(corrections = data.frame(
+        occurrenceID = c("a", "b"), decimalLatitude = c("1", "2"), decimalLongitude = c("3", "4"),
+        from_decimalLatitude = c("10", "20"), from_decimalLongitude = c("30", "40"),
+        stringsAsFactors = FALSE
+    ))
+    manual <- data.frame(
+        occurrenceID = c("b", "c"), decimalLatitude = c("5", "6"), decimalLongitude = c("7", "8"),
+        from_decimalLatitude = c("21", "60"), from_decimalLongitude = c("41", "80"),
+        stringsAsFactors = FALSE
+    )
+    out <- merge_manual_coord_edits(auto, manual)$corrections
+    testthat::expect_identical(out$from_decimalLatitude, c("10", "21", "60"))
+    testthat::expect_identical(out$from_decimalLongitude, c("30", "41", "80"))
+})
+
 testthat::test_that("revalidate_coord_rows keeps the row index of the full result", {
     testthat::skip_on_cran()
     testthat::local_mocked_bindings(

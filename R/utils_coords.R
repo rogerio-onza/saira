@@ -1477,6 +1477,7 @@ merge_manual_coord_edits <- function(auto = NULL, manual = NULL) {
         decimalLongitude = as.character(manual$decimalLongitude),
         stringsAsFactors = FALSE
     )
+    for (cl in intersect(coord_source_cols, names(manual))) man[[cl]] <- as.character(manual[[cl]])
     man <- man[!duplicated(man$occurrenceID, fromLast = TRUE), , drop = FALSE]
 
     auto_df <- if (is.list(auto) && is.data.frame(auto$corrections)) auto$corrections else NULL
@@ -1491,6 +1492,10 @@ merge_manual_coord_edits <- function(auto = NULL, manual = NULL) {
         hit <- !is.na(pos)
         out$decimalLatitude[pos[hit]] <- man$decimalLatitude[hit]
         out$decimalLongitude[pos[hit]] <- man$decimalLongitude[hit]
+        for (cl in intersect(coord_source_cols, names(man))) {
+            if (!cl %in% names(out)) out[[cl]] <- NA_character_
+            out[[cl]][pos[hit]] <- man[[cl]][hit]
+        }
         extra <- man[!hit, , drop = FALSE]
         if (nrow(extra) > 0L) {
             for (cl in setdiff(names(out), names(extra))) extra[[cl]] <- NA_character_
@@ -1501,6 +1506,60 @@ merge_manual_coord_edits <- function(auto = NULL, manual = NULL) {
 
     payload <- if (is.list(auto)) auto else list()
     payload$corrections <- out
+    payload
+}
+
+# Each coordinate correction keeps the two values it replaces, read from the
+# data the validation ran on (AUD-05, ADR-166).
+coord_source_cols <- c("from_decimalLatitude", "from_decimalLongitude")
+
+coord_source_text <- function(x) {
+    x <- trimws(as.character(x))
+    x[is.na(x)] <- ""
+    x
+}
+
+#' Coordinate corrections whose record changed after the fix
+#'
+#' A correction finds its record by occurrenceID and replaces both axes. When
+#' the record now holds other values than the ones the correction replaced (a
+#' later Preview edit, another column in Mapping), or left the data, applying
+#' the correction would undo the newer value (AUD-05, ADR-166).
+#'
+#' @param corr data.frame with \code{occurrenceID} and \code{coord_source_cols}.
+#' @param df Current data.
+#' @return Logical vector, \code{TRUE} for a stale row. A row without the
+#'   source values is never stale.
+#' @noRd
+stale_coord_rows <- function(corr, df) {
+    n <- if (is.data.frame(corr)) nrow(corr) else 0L
+    if (n == 0L || !all(coord_source_cols %in% names(corr)) || !is.data.frame(df)) {
+        return(rep(FALSE, n))
+    }
+    from_lat <- as.character(corr$from_decimalLatitude)
+    from_lon <- as.character(corr$from_decimalLongitude)
+    ids <- if ("occurrenceID" %in% names(df)) as.character(df$occurrenceID) else character(0)
+    idx <- match(as.character(corr$occurrenceID), ids)
+    now <- function(col) {
+        if (col %in% names(df)) coord_source_text(df[[col]])[idx] else rep("", n)
+    }
+    !is.na(from_lat) & !is.na(from_lon) &
+        (is.na(idx) | now("decimalLatitude") != from_lat | now("decimalLongitude") != from_lon)
+}
+
+#' Drop the stale rows of a coordinate correction payload
+#'
+#' @param payload Payload list with \code{corrections}, or \code{NULL}.
+#' @param df Current data.
+#' @return The payload without the stale rows and the source columns, with
+#'   \code{stale}: the number of rows dropped.
+#' @noRd
+drop_stale_coord_corrections <- function(payload, df) {
+    corr <- if (is.list(payload)) payload$corrections else NULL
+    if (!is.data.frame(corr)) return(payload)
+    stale <- stale_coord_rows(corr, df)
+    payload$corrections <- corr[!stale, setdiff(names(corr), coord_source_cols), drop = FALSE]
+    payload$stale <- sum(stale)
     payload
 }
 

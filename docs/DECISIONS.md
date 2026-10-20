@@ -3174,3 +3174,16 @@ Formato: ADR leve (Architecture Decision Record).
   - O valor oficial do MMA e da IUCN substitui uma chave que o objeto ja tem. Sem valor oficial, o valor antigo fica.
   - Um objeto plano passa por regex, e so um objeto aninhado passa pelo jsonlite. O jsonlite linha a linha levava 1,6 s numa coluna JSON de 21.512 linhas, e 4,1 s por chave no merge.
 - **Consequencias**: os numeros de um objeto aninhado saem como o jsonlite os escreve no merge (`1.0` pode virar `1`).
+
+## ADR-166: Uma correcao de coordenada guarda o valor que ela substitui
+
+- **Data**: 2026-10-20
+- **Status**: Aceito. Revisa ADR-129 (edicao manual de coordenadas).
+- **Contexto**: a auditoria de 2026-10-16 achou que uma correcao da aba Coordenadas ia para o pacote mesmo depois de uma edicao do mesmo ponto na Previa (AUD-05). A exportacao aplica a correcao por `occurrenceID` e escrevia por cima da edicao nova.
+- **Decisao**:
+  - Cada correcao, automatica ou manual, guarda a latitude e a longitude que a ultima validacao leu (`from_decimalLatitude`, `from_decimalLongitude`).
+  - Quando o ponto atual nao e mais esse valor, ou o registro saiu dos dados, a correcao sai do pacote. O payload leva a contagem em `stale`.
+  - A Exportacao mostra a contagem num aviso, com um botao para a aba Coordenadas. O aviso nao bloqueia: o pacote leva o ponto atual.
+  - Uma nova validacao descarta as edicoes manuais desatualizadas e mostra a contagem.
+  - Um payload sem essas colunas passa como antes.
+- **Consequencias**: uma edicao que volta ao valor antigo reativa a correcao. O texto compara com `trimws`, entao "-23.50" e "-23.5" contam como pontos diferentes.

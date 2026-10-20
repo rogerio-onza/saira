@@ -304,6 +304,11 @@
     "en": "%d record(s) still have a flag in the Coordinates tab (at sea, 0/0 or a reference point) and no correction. Rows:",
     "es": "%d registro(s) siguen con alerta en la pestaña Coordenadas (en el mar, 0/0 o punto de referencia) y sin corrección. Filas:"
   },
+  "export_coord_fixes_stale": {
+    "pt": "%d correção(ões) da aba Coordenadas saíram do pacote: o ponto mudou depois da correção. Valide as coordenadas de novo.",
+    "en": "%d fix(es) from the Coordinates tab left the package: the point changed after the fix. Validate the coordinates again.",
+    "es": "%d corrección(es) de la pestaña Coordenadas salieron del paquete: el punto cambió después de la corrección. Valide las coordenadas de nuevo."
+  },
   "export_action_coords": {
     "pt": "Ver em Coordenadas",
     "en": "See in Coordinates",
@@ -3128,6 +3133,11 @@
     "pt": "%d correção(ões) manual(is) descartada(s): o registro não está mais nos dados.",
     "en": "%d manual fix(es) dropped: the record is no longer in the data.",
     "es": "%d corrección(es) manual(es) descartada(s): el registro ya no está en los datos."
+  },
+  "validate_coords_edit_stale": {
+    "pt": "%d correção(ões) manual(is) descartada(s): o ponto mudou depois da correção.",
+    "en": "%d manual fix(es) dropped: the point changed after the fix.",
+    "es": "%d corrección(es) manual(es) descartada(s): el punto cambió después de la corrección."
   },
   "validate_coords_edit_error_empty": {
     "pt": "Digite um valor.",

@@ -113,6 +113,26 @@ testthat::test_that("mod_export_server blocks a blank name and a formula in an u
     )
 })
 
+testthat::test_that("mod_export_server counts the coordinate fixes that left the package (AUD-05)", {
+    payload <- list(corrections = data.frame(occurrenceID = character(0), decimalLatitude = character(0),
+                                             decimalLongitude = character(0)), stale = 2L)
+    shiny::testServer(
+        mod_export_server,
+        args = list(
+            mapped_data_r = shiny::reactive(complete_df()),
+            coords_correction_payload_r = shiny::reactive(payload),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            testthat::expect_identical(summary_r()$corrections$coord_fixes_stale, 2L)
+            html <- paste(output$summary$html, collapse = " ")
+            testthat::expect_match(html, "2 fix(es) from the Coordinates tab left the package", fixed = TRUE)
+            testthat::expect_match(html, "go_coords", fixed = TRUE)
+        }
+    )
+})
+
 testthat::test_that("mod_export_server renders the readiness summary and an empty state without data", {
     shiny::testServer(
         mod_export_server,
