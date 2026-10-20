@@ -1711,6 +1711,56 @@ testthat::test_that("a guide import is not undone before the client echoes it", 
         }
     )
 })
+# A select the user cleared reports NULL, like one not rendered yet. The restore
+# skipped its update, so the card stayed blank while the export mapped the column.
+testthat::test_that("a guide import fills a card the user cleared", {
+    withr::local_envvar(c(SAIRA_USER = paste0("test_clear_", as.integer(Sys.time()))))
+    df <- data.frame(
+        especie = c("Panthera onca", "Leopardus pardalis"),
+        latitude = c("-10.1", "-11.2"),
+        stringsAsFactors = FALSE
+    )
+    guide <- build_mapping_guide_txt(
+        list(scientificName = "especie", decimalLatitude = "latitude"),
+        df, lang = "en"
+    )
+    guide_path <- withr::local_tempfile(fileext = ".txt")
+    writeLines(guide, guide_path)
+    updated <- character(0)
+    testthat::local_mocked_bindings(
+        updateSelectInput = function(session, inputId, ...) updated <<- c(updated, inputId),
+        .package = "shiny"
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(map_decimalLatitude = "latitude")
+            session$setInputs(map_decimalLatitude = NULL)
+            testthat::expect_identical(rv$map_values[["decimalLatitude"]], "")
+
+            updated <<- character(0)
+            session$setInputs(import_template_file = list(
+                name = "guide.txt", size = 1L,
+                type = "text/plain", datapath = guide_path
+            ))
+            session$setInputs(confirm_import_template = 1)
+            session$flushReact()
+            testthat::expect_true("map_decimalLatitude" %in% updated)
+            testthat::expect_identical(rv$map_values[["decimalLatitude"]], "latitude")
+
+            # The echo lands, and the value stays.
+            session$setInputs(map_decimalLatitude = "latitude")
+            testthat::expect_identical(rv$map_values[["decimalLatitude"]], "latitude")
+        }
+    )
+})
+
 # A fixed value on the country card fills the term for every row and overrides
 # any column mapping, so the coordinate gate has to accept it. It did not, which
 # blocked coordinate validation for the exact case the fixed value exists for: a

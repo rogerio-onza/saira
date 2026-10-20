@@ -79,6 +79,16 @@ sanitize_map_selection <- function(term, value) {
     value_chr
 }
 
+# The columns of a guide source. The guide joins a concatenation with " + ",
+# so a column named "lat + gps" looks like two. The whole name wins when the
+# data has that column (AUD-15).
+guide_source_columns <- function(src, available_columns = NULL) {
+    src <- trimws(src)
+    if (src %in% available_columns) return(src)
+    cols <- trimws(strsplit(src, "\\s*\\+\\s*", perl = TRUE)[[1]])
+    cols[nzchar(cols)]
+}
+
 #' Plan a faithful mapping restore from a parsed mapping guide
 #'
 #' Given a parsed guide payload (\code{parse_mapping_guide_txt()}) and the
@@ -128,8 +138,7 @@ plan_mapping_guide_restore <- function(payload, available_columns) {
 
         src <- as.character(pairs$source_column[[i]])
         if (is.na(src) || !nzchar(trimws(src))) next
-        cols <- trimws(strsplit(src, "\\s*\\+\\s*", perl = TRUE)[[1]])
-        cols <- cols[nzchar(cols)]
+        cols <- guide_source_columns(src, available_columns)
         present <- cols[cols %in% available_columns]
         absent <- cols[!cols %in% available_columns]
         matched <- c(matched, present)

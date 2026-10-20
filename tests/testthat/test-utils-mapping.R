@@ -1200,6 +1200,17 @@ testthat::test_that("plan_mapping_guide_restore rebuilds concatenations, constan
     testthat::expect_identical(plan$constants$datasetName, "Rede Felinos")
 })
 
+testthat::test_that("plan_mapping_guide_restore keeps a column whose name has a plus (AUD-15)", {
+    pairs <- data.frame(source_column = c("lat + gps", "year + month"),
+                        dwc_term = c("decimalLatitude", "eventDate"), kind = "column",
+                        constant_value = NA_character_, stringsAsFactors = FALSE)
+    plan <- plan_mapping_guide_restore(list(meta = list(), pairs = pairs),
+                                       available_columns = c("lat + gps", "year", "month"))
+    testthat::expect_identical(plan$map_values$decimalLatitude, "lat + gps")
+    testthat::expect_identical(plan$map_values$eventDate, c("year", "month"))
+    testthat::expect_length(plan$missing_columns, 0L)
+})
+
 # resolve_occurrence_ids (C2) --------------------------------------------
 
 testthat::test_that("resolve_occurrence_ids preserves provided IDs and fills gaps", {

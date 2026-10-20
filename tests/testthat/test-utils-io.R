@@ -354,6 +354,22 @@ testthat::test_that("read_biodiversity_xlsx returns text with ISO dates and plai
     testthat::expect_identical(df$latitude, c("-19.91491", "100000"))
 })
 
+# The fixture holds one cell with the value 0.5208333 and the format h:mm.
+testthat::test_that("read_biodiversity_xlsx keeps a time-only cell as a time (AUD-13)", {
+    df <- read_biodiversity_xlsx(testthat::test_path("fixtures", "time-only.xlsx"))
+    testthat::expect_identical(df$eventTime, "12:30:00")
+    testthat::expect_true(is_dwc_time_value(df$eventTime))
+})
+
+testthat::test_that("read_biodiversity_csv finds the delimiter of a header with a line break (AUD-14)", {
+    path <- tempfile(fileext = ".csv")
+    on.exit(unlink(path), add = TRUE)
+    writeLines(c("\"scientific", "name\",decimalLatitude,decimalLongitude", "Panthera onca,-23.55,-46.63"), path)
+    df <- read_biodiversity_csv(path)
+    testthat::expect_identical(names(df), c("scientific\nname", "decimalLatitude", "decimalLongitude"))
+    testthat::expect_identical(df$decimalLongitude, "-46.63")
+})
+
 testthat::test_that("read_biodiversity_csv reads a Latin-1 file with accents in the header", {
     # Excel in Portuguese saves "CSV (separado por ponto e virgula)" this way.
     payload <- iconv("espécie;município\nPuma concolor;Belém\n", "UTF-8", "latin1", toRaw = TRUE)[[1]]

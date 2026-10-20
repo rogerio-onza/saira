@@ -166,13 +166,16 @@ parse_mapping_guide_txt <- function(path) {
 #'   connection is opened via \code{rostrum_connect()} and closed on exit.
 #' @param scope Character, default "personal".
 #' @param user_id Character, default \code{Sys.getenv("SAIRA_USER", unset = "anonymous")}.
+#' @param available_columns Optional column names of the loaded data. A source
+#'   that is one of them stays whole, so \code{"lat + gps"} is one alias.
 #' @return Invisibly: integer count of (source, term) pairs upserted.
 #' @export
 import_mapping_guide_to_aliases <- function(
     payload,
     conn = NULL,
     scope = "personal",
-    user_id = NULL
+    user_id = NULL,
+    available_columns = NULL
 ) {
     if (!is.list(payload) || is.null(payload$pairs) || !is.data.frame(payload$pairs)) {
         stop("import_mapping_guide_to_aliases: 'payload' must come from parse_mapping_guide_txt().")
@@ -200,8 +203,7 @@ import_mapping_guide_to_aliases <- function(
         if (is.na(src_raw)) next
         term    <- pairs$dwc_term[[i]]
         # Split multi-column composites ("colA + colB") into independent aliases.
-        sources <- trimws(strsplit(src_raw, "\\s*\\+\\s*", perl = TRUE)[[1]])
-        sources <- sources[nzchar(sources)]
+        sources <- guide_source_columns(src_raw, available_columns)
         for (src in sources) {
             tryCatch(
                 {
