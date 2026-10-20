@@ -87,6 +87,32 @@ testthat::test_that("mod_export_server refuses a direct download while the expor
     testthat::expect_false(learned)
 })
 
+testthat::test_that("mod_export_server blocks a blank name and a formula in an unmapped column (AUD-04, AUD-12)", {
+    df <- complete_df(3)
+    df$scientificName[2] <- ""
+    raw <- data.frame(especie = df$scientificName, anotacao = c("ok", "ok", "=1+1"),
+                      stringsAsFactors = FALSE)
+    shiny::testServer(
+        mod_export_server,
+        args = list(
+            mapped_data_r = shiny::reactive(df),
+            download_data_r = shiny::reactive(df),
+            raw_data_r = shiny::reactive(raw),
+            map_values_r = shiny::reactive(list(scientificName = "especie")),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            html <- paste(output$summary$html, collapse = " ")
+            testthat::expect_match(html, "scientificName is empty in 1 record", fixed = TRUE)
+            testthat::expect_match(html, "1 cell(s) in unmapped columns", fixed = TRUE)
+            testthat::expect_match(html, "go_map_unmapped", fixed = TRUE)
+            zip_path <- output$download_real
+            testthat::expect_identical(zip::zip_list(zip_path)$filename, "export_error.csv")
+        }
+    )
+})
+
 testthat::test_that("mod_export_server renders the readiness summary and an empty state without data", {
     shiny::testServer(
         mod_export_server,

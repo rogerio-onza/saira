@@ -178,6 +178,52 @@ testthat::test_that("build_export_summary blocks export when some basisOfRecord 
     testthat::expect_identical(saira:::format_row_list(1:12), "1, 2, 3, 4, 5, 6, 7, 8, 9, 10 (+2)")
 })
 
+testthat::test_that("build_export_summary blocks export when a record has no scientificName (AUD-12)", {
+    df <- sample_mapped()
+    testthat::expect_identical(saira:::build_export_summary(df)$sci_blank_rows, integer(0))
+
+    df$scientificName[2] <- "  "
+    s <- saira:::build_export_summary(mapped_data = df)
+    testthat::expect_true(s$all_required_present)
+    testthat::expect_identical(s$sci_blank_rows, 2L)
+    testthat::expect_true(s$export_blocked)
+})
+
+testthat::test_that("build_export_summary blocks a formula in an unmapped column (AUD-04)", {
+    df <- sample_mapped()
+    raw <- data.frame(
+        especie = df$scientificName,
+        anotacao = c("ok", "=1+1"),
+        vazia = c("", ""),
+        stringsAsFactors = FALSE
+    )
+    map_values <- list(scientificName = "especie")
+
+    s <- saira:::build_export_summary(mapped_data = df, raw_data = raw, map_values = map_values)
+    testthat::expect_identical(s$formula_cells$count, 0L)
+    testthat::expect_identical(s$formula_cells_unmapped$count, 1L)
+    testthat::expect_identical(s$formula_cells_unmapped$sample$column, "anotacao")
+    testthat::expect_identical(s$formula_cells_unmapped$sample$row, 2L)
+    testthat::expect_true(s$export_blocked)
+
+    # A mapped column is the Preview's to check, not this one.
+    s2 <- saira:::build_export_summary(
+        mapped_data = df, raw_data = raw,
+        map_values = list(scientificName = "especie", occurrenceRemarks = "anotacao")
+    )
+    testthat::expect_identical(s2$formula_cells_unmapped$count, 0L)
+    testthat::expect_false(s2$export_blocked)
+})
+
+testthat::test_that("export_bundle_filenames drops the Excel mirror above the sheet row limit (AUD-16)", {
+    at_limit <- saira:::export_bundle_filenames(n_records = 1048575L)
+    testthat::expect_identical(at_limit$auxiliary$xlsx, "saira-occurrences.xlsx")
+
+    above <- saira:::export_bundle_filenames(n_records = 1048576L)
+    testthat::expect_null(above$auxiliary$xlsx)
+    testthat::expect_identical(names(above$auxiliary), "mapping_guide")
+})
+
 testthat::test_that("slugify_dataset_name folds accents and collapses separators", {
     testthat::expect_equal(saira:::slugify_dataset_name("Meu Data Set"), "meu-data-set")
     testthat::expect_equal(saira:::slugify_dataset_name("Coleção de Aves — 2024"), "colecao-de-aves-2024")

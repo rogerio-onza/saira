@@ -3160,3 +3160,17 @@ Formato: ADR leve (Architecture Decision Record).
   - Num texto ou JSON, um numero com mais casas que a grade e a menos de uma grade de um eixo recebe o valor publicado. O teste ignora o sinal, porque "23.55 S" tambem e o ponto. Uma celula que e so um numero fica: e o valor do proprio termo.
   - Os cantos do poligono param em 90 e 180 graus.
 - **Consequencias**: um numero de outro dado perto do ponto tambem muda, como "23.5 C" numa grade de 1 grau. A protecao pesa mais que esse valor.
+
+## ADR-165: O bloqueio da exportacao le o arquivo que o download escreve
+
+- **Data**: 2026-10-20
+- **Status**: Aceito. Revisa ADR-086 (`dynamicProperties`) e ADR-107 (status de conservacao).
+- **Contexto**: a auditoria de 2026-10-16 achou cinco casos em que o pacote nao era o que o resumo da exportacao dizia (AUD-04, AUD-08, AUD-09, AUD-12, AUD-16).
+- **Decisao**:
+  - O resumo procura formulas tambem nas colunas nao mapeadas, com a mesma `unmapped_raw_columns()` do download. Uma formula ali bloqueia, e o botao leva ao Mapeamento, porque a Previa so mostra termos mapeados.
+  - Um `scientificName` vazio em qualquer registro bloqueia, como o `basisOfRecord` vazio.
+  - Acima de 1.048.575 registros o pacote nao leva a copia em Excel, e a aba diz isso. O Excel tem 1.048.576 linhas e o cabecalho ocupa uma. `export_bundle_filenames()` decide para o resumo e para o download.
+  - Uma celula com um objeto JSON entra no `dynamicProperties` com as chaves dela, sem a chave da coluna. Um objeto vazio conta como celula vazia. Uma chave repetida entre colunas nao e tratada.
+  - O valor oficial do MMA e da IUCN substitui uma chave que o objeto ja tem. Sem valor oficial, o valor antigo fica.
+  - Um objeto plano passa por regex, e so um objeto aninhado passa pelo jsonlite. O jsonlite linha a linha levava 1,6 s numa coluna JSON de 21.512 linhas, e 4,1 s por chave no merge.
+- **Consequencias**: os numeros de um objeto aninhado saem como o jsonlite os escreve no merge (`1.0` pode virar `1`).

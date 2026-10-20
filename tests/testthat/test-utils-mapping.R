@@ -196,6 +196,39 @@ testthat::test_that("build_dynamic_properties_json key override falls back to au
     testthat::expect_identical(out2[[1]], "{\"x\":\"v\"}")
 })
 
+testthat::test_that("build_dynamic_properties_json merges a cell that holds a JSON object (AUD-08)", {
+    df <- data.frame(
+        dynamicProperties = c(
+            "{\"temperature\":\"20\",\"mmaThreatStatus\":\"VU\"}",
+            " { \"a\": {\"b\": 1.50} } ",
+            "{}",
+            "{not json}",
+            ""
+        ),
+        cor = c("azul", "", "verde", "", ""),
+        check.names = FALSE,
+        stringsAsFactors = FALSE
+    )
+    out <- build_dynamic_properties_json(df, c("dynamicProperties", "cor"))
+    testthat::expect_identical(out, c(
+        "{\"temperature\":\"20\",\"mmaThreatStatus\":\"VU\",\"cor\":\"azul\"}",
+        "{\"a\":{\"b\":1.50}}",
+        "{\"cor\":\"verde\"}",
+        "{\"dynamicproperties\":\"{not json}\"}",
+        ""
+    ))
+    # A second import gives the same object, not a deeper one.
+    again <- data.frame(dynamicProperties = out[[1]], stringsAsFactors = FALSE)
+    testthat::expect_identical(build_dynamic_properties_json(again, "dynamicProperties"), out[[1]])
+    # Spaces outside the strings go, a brace inside a string stays.
+    spaced <- data.frame(dp = c("{ \"a\" : \"x y\" , \"n\": -2.5e3, \"t\": true }", "{\"s\":\"{x}\"}"),
+                         stringsAsFactors = FALSE)
+    testthat::expect_identical(
+        build_dynamic_properties_json(spaced, "dp"),
+        c("{\"a\":\"x y\",\"n\":-2.5e3,\"t\":true}", "{\"s\":\"{x}\"}")
+    )
+})
+
 testthat::test_that("build_dynamic_properties_json errors on missing column", {
     df <- data.frame(a = "x", stringsAsFactors = FALSE)
     testthat::expect_error(
@@ -1331,6 +1364,30 @@ testthat::test_that("merge_dynamic_property splices into an existing object", {
     testthat::expect_identical(
         saira:::merge_dynamic_property("{\"a\":\"1\"}", "mmaThreatStatus", "CR"),
         "{\"a\":\"1\",\"mmaThreatStatus\":\"CR\"}"
+    )
+})
+
+testthat::test_that("merge_dynamic_property replaces a key the object already has (AUD-09)", {
+    out <- saira:::merge_dynamic_property(
+        c("{\"iucnRedListCategory\":\"LC\",\"n\":20}",
+          "{\"iucnRedListCategory\":\"LC\",\"iucnRedListCategory\":\"NT\"}",
+          "{\"x\":{\"iucnRedListCategory\":\"LC\"}}"),
+        "iucnRedListCategory", "EN"
+    )
+    testthat::expect_identical(out, c(
+        "{\"iucnRedListCategory\":\"EN\",\"n\":20}",
+        "{\"iucnRedListCategory\":\"EN\"}",
+        "{\"x\":{\"iucnRedListCategory\":\"LC\"},\"iucnRedListCategory\":\"EN\"}"
+    ))
+    # The key inside a string value is not a member, so the pair is added.
+    testthat::expect_identical(
+        saira:::merge_dynamic_property("{\"note\":\"x \\\"k\\\":1\"}", "k", "v"),
+        "{\"note\":\"x \\\"k\\\":1\",\"k\":\"v\"}"
+    )
+    # Without a new value the old one stays.
+    testthat::expect_identical(
+        saira:::merge_dynamic_property("{\"mmaThreatStatus\":\"VU\"}", "mmaThreatStatus", NA),
+        "{\"mmaThreatStatus\":\"VU\"}"
     )
 })
 

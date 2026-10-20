@@ -4884,6 +4884,21 @@
     "en": "%d cell(s) start with =, +, - or @. A spreadsheet runs the value as a formula when a person opens occurrence.txt. Correct them in the preview.",
     "es": "%d celda(s) empiezan con =, +, - o @. Una hoja de cálculo ejecuta el valor como fórmula cuando alguien abre occurrence.txt. Corríjalas en la vista previa."
   },
+  "export_formula_unmapped_body": {
+    "pt": "%d célula(s) de colunas não mapeadas começam com =, +, - ou @ e seguem no occurrence.txt. Uma planilha executa esse valor como fórmula. Corrija a planilha original e envie de novo, ou mapeie a coluna e corrija na pré-visualização.",
+    "en": "%d cell(s) in unmapped columns start with =, +, - or @ and stay in occurrence.txt. A spreadsheet runs the value as a formula. Correct the original spreadsheet and upload it again, or map the column and correct it in the preview.",
+    "es": "%d celda(s) de columnas sin mapear empiezan con =, +, - o @ y siguen en occurrence.txt. Una hoja de cálculo ejecuta el valor como fórmula. Corrija la hoja original y súbala de nuevo, o mapee la columna y corríjala en la vista previa."
+  },
+  "export_blocked_sci_blank": {
+    "pt": "scientificName vazio em %d registro(s). O GBIF exige o nome em todo registro. Preencha na pré-visualização. Linhas:",
+    "en": "scientificName is empty in %d record(s). GBIF needs the name on every record. Fill it in the preview. Rows:",
+    "es": "scientificName vacío en %d registro(s). GBIF exige el nombre en todo registro. Complételo en la vista previa. Filas:"
+  },
+  "export_xlsx_mirror_skipped": {
+    "pt": "O pacote não leva a cópia em Excel: o arquivo tem %d registros, e uma planilha do Excel aceita até 1.048.575. O occurrence.txt leva todos os registros.",
+    "en": "The package has no Excel copy: the file has %d records, and an Excel sheet takes up to 1,048,575. occurrence.txt carries all the records.",
+    "es": "El paquete no lleva la copia en Excel: el archivo tiene %d registros, y una hoja de Excel acepta hasta 1.048.575. occurrence.txt lleva todos los registros."
+  },
   "preview_fix_pill_country": {
     "pt": "País",
     "en": "Country",

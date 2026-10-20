@@ -1885,6 +1885,10 @@ slugify_dataset_name <- function(x) {
     s
 }
 
+# An Excel sheet has 1,048,576 rows and the header takes one. writexl stops
+# the whole download on a larger table.
+xlsx_max_records <- 1048575L
+
 #' Export bundle file names, grouped by role
 #'
 #' Single source of truth for what the DwC-A download contains, so the Export
@@ -1896,13 +1900,16 @@ slugify_dataset_name <- function(x) {
 #' @param dataset_name Dataset name (from the `datasetName` constant), or NULL.
 #' @param has_sensitive Whether any record was generalized (adds the private
 #'   real-coordinates download).
+#' @param n_records Number of records. Above `xlsx_max_records` the bundle has
+#'   no Excel mirror (AUD-16).
 #' @return List with `slug`, `zip` (download file name), `dwca` (standard core
-#'   trio), `auxiliary` (list: `xlsx`, `mapping_guide`) and, when
+#'   trio), `auxiliary` (list: `xlsx` when it fits, `mapping_guide`) and, when
 #'   `has_sensitive`, `private` (the real-coordinates `.xlsx`). The private
 #'   file has its own download, so a shared bundle never carries the exact
 #'   points (ADR-163).
 #' @noRd
-export_bundle_filenames <- function(dataset_name = NULL, has_sensitive = FALSE) {
+export_bundle_filenames <- function(dataset_name = NULL, has_sensitive = FALSE,
+                                    n_records = 0L) {
     slug <- slugify_dataset_name(dataset_name)
     if (!nzchar(slug)) slug <- "saira"
 
@@ -1912,6 +1919,7 @@ export_bundle_filenames <- function(dataset_name = NULL, has_sensitive = FALSE) 
         xlsx = paste0(slug, "-occurrences.xlsx"),
         mapping_guide = paste0(slug, "-mapping-guide.txt")
     )
+    if (isTRUE(n_records > xlsx_max_records)) auxiliary$xlsx <- NULL
     private <- if (isTRUE(has_sensitive)) paste0(slug, "-sensitive-coords.xlsx")
 
     list(

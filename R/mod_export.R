@@ -132,7 +132,10 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 generalization_payload = call_r(sensitive_generalization_payload_r),
                 dataset_name = dataset_name_r(),
                 coord_validation = call_r(coord_validation_r),
-                preview_problems_n = call_r(preview_problems_n_r)
+                preview_problems_n = call_r(preview_problems_n_r),
+                raw_data = call_r(raw_data_r),
+                map_values = call_r(map_values_r),
+                overridden_terms = overridden_mapping_terms(call_r(custom_values_r))
             )
         })
 
@@ -301,6 +304,12 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                                 if (length(s$missing_required) == 0L) "go_fix_terms",
                                 tr("export_action_mapping", lang)))
             }
+            if (length(s$sci_blank_rows) > 0L) {
+                add(pending_row("block", shiny::tagList(
+                    sprintf(tr("export_blocked_sci_blank", lang), length(s$sci_blank_rows)), " ",
+                    shiny::tags$code(format_row_list(s$sci_blank_rows))
+                ), "go_preview", tr("export_action_preview", lang)))
+            }
             if (length(s$coord_invalid_rows) > 0L) {
                 add(pending_row("block", shiny::tagList(
                     sprintf(tr("export_blocked_coord_invalid", lang), length(s$coord_invalid_rows)), " ",
@@ -350,6 +359,19 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     ))
                 ), "go_preview", tr("export_action_preview", lang)))
             }
+            # The Preview shows only mapped terms, so these go back to Mapping.
+            fu <- s$formula_cells_unmapped
+            if (is.list(fu) && isTRUE(fu$count > 0L)) {
+                add(pending_row("block", shiny::tagList(
+                    shiny::strong(tr("export_formula_title", lang)), " ",
+                    sprintf(tr("export_formula_unmapped_body", lang), fu$count), " ",
+                    shiny::tags$code(paste(
+                        sprintf(tr("export_date_range_row", lang),
+                                fu$sample$row, fu$sample$column, fu$sample$value),
+                        collapse = ", "
+                    ))
+                ), "go_map_unmapped", tr("export_action_mapping", lang)))
+            }
             cf <- s$coord_flags
             if (is.list(cf) && isTRUE(cf$count > 0L)) {
                 add(pending_row("warn", shiny::tagList(
@@ -394,6 +416,9 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     sprintf(tr("export_zero_count_absent", lang), length(s$zero_count_rows)), " ",
                     shiny::tags$code(format_row_list(s$zero_count_rows))
                 )))
+            }
+            if (is.null(s$files$auxiliary$xlsx)) {
+                add(pending_row("info", sprintf(tr("export_xlsx_mirror_skipped", lang), s$record_count)))
             }
             if (length(unmapped_cols) > 0L) {
                 add(pending_row("info", shiny::tagList(
