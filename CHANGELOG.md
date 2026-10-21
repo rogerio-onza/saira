@@ -87,6 +87,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
 
 ### Fixed
+- **mapping:** Map a column picked again after a Reset, not only show it on the card
+- **mapping:** Draw the cards of a new upload without the columns mapped on the previous sheet
 - **generalization:** Keep the protection of a species after its name is corrected in the Names tab, ADR-164
 - **generalization:** Replace copies of the exact point in text and JSON fields with the generalized value, ADR-164
 - **generalization:** Generalize a record whose dataGeneralizations note is about other data, and blank its verbatim coordinates, ADR-164
@@ -215,6 +217,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **docs:** Describe the current tabs, export files and CI in the architecture and contributing guides
 
 ### Tests
+- **build:** Run the E2E flows and the roxygen and CSS checks in CI, from the release gate step list
+- **build:** Check the roxygen output and the CSS bundle in a temp dir, without a change to the working tree
+- **build:** Add E2E flows for a re-upload and Reset, a card after a guide import, and the public and private downloads
 - **build:** Stop the release gate on a stale Rd file or an R CMD check warning
 - **build:** Serve the E2E app through run_app() and keep Chrome timers unthrottled in long runs
 - **build:** Guard the mapping reactivity fixes and run the full flow end to end in the release gate

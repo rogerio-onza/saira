@@ -11,9 +11,11 @@
 #
 # Usage:
 #   setwd(here::here()); source("data-raw/build_css.R")
+#   Rscript data-raw/build_css.R [output]   (the release gate builds to a temp file)
 
 css_dir <- file.path("inst", "app", "www", "css")
-output  <- file.path("inst", "app", "www", "custom.css")
+args    <- commandArgs(trailingOnly = TRUE)
+output  <- if (length(args) > 0L) args[[1]] else file.path("inst", "app", "www", "custom.css")
 
 if (!dir.exists(css_dir)) {
     stop("[Saira] CSS source directory not found: ", css_dir)

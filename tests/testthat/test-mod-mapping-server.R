@@ -1761,6 +1761,37 @@ testthat::test_that("a guide import fills a card the user cleared", {
     )
 })
 
+# Reset clears every card by code, and the client echoes a cleared select as
+# NULL. The old column stayed pending, so picking it again was read as the stale
+# echo: the card showed the column, and the export did not map it.
+testthat::test_that("a column picked again after a Reset is mapped", {
+    df <- data.frame(
+        especie = c("Panthera onca", "Leopardus pardalis"),
+        ambiente = c("forest", "savanna"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            session$setInputs(map_habitat = "ambiente")
+            testthat::expect_identical(rv$map_values[["habitat"]], "ambiente")
+
+            session$setInputs(confirm_reset = 1)
+            session$setInputs(map_habitat = NULL)
+            testthat::expect_identical(rv$map_values[["habitat"]], "")
+
+            session$setInputs(map_habitat = "ambiente")
+            testthat::expect_identical(rv$map_values[["habitat"]], "ambiente")
+        }
+    )
+})
+
 # A fixed value on the country card fills the term for every row and overrides
 # any column mapping, so the coordinate gate has to accept it. It did not, which
 # blocked coordinate validation for the exact case the fixed value exists for: a
