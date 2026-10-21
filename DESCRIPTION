@@ -11,7 +11,6 @@ URL: https://github.com/rogerio-onza/saira
 BugReports: https://github.com/rogerio-onza/saira/issues
 Encoding: UTF-8
 Depends: R (>= 4.1.0)
-RoxygenNote: 7.3.3
 Imports:
     shiny (>= 1.8.1),
     htmltools,
@@ -106,3 +105,4 @@ Collate:
     'utils_threat_status.R'
     'utils_version.R'
     'utils_vocabulary.R'
+Config/roxygen2/version: 8.1.1

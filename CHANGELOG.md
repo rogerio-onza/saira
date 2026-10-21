@@ -217,6 +217,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **docs:** Describe the current tabs, export files and CI in the architecture and contributing guides
 
 ### Tests
+- **build:** Update every R package in renv.lock, roxygen2 8.1.1 included, and run the gate job with the roxygen2 version of DESCRIPTION
 - **build:** Run the E2E flows and the roxygen and CSS checks in CI, from the release gate step list
 - **build:** Check the roxygen output and the CSS bundle in a temp dir, without a change to the working tree
 - **build:** Add E2E flows for a re-upload and Reset, a card after a guide import, and the public and private downloads

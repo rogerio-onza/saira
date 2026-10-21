@@ -27,6 +27,15 @@ file_sums <- function(root, paths) {
 }
 
 check_roxygen <- function() {
+    # A different roxygen2 version rewrites every file, so the diff below would
+    # say "out of date" for a current tree.
+    note <- read.dcf("DESCRIPTION", fields = "Config/roxygen2/version")[[1]]
+    installed <- as.character(utils::packageVersion("roxygen2"))
+    if (!identical(installed, note)) {
+        stop("roxygen2 ", installed, " is installed, but DESCRIPTION:Config/roxygen2/version is ",
+             note, ". Install roxygen2 ", note, " to compare.", call. = FALSE)
+    }
+
     # document() rewrites man/, NAMESPACE and DESCRIPTION:Collate. Run it on a
     # copy, so a stale tree fails here without a change to the developer's files.
     copy <- tempfile("saira-roxygen-")
