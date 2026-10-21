@@ -118,14 +118,19 @@ jobs:
             any::devtools
             any::testthat
             any::withr
-            any::shinytest2
-            any::chromote
             any::httr2
             any::future
             any::furrr
             any::parallelly
             ropensci/rnaturalearthhires
           dependencies: '"hard"'
+
+      # Not in the list above: pak maps the chromote system requirement to
+      # Chromium from a Launchpad PPA, and that PPA answered 503 on 2026-10-21
+      # and failed the job. install.packages() installs no system packages, and
+      # chromote uses the Google Chrome of the runner image.
+      - name: Install the browser test packages
+        run: Rscript -e 'install.packages(c("shinytest2", "chromote"))'
 
       - name: Run the CI steps of the release gate
         run: Rscript scripts/release_gate.R --ci
