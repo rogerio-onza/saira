@@ -83,3 +83,49 @@ jobs:
           upload-snapshots: true
           args: 'c("--no-manual")'
           error-on: '"error"'
+
+  # The checks R CMD check does not cover: roxygen and CSS output are current,
+  # and the browser flows (E2E). scripts/release_gate.R holds the list, so a
+  # local `--ci` run is the same job. The runner image has Google Chrome, which
+  # chromote finds with no setup.
+  gate:
+    runs-on: ubuntu-latest
+    name: Release gate (CI steps)
+    timeout-minutes: 45
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      RENV_CONFIG_AUTOLOADER_ENABLED: false
+    steps:
+      - name: Fail over fast when an apt mirror stops answering
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-fast-failover >/dev/null <<'CONF'
+          Acquire::http::Timeout "15";
+          Acquire::https::Timeout "15";
+          Acquire::Retries "1";
+          CONF
+
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: 'release'
+          use-public-rspm: true
+          extra-repositories: https://ropensci.r-universe.dev
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: |
+            any::devtools
+            any::testthat
+            any::withr
+            any::shinytest2
+            any::chromote
+            any::httr2
+            any::future
+            any::furrr
+            any::parallelly
+            ropensci/rnaturalearthhires
+          dependencies: '"hard"'
+
+      - name: Run the CI steps of the release gate
+        run: Rscript scripts/release_gate.R --ci

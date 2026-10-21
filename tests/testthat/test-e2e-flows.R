@@ -659,6 +659,229 @@ testthat::test_that("E2E: Table | Problems in the Preview switches in the browse
     testthat::expect_identical(app$get_js("window.__hiddenChecks"), 0L)
 })
 
+# --- Flow 10: re-upload and Reset clear the Mapping ---
+#
+# Both bump the downstream reset signal. testServer sees the server state, but
+# only a browser shows whether the recreated cards come back empty, or whether
+# a select keeps a column the new sheet does not have.
+
+testthat::test_that("E2E: a re-upload and a Reset clear the picked columns", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 10000)
+
+    first_path <- tempfile(fileext = ".csv")
+    writeLines(c("especie,ambiente", "Panthera onca,forest"), first_path)
+    second_path <- tempfile(fileext = ".csv")
+    writeLines(c("nome,local", "Puma concolor,Curitiba"), second_path)
+    on.exit(unlink(c(first_path, second_path)), add = TRUE)
+
+    picked <- function() {
+        app$get_values(input = "mapping-map_habitat")$input[["mapping-map_habitat"]] %||% ""
+    }
+    card_is_mapped <- function() {
+        isTRUE(app$get_js(
+            "document.getElementById('mapping-fieldcard_habitat').classList.contains('field-mapped')"
+        ))
+    }
+    pick_habitat <- function() {
+        app$set_inputs(`mapping-map_habitat` = "ambiente")
+        app$wait_for_idle(timeout = 10000)
+        testthat::expect_identical(picked(), "ambiente")
+        testthat::expect_true(card_is_mapped())
+    }
+
+    app$upload_file(`upload-file` = first_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='mapping']")
+    app$wait_for_idle(timeout = 10000)
+    pick_habitat()
+
+    app$click(selector = "#mapping-reset_mapping")
+    app$wait_for_idle(timeout = 5000)
+    app$click(selector = "#mapping-confirm_reset")
+    app$wait_for_idle(timeout = 15000)
+    testthat::expect_identical(picked(), "")
+    testthat::expect_false(card_is_mapped())
+
+    pick_habitat()
+    app$upload_file(`upload-file` = second_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='mapping']")
+    app$wait_for_idle(timeout = 10000)
+    testthat::expect_identical(picked(), "")
+    testthat::expect_false(card_is_mapped())
+    # The select offers the columns of the new sheet only.
+    testthat::expect_identical(
+        app$get_js("$('#mapping-map_habitat option[value=\"ambiente\"]').length"), 0L
+    )
+})
+
+# --- Flow 11: a card after a guide import ---
+#
+# A guide restore sends updates the client echoes one flush later (ADR-104).
+# The card has to show the restored column even when the user cleared it first
+# (#205), and a pick made after the import has to stay.
+
+testthat::test_that("E2E: a guide fills a cleared card, and a later pick stays", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 10000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("especie,latitude,lat_gps",
+          "Panthera onca,-10.1,-10.2",
+          "Leopardus pardalis,-11.1,-11.2"),
+        csv_path
+    )
+    guide_path <- tempfile(fileext = ".txt")
+    writeLines(
+        build_mapping_guide_txt(
+            list(scientificName = "especie", decimalLatitude = "latitude"),
+            data.frame(especie = "x", latitude = "y", stringsAsFactors = FALSE),
+            lang = "en"
+        ),
+        guide_path,
+        useBytes = TRUE
+    )
+    on.exit(unlink(c(csv_path, guide_path)), add = TRUE)
+
+    picked <- function() {
+        app$get_values(input = "mapping-map_decimalLatitude")$input[["mapping-map_decimalLatitude"]] %||% ""
+    }
+    # The items the select draws, which is what the user sees on the card. The
+    # select takes several columns, so this is a vector.
+    shown <- function() {
+        unlist(app$get_js(
+            "$('#mapping-map_decimalLatitude').parent().find('.selectize-control .item')
+               .map(function () { return $(this).attr('data-value'); }).get()"
+        ))
+    }
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='mapping']")
+    app$wait_for_idle(timeout = 10000)
+
+    # Clear the card as a user does, from the select itself.
+    app$run_js("$('#mapping-map_decimalLatitude')[0].selectize.clear()")
+    app$wait_for_idle(timeout = 10000)
+    testthat::expect_identical(picked(), "")
+
+    app$click(selector = "#mapping-import_template")
+    app$wait_for_idle(timeout = 5000)
+    app$upload_file(`mapping-import_template_file` = guide_path)
+    app$wait_for_idle(timeout = 5000)
+    app$click(selector = "#mapping-confirm_import_template")
+    app$wait_for_idle(timeout = 20000)
+    testthat::expect_identical(picked(), "latitude")
+    testthat::expect_identical(shown(), "latitude")
+
+    app$set_inputs(`mapping-map_decimalLatitude` = "lat_gps")
+    app$wait_for_idle(timeout = 10000)
+    testthat::expect_identical(picked(), "lat_gps")
+    testthat::expect_identical(shown(), "lat_gps")
+})
+
+# --- Flow 12: the public package and the private file ---
+#
+# ADR-163: a generalized record leaves the zip with a coarse point, and its
+# exact point goes only into the separate .xlsx. Both downloads run the same
+# masking step, and only the browser run reaches the two download handlers.
+
+testthat::test_that("E2E: the zip carries generalized points and the private file the real ones", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 10000)
+
+    # Both species are VU on the MMA list, so they form the "vu" group.
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("scientificName,decimalLatitude,decimalLongitude,basisOfRecord,eventDate",
+          "Panthera onca,-10.512345,-55.234567,HumanObservation,2023-12-25",
+          "Chrysocyon brachyurus,-13.276543,-52.712345,HumanObservation,2023-11-02"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+    real_lat <- c("-10.512345", "-13.276543")
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='mapping']")
+    app$wait_for_idle(timeout = 10000)
+    app$click(selector = "#mapping-auto_map")
+    app$wait_for_idle(timeout = 20000)
+    app$set_inputs(`mapping-custom_license` = "CC BY 4.0")
+
+    app$set_inputs(main_nav = "sensitive_coords", wait_ = FALSE)
+    wait_until_js(app, "!!document.getElementById('sensitive_coords-sensitive_mode')")
+    app$set_inputs(`sensitive_coords-sensitive_mode` = "generalize")
+    app$wait_for_idle(timeout = 10000)
+    # 4.3 "yes" puts the group at Category 2, which needs a justification.
+    app$set_inputs(`sensitive_coords-q43_vu` = "yes")
+    app$wait_for_idle(timeout = 10000)
+    app$set_inputs(`sensitive_coords-sensitive_justification` = "Hunting pressure.")
+    app$wait_for_idle(timeout = 10000)
+
+    app$set_inputs(main_nav = "export", wait_ = FALSE)
+    wait_until_js(
+        app,
+        "(function () { var b = document.getElementById('export-download_trigger'); return !!b && !b.disabled; })()"
+    )
+    wait_until_js(app, "!!document.getElementById('export-download_private')")
+
+    zip_path <- app$get_download("export-download_real")
+    private_path <- app$get_download("export-download_private")
+    unzip_dir <- tempfile()
+    dir.create(unzip_dir)
+    on.exit(unlink(c(zip_path, private_path, unzip_dir), recursive = TRUE), add = TRUE)
+    utils::unzip(zip_path, exdir = unzip_dir)
+
+    zipped <- list.files(unzip_dir, recursive = TRUE)
+    testthat::expect_false(any(grepl("sensitive", zipped, fixed = TRUE)))
+    occurrence_path <- list.files(
+        unzip_dir, pattern = "^occurrence\\.txt$", recursive = TRUE, full.names = TRUE
+    )
+    testthat::expect_length(occurrence_path, 1L)
+    occurrence <- utils::read.csv(
+        occurrence_path[[1]], sep = ",", colClasses = "character", encoding = "UTF-8"
+    )
+    testthat::expect_identical(nrow(occurrence), 2L)
+    testthat::expect_false(any(occurrence$decimalLatitude %in% real_lat))
+    # The exact points are nowhere in the package, not only off the column.
+    for (file in list.files(unzip_dir, recursive = TRUE, full.names = TRUE, pattern = "\\.(txt|xml)$")) {
+        text <- paste(readLines(file, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+        testthat::expect_false(any(vapply(real_lat, grepl, logical(1), x = text, fixed = TRUE)))
+    }
+
+    testthat::expect_true(grepl("-sensitive-coords\\.xlsx$", private_path))
+    testthat::expect_setequal(readxl::excel_sheets(private_path), c("coordinates", "README"))
+    real <- readxl::read_xlsx(private_path, sheet = "coordinates", col_types = "text")
+    testthat::expect_setequal(real$decimalLatitude, real_lat)
+})
+
 # --- Flow 9: the whole flow on the demo dataset, timed ---
 #
 # The public demo sheet exercises every validation, so this is the one run that

@@ -209,15 +209,18 @@ Sem isso o `<a href>` fica vazio e o navegador baixa a página do app. Veja
 | Servidor de módulo | `test-mod-*.R` (`testServer()`) | `devtools::test()` |
 | Desempenho | `test-performance-regression.R` e testes marcados | `RUN_PERF=true` |
 | Navegador (E2E) | `test-e2e-flows.R` (`shinytest2`) | `RUN_E2E=true` e `NOT_CRAN=true` |
-| Gate local | `scripts/release_gate.R` | `Rscript scripts/release_gate.R` |
+| Gate | `scripts/release_gate.R` | `Rscript scripts/release_gate.R` (CI: `--ci`) |
 
 - `tests/testthat/setup.R` define `SAIRA_DATA_DIR` numa pasta temporária. Assim
   a suíte nunca escreve no `rostrum.sqlite` real.
 - `testServer()` não simula unbind e rebind de inputs no navegador. Mudanças de
   idioma, cards e downloads precisam também do E2E.
-- A CI (`.github/workflows/R-CMD-check.yml`) roda `R CMD check` em PRs para
-  `main` e em pushes para `main`. Ela não roda `release_gate.R` nem o E2E:
-  rode os dois localmente antes de uma release.
+- A CI (`.github/workflows/R-CMD-check.yml`) roda em PRs para `main` e em
+  pushes para `main`. Um job roda `R CMD check`, com a suíte. O outro roda
+  `release_gate.R --ci`: roxygen e CSS atuais, e o E2E.
+- A lista `steps` do gate é a única lista de checks. Cada passo diz se bloqueia
+  (`required`) e se roda na CI (`ci`). Nenhum passo escreve na árvore: roxygen
+  e CSS são gerados numa pasta temporária e comparados.
 
 ---
 

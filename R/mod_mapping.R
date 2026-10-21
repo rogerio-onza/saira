@@ -1389,7 +1389,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     rv$had_first_upload <- TRUE
                 }
             },
-            ignoreNULL = TRUE
+            ignoreNULL = TRUE,
+            # Ahead of output$mapping_ui and the scientificName flag (priority 1)
+            # in the flush. The grid ran first and drew the cards from the old
+            # sheet's mapping, and with no flag flip nothing redrew them.
+            priority = 2
         )
 
         # Consume the deferred auto-map: cards_bound comes from the client after
@@ -1437,6 +1441,12 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     old_value_isolated <- shiny::isolate(rv$map_values[[term]])
                     if (is.null(old_value_isolated) ||
                         !nzchar(trimws(as.character(old_value_isolated)[[1]]))) {
+                        # A clear set by code (Reset) echoes as NULL. Without
+                        # this, the old column stayed pending, and picking it
+                        # again was read as the stale echo and ignored.
+                        if (exists(term, envir = pending_map_echo, inherits = FALSE)) {
+                            rm(list = term, envir = pending_map_echo)
+                        }
                         next
                     }
                     input_value <- ""
