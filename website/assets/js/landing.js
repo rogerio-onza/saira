@@ -334,246 +334,20 @@
     }, { threshold: 0.35 }).observe(sec);
   }
 
-  // Hero: one photo per biome. The next photo comes in as a plumage: each
-  // hexagon turns like a feather scale, first around the subject of the next
-  // photo, shines in the colors of the saíra-sete-cores and shows the next
-  // species on its back. The record fields scramble at the same time.
-  var TURN_MS = 3400;
-
-  var VERT = "attribute vec2 a; void main() { gl_Position = vec4(a, 0.0, 1.0); }";
-  var FRAG = `
-precision highp float;
-uniform sampler2D texA, texB, cells;
-uniform vec2 res, sizeA, sizeB, posA, posB, dim, focus;
-uniform float t, cell, hexS;
-const float PI = 3.14159265;
-
-// object-fit: cover with object-position, in device pixels from the bottom left
-vec2 cover(vec2 p, vec2 sz, vec2 pos) {
-  float s = max(res.x / sz.x, res.y / sz.y);
-  vec2 sc = sz * s;
-  return (p - (res - sc) * vec2(pos.x, 1.0 - pos.y)) / sc;
-}
-float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-
-// Pointy-top hexagons with center spacing 1. hexd is 0.5 on the edge.
-float hexd(vec2 p) { p = abs(p); return max(dot(p, vec2(0.5, 0.8660254)), p.x); }
-vec2 hexCenter(vec2 uv) {
-  vec2 r = vec2(1.0, 1.7320508);
-  vec2 ga = mod(uv, r) - 0.5 * r;
-  vec2 gb = mod(uv - 0.5 * r, r) - 0.5 * r;
-  return uv - (dot(ga, ga) < dot(gb, gb) ? ga : gb);
-}
-
-// Turquoise, green, gold and violet blue, in a loop.
-vec3 sheen(float x) {
-  x = fract(x) * 4.0;
-  vec3 c0 = vec3(0.2, 0.85, 0.95), c1 = vec3(0.4, 0.9, 0.45), c2 = vec3(1.0, 0.68, 0.22), c3 = vec3(0.5, 0.42, 1.0);
-  if (x < 1.0) return mix(c0, c1, x);
-  if (x < 2.0) return mix(c1, c2, x - 1.0);
-  if (x < 3.0) return mix(c2, c3, x - 2.0);
-  return mix(c3, c0, x - 3.0);
-}
-
-void main() {
-  vec2 p = gl_FragCoord.xy;
-  vec2 uv = p / hexS;
-  vec2 hid = hexCenter(uv);
-  vec2 c = hid * hexS;
-  vec2 q = uv - hid;
-  float T = texture2D(cells, (clamp(floor(c / cell), vec2(0.0), dim - 1.0) + 0.5) / dim).r;
-  float ph = clamp((t - 0.03 - 0.62 * T) / 0.24, 0.0, 1.0);
-  ph = ph * ph * (3.0 - 2.0 * ph);
-  float th = PI * ph;
-  float cs = cos(th), sn = sin(th);
-  // The axis snaps to a mirror line of the hexagon, so the tile lands back on the grid.
-  vec2 d = c - focus;
-  float ang = atan(d.y, d.x + 0.001) + 0.5 * PI;
-  ang = floor(ang / (PI / 6.0) + 0.5) * (PI / 6.0);
-  vec2 ax = vec2(cos(ang), sin(ang));
-  vec2 nx = vec2(-ax.y, ax.x);
-  // Perspective view of a tile that turns about ax, solved for tile coordinates.
-  float X = dot(q, nx), Y = dot(q, ax);
-  float f = 4.5;
-  float den = f * cs + X * sn;
-  den = (den < 0.0 ? -1.0 : 1.0) * max(abs(den), 1e-4);
-  float u = X * f / den;
-  float v = Y * (f - u * sn) / f;
-  vec2 w = u * nx + v * ax;
-  // Sample the mipmapped photos before any branch.
-  vec3 fa = texture2D(texA, cover(c + w * hexS, sizeA, posA)).rgb;
-  vec3 fb = texture2D(texB, cover(c + (v * ax - u * nx) * hexS, sizeB, posB)).rgb;
-  vec3 b = texture2D(texB, cover(p, sizeB, posB)).rgb;
-  // Near rest the tile overlaps its neighbors a little, so no hairline gaps show.
-  float edge = 0.5 - 0.035 * sn + 0.03 * (1.0 - smoothstep(0.0, 0.15, sn));
-  float inside = step(hexd(w), edge);
-  vec3 face = cs > 0.0 ? fa : fb;
-  face *= 0.62 + 0.38 * abs(cs) + 0.25 * sn * dot(nx, vec2(-0.6, 0.8));
-  float band = exp(-pow((dot(w, nx) - (0.9 - 1.8 * ph)) / 0.24, 2.0));
-  vec3 glint = sheen(0.2 * hash(hid) + 0.5 * ph + 0.7 * dot(w, ax));
-  face = 1.0 - (1.0 - face) * (1.0 - glint * 0.8 * sn * band);
-  face = mix(face, glint, 0.55 * sn * smoothstep(edge - 0.06, edge, hexd(w)));
-  vec3 col = mix(vec3(0.025, 0.03, 0.035), face, inside);
-  gl_FragColor = vec4(mix(col, b, smoothstep(0.975, 1.0, t)), 1.0);
-}`;
-
-  function mulberry32(a) {
-    return function () {
-      a |= 0; a = a + 0x6D2B79F5 | 0;
-      var t = Math.imul(a ^ a >>> 15, 1 | a);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-  }
-
-  // WebGL stage of the hero. Without WebGL it returns null, and the hero
-  // swaps the photos at once.
-  function plumage(canvas) {
-    var gl = canvas.getContext("webgl", { alpha: false, antialias: false });
-    if (!gl) return null;
-    function shader(type, src) {
-      var s = gl.createShader(type);
-      gl.shaderSource(s, src);
-      gl.compileShader(s);
-      return s;
-    }
-    var prog = gl.createProgram();
-    gl.attachShader(prog, shader(gl.VERTEX_SHADER, VERT));
-    gl.attachShader(prog, shader(gl.FRAGMENT_SHADER, FRAG));
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return null;
-    gl.useProgram(prog);
-    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-    var at = gl.getAttribLocation(prog, "a");
-    gl.enableVertexAttribArray(at);
-    gl.vertexAttribPointer(at, 2, gl.FLOAT, false, 0, 0);
-    var U = {};
-    ["texA", "texB", "cells", "res", "sizeA", "sizeB", "posA", "posB", "dim", "focus", "t", "cell", "hexS"].forEach(function (n) {
-      U[n] = gl.getUniformLocation(prog, n);
-    });
-    gl.uniform1i(U.texA, 0);
-    gl.uniform1i(U.texB, 1);
-    gl.uniform1i(U.cells, 2);
-    var cells = gl.createTexture(), cache = [], raf = 0, pending = null, lost = false;
-
-    function params(filter, min) {
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, min);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    }
-
-    // A power-of-two copy with mipmaps, so the small turning tiles stay smooth.
-    // Two photos play at once, and the cache keeps one more.
-    function photo(img) {
-      for (var k = 0; k < cache.length; k++) {
-        if (cache[k].img === img) { var hit = cache.splice(k, 1)[0]; cache.push(hit); return hit.tex; }
-      }
-      var c = make("canvas");
-      c.width = 2048; c.height = 1024;
-      c.getContext("2d").drawImage(img, 0, 0, 2048, 1024);
-      var tex = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
-      gl.generateMipmap(gl.TEXTURE_2D);
-      params(gl.LINEAR, gl.LINEAR_MIPMAP_LINEAR);
-      cache.push({ img: img, tex: tex });
-      while (cache.length > 3) gl.deleteTexture(cache.shift().tex);
-      return tex;
-    }
-
-    // When each grid cell turns: first around the subject of the next photo,
-    // then around two or three other spots, like records that come in clusters.
-    function grid(W, H, focus, seed) {
-      var size = Math.max(18, Math.round(Math.max(W, H) / 46));
-      var cols = Math.ceil(W / size), rows = Math.ceil(H / size), rand = mulberry32(seed);
-      var spots = [{ x: focus[0] * cols, y: focus[1] * rows, t0: 0 }];
-      for (var s = 1, n = 3 + Math.floor(rand() * 2); s < n; s++) spots.push({ x: rand() * cols, y: rand() * rows, t0: 0.18 + rand() * 0.3 });
-      var spread = Math.max(cols, rows) * 0.75, when = new Float32Array(cols * rows), max = 0;
-      for (var j = 0; j < rows; j++) {
-        for (var i = 0; i < cols; i++) {
-          var v = Infinity;
-          for (var k = 0; k < spots.length; k++) v = Math.min(v, spots[k].t0 + Math.hypot(i - spots[k].x, j - spots[k].y) / spread);
-          v += (rand() - 0.5) * 0.12;
-          if (rand() < 0.02) v = rand() * 0.35;
-          when[j * cols + i] = Math.max(v, 0);
-          max = Math.max(max, when[j * cols + i]);
-        }
-      }
-      var data = new Uint8Array(cols * rows * 4);
-      for (var m = 0; m < cols * rows; m++) data[m * 4] = Math.round(when[m] / max * 255);
-      gl.activeTexture(gl.TEXTURE2);
-      gl.bindTexture(gl.TEXTURE_2D, cells);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, cols, rows, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
-      params(gl.NEAREST, gl.NEAREST);
-      gl.uniform2f(U.dim, cols, rows);
-      gl.uniform1f(U.cell, size);
-    }
-
-    function pos(img) {
-      var p = (img.style.objectPosition || "50% 50%").split(" ");
-      return [parseFloat(p[0]) / 100, parseFloat(p[1]) / 100];
-    }
-
-    // A lost context ends the turn on its own photo, and later swaps have no turn.
-    canvas.addEventListener("webglcontextlost", function () {
-      lost = true;
-      cancelAnimationFrame(raf);
-      if (pending) { var done = pending; pending = null; done(); }
-    });
-
-    return {
-      // Turns photo a into photo b, then calls done. False when it cannot play.
-      play: function (a, b, seed, done) {
-        if (lost) return false;
-        var unit = Math.min(window.devicePixelRatio || 1, 1.5);
-        var W = Math.round(canvas.clientWidth * unit), H = Math.round(canvas.clientHeight * unit);
-        canvas.width = W; canvas.height = H;
-        gl.viewport(0, 0, W, H);
-        var ta = photo(a), tb = photo(b), pa = pos(a), pb = pos(b);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, ta);
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, tb);
-        grid(W, H, [pb[0], 1 - pb[1]], seed);
-        gl.uniform2f(U.res, W, H);
-        gl.uniform2f(U.sizeA, a.naturalWidth, a.naturalHeight);
-        gl.uniform2f(U.sizeB, b.naturalWidth, b.naturalHeight);
-        gl.uniform2f(U.posA, pa[0], pa[1]);
-        gl.uniform2f(U.posB, pb[0], pb[1]);
-        gl.uniform2f(U.focus, pb[0] * W, (1 - pb[1]) * H);
-        // the long side sets the size, so a tall phone hero keeps large tiles
-        gl.uniform1f(U.hexS, Math.max(24, Math.max(W, H) / 34));
-        var t0 = performance.now();
-        function frame(now) {
-          var t = Math.min(1, (now - t0) / TURN_MS);
-          gl.uniform1f(U.t, t);
-          gl.drawArrays(gl.TRIANGLES, 0, 6);
-          if (t < 1) raf = requestAnimationFrame(frame);
-          else { pending = null; done(); }
-        }
-        pending = done;
-        frame(t0);
-        return true;
-      },
-      stop: function () { cancelAnimationFrame(raf); pending = null; }
-    };
-  }
+  // Hero: one photo per biome. The next photo comes into focus while the
+  // last one goes soft, and the record card fades between species.
+  var FADE_MS = 350;
 
   function initHero(hero) {
     var photos = [].slice.call(hero.querySelectorAll(".lp-photo"));
     var tabs = [].slice.call(hero.querySelectorAll(".lp-biome"));
-    var canvas = hero.querySelector(".lp-gl");
-    var stage = reduce ? null : plumage(canvas);
     var rec = {
+      box: hero.querySelector(".lp-rec"),
       name: hero.querySelector(".lp-rec-name"), line: hero.querySelector(".lp-rec-line"),
       cat: hero.querySelector(".lp-rec-cat"), credit: hero.querySelector(".lp-rec-credit span")
     };
     var dur = (Number(hero.getAttribute("data-seconds")) || 7) * 1000;
-    var i = 0, timer = null, left = dur, t0 = 0, holds = {};
+    var i = 0, timer = null, left = dur, t0 = 0, holds = {}, fade = null;
     tabs.forEach(function (t, k) { if (t.getAttribute("aria-pressed") === "true") i = k; });
     hero.style.setProperty("--dur", dur / 1000 + "s");
 
@@ -586,36 +360,39 @@ void main() {
       };
     }
 
-    function show(k) {
+    // prev is the photo that goes soft under the next one, or -1 for a cut
+    function show(k, prev) {
       photos.forEach(function (p, j) {
         p.classList.toggle("is-on", j === k);
+        p.classList.toggle("is-in", j === k && prev >= 0);
+        p.classList.toggle("is-prev", j === prev);
         if (j === k) p.removeAttribute("aria-hidden"); else p.setAttribute("aria-hidden", "true");
       });
-      canvas.classList.remove("is-on");
     }
 
     function loaded(img) { return img.complete && img.naturalWidth > 0; }
 
+    function fill(to) {
+      rec.name.textContent = to.name; rec.line.textContent = to.line; rec.credit.textContent = to.credit;
+      rec.cat.textContent = to.cat; rec.cat.setAttribute("data-code", to.code);
+    }
+
     function go(n) {
       if (n === i) return;
-      var from = record(i), to = record(n), a = photos[i], b = photos[n], seed = i * 31 + n * 17 + 5;
-      // a turn still running ends at once on its own photo
-      if (stage) stage.stop();
-      show(i);
+      var to = record(n), prev = i;
       i = n;
       tabs.forEach(function (t, k) {
         t.classList.toggle("is-on", k === i);
         t.classList.toggle("is-done", k < i);
         t.setAttribute("aria-pressed", k === i ? "true" : "false");
       });
-      rec.credit.textContent = to.credit;
-      if (stage && loaded(a) && loaded(b) && stage.play(a, b, seed, function () { show(n); })) {
-        canvas.classList.add("is-on");
-        scramble(rec.name, from.name, to.name);
-        scramble(rec.line, from.line, to.line, function (p) { if (p >= 0.6) { rec.cat.textContent = to.cat; rec.cat.setAttribute("data-code", to.code); } });
-      } else {
-        show(n);
-        rec.name.textContent = to.name; rec.line.textContent = to.line; rec.cat.textContent = to.cat; rec.cat.setAttribute("data-code", to.code);
+      // a photo that is still loading has nothing to focus, so it cuts in
+      show(n, !reduce && loaded(photos[n]) ? prev : -1);
+      clearTimeout(fade);
+      if (reduce) fill(to);
+      else {
+        rec.box.classList.add("is-out");
+        fade = setTimeout(function () { fill(to); rec.box.classList.remove("is-out"); }, FADE_MS);
       }
       left = dur;
       if (timer) { clearTimeout(timer); timer = null; run(); }
