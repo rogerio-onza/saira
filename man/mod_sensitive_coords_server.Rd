@@ -48,7 +48,7 @@ Defaults to always-active when not supplied.}
 top-level tab. The invalid-coordinate alert uses it to open Coordinates.}
 }
 \value{
-Reactive list `{ levels, justification, review_date, enabled }`
+Reactive list `list(levels, justification, review_date, enabled)`
   consumed by the export (Preview tab).
 }
 \description{

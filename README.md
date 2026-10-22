@@ -2,7 +2,7 @@
 
 Saíra é um aplicativo em R/Shiny para padronizar planilhas de ocorrências de
 biodiversidade no padrão Darwin Core (DwC) e publicá-las no GBIF e no SiBBr.
-A interface é visual e bilíngue (PT-BR/EN-US); não é preciso programar para usar.
+A interface é visual e trilíngue (PT-BR/EN-US/ES); não é preciso programar para usar.
 
 [🇧🇷 Português](#português) · [🇺🇸 English](#english)
 

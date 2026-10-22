@@ -3,6 +3,7 @@
 ^LICENSE\.md$
 ^README\.md$
 ^CHANGELOG\.md$
+^CONTRIBUTING\.md$
 ^docs$
 ^data-raw$
 ^app\.R$

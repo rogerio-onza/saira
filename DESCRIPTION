@@ -3,8 +3,8 @@ Title: Biodiversity Data Standardization to Darwin Core
 Version: 0.11.2
 Authors@R: person("Rog\u00E9rio", "Nunes Oliveira", email = "rogerio.onza@outlook.com", role = c("aut", "cre"))
 Description: Shiny application for standardizing biodiversity datasets to the
-    Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools
-    for data validation, column mapping, and taxonomic verification. Designed
+    Darwin Core standard. Provides a trilingual interface (PT-BR/EN-US/ES)
+    with tools for data validation, column mapping, and taxonomic verification. Designed
     for use with SiBBr (Sistema de Informação sobre a Biodiversidade Brasileira).
 License: GPL-3
 URL: https://github.com/rogerio-onza/saira

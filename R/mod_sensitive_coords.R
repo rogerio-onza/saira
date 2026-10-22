@@ -89,7 +89,7 @@ restore_choice <- function(saved, choices) {
 #'   Defaults to always-active when not supplied.
 #' @param on_navigate Optional callback `function(tab)` that switches the
 #'   top-level tab. The invalid-coordinate alert uses it to open Coordinates.
-#' @return Reactive list `{ levels, justification, review_date, enabled }`
+#' @return Reactive list `list(levels, justification, review_date, enabled)`
 #'   consumed by the export (Preview tab).
 #' @export
 mod_sensitive_coords_server <- function(id, data_r, lang_r,
