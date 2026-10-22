@@ -20,6 +20,9 @@ mod_export_server(
   custom_values_r = NULL,
   establishment_dropped_r = NULL,
   occurrence_id_info_r = NULL,
+  alias_receipt_r = NULL,
+  coord_validation_r = NULL,
+  preview_problems_n_r = NULL,
   on_navigate = NULL,
   on_export_success = NULL
 )
@@ -42,7 +45,7 @@ download (defaults to `mapped_data_r`).}
 generalization decision (`levels`, `enabled`, ...).}
 
 \item{conservation_payload_r}{Optional reactive with the conservation-status
-selection (`include_mma`, `include_iucn`, `taxon_keys`).}
+selection (`include_mma`, `include_iucn`).}
 
 \item{raw_data_r}{Optional reactive with the original uploaded data.frame.}
 
@@ -57,6 +60,15 @@ whose column carried values outside the controlled vocabulary.}
 
 \item{occurrence_id_info_r}{Optional reactive with the identifier strategy and
 counts from `resolve_occurrence_ids()`.}
+
+\item{alias_receipt_r}{Optional reactive with what the last export taught the
+alias store (`alias_export_receipt()`), shown with an undo (ADR-141).}
+
+\item{coord_validation_r}{Optional reactive with the Coordinates-tab result
+(`validate_coords_cc_df()`), NULL before the tab runs.}
+
+\item{preview_problems_n_r}{Optional reactive with the count of open Preview
+problems.}
 
 \item{on_navigate}{Optional callback `function(tab)` to switch the top-level
 navbar (used by the "fix missing terms" banner action).}

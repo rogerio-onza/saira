@@ -12,20 +12,12 @@
 #' @param session Shiny session
 #' @export
 app_server <- function(input, output, session) {
-    # Reactive: Selected language (debounced after first render)
-    lang_initialized <- shiny::reactiveVal(FALSE)
+    # Selected language. debounce() gives the first value at once and waits
+    # 150 ms only on a change, so the first render has no delay.
     lang_raw_r <- shiny::reactive({
         input$lang_switch %||% "pt"
     })
-    lang_debounced_r <- lang_raw_r |> shiny::debounce(150)
-    lang_r <- shiny::reactive({
-        if (!lang_initialized()) {
-            lang_initialized(TRUE)
-            lang_raw_r()
-        } else {
-            lang_debounced_r()
-        }
-    })
+    lang_r <- lang_raw_r |> shiny::debounce(150)
 
     # Warn once if the package was updated without restarting R (no-op otherwise).
     notify_session_stale(session, lang_r)
@@ -40,11 +32,10 @@ app_server <- function(input, output, session) {
     })
 
     output$nav_preview_title <- shiny::renderUI({
-        tr("nav_preview", lang_r())
-    })
-
-    output$nav_validate_title <- shiny::renderUI({
-        tr("nav_validate", lang_r())
+        shiny::tagList(
+            tr("nav_preview", lang_r()),
+            preview_nav_badge(preview_problems_n(), lang_r())
+        )
     })
 
     output$nav_validate_names_title <- shiny::renderUI({
@@ -64,11 +55,21 @@ app_server <- function(input, output, session) {
     })
 
     output$nav_wiki_title <- shiny::renderUI({
-        tr("nav_wiki", lang_r())
+        label <- tr("nav_wiki", lang_r())
+        shiny::tags$span(
+            title = label,
+            ph_icon("book-open"),
+            shiny::tags$span(label, class = "nav-tool-label")
+        )
     })
 
     output$nav_help_title <- shiny::renderUI({
-        tr("nav_help", lang_r())
+        label <- tr("nav_help", lang_r())
+        shiny::tags$span(
+            title = label,
+            ph_icon("circle-question"),
+            shiny::tags$span(label, class = "nav-tool-label")
+        )
     })
 
     # Version badge (navbar): links to the releases page in the active language.
@@ -116,50 +117,85 @@ app_server <- function(input, output, session) {
         coord_validation_gate <- NULL
     }
 
-    validate_names_r <- mod_validate_names_server("validate_names", mapped_data, lang_r, validation_gate_r = validation_gate, reset_signal_r = reset_signal)
-    name_review_payload_r <- attr(validate_names_r, "review_export_payload")
-    sensitivity_payload_r <- attr(validate_names_r, "sensitivity_payload")
-    conservation_payload_r <- attr(validate_names_r, "conservation_payload")
+    # Bind the root session: this callback fires inside a module's reactive
+    # context, so without an explicit session nav_select would namespace
+    # "main_nav" and silently no-op. When a term is given, also scroll the
+    # Mapping tab to that field card and flash it.
+    navigate_to <- function(tab, term = NULL) {
+        bslib::nav_select("main_nav", selected = tab, session = session)
+        if (!is.null(term) && length(term) == 1L && nzchar(term)) {
+            session$sendCustomMessage(
+                "saira_focus_field",
+                list(id = paste0("mapping-fieldcard_", term))
+            )
+        }
+    }
 
-    # Coordinate validation runs before preview so its transposed-coordinate
-    # correction payload can be applied at export (mirrors name review).
+    # Preview shows the mapped records and lets the user correct cell
+    # problems. Its corrections sit on top of the mapped frame, so every tab
+    # after it (Names, Coordinates, Generalization, Export) reads the corrected
+    # data.
+    # The nav badge counts the problems on the full mapped frame (ADR-021),
+    # about 1.3 s for 21k rows, so it recounts on a tab change or after a
+    # pause in the mapping edits, never on each edit.
+    mapping_settled <- shiny::debounce(mapping_result$map_values_r, 1500)
+    preview_r <- mod_preview_server(
+        "preview", preview_data, lang_r,
+        full_data_r = mapped_data,
+        raw_data_r = raw_data,
+        reset_signal_r = reset_signal,
+        on_navigate = navigate_to,
+        active_r = shiny::reactive(identical(input$main_nav, "preview")),
+        refresh_r = shiny::reactive(list(input$main_nav, mapping_settled())),
+        return_contract = "list"
+    )
+    edited_data <- preview_r$edited_data_r
+    preview_problems_n <- preview_r$problems_n_r
+
+    validate_names_r <- mod_validate_names_server("validate_names", edited_data, lang_r, validation_gate_r = validation_gate, reset_signal_r = reset_signal, return_contract = "list")
+    name_review_payload_r <- validate_names_r$reviews_r
+    sensitivity_payload_r <- validate_names_r$sensitivity_r
+    conservation_payload_r <- validate_names_r$conservation_r
+
+    # The transposed-coordinate correction payload is applied at export
+    # (mirrors name review).
     coord_validation_r <- mod_validate_coords_server(
         "validate_coords",
-        mapped_data,
+        edited_data,
         lang_r,
         validation_gate_r = coord_validation_gate,
-        reset_signal_r = reset_signal
+        reset_signal_r = reset_signal, return_contract = "list"
     )
-    coords_correction_payload_r <- attr(coord_validation_r, "coords_correction_payload")
-    country_fill_payload_r <- attr(coord_validation_r, "country_fill_payload")
+    coords_correction_payload_r <- coord_validation_r$corrections_r
+    country_fill_payload_r <- coord_validation_r$country_r
 
     # Dedicated sensitive-species generalization stage (Chapman 2020, Table 5).
-    # Consumes the Name-tab sensitivity marks plus the coordinate corrections so
-    # its map preview matches the published point; returns the export decision.
+    # Consumes the Name-tab sensitivity marks and name corrections plus the
+    # coordinate corrections, so its map preview matches the published record;
+    # returns the export decision.
     sensitive_generalization_payload_r <- mod_sensitive_coords_server(
         "sensitive_coords",
-        mapped_data,
+        edited_data,
         lang_r,
         sensitivity_payload_r = sensitivity_payload_r,
         coords_correction_payload_r = coords_correction_payload_r,
         country_fill_payload_r = country_fill_payload_r,
+        name_review_payload_r = name_review_payload_r,
         reset_signal_r = reset_signal,
         # Its map path is observer-driven, and observers ignore tab visibility,
         # so without this every mapping edit rebuilds the whole mapped frame for
         # a map nobody is looking at.
-        active_r = shiny::reactive(identical(input$main_nav, "sensitive_coords"))
+        active_r = shiny::reactive(identical(input$main_nav, "sensitive_coords")),
+        on_navigate = navigate_to
     )
-
-    # Preview is read-only (the download/export flow lives in the Export tab).
-    mod_preview_server("preview", preview_data, lang_r)
 
     # Export review + publish hub: the same validation/generalization payloads
     # feed the summary, and the DwC-A download flow lives here (ADR-103).
     mod_export_server(
         "export",
-        mapped_data,
+        edited_data,
         lang_r,
-        download_data_r                    = mapped_data,
+        download_data_r                    = edited_data,
         name_review_payload_r              = name_review_payload_r,
         coords_correction_payload_r        = coords_correction_payload_r,
         country_fill_payload_r             = country_fill_payload_r,
@@ -171,37 +207,29 @@ app_server <- function(input, output, session) {
         custom_values_r                    = mapping_result$custom_values_r,
         establishment_dropped_r            = mapping_result$establishment_dropped_r,
         occurrence_id_info_r               = mapping_result$occurrence_id_info_r,
+        alias_receipt_r                    = mapping_result$alias_receipt_r,
+        coord_validation_r                 = coord_validation_r$report_r,
+        preview_problems_n_r               = preview_problems_n,
         on_export_success                  = function() {
             export_signal_rv(shiny::isolate(export_signal_rv()) + 1L)
         },
-        # Bind the root session: this callback fires inside the export module's
-        # reactive context, so without an explicit session nav_select would
-        # namespace "main_nav" and silently no-op. When a term is given, also
-        # scroll the Mapping tab to that field card and flash it.
-        on_navigate                        = function(tab, term = NULL) {
-            bslib::nav_select("main_nav", selected = tab, session = session)
-            if (!is.null(term) && length(term) == 1L && nzchar(term)) {
-                session$sendCustomMessage(
-                    "saira_focus_field",
-                    list(id = paste0("mapping-fieldcard_", term))
-                )
-            }
-        }
+        on_navigate                        = navigate_to
     )
 
     # Independent modules (no data dependency)
     mod_wiki_server("wiki", lang_r)
     mod_help_server("help", lang_r)
 
-    # Auto-navigation after upload
+    # Auto-navigation after upload. No ignoreInit: req(input$file) stops the
+    # startup run before Shiny marks the observer as started, so ignoreInit
+    # skipped the first upload of the session instead.
     shiny::observeEvent(raw_data(),
         {
             if (!is.null(raw_data()) && nrow(raw_data()) > 0) {
                 bslib::nav_select("main_nav", selected = "mapping")
             }
         },
-        ignoreNULL = TRUE,
-        ignoreInit = TRUE
+        ignoreNULL = TRUE
     )
 
     # Cleanup on session end

@@ -432,6 +432,44 @@ testthat::test_that("import_mapping_guide_to_aliases skips constants, splits com
     testthat::expect_identical(as.integer(n), 3L)
 })
 
+testthat::test_that("import_mapping_guide_to_aliases keeps a loaded column whose name has a plus (AUD-15)", {
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit({
+        if (DBI::dbIsValid(conn)) DBI::dbDisconnect(conn)
+        unlink(db_path)
+    }, add = TRUE)
+
+    payload <- list(meta = list(), pairs = data.frame(
+        source_column = c("lat + gps", "year + month"), dwc_term = c("decimalLatitude", "eventDate"),
+        kind = "column", constant_value = NA_character_, stringsAsFactors = FALSE
+    ))
+    n <- import_mapping_guide_to_aliases(payload, conn = conn, user_id = "test_user",
+                                         available_columns = c("lat + gps", "year", "month"))
+    # One alias for "lat + gps", two for the year + month concatenation.
+    testthat::expect_identical(as.integer(n), 3L)
+    terms <- DBI::dbGetQuery(conn, "SELECT dwc_term FROM rostrum_aliases WHERE user_id = 'test_user'")$dwc_term
+    testthat::expect_identical(sum(terms == "decimalLatitude"), 1L)
+})
+
+testthat::test_that("a guide imported without a sheet preserves literal plus headers", {
+    raw <- data.frame("lat + gps" = "-23.5", year = "2024", "month + day" = "03-22",
+                      check.names = FALSE)
+    mapping <- list(decimalLatitude = "lat + gps", eventDate = c("year", "month + day"))
+    path <- tempfile(fileext = ".txt")
+    on.exit(unlink(path), add = TRUE)
+    writeLines(build_mapping_guide_txt(mapping, raw, lang = "en"), path)
+    payload <- parse_mapping_guide_txt(path)
+    conn <- rostrum_connect(path = ":memory:")
+    on.exit(DBI::dbDisconnect(conn), add = TRUE)
+    testthat::expect_identical(import_mapping_guide_to_aliases(payload, conn = conn, user_id = "home"), 3L)
+    rows <- DBI::dbGetQuery(conn, "SELECT col_name_norm, dwc_term FROM rostrum_aliases")
+    testthat::expect_setequal(rows$col_name_norm, normalize_for_matching(names(raw)))
+    testthat::expect_false(any(rows$col_name_norm %in% c("lat", "gps", "month", "day")))
+    plan <- plan_mapping_guide_restore(payload, names(raw))
+    testthat::expect_identical(plan$map_values[names(mapping)], mapping)
+})
+
 testthat::test_that("import_mapping_guide_to_aliases upserts and is idempotent", {
     db_path <- tempfile(fileext = ".sqlite")
     conn <- rostrum_connect(path = db_path)

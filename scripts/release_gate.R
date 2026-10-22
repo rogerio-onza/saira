@@ -1,81 +1,153 @@
 #!/usr/bin/env Rscript
-# Title: Release Gate Script for v0.2.0
+# Title: Release Gate Script
 # Author: Rogerio Nunes Oliveira
 # Date: 2026-02-28
-# Version: 1.0 (Onda 5, Item 5.6)
+# Version: 1.2
 #
-# Usage: Rscript scripts/release_gate.R
+# Usage: Rscript scripts/release_gate.R        (every step, before a release)
+#        Rscript scripts/release_gate.R --ci   (the steps CI runs, see below)
+#
+# `steps` is the one list of checks for local runs and CI. A required step
+# stops the gate at its first failure, so "ALL GATES PASSED" means all of them
+# passed. A step with `required = FALSE` only reports.
+#
+# `ci = FALSE` marks a step CI does not run in the gate job: R CMD check runs
+# the whole test suite in its own job, and the report-only steps need the IPT
+# or a stable machine.
+#
+# No step writes to the working tree. The roxygen and CSS steps generate into a
+# temp dir and compare.
 
-message("=== RELEASE GATE v0.2.0 ===")
+ci <- "--ci" %in% commandArgs(trailingOnly = TRUE)
 
-message("\n[0/6] DESCRIPTION integrity check")
-# Regenerate DESCRIPTION:Collate based on @include directives
-devtools::document()
+# Paths of a file set, named relative to `root`, with their md5 sums.
+file_sums <- function(root, paths) {
+    full <- file.path(root, paths)
+    stats::setNames(unname(tools::md5sum(full)), paths)
+}
 
-# Verify no non-existent files in Collate
-description <- readLines("DESCRIPTION")
-collate_start <- grep("^Collate:", description)
-if (length(collate_start) > 0) {
-    collate_end <- collate_start + 1
-    while (collate_end <= length(description) &&
-           grepl("^    '", description[collate_end])) {
-        collate_end <- collate_end + 1
+check_roxygen <- function() {
+    # A different roxygen2 version rewrites every file, so the diff below would
+    # say "out of date" for a current tree.
+    note <- read.dcf("DESCRIPTION", fields = "Config/roxygen2/version")[[1]]
+    installed <- as.character(utils::packageVersion("roxygen2"))
+    if (!identical(installed, note)) {
+        stop("roxygen2 ", installed, " is installed, but DESCRIPTION:Config/roxygen2/version is ",
+             note, ". Install roxygen2 ", note, " to compare.", call. = FALSE)
     }
-    collate_lines <- description[collate_start:(collate_end - 1)]
-    # Extract filenames from Collate
-    files_in_collate <- gsub(".*'([^']+)'.*", "\\1",
-                            grep("'", collate_lines, value = TRUE))
-    # Check each file exists in R/
-    missing_files <- files_in_collate[!file.exists(file.path("R", files_in_collate))]
 
-    if (length(missing_files) > 0) {
-        stop(sprintf(
-            "DESCRIPTION:Collate references non-existent files: %s",
-            paste(missing_files, collapse = ", ")
-        ))
+    # document() rewrites man/, NAMESPACE and DESCRIPTION:Collate. Run it on a
+    # copy, so a stale tree fails here without a change to the developer's files.
+    copy <- tempfile("saira-roxygen-")
+    dir.create(copy)
+    on.exit(unlink(copy, recursive = TRUE), add = TRUE)
+    file.copy(c("DESCRIPTION", "NAMESPACE", "R", "man", "inst"), copy, recursive = TRUE)
+
+    rd_files <- function(root) file.path("man", dir(file.path(root, "man"), "\\.Rd$"))
+    before <- file_sums(".", c("DESCRIPTION", "NAMESPACE", rd_files(".")))
+    devtools::document(copy, quiet = TRUE)
+    after <- file_sums(copy, c("DESCRIPTION", "NAMESPACE", rd_files(copy)))
+
+    paths <- union(names(before), names(after))
+    changed <- paths[is.na(before[paths]) | is.na(after[paths]) |
+        before[paths] != after[paths]]
+    if (length(changed) > 0L) {
+        stop("Roxygen output is out of date. Run devtools::document() and commit: ",
+             paste(changed, collapse = ", "), call. = FALSE)
+    }
+
+    description <- read.dcf("DESCRIPTION", fields = "Collate")[[1]]
+    collate <- scan(text = description, what = "", quiet = TRUE)
+    missing_files <- collate[!file.exists(file.path("R", collate))]
+    if (length(missing_files) > 0L) {
+        stop("DESCRIPTION:Collate references non-existent files: ",
+             paste(missing_files, collapse = ", "), call. = FALSE)
     }
 }
 
-message("[0/6] ✓ DESCRIPTION integrity OK")
+check_css <- function() {
+    # No test reads custom.css against its sources, so a missed rebuild ships
+    # old styles.
+    built <- tempfile(fileext = ".css")
+    on.exit(unlink(built), add = TRUE)
+    if (system2("Rscript", c(file.path("data-raw", "build_css.R"), built)) != 0L) {
+        stop("data-raw/build_css.R failed", call. = FALSE)
+    }
+    bundle <- file.path("inst", "app", "www", "custom.css")
+    if (!identical(readLines(bundle, warn = FALSE), readLines(built, warn = FALSE))) {
+        stop(bundle, " is out of date. Run data-raw/build_css.R and commit it.", call. = FALSE)
+    }
+}
 
-message("\n[1/6] Unit + Server tests")
-devtools::test()
+check_br_snapshot <- function() {
+    # The IPT often refuses requests, so this step only reports.
+    status <- system2("Rscript", c(file.path("data-raw", "update_brproviders.R"), "--check"))
+    if (status != 0L) stop("update_brproviders.R --check exited with ", status, call. = FALSE)
+}
 
-message("\n[2/6] CSS Guardrails")
-testthat::test_file("tests/testthat/test-css-guardrails.R")
-
-message("\n[3/6] i18n Integrity")
-testthat::test_file("tests/testthat/test-utils-i18n.R")
-testthat::test_file("tests/testthat/test-i18n-a11y-keys.R")
-
-message("\n[4/6] E2E")
-Sys.setenv(RUN_E2E = "true", NOT_CRAN = "true")
-testthat::test_file("tests/testthat/test-e2e-flows.R")
-Sys.unsetenv(c("RUN_E2E", "NOT_CRAN"))
-
-message("\n[5/6] R CMD check")
-devtools::check(document = FALSE, manual = FALSE)
-
-message("\n[6/6] Roxygen hygiene")
-# Verify that exported functions have @examples or are documented
-# and that internal helpers have @noRd (when applicable)
-# This is a soft check — warnings are acceptable, errors are not.
-exported_functions <- Reduce(c,
-    lapply(dir("R", full.names = TRUE), function(f) {
-        lines <- readLines(f, warn = FALSE)
-        exports <- grep("#' @export", lines, value = FALSE)
-        if (length(exports) > 0) {
-            # Find function names after @export
-            for (i in exports) {
-                func_def <- tail(grep("^[a-z_]+\\s*<-\\s*function", lines, value = TRUE), 1)
-                if (length(func_def) > 0) {
-                    gsub("\\s*<-.*", "", func_def)
-                }
-            }
-        }
+check_perf <- function() {
+    # Stage 3 of Rostrum already fails its 0.5 s budget on main, so this step
+    # only reports. Compare the failures with the last baseline.
+    withr::with_envvar(c(RUN_PERF = "true"), {
+        devtools::test(filter = "performance|utils-coords", stop_on_failure = TRUE)
     })
+}
+
+check_e2e <- function() {
+    # test_file() does not load the package, and the flows call its functions.
+    pkgload::load_all(".", quiet = TRUE)
+    withr::with_envvar(c(RUN_E2E = "true", NOT_CRAN = "true"), {
+        testthat::test_file("tests/testthat/test-e2e-flows.R", stop_on_failure = TRUE)
+    })
+}
+
+steps <- list(
+    list(name = "Roxygen output is current", required = TRUE, ci = TRUE,
+         run = check_roxygen),
+    list(name = "CSS bundle is current", required = TRUE, ci = TRUE,
+         run = check_css),
+    list(name = "Flora and Fauna BR snapshot", required = FALSE, ci = FALSE,
+         run = check_br_snapshot),
+    list(name = "Unit + Server tests", required = TRUE, ci = FALSE,
+         run = function() devtools::test(stop_on_failure = TRUE)),
+    list(name = "Performance budgets", required = FALSE, ci = FALSE,
+         run = check_perf),
+    list(name = "CSS guardrails", required = TRUE, ci = FALSE,
+         run = function() testthat::test_file("tests/testthat/test-css-guardrails.R",
+                                              stop_on_failure = TRUE)),
+    list(name = "i18n integrity", required = TRUE, ci = FALSE,
+         run = function() {
+             testthat::test_file("tests/testthat/test-utils-i18n.R", stop_on_failure = TRUE)
+             testthat::test_file("tests/testthat/test-i18n-a11y-keys.R", stop_on_failure = TRUE)
+         }),
+    list(name = "E2E", required = TRUE, ci = TRUE,
+         run = check_e2e),
+    # error_on stops the gate on an ERROR or a WARNING. NOTEs are only printed.
+    list(name = "R CMD check", required = TRUE, ci = FALSE,
+         run = function() devtools::check(document = FALSE, manual = FALSE,
+                                          error_on = "warning"))
 )
 
-message("[6/6] ✓ Roxygen hygiene check passed")
+if (ci) steps <- Filter(function(step) step$ci, steps)
 
+message("=== RELEASE GATE", if (ci) " (CI)", " ===")
+reported <- character(0)
+for (i in seq_along(steps)) {
+    step <- steps[[i]]
+    label <- sprintf("[%d/%d] %s", i, length(steps), step$name)
+    message("\n", label, if (!step$required) " (report only)")
+    if (step$required) {
+        step$run()
+    } else {
+        tryCatch(step$run(), error = function(e) {
+            reported <<- c(reported, step$name)
+            message(label, ": ", conditionMessage(e))
+        })
+    }
+    message(label, ": done")
+}
+
+if (length(reported) > 0L) {
+    message("\nReport-only steps with failures: ", paste(reported, collapse = ", "))
+}
 message("\n=== ALL GATES PASSED ===")

@@ -22,7 +22,7 @@ NULL
 # progress modal. Warming it here cost ~5.8s of every package load: ~4.4s to
 # load the `terra` namespace and ~1.4s to convert the stored sf to a SpatVector.
 # `terra` is in Imports but intentionally absent from NAMESPACE (it is `::`-only,
-# like sf/taxadb/leaflet/DT), so it stays lazy unless something forces it --
+# like sf/leaflet/DT), so it stays lazy unless something forces it --
 # which is exactly what this line used to do. ne_land_env caches process-wide,
 # so the first validation pays the cost once and every later run is warm.
 .onLoad <- function(libname, pkgname) {

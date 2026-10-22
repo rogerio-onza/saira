@@ -119,6 +119,23 @@ testthat::test_that("apply_geodetic_datum is no-op when coordinate columns absen
     testthat::expect_identical(apply_geodetic_datum(df), df)
 })
 
+testthat::test_that("derive_country_code fills a blank countryCode from country (D08)", {
+    df <- data.frame(
+        country = c("Brasil", "Uruguay", "Atlantis", "Brasil"),
+        countryCode = c("", NA, "", "AR"),
+        stringsAsFactors = FALSE
+    )
+    out <- convert_country_code_to_alpha2(derive_country_code(df))
+    # A mapped code stays, an unknown country stays blank.
+    testthat::expect_identical(out$countryCode, c("BR", "UY", NA, "AR"))
+
+    no_col <- derive_country_code(data.frame(country = "Brasil", stringsAsFactors = FALSE))
+    testthat::expect_identical(no_col$countryCode, "BRA")
+    testthat::expect_false("countryCode" %in% names(
+        derive_country_code(data.frame(country = "Atlantis", stringsAsFactors = FALSE))
+    ))
+})
+
 testthat::test_that("convert_country_code_to_alpha2 converts alpha-3 and preserves alpha-2", {
     df <- data.frame(
         countryCode = c("BRA", "BR", "USA", "AR"),
@@ -565,6 +582,27 @@ testthat::test_that("write_xlsx_text_only writes a readable xlsx with text-only 
     testthat::expect_type(back$decimalLatitude, "character")
 })
 
+testthat::test_that("write_sensitive_coords_xlsx writes the points and the notice in one workbook", {
+    if (!requireNamespace("readxl", quietly = TRUE)) testthat::skip("readxl not installed (test-only dep)")
+
+    real <- data.frame(
+        occurrenceID = "o1",
+        decimalLatitude = "-19.900",
+        decimalLongitude = NA_character_,
+        stringsAsFactors = FALSE
+    )
+    tmp <- tempfile(fileext = ".xlsx")
+    on.exit(unlink(tmp), add = TRUE)
+    write_sensitive_coords_xlsx(real, notice = "Private file.", path = tmp)
+
+    testthat::expect_equal(readxl::excel_sheets(tmp), c("coordinates", "README"))
+    back <- readxl::read_xlsx(tmp, sheet = "coordinates", col_types = "text")
+    # Text cells keep the trailing zeros, and a blank stays blank.
+    testthat::expect_identical(back$decimalLatitude, "-19.900")
+    testthat::expect_true(is.na(back$decimalLongitude))
+    testthat::expect_identical(readxl::read_xlsx(tmp, sheet = "README")$README, "Private file.")
+})
+
 testthat::test_that("build_mapping_guide_txt emits magic header, mapping pairs, no data", {
     raw <- data.frame(
         Lat = c(-15.5),
@@ -750,10 +788,9 @@ testthat::test_that("apply_conservation_status adds MMA keys for a BR provider",
 
 testthat::test_that("apply_conservation_status adds IUCN key and merges existing dynprops", {
     testthat::local_mocked_bindings(
-        fetch_gbif_iucn_category = function(usage_keys) {
-            ifelse(!is.na(usage_keys), "NT", NA_character_)
+        colxr_iucn_category = function(names) {
+            ifelse(names == "Harpia harpyja", "NT", NA_character_)
         },
-        gbif_match_usage_keys = function(names) rep(NA_character_, length(names)),
         .package = "saira"
     )
     df <- data.frame(
@@ -761,41 +798,26 @@ testthat::test_that("apply_conservation_status adds IUCN key and merges existing
         dynamicProperties = c("{\"k\":\"v\"}", ""),
         stringsAsFactors = FALSE
     )
-    payload <- list(
-        include_mma = FALSE, include_iucn = TRUE,
-        taxon_keys = data.frame(
-            scientificName = "Harpia harpyja",
-            taxonID = "GBIF:2480528",
-            provider = "gbif",
-            stringsAsFactors = FALSE
-        )
-    )
+    payload <- list(include_mma = FALSE, include_iucn = TRUE)
     out <- saira:::apply_conservation_status(df, payload)
     testthat::expect_identical(
         out$dynamicProperties[[1]], "{\"k\":\"v\",\"iucnRedListCategory\":\"NT\"}"
     )
-    # Row with no GBIF key (match fallback returns NA) -> unchanged.
+    # A name without an IUCN category -> unchanged.
     testthat::expect_identical(out$dynamicProperties[[2]], "")
 })
 
 testthat::test_that("apply_conservation_status merges both MMA and IUCN keys additively", {
     local_conservation_fixture()
     testthat::local_mocked_bindings(
-        fetch_gbif_iucn_category = function(usage_keys) rep("NT", length(usage_keys)),
-        gbif_match_usage_keys = function(names) rep("123", length(names)),
+        colxr_iucn_category = function(names) rep("NT", length(names)),
         .package = "saira"
     )
     df <- data.frame(
         scientificName = "Panthera onca", country = "Brasil",
         stringsAsFactors = FALSE
     )
-    payload <- list(
-        include_mma = TRUE, include_iucn = TRUE,
-        taxon_keys = data.frame(
-            scientificName = "Panthera onca", taxonID = "GBIF:1",
-            provider = "gbif", stringsAsFactors = FALSE
-        )
-    )
+    payload <- list(include_mma = TRUE, include_iucn = TRUE)
     out <- saira:::apply_conservation_status(df, payload)
     testthat::expect_identical(
         out$dynamicProperties[[1]],
@@ -823,21 +845,14 @@ testthat::test_that("apply_conservation_status is a no-op without name, payload 
 testthat::test_that("apply_conservation_status keeps MMA when the IUCN fetch errors", {
     local_conservation_fixture()
     testthat::local_mocked_bindings(
-        fetch_gbif_iucn_category = function(usage_keys) stop("network down"),
-        gbif_match_usage_keys = function(names) rep(NA_character_, length(names)),
+        colxr_iucn_category = function(names) stop("network down"),
         .package = "saira"
     )
     df <- data.frame(
         scientificName = "Panthera onca", country = "Brasil",
         stringsAsFactors = FALSE
     )
-    payload <- list(
-        include_mma = TRUE, include_iucn = TRUE,
-        taxon_keys = data.frame(
-            scientificName = "Panthera onca", taxonID = "GBIF:1",
-            provider = "gbif", stringsAsFactors = FALSE
-        )
-    )
+    payload <- list(include_mma = TRUE, include_iucn = TRUE)
     out <- testthat::expect_warning(
         saira:::apply_conservation_status(df, payload), "IUCN skipped"
     )
@@ -955,8 +970,7 @@ testthat::test_that("apply_conservation_status skips MMA when the country is unk
 testthat::test_that("apply_conservation_status keeps IUCN global while MMA stays national", {
     local_conservation_fixture()
     testthat::local_mocked_bindings(
-        fetch_gbif_iucn_category = function(usage_keys) rep("NT", length(usage_keys)),
-        gbif_match_usage_keys = function(names) rep("123", length(names)),
+        colxr_iucn_category = function(names) rep("NT", length(names)),
         .package = "saira"
     )
     df <- data.frame(
@@ -978,23 +992,6 @@ testthat::test_that("apply_conservation_status keeps IUCN global while MMA stays
     testthat::expect_identical(
         out$dynamicProperties[[2]], "{\"iucnRedListCategory\":\"NT\"}"
     )
-})
-
-testthat::test_that("resolve_iucn_usage_keys strips the GBIF prefix and falls back by name", {
-    testthat::local_mocked_bindings(
-        gbif_match_usage_keys = function(names) rep("999", length(names)),
-        .package = "saira"
-    )
-    tk <- data.frame(
-        scientificName = c("A b", "C d"),
-        taxonID = c("GBIF:111", "FLORABR:xyz"),
-        provider = c("gbif", "florabr"),
-        stringsAsFactors = FALSE
-    )
-    out <- saira:::resolve_iucn_usage_keys(c("A b", "C d", "E f"), tk)
-    # "A b": GBIF taxonID stripped to bare key; "C d": non-GBIF provider -> match
-    # fallback; "E f": absent from taxon_keys -> match fallback.
-    testthat::expect_identical(out, c("111", "999", "999"))
 })
 
 # The two establishment terms are Occurrence terms, which would put them at the
@@ -1309,4 +1306,141 @@ testthat::test_that("process_for_export_with_unmapped drops empty columns with t
 
     testthat::expect_true("note" %in% names(out))
     testthat::expect_false("empty" %in% names(out))
+})
+
+testthat::test_that("apply_name_rank_payload puts the validated rank on one-word names", {
+    report <- data.frame(
+        query_name = c("Felidae", "Aves", "Puma", "Nasua nasua", "Xyz"),
+        taxonRank = c("FAMILY", "class", "genus", "species", "family"),
+        validation_status = c("accepted", "accepted", "accepted", "accepted", "not_found"),
+        stringsAsFactors = FALSE
+    )
+    ranks <- name_rank_table(report)
+    testthat::expect_equal(ranks$query_name, c("Felidae", "Aves", "Puma", "Nasua nasua"))
+
+    df <- data.frame(
+        scientificName = c("Felidae", "Aves", "Puma", "Nasua nasua", "Xyz", "Felidae"),
+        genus = c("Felidae", "Aves", "Puma", "Nasua", "Xyz", "Felidae"),
+        taxonRank = c("genus", "", "genus", "species", "genus", "order"),
+        stringsAsFactors = FALSE
+    )
+    out <- apply_name_rank_payload(df, ranks)
+    testthat::expect_equal(out$taxonRank, c("family", "class", "genus", "species", "genus", "order"))
+    testthat::expect_equal(out$genus, c("", "", "Puma", "Nasua", "Xyz", "Felidae"))
+
+    testthat::expect_identical(apply_name_rank_payload(df, NULL), df)
+    testthat::expect_null(name_rank_table(NULL))
+})
+
+testthat::test_that("apply_name_review_payload moves the derived taxon terms to the corrected name", {
+    df <- data.frame(
+        scientificName = c("Felis concolor", "Puma concolr"),
+        genus = c("Felis", "Puma"),
+        specificEpithet = c("concolor", "concolr"),
+        stringsAsFactors = FALSE
+    )
+    payload <- list(entries = data.frame(
+        query_name = c("Felis concolor", "Puma concolr"),
+        review_type = "correct",
+        original_name = c("Felis concolor", "Puma concolr"),
+        corrected_name = "Puma concolor",
+        reason = "",
+        reviewed_at = Sys.time(),
+        stringsAsFactors = FALSE
+    ))
+
+    out <- apply_name_review_payload(df, payload)
+
+    testthat::expect_identical(out$scientificName, c("Puma concolor", "Puma concolor"))
+    testthat::expect_identical(out$genus, c("Puma", "Puma"))
+    testthat::expect_identical(out$specificEpithet, c("concolor", "concolor"))
+})
+
+testthat::test_that("apply_conservation_status adds the MMA category to a generalized row outside Brazil", {
+    df <- data.frame(scientificName = c("Panthera onca", "Panthera onca"),
+                     country = c("Denmark", "Denmark"), stringsAsFactors = FALSE)
+    testthat::local_mocked_bindings(
+        sensitive_category_for = function(names) rep("VU", length(names)),
+        sensitive_source_for = function(names) rep("MMA 148/2022", length(names)),
+        .package = "saira"
+    )
+    out <- saira:::apply_conservation_status(df, list(include_mma = TRUE), generalized = c(TRUE, FALSE))
+    testthat::expect_match(out$dynamicProperties[1], "mmaThreatStatus")
+    testthat::expect_false(grepl("mmaThreatStatus", out$dynamicProperties[2]))
+})
+
+testthat::test_that("unmapped raw coordinates are blanked on generalized rows (B45)", {
+    df_processed <- data.frame(scientificName = c("Panthera onca", "Puma concolor"),
+                               decimalLatitude = c("-23.55", "-10.1234"),
+                               stringsAsFactors = FALSE)
+    raw <- data.frame(Especie = df_processed$scientificName, Lat = df_processed$decimalLatitude,
+                      Latitude = c("-23.5505", "-10.1234"), CoordX = c("345000", "1"),
+                      Nota = c("ponto -46.6333", "-46.6333"), Plataforma = c("2.5", "2.5"),
+                      Peso = c("3", "3"), stringsAsFactors = FALSE)
+    mv <- list(scientificName = "Especie", decimalLatitude = "Lat")
+    out <- process_for_export_with_unmapped(df_processed, raw, mv, sensitive_rows = 1L)
+    testthat::expect_true(is.na(out$Latitude[1]))
+    testthat::expect_true(is.na(out$CoordX[1]))
+    testthat::expect_equal(out$Plataforma[1], "2.5")
+    testthat::expect_equal(out$Nota[1], "ponto -46.6333")
+    testthat::expect_equal(out$Peso[1], "3")
+    testthat::expect_equal(out$Latitude[2], "-10.1234")
+    testthat::expect_equal(out$Plataforma[2], "2.5")
+})
+
+testthat::test_that("the scrubber blanks copies of the point, not measurements (B52, B59)", {
+    extras <- data.frame(pH = c("6.5", "7"), ponto_sul = c("-23.5505", "-10"),
+                         perto = c("-23.55", "-10"), Y_sul = c("-23", "-10"),
+                         Longo = c("2.5", "2.5"), stringsAsFactors = FALSE)
+    points <- data.frame(decimalLatitude = "-23.5505", decimalLongitude = "-46.6333", grid = 0.1)
+    out <- saira:::blank_coordinate_like_cells(extras, 1L, points)
+    testthat::expect_equal(out$pH, c("6.5", "7"))
+    testthat::expect_equal(out$ponto_sul, c(NA, "-10"))
+    testthat::expect_equal(out$perto, c(NA, "-10"))
+    testthat::expect_equal(out$Y_sul, c(NA, "-10"))
+    testthat::expect_equal(out$Longo, c("2.5", "2.5"))
+    testthat::expect_equal(
+        saira:::coordinate_like_column(c("Longo", "Lontra", "Lateral", "Latitude", "CoordX",
+                                         "LatGPS", "decimalLongitude_original", "x")),
+        c(FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE)
+    )
+})
+
+testthat::test_that("a raw column named like a used DwC term is kept with a suffix (B22)", {
+    df_processed <- data.frame(scientificName = "Panthera onca", decimalLatitude = "",
+                               stringsAsFactors = FALSE)
+    raw <- data.frame(Especie = "Panthera onca", Lat = "", decimalLatitude = "-23.5",
+                      stringsAsFactors = FALSE)
+    mv <- list(scientificName = "Especie", decimalLatitude = "Lat")
+    out <- process_for_export_with_unmapped(df_processed, raw, mv)
+    testthat::expect_equal(out$decimalLatitude_original, "-23.5")
+})
+
+testthat::test_that("formula-like cells are found and get a fix (B48)", {
+    v <- c("=1+1", "@SUM(A1)", "+cmd|' /C calc'!A0", "-1+1", "-23.5", "+5",
+           "-23°33'S", "-23.5,-46.6", "Panthera onca", NA)
+    testthat::expect_equal(is_formula_like(v), c(rep(TRUE, 4), rep(FALSE, 6)))
+    testthat::expect_equal(suggest_formula_fix(c("=1+1", "-1+1")), c("1+1", NA))
+    df <- data.frame(scientificName = c("=1+1", "Puma concolor"), stringsAsFactors = FALSE)
+    testthat::expect_equal(formula_like_cells(df)$count, 1L)
+    p <- detect_preview_problems(df)
+    testthat::expect_equal(p$type[p$row == 1L], "cell_formula")
+    testthat::expect_equal(p$suggestion[p$row == 1L], "1+1")
+})
+
+testthat::test_that("unmapped text with a copy of the point gets the published value (AUD-02)", {
+    df_processed <- data.frame(scientificName = c("Panthera onca", "Panthera onca"),
+                               decimalLatitude = c("-23.6", ""), decimalLongitude = c("-46.6", ""),
+                               stringsAsFactors = FALSE)
+    raw <- data.frame(Especie = df_processed$scientificName,
+                      anotacao = c("GPS: -23.55052, -46.63331", "UTM 7400000.25 330000.75"),
+                      ponto = c("-23.55052,-46.63331", "ok"), stringsAsFactors = FALSE)
+    mv <- list(scientificName = "Especie")
+    # Row 2 was withheld: its point cannot be generalized, so the number goes.
+    points <- data.frame(decimalLatitude = c("-23.55052", "7400000.25"),
+                         decimalLongitude = c("-46.63331", "330000.75"), grid = c(0.1, 0.1))
+    out <- process_for_export_with_unmapped(df_processed, raw, mv,
+                                            sensitive_rows = 1:2, sensitive_points = points)
+    testthat::expect_equal(out$anotacao, c("GPS: -23.6, -46.6", "UTM  "))
+    testthat::expect_equal(out$ponto, c("-23.6,-46.6", "ok"))
 })

@@ -57,7 +57,7 @@ Não. O aplicativo roda **localmente** no seu computador (ou em um servidor da s
 ### Em quais idiomas o aplicativo funciona?
 
 ::: {.faq-card}
-O Saíra é bilíngue: **Português (PT-BR)** e **Inglês (EN-US)**. Você alterna o idioma a qualquer momento no canto superior da interface. Este site de ajuda também está disponível nos dois idiomas (veja o botão de idioma no topo).
+O Saíra é trilíngue: **Português (PT-BR)**, **Inglês (EN-US)** e **Espanhol (ES)**. Você alterna o idioma a qualquer momento no canto superior da interface. Este site de ajuda também está disponível nos três idiomas (veja os botões de idioma no topo).
 :::
 
 ### Posso voltar a uma etapa anterior sem perder o trabalho?
@@ -69,7 +69,7 @@ Sim. O fluxo é flexível: você pode remapear um campo, recarregar a planilha o
 ### Quais formatos de planilha o Saíra aceita?
 
 ::: {.faq-card}
-CSV (`.csv`, `.tsv`, `.txt`), com detecção automática de codificação e separador. Também aceita pacotes de **armadilha fotográfica** (`.zip`): Camtrap DP e exportações do Wildlife Insights. Detalhes em [Importando seus dados](tutoriais/02-upload.qmd).
+CSV (`.csv`, `.tsv`, `.txt`), com detecção automática de codificação e separador, e Excel (`.xlsx`), lido da primeira aba. Também aceita pacotes de **armadilha fotográfica** (`.zip`): Camtrap DP e exportações do Wildlife Insights. Detalhes em [Importando seus dados](tutoriais/02-upload.qmd).
 :::
 
 ### Posso definir um valor fixo para o conjunto todo?

@@ -22,7 +22,7 @@ fonte (multi-coluna serializa como "colA + colB").}
 
 \item{raw_data}{data.frame original (para listar colunas nao usadas).}
 
-\item{lang}{Character scalar "pt" ou "en" (ou reactive — extraido com `()` se for).}
+\item{lang}{Character scalar from `get_languages()` (ou reactive — extraido com `()` se for).}
 
 \item{required_terms}{Character vector de termos DwC obrigatorios (default = required do preview).}
 

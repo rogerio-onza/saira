@@ -6,7 +6,6 @@
 normalize_scientific_name   <- function(...) saira:::normalize_scientific_name(...)
 prepare_taxadb_inputs       <- function(...) saira:::prepare_taxadb_inputs(...)
 resolve_taxadb_matches      <- function(...) saira:::resolve_taxadb_matches(...)
-run_taxadb_cascade          <- function(...) saira:::run_taxadb_cascade(...)
 build_validation_report     <- function(...) saira:::build_validation_report(...)
 init_taxadb_run_state       <- function(...) saira:::init_taxadb_run_state(...)
 next_taxadb_run_step        <- function(...) saira:::next_taxadb_run_step(...)
@@ -74,105 +73,6 @@ testthat::test_that("prepare_taxadb_inputs normalizes only unique raw names", {
             testthat::expect_true(is.na(out$query_name[[7]]))
         }
     )
-})
-
-testthat::test_that("resolve_taxadb_matches detects ambiguity and acceptance", {
-    matches <- data.frame(
-        query_name = c("puma concolor", "abies alba", "abies alba"),
-        scientificName = c("Puma concolor", "Abies alba", "Abies alba"),
-        taxonomicStatus = c("accepted", "synonym", "accepted"),
-        provider = c("gbif", "gbif", "gbif"),
-        stringsAsFactors = FALSE
-    )
-
-    resolved <- resolve_taxadb_matches(matches)
-    resolved <- resolved[order(resolved$query_name), , drop = FALSE]
-
-    testthat::expect_identical(resolved$validation_status[[1]], "ambiguous")
-    testthat::expect_identical(resolved$validation_status[[2]], "accepted")
-})
-
-testthat::test_that("run_taxadb_cascade respects provider priority", {
-    calls <- list()
-
-    fake_fetch <- function(query_names, provider) {
-        calls[[length(calls) + 1L]] <<- list(provider = provider, names = query_names)
-        if (identical(provider, "gbif")) {
-            return(data.frame(
-                query_name = "puma concolor",
-                scientificName = "Puma concolor",
-                taxonomicStatus = "accepted",
-                provider = provider,
-                stringsAsFactors = FALSE
-            ))
-        }
-        if (identical(provider, "itis")) {
-            return(data.frame(
-                query_name = "abies alba",
-                scientificName = "Abies alba",
-                taxonomicStatus = "accepted",
-                provider = provider,
-                stringsAsFactors = FALSE
-            ))
-        }
-        data.frame()
-    }
-
-    out <- run_taxadb_cascade(
-        query_names = c("puma concolor", "abies alba"),
-        providers = c("gbif", "itis"),
-        fetch_fun = fake_fetch
-    )
-
-    testthat::expect_true(any(out$query_name == "puma concolor"))
-    testthat::expect_true(any(out$query_name == "abies alba"))
-    testthat::expect_identical(calls[[1]]$provider, "gbif")
-    testthat::expect_identical(calls[[2]]$provider, "itis")
-})
-
-testthat::test_that("run_taxadb_cascade skips failed providers and keeps metadata", {
-    calls <- character(0)
-
-    fake_fetch <- function(query_names, provider) {
-        calls <<- c(calls, provider)
-
-        if (identical(provider, "gbif")) {
-            return(data.frame())
-        }
-
-        if (identical(provider, "itis")) {
-            stop("provider unavailable")
-        }
-
-        if (identical(provider, "col")) {
-            return(data.frame(
-                query_name = "abies alba",
-                scientificName = "Abies alba",
-                taxonomicStatus = "accepted",
-                provider = provider,
-                stringsAsFactors = FALSE
-            ))
-        }
-
-        data.frame()
-    }
-
-    out <- run_taxadb_cascade(
-        query_names = c("abies alba"),
-        providers = c("gbif", "itis", "col"),
-        fetch_fun = fake_fetch
-    )
-
-    failures <- attr(out, "provider_failures")
-    attempted <- attr(out, "provider_attempted")
-
-    testthat::expect_identical(calls, c("gbif", "itis", "col"))
-    testthat::expect_true(any(out$query_name == "abies alba"))
-    testthat::expect_identical(out$provider[[1]], "col")
-    testthat::expect_true(is.data.frame(failures))
-    testthat::expect_identical(nrow(failures), 1L)
-    testthat::expect_identical(failures$provider[[1]], "itis")
-    testthat::expect_identical(attempted, c("gbif", "itis", "col"))
 })
 
 testthat::test_that("build_validation_report preserves order and flags ignored", {
@@ -295,33 +195,20 @@ testthat::test_that("state machine appends stream incrementally by batch", {
         stringsAsFactors = FALSE
     )
 
-    fake_query <- function(query_names, provider, db) {
-        if (identical(sort(query_names), c("abies alba", "puma concolor"))) {
-            return(data.frame(
-                query_name = c("puma concolor", "abies alba"),
-                scientificName = c("Puma concolor", "Abies alba"),
-                taxonomicStatus = c("accepted", "accepted"),
-                provider = provider,
-                stringsAsFactors = FALSE
-            ))
-        }
-
-        if (identical(sort(query_names), c("canis lupus", "quercus robur"))) {
-            return(data.frame(
-                query_name = c("quercus robur", "canis lupus"),
-                scientificName = c("Quercus robur", "Canis lupus"),
-                taxonomicStatus = c("accepted", "synonym"),
-                provider = provider,
-                stringsAsFactors = FALSE
-            ))
-        }
-
-        data.frame()
+    status <- c("puma concolor" = "accepted", "abies alba" = "accepted",
+                "quercus robur" = "accepted", "canis lupus" = "synonym")
+    fake_match <- function(names) {
+        data.frame(
+            query_name = names,
+            scientificName = tools::toTitleCase(names),
+            provider = "gbif",
+            validation_status = unname(status[names]),
+            stringsAsFactors = FALSE
+        )
     }
 
     testthat::with_mocked_bindings(
-        init_taxadb_provider = function(provider) list(provider = provider),
-        query_taxadb_batch = fake_query,
+        colxr_match_names = fake_match,
         .package = "saira",
         {
             state <- init_taxadb_run_state(
@@ -363,13 +250,12 @@ testthat::test_that("aborted run moves to consolidate before next batch", {
     )
 
     testthat::with_mocked_bindings(
-        init_taxadb_provider = function(provider) list(provider = provider),
-        query_taxadb_batch = function(query_names, provider, db) {
+        colxr_match_names = function(names) {
             data.frame(
-                query_name = query_names[[1]],
-                scientificName = query_names[[1]],
-                taxonomicStatus = "accepted",
-                provider = provider,
+                query_name = names,
+                scientificName = names,
+                provider = "gbif",
+                validation_status = "accepted",
                 stringsAsFactors = FALSE
             )
         },
@@ -411,7 +297,7 @@ testthat::test_that("init_taxadb_run_state: BR providers classified correctly", 
     )
     state <- init_taxadb_run_state(input_df, providers = c("florabr", "gbif"))
     testthat::expect_equal(state$provider_types[["florabr"]], "br")
-    testthat::expect_equal(state$provider_types[["gbif"]], "taxadb")
+    testthat::expect_equal(state$provider_types[["gbif"]], "colxr")
     testthat::expect_equal(state$cascade_phase, "br")
 })
 
@@ -425,7 +311,7 @@ testthat::test_that("init_taxadb_run_state: GBIF auto-added as fallback when onl
     )
     state <- init_taxadb_run_state(input_df, providers = c("florabr"))
     testthat::expect_true("gbif" %in% state$providers)
-    testthat::expect_equal(state$provider_types[["gbif"]], "taxadb")
+    testthat::expect_equal(state$provider_types[["gbif"]], "colxr")
 })
 
 testthat::test_that("init_taxadb_run_state: BR providers ordered before GBIF", {
@@ -517,6 +403,114 @@ testthat::test_that("next_taxadb_run_step: only BR accepted names leave pending_
     )
 })
 
+testthat::test_that("vn_settled_stream shows a name only with its last answer (DEP-07)", {
+    input_df <- data.frame(
+        row_id      = 1:4,
+        input_name  = c("Acceptedus br", "Synonymus br", "Ambiguous br", "Unknownus br"),
+        query_name  = c("acceptedus br", "synonymus br", "ambiguous br", "unknownus br"),
+        skip_reason = NA_character_,
+        stringsAsFactors = FALSE
+    )
+    br_status <- c(
+        "acceptedus br" = "accepted", "synonymus br" = "synonym",
+        "ambiguous br" = "ambiguous", "unknownus br" = "not_found"
+    )
+    gbif_status <- c("synonymus br" = "synonym", "ambiguous br" = "not_found", "unknownus br" = "accepted")
+
+    testthat::with_mocked_bindings(
+        brprovider_ensure_data = function(provider_id, verbose = FALSE, ...) {
+            list(ok = TRUE, available = TRUE, provider_id = provider_id)
+        },
+        brprovider_load_data = function(provider_id, force_reload = FALSE) {
+            data.frame(provider = provider_id, stringsAsFactors = FALSE)
+        },
+        query_brprovider = function(query_names, provider_id, data = NULL, max_distance = 0.1) {
+            data.frame(
+                query_name = query_names,
+                provider = provider_id,
+                validation_status = unname(br_status[query_names]),
+                stringsAsFactors = FALSE
+            )
+        },
+        colxr_match_names = function(names) {
+            out <- data.frame(
+                query_name = names,
+                provider = "gbif",
+                validation_status = unname(gbif_status[names]),
+                stringsAsFactors = FALSE
+            )
+            attr(out, "unanswered") <- character(0)
+            out
+        },
+        .package = "saira",
+        {
+            settled_status <- function(state) {
+                settled <- vn_settled_stream(state)
+                stats::setNames(as.character(settled$validation_status), settled$query_name)
+            }
+            state <- init_taxadb_run_state(input_df, providers = c("florabr", "gbif"), batch_size = 200L)
+            state <- next_taxadb_run_step(state) # prepare -> provider_init
+            state <- next_taxadb_run_step(state) # load Flora BR
+            state <- next_taxadb_run_step(state) # Flora BR batch
+
+            # Flora BR answers four names, but only the accepted one is final.
+            testthat::expect_identical(nrow(state$stream_df), 4L)
+            testthat::expect_identical(settled_status(state), c("acceptedus br" = "accepted"))
+
+            while (!identical(state$current_provider, "gbif") || !identical(state$phase, "provider_finalize")) {
+                state <- next_taxadb_run_step(state)
+            }
+            # A name GBIF does not find still waits, and the list count is the
+            # count of names with an answer.
+            settled <- settled_status(state)
+            testthat::expect_setequal(names(settled), c("acceptedus br", "synonymus br", "unknownus br"))
+            testthat::expect_identical(settled[["unknownus br"]], "accepted")
+            testthat::expect_identical(length(settled), as.integer(state$resolved_unique))
+            # A name that leaves the queue goes to the top of the list.
+            settled_df <- vn_settled_stream(state)
+            order_of <- function(name) settled_df$display_order[settled_df$query_name == name]
+            testthat::expect_gt(order_of("unknownus br"), order_of("acceptedus br"))
+
+            while (!is_taxadb_run_done(state)) {
+                state <- next_taxadb_run_step(state)
+            }
+            testthat::expect_identical(settled_status(state)[["ambiguous br"]], "ambiguous")
+            testthat::expect_identical(nrow(vn_settled_stream(state)), 4L)
+        }
+    )
+})
+
+testthat::test_that("next_taxadb_run_step: BR providers query in small batches, GBIF in large ones", {
+    input_df <- data.frame(
+        row_id      = 1:12,
+        input_name  = paste("Name", 1:12),
+        query_name  = paste("name", 1:12),
+        skip_reason = NA_character_,
+        stringsAsFactors = FALSE
+    )
+
+    testthat::with_mocked_bindings(
+        brprovider_ensure_data = function(provider_id, verbose = FALSE, ...) {
+            list(ok = TRUE, available = TRUE, provider_id = provider_id)
+        },
+        brprovider_load_data = function(provider_id, force_reload = FALSE) {
+            data.frame(provider = provider_id, stringsAsFactors = FALSE)
+        },
+        .package = "saira",
+        {
+            state <- init_taxadb_run_state(input_df, providers = c("florabr"), batch_size = 200L, br_batch_size = 5L)
+            state <- next_taxadb_run_step(state) # prepare -> provider_init
+            state <- next_taxadb_run_step(state) # init/load BR provider
+            testthat::expect_identical(state$provider_batch_total, 3L)
+            testthat::expect_identical(lengths(state$current_batches, use.names = FALSE), c(5L, 5L, 2L))
+            testthat::expect_identical(
+                saira:::split_query_batches(state$pending_queries, batch_size = state$batch_size) |> length(),
+                1L
+            )
+        }
+    )
+})
+
 testthat::test_that("next_taxadb_run_step: BR provider init uses ensure_data and loads cache", {
     input_df <- data.frame(
         row_id = 1L,
@@ -588,4 +582,151 @@ testthat::test_that("next_taxadb_run_step: ensure_data failure is captured in pr
             testthat::expect_match(as.character(state$provider_failures$error[[1L]]), "bootstrap failed")
         }
     )
+})
+
+testthat::test_that("next_taxadb_run_step: a GBIF failure lists the unchecked names (DEP-02)", {
+    input_df <- data.frame(
+        row_id = 1:5,
+        input_name = paste("Name", 1:5),
+        query_name = paste("name", 1:5),
+        skip_reason = NA_character_,
+        stringsAsFactors = FALSE
+    )
+
+    testthat::with_mocked_bindings(
+        colxr_match_names = function(names) {
+            # Batch 1 answers: "name 1" is found, "name 2" is not. Batch 2
+            # loses "name 4" to a network error.
+            answered <- setdiff(names, "name 4")
+            out <- data.frame(
+                query_name = answered,
+                scientificName = answered,
+                provider = "gbif",
+                validation_status = ifelse(answered %in% c("name 1", "name 3"), "accepted", "not_found"),
+                stringsAsFactors = FALSE
+            )
+            attr(out, "unanswered") <- intersect(names, "name 4")
+            out
+        },
+        .package = "saira",
+        {
+            state <- init_taxadb_run_state(input_df, providers = "gbif", batch_size = 2L)
+            while (!is_taxadb_run_done(state)) {
+                state <- next_taxadb_run_step(state)
+            }
+            finalized <- finalize_taxadb_run(state)
+
+            testthat::expect_identical(nrow(finalized$meta$provider_failures), 1L)
+            # "name 2" was checked and not found. "name 5" was never sent.
+            testthat::expect_setequal(finalized$meta$unchecked, c("name 4", "name 5"))
+            status <- stats::setNames(finalized$report$validation_status, finalized$report$query_name)
+            testthat::expect_identical(unname(status[c("name 1", "name 3")]), c("accepted", "accepted"))
+        }
+    )
+})
+
+testthat::test_that("next_taxadb_run_step: names GBIF resolves after a BR failure are not unchecked", {
+    input_df <- data.frame(
+        row_id = 1:2,
+        input_name = c("Panthera onca", "Unknownus sp"),
+        query_name = c("panthera onca", "unknownus sp"),
+        skip_reason = NA_character_,
+        stringsAsFactors = FALSE
+    )
+
+    testthat::with_mocked_bindings(
+        brprovider_ensure_data = function(provider_id, verbose = FALSE, ...) {
+            list(ok = FALSE, available = FALSE, provider_id = provider_id, error = "offline")
+        },
+        colxr_match_names = function(names) {
+            data.frame(
+                query_name = names,
+                scientificName = names,
+                provider = "gbif",
+                validation_status = ifelse(names == "panthera onca", "accepted", "not_found"),
+                stringsAsFactors = FALSE
+            )
+        },
+        .package = "saira",
+        {
+            state <- init_taxadb_run_state(input_df, providers = "faunabr", batch_size = 20L)
+            while (!is_taxadb_run_done(state)) {
+                state <- next_taxadb_run_step(state)
+            }
+            finalized <- finalize_taxadb_run(state)
+
+            testthat::expect_identical(finalized$meta$provider_failures$provider, "faunabr")
+            testthat::expect_identical(finalized$meta$unchecked, "unknownus sp")
+        }
+    )
+})
+
+testthat::test_that("init_taxadb_retry_state queries the unchecked names again and keeps the run (ADR-169)", {
+    input_df <- data.frame(
+        row_id = 1:5,
+        input_name = paste("Name", 1:5),
+        query_name = paste("name", 1:5),
+        skip_reason = NA_character_,
+        stringsAsFactors = FALSE
+    )
+    run_all <- function(state) {
+        while (!is_taxadb_run_done(state)) {
+            state <- next_taxadb_run_step(state)
+        }
+        state
+    }
+
+    sent <- list()
+    first <- testthat::with_mocked_bindings(
+        colxr_match_names = function(names) {
+            # "name 2" is not found. GBIF does not answer for "name 4".
+            answered <- setdiff(names, "name 4")
+            out <- data.frame(
+                query_name = answered,
+                scientificName = answered,
+                provider = "gbif",
+                validation_status = ifelse(answered == "name 2", "not_found", "accepted"),
+                stringsAsFactors = FALSE
+            )
+            attr(out, "unanswered") <- intersect(names, "name 4")
+            out
+        },
+        .package = "saira",
+        run_all(init_taxadb_run_state(input_df, providers = "gbif", batch_size = 2L))
+    )
+    testthat::expect_setequal(first$unchecked_queries, c("name 4", "name 5"))
+
+    retry <- init_taxadb_retry_state(first)
+    testthat::expect_identical(retry$providers, "gbif")
+    testthat::expect_setequal(retry$pending_queries, c("name 4", "name 5"))
+    testthat::expect_identical(retry$total_unique, 2L)
+
+    done <- testthat::with_mocked_bindings(
+        colxr_match_names = function(names) {
+            sent[[length(sent) + 1L]] <<- names
+            data.frame(
+                query_name = names,
+                scientificName = names,
+                provider = "gbif",
+                validation_status = "accepted",
+                stringsAsFactors = FALSE
+            )
+        },
+        .package = "saira",
+        run_all(retry)
+    )
+    testthat::expect_setequal(unlist(sent), c("name 4", "name 5"))
+
+    finalized <- finalize_taxadb_run(done)
+    testthat::expect_identical(finalized$meta$unchecked, character(0))
+    testthat::expect_identical(nrow(finalized$meta$provider_failures), 0L)
+    status <- stats::setNames(finalized$report$validation_status, finalized$report$query_name)
+    testthat::expect_identical(
+        unname(status[paste("name", 1:5)]),
+        c("accepted", "not_found", "accepted", "accepted", "accepted")
+    )
+    testthat::expect_setequal(finalized$stream_df$query_name, paste("name", 1:5))
+
+    # A run with every name checked has nothing to query again.
+    testthat::expect_error(init_taxadb_retry_state(done), "no unchecked names")
 })

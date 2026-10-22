@@ -15,6 +15,7 @@ taxadb_expected_columns <- function() {
         "scientificName",
         "taxonRank",
         "acceptedNameUsageID",
+        "acceptedNameUsage",
         "taxonomicStatus",
         "update_date",
         "kingdom",
@@ -75,38 +76,48 @@ normalize_scientific_name <- function(
         return(NA_character_)
     }
 
-    value <- as.character(name)
-    value <- gsub("\\|", " ", value)
-    value <- gsub("\\s+", " ", trimws(value))
+    value <- gsub("\\s+", " ", trimws(as.character(name)))
 
-    if (!nzchar(value)) {
+    # A placeholder, two names in one cell, a hybrid formula or an
+    # abbreviated genus has no single name to query. "P. onca" finds
+    # nothing, and a hybrid must not match one of its parents.
+    if (scientific_name_kind(value) != "name") {
         return(NA_character_)
     }
+    value <- trimws(sub("\\?+$", "", value))
+    value <- sub(name_unidentified_prefix_re, "", fold_name_diacritics(value), ignore.case = TRUE)
 
     if (remove_authors) {
-        value <- gsub("\\([^\\)]*\\)", " ", value)
+        value <- gsub("\\([^\\)]*\\)|\\[[^]]*\\]", " ", value)
     }
 
     value <- gsub("\\s+", " ", trimws(value))
     if (!nzchar(value)) {
-        return(NA_character_)
-    }
-
-    tokens <- strsplit(value, " ", fixed = TRUE)[[1]]
-    tokens <- trimws(tokens)
-    tokens <- vapply(tokens, strip_taxadb_token, FUN.VALUE = character(1))
-    tokens <- tokens[nzchar(tokens)]
-
-    if (length(tokens) == 0L) {
         return(NA_character_)
     }
 
     rank_tokens <- c("subsp", "subsp.", "var", "var.", "f", "f.", "forma")
     qualifier_tokens <- c("cf", "cf.", "aff", "aff.", "nr", "nr.", "sp", "sp.", "spp", "spp.")
+    # A life stage or a sex typed after the name is not an epithet.
+    noise_tokens <- setdiff(name_non_epithet_words, c(qualifier_tokens, "x"))
+
+    raw_tokens <- strsplit(value, " ", fixed = TRUE)[[1]]
+    tokens <- unname(vapply(raw_tokens, strip_taxadb_token, FUN.VALUE = character(1)))
+    # The author test needs the comma or the year that strip_taxadb_token()
+    # removes, so it reads the typed tokens.
+    evidence <- vapply(seq_along(raw_tokens), function(i) author_evidence(raw_tokens, i), logical(1))
+    kept <- nzchar(tokens) & !(tolower(tokens) %in% noise_tokens)
+    tokens <- tokens[kept]
+    evidence <- evidence[kept]
+
+    if (length(tokens) == 0L) {
+        return(NA_character_)
+    }
 
     if (remove_authors) {
         author_connectors <- c("ex", "in", "et", "al.", "and", "&")
         keep <- logical(length(tokens))
+        epithet_seen <- FALSE
         for (idx in seq_along(tokens)) {
             token <- tokens[[idx]]
             lower <- tolower(token)
@@ -116,7 +127,7 @@ normalize_scientific_name <- function(
                 next
             }
 
-            if (lower %in% rank_tokens) {
+            if (lower %in% c(rank_tokens, qualifier_tokens)) {
                 keep[[idx]] <- TRUE
                 next
             }
@@ -131,12 +142,16 @@ normalize_scientific_name <- function(
                 next
             }
 
-            if (grepl("^[A-Z]", token)) {
+            # The first word after the genus is the epithet even with a
+            # capital ("Mimus Saturninus", "PANTHERA ONCA"), unless
+            # author_evidence() finds a comma or a year ("Panthera Oken, 1816").
+            if (grepl("^[A-Z]", token) && (epithet_seen || evidence[[idx]])) {
                 keep[[idx]] <- FALSE
                 next
             }
 
             keep[[idx]] <- TRUE
+            epithet_seen <- TRUE
         }
         tokens <- tokens[keep]
     }
@@ -146,7 +161,10 @@ normalize_scientific_name <- function(
     }
 
     if (ignore_qualifiers) {
-        had_sp_marker <- any(tolower(tokens) %in% c("sp", "sp.", "spp", "spp."))
+        sp_at <- which(tolower(tokens) %in% c("sp", "sp.", "spp", "spp."))
+        had_sp_marker <- length(sp_at) > 0L
+        # "Scinax sp. nov. 1": what follows the marker is not part of a name.
+        if (had_sp_marker) tokens <- tokens[seq_len(sp_at[[1L]] - 1L)]
         tokens <- tokens[!(tolower(tokens) %in% qualifier_tokens)]
         if (length(tokens) == 1L && had_sp_marker) {
             return(NA_character_)
@@ -158,6 +176,11 @@ normalize_scientific_name <- function(
         return(NA_character_)
     }
 
+    # "Panthera onca." ends a sentence, not an abbreviation.
+    last <- length(tokens)
+    if (!tolower(tokens[[last]]) %in% c(rank_tokens, qualifier_tokens)) {
+        tokens[[last]] <- sub("\\.$", "", tokens[[last]])
+    }
     tokens <- format_scientific_tokens(tokens, rank_tokens)
     normalized <- gsub("\\s+", " ", trimws(paste(tokens, collapse = " ")))
 
@@ -222,81 +245,6 @@ ensure_taxadb_columns <- function(df) {
     df
 }
 
-resolve_query_name_col <- function(matches_df, names_chr) {
-    if ("query_name" %in% names(matches_df)) {
-        return(matches_df)
-    }
-
-    candidate_cols <- c(
-        "input",
-        "input_name",
-        "inputName",
-        "query",
-        "query_name",
-        "search_term",
-        "searched_name",
-        "matched_name",
-        "name"
-    )
-    matched_col <- candidate_cols[candidate_cols %in% names(matches_df)][1]
-
-    if (!is.na(matched_col) && nzchar(matched_col)) {
-        matches_df$query_name <- as.character(matches_df[[matched_col]])
-    } else if ("scientificName" %in% names(matches_df)) {
-        name_lookup <- stats::setNames(names_chr, tolower(names_chr))
-        lower_sn <- tolower(as.character(matches_df$scientificName))
-        mapped <- unname(name_lookup[lower_sn])
-        mapped[is.na(mapped)] <- as.character(matches_df$scientificName)[is.na(mapped)]
-        matches_df$query_name <- mapped
-    } else {
-        matches_df$query_name <- NA_character_
-    }
-
-    matches_df
-}
-
-fetch_taxadb_matches <- function(query_names, provider) {
-    if (length(query_names) == 0L) {
-        return(data.frame())
-    }
-
-    if (is_blank_value(provider)) {
-        stop("provider must be provided.")
-    }
-
-    names_chr <- unique(as.character(query_names))
-    names_chr <- names_chr[!is.na(names_chr) & nzchar(names_chr)]
-    if (length(names_chr) == 0L) {
-        return(data.frame())
-    }
-
-    db <- tryCatch(
-        taxadb::td_create(provider),
-        error = function(e) {
-            stop(sprintf("Failed to initialize taxadb provider '%s': %s", provider, e$message))
-        }
-    )
-
-    matches <- withCallingHandlers(
-        taxadb::filter_name(names_chr, provider = provider, db = db),
-        warning = function(w) {
-            if (grepl("check_from.*tbl_sql|tbl_sql.*check_from|check_from.*deprecated",
-                      conditionMessage(w), ignore.case = TRUE)) {
-                invokeRestart("muffleWarning")
-            }
-        }
-    )
-    matches_df <- as.data.frame(matches, stringsAsFactors = FALSE)
-
-    if (nrow(matches_df) == 0L) {
-        return(data.frame())
-    }
-
-    matches_df$provider <- provider
-    matches_df <- resolve_query_name_col(matches_df, names_chr)
-    matches_df
-}
-
 normalize_taxonomic_status <- function(status) {
     if (is_blank_value(status)) {
         return("unresolved")
@@ -312,45 +260,6 @@ normalize_taxonomic_status <- function(status) {
     }
 
     "unresolved"
-}
-
-resolve_taxadb_matches <- function(matches_df) {
-    if (is.null(matches_df) || nrow(matches_df) == 0L) {
-        return(data.frame())
-    }
-
-    if (!"query_name" %in% names(matches_df)) {
-        stop("matches_df must include query_name.")
-    }
-
-    matches_df <- ensure_taxadb_columns(matches_df)
-    split_matches <- split(matches_df, matches_df$query_name)
-
-    resolved <- lapply(names(split_matches), function(query_name) {
-        slice <- split_matches[[query_name]]
-        match_count <- nrow(slice)
-
-        if (match_count == 1L) {
-            row <- slice[1, , drop = FALSE]
-            row$validation_status <- normalize_taxonomic_status(row$taxonomicStatus)
-            row$match_count <- as.integer(match_count)
-            row$query_name <- query_name
-            return(row)
-        }
-
-        row <- slice[1, , drop = FALSE]
-        row[, ] <- NA
-        row$query_name <- query_name
-        if ("provider" %in% names(slice)) {
-            row$provider <- slice$provider[[1]]
-        }
-        row$scientificName <- query_name
-        row$validation_status <- "ambiguous"
-        row$match_count <- as.integer(match_count)
-        row
-    })
-
-    do.call(rbind, resolved)
 }
 
 build_taxadb_placeholder <- function(query_names, status) {
@@ -468,101 +377,6 @@ collapse_cascade_results <- function(cascade_results) {
     out
 }
 
-run_taxadb_cascade <- function(
-  query_names,
-  providers,
-  fetch_fun = fetch_taxadb_matches
-) {
-    empty_failures_df <- function() {
-        data.frame(provider = character(0), error = character(0), stringsAsFactors = FALSE)
-    }
-
-    failure_list <- list()
-
-    attach_metadata <- function(df, attempted, failures) {
-        attr(df, "provider_attempted") <- attempted
-        attr(df, "provider_failures") <- failures
-        df
-    }
-
-    build_failures_df <- function() {
-        if (length(failure_list) == 0L) return(empty_failures_df())
-        do.call(rbind, failure_list)
-    }
-
-    if (length(query_names) == 0L) {
-        return(attach_metadata(data.frame(), character(0), empty_failures_df()))
-    }
-
-    providers <- providers[!is.na(providers) & nzchar(providers)]
-    if (length(providers) == 0L) {
-        stop("providers must include at least one provider.")
-    }
-
-    remaining <- unique(as.character(query_names))
-    remaining <- remaining[!is.na(remaining) & nzchar(remaining)]
-
-    resolved_list <- list()
-
-    for (provider in providers) {
-        if (length(remaining) == 0L) {
-            break
-        }
-
-        matches <- tryCatch(
-            fetch_fun(remaining, provider),
-            error = function(e) e
-        )
-        if (inherits(matches, "error")) {
-            failure_list[[length(failure_list) + 1L]] <- data.frame(
-                provider = as.character(provider),
-                error    = as.character(matches$message),
-                stringsAsFactors = FALSE
-            )
-            next
-        }
-        if (is.null(matches) || nrow(matches) == 0L) {
-            next
-        }
-
-        resolved <- resolve_taxadb_matches(matches)
-        if (nrow(resolved) == 0L) {
-            next
-        }
-
-        resolved_list[[length(resolved_list) + 1L]] <- resolved
-        resolved_names <- unique(resolved$query_name)
-        remaining <- setdiff(remaining, resolved_names)
-    }
-
-    if (length(remaining) > 0L) {
-        resolved_list[[length(resolved_list) + 1L]] <- build_taxadb_placeholder(
-            remaining,
-            status = "not_found"
-        )
-    }
-
-    if (length(resolved_list) == 0L) {
-        return(attach_metadata(data.frame(), providers, build_failures_df()))
-    }
-
-    all_cols <- unique(unlist(lapply(resolved_list, names), use.names = FALSE))
-    resolved_list <- lapply(resolved_list, function(df) {
-        missing_cols <- setdiff(all_cols, names(df))
-        if (length(missing_cols) > 0L) {
-            for (col_name in missing_cols) {
-                df[[col_name]] <- NA
-            }
-        }
-        df <- df[, all_cols, drop = FALSE]
-        rownames(df) <- NULL
-        df
-    })
-
-    combined <- do.call(rbind, resolved_list)
-    attach_metadata(combined, providers, build_failures_df())
-}
-
 clean_provider_ids <- function(providers) {
     providers_chr <- as.character(providers)
     providers_chr <- providers_chr[!is.na(providers_chr) & nzchar(providers_chr)]
@@ -585,44 +399,25 @@ split_query_batches <- function(query_names, batch_size = 200L) {
     )
 }
 
-init_taxadb_provider <- function(provider) {
-    if (is_blank_value(provider)) {
-        stop("provider must be provided.")
-    }
-
-    tryCatch(
-        taxadb::td_create(provider),
-        error = function(e) {
-            stop(sprintf("Failed to initialize taxadb provider '%s': %s", provider, e$message))
-        }
+# A provider that fails leaves the names of its current and later batches
+# unchecked: without this record they end as "not_found" with no warning
+# (DEP-02). `answered` lists the names of the current batch it did answer.
+record_provider_failure <- function(state, provider, message, answered = character(0)) {
+    state$provider_failures <- rbind(
+        state$provider_failures,
+        data.frame(provider = provider, error = message, stringsAsFactors = FALSE)
     )
-}
-
-query_taxadb_batch <- function(query_names, provider, db) {
-    names_chr <- unique(as.character(query_names))
-    names_chr <- names_chr[!is.na(names_chr) & nzchar(names_chr)]
-
-    if (length(names_chr) == 0L) {
-        return(data.frame())
+    batches <- state$current_batches
+    first <- max(1L, as.integer(state$provider_batch_idx))
+    left <- if (first <= length(batches)) {
+        unlist(batches[first:length(batches)], use.names = FALSE)
+    } else {
+        character(0)
     }
-
-    matches <- withCallingHandlers(
-        taxadb::filter_name(names_chr, provider = provider, db = db),
-        warning = function(w) {
-            if (grepl("check_from.*tbl_sql|tbl_sql.*check_from|check_from.*deprecated",
-                      conditionMessage(w), ignore.case = TRUE)) {
-                invokeRestart("muffleWarning")
-            }
-        }
-    )
-    matches_df <- as.data.frame(matches, stringsAsFactors = FALSE)
-    if (nrow(matches_df) == 0L) {
-        return(data.frame())
-    }
-
-    matches_df$provider <- provider
-    matches_df <- resolve_query_name_col(matches_df, names_chr)
-    matches_df
+    unchecked <- setdiff(intersect(left, state$pending_queries), answered)
+    state$unchecked_queries <- union(state$unchecked_queries, unchecked)
+    state$phase <- "provider_finalize"
+    state
 }
 
 empty_validation_stream <- function() {
@@ -704,6 +499,14 @@ append_stream_items <- function(stream_df, resolved_df, now = Sys.time()) {
     idx <- match(updates$query_name, out$query_name)
     existing_mask <- !is.na(idx)
 
+    # Every answered name goes to the top of the list, also when its status
+    # does not change: the list shows a name when its last answer arrives.
+    max_order <- suppressWarnings(max(out$display_order, na.rm = TRUE))
+    if (is.infinite(max_order) || is.na(max_order)) {
+        max_order <- 0L
+    }
+    order_seq <- seq.int(from = as.integer(max_order) + 1L, length.out = nrow(updates))
+
     if (any(existing_mask)) {
         existing_idx <- idx[existing_mask]
         update_idx <- which(existing_mask)
@@ -723,25 +526,13 @@ append_stream_items <- function(stream_df, resolved_df, now = Sys.time()) {
             out$provider[replace_idx] <- updates$provider[replace_updates]
             out$updated_at[replace_idx] <- as.POSIXct(now, tz = "UTC")
         }
+        out$display_order[existing_idx] <- order_seq[existing_mask]
     }
 
     new_updates <- updates[!existing_mask, , drop = FALSE]
     if (nrow(new_updates) > 0L) {
-        if (nrow(out) == 0L) {
-            start_order <- 1L
-        } else {
-            max_order <- suppressWarnings(max(out$display_order, na.rm = TRUE))
-            if (is.infinite(max_order) || is.na(max_order)) {
-                max_order <- 0L
-            }
-            start_order <- as.integer(max_order) + 1L
-        }
-
         new_updates$updated_at <- as.POSIXct(now, tz = "UTC")
-        new_updates$display_order <- seq.int(
-            from = start_order,
-            length.out = nrow(new_updates)
-        )
+        new_updates$display_order <- order_seq[!existing_mask]
 
         new_updates <- new_updates[, c("query_name", "validation_status", "provider", "updated_at", "display_order"), drop = FALSE]
         out <- rbind(out, new_updates)
@@ -755,6 +546,7 @@ init_taxadb_run_state <- function(
   input_df,
   providers,
   batch_size = 200L,
+  br_batch_size = 5L,
   run_id = as.numeric(Sys.time()) * 1000
 ) {
     if (is.null(input_df) || !is.data.frame(input_df)) {
@@ -769,10 +561,10 @@ init_taxadb_run_state <- function(
         stop("providers must include at least one provider.")
     }
 
-    # Classify each provider as "br" (florabr/faunabr) or "taxadb" (GBIF etc.)
+    # Classify each provider as "br" (florabr/faunabr) or "colxr" (GBIF).
     br_ids <- c("florabr", "faunabr")
     provider_types <- stats::setNames(
-        ifelse(provider_ids %in% br_ids, "br", "taxadb"),
+        ifelse(provider_ids %in% br_ids, "br", "colxr"),
         provider_ids
     )
 
@@ -782,13 +574,13 @@ init_taxadb_run_state <- function(
     has_gbif <- "gbif" %in% provider_ids
     if (has_br && !has_gbif) {
         provider_ids              <- c(provider_ids, "gbif")
-        provider_types["gbif"]    <- "taxadb"
+        provider_types["gbif"]    <- "colxr"
     }
 
-    # Reorder: all BR providers first, then all taxadb providers.
-    br_ordered     <- provider_ids[provider_types[provider_ids] == "br"]
-    taxadb_ordered <- provider_ids[provider_types[provider_ids] == "taxadb"]
-    provider_ids   <- c(br_ordered, taxadb_ordered)
+    # Reorder: all BR providers first, then GBIF.
+    br_ordered    <- provider_ids[provider_types[provider_ids] == "br"]
+    colxr_ordered <- provider_ids[provider_types[provider_ids] == "colxr"]
+    provider_ids  <- c(br_ordered, colxr_ordered)
 
     cascade_phase <- if (length(br_ordered) > 0L) "br" else "fallback"
 
@@ -806,15 +598,20 @@ init_taxadb_run_state <- function(
         cascade_phase = cascade_phase,
         provider_idx = 0L,
         current_provider = "",
-        current_provider_db = NULL,
         current_provider_data = NULL,
         current_batches = batches,
         provider_batch_idx = 0L,
         provider_batch_total = length(batches),
         pending_queries = valid_queries,
+        # Sheet order of the names, for the cells of the run grid.
+        query_order = valid_queries,
         total_unique = length(valid_queries),
         resolved_unique = 0L,
         batch_size = suppressWarnings(as.integer(batch_size)),
+        # A Flora BR or Fauna BR query takes ~0.3 s per name, so a small
+        # batch keeps each run tick short and the progress moves in small
+        # steps. The cost is ~10% more time for the BR queries.
+        br_batch_size = suppressWarnings(as.integer(br_batch_size)),
         input_df = input_df,
         resolved_frames = list(),
         cascade_results = data.frame(),
@@ -824,19 +621,51 @@ init_taxadb_run_state <- function(
             error = character(0),
             stringsAsFactors = FALSE
         ),
+        unchecked_queries = character(0),
         stream_df = empty_validation_stream(),
         error_message = NA_character_
     )
+}
+
+# A retry queries the names a failed provider left unchecked again, with the
+# failed providers only: the other providers already had these names. The new
+# run starts from the answers and the list of the previous run, so its report
+# and its list keep every name (ADR-169).
+init_taxadb_retry_state <- function(prev_state, run_id = as.numeric(Sys.time()) * 1000) {
+    unchecked <- as.character(prev_state$unchecked_queries %||% character(0))
+    failures <- prev_state$provider_failures
+    failed <- if (is.data.frame(failures)) as.character(failures$provider) else character(0)
+    providers <- intersect(as.character(prev_state$providers), failed)
+    if (length(unchecked) == 0L || length(providers) == 0L) {
+        stop("The previous run has no unchecked names.")
+    }
+
+    input_df <- prev_state$input_df
+    state <- init_taxadb_run_state(
+        input_df[input_df$query_name %in% unchecked, , drop = FALSE],
+        providers = providers,
+        batch_size = prev_state$batch_size,
+        br_batch_size = prev_state$br_batch_size,
+        run_id = run_id
+    )
+    state$input_df <- input_df
+    previous <- prev_state$cascade_results
+    if (is.data.frame(previous) && nrow(previous) > 0L) {
+        state$resolved_frames <- list(previous)
+    }
+    state$stream_df <- prev_state$stream_df
+    state$provider_attempted <- as.character(prev_state$provider_attempted)
+    state
 }
 
 is_taxadb_run_done <- function(state) {
     isTRUE(state$completed) || identical(state$phase, "done") || identical(state$phase, "failed")
 }
 
-next_taxadb_run_step <- function(state) {
+next_taxadb_run_step <- function(state, adapters = names_provider_adapters()) {
     # Collect completed background BR updates opportunistically while the
     # state machine advances.
-    try(brprovider_poll_updates(), silent = TRUE)
+    try(adapters$poll(), silent = TRUE)
 
     if (is_taxadb_run_done(state)) {
         return(state)
@@ -869,13 +698,13 @@ next_taxadb_run_step <- function(state) {
 
         provider      <- state$providers[[next_idx]]
         provider_type <- as.character(
-            state$provider_types[[provider]] %||% "taxadb"
+            state$provider_types[[provider]] %||% "colxr"
         )
 
-        # Transition from BR phase to GBIF/taxadb fallback phase when we
-        # encounter the first taxadb provider while still in the "br" phase.
+        # Move from the BR phase to the GBIF fallback phase at the first
+        # COL XR provider.
         if (identical(state$cascade_phase, "br") &&
-            identical(provider_type, "taxadb")) {
+            identical(provider_type, "colxr")) {
             state$cascade_phase <- "fallback"
         }
 
@@ -883,105 +712,30 @@ next_taxadb_run_step <- function(state) {
         state$current_provider      <- provider
         state$provider_attempted    <- unique(c(state$provider_attempted, provider))
         state$provider_batch_idx    <- 0L
-        state$current_provider_db   <- NULL
         state$current_provider_data <- NULL
 
         # Re-batch using current pending_queries (may differ from initial set).
         state$current_batches      <- split_query_batches(
             state$pending_queries,
-            batch_size = state$batch_size
+            batch_size = if (identical(provider_type, "br")) {
+                state$br_batch_size %||% state$batch_size
+            } else {
+                state$batch_size
+            }
         )
         state$provider_batch_total <- length(state$current_batches)
 
-        if (identical(provider_type, "br")) {
-            # ---- BR provider (florabr / faunabr) ----------------------------
-            ensured <- tryCatch(
-                brprovider_ensure_data(provider_id = provider, verbose = FALSE),
-                error = function(e) e
-            )
-            if (inherits(ensured, "error") || !isTRUE(ensured$ok) || !isTRUE(ensured$available)) {
-                err_msg <- if (inherits(ensured, "error")) {
-                    as.character(ensured$message)
-                } else if (is.list(ensured) && !is.null(ensured$error) &&
-                           nzchar(as.character(ensured$error))) {
-                    as.character(ensured$error)
-                } else {
-                    "Automatic data bootstrap failed."
-                }
-                state$provider_failures <- rbind(
-                    state$provider_failures,
-                    data.frame(
-                        provider = provider,
-                        error    = err_msg,
-                        stringsAsFactors = FALSE
-                    )
-                )
-                state$phase <- "provider_finalize"
-                return(state)
-            }
-
-            loaded <- tryCatch(
-                brprovider_load_data(provider),
-                error = function(e) e
-            )
-            if (inherits(loaded, "error") || is.null(loaded)) {
-                err_msg <- if (inherits(loaded, "error")) {
-                    as.character(loaded$message)
-                } else {
-                    "Data load failed."
-                }
-                state$provider_failures <- rbind(
-                    state$provider_failures,
-                    data.frame(
-                        provider = provider,
-                        error    = err_msg,
-                        stringsAsFactors = FALSE
-                    )
-                )
-                state$phase <- "provider_finalize"
-                return(state)
-            }
-
-            state$current_provider_data <- loaded
-            state$phase <- if (state$provider_batch_total == 0L) {
-                "provider_finalize"
-            } else {
-                "provider_query_batch"
-            }
-        } else {
-            # ---- taxadb provider (GBIF etc.) --------------------------------
-            db <- tryCatch(
-                init_taxadb_provider(provider),
-                error = function(e) e
-            )
-            if (inherits(db, "error")) {
-                state$provider_failures <- rbind(
-                    state$provider_failures,
-                    data.frame(
-                        provider = provider,
-                        error    = as.character(db$message),
-                        stringsAsFactors = FALSE
-                    )
-                )
-                state$current_provider_db <- NULL
-                state$phase <- "provider_finalize"
-                return(state)
-            }
-
-            state$current_provider_db <- db
-            state$phase <- if (state$provider_batch_total == 0L) {
-                "provider_finalize"
-            } else {
-                "provider_query_batch"
-            }
-        }
+        loaded <- adapters$load(provider, provider_type)
+        if (!is.null(loaded$error)) return(record_provider_failure(state, provider, loaded$error))
+        state$current_provider_data <- loaded$data
+        state$phase <- if (state$provider_batch_total == 0L) "provider_finalize" else "provider_query_batch"
 
         return(state)
     }
 
     if (identical(state$phase, "provider_query_batch")) {
         provider_type <- as.character(
-            state$provider_types[[state$current_provider]] %||% "taxadb"
+            state$provider_types[[state$current_provider]] %||% "colxr"
         )
 
         next_batch <- as.integer(state$provider_batch_idx) + 1L
@@ -993,105 +747,24 @@ next_taxadb_run_step <- function(state) {
         state$provider_batch_idx <- next_batch
         batch_queries <- state$current_batches[[next_batch]]
 
-        if (identical(provider_type, "br")) {
-            # ---- BR provider query ------------------------------------------
-            result_df <- tryCatch(
-                query_brprovider(
-                    query_names = batch_queries,
-                    provider_id = state$current_provider,
-                    data        = state$current_provider_data
-                ),
-                error = function(e) e
-            )
-
-            if (inherits(result_df, "error")) {
-                state$provider_failures <- rbind(
-                    state$provider_failures,
-                    data.frame(
-                        provider = state$current_provider,
-                        error    = as.character(result_df$message),
-                        stringsAsFactors = FALSE
-                    )
-                )
-                state$phase <- "provider_finalize"
-                return(state)
-            }
-
-            if (is.data.frame(result_df) && nrow(result_df) > 0L) {
-                state$resolved_frames[[
-                    length(state$resolved_frames) + 1L
-                ]] <- result_df
-
-                # BR providers short-circuit only on accepted names.
-                # Synonym / ambiguous / not_found continue to the GBIF fallback.
-                accepted_mask <- result_df$validation_status %in% "accepted"
-                accepted_mask[is.na(accepted_mask)] <- FALSE
-                accepted_df <- result_df[accepted_mask, , drop = FALSE]
-
-                if (nrow(accepted_df) > 0L) {
-                    resolved_names       <- unique(as.character(
-                        accepted_df$query_name
-                    ))
-                    state$pending_queries  <- setdiff(
-                        state$pending_queries, resolved_names
-                    )
-                    state$resolved_unique  <- state$total_unique -
-                        length(state$pending_queries)
-                }
-
-                state$stream_df <- append_stream_items(
-                    state$stream_df, result_df, now = Sys.time()
-                )
-            }
-
-        } else {
-            # ---- taxadb provider query (GBIF etc.) --------------------------
-            if (is.null(state$current_provider_db)) {
-                state$phase <- "provider_finalize"
-                return(state)
-            }
-
-            matches <- tryCatch(
-                query_taxadb_batch(
-                    query_names = batch_queries,
-                    provider    = state$current_provider,
-                    db          = state$current_provider_db
-                ),
-                error = function(e) e
-            )
-
-            if (inherits(matches, "error")) {
-                state$provider_failures <- rbind(
-                    state$provider_failures,
-                    data.frame(
-                        provider = state$current_provider,
-                        error    = as.character(matches$message),
-                        stringsAsFactors = FALSE
-                    )
-                )
-                state$phase <- "provider_finalize"
-                return(state)
-            }
-
-            if (nrow(matches) > 0L) {
-                resolved <- resolve_taxadb_matches(matches)
-                if (nrow(resolved) > 0L) {
-                    state$resolved_frames[[
-                        length(state$resolved_frames) + 1L
-                    ]] <- resolved
-                    resolved_names        <- unique(as.character(
-                        resolved$query_name
-                    ))
-                    state$pending_queries   <- setdiff(
-                        state$pending_queries, resolved_names
-                    )
-                    state$resolved_unique   <- state$total_unique -
-                        length(state$pending_queries)
-                    state$stream_df <- append_stream_items(
-                        state$stream_df, resolved, now = Sys.time()
-                    )
-                }
-            }
+        answer <- adapters$query(batch_queries, state$current_provider, provider_type,
+                                 state$current_provider_data)
+        if (!is.null(answer$error)) {
+            return(record_provider_failure(state, state$current_provider, answer$error))
+        }
+        result_df <- answer$results
+        if (nrow(result_df) > 0L) {
+            state$resolved_frames[[length(state$resolved_frames) + 1L]] <- result_df
+            state$pending_queries <- setdiff(state$pending_queries, answer$resolved)
+            state$resolved_unique <- state$total_unique - length(state$pending_queries)
+            state$stream_df <- append_stream_items(state$stream_df, result_df, now = Sys.time())
+        }
+        if (length(answer$unanswered) > 0L) {
+            return(record_provider_failure(
+                state, state$current_provider,
+                sprintf("GBIF did not answer for %d names.", length(answer$unanswered)),
+                answered = answer$answered
+            ))
         }
 
         if (state$provider_batch_idx >= state$provider_batch_total) {
@@ -1101,7 +774,6 @@ next_taxadb_run_step <- function(state) {
     }
 
     if (identical(state$phase, "provider_finalize")) {
-        state$current_provider_db   <- NULL
         state$current_provider_data <- NULL
 
         if (length(state$pending_queries) == 0L) {
@@ -1119,6 +791,10 @@ next_taxadb_run_step <- function(state) {
     }
 
     if (identical(state$phase, "consolidate")) {
+        # A name another provider resolved later is no longer unchecked.
+        state$unchecked_queries <- intersect(
+            state$unchecked_queries, state$pending_queries
+        )
         if (length(state$pending_queries) > 0L) {
             placeholders <- build_taxadb_placeholder(
                 state$pending_queries, status = "not_found"
@@ -1165,6 +841,7 @@ finalize_taxadb_run <- function(state) {
         meta = list(
             provider_attempted = unique(as.character(state$provider_attempted)),
             provider_failures = state$provider_failures,
+            unchecked = as.character(state$unchecked_queries %||% character(0)),
             aborted = isTRUE(state$aborted)
         ),
         stream_df = state$stream_df
@@ -1261,6 +938,7 @@ build_validation_report <- function(input_df, cascade_results) {
         "scientificName",
         "taxonomicStatus",
         "acceptedNameUsageID",
+        "acceptedNameUsage",
         "taxonID",
         "taxonRank",
         "kingdom",

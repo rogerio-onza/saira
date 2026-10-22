@@ -36,7 +36,7 @@ Saíra is built on open-source R packages, all declared as dependencies in [`DES
 
 | Package | What for | License |
 | --- | --- | --- |
-| [taxadb](https://cran.r-project.org/package=taxadb) | Local taxonomic backbones to verify scientific names | MIT |
+| [httr2](https://cran.r-project.org/package=httr2) | Queries scientific names in the Catalogue of Life (COL XR) through the GBIF API | MIT |
 | [florabr](https://wevertonbio.github.io/florabr/) | Flora e Funga do Brasil (plant, algae and fungi names) | GPL (≥ 3) |
 | [faunabr](https://wevertonbio.github.io/faunabr/) | Catálogo Taxonômico da Fauna do Brasil | GPL (≥ 3) |
 

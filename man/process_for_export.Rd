@@ -17,7 +17,7 @@ Process data for DwC-compliant export
 }
 \examples{
 \dontrun{
-  # Processes mapped data for export (uses taxadb, spatial packages)
+  # Processes mapped data for export (uses spatial packages)
   processed <- process_for_export(my_mapped_data)
   # Returns data with:
   # - eventDate in ISO format (YYYY-MM-DD)

@@ -261,52 +261,6 @@ validate_decision_df <- function(decision_df) {
     invisible(TRUE)
 }
 
-validate_composition_df <- function(composition_df) {
-    if (!is.data.frame(composition_df)) {
-        stop("composition_df must be a data.frame.")
-    }
-
-    required_cols <- c(
-        "term",
-        "selected_col",
-        "status",
-        "reason",
-        "applied",
-        "composed_from_json"
-    )
-    missing_cols <- setdiff(required_cols, names(composition_df))
-    if (length(missing_cols) > 0L) {
-        stop("composition_df is missing required columns: ", paste(missing_cols, collapse = ", "))
-    }
-
-    if (!is.character(composition_df$term)) {
-        stop("composition_df$term must be character.")
-    }
-    if (!is.character(composition_df$selected_col)) {
-        stop("composition_df$selected_col must be character.")
-    }
-    if (!is.character(composition_df$status)) {
-        stop("composition_df$status must be character.")
-    }
-    if (!is.character(composition_df$reason)) {
-        stop("composition_df$reason must be character.")
-    }
-    if (!is.logical(composition_df$applied)) {
-        stop("composition_df$applied must be logical.")
-    }
-    if (!is.character(composition_df$composed_from_json)) {
-        stop("composition_df$composed_from_json must be character.")
-    }
-
-    allowed_status <- c("AUTO", "SUGERIDO", "AMBIGUO", "MANUAL", "EDITADO")
-    status_invalid <- !is.na(composition_df$status) & !(composition_df$status %in% allowed_status)
-    if (any(status_invalid)) {
-        stop("composition_df$status contains unsupported values.")
-    }
-
-    invisible(TRUE)
-}
-
 #' Adapt V1 Synonym Table to V2 Schema
 #'
 #' Converts a synonym data frame in the legacy V1 format (columns

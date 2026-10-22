@@ -12,7 +12,8 @@
 #' @param mapped_data Processed Darwin Core data frame (`processed_data_r`).
 #' @param name_review_payload List with `entries` (the manual name reviews), or NULL.
 #' @param coords_correction_payload List with `corrections` (occurrenceID + new
-#'   coordinates), or NULL.
+#'   coordinates) and `stale` (the fixes dropped because the point changed),
+#'   or NULL.
 #' @param country_fill_payload List with `country` (occurrenceID + filled country),
 #'   or NULL.
 #' @param sensitivity_payload Per-species sensitivity marks (for the threat
@@ -21,12 +22,23 @@
 #'   Generalization stage, or NULL.
 #' @param dataset_name Dataset name (the `datasetName` constant), used to name
 #'   the auxiliary bundle files. NULL falls back to a generic slug.
+#' @param raw_data,map_values,overridden_terms The upload, the mapping and the
+#'   terms whose fixed value won (`overridden_mapping_terms()`). They give the
+#'   unmapped columns the download adds to the file.
 #' @return Named list: `record_count`, `term_count`, `corrections`
-#'   (`names_corrected`/`names_confirmed`/`coord_fixes`/`country_fills`),
+#'   (`names_corrected`/`names_confirmed`/`coord_fixes`/`coord_fixes_stale`/`country_fills`),
 #'   `generalization` (data.frame `scientificName`/`category`/`tier`),
 #'   `readiness` (data.frame `term`/`present`), `readiness_pct`,
-#'   `missing_required`, `occurrence_id_present`, `justification_pending`,
-#'   `date_issues` (from `date_year_issues()`),
+#'   `missing_required`, `occurrence_id_present`, `bor_blank_count`,
+#'   `bor_blank_rows`, `sci_blank_rows` (records with no scientificName),
+#'   `justification_pending`,
+#'   `date_issues` (from `date_year_issues()`), `date_unparsed` (from
+#'   `unparsed_date_cells()`), `formula_cells` (from `formula_like_cells()`),
+#'   `formula_cells_unmapped` (the same check on the unmapped raw columns),
+#'   `zero_count_rows` (count 0 with a blank occurrenceStatus),
+#'   `coord_invalid_rows` (a coordinate the export cannot read, after the
+#'   accepted corrections), `coord_flags` (Coordinates-tab flags with no
+#'   correction, NULL when the tab did not run), `preview_problems_n`,
 #'   `all_required_present`, `export_blocked`, and `files`
 #'   (list `dwca` + `auxiliary`).
 #' @noRd
@@ -36,8 +48,15 @@ build_export_summary <- function(mapped_data,
                                  country_fill_payload = NULL,
                                  sensitivity_payload = NULL,
                                  generalization_payload = NULL,
-                                 dataset_name = NULL) {
+                                 dataset_name = NULL,
+                                 coord_validation = NULL,
+                                 preview_problems_n = NULL,
+                                 raw_data = NULL,
+                                 map_values = NULL,
+                                 overridden_terms = character(0)) {
     df <- if (is.data.frame(mapped_data)) mapped_data else data.frame()
+    coords_correction_payload <- drop_stale_coord_corrections(coords_correction_payload, df)
+    country_fill_payload <- reconcile_country_fill(country_fill_payload, df)
     n_records <- nrow(df)
     term_count <- ncol(df)
 
@@ -57,6 +76,8 @@ build_export_summary <- function(mapped_data,
         names_corrected = sum(review_type == "correct"),
         names_confirmed = sum(review_type == "confirm"),
         coord_fixes = nrows_of(slot(coords_correction_payload, "corrections")),
+        # Fixes the Coordinates tab dropped: the point changed after the fix.
+        coord_fixes_stale = as.integer(slot(coords_correction_payload, "stale") %||% 0L),
         country_fills = nrows_of(slot(country_fill_payload, "country"))
     )
 
@@ -72,8 +93,11 @@ build_export_summary <- function(mapped_data,
         keep <- !is.na(lv) & lv %in% masking_tiers
         sp <- names(lv)[keep]
         if (length(sp) > 0L) {
+            # The levels carry the corrected names (AUD-01).
             cats <- tryCatch(
-                sensitive_resolve(sp, sensitivity_payload)$category,
+                sensitive_resolve(
+                    sp, rekey_sensitivity_decisions(sensitivity_payload, name_review_payload)
+                )$category,
                 error = function(e) rep(NA_character_, length(sp))
             )
             cats[is.na(cats) | !nzchar(cats)] <- "\u2014"
@@ -86,46 +110,18 @@ build_export_summary <- function(mapped_data,
         }
     }
 
-    # --- Readiness (required DwC terms present and non-empty) ---------------
-    required <- c(
-        "scientificName", "eventDate", "decimalLatitude",
-        "decimalLongitude", "basisOfRecord"
-    )
-    term_present <- function(term) {
-        term %in% names(df) &&
-            any(!is.na(df[[term]]) & nzchar(trimws(as.character(df[[term]]))))
-    }
-    present <- vapply(required, term_present, logical(1))
-    readiness <- data.frame(
-        term = required, present = unname(present), stringsAsFactors = FALSE
-    )
-    all_required_present <- all(present)
-    readiness_pct <- if (length(present) == 0L) {
-        0L
-    } else {
-        as.integer(round(100 * sum(present) / length(present)))
-    }
-    missing_required <- required[!present]
-    occurrence_id_present <- term_present("occurrenceID")
-
-    # A year outside the plausible range is a typo the format conversion cannot
-    # catch, so it is reported here rather than blocking: a historical record
-    # can legitimately predate 1600, and only the publisher knows which is which.
-    date_issues <- date_year_issues(df)
-
-    # Generalization to Category 1/2/3 needs a written justification; export is
-    # blocked until it is provided (mirrors the download handler's hard gate).
-    justification_pending <- is.list(gp) && isTRUE(gp$enabled) &&
-        isTRUE(gp$needs_justification) &&
-        !nzchar(trimws(gp$justification %||% ""))
-    export_blocked <- !all_required_present || justification_pending
-
+    effective <- prepare_effective_records(df, name_review_payload,
+                                            coords_correction_payload, country_fill_payload)
+    assessment <- assess_publication(effective, gp, raw_data, map_values,
+                                     overridden_terms, coord_validation,
+                                     drop_stale_coord_corrections(coords_correction_payload, df))
     # --- Files the bundle will contain -------------------------------------
-    # Single source of truth shared with the download handler. The real-coords
-    # CSV only ships when a species is actually generalized.
+    # Single source of truth shared with the download handler. The private
+    # real-coordinates file exists only when a species is generalized.
     files <- export_bundle_filenames(
         dataset_name = dataset_name,
-        has_sensitive = nrow(gen) > 0L
+        has_sensitive = nrow(gen) > 0L,
+        n_records = n_records
     )
 
     list(
@@ -133,14 +129,32 @@ build_export_summary <- function(mapped_data,
         term_count = term_count,
         corrections = corrections,
         generalization = gen,
-        readiness = readiness,
-        readiness_pct = readiness_pct,
-        missing_required = missing_required,
-        occurrence_id_present = occurrence_id_present,
-        justification_pending = justification_pending,
-        date_issues = date_issues,
-        all_required_present = all_required_present,
-        export_blocked = export_blocked,
+        readiness = assessment$readiness,
+        readiness_pct = assessment$readiness_pct,
+        missing_required = assessment$missing_required,
+        occurrence_id_present = assessment$occurrence_id_present,
+        bor_blank_count = assessment$bor_blank_count,
+        bor_blank_rows = assessment$bor_blank_rows,
+        sci_blank_rows = assessment$sci_blank_rows,
+        justification_pending = assessment$justification_pending,
+        date_issues = assessment$date_issues,
+        date_unparsed = assessment$date_unparsed,
+        formula_cells = assessment$formula_cells,
+        formula_cells_unmapped = assessment$formula_cells_unmapped,
+        zero_count_rows = assessment$zero_count_rows,
+        coord_invalid_rows = assessment$coord_invalid_rows,
+        coord_flags = assessment$coord_flags,
+        preview_problems_n = as.integer(preview_problems_n %||% 0L),
+        all_required_present = assessment$all_required_present,
+        export_blocked = assessment$export_blocked,
         files = files
     )
+}
+
+
+# Row numbers for a pending item: the first ones, then how many more.
+format_row_list <- function(rows, max_n = 10L) {
+    shown <- paste(utils::head(rows, max_n), collapse = ", ")
+    extra <- length(rows) - max_n
+    if (extra > 0L) paste0(shown, " (+", extra, ")") else shown
 }

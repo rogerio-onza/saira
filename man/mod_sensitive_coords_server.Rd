@@ -11,8 +11,10 @@ mod_sensitive_coords_server(
   sensitivity_payload_r = NULL,
   coords_correction_payload_r = NULL,
   country_fill_payload_r = NULL,
+  name_review_payload_r = NULL,
   reset_signal_r = NULL,
-  active_r = NULL
+  active_r = NULL,
+  on_navigate = NULL
 )
 }
 \arguments{
@@ -30,6 +32,9 @@ correction payload, applied so the preview matches the published point.}
 
 \item{country_fill_payload_r}{Optional reactive country-fill payload.}
 
+\item{name_review_payload_r}{Optional reactive Names-tab review payload,
+applied so the tab assesses the corrected names that the export writes.}
+
 \item{reset_signal_r}{Optional reactive reset signal from the mapping module.
 When it fires, module-local state and inputs are cleared.}
 
@@ -38,9 +43,12 @@ screen. The map path is the only consumer of the full mapped frame that is
 driven by observers, and observers are never suspended by tab visibility,
 so without this every mapping edit pays a whole-dataset rebuild here.
 Defaults to always-active when not supplied.}
+
+\item{on_navigate}{Optional callback `function(tab)` that switches the
+top-level tab. The invalid-coordinate alert uses it to open Coordinates.}
 }
 \value{
-Reactive list `{ levels, justification, review_date, enabled }`
+Reactive list `list(levels, justification, review_date, enabled)`
   consumed by the export (Preview tab).
 }
 \description{

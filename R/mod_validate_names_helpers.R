@@ -13,13 +13,52 @@
 # validation_status, this one reads the species name against the bundled
 # invasive list. Kept in the same bar because the user reasons about both as
 # "narrow the processed names down to the ones I care about".
-.vn_stream_filter_values <- c("all", "problems", "not_found", "ambiguous", "synonym", "ignored", "accepted", "invasive")
+.vn_stream_filter_values <- c("all", "problems", "not_found", "ambiguous", "synonym", "ignored", "accepted", "invasive", "translocated")
 .vn_problem_status_values <- c("not_found", "ambiguous", "synonym")
 .vn_review_exit_ms <- 320L
 
 # ---------------------------------------------------------------------------
 # Provider utilities
 # ---------------------------------------------------------------------------
+
+#' Warning text for a names run with a failed provider
+#'
+#' The text names the providers that failed (DEP-02).
+#' @param meta The \code{meta} list of \code{finalize_taxadb_run()}.
+#' @param lang Language code.
+#' @return Character string, or NULL when every provider answered.
+#' @noRd
+vn_provider_failure_message <- function(meta, lang = "pt") {
+    failures <- meta$provider_failures
+    if (!is.data.frame(failures) || nrow(failures) == 0L) {
+        return(NULL)
+    }
+    providers <- paste(
+        format_provider_labels(failures$provider),
+        collapse = tr("validate_names_run_and", lang)
+    )
+    sprintf(tr("validate_names_provider_failed", lang), providers)
+}
+
+#' Answer list without the names a run left unchecked
+#'
+#' A name that no provider could check has only a "not_found" answer, and the
+#' block of unchecked names shows it. The list and its counts leave it out. A
+#' name with an answer from another provider keeps its row (ADR-169).
+#' @param stream_df Stream data frame.
+#' @param unchecked Character vector of unchecked query names.
+#' @return Stream data frame.
+#' @noRd
+vn_drop_unchecked <- function(stream_df, unchecked) {
+    if (!is.data.frame(stream_df) || nrow(stream_df) == 0L || length(unchecked) == 0L) {
+        return(stream_df)
+    }
+    status <- vapply(stream_df$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
+    drop <- stream_df$query_name %in% unchecked & status == "not_found"
+    out <- stream_df[!drop, , drop = FALSE]
+    rownames(out) <- NULL
+    out
+}
 
 #' Format provider IDs into display labels
 #' @param provider_values Character vector of provider IDs
@@ -35,52 +74,6 @@ format_provider_labels <- function(provider_values) {
     missing_idx <- is.na(labels) | !nzchar(labels)
     labels[missing_idx] <- toupper(values_chr[missing_idx])
     unique(labels)
-}
-
-#' Normalize provider failures data frame
-#' @param raw_failures Data frame (or NULL) with provider and error columns
-#' @return Data frame with columns provider, error (0 or more rows)
-#' @noRd
-normalize_provider_failures <- function(raw_failures) {
-    if (!is.data.frame(raw_failures) || nrow(raw_failures) == 0L) {
-        return(data.frame(provider = character(0), error = character(0), stringsAsFactors = FALSE))
-    }
-
-    out <- raw_failures
-    if (!"provider" %in% names(out)) out$provider <- NA_character_
-    if (!"error" %in% names(out)) out$error <- NA_character_
-    out$provider <- as.character(out$provider)
-    out$error <- as.character(out$error)
-    out <- out[!is.na(out$provider) & nzchar(out$provider), c("provider", "error"), drop = FALSE]
-    rownames(out) <- NULL
-    out
-}
-
-#' Format provider failure lines with i18n
-#' @param failure_df Data frame with provider and error columns
-#' @param resolved_unique Integer count of resolved unique queries
-#' @param lang Language code ("pt" or "en")
-#' @return Character vector of formatted failure messages
-#' @noRd
-provider_failure_lines <- function(failure_df, resolved_unique = 0L, lang = "pt") {
-    if (!is.data.frame(failure_df) || nrow(failure_df) == 0L) {
-        return(character(0))
-    }
-
-    resolved_int <- suppressWarnings(as.integer(resolved_unique))
-    if (is.na(resolved_int) || resolved_int < 0L) resolved_int <- 0L
-
-    vapply(seq_len(nrow(failure_df)), function(i) {
-        provider_label <- format_provider_labels(failure_df$provider[[i]])
-        if (length(provider_label) == 0L) {
-            provider_label <- toupper(as.character(failure_df$provider[[i]]))
-        } else {
-            provider_label <- provider_label[[1]]
-        }
-        error_text <- as.character(failure_df$error[[i]])
-        if (is.na(error_text) || !nzchar(error_text)) error_text <- tr("validate_names_error_unknown", lang)
-        sprintf(tr("validate_names_provider_failed_stream_item", lang), provider_label, resolved_int, error_text)
-    }, FUN.VALUE = character(1))
 }
 
 # ---------------------------------------------------------------------------
@@ -118,63 +111,123 @@ stream_window <- function(stream_df, limit = .vn_stream_window_limit) {
     out
 }
 
-#' Get phase label string for a run state
-#' @param state Run state object with $phase field
-#' @param lang Language code ("pt" or "en")
-#' @return Character string
+#' Status of each name during a run, for the run grid
+#'
+#' One character per name, in sheet order: "a" accepted, "s" synonym, "m"
+#' ambiguous, "n" not found, "q" in the next batch and "." waiting. A name
+#' that a Brazilian provider finds but does not accept waits for GBIF, so it
+#' stays "." until it has its last answer.
+#' @param state Run state object.
+#' @return Character scalar.
 #' @noRd
-phase_label <- function(state, lang = "pt") {
-    phase_value <- as.character(state$phase %||% "")
-    switch(phase_value,
-        prepare = tr("validate_names_progress_phase_prepare", lang),
-        provider_init = tr("validate_names_progress_phase_provider_init", lang),
-        provider_query_batch = tr("validate_names_progress_phase_provider_query_batch", lang),
-        provider_finalize = tr("validate_names_progress_phase_provider_finalize", lang),
-        consolidate = tr("validate_names_progress_phase_consolidate", lang),
-        done = tr("validate_names_progress_phase_done", lang),
-        failed = tr("validate_names_progress_phase_failed", lang),
-        tr("validate_names_progress_phase_prepare", lang)
-    )
+vn_run_cells <- function(state) {
+    queries <- as.character(state$query_order %||% character(0))
+    if (length(queries) == 0L) {
+        return("")
+    }
+    stream <- state$stream_df
+    status <- if (is.data.frame(stream) && nrow(stream) > 0L) {
+        stream$validation_status[match(queries, stream$query_name)]
+    } else {
+        rep(NA_character_, length(queries))
+    }
+    code <- rep("n", length(queries))
+    code[status %in% "accepted"] <- "a"
+    code[status %in% "synonym"] <- "s"
+    code[status %in% c("ambiguous", "unresolved")] <- "m"
+
+    pending <- queries %in% as.character(state$pending_queries %||% character(0))
+    code[pending] <- "."
+    next_idx <- as.integer(state$provider_batch_idx %||% 0L) + 1L
+    batches <- state$current_batches
+    if (identical(state$phase, "provider_query_batch") && next_idx <= length(batches)) {
+        code[pending & queries %in% batches[[next_idx]]] <- "q"
+    }
+    paste(code, collapse = "")
 }
 
-#' Get FA icon name for current validation phase
-#' @param state Run state object with $phase and $current_provider fields
-#' @return Character string with FA icon name
+#' Answer list rows of the names that have their last answer
+#'
+#' A name that a Brazilian provider finds but does not accept waits for the
+#' next provider, so its first answer can change. The list shows a name when
+#' it leaves the queue, as the run grid does (DEP-07).
+#' @param state Run state object.
+#' @return Stream data frame.
 #' @noRd
-vn_phase_icon <- function(state) {
-    phase <- as.character(state$phase %||% "")
-    provider <- as.character(state$current_provider %||% "")
-    is_br <- provider %in% c("florabr", "faunabr")
-
-    if (identical(phase, "provider_init") && is_br && !brprovider_data_available(provider)) {
-        return("download")
+vn_settled_stream <- function(state) {
+    stream <- state$stream_df
+    if (!is.data.frame(stream) || nrow(stream) == 0L) {
+        return(stream)
     }
-    switch(phase,
-        prepare              = "gears",
-        provider_init        = "plug",
-        provider_query_batch = "microscope",
-        provider_finalize    = "circle-notch",
-        consolidate          = "layer-group",
-        done                 = "flag-checkered",
-        failed               = "triangle-exclamation",
-        "spinner"
-    )
+    pending <- as.character(state$pending_queries %||% character(0))
+    stream[!(stream$query_name %in% pending), , drop = FALSE]
 }
 
-#' Get phase text with BR download detection
-#' @param state Run state object
-#' @param lang Language code ("pt" or "en")
-#' @return Character string with phase description
+#' Progress of a names run, for the run card of the report panel
+#'
+#' The count is the names that have an answer. Names that no provider finds
+#' get one at the end, so the count always reaches the total.
+#' @param state Run state object.
+#' @param lang Language code.
+#' @return List with \code{run_id}, \code{done}, \code{total}, \code{pct},
+#'   \code{waiting} (a first Flora BR or Fauna BR download, with no count to
+#'   show), \code{eyebrow}, \code{count}, \code{cells} (from
+#'   \code{vn_run_cells()}), \code{tally} (formatted count per cell status)
+#'   and \code{steps}: one list per step with \code{key}, \code{label},
+#'   \code{state} ("done", "active" or "next") and \code{state_label}.
 #' @noRd
-vn_phase_text <- function(state, lang = "pt") {
+vn_run_progress <- function(state, lang = "pt") {
     phase <- as.character(state$phase %||% "")
     provider <- as.character(state$current_provider %||% "")
-    is_br <- provider %in% c("florabr", "faunabr")
+    types <- state$provider_types
+    br_ids <- names(types)[types == "br"]
+    total <- as.integer(state$total_unique %||% 0L)
+    in_report <- phase %in% c("consolidate", "done")
+    done <- if (in_report) total else as.integer(state$resolved_unique %||% 0L)
 
-    if (identical(phase, "provider_init") && is_br && !brprovider_data_available(provider)) {
-        return(sprintf(tr("validate_names_loading_phase_provider_download", lang), provider))
+    current <- if (in_report) {
+        "report"
+    } else if (identical(state$cascade_phase, "br")) {
+        "br"
+    } else {
+        "gbif"
     }
-    phase_label(state, lang)
+    keys <- c(if (length(br_ids) > 0L) "br", "gbif", "report")
+    labels <- c(
+        br = paste(format_provider_labels(br_ids), collapse = tr("validate_names_run_and", lang)),
+        gbif = tr(if (length(br_ids) > 0L) "validate_names_run_step_gbif_rest" else "validate_names_run_step_gbif", lang),
+        report = tr("validate_names_run_step_report", lang)
+    )
+    current_idx <- match(current, keys)
+    steps <- lapply(seq_along(keys), function(i) {
+        step_state <- if (i < current_idx) "done" else if (i == current_idx) "active" else "next"
+        list(
+            key = keys[i],
+            label = unname(labels[keys[i]]),
+            state = step_state,
+            state_label = tr(paste0("validate_names_run_state_", step_state), lang)
+        )
+    })
+
+    cells <- vn_run_cells(state)
+    codes <- strsplit(cells, "", fixed = TRUE)[[1]]
+    tally <- lapply(c(a = "a", s = "s", m = "m", n = "n"), function(code) {
+        format_count(sum(codes == code), lang)
+    })
+
+    list(
+        run_id = as.character(state$run_id %||% ""),
+        done = done,
+        total = total,
+        pct = if (total > 0L) round(100 * done / total) else 0,
+        waiting = identical(phase, "provider_init") && provider %in% br_ids &&
+            !brprovider_data_available(provider),
+        eyebrow = tr(if (in_report) "validate_names_run_eyebrow_report" else "validate_names_run_eyebrow", lang),
+        count = sprintf(tr("validate_names_run_count", lang), format_count(done, lang), format_count(total, lang)),
+        cells = cells,
+        tally = tally,
+        steps = steps
+    )
 }
 
 #' Recommend stream filter after validation completes
@@ -188,13 +241,29 @@ stream_filter_after_completion <- function(report_df) {
     "problems"
 }
 
+#' Cascade step at which a provider is queried
+#'
+#' Mirrors the reorder in `init_taxadb_run_state()`: the Brazilian providers
+#' answer first, and GBIF receives only the names they did not find.
+#' @param provider_id Provider id.
+#' @param selected Character vector of selected provider ids.
+#' @param br_ids Character vector of Brazilian provider ids.
+#' @return Integer step (1 or 2), or NA when the provider is not selected.
+#' @noRd
+provider_query_step <- function(provider_id, selected, br_ids) {
+    if (!(provider_id %in% selected)) {
+        return(NA_integer_)
+    }
+    if (provider_id %in% br_ids || !any(br_ids %in% selected)) 1L else 2L
+}
+
 # ---------------------------------------------------------------------------
 # Status classification
 # ---------------------------------------------------------------------------
 
 #' Map validation status to style attributes
 #' @param status_value Status value string
-#' @return Named list with key, icon_symbol, label_key, item_class, badge_class, row_class
+#' @return Named list with key, icon_symbol, icon (Phosphor name), label_key, item_class, badge_class, row_class
 #' @noRd
 status_style_map <- function(status_value) {
     status_key <- as.character(status_value)
@@ -204,6 +273,7 @@ status_style_map <- function(status_value) {
         return(list(
             key = "accepted",
             icon_symbol = "\u2713",
+            icon = "check",
             label_key = "validate_names_stream_status_accepted",
             item_class = "vn-stream-item-accepted",
             badge_class = "badge-success",
@@ -214,6 +284,7 @@ status_style_map <- function(status_value) {
         return(list(
             key = "synonym",
             icon_symbol = "\u21C4",
+            icon = "arrows-left-right",
             label_key = "validate_names_stream_status_synonym",
             item_class = "vn-stream-item-synonym",
             badge_class = "badge-info",
@@ -224,6 +295,7 @@ status_style_map <- function(status_value) {
         return(list(
             key = "ambiguous",
             icon_symbol = "?",
+            icon = "question",
             label_key = "validate_names_stream_status_ambiguous",
             item_class = "vn-stream-item-ambiguous",
             badge_class = "badge-warning",
@@ -234,6 +306,7 @@ status_style_map <- function(status_value) {
         return(list(
             key = "ignored",
             icon_symbol = "\u2014",
+            icon = "minus",
             label_key = "validate_names_stream_status_ignored",
             item_class = "vn-stream-item-ignored",
             badge_class = "badge-muted",
@@ -243,6 +316,7 @@ status_style_map <- function(status_value) {
     list(
         key = "not_found",
         icon_symbol = "\u2715",
+        icon = "x",
         label_key = "validate_names_stream_status_not_found",
         item_class = "vn-stream-item-not-found",
         badge_class = "badge-error",
@@ -293,15 +367,6 @@ normalize_status_vec <- function(status_values) {
     resolved[match(values, uniq)]
 }
 
-#' Test if status represents an unresolved problem
-#' @param status_key Status value (raw or canonical)
-#' @return Logical
-#' @noRd
-is_problem_status_key <- function(status_key) {
-    key <- normalize_status_for_filter(status_key)
-    key %in% .vn_problem_status_values
-}
-
 #' Count stream items by filter category
 #' @param stream_df Stream data frame with validation_status and query_name columns
 #' @param reviewed_keys Character vector of already-reviewed query names
@@ -316,7 +381,8 @@ stream_filter_counts <- function(stream_df, reviewed_keys = character(0)) {
         synonym = 0L,
         ignored = 0L,
         accepted = 0L,
-        invasive = 0L
+        invasive = 0L,
+        translocated = 0L
     )
     if (!is.data.frame(stream_df) || nrow(stream_df) == 0L) {
         return(out)
@@ -333,7 +399,11 @@ stream_filter_counts <- function(stream_df, reviewed_keys = character(0)) {
     out[["ignored"]] <- as.integer(sum(status_vec == "ignored", na.rm = TRUE))
     out[["problems"]] <- as.integer(sum(unresolved_problem, na.rm = TRUE))
     out[["accepted"]] <- as.integer(sum(status_vec == "accepted", na.rm = TRUE))
-    out[["invasive"]] <- as.integer(sum(flag_invasive_species(query_vec), na.rm = TRUE))
+    # One pill per claim: "invasive" counts only taxa the list calls alien to
+    # Brazil, so a native on the list is never counted as an exotic invader.
+    origin_class <- invasive_origin_class_for(query_vec)
+    out[["invasive"]] <- as.integer(sum(origin_class == "alien", na.rm = TRUE))
+    out[["translocated"]] <- as.integer(sum(origin_class == "translocated_native", na.rm = TRUE))
     out
 }
 
@@ -360,6 +430,11 @@ filter_stream_df <- function(stream_df, filter_key = "all", reviewed_keys = char
     reviewed_vec[is.na(reviewed_vec)] <- FALSE
     exiting_vec <- query_vec %in% exiting_keys
     exiting_vec[is.na(exiting_vec)] <- FALSE
+    origin_class <- if (key %in% c("invasive", "translocated")) {
+        invasive_origin_class_for(query_vec)
+    } else {
+        rep(NA_character_, length(query_vec))
+    }
     keep_idx <- switch(key,
         problems = (status_vec %in% .vn_problem_status_values & !reviewed_vec) | exiting_vec,
         not_found = ((status_vec == "not_found") & !reviewed_vec) | exiting_vec,
@@ -368,8 +443,10 @@ filter_stream_df <- function(stream_df, filter_key = "all", reviewed_keys = char
         ignored = status_vec == "ignored",
         accepted = status_vec == "accepted",
         # Species-list axis, so no reviewed/exiting interplay: a name is on the
-        # invasive list or it is not, regardless of its validation status.
-        invasive = flag_invasive_species(query_vec),
+        # invasive list or it is not, regardless of its validation status. The
+        # two groups filter apart, matching what their badges claim.
+        invasive = !is.na(origin_class) & origin_class == "alien",
+        translocated = !is.na(origin_class) & origin_class == "translocated_native",
         rep(TRUE, length(status_vec))
     )
     out <- stream_df[keep_idx, , drop = FALSE]
@@ -416,71 +493,4 @@ review_status_context <- function(status_key, lang = "pt") {
         question = tr("validate_names_review_question_not_found", lang),
         helper = tr("validate_names_review_helper_not_found", lang)
     )
-}
-
-#' Render scientific name with italic emphasis
-#' @param value Scientific name string
-#' @return Shiny HTML object
-#' @noRd
-render_review_name_em <- function(value) {
-    shiny::HTML(sprintf("<em>%s</em>", htmltools::htmlEscape(as.character(value %||% ""))))
-}
-
-#' Summary of conservation status that export will add to dynamicProperties
-#'
-#' Shown above the validation report. MMA is an exact local count of records on
-#' the national threatened list; IUCN is the number of resolved records GBIF
-#' will be queried for on export (some may have no assessment). Returns NULL when
-#' no source applies or there is nothing to count, so it drops out of the layout.
-#'
-#' @param report Validation report data frame (needs `scientificName`).
-#' @param selected Character vector of selected provider IDs.
-#' @param br_provider_ids Character vector of Brazilian provider IDs.
-#' @param lang Active language code.
-#' @return A Shiny tag or NULL.
-#' @noRd
-conservation_status_summary_ui <- function(report, selected, br_provider_ids, lang) {
-    include_mma <- length(intersect(selected, br_provider_ids)) > 0L
-    include_iucn <- "gbif" %in% selected
-    name_col <- if (is.data.frame(report) && "scientificName" %in% names(report)) {
-        as.character(report$scientificName)
-    } else {
-        character(0)
-    }
-    # The invasive count comes from a bundled list and is provider-independent,
-    # so it is reported even when neither conservation provider is selected.
-    if (length(name_col) == 0L) {
-        return(NULL)
-    }
-
-    lines <- list()
-    if (include_mma) {
-        mma_n <- sum(!is.na(sensitive_category_for(name_col)))
-        if (mma_n > 0L) {
-            lines[[length(lines) + 1L]] <- shiny::tags$span(
-                class = "vn-conservation-line",
-                sprintf(tr("validate_names_conservation_summary_mma", lang), mma_n)
-            )
-        }
-    }
-    if (include_iucn) {
-        iucn_n <- sum(!is.na(name_col) & nzchar(trimws(name_col)))
-        if (iucn_n > 0L) {
-            lines[[length(lines) + 1L]] <- shiny::tags$span(
-                class = "vn-conservation-line",
-                sprintf(tr("validate_names_conservation_summary_iucn", lang), iucn_n)
-            )
-        }
-    }
-    invasive_n <- sum(flag_invasive_species(name_col))
-    if (invasive_n > 0L) {
-        lines[[length(lines) + 1L]] <- shiny::tags$span(
-            class = "vn-conservation-line",
-            sprintf(tr("validate_names_conservation_summary_invasive", lang), invasive_n)
-        )
-    }
-    if (length(lines) == 0L) {
-        return(NULL)
-    }
-    shiny::div(class = "vn-conservation-summary", lines)
 }
