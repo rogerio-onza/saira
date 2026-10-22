@@ -171,13 +171,19 @@ jobs:
         run: |
           echo "RENV_CONFIG_REPOS_OVERRIDE=CRAN=https://packagemanager.posit.co/cran/__linux__/$(lsb_release -cs)/latest;ropensci=https://ropensci.r-universe.dev" >> "$GITHUB_ENV"
 
-      # setup-renv installs no system libraries. pak lists them from DESCRIPTION.
+      # setup-renv installs no system libraries. renv lists them from the
+      # records of renv.lock, the development packages too (gert needs
+      # libgit2). chromote is not in the list: its requirement is Chromium,
+      # and chromote uses the Google Chrome of the runner image.
       - name: Install the system requirements
         env:
           RENV_CONFIG_AUTOLOADER_ENABLED: false
         run: |
-          Rscript -e 'install.packages("pak", lib = Sys.getenv("R_LIBS_USER"))'
-          Rscript -e 'sr <- pak::pkg_sysreqs("local::.", dependencies = NA); for (cmd in c(sr$pre_install, sr$install_scripts, sr$post_install)) if (system(paste("sudo", cmd)) != 0L) stop("Failed: ", cmd)'
+          Rscript -e 'install.packages("renv", lib = Sys.getenv("R_LIBS_USER"))'
+          pkgs=$(Rscript -e 'p <- setdiff(names(renv::lockfile_read()$Packages), "chromote"); s <- renv::sysreqs(p, source = "lockfile", recursive = FALSE, check = FALSE, report = FALSE); cat(unique(unlist(lapply(s, function(x) unlist(x$packages)))))')
+          echo "System packages: $pkgs"
+          sudo apt-get update
+          sudo apt-get install -y $pkgs
 
       - uses: r-lib/actions/setup-renv@v2
 
