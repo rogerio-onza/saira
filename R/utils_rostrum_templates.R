@@ -168,6 +168,7 @@ parse_mapping_guide_txt <- function(path) {
 #' @param user_id Character, default \code{Sys.getenv("SAIRA_USER", unset = "anonymous")}.
 #' @param available_columns Optional column names of the loaded data. A source
 #'   that is one of them stays whole, so \code{"lat + gps"} is one alias.
+#'   If NULL, the function uses the headers that the guide records (ADR-171).
 #' @return Invisibly: integer count of (source, term) pairs upserted.
 #' @export
 import_mapping_guide_to_aliases <- function(
@@ -182,6 +183,11 @@ import_mapping_guide_to_aliases <- function(
     }
     pairs <- payload$pairs
     if (nrow(pairs) == 0L) return(invisible(0L))
+
+    if (is.null(available_columns) && !is.null(payload$meta$source_columns)) {
+        columns <- tryCatch(jsonlite::fromJSON(payload$meta$source_columns), error = function(e) NULL)
+        if (is.character(columns)) available_columns <- columns
+    }
 
     if (is.null(user_id) || !nzchar(user_id)) {
         user_id <- Sys.getenv("SAIRA_USER", unset = "anonymous")

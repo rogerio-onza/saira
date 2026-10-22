@@ -13,6 +13,37 @@ complete_df <- function(n = 5) {
     )
 }
 
+testthat::test_that("simultaneous export warnings have unique working navigation buttons", {
+    df <- complete_df(3)
+    df$scientificName[1] <- ""
+    df$decimalLatitude[1] <- "100"
+    df$eventDate <- c("3020-01-01", "unreadable", "2024-01-01")
+    df$recordedBy <- c("=1+1", "", "")
+    navigations <- character(0)
+    shiny::testServer(mod_export_server, args = list(
+        mapped_data_r = shiny::reactive(df), lang_r = shiny::reactive("en"),
+        preview_problems_n_r = shiny::reactive(3L),
+        coords_correction_payload_r = shiny::reactive(list(stale = 1L)),
+        coord_validation_r = shiny::reactive(data.frame(.row_index = 2L, diagnostic_family = "sea")),
+        on_navigate = function(tab, term = NULL) navigations <<- c(navigations, tab)
+    ), {
+        session$flushReact()
+        html <- xml2::read_html(paste(output$summary$html, collapse = " "))
+        ids <- xml2::xml_attr(xml2::xml_find_all(html, "//*[@id]"), "id")
+        testthat::expect_identical(anyDuplicated(ids), 0L)
+        buttons <- xml2::xml_attr(xml2::xml_find_all(html, "//button[contains(@id, 'go_preview_')]"), "id")
+        testthat::expect_length(buttons, 6L)
+        for (id in buttons) {
+            # testServer inputs use local IDs. The HTML has the module prefix.
+            local_id <- sub(paste0("^", session$ns("")), "", id)
+            do.call(session$setInputs, stats::setNames(list(1L), local_id))
+        }
+        session$setInputs(go_coords_stale = 1L)
+        session$setInputs(go_coords_flags = 1L)
+    })
+    testthat::expect_identical(navigations, c(rep("preview", 6L), rep("validate_coords", 2L)))
+})
+
 testthat::test_that("mod_export_server enables the .ZIP download once required terms are present", {
     shiny::testServer(
         mod_export_server,

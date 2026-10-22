@@ -162,7 +162,10 @@ suggest_individual_count <- function(values) {
 is_dwc_time_value <- function(x) {
     x <- trimws(as.character(x))
     x[is.na(x)] <- ""
-    one <- "([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\\.[0-9]+)?)?(Z|[+-][0-9]{2}(:?[0-9]{2})?)?"
+    # End-of-day midnight is valid too (ISO 8601-1:2019/Amd 1:2022).
+    # When the hour is 24, all smaller components must be zero.
+    clock <- "(([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\\.[0-9]+)?)?|24:00(:00(\\.0+)?)?)"
+    one <- paste0(clock, "(Z|[+-][0-9]{2}(:?[0-9]{2})?)?")
     grepl(paste0("^", one, "(/", one, ")?$"), x)
 }
 

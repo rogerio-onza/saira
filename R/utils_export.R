@@ -427,6 +427,9 @@ build_mapping_guide_txt <- function(map_values,
         "#",
         sprintf("# created_at: %s", format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")),
         sprintf("# source_file: %s", if (is.na(source_file)) "" else source_file),
+        # Without a loaded sheet, Home reads these headers to tell a name
+        # with '+' from a concatenation (ADR-171).
+        paste0("# source_columns: ", jsonlite::toJSON(raw_cols, auto_unbox = FALSE)),
         sprintf("# saira_version: %s", as.character(utils::packageVersion("saira"))),
         sprintf("# n_cols_total: %d  n_cols_mapped: %d  n_cols_unmapped: %d  n_rows: %d",
                 n_total, n_mapped, n_unmapped, n_rows),

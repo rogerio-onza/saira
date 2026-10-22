@@ -12,7 +12,7 @@
 app_ui <- function() {
     css_version <- as.character(utils::packageVersion("saira"))
 
-    shiny::tagList(
+    ui <- shiny::tagList(
         shiny::tags$head(
             # Paint the stored theme before the first frame, so a dark page
             # never flashes light (ADR-144).
@@ -226,6 +226,10 @@ app_ui <- function() {
             )
         )
     )
+    # Shiny reads lang from the top-level UI object when it builds <html>.
+    # The surrounding tagList hides the attribute that page_navbar sets.
+    attr(ui, "lang") <- "pt-BR"
+    ui
 }
 
 # Runs in <head> before the stylesheets. It must stay small and must not fail:

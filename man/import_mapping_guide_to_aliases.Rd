@@ -23,7 +23,8 @@ connection is opened via \code{rostrum_connect()} and closed on exit.}
 \item{user_id}{Character, default \code{Sys.getenv("SAIRA_USER", unset = "anonymous")}.}
 
 \item{available_columns}{Optional column names of the loaded data. A source
-that is one of them stays whole, so \code{"lat + gps"} is one alias.}
+that is one of them stays whole, so \code{"lat + gps"} is one alias.
+If NULL, the function uses the headers that the guide records (ADR-171).}
 }
 \value{
 Invisibly: integer count of (source, term) pairs upserted.

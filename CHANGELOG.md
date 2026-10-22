@@ -93,6 +93,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **export:** Open the correct tab from each pending-item button. Two items of the same tab no longer share one button ID
+- **ui:** Declare Portuguese in the first HTML that the server sends, before JavaScript runs
+- **upload:** Keep a column name with `+` as one alias when Home imports a guide without a loaded sheet, ADR-171
+- **upload:** Read time-only Excel cells from workbooks that use the 1904 date system
+- **preview:** Accept `24:00` as the end of the day in `eventTime`, also in time intervals
 - **export:** Write the dataset metadata as EML 2.2.0, valid against the EML and GBIF profile schemas
 - **mapping:** Map a column picked again after a Reset, not only show it on the card
 - **mapping:** Draw the cards of a new upload without the columns mapped on the previous sheet

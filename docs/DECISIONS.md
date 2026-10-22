@@ -3278,3 +3278,14 @@ Formato: ADR leve (Architecture Decision Record).
 - **Verificacao**: testes existentes de dominio/servidor e reatividade, novas
   composicoes em `test-refactor-contracts.R`, fluxos E2E existentes, sintaxe dos
   assets, Roxygen/Collate e comparacao do bundle CSS.
+
+## ADR-171: O guia de mapeamento grava os headers originais, para manter nomes com `+`
+
+- **Data**: 2026-10-22
+- **Status**: Aceito.
+- **Contexto**: no Inicio, sem planilha carregada, a importacao do guia nao sabia se `lat + gps` era uma coluna ou a concatenacao de `lat` e `gps`. Ela separava o nome e gravava dois aliases errados.
+- **Decisao**:
+  - O guia fica no formato v2 e ganha a linha `# source_columns:`, com os headers da planilha num array JSON.
+  - Sem planilha, `import_mapping_guide_to_aliases()` usa esses headers como `available_columns`.
+  - `guide_source_columns()` mantem o nome inteiro quando ele e um header. Numa concatenacao, ela casa primeiro o header literal mais longo.
+- **Consequencias**: leitores antigos ignoram a linha nova. Um guia sem a linha (v1 ou v2 anterior) mantem a leitura antiga e precisa da planilha para nomes ambiguos. O guia grava so os nomes das colunas, sem dados dos registros.

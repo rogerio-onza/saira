@@ -244,6 +244,20 @@ testthat::test_that("detect_preview_problems checks eventTime, uncertainty, coor
     testthat::expect_true(all(p$family[startsWith(p$type, "name_")] == "name"))
 })
 
+testthat::test_that("Preview accepts end-of-day midnight without changing the day", {
+    valid <- c("24:00", "24:00:00", "24:00:00.000Z", "24:00-03:00", "23:00/24:00")
+    invalid <- c("24:01", "24:00:01", "24:00:00.001", "25:00", "23:00/24:10")
+    testthat::expect_true(all(is_dwc_time_value(valid)))
+    testthat::expect_false(any(is_dwc_time_value(invalid)))
+    testthat::expect_length(detect_preview_problems(data.frame(eventTime = valid))$row, 0L)
+    for (value in valid) {
+        testthat::expect_identical(parse_preview_edit("eventTime", value)$value, value)
+    }
+    for (value in invalid) {
+        testthat::expect_identical(parse_preview_edit("eventTime", value)$error, "preview_fix_err_time")
+    }
+})
+
 testthat::test_that("parse_preview_edit converts eventTime, uncertainty and coordinates", {
     testthat::expect_identical(parse_preview_edit("eventTime", "8:30 pm")$value, "20:30")
     testthat::expect_identical(parse_preview_edit("eventTime", "25:00")$error, "preview_fix_err_time")

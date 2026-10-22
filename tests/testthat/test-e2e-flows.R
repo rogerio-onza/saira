@@ -225,16 +225,19 @@ testthat::test_that("E2E: Language switch PT -> EN -> PT without error (Flow 5)"
     }
 
     nav_pt_initial <- strip_html(app$get_html("#nav_upload_title"))
+    testthat::expect_identical(app$get_js("document.documentElement.lang"), "pt-BR")
 
     # Switch to EN
     app$set_inputs(lang_switch = "en")
     app$wait_for_idle(timeout = 5000)
     nav_en <- strip_html(app$get_html("#nav_upload_title"))
+    testthat::expect_identical(app$get_js("document.documentElement.lang"), "en")
 
     # Switch to PT
     app$set_inputs(lang_switch = "pt")
     app$wait_for_idle(timeout = 5000)
     nav_pt_final <- strip_html(app$get_html("#nav_upload_title"))
+    testthat::expect_identical(app$get_js("document.documentElement.lang"), "pt-BR")
 
     testthat::expect_true(nzchar(nav_pt_initial))
     testthat::expect_true(nzchar(nav_en))
