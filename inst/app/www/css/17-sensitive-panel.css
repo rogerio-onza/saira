@@ -1208,7 +1208,10 @@
     box-shadow: none;
 }
 
-.sc-assess > .shiny-panel-conditional {
+/* :where() keeps this below Shiny's hidden rule for a conditional panel
+   ([data-display-if]:not(.shiny-conditional--shown)), which has the same
+   specificity and loads first. */
+:where(.sc-assess) > .shiny-panel-conditional {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);

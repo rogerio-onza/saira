@@ -12,7 +12,7 @@ BugReports: https://github.com/rogerio-onza/saira/issues
 Encoding: UTF-8
 Depends: R (>= 4.1.0)
 Imports:
-    shiny (>= 1.8.1),
+    shiny (>= 1.14.0),
     htmltools,
     bslib (>= 0.5.0),
     readr (>= 2.1.0),
