@@ -288,15 +288,16 @@ test_that("a compact card keeps its select and adds Fixed value only for constan
     expect_match(full_html, "field-compact-expand", fixed = TRUE)
 })
 
-test_that("the fixed value panel starts with the state of its condition", {
+test_that("the fixed value panel has no inline display", {
     ns <- shiny::NS("map")
     off <- as.character(build_constant_value_input("country", ns, "en", list()))
     on <- as.character(build_constant_value_input(
         "country", ns, "en", list(usecustom_country = TRUE)
     ))
-    # Shiny never hides a panel that CSS hides. It hides it when a compact
-    # row opens, and that event stops the filter slide (ADR-157).
-    expect_match(off, 'data-display-if="input.usecustom_country"[^>]*style="display: none;"')
+    # Shiny 1.14 hides a panel with its own CSS rule until the condition is
+    # true. An inline "display: none" kept the panel hidden after that.
+    expect_match(off, 'data-display-if="input.usecustom_country"', fixed = TRUE)
+    expect_false(grepl("display: none", off, fixed = TRUE))
     expect_false(grepl("display: none", on, fixed = TRUE))
 })
 
