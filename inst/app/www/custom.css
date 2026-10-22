@@ -6787,6 +6787,75 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   color: var(--text-muted);
 }
 
+/* Names a run left unchecked: one dashed block above the answer list,
+   apart from the "not found" names (ADR-169). */
+.vn-stream-status-icon-unchecked {
+  background: var(--badge-manual-bg);
+  color: var(--text-muted);
+  border: 1px dashed var(--border-strong);
+}
+
+.vn-unchecked-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 0.35rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+}
+
+.vn-unchecked-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.vn-unchecked-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.vn-unchecked-title {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.vn-unchecked-note {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.vn-unchecked-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.vn-unchecked-chip {
+  padding: 0.1rem 0.55rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-chip);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.vn-unchecked-chip.is-more {
+  font-family: var(--font-ui);
+  font-style: normal;
+  color: var(--text-muted);
+}
+
 .vn-stream-item-main {
   flex: 1 1 auto;
   min-width: 0;

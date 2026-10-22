@@ -255,7 +255,11 @@ brprovider_cache_status <- function(provider_id, poll = TRUE) {
         meta_changed <- TRUE
     }
 
-    if (has_data && identical(as.character(meta$status), "update_failed")) {
+    # The old cache still answers after a failed update (ADR-073). A known
+    # newer remote version means the data is stale, so the failure stays
+    # visible (ADR-167).
+    if (has_data && identical(as.character(meta$status), "update_failed") &&
+        brprovider_compare_versions(meta$remote_version_last_seen, meta$local_version) <= 0L) {
         meta$status <- "up_to_date"
         meta_changed <- TRUE
     }
@@ -534,14 +538,16 @@ brprovider_latest_remote_version <- function(provider_id) {
 #'   descriptive error including a partial directory tree.
 #' @noRd
 .brprovider_check_artifacts <- function(provider_id, tmp_dir) {
+    # florabr 1.4 writes a gzipped CSV. Older versions wrote an .rds, and
+    # load_florabr() still reads both.
     expected <- switch(provider_id,
-        florabr = "CompleteBrazilianFlora.rds",
+        florabr = c("CompleteBrazilianFlora.gz", "CompleteBrazilianFlora.rds"),
         faunabr = "CompleteBrazilianFauna.gz",
         NULL
     )
     if (is.null(expected)) return(invisible(NULL))
-    hits <- list.files(tmp_dir, pattern = expected, recursive = TRUE,
-                       full.names = TRUE)
+    hits <- list.files(tmp_dir, recursive = TRUE, full.names = TRUE)
+    hits <- hits[basename(hits) %in% expected]
     if (length(hits) == 0L) {
         all_files <- list.files(tmp_dir, recursive = TRUE, full.names = FALSE)
         tree <- if (length(all_files) == 0L) {
@@ -552,7 +558,7 @@ brprovider_latest_remote_version <- function(provider_id) {
         }
         stop(sprintf(
             "Expected artifact '%s' not found after get_%s().\nTemp dir: %s\nContents (up to 20):\n  %s",
-            expected, provider_id, tmp_dir, tree
+            paste(expected, collapse = "' or '"), provider_id, tmp_dir, tree
         ))
     }
     invisible(hits)

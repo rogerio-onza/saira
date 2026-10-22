@@ -1,27 +1,17 @@
 # Title: Conservation status lookups (GBIF IUCN Red List category)
 # Author: Rogerio Nunes Oliveira
 #
-# Optional, non-blocking helpers that read a taxon's global IUCN Red List
-# category from GBIF's keyless species API, used on export to populate the
-# iucnRedListCategory entry of dynamicProperties. Every path degrades to NA:
-# httr2 absent (it is a Suggests-only dependency), machine offline, an HTTP
-# error or an unexpected payload must never break or stall the export bundle.
-# Results are memoized per session so the same taxon is queried at most once.
+# HTTP helpers for the keyless GBIF API, and the global IUCN Red List category
+# that the export writes to dynamicProperties. Every path degrades to NA: a
+# machine offline, an HTTP error or an unexpected payload must never break or
+# stall the export bundle. The COL XR match memo (utils_colxr.R) keeps each
+# name to one request per session.
 
-# Session memo: usageKey -> IUCN code (e.g. "NT"). An NA answer is stored too so
-# a taxon GBIF does not assess is not re-queried.
-gbif_iucn_cache <- create_rds_cache("gbif_iucn")
-# Session memo: scientific name -> GBIF usageKey, for the match fallback.
-gbif_match_cache <- create_rds_cache("gbif_match")
-
-GBIF_API_BASE <- "https://api.gbif.org/v1"
+GBIF_API_BASE <- "https://api.gbif.org/v2"
 GBIF_API_TIMEOUT_S <- 10
 # One request at a time made the export wait ~0.3 s per taxon, several minutes
 # for a few hundred species (ADR-126).
 GBIF_API_MAX_ACTIVE <- 10L
-
-# The feature is opt-in through Suggests: absent httr2 disables every call.
-has_httr2 <- function() requireNamespace("httr2", quietly = TRUE)
 
 # One GET request against the GBIF API. A 429 or 503 is retried, so a rate
 # limit under parallel load does not turn a real category into NA. Keep the
@@ -53,7 +43,7 @@ gbif_response_body <- function(resp) {
 # failure, so callers only deal with "got a body or did not".
 gbif_api_get_many <- function(requests) {
     empty <- vector("list", length(requests))
-    if (length(requests) == 0L || !has_httr2()) {
+    if (length(requests) == 0L) {
         return(empty)
     }
     tryCatch(
@@ -71,91 +61,32 @@ gbif_api_get_many <- function(requests) {
     )
 }
 
-# Read a single scalar string field from a parsed GBIF body, or NA.
-gbif_body_field <- function(body, field) {
-    if (!is.list(body)) {
-        return(NA_character_)
-    }
-    value <- body[[field]]
-    if (length(value) != 1L) {
-        return(NA_character_)
-    }
-    value <- as.character(value)
-    if (is.na(value) || !nzchar(value)) NA_character_ else value
-}
-
-#' IUCN Red List category code for GBIF usage keys
+#' IUCN Red List category of scientific names, from COL XR
 #'
-#' For each GBIF usageKey, reads the global IUCN Red List category from
-#' `GET /species/{key}/iucnRedListCategory` and returns its short `code`
-#' (e.g. "NT", "VU", "EN"). Missing keys, taxa GBIF does not assess, an absent
-#' httr2, an offline machine or any API error all yield NA. Memoized per session.
-#'
-#' @param usage_keys Character/numeric vector of GBIF usage keys (NA allowed).
-#' @return Character vector of IUCN codes (NA where unavailable), same length.
-#' @keywords internal
-#' @noRd
-fetch_gbif_iucn_category <- function(usage_keys) {
-    n <- length(usage_keys)
-    if (n == 0L) {
-        return(character(0))
-    }
-    keys <- as.character(usage_keys)
-    out <- rep(NA_character_, n)
-    valid <- !is.na(keys) & nzchar(keys)
-    if (!any(valid) || !has_httr2()) {
-        return(out)
-    }
-    memo <- gbif_iucn_cache$get()
-    if (is.null(memo)) {
-        memo <- character(0)
-    }
-    misses <- setdiff(unique(keys[valid]), names(memo))
-    bodies <- gbif_api_get_many(lapply(misses, function(k) {
-        list(segments = c("species", k, "iucnRedListCategory"))
-    }))
-    memo[misses] <- vapply(bodies, gbif_body_field, character(1), field = "code")
-    if (length(misses) > 0L) {
-        gbif_iucn_cache$set(memo)
-    }
-    out[valid] <- unname(memo[keys[valid]])
-    out
-}
-
-#' Resolve scientific names to GBIF usage keys (match fallback)
-#'
-#' Used only for names that lack a GBIF-resolved `taxonID` (e.g. rows a Brazilian
-#' provider matched, or manual renames). Calls the keyless
-#' `GET /species/match?name=` endpoint and returns the `usageKey`. Same graceful
-#' degradation and per-session memoization as [fetch_gbif_iucn_category()].
+#' The COL XR match carries the global IUCN category of the name. A synonym
+#' has no category of its own, so it takes the category of its accepted name.
+#' Names GBIF did not answer, and names without an assessment, give NA.
 #'
 #' @param names Character vector of scientific names (NA allowed).
-#' @return Character vector of GBIF usage keys (NA where unmatched), same length.
+#' @return Character vector of IUCN codes ("NT", "EN", ...), same length.
 #' @keywords internal
 #' @noRd
-gbif_match_usage_keys <- function(names) {
-    n <- length(names)
-    if (n == 0L) {
-        return(character(0))
-    }
+colxr_iucn_category <- function(names) {
     nm <- as.character(names)
-    out <- rep(NA_character_, n)
+    out <- rep(NA_character_, length(nm))
     valid <- !is.na(nm) & nzchar(trimws(nm))
-    if (!any(valid) || !has_httr2()) {
+    if (!any(valid)) {
         return(out)
     }
-    memo <- gbif_match_cache$get()
-    if (is.null(memo)) {
-        memo <- character(0)
+    matches <- colxr_match_names(nm[valid])
+    code <- stats::setNames(matches$iucnRedListCategory, matches$query_name)
+    syn <- matches$validation_status %in% "synonym" & is.na(code) &
+        !is.na(matches$acceptedNameUsage)
+    if (any(syn)) {
+        accepted <- matches$acceptedNameUsage[syn]
+        found <- colxr_match_names(accepted)
+        code[syn] <- found$iucnRedListCategory[match(accepted, found$query_name)]
     }
-    misses <- setdiff(unique(nm[valid]), names(memo))
-    bodies <- gbif_api_get_many(lapply(misses, function(q) {
-        list(segments = c("species", "match"), query = list(name = q))
-    }))
-    memo[misses] <- vapply(bodies, gbif_body_field, character(1), field = "usageKey")
-    if (length(misses) > 0L) {
-        gbif_match_cache$set(memo)
-    }
-    out[valid] <- unname(memo[nm[valid]])
+    out[valid] <- unname(code[nm[valid]])
     out
 }

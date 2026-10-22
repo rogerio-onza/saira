@@ -66,7 +66,7 @@ mod_export_ui <- function(id) {
 #' @param sensitive_generalization_payload_r Optional reactive with the
 #'   generalization decision (`levels`, `enabled`, ...).
 #' @param conservation_payload_r Optional reactive with the conservation-status
-#'   selection (`include_mma`, `include_iucn`, `taxon_keys`).
+#'   selection (`include_mma`, `include_iucn`).
 #' @param raw_data_r Optional reactive with the original uploaded data.frame.
 #' @param map_values_r Optional reactive with the current mapping list.
 #' @param custom_values_r Optional reactive with typed constants (`datasetName`,

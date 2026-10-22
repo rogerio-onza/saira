@@ -36,7 +36,7 @@ Saíra se construye sobre paquetes de R de código abierto, todos declarados com
 
 | Paquete | Para qué | Licencia |
 | --- | --- | --- |
-| [taxadb](https://cran.r-project.org/package=taxadb) | Bases taxonómicas locales para verificar nombres científicos | MIT |
+| [httr2](https://cran.r-project.org/package=httr2) | Consulta de los nombres científicos en el Catálogo de la Vida (COL XR), por la API de GBIF | MIT |
 | [florabr](https://wevertonbio.github.io/florabr/) | Flora e Funga do Brasil (nombres de plantas, algas y hongos) | GPL (≥ 3) |
 | [faunabr](https://wevertonbio.github.io/faunabr/) | Catálogo Taxonômico da Fauna do Brasil | GPL (≥ 3) |
 

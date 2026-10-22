@@ -244,8 +244,7 @@ is_brazilian_record <- function(df) {
 #' are already in place.
 #'
 #' @param df Data frame to export (post name review).
-#' @param payload Optional list with `include_mma`, `include_iucn` (logical) and
-#'   `taxon_keys` (data.frame of `scientificName`, `taxonID`, `provider`).
+#' @param payload Optional list with `include_mma` and `include_iucn` (logical).
 #' @param generalized Optional logical vector, one per row: TRUE where
 #'   `mask_sensitive_coordinates()` protected the row.
 #' @return `df` with an updated `dynamicProperties` column.
@@ -300,10 +299,9 @@ apply_conservation_status <- function(df, payload = NULL, generalized = NULL) {
     if (include_iucn) {
         dynprops <- tryCatch(
             {
-                usage_keys <- resolve_iucn_usage_keys(names_vec, payload$taxon_keys)
                 merge_dynamic_property(
                     dynprops, "iucnRedListCategory",
-                    fetch_gbif_iucn_category(usage_keys)
+                    colxr_iucn_category(names_vec)
                 )
             },
             error = function(e) {
@@ -321,40 +319,13 @@ apply_conservation_status <- function(df, payload = NULL, generalized = NULL) {
     df
 }
 
-# GBIF usage keys for the IUCN lookup. Prefer the taxonID taxadb already resolved
-# for rows GBIF matched (stripping any "GBIF:" prefix to the bare numeric key),
-# and fall back to the keyless match endpoint for the rest (BR-resolved rows or
-# manual renames).
-resolve_iucn_usage_keys <- function(names_vec, taxon_keys) {
-    n <- length(names_vec)
-    keys <- rep(NA_character_, n)
-    if (is.data.frame(taxon_keys) && nrow(taxon_keys) > 0L &&
-        all(c("scientificName", "taxonID", "provider") %in% names(taxon_keys))) {
-        is_gbif <- tolower(as.character(taxon_keys$provider)) == "gbif"
-        sci <- as.character(taxon_keys$scientificName)[is_gbif]
-        bare <- sub("^[^0-9]*", "", as.character(taxon_keys$taxonID)[is_gbif])
-        ok <- !is.na(bare) & nzchar(bare) & !is.na(sci) & nzchar(sci)
-        sci <- sci[ok]
-        bare <- bare[ok]
-        if (length(sci) > 0L) {
-            keys <- bare[match(names_vec, sci)]
-        }
-    }
-    need <- is.na(keys) & !is.na(names_vec) &
-        nzchar(trimws(as.character(names_vec)))
-    if (any(need)) {
-        keys[need] <- gbif_match_usage_keys(names_vec[need])
-    }
-    keys
-}
-
 #' Process data for DwC-compliant export
 #'
 #' @param df Data frame with mapped columns
 #' @return Data frame with ISO dates, cleaned separators, UUIDs, canonical column order
 #' @examples
 #' \dontrun{
-#'   # Processes mapped data for export (uses taxadb, spatial packages)
+#'   # Processes mapped data for export (uses spatial packages)
 #'   processed <- process_for_export(my_mapped_data)
 #'   # Returns data with:
 #'   # - eventDate in ISO format (YYYY-MM-DD)
@@ -1776,7 +1747,7 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
     ms <- xml2::xml_add_child(methods, "methodStep")
     desc <- xml2::xml_add_child(ms, "description")
     xml2::xml_add_child(desc, "para", sprintf(
-        "Dataset prepared with Saira v%s (https://github.com/rogerio-onza/saira). Fields validated and mapped to Darwin Core; coordinates checked with CoordinateCleaner; taxonomy reconciled against taxadb.",
+        "Dataset prepared with Saira v%s (https://github.com/rogerio-onza/saira). Fields validated and mapped to Darwin Core; coordinates checked with CoordinateCleaner; taxonomy reconciled against the Catalogue of Life (COL XR) through the GBIF API.",
         utils::packageVersion("saira")
     ))
 

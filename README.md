@@ -127,7 +127,7 @@ Antes de abrir um pull request, leia [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### 🧩 Tecnologias e créditos
 
-O Saíra usa pacotes R de código aberto (Shiny, `taxadb`/`florabr`/`faunabr`,
+O Saíra usa pacotes R de código aberto (Shiny, `httr2`/`florabr`/`faunabr`,
 `CoordinateCleaner`/`sf`/`terra`, entre outros) e embute dados de fontes públicas
 (camada Natural Earth, termos Darwin Core do TDWG sob CC-BY, Lista Nacional de
 Espécies Ameaçadas — Portarias MMA nº 148/2022, nº 1.704/2026 e GM/MMA
@@ -259,7 +259,7 @@ Before opening a pull request, read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### 🧩 Technologies and credits
 
-Saíra uses open-source R packages (Shiny, `taxadb`/`florabr`/`faunabr`,
+Saíra uses open-source R packages (Shiny, `httr2`/`florabr`/`faunabr`,
 `CoordinateCleaner`/`sf`/`terra`, among others) and bundles data from public
 sources (Natural Earth layer, Darwin Core terms from TDWG under CC-BY, the
 Brazilian Official List of Threatened Species — Portarias MMA nº 148/2022,

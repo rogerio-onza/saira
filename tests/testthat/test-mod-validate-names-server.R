@@ -449,6 +449,139 @@ testthat::test_that("stream panel lists names under other filters when all probl
     )
 })
 
+testthat::test_that("a run sends the answer list by key, and the panel renders once (DEP-07)", {
+    mapped_df <- data.frame(scientificName = c("Puma concolor"), stringsAsFactors = FALSE)
+    testthat::local_mocked_bindings(
+        brprovider_data_available = function(provider_id) FALSE,
+        .package = "saira"
+    )
+    stream_rows <- function(names, status) {
+        data.frame(
+            query_name = names,
+            validation_status = status,
+            provider = "gbif",
+            updated_at = as.POSIXct("2026-10-22 10:00:00", tz = "UTC"),
+            display_order = seq_along(names),
+            stringsAsFactors = FALSE
+        )
+    }
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            sent <- list()
+            root <- session$rootScope()
+            root$sendCustomMessage <- function(type, message) {
+                if (identical(type, "vnStreamSync")) sent[[length(sent) + 1L]] <<- message
+            }
+            rv$running <- TRUE
+            session$flushReact()
+            panel_before <- output$stream_panel
+
+            rv$stream_df <- stream_rows(c("Puma concolor", "Abies alba"), c("accepted", "not_found"))
+            session$flushReact()
+            msg <- sent[[length(sent)]]
+            testthat::expect_identical(msg$id, session$ns("stream_panel"))
+            # Newest first, one key per name.
+            testthat::expect_identical(vapply(msg$rows, `[[`, "", "key"), c("Abies alba", "Puma concolor"))
+            testthat::expect_true(grepl('data-key="Abies alba"', msg$rows[[1]]$html, fixed = TRUE))
+            testthat::expect_identical(msg$counts$all, 2L)
+            testthat::expect_identical(msg$counts$problems, 1L)
+            # The panel keeps its first render: the rows change in place.
+            testthat::expect_identical(output$stream_panel, panel_before)
+
+            rv$running <- FALSE
+            session$flushReact()
+            n_sent <- length(sent)
+            testthat::expect_true(grepl("Abies alba", output$stream_panel$html, fixed = TRUE))
+            rv$stream_df <- stream_rows("Puma concolor", "accepted")
+            session$flushReact()
+            testthat::expect_identical(length(sent), n_sent)
+        }
+    )
+})
+
+testthat::test_that("unchecked names leave the list for the block, and the retry checks them (ADR-169)", {
+    mapped_df <- data.frame(scientificName = c("Puma concolor"), stringsAsFactors = FALSE)
+    input_df <- data.frame(
+        row_id = 1:3,
+        input_name = c("Puma concolor", "Cebus apella", "Abies alba"),
+        query_name = c("Puma concolor", "Cebus apella", "Abies alba"),
+        skip_reason = NA_character_,
+        stringsAsFactors = FALSE
+    )
+    gbif <- new.env()
+    gbif$up <- FALSE
+    testthat::local_mocked_bindings(
+        brprovider_data_available = function(provider_id) FALSE,
+        colxr_match_names = function(names) {
+            answered <- if (gbif$up) names else intersect(names, "Puma concolor")
+            out <- data.frame(
+                query_name = answered,
+                scientificName = answered,
+                provider = "gbif",
+                validation_status = "accepted",
+                stringsAsFactors = FALSE
+            )
+            attr(out, "unanswered") <- setdiff(names, answered)
+            out
+        },
+        .package = "saira"
+    )
+    state <- init_taxadb_run_state(input_df, providers = "gbif", batch_size = 20L)
+    while (!is_taxadb_run_done(state)) {
+        state <- next_taxadb_run_step(state)
+    }
+    finalized <- finalize_taxadb_run(state)
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            rv$run_state <- state
+            validation_result(finalized$report)
+            validation_meta(finalized$meta)
+            rv$stream_df <- finalized$stream_df
+            rv$stream_filter <- "all"
+            session$flushReact()
+
+            html <- paste(output$stream_panel$html, collapse = " ")
+            testthat::expect_true(grepl("2 names with no answer", html, fixed = TRUE))
+            testthat::expect_true(grepl('data-key="Puma concolor"', html, fixed = TRUE))
+            testthat::expect_false(grepl('data-key="Cebus apella"', html, fixed = TRUE))
+            testthat::expect_identical(stream_view()$counts[["not_found"]], 0L)
+
+            gbif$up <- TRUE
+            session$setInputs(retry_unchecked = 1)
+            testthat::expect_true(isTRUE(rv$running))
+            testthat::expect_identical(rv$run_state$total_unique, 2L)
+            for (i in seq_len(50)) {
+                if (!isTRUE(rv$running)) break
+                session$elapse(100)
+            }
+            testthat::expect_false(isTRUE(rv$running))
+            testthat::expect_identical(validation_meta()$unchecked, character(0))
+            status <- stats::setNames(validation_result()$validation_status, validation_result()$query_name)
+            testthat::expect_identical(unname(status[input_df$query_name]), rep("accepted", 3L))
+
+            # Every name is checked now: the problems filter shows the end state.
+            html <- paste(output$stream_panel$html, collapse = " ")
+            testthat::expect_false(grepl("vn-unchecked-block", html, fixed = TRUE))
+            testthat::expect_true(grepl("vn-review-empty-state", html, fixed = TRUE))
+            rv$stream_filter <- "all"
+            session$flushReact()
+            testthat::expect_true(grepl('data-key="Cebus apella"', output$stream_panel$html, fixed = TRUE))
+        }
+    )
+})
+
 testthat::test_that("module stream state grows incrementally per processed batch", {
     mapped_df <- data.frame(
         scientificName = paste("Species", seq_len(250)),
@@ -463,13 +596,12 @@ testthat::test_that("module stream state grows incrementally per processed batch
     )
 
     testthat::with_mocked_bindings(
-        init_taxadb_provider = function(provider) list(provider = provider),
-        query_taxadb_batch = function(query_names, provider, db) {
+        colxr_match_names = function(names) {
             data.frame(
-                query_name = query_names,
-                scientificName = query_names,
-                taxonomicStatus = "accepted",
-                provider = provider,
+                query_name = names,
+                scientificName = names,
+                provider = "gbif",
+                validation_status = "accepted",
                 stringsAsFactors = FALSE
             )
         },
@@ -529,13 +661,12 @@ testthat::test_that("cancel path marks unresolved names after abort flag", {
     )
 
     testthat::with_mocked_bindings(
-        init_taxadb_provider = function(provider) list(provider = provider),
-        query_taxadb_batch = function(query_names, provider, db) {
+        colxr_match_names = function(names) {
             data.frame(
-                query_name = query_names,
-                scientificName = query_names,
-                taxonomicStatus = "accepted",
-                provider = provider,
+                query_name = names,
+                scientificName = names,
+                provider = "gbif",
+                validation_status = "accepted",
                 stringsAsFactors = FALSE
             )
         },

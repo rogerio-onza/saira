@@ -21,6 +21,97 @@
 # Provider utilities
 # ---------------------------------------------------------------------------
 
+#' Warning text for a names run with a failed provider
+#'
+#' The text names the providers that failed (DEP-02).
+#' @param meta The \code{meta} list of \code{finalize_taxadb_run()}.
+#' @param lang Language code.
+#' @return Character string, or NULL when every provider answered.
+#' @noRd
+vn_provider_failure_message <- function(meta, lang = "pt") {
+    failures <- meta$provider_failures
+    if (!is.data.frame(failures) || nrow(failures) == 0L) {
+        return(NULL)
+    }
+    providers <- paste(
+        format_provider_labels(failures$provider),
+        collapse = tr("validate_names_run_and", lang)
+    )
+    sprintf(tr("validate_names_provider_failed", lang), providers)
+}
+
+#' Answer list without the names a run left unchecked
+#'
+#' A name that no provider could check has only a "not_found" answer, and the
+#' block of unchecked names shows it. The list and its counts leave it out. A
+#' name with an answer from another provider keeps its row (ADR-169).
+#' @param stream_df Stream data frame.
+#' @param unchecked Character vector of unchecked query names.
+#' @return Stream data frame.
+#' @noRd
+vn_drop_unchecked <- function(stream_df, unchecked) {
+    if (!is.data.frame(stream_df) || nrow(stream_df) == 0L || length(unchecked) == 0L) {
+        return(stream_df)
+    }
+    status <- vapply(stream_df$validation_status, normalize_status_for_filter, FUN.VALUE = character(1))
+    drop <- stream_df$query_name %in% unchecked & status == "not_found"
+    out <- stream_df[!drop, , drop = FALSE]
+    rownames(out) <- NULL
+    out
+}
+
+#' Block of the names a run left unchecked
+#'
+#' The block stands above the answer list. Its button queries these names
+#' again (ADR-169).
+#' @param unchecked Character vector of unchecked query names.
+#' @param meta The \code{meta} list of \code{finalize_taxadb_run()}.
+#' @param retry_id Input id of the retry button.
+#' @param lang Language code.
+#' @param chip_limit Most names to show. A last chip counts the others.
+#' @return A \code{div} tag, or NULL when every name was checked.
+#' @noRd
+vn_unchecked_block_ui <- function(unchecked, meta, retry_id, lang = "pt", chip_limit = 12L) {
+    n <- length(unchecked)
+    if (n == 0L) {
+        return(NULL)
+    }
+    suffix <- if (n == 1L) "_one" else "_other"
+    shown <- utils::head(unchecked, chip_limit)
+    more <- n - length(shown)
+    note <- paste(
+        c(vn_provider_failure_message(meta, lang), tr(paste0("validate_names_unchecked_note", suffix), lang)),
+        collapse = " "
+    )
+    shiny::div(
+        class = "vn-unchecked-block",
+        shiny::div(
+            class = "vn-unchecked-head",
+            shiny::span(class = "vn-stream-status-icon vn-stream-status-icon-unchecked", ph_icon("cloud-slash")),
+            shiny::div(
+                class = "vn-unchecked-text",
+                shiny::span(
+                    class = "vn-unchecked-title",
+                    sprintf(tr(paste0("validate_names_unchecked_title", suffix), lang), format_count(n, lang))
+                ),
+                shiny::span(class = "vn-unchecked-note", note)
+            ),
+            shiny::actionButton(
+                inputId = retry_id,
+                label = tr("validate_names_unchecked_retry", lang),
+                icon = ph_icon("arrow-clockwise"),
+                class = "btn-secondary vn-review-trigger"
+            )
+        ),
+        shiny::div(
+            class = "vn-unchecked-chips",
+            lapply(shown, function(name) shiny::span(class = "vn-unchecked-chip", name)),
+            if (more > 0L) shiny::span(class = "vn-unchecked-chip is-more", paste0("+", format_count(more, lang)))
+        )
+    )
+}
+
+
 #' Format provider IDs into display labels
 #' @param provider_values Character vector of provider IDs
 #' @return Character vector of display labels
@@ -105,6 +196,23 @@ vn_run_cells <- function(state) {
         code[pending & queries %in% batches[[next_idx]]] <- "q"
     }
     paste(code, collapse = "")
+}
+
+#' Answer list rows of the names that have their last answer
+#'
+#' A name that a Brazilian provider finds but does not accept waits for the
+#' next provider, so its first answer can change. The list shows a name when
+#' it leaves the queue, as the run grid does (DEP-07).
+#' @param state Run state object.
+#' @return Stream data frame.
+#' @noRd
+vn_settled_stream <- function(state) {
+    stream <- state$stream_df
+    if (!is.data.frame(stream) || nrow(stream) == 0L) {
+        return(stream)
+    }
+    pending <- as.character(state$pending_queries %||% character(0))
+    stream[!(stream$query_name %in% pending), , drop = FALSE]
 }
 
 #' Progress of a names run, for the run card of the report panel

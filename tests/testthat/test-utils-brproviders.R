@@ -191,10 +191,19 @@ testthat::test_that(".brprovider_check_artifacts: florabr missing artifact menti
     dir.create(tmp)
     on.exit(unlink(tmp, recursive = TRUE))
 
-    testthat::expect_error(
-        .brprovider_check_artifacts("florabr", tmp),
-        regexp = "CompleteBrazilianFlora\\.rds"
-    )
+    err <- testthat::expect_error(.brprovider_check_artifacts("florabr", tmp))
+    testthat::expect_match(err$message, "CompleteBrazilianFlora.gz", fixed = TRUE)
+    testthat::expect_match(err$message, "CompleteBrazilianFlora.rds", fixed = TRUE)
+})
+
+testthat::test_that(".brprovider_check_artifacts: florabr 1.4 gz artifact is accepted (DEP-04)", {
+    tmp <- tempfile(pattern = "brp_flora_gz_")
+    dir.create(file.path(tmp, "393.420"), recursive = TRUE)
+    on.exit(unlink(tmp, recursive = TRUE))
+    writeLines("", file.path(tmp, "393.420", "CompleteBrazilianFlora.gz"))
+
+    result <- .brprovider_check_artifacts("florabr", tmp)
+    testthat::expect_match(result[[1L]], "CompleteBrazilianFlora\\.gz$")
 })
 
 testthat::test_that(".brprovider_check_artifacts: florabr present artifact returns invisibly", {
@@ -206,6 +215,44 @@ testthat::test_that(".brprovider_check_artifacts: florabr present artifact retur
     result <- .brprovider_check_artifacts("florabr", tmp)
     testthat::expect_true(length(result) >= 1L)
     testthat::expect_match(result[[1L]], "CompleteBrazilianFlora\\.rds")
+})
+
+testthat::test_that("florabr download loads the 1.4 gz artifact end to end (DEP-04)", {
+    testthat::skip_if_not_installed("florabr", minimum_version = "1.4.0")
+    tmp <- tempfile(pattern = "brp_flora_load_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+
+    # get_florabr() 1.4 writes <version>/CompleteBrazilianFlora.gz, a gzipped
+    # CSV that load_florabr() reads with data.table::fread().
+    short_cols <- c(
+        "species", "scientificName", "acceptedName", "kingdom", "group", "subgroup",
+        "phylum", "class", "order", "family", "genus", "lifeForm", "habitat", "biome",
+        "states", "vegetation", "origin", "endemism", "taxonomicStatus",
+        "nomenclaturalStatus", "vernacularName", "taxonRank", "id"
+    )
+    fake_get <- function(output_dir, data_version, overwrite, verbose) {
+        version_dir <- file.path(output_dir, "393.420")
+        dir.create(version_dir, recursive = TRUE)
+        row <- stats::setNames(as.list(rep("x", length(short_cols))), short_cols)
+        row$species <- "Paubrasilia echinata"
+        con <- gzfile(file.path(version_dir, "CompleteBrazilianFlora.gz"), "w")
+        utils::write.csv(as.data.frame(row), con, row.names = FALSE)
+        close(con)
+        invisible(NULL)
+    }
+
+    testthat::local_mocked_bindings(get_florabr = fake_get, .package = "florabr")
+    testthat::local_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .package = "saira"
+    )
+    out <- saira:::.brprovider_download_data_impl("florabr", verbose = FALSE)
+
+    testthat::expect_true(isTRUE(out$ok), info = out$error)
+    testthat::expect_identical(out$local_version, "393.420")
+    cached <- readRDS(out$persist_path)
+    testthat::expect_identical(cached$species, "Paubrasilia echinata")
 })
 
 testthat::test_that(".brprovider_check_artifacts: present artifact returns invisibly", {
@@ -441,7 +488,7 @@ testthat::test_that("provider lock prevents concurrent starts", {
     )
 })
 
-testthat::test_that("poll_updates marks update_failed and preserves cache", {
+testthat::test_that("poll_updates marks update_failed and preserves cache (DEP-05)", {
     testthat::skip_if_not_installed("future")
 
     tmp <- tempfile(pattern = "brp_poll_fail_")
@@ -490,9 +537,16 @@ testthat::test_that("poll_updates marks update_failed and preserves cache", {
                 }
             )
 
+            # Version 1.49 is known and newer: the cache is stale, so the
+            # badge keeps the failure.
+            st <- brprovider_cache_status(pid, poll = FALSE)
+            testthat::expect_identical(as.character(st$status), "update_failed")
+            testthat::expect_true(isTRUE(st$has_data))
+
+            # No newer version known: the old cache is current (ADR-073).
+            saira:::.brprovider_patch_meta(pid, list(remote_version_last_seen = "1.48"))
             st <- brprovider_cache_status(pid, poll = FALSE)
             testthat::expect_identical(as.character(st$status), "up_to_date")
-            testthat::expect_true(isTRUE(st$has_data))
         }
     )
 })
