@@ -155,7 +155,7 @@ anchor-sections: false
       <div class="lp-term-line" data-out data-wait="350"><span class="out">package ‘pak’ successfully unpacked and MD5 sums checked</span></div>
       <div class="lp-term-line" data-out data-wait="250"><span class="out">→ Will install 128 packages.</span></div>
       <div class="lp-term-line" data-out data-wait="1100"><span class="pr">ℹ </span><span class="out">Getting 128 pkgs</span><span class="lp-term-prog"><i></i></span></div>
-      <div class="lp-term-line" data-out data-wait="350"><span class="str">✔ </span><span class="out">Installed saira <span data-saira-version>0.11.2</span> (github::rogerio-onza/saira)</span></div>
+      <div class="lp-term-line" data-out data-wait="350"><span class="str">✔ </span><span class="out">Installed saira <span data-saira-version>1.0.0</span> (github::rogerio-onza/saira)</span></div>
       <div class="lp-term-line" data-out><span class="out">Listening on </span><span>http://127.0.0.1:7346</span></div>
     </div>
   </figure>

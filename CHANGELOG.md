@@ -7,6 +7,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-22
+
 ### Added
 - **names:** Show the names a failed provider left unchecked in a block above the run list, with a button that queries only these names again, ADR-169
 - **names:** Show one hexagon per name during a run, colored by its answer, ADR-160
@@ -87,6 +89,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **ui:** Drop shadows and gradients, use warm neutral borders and a darker muted text for AA contrast, ADR-127
 - **export:** Match the MMA threat list once per species, not once per row, so large datasets export faster
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
+- **names:** Update the bundled Flora e Funga do Brasil to 393.432 and Fauna do Brasil to 1.57
 - **names:** Check the names that Flora BR and Fauna BR miss against COL XR through the GBIF API, with no download, ADR-167
 - **export:** Read the IUCN category from the COL XR answer, and give a synonym the category of its accepted name, ADR-167
 - **build:** Run the tests in CI also on the package versions of `renv.lock`, ADR-167

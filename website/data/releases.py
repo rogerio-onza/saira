@@ -15,6 +15,28 @@
 
 RELEASES = [
     {
+        "version": "1.0.0",
+        "date": "2026-10-22",
+        "pt": [
+            ("added", "**Espanhol**: terceiro idioma da interface e do site de ajuda, ao lado de português e inglês"),
+            ("changed", "**Visual**: novo desenho plano em todas as etapas, com tema claro, escuro ou do sistema"),
+            ("added", "**Coordenadas**: edição de latitude e longitude direto na tabela, com revalidação e desfazer"),
+            ("changed", "**Nomes**: Flora e Funga do Brasil e Fauna do Brasil vêm instaladas, e o COL XR confere o resto"),
+        ],
+        "en": [
+            ("added", "**Spanish**: a third language for the interface and the help site, beside Portuguese and English"),
+            ("changed", "**Look**: a new flat design across every step, with a light, dark or system theme"),
+            ("added", "**Coordinates**: edit latitude and longitude directly in the table, with revalidation and undo"),
+            ("changed", "**Names**: Flora e Funga do Brasil and Fauna do Brasil come installed, and COL XR checks the rest"),
+        ],
+        "es": [
+            ("added", "**Español**: tercer idioma de la interfaz y del sitio de ayuda, junto al portugués y el inglés"),
+            ("changed", "**Apariencia**: nuevo diseño plano en todas las etapas, con tema claro, oscuro o del sistema"),
+            ("added", "**Coordenadas**: edición de latitud y longitud directo en la tabla, con revalidación y deshacer"),
+            ("changed", "**Nombres**: Flora e Funga do Brasil y Fauna do Brasil vienen instaladas, y COL XR verifica el resto"),
+        ],
+    },
+    {
         "version": "0.11.2",
         "date": "2026-09-11",
         "pt": [

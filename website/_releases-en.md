@@ -2,6 +2,19 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v1.0.0</span>
+    <time class="release-date">2026-10-22</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Spanish</strong>: a third language for the interface and the help site, beside Portuguese and English</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Look</strong>: a new flat design across every step, with a light, dark or system theme</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Coordinates</strong>: edit latitude and longitude directly in the table, with revalidation and undo</span></li>
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Names</strong>: Flora e Funga do Brasil and Fauna do Brasil come installed, and COL XR checks the rest</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v0.11.2</span>
     <time class="release-date">2026-09-11</time>
   </header>
