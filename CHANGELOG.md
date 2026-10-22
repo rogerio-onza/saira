@@ -34,7 +34,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **generalization:** Shorten the precision and invalid-coordinate notes, and open the Chapman explanation from a "?" beside the decision table
 - **export:** Show the download bar as a flat card, and name the next step on the button while the bundle is blocked
 - **site:** Show each use of open data as a hex badge with a short text, use the app UI font (IBM Plex Sans) for labels and menus, and give the Caatinga species its scientific name, ADR-134
-- **site:** Swap the hero species with a plumage of turning hexagons that shine in the colors of the saíra-sete-cores
+- **site:** Swap the hero species with a focus pull, and fade the record card instead of scrambling it
 - **site:** Remove the Project, Glossary and Technologies tabs from the menu, give the version pill a soft indigo fill, and update the home page copy (italic subtitle, publish to SiBBr and GBIF, the number block names SiBBr only)
 - **mapping:** Run the auto-map on every upload, not only on Camtrap DP, ADR-154
 - **names:** Remove the Cancel button and the phase line from a run. The run card shows the progress, ADR-160
