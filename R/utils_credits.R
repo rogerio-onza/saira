@@ -17,7 +17,7 @@ credits_package_groups <- function() {
     list(
         ui = c("shiny", "bslib", "htmltools", "htmlwidgets", "DT", "leaflet"),
         io = c("readr", "readxl", "writexl", "zip", "xml2", "jsonlite"),
-        taxonomy = c("taxadb", "florabr", "faunabr"),
+        taxonomy = c("httr2", "florabr", "faunabr"),
         coords = c(
             "CoordinateCleaner", "sf", "terra", "countrycode",
             "rnaturalearth", "rnaturalearthdata"

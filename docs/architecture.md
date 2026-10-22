@@ -64,7 +64,7 @@ saira/
 | DwC e vocabulário | `utils_dwc.R`, `utils_vocabulary.R` |
 | Mapeamento (Rostrum) | `utils_mapping.R`, `utils_rostrum_engine.R`, `utils_rostrum_db.R`, `utils_rostrum_templates.R`, `utils_rostrum_contracts.R`, `utils_oceanic_islands.R` |
 | Pré-visualização | `utils_preview.R`, `utils_preview_fix.R` |
-| Nomes | `utils_taxadb.R`, `utils_brproviders.R`, `utils_threat_status.R`, `utils_invasive.R`, `utils_species_photos.R` |
+| Nomes | `utils_taxadb.R`, `utils_colxr.R`, `utils_brproviders.R`, `utils_threat_status.R`, `utils_invasive.R`, `utils_species_photos.R` |
 | Coordenadas | `utils_coords.R`, `utils_coords_run.R`, `utils_coords_utm.R` |
 | Generalização | `utils_sensitive.R` |
 | Exportação | `utils_export.R`, `utils_export_summary.R` |

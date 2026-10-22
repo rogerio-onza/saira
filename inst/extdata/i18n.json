@@ -2149,6 +2149,41 @@
     "en": "Failed to validate names: %s",
     "es": "No fue posible validar los nombres: %s"
   },
+  "validate_names_provider_failed": {
+    "pt": "Não foi possível consultar %s.",
+    "en": "Saira could not query %s.",
+    "es": "No fue posible consultar %s."
+  },
+  "validate_names_unchecked_title_one": {
+    "pt": "%s nome sem resposta",
+    "en": "%s name with no answer",
+    "es": "%s nombre sin respuesta"
+  },
+  "validate_names_unchecked_title_other": {
+    "pt": "%s nomes sem resposta",
+    "en": "%s names with no answer",
+    "es": "%s nombres sin respuesta"
+  },
+  "validate_names_unchecked_note_one": {
+    "pt": "Ele não conta como não encontrado.",
+    "en": "It does not count as not found.",
+    "es": "No cuenta como no encontrado."
+  },
+  "validate_names_unchecked_note_other": {
+    "pt": "Eles não contam como não encontrados.",
+    "en": "They do not count as not found.",
+    "es": "No cuentan como no encontrados."
+  },
+  "validate_names_unchecked_retry": {
+    "pt": "Tentar de novo",
+    "en": "Try again",
+    "es": "Reintentar"
+  },
+  "validate_names_status_badge_unchecked": {
+    "pt": "Não verificado",
+    "en": "Not checked",
+    "es": "No verificado"
+  },
   "validate_names_report_title": {
     "pt": "Relatório de Nomes",
     "en": "Names Report",
@@ -3854,10 +3889,10 @@
     "en": "JSON reading and writing",
     "es": "Lectura y escritura de JSON"
   },
-  "help_pkg_taxadb": {
-    "pt": "Bases taxonômicas locais",
-    "en": "Local taxonomic backbones",
-    "es": "Bases taxonómicas locales"
+  "help_pkg_httr2": {
+    "pt": "Nomes no COL XR, pela API do GBIF",
+    "en": "Names in COL XR, through the GBIF API",
+    "es": "Nombres en COL XR, por la API de GBIF"
   },
   "help_pkg_florabr": {
     "pt": "Flora e Funga do Brasil",

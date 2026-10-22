@@ -1036,37 +1036,15 @@ generalization_map_preview <- function(df, generalization, decisions = NULL) {
     set_lock_attrs(out)
 }
 
-# Accepted names for GBIF backbone ids ("GBIF:9119360" -> "Paubrasilia
-# echinata"), read from the local taxadb copy the names validation already
-# uses. Ids of other providers, and any lookup failure, give no name.
-accepted_names_for_ids <- function(ids) {
-    none <- stats::setNames(character(0), character(0))
-    ids <- unique(as.character(ids))
-    ids <- ids[!is.na(ids) & grepl("^GBIF:", ids)]
-    if (!length(ids)) {
-        return(none)
-    }
-    found <- tryCatch(
-        suppressWarnings(as.data.frame(
-            taxadb::filter_id(ids, provider = "gbif", db = init_taxadb_provider("gbif"))
-        )),
-        error = function(e) NULL
-    )
-    if (!is.data.frame(found) || !all(c("taxonID", "scientificName") %in% names(found))) {
-        return(none)
-    }
-    found <- found[!is.na(found$scientificName) & !duplicated(found$taxonID), , drop = FALSE]
-    stats::setNames(as.character(found$scientificName), found$taxonID)
-}
-
 # Sensitivity decisions for synonyms of MMA-listed species (B18). The MMA list
 # uses the accepted name, so "Caesalpinia echinata" (a synonym of the EN
 # "Paubrasilia echinata") missed the generalization. Returns the same columns
-# as the manual overrides: scientificName, sensitive, category.
-synonym_sensitivity_entries <- function(report, lookup = accepted_names_for_ids) {
+# as the manual overrides: scientificName, sensitive, category. The accepted
+# name comes from the COL XR match of the names run.
+synonym_sensitivity_entries <- function(report) {
     empty <- data.frame(scientificName = character(0), sensitive = logical(0),
                         category = character(0), stringsAsFactors = FALSE)
-    needed <- c("validation_status", "acceptedNameUsageID")
+    needed <- c("validation_status", "acceptedNameUsage")
     if (!is.data.frame(report) || nrow(report) == 0L || !all(needed %in% names(report))) {
         return(empty)
     }
@@ -1074,21 +1052,20 @@ synonym_sensitivity_entries <- function(report, lookup = accepted_names_for_ids)
     if (is.na(typed_col)) {
         return(empty)
     }
-    syn <- report$validation_status %in% "synonym" & !is_blank_cell(report$acceptedNameUsageID)
+    syn <- report$validation_status %in% "synonym" & !is_blank_cell(report$acceptedNameUsage)
     typed <- as.character(report[[typed_col]])[syn]
-    ids <- as.character(report$acceptedNameUsageID)[syn]
+    accepted <- as.character(report$acceptedNameUsage)[syn]
     keep <- !duplicated(typed) & !is_blank_cell(typed)
     typed <- typed[keep]
-    ids <- ids[keep]
+    accepted <- accepted[keep]
     # A synonym on the list keeps its own category.
     unlisted <- is.na(sensitive_category_for(typed))
     typed <- typed[unlisted]
-    ids <- ids[unlisted]
+    accepted <- accepted[unlisted]
     if (!length(typed)) {
         return(empty)
     }
-    accepted <- unname(lookup(ids)[ids])
-    category <- sensitive_category_for(ifelse(is.na(accepted), "", accepted))
+    category <- sensitive_category_for(accepted)
     hit <- !is.na(category)
     if (!any(hit)) {
         return(empty)

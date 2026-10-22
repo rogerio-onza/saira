@@ -394,7 +394,7 @@ testthat::test_that("Performance regression: resolve_occurrence_ids generates no
 })
 
 # ADR-113: the validation run tick. stream_window() runs on every 60ms step of a
-# taxonomic run, on the same single R thread doing the taxadb work, and the
+# taxonomic run, on the same single R thread doing the name lookups, and the
 # stream is largest exactly when the run is busiest.
 
 testthat::test_that("Performance regression: stream_window truncates the index, not the frame", {

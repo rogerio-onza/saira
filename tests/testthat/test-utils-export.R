@@ -788,10 +788,9 @@ testthat::test_that("apply_conservation_status adds MMA keys for a BR provider",
 
 testthat::test_that("apply_conservation_status adds IUCN key and merges existing dynprops", {
     testthat::local_mocked_bindings(
-        fetch_gbif_iucn_category = function(usage_keys) {
-            ifelse(!is.na(usage_keys), "NT", NA_character_)
+        colxr_iucn_category = function(names) {
+            ifelse(names == "Harpia harpyja", "NT", NA_character_)
         },
-        gbif_match_usage_keys = function(names) rep(NA_character_, length(names)),
         .package = "saira"
     )
     df <- data.frame(
@@ -799,41 +798,26 @@ testthat::test_that("apply_conservation_status adds IUCN key and merges existing
         dynamicProperties = c("{\"k\":\"v\"}", ""),
         stringsAsFactors = FALSE
     )
-    payload <- list(
-        include_mma = FALSE, include_iucn = TRUE,
-        taxon_keys = data.frame(
-            scientificName = "Harpia harpyja",
-            taxonID = "GBIF:2480528",
-            provider = "gbif",
-            stringsAsFactors = FALSE
-        )
-    )
+    payload <- list(include_mma = FALSE, include_iucn = TRUE)
     out <- saira:::apply_conservation_status(df, payload)
     testthat::expect_identical(
         out$dynamicProperties[[1]], "{\"k\":\"v\",\"iucnRedListCategory\":\"NT\"}"
     )
-    # Row with no GBIF key (match fallback returns NA) -> unchanged.
+    # A name without an IUCN category -> unchanged.
     testthat::expect_identical(out$dynamicProperties[[2]], "")
 })
 
 testthat::test_that("apply_conservation_status merges both MMA and IUCN keys additively", {
     local_conservation_fixture()
     testthat::local_mocked_bindings(
-        fetch_gbif_iucn_category = function(usage_keys) rep("NT", length(usage_keys)),
-        gbif_match_usage_keys = function(names) rep("123", length(names)),
+        colxr_iucn_category = function(names) rep("NT", length(names)),
         .package = "saira"
     )
     df <- data.frame(
         scientificName = "Panthera onca", country = "Brasil",
         stringsAsFactors = FALSE
     )
-    payload <- list(
-        include_mma = TRUE, include_iucn = TRUE,
-        taxon_keys = data.frame(
-            scientificName = "Panthera onca", taxonID = "GBIF:1",
-            provider = "gbif", stringsAsFactors = FALSE
-        )
-    )
+    payload <- list(include_mma = TRUE, include_iucn = TRUE)
     out <- saira:::apply_conservation_status(df, payload)
     testthat::expect_identical(
         out$dynamicProperties[[1]],
@@ -861,21 +845,14 @@ testthat::test_that("apply_conservation_status is a no-op without name, payload 
 testthat::test_that("apply_conservation_status keeps MMA when the IUCN fetch errors", {
     local_conservation_fixture()
     testthat::local_mocked_bindings(
-        fetch_gbif_iucn_category = function(usage_keys) stop("network down"),
-        gbif_match_usage_keys = function(names) rep(NA_character_, length(names)),
+        colxr_iucn_category = function(names) stop("network down"),
         .package = "saira"
     )
     df <- data.frame(
         scientificName = "Panthera onca", country = "Brasil",
         stringsAsFactors = FALSE
     )
-    payload <- list(
-        include_mma = TRUE, include_iucn = TRUE,
-        taxon_keys = data.frame(
-            scientificName = "Panthera onca", taxonID = "GBIF:1",
-            provider = "gbif", stringsAsFactors = FALSE
-        )
-    )
+    payload <- list(include_mma = TRUE, include_iucn = TRUE)
     out <- testthat::expect_warning(
         saira:::apply_conservation_status(df, payload), "IUCN skipped"
     )
@@ -993,8 +970,7 @@ testthat::test_that("apply_conservation_status skips MMA when the country is unk
 testthat::test_that("apply_conservation_status keeps IUCN global while MMA stays national", {
     local_conservation_fixture()
     testthat::local_mocked_bindings(
-        fetch_gbif_iucn_category = function(usage_keys) rep("NT", length(usage_keys)),
-        gbif_match_usage_keys = function(names) rep("123", length(names)),
+        colxr_iucn_category = function(names) rep("NT", length(names)),
         .package = "saira"
     )
     df <- data.frame(
@@ -1016,23 +992,6 @@ testthat::test_that("apply_conservation_status keeps IUCN global while MMA stays
     testthat::expect_identical(
         out$dynamicProperties[[2]], "{\"iucnRedListCategory\":\"NT\"}"
     )
-})
-
-testthat::test_that("resolve_iucn_usage_keys strips the GBIF prefix and falls back by name", {
-    testthat::local_mocked_bindings(
-        gbif_match_usage_keys = function(names) rep("999", length(names)),
-        .package = "saira"
-    )
-    tk <- data.frame(
-        scientificName = c("A b", "C d"),
-        taxonID = c("GBIF:111", "FLORABR:xyz"),
-        provider = c("gbif", "florabr"),
-        stringsAsFactors = FALSE
-    )
-    out <- saira:::resolve_iucn_usage_keys(c("A b", "C d", "E f"), tk)
-    # "A b": GBIF taxonID stripped to bare key; "C d": non-GBIF provider -> match
-    # fallback; "E f": absent from taxon_keys -> match fallback.
-    testthat::expect_identical(out, c("111", "999", "999"))
 })
 
 # The two establishment terms are Occurrence terms, which would put them at the

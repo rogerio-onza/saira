@@ -972,15 +972,14 @@ test_that("synonym_sensitivity_entries() flags synonyms of MMA-listed species", 
   report <- data.frame(
     input_name = c("Caesalpinia echinata", "Felis catus", "Caesalpinia echinata", "Puma concolor"),
     validation_status = c("synonym", "synonym", "synonym", "accepted"),
-    acceptedNameUsageID = c("GBIF:1", "GBIF:2", "GBIF:1", ""),
+    acceptedNameUsage = c(listed, "Felis silvestris", listed, NA),
     stringsAsFactors = FALSE
   )
-  lookup <- function(ids) c("GBIF:1" = listed, "GBIF:2" = "Felis silvestris")[ids]
-  out <- synonym_sensitivity_entries(report, lookup = lookup)
+  out <- synonym_sensitivity_entries(report)
   expect_equal(out$scientificName, "Caesalpinia echinata")
   expect_true(out$sensitive)
   expect_equal(out$category, sensitive_category_for(listed))
-  expect_equal(nrow(synonym_sensitivity_entries(NULL, lookup = lookup)), 0L)
+  expect_equal(nrow(synonym_sensitivity_entries(NULL)), 0L)
 })
 
 test_that("count_distinct_species() groups name variants by canonical name", {

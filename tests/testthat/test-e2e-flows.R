@@ -881,7 +881,7 @@ testthat::test_that("E2E: the zip carries generalized points and the private fil
 # crosses every tab with real data. Each step records its time. The numbers are
 # printed, and written to SAIRA_E2E_TIMINGS when that variable names a file, to
 # compare a branch against the baseline taken on main. Name validation queries
-# GBIF and taxadb over the network, so it stays out of this flow.
+# the GBIF API over the network, so it stays out of this flow.
 
 testthat::test_that("E2E: full flow on the demo dataset, with step timings", {
     testthat::skip_on_cran()
@@ -1007,4 +1007,112 @@ testthat::test_that("E2E: full flow on the demo dataset, with step timings", {
     if (nzchar(out_file)) {
         utils::write.csv(timings, out_file, row.names = FALSE)
     }
+})
+
+# --- Flow: the answer list during a names run (DEP-07) ---
+#
+# GBIF is replaced by the recorded COL XR answers, and each GBIF batch waits
+# until the test releases it. So the test reads the list at fixed points of the
+# run, with no network and no timing guess.
+
+testthat::test_that("E2E: the names list shows settled names and keeps its rows during a run", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    gate_dir <- withr::local_tempdir()
+    build_gated_app <- function() {
+        pkgload::load_all(app_root, export_all = FALSE, quiet = TRUE)
+        fixtures <- file.path(app_root, "tests", "testthat", "fixtures", "colxr")
+        calls <- 0L
+        gated_gbif <- function(requests) {
+            calls <<- calls + 1L
+            file.create(file.path(gate_dir, paste0("waiting_", calls)))
+            deadline <- Sys.time() + 120
+            repeat {
+                released <- suppressWarnings(as.integer(
+                    readLines(file.path(gate_dir, "released"), warn = FALSE)
+                ))
+                if (isTRUE(released[1] >= calls) || Sys.time() > deadline) break
+                Sys.sleep(0.1)
+            }
+            # A name with no recording gets an accepted answer. A "no match"
+            # answer keeps a name in the queue until the run ends.
+            lapply(requests, function(r) {
+                file <- file.path(fixtures, paste0(gsub(" ", "_", r$query$scientificName), ".json"))
+                if (!file.exists(file)) file <- file.path(fixtures, "Panthera_onca.json")
+                jsonlite::read_json(file)
+            })
+        }
+        utils::assignInNamespace("gbif_api_get_many", gated_gbif, ns = "saira")
+        run_app()
+    }
+    build_gated_app <- utils::removeSource(build_gated_app)
+    environment(build_gated_app) <- list2env(
+        list(app_root = app_root, gate_dir = gate_dir),
+        parent = globalenv()
+    )
+    writeLines("0", file.path(gate_dir, "released"))
+    release <- function(n) writeLines(as.character(n), file.path(gate_dir, "released"))
+    wait_for_gbif_call <- function(n, timeout = 180) {
+        deadline <- Sys.time() + timeout
+        while (!file.exists(file.path(gate_dir, paste0("waiting_", n)))) {
+            if (Sys.time() > deadline) stop("GBIF call ", n, " did not start", call. = FALSE)
+            Sys.sleep(0.25)
+        }
+    }
+
+    # Fauna BR accepts Panthera onca. Flora BR gives Caesalpinia echinata as a
+    # synonym, so GBIF must answer it too. No BR list has the other names, and
+    # each one costs the BR fuzzy match about 1 s, so there are only enough of
+    # them for two GBIF batches of 20. Auto-map skips a column of names with
+    # digits, so the epithets are letters.
+    names_in <- c("Panthera onca", "Caesalpinia echinata", paste0("Gatedgenus ", letters[1:20], "ensis"))
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(c("occurrenceID,scientificName", sprintf("e2e-%02d,%s", seq_along(names_in), names_in)), csv_path)
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app <- shinytest2::AppDriver$new(app = build_gated_app, timeout = 60000, load_timeout = 30000)
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 20000)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 20000)
+    app$set_inputs(main_nav = "mapping", wait_ = FALSE)
+    app$wait_for_idle(timeout = 20000)
+    app$click(selector = "#mapping-auto_map")
+    app$wait_for_idle(timeout = 20000)
+    mapped <- app$get_values(input = "mapping-map_scientificName")$input
+    testthat::expect_identical(mapped[["mapping-map_scientificName"]], "scientificName")
+    app$set_inputs(main_nav = "validate_names", wait_ = FALSE)
+    wait_until_js(app, "!!document.getElementById('validate_names-validate')")
+    app$click("validate_names-validate")
+
+    list_keys <- "Array.from(document.querySelectorAll('#validate_names-stream_panel .vn-stream-list [data-key]'))
+                    .map(function (el) { return el.getAttribute('data-key'); })"
+    all_count <- "document.querySelector('#validate_names-stream_filter_all .vn-pill-count').textContent.trim()"
+
+    # The BR providers are done and the first GBIF batch waits. Only the name
+    # that a BR list accepts has its last answer.
+    wait_for_gbif_call(1)
+    wait_until_js(app, sprintf("%s.length === 1", list_keys))
+    Sys.sleep(0.5)
+    testthat::expect_identical(unlist(app$get_js(list_keys)), "Panthera onca")
+    app$run_js("document.querySelector('[data-key=\"Panthera onca\"]').setAttribute('data-e2e-mark', '1');")
+
+    # The first GBIF batch adds its 20 names in place, and the marked row stays.
+    release(1)
+    wait_for_gbif_call(2)
+    wait_until_js(app, sprintf("%s.length === 21", list_keys))
+    testthat::expect_identical(app$get_js(all_count), "21")
+    testthat::expect_true(app$get_js(
+        "(function () { var el = document.querySelector('[data-e2e-mark]');
+           return !!el && el.getAttribute('data-key') === 'Panthera onca'; })()"
+    ))
+    testthat::expect_true("Caesalpinia echinata" %in% unlist(app$get_js(list_keys)))
+
+    release(999)
+    wait_until_js(app, sprintf("%s === '22'", all_count), timeout = 60000)
+    app$wait_for_idle(timeout = 20000)
+    # Every name has an answer, so the run is complete, not partial.
+    testthat::expect_false(app$get_js("!!document.querySelector('.shiny-notification-warning')"))
 })

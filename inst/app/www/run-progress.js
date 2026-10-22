@@ -173,6 +173,69 @@
     });
   }
 
+  /* ---------------- Names: the answer list ---------------- */
+
+  // During a run the server sends the rows of the list with a key per name.
+  // A row changes only when its HTML changes, and the list stays in the
+  // page, so the scroll and the focus stay too (DEP-07).
+  function rowFromHtml(html) {
+    var tpl = document.createElement("template");
+    tpl.innerHTML = html;
+    var row = tpl.content.firstElementChild;
+    row.vnHtml = html;
+    return row;
+  }
+
+  function syncStream(msg) {
+    var panel = document.getElementById(msg.id);
+    if (!panel) return;
+    Object.keys(msg.counts || {}).forEach(function (key) {
+      var pill = document.getElementById(msg.pill_prefix + key);
+      var count = pill && pill.querySelector(".vn-pill-count");
+      var text = String(msg.counts[key]);
+      if (count && count.textContent !== text) count.textContent = text;
+    });
+    var body = panel.querySelector(".vn-stream-body");
+    if (!body) return;
+    var rows = msg.rows || [];
+    var list = body.querySelector(":scope > .vn-stream-list");
+    if (!rows.length) {
+      if (list || body.vnEmpty !== msg.empty) {
+        body.innerHTML = msg.empty;
+        body.vnEmpty = msg.empty;
+      }
+      return;
+    }
+    if (!list) {
+      body.innerHTML = "";
+      body.vnEmpty = null;
+      list = document.createElement("div");
+      list.className = "vn-stream-list";
+      body.appendChild(list);
+    }
+    // New rows go on top. Keep the rows the user reads where they are.
+    var heightBefore = body.scrollTop > 0 ? list.scrollHeight : null;
+    var old = {};
+    Array.prototype.forEach.call(list.children, function (el) {
+      old[el.getAttribute("data-key")] = el;
+    });
+    var prev = null;
+    rows.forEach(function (row) {
+      var el = Object.prototype.hasOwnProperty.call(old, row.key) ? old[row.key] : null;
+      if (el) delete old[row.key];
+      if (!el || el.vnHtml !== row.html) {
+        var fresh = rowFromHtml(row.html);
+        if (el) list.replaceChild(fresh, el);
+        el = fresh;
+      }
+      var next = prev ? prev.nextElementSibling : list.firstElementChild;
+      if (el !== next) list.insertBefore(el, next);
+      prev = el;
+    });
+    Object.keys(old).forEach(function (key) { old[key].remove(); });
+    if (heightBefore !== null) body.scrollTop += list.scrollHeight - heightBefore;
+  }
+
   /* ---------------- Steps of a run card ---------------- */
 
   // The Coordinates stage builds its step rows once, then changes them in
@@ -510,6 +573,7 @@
 
   $(function () {
     Shiny.addCustomMessageHandler("coordsRun", onCoordsRun);
+    Shiny.addCustomMessageHandler("vnStreamSync", syncStream);
 
     Shiny.addCustomMessageHandler("vnRunProgress", function (msg) {
       names.msg = msg;

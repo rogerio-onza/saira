@@ -3187,3 +3187,43 @@ Formato: ADR leve (Architecture Decision Record).
   - Uma nova validacao descarta as edicoes manuais desatualizadas e mostra a contagem.
   - Um payload sem essas colunas passa como antes.
 - **Consequencias**: uma edicao que volta ao valor antigo reativa a correcao. O texto compara com `trimws`, entao "-23.50" e "-23.5" contam como pontos diferentes.
+
+## ADR-167: O COL XR pela API do GBIF substitui o taxadb
+
+- **Data**: 2026-10-22
+- **Status**: Aceito. Revisa ADR-073 (`update_failed` com cache) e ADR-126 (IUCN pelo GBIF).
+- **Contexto**: a auditoria de dependencias de 2026-10-21 (DEP-01 a DEP-06 e DEP-08) achou o GBIF quebrado depois da atualizacao dos pacotes. O taxadb 0.3.0 devolve caminhos de parquet em `td_create()`, nao uma conexao, e a falha do provedor saia como "nao encontrado". A primeira rodada tambem baixava a base inteira (104 s).
+- **Decisao**:
+  - Os nomes que o Flora BR e o Fauna BR nao resolvem vao ao COL XR (`checklistKey` `7ddf754f-d193-4cc9-b351-99906754a03b`), pela API v2 de match do GBIF, com `strict = true`. Nao ha download nem chave de API.
+  - `colxr_match_names()` manda uma requisicao por nome, em paralelo, e guarda as respostas num memo so da sessao R. Nada vai para disco, porque um status velho exportaria errado.
+  - EXACT ou VARIANT com ACCEPTED ou PROVISIONALLY_ACCEPTED e aceito. SYNONYM ou MISAPPLIED e sinonimo. Outro status, ou um homonimo (MULTIPLE_MATCHES_SAME_CONFIDENCE), e ambiguo. O resto e nao encontrado.
+  - A resposta traz o nome aceito, a classificacao e a categoria IUCN. A generalizacao le o nome aceito do relatorio, sem uma segunda consulta por ID. A exportacao le a IUCN do mesmo memo, e um sinonimo usa a IUCN do nome aceito.
+  - Uma falha de provedor nao responde pelo nome. Os nomes sem consulta vao para `meta$unchecked`, a rodada termina como `partial` e um aviso fica na tela ate o usuario fechar.
+  - O `update_failed` com cache fica quando o metadata ja viu uma versao remota mais nova que a local. Sem versao mais nova, ADR-073 vale.
+  - O artifact check do Flora BR aceita `CompleteBrazilianFlora.gz` (florabr 1.4) e `CompleteBrazilianFlora.rds`.
+  - Um job do CI restaura o `renv.lock` e roda os testes. Os outros jobs instalam a versao mais nova do CRAN, e por isso nao viram a quebra que o desenvolvedor via.
+  - O faunabr sai do `Remotes`. O 1.1.2 do CRAN contem o commit que o pin trazia.
+- **Consequencias**: a consulta ao GBIF precisa de internet em cada sessao. As funcoes `*_taxadb_*` mantem o nome, para um diff pequeno. Um nome sem consulta ainda nao tem estado proprio na lista nem botao de nova tentativa: isso precisa de mockup.
+
+## ADR-168: A lista da rodada de nomes mostra so a ultima resposta de cada nome
+
+- **Data**: 2026-10-22
+- **Status**: Aceito. Complementa ADR-159 (sessao livre entre lotes) e ADR-160 (grade da rodada).
+- **Contexto**: a auditoria de dependencias de 2026-10-21 (DEP-07) achou dois defeitos na lista de respostas durante a rodada. Um nome que o Flora BR acha mas nao aceita aparecia como "Revisar" e mudava depois, com a resposta do GBIF. E o `renderUI` desenhava a lista a cada lote, entao o scroll e o foco voltavam ao topo.
+- **Decisao**:
+  - A lista mostra um nome quando ele sai de `pending_queries`, a mesma regra da grade e do contador (`vn_settled_stream()`).
+  - Cada resposta leva o nome ao topo da lista, tambem quando o status nao muda.
+  - Durante a rodada, o painel renderiza uma vez por filtro. A mensagem `vnStreamSync` troca as linhas por `data-key` e as contagens dos filtros no lugar. No fim da rodada, o `renderUI` desenha a lista final.
+- **Consequencias**: um nome que nenhum provedor acha aparece so no fim da rodada, como na grade. O E2E troca o GBIF por respostas gravadas e libera um lote de cada vez, sem rede e sem espera por tempo.
+
+## ADR-169: Nomes sem resposta ficam num bloco, com nova tentativa so para eles
+
+- **Data**: 2026-10-22
+- **Status**: Aceito. Complementa ADR-167 (falha de provedor, DEP-02) e ADR-168 (lista da rodada).
+- **Contexto**: quando um provedor falha, os nomes que ele nao consultou terminam com o marcador "not_found". A lista os mostrava em vermelho como "Nao encontrado", e um aviso fixo pedia uma nova validacao de todos os nomes.
+- **Decisao**:
+  - Depois da rodada, um bloco tracejado acima da lista mostra os nomes sem resposta, o provedor que falhou e o botao "Tentar de novo" (opcao 1C do canvas). A lista e as contagens dos filtros deixam de fora um nome que so tem o marcador (`vn_drop_unchecked()`). Um nome com resposta de outro provedor fica na lista e no bloco.
+  - Na tabela do relatorio, esses nomes tem o selo "Nao verificado". O status gravado continua "not_found", entao a exportacao nao muda.
+  - O botao comeca uma rodada so com esses nomes e so com os provedores que falharam (`init_taxadb_retry_state()`). Os outros provedores ja tinham consultado esses nomes. A rodada parte das respostas e da lista da rodada anterior, e as revisoes ficam.
+  - O aviso fixo sai quando ha nomes sem resposta. Ele fica so quando outro provedor consultou todos os nomes.
+- **Consequencias**: durante a nova tentativa, a grade mostra so os nomes consultados de novo. O bloco mostra ate 12 nomes e conta os outros.

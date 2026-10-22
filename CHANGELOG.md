@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **names:** Show the names a failed provider left unchecked in a block above the run list, with a button that queries only these names again, ADR-169
 - **names:** Show one hexagon per name during a run, colored by its answer, ADR-160
 - **coords:** Replace the run dialog with a map that scans the points and marks each flag, ADR-160
 - **ui:** Draw the points of the Coordinates and Generalization maps and their legends as hexagons, ADR-160
@@ -85,6 +86,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **ui:** Drop shadows and gradients, use warm neutral borders and a darker muted text for AA contrast, ADR-127
 - **export:** Match the MMA threat list once per species, not once per row, so large datasets export faster
 - **export:** Query the IUCN categories from GBIF in parallel, so the download no longer waits minutes, ADR-126 ([#132](https://github.com/rogerio-onza/saira/pull/132))
+- **names:** Check the names that Flora BR and Fauna BR miss against COL XR through the GBIF API, with no download, ADR-167
+- **export:** Read the IUCN category from the COL XR answer, and give a synonym the category of its accepted name, ADR-167
+- **build:** Run the tests in CI also on the package versions of `renv.lock`, ADR-167
+- **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
 - **mapping:** Map a column picked again after a Reset, not only show it on the card
@@ -206,6 +211,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **upload:** Expose the format switch to screen readers as one radio group
 - **upload:** Shrink the home drop zone on a phone
 - **upload:** Refuse a Camtrap DP zip whose tables pass 2 GB or 1000 files, and unzip only the tables
+- **names:** Warn and count the names not checked when a provider fails, instead of marking them not found, ADR-167
+- **names:** Accept the Flora BR update that florabr 1.4 writes, ADR-167
+- **names:** Keep the "update failed" badge while a newer Flora BR or Fauna BR version is not installed, ADR-167
+- **names:** Show a name in the run list only with its last answer, and keep the scroll while the list grows, ADR-168
 
 ### Performance
 - **upload:** Read a large CSV in a third of the time and about half the peak memory

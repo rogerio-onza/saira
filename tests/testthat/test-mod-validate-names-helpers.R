@@ -366,7 +366,7 @@ testthat::test_that("vn_run_progress moves the active step with the cascade", {
     testthat::local_mocked_bindings(brprovider_data_available = function(id) TRUE, .package = "saira")
     state <- list(
         phase = "provider_query_batch", current_provider = "florabr", cascade_phase = "br",
-        provider_types = c(florabr = "br", faunabr = "br", gbif = "taxadb"),
+        provider_types = c(florabr = "br", faunabr = "br", gbif = "colxr"),
         total_unique = 1200L, resolved_unique = 300L
     )
     br <- vn_run_progress(state, "pt")
@@ -393,7 +393,7 @@ testthat::test_that("vn_run_progress drops the BR step and flags a first downloa
     testthat::local_mocked_bindings(brprovider_data_available = function(id) FALSE, .package = "saira")
     gbif_only <- vn_run_progress(list(
         phase = "provider_init", current_provider = "gbif", cascade_phase = "fallback",
-        provider_types = c(gbif = "taxadb"), total_unique = 0L, resolved_unique = 0L
+        provider_types = c(gbif = "colxr"), total_unique = 0L, resolved_unique = 0L
     ), "pt")
     testthat::expect_identical(vapply(gbif_only$steps, `[[`, "", "key"), c("gbif", "report"))
     testthat::expect_identical(gbif_only$steps[[1]]$label, "GBIF")
@@ -402,7 +402,7 @@ testthat::test_that("vn_run_progress drops the BR step and flags a first downloa
 
     download <- vn_run_progress(list(
         phase = "provider_init", current_provider = "faunabr", cascade_phase = "br",
-        provider_types = c(faunabr = "br", gbif = "taxadb"), total_unique = 10L, resolved_unique = 0L
+        provider_types = c(faunabr = "br", gbif = "colxr"), total_unique = 10L, resolved_unique = 0L
     ), "pt")
     testthat::expect_true(download$waiting)
 })
@@ -447,4 +447,41 @@ test_that("vn_run_cells keeps sheet order and waits for the last answer", {
     state$phase <- "provider_init"
     expect_identical(vn_run_cells(state), "a.mn..")
     expect_identical(vn_run_cells(list(query_order = character(0))), "")
+})
+
+test_that("vn_provider_failure_message names the failed providers (DEP-02)", {
+    none <- data.frame(provider = character(0), error = character(0), stringsAsFactors = FALSE)
+    expect_null(saira:::vn_provider_failure_message(list(provider_failures = none), "en"))
+
+    failures <- data.frame(provider = c("faunabr", "gbif"), error = "offline", stringsAsFactors = FALSE)
+    text <- saira:::vn_provider_failure_message(list(provider_failures = failures), "en")
+    expect_match(text, "^Saira could not query Fauna BR.*GBIF\\.$")
+})
+
+test_that("vn_drop_unchecked keeps the names another provider answered (ADR-169)", {
+    stream <- data.frame(
+        query_name = c("Cebus apella", "Caesalpinia echinata", "Puma concolor"),
+        validation_status = c("not_found", "synonym", "accepted"),
+        stringsAsFactors = FALSE
+    )
+    out <- saira:::vn_drop_unchecked(stream, c("Cebus apella", "Caesalpinia echinata"))
+    expect_identical(out$query_name, c("Caesalpinia echinata", "Puma concolor"))
+    expect_identical(saira:::vn_drop_unchecked(stream, character(0)), stream)
+})
+
+test_that("vn_unchecked_block_ui counts the names and limits the chips (ADR-169)", {
+    failures <- data.frame(provider = "gbif", error = "offline", stringsAsFactors = FALSE)
+    meta <- list(provider_failures = failures)
+    expect_null(saira:::vn_unchecked_block_ui(character(0), meta, "retry", "en"))
+
+    many <- as.character(saira:::vn_unchecked_block_ui(paste("Name", 1:1200), meta, "retry", "pt"))
+    expect_match(many, "1.200 nomes sem resposta", fixed = TRUE)
+    expect_match(many, "N\u00e3o foi poss\u00edvel consultar GBIF. Eles n\u00e3o contam como n\u00e3o encontrados.", fixed = TRUE)
+    expect_match(many, 'id="retry"', fixed = TRUE)
+    expect_identical(lengths(regmatches(many, gregexpr("vn-unchecked-chip\"", many))), 12L)
+    expect_match(many, "+1.188", fixed = TRUE)
+
+    one <- as.character(saira:::vn_unchecked_block_ui("Cebus apella", meta, "retry", "en"))
+    expect_match(one, "1 name with no answer", fixed = TRUE)
+    expect_match(one, "It does not count as not found.", fixed = TRUE)
 })

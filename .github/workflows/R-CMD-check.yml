@@ -118,7 +118,6 @@ jobs:
             any::devtools
             any::testthat
             any::withr
-            any::httr2
             any::future
             any::furrr
             any::parallelly
@@ -140,3 +139,47 @@ jobs:
 
       - name: Run the CI steps of the release gate
         run: Rscript scripts/release_gate.R --ci
+
+  # The two jobs above install the latest CRAN versions. This job restores
+  # renv.lock, so the tests also run on the versions a developer has (ADR-167).
+  lock:
+    runs-on: ubuntu-latest
+    name: Tests on renv.lock
+    timeout-minutes: 45
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      NOT_CRAN: true
+    steps:
+      - name: Fail over fast when an apt mirror stops answering
+        run: |
+          sudo tee /etc/apt/apt.conf.d/99-fast-failover >/dev/null <<'CONF'
+          Acquire::http::Timeout "15";
+          Acquire::https::Timeout "15";
+          Acquire::Retries "1";
+          CONF
+
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: renv
+          use-public-rspm: true
+
+      # setup-r points renv at P3M only. rnaturalearthhires is on r-universe,
+      # so the override names both repositories.
+      - name: Point renv at P3M binaries and r-universe
+        run: |
+          echo "RENV_CONFIG_REPOS_OVERRIDE=CRAN=https://packagemanager.posit.co/cran/__linux__/$(lsb_release -cs)/latest;ropensci=https://ropensci.r-universe.dev" >> "$GITHUB_ENV"
+
+      # setup-renv installs no system libraries. pak lists them from DESCRIPTION.
+      - name: Install the system requirements
+        env:
+          RENV_CONFIG_AUTOLOADER_ENABLED: false
+        run: |
+          Rscript -e 'install.packages("pak", lib = Sys.getenv("R_LIBS_USER"))'
+          Rscript -e 'sr <- pak::pkg_sysreqs("local::.", dependencies = NA); for (cmd in c(sr$pre_install, sr$install_scripts, sr$post_install)) if (system(paste("sudo", cmd)) != 0L) stop("Failed: ", cmd)'
+
+      - uses: r-lib/actions/setup-renv@v2
+
+      - name: Run the tests
+        run: Rscript -e 'testthat::test_local(stop_on_failure = TRUE)'
