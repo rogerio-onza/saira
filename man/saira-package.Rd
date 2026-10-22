@@ -19,5 +19,10 @@ Useful links:
 \author{
 \strong{Maintainer}: Rogério Nunes Oliveira \email{rogerio.onza@outlook.com}
 
+Authors:
+\itemize{
+  \item Rogério Nunes Oliveira \email{rogerio.onza@outlook.com}
+}
+
 }
 \keyword{internal}

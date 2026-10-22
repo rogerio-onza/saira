@@ -555,14 +555,12 @@ testthat::test_that("E2E: the Mapping filter runs in the browser and Next pendin
           });
         });
       }).observe(document.getElementById('mapping-mapping_ui'), { childList: true, subtree: true });")
-    # A check of hidden outputs blocks the page for 50 to 90 ms and stops
-    # the filter slide, so a switch must not start one.
-    app$run_js("window.__gridRenders = 0; window.__hiddenChecks = 0;
+    # Shiny 1.14 reports output visibility per element, with no check of all
+    # outputs that blocks the page (0 long tasks measured on 2026-10-21), so
+    # only a grid render is counted.
+    app$run_js("window.__gridRenders = 0;
       $(document).on('shiny:value', function (e) {
         if (e.target.id === 'mapping-mapping_ui') { window.__gridRenders++; }
-      });
-      $(document).on('shiny:inputchanged', function (e) {
-        if (/^[.]clientdata_output_.*_hidden$/.test(e.name)) { window.__hiddenChecks++; }
       });")
     shown <- function() {
         app$get_js("Array.prototype.filter.call(
@@ -585,7 +583,6 @@ testthat::test_that("E2E: the Mapping filter runs in the browser and Next pendin
     }
     testthat::expect_identical(app$get_js("window.__cardMoves"), 0L)
     testthat::expect_identical(app$get_js("window.__gridRenders"), 0L)
-    testthat::expect_identical(app$get_js("window.__hiddenChecks"), 0L)
 
     # Mapped hides the missing required terms. Next pending goes to one of
     # them, so the filter changes to Relevant, which hides no card.
@@ -630,13 +627,10 @@ testthat::test_that("E2E: Table | Problems in the Preview switches in the browse
     testthat::expect_identical(app$get_value(input = "preview-mode"), "problems")
 
     # The content of both modes is there before a switch (ADR-158), so a
-    # switch renders no output and starts no check of hidden outputs.
-    app$run_js("window.__previewRenders = 0; window.__hiddenChecks = 0;
+    # switch renders no output.
+    app$run_js("window.__previewRenders = 0;
       $(document).on('shiny:value', function (e) {
         if (/^preview-/.test(e.target.id)) { window.__previewRenders++; }
-      });
-      $(document).on('shiny:inputchanged', function (e) {
-        if (/^[.]clientdata_output_.*_hidden$/.test(e.name)) { window.__hiddenChecks++; }
       });")
     shows <- function(part) {
         app$get_js(paste0("document.querySelector('#preview-mode_body [data-mode=\"", part,
@@ -656,7 +650,6 @@ testthat::test_that("E2E: Table | Problems in the Preview switches in the browse
     testthat::expect_gt(rows("datatable"), 0L)
     testthat::expect_gt(rows("rows_table"), 0L)
     testthat::expect_identical(app$get_js("window.__previewRenders"), 0L)
-    testthat::expect_identical(app$get_js("window.__hiddenChecks"), 0L)
 })
 
 # --- Flow 10: re-upload and Reset clear the Mapping ---

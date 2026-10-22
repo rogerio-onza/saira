@@ -378,14 +378,11 @@ build_constant_value_input <- function(term, ns, lang_r, input) {
                 tr("mapping_fixed_value_hint", lang_r)
             )
         ),
-        # Start hidden when the condition is false. On a compact row the CSS
-        # hides the panel, so Shiny never hides it. It then hides it when the
-        # row opens, and that "hidden" event makes Shiny check all outputs
-        # in the filter slide (ADR-157).
+        # No inline display: Shiny 1.14 shows the panel with a class, and an
+        # inline "display: none" kept it hidden after the checkbox was ticked.
         shiny::conditionalPanel(
             condition = paste0("input.usecustom_", term),
             ns = ns,
-            style = if (!isTRUE(saved_use)) "display: none;",
             shiny::div(
                 class = "field-allrows-note",
                 ph_icon("info-circle"),

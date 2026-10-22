@@ -730,7 +730,15 @@ coords_cc_flagged <- function(fun_name, x, ...) {
         cc_gbif = CoordinateCleaner::cc_gbif,
         cc_inst = CoordinateCleaner::cc_inst
     )
-    flagged <- fn(x = x, value = "flagged", verbose = FALSE, ...)
+    # cc_zero() builds a point with no CRS, and terra 1.9 warns on each run.
+    flagged <- withCallingHandlers(
+        fn(x = x, value = "flagged", verbose = FALSE, ...),
+        warning = function(w) {
+            if (grepl("guessed crs", conditionMessage(w), fixed = TRUE)) {
+                invokeRestart("muffleWarning")
+            }
+        }
+    )
     flagged <- as.logical(flagged)
     if (length(flagged) != nrow(x)) {
         stop(

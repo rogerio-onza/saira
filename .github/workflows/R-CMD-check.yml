@@ -132,5 +132,11 @@ jobs:
       - name: Install the browser test packages
         run: Rscript -e 'install.packages(c("shinytest2", "chromote"))'
 
+      # The roxygen step compares with the committed files, so it needs the
+      # roxygen2 version that wrote them, not the latest one.
+      - name: Install the roxygen2 version of DESCRIPTION
+        run: |
+          Rscript -e 'v <- read.dcf("DESCRIPTION", fields = "Config/roxygen2/version")[[1]]; if (as.character(packageVersion("roxygen2")) != v) remotes::install_version("roxygen2", v, upgrade = "never")'
+
       - name: Run the CI steps of the release gate
         run: Rscript scripts/release_gate.R --ci
