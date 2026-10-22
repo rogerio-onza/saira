@@ -45,7 +45,7 @@ download (defaults to `mapped_data_r`).}
 generalization decision (`levels`, `enabled`, ...).}
 
 \item{conservation_payload_r}{Optional reactive with the conservation-status
-selection (`include_mma`, `include_iucn`, `taxon_keys`).}
+selection (`include_mma`, `include_iucn`).}
 
 \item{raw_data_r}{Optional reactive with the original uploaded data.frame.}
 
