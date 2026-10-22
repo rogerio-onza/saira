@@ -28,9 +28,6 @@ a { color: inherit; }
 //  main.content rules.
 // =============================================================================
 @keyframes lp-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-// two names for one animation: a new class name restarts it on every swap
-@keyframes lp-hex-a { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
-@keyframes lp-hex-b { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
 @keyframes lp-fill { to { width: 100%; } }
 @keyframes lp-draw { to { stroke-dashoffset: 0; } }
 // the map pin blinks twice in hard steps, unlike a soft pulse
@@ -81,18 +78,9 @@ a { color: inherit; }
   }
   .lp-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
   .lp-photo.is-on { opacity: 1; }
-  .lp-hexes {
-    position: absolute; inset: 0; z-index: 1; pointer-events: none; visibility: hidden;
-    &.p0, &.p1 { visibility: visible; }
-  }
-  .lp-hex {
-    position: absolute; left: var(--x); top: var(--y); width: var(--hw); height: var(--hh);
-    background: var(--img) no-repeat; background-size: var(--bw) var(--bh);
-    background-position: calc(var(--ox) - var(--x)) calc(var(--oy) - var(--y));
-    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); opacity: 0;
-  }
-  .lp-hexes.p0 .lp-hex { animation: lp-hex-a 900ms ease-out var(--d) both; }
-  .lp-hexes.p1 .lp-hex { animation: lp-hex-b 900ms ease-out var(--d) both; }
+  // the WebGL plumage turn covers the photos only during a swap
+  .lp-gl { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; pointer-events: none; visibility: hidden; }
+  .lp-gl.is-on { visibility: visible; }
   // light shade only behind the text blocks, so the photo stays visible
   .lp-scrim {
     position: absolute; inset: 0; z-index: 2; pointer-events: none;

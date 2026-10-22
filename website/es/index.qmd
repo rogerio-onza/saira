@@ -16,7 +16,7 @@ anchor-sections: false
   <img class="lp-photo is-on" src="../assets/img/landing/tangara-fastuosa.jpg" fetchpriority="high" width="1920" height="1440" style="object-position: 50% 28%" alt="Saíra-pintor posada en un tallo verde, con hojas y fondo desenfocado">
   <img class="lp-photo" data-src="../assets/img/landing/acanthochelys-macrocephala.jpg" aria-hidden="true" width="1920" height="1280" style="object-position: 62% 55%" alt="Tortuga del Pantanal cruzando un camino de tierra">
   <img class="lp-photo" data-src="../assets/img/landing/leopardus-munoai.jpg" aria-hidden="true" width="1920" height="1215" style="object-position: 50% 65%" alt="Gato del pajonal pampeano caminando hacia la cámara, lamiéndose el hocico">
-  <div class="lp-hexes" aria-hidden="true"></div>
+  <canvas class="lp-gl" aria-hidden="true"></canvas>
   <div class="lp-scrim" aria-hidden="true"></div>
   <div class="lp-hero-text">
     <h1 class="lp-rise">Saíra</h1>
