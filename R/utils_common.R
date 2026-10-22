@@ -91,3 +91,26 @@ tokenize_for_matching <- function(x) {
     parts <- trimws(parts)
     parts[nzchar(parts)]
 }
+
+# Common fallback: NULL, scalar NA or an empty string. Vectors are retained.
+`%||%` <- function(a, b) if (is.null(a) || (length(a) == 1L && (is.na(a) || identical(a, "")))) b else a
+
+normalize_domain_keys <- function(values) {
+    chr <- as.character(values)
+    chr[is.na(values)] <- ""
+    tolower(trimws(chr))
+}
+
+# Shared column extraction; historical Rostrum name retained for callers.
+rostrum_extract_column <- function(df, column_name) {
+    if (!is.character(column_name) || length(column_name) != 1L || is.na(column_name) || !nzchar(column_name)) {
+        return(rep(NA_character_, nrow(df)))
+    }
+    if (!(column_name %in% names(df))) {
+        return(rep(NA_character_, nrow(df)))
+    }
+
+    values <- as.character(df[[column_name]])
+    values[is.na(df[[column_name]])] <- NA_character_
+    values
+}

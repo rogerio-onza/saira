@@ -18,98 +18,11 @@ mod_preview_ui <- function(id) {
         ),
         # The Use, Undo and Apply controls live inside re-rendered cells, so one
         # delegated handler per control serves every row (as in Coordinates).
-        shiny::tags$script(shiny::HTML(sprintf(
-            "$(document).on('click', '.preview-fix-use', function(e) {
-               e.preventDefault();
-               Shiny.setInputValue('%s', parseInt(this.dataset.id, 10), {priority: 'event'});
-             });
-             $(document).on('click', '.preview-fix-blank', function(e) {
-               e.preventDefault();
-               Shiny.setInputValue('%s', parseInt(this.dataset.id, 10), {priority: 'event'});
-             });
-             $(document).on('click', '.preview-fix-undo', function(e) {
-               e.preventDefault();
-               Shiny.setInputValue('%s', parseInt(this.dataset.id, 10), {priority: 'event'});
-             });
-             $(document).on('click', '.preview-fix-other', function(e) {
-               e.preventDefault();
-               Shiny.setInputValue('%s', parseInt(this.dataset.id, 10), {priority: 'event'});
-             });
-             $(document).on('click', '.preview-vocab-apply', function(e) {
-               e.preventDefault();
-               var sel = $(this).closest('.preview-vocab-item').find('select')[0];
-               if (!sel || !sel.value) return;
-               Shiny.setInputValue('%s', {id: parseInt(this.dataset.id, 10), to: sel.value}, {priority: 'event'});
-             });
-             // The vocabulary list renders again after each correction, so the
-             // choices not yet applied are kept here and put back.
-             var pfVocab = {};
-             $(document).on('change', '.preview-vocab-item select', function() {
-               var item = $(this).closest('.preview-vocab-item');
-               pfVocab[item.data('key')] = this.value;
-               item.find('.preview-vocab-apply').prop('disabled', !this.value);
-             });
-             $(document).on('shiny:value', function(e) {
-               if (e.name !== '%s') return;
-               setTimeout(function() {
-                 $('.preview-vocab-item').each(function() {
-                   var v = pfVocab[$(this).data('key')];
-                   var sel = $(this).find('select')[0];
-                   if (!sel || v === undefined) return;
-                   sel.value = v;
-                   $(this).find('.preview-vocab-apply').prop('disabled', !sel.value);
-                 });
-               }, 0);
-             });
-             // DT row selection toggles on each click, which closed the record
-             // panel between the two clicks of an edit. A focus that only moves
-             // replaces it, and one click on the Correction opens the editor.
-             $(document).on('click', '.preview-rows-table tbody tr', function() {
-               var dt = $(this).closest('table').DataTable();
-               var d = dt.row(this).data();
-               if (!d) return;
-               $(dt.table().node()).data('pfFocus', d[0] + '|' + d[1]);
-               $(this).addClass('pf-focus').siblings().removeClass('pf-focus');
-               Shiny.setInputValue('%s', {row: d[0], term: d[1]});
-             });
-             $(document).on('click', '.preview-rows-table td.pf-fix-cell', function() {
-               if (!$(this).find('input').length) $(this).trigger('dblclick');
-             });
-             // After a save the server names the next open problem. It waits
-             // for the redraw of the save, then scrolls only when that row is
-             // out of view, and gives it the focus.
-             Shiny.addCustomMessageHandler('%s', function(m) {
-               var table = $('#%s .dataTables_scrollBody table');
-               if (!table.length) return;
-               table.one('draw.dt', function() {
-                 var dt = table.DataTable();
-                 var key = m.row + '|' + m.term;
-                 table.data('pfFocus', key);
-                 dt.rows().every(function() {
-                   var d = this.data();
-                   $(this.node()).toggleClass('pf-focus', d[0] + '|' + d[1] === key);
-                 });
-                 var page = dt.scroller.page();
-                 if (m.pos < page.start || m.pos >= page.end) {
-                   dt.scroller.toPosition(Math.max(m.pos - 1, 0));
-                 }
-                 Shiny.setInputValue('%s', {row: m.row, term: m.term});
-               });
-             });
-             // DT commits a single-cell edit only on blur, so Enter blurs.
-             $(document).on('keydown', '.preview-rows-table td input', function(e) {
-               if (e.key === 'Enter') { e.preventDefault(); this.blur(); }
-             });
-             // Table | Problems shows content that is already there (ADR-158).
-             // A conditionalPanel would make Shiny check every output.
-             $(document).on('change', '#%s', function() {
-               var mode = $(this).find('input:checked').val();
-               $('#%s [data-mode]').each(function() {
-                 this.classList.toggle('is-off', this.getAttribute('data-mode') !== mode);
-               });
-             });",
-            ns("use"), ns("blank"), ns("undo"), ns("other"), ns("vocab_apply"), ns("vocab_section"), ns("focus"),
-            ns("fix_next"), ns("rows_table"), ns("focus"), ns("mode"), ns("table_or_message")
+        shiny::tags$script(module_behavior_html("previewFixControls", list(
+            useId = ns("use"), blankId = ns("blank"), undoId = ns("undo"), otherId = ns("other"),
+            vocabApplyId = ns("vocab_apply"), vocabSectionId = ns("vocab_section"),
+            focusId = ns("focus"), fixNextChannel = ns("fix_next"), tableId = ns("rows_table"),
+            modeId = ns("mode"), contentId = ns("table_or_message")
         )))
     )
 }
@@ -135,14 +48,16 @@ mod_preview_ui <- function(id) {
 #'   the tab opens Problems when there is something to correct.
 #' @param refresh_r Reactive whose change recounts the open problems for the
 #'   nav badge, or NULL to count on every change of the full data.
-#' @return Reactive preview data frame, with the corrected full data frame in
+#' @return A reactive with legacy attributes by default, or a named list of
+#'   reactives when return_contract is \code{"list"}.
 #'   attribute `edited_data_r` and the open-problem count (NA without data) in
 #'   attribute `problems_n_r`.
+#' @param return_contract Return a legacy reactive (default) or a named list of reactives.
 #' @export
 mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_data_r,
                                raw_data_r = NULL, reset_signal_r = NULL,
                                on_navigate = NULL, active_r = NULL,
-                               refresh_r = NULL) {
+                               refresh_r = NULL, return_contract = c("legacy", "list")) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
@@ -284,20 +199,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             )
             empty_indices <- which(empty_mask) - 1L
 
-            truncation_js <- DT::JS(
-                "function(data, type, row, meta) {",
-                "  if (data === null || data === undefined) { return data; }",
-                "  var text = String(data);",
-                "  if (type === 'display') {",
-                "    var escaped = $('<div/>').text(text).html();",
-                "    if (text.length > 80) {",
-                "      return '<span title=\"' + escaped + '\">' + escaped.substr(0, 80) + '...</span>';",
-                "    }",
-                "    return escaped;",
-                "  }",
-                "  return data;",
-                "}"
-            )
+            truncation_js <- DT::JS(module_behavior_call("previewTruncateCell"))
 
             column_defs <- list(
                 list(
@@ -313,23 +215,10 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                 )
             }
 
-            init_complete_js <- DT::JS(
-                sprintf(
-                    paste0(
-                        "function(settings, json) {",
-                        "  var emptyCols = %s;",
-                        "  if (!Array.isArray(emptyCols) || emptyCols.length === 0) { return; }",
-                        "  var api = this.api();",
-                        "  api.columns().every(function(idx) {",
-                        "    if (emptyCols.indexOf(idx) !== -1) {",
-                        "      $(api.column(idx).header()).addClass('preview-col-empty');",
-                        "    }",
-                        "  });",
-                        "}"
-                    ),
-                    jsonlite::toJSON(as.integer(empty_indices))
-                )
-            )
+            # I() keeps a single index an array in the JSON.
+            init_complete_js <- DT::JS(module_behavior_call(
+                "previewMarkEmptyColumns", list(emptyColumns = I(as.integer(empty_indices)))
+            ))
 
             DT::datatable(
                 preview_df,
@@ -691,43 +580,17 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             shiny::req(length(ids) > 0L)
             df <- shiny::isolate(build_rows_df(ids))
             lang <- lang_r()
-            fix_js <- DT::JS(sprintf(
-                "function(data, type, row) {
-                   if (type !== 'display') { return data; }
-                   var esc = function(s) { return $('<div/>').text(s).html().replace(/\"/g, '&quot;'); };
-                   if (data) { return '<span class=\"pf-done\">' + esc(data) + '</span>'; }
-                   if (row[5].indexOf('preview-fix-undo') >= 0) {
-                     return '<span class=\"pf-done\">%s</span>';
-                   }
-                   if (row[7]) {
-                     return '<span class=\"pf-auto\" title=\"' + esc(row[7]) + '\">' + esc(row[7]) +
-                       '</span> <span class=\"pf-tag pf-tag-auto\">%s</span>';
-                   }
-                   if (row[6]) {
-                     return '<span class=\"pf-ghost\">' + esc(row[6]) + '</span> <span class=\"pf-tag\">%s</span>';
-                   }
-                   return '<span class=\"pf-empty\">' + (row[1] === 'scientificName' ? '%s' : '%s') + '</span>';
-                 }",
-                tr("preview_fix_empty_value", lang), tr("preview_fix_auto", lang),
-                tr("preview_fix_suggestion", lang), tr("preview_fix_placeholder_taxon", lang),
-                tr("preview_fix_placeholder", lang)
-            ))
-            focus_js <- DT::JS(
-                "function() {",
-                "  var key = $(this.api().table().node()).data('pfFocus');",
-                "  this.api().rows().every(function() {",
-                "    var d = this.data();",
-                "    $(this.node()).toggleClass('pf-focus', d[0] + '|' + d[1] === key);",
-                "  });",
-                "}"
-            )
+            fix_js <- DT::JS(module_behavior_call("previewFixValueCell", list(
+                emptyValue = tr("preview_fix_empty_value", lang),
+                auto = tr("preview_fix_auto", lang),
+                suggestion = tr("preview_fix_suggestion", lang),
+                placeholderTaxon = tr("preview_fix_placeholder_taxon", lang),
+                placeholder = tr("preview_fix_placeholder", lang)
+            )))
+            focus_js <- DT::JS(module_behavior_call("previewFocusRow"))
             # The value is escaped on the server. The span cuts a long value,
             # because Scroller needs rows of one height.
-            cut_js <- DT::JS(
-                "function(data, type) {",
-                "  return type === 'display' ? '<span class=\"pf-cut\">' + data + '</span>' : data;",
-                "}"
-            )
+            cut_js <- DT::JS(module_behavior_call("previewCutCell"))
             DT::datatable(
                 df,
                 # Translated headers only: the data keeps its column names, so a
@@ -965,9 +828,10 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                                     duration = if (identical(type, "error")) 7 else 4)
         }
 
-        attr(preview_data, "edited_data_r") <- edited_data_r
-        attr(preview_data, "problems_n_r") <- problems_n_r
-        return(preview_data)
+        module_result_return(
+            new_module_result(preview_data, edited_data_r = edited_data_r, problems_n_r = problems_n_r),
+            c("edited_data_r" = "edited_data_r", "problems_n_r" = "problems_n_r"), return_contract
+        )
     })
 }
 

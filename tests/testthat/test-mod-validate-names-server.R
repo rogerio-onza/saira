@@ -773,6 +773,15 @@ testthat::test_that("report table wires the sensitive-species pill column", {
                     scientific_render <- paste(unlist(cd$render), collapse = " ")
                 }
             }
+            # The callback configuration points to a factory in the shared asset.
+            # Inspect that factory while preserving the hidden-column contract.
+            testthat::expect_match(scientific_render, "window.sairaModuleBehavior.", fixed = TRUE)
+            factory <- sub("^window[.]sairaModuleBehavior[.]([a-zA-Z0-9_]+).*", "\\1", scientific_render)
+            asset <- paste(readLines(system.file("app", "www", "module-validate-names.js", package = "saira")), collapse = "\n")
+            marker <- paste0("behavior.", factory, " = function (cfg) {")
+            testthat::expect_true(grepl(marker, asset, fixed = TRUE))
+            scientific_render <- strsplit(asset, marker, fixed = TRUE)[[1L]][2L]
+            scientific_render <- strsplit(scientific_render, "\n  behavior.", fixed = TRUE)[[1L]][1L]
             testthat::expect_true(
                 grepl("vn-cell-sensitive", scientific_render, fixed = TRUE)
             )

@@ -435,3 +435,36 @@ testthat::test_that("the tab assesses the corrected name with its Names mark (AU
         }
     )
 })
+
+testthat::test_that("the invalid-point alert keeps its optional navigation callback after presentation extraction", {
+    local_sensitive_fixture("Panthera onca", category = "EN")
+    testthat::local_mocked_bindings(
+        generalization_map_preview = function(...) {
+            out <- data.frame(scientificName = "Panthera onca")
+            attr(out, "n_withheld") <- 1L
+            out
+        },
+        .package = "saira"
+    )
+    for (with_navigation in c(TRUE, FALSE)) {
+        navigated <- NULL
+        navigate <- if (with_navigation) function(tab) navigated <<- tab else NULL
+        shiny::testServer(
+            saira:::mod_sensitive_coords_server,
+            args = list(data_r = shiny::reactive(sample_occurrence_df()),
+                        lang_r = shiny::reactive("en"), active_r = shiny::reactive(FALSE),
+                        on_navigate = navigate),
+            {
+                session$setInputs(sensitive_mode = "generalize")
+                session$flushReact()
+                html <- paste(unlist(output$precision_lock_alert), collapse = " ")
+                testthat::expect_identical(grepl("go_fix_coords", html, fixed = TRUE), with_navigation)
+                if (with_navigation) {
+                    session$setInputs(go_fix_coords = 1L)
+                    session$flushReact()
+                    testthat::expect_identical(navigated, "validate_coords")
+                }
+            }
+        )
+    }
+})

@@ -11,7 +11,7 @@
 mod_wiki_ui <- function(id) {
     ns <- shiny::NS(id)
 
-    shiny::tagList(
+    htmltools::attachDependencies(shiny::tagList(
         shiny::div(
             class = "container-fluid wiki-module",
             shiny::uiOutput(ns("header_card")),
@@ -21,7 +21,7 @@ mod_wiki_ui <- function(id) {
                 DT::dataTableOutput(ns("terms_table"))
             )
         )
-    )
+    ), module_behavior_dependency())
 }
 
 #' Wiki Module Server
@@ -37,29 +37,7 @@ mod_wiki_server <- function(id, lang_r) {
 
         # i18n keys for all 21 catalog classes. Falls back to raw class name
         # if a future class isn't covered.
-        class_tr_keys <- c(
-            "Record-level"          = "class_record",
-            "Occurrence"            = "class_occurrence",
-            "Event"                 = "class_event",
-            "Location"              = "class_location",
-            "Identification"        = "class_identification",
-            "Taxon"                 = "class_taxon",
-            "GeologicalContext"     = "class_geologicalcontext",
-            "MaterialEntity"        = "class_materialentity",
-            "MaterialSample"        = "class_materialsample",
-            "MeasurementOrFact"     = "class_measurementorfact",
-            "Organism"              = "class_organism",
-            "ResourceRelationship"  = "class_resourcerelationship",
-            "Agent"                 = "class_agent",
-            "Assertion"             = "class_assertion",
-            "BibliographicResource" = "class_bibliographicresource",
-            "MolecularProtocol"     = "class_molecularprotocol",
-            "NucleotideAnalysis"    = "class_nucleotideanalysis",
-            "NucleotideSequence"    = "class_nucleotidesequence",
-            "OrganismInteraction"   = "class_organisminteraction",
-            "Protocol"              = "class_protocol",
-            "Provenance"            = "class_provenance"
-        )
+        class_tr_keys <- dwc_class_translation_keys()
 
         get_class_label <- function(cls, lang) {
             key <- unname(class_tr_keys[cls])
@@ -305,194 +283,15 @@ mod_wiki_server <- function(id, lang_r) {
                 optional = tr("wiki_required_badge_optional", lang_r())
             )
 
-            row_callback_js <- DT::JS(
-                sprintf(
-                    paste0(
-                        "function(row, data) {",
-                        "  var labels = %s;",
-                        "  var termUrl = %s;",
-                        "  var classSlugMap = %s;",
-                        "  var normalizeBoolean = function(value) {",
-                        "    var normalized = String(value === null || value === undefined ? '' : value).trim().toLowerCase();",
-                        "    return value === true || value === 1 || normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'sim';",
-                        "  };",
-                        "  var escapeHtml = function(value) {",
-                        "    return String(value === null || value === undefined ? '' : value)",
-                        "      .replace(/&/g, '&amp;')",
-                        "      .replace(/</g, '&lt;')",
-                        "      .replace(/>/g, '&gt;')",
-                        "      .replace(/\\\"/g, '&quot;')",
-                        "      .replace(/'/g, '&#39;');",
-                        "  };",
-                        "  var requiredIcon = \"<svg width='9' height='9' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='3'><polyline points='20 6 9 17 4 12'/></svg>\";",
-                        "  var termText = String(data[0] === null || data[0] === undefined ? '' : data[0]);",
-                        "  var classText = String(data[1] === null || data[1] === undefined ? '' : data[1]);",
-                        "  var definitionText = String(data[2] === null || data[2] === undefined ? '' : data[2]);",
-                        "  var isRequired = normalizeBoolean(data[3]);",
-                        "  var classSlug = classSlugMap[classText.trim().toLowerCase()] || 'record-level';",
-                        "  $('td:eq(0)', row).html(\"<a class='wiki-term-link' href='\" + termUrl + \"' target='_blank' rel='noopener noreferrer'>\" + escapeHtml(termText) + \"</a>\");",
-                        "  $('td:eq(1)', row).html(\"<span class='wiki-class-badge wiki-class-badge--\" + classSlug + \"'>\" + escapeHtml(classText) + \"</span>\");",
-                        "  var $definitionCell = $('td:eq(2)', row);",
-                        "  $definitionCell.text(definitionText);",
-                        "  $definitionCell.toggleClass('is-required', isRequired);",
-                        "  if (isRequired) {",
-                        "    $('td:eq(3)', row).html(\"<span class='wiki-required-badge wiki-required-badge--true'>\" + requiredIcon + escapeHtml(labels.required) + \"</span>\");",
-                        "  } else {",
-                        "    $('td:eq(3)', row).html(\"<span class='wiki-required-badge wiki-required-badge--false'>\" + escapeHtml(labels.optional) + \"</span>\");",
-                        "  }",
-                        "  $('td:eq(3)', row).addClass('wiki-required-cell');",
-                        "}"
-                    ),
-                    jsonlite::toJSON(required_badge_labels, auto_unbox = TRUE),
-                    jsonlite::toJSON("https://sibbr.gov.br", auto_unbox = TRUE),
-                    jsonlite::toJSON(class_slug_js_map, auto_unbox = TRUE)
-                )
-            )
-
-            header_callback_js <- DT::JS(
-                paste0(
-                    "function(thead) {",
-                    "  var sortIcon = \"<svg class='wiki-sort-icon' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'><path d='m7 15 5 5 5-5'></path><path d='m7 9 5-5 5 5'></path></svg>\";",
-                    "  $(thead).find('th').each(function(index) {",
-                    "    var $th = $(this);",
-                    "    var label = $th.text();",
-                    "    var centerClass = index === 3 ? ' wiki-th-content--center' : '';",
-                    "    if ($th.find('.wiki-th-content').length === 0) {",
-                    "      $th.html(\"<div class='wiki-th-content\" + centerClass + \"'><span class='wiki-th-label'>\" + label + \"</span>\" + sortIcon + \"</div>\");",
-                    "    }",
-                    "  });",
-                    "}"
-                )
-            )
-
-            filter_callback_js <- DT::JS(
-                sprintf(
-                    paste0(
-                        "var searchInputId = %s;",
-                        "var classFilterId = %s;",
-                        "var pageLengthId = %s;",
-                        "var searchSelector = '#' + searchInputId;",
-                        "var classSelector = '#' + classFilterId;",
-                        "var pageSelector = '#' + pageLengthId;",
-                        "var pillsSelector = '.wiki-filter-pill';",
-                        "var nsSafe = searchInputId.replace(/[^a-zA-Z0-9_-]/g, '');",
-                        "var eventNs = '.wikiFilter.' + nsSafe;",
-                        "var $doc = $(document);",
-                        "var getModule = function() {",
-                        "  var $candidate = $(searchSelector).closest('.wiki-module');",
-                        "  if ($candidate.length) {",
-                        "    return $candidate;",
-                        "  }",
-                        "  $candidate = $(classSelector).closest('.wiki-module');",
-                        "  if ($candidate.length) {",
-                        "    return $candidate;",
-                        "  }",
-                        "  $candidate = $(pageSelector).closest('.wiki-module');",
-                        "  if ($candidate.length) {",
-                        "    return $candidate;",
-                        "  }",
-                        "  return $(table.table().container()).closest('.wiki-module');",
-                        "};",
-                        "var $module = getModule();",
-                        "var getPills = function() {",
-                        "  return $module.length ? $module.find(pillsSelector) : $(pillsSelector);",
-                        "};",
-                        "var getClassFilter = function() { return $(classSelector); };",
-                        "var getPageLength = function() { return $(pageSelector); };",
-                        "var setActivePill = function(filterValue) {",
-                        "  var value = String(filterValue || '');",
-                        "  var $pills = getPills();",
-                        "  if (!$pills.length) {",
-                        "    return;",
-                        "  }",
-                        "  $pills.removeClass('active').attr('aria-pressed', 'false');",
-                        "  var $target = $pills.filter(function() {",
-                        "    return String($(this).attr('data-filter') || '') === value;",
-                        "  });",
-                        "  if ($target.length === 0) {",
-                        "    $target = $pills.filter('[data-filter=\"\"]');",
-                        "  }",
-                        "  $target.addClass('active').attr('aria-pressed', 'true');",
-                        "};",
-                        "var applyClassFilter = function(filterValue, syncSelect) {",
-                        "  var value = String(filterValue || '');",
-                        "  table.column(1).search(value).draw(false);",
-                        "  setActivePill(value);",
-                        "  if (syncSelect) {",
-                        "    var $classFilter = getClassFilter();",
-                        "    if ($classFilter.length && String($classFilter.val() || '') !== value) {",
-                        "      $classFilter.val(value);",
-                        "    }",
-                        "  }",
-                        "};",
-                        "var applyGlobalSearch = function(value) {",
-                        "  table.search(String(value || '')).draw(false);",
-                        "};",
-                        "var applyPageLength = function(value) {",
-                        "  var len = parseInt(value, 10);",
-                        "  if (!isNaN(len) && len > 0) {",
-                        "    table.page.len(len).draw(false);",
-                        "  }",
-                        "};",
-                        "$doc.off('input' + eventNs, searchSelector);",
-                        "$doc.off('keyup' + eventNs, searchSelector);",
-                        "$doc.off('search' + eventNs, searchSelector);",
-                        "$doc.off('change' + eventNs, classSelector);",
-                        "$doc.off('change' + eventNs, pageSelector);",
-                        "$doc.off('click' + eventNs, pillsSelector);",
-                        "$doc.on('input' + eventNs, searchSelector, function() {",
-                        "  applyGlobalSearch(this.value);",
-                        "});",
-                        "$doc.on('keyup' + eventNs, searchSelector, function() {",
-                        "  applyGlobalSearch(this.value);",
-                        "});",
-                        "$doc.on('search' + eventNs, searchSelector, function() {",
-                        "  applyGlobalSearch(this.value);",
-                        "});",
-                        "$doc.on('change' + eventNs, classSelector, function() {",
-                        "  applyClassFilter($(this).val() || '', false);",
-                        "});",
-                        "$doc.on('click' + eventNs, pillsSelector, function() {",
-                        "  if ($module.length && $(this).closest('.wiki-module')[0] !== $module[0]) {",
-                        "    return;",
-                        "  }",
-                        "  var value = $(this).attr('data-filter') || '';",
-                        "  applyClassFilter(value, true);",
-                        "});",
-                        "$doc.on('change' + eventNs, pageSelector, function() {",
-                        "  applyPageLength($(this).val());",
-                        "});",
-                        "table.off('length.dt' + eventNs).on('length.dt' + eventNs, function(e, settings, len) {",
-                        "  var $pageLength = getPageLength();",
-                        "  if ($pageLength.length) {",
-                        "    $pageLength.val(String(len));",
-                        "  }",
-                        "});",
-                        "var $searchInput = $(searchSelector);",
-                        "if ($searchInput.length) {",
-                        "  table.search($searchInput.val() || '');",
-                        "}",
-                        "var $classFilter = getClassFilter();",
-                        "if ($classFilter.length) {",
-                        "  applyClassFilter($classFilter.val() || '', false);",
-                        "} else {",
-                        "  applyClassFilter('', false);",
-                        "}",
-                        "var $pageLength = getPageLength();",
-                        "if ($pageLength.length) {",
-                        "  var selectedLen = parseInt($pageLength.val(), 10);",
-                        "  if (!isNaN(selectedLen)) {",
-                        "    table.page.len(selectedLen);",
-                        "  }",
-                        "  $pageLength.val(String(table.page.len()));",
-                        "}",
-                        "table.draw(false);"
-                    ),
-                    jsonlite::toJSON(ns("search"), auto_unbox = TRUE),
-                    jsonlite::toJSON(ns("class_filter"), auto_unbox = TRUE),
-                    jsonlite::toJSON(ns("page_length"), auto_unbox = TRUE)
-                )
-            )
+            row_callback_js <- DT::JS(module_behavior_call("wikiTermRow", list(
+                labels = required_badge_labels,
+                termUrl = "https://sibbr.gov.br",
+                classSlugs = class_slug_js_map
+            )))
+            header_callback_js <- DT::JS(module_behavior_call("wikiTableHeader"))
+            filter_callback_js <- DT::JS(module_behavior_call("wikiTableFilters", list(
+                searchId = ns("search"), classId = ns("class_filter"), pageId = ns("page_length")
+            ), table_context = TRUE))
 
             DT::datatable(
                 terms_table_data(),

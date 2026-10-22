@@ -13,7 +13,8 @@ mod_preview_server(
   reset_signal_r = NULL,
   on_navigate = NULL,
   active_r = NULL,
-  refresh_r = NULL
+  refresh_r = NULL,
+  return_contract = c("legacy", "list")
 )
 }
 \arguments{
@@ -38,9 +39,12 @@ the tab opens Problems when there is something to correct.}
 
 \item{refresh_r}{Reactive whose change recounts the open problems for the
 nav badge, or NULL to count on every change of the full data.}
+
+\item{return_contract}{Return a legacy reactive (default) or a named list of reactives.}
 }
 \value{
-Reactive preview data frame, with the corrected full data frame in
+A reactive with legacy attributes by default, or a named list of
+  reactives when return_contract is \code{"list"}.
   attribute `edited_data_r` and the open-problem count (NA without data) in
   attribute `problems_n_r`.
 }

@@ -25,5 +25,7 @@ testthat::test_that("leaflet_fill_world bounds the view and hooks the minimum zo
     map <- leaflet_fill_world(leaflet::leaflet())
     calls <- vapply(map$x$calls, function(x) x$method, character(1))
     testthat::expect_true("setMaxBounds" %in% calls)
-    testthat::expect_true(any(grepl("setMinZoom", unlist(map$jsHooks), fixed = TRUE)))
+    testthat::expect_true(any(grepl("leafletFillWorld", unlist(map$jsHooks), fixed = TRUE)))
+    asset <- system.file("app", "www", "module-utils-coords.js", package = "saira")
+    testthat::expect_true(any(grepl("setMinZoom", readLines(asset), fixed = TRUE)))
 })

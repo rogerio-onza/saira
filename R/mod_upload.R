@@ -106,25 +106,7 @@ mod_upload_ui <- function(id) {
                     )
                 )
             ),
-            shiny::tags$script(shiny::HTML(
-                "(function(){\n",
-                "  if (window.__sairaUploadModeTabsWired) return;\n",
-                "  window.__sairaUploadModeTabsWired = true;\n",
-                "  document.addEventListener('click', function(e){\n",
-                "    var tab = e.target.closest && e.target.closest('.upload-mode-tab');\n",
-                "    if (!tab) return;\n",
-                "    e.preventDefault();\n",
-                "    var wrap = tab.closest('.upload-mode-tabs');\n",
-                "    if (!wrap) return;\n",
-                "    var mode = tab.getAttribute('data-mode');\n",
-                "    var radio = wrap.querySelector('input[type=\"radio\"][value=\"' + mode + '\"]');\n",
-                "    if (!radio || radio.checked) return;\n",
-                "    radio.checked = true;\n",
-                "    radio.dispatchEvent(new Event('change', {bubbles: true}));\n",
-                "    radio.focus({preventScroll: true});\n",
-                "  });\n",
-                "})();"
-            )),
+            shiny::tags$script(module_behavior_html("uploadModeTabs")),
             shiny::div(
                 id = ns("mode_change_announce"),
                 class = "visually-hidden",

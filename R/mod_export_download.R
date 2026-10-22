@@ -1,12 +1,9 @@
-# Title: Export download subsystem (relocated verbatim from mod_preview, ADR-103)
+# Title: Export download controller (ADR-103, ADR-170)
 # Author: Rogerio Nunes Oliveira
 #
-# The full DwC-A download flow (field validation -> confirmation modal ->
-# animated loading modal driven by custom message channels -> hidden
-# downloadButton -> bundle downloadHandler) lives here so it can be mounted on
-# the Export tab. Body is moved verbatim from mod_preview_server to preserve the
-# exact JS/channel wiring; only the enclosing function differs. Call it from
-# within a moduleServer, passing that module's input/output/session.
+# Handles Shiny confirmation, progress and success/failure. Preparation and policy
+# live in utils_publication.R; build_dwca_bundle() owns the archive core trio.
+# Real coordinates are written only by the separate private download.
 
 #' Mount the DwC-A export download flow inside a module server
 #' @noRd
@@ -26,14 +23,7 @@ mount_export_download <- function(input, output, session, lang_r,
                                   blocked_r = NULL,
                                   on_export_success = NULL) {
     ns <- session$ns
-        required_download_fields <- c(
-            "scientificName",
-            "eventDate",
-            "decimalLatitude",
-            "decimalLongitude",
-            "basisOfRecord",
-            "license"
-        )
+        required_download_fields <- publication_required_terms()
         warning_download_fields <- c("occurrenceID")
         download_click_channel <- paste0("preview-download-click-", ns("download_real"))
         download_finish_channel <- paste0("preview-download-finish-", ns("download_real"))
@@ -60,79 +50,21 @@ mount_export_download <- function(input, output, session, lang_r,
             if (!is.null(blocked_r) && shiny::is.reactive(blocked_r)) {
                 isTRUE(blocked_r())
             } else {
-                !isTRUE(download_validation()$ok)
+                isTRUE(build_export_summary(
+                    mapped_data_r(), name_review_payload = export_name_review_payload(),
+                    coords_correction_payload = optional_reactive_value(coords_correction_payload_r),
+                    country_fill_payload = optional_reactive_value(country_fill_payload_r),
+                    generalization_payload = optional_reactive_value(sensitive_generalization_payload_r),
+                    raw_data = optional_reactive_value(raw_data_r),
+                    map_values = optional_reactive_value(map_values_r),
+                    overridden_terms = overridden_mapping_terms(optional_reactive_value(custom_values_r))
+                )$export_blocked)
             }
         })
         output$download_btn_container <- shiny::renderUI({
-            register_handlers_script <- sprintf(
-                "(function () {
-                    var clickChannel = %s;
-                    var finishChannel = %s;
-                    window.__sairaPreviewDownloadHandlers = window.__sairaPreviewDownloadHandlers || {};
-                    if (window.__sairaPreviewDownloadHandlers[clickChannel]) {
-                        return;
-                    }
-                    window.__sairaPreviewDownloadHandlers[clickChannel] = true;
-
-                    Shiny.addCustomMessageHandler(clickChannel, function (payload) {
-                        var btn = document.getElementById(payload.id);
-                        if (btn) {
-                            btn.click();
-                        }
-                    });
-
-                    Shiny.addCustomMessageHandler(finishChannel, function (payload) {
-                        var progressEl = payload.progress_id ? document.getElementById(payload.progress_id) : null;
-                        var statusEl = payload.status_id ? document.getElementById(payload.status_id) : null;
-                        var phraseIconEl = payload.phrase_icon_id ? document.getElementById(payload.phrase_icon_id) : null;
-                        var phraseTextEl = payload.phrase_text_id ? document.getElementById(payload.phrase_text_id) : null;
-                        var poolRoot = payload.modal_root_id ? document.getElementById(payload.modal_root_id) : null;
-                        var modalEl = poolRoot ? poolRoot.closest('.modal') : null;
-                        var timerKey = payload.timer_key || null;
-                        var progressKey = timerKey ? (timerKey + '_progress') : null;
-
-                        if (timerKey && window[timerKey]) {
-                            window.clearInterval(window[timerKey]);
-                            window[timerKey] = null;
-                        }
-                        if (progressKey && window[progressKey]) {
-                            window.clearInterval(window[progressKey]);
-                            window[progressKey] = null;
-                        }
-
-                        if (progressEl) {
-                            progressEl.style.width = '100%%';
-                        }
-                        if (statusEl && payload.status_text) {
-                            statusEl.textContent = payload.status_text;
-                        }
-                        if (phraseIconEl && payload.final_icon) {
-                            phraseIconEl.className = 'ph ph-' + payload.final_icon + ' automap-loading-phrase-icon';
-                        }
-                        if (phraseTextEl && payload.final_phrase) {
-                            phraseTextEl.textContent = payload.final_phrase;
-                        }
-
-                        var closeModal = function () {
-                            if (!modalEl) { return; }
-                            if (window.bootstrap && window.bootstrap.Modal) {
-                                var instance = window.bootstrap.Modal.getInstance(modalEl);
-                                if (instance) {
-                                    instance.hide();
-                                } else if (window.jQuery) {
-                                    window.jQuery(modalEl).modal('hide');
-                                }
-                            } else if (window.jQuery) {
-                                window.jQuery(modalEl).modal('hide');
-                            }
-                        };
-
-                        window.setTimeout(closeModal, payload.delay_ms || 320);
-                    });
-                })();",
-                jsonlite::toJSON(download_click_channel, auto_unbox = TRUE),
-                jsonlite::toJSON(download_finish_channel, auto_unbox = TRUE)
-            )
+            register_handlers_script <- module_behavior_call("exportDownloadHandlers", list(
+                clickChannel = download_click_channel, finishChannel = download_finish_channel
+            ))
 
             blocked <- export_blocked()
             inert <- isTRUE(is_exporting()) || blocked
@@ -292,97 +224,15 @@ mount_export_download <- function(input, output, session, lang_r,
             if (!nzchar(status_prefix)) {
                 status_prefix <- tr("loading", lang_r())
             }
-            rotate_script <- sprintf(
-                "(function () {
-                    var iconEl = document.getElementById('%s');
-                    var textEl = document.getElementById('%s');
-                    var poolRoot = document.getElementById('%s');
-                    var progressEl = document.getElementById('%s');
-                    var statusEl = document.getElementById('%s');
-                    if (!iconEl || !textEl || !poolRoot || !progressEl || !statusEl) { return; }
-
-                    var items = poolRoot.querySelectorAll('.automap-loading-phrase-item');
-                    if (!items.length) { return; }
-
-                    var timerKey = '%s';
-                    var progressKey = timerKey + '_progress';
-                    var modalEl = poolRoot.closest('.modal');
-                    var progressValue = 0;
-                    var statusPrefix = %s;
-
-                    var applyProgress = function (value) {
-                        var pct = Math.max(0, Math.min(100, Math.round(value)));
-                        progressEl.style.width = pct + '%%';
-                        statusEl.textContent = statusPrefix ? (statusPrefix + ' ' + pct + '%%') : (pct + '%%');
-                    };
-
-                    var applyPhrase = function (index) {
-                        var item = items[index];
-                        if (!item) { return; }
-                        var nextIcon = item.getAttribute('data-icon') || 'gear-six';
-                        iconEl.className = 'ph ph-' + nextIcon + ' automap-loading-phrase-icon';
-                        textEl.textContent = item.textContent || '';
-                    };
-
-                    if (window[timerKey]) {
-                        window.clearInterval(window[timerKey]);
-                        window[timerKey] = null;
-                    }
-                    if (window[progressKey]) {
-                        window.clearInterval(window[progressKey]);
-                        window[progressKey] = null;
-                    }
-
-                    applyPhrase(0);
-                    applyProgress(0);
-
-                    window[progressKey] = window.setInterval(function () {
-                        if (progressValue < 90) {
-                            progressValue += 10;
-                            applyProgress(progressValue);
-                            var phraseIdx = Math.min(items.length - 1, Math.max(0, Math.floor(progressValue / 10) - 1));
-                            applyPhrase(phraseIdx);
-                        }
-                    }, 900);
-
-                    if (modalEl) {
-                        modalEl.classList.add('automap-loading-host');
-                    }
-                    if (document.body) {
-                        document.body.classList.add('automap-loading-open');
-                    }
-
-                    var clearState = function () {
-                        if (window[timerKey]) {
-                            window.clearInterval(window[timerKey]);
-                            window[timerKey] = null;
-                        }
-                        if (window[progressKey]) {
-                            window.clearInterval(window[progressKey]);
-                            window[progressKey] = null;
-                        }
-                        if (modalEl) {
-                            modalEl.classList.remove('automap-loading-host');
-                        }
-                        if (document.body) {
-                            document.body.classList.remove('automap-loading-open');
-                        }
-                    };
-
-                    if (modalEl) {
-                        modalEl.addEventListener('hidden.bs.modal', clearState, { once: true });
-                    } else {
-                        document.addEventListener('hidden.bs.modal', clearState, { once: true });
-                    }
-                })();",
-                ns("preview_export_phrase_icon"),
-                ns("preview_export_phrase_text"),
-                ns("preview_export_phrase_pool"),
-                ns("preview_export_progress_bar"),
-                ns("preview_export_status_text"),
-                ns("preview_export_phrase_timer"),
-                jsonlite::toJSON(status_prefix, auto_unbox = TRUE)
-            )
+            rotate_script <- module_behavior_call("exportProgressModal", list(
+                iconId = ns("preview_export_phrase_icon"),
+                textId = ns("preview_export_phrase_text"),
+                poolId = ns("preview_export_phrase_pool"),
+                progressId = ns("preview_export_progress_bar"),
+                statusId = ns("preview_export_status_text"),
+                timerKey = ns("preview_export_phrase_timer"),
+                statusPrefix = status_prefix
+            ))
 
             shiny::showModal(shiny::modalDialog(
                 shiny::div(
@@ -511,13 +361,6 @@ mount_export_download <- function(input, output, session, lang_r,
             } else {
                 NULL
             }
-            review_ready <- apply_validation_payloads(
-                download_data(),
-                name_payload = export_name_review_payload(),
-                coords_payload = coords_payload,
-                country_payload = country_payload
-            )
-
 
             raw_df <- if (!is.null(raw_data_r) && shiny::is.reactive(raw_data_r)) {
                 tryCatch(raw_data_r(), error = function(e) data.frame())
@@ -558,23 +401,24 @@ mount_export_download <- function(input, output, session, lang_r,
                 )
                 shiny::req(FALSE)
             }
-            gen_levels <- if (is.list(gen) && !is.null(gen$levels)) {
-                gen$levels
-            } else {
-                stats::setNames(character(0), character(0))
+            effective <- prepare_effective_records(
+                download_data(), export_name_review_payload(), coords_payload, country_payload
+            )
+            assessment <- assess_publication(
+                effective, gen, raw_df, mv, overridden_mapping_terms(cv),
+                coords_correction_payload = drop_stale_coord_corrections(coords_payload, download_data())
+            )
+            if (isTRUE(assessment$export_blocked)) {
+                stop(tr("export_download_blocked", lang_r()), call. = FALSE)
             }
-            # Masks before process_for_export_with_unmapped(): that
-            # step turns the coordinates into numbers, "-19.900"
-            # loses its trailing zeros, and the precision clamp then
-            # picks a coarser grid than the Generalization tab shows.
-            masked <- mask_sensitive_coordinates(
-                review_ready,
-                decisions = rekey_sensitivity_decisions(export_sensitivity_payload(),
-                                                        export_name_review_payload()),
-                generalization = gen_levels,
-                enabled = is.list(gen) && isTRUE(gen$enabled),
-                lang = lang_r(),
-                justification = if (is.list(gen)) gen$justification else NULL
+            # Masks before process_for_export_with_unmapped(): that step turns
+            # the coordinates into numbers, "-19.900" loses its trailing zeros,
+            # and the precision clamp then picks a coarser grid than the
+            # Generalization tab shows.
+            masked <- prepare_publication_records(
+                effective,
+                sensitivity = rekey_sensitivity_decisions(export_sensitivity_payload(), export_name_review_payload()),
+                generalization = gen, lang = lang_r()
             )
             list(masked = masked, gen = gen, cv = cv, raw_df = raw_df, mv = mv)
         }
@@ -645,6 +489,10 @@ mount_export_download <- function(input, output, session, lang_r,
                             sensitive_points = masked$scrub_points
                         )
 
+                        if (formula_like_cells(export_data)$count > 0L) {
+                            stop(tr("export_download_blocked", lang_r()), call. = FALSE)
+                        }
+
                         tmpdir <- tempfile("saira_export_")
                         dir.create(tmpdir, showWarnings = FALSE, recursive = TRUE)
                         on.exit(unlink(tmpdir, recursive = TRUE), add = TRUE)
@@ -656,9 +504,6 @@ mount_export_download <- function(input, output, session, lang_r,
                         # The real coordinates have their own download (ADR-163).
                         fnames <- export_bundle_filenames(dataset_name = cv$datasetName,
                                                           n_records = nrow(export_data))
-                        core_path  <- file.path(tmpdir, "occurrence.txt")
-                        meta_path  <- file.path(tmpdir, "meta.xml")
-                        eml_path   <- file.path(tmpdir, "eml.xml")
                         xlsx_path  <- if (!is.null(fnames$auxiliary$xlsx)) {
                             file.path(tmpdir, fnames$auxiliary$xlsx)
                         }
@@ -686,57 +531,7 @@ mount_export_download <- function(input, output, session, lang_r,
                             id_strategy <- occurrence_id_strategy_label(id_counts$preserved, id_counts$total)
                         }
 
-                        readr::write_csv(export_data, core_path, na = "")
-                        writeLines(
-                            build_meta_xml(export_data, core_filename = "occurrence.txt"),
-                            meta_path,
-                            useBytes = TRUE
-                        )
-                        # Record the dataset-level access constraint (Chapman
-                        # sec. 5.1) in the EML when any record was generalized.
-                        eml_metadata <- list()
-                        # The EML intellectualRights must reflect the license the
-                        # user chose in the mapping (constant card or a mapped
-                        # column), carried in the export's license column — not
-                        # the CC0 default. Use the most frequent non-empty value
-                        # when a mapped column carries more than one.
-                        if ("license" %in% names(export_data)) {
-                            lic_vals <- trimws(as.character(export_data[["license"]]))
-                            lic_vals <- lic_vals[!is.na(lic_vals) & nzchar(lic_vals)]
-                            if (length(lic_vals) > 0L) {
-                                eml_metadata$license <- names(
-                                    sort(table(lic_vals), decreasing = TRUE)
-                                )[[1]]
-                            }
-                        }
-                        # The EML title is the dataset name the user gave
-                        # (constant card or mapped column), not "Saira export".
-                        if ("datasetName" %in% names(export_data)) {
-                            ds_vals <- trimws(as.character(export_data[["datasetName"]]))
-                            ds_vals <- ds_vals[!is.na(ds_vals) & nzchar(ds_vals)]
-                            if (length(ds_vals) > 0L) {
-                                eml_metadata$title <- names(
-                                    sort(table(ds_vals), decreasing = TRUE)
-                                )[[1]]
-                            }
-                        }
-                        # The private file also holds the withheld rows.
-                        if (nrow(masked$real) > 0L) {
-                            review_date <- if (is.list(gen)) gen$review_date else NULL
-                            if (is.null(review_date) || length(review_date) == 0L) {
-                                review_date <- Sys.Date() + 730
-                            }
-                            eml_metadata$sensitivity <- list(
-                                n_masked = nrow(masked$real),
-                                review_date = format(as.Date(review_date), "%Y-%m-%d"),
-                                lang = lang_r()
-                            )
-                        }
-                        writeLines(
-                            build_eml_xml(export_data, metadata = eml_metadata),
-                            eml_path,
-                            useBytes = TRUE
-                        )
+                        eml_metadata <- publication_metadata(export_data, masked$real, gen, lang_r())
                         if (!is.null(xlsx_path)) write_xlsx_text_only(export_data, xlsx_path)
                         writeLines(
                             build_mapping_guide_txt(
@@ -751,13 +546,10 @@ mount_export_download <- function(input, output, session, lang_r,
                             useBytes = TRUE
                         )
 
-                        zip_files <- c(core_path, meta_path, eml_path,
-                                       xlsx_path, guide_path)
-
-                        zip::zipr(
-                            zipfile = file,
-                            files = zip_files
-                        )
+                        extras <- list()
+                        if (!is.null(xlsx_path)) extras[[basename(xlsx_path)]] <- xlsx_path
+                        extras[[basename(guide_path)]] <- guide_path
+                        build_dwca_bundle(export_data, file, metadata = eml_metadata, extras = extras)
 
                         # The bundle is written: the mapping is now confirmed, so
                         # the mapping module may learn its aliases. Fires only

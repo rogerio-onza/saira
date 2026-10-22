@@ -22,7 +22,7 @@
 #' no continuous observers over the row inputs.
 #'
 #' @param input,output,session Shiny module scope
-#' @param rv reactiveValues from parent module
+#' @param rv Assistant-owned reactive state (accepted answers, draft and pagination)
 #' @param ns namespace function
 #' @param lang_r reactive language code
 #' @param establishment_page_size integer page size
@@ -434,4 +434,174 @@ setup_establishment_assistant <- function(
     })
 
     invisible(NULL)
+}
+
+# Per-species establishment answers (ADR-110). Keyed on the species, not on a
+# source column: one answer covers every record of that taxon. `map` is what
+# reaches the data; `draft` is in-modal only.
+new_mapping_establishment_model <- function(input, raw_data_r, lang_r, map_values_r) {
+    rv <- shiny::reactiveValues(
+        establishment_map = sanitize_establishment_map(list()),
+        establishment_draft = sanitize_establishment_map(list()),
+        establishment_auto_map = stats::setNames(character(0), character(0)),
+        establishment_entries = data.frame(
+            idx = integer(0),
+            key = character(0),
+            raw = character(0),
+            n_records = integer(0),
+            invasive = logical(0),
+            stringsAsFactors = FALSE
+        ),
+        establishment_page = 1L
+    )
+    establishment_page_size <- 20L
+
+    get_establishment_species <- function() {
+        df <- raw_data_r()
+        if (!is.data.frame(df) || nrow(df) == 0L) {
+            return(character(0))
+        }
+        selected <- sanitize_map_selection(
+            "scientificName", map_values_r()[["scientificName"]]
+        )
+        if (!has_selected_value(selected)) {
+            selected <- sanitize_map_selection(
+                "scientificName", input$map_scientificName
+            )
+        }
+        if (!has_selected_value(selected)) {
+            return(character(0))
+        }
+        col <- as.character(selected[[1]])
+        if (!(col %in% names(df))) {
+            return(character(0))
+        }
+        as.character(df[[col]])
+    }
+
+    # Oceanic island per record, NA off the islands (ADR-143). NULL when
+    # the coordinates or the species are not mapped.
+    get_establishment_island_rows <- function() {
+        establishment_island_rows_for_df(
+            raw_data_r(), map_values_r(), get_establishment_species()
+        )
+    }
+
+    establishment_page_count <- function() {
+        total_items <- nrow(rv$establishment_entries)
+        if (total_items <= 0) {
+            return(1L)
+        }
+        max(1L, as.integer(ceiling(total_items / establishment_page_size)))
+    }
+
+    get_establishment_page_entries <- function() {
+        entries <- rv$establishment_entries
+        if (nrow(entries) == 0) {
+            return(entries)
+        }
+        total_pages <- establishment_page_count()
+        current_page <- max(1L, min(as.integer(rv$establishment_page), total_pages))
+        start_idx <- ((current_page - 1L) * establishment_page_size) + 1L
+        end_idx <- min(nrow(entries), start_idx + establishment_page_size - 1L)
+        entries[start_idx:end_idx, , drop = FALSE]
+    }
+
+    establishment_choices <- function(field = "means") {
+        catalog <- if (identical(field, "degree")) {
+            degree_of_establishment_vocab_catalog
+        } else {
+            establishment_means_vocab_catalog
+        }
+        dwc_vocab_choices(
+            catalog,
+            lang = lang_r(),
+            include_skip = TRUE,
+            skip_label = tr("est_assistant_skip_option", lang_r())
+        )
+    }
+
+    # Auto-suggestions overlaid by the user's in-modal edits. Only
+    # establishmentMeans has suggestions; degreeOfEstablishment starts empty
+    # by design (it depends on the record, not on the species). The island
+    # answers have no auto-suggestion: the user applies it with one click.
+    get_effective_establishment_map <- function() {
+        entries <- rv$establishment_entries
+        if (nrow(entries) == 0) {
+            return(sanitize_establishment_map(list()))
+        }
+
+        keys <- entries$key
+        auto <- sanitize_establishment_field_map(rv$establishment_auto_map, "means")
+        draft <- sanitize_establishment_map(rv$establishment_draft)
+
+        means <- auto[keys]
+        means[is.na(means)] <- ""
+        draft_means <- draft$means[keys]
+        has_draft <- !is.na(draft_means)
+        means[has_draft] <- draft_means[has_draft]
+
+        draft_only <- function(field, vocab) {
+            values <- draft[[field]][keys]
+            values[is.na(values)] <- ""
+            stats::setNames(
+                as.character(sanitize_establishment_terms(values, vocab)), keys
+            )
+        }
+
+        list(
+            means = stats::setNames(
+                as.character(sanitize_establishment_terms(means, "means")), keys
+            ),
+            degree = draft_only("degree", "degree"),
+            island_means = draft_only("island_means", "means"),
+            island_degree = draft_only("island_degree", "degree")
+        )
+    }
+
+    sync_establishment_page_to_draft <- function() {
+        entries <- get_establishment_page_entries()
+        if (nrow(entries) == 0) {
+            return(invisible(NULL))
+        }
+        for (i in seq_len(nrow(entries))) {
+            key <- entries$key[[i]]
+            idx <- entries$idx[[i]]
+            for (field in c("means", "degree", "island_means", "island_degree")) {
+                input_value <- input[[paste0("est_", field, "_", idx)]]
+                if (is.null(input_value)) {
+                    next
+                }
+                sanitized <- sanitize_establishment_terms(
+                    as.character(input_value)[[1]], sub("^island_", "", field)
+                )
+                # [[ ]] on a named character vector errors for an absent
+                # name (unlike a list), so gate the read like the
+                # basisOfRecord assistant does.
+                draft_field <- rv$establishment_draft[[field]]
+                has_key <- key %in% names(draft_field)
+                current <- if (has_key) as.character(draft_field[[key]]) else NA_character_
+                if (!has_key || !identical(current, sanitized)) {
+                    rv$establishment_draft[[field]][[key]] <- sanitized
+                }
+            }
+        }
+        invisible(NULL)
+    }
+
+    reset_establishment_state <- function() {
+        empty <- stats::setNames(character(0), character(0))
+        rv$establishment_map <- sanitize_establishment_map(list())
+        rv$establishment_draft <- sanitize_establishment_map(list())
+        rv$establishment_auto_map <- empty
+        rv$establishment_entries <- data.frame(
+            idx = integer(0), key = character(0), raw = character(0),
+            n_records = integer(0), invasive = logical(0),
+            stringsAsFactors = FALSE
+        )
+        rv$establishment_page <- 1L
+        invisible(NULL)
+    }
+
+    list(state = rv, establishment_page_size = establishment_page_size, get_establishment_species = get_establishment_species, get_establishment_island_rows = get_establishment_island_rows, establishment_page_count = establishment_page_count, get_establishment_page_entries = get_establishment_page_entries, establishment_choices = establishment_choices, get_effective_establishment_map = get_effective_establishment_map, sync_establishment_page_to_draft = sync_establishment_page_to_draft, reset_establishment_state = reset_establishment_state)
 }

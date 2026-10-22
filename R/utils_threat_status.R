@@ -5,7 +5,11 @@
 # that the export writes to dynamicProperties. Every path degrades to NA: a
 # machine offline, an HTTP error or an unexpected payload must never break or
 # stall the export bundle. The COL XR match memo (utils_colxr.R) keeps each
-# name to one request per session.
+# name to one request per R process.
+#
+# Cache scope: public provider data shared by sessions in this R process.
+# Category lookups retain the existing memo/reset policy; network failures
+# remain non-blocking.
 
 GBIF_API_BASE <- "https://api.gbif.org/v2"
 GBIF_API_TIMEOUT_S <- 10
@@ -89,4 +93,125 @@ colxr_iucn_category <- function(names) {
     }
     out[valid] <- unname(code[nm[valid]])
     out
+}
+
+# Rows whose country resolves to Brazil. The MMA portaria is a *national* legal
+# instrument, so its status must never be asserted for a record collected
+# elsewhere -- picking a BR name provider is a taxonomic-source preference, not
+# a statement about locality. `countryCode` wins when present (Saira keeps it in
+# alpha-3 until convert_country_code_to_alpha2() runs at the export boundary,
+# but a publisher may supply alpha-2); otherwise the free-text `country` goes
+# through the same 5-layer cascade the coordinate tab uses (ADR-036), which
+# resolves multilingual spellings and dedupes internally. A row with no
+# resolvable country is NOT Brazilian: an unknown locality is not evidence of
+# Brazilian occurrence.
+is_brazilian_record <- function(df) {
+    n <- if (is.data.frame(df)) nrow(df) else 0L
+    if (n == 0L) {
+        return(logical(0))
+    }
+    iso <- rep(NA_character_, n)
+    for (col in c("countryCode", "country")) {
+        pending <- is.na(iso)
+        if (!any(pending) || !(col %in% names(df))) {
+            next
+        }
+        values <- as.character(df[[col]])[pending]
+        iso[pending] <- tryCatch(
+            coords_country_to_iso3(values),
+            error = function(e) rep(NA_character_, length(values))
+        )
+    }
+    !is.na(iso) & iso == "BRA"
+}
+
+#' Append conservation-status entries to dynamicProperties on export
+#'
+#' Additively folds each selected provider's conservation status into the
+#' `dynamicProperties` column (creating it when absent): the Brazilian MMA
+#' category plus its portaria source when a BR provider was selected, and/or the
+#' global IUCN Red List code from GBIF when GBIF was selected. The two sources
+#' are independent — a taxon can receive both, or only the MMA keys when GBIF
+#' does not assess it. The MMA list is national, so its keys go only to records
+#' that resolve to Brazil (see [is_brazilian_record()]); the IUCN assessment is
+#' global and is applied regardless of locality. The GBIF lookup is optional and
+#' non-blocking: any failure simply omits the IUCN key and never breaks the
+#' export. Runs after [apply_name_review_payload()] so it sees the corrected
+#' `scientificName`, and after the country fill so coordinate-derived countries
+#' are already in place.
+#'
+#' @param df Data frame to export (post name review).
+#' @param payload Optional list with `include_mma` and `include_iucn` (logical).
+#' @param generalized Optional logical vector, one per row: TRUE where
+#'   `mask_sensitive_coordinates()` protected the row.
+#' @return `df` with an updated `dynamicProperties` column.
+#' @keywords internal
+#' @noRd
+apply_conservation_status <- function(df, payload = NULL, generalized = NULL) {
+    if (!is.data.frame(df) || nrow(df) == 0L ||
+        !("scientificName" %in% names(df)) ||
+        is.null(payload) || !is.list(payload)) {
+        return(df)
+    }
+    include_mma <- isTRUE(payload$include_mma)
+    include_iucn <- isTRUE(payload$include_iucn)
+    if (!include_mma && !include_iucn) {
+        return(df)
+    }
+
+    names_vec <- as.character(df$scientificName)
+    had_column <- "dynamicProperties" %in% names(df)
+    dynprops <- df[["dynamicProperties"]]
+    if (is.null(dynprops)) {
+        dynprops <- rep("", nrow(df))
+    }
+
+    # Each source is wrapped independently so a failure in one (e.g. the GBIF
+    # network) never blocks the export nor drops the other source's keys.
+    if (include_mma) {
+        dynprops <- tryCatch(
+            {
+                # National list: blank the keys outside Brazil so
+                # merge_dynamic_property() leaves those rows untouched.
+                br <- is_brazilian_record(df)
+                # A row Saira generalized cites its MMA category in
+                # dataGeneralizations, so dynamicProperties carries it too (B12).
+                if (length(generalized) == length(br)) br <- br | generalized
+                mma_category <- sensitive_category_for(names_vec)
+                mma_category[!br] <- NA_character_
+                mma_source <- sensitive_source_for(names_vec)
+                mma_source[!br] <- NA_character_
+                dp <- merge_dynamic_property(
+                    dynprops, "mmaThreatStatus", mma_category
+                )
+                merge_dynamic_property(dp, "mmaSource", mma_source)
+            },
+            error = function(e) {
+                warning("apply_conservation_status: MMA skipped (", conditionMessage(e), ")")
+                dynprops
+            }
+        )
+    }
+
+    if (include_iucn) {
+        dynprops <- tryCatch(
+            {
+                merge_dynamic_property(
+                    dynprops, "iucnRedListCategory",
+                    colxr_iucn_category(names_vec)
+                )
+            },
+            error = function(e) {
+                warning("apply_conservation_status: IUCN skipped (", conditionMessage(e), ")")
+                dynprops
+            }
+        )
+    }
+
+    # Keep an already-mapped column even if nothing merged; but do not create a
+    # spurious all-empty column when no taxon matched and none was mapped.
+    if (had_column || any(nzchar(dynprops))) {
+        df[["dynamicProperties"]] <- dynprops
+    }
+    df
 }

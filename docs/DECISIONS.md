@@ -3227,3 +3227,54 @@ Formato: ADR leve (Architecture Decision Record).
   - O botao comeca uma rodada so com esses nomes e so com os provedores que falharam (`init_taxadb_retry_state()`). Os outros provedores ja tinham consultado esses nomes. A rodada parte das respostas e da lista da rodada anterior, e as revisoes ficam.
   - O aviso fixo sai quando ha nomes sem resposta. Ele fica so quando outro provedor consultou todos os nomes.
 - **Consequencias**: durante a nova tentativa, a grade mostra so os nomes consultados de novo. O bloco mostra ate 12 nomes e conta os outros.
+
+
+---
+
+## ADR-170: Fronteiras do refactor B-H e adaptadores de compatibilidade
+
+- **Data**: 2026-10-22
+- **Contexto**: Appendix A de `bugs-erros-correcoes.md` identifica preparacao de
+  publicacao duplicada, contratos implicitos e estado compartilhado entre UI,
+  assistentes e efeitos externos.
+- **Decisao**:
+  - Primitivas de nomes, datas, incerteza, identificadores, JSON e ordenacao DwC
+    ficam em arquivos de dominio. Assinaturas e caminhos escalar/vetorizado ficam.
+  - `prepare_effective_records()` aplica revisao de nome, rank, coordenadas e
+    pais nessa ordem. `assess_publication()` concentra a politica do resumo e
+    dos handlers; o arquivo final tambem passa pela checagem de formulas.
+  - `prepare_publication_records()` mascara os pontos com decisoes de
+    sensibilidade associadas ao nome aceito. Conservacao/rede continua explicita
+    no handler; `publication_metadata()` recebe valores preparados.
+    `build_dwca_bundle()` e o unico escritor do trio publico. O XLSX privado
+    continua separado; aliases so sao confirmados depois da escrita do ZIP.
+  - Preview, Nomes e Coordenadas aceitam `return_contract = "list"`. O app usa
+    listas de reactives validadas. O padrao publico continua sendo a reactive
+    com os mesmos atributos, por um adaptador de transicao.
+  - Comandos de Mapeamento possuem portas de escrita e sincronizacao pequenas.
+    Importacao usa os mesmos comandos. Cada assistente possui seu estado;
+    somente respostas aceitas alimentam os registros. Echo, cards_bound,
+    prioridades, caches e invalidacao por termo conservam seus contratos.
+  - Apresentacoes recebem reactives de leitura e callbacks explicitos;
+    controladores continuam donos das decisoes e da execucao. Regras Chapman
+    e composicao de niveis sao funcoes sem Shiny.
+  - JavaScript fica em assets `module-*.js`, como uma dependencia htmltools.
+    Strings R passam configuracao JSON com IDs e textos; callbacks de tabelas
+    e mapas usam factories, inclusive quando o widget e usado isoladamente.
+    Toasts e modal de loading possuem fontes CSS de componente compartilhadas.
+  - Adaptadores de fornecedores recebem/produzem envelopes comuns. As portas
+    poll/load/query da rodada podem ser injetadas. Storage, update, aliases,
+    migracoes e contratos JSON ficam separados, preservando transacoes SQLite.
+- **Validade**: snapshots de coordenadas tambem acompanham o preenchimento de
+  pais. So decisoes afetadas por uma mudanca do ponto sao descartadas. Payloads
+  legados sem snapshot mantem seu contrato. O contador de descartes e idempotente.
+- **Ajustes de comportamento identificados**: revisao sem reviewed_at recebe
+  timestamp desconhecido tipado; o resumo avalia as revisoes aceitas; downloads
+  montados sem banner usam a politica completa; formulas sao verificadas apos
+  enriquecimento e incorporacao das colunas auxiliares.
+- **Compatibilidade**: `validate_coords()`/`validate_coords_df()`, nomes antigos
+  de helpers e slots exportados permanecem. `sensitive_overview_input_r` continua
+  no retorno do Mapeamento. Nenhuma remocao de API ou migracao de schema foi feita.
+- **Verificacao**: testes existentes de dominio/servidor e reatividade, novas
+  composicoes em `test-refactor-contracts.R`, fluxos E2E existentes, sintaxe dos
+  assets, Roxygen/Collate e comparacao do bundle CSS.

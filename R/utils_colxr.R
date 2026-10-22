@@ -1,3 +1,6 @@
+# Cache scope: public provider data shared by sessions in this R process.
+# Successful matches and confirmed not-found answers are memoized until reset.
+# Unanswered requests are excluded from the memo and can be retried.
 # Title: Name matching against COL XR through the GBIF API
 # Author: Rogerio Nunes Oliveira
 # Date: 2026-10-22
