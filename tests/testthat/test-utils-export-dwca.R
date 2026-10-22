@@ -139,7 +139,10 @@ testthat::test_that("build_eml_xml emits required EML fields with defaults", {
 
     xml_str <- build_eml_xml(df)
     doc <- xml2::read_xml(xml_str)
-    ns <- c(eml = "https://eml.ecoinformatics.org/eml-2.1.1")
+    testthat::expect_identical(
+        xml2::xml_ns(doc)[["eml"]],
+        "https://eml.ecoinformatics.org/eml-2.2.0"
+    )
 
     testthat::expect_length(xml2::xml_find_all(doc, "//title"), 1L)
     testthat::expect_length(xml2::xml_find_all(doc, "//creator"), 1L)
@@ -149,6 +152,11 @@ testthat::test_that("build_eml_xml emits required EML fields with defaults", {
     testthat::expect_length(xml2::xml_find_all(doc, "//contact"), 1L)
     testthat::expect_length(xml2::xml_find_all(doc, "//geographicCoverage"), 1L)
     testthat::expect_length(xml2::xml_find_all(doc, "//temporalCoverage"), 1L)
+    # contact must precede methods (EML 2.2.0 dataset sequence).
+    kids <- xml2::xml_name(xml2::xml_children(
+        xml2::xml_find_first(doc, "//dataset")
+    ))
+    testthat::expect_lt(which(kids == "contact"), which(kids == "methods"))
     # Title default includes today's date.
     title_text <- xml2::xml_text(xml2::xml_find_first(doc, "//title"))
     testthat::expect_true(grepl("^Saira export ", title_text))
@@ -248,7 +256,7 @@ testthat::test_that("build_eml_xml emits a sensitivity access block when masking
     note <- xml2::xml_text(ai)
     testthat::expect_true(grepl("7", note))
     testthat::expect_true(grepl("2028-06-10", note))
-    # additionalInfo must precede intellectualRights (EML 2.1.1 sequence).
+    # additionalInfo must precede intellectualRights (EML 2.2.0 sequence).
     kids <- xml2::xml_name(xml2::xml_children(
         xml2::xml_find_first(doc, "//dataset")
     ))

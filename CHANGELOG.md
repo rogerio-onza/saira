@@ -93,6 +93,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **export:** Write the dataset metadata as EML 2.2.0, valid against the EML and GBIF profile schemas
 - **mapping:** Map a column picked again after a Reset, not only show it on the card
 - **mapping:** Draw the cards of a new upload without the columns mapped on the previous sheet
 - **generalization:** Keep the protection of a species after its name is corrected in the Names tab, ADR-164

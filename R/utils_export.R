@@ -1619,7 +1619,7 @@ build_intellectual_rights_xml <- function(license_value) {
     paste0("<intellectualRights>", para, "</intellectualRights>")
 }
 
-#' Build an EML 2.1.1 dataset descriptor for a Saira export
+#' Build an EML 2.2.0 dataset descriptor for a Saira export
 #'
 #' Produces a minimal-but-valid EML document with required GBIF/IPT fields:
 #' title, creator, contact, pubDate, abstract, intellectualRights, and
@@ -1668,10 +1668,10 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
 
     doc <- xml2::xml_new_root(
         "eml:eml",
-        "xmlns:eml" = "https://eml.ecoinformatics.org/eml-2.1.1",
+        "xmlns:eml" = "https://eml.ecoinformatics.org/eml-2.2.0",
         "xmlns:dc"  = "http://purl.org/dc/terms/",
         "xmlns:xsi" = "http://www.w3.org/2001/XMLSchema-instance",
-        "xsi:schemaLocation" = "https://eml.ecoinformatics.org/eml-2.1.1 https://eml.ecoinformatics.org/eml-2.1.1/eml.xsd",
+        "xsi:schemaLocation" = "https://eml.ecoinformatics.org/eml-2.2.0 https://eml.ecoinformatics.org/eml-2.2.0/eml.xsd",
         packageId = pkg_id,
         system = "saira",
         scope = "system",
@@ -1700,7 +1700,7 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
 
     # Access constraints for generalized sensitive records (Chapman 2020 sec.
     # 5.1). Emitted only when the export actually masked rows. Placed before
-    # intellectualRights to honour the EML 2.1.1 resource sequence.
+    # intellectualRights to honour the EML 2.2.0 resource sequence.
     sens <- metadata$sensitivity
     if (is.list(sens) && !is.null(sens$n_masked) && sens$n_masked > 0L) {
         review <- sens$review_date %||% format(Sys.Date() + 730, "%Y-%m-%d")
@@ -1743,15 +1743,8 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
         }
     }
 
-    methods <- xml2::xml_add_child(ds, "methods")
-    ms <- xml2::xml_add_child(methods, "methodStep")
-    desc <- xml2::xml_add_child(ms, "description")
-    xml2::xml_add_child(desc, "para", sprintf(
-        "Dataset prepared with Saira v%s (https://github.com/rogerio-onza/saira). Fields validated and mapped to Darwin Core; coordinates checked with CoordinateCleaner; taxonomy reconciled against the Catalogue of Life (COL XR) through the GBIF API.",
-        utils::packageVersion("saira")
-    ))
-
-    # Contact mirrors the creator block.
+    # Contact mirrors the creator block. The dataset sequence puts contact
+    # before methods.
     ct <- xml2::xml_add_child(ds, "contact")
     ct_ind <- xml2::xml_add_child(ct, "individualName")
     if (nzchar(given)) xml2::xml_add_child(ct_ind, "givenName", given)
@@ -1762,6 +1755,14 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
     if (nzchar(creator$email)) {
         xml2::xml_add_child(ct, "electronicMailAddress", creator$email)
     }
+
+    methods <- xml2::xml_add_child(ds, "methods")
+    ms <- xml2::xml_add_child(methods, "methodStep")
+    desc <- xml2::xml_add_child(ms, "description")
+    xml2::xml_add_child(desc, "para", sprintf(
+        "Dataset prepared with Saira v%s (https://github.com/rogerio-onza/saira). Fields validated and mapped to Darwin Core; coordinates checked with CoordinateCleaner; taxonomy reconciled against the Catalogue of Life (COL XR) through the GBIF API.",
+        utils::packageVersion("saira")
+    ))
 
     as.character(doc)
 }

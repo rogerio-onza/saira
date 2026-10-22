@@ -2,7 +2,7 @@
 % Please edit documentation in R/utils_export.R
 \name{build_eml_xml}
 \alias{build_eml_xml}
-\title{Build an EML 2.1.1 dataset descriptor for a Saira export}
+\title{Build an EML 2.2.0 dataset descriptor for a Saira export}
 \usage{
 build_eml_xml(df, metadata = list(), package_id = NULL)
 }

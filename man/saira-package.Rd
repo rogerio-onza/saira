@@ -6,7 +6,7 @@
 \alias{saira-package}
 \title{saira: Biodiversity Data Standardization to Darwin Core}
 \description{
-Shiny application for standardizing biodiversity datasets to the Darwin Core standard. Provides bilingual interface (PT-BR/EN-US) with tools for data validation, column mapping, and taxonomic verification. Designed for use with SiBBr (Sistema de Informação sobre a Biodiversidade Brasileira).
+Shiny application for standardizing biodiversity datasets to the Darwin Core standard. Provides a trilingual interface (PT-BR/EN-US/ES) with tools for data validation, column mapping, and taxonomic verification. Designed for use with SiBBr (Sistema de Informação sobre a Biodiversidade Brasileira).
 }
 \seealso{
 Useful links:
