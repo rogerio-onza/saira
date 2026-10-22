@@ -361,6 +361,20 @@ testthat::test_that("read_biodiversity_xlsx keeps a time-only cell as a time (AU
     testthat::expect_true(is_dwc_time_value(df$eventTime))
 })
 
+# The first sheet starts at B3 and uses a non-default worksheet filename.
+# Time and date formats share serial zero, so the format must decide.
+testthat::test_that("1904 Excel times keep their time while real origin dates stay dates", {
+    path <- testthat::test_path("fixtures", "time-only-1904.xlsx")
+    df <- read_biodiversity_xlsx(path)
+    testthat::expect_identical(df$eventTime, c("12:30:00", "06:00:00"))
+    testthat::expect_identical(df$customTime, df$eventTime)
+    testthat::expect_identical(df$eventDate, c("1904-01-01", "2024-03-22"))
+    testthat::expect_identical(df$dateTime, c("1904-01-01T12:30:00", "2024-03-22T06:00:00"))
+    testthat::expect_identical(df$midnight, c("00:00:00", "12:00:00"))
+    no_header <- read_biodiversity_xlsx(path, header = FALSE)
+    testthat::expect_identical(no_header$col_1, c("eventTime", df$eventTime))
+})
+
 testthat::test_that("read_biodiversity_csv finds the delimiter of a header with a line break (AUD-14)", {
     path <- tempfile(fileext = ".csv")
     on.exit(unlink(path), add = TRUE)

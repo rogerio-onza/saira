@@ -84,6 +84,18 @@ sanitize_map_selection <- function(term, value) {
 guide_source_columns <- function(src, available_columns = NULL) {
     src <- trimws(src)
     if (src %in% available_columns) return(src)
+    # A header can contain ' + '. Match the longest literal header first,
+    # also inside a concatenation of columns (ADR-171).
+    columns <- unique(trimws(available_columns))
+    columns <- columns[!is.na(columns) & nzchar(columns)]
+    columns <- columns[order(nchar(columns), decreasing = TRUE)]
+    for (column in columns) {
+        prefix <- paste0(column, " + ")
+        if (startsWith(src, prefix)) {
+            rest <- substring(src, nchar(prefix) + 1L)
+            return(c(column, guide_source_columns(rest, available_columns)))
+        }
+    }
     cols <- trimws(strsplit(src, "\\s*\\+\\s*", perl = TRUE)[[1]])
     cols[nzchar(cols)]
 }

@@ -24,3 +24,8 @@ testthat::test_that("app_ui paints the stored theme before the stylesheets load"
     testthat::expect_lt(boot, css)
     testthat::expect_match(head_html, "www/theme-switch.js?v=", fixed = TRUE)
 })
+
+testthat::test_that("the initial HTTP document declares Portuguese before JavaScript runs", {
+    page <- shiny:::renderPage(app_ui())
+    testthat::expect_match(page, '<html lang="pt-BR">', fixed = TRUE)
+})

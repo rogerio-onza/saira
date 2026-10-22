@@ -348,8 +348,68 @@ read_biodiversity_xlsx <- function(file_path, header = TRUE) {
     df <- as.data.frame(lapply(sheet, function(col) {
         vapply(col, xlsx_cell_to_text, character(1))
     }), stringsAsFactors = FALSE, check.names = FALSE)
+    # In a 1904 workbook, serial zero is a real date and also the base of a
+    # time-only value. Only the cell format tells them apart.
+    has_mac_origin <- any(vapply(sheet, function(col) any(vapply(col, function(x) {
+        inherits(x, "POSIXt") && !is.na(x) && format(x, "%Y-%m-%d", tz = "UTC") == "1904-01-01"
+    }, logical(1))), logical(1)))
+    if (has_mac_origin) {
+        cells <- xlsx_1904_time_cells(file_path)
+        for (i in seq_len(nrow(cells))) {
+            row <- cells$row[i] - as.integer(header)
+            col <- cells$col[i]
+            if (row < 1L || row > nrow(df) || col < 1L || col > ncol(df)) next
+            value <- sheet[[col]][[row]]
+            if (inherits(value, "POSIXt") && !is.na(value)) {
+                df[[col]][row] <- format(value, "%H:%M:%S", tz = "UTC")
+            }
+        }
+    }
     names(df) <- if (header) names(sheet) else paste0("col_", seq_len(ncol(sheet)))
     finish_upload_frame(df)
+}
+
+# Time-only cells, as positions from the first populated row and column that
+# readxl reads. The header row counts as row 1.
+xlsx_1904_time_cells <- function(file_path) {
+    read_part <- function(part) {
+        con <- unz(file_path, part, open = "rb")
+        on.exit(close(con), add = TRUE)
+        xml2::xml_ns_strip(xml2::read_xml(con))
+    }
+    empty <- data.frame(row = integer(0), col = integer(0))
+    workbook <- read_part("xl/workbook.xml")
+    if (!xml2::xml_attr(xml2::xml_find_first(workbook, ".//workbookPr"), "date1904") %in% c("1", "true")) return(empty)
+    styles <- read_part("xl/styles.xml")
+    custom <- xml2::xml_find_all(styles, ".//numFmts/numFmt")
+    formats <- tolower(xml2::xml_attr(custom, "formatCode"))
+    formats <- gsub('"[^"]*"|\\\\.', "", formats)
+    formats <- gsub("\\[([hms]+)\\]", "\\1", formats)
+    formats <- gsub("\\[[^]]*\\]", "", formats)
+    time_ids <- c(18:21, 45:47, as.integer(xml2::xml_attr(custom, "numFmtId"))[
+        grepl("[hs]", formats) & !grepl("[yd]", formats)
+    ])
+    xf <- xml2::xml_find_all(styles, ".//cellXfs/xf")
+    time_styles <- which(as.integer(xml2::xml_attr(xf, "numFmtId")) %in% time_ids) - 1L
+    if (!length(time_styles)) return(empty)
+
+    # The workbook relationships give the sheet order, not the sheet filename.
+    first <- xml2::xml_find_first(workbook, ".//sheets/sheet")
+    rels <- xml2::xml_find_all(read_part("xl/_rels/workbook.xml.rels"), ".//Relationship")
+    target <- xml2::xml_attr(rels, "Target")[match(xml2::xml_attr(first, "id"), xml2::xml_attr(rels, "Id"))]
+    part <- if (startsWith(target, "/")) substring(target, 2L) else paste0("xl/", target)
+    cells <- xml2::xml_find_all(read_part(part), ".//sheetData/row/c[v or is]")
+    if (!length(cells)) return(empty)
+    refs <- xml2::xml_attr(cells, "r")
+    rows <- as.integer(sub("^[A-Z]+", "", refs))
+    cols <- vapply(sub("[0-9]+$", "", refs), function(x) {
+        digits <- utf8ToInt(x) - utf8ToInt("A") + 1L
+        sum(digits * 26 ^ rev(seq_along(digits) - 1L))
+    }, numeric(1))
+    serial <- suppressWarnings(as.numeric(xml2::xml_text(xml2::xml_find_first(cells, "./v"))))
+    keep <- which(xml2::xml_attr(cells, "s") %in% as.character(time_styles) &
+                  !is.na(serial) & serial >= 0 & serial < 1)
+    data.frame(row = rows[keep] - min(rows) + 1L, col = as.integer(cols[keep] - min(cols) + 1L))
 }
 
 xlsx_cell_to_text <- function(x) {

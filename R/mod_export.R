@@ -171,13 +171,18 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
 
         # One button per pending item, each opening the step that fixes it.
         navigate_on <- function(input_id, tab, term = NULL) {
+            force(input_id)
             shiny::observeEvent(input[[input_id]], {
                 if (is.function(on_navigate)) on_navigate(tab, term = term)
             }, ignoreInit = TRUE)
         }
         navigate_on("go_fix_justification", "sensitive_coords")
-        navigate_on("go_preview", "preview")
-        navigate_on("go_coords", "validate_coords")
+        for (id in c("go_preview_sci_blank", "go_preview_coord_invalid", "go_preview_date_range",
+                     "go_preview_date_unparsed", "go_preview_formula", "go_preview_problems")) {
+            navigate_on(id, "preview")
+        }
+        navigate_on("go_coords_stale", "validate_coords")
+        navigate_on("go_coords_flags", "validate_coords")
         navigate_on("go_map_unmapped", "mapping")
         navigate_on("go_map_establishment", "mapping", term = "establishmentMeans")
         navigate_on("go_map_occid", "mapping", term = "occurrenceID")
@@ -293,13 +298,13 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 add(pending_row("block", shiny::tagList(
                     sprintf(tr("export_blocked_sci_blank", lang), length(s$sci_blank_rows)), " ",
                     shiny::tags$code(format_row_list(s$sci_blank_rows))
-                ), "go_preview", tr("export_action_preview", lang)))
+                ), "go_preview_sci_blank", tr("export_action_preview", lang)))
             }
             if (length(s$coord_invalid_rows) > 0L) {
                 add(pending_row("block", shiny::tagList(
                     sprintf(tr("export_blocked_coord_invalid", lang), length(s$coord_invalid_rows)), " ",
                     shiny::tags$code(format_row_list(s$coord_invalid_rows))
-                ), "go_preview", tr("export_action_preview", lang)))
+                ), "go_preview_coord_invalid", tr("export_action_preview", lang)))
             }
             if (isTRUE(s$justification_pending)) {
                 add(pending_row("block", tr("export_blocked_justification", lang),
@@ -318,7 +323,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                                 di$sample$row, di$sample$column, di$sample$value),
                         collapse = ", "
                     ))
-                ), "go_preview", tr("export_action_preview", lang)))
+                ), "go_preview_date_range", tr("export_action_preview", lang)))
             }
             du <- s$date_unparsed
             if (is.list(du) && isTRUE(du$count > 0L)) {
@@ -330,7 +335,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                                 du$sample$row, du$sample$column, du$sample$value),
                         collapse = ", "
                     ))
-                ), "go_preview", tr("export_action_preview", lang)))
+                ), "go_preview_date_unparsed", tr("export_action_preview", lang)))
             }
             fc <- s$formula_cells
             if (is.list(fc) && isTRUE(fc$count > 0L)) {
@@ -342,7 +347,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                                 fc$sample$row, fc$sample$column, fc$sample$value),
                         collapse = ", "
                     ))
-                ), "go_preview", tr("export_action_preview", lang)))
+                ), "go_preview_formula", tr("export_action_preview", lang)))
             }
             # The Preview shows only mapped terms, so these go back to Mapping.
             fu <- s$formula_cells_unmapped
@@ -359,7 +364,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }
             if (isTRUE(s$corrections$coord_fixes_stale > 0L)) {
                 add(pending_row("warn", sprintf(tr("export_coord_fixes_stale", lang), s$corrections$coord_fixes_stale),
-                                "go_coords", tr("export_action_coords", lang)))
+                                "go_coords_stale", tr("export_action_coords", lang)))
             }
             cf <- s$coord_flags
             if (is.list(cf) && isTRUE(cf$count > 0L)) {
@@ -367,13 +372,13 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     shiny::strong(tr("export_coord_flags_title", lang)), " ",
                     sprintf(tr("export_coord_flags_body", lang), cf$count), " ",
                     shiny::tags$code(format_row_list(cf$rows))
-                ), "go_coords", tr("export_action_coords", lang)))
+                ), "go_coords_flags", tr("export_action_coords", lang)))
             }
             if (isTRUE(s$preview_problems_n > 0L)) {
                 add(pending_row("warn", shiny::tagList(
                     shiny::strong(tr("export_preview_open_title", lang)), " ",
                     sprintf(tr("export_preview_open_body", lang), s$preview_problems_n)
-                ), "go_preview", tr("export_action_preview", lang)))
+                ), "go_preview_problems", tr("export_action_preview", lang)))
             }
             # A value outside the TDWG vocabulary leaves its row blank rather
             # than travelling to GBIF as free text.
