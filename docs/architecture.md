@@ -42,8 +42,8 @@ saira/
 │   ├── mod_mapping*.R        # Mapeamento: cards, loading, assistentes basisOfRecord e establishmentMeans
 │   ├── mod_preview.R         # Pré-visualização: tabela e modo Problemas com correção de célula
 │   ├── mod_validate_names*.R # Nomes
-│   ├── mod_validate_coords.R # Coordenadas
-│   ├── mod_sensitive_coords.R  # Generalização de espécies sensíveis
+│   ├── mod_validate_coords*.R # Coordenadas: controlador e apresentacao
+│   ├── mod_sensitive_coords*.R # Generalizacao: controlador e apresentacao
 │   ├── mod_export.R          # Exportação: resumo, alertas e bloqueios
 │   ├── mod_export_download.R # Exportação: download do DwC-A e do arquivo privado
 │   ├── mod_wiki.R, mod_help.R
@@ -61,14 +61,14 @@ saira/
 | Área | Arquivos `R/utils_*.R` |
 |---|---|
 | Leitura | `utils_io.R`, `utils_camtrap.R` |
-| DwC e vocabulário | `utils_dwc.R`, `utils_vocabulary.R` |
-| Mapeamento (Rostrum) | `utils_mapping.R`, `utils_rostrum_engine.R`, `utils_rostrum_db.R`, `utils_rostrum_templates.R`, `utils_rostrum_contracts.R`, `utils_oceanic_islands.R` |
+| DwC e vocabulário | `utils_dwc.R`, `utils_dwc_columns.R`, `utils_vocabulary.R` |
+| Mapeamento (Rostrum) | `utils_mapping.R`, `utils_mapping_commands.R`, `utils_rostrum_*.R`, `utils_dynamic_properties.R`, `utils_identifiers.R`, `utils_oceanic_islands.R` |
 | Pré-visualização | `utils_preview.R`, `utils_preview_fix.R` |
-| Nomes | `utils_taxadb.R`, `utils_colxr.R`, `utils_brproviders.R`, `utils_threat_status.R`, `utils_invasive.R`, `utils_species_photos.R` |
-| Coordenadas | `utils_coords.R`, `utils_coords_run.R`, `utils_coords_utm.R` |
-| Generalização | `utils_sensitive.R` |
-| Exportação | `utils_export.R`, `utils_export_summary.R` |
-| Comum | `utils_common.R`, `utils_i18n.R`, `utils_icons.R`, `utils_credits.R`, `utils_version.R` |
+| Nomes | `utils_names.R`, `utils_names_reviews.R`, `utils_names_providers.R`, `utils_taxadb.R`, `utils_colxr.R`, `utils_brproviders*.R`, `utils_threat_status.R`, `utils_invasive.R`, `utils_species_photos.R` |
+| Coordenadas | `utils_coords.R`, `utils_coords_run.R`, `utils_coords_utm.R`, `utils_uncertainty.R` |
+| Generalização | `utils_sensitive.R`, `utils_generalization.R` |
+| Exportação | `utils_publication.R`, `utils_export.R`, `utils_export_summary.R`, `utils_export_metadata.R`, `utils_export_writers.R` |
+| Comum | `utils_common.R`, `utils_dates.R`, `utils_module_results.R`, `utils_module_assets.R`, `utils_i18n.R`, `utils_icons.R`, `utils_credits.R`, `utils_version.R` |
 
 O motor de mapeamento está descrito em `docs/rostrum_engine.md`.
 
@@ -96,12 +96,15 @@ graph LR
   `processed_data_r` (quadro completo), `preview_data_r` (100 primeiras linhas),
   `validation_gate_r`, `validation_gate_coords_r`, `map_values_r`,
   `custom_values_r`, `reset_signal_r` e outros.
-- A Pré-visualização aplica as correções de célula sobre o quadro mapeado.
-  `attr(preview_r, "edited_data_r")` alimenta todas as abas seguintes.
-- Nomes e Coordenadas são validações que o usuário dispara por botão. As
-  decisões saem como atributos do retorno: `review_export_payload`,
-  `sensitivity_payload`, `conservation_payload`, `coords_correction_payload`,
-  `country_fill_payload`.
+- Preview, Nomes e Coordenadas oferecem `return_contract = "list"` (ADR-170).
+  O app usa campos nomeados: Preview (`report_r`, `edited_data_r`, `problems_n_r`),
+  Nomes (`report_r`, `reviews_r`, `sensitivity_r`, `conservation_r`), Coordenadas
+  (`report_r`, `filtered_data_r`, `active_filter_r`, `corrections_r`, `country_r`).
+  O retorno publico padrao continua sendo uma reactive com os atributos antigos.
+  `new_module_result()` valida os campos reativos na montagem.
+- A Pre-visualizacao aplica correcoes de celula ao quadro mapeado;
+  `preview_r$edited_data_r` alimenta as abas seguintes. Nomes e Coordenadas
+  executam validacoes somente quando o usuario dispara a rodada.
 - A Generalização lê as marcações e correções acima e devolve a decisão de
   publicação. A Exportação aplica todos os payloads no arquivo.
 - `reset_signal_r` muda num novo upload ou num reset confirmado do Mapeamento.
@@ -133,9 +136,13 @@ graph LR
 ## 5. Exportação
 
 O download fica na aba Exportação (ADR-103), não na Pré-visualização.
-`mod_export_download.R` monta o arquivo a partir de `edited_data` e aplica os
-payloads de nome, coordenada, país, generalização e status de conservação. O
-bloqueio do download lê o mesmo arquivo que o download escreve (ADR-165).
+`mod_export_download.R` controla confirmacao, progresso e efeitos de arquivo.
+`prepare_effective_records()` aplica nome, rank, coordenadas e pais;
+`assess_publication()` avalia o mesmo estado aceito no resumo e no handler.
+`prepare_publication_records()` mascara os pontos; o enriquecimento de conservacao
+continua explicito. A normalizacao final e as colunas nao mapeadas antecedem a
+checagem final de formulas. `publication_metadata()` recebe os valores preparados,
+e `build_dwca_bundle()` escreve o trio DwC-A em um unico caminho.
 
 O ZIP `<slug>-dwc-archive.zip` contém (nomes em `export_bundle_filenames()`):
 
@@ -243,3 +250,26 @@ pkgload::load_all(); run_app()
 remotes::install_github("rogerio-onza/saira")
 saira::run_app()
 ```
+
+
+## 9. Fronteiras B-H (ADR-170)
+
+`mod_mapping_import.R` aplica planos pelos comandos de
+`utils_mapping_commands.R`; os modelos dos dois assistentes possuem rascunhos,
+paginacao e respostas aceitas separados do estado da grade. As apresentacoes
+`mod_*_presentation.R` recebem reactives de leitura e callbacks; controladores
+possuem execucao e decisoes. Os assets `module-*.js` sao carregados por uma unica
+htmlDependency, com configuracao JSON por instancia. O pequeno script de tema
+continua no head antes do primeiro frame.
+
+`utils_names_providers.R` define poll/load/query para a rodada. A normalizacao de
+respostas esta em `utils_brproviders_adapters.R`, o storage em
+`utils_brproviders_storage.R`, e download/atualizacao em `utils_brproviders.R`.
+`utils_rostrum_migrations.R`, `utils_rostrum_aliases.R` e
+`utils_rostrum_template_contracts.R` separam responsabilidades mantendo as mesmas
+transacoes e interfaces. Caches de dados publicos sao do processo R; respostas
+sem retorno da rede nao entram no memo COL XR e podem ser tentadas novamente.
+
+Snapshots invalidam apenas correcoes/preenchimentos cujo ponto de origem mudou;
+idioma e filtros nao alteram validade. Payloads sem snapshot e APIs legadas
+continuam aceitos. Ver ADR-170 em `DECISIONS.md`.

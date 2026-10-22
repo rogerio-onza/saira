@@ -400,8 +400,6 @@ coords_cc_sea_run <- function(x, ref = NULL, scale = NULL, timeout = NULL, crop_
     )
 }
 
-
-
 resolve_country_aliases_path <- function() {
     candidates <- c(
         system.file("extdata", "country_aliases.rds", package = "saira"),
@@ -1567,7 +1565,7 @@ drop_stale_coord_corrections <- function(payload, df) {
     if (!is.data.frame(corr)) return(payload)
     stale <- stale_coord_rows(corr, df)
     payload$corrections <- corr[!stale, setdiff(names(corr), coord_source_cols), drop = FALSE]
-    payload$stale <- sum(stale)
+    payload$stale <- as.integer(payload$stale %||% 0L) + sum(stale)
     payload
 }
 
@@ -2142,18 +2140,7 @@ coords_map_view <- function(lat, lon) {
 #' @noRd
 leaflet_fill_world <- function(map_obj) {
     map_obj <- leaflet::setMaxBounds(map_obj, -180, -85, 180, 85)
-    htmlwidgets::onRender(map_obj, "
-        function(el, x) {
-            var map = this;
-            map.options.maxBoundsViscosity = 1;
-            function fillWorld() {
-                var width = map.getSize().x;
-                if (width > 0) map.setMinZoom(Math.max(1, Math.ceil(Math.log2(width / 256))));
-            }
-            fillWorld();
-            map.on('resize', fillWorld);
-        }
-    ")
+    module_behavior_on_render(map_obj, "leafletFillWorld")
 }
 
 build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = NULL, popup_labels = NULL) {

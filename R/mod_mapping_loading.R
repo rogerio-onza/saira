@@ -73,124 +73,17 @@ show_mapping_loading_modal <- function(
     if (!nzchar(status_prefix)) {
         status_prefix <- tr("loading", lang_r())
     }
-    rotate_script <- sprintf(
-        "(function () {
-                    var iconEl = document.getElementById('%s');
-                    var textEl = document.getElementById('%s');
-                    var rowEl = document.getElementById('%s');
-                    var poolRoot = document.getElementById('%s');
-                    var progressEl = document.getElementById('%s');
-                    var statusEl = document.getElementById('%s');
-                    if (!iconEl || !textEl || !rowEl || !poolRoot) { return; }
-
-                    var items = poolRoot.querySelectorAll('.automap-loading-phrase-item');
-                    if (!items.length) { return; }
-
-                    var timerKey = '%s';
-                    var timeoutKey = timerKey + '_fade';
-                    var progressKey = timerKey + '_progress';
-                    var fadeMs = 280;
-                    var stepMs = 2500;
-                    var modalEl = poolRoot.closest('.modal');
-                    var statusPrefix = %s;
-                    var progressValue = %d;
-
-                    var applyProgress = function (value) {
-                        var pct = Math.max(0, Math.min(100, Math.round(value)));
-                        if (progressEl) {
-                            progressEl.style.width = pct + '%%';
-                        }
-                        if (statusEl) {
-                            statusEl.textContent = statusPrefix ? (statusPrefix + ' ' + pct + '%%') : (pct + '%%');
-                        }
-                    };
-
-                    if (modalEl) {
-                        modalEl.classList.add('automap-loading-host');
-                    }
-                    if (document.body) {
-                        document.body.classList.add('automap-loading-open');
-                    }
-
-                    if (window[timerKey]) {
-                        window.clearInterval(window[timerKey]);
-                        window[timerKey] = null;
-                    }
-                    if (window[timeoutKey]) {
-                        window.clearTimeout(window[timeoutKey]);
-                        window[timeoutKey] = null;
-                    }
-                    if (window[progressKey]) {
-                        window.clearInterval(window[progressKey]);
-                        window[progressKey] = null;
-                    }
-
-                    var applyPhrase = function (index) {
-                        var item = items[index];
-                        if (!item) { return; }
-                        var nextIcon = item.getAttribute('data-icon') || 'gear-six';
-                        iconEl.className = 'ph ph-' + nextIcon + ' automap-loading-phrase-icon';
-                        textEl.textContent = item.textContent || '';
-                    };
-
-                    var idx = 0;
-                    applyPhrase(idx);
-                    applyProgress(progressValue);
-
-                    window[timerKey] = window.setInterval(function () {
-                        rowEl.classList.add('is-fading');
-                        window[timeoutKey] = window.setTimeout(function () {
-                            idx = (idx + 1) %% items.length;
-                            applyPhrase(idx);
-                            rowEl.classList.remove('is-fading');
-                            window[timeoutKey] = null;
-                        }, fadeMs);
-                    }, stepMs);
-
-                    window[progressKey] = window.setInterval(function () {
-                        if (progressValue < 92) {
-                            progressValue += 1;
-                            applyProgress(progressValue);
-                        }
-                    }, 240);
-
-                    var clearTimer = function () {
-                        if (window[timerKey]) {
-                            window.clearInterval(window[timerKey]);
-                            window[timerKey] = null;
-                        }
-                        if (window[timeoutKey]) {
-                            window.clearTimeout(window[timeoutKey]);
-                            window[timeoutKey] = null;
-                        }
-                        if (window[progressKey]) {
-                            window.clearInterval(window[progressKey]);
-                            window[progressKey] = null;
-                        }
-                        if (modalEl) {
-                            modalEl.classList.remove('automap-loading-host');
-                        }
-                        if (document.body) {
-                            document.body.classList.remove('automap-loading-open');
-                        }
-                    };
-
-                    if (modalEl) {
-                        modalEl.addEventListener('hidden.bs.modal', clearTimer, { once: true });
-                    } else {
-                        document.addEventListener('hidden.bs.modal', clearTimer, { once: true });
-                    }
-                })();",
-        ns("automap_loading_phrase_icon"),
-        ns("automap_loading_phrase_text"),
-        ns("automap_loading_phrase_row"),
-        ns("automap_loading_phrase_pool"),
-        ns("automap_loading_progress_bar"),
-        ns("automap_loading_status_text"),
-        ns("automap_loading_phrase_timer"),
-        jsonlite::toJSON(status_prefix, auto_unbox = TRUE),
-        rv$automap_progress
-    )
+    rotate_script <- module_behavior_call("mappingLoadingModal", list(
+        iconId = ns("automap_loading_phrase_icon"),
+        textId = ns("automap_loading_phrase_text"),
+        rowId = ns("automap_loading_phrase_row"),
+        poolId = ns("automap_loading_phrase_pool"),
+        progressId = ns("automap_loading_progress_bar"),
+        statusId = ns("automap_loading_status_text"),
+        timerKey = ns("automap_loading_phrase_timer"),
+        statusPrefix = status_prefix,
+        progress = rv$automap_progress
+    ))
     shiny::showModal(shiny::modalDialog(
         shiny::div(
             class = "automap-loading-modal",

@@ -258,7 +258,6 @@ degree_of_establishment_vocab_catalog <- list(
     )
 )
 
-
 #' @noRd
 resolve_dwc_full_catalog_path <- function() {
     candidates <- c(

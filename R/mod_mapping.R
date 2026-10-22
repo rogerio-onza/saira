@@ -82,287 +82,7 @@ mod_mapping_ui <- function(id) {
             )
         )
     ),
-    shiny::tags$script(shiny::HTML(
-        "(function () {
-          if (window.__sairaMappingScrollRegistered) { return; }
-          window.__sairaMappingScrollRegistered = true;
-          // Relevant filter: open or close a class's compact rows client-side.
-          // The rows are bound inputs already, so nothing is rebuilt (ADR-137).
-          // The jQuery events make Shiny recheck which outputs are hidden.
-          function setMoreGroupOpen(group, open) {
-            group.classList.toggle('is-open', open);
-            var btn = group.querySelector('.mapping-more');
-            if (btn) { btn.setAttribute('aria-expanded', open ? 'true' : 'false'); }
-            window.jQuery(group).trigger(open ? 'shown' : 'hidden');
-          }
-          // Relevant / All / Mapped / Pending in the browser (ADR-157). The
-          // grid holds every card, so a switch rebuilds nothing. The rules
-          // follow keep_by_mapped_filter() and collapse_mapping_term(): the
-          // server keeps the state classes current (saira-toggle-field-mapped)
-          // and marks the terms that can collapse (data-collapse).
-          function keepByFilter(mode, el) {
-            if (mode === 'mapped') { return el.classList.contains('field-mapped'); }
-            if (mode === 'pending') {
-              return el.classList.contains('field-required-missing') ||
-                el.classList.contains('field-attention');
-            }
-            return true;
-          }
-          function cardTerm(card, prefix) {
-            return card.id.slice((prefix + 'fieldcard_').length);
-          }
-          function collapseByFilter(mode, card, prefix) {
-            if (mode !== 'relevant' || card.dataset.collapse !== 'true' ||
-                !card.classList.contains('field-unmapped')) { return false; }
-            var fixed = document.getElementById(prefix + 'usecustom_' + cardTerm(card, prefix));
-            return !(fixed && fixed.checked);
-          }
-          // Write only a changed value: each write is a DOM mutation.
-          function setHidden(el, hide) {
-            if (el.hidden !== hide) { el.hidden = hide; }
-          }
-          function setText(el, text) {
-            if (el.textContent !== text) { el.textContent = text; }
-          }
-          // Classes only, no card moves: a moved card connects its tooltips
-          // again, and the browser styles and lays it out from zero. The CSS
-          // order puts the collapsed cards after the line.
-          function applyMappingFilter(prefix) {
-            var picked = document.querySelector('input[name=\"' + prefix + 'mapped_filter\"]:checked');
-            var out = document.getElementById(prefix + 'mapping_ui');
-            if (!picked || !out) { return; }
-            var mode = picked.value;
-            out.querySelectorAll('.field-row').forEach(function (row) {
-              setHidden(row, !keepByFilter(mode, row));
-            });
-            out.querySelectorAll('.mapping-card-grid').forEach(function (grid) {
-              var group = grid.querySelector(':scope > .mapping-more-group');
-              if (!group) { return; }
-              var terms = [];
-              grid.querySelectorAll(':scope > .field-card').forEach(function (card) {
-                setHidden(card, !keepByFilter(mode, card));
-                var collapse = collapseByFilter(mode, card, prefix);
-                card.classList.toggle('field-card-compact', collapse);
-                card.classList.toggle('field-card-collapsed', collapse);
-                if (collapse) { terms.push(cardTerm(card, prefix)); }
-              });
-              setMoreGroupText(group, terms);
-            });
-          }
-          function setMoreGroupText(group, terms) {
-            setHidden(group, terms.length === 0);
-            setText(group.querySelector('.mapping-more-label'), terms.length + ' ' +
-              (terms.length === 1 ? group.dataset.one : group.dataset.other));
-            setText(group.querySelector('.mapping-more-terms'), terms.join(', '));
-          }
-          // jQuery, not addEventListener: a server update of the radio
-          // triggers a jQuery change event, which a native listener misses.
-          window.jQuery(document).on('change', '.shiny-input-radiogroup', function () {
-            var m = /^(.*-)mapped_filter$/.exec(this.id || '');
-            if (m) { applyMappingFilter(m[1]); }
-          });
-          // A fixed value turned on by a guide import does not change the
-          // filter, so the row stayed collapsed with the value out of sight.
-          // Only that row opens: a row that got a column stays a row (ADR-137).
-          window.jQuery(document).on('change', 'input[type=\"checkbox\"]', function () {
-            var m = /^(.*-)usecustom_(.*)$/.exec(this.id || '');
-            if (!m || !this.checked) { return; }
-            var card = document.getElementById(m[1] + 'fieldcard_' + m[2]);
-            if (!card || !card.classList.contains('field-card-collapsed')) { return; }
-            card.classList.remove('field-card-compact', 'field-card-collapsed');
-            var grid = card.parentElement;
-            var group = grid.querySelector(':scope > .mapping-more-group');
-            if (!group) { return; }
-            var terms = [];
-            grid.querySelectorAll(':scope > .field-card.field-card-collapsed').forEach(function (c) {
-              terms.push(cardTerm(c, m[1]));
-            });
-            setMoreGroupText(group, terms);
-          });
-          // A rebuild can start before the server gets a filter switch, so
-          // the new grid gets the filter on screen.
-          window.jQuery(document).on('shiny:value', function (ev) {
-            var m = /^(.*-)mapping_ui$/.exec(ev.target.id || '');
-            if (m) { setTimeout(function () { applyMappingFilter(m[1]); }, 0); }
-          });
-          // A card or row that the filter hides cannot scroll into view.
-          // Relevant keeps every card, so switch to it.
-          function revealFiltered(el) {
-            var m = /^(.*-)field(card|row)_/.exec(el.id);
-            var group = m && document.getElementById(m[1] + 'mapped_filter');
-            var relevant = group && group.querySelector('input[value=\"relevant\"]');
-            if (!relevant) { return; }
-            relevant.checked = true;
-            window.jQuery(group).trigger('change');
-          }
-          document.addEventListener('click', function (ev) {
-            var more = ev.target.closest('.mapping-more');
-            if (more) {
-              var group = more.closest('.mapping-more-group');
-              setMoreGroupOpen(group, !group.classList.contains('is-open'));
-              return;
-            }
-            // 'Fixed value' on a compact row: show the full card in place.
-            var expand = ev.target.closest('.field-compact-expand');
-            if (expand) {
-              var card = expand.closest('.field-card');
-              card.classList.remove('field-card-compact');
-              return;
-            }
-            // Island suggestion in the establishment assistant (ADR-143):
-            // the user applies it, the app never fills it in silently.
-            var island = ev.target.closest('.est-island-apply, .est-island-undo');
-            if (island) {
-              var wrap = island.closest('.est-island-suggest');
-              var apply = island.classList.contains('est-island-apply');
-              window.jQuery(document.getElementById(wrap.dataset.target))
-                .val(apply ? 'introduced' : '').trigger('change');
-              wrap.classList.toggle('is-applied', apply);
-            }
-          });
-          document.addEventListener('change', function (ev) {
-            var sel = ev.target;
-            if (!sel.id || sel.id.indexOf('est_island_means_') === -1) { return; }
-            var wrap = document.querySelector(
-              '.est-island-suggest[data-target=\"' + sel.id + '\"]'
-            );
-            if (wrap) { wrap.classList.toggle('is-applied', sel.value === 'introduced'); }
-          });
-          Shiny.addCustomMessageHandler('saira-mapping-scroll-to-class', function (payload) {
-            var id = payload && payload.anchor_id;
-            if (!id) { return; }
-            // Poll until the target element exists, then scroll. For a class
-            // anchor it is already in the DOM (resolves immediately); for a
-            // freshly added term card the grid is still rebuilding (~50
-            // selectize inputs), which can take a few seconds, so poll on a
-            // time budget rather than a fixed frame count.
-            var deadline = (window.performance ? performance.now() : Date.now()) + 8000;
-            (function tryScroll() {
-              var el = document.getElementById(id);
-              if (el) {
-                if (el.hidden) { revealFiltered(el); }
-                // A card collapsed by the Relevant filter is hidden
-                // (display: none) while its line is closed, and cannot
-                // scroll into view.
-                var group = el.classList.contains('field-card-collapsed') &&
-                  el.parentElement.querySelector(':scope > .mapping-more-group');
-                if (group && !group.classList.contains('is-open')) {
-                  setMoreGroupOpen(group, true);
-                }
-                el.scrollIntoView({ behavior: 'smooth', block: payload.block || 'start' });
-                // Optional highlight, used by the 'next pending' button so the
-                // card that was scrolled to is identifiable among its
-                // neighbours. Outline only, so nothing shifts.
-                if (payload.flash) {
-                  el.classList.remove('field-card-flash');
-                  void el.offsetWidth;
-                  el.classList.add('field-card-flash');
-                  setTimeout(function () {
-                    el.classList.remove('field-card-flash');
-                  }, 2200);
-                }
-                return;
-              }
-              var now = (window.performance ? performance.now() : Date.now());
-              if (now < deadline) { window.requestAnimationFrame(tryScroll); }
-            })();
-          });
-          // Patch the class pills' state dots and the pending counter in place.
-          // Same reason as saira-toggle-field-mapped below: re-rendering the
-          // pill bar would recreate its actionButtons on every mapping change.
-          Shiny.addCustomMessageHandler('saira-mapping-triage', function (payload) {
-            if (!payload) { return; }
-            // The first push can land before renderUI has put the pill bar in
-            // the DOM (auto-map writes the mapping as the tab is drawn), so
-            // poll on a short budget the same way the scroll handler does
-            // rather than dropping the update.
-            var deadline = (window.performance ? performance.now() : Date.now()) + 3000;
-            (function apply() {
-              var counter = document.getElementById(payload.count_id);
-              if (!counter) {
-                var now = (window.performance ? performance.now() : Date.now());
-                if (now < deadline) { window.requestAnimationFrame(apply); }
-                return;
-              }
-              counter.textContent = payload.count > 0 ? String(payload.count) : '';
-              (payload.dots || []).forEach(function (item) {
-                var dot = document.getElementById(item.id);
-                if (!dot) { return; }
-                dot.className = 'pill-state-dot is-' + item.state;
-                dot.title = item.title || '';
-              });
-              var btn = document.getElementById(payload.button_id);
-              if (btn) {
-                btn.classList.toggle('is-idle', !(payload.count > 0));
-              }
-              Object.keys(payload.filters || {}).forEach(function (key) {
-                var chip = document.getElementById(payload.filter_prefix + key);
-                if (!chip) { return; }
-                var n = payload.filters[key];
-                chip.textContent = String(n);
-                chip.classList.toggle('is-act', chip.dataset.action === 'true' && n > 0);
-              });
-            })();
-          });
-          // Tell the server the field cards are bound, once per grid render.
-          // The upload auto-map waits for this signal: a card value alone may
-          // not change (a new file can leave scientificName empty again), and
-          // an unchanged input never reaches the server. The timer runs after
-          // Shiny has queued the card values, so they arrive first.
-          var cardsBoundTimer = null;
-          window.jQuery(document).on('shiny:bound', function (ev) {
-            if (ev.bindingType !== 'input' || cardsBoundTimer) { return; }
-            var m = /^(.*-)map_[A-Za-z]+$/.exec(ev.target.id || '');
-            if (!m || !ev.target.closest('.mapping-scroll-container')) { return; }
-            cardsBoundTimer = setTimeout(function () {
-              cardsBoundTimer = null;
-              Shiny.setInputValue(m[1] + 'cards_bound', Date.now());
-            }, 0);
-          });
-          // Live-toggle a field card's mapped border without re-rendering the
-          // whole mapping grid. Used for fixed-value terms whose free-text read
-          // is isolated (ADR-098): the server recomputes is_field_mapped() after
-          // typing settles and flips the class here, matching the next render.
-          Shiny.addCustomMessageHandler('saira-toggle-field-mapped', function (payload) {
-            var id = payload && payload.id;
-            if (!id) { return; }
-            var el = document.getElementById(id);
-            if (!el) { return; }
-            if (payload.mapped) {
-              el.classList.add('field-mapped');
-              el.classList.remove('field-unmapped');
-            } else {
-              el.classList.add('field-unmapped');
-              el.classList.remove('field-mapped');
-            }
-            // Same for the state modifier: it is decided at render time, and
-            // the grid does not re-render on a selection, so a required card
-            // would keep its red border after being filled.
-            el.classList.remove('field-required-missing', 'field-attention');
-            if (payload.state) { el.classList.add(payload.state); }
-            // Sync the status badge (e.g. -> EDITADO) without re-rendering. The
-            // badge span carries a stable .field-status-badge hook; create it if
-            // the term had no badge, remove it when the recomputed badge is null.
-            var badge = payload.badge;
-            if (badge) {
-              var span = el.querySelector('.field-status-badge');
-              if (badge.show) {
-                if (!span) {
-                  var row = el.querySelector('.field-header-row');
-                  if (row) { span = document.createElement('span'); row.appendChild(span); }
-                }
-                if (span) {
-                  span.className = badge.class;
-                  span.title = badge.title || '';
-                  span.textContent = badge.label || '';
-                }
-              } else if (span && span.parentNode) {
-                span.parentNode.removeChild(span);
-              }
-            }
-          });
-        })();"
-    ))
+    shiny::tags$script(module_behavior_html("mappingGrid"))
     )
 }
 #' @noRd
@@ -411,32 +131,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             extra_terms = character(0),
             rostrum_decisions = NULL,
             rostrum_run_stats = list(),
-            basis_of_record_map = stats::setNames(character(0), character(0)),
-            basis_of_record_auto_map = stats::setNames(character(0), character(0)),
-            basis_of_record_source_col = "",
-            basis_of_record_draft_map = stats::setNames(character(0), character(0)),
-            basis_of_record_entries = data.frame(
-                idx = integer(0),
-                key = character(0),
-                raw = character(0),
-                stringsAsFactors = FALSE
-            ),
-            basis_of_record_page = 1L,
-            # Per-species establishment answers (ADR-110). Keyed on the species,
-            # not on a source column: one answer covers every record of that
-            # taxon. `map` is what reaches the data; `draft` is in-modal only.
-            establishment_map = sanitize_establishment_map(list()),
-            establishment_draft = sanitize_establishment_map(list()),
-            establishment_auto_map = stats::setNames(character(0), character(0)),
-            establishment_entries = data.frame(
-                idx = integer(0),
-                key = character(0),
-                raw = character(0),
-                n_records = integer(0),
-                invasive = logical(0),
-                stringsAsFactors = FALSE
-            ),
-            establishment_page = 1L,
             is_programmatic_update = FALSE,
             programmatic_terms = character(0),
             # Deduped boolean tracked by an observer below. Drives the only
@@ -459,6 +153,26 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # What the last export taught the alias store, for its undo.
             alias_receipt = NULL
         )
+        basis_model <- new_mapping_basis_model(input, raw_data_r, lang_r, shiny::reactive(rv$map_values))
+        basis_state <- basis_model$state
+        basis_of_record_page_size <- basis_model$basis_of_record_page_size
+        get_basis_of_record_source_col <- basis_model$get_basis_of_record_source_col
+        basis_of_record_page_count <- basis_model$basis_of_record_page_count
+        get_basis_of_record_page_entries <- basis_model$get_basis_of_record_page_entries
+        basis_of_record_target_choices <- basis_model$basis_of_record_target_choices
+        get_effective_basis_of_record_map <- basis_model$get_effective_basis_of_record_map
+        sync_current_page_to_draft <- basis_model$sync_current_page_to_draft
+        establishment_model <- new_mapping_establishment_model(input, raw_data_r, lang_r, shiny::reactive(rv$map_values))
+        establishment_state <- establishment_model$state
+        establishment_page_size <- establishment_model$establishment_page_size
+        get_establishment_species <- establishment_model$get_establishment_species
+        get_establishment_island_rows <- establishment_model$get_establishment_island_rows
+        establishment_page_count <- establishment_model$establishment_page_count
+        get_establishment_page_entries <- establishment_model$get_establishment_page_entries
+        establishment_choices <- establishment_model$establishment_choices
+        get_effective_establishment_map <- establishment_model$get_effective_establishment_map
+        sync_establishment_page_to_draft <- establishment_model$sync_establishment_page_to_draft
+        reset_establishment_state <- establishment_model$reset_establishment_state
 
         # SQLite connection for alias and template persistence
         conn <- tryCatch(
@@ -497,29 +211,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
         # i18n keys for all 21 catalog classes (base + on-demand extras).
         # Falls back to raw class name if a future class isn't covered.
-        class_tr_keys_map <- c(
-            "Record-level"          = "class_record",
-            "Occurrence"            = "class_occurrence",
-            "Event"                 = "class_event",
-            "Location"              = "class_location",
-            "Taxon"                 = "class_taxon",
-            "Identification"        = "class_identification",
-            "GeologicalContext"     = "class_geologicalcontext",
-            "MaterialEntity"        = "class_materialentity",
-            "MaterialSample"        = "class_materialsample",
-            "MeasurementOrFact"     = "class_measurementorfact",
-            "Organism"              = "class_organism",
-            "ResourceRelationship"  = "class_resourcerelationship",
-            "Agent"                 = "class_agent",
-            "Assertion"             = "class_assertion",
-            "BibliographicResource" = "class_bibliographicresource",
-            "MolecularProtocol"     = "class_molecularprotocol",
-            "NucleotideAnalysis"    = "class_nucleotideanalysis",
-            "NucleotideSequence"    = "class_nucleotidesequence",
-            "OrganismInteraction"   = "class_organisminteraction",
-            "Protocol"              = "class_protocol",
-            "Provenance"            = "class_provenance"
-        )
+        class_tr_keys_map <- dwc_class_translation_keys()
 
         # Required DwC terms surfaced as a live status strip in the sidebar
         required_fields_strip <- required_mapping_terms()
@@ -537,7 +229,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             key <- unname(class_tr_keys_map[category_value])
             if (is.na(key)) category_value else tr(key, lang_r())
         }
-
 
         # Active DwC terms list: base 50 + any extras added in this session
         dwc_all <- shiny::reactive({
@@ -640,7 +331,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 return(list(is_mapped = is_mapped, meta = meta))
             }
             field <- if (identical(term, "establishmentMeans")) "means" else "degree"
-            if (establishment_answer_count(rv$establishment_map, field) > 0L) {
+            if (establishment_answer_count(establishment_state$establishment_map, field) > 0L) {
                 is_mapped <- TRUE
                 if (!has_selected_value(current_val)) {
                     meta$status <- "ASSISTENTE"
@@ -734,7 +425,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # head(200) sample for every mapped standard term (camtrap maps ~25-40 ->
         # noticeable lag). Dataset-scoped: cleared on a new upload. Restricted to
         # standard terms, whose preview depends only on (term, columns,
-        # raw_data) -- never on rv$basis_of_record_map / rv$dyn_props_keys.
+        # raw_data) -- never on basis_state$basis_of_record_map / rv$dyn_props_keys.
         preview_cache <- new.env(parent = emptyenv())
 
         # Tracks which map_<term> inputs have reported a non-NULL value at least
@@ -819,7 +510,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         df = slice,
                         user_cols = user_cols,
                         species_values = species,
-                        establishment_map = rv$establishment_map,
+                        establishment_map = establishment_state$establishment_map,
                         out_sep = " | ",
                         island_rows = establishment_island_rows_for_df(
                             slice, rv$map_values, species
@@ -830,7 +521,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         term = term,
                         df = slice,
                         user_cols = user_cols,
-                        basis_of_record_map = rv$basis_of_record_map,
+                        basis_of_record_map = basis_state$basis_of_record_map,
                         dyn_props_keys = rv$dyn_props_keys,
                         out_sep = " | "
                     )
@@ -909,10 +600,16 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             ))
         }
 
-        set_map_value <- function(term, value, update_input = TRUE) {
-            sanitized_value <- sanitize_map_selection(term, value)
-            rv$map_values[[term]] <- sanitized_value
-
+        mapping_commands <- new_mapping_commands(
+            write_selection = function(term, value) { rv$map_values[[term]] <- value },
+            write_meta = function(term, meta) { rv$map_meta[[term]] <- meta },
+            add_terms = function(terms) { rv$extra_terms <- unique(c(rv$extra_terms, terms)) },
+            begin_restore = function() { rv$is_programmatic_update <- TRUE },
+            end_restore = function() {
+                rv$is_programmatic_update <- FALSE
+                rv$programmatic_terms <- character(0)
+            },
+            sync_selection = function(term, sanitized_value, update_input) {
             input_id <- paste0("map_", term)
             old_input <- shiny::isolate(input[[input_id]])
             # A select the user cleared reports NULL, like one not rendered yet.
@@ -927,256 +624,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 }
                 shiny::updateSelectInput(session, input_id, selected = sanitized_value)
             }
-        }
-
-        basis_of_record_page_size <- 20L
-
-        get_basis_of_record_source_col <- function() {
-            selected <- sanitize_map_selection("basisOfRecord", rv$map_values[["basisOfRecord"]])
-            if (has_selected_value(selected)) {
-                return(as.character(selected[[1]]))
             }
-
-            input_selected <- sanitize_map_selection("basisOfRecord", input$map_basisOfRecord)
-            if (has_selected_value(input_selected)) {
-                return(as.character(input_selected[[1]]))
-            }
-
-            ""
-        }
-
-        basis_of_record_page_count <- function() {
-            total_items <- nrow(rv$basis_of_record_entries)
-            if (total_items <= 0) {
-                return(1L)
-            }
-
-            max(1L, as.integer(ceiling(total_items / basis_of_record_page_size)))
-        }
-
-        get_basis_of_record_page_entries <- function() {
-            entries <- rv$basis_of_record_entries
-            if (nrow(entries) == 0) {
-                return(entries)
-            }
-
-            total_pages <- basis_of_record_page_count()
-            current_page <- max(1L, min(as.integer(rv$basis_of_record_page), total_pages))
-            start_idx <- ((current_page - 1L) * basis_of_record_page_size) + 1L
-            end_idx <- min(nrow(entries), start_idx + basis_of_record_page_size - 1L)
-            entries[start_idx:end_idx, , drop = FALSE]
-        }
-
-        basis_of_record_target_choices <- function() {
-            get_basis_of_record_term_choices(
-                lang = lang_r(),
-                include_skip = TRUE,
-                with_description = TRUE,
-                skip_label = tr("bor_assistant_skip_option", lang_r())
-            )
-        }
-
-        get_effective_basis_of_record_map <- function() {
-            entries <- rv$basis_of_record_entries
-            if (nrow(entries) == 0) {
-                return(stats::setNames(character(0), character(0)))
-            }
-
-            keys <- entries$key
-            auto_map <- sanitize_basis_of_record_map(rv$basis_of_record_auto_map)
-            draft_map <- sanitize_basis_of_record_map(rv$basis_of_record_draft_map)
-
-            effective <- auto_map[keys]
-            effective[is.na(effective)] <- ""
-
-            draft_values <- draft_map[keys]
-            has_draft <- !is.na(draft_values)
-            effective[has_draft] <- draft_values[has_draft]
-
-            effective <- sanitize_basis_of_record_terms(effective)
-            stats::setNames(as.character(effective), keys)
-        }
-
-        sync_current_page_to_draft <- function() {
-            entries <- get_basis_of_record_page_entries()
-            if (nrow(entries) == 0) {
-                return(invisible(NULL))
-            }
-
-            for (i in seq_len(nrow(entries))) {
-                entry <- entries[i, , drop = FALSE]
-                input_id <- paste0("basis_of_record_target_", entry$idx[[1]])
-                input_value <- input[[input_id]]
-                if (is.null(input_value)) {
-                    next
-                }
-
-                sanitized_value <- sanitize_basis_of_record_term(input_value)
-                key <- entry$key[[1]]
-                has_key <- key %in% names(rv$basis_of_record_draft_map)
-                current_value <- if (has_key) as.character(rv$basis_of_record_draft_map[[key]])[[1]] else NA_character_
-
-                if (!has_key || !identical(current_value, sanitized_value)) {
-                    rv$basis_of_record_draft_map[[entry$key[[1]]]] <- sanitized_value
-                }
-            }
-
-            invisible(NULL)
-        }
+        )
+        set_map_value <- mapping_commands$select
 
         # --- establishmentMeans / degreeOfEstablishment assistant (ADR-110) ---
         # Same page size and snapshot-sync contract as the basisOfRecord
         # assistant, but keyed on the species read from the scientificName
         # column instead of on the unique values of the term's own column.
-        establishment_page_size <- 20L
-
-        get_establishment_species <- function() {
-            df <- raw_data_r()
-            if (!is.data.frame(df) || nrow(df) == 0L) {
-                return(character(0))
-            }
-            selected <- sanitize_map_selection(
-                "scientificName", rv$map_values[["scientificName"]]
-            )
-            if (!has_selected_value(selected)) {
-                selected <- sanitize_map_selection(
-                    "scientificName", input$map_scientificName
-                )
-            }
-            if (!has_selected_value(selected)) {
-                return(character(0))
-            }
-            col <- as.character(selected[[1]])
-            if (!(col %in% names(df))) {
-                return(character(0))
-            }
-            as.character(df[[col]])
-        }
-
-        # Oceanic island per record, NA off the islands (ADR-143). NULL when
-        # the coordinates or the species are not mapped.
-        get_establishment_island_rows <- function() {
-            establishment_island_rows_for_df(
-                raw_data_r(), rv$map_values, get_establishment_species()
-            )
-        }
-
-        establishment_page_count <- function() {
-            total_items <- nrow(rv$establishment_entries)
-            if (total_items <= 0) {
-                return(1L)
-            }
-            max(1L, as.integer(ceiling(total_items / establishment_page_size)))
-        }
-
-        get_establishment_page_entries <- function() {
-            entries <- rv$establishment_entries
-            if (nrow(entries) == 0) {
-                return(entries)
-            }
-            total_pages <- establishment_page_count()
-            current_page <- max(1L, min(as.integer(rv$establishment_page), total_pages))
-            start_idx <- ((current_page - 1L) * establishment_page_size) + 1L
-            end_idx <- min(nrow(entries), start_idx + establishment_page_size - 1L)
-            entries[start_idx:end_idx, , drop = FALSE]
-        }
-
-        establishment_choices <- function(field = "means") {
-            catalog <- if (identical(field, "degree")) {
-                degree_of_establishment_vocab_catalog
-            } else {
-                establishment_means_vocab_catalog
-            }
-            dwc_vocab_choices(
-                catalog,
-                lang = lang_r(),
-                include_skip = TRUE,
-                skip_label = tr("est_assistant_skip_option", lang_r())
-            )
-        }
-
-        # Auto-suggestions overlaid by the user's in-modal edits. Only
-        # establishmentMeans has suggestions; degreeOfEstablishment starts empty
-        # by design (it depends on the record, not on the species). The island
-        # answers have no auto-suggestion: the user applies it with one click.
-        get_effective_establishment_map <- function() {
-            entries <- rv$establishment_entries
-            if (nrow(entries) == 0) {
-                return(sanitize_establishment_map(list()))
-            }
-
-            keys <- entries$key
-            auto <- sanitize_establishment_field_map(rv$establishment_auto_map, "means")
-            draft <- sanitize_establishment_map(rv$establishment_draft)
-
-            means <- auto[keys]
-            means[is.na(means)] <- ""
-            draft_means <- draft$means[keys]
-            has_draft <- !is.na(draft_means)
-            means[has_draft] <- draft_means[has_draft]
-
-            draft_only <- function(field, vocab) {
-                values <- draft[[field]][keys]
-                values[is.na(values)] <- ""
-                stats::setNames(
-                    as.character(sanitize_establishment_terms(values, vocab)), keys
-                )
-            }
-
-            list(
-                means = stats::setNames(
-                    as.character(sanitize_establishment_terms(means, "means")), keys
-                ),
-                degree = draft_only("degree", "degree"),
-                island_means = draft_only("island_means", "means"),
-                island_degree = draft_only("island_degree", "degree")
-            )
-        }
-
-        sync_establishment_page_to_draft <- function() {
-            entries <- get_establishment_page_entries()
-            if (nrow(entries) == 0) {
-                return(invisible(NULL))
-            }
-            for (i in seq_len(nrow(entries))) {
-                key <- entries$key[[i]]
-                idx <- entries$idx[[i]]
-                for (field in c("means", "degree", "island_means", "island_degree")) {
-                    input_value <- input[[paste0("est_", field, "_", idx)]]
-                    if (is.null(input_value)) {
-                        next
-                    }
-                    sanitized <- sanitize_establishment_terms(
-                        as.character(input_value)[[1]], sub("^island_", "", field)
-                    )
-                    # [[ ]] on a named character vector errors for an absent
-                    # name (unlike a list), so gate the read like the
-                    # basisOfRecord assistant does.
-                    draft_field <- rv$establishment_draft[[field]]
-                    has_key <- key %in% names(draft_field)
-                    current <- if (has_key) as.character(draft_field[[key]]) else NA_character_
-                    if (!has_key || !identical(current, sanitized)) {
-                        rv$establishment_draft[[field]][[key]] <- sanitized
-                    }
-                }
-            }
-            invisible(NULL)
-        }
-
-        reset_establishment_state <- function() {
-            empty <- stats::setNames(character(0), character(0))
-            rv$establishment_map <- sanitize_establishment_map(list())
-            rv$establishment_draft <- sanitize_establishment_map(list())
-            rv$establishment_auto_map <- empty
-            rv$establishment_entries <- data.frame(
-                idx = integer(0), key = character(0), raw = character(0),
-                n_records = integer(0), invasive = logical(0),
-                stringsAsFactors = FALSE
-            )
-            rv$establishment_page <- 1L
-            invisible(NULL)
-        }
-
 
         # Translated labels
         output$btn_auto_map_label <- shiny::renderUI({
@@ -1271,7 +726,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # BasisOfRecord assistant (delegated to mod_mapping_basis_assistant.R)
         setup_basis_of_record_assistant(
             input = input, output = output, session = session,
-            rv = rv, ns = ns, lang_r = lang_r, raw_data_r = raw_data_r,
+            rv = basis_state, ns = ns, lang_r = lang_r, raw_data_r = raw_data_r,
             basis_of_record_page_size = basis_of_record_page_size,
             basis_of_record_page_count = basis_of_record_page_count,
             get_basis_of_record_page_entries = get_basis_of_record_page_entries,
@@ -1284,7 +739,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # The grid only re-renders on structural changes (ADR-098), so saving
         # the assistant would leave the two cards showing their old badge and
         # border. Refresh them surgically, the same way a column selection does.
-        shiny::observeEvent(rv$establishment_map, {
+        shiny::observeEvent(establishment_state$establishment_map, {
             for (term in establishment_terms) {
                 push_card_state(term)
             }
@@ -1292,7 +747,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
         setup_establishment_assistant(
             input = input, output = output, session = session,
-            rv = rv, ns = ns, lang_r = lang_r,
+            rv = establishment_state, ns = ns, lang_r = lang_r,
             establishment_page_size = establishment_page_size,
             establishment_page_count = establishment_page_count,
             get_establishment_page_entries = get_establishment_page_entries,
@@ -1302,7 +757,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             get_establishment_island_rows = get_establishment_island_rows,
             sync_establishment_page_to_draft = sync_establishment_page_to_draft
         )
-
 
         shiny::observe({
             term_names <- all_term_names()
@@ -1361,7 +815,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 rv$rostrum_decisions <- NULL
                 rv$rostrum_run_stats <- list()
                 rv$dyn_props_keys <- list()
-                reset_basis_of_record_state(rv)
+                reset_basis_of_record_state(basis_state)
                 reset_establishment_state()
                 rm(list = ls(preview_cache, all.names = TRUE), envir = preview_cache)
                 rm(
@@ -1489,11 +943,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         } else {
                             ""
                         }
-                        previous_source_col <- shiny::isolate(rv$basis_of_record_source_col)
+                        previous_source_col <- shiny::isolate(basis_state$basis_of_record_source_col)
 
                         if (!identical(previous_source_col, next_source_col)) {
-                            rv$basis_of_record_source_col <- next_source_col
-                            reset_basis_of_record_state(rv, reset_source_col = FALSE)
+                            basis_state$basis_of_record_source_col <- next_source_col
+                            reset_basis_of_record_state(basis_state, reset_source_col = FALSE)
                         }
                     }
 
@@ -1947,208 +1401,17 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # rebuilds the mapping in the cards — concatenations and typed
         # constants — by matching the guide's source columns to the loaded
         # dataset, and (2) seeds rostrum_aliases for cross-dataset auto-mapping.
-        shiny::observeEvent(input$import_template, {
-            shiny::showModal(shiny::modalDialog(
-                title = tr("modal_import_template_title", lang_r()),
-                # Same dropzone and progress row as the Home upload
-                # (upload-dropzone.js binds any .upload-dropzone).
-                shiny::div(
-                    class = "import-template-modal",
-                    shiny::p(
-                        class = "import-template-help",
-                        tr("modal_import_template_help", lang_r())
-                    ),
-                    shiny::div(
-                        class = "upload-section",
-                        shiny::div(
-                            class = "upload-dropzone import-template-dropzone",
-                            shiny::div(
-                                class = "upload-dropzone-copy",
-                                ph_icon("file-import", class = "upload-dropzone-icon", weight = "light"),
-                                shiny::div(
-                                    class = "upload-dropzone-hint upload-dropzone-when-empty",
-                                    tr("modal_import_template_dropzone_hint", lang_r())
-                                ),
-                                shiny::div(class = "upload-dropzone-filename upload-dropzone-when-file"),
-                                shiny::div(
-                                    class = "upload-dropzone-max-size upload-dropzone-when-file",
-                                    tr("modal_import_template_replace_hint", lang_r())
-                                )
-                            )
-                        ),
-                        shiny::div(
-                            class = "upload-native-input",
-                            shiny::fileInput(
-                                inputId = ns("import_template_file"),
-                                label = shiny::tags$span(
-                                    tr("modal_import_template_label", lang_r()),
-                                    class = "visually-hidden"
-                                ),
-                                accept = c(".txt", "text/plain"),
-                                buttonLabel = ph_icon("upload"),
-                                placeholder = ""
-                            )
-                        )
-                    )
-                ),
-                footer = shiny::tagList(
-                    shiny::modalButton(tr("btn_cancel", lang_r())),
-                    shiny::actionButton(
-                        ns("confirm_import_template"),
-                        tr("modal_import_template_confirm", lang_r()),
-                        class = "btn-primary"
-                    )
-                ),
-                easyClose = TRUE
-            ))
-        })
-
-        shiny::observeEvent(input$confirm_import_template, {
-            f <- input$import_template_file
-            if (is.null(f) || !nzchar(f$datapath)) {
-                shiny::showNotification(
-                    tr("modal_import_template_no_file", lang_r()),
-                    type = "warning",
-                    duration = 5
-                )
-                return(invisible(NULL))
-            }
-
-            if (!is_saira_mapping_guide(f$datapath)) {
-                shiny::showNotification(
-                    tr("modal_import_template_invalid_magic", lang_r()),
-                    type = "error",
-                    duration = 8
-                )
-                return(invisible(NULL))
-            }
-
-            payload <- tryCatch(
-                parse_mapping_guide_txt(f$datapath),
-                error = function(e) e
+        mount_mapping_import(
+            input, session, lang_r, raw_data_r, mapping_commands,
+            show_loading = function() show_mapping_loading_modal(
+                rv, ns, lang_r, specs = mapping_import_phrase_specs(),
+                title_key = "loading_import_title", status_key = "loading_import_status"
+            ),
+            hide_loading = function() hide_mapping_loading_modal(session),
+            seed_aliases = function(payload, columns) import_mapping_guide_to_aliases(
+                payload, conn = conn, available_columns = columns
             )
-            if (inherits(payload, "error")) {
-                shiny::showNotification(
-                    sprintf(tr("upload_guide_invalid", lang_r()), conditionMessage(payload)),
-                    type = "error",
-                    duration = 8
-                )
-                return(invisible(NULL))
-            }
-
-            # From here on the import is committed and takes a couple of
-            # seconds: the alias upserts, then a full grid rebuild (restoring
-            # scientificName flips rv$scientificname_mapped, one of the four
-            # structural dependencies of output$mapping_ui). Nothing above this
-            # line is slow, so the modal opens here and no early return has to
-            # take it back down. showModal writes to the socket immediately, so
-            # it paints while the loop below still runs.
-            show_mapping_loading_modal(
-                rv, ns, lang_r,
-                specs = mapping_import_phrase_specs(),
-                title_key = "loading_import_title",
-                status_key = "loading_import_status"
-            )
-            # The modal has no footer and no easyClose, so anything that throws
-            # before the handover below would strand the user behind it.
-            handed_to_flush <- FALSE
-            on.exit({
-                if (!handed_to_flush) hide_mapping_loading_modal(session)
-            }, add = TRUE)
-
-            # Faithful restore: rebuild the exact mapping in the cards by
-            # matching the guide's source columns to the loaded dataset.
-            available_columns <- tryCatch(names(raw_data_r()), error = function(e) character(0))
-            plan <- plan_mapping_guide_restore(payload, available_columns)
-
-            # Register any catalog terms the guide maps that are outside the
-            # default set, so their cards render (mirrors the Add-term flow).
-            # Without this the value is restored into rv$map_values but no card
-            # is ever shown for it.
-            restore_extras <- detect_extra_dwc_terms(names(plan$map_values))
-            if (length(restore_extras) > 0L) {
-                rv$extra_terms <- unique(c(rv$extra_terms, restore_extras))
-            }
-
-            rv$is_programmatic_update <- TRUE
-            on.exit({
-                rv$is_programmatic_update <- FALSE
-                rv$programmatic_terms <- character(0)
-            }, add = TRUE)
-
-            for (term in names(plan$map_values)) {
-                set_map_value(term, plan$map_values[[term]], update_input = TRUE)
-                rv$map_meta[[term]] <- build_manual_meta(previous_meta = NULL, has_value = TRUE)
-            }
-
-            consts <- plan$constants
-            if (!is.null(consts$datasetName)) {
-                shiny::updateTextInput(session, "custom_datasetName", value = consts$datasetName)
-                rv$map_meta[["datasetName"]] <- build_manual_meta(previous_meta = NULL, has_value = TRUE)
-            }
-            if (!is.null(consts$license)) {
-                shiny::updateCheckboxGroupInput(session, "custom_license", selected = consts$license)
-            }
-            if (!is.null(consts$language)) {
-                shiny::updateCheckboxGroupInput(session, "custom_language", selected = consts$language)
-            }
-            # Fixed values from the constant_value_terms() allowlist. A term
-            # overridden by one is written to the guide as a constant and no
-            # longer as a column mapping, so without this the import restores
-            # it nowhere and the term leaves the next export.
-            for (term in intersect(names(consts), constant_value_terms())) {
-                shiny::updateCheckboxInput(session, paste0("usecustom_", term), value = TRUE)
-                if (identical(term, "basisOfRecord")) {
-                    shiny::updateSelectInput(session, "custom_basisOfRecord", selected = consts[[term]])
-                } else {
-                    shiny::updateTextInput(session, paste0("custom_", term), value = consts[[term]])
-                }
-            }
-
-            # Seed personal aliases for cross-dataset auto-mapping (ADR-087);
-            # non-fatal if it fails (the faithful restore already happened).
-            # Reuses the module's connection: opening a second one to the same
-            # file re-runs the schema migration check and makes the two contend
-            # for the same write lock through BEGIN IMMEDIATE.
-            tryCatch(
-                import_mapping_guide_to_aliases(payload, conn = conn, available_columns = available_columns),
-                error = function(e) NULL
-            )
-
-            n_terms <- length(plan$applied_terms)
-            msg <- if (n_terms == 0L) {
-                tr("modal_import_template_none_applied", lang_r())
-            } else {
-                sprintf(tr("modal_import_template_restored", lang_r()), n_terms)
-            }
-            # Green only when every template column was found.
-            notif_type <- if (n_terms == 0L) {
-                "error"
-            } else if (length(plan$missing_columns) > 0L) {
-                "warning"
-            } else {
-                "message"
-            }
-            if (length(plan$missing_columns) > 0L) {
-                msg <- paste0(msg, " ", sprintf(
-                    tr("modal_import_template_missing_cols", lang_r()),
-                    length(plan$missing_columns),
-                    paste(utils::head(plan$missing_columns, 5L), collapse = ", ")
-                ))
-            }
-
-            # The grid rebuild happens in the output pass of this same flush,
-            # after the observer returns. Closing the modal here would hand the
-            # user back a stale screen and let them click into cards that are
-            # about to be replaced, so hold it until the flush is done.
-            session$onFlushed(function() {
-                hide_mapping_loading_modal(session)
-                shiny::showNotification(
-                    msg, type = notif_type, duration = 10, session = session
-                )
-            }, once = TRUE)
-            handed_to_flush <- TRUE
-        }, ignoreInit = TRUE)
+        )
 
         # "Add term" modal
         shiny::observeEvent(input$add_term, {
@@ -2552,9 +1815,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     # inputs with the same id on the page. The degree card gets
                     # a pointer instead.
                     field <- if (identical(term, "establishmentMeans")) "means" else "degree"
-                    answered <- establishment_answer_count(rv$establishment_map, field)
+                    answered <- establishment_answer_count(establishment_state$establishment_map, field)
                     pending <- if (identical(field, "degree")) {
-                        length(establishment_pairs_missing_degree(rv$establishment_map))
+                        length(establishment_pairs_missing_degree(establishment_state$establishment_map))
                     } else {
                         0L
                     }
@@ -2606,7 +1869,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 carddyn_created[[term]] <- TRUE
             }
         })
-
 
         # Camtrap DP columns are already canonical Darwin Core terms
         # (camtrapdp::write_dwc() emits them by name), so the mapping is a
@@ -2858,7 +2120,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             shiny::updateDateInput(session, "custom_modified_date", value = Sys.Date())
             shiny::updateCheckboxGroupInput(session, "custom_license", selected = character(0))
             shiny::updateCheckboxGroupInput(session, "custom_language", selected = character(0))
-            reset_basis_of_record_state(rv)
+            reset_basis_of_record_state(basis_state)
             reset_establishment_state()
             rv$is_programmatic_update <- FALSE
             rv$programmatic_terms <- character(0)
@@ -2961,11 +2223,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 custom_license = input$custom_license,
                 custom_language = input$custom_language,
                 constant_values = collect_constant_values(),
-                basis_of_record_map = rv$basis_of_record_map,
+                basis_of_record_map = basis_state$basis_of_record_map,
                 now_utc = Sys.time(),
                 out_sep = " | ",
                 dyn_props_keys = rv$dyn_props_keys,
-                establishment_map = rv$establishment_map
+                establishment_map = establishment_state$establishment_map
             )
         }
 
@@ -3329,7 +2591,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 dropped <- establishment_dropped_values(
                     term = term, df = df, user_cols = cols,
                     species_values = species,
-                    establishment_map = rv$establishment_map,
+                    establishment_map = establishment_state$establishment_map,
                     out_sep = " | ",
                     island_rows = establishment_island_rows_for_df(
                         df, rv$map_values, species

@@ -17,23 +17,8 @@ mod_export_ui <- function(id) {
     shiny::tagList(
         # One-time handler: when the blocked banner's "fix" CTA navigates to
         # Mapping, scroll the targeted field card into view and flash it.
-        shiny::tags$script(shiny::HTML(paste(
-            "(function(){",
-            "if (window.__sairaFocusFieldHandler || !window.Shiny) { return; }",
-            "window.__sairaFocusFieldHandler = true;",
-            "Shiny.addCustomMessageHandler('saira_focus_field', function(msg){",
-            "  if (!msg || !msg.id) { return; }",
-            "  setTimeout(function(){",
-            "    var el = document.getElementById(msg.id);",
-            "    if (!el) { return; }",
-            "    el.scrollIntoView({behavior: 'smooth', block: 'center'});",
-            "    el.classList.add('field-card-flash');",
-            "    setTimeout(function(){ el.classList.remove('field-card-flash'); }, 2200);",
-            "  }, 300);",
-            "});",
-            "})();",
-            sep = "\n"
-        ))),
+        shiny::tags$script(module_behavior_html("exportFocusField")),
+
         shiny::div(
             class = "container-fluid export-page",
             shiny::uiOutput(ns("summary")),
@@ -515,9 +500,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     files_card,
                     if (!is.null(gen_card)) shiny::div(class = "export-summary-gen", gen_card)
                 ),
-                shiny::tags$script(shiny::HTML(
-                    "(function(){if(window.bootstrap&&bootstrap.Tooltip){document.querySelectorAll('.export-info-tip[data-bs-toggle=\"tooltip\"]').forEach(function(el){if(!el.__tipInit){el.__tipInit=true;new bootstrap.Tooltip(el);}});}})();"
-                ))
+                shiny::tags$script(module_behavior_html("exportTooltips"))
             )
         })
 

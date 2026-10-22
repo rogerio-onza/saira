@@ -54,13 +54,7 @@ app_ui <- function() {
             ),
             # Keep <html lang> in step with the language selector, so screen
             # readers and the browser's hyphenation follow the interface.
-            shiny::tags$script(shiny::HTML(
-                "$(document).on('shiny:inputchanged', function (e) {
-                    if (e.name !== 'lang_switch') return;
-                    var tags = {pt: 'pt-BR', en: 'en', es: 'es'};
-                    document.documentElement.lang = tags[e.value] || e.value;
-                });"
-            ))
+            shiny::tags$script(module_behavior_html("syncHtmlLang"))
         ),
         bslib::page_navbar(
             id = "main_nav",

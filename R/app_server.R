@@ -146,15 +146,16 @@ app_server <- function(input, output, session) {
         reset_signal_r = reset_signal,
         on_navigate = navigate_to,
         active_r = shiny::reactive(identical(input$main_nav, "preview")),
-        refresh_r = shiny::reactive(list(input$main_nav, mapping_settled()))
+        refresh_r = shiny::reactive(list(input$main_nav, mapping_settled())),
+        return_contract = "list"
     )
-    edited_data <- attr(preview_r, "edited_data_r")
-    preview_problems_n <- attr(preview_r, "problems_n_r")
+    edited_data <- preview_r$edited_data_r
+    preview_problems_n <- preview_r$problems_n_r
 
-    validate_names_r <- mod_validate_names_server("validate_names", edited_data, lang_r, validation_gate_r = validation_gate, reset_signal_r = reset_signal)
-    name_review_payload_r <- attr(validate_names_r, "review_export_payload")
-    sensitivity_payload_r <- attr(validate_names_r, "sensitivity_payload")
-    conservation_payload_r <- attr(validate_names_r, "conservation_payload")
+    validate_names_r <- mod_validate_names_server("validate_names", edited_data, lang_r, validation_gate_r = validation_gate, reset_signal_r = reset_signal, return_contract = "list")
+    name_review_payload_r <- validate_names_r$reviews_r
+    sensitivity_payload_r <- validate_names_r$sensitivity_r
+    conservation_payload_r <- validate_names_r$conservation_r
 
     # The transposed-coordinate correction payload is applied at export
     # (mirrors name review).
@@ -163,10 +164,10 @@ app_server <- function(input, output, session) {
         edited_data,
         lang_r,
         validation_gate_r = coord_validation_gate,
-        reset_signal_r = reset_signal
+        reset_signal_r = reset_signal, return_contract = "list"
     )
-    coords_correction_payload_r <- attr(coord_validation_r, "coords_correction_payload")
-    country_fill_payload_r <- attr(coord_validation_r, "country_fill_payload")
+    coords_correction_payload_r <- coord_validation_r$corrections_r
+    country_fill_payload_r <- coord_validation_r$country_r
 
     # Dedicated sensitive-species generalization stage (Chapman 2020, Table 5).
     # Consumes the Name-tab sensitivity marks and name corrections plus the
@@ -207,7 +208,7 @@ app_server <- function(input, output, session) {
         establishment_dropped_r            = mapping_result$establishment_dropped_r,
         occurrence_id_info_r               = mapping_result$occurrence_id_info_r,
         alias_receipt_r                    = mapping_result$alias_receipt_r,
-        coord_validation_r                 = coord_validation_r,
+        coord_validation_r                 = coord_validation_r$report_r,
         preview_problems_n_r               = preview_problems_n,
         on_export_success                  = function() {
             export_signal_rv(shiny::isolate(export_signal_rv()) + 1L)

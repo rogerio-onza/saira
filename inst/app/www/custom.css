@@ -1160,10 +1160,6 @@ label,
   font-weight: var(--weight-regular);
 }
 
-.shiny-notification {
-  font-weight: var(--weight-regular);
-}
-
 /* Bootstrap paints links in the theme primary (#38CFF6), which disappears on
    every alert tint. The link takes the alert's AA text color instead. */
 .alert a:not(.btn) {
@@ -1199,6 +1195,34 @@ label,
   background-color: var(--info-bg);
   color: var(--info);
   border: 1px solid var(--info-border);
+}
+
+
+/* Toasts sit over the page, so they must be opaque. The state tints are
+   translucent: they go over the card color. Shiny also sets opacity 0.85. */
+.shiny-notification {
+  font-weight: var(--weight-regular);
+  border-radius: var(--radius);
+  font-family: var(--font-serif);
+  opacity: 1;
+}
+
+.shiny-notification-error {
+  background: linear-gradient(var(--error-bg), var(--error-bg)) var(--bg-card);
+  border: 1px solid var(--error-border);
+  color: var(--error-text);
+}
+
+.shiny-notification-warning {
+  background: linear-gradient(var(--warning-bg), var(--warning-bg)) var(--bg-card);
+  border: 1px solid var(--warning-border);
+  color: var(--warning-text);
+}
+
+.shiny-notification-message {
+  background: linear-gradient(var(--success-bg), var(--success-bg)) var(--bg-card);
+  border: 1px solid var(--success-border);
+  color: var(--success-text);
 }
 
 /* =============================================================================
@@ -2963,32 +2987,6 @@ table.dataTable tbody tr.validate-invalid td {
    SHINY-SPECIFIC OVERRIDES
    ============================================================================= */
 
-/* Toasts sit over the page, so they must be opaque. The state tints are
-   translucent: they go over the card color. Shiny also sets opacity 0.85. */
-.shiny-notification {
-  border-radius: var(--radius);
-  font-family: var(--font-serif);
-  opacity: 1;
-}
-
-.shiny-notification-error {
-  background: linear-gradient(var(--error-bg), var(--error-bg)) var(--bg-card);
-  border: 1px solid var(--error-border);
-  color: var(--error-text);
-}
-
-.shiny-notification-warning {
-  background: linear-gradient(var(--warning-bg), var(--warning-bg)) var(--bg-card);
-  border: 1px solid var(--warning-border);
-  color: var(--warning-text);
-}
-
-.shiny-notification-message {
-  background: linear-gradient(var(--success-bg), var(--success-bg)) var(--bg-card);
-  border: 1px solid var(--success-border);
-  color: var(--success-text);
-}
-
 /* Tab content padding */
 .tab-content {
   padding: var(--space-6);
@@ -3710,6 +3708,131 @@ table.dataTable tbody tr.validate-invalid td {
   font-weight: var(--weight-semibold);
   word-break: break-all;
 }
+/* Loading modal shared by Mapping, guide import and Export. */
+/* Auto-map blocking modal */
+.automap-loading-open .modal-backdrop.show {
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+.modal.automap-loading-host .modal-content {
+  border-radius: var(--radius-xl);
+  box-shadow: none;
+  border: 1px solid var(--border-light);
+}
+
+.modal .automap-loading-modal {
+  text-align: center;
+  padding: var(--space-2) var(--space-1);
+}
+
+.modal .automap-loading-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.modal .automap-loading-brand-icon {
+  font-size: 2.35rem;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.modal .automap-loading-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: var(--weight-semibold);
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.modal .automap-loading-status {
+  color: var(--accent);
+  font-size: var(--text-sm);
+  margin-bottom: 0;
+}
+
+.modal .automap-loading-progress {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto var(--space-2);
+  height: 12px;
+  border-radius: var(--radius-full);
+  background: var(--border-light);
+  border: 1px solid var(--border-default);
+  overflow: hidden;
+}
+
+.modal .automap-loading-progress-bar {
+  height: 100%;
+  width: 0;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  transition: width 0.24s ease;
+}
+
+.modal .automap-loading-phrase {
+  margin-top: var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  min-height: 2.6em;
+}
+
+.modal .automap-loading-phrase-row {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 280ms ease, transform 280ms ease;
+}
+
+.modal .automap-loading-phrase-row.is-fading {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.modal .automap-loading-phrase-icon {
+  color: var(--accent);
+  margin-top: 2px;
+  transform-origin: center;
+  animation: automap-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes automap-pulse {
+  0% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 576px) {
+  .modal .automap-loading-brand-row {
+    gap: var(--space-3);
+  }
+
+  .modal .automap-loading-brand-icon {
+    font-size: 2.1rem;
+  }
+
+  .modal .automap-loading-title {
+    font-size: var(--text-lg);
+  }
+}
+
 /* =============================================================================
    MAPPING MODULE STYLES
    ============================================================================= */
@@ -4656,130 +4779,6 @@ table.dataTable tbody tr.validate-invalid td {
   padding: var(--space-1) var(--space-2);
   margin-top: var(--space-1);
   margin-bottom: var(--space-1);
-}
-
-/* Auto-map blocking modal */
-.automap-loading-open .modal-backdrop.show {
-  background-color: rgba(0, 0, 0, 0.45);
-}
-
-.modal.automap-loading-host .modal-content {
-  border-radius: var(--radius-xl);
-  box-shadow: none;
-  border: 1px solid var(--border-light);
-}
-
-.modal .automap-loading-modal {
-  text-align: center;
-  padding: var(--space-2) var(--space-1);
-}
-
-.modal .automap-loading-brand-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-4);
-  margin-bottom: var(--space-3);
-}
-
-.modal .automap-loading-brand-icon {
-  font-size: 2.35rem;
-  color: var(--accent);
-  line-height: 1;
-}
-
-.modal .automap-loading-title {
-  font-family: var(--font-serif);
-  font-size: var(--text-xl);
-  font-weight: var(--weight-semibold);
-  letter-spacing: 0.05em;
-  color: var(--text-primary);
-  margin-bottom: var(--space-2);
-}
-
-.modal .automap-loading-status {
-  color: var(--accent);
-  font-size: var(--text-sm);
-  margin-bottom: 0;
-}
-
-.modal .automap-loading-progress {
-  width: 100%;
-  max-width: 420px;
-  margin: 0 auto var(--space-2);
-  height: 12px;
-  border-radius: var(--radius-full);
-  background: var(--border-light);
-  border: 1px solid var(--border-default);
-  overflow: hidden;
-}
-
-.modal .automap-loading-progress-bar {
-  height: 100%;
-  width: 0;
-  border-radius: var(--radius-full);
-  background: var(--primary);
-  transition: width 0.24s ease;
-}
-
-.modal .automap-loading-phrase {
-  margin-top: var(--space-2);
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  line-height: var(--leading-normal);
-  min-height: 2.6em;
-}
-
-.modal .automap-loading-phrase-row {
-  display: inline-flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 280ms ease, transform 280ms ease;
-}
-
-.modal .automap-loading-phrase-row.is-fading {
-  opacity: 0;
-  transform: translateY(4px);
-}
-
-.modal .automap-loading-phrase-icon {
-  color: var(--accent);
-  margin-top: 2px;
-  transform-origin: center;
-  animation: automap-pulse 1.2s ease-in-out infinite;
-}
-
-@keyframes automap-pulse {
-  0% {
-    opacity: 0.7;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.12);
-  }
-
-  100% {
-    opacity: 0.7;
-    transform: scale(1);
-  }
-}
-
-@media (max-width: 576px) {
-  .modal .automap-loading-brand-row {
-    gap: var(--space-3);
-  }
-
-  .modal .automap-loading-brand-icon {
-    font-size: 2.1rem;
-  }
-
-  .modal .automap-loading-title {
-    font-size: var(--text-lg);
-  }
 }
 
 /* basisOfRecord assistant modal */

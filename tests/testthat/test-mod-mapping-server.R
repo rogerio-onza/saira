@@ -543,21 +543,21 @@ testthat::test_that("basisOfRecord assistant persists mapping and processed_data
             session$setInputs(open_basis_of_record_assistant = 1)
             session$flushReact()
 
-            testthat::expect_true(nrow(rv$basis_of_record_entries) >= 2)
+            testthat::expect_true(nrow(basis_state$basis_of_record_entries) >= 2)
 
-            first_idx <- rv$basis_of_record_entries$idx[[1]]
-            first_key <- rv$basis_of_record_entries$key[[1]]
+            first_idx <- basis_state$basis_of_record_entries$idx[[1]]
+            first_key <- basis_state$basis_of_record_entries$key[[1]]
             dynamic_input <- list()
             dynamic_input[[paste0("basis_of_record_target_", first_idx)]] <- "HumanObservation"
             do.call(session$setInputs, dynamic_input)
             session$flushReact()
 
-            testthat::expect_false(first_key %in% names(rv$basis_of_record_draft_map))
+            testthat::expect_false(first_key %in% names(basis_state$basis_of_record_draft_map))
 
             session$setInputs(save_basis_of_record_assistant = 1)
             session$flushReact()
 
-            testthat::expect_identical(rv$basis_of_record_map[[first_key]], "HumanObservation")
+            testthat::expect_identical(basis_state$basis_of_record_map[[first_key]], "HumanObservation")
 
             out <- processed_data()
             testthat::expect_true("basisOfRecord" %in% names(out))
@@ -583,9 +583,9 @@ testthat::test_that("basisOfRecord assistant allows overriding auto-suggestion w
             session$setInputs(open_basis_of_record_assistant = 1)
             session$flushReact()
 
-            testthat::expect_identical(nrow(rv$basis_of_record_entries), 1L)
-            first_idx <- rv$basis_of_record_entries$idx[[1]]
-            first_key <- rv$basis_of_record_entries$key[[1]]
+            testthat::expect_identical(nrow(basis_state$basis_of_record_entries), 1L)
+            first_idx <- basis_state$basis_of_record_entries$idx[[1]]
+            first_key <- basis_state$basis_of_record_entries$key[[1]]
 
             dynamic_input <- list()
             dynamic_input[[paste0("basis_of_record_target_", first_idx)]] <- ""
@@ -593,8 +593,8 @@ testthat::test_that("basisOfRecord assistant allows overriding auto-suggestion w
             session$setInputs(save_basis_of_record_assistant = 1)
             session$flushReact()
 
-            testthat::expect_true(first_key %in% names(rv$basis_of_record_map))
-            testthat::expect_identical(rv$basis_of_record_map[[first_key]], "")
+            testthat::expect_true(first_key %in% names(basis_state$basis_of_record_map))
+            testthat::expect_identical(basis_state$basis_of_record_map[[first_key]], "")
 
             out <- processed_data()
             testthat::expect_identical(out$basisOfRecord[[1]], "")
@@ -620,21 +620,21 @@ testthat::test_that("basisOfRecord assistant map is cleared when source column c
             session$setInputs(open_basis_of_record_assistant = 1)
             session$flushReact()
 
-            if (nrow(rv$basis_of_record_entries) > 0) {
-                first_idx <- rv$basis_of_record_entries$idx[[1]]
+            if (nrow(basis_state$basis_of_record_entries) > 0) {
+                first_idx <- basis_state$basis_of_record_entries$idx[[1]]
                 dynamic_input <- list()
                 dynamic_input[[paste0("basis_of_record_target_", first_idx)]] <- "HumanObservation"
                 do.call(session$setInputs, dynamic_input)
                 session$setInputs(save_basis_of_record_assistant = 1)
                 session$flushReact()
-                testthat::expect_true(length(rv$basis_of_record_map) > 0)
+                testthat::expect_true(length(basis_state$basis_of_record_map) > 0)
             }
 
             session$setInputs(map_basisOfRecord = "bor_b")
             session$flushReact()
 
-            testthat::expect_identical(length(rv$basis_of_record_map), 0L)
-            testthat::expect_identical(rv$basis_of_record_source_col, "bor_b")
+            testthat::expect_identical(length(basis_state$basis_of_record_map), 0L)
+            testthat::expect_identical(basis_state$basis_of_record_source_col, "bor_b")
         }
     )
 })
@@ -659,8 +659,8 @@ testthat::test_that("basisOfRecord assistant opens using input fallback when rv 
             session$setInputs(open_basis_of_record_assistant = 1)
             session$flushReact()
 
-            testthat::expect_identical(rv$basis_of_record_source_col, "basis_raw")
-            testthat::expect_true(nrow(rv$basis_of_record_entries) >= 2)
+            testthat::expect_identical(basis_state$basis_of_record_source_col, "basis_raw")
+            testthat::expect_true(nrow(basis_state$basis_of_record_entries) >= 2)
         }
     )
 })
@@ -1321,16 +1321,16 @@ testthat::test_that("the establishment assistant lists species and pre-fills inv
             session$setInputs(open_establishment_assistant = 1)
             session$flushReact()
 
-            entries <- rv$establishment_entries
+            entries <- establishment_state$establishment_entries
             testthat::expect_equal(entries$raw, c("Sus scrofa", "Panthera onca"))
             testthat::expect_equal(entries$n_records, c(2L, 1L))
             testthat::expect_equal(entries$origin_class, c("alien", NA))
             # Only the listed taxon is pre-filled, and only establishmentMeans.
             testthat::expect_equal(
-                unname(rv$establishment_auto_map[["sus scrofa"]]), "introduced"
+                unname(establishment_state$establishment_auto_map[["sus scrofa"]]), "introduced"
             )
             testthat::expect_equal(
-                unname(rv$establishment_auto_map[["panthera onca"]]), ""
+                unname(establishment_state$establishment_auto_map[["panthera onca"]]), ""
             )
         }
     )
@@ -1355,8 +1355,8 @@ testthat::test_that("saved answers reach the preview for every record of the spe
             session$setInputs(open_establishment_assistant = 1)
             session$flushReact()
 
-            idx <- rv$establishment_entries$idx[
-                rv$establishment_entries$key == "sus scrofa"
+            idx <- establishment_state$establishment_entries$idx[
+                establishment_state$establishment_entries$key == "sus scrofa"
             ]
             do.call(session$setInputs, stats::setNames(
                 list("introduced"), paste0("est_means_", idx)
@@ -1405,7 +1405,7 @@ testthat::test_that("the establishment assistant splits island records of a tran
             session$setInputs(open_establishment_assistant = 1)
             session$flushReact()
 
-            entries <- rv$establishment_entries
+            entries <- establishment_state$establishment_entries
             testthat::expect_equal(entries$n_island, 2L)
             testthat::expect_equal(entries$island_names, "Fernando de Noronha")
             # No silent prefill: the island answer starts empty.
@@ -1447,7 +1447,7 @@ testthat::test_that("establishmentMeans without a degree is reported, not blocke
             session$setInputs(open_establishment_assistant = 1)
             session$flushReact()
 
-            idx <- rv$establishment_entries$idx[[1]]
+            idx <- establishment_state$establishment_entries$idx[[1]]
             do.call(session$setInputs, stats::setNames(
                 list("introduced"), paste0("est_means_", idx)
             ))
@@ -1455,7 +1455,7 @@ testthat::test_that("establishmentMeans without a degree is reported, not blocke
             session$flushReact()
 
             testthat::expect_equal(
-                establishment_pairs_missing_degree(rv$establishment_map), "sus scrofa"
+                establishment_pairs_missing_degree(establishment_state$establishment_map), "sus scrofa"
             )
             preview <- session$getReturned()$preview_data_r()
             testthat::expect_equal(preview$establishmentMeans, "introduced")
@@ -1478,8 +1478,8 @@ testthat::test_that("the assistant refuses to open without a scientificName colu
             session$setInputs(open_establishment_assistant = 1)
             session$flushReact()
 
-            testthat::expect_equal(nrow(rv$establishment_entries), 0L)
-            testthat::expect_true(establishment_map_is_empty(rv$establishment_map))
+            testthat::expect_equal(nrow(establishment_state$establishment_entries), 0L)
+            testthat::expect_true(establishment_map_is_empty(establishment_state$establishment_map))
         }
     )
 })
@@ -1498,16 +1498,16 @@ testthat::test_that("a new upload clears the establishment answers", {
         ),
         {
             session$flushReact()
-            rv$establishment_map <- list(
+            establishment_state$establishment_map <- list(
                 means = c("sus scrofa" = "introduced"),
                 degree = c("sus scrofa" = "invasive")
             )
-            testthat::expect_false(establishment_map_is_empty(rv$establishment_map))
+            testthat::expect_false(establishment_map_is_empty(establishment_state$establishment_map))
 
             data_rv(data.frame(especie = c("Panthera onca"), stringsAsFactors = FALSE))
             session$flushReact()
 
-            testthat::expect_true(establishment_map_is_empty(rv$establishment_map))
+            testthat::expect_true(establishment_map_is_empty(establishment_state$establishment_map))
         }
     )
 })
@@ -1567,8 +1567,8 @@ testthat::test_that("an assistant-filled card reads as mapped, not as untouched"
             session$setInputs(open_establishment_assistant = 1)
             session$flushReact()
 
-            idx <- rv$establishment_entries$idx[
-                rv$establishment_entries$key == "sus scrofa"
+            idx <- establishment_state$establishment_entries$idx[
+                establishment_state$establishment_entries$key == "sus scrofa"
             ]
             do.call(session$setInputs, stats::setNames(
                 list("introduced"), paste0("est_means_", idx)

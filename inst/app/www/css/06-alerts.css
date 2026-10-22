@@ -12,10 +12,6 @@
   font-weight: var(--weight-regular);
 }
 
-.shiny-notification {
-  font-weight: var(--weight-regular);
-}
-
 /* Bootstrap paints links in the theme primary (#38CFF6), which disappears on
    every alert tint. The link takes the alert's AA text color instead. */
 .alert a:not(.btn) {
@@ -51,5 +47,33 @@
   background-color: var(--info-bg);
   color: var(--info);
   border: 1px solid var(--info-border);
+}
+
+
+/* Toasts sit over the page, so they must be opaque. The state tints are
+   translucent: they go over the card color. Shiny also sets opacity 0.85. */
+.shiny-notification {
+  font-weight: var(--weight-regular);
+  border-radius: var(--radius);
+  font-family: var(--font-serif);
+  opacity: 1;
+}
+
+.shiny-notification-error {
+  background: linear-gradient(var(--error-bg), var(--error-bg)) var(--bg-card);
+  border: 1px solid var(--error-border);
+  color: var(--error-text);
+}
+
+.shiny-notification-warning {
+  background: linear-gradient(var(--warning-bg), var(--warning-bg)) var(--bg-card);
+  border: 1px solid var(--warning-border);
+  color: var(--warning-text);
+}
+
+.shiny-notification-message {
+  background: linear-gradient(var(--success-bg), var(--success-bg)) var(--bg-card);
+  border: 1px solid var(--success-border);
+  color: var(--success-text);
 }
 

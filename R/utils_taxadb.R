@@ -662,10 +662,10 @@ is_taxadb_run_done <- function(state) {
     isTRUE(state$completed) || identical(state$phase, "done") || identical(state$phase, "failed")
 }
 
-next_taxadb_run_step <- function(state) {
+next_taxadb_run_step <- function(state, adapters = names_provider_adapters()) {
     # Collect completed background BR updates opportunistically while the
     # state machine advances.
-    try(brprovider_poll_updates(), silent = TRUE)
+    try(adapters$poll(), silent = TRUE)
 
     if (is_taxadb_run_done(state)) {
         return(state)
@@ -725,51 +725,10 @@ next_taxadb_run_step <- function(state) {
         )
         state$provider_batch_total <- length(state$current_batches)
 
-        if (identical(provider_type, "br")) {
-            # ---- BR provider (florabr / faunabr) ----------------------------
-            ensured <- tryCatch(
-                brprovider_ensure_data(provider_id = provider, verbose = FALSE),
-                error = function(e) e
-            )
-            if (inherits(ensured, "error") || !isTRUE(ensured$ok) || !isTRUE(ensured$available)) {
-                err_msg <- if (inherits(ensured, "error")) {
-                    as.character(ensured$message)
-                } else if (is.list(ensured) && !is.null(ensured$error) &&
-                           nzchar(as.character(ensured$error))) {
-                    as.character(ensured$error)
-                } else {
-                    "Automatic data bootstrap failed."
-                }
-                return(record_provider_failure(state, provider, err_msg))
-            }
-
-            loaded <- tryCatch(
-                brprovider_load_data(provider),
-                error = function(e) e
-            )
-            if (inherits(loaded, "error") || is.null(loaded)) {
-                err_msg <- if (inherits(loaded, "error")) {
-                    as.character(loaded$message)
-                } else {
-                    "Data load failed."
-                }
-                return(record_provider_failure(state, provider, err_msg))
-            }
-
-            state$current_provider_data <- loaded
-            state$phase <- if (state$provider_batch_total == 0L) {
-                "provider_finalize"
-            } else {
-                "provider_query_batch"
-            }
-        } else {
-            # COL XR is an API: there is nothing to download or load.
-            state$phase <- if (state$provider_batch_total == 0L) {
-                "provider_finalize"
-            } else {
-                "provider_query_batch"
-            }
-        }
+        loaded <- adapters$load(provider, provider_type)
+        if (!is.null(loaded$error)) return(record_provider_failure(state, provider, loaded$error))
+        state$current_provider_data <- loaded$data
+        state$phase <- if (state$provider_batch_total == 0L) "provider_finalize" else "provider_query_batch"
 
         return(state)
     }
@@ -788,83 +747,24 @@ next_taxadb_run_step <- function(state) {
         state$provider_batch_idx <- next_batch
         batch_queries <- state$current_batches[[next_batch]]
 
-        if (identical(provider_type, "br")) {
-            # ---- BR provider query ------------------------------------------
-            result_df <- tryCatch(
-                query_brprovider(
-                    query_names = batch_queries,
-                    provider_id = state$current_provider,
-                    data        = state$current_provider_data
-                ),
-                error = function(e) e
-            )
-
-            if (inherits(result_df, "error")) {
-                return(record_provider_failure(
-                    state, state$current_provider, as.character(result_df$message)
-                ))
-            }
-
-            if (is.data.frame(result_df) && nrow(result_df) > 0L) {
-                state$resolved_frames[[
-                    length(state$resolved_frames) + 1L
-                ]] <- result_df
-
-                # BR providers short-circuit only on accepted names.
-                # Synonym / ambiguous / not_found continue to the GBIF fallback.
-                accepted_mask <- result_df$validation_status %in% "accepted"
-                accepted_mask[is.na(accepted_mask)] <- FALSE
-                accepted_df <- result_df[accepted_mask, , drop = FALSE]
-
-                if (nrow(accepted_df) > 0L) {
-                    resolved_names       <- unique(as.character(
-                        accepted_df$query_name
-                    ))
-                    state$pending_queries  <- setdiff(
-                        state$pending_queries, resolved_names
-                    )
-                    state$resolved_unique  <- state$total_unique -
-                        length(state$pending_queries)
-                }
-
-                state$stream_df <- append_stream_items(
-                    state$stream_df, result_df, now = Sys.time()
-                )
-            }
-
-        } else {
-            # ---- COL XR provider query (GBIF) -------------------------------
-            matches <- tryCatch(colxr_match_names(batch_queries), error = function(e) e)
-            if (inherits(matches, "error")) {
-                return(record_provider_failure(
-                    state, state$current_provider, as.character(matches$message)
-                ))
-            }
-
-            # A name COL XR does not know stays pending: it ends as not_found.
-            resolved <- matches[matches$validation_status != "not_found", , drop = FALSE]
-            if (nrow(resolved) > 0L) {
-                state$resolved_frames[[
-                    length(state$resolved_frames) + 1L
-                ]] <- resolved
-                state$pending_queries <- setdiff(
-                    state$pending_queries, resolved$query_name
-                )
-                state$resolved_unique <- state$total_unique -
-                    length(state$pending_queries)
-                state$stream_df <- append_stream_items(
-                    state$stream_df, resolved, now = Sys.time()
-                )
-            }
-
-            unanswered <- attr(matches, "unanswered")
-            if (length(unanswered) > 0L) {
-                return(record_provider_failure(
-                    state, state$current_provider,
-                    sprintf("GBIF did not answer for %d names.", length(unanswered)),
-                    answered = matches$query_name
-                ))
-            }
+        answer <- adapters$query(batch_queries, state$current_provider, provider_type,
+                                 state$current_provider_data)
+        if (!is.null(answer$error)) {
+            return(record_provider_failure(state, state$current_provider, answer$error))
+        }
+        result_df <- answer$results
+        if (nrow(result_df) > 0L) {
+            state$resolved_frames[[length(state$resolved_frames) + 1L]] <- result_df
+            state$pending_queries <- setdiff(state$pending_queries, answer$resolved)
+            state$resolved_unique <- state$total_unique - length(state$pending_queries)
+            state$stream_df <- append_stream_items(state$stream_df, result_df, now = Sys.time())
+        }
+        if (length(answer$unanswered) > 0L) {
+            return(record_provider_failure(
+                state, state$current_provider,
+                sprintf("GBIF did not answer for %d names.", length(answer$unanswered)),
+                answered = answer$answered
+            ))
         }
 
         if (state$provider_batch_idx >= state$provider_batch_total) {
