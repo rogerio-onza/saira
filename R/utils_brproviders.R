@@ -16,7 +16,9 @@
 # Private in-process registry for background update jobs.
 .brprovider_jobs <- new.env(parent = emptyenv())
 
-.brprovider_check_ttl_secs_default <- 24L * 60L * 60L
+# A new catalog version is a full download of about 2 min, and the names change
+# little in a month (ADR-174).
+.brprovider_check_ttl_secs_default <- 30L * 24L * 60L * 60L
 .brprovider_retry_backoff_secs_default <- 15L * 60L
 .brprovider_lock_stale_secs_default <- 60L * 60L
 
@@ -676,7 +678,7 @@ brprovider_poll_updates <- function(provider_id = NULL) {
 #' download (mandatory first run).
 #'
 #' @param provider_id Character.
-#' @param check_ttl_secs Numeric. Remote check TTL in seconds. Default 24h.
+#' @param check_ttl_secs Numeric. Remote check TTL in seconds. Default 30 days.
 #' @param retry_backoff_secs Numeric. Retry backoff after update failure.
 #' @param verbose Logical.
 #' @return Named list with status flags.

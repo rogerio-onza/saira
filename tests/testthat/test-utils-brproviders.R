@@ -688,6 +688,13 @@ testthat::test_that("bundled snapshot fills an empty cache with its version", {
             testthat::expect_true(isTRUE(st$has_data))
             testthat::expect_identical(as.character(st$status), "up_to_date")
             testthat::expect_identical(as.character(st$local_version), snap$florabr$version)
+
+            # The snapshot date counts as a check, so the IPT waits 30 days from it.
+            meta <- .brprovider_read_meta("florabr")
+            testthat::expect_identical(meta$last_checked_at, snap$florabr$downloaded_at)
+            snapshot_at <- .brprovider_time_from_string(snap$florabr$downloaded_at)
+            testthat::expect_false(.brprovider_check_due(meta, now = snapshot_at + 29 * 86400))
+            testthat::expect_true(.brprovider_check_due(meta, now = snapshot_at + 30 * 86400))
         }
     )
 })

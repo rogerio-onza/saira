@@ -30,6 +30,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **names:** Check the IPT for new Flora BR and Fauna BR versions every 30 days, not every day, ADR-174
 - **export:** Download the real coordinates of the generalized records as a private Excel file from the Package card, outside the IPT `.zip`, ADR-163
 - **generalization:** Shorten the precision and invalid-coordinate notes, and open the Chapman explanation from a "?" beside the decision table
 - **export:** Show the download bar as a flat card, and name the next step on the button while the bundle is blocked
