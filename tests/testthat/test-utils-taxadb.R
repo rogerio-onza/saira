@@ -97,6 +97,29 @@ testthat::test_that("build_validation_report preserves order and flags ignored",
     testthat::expect_identical(report$validation_status[[3]], "invalid")
 })
 
+testthat::test_that("build_validation_report keeps the BR suggestion of an ambiguous name", {
+    input_df <- data.frame(
+        row_id = 1L,
+        input_name = "Pantera onca",
+        query_name = "Pantera onca",
+        skip_reason = NA_character_,
+        stringsAsFactors = FALSE
+    )
+    cascade <- saira:::normalize_brprovider_result(data.frame(
+        input_name = "Pantera onca",
+        Spelling = "Probably_incorrect",
+        Suggested_name = "Panthera onca",
+        Distance = 1L,
+        taxonomicStatus = "valid",
+        family = "Felidae",
+        stringsAsFactors = FALSE
+    ), "faunabr")
+
+    report <- build_validation_report(input_df, cascade)
+    testthat::expect_identical(report$scientificName, "Pantera onca")
+    testthat::expect_identical(report$suggestedName, "Panthera onca")
+})
+
 testthat::test_that("build_validation_report collapses duplicate cascade rows by best effective status", {
     input_df <- data.frame(
         row_id = 1:2,
