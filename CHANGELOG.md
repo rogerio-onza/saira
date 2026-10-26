@@ -93,6 +93,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **ui:** Stop the console errors when a tab or theme change skips its animation, for example in a hidden window
 - **names:** Check for Flora BR and Fauna BR updates in a separate R process, so a run does not stop for it
 - **names:** Fill the name correction with the Flora BR or Fauna BR suggestion for a misspelled name, ADR-173
 - **names:** Keep the accepted name of a Flora BR or Fauna BR synonym for the sensitive check, ADR-173

@@ -54,6 +54,9 @@
       replaying = true;
       try { showTab(link); } finally { replaying = false; }
     });
+    // A hidden page or a newer transition skips this one, and ready then
+    // rejects. The tab still changes, so the rejection needs no handling.
+    vt.ready.catch(function () {});
     vt.finished.finally(function () {
       if (id === latest) root.classList.remove("vt-tab", "vt-back");
     });
