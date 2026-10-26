@@ -473,6 +473,23 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
 }
 
 #' @noRd
+.brprovider_update_job <- function() {
+    # pkgload runs the app from the source tree, without an installed saira.
+    # The new R process must then load the same tree to find the worker.
+    path <- getNamespaceInfo("saira", "path")
+    source_path <- if (file.exists(file.path(path, "R", "utils_brproviders.R"))) path
+    job <- function(provider_id, local_version) {
+        if (!is.null(source_path)) {
+            pkgload::load_all(source_path, quiet = TRUE, export_all = FALSE)
+        }
+        worker <- get(".brprovider_background_update_worker", envir = asNamespace("saira"))
+        worker(provider_id = provider_id, local_version = local_version)
+    }
+    environment(job) <- list2env(list(source_path = source_path), parent = baseenv())
+    job
+}
+
+#' @noRd
 .brprovider_start_background_update <- function(provider_id,
                                                 local_version = NA_character_,
                                                 retry_backoff_secs = .brprovider_retry_backoff_secs_default) {
@@ -496,33 +513,36 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
         source_package_version = .brprovider_pkg_version_safe(provider_id)
     ))
 
+    cluster <- NULL
     future_obj <- tryCatch({
-        old_plan <- tryCatch(future::plan("list"), error = function(e) NULL)
-        changed_plan <- FALSE
-        if (is.list(old_plan) && length(old_plan) > 0L && inherits(old_plan[[1L]], "sequential")) {
-            future::plan(future::multisession, workers = 1L)
-            changed_plan <- TRUE
-        }
+        # future runs multisession(workers = 1) in this R process, so the IPT
+        # check and the download stopped the app. The update gets its own
+        # R process. Without the PID test and the validation, which start
+        # extra R sessions, the process starts in 0.3 s instead of 3 s.
+        old_opts <- options(parallelly.makeNodePSOCK.autoKill = FALSE)
+        on.exit(options(old_opts), add = TRUE)
+        cluster <- parallelly::makeClusterPSOCK(
+            1L,
+            rscript_args = "--vanilla",
+            rscript_libs = .libPaths(),
+            validate = FALSE
+        )
+        old_plan <- future::plan("list")
+        # .cleanup = FALSE keeps the process alive. The poll stops it.
+        on.exit(future::plan(old_plan, .cleanup = FALSE), add = TRUE)
+        future::plan(future::cluster, workers = cluster, .cleanup = FALSE)
 
-        on.exit({
-            if (isTRUE(changed_plan) && !is.null(old_plan)) {
-                try(future::plan(old_plan), silent = TRUE)
-            }
-        }, add = TRUE)
-
+        job <- .brprovider_update_job()
         future::future(
-            {
-                .brprovider_background_update_worker(
-                    provider_id = provider_id,
-                    local_version = local_version
-                )
-            },
+            job(provider_id = provider_id, local_version = local_version),
+            globals = list(job = job, provider_id = provider_id, local_version = local_version),
             lazy = FALSE,
             seed = TRUE
         )
     }, error = function(e) e)
 
     if (inherits(future_obj, "error")) {
+        if (!is.null(cluster)) try(parallel::stopCluster(cluster), silent = TRUE)
         .brprovider_release_lock(provider_id)
         now <- .brprovider_now_utc()
         .brprovider_patch_meta(provider_id, list(
@@ -537,6 +557,7 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
 
     assign(provider_id, list(
         future = future_obj,
+        cluster = cluster,
         retry_backoff_secs = as.integer(retry_backoff_secs),
         started_at = .brprovider_time_to_string(.brprovider_now_utc())
     ), envir = .brprovider_jobs)
@@ -589,6 +610,7 @@ brprovider_poll_updates <- function(provider_id = NULL) {
             }
         )
 
+        if (!is.null(job$cluster)) try(parallel::stopCluster(job$cluster), silent = TRUE)
         .brprovider_release_lock(id)
 
         now <- .brprovider_now_utc()

@@ -551,6 +551,73 @@ testthat::test_that("poll_updates marks update_failed and preserves cache (DEP-0
     )
 })
 
+testthat::test_that("background update runs in its own R process, and the poll stops it", {
+    testthat::skip_if_not_installed("future")
+    testthat::skip_if_not_installed("parallelly")
+
+    tmp <- tempfile(pattern = "brp_worker_")
+    dir.create(tmp)
+    old_plan <- future::plan("list")
+    future::plan(future::sequential)
+    on.exit({
+        future::plan(old_plan)
+        unlink(tmp, recursive = TRUE)
+    })
+
+    job <- function(provider_id, local_version) {
+        list(ok = TRUE, updated = FALSE, provider_id = provider_id,
+             remote_version = "1", local_version = "1", error = NA_character_,
+             pid = Sys.getpid())
+    }
+    environment(job) <- baseenv()
+
+    testthat::with_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .brprovider_update_job = function() job,
+        .package = "saira",
+        {
+            testthat::expect_true(.brprovider_start_background_update("faunabr"))
+            started <- get("faunabr", envir = .brprovider_jobs())
+            testthat::expect_s3_class(future::plan(), "sequential")
+            testthat::expect_false(identical(future::value(started$future)$pid, Sys.getpid()))
+
+            events <- brprovider_poll_updates(provider_id = "faunabr")
+            testthat::expect_length(events, 1L)
+            testthat::expect_identical(events[[1L]]$status, "up_to_date")
+            testthat::expect_false(exists("faunabr", envir = .brprovider_jobs(), inherits = FALSE))
+            testthat::expect_false(file.exists(.brprovider_lock_path("faunabr")))
+            testthat::expect_error(parallel::clusterEvalQ(started$cluster, 1))
+        }
+    )
+})
+
+testthat::test_that("a worker that does not start releases the lock and backs off", {
+    testthat::skip_if_not_installed("future")
+    testthat::skip_if_not_installed("parallelly")
+
+    tmp <- tempfile(pattern = "brp_worker_fail_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+
+    testthat::with_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .package = "saira",
+        testthat::with_mocked_bindings(
+            makeClusterPSOCK = function(...) stop("worker unavailable"),
+            .package = "parallelly",
+            {
+                testthat::expect_false(.brprovider_start_background_update("faunabr"))
+                meta <- .brprovider_read_meta("faunabr")
+                testthat::expect_identical(meta$status, "update_failed")
+                testthat::expect_identical(meta$last_error, "worker unavailable")
+                testthat::expect_false(is.na(meta$retry_after_at))
+                testthat::expect_false(file.exists(.brprovider_lock_path("faunabr")))
+                testthat::expect_false(exists("faunabr", envir = .brprovider_jobs(), inherits = FALSE))
+            }
+        )
+    )
+})
+
 testthat::test_that("bundled snapshot fills an empty cache with its version", {
     tmp <- tempfile(pattern = "brp_seed_")
     dir.create(tmp)
