@@ -224,6 +224,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **names:** Show a name in the run list only with its last answer, and keep the scroll while the list grows, ADR-168
 
 ### Performance
+- **names:** Check the names found in the Flora BR and Fauna BR catalogs before the slow spelling search, ADR-172
 - **upload:** Read a large CSV in a third of the time and about half the peak memory
 - **mapping:** Switch the Mapping filter in the browser, with no grid rebuild and no card moves: Relevant and All now change at once, not after 2 s, ADR-157
 - **names:** Check the Brazilian provider status only during a run or a provider update ([#168](https://github.com/rogerio-onza/saira/pull/168))

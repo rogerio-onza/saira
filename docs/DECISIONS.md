@@ -3289,3 +3289,14 @@ Formato: ADR leve (Architecture Decision Record).
   - Sem planilha, `import_mapping_guide_to_aliases()` usa esses headers como `available_columns`.
   - `guide_source_columns()` mantem o nome inteiro quando ele e um header. Numa concatenacao, ela casa primeiro o header literal mais longo.
 - **Consequencias**: leitores antigos ignoram a linha nova. Um guia sem a linha (v1 ou v2 anterior) mantem a leitura antiga e precisa da planilha para nomes ambiguos. O guia grava so os nomes das colunas, sem dados dos registros.
+
+## ADR-172: Flora BR e Fauna BR respondem primeiro os nomes do catalogo
+
+- **Data**: 2026-10-26
+- **Status**: Aceito.
+- **Contexto**: na planilha de demonstracao (56 nomes), a fase BR levava 24 s, 19 s deles na Flora BR. Um nome fora do catalogo passa por `agrep()` sobre 166 mil nomes, cerca de 0,4 s por nome. A Flora BR fazia essa busca para cada animal antes de a Fauna BR aceita-lo por correspondencia exata. Nesse tempo, a lista e o contador ficavam quase parados.
+- **Decisao**:
+  - A fase BR tem duas passadas (`br_pass`). Na passada exata, cada provedor recebe so os nomes pendentes que estao na coluna `species` do seu catalogo, em lotes de `batch_size`.
+  - Na passada aproximada, cada provedor recebe os nomes ainda pendentes que nao estao no seu catalogo, em lotes de `br_batch_size`.
+  - Um provedor que falhou na passada exata nao e carregado de novo. Os nomes que ele nao respondeu ficam sem verificacao.
+- **Consequencias**: a busca aproximada so produz `ambiguous` ou `not_found`, abaixo de `accepted` e `synonym` no rank da cascata. Pular essa busca para um nome que outro provedor BR aceita nao muda o relatorio. Na demonstracao, a fase BR caiu de 24,6 s para 6,4 s, e metade dos nomes aparece em 0,4 s, nao em 21 s. Cascata, relatorio e lista ficaram identicos nos 73 nomes testados (demonstracao e casos dificeis). O custo restante e a busca aproximada dos nomes que nenhum catalogo tem, cerca de 0,9 s por nome nas duas bases.
