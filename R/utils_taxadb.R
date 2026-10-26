@@ -596,6 +596,9 @@ init_taxadb_run_state <- function(
         providers = provider_ids,
         provider_types = provider_types,
         cascade_phase = cascade_phase,
+        # The BR providers answer in two passes: first the names in their
+        # catalogues, then the fuzzy search for the names still pending.
+        br_pass = "exact",
         provider_idx = 0L,
         current_provider = "",
         current_provider_data = NULL,
@@ -608,7 +611,7 @@ init_taxadb_run_state <- function(
         total_unique = length(valid_queries),
         resolved_unique = 0L,
         batch_size = suppressWarnings(as.integer(batch_size)),
-        # A Flora BR or Fauna BR query takes ~0.3 s per name, so a small
+        # A fuzzy Flora BR or Fauna BR query takes ~0.4 s per name, so a small
         # batch keeps each run tick short and the progress moves in small
         # steps. The cost is ~10% more time for the BR queries.
         br_batch_size = suppressWarnings(as.integer(br_batch_size)),
@@ -691,6 +694,13 @@ next_taxadb_run_step <- function(state, adapters = names_provider_adapters()) {
         }
 
         next_idx <- as.integer(state$provider_idx) + 1L
+        # After the exact pass of the last BR provider, the BR providers
+        # start again with the fuzzy pass.
+        if (identical(state$br_pass, "exact") &&
+            !identical(as.character(state$provider_types[state$providers[next_idx]]), "br")) {
+            state$br_pass <- "fuzzy"
+            next_idx <- 1L
+        }
         if (next_idx > length(state$providers)) {
             state$phase <- "consolidate"
             return(state)
@@ -706,6 +716,21 @@ next_taxadb_run_step <- function(state, adapters = names_provider_adapters()) {
         if (identical(state$cascade_phase, "br") &&
             identical(provider_type, "colxr")) {
             state$cascade_phase <- "fallback"
+        }
+
+        # A provider that failed in the exact pass is not loaded again. The
+        # names it did not answer stay unchecked.
+        if (identical(provider_type, "br") && identical(state$br_pass, "fuzzy") &&
+            provider %in% state$provider_failures$provider) {
+            answered <- unlist(lapply(state$resolved_frames, function(df) {
+                df$query_name[df$provider %in% provider]
+            }), use.names = FALSE)
+            state$unchecked_queries <- union(
+                state$unchecked_queries, setdiff(state$pending_queries, answered)
+            )
+            state$provider_idx <- next_idx
+            state$phase <- "provider_finalize"
+            return(state)
         }
 
         state$provider_idx          <- next_idx
@@ -728,6 +753,21 @@ next_taxadb_run_step <- function(state, adapters = names_provider_adapters()) {
         loaded <- adapters$load(provider, provider_type)
         if (!is.null(loaded$error)) return(record_provider_failure(state, provider, loaded$error))
         state$current_provider_data <- loaded$data
+        if (identical(provider_type, "br")) {
+            # A name that is not in the catalogue goes through agrep() over
+            # the full catalogue, ~0.4 s per name. Flora BR did this for each
+            # animal before Fauna BR accepted it. The fuzzy result is at most
+            # ambiguous, so it never changes the answer of an exact match in
+            # a later provider (ADR-172).
+            in_catalog <- state$pending_queries %in% loaded$data[["species"]]
+            exact_pass <- identical(state$br_pass, "exact")
+            state$current_batches <- split_query_batches(
+                state$pending_queries[if (exact_pass) in_catalog else !in_catalog],
+                # An exact lookup costs the same for 5 or 20 names.
+                batch_size = if (exact_pass) state$batch_size else state$br_batch_size %||% state$batch_size
+            )
+            state$provider_batch_total <- length(state$current_batches)
+        }
         state$phase <- if (state$provider_batch_total == 0L) "provider_finalize" else "provider_query_batch"
 
         return(state)

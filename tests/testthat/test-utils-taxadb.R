@@ -357,7 +357,7 @@ testthat::test_that("next_taxadb_run_step: only BR accepted names leave pending_
             list(ok = TRUE, available = TRUE, provider_id = provider_id)
         },
         brprovider_load_data = function(provider_id, force_reload = FALSE) {
-            data.frame(provider = provider_id, stringsAsFactors = FALSE)
+            data.frame(species = input_df$query_name, stringsAsFactors = FALSE)
         },
         query_brprovider = function(query_names, provider_id, data = NULL, max_distance = 0.1) {
             status_lookup <- c(
@@ -422,7 +422,7 @@ testthat::test_that("vn_settled_stream shows a name only with its last answer (D
             list(ok = TRUE, available = TRUE, provider_id = provider_id)
         },
         brprovider_load_data = function(provider_id, force_reload = FALSE) {
-            data.frame(provider = provider_id, stringsAsFactors = FALSE)
+            data.frame(species = input_df$query_name, stringsAsFactors = FALSE)
         },
         query_brprovider = function(query_names, provider_id, data = NULL, max_distance = 0.1) {
             data.frame(
@@ -480,7 +480,7 @@ testthat::test_that("vn_settled_stream shows a name only with its last answer (D
     )
 })
 
-testthat::test_that("next_taxadb_run_step: BR providers query in small batches, GBIF in large ones", {
+testthat::test_that("next_taxadb_run_step: BR fuzzy queries go in small batches, exact ones in large ones", {
     input_df <- data.frame(
         row_id      = 1:12,
         input_name  = paste("Name", 1:12),
@@ -488,27 +488,54 @@ testthat::test_that("next_taxadb_run_step: BR providers query in small batches, 
         skip_reason = NA_character_,
         stringsAsFactors = FALSE
     )
-
-    testthat::with_mocked_bindings(
-        brprovider_ensure_data = function(provider_id, verbose = FALSE, ...) {
-            list(ok = TRUE, available = TRUE, provider_id = provider_id)
-        },
-        brprovider_load_data = function(provider_id, force_reload = FALSE) {
-            data.frame(provider = provider_id, stringsAsFactors = FALSE)
-        },
-        .package = "saira",
-        {
-            state <- init_taxadb_run_state(input_df, providers = c("florabr"), batch_size = 200L, br_batch_size = 5L)
-            state <- next_taxadb_run_step(state) # prepare -> provider_init
-            state <- next_taxadb_run_step(state) # init/load BR provider
-            testthat::expect_identical(state$provider_batch_total, 3L)
-            testthat::expect_identical(lengths(state$current_batches, use.names = FALSE), c(5L, 5L, 2L))
-            testthat::expect_identical(
-                saira:::split_query_batches(state$pending_queries, batch_size = state$batch_size) |> length(),
-                1L
-            )
+    sent <- list()
+    adapters <- list(
+        poll = function() list(),
+        load = function(provider, type) list(data = data.frame(species = paste("name", 1:3)), error = NULL),
+        query = function(names, provider, type, data) {
+            if (identical(type, "br")) sent[[length(sent) + 1L]] <<- names
+            list(results = data.frame(query_name = names, validation_status = "not_found"),
+                 resolved = character(0), answered = names, unanswered = character(0), error = NULL)
         }
     )
+
+    state <- init_taxadb_run_state(input_df, providers = c("florabr"), batch_size = 200L, br_batch_size = 5L)
+    while (!is_taxadb_run_done(state)) state <- next_taxadb_run_step(state, adapters)
+
+    testthat::expect_identical(lengths(sent), c(3L, 5L, 4L))
+    testthat::expect_identical(sent[[1L]], paste("name", 1:3))
+})
+
+testthat::test_that("next_taxadb_run_step: a name accepted in a later BR catalogue skips the fuzzy search (ADR-172)", {
+    input_df <- data.frame(
+        row_id      = 1:3,
+        input_name  = c("Plantus a", "Animalus b", "Unknownus c"),
+        query_name  = c("Plantus a", "Animalus b", "Unknownus c"),
+        skip_reason = NA_character_,
+        stringsAsFactors = FALSE
+    )
+    catalog <- list(florabr = "Plantus a", faunabr = "Animalus b")
+    sent <- list()
+    adapters <- list(
+        poll = function() list(),
+        load = function(provider, type) list(data = data.frame(species = catalog[[provider]]), error = NULL),
+        query = function(names, provider, type, data) {
+            sent[[length(sent) + 1L]] <<- data.frame(provider = provider, query_name = names)
+            accepted <- names[names %in% data$species]
+            list(results = data.frame(query_name = names, provider = provider,
+                                      validation_status = ifelse(names %in% accepted, "accepted", "not_found")),
+                 resolved = accepted, answered = names, unanswered = character(0), error = NULL)
+        }
+    )
+
+    state <- init_taxadb_run_state(input_df, providers = c("florabr", "faunabr"), batch_size = 20L)
+    while (!is_taxadb_run_done(state)) state <- next_taxadb_run_step(state, adapters)
+    sent <- do.call(rbind, sent)
+
+    testthat::expect_identical(sent$provider, c("florabr", "faunabr", "florabr", "faunabr", "gbif"))
+    testthat::expect_identical(sent$query_name, c("Plantus a", "Animalus b", "Unknownus c", "Unknownus c", "Unknownus c"))
+    status <- stats::setNames(state$cascade_results$validation_status, state$cascade_results$query_name)
+    testthat::expect_identical(unname(status[input_df$query_name]), c("accepted", "accepted", "not_found"))
 })
 
 testthat::test_that("next_taxadb_run_step: BR provider init uses ensure_data and loads cache", {
