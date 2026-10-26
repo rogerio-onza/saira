@@ -35,7 +35,7 @@ testthat::test_that("normalize_brprovider_result: a homonym tie keeps the accept
     raw <- data.frame(
         input_name      = c("Victoria amazonica", "Victoria amazonica"),
         Spelling        = c("Correct", "Correct"),
-        `Suggested name` = c("Victoria amazonica", "Victoria amazonica"),
+        Suggested_name  = c("Victoria amazonica", "Victoria amazonica"),
         Distance        = c(0, 0),
         taxonomicStatus = c("Synonym", "Accepted"),
         family          = "Nymphaeaceae",
@@ -50,7 +50,7 @@ testthat::test_that("normalize_brprovider_result: Correct + Accepted -> accepted
     raw <- data.frame(
         input_name      = "Panthera onca",
         Spelling        = "Correct",
-        `Suggested name` = "Panthera onca",
+        Suggested_name  = "Panthera onca",
         Distance        = 0L,
         taxonomicStatus = "valid",
         family          = "Felidae",
@@ -63,13 +63,14 @@ testthat::test_that("normalize_brprovider_result: Correct + Accepted -> accepted
     testthat::expect_equal(out$provider, "faunabr")
     testthat::expect_equal(out$query_name, "Panthera onca")
     testthat::expect_equal(out$scientificName, "Panthera onca")
+    testthat::expect_true(is.na(out$suggestedName))
 })
 
 testthat::test_that("normalize_brprovider_result: Correct + Synonym -> synonym", {
     raw <- data.frame(
         input_name      = "Araucaria angustifolia",
         Spelling        = "Correct",
-        `Suggested name` = "Araucaria angustifolia",
+        Suggested_name  = "Araucaria angustifolia",
         Distance        = 0L,
         taxonomicStatus = "Synonym",
         family          = "Araucariaceae",
@@ -81,11 +82,61 @@ testthat::test_that("normalize_brprovider_result: Correct + Synonym -> synonym",
     testthat::expect_equal(out$provider, "florabr")
 })
 
+testthat::test_that("normalize_brprovider_result: a synonym carries the accepted name of each base", {
+    flora <- data.frame(
+        input_name          = c("Caesalpinia echinata", "Euterpe edulis"),
+        Spelling            = "Correct",
+        Suggested_name      = c("Caesalpinia echinata", "Euterpe edulis"),
+        Distance            = 0,
+        taxonomicStatus     = c("Synonym", "Accepted"),
+        nomenclaturalStatus = c("", "Correct"),
+        acceptedName        = c("Paubrasilia echinata", ""),
+        family              = c("Fabaceae", "Arecaceae"),
+        stringsAsFactors    = FALSE
+    )
+    out <- normalize_brprovider_result(flora, "florabr")
+    testthat::expect_identical(out$acceptedNameUsage, c("Paubrasilia echinata", NA_character_))
+
+    # Fauna BR fills validName on valid rows too, with the name itself.
+    fauna <- data.frame(
+        input_name          = c("Habronema waltoni", "Panthera onca"),
+        Spelling            = "Correct",
+        Suggested_name      = c("Habronema waltoni", "Panthera onca"),
+        Distance            = 0,
+        taxonomicStatus     = c("synonym", "valid"),
+        nomenclaturalStatus = NA_character_,
+        validName           = c("Lispirurus waltoni", "Panthera onca"),
+        family              = c("Habronematidae", "Felidae"),
+        matches             = "single",
+        stringsAsFactors    = FALSE
+    )
+    out <- normalize_brprovider_result(fauna, "faunabr")
+    testthat::expect_identical(out$acceptedNameUsage, c("Lispirurus waltoni", NA_character_))
+})
+
+testthat::test_that("a Flora BR synonym of an MMA species reaches the sensitive lookup (B18)", {
+    listed <- "Paubrasilia echinata"
+    testthat::skip_if(is.na(saira:::sensitive_category_for(listed)), "Paubrasilia echinata not on the bundled MMA list")
+    report <- normalize_brprovider_result(data.frame(
+        input_name      = "Caesalpinia echinata",
+        Spelling        = "Correct",
+        Suggested_name  = "Caesalpinia echinata",
+        Distance        = 0,
+        taxonomicStatus = "Synonym",
+        acceptedName    = listed,
+        family          = "Fabaceae",
+        stringsAsFactors = FALSE
+    ), "florabr")
+    out <- saira:::synonym_sensitivity_entries(report)
+    testthat::expect_identical(out$scientificName, "Caesalpinia echinata")
+    testthat::expect_true(out$sensitive)
+})
+
 testthat::test_that("normalize_brprovider_result: Probably_incorrect -> ambiguous", {
     raw <- data.frame(
         input_name      = "Pantera onca",
         Spelling        = "Probably_incorrect",
-        `Suggested name` = "Panthera onca",
+        Suggested_name  = "Panthera onca",
         Distance        = 1L,
         taxonomicStatus = "valid",
         family          = "Felidae",
@@ -94,14 +145,16 @@ testthat::test_that("normalize_brprovider_result: Probably_incorrect -> ambiguou
     )
     out <- normalize_brprovider_result(raw, "faunabr")
     testthat::expect_equal(out$validation_status, "ambiguous")
-    testthat::expect_equal(out$scientificName, "Panthera onca")
+    # The report and the export look up threat status by scientificName.
+    testthat::expect_equal(out$scientificName, "Pantera onca")
+    testthat::expect_equal(out$suggestedName, "Panthera onca")
 })
 
 testthat::test_that("normalize_brprovider_result: Not_found -> not_found with match_count 0", {
     raw <- data.frame(
         input_name      = "Xyz abc",
         Spelling        = "Not_found",
-        `Suggested name` = NA_character_,
+        Suggested_name  = NA_character_,
         Distance        = NA_real_,
         taxonomicStatus = NA_character_,
         family          = NA_character_,
@@ -117,7 +170,7 @@ testthat::test_that("normalize_brprovider_result: dedup keeps closest Distance p
     raw <- data.frame(
         input_name      = c("Pantera onca", "Pantera onca", "Pantera onca"),
         Spelling        = c("Probably_incorrect", "Probably_incorrect", "Probably_incorrect"),
-        `Suggested name` = c("Panthera onca", "Pantera once", "Pantera oncaa"),
+        Suggested_name  = c("Panthera onca", "Pantera once", "Pantera oncaa"),
         Distance        = c(1L, 2L, 3L),
         taxonomicStatus = c("valid", "valid", "valid"),
         family          = c("Felidae", "Felidae", "Felidae"),
@@ -126,14 +179,14 @@ testthat::test_that("normalize_brprovider_result: dedup keeps closest Distance p
     )
     out <- normalize_brprovider_result(raw, "faunabr")
     testthat::expect_equal(nrow(out), 1L)
-    testthat::expect_equal(out$scientificName, "Panthera onca")
+    testthat::expect_equal(out$suggestedName, "Panthera onca")
 })
 
 testthat::test_that("normalize_brprovider_result: taxadb expected columns are present", {
     raw <- data.frame(
         input_name      = "Panthera onca",
         Spelling        = "Correct",
-        `Suggested name` = "Panthera onca",
+        Suggested_name  = "Panthera onca",
         Distance        = 0L,
         taxonomicStatus = "valid",
         family          = "Felidae",

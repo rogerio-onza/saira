@@ -604,10 +604,19 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 return(NULL)
             }
 
+            # The stream has no suggestion column, so it comes from the report.
+            report_df <- validation_result()
+            suggested_name <- if (is.data.frame(report_df) && "suggestedName" %in% names(report_df)) {
+                as.character(report_df$suggestedName[match(query_name, as.character(report_df$query_name))])
+            } else {
+                NA_character_
+            }
+
             list(
                 query_name = query_name,
                 status_key = status_key,
-                scientific_name = query_name
+                scientific_name = query_name,
+                suggested_name = suggested_name
             )
         }
 

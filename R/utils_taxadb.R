@@ -976,6 +976,7 @@ build_validation_report <- function(input_df, cascade_results) {
         "query_name",
         "input_name",
         "scientificName",
+        "suggestedName",
         "taxonomicStatus",
         "acceptedNameUsageID",
         "acceptedNameUsage",

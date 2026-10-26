@@ -835,6 +835,13 @@ show_names_review_modal <- function(mode, target, ns, lang_r) {
             inputId = input_id, saveId = save_id,
             original = as.character(target$scientific_name %||% "")
         ))
+        # A BR provider suggestion fills the field. The hint keeps the typed name.
+        suggested <- as.character(target$suggested_name %||% NA_character_)
+        prefill <- if (length(suggested) == 1L && !is.na(suggested) && nzchar(suggested)) {
+            suggested
+        } else {
+            as.character(target$scientific_name %||% "")
+        }
 
         shiny::showModal(shiny::modalDialog(
             shiny::div(
@@ -854,7 +861,7 @@ show_names_review_modal <- function(mode, target, ns, lang_r) {
                     id = ns("review_corrected_name"),
                     type = "text",
                     class = "vn-review-edit-input form-control",
-                    value = as.character(target$scientific_name %||% ""),
+                    value = prefill,
                     spellcheck = "false",
                     autocomplete = "off"
                 ),

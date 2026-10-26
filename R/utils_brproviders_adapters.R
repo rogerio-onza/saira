@@ -11,7 +11,10 @@
 #'   Spelling         -> validation_status  (Correct -> accepted/synonym,
 #'                                           Probably_incorrect -> ambiguous,
 #'                                           Not_found -> not_found)
-#'   "Suggested name" -> scientificName
+#'   input_name       -> scientificName
+#'   Suggested_name   -> suggestedName      (ambiguous rows only)
+#'   acceptedName or
+#'   validName        -> acceptedNameUsage  (synonym rows only)
 #'   taxonomicStatus  -> taxonomicStatus    (lowercased)
 #'   family           -> family
 #'
@@ -99,17 +102,25 @@ normalize_brprovider_result <- function(raw_df, provider_id) {
         "not_found"
     }, FUN.VALUE = character(1))
 
-    # scientificName: prefer "Suggested name" column, fall back to input
-    suggested_col <- if ("Suggested name" %in% names(raw_df)) {
-        "Suggested name"
-    } else {
-        NA_character_
+    # As with COL, an ambiguous name keeps the typed scientificName: the
+    # report and the export look up threat and sensitive status by it. The
+    # closest catalog name only fills the correction field of the review.
+    suggested_name <- rep(NA_character_, n)
+    if ("Suggested_name" %in% names(raw_df)) {
+        sugg <- as.character(raw_df[["Suggested_name"]])
+        use <- validation_status == "ambiguous" & !is.na(sugg) & nzchar(sugg)
+        suggested_name[use] <- sugg[use]
     }
-    scientific_name <- if (!is.na(suggested_col)) {
-        sugg <- as.character(raw_df[[suggested_col]])
-        ifelse(is.na(sugg) | !nzchar(sugg), query_name, sugg)
-    } else {
-        query_name
+
+    # A synonym carries its accepted name, as in COL: the sensitive lookup
+    # follows it to the MMA list (B18). Flora BR calls the column
+    # acceptedName, Fauna BR calls it validName.
+    accepted_name <- rep(NA_character_, n)
+    accepted_col <- intersect(c("acceptedName", "validName"), names(raw_df))
+    if (length(accepted_col) > 0L) {
+        acc <- trimws(as.character(raw_df[[accepted_col[[1L]]]]))
+        use <- validation_status == "synonym" & !is.na(acc) & nzchar(acc)
+        accepted_name[use] <- acc[use]
     }
 
     family <- if ("family" %in% names(raw_df)) {
@@ -122,7 +133,9 @@ normalize_brprovider_result <- function(raw_df, provider_id) {
 
     out <- data.frame(
         query_name        = query_name,
-        scientificName    = scientific_name,
+        scientificName    = query_name,
+        suggestedName     = suggested_name,
+        acceptedNameUsage = accepted_name,
         taxonomicStatus   = taxa_status_raw,
         family            = family,
         provider          = as.character(provider_id),

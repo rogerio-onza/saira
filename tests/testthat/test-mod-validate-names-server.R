@@ -313,6 +313,60 @@ testthat::test_that("open_review_target first valid event resolves and stores ta
     )
 })
 
+testthat::test_that("open_review_target takes the BR suggestion from the report", {
+    mapped_df <- data.frame(scientificName = c("Pantera onca"), stringsAsFactors = FALSE)
+
+    testthat::with_mocked_bindings(
+        showModal = function(...) NULL,
+        .package = "shiny",
+        {
+            shiny::testServer(
+                mod_validate_names_server,
+                args = list(
+                    mapped_data_r = shiny::reactive(mapped_df),
+                    lang_r = shiny::reactive("en")
+                ),
+                {
+                    validation_result(data.frame(
+                        query_name = "Pantera onca",
+                        scientificName = "Pantera onca",
+                        suggestedName = "Panthera onca",
+                        validation_status = "ambiguous",
+                        stringsAsFactors = FALSE
+                    ))
+
+                    session$setInputs(open_review_target = "Pantera onca")
+                    session$flushReact()
+
+                    testthat::expect_identical(as.character(rv$review_target$scientific_name), "Pantera onca")
+                    testthat::expect_identical(as.character(rv$review_target$suggested_name), "Panthera onca")
+                }
+            )
+        }
+    )
+})
+
+testthat::test_that("the edit modal fills the suggestion and keeps the typed name in the hint", {
+    edit_html <- function(target) {
+        shown <- NULL
+        testthat::with_mocked_bindings(
+            showModal = function(ui, ...) shown <<- ui,
+            .package = "shiny",
+            show_names_review_modal("edit", target, shiny::NS("vn"), function() "en")
+        )
+        as.character(shown)
+    }
+
+    html <- edit_html(list(query_name = "Pantera onca", status_key = "ambiguous",
+                           scientific_name = "Pantera onca", suggested_name = "Panthera onca"))
+    testthat::expect_match(html, 'value="Panthera onca"', fixed = TRUE)
+    testthat::expect_match(html, "<em>Pantera onca</em>", fixed = TRUE)
+
+    html <- edit_html(list(query_name = "Xyz abc", status_key = "not_found",
+                           scientific_name = "Xyz abc", suggested_name = NA_character_))
+    testthat::expect_match(html, 'value="Xyz abc"', fixed = TRUE)
+})
+
 testthat::test_that("open review handles modal open errors with notification", {
     mapped_df <- data.frame(scientificName = c("Abies alba"), stringsAsFactors = FALSE)
     notifications <- character(0)

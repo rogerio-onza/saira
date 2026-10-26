@@ -3300,3 +3300,15 @@ Formato: ADR leve (Architecture Decision Record).
   - Na passada aproximada, cada provedor recebe os nomes ainda pendentes que nao estao no seu catalogo, em lotes de `br_batch_size`.
   - Um provedor que falhou na passada exata nao e carregado de novo. Os nomes que ele nao respondeu ficam sem verificacao.
 - **Consequencias**: a busca aproximada so produz `ambiguous` ou `not_found`, abaixo de `accepted` e `synonym` no rank da cascata. Pular essa busca para um nome que outro provedor BR aceita nao muda o relatorio. Na demonstracao, a fase BR caiu de 24,6 s para 6,4 s, e metade dos nomes aparece em 0,4 s, nao em 21 s. Cascata, relatorio e lista ficaram identicos nos 73 nomes testados (demonstracao e casos dificeis). O custo restante e a busca aproximada dos nomes que nenhum catalogo tem, cerca de 0,9 s por nome nas duas bases.
+
+## ADR-173: O adaptador BR le a sugestao e o nome aceito das bases
+
+- **Data**: 2026-10-26
+- **Status**: Aceito.
+- **Contexto**: o adaptador BR lia a coluna `Suggested name`, mas o `florabr` e o `faunabr` devolvem `Suggested_name`. A sugestao nunca chegava ao relatorio, e os testes passavam porque a fixture usava o nome errado. Ler a sugestao para `scientificName` faria o relatorio mostrar e classificar "Panthera onca" (ameaca, sensivel, invasora) enquanto o export resolve a planilha por "Pantera onca". O adaptador tambem ignorava o nome aceito de um sinonimo (`acceptedName` na Flora BR, `validName` na Fauna BR). Sem ele, a regra B18 nao generalizava o sinonimo de uma especie MMA quando o COL nao confirmava o sinonimo.
+- **Decisao**:
+  - Como no COL, um nome `ambiguous` mantem o nome digitado em `scientificName`.
+  - O nome mais proximo do catalogo vai para a coluna `suggestedName` do relatorio, so nas linhas `ambiguous`.
+  - Na revisao, o campo "Correcao do nome" abre com a sugestao. O nome digitado continua na dica abaixo do campo, e o usuario salva ou edita.
+  - Uma linha `synonym` leva o nome aceito da base para `acceptedNameUsage`, como o COL faz. As linhas `accepted` ficam sem ele.
+- **Consequencias**: relatorio e export continuam a usar o mesmo nome. Uma grafia errada vira correcao com um clique. Nomes ambiguos do COL nao tem sugestao, e o campo abre com o nome digitado, como antes. Um sinonimo que so a base BR conhece, ou que o COL nao respondeu, agora chega a busca de sensiveis pelo nome aceito.
