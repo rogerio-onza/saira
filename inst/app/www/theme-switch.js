@@ -75,6 +75,8 @@
     root.style.setProperty("--reveal-r", r + "px");
     root.classList.add("theme-reveal");
     var vt = document.startViewTransition(function () { paint(theme); });
+    // A skipped transition rejects ready. The theme still changes.
+    vt.ready.catch(function () {});
     vt.finished.finally(function () { root.classList.remove("theme-reveal"); });
   }
 
