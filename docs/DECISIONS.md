@@ -3312,3 +3312,12 @@ Formato: ADR leve (Architecture Decision Record).
   - Na revisao, o campo "Correcao do nome" abre com a sugestao. O nome digitado continua na dica abaixo do campo, e o usuario salva ou edita.
   - Uma linha `synonym` leva o nome aceito da base para `acceptedNameUsage`, como o COL faz. As linhas `accepted` ficam sem ele.
 - **Consequencias**: relatorio e export continuam a usar o mesmo nome. Uma grafia errada vira correcao com um clique. Nomes ambiguos do COL nao tem sugestao, e o campo abre com o nome digitado, como antes. Um sinonimo que so a base BR conhece, ou que o COL nao respondeu, agora chega a busca de sensiveis pelo nome aceito.
+
+## ADR-174: Checagem da Flora e Fauna BR a cada 30 dias
+
+- **Data**: 2026-10-26
+- **Status**: Aceito. Muda o TTL da ADR-071 e a checagem diaria da ADR-153.
+- **Contexto**: a checagem consultava o IPT a cada 24 h, e uma instalacao nova consultava na primeira validacao, porque o snapshot gravava `last_checked_at` vazio. Quando o IPT tem versao nova, a checagem baixa o catalogo inteiro: no desktop, em 2026-10-26, a Flora BR levou cerca de 2 min em segundo plano, com o poll de 1,2 s ligado (#220).
+- **Decisao**: `.brprovider_check_ttl_secs_default` passa a 30 dias. A copia do snapshot grava `last_checked_at` com a data do download do snapshot, entao a primeira checagem acontece 30 dias depois dessa data.
+- **Alternativas**: 7 dias, rejeitada porque o download continuaria frequente. Checar e so avisar, com atualizacao manual, rejeitada por enquanto porque pede um controle novo na aba Nomes.
+- **Consequencias**: um nome novo ou uma sinonimia nova pode levar ate 30 dias para chegar. Uma release com snapshot recente nao consulta o IPT no primeiro mes. Um cache com `last_checked_at` antigo checa na proxima validacao, como antes.

@@ -194,6 +194,8 @@ brprovider_data_available <- function(provider_id) {
     .brprovider_patch_meta(provider_id, list(
         local_version = version,
         remote_version_last_seen = version,
+        # The snapshot download counts as the last check (ADR-174).
+        last_checked_at = .brprovider_scalar_chr(info$downloaded_at),
         last_updated_at = .brprovider_scalar_chr(info$downloaded_at),
         status = "up_to_date",
         last_error = NA_character_,
