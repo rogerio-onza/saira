@@ -93,6 +93,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **names:** Check for Flora BR and Fauna BR updates in a separate R process, so a run does not stop for it
 - **export:** Open the correct tab from each pending-item button. Two items of the same tab no longer share one button ID
 - **ui:** Declare Portuguese in the first HTML that the server sends, before JavaScript runs
 - **upload:** Keep a column name with `+` as one alias when Home imports a guide without a loaded sheet, ADR-171

@@ -49,6 +49,7 @@ Suggests:
     devtools,
     future,
     furrr,
+    parallel,
     parallelly,
     profvis,
     roxygen2,
