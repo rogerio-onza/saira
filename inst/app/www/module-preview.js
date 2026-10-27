@@ -56,6 +56,13 @@
       }, 0);
     });
 
+    // Exact copies: one row, or "all", in or out of the package.
+    $(document).on('click', '.preview-copy-set', function (e) {
+      e.preventDefault();
+      Shiny.setInputValue(cfg.copyId, { row: this.dataset.row, out: this.dataset.out === '1' },
+        { priority: 'event' });
+    });
+
     // DT row selection toggles on each click, which closed the record panel
     // between the two clicks of an edit. A focus that only moves replaces
     // it, and one click on the Correction opens the editor.

@@ -2768,6 +2768,96 @@ label,
   font-family: var(--font-ui);
   font-size: var(--text-sm);
 }
+
+/* Exact copies: each original row with its copies under it. */
+.preview-copy-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  box-shadow: none;
+}
+
+.preview-copy-box p {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+.preview-copy-box small {
+  display: block;
+  color: var(--text-muted);
+}
+
+.preview-copy-scroll {
+  max-height: var(--pf-col-height);
+  overflow-y: auto;
+}
+
+.preview-copy-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+.preview-copy-table th {
+  position: sticky;
+  top: 0;
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--bg-card);
+  text-align: left;
+}
+
+.preview-copy-table td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--border-light);
+}
+
+.preview-copy-table tr.is-original td {
+  border-top: 2px solid var(--border-default);
+  color: var(--text-muted);
+}
+
+.preview-copy-choice {
+  display: inline-flex;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+}
+
+.preview-copy-choice .preview-copy-set {
+  padding: 0.2rem 0.6rem;
+  border: 0;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+.preview-copy-choice .preview-copy-set + .preview-copy-set {
+  border-left: 1px solid var(--border-default);
+}
+
+.preview-copy-choice .preview-copy-set.is-on {
+  background: var(--selected-bg);
+  color: var(--accent);
+}
+
+.preview-copy-choice .preview-copy-set.is-out {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.preview-copy-note {
+  margin: var(--space-2) 0 0;
+}
 /* =============================================================================
    SIDEBAR (for Mapping)
    ============================================================================= */

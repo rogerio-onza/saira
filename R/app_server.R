@@ -210,6 +210,7 @@ app_server <- function(input, output, session) {
         alias_receipt_r                    = mapping_result$alias_receipt_r,
         coord_validation_r                 = coord_validation_r$report_r,
         preview_problems_n_r               = preview_problems_n,
+        rows_left_out_r                    = preview_r$rows_left_out_r,
         on_export_success                  = function() {
             export_signal_rv(shiny::isolate(export_signal_rv()) + 1L)
         },

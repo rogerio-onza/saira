@@ -168,14 +168,20 @@ resolve_occurrence_ids <- function(df, n = NULL, map_values = NULL) {
 # come from `basis` (the mapped rows before the Preview corrections), so a
 # correction in the Preview does not change them (ADR-152).
 #
+# `ignore` holds rows that leave the package at export (exact copies the
+# person leaves out). They do not count as a repeat and keep their id, so the
+# row they copy keeps its own id.
+#
 # Returns `df`, with the `ids_replaced` attribute (the count of rows changed)
 # when it changes a row.
-replace_repeated_ids <- function(df, basis = df) {
+replace_repeated_ids <- function(df, basis = df, ignore = integer(0)) {
     if (!is.data.frame(df) || !"occurrenceID" %in% names(df)) {
         return(df)
     }
     v <- trimws(as.character(df$occurrenceID))
-    repeated <- !is.na(v) & nzchar(v) & (duplicated(v) | duplicated(v, fromLast = TRUE))
+    v[intersect(as.integer(ignore), seq_along(v))] <- NA_character_
+    repeated <- !is.na(v) & nzchar(v) & (duplicated(v, incomparables = NA) |
+        duplicated(v, fromLast = TRUE, incomparables = NA))
     if (any(repeated)) {
         df$occurrenceID[repeated] <- generate_persistent_ids(basis, rows = repeated)
         attr(df, "ids_replaced") <- sum(repeated)

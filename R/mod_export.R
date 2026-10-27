@@ -67,6 +67,8 @@ mod_export_ui <- function(id) {
 #'   (`validate_coords_cc_df()`), NULL before the tab runs.
 #' @param preview_problems_n_r Optional reactive with the count of open Preview
 #'   problems.
+#' @param rows_left_out_r Optional reactive with the rows of exact copies the
+#'   Preview left out of the package.
 #' @param on_navigate Optional callback `function(tab)` to switch the top-level
 #'   navbar (used by the "fix missing terms" banner action).
 #' @param on_export_success Optional callback fired after a successful export,
@@ -89,6 +91,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                               alias_receipt_r = NULL,
                               coord_validation_r = NULL,
                               preview_problems_n_r = NULL,
+                              rows_left_out_r = NULL,
                               on_navigate = NULL,
                               on_export_success = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
@@ -120,7 +123,8 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 preview_problems_n = call_r(preview_problems_n_r),
                 raw_data = call_r(raw_data_r),
                 map_values = call_r(map_values_r),
-                overridden_terms = overridden_mapping_terms(call_r(custom_values_r))
+                overridden_terms = overridden_mapping_terms(call_r(custom_values_r)),
+                rows_left_out = call_r(rows_left_out_r)
             )
         })
 
@@ -148,6 +152,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             occurrence_id_info_r = occurrence_id_info_r,
             coords_correction_payload_r = coords_correction_payload_r,
             country_fill_payload_r = country_fill_payload_r,
+            rows_left_out_r = rows_left_out_r,
             blocked_r = blocked_r,
             on_export_success = on_export_success
         )
@@ -178,7 +183,8 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
         }
         navigate_on("go_fix_justification", "sensitive_coords")
         for (id in c("go_preview_sci_blank", "go_preview_coord_invalid", "go_preview_date_range",
-                     "go_preview_date_unparsed", "go_preview_formula", "go_preview_problems")) {
+                     "go_preview_date_unparsed", "go_preview_formula", "go_preview_problems",
+                     "go_preview_copies")) {
             navigate_on(id, "preview")
         }
         navigate_on("go_coords_stale", "validate_coords")
@@ -405,6 +411,12 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 call_r(raw_data_r), call_r(map_values_r),
                 overridden_terms = overridden_mapping_terms(call_r(custom_values_r))
             )
+            if (length(s$rows_left_out) > 0L) {
+                add(pending_row("info", shiny::tagList(
+                    sprintf(tr("export_copies_left_out", lang), length(s$rows_left_out)), " ",
+                    shiny::tags$code(format_row_list(s$rows_left_out))
+                ), "go_preview_copies", tr("export_action_preview", lang)))
+            }
             if (length(s$zero_count_rows) > 0L) {
                 add(pending_row("info", shiny::tagList(
                     sprintf(tr("export_zero_count_absent", lang), length(s$zero_count_rows)), " ",

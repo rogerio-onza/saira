@@ -889,6 +889,11 @@
     "en": "%d row(s) with a count of 0 will show as absences on GBIF, because occurrenceStatus is empty. If 0 means \"not counted\", leave the count empty.",
     "es": "%d fila(s) con conteo 0 aparecerán como ausencias en GBIF, porque occurrenceStatus está vacío. Si 0 significa \"no contado\", deje el conteo vacío."
   },
+  "export_copies_left_out": {
+    "pt": "%d cópia(s) exata(s) ficam fora do pacote.",
+    "en": "%d exact copy row(s) stay out of the package.",
+    "es": "%d copia(s) exacta(s) quedan fuera del paquete."
+  },
   "export_establishment_dropped": {
     "pt": "%d valor(es) da sua coluna de %s estão fora do vocabulário controlado do Darwin Core e ficaram vazios em %d registro(s). Traduza cada um no assistente do card.",
     "en": "%d value(s) from your %s column are outside the Darwin Core controlled vocabulary and were left blank in %d record(s). Translate each one in the card's assistant.",
@@ -1593,6 +1598,66 @@
     "pt": "Se você não corrigir, o Saíra troca cada ID repetido por um UUID persistente: ele vem do conteúdo da linha e fica igual a cada exportação.",
     "en": "If you do not fix them, Saíra replaces each repeated ID with a persistent UUID: it comes from the row content and stays the same on every export.",
     "es": "Si no los corrige, Saíra reemplaza cada ID repetido por un UUID persistente: viene del contenido de la fila y queda igual en cada exportación."
+  },
+  "preview_fix_pill_copy": {
+    "pt": "Cópia exata",
+    "en": "Exact copy",
+    "es": "Copia exacta"
+  },
+  "preview_copy_open": {
+    "pt": "%d linha(s) repetem outra linha em todas as colunas.",
+    "en": "%d row(s) repeat another row in every column.",
+    "es": "%d fila(s) repiten otra fila en todas las columnas."
+  },
+  "preview_copy_open_sub": {
+    "pt": "O pacote leva todas as linhas até você escolher.",
+    "en": "The package keeps every row until you choose.",
+    "es": "El paquete incluye todas las filas hasta que usted elija."
+  },
+  "preview_copy_all_out": {
+    "pt": "Cópias fora do pacote: %d.",
+    "en": "Copies out of the package: %d.",
+    "es": "Copias fuera del paquete: %d."
+  },
+  "preview_copy_all_out_sub": {
+    "pt": "As linhas originais continuam no pacote.",
+    "en": "The original rows stay in the package.",
+    "es": "Las filas originales siguen en el paquete."
+  },
+  "preview_copy_drop_all": {
+    "pt": "Tirar as cópias do pacote",
+    "en": "Remove the copies from the package",
+    "es": "Quitar las copias del paquete"
+  },
+  "preview_copy_original": {
+    "pt": "Original",
+    "en": "Original",
+    "es": "Original"
+  },
+  "preview_copy_of": {
+    "pt": "Cópia exata da linha %d",
+    "en": "Exact copy of row %d",
+    "es": "Copia exacta de la fila %d"
+  },
+  "preview_copy_in": {
+    "pt": "No pacote",
+    "en": "In the package",
+    "es": "En el paquete"
+  },
+  "preview_copy_out": {
+    "pt": "Fora do pacote",
+    "en": "Out of the package",
+    "es": "Fuera del paquete"
+  },
+  "preview_copy_original_stays": {
+    "pt": "fica no pacote",
+    "en": "stays in the package",
+    "es": "queda en el paquete"
+  },
+  "preview_copy_note": {
+    "pt": "A linha original fica sempre no pacote. Só a cópia tem escolha.",
+    "en": "The original row always stays in the package. Only the copy has a choice.",
+    "es": "La fila original siempre queda en el paquete. Solo la copia tiene elección."
   },
   "preview_fix_record_title": {
     "pt": "Registro %d como está na planilha",

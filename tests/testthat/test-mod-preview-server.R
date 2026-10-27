@@ -302,3 +302,40 @@ testthat::test_that("preview_nav_badge shows a count, a check or nothing", {
     testthat::expect_match(count, ">22</span>", fixed = TRUE)
     testthat::expect_match(count, "22 problemas para corrigir", fixed = TRUE)
 })
+
+testthat::test_that("an exact copy left out reaches the export contract", {
+    raw <- data.frame(sp = c("Aa aa", "Bb bb", "Aa aa"), d = c("2020", "2021", "2020"),
+                      id = c("x1", "x2", "x1"), stringsAsFactors = FALSE)
+    mapped <- data.frame(scientificName = raw$sp, eventDate = raw$d, occurrenceID = raw$id,
+                         stringsAsFactors = FALSE)
+    shiny::testServer(
+        mod_preview_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped),
+            lang_r = shiny::reactive("en"),
+            raw_data_r = shiny::reactive(raw),
+            return_contract = "list"
+        ),
+        {
+            out_r <- session$getReturned()$rows_left_out_r
+            testthat::expect_identical(out_r(), integer(0))
+            # The repeated id of a copy is not an id problem.
+            testthat::expect_false(any(problems_r()$type == "id_duplicate"))
+            testthat::expect_identical(family_counts_r()[["copy"]], 1L)
+
+            # The pill observers skip their first run (ignoreInit).
+            session$flushReact()
+            session$setInputs(fix_filter_copy = 1)
+            testthat::expect_match(output$copies_section$html, "Exact copy of row 1", fixed = TRUE)
+            session$setInputs(copy_set = list(row = "3", out = TRUE))
+            testthat::expect_identical(out_r(), 3L)
+            session$setInputs(copy_set = list(row = "all", out = FALSE))
+            testthat::expect_identical(out_r(), integer(0))
+            session$setInputs(copy_set = list(row = "all", out = TRUE))
+            testthat::expect_identical(out_r(), 3L)
+            # Row 1 is an original, not a copy.
+            session$setInputs(copy_set = list(row = "1", out = TRUE))
+            testthat::expect_identical(out_r(), 3L)
+        }
+    )
+})

@@ -3321,3 +3321,15 @@ Formato: ADR leve (Architecture Decision Record).
 - **Decisao**: `.brprovider_check_ttl_secs_default` passa a 30 dias. A copia do snapshot grava `last_checked_at` com a data do download do snapshot, entao a primeira checagem acontece 30 dias depois dessa data.
 - **Alternativas**: 7 dias, rejeitada porque o download continuaria frequente. Checar e so avisar, com atualizacao manual, rejeitada por enquanto porque pede um controle novo na aba Nomes.
 - **Consequencias**: um nome novo ou uma sinonimia nova pode levar ate 30 dias para chegar. Uma release com snapshot recente nao consulta o IPT no primeiro mes. Um cache com `last_checked_at` antigo checa na proxima validacao, como antes.
+
+## ADR-175: Copias exatas saem do pacote so no download
+
+- **Data**: 2026-10-27
+- **Status**: Aceito.
+- **Contexto**: uma planilha pode repetir uma linha em todas as colunas, por erro de copia. O Saira tratava a copia so como `occurrenceID` repetido e trocava os dois ids (ADR-152). O usuario nao tinha como tirar a copia do pacote.
+- **Decisao**:
+  - `exact_copy_rows()` acha as copias na planilha carregada. Na Previa, o filtro "Copia exata" de Problemas lista cada original e suas copias, com "No pacote / Fora do pacote" por copia e um botao em lote. O padrao mantem tudo.
+  - O id repetido de uma copia exata aparece so nesse filtro (`drop_copy_id_problems()`).
+  - As linhas fora do pacote seguem nos dados das outras abas, porque elas guardam estado por indice de linha e o export junta as colunas nao mapeadas por linha. O download remove essas linhas no fim, depois de montar `export_data`, e tira os seus ids do arquivo privado de coordenadas reais.
+  - `replace_repeated_ids()` ignora as linhas fora do pacote, entao a original mantem o id do usuario.
+- **Consequencias**: as abas Nomes, Coordenadas e Generalizacao ainda mostram as copias fora do pacote. O card Pacote conta os registros sem elas e mostra uma linha de aviso com o numero das linhas. Uma copia fora do pacote volta com um clique.

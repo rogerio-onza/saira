@@ -20,6 +20,7 @@ mount_export_download <- function(input, output, session, lang_r,
                                   occurrence_id_info_r = NULL,
                                   coords_correction_payload_r = NULL,
                                   country_fill_payload_r = NULL,
+                                  rows_left_out_r = NULL,
                                   blocked_r = NULL,
                                   on_export_success = NULL) {
     ns <- session$ns
@@ -420,7 +421,19 @@ mount_export_download <- function(input, output, session, lang_r,
                 sensitivity = rekey_sensitivity_decisions(export_sensitivity_payload(), export_name_review_payload()),
                 generalization = gen, lang = lang_r()
             )
-            list(masked = masked, gen = gen, cv = cv, raw_df = raw_df, mv = mv)
+            # Exact copies the Preview left out. The rows go after the
+            # unmapped columns join, which match the upload by row.
+            drop <- intersect(optional_reactive_value(rows_left_out_r, integer(0)),
+                              seq_len(nrow(effective)))
+            if (length(drop) && nrow(masked$real)) {
+                ids <- if ("occurrenceID" %in% names(effective)) {
+                    as.character(effective$occurrenceID)
+                } else {
+                    as.character(seq_len(nrow(effective)))
+                }
+                masked$real <- masked$real[!masked$real$occurrenceID %in% ids[drop], , drop = FALSE]
+            }
+            list(masked = masked, gen = gen, cv = cv, raw_df = raw_df, mv = mv, drop = drop)
         }
 
         output$download_real <- shiny::downloadHandler(
@@ -488,6 +501,13 @@ mount_export_download <- function(input, output, session, lang_r,
                             sensitive_rows = masked$scrub_rows,
                             sensitive_points = masked$scrub_points
                         )
+
+                        if (length(prep$drop)) {
+                            id_attr <- attr(export_data, "id_strategy")
+                            export_data <- export_data[-prep$drop, , drop = FALSE]
+                            rownames(export_data) <- NULL
+                            attr(export_data, "id_strategy") <- id_attr
+                        }
 
                         if (formula_like_cells(export_data)$count > 0L) {
                             stop(tr("export_download_blocked", lang_r()), call. = FALSE)
