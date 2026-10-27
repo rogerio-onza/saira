@@ -501,10 +501,6 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
         return(FALSE)
     }
 
-    if (!requireNamespace("future", quietly = TRUE)) {
-        return(FALSE)
-    }
-
     if (!.brprovider_acquire_lock(provider_id)) {
         return(FALSE)
     }
@@ -515,42 +511,30 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
         source_package_version = .brprovider_pkg_version_safe(provider_id)
     ))
 
-    cluster <- NULL
-    future_obj <- tryCatch({
-        # future runs multisession(workers = 1) in this R process, so the IPT
-        # check and the download stopped the app. The update gets its own
-        # R process. Without the PID test and the validation, which start
-        # extra R sessions, the process starts in 0.3 s instead of 3 s.
-        old_opts <- options(parallelly.makeNodePSOCK.autoKill = FALSE)
-        on.exit(options(old_opts), add = TRUE)
-        cluster <- parallelly::makeClusterPSOCK(
-            1L,
-            rscript_args = "--vanilla",
-            rscript_libs = .libPaths(),
-            validate = FALSE
-        )
-        old_plan <- future::plan("list")
-        # .cleanup = FALSE keeps the process alive. The poll stops it.
-        on.exit(future::plan(old_plan, .cleanup = FALSE), add = TRUE)
-        future::plan(future::cluster, workers = cluster, .cleanup = FALSE)
+    # The IPT check and the download get their own R process, so the app does
+    # not stop (LESSONS). A PSOCK worker listens on all network interfaces, and
+    # Windows then asks for firewall access. callr uses pipes, not a socket.
+    process <- tryCatch(
+        callr::r_bg(
+            .brprovider_update_job(),
+            args = list(provider_id = provider_id, local_version = local_version),
+            libpath = .libPaths(),
+            package = TRUE,
+            user_profile = FALSE,
+            stdout = NULL,
+            stderr = NULL,
+            supervise = TRUE
+        ),
+        error = function(e) e
+    )
 
-        job <- .brprovider_update_job()
-        future::future(
-            job(provider_id = provider_id, local_version = local_version),
-            globals = list(job = job, provider_id = provider_id, local_version = local_version),
-            lazy = FALSE,
-            seed = TRUE
-        )
-    }, error = function(e) e)
-
-    if (inherits(future_obj, "error")) {
-        if (!is.null(cluster)) try(parallel::stopCluster(cluster), silent = TRUE)
+    if (inherits(process, "error")) {
         .brprovider_release_lock(provider_id)
         now <- .brprovider_now_utc()
         .brprovider_patch_meta(provider_id, list(
             status = "update_failed",
             last_checked_at = .brprovider_time_to_string(now),
-            last_error = as.character(future_obj$message),
+            last_error = as.character(process$message),
             retry_after_at = .brprovider_time_to_string(now + as.numeric(retry_backoff_secs)),
             source_package_version = .brprovider_pkg_version_safe(provider_id)
         ))
@@ -558,8 +542,7 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
     }
 
     assign(provider_id, list(
-        future = future_obj,
-        cluster = cluster,
+        process = process,
         retry_backoff_secs = as.integer(retry_backoff_secs),
         started_at = .brprovider_time_to_string(.brprovider_now_utc())
     ), envir = .brprovider_jobs)
@@ -572,10 +555,6 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
 #' @return List of update events completed during this poll.
 #' @noRd
 brprovider_poll_updates <- function(provider_id = NULL) {
-    if (!requireNamespace("future", quietly = TRUE)) {
-        return(list())
-    }
-
     job_ids <- ls(envir = .brprovider_jobs, all.names = TRUE)
     if (!is.null(provider_id)) {
         ids <- unique(as.character(provider_id))
@@ -588,31 +567,28 @@ brprovider_poll_updates <- function(provider_id = NULL) {
     events <- list()
     for (id in job_ids) {
         job <- get(id, envir = .brprovider_jobs, inherits = FALSE)
-        future_obj <- job$future
 
-        resolved <- tryCatch(
-            future::resolved(future_obj),
-            error = function(e) TRUE
-        )
-        if (!isTRUE(resolved)) {
+        alive <- tryCatch(job$process$is_alive(), error = function(e) FALSE)
+        if (isTRUE(alive)) {
             next
         }
 
         result <- tryCatch(
-            future::value(future_obj),
+            job$process$get_result(),
             error = function(e) {
+                # callr wraps the error of the R process. The cause is the message to keep.
+                cause <- if (inherits(e$parent, "condition")) e$parent else e
                 list(
                     ok = FALSE,
                     updated = FALSE,
                     provider_id = id,
                     remote_version = NA_character_,
                     local_version = NA_character_,
-                    error = as.character(e$message)
+                    error = conditionMessage(cause)
                 )
             }
         )
 
-        if (!is.null(job$cluster)) try(parallel::stopCluster(job$cluster), silent = TRUE)
         .brprovider_release_lock(id)
 
         now <- .brprovider_now_utc()

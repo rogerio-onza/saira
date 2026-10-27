@@ -61,6 +61,7 @@ O Saíra é construído sobre pacotes R de código aberto, todos declarados como
 | [ids](https://cran.r-project.org/package=ids) | Geração de identificadores | MIT |
 | [uuid](https://cran.r-project.org/package=uuid) | UUIDs | MIT |
 | [withr](https://cran.r-project.org/package=withr) | Gerência de estado temporário | MIT |
+| [callr](https://cran.r-project.org/package=callr) | Atualização da Flora BR e da Fauna BR num processo R em segundo plano | MIT |
 | [DBI](https://cran.r-project.org/package=DBI) | Interface de banco de dados | LGPL (≥ 2.1) |
 | [RSQLite](https://cran.r-project.org/package=RSQLite) | Backend SQLite dos caches taxonômicos | LGPL (≥ 2.1) |
 

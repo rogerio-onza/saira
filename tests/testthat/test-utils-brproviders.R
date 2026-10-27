@@ -542,8 +542,6 @@ testthat::test_that("provider lock prevents concurrent starts", {
 })
 
 testthat::test_that("poll_updates marks update_failed and preserves cache (DEP-05)", {
-    testthat::skip_if_not_installed("future")
-
     tmp <- tempfile(pattern = "brp_poll_fail_")
     dir.create(tmp)
     on.exit(unlink(tmp, recursive = TRUE))
@@ -570,25 +568,22 @@ testthat::test_that("poll_updates marks update_failed and preserves cache (DEP-0
             dir.create(dirname(.brprovider_lock_path(pid)), recursive = TRUE, showWarnings = FALSE)
             writeLines("lock", .brprovider_lock_path(pid))
 
-            assign(pid, list(future = structure(list(), class = "fake_future"), retry_backoff_secs = 60L),
-                   envir = .brprovider_jobs())
-
-            testthat::with_mocked_bindings(
-                resolved = function(future_obj) TRUE,
-                value = function(future_obj) list(
+            process <- list(
+                is_alive = function() FALSE,
+                get_result = function() list(
                     ok = FALSE,
                     updated = FALSE,
                     provider_id = pid,
                     remote_version = "1.49",
                     local_version = "1.48",
                     error = "timeout"
-                ),
-                .package = "future",
-                {
-                    events <- brprovider_poll_updates(provider_id = pid)
-                    testthat::expect_true(length(events) == 1L)
-                }
+                )
             )
+            assign(pid, list(process = process, retry_backoff_secs = 60L),
+                   envir = .brprovider_jobs())
+
+            events <- brprovider_poll_updates(provider_id = pid)
+            testthat::expect_true(length(events) == 1L)
 
             # Version 1.49 is known and newer: the cache is stale, so the
             # badge keeps the failure.
@@ -605,17 +600,9 @@ testthat::test_that("poll_updates marks update_failed and preserves cache (DEP-0
 })
 
 testthat::test_that("background update runs in its own R process, and the poll stops it", {
-    testthat::skip_if_not_installed("future")
-    testthat::skip_if_not_installed("parallelly")
-
     tmp <- tempfile(pattern = "brp_worker_")
     dir.create(tmp)
-    old_plan <- future::plan("list")
-    future::plan(future::sequential)
-    on.exit({
-        future::plan(old_plan)
-        unlink(tmp, recursive = TRUE)
-    })
+    on.exit(unlink(tmp, recursive = TRUE))
 
     job <- function(provider_id, local_version) {
         list(ok = TRUE, updated = FALSE, provider_id = provider_id,
@@ -631,23 +618,45 @@ testthat::test_that("background update runs in its own R process, and the poll s
         {
             testthat::expect_true(.brprovider_start_background_update("faunabr"))
             started <- get("faunabr", envir = .brprovider_jobs())
-            testthat::expect_s3_class(future::plan(), "sequential")
-            testthat::expect_false(identical(future::value(started$future)$pid, Sys.getpid()))
+            started$process$wait(30000)
+            testthat::expect_false(identical(started$process$get_result()$pid, Sys.getpid()))
 
             events <- brprovider_poll_updates(provider_id = "faunabr")
             testthat::expect_length(events, 1L)
             testthat::expect_identical(events[[1L]]$status, "up_to_date")
             testthat::expect_false(exists("faunabr", envir = .brprovider_jobs(), inherits = FALSE))
             testthat::expect_false(file.exists(.brprovider_lock_path("faunabr")))
-            testthat::expect_error(parallel::clusterEvalQ(started$cluster, 1))
+            testthat::expect_false(started$process$is_alive())
+        }
+    )
+})
+
+testthat::test_that("a worker that stops with an error keeps the cause as last_error", {
+    tmp <- tempfile(pattern = "brp_worker_error_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+
+    job <- function(provider_id, local_version) stop("IPT unavailable")
+    environment(job) <- baseenv()
+
+    testthat::with_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .brprovider_update_job = function() job,
+        .package = "saira",
+        {
+            testthat::expect_true(.brprovider_start_background_update("faunabr"))
+            get("faunabr", envir = .brprovider_jobs())$process$wait(30000)
+            events <- brprovider_poll_updates(provider_id = "faunabr")
+            testthat::expect_length(events, 1L)
+            meta <- .brprovider_read_meta("faunabr")
+            testthat::expect_identical(meta$status, "update_failed")
+            testthat::expect_identical(meta$last_error, "IPT unavailable")
+            testthat::expect_false(file.exists(.brprovider_lock_path("faunabr")))
         }
     )
 })
 
 testthat::test_that("a worker that does not start releases the lock and backs off", {
-    testthat::skip_if_not_installed("future")
-    testthat::skip_if_not_installed("parallelly")
-
     tmp <- tempfile(pattern = "brp_worker_fail_")
     dir.create(tmp)
     on.exit(unlink(tmp, recursive = TRUE))
@@ -656,8 +665,8 @@ testthat::test_that("a worker that does not start releases the lock and backs of
         brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
         .package = "saira",
         testthat::with_mocked_bindings(
-            makeClusterPSOCK = function(...) stop("worker unavailable"),
-            .package = "parallelly",
+            r_bg = function(...) stop("worker unavailable"),
+            .package = "callr",
             {
                 testthat::expect_false(.brprovider_start_background_update("faunabr"))
                 meta <- .brprovider_read_meta("faunabr")

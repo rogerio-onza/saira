@@ -4124,6 +4124,11 @@
     "en": "Temporary state",
     "es": "Estado temporal"
   },
+  "help_pkg_callr": {
+    "pt": "Atualização das bases BR em segundo plano",
+    "en": "Background update of the BR catalogs",
+    "es": "Actualización de los catálogos BR en segundo plano"
+  },
   "help_pkg_dbi": {
     "pt": "Interface de banco de dados",
     "en": "Database interface",
