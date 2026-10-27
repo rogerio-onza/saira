@@ -905,14 +905,17 @@ xlsx_max_records <- 1048575L
 #'   real-coordinates download).
 #' @param n_records Number of records. Above `xlsx_max_records` the bundle has
 #'   no Excel mirror (AUD-16).
+#' @param has_changes Whether the export corrects a value (adds the changes
+#'   list).
 #' @return List with `slug`, `zip` (download file name), `dwca` (standard core
-#'   trio), `auxiliary` (list: `xlsx` when it fits, `mapping_guide`) and, when
+#'   trio), `auxiliary` (list: `xlsx` when it fits, `mapping_guide`, `changes`
+#'   when `has_changes`) and, when
 #'   `has_sensitive`, `private` (the real-coordinates `.xlsx`). The private
 #'   file has its own download, so a shared bundle never carries the exact
 #'   points (ADR-163).
 #' @noRd
 export_bundle_filenames <- function(dataset_name = NULL, has_sensitive = FALSE,
-                                    n_records = 0L) {
+                                    n_records = 0L, has_changes = FALSE) {
     slug <- slugify_dataset_name(dataset_name)
     if (!nzchar(slug)) slug <- "saira"
 
@@ -923,6 +926,7 @@ export_bundle_filenames <- function(dataset_name = NULL, has_sensitive = FALSE,
         mapping_guide = paste0(slug, "-mapping-guide.txt")
     )
     if (isTRUE(n_records > xlsx_max_records)) auxiliary$xlsx <- NULL
+    if (isTRUE(has_changes)) auxiliary$changes <- paste0(slug, "-changes.csv")
     private <- if (isTRUE(has_sensitive)) paste0(slug, "-sensitive-coords.xlsx")
 
     list(

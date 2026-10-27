@@ -96,6 +96,13 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             exact_copy_rows(if (is.function(raw_data_r)) raw_data_r())
         })
 
+        # The cells the Preview edits change, for the export change list.
+        preview_changes_r <- shiny::reactive({
+            edits <- edits_rv()
+            if (!is.data.frame(edits) || !nrow(edits)) return(NULL)
+            cell_changes(full_data_r(), corrected_data_r(), unique(edits$term))
+        })
+
         # Only rows that are still copies: a new upload can change them.
         rows_left_out_r <- shiny::reactive({
             sort(intersect(left_out_rv(), copies_r()$row))
@@ -938,9 +945,11 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
 
         module_result_return(
             new_module_result(preview_data, edited_data_r = edited_data_r, problems_n_r = problems_n_r,
-                              rows_left_out_r = rows_left_out_r),
+                              rows_left_out_r = rows_left_out_r,
+                              preview_changes_r = preview_changes_r),
             c("edited_data_r" = "edited_data_r", "problems_n_r" = "problems_n_r",
-              "rows_left_out_r" = "rows_left_out_r"), return_contract
+              "rows_left_out_r" = "rows_left_out_r",
+              "preview_changes_r" = "preview_changes_r"), return_contract
         )
     })
 }

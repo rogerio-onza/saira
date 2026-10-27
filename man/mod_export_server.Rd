@@ -23,6 +23,8 @@ mod_export_server(
   alias_receipt_r = NULL,
   coord_validation_r = NULL,
   preview_problems_n_r = NULL,
+  rows_left_out_r = NULL,
+  preview_changes_r = NULL,
   on_navigate = NULL,
   on_export_success = NULL
 )
@@ -69,6 +71,12 @@ alias store (`alias_export_receipt()`), shown with an undo (ADR-141).}
 
 \item{preview_problems_n_r}{Optional reactive with the count of open Preview
 problems.}
+
+\item{rows_left_out_r}{Optional reactive with the rows of exact copies the
+Preview left out of the package.}
+
+\item{preview_changes_r}{Optional reactive with the cells the Preview edits
+change (`cell_changes()`).}
 
 \item{on_navigate}{Optional callback `function(tab)` to switch the top-level
 navbar (used by the "fix missing terms" banner action).}

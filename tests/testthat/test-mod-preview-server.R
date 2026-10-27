@@ -138,6 +138,11 @@ testthat::test_that("mod_preview_server fixes a differing year per row and repla
             session$setInputs(blank = which(p$term == "individualCount" & p$row == 2L))
             testthat::expect_equal(edited_r()$individualCount, c("2", NA, NA, "3"))
 
+            # The export change list reads one row per changed cell.
+            changes <- attr(session$getReturned(), "preview_changes_r")()
+            testthat::expect_identical(changes$row, c(1L, 2L, 2L, 3L))
+            testthat::expect_identical(changes$from, c("2019", "2019", "muitos", "muitos"))
+
             # A repeated id left as it is shows the id the export writes.
             dup <- which(p$type == "id_duplicate")
             testthat::expect_identical(build_rows_df(dup)$auto, edited_r()$occurrenceID[1:2])

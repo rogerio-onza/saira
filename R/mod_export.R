@@ -69,6 +69,8 @@ mod_export_ui <- function(id) {
 #'   problems.
 #' @param rows_left_out_r Optional reactive with the rows of exact copies the
 #'   Preview left out of the package.
+#' @param preview_changes_r Optional reactive with the cells the Preview edits
+#'   change (`cell_changes()`).
 #' @param on_navigate Optional callback `function(tab)` to switch the top-level
 #'   navbar (used by the "fix missing terms" banner action).
 #' @param on_export_success Optional callback fired after a successful export,
@@ -92,6 +94,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                               coord_validation_r = NULL,
                               preview_problems_n_r = NULL,
                               rows_left_out_r = NULL,
+                              preview_changes_r = NULL,
                               on_navigate = NULL,
                               on_export_success = NULL) {
     shiny::moduleServer(id, function(input, output, session) {
@@ -124,7 +127,8 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 raw_data = call_r(raw_data_r),
                 map_values = call_r(map_values_r),
                 overridden_terms = overridden_mapping_terms(call_r(custom_values_r)),
-                rows_left_out = call_r(rows_left_out_r)
+                rows_left_out = call_r(rows_left_out_r),
+                preview_changes = call_r(preview_changes_r)
             )
         })
 
@@ -153,6 +157,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             coords_correction_payload_r = coords_correction_payload_r,
             country_fill_payload_r = country_fill_payload_r,
             rows_left_out_r = rows_left_out_r,
+            preview_changes_r = preview_changes_r,
             blocked_r = blocked_r,
             on_export_success = on_export_success
         )
@@ -187,6 +192,10 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                      "go_preview_copies")) {
             navigate_on(id, "preview")
         }
+        navigate_on("go_changes_names", "validate_names")
+        navigate_on("go_changes_coordinates", "validate_coords")
+        navigate_on("go_changes_country", "validate_coords")
+        navigate_on("go_changes_preview", "preview")
         navigate_on("go_coords_stale", "validate_coords")
         navigate_on("go_coords_flags", "validate_coords")
         navigate_on("go_map_unmapped", "mapping")
@@ -213,6 +222,64 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             )
         }
 
+        # One example of each kind of correction, under the Corrections
+        # number. The full list goes in the changes file of the package.
+        changes_panel <- function(s, ex, n_fix, has_gen, lang) {
+            shown <- function(v) {
+                if (all(!nzchar(v))) tr("export_changes_blank", lang) else paste(v, collapse = ", ")
+            }
+            rows <- lapply(names(ex), function(kind) {
+                e <- ex[[kind]]$example
+                body <- if (is.null(e)) {
+                    shiny::div(class = "export-change-why", tr("export_changes_hidden", lang))
+                } else {
+                    term <- if (kind == "preview" || (kind == "coordinates" && nrow(e) == 1L)) {
+                        shiny::span(class = "export-change-term", paste(e$term, collapse = ", "))
+                    }
+                    shiny::tagList(
+                        shiny::div(
+                            class = "export-change-ex", term,
+                            shiny::span(class = "export-change-old", shown(e$from)),
+                            ph_icon("arrow-right"),
+                            shiny::span(class = "export-change-new", shown(e$to))
+                        ),
+                        shiny::div(class = "export-change-why",
+                                   sprintf(tr("export_changes_row", lang), e$row[1L]), " \u00b7 ",
+                                   tr(paste0("export_changes_why_", kind), lang))
+                    )
+                }
+                shiny::div(
+                    class = "export-change-row",
+                    shiny::div(class = "export-change-kind",
+                               tr(paste0("export_changes_kind_", kind), lang),
+                               shiny::span(sprintf(tr("export_changes_records", lang),
+                                                   ex[[kind]]$records))),
+                    shiny::div(class = "export-change-body", body),
+                    shiny::actionLink(ns(paste0("go_changes_", kind)),
+                                      tr(paste0("export_changes_go_", kind), lang),
+                                      class = "export-change-go")
+                )
+            })
+            shiny::div(
+                id = ns("changes_panel"), class = "collapse",
+                shiny::div(
+                    class = "export-changes",
+                    shiny::div(class = "export-changes-head",
+                               shiny::strong(sprintf(tr("export_changes_head", lang), n_fix,
+                                                     length(unique(s$changes$row)))),
+                               shiny::span(tr("export_changes_one_each", lang))),
+                    rows,
+                    shiny::div(
+                        class = "export-changes-foot", ph_icon("lock"),
+                        shiny::p(
+                            sprintf(tr("export_changes_foot", lang), s$files$auxiliary$changes),
+                            if (has_gen) paste0(" ", tr("export_changes_foot_gen", lang))
+                        )
+                    )
+                )
+            )
+        }
+
         file_group <- function(title, files) {
             shiny::tagList(
                 shiny::div(class = "export-file-group-title", title),
@@ -235,7 +302,6 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }
 
             # --- Numbers ------------------------------------------------------
-            cc <- s$corrections
             gen <- s$generalization
             fmt_n <- function(value) format_count(value, lang)
             # The numbers sit in a strip inside the package card (round 5,
@@ -250,15 +316,30 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 )
             }
             n_aux <- length(s$files$auxiliary)
-            n_fix <- cc$names_corrected + cc$names_confirmed + cc$coord_fixes + cc$country_fills
+            # Corrections count records, one per kind of change (ADR-176).
+            ex <- change_examples(s$changes)
+            n_of <- function(kind) ex[[kind]]$records %||% 0L
+            n_fix <- sum(vapply(change_kinds, n_of, integer(1)))
             records_sub <- sprintf(tr("export_kpi_records_sub", lang), s$term_count)
-            fixes_sub <- sprintf(tr("export_kpi_corrections_sub", lang),
-                                 cc$names_corrected + cc$names_confirmed, cc$coord_fixes, cc$country_fills)
+            fixes_sub <- sprintf(tr("export_kpi_corrections_sub", lang), n_of("names"),
+                                 n_of("coordinates"), n_of("country"), n_of("preview"))
+            fixes_kpi <- kpi(n_fix, tr("export_kpi_corrections", lang), fixes_sub)
+            if (n_fix > 0L) {
+                fixes_kpi <- shiny::tags$button(
+                    type = "button", class = "export-kpi export-kpi-toggle collapsed",
+                    title = fixes_sub, `data-bs-toggle` = "collapse",
+                    `data-bs-target` = paste0("#", ns("changes_panel")),
+                    `aria-expanded` = "false", `aria-controls` = ns("changes_panel"),
+                    shiny::div(class = "export-kpi-value", fmt_n(n_fix)),
+                    shiny::div(class = "export-kpi-label", tr("export_kpi_corrections", lang),
+                               ph_icon("caret-down"))
+                )
+            }
             kpis <- shiny::tagList(
                 shiny::div(
                     class = "export-kpis",
                     kpi(s$record_count, tr("export_kpi_records", lang), records_sub),
-                    kpi(n_fix, tr("export_kpi_corrections", lang), fixes_sub),
+                    fixes_kpi,
                     kpi(count_distinct_species(gen$scientificName), tr("export_kpi_generalized", lang),
                         if (nrow(gen) == 0L) tr("export_gen_none_short", lang) else tr("export_kpi_generalized_sub", lang)),
                     kpi(length(s$files$dwca) + n_aux, tr("export_kpi_files", lang),
@@ -268,7 +349,8 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     class = "export-kpi-sub",
                     shiny::span(records_sub),
                     shiny::span(sprintf(tr("export_kpi_corrections_line", lang), fixes_sub))
-                )
+                ),
+                if (n_fix > 0L) changes_panel(s, ex, n_fix, nrow(gen) > 0L, lang)
             )
 
             # --- Pending items: one row each, with the step that fixes it ------

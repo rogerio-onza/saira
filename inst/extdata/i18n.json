@@ -145,14 +145,114 @@
     "es": "Correcciones"
   },
   "export_kpi_corrections_sub": {
-    "pt": "%d nomes · %d coordenadas · %d países",
-    "en": "%d names · %d coordinates · %d countries",
-    "es": "%d nombres · %d coordenadas · %d países"
+    "pt": "%d nomes · %d coordenadas · %d países · %d na prévia",
+    "en": "%d names · %d coordinates · %d countries · %d in the Preview",
+    "es": "%d nombres · %d coordenadas · %d países · %d en la vista previa"
   },
   "export_kpi_corrections_line": {
     "pt": "Correções: %s",
     "en": "Corrections: %s",
     "es": "Correcciones: %s"
+  },
+  "export_changes_head": {
+    "pt": "%d correções em %d registros",
+    "en": "%d corrections in %d records",
+    "es": "%d correcciones en %d registros"
+  },
+  "export_changes_one_each": {
+    "pt": "um exemplo por tipo",
+    "en": "one example of each kind",
+    "es": "un ejemplo por tipo"
+  },
+  "export_changes_records": {
+    "pt": "%d registro(s)",
+    "en": "%d record(s)",
+    "es": "%d registro(s)"
+  },
+  "export_changes_row": {
+    "pt": "Linha %d",
+    "en": "Row %d",
+    "es": "Fila %d"
+  },
+  "export_changes_blank": {
+    "pt": "(vazio)",
+    "en": "(blank)",
+    "es": "(vacío)"
+  },
+  "export_changes_hidden": {
+    "pt": "Só registros generalizados: os valores ficam fora desta lista.",
+    "en": "Only generalized records: their values stay out of this list.",
+    "es": "Solo registros generalizados: sus valores quedan fuera de esta lista."
+  },
+  "export_changes_kind_names": {
+    "pt": "Nomes",
+    "en": "Names",
+    "es": "Nombres"
+  },
+  "export_changes_kind_coordinates": {
+    "pt": "Coordenadas",
+    "en": "Coordinates",
+    "es": "Coordenadas"
+  },
+  "export_changes_kind_country": {
+    "pt": "Países",
+    "en": "Countries",
+    "es": "Países"
+  },
+  "export_changes_kind_preview": {
+    "pt": "Na prévia",
+    "en": "In the Preview",
+    "es": "En la vista previa"
+  },
+  "export_changes_why_names": {
+    "pt": "corrigido na aba Nomes",
+    "en": "corrected in the Names tab",
+    "es": "corregido en la pestaña Nombres"
+  },
+  "export_changes_why_coordinates": {
+    "pt": "corrigida na aba Coordenadas",
+    "en": "corrected in the Coordinates tab",
+    "es": "corregida en la pestaña Coordenadas"
+  },
+  "export_changes_why_country": {
+    "pt": "preenchido pelas coordenadas",
+    "en": "filled from the coordinates",
+    "es": "completado a partir de las coordenadas"
+  },
+  "export_changes_why_preview": {
+    "pt": "editada na prévia",
+    "en": "edited in the Preview",
+    "es": "editada en la vista previa"
+  },
+  "export_changes_go_names": {
+    "pt": "Ver em Nomes",
+    "en": "Open Names",
+    "es": "Ver en Nombres"
+  },
+  "export_changes_go_coordinates": {
+    "pt": "Ver em Coordenadas",
+    "en": "Open Coordinates",
+    "es": "Ver en Coordenadas"
+  },
+  "export_changes_go_country": {
+    "pt": "Ver em Coordenadas",
+    "en": "Open Coordinates",
+    "es": "Ver en Coordenadas"
+  },
+  "export_changes_go_preview": {
+    "pt": "Ver na prévia",
+    "en": "Open the Preview",
+    "es": "Ver en la vista previa"
+  },
+  "export_changes_foot": {
+    "pt": "A lista completa vai no arquivo auxiliar %s.",
+    "en": "The full list goes in the auxiliary file %s.",
+    "es": "La lista completa va en el archivo auxiliar %s."
+  },
+  "export_changes_foot_gen": {
+    "pt": "Os valores dos registros generalizados ficam fora dela: os pontos reais estão só no arquivo privado.",
+    "en": "It leaves out the values of generalized records: the real points are only in the private file.",
+    "es": "Deja fuera los valores de los registros generalizados: los puntos reales están solo en el archivo privado."
   },
   "export_kpi_generalized": {
     "pt": "Espécies generalizadas",
@@ -890,9 +990,9 @@
     "es": "%d fila(s) con conteo 0 aparecerán como ausencias en GBIF, porque occurrenceStatus está vacío. Si 0 significa \"no contado\", deje el conteo vacío."
   },
   "export_copies_left_out": {
-    "pt": "%d cópia(s) exata(s) ficam fora do pacote.",
-    "en": "%d exact copy row(s) stay out of the package.",
-    "es": "%d copia(s) exacta(s) quedan fuera del paquete."
+    "pt": "%d cópia(s) exata(s) tirada(s) na Prévia.",
+    "en": "%d exact copy row(s) removed in the Preview.",
+    "es": "%d copia(s) exacta(s) quitada(s) en la vista previa."
   },
   "export_establishment_dropped": {
     "pt": "%d valor(es) da sua coluna de %s estão fora do vocabulário controlado do Darwin Core e ficaram vazios em %d registro(s). Traduza cada um no assistente do card.",
@@ -1610,24 +1710,24 @@
     "es": "%d fila(s) repiten otra fila en todas las columnas."
   },
   "preview_copy_open_sub": {
-    "pt": "O pacote leva todas as linhas até você escolher.",
-    "en": "The package keeps every row until you choose.",
-    "es": "El paquete incluye todas las filas hasta que usted elija."
+    "pt": "Todas as linhas são exportadas até você escolher.",
+    "en": "Every row is exported until you choose.",
+    "es": "Todas las filas se exportan hasta que usted elija."
   },
   "preview_copy_all_out": {
-    "pt": "Cópias fora do pacote: %d.",
-    "en": "Copies out of the package: %d.",
-    "es": "Copias fuera del paquete: %d."
+    "pt": "Cópias tiradas: %d.",
+    "en": "Copies removed: %d.",
+    "es": "Copias quitadas: %d."
   },
   "preview_copy_all_out_sub": {
-    "pt": "As linhas originais continuam no pacote.",
-    "en": "The original rows stay in the package.",
-    "es": "Las filas originales siguen en el paquete."
+    "pt": "As linhas originais continuam.",
+    "en": "The original rows stay.",
+    "es": "Las filas originales se mantienen."
   },
   "preview_copy_drop_all": {
-    "pt": "Tirar as cópias do pacote",
-    "en": "Remove the copies from the package",
-    "es": "Quitar las copias del paquete"
+    "pt": "Tirar todas as cópias",
+    "en": "Remove all copies",
+    "es": "Quitar todas las copias"
   },
   "preview_copy_original": {
     "pt": "Original",
@@ -1640,24 +1740,24 @@
     "es": "Copia exacta de la fila %d"
   },
   "preview_copy_in": {
-    "pt": "No pacote",
-    "en": "In the package",
-    "es": "En el paquete"
+    "pt": "Manter cópia",
+    "en": "Keep copy",
+    "es": "Mantener copia"
   },
   "preview_copy_out": {
-    "pt": "Fora do pacote",
-    "en": "Out of the package",
-    "es": "Fuera del paquete"
+    "pt": "Tirar cópia",
+    "en": "Remove copy",
+    "es": "Quitar copia"
   },
   "preview_copy_original_stays": {
-    "pt": "fica no pacote",
-    "en": "stays in the package",
-    "es": "queda en el paquete"
+    "pt": "sempre fica",
+    "en": "always stays",
+    "es": "siempre se mantiene"
   },
   "preview_copy_note": {
-    "pt": "A linha original fica sempre no pacote. Só a cópia tem escolha.",
-    "en": "The original row always stays in the package. Only the copy has a choice.",
-    "es": "La fila original siempre queda en el paquete. Solo la copia tiene elección."
+    "pt": "A linha original sempre fica. Uma cópia tirada sai só do download: a sua planilha não muda.",
+    "en": "The original row always stays. A removed copy leaves only the download: your spreadsheet does not change.",
+    "es": "La fila original siempre se mantiene. Una copia quitada sale solo de la descarga: su planilla no cambia."
   },
   "preview_fix_record_title": {
     "pt": "Registro %d como está na planilha",

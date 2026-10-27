@@ -21,6 +21,7 @@ mount_export_download <- function(input, output, session, lang_r,
                                   coords_correction_payload_r = NULL,
                                   country_fill_payload_r = NULL,
                                   rows_left_out_r = NULL,
+                                  preview_changes_r = NULL,
                                   blocked_r = NULL,
                                   on_export_success = NULL) {
     ns <- session$ns
@@ -433,7 +434,12 @@ mount_export_download <- function(input, output, session, lang_r,
                 }
                 masked$real <- masked$real[!masked$real$occurrenceID %in% ids[drop], , drop = FALSE]
             }
-            list(masked = masked, gen = gen, cv = cv, raw_df = raw_df, mv = mv, drop = drop)
+            changes <- build_change_log(
+                download_data(), effective, optional_reactive_value(preview_changes_r, NULL),
+                union(masked$rows, generalized_record_rows(effective, gen)), drop
+            )
+            list(masked = masked, gen = gen, cv = cv, raw_df = raw_df, mv = mv, drop = drop,
+                 changes = changes)
         }
 
         output$download_real <- shiny::downloadHandler(
@@ -523,7 +529,8 @@ mount_export_download <- function(input, output, session, lang_r,
                         # mirror and mapping guide are renamed after the dataset.
                         # The real coordinates have their own download (ADR-163).
                         fnames <- export_bundle_filenames(dataset_name = cv$datasetName,
-                                                          n_records = nrow(export_data))
+                                                          n_records = nrow(export_data),
+                                                          has_changes = nrow(prep$changes) > 0L)
                         xlsx_path  <- if (!is.null(fnames$auxiliary$xlsx)) {
                             file.path(tmpdir, fnames$auxiliary$xlsx)
                         }
@@ -569,6 +576,11 @@ mount_export_download <- function(input, output, session, lang_r,
                         extras <- list()
                         if (!is.null(xlsx_path)) extras[[basename(xlsx_path)]] <- xlsx_path
                         extras[[basename(guide_path)]] <- guide_path
+                        if (!is.null(fnames$auxiliary$changes)) {
+                            changes_path <- file.path(tmpdir, fnames$auxiliary$changes)
+                            write_change_log_csv(prep$changes, changes_path)
+                            extras[[basename(changes_path)]] <- changes_path
+                        }
                         build_dwca_bundle(export_data, file, metadata = eml_metadata, extras = extras)
 
                         # The bundle is written: the mapping is now confirmed, so

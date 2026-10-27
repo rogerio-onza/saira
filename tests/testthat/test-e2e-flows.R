@@ -944,6 +944,97 @@ testthat::test_that("E2E: the zip carries generalized points and the private fil
     testthat::expect_setequal(real$decimalLatitude, real_lat)
 })
 
+# --- Flow 8c: the change list never shows a value of a generalized record ---
+#
+# Row 1 (generalized) and row 3 (not generalized) each get a Preview fix. The
+# panel and the changes file show row 3, and never the values of row 1.
+
+testthat::test_that("E2E: the change list shows a Preview fix and hides a generalized record", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 10000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("scientificName,decimalLatitude,decimalLongitude,basisOfRecord,eventDate,individualCount",
+          "Panthera onca,-10.512345,-55.234567,HumanObservation,2023-12-25,muitos",
+          "Chrysocyon brachyurus,-13.276543,-52.712345,HumanObservation,2023-11-02,1",
+          "Didelphis albiventris,-195.5,-50.1,HumanObservation,2023-10-01,2"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+    secret <- c("-10.512345", "-55.234567", "muitos")
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='mapping']")
+    app$wait_for_idle(timeout = 10000)
+    app$click(selector = "#mapping-auto_map")
+    app$wait_for_idle(timeout = 20000)
+    app$set_inputs(`mapping-custom_license` = "CC BY 4.0")
+
+    app$set_inputs(main_nav = "preview", wait_ = FALSE)
+    wait_until_js(app, "!!document.getElementById('preview-mode')")
+    app$set_inputs(`preview-mode` = "problems", wait_ = FALSE)
+    app$wait_for_idle(duration = 800, timeout = 30000)
+    for (value in c("muitos", "-195.5")) {
+        app$run_js(sprintf("$('#preview-rows_table table').DataTable().search('%s').draw();", value))
+        wait_until_js(app, sprintf(
+            "Array.from(document.querySelectorAll('#preview-rows_table tbody tr')).some(function (r) {
+               return r.innerText.indexOf('%s') >= 0 && r.querySelector('.preview-fix-blank'); })", value))
+        app$run_js(sprintf(
+            "Array.from(document.querySelectorAll('#preview-rows_table tbody tr')).filter(function (r) {
+               return r.innerText.indexOf('%s') >= 0; })[0].querySelector('.preview-fix-blank').click();", value))
+        app$wait_for_idle(duration = 800, timeout = 30000)
+    }
+
+    app$set_inputs(main_nav = "sensitive_coords", wait_ = FALSE)
+    wait_until_js(app, "!!document.getElementById('sensitive_coords-sensitive_mode')")
+    app$set_inputs(`sensitive_coords-sensitive_mode` = "generalize")
+    app$wait_for_idle(timeout = 10000)
+    app$set_inputs(`sensitive_coords-q43_vu` = "yes")
+    app$wait_for_idle(timeout = 10000)
+    app$set_inputs(`sensitive_coords-sensitive_justification` = "Hunting pressure.")
+    app$wait_for_idle(timeout = 10000)
+
+    app$set_inputs(main_nav = "export", wait_ = FALSE)
+    wait_until_js(app, "!!document.querySelector('.export-kpi-toggle')")
+    app$click(selector = ".export-kpi-toggle")
+    wait_until_js(app, "!!document.querySelector('#export-changes_panel.show')")
+    panel <- app$get_html("#export-changes_panel")
+    testthat::expect_match(panel, "Linha 3", fixed = TRUE)
+    testthat::expect_match(panel, "-195.5", fixed = TRUE)
+    testthat::expect_match(panel, "-changes.csv", fixed = TRUE)
+    for (value in secret) testthat::expect_false(grepl(value, panel, fixed = TRUE))
+
+    wait_until_js(
+        app,
+        "(function () { var b = document.getElementById('export-download_trigger'); return !!b && !b.disabled; })()"
+    )
+    zip_path <- app$get_download("export-download_real")
+    unzip_dir <- tempfile()
+    dir.create(unzip_dir)
+    on.exit(unlink(c(zip_path, unzip_dir), recursive = TRUE), add = TRUE)
+    utils::unzip(zip_path, exdir = unzip_dir)
+
+    changes_path <- list.files(unzip_dir, pattern = "-changes\\.csv$", full.names = TRUE)
+    testthat::expect_length(changes_path, 1L)
+    text <- paste(readLines(changes_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+    for (value in secret) testthat::expect_false(grepl(value, text, fixed = TRUE))
+    changes <- utils::read.csv(changes_path, colClasses = "character")
+    testthat::expect_identical(changes$row, c("1", "3"))
+    testthat::expect_identical(changes$kind, c("preview", "preview"))
+    testthat::expect_identical(changes$generalized, c("TRUE", "FALSE"))
+    testthat::expect_identical(changes$from, c("", "-195.5"))
+})
+
 # --- Flow 9: the whole flow on the demo dataset, timed ---
 #
 # The public demo sheet exercises every validation, so this is the one run that
