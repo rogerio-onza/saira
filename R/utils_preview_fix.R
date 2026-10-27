@@ -711,3 +711,59 @@ preview_problem_banner <- function(problems, n_rows, min_share = 0.2, min_count 
         example = if (length(values)) names(sort(table(values), decreasing = TRUE))[[1]] else ""
     )
 }
+
+#' Find the rows that repeat an earlier row in every column
+#'
+#' A row pasted twice is the usual cause. Only a copy of the whole row counts:
+#' two records that differ in one column (another time, another specimen) can
+#' both be real.
+#'
+#' @param df The uploaded data frame, before the mapping.
+#' @return Data frame with `row` (the copy) and `of` (the first row with the
+#'   same values). A row with every cell blank is not a copy.
+#' @noRd
+exact_copy_rows <- function(df) {
+    none <- data.frame(row = integer(0), of = integer(0))
+    if (!is.data.frame(df) || nrow(df) < 2L || ncol(df) == 0L) {
+        return(none)
+    }
+    cells <- lapply(df, function(v) {
+        v <- as.character(v)
+        v[is.na(v)] <- "\u0001"
+        v
+    })
+    key <- do.call(paste, c(unname(cells), sep = "\u001f"))
+    blank <- Reduce(`&`, lapply(cells, function(v) v == "\u0001" | !nzchar(trimws(v))))
+    rows <- which(duplicated(key) & !blank)
+    if (!length(rows)) {
+        return(none)
+    }
+    data.frame(row = rows, of = match(key[rows], key))
+}
+
+#' Remove the repeated ids that only exact copies share
+#'
+#' A copy repeats the id of its original. The Preview lists that row under
+#' Exact copy, so the same row does not show twice. An id that another record
+#' also uses stays an id problem.
+#'
+#' @param problems Output of `detect_preview_problems()`.
+#' @param copies Output of `exact_copy_rows()`.
+#' @return `problems` without those rows.
+#' @noRd
+drop_copy_id_problems <- function(problems, copies) {
+    hit <- which(problems$type == "id_duplicate")
+    if (!length(hit) || !is.data.frame(copies) || !nrow(copies)) {
+        return(problems)
+    }
+    rows <- problems$row[hit]
+    root <- copies$of[match(rows, copies$row)]
+    root[is.na(root)] <- rows[is.na(root)]
+    one_record <- stats::ave(root, problems$value[hit], FUN = function(x) length(unique(x))) == 1L
+    if (!any(one_record)) {
+        return(problems)
+    }
+    out <- problems[-hit[one_record], , drop = FALSE]
+    rownames(out) <- NULL
+    out
+}

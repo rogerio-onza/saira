@@ -1253,6 +1253,13 @@ testthat::test_that("replace_repeated_ids gives every repeated row a persistent 
     testthat::expect_null(attr(fixed, "ids_replaced"))
 })
 
+testthat::test_that("replace_repeated_ids does not count a row the export leaves out", {
+    basis <- data.frame(occurrenceID = c("r1", "r2", "r1"), stringsAsFactors = FALSE)
+    out <- replace_repeated_ids(basis, ignore = 3L)
+    testthat::expect_identical(out$occurrenceID, c("r1", "r2", "r1"))
+    testthat::expect_null(attr(out, "ids_replaced"))
+})
+
 testthat::test_that("occurrence_id_counts_after_repeats moves the replaced ids to generated", {
     counts <- list(total = 10L, preserved = 8L, generated = 2L)
     out <- occurrence_id_counts_after_repeats(counts, 3L)

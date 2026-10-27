@@ -22,7 +22,7 @@ mod_preview_ui <- function(id) {
             useId = ns("use"), blankId = ns("blank"), undoId = ns("undo"), otherId = ns("other"),
             vocabApplyId = ns("vocab_apply"), vocabSectionId = ns("vocab_section"),
             focusId = ns("focus"), fixNextChannel = ns("fix_next"), tableId = ns("rows_table"),
-            modeId = ns("mode"), contentId = ns("table_or_message")
+            modeId = ns("mode"), contentId = ns("table_or_message"), copyId = ns("copy_set")
         )))
     )
 }
@@ -65,10 +65,13 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
         # `from`), term, from (the mapped value it replaces) and to.
         edits_rv <- shiny::reactiveVal(NULL)
         filter_rv <- shiny::reactiveVal("problems")
+        # Exact copies the user left out of the package (rows of the upload).
+        left_out_rv <- shiny::reactiveVal(integer(0))
 
         if (!is.null(reset_signal_r)) {
             shiny::observeEvent(reset_signal_r(), {
                 edits_rv(NULL)
+                left_out_rv(integer(0))
                 filter_rv("problems")
             }, ignoreInit = TRUE)
         }
@@ -85,7 +88,17 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
 
         # The tabs after this one read unique identifiers (ADR-152).
         edited_data_r <- shiny::reactive({
-            replace_repeated_ids(corrected_data_r(), basis = full_data_r())
+            replace_repeated_ids(corrected_data_r(), basis = full_data_r(),
+                                 ignore = rows_left_out_r())
+        })
+
+        copies_r <- shiny::reactive({
+            exact_copy_rows(if (is.function(raw_data_r)) raw_data_r())
+        })
+
+        # Only rows that are still copies: a new upload can change them.
+        rows_left_out_r <- shiny::reactive({
+            sort(intersect(left_out_rv(), copies_r()$row))
         })
 
         # Both modes stay rendered while the tab shows, so a mode switch
@@ -94,7 +107,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
         problems_r <- shiny::reactive({
             df <- full_data_r()
             shiny::req(is.data.frame(df))
-            detect_preview_problems(df)
+            drop_copy_id_problems(detect_preview_problems(df), copies_r())
         })
 
         # Problems with no correction yet, for the nav badge and the Problems
@@ -255,13 +268,13 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             p <- problems_r()
             open <- is.na(problem_edit_r())
             counts <- table(factor(p$family[open], levels = unique(preview_problem_types$family)))
-            c(problems = sum(open), as.list(counts), edited = sum(!open))
+            c(problems = sum(open), as.list(counts), copy = nrow(copies_r()), edited = sum(!open))
         })
 
         output$problems_panel <- shiny::renderUI({
             p <- problems_r()
             lang <- lang_r()
-            if (nrow(p) == 0L) {
+            if (nrow(p) == 0L && nrow(copies_r()) == 0L) {
                 return(shiny::div(class = "preview-fix-none", ph_icon("check"), " ",
                                   tr("preview_fix_none", lang)))
             }
@@ -275,7 +288,8 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                     class = "preview-fix-cols",
                     shiny::uiOutput(ns("vocab_section"), class = "preview-fix-vocab-col"),
                     shiny::uiOutput(ns("rows_section"), class = "preview-fix-rows-col")
-                )
+                ),
+                shiny::uiOutput(ns("copies_section"))
             )
         })
 
@@ -289,9 +303,10 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                          count = "pill-warning", uncertainty = "pill-warning",
                          coord = "pill-error", name = "pill-warning", country = "pill-warning",
                          formula = "pill-error",
-                         empty = "pill-error", id = "pill-reference", edited = "pill-edited")
+                         empty = "pill-error", id = "pill-reference", copy = "pill-reference",
+                         edited = "pill-edited")
             # Only the types with something left to correct, plus the active one.
-            keys <- c("problems", unique(preview_problem_types$family), "edited")
+            keys <- c("problems", unique(preview_problem_types$family), "copy", "edited")
             keys <- keys[keys == "problems" | keys == active |
                              vapply(keys, function(k) counts[[k]] > 0L, logical(1))]
             shiny::div(
@@ -310,7 +325,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             )
         })
 
-        lapply(c("problems", unique(preview_problem_types$family), "edited"), function(key) {
+        lapply(c("problems", unique(preview_problem_types$family), "copy", "edited"), function(key) {
             shiny::observeEvent(input[[paste0("fix_filter_", key)]], {
                 filter_rv(key)
             }, ignoreInit = TRUE)
@@ -823,14 +838,109 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             notify_fix(tr("preview_fix_undone", lang_r()), "message")
         }, ignoreInit = TRUE)
 
+        # --- Exact copies ----------------------------------------------------
+
+        # Each original with its copies under it. Only a copy has a choice.
+        output$copies_section <- shiny::renderUI({
+            shiny::req(identical(filter_rv(), "copy"))
+            cp <- copies_r()
+            shiny::req(nrow(cp) > 0L)
+            left <- rows_left_out_r()
+            lang <- lang_r()
+            df <- corrected_data_r()
+            cell <- function(term, row) {
+                v <- if (term %in% names(df)) as.character(df[[term]][row]) else NA_character_
+                if (is.na(v) || !nzchar(trimws(v))) "" else v
+            }
+            choice <- function(row, out) {
+                shiny::tags$span(
+                    class = "preview-copy-choice",
+                    shiny::tags$button(type = "button", class = paste("preview-copy-set", if (!out) "is-on"),
+                                       `data-row` = row, `data-out` = "0", tr("preview_copy_in", lang)),
+                    shiny::tags$button(type = "button", class = paste("preview-copy-set", if (out) "is-out"),
+                                       `data-row` = row, `data-out` = "1", tr("preview_copy_out", lang))
+                )
+            }
+            line <- function(row, diag, last, original = FALSE) {
+                shiny::tags$tr(
+                    class = if (original) "is-original",
+                    shiny::tags$td(class = "pf-mono", row),
+                    shiny::tags$td(diag),
+                    shiny::tags$td(class = "pf-taxon", cell("scientificName", row)),
+                    shiny::tags$td(class = "pf-mono", cell("eventDate", row)),
+                    shiny::tags$td(last)
+                )
+            }
+            body <- lapply(unique(cp$of), function(of) {
+                copies <- cp$row[cp$of == of]
+                shiny::tagList(
+                    line(of, shiny::span(class = "pf-muted", tr("preview_copy_original", lang)),
+                         shiny::span(class = "pf-muted", tr("preview_copy_original_stays", lang)),
+                         original = TRUE),
+                    lapply(copies, function(r) line(
+                        r,
+                        shiny::span(class = "coord-issue-badge coord-issue-badge-missing",
+                                    sprintf(tr("preview_copy_of", lang), of)),
+                        choice(r, r %in% left)
+                    ))
+                )
+            })
+            all_out <- length(left) == nrow(cp)
+            shiny::div(
+                class = "preview-fix-section preview-copies",
+                shiny::div(
+                    class = "preview-copy-box",
+                    shiny::p(
+                        if (all_out) sprintf(tr("preview_copy_all_out", lang), nrow(cp))
+                        else sprintf(tr("preview_copy_open", lang), nrow(cp)),
+                        shiny::tags$small(tr(if (all_out) "preview_copy_all_out_sub" else "preview_copy_open_sub", lang))
+                    ),
+                    shiny::tags$button(
+                        type = "button", `data-row` = "all", `data-out` = if (all_out) "0" else "1",
+                        class = paste("btn btn-sm preview-copy-set",
+                                      if (all_out) "btn-outline-secondary" else "btn-primary"),
+                        tr(if (all_out) "preview_fix_undo" else "preview_copy_drop_all", lang)
+                    )
+                ),
+                shiny::div(
+                    class = "preview-copy-scroll",
+                    shiny::tags$table(
+                        class = "preview-copy-table",
+                        shiny::tags$thead(shiny::tags$tr(
+                            shiny::tags$th(tr("preview_fix_col_row", lang)),
+                            shiny::tags$th(tr("preview_fix_col_diag", lang)),
+                            shiny::tags$th("scientificName"),
+                            shiny::tags$th("eventDate"),
+                            shiny::tags$th(tr("preview_fix_col_fix", lang))
+                        )),
+                        shiny::tags$tbody(body)
+                    )
+                ),
+                shiny::p(class = "pf-muted preview-copy-note", tr("preview_copy_note", lang))
+            )
+        })
+
+        shiny::observeEvent(input$copy_set, {
+            set <- input$copy_set
+            cp <- copies_r()
+            rows <- if (identical(set$row, "all")) cp$row else {
+                intersect(suppressWarnings(as.integer(set$row)), cp$row)
+            }
+            if (!length(rows)) return(invisible(NULL))
+            left <- left_out_rv()
+            left_out_rv(if (isTRUE(set$out)) union(left, rows) else setdiff(left, rows))
+        }, ignoreInit = TRUE)
+
         notify_fix <- function(message, type) {
             shiny::showNotification(message, type = type, id = ns("fix_note"),
                                     duration = if (identical(type, "error")) 7 else 4)
         }
 
         module_result_return(
-            new_module_result(preview_data, edited_data_r = edited_data_r, problems_n_r = problems_n_r),
-            c("edited_data_r" = "edited_data_r", "problems_n_r" = "problems_n_r"), return_contract
+            new_module_result(preview_data, edited_data_r = edited_data_r, problems_n_r = problems_n_r,
+                              rows_left_out_r = rows_left_out_r),
+            c("edited_data_r" = "edited_data_r", "problems_n_r" = "problems_n_r",
+              "rows_left_out_r" = "rows_left_out_r"), return_contract
         )
     })
 }

@@ -25,6 +25,8 @@
 #' @param raw_data,map_values,overridden_terms The upload, the mapping and the
 #'   terms whose fixed value won (`overridden_mapping_terms()`). They give the
 #'   unmapped columns the download adds to the file.
+#' @param rows_left_out Rows of exact copies the Preview left out of the
+#'   package. They do not count as records.
 #' @return Named list: `record_count`, `term_count`, `corrections`
 #'   (`names_corrected`/`names_confirmed`/`coord_fixes`/`coord_fixes_stale`/`country_fills`),
 #'   `generalization` (data.frame `scientificName`/`category`/`tier`),
@@ -53,11 +55,13 @@ build_export_summary <- function(mapped_data,
                                  preview_problems_n = NULL,
                                  raw_data = NULL,
                                  map_values = NULL,
-                                 overridden_terms = character(0)) {
+                                 overridden_terms = character(0),
+                                 rows_left_out = integer(0)) {
     df <- if (is.data.frame(mapped_data)) mapped_data else data.frame()
     coords_correction_payload <- drop_stale_coord_corrections(coords_correction_payload, df)
     country_fill_payload <- reconcile_country_fill(country_fill_payload, df)
-    n_records <- nrow(df)
+    rows_left_out <- intersect(as.integer(rows_left_out), seq_len(nrow(df)))
+    n_records <- nrow(df) - length(rows_left_out)
     term_count <- ncol(df)
 
     nrows_of <- function(x) if (is.data.frame(x)) nrow(x) else 0L
@@ -126,6 +130,7 @@ build_export_summary <- function(mapped_data,
 
     list(
         record_count = n_records,
+        rows_left_out = rows_left_out,
         term_count = term_count,
         corrections = corrections,
         generalization = gen,

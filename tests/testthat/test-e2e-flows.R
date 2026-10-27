@@ -461,6 +461,72 @@ testthat::test_that("E2E: slash dates export as ISO and an out-of-range year is 
     )
 })
 
+# --- Flow 7b: an exact copy left out in the Preview stays out of the zip ---
+#
+# The Preview only stores the choice. The rows leave in the download handler,
+# after the unmapped columns join by row, so only a browser run covers it.
+
+testthat::test_that("E2E: an exact copy left out in the Preview stays out of the zip", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 10000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("occurrenceID,scientificName,decimalLatitude,decimalLongitude,basisOfRecord,eventDate",
+          "r1,Panthera onca,-10.5,-55.2,HumanObservation,2023-12-25",
+          "r2,Leopardus pardalis,-11.3,-54.8,HumanObservation,2023-11-02",
+          "r1,Panthera onca,-10.5,-55.2,HumanObservation,2023-12-25",
+          "r3,Puma concolor,-12.1,-53.4,HumanObservation,2023-10-01"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='mapping']")
+    app$wait_for_idle(timeout = 10000)
+    app$click(selector = "#mapping-auto_map")
+    app$wait_for_idle(timeout = 20000)
+    app$set_inputs(`mapping-custom_license` = "CC BY 4.0")
+
+    app$click(selector = "a[data-value='preview']")
+    app$wait_for_idle(timeout = 15000)
+    app$set_inputs(`preview-mode` = "problems")
+    wait_until_js(app, "!!document.getElementById('preview-fix_filter_copy')")
+    app$click(selector = "#preview-fix_filter_copy")
+    wait_until_js(app, "!!document.querySelector(\".preview-copy-set[data-row='all']\")")
+    testthat::expect_match(app$get_html("#preview-copies_section"), "linha 1", fixed = TRUE)
+    app$click(selector = ".preview-copy-set[data-row='all']")
+    wait_until_js(app, "!!document.querySelector(\".preview-copy-set.is-out[data-row='3']\")")
+
+    app$click(selector = "a[data-value='export']")
+    app$wait_for_idle(timeout = 15000)
+    testthat::expect_match(app$get_html("#export-summary"), "1 cópia(s) exata(s)", fixed = TRUE)
+
+    wait_until_js(
+        app,
+        "(function () { var b = document.getElementById('export-download_trigger'); return !!b && !b.disabled; })()"
+    )
+    zip_path <- app$get_download("export-download_real")
+    on.exit(unlink(zip_path), add = TRUE)
+    unzip_dir <- tempfile()
+    dir.create(unzip_dir)
+    on.exit(unlink(unzip_dir, recursive = TRUE), add = TRUE)
+    utils::unzip(zip_path, exdir = unzip_dir)
+    occurrence <- utils::read.csv(
+        file.path(unzip_dir, "occurrence.txt"), sep = ",", colClasses = "character", encoding = "UTF-8"
+    )
+    testthat::expect_identical(occurrence$occurrenceID, c("r1", "r2", "r3"))
+})
+
 # --- Flow 8: a language switch keeps a card's column ---
 #
 # ADR-111, item 5: the mapping sync observer keeps its lang_r() dependency. When

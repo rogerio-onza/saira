@@ -316,3 +316,38 @@ testthat::test_that("detect_preview_problems flags a (0, 0) filler on both axes 
     testthat::expect_equal(z$row[z$term == "decimalLatitude"], 1L)
     testthat::expect_equal(sort(z$row[z$term == "decimalLongitude"]), c(1L, 3L))
 })
+
+testthat::test_that("exact_copy_rows finds only rows equal in every column", {
+    df <- data.frame(
+        sp = c("A a", "B b", "A a", "A a", "B b", NA, NA, "C c"),
+        date = c("2020-01-01", "2021", "2020-01-01", "2020-01-01", "2022", NA, NA, "x"),
+        id = c("1", "2", "1", "1", "2", "", "", "3"),
+        stringsAsFactors = FALSE
+    )
+    cp <- exact_copy_rows(df)
+    # Row 5 differs in date. Rows 6 and 7 are blank, not copies.
+    testthat::expect_identical(cp$row, c(3L, 4L))
+    testthat::expect_identical(cp$of, c(1L, 1L))
+    testthat::expect_identical(nrow(exact_copy_rows(df[1:2, ])), 0L)
+    testthat::expect_identical(nrow(exact_copy_rows(NULL)), 0L)
+})
+
+testthat::test_that("exact_copy_rows tells NA from the text NA and from blank", {
+    df <- data.frame(a = c(NA, "NA", "", NA), b = c("x", "x", "x", "x"), stringsAsFactors = FALSE)
+    cp <- exact_copy_rows(df)
+    testthat::expect_identical(cp$row, 4L)
+    testthat::expect_identical(cp$of, 1L)
+})
+
+testthat::test_that("drop_copy_id_problems keeps an id that another record shares", {
+    problems <- data.frame(
+        row = c(1L, 3L, 2L, 5L, 7L), term = "occurrenceID", type = "id_duplicate",
+        family = "id", bulk = FALSE, value = c("a", "a", "b", "b", "b"),
+        suggestion = NA_character_, stringsAsFactors = FALSE
+    )
+    copies <- data.frame(row = c(3L, 5L), of = c(1L, 2L))
+    out <- drop_copy_id_problems(problems, copies)
+    # "a": only row 1 and its copy. "b": row 7 is another record.
+    testthat::expect_identical(out$value, c("b", "b", "b"))
+    testthat::expect_identical(drop_copy_id_problems(problems, copies[0, ]), problems)
+})

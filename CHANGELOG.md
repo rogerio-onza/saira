@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **preview:** List exact copies of a row under Problems, with a choice to leave each copy out of the package, ADR-175
 - **names:** Show the names a failed provider left unchecked in a block above the run list, with a button that queries only these names again, ADR-169
 - **names:** Show one hexagon per name during a run, colored by its answer, ADR-160
 - **coords:** Replace the run dialog with a map that scans the points and marks each flag, ADR-160

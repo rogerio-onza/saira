@@ -318,3 +318,9 @@ testthat::test_that("build_export_summary lists Coordinates flags with no correc
     testthat::expect_equal(s$coord_flags$count, 0L)
     testthat::expect_null(saira:::build_export_summary(df)$coord_flags)
 })
+
+testthat::test_that("build_export_summary does not count the copies left out", {
+    s <- saira:::build_export_summary(mapped_data = sample_mapped(), rows_left_out = c(2L, 9L))
+    testthat::expect_equal(s$record_count, 1L)
+    testthat::expect_identical(s$rows_left_out, 2L)
+})
