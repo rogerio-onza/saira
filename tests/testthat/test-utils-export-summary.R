@@ -324,3 +324,71 @@ testthat::test_that("build_export_summary does not count the copies left out", {
     testthat::expect_equal(s$record_count, 1L)
     testthat::expect_identical(s$rows_left_out, 2L)
 })
+
+testthat::test_that("cell_changes lists the cells that differ, with blank equal to NA", {
+    before <- data.frame(a = c("x", NA, "z"), b = c("1", "2", "3"), stringsAsFactors = FALSE)
+    after <- data.frame(a = c("x", "", "w"), b = c("1", "20", "3"), stringsAsFactors = FALSE)
+    out <- saira:::cell_changes(before, after, c("a", "b", "missing"))
+    testthat::expect_identical(out$row, c(3L, 2L))
+    testthat::expect_identical(out$term, c("a", "b"))
+    testthat::expect_identical(out$from, c("z", "2"))
+    testthat::expect_identical(out$to, c("w", "20"))
+    testthat::expect_identical(nrow(saira:::cell_changes(before, after[1:2, ], "a")), 0L)
+})
+
+testthat::test_that("build_change_log hides the values of generalized records", {
+    data <- data.frame(
+        occurrenceID = c("o1", "o2", "o3"),
+        scientificName = c("Panthera onca", "Puma concolr", "Felis catus"),
+        decimalLatitude = c("-10.51", "-23.5", "-8.1"),
+        decimalLongitude = c("-55.23", "-46.6", "-35.1"),
+        country = c("", "Brazil", ""),
+        stringsAsFactors = FALSE
+    )
+    effective <- data
+    effective$scientificName[2] <- "Puma concolor"
+    effective$decimalLatitude[1] <- "-55.23"
+    effective$decimalLongitude[1] <- "-10.51"
+    effective$country[c(1, 3)] <- "Brazil"
+    preview <- data.frame(row = c(1L, 3L), term = c("eventDate", "eventDate"),
+                          from = c("25/12/23", "1/2/24"), to = c("2023-12-25", "2024-02-01"),
+                          stringsAsFactors = FALSE)
+
+    log <- saira:::build_change_log(data, effective, preview, hidden_rows = 1L, rows_left_out = 3L)
+    testthat::expect_identical(log$row, c(1L, 1L, 1L, 1L, 2L))
+    testthat::expect_identical(log$kind, c("coordinates", "coordinates", "country", "preview", "names"))
+    testthat::expect_identical(log$occurrenceID, c("o1", "o1", "o1", "o1", "o2"))
+    # Row 1 is generalized: only its country shows a value.
+    testthat::expect_true(all(log$generalized[1:4]))
+    testthat::expect_identical(log$from[c(1, 2, 4)], c("", "", ""))
+    testthat::expect_identical(log$to[c(1, 2, 4)], c("", "", ""))
+    testthat::expect_identical(log$to[3], "Brazil")
+    testthat::expect_false(any(grepl("-10.51|-55.23|25/12/23", unlist(log))))
+
+    ex <- saira:::change_examples(log)
+    testthat::expect_identical(names(ex), c("names", "coordinates", "country", "preview"))
+    testthat::expect_identical(ex$names$example$to, "Puma concolor")
+    testthat::expect_null(ex$coordinates$example)
+    testthat::expect_identical(ex$coordinates$records, 1L)
+})
+
+testthat::test_that("build_export_summary lists the changes and adds the changes file", {
+    df <- sample_mapped()
+    df$occurrenceID <- c("o1", "o2")
+    preview <- data.frame(row = 2L, term = "eventDate", from = "2/2/24", to = "2024-02-02",
+                          stringsAsFactors = FALSE)
+    s <- saira:::build_export_summary(df, dataset_name = "Meu Data Set", preview_changes = preview)
+    testthat::expect_identical(s$changes$kind, "preview")
+    testthat::expect_equal(s$files$auxiliary$changes, "meu-data-set-changes.csv")
+    testthat::expect_null(saira:::build_export_summary(df)$files$auxiliary$changes)
+})
+
+testthat::test_that("write_change_log_csv quotes a formula so a spreadsheet does not run it", {
+    log <- data.frame(row = 1:2, term = "x", from = c("=SUM(A1)", "-10.5"), to = c("", "-10.5"),
+                      stringsAsFactors = FALSE)
+    path <- tempfile(fileext = ".csv")
+    on.exit(unlink(path))
+    saira:::write_change_log_csv(log, path)
+    back <- utils::read.csv(path, colClasses = "character")
+    testthat::expect_identical(back$from, c("'=SUM(A1)", "-10.5"))
+})

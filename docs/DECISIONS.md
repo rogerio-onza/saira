@@ -3328,8 +3328,21 @@ Formato: ADR leve (Architecture Decision Record).
 - **Status**: Aceito.
 - **Contexto**: uma planilha pode repetir uma linha em todas as colunas, por erro de copia. O Saira tratava a copia so como `occurrenceID` repetido e trocava os dois ids (ADR-152). O usuario nao tinha como tirar a copia do pacote.
 - **Decisao**:
-  - `exact_copy_rows()` acha as copias na planilha carregada. Na Previa, o filtro "Copia exata" de Problemas lista cada original e suas copias, com "No pacote / Fora do pacote" por copia e um botao em lote. O padrao mantem tudo.
+  - `exact_copy_rows()` acha as copias na planilha carregada. Na Previa, o filtro "Copia exata" de Problemas lista cada original e suas copias, com "Manter copia / Tirar copia" por copia e um botao em lote. O padrao mantem tudo.
   - O id repetido de uma copia exata aparece so nesse filtro (`drop_copy_id_problems()`).
   - As linhas fora do pacote seguem nos dados das outras abas, porque elas guardam estado por indice de linha e o export junta as colunas nao mapeadas por linha. O download remove essas linhas no fim, depois de montar `export_data`, e tira os seus ids do arquivo privado de coordenadas reais.
   - `replace_repeated_ids()` ignora as linhas fora do pacote, entao a original mantem o id do usuario.
 - **Consequencias**: as abas Nomes, Coordenadas e Generalizacao ainda mostram as copias fora do pacote. O card Pacote conta os registros sem elas e mostra uma linha de aviso com o numero das linhas. Uma copia fora do pacote volta com um clique.
+
+## ADR-176: Lista de correcoes no Pacote e arquivo de alteracoes
+
+- **Data**: 2026-10-27
+- **Status**: Aceito.
+- **Contexto**: o numero "Correcoes" do card Pacote somava revisoes de nomes (por nome, nao por registro), correcoes de coordenadas e paises preenchidos. Ele deixava fora as edicoes da Previa, e o usuario nao via o que mudou.
+- **Decisao**:
+  - `build_change_log()` compara os valores antes e depois das correcoes de Nomes, Coordenadas e pais, e junta as celulas que a Previa mudou (`cell_changes()`). O resultado tem uma linha por celula: `row`, `occurrenceID`, `kind`, `term`, `from`, `to`, `generalized`.
+  - O numero "Correcoes" conta registros por tipo de correcao. Uma confirmacao de nome nao muda valor e sai da conta.
+  - O numero abre um painel com um exemplo de cada tipo. O pacote ganha o arquivo auxiliar `<slug>-changes.csv`, so quando ha correcao.
+  - Num registro de especie generalizada, a lista deixa vazios `from` e `to`, exceto `scientificName` e `country`. O download usa a uniao das linhas mascaradas e das linhas das especies generalizadas, entao nenhum ponto real entra na lista.
+  - O CSV poe uma aspa antes de um valor com cara de formula, porque `from` guarda o valor antigo de uma celula corrigida.
+- **Consequencias**: o numero "Correcoes" pode ficar diferente do anterior. Uma copia exata fora do pacote sai da lista. Uma especie sem nenhum registro georreferenciado nao e generalizada, entao os seus valores aparecem na lista.
