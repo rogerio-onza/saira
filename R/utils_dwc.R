@@ -671,14 +671,16 @@ collapse_mapping_term <- function(term, is_mapped, fixed_value_on = FALSE,
 #' row per selected column, and bslib breakpoints follow the viewport rather
 #' than the container: inside a one-track card at 1440px the two columns stay
 #' side by side and the key input drops to roughly 198px. Spanning two tracks
-#' keeps it at the width it had under the old two-column grid. The other cards
-#' with their own block (license, language, modified, the fixed-value input and
-#' the two assistant buttons) are full-width inside the card and need no span.
+#' keeps it at the width it had under the old two-column grid. The
+#' `measurementValue` block has four inputs per column, so it spans two tracks
+#' too. The other cards with their own block (license, language, modified, the
+#' fixed-value input and the two assistant buttons) are full-width inside the
+#' card and need no span.
 #'
 #' @return Character vector of DwC term names.
 #' @noRd
 wide_card_terms <- function() {
-    c("dynamicProperties")
+    c("dynamicProperties", "measurementValue")
 }
 
 # Field `<stem>_<lang>` of a vocabulary item, English when the language has none.

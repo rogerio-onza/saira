@@ -38,6 +38,20 @@ prepare_preview_data <- function(df, max_rows = 100L) {
     order_columns_dwc_canonical(preview_df)
 }
 
+# The table head of the Preview. A column of one measurement shows its source
+# column above the term, so two measurementValue columns read apart (ADR-179).
+# DT adds the table class itself when a container is given.
+preview_table_container <- function(names) {
+    sources <- measurement_value_source(names)
+    cells <- Map(function(name, src) {
+        if (is.na(src)) {
+            return(htmltools::tags$th(name))
+        }
+        htmltools::tags$th(htmltools::tags$span(class = "preview-col-source", src), "measurementValue")
+    }, names, sources, USE.NAMES = FALSE)
+    htmltools::tags$table(htmltools::tags$thead(htmltools::tags$tr(cells)))
+}
+
 validate_preview_download_requirements <- function(
     df,
     blocking_fields = c(

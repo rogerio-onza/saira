@@ -14,14 +14,14 @@ NULL
 preview_problem_types <- data.frame(
     type = c("vocab_unknown", "date_unparsed", "date_ambiguous", "year_range", "interval_inverted",
              "date_mismatch", "time_invalid", "count_invalid", "count_present_zero",
-             "uncertainty_invalid",
+             "uncertainty_invalid", "measure_unit", "measure_number",
              "coord_invalid", "coord_zero", "name_hybrid", "name_multiple", "name_abbreviated",
              "name_placeholder", "name_extra_text", "name_authorship", "country_threat_code",
              "country_conflict", "cell_formula", "required_empty", "id_duplicate"),
     family = c("vocab", "date", "date", "year", "interval", "date_mismatch", "time", "count",
-               "count", "uncertainty", "coord", "coord", "name", "name", "name", "name", "name", "name",
+               "count", "uncertainty", "measure", "measure", "coord", "coord", "name", "name", "name", "name", "name", "name",
                "country", "country", "formula", "empty", "id"),
-    bulk = c(rep(TRUE, 8L), FALSE, rep(TRUE, 10L), FALSE, TRUE, FALSE, FALSE),
+    bulk = c(rep(TRUE, 8L), FALSE, rep(TRUE, 12L), FALSE, TRUE, FALSE, FALSE),
     stringsAsFactors = FALSE
 )
 
@@ -211,6 +211,59 @@ suggest_coordinate <- function(values, limit) {
     ifelse(!is.na(num) & abs(num) <= limit, v, NA_character_)
 }
 
+# A measurement value a program reads as a number: digits, a dot for the
+# decimals and an optional exponent.
+is_measure_number <- function(x) {
+    grepl("^[-+]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][-+]?[0-9]+)?$", x)
+}
+
+# "10kg", "1,5 ha", "993 mm": a number and its unit in one cell.
+measure_unit_re <- paste0("^(-?[0-9]+([.,][0-9]+)?) *",
+                          "([[:alpha:]\u00b0%\u00b5][[:alnum:]\u00b0%\u00b5\u00b2\u00b3/.^-]*)$")
+
+# The number with a dot for the decimals, or NA when the comma can be a
+# thousands mark ("1,500").
+measure_decimal <- function(x) {
+    out <- sub(",", ".", x, fixed = TRUE)
+    out[grepl("^-?[0-9]{1,3},[0-9]{3}$", x)] <- NA_character_
+    out
+}
+
+# TRUE when at least min_share of the filled values are numbers, numbers with
+# a unit or numbers with a decimal comma.
+is_measure_column <- function(v, min_share = 0.8) {
+    filled <- nzchar(v)
+    like <- is_measure_number(v) | grepl(measure_unit_re, v) | grepl("^-?[0-9]+,[0-9]+$", v)
+    any(filled) && mean(like[filled]) >= min_share
+}
+
+# The problem type of each measurement value, NA for a good one. A column
+# where less than 80% of the filled values are numbers holds text (a sex, a
+# stage), so it has no measurement problem.
+measure_problem_type <- function(v, min_share = 0.8) {
+    type <- rep(NA_character_, length(v))
+    filled <- nzchar(v)
+    number <- is_measure_number(v)
+    with_unit <- grepl(measure_unit_re, v)
+    if (!is_measure_column(v, min_share)) {
+        return(type)
+    }
+    type[filled & with_unit] <- "measure_unit"
+    type[filled & !number & !with_unit] <- "measure_number"
+    type
+}
+
+# The number a measurement value holds, or NA when there is none or more
+# than one ("10-20"), or when the text qualifies it ("<5").
+suggest_measure_value <- function(v) {
+    m <- regmatches(v, regexec(measure_unit_re, v))
+    with_unit <- vapply(m, function(p) if (length(p)) p[2] else NA_character_, character(1))
+    nums <- regmatches(v, gregexpr("-?[0-9]+([.,][0-9]+)?", v))
+    one <- vapply(nums, function(n) if (length(n) == 1L) n else NA_character_, character(1))
+    one[grepl("[<>~\u2264\u2265\u00b1]", v)] <- NA_character_
+    measure_decimal(ifelse(is.na(with_unit), one, with_unit))
+}
+
 # The name issues extract_scientific_name_components() finds, as Preview
 # types. An issue keeps the typed name, so the record is not matched to a
 # taxon and is not generalized.
@@ -357,6 +410,18 @@ detect_preview_problems <- function(df, max_year = NULL) {
             out[[length(out) + 1L]] <- problem_rows(bad, "coordinateUncertaintyInMeters",
                                                     "uncertainty_invalid", v[bad],
                                                     suggest_uncertainty(v[bad]))
+        }
+    }
+
+    # The unit goes to measurementUnit, so "10kg" in a column of numbers is a
+    # problem. One column per measurement keeps the check apart (ADR-179).
+    for (term in cols[is_measurement_value_term(cols)]) {
+        v <- text(term)
+        type <- measure_problem_type(v)
+        bad <- which(!is.na(type))
+        if (length(bad)) {
+            out[[length(out) + 1L]] <- problem_rows(bad, term, type[bad], v[bad],
+                                                    suggest_measure_value(v[bad]))
         }
     }
 
@@ -667,6 +732,14 @@ parse_preview_edit <- function(term, value, taken = character(0)) {
         }
     } else if (term == "individualCount") {
         if (!grepl("^\\d+$", v)) return(fail("preview_fix_err_count"))
+    } else if (is_measurement_value_term(term)) {
+        if (grepl("^-?[0-9]+,[0-9]+$", v) && !is.na(measure_decimal(v))) {
+            v <- measure_decimal(v)
+        } else if (grepl(measure_unit_re, v)) {
+            return(fail("preview_fix_err_measure_unit"))
+        } else if (!is_measure_number(v)) {
+            return(fail("preview_fix_err_measure_number"))
+        }
     } else if (term %in% c("year", "month", "day")) {
         n <- suppressWarnings(as.integer(v))
         top <- c(year = 9999L, month = 12L, day = 31L)[[term]]

@@ -1346,6 +1346,68 @@
   font-size: var(--text-sm);
 }
 
+/* measurementValue: type, unit and method per source column (ADR-179) */
+.mof-specs-block {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  background: var(--bg-subtle);
+  border-radius: var(--radius);
+}
+
+.mof-specs-block .custom-field-label {
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--text-primary);
+  display: block;
+  margin-bottom: var(--space-1);
+}
+
+.mof-specs-block .mof-specs-help {
+  margin-bottom: var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}
+
+.mof-specs-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 9.5rem) minmax(0, 1.6fr) minmax(0, 0.7fr) minmax(0, 1.2fr);
+  gap: var(--space-2);
+  align-items: start;
+}
+
+.mof-specs-head {
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+}
+
+.mof-specs-source {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  padding-top: var(--space-2);
+  word-break: break-word;
+}
+
+.mof-specs-source small {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.mof-specs-grid .form-group {
+  margin-bottom: 0;
+}
+
+.mof-specs-grid .form-control[type="text"] {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
 /* Transient highlight when the Export tab's "fix missing terms" CTA scrolls the
    user to a field card (outline pulse — no layout shift, no shadow). */
 .field-card-flash {

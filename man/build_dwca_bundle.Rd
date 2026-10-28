@@ -4,7 +4,13 @@
 \alias{build_dwca_bundle}
 \title{Assemble a Darwin Core Archive (DwC-A) bundle as a ZIP}
 \usage{
-build_dwca_bundle(df, zip_path, metadata = list(), extras = list())
+build_dwca_bundle(
+  df,
+  zip_path,
+  metadata = list(),
+  extras = list(),
+  measurements = NULL
+)
 }
 \arguments{
 \item{df}{Data frame of DwC-ready records (output of
@@ -16,12 +22,17 @@ build_dwca_bundle(df, zip_path, metadata = list(), extras = list())
 
 \item{extras}{Optional named list mapping in-zip filenames to local file
 paths to include as siblings.}
+
+\item{measurements}{Optional data frame of MeasurementOrFact rows
+(`split_measurements()`). When it has rows, the archive gains
+`measurementorfact.txt` and `meta.xml` declares it.}
 }
 \value{
 Invisibly returns `zip_path`.
 }
 \description{
-Lays out the archive with `occurrence.txt`, `meta.xml`, `eml.xml` at the
-ZIP root, plus any provided sibling files (`mapping_guide.txt`, the
+Lays out the archive with `occurrence.txt`, `meta.xml`, `eml.xml` (and
+`measurementorfact.txt` when there are measurements) at the ZIP root, plus
+any provided sibling files (`mapping_guide.txt`, the
 Excel mirror). The bundle is GBIF/IPT-compatible.
 }

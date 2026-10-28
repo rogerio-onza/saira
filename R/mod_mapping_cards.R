@@ -555,6 +555,60 @@ build_dynprops_keys_block <- function(current_val, ns, lang_r, input) {
     )
 }
 
+#' Type, unit and method of each column mapped to measurementValue (ADR-179)
+#'
+#' Each column becomes one row of measurementorfact.txt. An empty type keeps
+#' the column name as the type, so the placeholder shows that name.
+#' @param cols Selected source columns.
+#' @param samples Named list of sample values, keyed by column.
+#' @param units Named character vector of units from the column names, the
+#'   start value of a unit input not typed yet.
+#' @noRd
+build_measurement_specs_block <- function(cols, samples, ns, lang_r, input, units = NULL) {
+    if (length(cols) == 0L) {
+        return(NULL)
+    }
+    field <- function(stem, col, label, placeholder = NULL) {
+        input_id <- paste0("mof_", stem, "_", make.names(col))
+        saved <- shiny::isolate(input[[input_id]])
+        start <- if (stem == "unit" && col %in% names(units)) units[[col]] else ""
+        htmltools::tagAppendAttributes(
+            shiny::textInput(ns(input_id), NULL,
+                             value = if (!is.null(saved)) saved else start,
+                             placeholder = placeholder, width = "100%"),
+            `aria-label` = paste(label, col),
+            .cssSelector = "input"
+        )
+    }
+    heads <- c(tr("mof_specs_column", lang_r), tr("mof_specs_type", lang_r),
+               tr("mof_specs_unit", lang_r), tr("mof_specs_method", lang_r))
+    shiny::div(
+        class = "mof-specs-block",
+        shiny::tags$label(class = "custom-field-label", tr("mof_specs_header", lang_r)),
+        shiny::tags$p(class = "mof-specs-help", tr("mof_specs_help", lang_r)),
+        shiny::div(
+            class = "mof-specs-grid",
+            lapply(heads, function(h) shiny::tags$span(class = "mof-specs-head", h)),
+            lapply(cols, function(col) {
+                sample <- samples[[col]]
+                shiny::tagList(
+                    shiny::div(
+                        class = "mof-specs-source",
+                        col,
+                        if (length(sample)) {
+                            shiny::tags$small(paste(tr("mapping_card_sample_prefix", lang_r),
+                                                    paste(sample, collapse = "  ")))
+                        }
+                    ),
+                    field("type", col, heads[2], placeholder = col),
+                    field("unit", col, heads[3]),
+                    field("method", col, heads[4], placeholder = tr("mof_specs_optional", lang_r))
+                )
+            })
+        )
+    )
+}
+
 #' Sample line shown under a card's column selector.
 #'
 #' Only called for a term that already has a column selected, so an empty

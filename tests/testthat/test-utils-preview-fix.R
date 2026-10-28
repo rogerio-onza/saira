@@ -351,3 +351,41 @@ testthat::test_that("drop_copy_id_problems keeps an id that another record share
     testthat::expect_identical(out$value, c("b", "b", "b"))
     testthat::expect_identical(drop_copy_id_problems(problems, copies[0, ]), problems)
 })
+
+testthat::test_that("detect_preview_problems finds a unit or text in a column of numbers", {
+    df <- data.frame(
+        measurementValue = c("10kg", "1,5", "?", "12", "8.5", "cerca de 10", "1,500", "-3", "10-20",
+                             "7", "3", "4", "5", "6", "9", "11", "2"),
+        `measurementValue [stage]` = c("adult", "juvenile", "10kg", rep("", 14L)),
+        check.names = FALSE, stringsAsFactors = FALSE
+    )
+    p <- detect_preview_problems(df)
+    p <- p[p$term == "measurementValue", , drop = FALSE]
+    testthat::expect_identical(p$row, c(1L, 2L, 3L, 6L, 7L, 9L))
+    testthat::expect_identical(p$type, c("measure_unit", rep("measure_number", 5L)))
+    testthat::expect_identical(p$suggestion, c("10", "1.5", NA, "10", NA, NA))
+    testthat::expect_true(all(p$family == "measure" & p$bulk))
+
+    # A column of words is not a measurement of numbers: no problem there.
+    all_p <- detect_preview_problems(df)
+    testthat::expect_false("measurementValue [stage]" %in% all_p$term)
+
+    # One column per measurement is checked apart.
+    wide <- data.frame(`measurementValue [AREA_HA]` = c("10", "5 ha"), check.names = FALSE,
+                       stringsAsFactors = FALSE)
+    wp <- detect_preview_problems(wide)
+    testthat::expect_identical(paste(wp$row, wp$term, wp$type, wp$suggestion),
+                               "2 measurementValue [AREA_HA] measure_unit 5")
+})
+
+testthat::test_that("parse_preview_edit takes a number for a measurement", {
+    testthat::expect_identical(parse_preview_edit("measurementValue", "2,5")$value, "2.5")
+    testthat::expect_identical(parse_preview_edit("measurementValue [a]", " 10 ")$value, "10")
+    testthat::expect_identical(parse_preview_edit("measurementValue", "")$value, "")
+    testthat::expect_identical(parse_preview_edit("measurementValue", "10 kg")$error,
+                               "preview_fix_err_measure_unit")
+    testthat::expect_identical(parse_preview_edit("measurementValue", "1,500")$error,
+                               "preview_fix_err_measure_number")
+    testthat::expect_identical(parse_preview_edit("measurementValue [a]", "muito")$error,
+                               "preview_fix_err_measure_number")
+})

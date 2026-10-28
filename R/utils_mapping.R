@@ -2512,6 +2512,17 @@ build_processed_mapping_df <- function(
             user_cols <- user_cols[[1]]
         }
 
+        # Each column of a wide sheet is its own measurement (ADR-179). One
+        # frame column per source keeps the values apart for the Preview.
+        if (term == "measurementValue" && length(user_cols) > 1) {
+            for (col in user_cols) {
+                name <- measurement_value_column(col)
+                df_final[[name]] <- collapse_mapped_values(df, col, out_sep = out_sep)
+                selected_terms <- c(selected_terms, name)
+            }
+            next
+        }
+
         selected_terms <- c(selected_terms, term)
 
         term_result <- build_term_value(
