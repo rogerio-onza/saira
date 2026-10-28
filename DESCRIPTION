@@ -115,6 +115,7 @@ Collate:
     'utils_preview.R'
     'utils_preview_fix.R'
     'utils_publication.R'
+    'utils_publication_check.R'
     'utils_rostrum_aliases.R'
     'utils_rostrum_contracts.R'
     'utils_rostrum_db.R'
