@@ -38,7 +38,7 @@ is_measurement_value_term <- function(names) {
 # Unit tokens at the end of a column name, and the measurementUnit of each.
 measurement_name_units <- c(
     ha = "ha", m = "m", m2 = "m2", km = "km", km2 = "km2", cm = "cm", mm = "mm",
-    kg = "kg", g = "g", mg = "mg", l = "L", ml = "mL", c = "°C", pct = "%"
+    kg = "kg", g = "g", mg = "mg", l = "L", ml = "mL", c = "\u00b0C", pct = "%"
 )
 
 #' Columns that auto-map suggests for measurementValue
