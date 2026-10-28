@@ -51,6 +51,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **ui:** Slide the new content in when the Mapping filter or the Table/Problems switch changes, ADR-156
 - **preview:** Rename the first Problems pill to "All" and shorten the Table subtitle to "First 100 records"
 - **deps:** Remove the ids package, uuid makes the same identifiers
+- **deps:** Remove stringr and rnaturalearthhires, no code uses them, and correct the Technologies page
 - **occurrenceID:** Replace a repeated identifier with a persistent UUID when the Preview does not fix it, ADR-152 ([#181](https://github.com/rogerio-onza/saira/pull/181))
 - **upload:** Install camtrapdp with Saíra, so the camera trap mode always works and CI tests it, ADR-149 ([#178](https://github.com/rogerio-onza/saira/pull/178))
 - **site:** Use the app background colors on the help site, in the light and dark themes

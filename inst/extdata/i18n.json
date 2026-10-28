@@ -3990,9 +3990,9 @@
     "es": "Utilidades"
   },
   "help_pkg_group_camtrap": {
-    "pt": "Armadilhas fotográficas (opcional)",
-    "en": "Camera traps (optional)",
-    "es": "Cámaras trampa (opcional)"
+    "pt": "Armadilhas fotográficas",
+    "en": "Camera traps",
+    "es": "Cámaras trampa"
   },
   "help_pkg_shiny": {
     "pt": "Framework da aplicação web",
@@ -4099,11 +4099,6 @@
     "en": "Boundary data (1:110m and 1:50m)",
     "es": "Datos de límites (1:110m y 1:50m)"
   },
-  "help_pkg_stringr": {
-    "pt": "Manipulação de texto",
-    "en": "Text manipulation",
-    "es": "Manipulación de texto"
-  },
   "help_pkg_digest": {
     "pt": "Hash do occurrenceID",
     "en": "occurrenceID hash",
@@ -4135,9 +4130,9 @@
     "es": "Interfaz de bases de datos"
   },
   "help_pkg_rsqlite": {
-    "pt": "SQLite dos caches e do Rostrum",
-    "en": "SQLite for the caches and Rostrum",
-    "es": "SQLite de las cachés y de Rostrum"
+    "pt": "SQLite dos aliases e modelos do Rostrum",
+    "en": "SQLite for the Rostrum aliases and templates",
+    "es": "SQLite de los alias y plantillas de Rostrum"
   },
   "help_pkg_camtrapdp": {
     "pt": "Importa pacotes Camtrap DP",

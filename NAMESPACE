@@ -122,12 +122,6 @@ importFrom(shiny,
   showNotification,
   validate
 )
-importFrom(stringr,
-  str_detect,
-  str_replace_all,
-  str_split,
-  str_trim
-)
 importFrom(withr,
   defer,
   with_tempdir
