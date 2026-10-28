@@ -286,6 +286,15 @@
   background-color: var(--hover-bg);
 }
 
+/* One column per measurement: its source column sits above the term (ADR-179) */
+.dataTable thead th .preview-col-source {
+  display: block;
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-muted);
+}
+
 .dataTable td span[title] {
   cursor: help;
   border-bottom: 1px dotted var(--border-default);

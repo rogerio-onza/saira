@@ -64,7 +64,9 @@ build_export_summary <- function(mapped_data,
     country_fill_payload <- reconcile_country_fill(country_fill_payload, df)
     rows_left_out <- intersect(as.integer(rows_left_out), seq_len(nrow(df)))
     n_records <- nrow(df) - length(rows_left_out)
-    term_count <- ncol(df)
+    # The per-column measurement columns are one term, measurementValue.
+    value_cols <- names(df)[is_measurement_value_term(names(df))]
+    term_count <- length(unique(replace(names(df), names(df) %in% value_cols, "measurementValue")))
 
     nrows_of <- function(x) if (is.data.frame(x)) nrow(x) else 0L
     slot <- function(payload, name) {
@@ -126,11 +128,13 @@ build_export_summary <- function(mapped_data,
     # --- Files the bundle will contain -------------------------------------
     # Single source of truth shared with the download handler. The private
     # real-coordinates file exists only when a species is generalized.
+    values <- trimws(unlist(lapply(df[value_cols], as.character), use.names = FALSE))
     files <- export_bundle_filenames(
         dataset_name = dataset_name,
         has_sensitive = nrow(gen) > 0L,
         n_records = n_records,
-        has_changes = nrow(changes) > 0L
+        has_changes = nrow(changes) > 0L,
+        has_measurements = "occurrenceID" %in% names(df) && any(!is.na(values) & nzchar(values))
     )
 
     list(

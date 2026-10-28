@@ -369,6 +369,7 @@ build_mapping_guide_txt <- function(map_values,
             unmp_note_1  = "#     Estas colunas seguem no arquivo, mas NAO sao declaradas no meta.xml,",
             unmp_note_2  = "#     entao o GBIF vai ignora-las. Para publica-las, mapeie cada uma para",
             unmp_note_3  = "#     um termo DwC ou inclua o conteudo em dynamicProperties.",
+            mof_note     = "#     cada coluna de measurementValue vira uma linha por registro em measurementorfact.txt",
             coverage     = "# cobertura: %d termo(s) DwC mapeado(s), %d constante(s), %d obrigatorio(s) faltando",
             none         = "(nenhum)"
         )
@@ -391,6 +392,7 @@ build_mapping_guide_txt <- function(map_values,
             unmp_note_1  = "#     Estas columnas siguen en el archivo, pero NO se declaran en meta.xml,",
             unmp_note_2  = "#     por eso GBIF las va a ignorar. Para publicarlas, mapee cada una a un",
             unmp_note_3  = "#     termino DwC o incluya su contenido en dynamicProperties.",
+            mof_note     = "#     cada columna de measurementValue se vuelve una fila por registro en measurementorfact.txt",
             coverage     = "# cobertura: %d termino(s) DwC mapeado(s), %d constante(s), %d obligatorio(s) faltante(s)",
             none         = "(ninguno)"
         )
@@ -413,6 +415,7 @@ build_mapping_guide_txt <- function(map_values,
             unmp_note_1  = "#     These columns stay in the file but are NOT declared in meta.xml,",
             unmp_note_2  = "#     so GBIF will ignore them. To publish them, map each one to a DwC",
             unmp_note_3  = "#     term or fold its content into dynamicProperties.",
+            mof_note     = "#     each measurementValue column becomes one row per record in measurementorfact.txt",
             coverage     = "# coverage: %d DwC term(s) mapped, %d constant(s), %d required missing",
             none         = "(none)"
         )
@@ -460,6 +463,11 @@ build_mapping_guide_txt <- function(map_values,
         )
         for (cls in ordered_classes) {
             out <- c(out, sprintf("#   -- %s --", cls))
+            # The " | " join of the legend does not hold here.
+            if (identical(cls, "MeasurementOrFact") &&
+                any(vapply(pairs, function(p) p$term == "measurementValue", logical(1)))) {
+                out <- c(out, L$mof_note)
+            }
             for (i in which(pair_classes == cls)) {
                 p <- pairs[[i]]
                 out <- c(out, sprintf("%-*s -> %s", col_width, p$source, p$term))
@@ -907,15 +915,18 @@ xlsx_max_records <- 1048575L
 #'   no Excel mirror (AUD-16).
 #' @param has_changes Whether the export corrects a value (adds the changes
 #'   list).
+#' @param has_measurements Whether the export has measurements (adds the
+#'   MeasurementOrFact extension to `dwca`).
 #' @return List with `slug`, `zip` (download file name), `dwca` (standard core
-#'   trio), `auxiliary` (list: `xlsx` when it fits, `mapping_guide`, `changes`
+#'   trio, plus the extension), `auxiliary` (list: `xlsx` when it fits, `mapping_guide`, `changes`
 #'   when `has_changes`) and, when
 #'   `has_sensitive`, `private` (the real-coordinates `.xlsx`). The private
 #'   file has its own download, so a shared bundle never carries the exact
 #'   points (ADR-163).
 #' @noRd
 export_bundle_filenames <- function(dataset_name = NULL, has_sensitive = FALSE,
-                                    n_records = 0L, has_changes = FALSE) {
+                                    n_records = 0L, has_changes = FALSE,
+                                    has_measurements = FALSE) {
     slug <- slugify_dataset_name(dataset_name)
     if (!nzchar(slug)) slug <- "saira"
 
@@ -932,7 +943,8 @@ export_bundle_filenames <- function(dataset_name = NULL, has_sensitive = FALSE,
     list(
         slug = slug,
         zip = paste0(slug, "-dwc-archive.zip"),
-        dwca = c("occurrence.txt", "meta.xml", "eml.xml"),
+        dwca = c("occurrence.txt", "meta.xml", "eml.xml",
+                 if (isTRUE(has_measurements)) MOF_FILENAME),
         auxiliary = auxiliary,
         private = private
     )

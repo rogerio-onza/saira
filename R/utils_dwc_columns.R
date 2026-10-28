@@ -142,6 +142,9 @@ order_columns_dwc_canonical <- function(df) {
 
     class_overrides <- dwc_canonical_class_overrides()
 
+    # "measurementValue [AREA_HA]" sorts as measurementValue, in column order.
+    cols_term <- ifelse(is.na(measurement_value_source(cols)), cols, "measurementValue")
+
     lookup_class <- function(col) {
         # Overrides win so both the class block and the within-class preferred
         # position are resolved against the same (relocated) class.
@@ -160,7 +163,7 @@ order_columns_dwc_canonical <- function(df) {
         as.integer(cat_pos[[col]])
     }
 
-    cls_idx <- vapply(cols, function(col) {
+    cls_idx <- vapply(cols_term, function(col) {
         cls <- lookup_class(col)
         if (is.na(cls) || !nzchar(cls)) return(unknown_class_idx)
         m <- match(cls, class_order, nomatch = unknown_class_idx)
@@ -168,7 +171,7 @@ order_columns_dwc_canonical <- function(df) {
     }, integer(1))
 
     pref_idx <- vapply(seq_along(cols), function(i) {
-        col <- cols[i]
+        col <- cols_term[i]
         cls <- lookup_class(col)
         if (!is.na(cls) && nzchar(cls)) {
             pref <- preferred[[cls]]

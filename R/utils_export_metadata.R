@@ -47,9 +47,12 @@ dwc_term_uri <- function(column) {
 #'   to `occurrence.txt`.
 #' @param core_filename Name of the core CSV file referenced by `meta.xml`.
 #'   Default `"occurrence.txt"`.
+#' @param measurements Optional data frame of the MeasurementOrFact rows,
+#'   `occurrenceID` first. When it has rows, `meta.xml` declares the
+#'   `measurementorfact.txt` extension, linked to the core by that column.
 #' @return Character scalar containing the serialized XML document.
 #' @export
-build_meta_xml <- function(df, core_filename = "occurrence.txt") {
+build_meta_xml <- function(df, core_filename = "occurrence.txt", measurements = NULL) {
     if (!is.data.frame(df)) stop("build_meta_xml: 'df' must be a data.frame.")
 
     cols <- names(df)
@@ -84,6 +87,30 @@ build_meta_xml <- function(df, core_filename = "occurrence.txt") {
             index = as.character(i - 1L),
             term = uris[i]
         )
+    }
+
+    if (is.data.frame(measurements) && nrow(measurements) > 0L) {
+        ext <- xml2::xml_add_child(
+            doc, "extension",
+            encoding = "UTF-8",
+            fieldsTerminatedBy = ",",
+            linesTerminatedBy = "\\n",
+            fieldsEnclosedBy = "\"",
+            ignoreHeaderLines = "1",
+            rowType = "http://rs.tdwg.org/dwc/terms/MeasurementOrFact"
+        )
+        ext_files <- xml2::xml_add_child(ext, "files")
+        xml2::xml_add_child(ext_files, "location", MOF_FILENAME)
+        # Column 0 is the link to the core, not a MeasurementOrFact term.
+        xml2::xml_add_child(ext, "coreid", index = "0")
+        mof_cols <- names(measurements)
+        for (i in seq_along(mof_cols)[-1L]) {
+            xml2::xml_add_child(
+                ext, "field",
+                index = as.character(i - 1L),
+                term = paste0("http://rs.tdwg.org/dwc/terms/", mof_cols[i])
+            )
+        }
     }
 
     as.character(doc)

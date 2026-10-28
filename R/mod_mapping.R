@@ -143,6 +143,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             automap_phrase_order = integer(0),
             ambiguity_queue = list(),
             dyn_props_keys = list(),
+            measurement_specs = list(),
+            # Unit from the name of each column auto-map put in measurementValue.
+            measurement_unit_hints = character(0),
             # Counter bumped on every event that invalidates the dataset baseline
             # (re-upload or a confirmed Reset). Exposed as reset_signal_r so the
             # downstream tabs (names/coords/generalization) can wipe their retained
@@ -815,6 +818,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 rv$rostrum_decisions <- NULL
                 rv$rostrum_run_stats <- list()
                 rv$dyn_props_keys <- list()
+                rv$measurement_specs <- list()
+                rv$measurement_unit_hints <- character(0)
                 reset_basis_of_record_state(basis_state)
                 reset_establishment_state()
                 rm(list = ls(preview_cache, all.names = TRUE), envir = preview_cache)
@@ -1021,6 +1026,31 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             current_keys <- shiny::isolate(rv$dyn_props_keys)
             if (!identical(current_keys, new_keys)) {
                 rv$dyn_props_keys <- new_keys
+            }
+        })
+
+        # Type, unit and method of each column mapped to measurementValue, for
+        # the measurement extension (ADR-179). Only the export reads them, so
+        # typing does not rebuild the mapped frame.
+        shiny::observe({
+            if (isTRUE(rv$is_programmatic_update)) {
+                return(invisible(NULL))
+            }
+            selected_cols <- as.character(rv$map_values[["measurementValue"]] %||% character(0))
+            stems <- c(measurementType = "type", measurementUnit = "unit",
+                       measurementMethod = "method")
+            new_specs <- list()
+            for (col_name in selected_cols[nzchar(selected_cols)]) {
+                spec <- list()
+                for (term in names(stems)) {
+                    raw_value <- input[[paste0("mof_", stems[[term]], "_", make.names(col_name))]]
+                    trimmed <- trimws(as.character(raw_value %||% ""))
+                    if (length(trimmed) == 1L && nzchar(trimmed)) spec[[term]] <- trimmed
+                }
+                if (length(spec)) new_specs[[col_name]] <- spec
+            }
+            if (!identical(shiny::isolate(rv$measurement_specs), new_specs)) {
+                rv$measurement_specs <- new_specs
             }
         })
 
@@ -1847,6 +1877,16 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             )
                         }
                     )
+                } else if (identical(term, "measurementValue")) {
+                    # One line per column, with its own sample, in place of
+                    # the joined sample.
+                    cols <- if (has_selected_value(current_val)) as.character(current_val) else character(0)
+                    cols <- cols[nzchar(cols)]
+                    samples <- lapply(stats::setNames(cols, cols), function(col) {
+                        processed_preview_for_term(term, col, 2L)
+                    })
+                    build_measurement_specs_block(cols, samples, ns, lang, input,
+                                                  units = shiny::isolate(rv$measurement_unit_hints))
                 } else if (has_selected_value(current_val)) {
                     build_field_sample(
                         processed_preview_for_term(term, current_val, 1L), lang
@@ -2036,6 +2076,24 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
                     if (nrow(auto_results) == 0) {
                         update_automap_loading(rv, 1L, 1L)
+                    }
+
+                    # Columns named after a unit ("AREA_HA") go to
+                    # measurementValue as a suggestion (ADR-179).
+                    if (!has_selected_value(rv$map_values[["measurementValue"]])) {
+                        used <- unlist(rv$map_values, use.names = FALSE)
+                        units <- suggest_measurement_columns(raw_data_r(), exclude = used)
+                        if (length(units) > 0L) {
+                            rv$extra_terms <- unique(c(rv$extra_terms, "measurementValue"))
+                            rv$measurement_unit_hints <- units
+                            set_map_value("measurementValue", names(units), update_input = TRUE)
+                            next_meta[["measurementValue"]] <- list(
+                                status = "SUGERIDO", score = NA_real_,
+                                reason = "measurement_unit_in_name", source = "auto",
+                                alternatives_json = "[]"
+                            )
+                            suggested_count <- suggested_count + 1L
+                        }
                     }
 
                     rv$map_meta <- next_meta
@@ -2618,7 +2676,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             custom_values_r             = custom_values_r,
             establishment_dropped_r     = establishment_dropped_r,
             reset_signal_r              = shiny::reactive(rv$downstream_reset),
-            alias_receipt_r             = shiny::reactive(rv$alias_receipt)
+            alias_receipt_r             = shiny::reactive(rv$alias_receipt),
+            measurement_specs_r         = shiny::reactive(rv$measurement_specs)
         ))
     })
 }

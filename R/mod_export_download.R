@@ -22,6 +22,7 @@ mount_export_download <- function(input, output, session, lang_r,
                                   country_fill_payload_r = NULL,
                                   rows_left_out_r = NULL,
                                   preview_changes_r = NULL,
+                                  measurement_specs_r = NULL,
                                   blocked_r = NULL,
                                   on_export_success = NULL) {
     ns <- session$ns
@@ -515,7 +516,21 @@ mount_export_download <- function(input, output, session, lang_r,
                             attr(export_data, "id_strategy") <- id_attr
                         }
 
-                        if (formula_like_cells(export_data)$count > 0L) {
+                        # GBIF reads no measurement term in the core, so the
+                        # measurements go to their own extension file.
+                        value_column <- if ("measurementValue" %in% overridden_mapping_terms(cv)) {
+                            NULL
+                        } else {
+                            map_value_sources(mv["measurementValue"])[1L]
+                        }
+                        measurement_specs <- if (shiny::is.reactive(measurement_specs_r)) {
+                            tryCatch(measurement_specs_r(), error = function(e) NULL)
+                        }
+                        mof <- split_measurements(export_data, value_column, measurement_specs)
+                        export_data <- mof$core
+
+                        if (formula_like_cells(export_data)$count > 0L ||
+                            formula_like_cells(mof$measurements)$count > 0L) {
                             stop(tr("export_download_blocked", lang_r()), call. = FALSE)
                         }
 
@@ -525,12 +540,14 @@ mount_export_download <- function(input, output, session, lang_r,
 
                         # File names shared with the Export tab summary: the
                         # DwC-A core trio (occurrence.txt + meta.xml + eml.xml)
-                        # keeps its standard names at archive root; the Excel
+                        # and the measurement extension keep their standard
+                        # names at archive root; the Excel
                         # mirror and mapping guide are renamed after the dataset.
                         # The real coordinates have their own download (ADR-163).
                         fnames <- export_bundle_filenames(dataset_name = cv$datasetName,
                                                           n_records = nrow(export_data),
-                                                          has_changes = nrow(prep$changes) > 0L)
+                                                          has_changes = nrow(prep$changes) > 0L,
+                                                          has_measurements = !is.null(mof$measurements))
                         xlsx_path  <- if (!is.null(fnames$auxiliary$xlsx)) {
                             file.path(tmpdir, fnames$auxiliary$xlsx)
                         }
@@ -581,7 +598,8 @@ mount_export_download <- function(input, output, session, lang_r,
                             write_change_log_csv(prep$changes, changes_path)
                             extras[[basename(changes_path)]] <- changes_path
                         }
-                        build_dwca_bundle(export_data, file, metadata = eml_metadata, extras = extras)
+                        build_dwca_bundle(export_data, file, metadata = eml_metadata, extras = extras,
+                                          measurements = mof$measurements)
 
                         # The bundle is written: the mapping is now confirmed, so
                         # the mapping module may learn its aliases. Fires only

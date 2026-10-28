@@ -105,6 +105,7 @@ Collate:
     'utils_io.R'
     'utils_mapping.R'
     'utils_mapping_commands.R'
+    'utils_measurements.R'
     'utils_module_assets.R'
     'utils_module_results.R'
     'utils_names.R'

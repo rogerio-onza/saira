@@ -319,3 +319,29 @@ test_that("build_collapsed_terms counts the terms", {
     expect_match(empty, paste0('data-one="', tr("mapping_more_terms_one", "en"), '"'), fixed = TRUE)
     expect_match(empty, paste0('data-other="', tr("mapping_more_terms_other", "en"), '"'), fixed = TRUE)
 })
+
+test_that("build_measurement_specs_block gives each column a type, unit and method", {
+    ns <- shiny::NS("map")
+    testthat::expect_null(build_measurement_specs_block(character(0), list(), ns, "pt", list()))
+
+    html <- as.character(build_measurement_specs_block(
+        c("AREA_HA", "Annual rainfall"), list(AREA_HA = c("10", "5")), ns, "pt",
+        list(mof_unit_AREA_HA = "ha")
+    ))
+    expect_match(html, 'id="map-mof_type_AREA_HA"', fixed = TRUE)
+    expect_match(html, 'id="map-mof_method_Annual.rainfall"', fixed = TRUE)
+    # An empty type keeps the column name, so the placeholder shows it.
+    expect_match(html, 'placeholder="Annual rainfall"', fixed = TRUE)
+    expect_match(html, 'value="ha"', fixed = TRUE)
+    expect_match(html, "ex.: 10  5", fixed = TRUE)
+    expect_match(html, 'aria-label="Unidade AREA_HA"', fixed = TRUE)
+
+    # The unit from the column name fills an input not typed yet, and a typed
+    # value wins.
+    html <- as.character(build_measurement_specs_block(
+        c("AREA_HA", "chuva_mm"), list(), ns, "pt", list(mof_unit_AREA_HA = ""),
+        units = c(AREA_HA = "ha", chuva_mm = "mm")
+    ))
+    expect_match(html, 'id="map-mof_unit_chuva_mm"[^>]*value="mm"')
+    expect_no_match(html, 'value="ha"', fixed = TRUE)
+})

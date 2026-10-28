@@ -55,8 +55,9 @@ write_sensitive_coords_xlsx <- function(real, notice, path) {
 
 #' Assemble a Darwin Core Archive (DwC-A) bundle as a ZIP
 #'
-#' Lays out the archive with `occurrence.txt`, `meta.xml`, `eml.xml` at the
-#' ZIP root, plus any provided sibling files (`mapping_guide.txt`, the
+#' Lays out the archive with `occurrence.txt`, `meta.xml`, `eml.xml` (and
+#' `measurementorfact.txt` when there are measurements) at the ZIP root, plus
+#' any provided sibling files (`mapping_guide.txt`, the
 #' Excel mirror). The bundle is GBIF/IPT-compatible.
 #'
 #' @param df Data frame of DwC-ready records (output of
@@ -65,9 +66,13 @@ write_sensitive_coords_xlsx <- function(real, notice, path) {
 #' @param metadata Named list passed to `build_eml_xml()`.
 #' @param extras Optional named list mapping in-zip filenames to local file
 #'   paths to include as siblings.
+#' @param measurements Optional data frame of MeasurementOrFact rows
+#'   (`split_measurements()`). When it has rows, the archive gains
+#'   `measurementorfact.txt` and `meta.xml` declares it.
 #' @return Invisibly returns `zip_path`.
 #' @export
-build_dwca_bundle <- function(df, zip_path, metadata = list(), extras = list()) {
+build_dwca_bundle <- function(df, zip_path, metadata = list(), extras = list(),
+                              measurements = NULL) {
     if (!is.data.frame(df)) stop("build_dwca_bundle: 'df' must be a data.frame.")
 
     tmpdir <- tempfile("saira_dwca_")
@@ -79,12 +84,17 @@ build_dwca_bundle <- function(df, zip_path, metadata = list(), extras = list()) 
     eml_path  <- file.path(tmpdir, "eml.xml")
 
     readr::write_csv(df, core_path, na = "")
-    writeLines(build_meta_xml(df, core_filename = "occurrence.txt"),
+    writeLines(build_meta_xml(df, core_filename = "occurrence.txt", measurements = measurements),
                meta_path, useBytes = TRUE)
     writeLines(build_eml_xml(df, metadata = metadata),
                eml_path, useBytes = TRUE)
 
     files <- c(core_path, meta_path, eml_path)
+    if (is.data.frame(measurements) && nrow(measurements) > 0L) {
+        mof_path <- file.path(tmpdir, MOF_FILENAME)
+        readr::write_csv(measurements, mof_path, na = "")
+        files <- c(files, mof_path)
+    }
     for (nm in names(extras)) {
         src <- extras[[nm]]
         if (length(src) == 1L && file.exists(src)) {

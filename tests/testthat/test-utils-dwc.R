@@ -500,7 +500,7 @@ testthat::test_that("collapse_mapping_term keeps relevant, mapped and added term
 })
 
 testthat::test_that("wide_card_terms only spans terms that need the extra track", {
-    testthat::expect_identical(wide_card_terms(), "dynamicProperties")
+    testthat::expect_identical(wide_card_terms(), c("dynamicProperties", "measurementValue"))
 })
 
 testthat::test_that("Portuguese term definitions keep their accents", {

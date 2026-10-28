@@ -84,7 +84,7 @@ testthat::test_that("mod_mapping_server exposes lightweight preview_data alongsi
                     "rostrum_decisions_r", "rostrum_explain_r", "rostrum_run_stats_r",
                     "map_values_r", "occurrence_id_info_r",
                     "custom_values_r", "establishment_dropped_r",
-                    "reset_signal_r", "alias_receipt_r"
+                    "reset_signal_r", "alias_receipt_r", "measurement_specs_r"
                 )
             )
 
@@ -230,6 +230,34 @@ testthat::test_that("validation gates stay in no_data when upstream raw_data_r i
             testthat::expect_identical(cgate$lat_col, "")
             testthat::expect_identical(cgate$lon_col, "")
             testthat::expect_identical(cgate$country_col, "")
+        }
+    )
+})
+
+testthat::test_that("auto-map suggests the columns named after a unit for measurementValue", {
+    withr::local_envvar(c(SAIRA_USER = paste0("test_isolation_", as.integer(Sys.time()))))
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Leopardus pardalis"),
+        AREA_HA = c("10", "5"),
+        chuva_mm = c("1200", "900"),
+        dia_inicio = c("1", "2"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(auto_map = 1)
+            session$flushReact()
+
+            testthat::expect_true("measurementValue" %in% rv$extra_terms)
+            testthat::expect_identical(rv$map_values$measurementValue, c("AREA_HA", "chuva_mm"))
+            testthat::expect_identical(rv$map_meta$measurementValue$status, "SUGERIDO")
+            testthat::expect_identical(rv$measurement_unit_hints, c(AREA_HA = "ha", chuva_mm = "mm"))
         }
     )
 })

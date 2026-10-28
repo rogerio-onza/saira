@@ -242,6 +242,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
 
             DT::datatable(
                 preview_df,
+                container = preview_table_container(names(preview_df)),
                 options = list(
                     pageLength = 15,
                     lengthMenu = c(15, 25, 50, 100),
@@ -308,6 +309,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                          year = "pill-warning", interval = "pill-warning",
                          date_mismatch = "pill-warning", time = "pill-warning",
                          count = "pill-warning", uncertainty = "pill-warning",
+                         measure = "pill-warning",
                          coord = "pill-error", name = "pill-warning", country = "pill-warning",
                          formula = "pill-error",
                          empty = "pill-error", id = "pill-reference", copy = "pill-reference",

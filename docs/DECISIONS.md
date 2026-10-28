@@ -3346,3 +3346,17 @@ Formato: ADR leve (Architecture Decision Record).
   - Num registro de especie generalizada, a lista deixa vazios `from` e `to`, exceto `scientificName` e `country`. O download usa a uniao das linhas mascaradas e das linhas das especies generalizadas, entao nenhum ponto real entra na lista.
   - O CSV poe uma aspa antes de um valor com cara de formula, porque `from` guarda o valor antigo de uma celula corrigida.
 - **Consequencias**: o numero "Correcoes" pode ficar diferente do anterior. Uma copia exata fora do pacote sai da lista. Uma especie sem nenhum registro georreferenciado nao e generalizada, entao os seus valores aparecem na lista.
+
+## ADR-179: Medidas no arquivo de extensao MeasurementOrFact
+
+- **Data**: 2026-10-27
+- **Status**: Aceito.
+- **Contexto**: os termos de medida ficavam no `occurrence.txt`. O GBIF nao le termo de medida no core Occurrence, entao a medida nao era publicada. Com duas ou mais colunas no card `measurementValue`, o valor saia junto por " | " numa celula so, e a Previa nao podia apontar uma medida errada. ATLANTIC Primates, Small Mammals e o esforco amostral (CAM_EFF) precisam de varias medidas por registro.
+- **Decisao**:
+  - Com duas ou mais colunas no card `measurementValue`, o quadro mapeado tem uma coluna por fonte, `measurementValue [COLUNA]`, no lugar do valor junto. A Previa mostra o nome da coluna acima do termo.
+  - `split_measurements()` tira do core os termos MeasurementOrFact e essas colunas, e monta `measurementorfact.txt` com uma linha por celula preenchida. Os valores vem de `export_data`, entao as edicoes da Previa ficam. O `meta.xml` declara a extensao com `<coreid index="0"/>` no `occurrenceID`.
+  - `measurementID` e `<occurrenceID>:<coluna>`. Um `measurementID` mapeado vale so com uma coluna.
+  - O card `measurementValue` tem uma linha por coluna com Tipo, Unidade e Metodo. O valor do card ganha do termo mapeado. Tipo vazio usa o nome da coluna. O `measurementType` mapeado vale so com uma coluna, unidade e metodo mapeados valem para todas. Uma linha compacta (ADR-137) de card largo, `measurementValue` ou `dynamicProperties`, abre quando recebe uma coluna, porque a linha compacta esconde esses campos.
+  - O automapeamento poe em `measurementValue`, como SUGERIDO, a coluna sem termo cujo nome termina numa unidade (`AREA_HA`, `peso (kg)`) e cujos valores sao 80% ou mais numeros. A unidade do nome preenche a Unidade do card. O Rostrum compara nomes e nenhum nome assim lembra `measurementValue`. Uma coluna numerica sem unidade no nome fica de fora, porque as partes de data (`dia_inicio`) tambem sao numeros.
+  - O modo Problemas tem a familia "Medida". Numa coluna de medida com 80% ou mais de numeros, "10kg" e `measure_unit` e outro texto e `measure_number`. A sugestao e o numero com ponto. "1,500" e "10-20" ficam sem sugestao. Uma coluna de texto (sexo, estagio) nao e lida.
+- **Consequencias**: um pacote sem medida fica igual. O espelho xlsx mostra so o core. Uma edicao da Previa feita com uma coluna para de valer quando a segunda coluna entra, porque o nome da coluna do quadro muda.

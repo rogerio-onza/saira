@@ -5143,5 +5143,65 @@
     "pt": "Marcar ausente",
     "en": "Mark absent",
     "es": "Marcar ausente"
+  },
+  "preview_fix_pill_measure": {
+    "pt": "Medida",
+    "en": "Measurement",
+    "es": "Medida"
+  },
+  "preview_fix_diag_measure_unit": {
+    "pt": "Número com unidade",
+    "en": "Number with a unit",
+    "es": "Número con unidad"
+  },
+  "preview_fix_diag_measure_number": {
+    "pt": "Medida não é número",
+    "en": "Measurement is not a number",
+    "es": "La medida no es un número"
+  },
+  "preview_fix_err_measure_unit": {
+    "pt": "Escreva só o número, como 10. A unidade vai no campo Unidade do card measurementValue.",
+    "en": "Write only the number, such as 10. The unit goes in the Unit field of the measurementValue card.",
+    "es": "Escriba solo el número, como 10. La unidad va en el campo Unidad de la tarjeta measurementValue."
+  },
+  "preview_fix_err_measure_number": {
+    "pt": "Use um número, como 10 ou 2.5.",
+    "en": "Use a number, such as 10 or 2.5.",
+    "es": "Use un número, como 10 o 2.5."
+  },
+  "mof_specs_header": {
+    "pt": "Uma medida por coluna",
+    "en": "One measurement per column",
+    "es": "Una medida por columna"
+  },
+  "mof_specs_help": {
+    "pt": "Cada coluna vira uma linha em measurementorfact.txt. Sem tipo, a linha usa o nome da coluna.",
+    "en": "Each column becomes one row in measurementorfact.txt. With no type, the row uses the column name.",
+    "es": "Cada columna se vuelve una fila en measurementorfact.txt. Sin tipo, la fila usa el nombre de la columna."
+  },
+  "mof_specs_column": {
+    "pt": "Coluna",
+    "en": "Column",
+    "es": "Columna"
+  },
+  "mof_specs_type": {
+    "pt": "Tipo",
+    "en": "Type",
+    "es": "Tipo"
+  },
+  "mof_specs_unit": {
+    "pt": "Unidade",
+    "en": "Unit",
+    "es": "Unidad"
+  },
+  "mof_specs_method": {
+    "pt": "Método",
+    "en": "Method",
+    "es": "Método"
+  },
+  "mof_specs_optional": {
+    "pt": "opcional",
+    "en": "optional",
+    "es": "opcional"
   }
 }

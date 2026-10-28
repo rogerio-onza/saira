@@ -121,13 +121,8 @@
       if (m) applyMappingFilter(m[1]);
     });
 
-    // A fixed value turned on by a guide import does not change the filter,
-    // so the row stayed collapsed with the value out of sight. Only that row
-    // opens: a row that got a column stays a row (ADR-137).
-    window.jQuery(document).on('change', 'input[type="checkbox"]', function () {
-      var m = /^(.*-)usecustom_(.*)$/.exec(this.id || '');
-      if (!m || !this.checked) return;
-      var card = document.getElementById(m[1] + 'fieldcard_' + m[2]);
+    function openCollapsedCard(prefix, term) {
+      var card = document.getElementById(prefix + 'fieldcard_' + term);
       if (!card || !card.classList.contains('field-card-collapsed')) return;
       card.classList.remove('field-card-compact', 'field-card-collapsed');
       var grid = card.parentElement;
@@ -135,9 +130,28 @@
       if (!group) return;
       var terms = [];
       grid.querySelectorAll(':scope > .field-card.field-card-collapsed').forEach(function (c) {
-        terms.push(cardTerm(c, m[1]));
+        terms.push(cardTerm(c, prefix));
       });
       setMoreGroupText(group, terms);
+    }
+
+    // A fixed value turned on by a guide import does not change the filter,
+    // so the row stayed collapsed with the value out of sight. Only that row
+    // opens: a row that got a column stays a row (ADR-137).
+    window.jQuery(document).on('change', 'input[type="checkbox"]', function () {
+      var m = /^(.*-)usecustom_(.*)$/.exec(this.id || '');
+      if (!m || !this.checked) return;
+      openCollapsedCard(m[1], m[2]);
+    });
+
+    // A wide card (dynamicProperties keys, measurement type and unit) has
+    // inputs for each picked column, and a compact row hides them. So a wide
+    // row that gets a column opens.
+    window.jQuery(document).on('change', 'select', function () {
+      var m = /^(.*-)map_(.*)$/.exec(this.id || '');
+      if (!m || !window.jQuery(this).val() || !window.jQuery(this).val().length) return;
+      var card = document.getElementById(m[1] + 'fieldcard_' + m[2]);
+      if (card && card.classList.contains('field-card-wide')) openCollapsedCard(m[1], m[2]);
     });
 
     // A rebuild can start before the server gets a filter switch, so the

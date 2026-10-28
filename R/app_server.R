@@ -212,6 +212,7 @@ app_server <- function(input, output, session) {
         preview_problems_n_r               = preview_problems_n,
         rows_left_out_r                    = preview_r$rows_left_out_r,
         preview_changes_r                  = preview_r$preview_changes_r,
+        measurement_specs_r                = mapping_result$measurement_specs_r,
         on_export_success                  = function() {
             export_signal_rv(shiny::isolate(export_signal_rv()) + 1L)
         },

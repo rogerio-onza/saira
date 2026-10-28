@@ -392,3 +392,17 @@ testthat::test_that("write_change_log_csv quotes a formula so a spreadsheet does
     back <- utils::read.csv(path, colClasses = "character")
     testthat::expect_identical(back$from, c("'=SUM(A1)", "-10.5"))
 })
+
+testthat::test_that("build_export_summary counts the measurement columns as one term", {
+    df <- sample_mapped()
+    df$occurrenceID <- c("o1", "o2")
+    df[["measurementValue [AREA_HA]"]] <- c("10", "")
+    df[["measurementValue [Annual_rainfall]"]] <- c("", "")
+    s <- saira:::build_export_summary(mapped_data = df)
+    testthat::expect_identical(s$term_count, ncol(df) - 1L)
+    testthat::expect_true("measurementorfact.txt" %in% s$files$dwca)
+
+    df[["measurementValue [AREA_HA]"]] <- c("", "")
+    s <- saira:::build_export_summary(mapped_data = df)
+    testthat::expect_false("measurementorfact.txt" %in% s$files$dwca)
+})

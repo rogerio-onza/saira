@@ -25,6 +25,7 @@ mod_export_server(
   preview_problems_n_r = NULL,
   rows_left_out_r = NULL,
   preview_changes_r = NULL,
+  measurement_specs_r = NULL,
   on_navigate = NULL,
   on_export_success = NULL
 )
@@ -77,6 +78,9 @@ Preview left out of the package.}
 
 \item{preview_changes_r}{Optional reactive with the cells the Preview edits
 change (`cell_changes()`).}
+
+\item{measurement_specs_r}{Optional reactive with the type, unit and method
+of each column mapped to `measurementValue`, keyed by column.}
 
 \item{on_navigate}{Optional callback `function(tab)` to switch the top-level
 navbar (used by the "fix missing terms" banner action).}
