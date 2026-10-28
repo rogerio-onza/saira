@@ -12,6 +12,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give each column of the measurementValue card its own type, unit and method, ADR-179
 - **mapping:** Suggest a column named after a unit, as AREA_HA, for measurementValue on auto-map, ADR-179
 - **preview:** Show one column per measurement and flag a unit or text among numbers, ADR-179
+- **export:** Add `check_publication()`, which lists the records of a sent archive that GBIF or SiBBr does not show, ADR-178
 - **export:** Open one example of each correction from the Package card, and add a changes file to the package, ADR-176
 - **preview:** List exact copies of a row under Problems, with a choice to leave each copy out of the package, ADR-175
 - **names:** Show the names a failed provider left unchecked in a block above the run list, with a button that queries only these names again, ADR-169

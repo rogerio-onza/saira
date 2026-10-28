@@ -3347,6 +3347,19 @@ Formato: ADR leve (Architecture Decision Record).
   - O CSV poe uma aspa antes de um valor com cara de formula, porque `from` guarda o valor antigo de uma celula corrigida.
 - **Consequencias**: o numero "Correcoes" pode ficar diferente do anterior. Uma copia exata fora do pacote sai da lista. Uma especie sem nenhum registro georreferenciado nao e generalizada, entao os seus valores aparecem na lista.
 
+## ADR-178: Conferencia pos-publicacao como funcao R
+
+- **Data**: 2026-10-27
+- **Status**: Aceito.
+- **Contexto**: um portal pode perder registros na indexacao sem erro no IPT. O portal do SiBBr mostrou 195 registros a menos do Neotropical Carnivores do que o archive enviado. O validador do GBIF exige login e foi cancelado.
+- **Decisao**:
+  - `check_publication(archive, dataset)` le os `occurrenceID` do archive enviado e os do dataset publicado, e devolve `sent`, `published`, `missing` e `unexpected`. E uma funcao R para curador, sem tela no app (roadmap pos-1.0, regra 4).
+  - A chave escolhe o portal: UUID e dataset do GBIF, `dr` e numero e recurso do SiBBr. As duas APIs sao publicas.
+  - O layout do arquivo vem do `meta.xml`: separador, aspas, linhas de cabecalho e a coluna do termo `occurrenceID` (ou a do `<id>`). Um archive do IPT usa tab, sem aspas, e o `occurrenceID` fica fora do indice 0.
+  - Os ids publicados vem da faceta `occurrenceId` em paginas de 5.000. A busca de registros do GBIF para em 100.000, a faceta nao. Uma pagina maior derrubou o servico do SiBBr por alguns minutos.
+  - Um erro do portal para a funcao. Uma lista parcial apontaria registros ausentes que existem.
+- **Consequencias**: o Neotropical Carnivores (99.605 registros) confere em cerca de 25 s. Um dataset grande no GBIF pede uma pagina por 5.000 ids. A funcao nao ve registros sem `occurrenceID` no portal, mas `published` conta todos.
+
 ## ADR-179: Medidas no arquivo de extensao MeasurementOrFact
 
 - **Data**: 2026-10-27
