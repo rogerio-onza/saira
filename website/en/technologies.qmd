@@ -50,22 +50,19 @@ Saíra is built on open-source R packages, all declared as dependencies in [`DES
 | [countrycode](https://cran.r-project.org/package=countrycode) | Conversion between country names and codes | GPL-3 |
 | [rnaturalearth](https://cran.r-project.org/package=rnaturalearth) | Access to Natural Earth boundaries | MIT |
 | [rnaturalearthdata](https://cran.r-project.org/package=rnaturalearthdata) | Boundary data (1:110m and 1:50m) | CC0 |
-| [rnaturalearthhires](https://docs.ropensci.org/rnaturalearthhires/) | High-resolution boundaries (1:10m, optional) | CC0 |
 
 ### Utilities
 
 | Package | What for | License |
 | --- | --- | --- |
-| [stringr](https://cran.r-project.org/package=stringr) | Text manipulation | MIT |
 | [digest](https://cran.r-project.org/package=digest) | Deterministic hashing for `occurrenceID` | GPL (≥ 2) |
-| [ids](https://cran.r-project.org/package=ids) | Identifier generation | MIT |
 | [uuid](https://cran.r-project.org/package=uuid) | UUIDs | MIT |
 | [withr](https://cran.r-project.org/package=withr) | Temporary state management | MIT |
 | [callr](https://cran.r-project.org/package=callr) | Updates Flora BR and Fauna BR in a background R process | MIT |
 | [DBI](https://cran.r-project.org/package=DBI) | Database interface | LGPL (≥ 2.1) |
-| [RSQLite](https://cran.r-project.org/package=RSQLite) | SQLite backend for the taxonomic caches | LGPL (≥ 2.1) |
+| [RSQLite](https://cran.r-project.org/package=RSQLite) | Rostrum aliases and templates | LGPL (≥ 2.1) |
 
-### Camera traps (optional)
+### Camera traps
 
 | Package | What for | License |
 | --- | --- | --- |

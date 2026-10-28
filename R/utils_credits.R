@@ -22,7 +22,7 @@ credits_package_groups <- function() {
             "CoordinateCleaner", "sf", "terra", "countrycode",
             "rnaturalearth", "rnaturalearthdata"
         ),
-        utils = c("stringr", "digest", "uuid", "withr", "callr", "DBI", "RSQLite"),
+        utils = c("digest", "uuid", "withr", "callr", "DBI", "RSQLite"),
         camtrap = "camtrapdp"
     )
 }

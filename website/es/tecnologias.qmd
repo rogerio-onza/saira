@@ -50,22 +50,19 @@ Saíra se construye sobre paquetes de R de código abierto, todos declarados com
 | [countrycode](https://cran.r-project.org/package=countrycode) | Conversión entre nombres y códigos de países | GPL-3 |
 | [rnaturalearth](https://cran.r-project.org/package=rnaturalearth) | Acceso a los límites de Natural Earth | MIT |
 | [rnaturalearthdata](https://cran.r-project.org/package=rnaturalearthdata) | Datos de límites (1:110m y 1:50m) | CC0 |
-| [rnaturalearthhires](https://docs.ropensci.org/rnaturalearthhires/) | Límites de alta resolución (1:10m, opcional) | CC0 |
 
 ### Utilidades
 
 | Paquete | Para qué | Licencia |
 | --- | --- | --- |
-| [stringr](https://cran.r-project.org/package=stringr) | Manipulación de texto | MIT |
 | [digest](https://cran.r-project.org/package=digest) | Hash determinista para `occurrenceID` | GPL (≥ 2) |
-| [ids](https://cran.r-project.org/package=ids) | Generación de identificadores | MIT |
 | [uuid](https://cran.r-project.org/package=uuid) | UUID | MIT |
 | [withr](https://cran.r-project.org/package=withr) | Gestión de estado temporal | MIT |
 | [callr](https://cran.r-project.org/package=callr) | Actualiza Flora BR y Fauna BR en un proceso R en segundo plano | MIT |
 | [DBI](https://cran.r-project.org/package=DBI) | Interfaz de bases de datos | LGPL (≥ 2.1) |
-| [RSQLite](https://cran.r-project.org/package=RSQLite) | Backend SQLite para las cachés taxonómicas | LGPL (≥ 2.1) |
+| [RSQLite](https://cran.r-project.org/package=RSQLite) | Alias y plantillas de Rostrum | LGPL (≥ 2.1) |
 
-### Cámaras trampa (opcional)
+### Cámaras trampa
 
 | Paquete | Para qué | Licencia |
 | --- | --- | --- |

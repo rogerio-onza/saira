@@ -74,7 +74,6 @@ jobs:
             any::rcmdcheck
             any::devtools
             any::testthat
-            ropensci/rnaturalearthhires
           dependencies: '"hard"'
           needs: check
 
@@ -121,7 +120,6 @@ jobs:
             any::future
             any::furrr
             any::parallelly
-            ropensci/rnaturalearthhires
           dependencies: '"hard"'
 
       # Not in the list above: pak maps the chromote system requirement to
@@ -165,8 +163,9 @@ jobs:
           r-version: renv
           use-public-rspm: true
 
-      # setup-r points renv at P3M only. rnaturalearthhires is on r-universe,
-      # so the override names both repositories.
+      # setup-r points renv at P3M only. renv.lock takes crul, oai,
+      # rnaturalearth and rnaturalearthdata from r-universe, so the override
+      # names both repositories.
       - name: Point renv at P3M binaries and r-universe
         run: |
           echo "RENV_CONFIG_REPOS_OVERRIDE=CRAN=https://packagemanager.posit.co/cran/__linux__/$(lsb_release -cs)/latest;ropensci=https://ropensci.r-universe.dev" >> "$GITHUB_ENV"
