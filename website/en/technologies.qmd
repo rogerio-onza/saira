@@ -61,6 +61,7 @@ Saíra is built on open-source R packages, all declared as dependencies in [`DES
 | [ids](https://cran.r-project.org/package=ids) | Identifier generation | MIT |
 | [uuid](https://cran.r-project.org/package=uuid) | UUIDs | MIT |
 | [withr](https://cran.r-project.org/package=withr) | Temporary state management | MIT |
+| [callr](https://cran.r-project.org/package=callr) | Updates Flora BR and Fauna BR in a background R process | MIT |
 | [DBI](https://cran.r-project.org/package=DBI) | Database interface | LGPL (≥ 2.1) |
 | [RSQLite](https://cran.r-project.org/package=RSQLite) | SQLite backend for the taxonomic caches | LGPL (≥ 2.1) |
 

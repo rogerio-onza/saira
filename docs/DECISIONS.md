@@ -3347,6 +3347,15 @@ Formato: ADR leve (Architecture Decision Record).
   - O CSV poe uma aspa antes de um valor com cara de formula, porque `from` guarda o valor antigo de uma celula corrigida.
 - **Consequencias**: o numero "Correcoes" pode ficar diferente do anterior. Uma copia exata fora do pacote sai da lista. Uma especie sem nenhum registro georreferenciado nao e generalizada, entao os seus valores aparecem na lista.
 
+## ADR-177: Atualizacao da Flora e Fauna BR num processo callr
+
+- **Data**: 2026-10-27
+- **Status**: Aceito. Troca o worker PSOCK de #220.
+- **Contexto**: o worker PSOCK chama `serverSocket(port)`, que escuta em todas as interfaces. No desktop, o Windows mostrava o pedido de acesso do R as redes publicas na primeira atualizacao dos catalogos BR.
+- **Decisao**: `.brprovider_start_background_update()` roda o job com `callr::r_bg()`, que fala com o processo novo por pipes. O poll le `is_alive()` e `get_result()`, e guarda a causa do erro do processo em `last_error`. `callr` entra em Imports, porque a atualizacao faz parte do app.
+- **Alternativas**: regra de firewall no instalador, rejeitada porque pede administrador. `mirai`, rejeitada porque e uma dependencia nova para um so processo.
+- **Consequencias**: o app nao abre mais socket de escuta fora do `127.0.0.1` do Shiny. O desktop leva `callr`, `processx` e `ps` no lugar de `future`, `parallelly`, `globals` e `listenv`. O modo paralelo opcional do Rostrum continua com `future` (Suggests).
+
 ## ADR-178: Conferencia pos-publicacao como funcao R
 
 - **Data**: 2026-10-27
