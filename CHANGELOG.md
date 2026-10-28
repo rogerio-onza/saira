@@ -103,6 +103,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - **names:** Update Flora BR and Fauna BR without the Windows firewall prompt for public networks, ADR-177
+- **ui:** Stop the "column name not found" alert of the Names and Coordinates tables after a language change
 - **ui:** Stop the console errors when a tab or theme change skips its animation, for example in a hidden window
 - **names:** Check for Flora BR and Fauna BR updates in a separate R process, so a run does not stop for it
 - **names:** Fill the name correction with the Flora BR or Fauna BR suggestion for a misspelled name, ADR-173

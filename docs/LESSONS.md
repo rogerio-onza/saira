@@ -149,6 +149,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Encoding de metadados do pacote e mais seguro com escapes Unicode**: para campos como `Authors@R`/`Description`, `\uXXXX` reduz risco de mojibake entre editores/SO.
 - **Placeholder de `selectInput`** nao aceita `uiOutput` -- usar `update*Input()` no server.
 - **`DT::datatable` precisa de objeto `language` completo** em apps bilingues: incluir `emptyTable`, `zeroRecords` e `paginate.first/last/next/previous` evita sobras de texto no idioma errado.
+- **Cabecalho traduzido vai no argumento `colnames`, nunca em `names(data)`** (2026-10-27). Em modo servidor, cada pedido da tabela na tela manda o nome das colunas. Depois da troca de idioma, um pedido da tabela antiga com "Nome Cientifico" chegava aos dados novos com "Scientific Name", e o DT abria o alerta "column name not found". O Preview ja usava `colnames`; Nomes e Coordenadas nao.
 - **Ao adicionar novas labels de tabela/filtros em modulo bilingue, atualizar a suite de i18n no mesmo ciclo** previne regressao silenciosa de traducao.
 
 ## DwC / Dados de Biodiversidade

@@ -517,15 +517,6 @@ mount_mod_validate_coords_presentation <- function(
             iso3_col = as_text("country_iso3"),
             stringsAsFactors = FALSE
         )
-
-        colnames(table_df) <- c(
-            tr("validate_coords_col_row", lang_r()),
-            tr("validate_coords_col_issue", lang_r()),
-            tr("validate_coords_col_lat", lang_r()),
-            tr("validate_coords_col_lon", lang_r()),
-            tr("validate_coords_col_country", lang_r()),
-            tr("validate_coords_col_iso3", lang_r())
-        )
         table_df
     }
 
@@ -547,6 +538,17 @@ mount_mod_validate_coords_presentation <- function(
 
         DT::datatable(
             table_df,
+            # Translated headers only: the data keeps its column names, so a
+            # server-side request sent before a language change still finds
+            # its columns (DT alerts "column name not found" otherwise).
+            colnames = c(
+                tr("validate_coords_col_row", lang_r()),
+                tr("validate_coords_col_issue", lang_r()),
+                tr("validate_coords_col_lat", lang_r()),
+                tr("validate_coords_col_lon", lang_r()),
+                tr("validate_coords_col_country", lang_r()),
+                tr("validate_coords_col_iso3", lang_r())
+            ),
             options = list(
                 pageLength = 10,
                 lengthMenu = c(10, 25, 50, 100),

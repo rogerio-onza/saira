@@ -486,17 +486,6 @@ mount_mod_validate_names_presentation <- function(
             stringsAsFactors = FALSE
         )
 
-        colnames(table_df) <- c(
-            tr("validate_names_table_col_scientific_name", lang_r()),
-            tr("validate_names_table_col_status", lang_r()),
-            tr("validate_names_table_col_taxonomic_status", lang_r()),
-            ".review_original_name",
-            ".is_sensitive",
-            ".sensitive_name",
-            ".is_invasive",
-            ".invasive_reason"
-        )
-
         status_labels <- list(
             accepted = tr("validate_names_status_badge_accepted", lang_r()),
             accepted_manual = tr("validate_names_status_badge_accepted", lang_r()),
@@ -529,6 +518,19 @@ mount_mod_validate_names_presentation <- function(
 
         DT::datatable(
             table_df,
+            # Translated headers only: the data keeps its column names, so a
+            # server-side request sent before a language change still finds
+            # its columns (DT alerts "column name not found" otherwise).
+            colnames = c(
+                tr("validate_names_table_col_scientific_name", lang_r()),
+                tr("validate_names_table_col_status", lang_r()),
+                tr("validate_names_table_col_taxonomic_status", lang_r()),
+                ".review_original_name",
+                ".is_sensitive",
+                ".sensitive_name",
+                ".is_invasive",
+                ".invasive_reason"
+            ),
             options = list(
                 pageLength = 10,
                 lengthMenu = c(10, 25, 50, 100),
