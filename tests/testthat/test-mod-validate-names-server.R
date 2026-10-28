@@ -864,6 +864,48 @@ testthat::test_that("report table wires the sensitive-species pill column", {
     )
 })
 
+testthat::test_that("report table keeps its data column names when the language changes", {
+    # A server-side request from the table on screen names the columns. If the
+    # names follow the language, DT alerts "column name not found".
+    data_names <- list()
+    datatable <- DT::datatable
+    testthat::local_mocked_bindings(
+        datatable = function(data, ...) {
+            data_names[[length(data_names) + 1L]] <<- names(data)
+            datatable(data, ...)
+        },
+        .package = "DT"
+    )
+    lang <- shiny::reactiveVal("pt")
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(data.frame(scientificName = "Homo sapiens")),
+            lang_r = lang
+        ),
+        {
+            validation_result(data.frame(
+                scientificName = "Homo sapiens",
+                query_name = "Homo sapiens",
+                validation_status = "accepted",
+                taxonomicStatus = "accepted",
+                stringsAsFactors = FALSE
+            ))
+            session$flushReact()
+            pt <- jsonlite::fromJSON(output$report_table, simplifyVector = FALSE)$x$container
+            lang("en")
+            session$flushReact()
+            en <- jsonlite::fromJSON(output$report_table, simplifyVector = FALSE)$x$container
+
+            testthat::expect_match(pt, tr("validate_names_table_col_scientific_name", "pt"), fixed = TRUE)
+            testthat::expect_match(en, tr("validate_names_table_col_scientific_name", "en"), fixed = TRUE)
+            testthat::expect_length(data_names, 2L)
+            testthat::expect_identical(data_names[[1]], data_names[[2]])
+        }
+    )
+})
+
 testthat::test_that("sensitivity payload reflects per-species overrides", {
     mapped_df <- data.frame(
         scientificName = "Felis catus",

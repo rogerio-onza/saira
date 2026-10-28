@@ -532,6 +532,12 @@ testthat::test_that("a fix leaves the payload when its point changes later (AUD-
             # The country typed in the spreadsheet reaches the table as text.
             country <- build_issues_table_df(effective_validation_r())[[5]][[1]]
             testthat::expect_identical(country, "&lt;b data-audit=\"country\"&gt;Brasil&lt;/b&gt;")
+            # The headers carry the language. The data names stay the same, so a
+            # request from the table on screen finds its columns after a switch.
+            testthat::expect_identical(
+                names(build_issues_table_df(effective_validation_r())),
+                c("row_col", "diag_col", "lat_col", "lon_col", "country_col", "iso3_col")
+            )
 
             # A manual edit of "b" and an automatic fix of "a" keep the values
             # they replace.
