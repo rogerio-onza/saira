@@ -406,3 +406,42 @@ testthat::test_that("app_server opens Mapping on the first upload of the session
 
     testthat::expect_true("mapping" %in% navigated)
 })
+
+upload_guide_fixture <- function() {
+    path <- tempfile(fileext = ".txt")
+    raw <- data.frame(especie = "Panthera onca", local = "Mata")
+    writeLines(build_mapping_guide_txt(list(scientificName = "especie", locality = "local"), raw, lang = "en"), path)
+    path
+}
+
+testthat::test_that("mod_upload_server offers the guide import on the first upload of the session", {
+    guide_path <- upload_guide_fixture()
+    on.exit(unlink(guide_path), add = TRUE)
+    withr::local_envvar(SAIRA_PUBLIC = NA)
+
+    shiny::testServer(mod_upload_server, args = list(lang_r = shiny::reactive("en")), {
+        session$setInputs(file = list(
+            name = "guide.txt", size = file.info(guide_path)$size,
+            type = "text/plain", datapath = guide_path
+        ))
+        session$flushReact()
+        testthat::expect_identical(file_kind(), "guide")
+        testthat::expect_identical(nrow(guide_payload_rv()$pairs), 2L)
+    })
+})
+
+testthat::test_that("mod_upload_server offers no guide import on a shared server", {
+    guide_path <- upload_guide_fixture()
+    on.exit(unlink(guide_path), add = TRUE)
+    withr::local_envvar(SAIRA_PUBLIC = "true")
+
+    shiny::testServer(mod_upload_server, args = list(lang_r = shiny::reactive("en")), {
+        session$setInputs(file = list(
+            name = "guide.txt", size = file.info(guide_path)$size,
+            type = "text/plain", datapath = guide_path
+        ))
+        session$flushReact()
+        testthat::expect_identical(file_kind(), "guide")
+        testthat::expect_null(guide_payload_rv())
+    })
+})

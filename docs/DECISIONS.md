@@ -3398,6 +3398,15 @@ Formato: ADR leve (Architecture Decision Record).
 - **Contexto**: o shell Electron abre o app numa porta de `127.0.0.1`. A sessao Shiny e so da janela do app.
 - **Decisao**: o shell cria uma chave aleatoria por execucao, passa a chave ao R em `SAIRA_ACCESS_KEY` e grava o cookie `saira_access` (`httpOnly`, `SameSite=Strict`) na sessao da janela. Com a variavel, `run_app()` fecha a sessao sem esse cookie ou com `Origin` diferente do host. Sem a variavel, nada muda.
 - **Consequencias**: upload e download pedem uma sessao aberta. O E2E do desktop roda pela janela e recebe o cookie. `saira::run_app()` no R nao usa chave.
+
+## ADR-182: Servidor compartilhado nao grava aliases
+
+- **Data**: 2026-10-29
+- **Status**: Aceito.
+- **Contexto**: o Rostrum guarda aliases num SQLite do usuario do sistema, e todas as sessoes de um processo usam a identidade `anonymous`. No desktop e no R local, uma pessoa usa o app. Num servidor, varias pessoas usam o mesmo SQLite.
+- **Decisao**: com `SAIRA_PUBLIC=true` (ou `1`, `yes`), `rostrum_learning_enabled()` e falso. `rostrum_commit_session_aliases()` e `import_mapping_guide_to_aliases()` nao gravam nada. A aba Upload nao oferece importar um guia e indica Importar modelo na aba Mapeamento. A leitura dos aliases continua.
+- **Consequencias**: num servidor com a variavel, o automapeamento usa so os aliases que ja estavam no SQLite, e o Export nao mostra o quadro de aliases aprendidos. Importar modelo na aba Mapeamento ainda aplica o guia aos dados carregados. Sem a variavel, nada muda.
+
 ## ADR-183: Site e CI usam codigo fixado
 
 - **Data**: 2026-10-29

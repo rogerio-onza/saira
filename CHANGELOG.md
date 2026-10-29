@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **mapping:** Add `SAIRA_PUBLIC=true` for a shared server, which reads aliases but saves no new ones, ADR-182
 - **export:** Move the measurements to a MeasurementOrFact extension file, one row per measurement, ADR-179
 - **mapping:** Give each column of the measurementValue card its own type, unit and method, ADR-179
 - **mapping:** Suggest a column named after a unit, as AREA_HA, for measurementValue on auto-map, ADR-179
@@ -104,9 +105,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **preview:** Show "&", "<" and ">" as typed in the Preview table, not as "&amp;"
 - **preview:** Keep quotes in the tooltip of long values in the Preview and Names tables
 - **upload:** Read only the tables inside a Camtrap DP ZIP, ADR-180
 - **desktop:** Open an app session only in the desktop window, ADR-181
+- **upload:** Offer the mapping guide import on the first upload of a session, not only from the second
 - **names:** Update Flora BR and Fauna BR without the Windows firewall prompt for public networks, ADR-177
 - **ui:** Stop the "column name not found" alert of the Names and Coordinates tables after a language change
 - **ui:** Stop the console errors when a tab or theme change skips its animation, for example in a hidden window
@@ -251,6 +254,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **ui:** Stop loading the unused Lottie player on every page, and remove 9 MB of unused images from the package ([#168](https://github.com/rogerio-onza/saira/pull/168))
 
 ### Documentation
+- **site:** Show how to serve Saíra to other people, and fix the network example of the install tutorial
 - **docs:** Describe the current tabs, export files and CI in the architecture and contributing guides
 
 ### Tests

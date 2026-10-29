@@ -182,7 +182,7 @@ import_mapping_guide_to_aliases <- function(
         stop("import_mapping_guide_to_aliases: 'payload' must come from parse_mapping_guide_txt().")
     }
     pairs <- payload$pairs
-    if (nrow(pairs) == 0L) return(invisible(0L))
+    if (nrow(pairs) == 0L || !rostrum_learning_enabled()) return(invisible(0L))
 
     if (is.null(available_columns) && !is.null(payload$meta$source_columns)) {
         columns <- tryCatch(jsonlite::fromJSON(payload$meta$source_columns), error = function(e) NULL)
