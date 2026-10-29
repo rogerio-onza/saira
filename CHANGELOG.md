@@ -38,6 +38,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **site:** Show the install options in tabs on the landing page: the app for Windows or Linux, or the R package. Remove the open data section
 - **site:** Serve the analytics tracker from the site, not from an outside address, ADR-183
 - **build:** Pin the GitHub Actions to commit SHAs and give Pages write access to the deploy job only, ADR-183
 - **names:** Check the IPT for new Flora BR and Fauna BR versions every 30 days, not every day, ADR-174

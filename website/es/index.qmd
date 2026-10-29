@@ -103,61 +103,64 @@ anchor-sections: false
   </div>
 </section>
 
-<!-- ===================== WHY: uses of open data (icons: Lucide, ISC license) ===================== -->
-<section class="lp-section lp-why" id="por-que" aria-labelledby="por-que-titulo">
-  <div class="lp-head">
-    <div>
-      <span class="lp-eyebrow">Datos abiertos</span>
-      <h2 id="por-que-titulo">¿Por qué importan los datos abiertos?</h2>
-      <p class="lp-lede">Cada registro publicado apoya decisiones de órganos ambientales y de salud, como:</p>
-    </div>
-  </div>
-  <div class="lp-why-row">
-    <ol class="lp-uses">
-      <li class="lp-use is-risk"><span class="lp-use-ic"><svg class="lp-use-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7" pathLength="1"/><polyline points="16 17 22 17 22 11" pathLength="1"/></svg><svg class="lp-use-ring" viewBox="0 0 84 92" aria-hidden="true"><polygon points="42 2, 82 25, 82 67, 42 90, 2 67, 2 25" pathLength="1"/></svg></span><span class="lp-use-label">Riesgo de extinción</span><span class="lp-use-text">Apoya la evaluación del riesgo de extinción y prioriza acciones de conservación.</span></li>
-      <li class="lp-use is-area"><span class="lp-use-ic"><svg class="lp-use-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 10v.2A3 3 0 0 1 8.9 16H5a3 3 0 0 1-1-5.8V10a3 3 0 0 1 6 0Z" pathLength="1"/><path d="M7 16v6" pathLength="1"/><path d="M13 19v3" pathLength="1"/><path d="M12 19h8.3a1 1 0 0 0 .7-1.7L18 14h.3a1 1 0 0 0 .7-1.7L16 9h.2a1 1 0 0 0 .8-1.7L13 3l-1.4 1.5" pathLength="1"/></svg><svg class="lp-use-ring" viewBox="0 0 84 92" aria-hidden="true"><polygon points="42 2, 82 25, 82 67, 42 90, 2 67, 2 25" pathLength="1"/></svg></span><span class="lp-use-label">Áreas protegidas</span><span class="lp-use-text">Orienta la planificación y la gestión de unidades de conservación y corredores ecológicos.</span></li>
-      <li class="lp-use is-lic"><span class="lp-use-ic"><svg class="lp-use-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" pathLength="1"/><path d="M14 2v4a2 2 0 0 0 2 2h4" pathLength="1"/><path d="m9 15 2 2 4-4" pathLength="1"/></svg><svg class="lp-use-ring" viewBox="0 0 84 92" aria-hidden="true"><polygon points="42 2, 82 25, 82 67, 42 90, 2 67, 2 25" pathLength="1"/></svg></span><span class="lp-use-label">Licenciamiento</span><span class="lp-use-text">Contribuye al análisis de impactos ambientales y al cumplimiento de la legislación.</span></li>
-      <li class="lp-use is-inv"><span class="lp-use-ic"><svg class="lp-use-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" pathLength="1"/><path d="M12 9v4" pathLength="1"/><path d="M12 17h.01" pathLength="1"/></svg><svg class="lp-use-ring" viewBox="0 0 84 92" aria-hidden="true"><polygon points="42 2, 82 25, 82 67, 42 90, 2 67, 2 25" pathLength="1"/></svg></span><span class="lp-use-label">Especies invasoras</span><span class="lp-use-text">Ayuda a monitorear especies invasoras y a prevenir sus impactos.</span></li>
-      <li class="lp-use is-zoo"><span class="lp-use-ic"><svg class="lp-use-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 2 1.88 1.88" pathLength="1"/><path d="M14.12 3.88 16 2" pathLength="1"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1" pathLength="1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6" pathLength="1"/><path d="M12 20v-9" pathLength="1"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5" pathLength="1"/><path d="M6 13H2" pathLength="1"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4" pathLength="1"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4" pathLength="1"/><path d="M22 13h-4" pathLength="1"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4" pathLength="1"/></svg><svg class="lp-use-ring" viewBox="0 0 84 92" aria-hidden="true"><polygon points="42 2, 82 25, 82 67, 42 90, 2 67, 2 25" pathLength="1"/></svg></span><span class="lp-use-label">Zoonosis</span><span class="lp-use-text">Apoya la vigilancia y la prevención de enfermedades que pueden pasar entre animales y personas.</span></li>
-    </ol>
-    <p class="lp-why-num"><strong data-count="6">+6</strong><span>artículos revisados por pares al día usan datos del GBIF</span></p>
-  </div>
-  <p class="lp-note">Fuentes: <a href="https://www.metropoles.com/ciencia/plataforma-dados-sobre-biodiversidade">Metrópoles</a> (usos del SiBBr, en portugués); <a href="https://www.gbif.org/es/data-use">GBIF.org</a> (artículos al día).</p>
-</section>
-
-<!-- ===================== INSTALL: the script in a console window, then a short replay of the output ===================== -->
+<!-- ===================== INSTALL: tabs for the app (Windows, Linux) and the R package; the R tab keeps the console replay ===================== -->
 <section class="lp-section lp-install" id="instalar" aria-labelledby="instalar-titulo">
   <div class="lp-install-text">
     <span class="lp-eyebrow">Instalación</span>
-    <h2 id="instalar-titulo">Instale desde la consola de R</h2>
-    <p>pak instala Saíra y sus dependencias. Después, <code>saira::run_app()</code> abre la aplicación en su navegador.</p>
-    <p class="lp-small">¿Nunca usó R? El <a href="tutoriales/01-instalacion.html">tutorial de instalación</a> empieza desde cero. ¿Encontró un error? <a href="https://github.com/rogerio-onza/saira/issues">Abra un issue</a>.</p>
+    <h2 id="instalar-titulo">Descargue la aplicación o instale desde R</h2>
+    <p>Elija la aplicación para su sistema. Ya incluye R. Si ya usa R, instale el paquete desde la consola, en Windows o en Linux.</p>
+    <p class="lp-small">¿Dudas? Vea el <a href="tutoriales/01-instalacion.html">tutorial de instalación</a>. ¿Encontró un error? <a href="https://github.com/rogerio-onza/saira/issues">Abra un issue</a>.</p>
   </div>
-  <figure class="lp-term" aria-labelledby="lp-term-label">
-    <div class="lp-term-bar">
-      <div class="lp-tl" aria-hidden="true"><span></span><span></span><span></span></div>
-      <figcaption id="lp-term-label" class="lp-term-label">Consola · R</figcaption>
-      <button type="button" class="lp-copy" data-copied="Copiado" data-copy='options(repos = c(&#10;  ropensci = "https://ropensci.r-universe.dev",&#10;  CRAN     = "https://cloud.r-project.org"&#10;))&#10;install.packages("pak")&#10;pak::pak("rogerio-onza/saira")&#10;saira::run_app()'>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
-        <span>Copiar</span>
-      </button>
+  <div class="lp-get">
+    <div class="lp-get-tabs" role="tablist" aria-label="Forma de instalación">
+      <div class="lp-get-group"><span class="lp-get-label" aria-hidden="true">App</span><div>
+        <button type="button" role="tab" id="lp-tab-win" data-os="windows" aria-controls="lp-pane-win" aria-selected="true">Windows</button>
+        <button type="button" role="tab" id="lp-tab-linux" data-os="linux" aria-controls="lp-pane-linux" aria-selected="false" tabindex="-1">Linux</button>
+      </div></div>
+      <span class="lp-get-sep" aria-hidden="true"></span>
+      <div class="lp-get-group"><span class="lp-get-label" aria-hidden="true">R</span><div>
+        <button type="button" role="tab" id="lp-tab-r" data-os="r" aria-controls="lp-pane-r" aria-selected="false" tabindex="-1">Paquete R</button>
+      </div></div>
     </div>
-    <pre class="visually-hidden">options(repos = c(ropensci = "https://ropensci.r-universe.dev", CRAN = "https://cloud.r-project.org"))&#10;install.packages("pak")&#10;pak::pak("rogerio-onza/saira")&#10;saira::run_app()</pre>
-    <div class="lp-term-body" aria-hidden="true">
-      <div class="lp-term-line"><span class="pr">&gt; </span><span class="fn">options</span>(repos = <span class="fn">c</span>(</div>
-      <div class="lp-term-line"><span class="pr">+ </span>  ropensci = <span class="str">"https://ropensci.r-universe.dev"</span>,</div>
-      <div class="lp-term-line"><span class="pr">+ </span>  CRAN     = <span class="str">"https://cloud.r-project.org"</span></div>
-      <div class="lp-term-line"><span class="pr">+ </span>))</div>
-      <div class="lp-term-line"><span class="pr">&gt; </span><span class="fn">install.packages</span>(<span class="str">"pak"</span>)</div>
-      <div class="lp-term-line"><span class="pr">&gt; </span><span class="fn">pak::pak</span>(<span class="str">"rogerio-onza/saira"</span>)</div>
-      <div class="lp-term-line"><span class="pr">&gt; </span><span class="fn">saira::run_app</span>()</div>
-      <div class="lp-term-line" data-out data-wait="350"><span class="out">package ‘pak’ successfully unpacked and MD5 sums checked</span></div>
-      <div class="lp-term-line" data-out data-wait="250"><span class="out">→ Will install 128 packages.</span></div>
-      <div class="lp-term-line" data-out data-wait="1100"><span class="pr">ℹ </span><span class="out">Getting 128 pkgs</span><span class="lp-term-prog"><i></i></span></div>
-      <div class="lp-term-line" data-out data-wait="350"><span class="str">✔ </span><span class="out">Installed saira <span data-saira-version>0.11.2</span> (github::rogerio-onza/saira)</span></div>
-      <div class="lp-term-line" data-out><span class="out">Listening on </span><span>http://127.0.0.1:7346</span></div>
+    <div class="lp-app" role="tabpanel" id="lp-pane-win" aria-labelledby="lp-tab-win">
+      <div class="lp-app-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg><div><h3>Saíra para Windows</h3><span class="lp-app-meta">64 bits</span></div></div>
+      <ul><li>Ya incluye R y todas las dependencias.</li><li>Abre en su propia ventana, sin navegador.</li></ul>
+      <a class="lp-btn lp-dl" href="https://github.com/rogerio-onza/saira/releases/latest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Descargar para Windows</a>
     </div>
-  </figure>
+    <div class="lp-app" role="tabpanel" id="lp-pane-linux" aria-labelledby="lp-tab-linux" hidden>
+      <div class="lp-app-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg><div><h3>Saíra para Linux</h3><span class="lp-app-meta">64 bits</span></div></div>
+      <ul><li>Ya incluye R y todas las dependencias.</li><li>Abre en su propia ventana, sin navegador.</li></ul>
+      <a class="lp-btn lp-dl" href="https://github.com/rogerio-onza/saira/releases/latest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Descargar para Linux</a>
+    </div>
+    <div class="lp-get-r" role="tabpanel" id="lp-pane-r" aria-labelledby="lp-tab-r" hidden>
+      <p>En Windows o en Linux, con R 4.1 o superior. Después, <code>saira::run_app()</code> abre la aplicación en su navegador.</p>
+      <figure class="lp-term" aria-labelledby="lp-term-label">
+        <div class="lp-term-bar">
+          <div class="lp-tl" aria-hidden="true"><span></span><span></span><span></span></div>
+          <figcaption id="lp-term-label" class="lp-term-label">Consola · R</figcaption>
+          <button type="button" class="lp-copy" data-copied="Copiado" data-copy='options(repos = c(&#10;  ropensci = "https://ropensci.r-universe.dev",&#10;  CRAN     = "https://cloud.r-project.org"&#10;))&#10;install.packages("pak")&#10;pak::pak("rogerio-onza/saira")&#10;saira::run_app()'>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>
+            <span>Copiar</span>
+          </button>
+        </div>
+        <pre class="visually-hidden">options(repos = c(ropensci = "https://ropensci.r-universe.dev", CRAN = "https://cloud.r-project.org"))&#10;install.packages("pak")&#10;pak::pak("rogerio-onza/saira")&#10;saira::run_app()</pre>
+        <div class="lp-term-body" aria-hidden="true">
+          <div class="lp-term-line"><span class="pr">&gt; </span><span class="fn">options</span>(repos = <span class="fn">c</span>(</div>
+          <div class="lp-term-line"><span class="pr">+ </span>  ropensci = <span class="str">"https://ropensci.r-universe.dev"</span>,</div>
+          <div class="lp-term-line"><span class="pr">+ </span>  CRAN     = <span class="str">"https://cloud.r-project.org"</span></div>
+          <div class="lp-term-line"><span class="pr">+ </span>))</div>
+          <div class="lp-term-line"><span class="pr">&gt; </span><span class="fn">install.packages</span>(<span class="str">"pak"</span>)</div>
+          <div class="lp-term-line"><span class="pr">&gt; </span><span class="fn">pak::pak</span>(<span class="str">"rogerio-onza/saira"</span>)</div>
+          <div class="lp-term-line"><span class="pr">&gt; </span><span class="fn">saira::run_app</span>()</div>
+          <div class="lp-term-line" data-out data-wait="350"><span class="out">package ‘pak’ successfully unpacked and MD5 sums checked</span></div>
+          <div class="lp-term-line" data-out data-wait="250"><span class="out">→ Will install 128 packages.</span></div>
+          <div class="lp-term-line" data-out data-wait="1100"><span class="pr">ℹ </span><span class="out">Getting 128 pkgs</span><span class="lp-term-prog"><i></i></span></div>
+          <div class="lp-term-line" data-out data-wait="350"><span class="str">✔ </span><span class="out">Installed saira <span data-saira-version>0.11.2</span> (github::rogerio-onza/saira)</span></div>
+          <div class="lp-term-line" data-out><span class="out">Listening on </span><span>http://127.0.0.1:7346</span></div>
+        </div>
+      </figure>
+    </div>
+  </div>
 </section>
 
 </div>

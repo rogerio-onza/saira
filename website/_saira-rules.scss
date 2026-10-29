@@ -31,7 +31,6 @@ a { color: inherit; }
 @keyframes lp-fill { to { width: 100%; } }
 @keyframes lp-focus-in { 0% { opacity: 0; filter: blur(16px); transform: scale(1.02); } 55% { opacity: 1; } 100% { opacity: 1; filter: none; transform: none; } }
 @keyframes lp-focus-out { to { filter: blur(12px); } }
-@keyframes lp-draw { to { stroke-dashoffset: 0; } }
 // the map pin blinks twice in hard steps, unlike a soft pulse
 @keyframes lp-lock { 0%, 30%, 60%, 100% { opacity: 1; } 15%, 45% { opacity: .1; } }
 
@@ -48,11 +47,8 @@ a { color: inherit; }
   --lp-bad-soft: color-mix(in srgb, var(--error) 9%, var(--surface));
   --lp-pin: var(--accent);
   --lp-glow: var(--primary);
-  // one color per use of open data; risk takes the red of the threat categories
-  --lp-c-risk: #C0392B; --lp-c-area: #0a7a4f; --lp-c-lic: var(--accent); --lp-c-inv: #b26a00; --lp-c-zoo: #6d28d9;
   body.quarto-dark & {
     --lp-pin: var(--primary); --lp-glow: var(--text);
-    --lp-c-risk: #ef8a7e; --lp-c-area: #66e0a8; --lp-c-lic: #8a93f0; --lp-c-inv: #ffb838; --lp-c-zoo: #b79cff;
   }
 
   display: flex; flex-direction: column; gap: clamp(64px, 9vw, 120px);
@@ -291,45 +287,39 @@ a { color: inherit; }
   .lp-status { color: var(--text); }
   .lp-note { margin: -10px 0 0; font-family: var(--sans); font-size: 12px; line-height: 1.6; color: var(--lp-soft); }
 
-  // ---------- why open data matters: five uses, lit one at a time ----------
-  // hex badges echo the run progress grid of the app
-  .lp-why { gap: 32px; }
-  .lp-why-row { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 24px 0; align-items: stretch; }
-  .lp-uses { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
-  .lp-use { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 4px 24px; border-left: 1px solid var(--lp-line); }
-  .lp-use:first-child { padding-left: 0; border-left: 0; }
-  .lp-use.is-risk { --c: var(--lp-c-risk); } .lp-use.is-area { --c: var(--lp-c-area); } .lp-use.is-lic { --c: var(--lp-c-lic); }
-  .lp-use.is-inv { --c: var(--lp-c-inv); } .lp-use.is-zoo { --c: var(--lp-c-zoo); }
-  .lp-use-ic {
-    position: relative; display: grid; place-items: center; width: 72px; height: 80px; margin: 6px 0 8px 6px; color: var(--c);
-    transition: color .4s ease, transform .4s cubic-bezier(.2, .8, .3, 1.4);
-  }
-  .lp-use-ic::before {
-    content: ""; position: absolute; inset: 0; clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
-    background: color-mix(in srgb, var(--c) 12%, var(--surface)); transition: background-color .4s ease;
-  }
-  .lp-use-svg { position: relative; width: 32px; height: 32px; }
-  .lp-use-ring { position: absolute; inset: -6px; width: calc(100% + 12px); height: calc(100% + 12px); }
-  .lp-use-ring polygon { fill: none; stroke: var(--c); stroke-width: 2; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
-  .lp-use-label { font-family: var(--sans); font-size: 13px; font-weight: 600; letter-spacing: .08em; line-height: 1.35; text-transform: uppercase; color: var(--lp-soft); transition: color .4s ease; }
-  .lp-use-text { font-size: 15px; line-height: 1.5; color: var(--lp-soft); }
-  .lp-use.is-on .lp-use-ic, .lp-use.is-seen .lp-use-ic { color: var(--surface); }
-  .lp-use.is-on .lp-use-ic::before, .lp-use.is-seen .lp-use-ic::before { background: var(--c); }
-  .lp-use.is-on .lp-use-ic { transform: scale(1.1); }
-  .lp-use.is-on .lp-use-label, .lp-use.is-seen .lp-use-label { color: var(--c); }
-  .lp-use.is-on .lp-use-ring polygon { animation: lp-draw 1.3s linear forwards; }
-  .lp-use.is-drawn .lp-use-svg * { stroke-dasharray: 1; stroke-dashoffset: 1; animation: lp-draw 1s cubic-bezier(.5, 0, .2, 1) forwards; }
-  .lp-why-num { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 4px 0 0 24px; border-left: 1px solid var(--lp-line); }
-  .lp-why-num strong { font-family: var(--sans); font-size: clamp(40px, 4.4vw, 56px); line-height: 1; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
-  .lp-why-num span { font-size: 15px; line-height: 1.45; color: var(--lp-soft); }
-  .lp-why .lp-note { margin: 0; }
-
-  // ---------- install: the script in a console window ----------
+  // ---------- install: the app (Windows, Linux) or the R package, in tabs ----------
   .lp-install { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 40px 64px; align-items: center; }
   .lp-install-text { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-  .lp-install-text p { margin: 0; color: var(--lp-soft); }
-  .lp-install-text code { padding: 0; background: none; font-family: var(--mono); font-size: 15px; color: var(--text); }
+  .lp-install-text p, .lp-get-r p { margin: 0; color: var(--lp-soft); }
+  .lp-get-r code { padding: 0; background: none; font-family: var(--mono); font-size: 15px; color: var(--text); }
   .lp-small { font-size: 16px; }
+
+  .lp-get { min-width: 0; background: var(--surface); border: 1px solid var(--lp-line); border-radius: var(--r); overflow: hidden; box-shadow: none; }
+  .lp-get-tabs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0 28px; padding: 0 32px; border-bottom: 1px solid var(--lp-line); }
+  .lp-get-group { display: flex; flex-direction: column; gap: 2px; padding-top: 14px; }
+  .lp-get-group > div { display: flex; gap: 20px; }
+  .lp-get-label { font-family: var(--sans); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--lp-soft); }
+  .lp-get-sep { align-self: stretch; width: 1px; margin: 14px 0; background: var(--lp-line); }
+  .lp-get-tabs button {
+    min-height: 44px; padding: 0; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--lp-soft);
+    font-family: var(--sans); font-size: 15px; font-weight: 600; cursor: pointer; transition: color .2s ease, border-color .2s ease;
+  }
+  .lp-get-tabs button:hover { color: var(--text); }
+  .lp-get-tabs button[aria-selected="true"] { border-bottom-color: var(--primary); color: var(--text); }
+  .lp-get-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .lp-app, .lp-get-r { display: flex; flex-direction: column; gap: 22px; padding: 32px; }
+  .lp-get-r { gap: 16px; padding-top: 24px; }
+  .lp-app[hidden], .lp-get-r[hidden] { display: none; }
+  .lp-app-head { display: flex; align-items: center; gap: 16px; }
+  .lp-app-head svg { flex: none; width: 44px; height: 44px; color: var(--accent); }
+  .lp-app-head > div { display: flex; flex-direction: column; }
+  .lp-app h3 { margin: 0; font-family: var(--sans); font-size: 20px; font-weight: 600; line-height: 1.3; }
+  .lp-app-meta { font-family: var(--sans); font-size: 14px; color: var(--lp-soft); }
+  .lp-app ul { margin: 0; padding-left: 20px; font-size: 17px; color: var(--lp-soft); }
+  .lp-dl { align-self: flex-start; gap: 10px; min-height: 48px; background: var(--primary); border-color: var(--primary); color: var(--on-primary); font-size: 15px; font-weight: 700; }
+  .lp-dl:hover { background: #5bd9f8; border-color: #5bd9f8; color: var(--on-primary); }
+  .lp-dl svg { width: 18px; height: 18px; }
+  .lp-get-r .lp-term { border-radius: var(--r-sm); }
 
   .lp-term {
     margin: 0; min-width: 0; overflow: hidden; color-scheme: dark;
@@ -378,10 +368,8 @@ a { color: inherit; }
     .lp-biome-sp { display: none; }
     .lp-panel { --px: 16px; }
     .lp-install { grid-template-columns: minmax(0, 1fr); }
-    .lp-why-row { grid-template-columns: minmax(0, 1fr); }
-    .lp-why-num { padding: 20px 0 0; border-left: 0; border-top: 1px solid var(--lp-line); }
-    .lp-uses { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 24px; }
-    .lp-use { padding: 0; border-left: 0; }
+    .lp-get-tabs { gap: 0 20px; padding: 0 16px; }
+    .lp-app, .lp-get-r { padding: 20px 16px; }
     .lp-term-body { padding: 16px; font-size: 12px; }
   }
   // a narrow map has no room beside the pin, so the card sits in the top right corner (sea)
