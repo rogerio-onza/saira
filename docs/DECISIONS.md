@@ -3407,3 +3407,12 @@ Formato: ADR leve (Architecture Decision Record).
 - **Decisao**: com `SAIRA_PUBLIC=true` (ou `1`, `yes`), `rostrum_learning_enabled()` e falso. `rostrum_commit_session_aliases()` e `import_mapping_guide_to_aliases()` nao gravam nada. A aba Upload nao oferece importar um guia e indica Importar modelo na aba Mapeamento. A leitura dos aliases continua.
 - **Consequencias**: num servidor com a variavel, o automapeamento usa so os aliases que ja estavam no SQLite, e o Export nao mostra o quadro de aliases aprendidos. Importar modelo na aba Mapeamento ainda aplica o guia aos dados carregados. Sem a variavel, nada muda.
 
+## ADR-183: Site e CI usam codigo fixado
+
+- **Data**: 2026-10-29
+- **Status**: Aceito.
+- **Contexto**: o site de ajuda carregava o tracker do Umami de um endereco externo, e os workflows usavam Actions por tag. Nos dois casos, o codigo que rodava podia mudar sem um commit no Saira.
+- **Decisao**:
+  - `website/assets/js/umami.js` e uma copia revisada do tracker, com a origem e o SHA-256 no comentario do topo. `assets/analytics.html` carrega a copia pelo `quarto:offset` de cada pagina. O tracker envia os dados ao mesmo endpoint de antes.
+  - Os workflows usam cada Action por SHA de commit, com a versao num comentario. O Dependabot (`.github/dependabot.yml`) propoe as atualizacoes uma vez por mes. No `publish-site.yml`, so o job `deploy` tem `pages: write` e `id-token: write`.
+- **Consequencias**: uma versao nova do tracker entra so por PR, depois de uma leitura do arquivo. Uma Action nova chega como PR do Dependabot.
