@@ -1970,6 +1970,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # identity path above; everything else runs the fuzzy Rostrum engine.
         perform_auto_map <- function() {
             shiny::req(raw_data_r())
+            # An empty card only: the license is the publisher's choice.
+            card_values <- card_values_from_columns(raw_data_r())
+            if (!is.null(card_values$license) && length(input$custom_license) == 0L) {
+                shiny::updateCheckboxGroupInput(session, "custom_license", selected = card_values$license)
+            }
+            if (!is.null(card_values$language) && length(input$custom_language) == 0L) {
+                shiny::updateCheckboxGroupInput(session, "custom_language", selected = card_values$language)
+            }
             if (!is.null(attr(raw_data_r(), "saira_camtrap_source"))) {
                 perform_camtrap_automap()
                 return(invisible(NULL))

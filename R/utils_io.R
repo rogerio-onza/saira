@@ -93,8 +93,10 @@ read_biodiversity_csv <- function(file_path, encoding = NULL, header = TRUE) {
 # from two exports), so each line is decoded on its own: UTF-8 when it is
 # valid, else Windows-1252, else Latin-1. Windows-1252 goes first because
 # Latin-1 decodes every byte, and its curly quote 0x92 becomes the invisible
-# C1 control U+0092. CR, CRLF and LF all end a line: readr does not split on a
-# lone CR and merged the next record into the last cell.
+# C1 control U+0092. A DOS export (Excel "CSV (MS-DOS)") is CP850, and its
+# lines are read as CP850 (is_cp850_text()). CR, CRLF and LF all end a line:
+# readr does not split on a lone CR and merged the next record into the last
+# cell.
 decode_text_file <- function(file_path, encoding = NULL) {
     report <- list(encoding_lines = c(), utf16 = FALSE)
     size <- file.info(file_path)$size
@@ -141,7 +143,11 @@ decode_text_file <- function(file_path, encoding = NULL) {
     }
     ok <- validUTF8(lines)
     enc <- ifelse(ok, "UTF-8", "Windows-1252")
-    if (any(!ok)) {
+    if (any(!ok) && is_cp850_text(lines[!ok])) {
+        # CP850 decodes every byte.
+        lines[!ok] <- iconv(lines[!ok], from = "CP850", to = "UTF-8")
+        enc[!ok] <- "CP850"
+    } else if (any(!ok)) {
         cp <- iconv(lines[!ok], from = "CP1252", to = "UTF-8")
         # Bytes 0x81, 0x8D, 0x8F, 0x90 and 0x9D have no CP1252 character.
         miss <- is.na(cp)
@@ -155,6 +161,18 @@ decode_text_file <- function(file_path, encoding = NULL) {
     counts <- table(enc)
     report$encoding_lines <- stats::setNames(as.integer(counts), names(counts))
     list(lines = lines, report = report)
+}
+
+# In CP850, "c-cedilla" is 0x87 and "a-tilde" is 0xC6, which Windows-1252
+# shows as a double dagger and "AE". Each set below holds the bytes that are
+# Portuguese lowercase letters in only one of the two code pages. The first
+# 5000 lines are enough to decide, and a full copy of a large file is not.
+is_cp850_text <- function(lines) {
+    bytes <- charToRaw(paste(utils::head(lines, 5000L), collapse = ""))
+    counts <- tabulate(as.integer(bytes), nbins = 255L)
+    dos <- c(0x81:0x83, 0x87, 0x88, 0xA1:0xA4, 0xC6)
+    win <- c(0xE1, 0xE3, 0xE7, 0xEA, 0xED, 0xF3:0xF5, 0xFA)
+    sum(counts[dos]) > sum(counts[win])
 }
 
 # The header record: a quoted column name can hold a line break, so the lines
@@ -204,6 +222,53 @@ clean_invisible_chars <- function(x) {
     if (!any(hit)) return(x)
     out <- gsub(space_char_pattern, " ", x[hit], perl = TRUE)
     x[hit] <- gsub(invisible_char_pattern, "", out, perl = TRUE)
+    x
+}
+
+# Text that a tool read from CP850 as Latin-1, as Saira 0.11 did: "Sao Paulo"
+# with an a-tilde arrives as "SAEo Paulo", and the c-cedilla as the C1 control
+# U+0087. Every character is still one Latin-1 byte, so the CP850 text comes
+# back whole. clean_invisible_chars() removes the C1 controls, so the repair
+# runs first. The marks below are the Latin-1 forms of Portuguese and Spanish
+# letters in CP850. A cell needs a mark next to a letter. U+0080, U+0085 and
+# U+0093 need a letter on both sides, because they are also the Windows-1252
+# euro sign, ellipsis and left quote. A column with such a cell also has its
+# other marks repaired: an a-acute read as NBSP often stands alone, and an
+# A-acute read as the micro sign is also a real symbol. The repaired text must
+# hold only ASCII, Portuguese and Spanish letters, so a correct "e-acute"
+# (CP850 "U-acute") stays as it is.
+dos_letter_marks <- "\\x{0081}-\\x{0083}\\x{0087}\\x{0088}\\x{0090}\\x{009A}\\x{00A1}-\\x{00A5}\\x{00C6}"
+dos_mark_pattern <- paste0(
+    "(*UTF)[A-Za-z][", dos_letter_marks, "]|[", dos_letter_marks, "][A-Za-z]",
+    "|[A-Za-z][\\x{0080}\\x{0085}\\x{0093}][A-Za-z]"
+)
+dos_weak_pattern <- paste0(
+    "(*UTF)[", dos_letter_marks, "\\x{0080}\\x{0085}\\x{0093}",
+    "\\x{00A6}\\x{00A7}\\x{00B5}-\\x{00B7}\\x{00D2}\\x{00D6}\\x{00E4}\\x{00E5}\\x{00F8}]",
+    "|[A-Za-z]\\x{00A0}|\\x{00A0}[A-Za-z]"
+)
+dos_plain_pattern <- paste0(
+    "(*UTF)^[\\x{0001}-\\x{007F}",
+    "\u00e1\u00e0\u00e2\u00e3\u00e9\u00ea\u00ed\u00f3\u00f4\u00f5\u00fa\u00fc\u00e7\u00f1",
+    "\u00c1\u00c0\u00c2\u00c3\u00c9\u00ca\u00cd\u00d3\u00d4\u00d5\u00da\u00dc\u00c7\u00d1",
+    "\u00aa\u00ba\u00b0]*$"
+)
+
+repair_dos_accents <- function(x) {
+    if (!is.character(x)) return(x)
+    # The letter marks as UTF-8 bytes. A correct accent is 0xC3 and one more
+    # byte, and of those only "AE" (0xC3 0x86) is a mark. One byte test skips
+    # a column of correct accents about 4 times faster than the letter test.
+    marked <- which(grepl("\\xc2[\\x80-\\x9f\\xa1-\\xa5]|\\xc3\\x86", x, perl = TRUE, useBytes = TRUE))
+    if (length(marked) == 0L) return(x)
+    strong <- marked[grepl(dos_mark_pattern, x[marked], perl = TRUE)]
+    if (length(strong) == 0L) return(x)
+    wide <- which(grepl("[^\\x01-\\x7f]", x, perl = TRUE, useBytes = TRUE))
+    cand <- wide[grepl(dos_weak_pattern, x[wide], perl = TRUE)]
+    fixed <- iconv(iconv(x[cand], "UTF-8", "latin1"), "CP850", "UTF-8")
+    ok <- !is.na(fixed) & grepl(dos_plain_pattern, fixed, perl = TRUE)
+    if (!any(ok & cand %in% strong)) return(x)
+    x[cand[ok]] <- fixed[ok]
     x
 }
 
@@ -266,6 +331,9 @@ upload_read_notes <- function(report, lang = "en") {
             paste(utils::head(report$footer_rows, 5L), collapse = ", ")
         ))
     }
+    if (isTRUE(report$dos_accent_cells > 0L)) {
+        notes <- c(notes, sprintf(tr("upload_report_dos_accents", lang), report$dos_accent_cells))
+    }
     if (isTRUE(report$invisible_cells > 0L)) {
         notes <- c(notes, sprintf(tr("upload_report_invisible", lang), report$invisible_cells))
     }
@@ -294,17 +362,20 @@ finish_upload_frame <- function(df, report = list()) {
     names(df) <- repair_column_names(raw_names)
 
     changed <- 0L
+    repaired <- 0L
     for (col in names(df)) {
         v <- df[[col]]
         if (!is.character(v)) next
-        cleaned <- clean_invisible_chars(v)
-        diff <- !is.na(v) & cleaned != v
-        if (any(diff)) {
-            changed <- changed + sum(diff)
-            df[[col]] <- cleaned
-        }
+        accents <- repair_dos_accents(v)
+        fixed <- !is.na(v) & accents != v
+        repaired <- repaired + sum(fixed)
+        cleaned <- clean_invisible_chars(accents)
+        diff <- !is.na(v) & cleaned != accents
+        if (any(diff)) changed <- changed + sum(diff)
+        if (any(diff | fixed)) df[[col]] <- cleaned
     }
     report$invisible_cells <- changed
+    report$dos_accent_cells <- repaired
 
     if (nrow(df) > 0L && ncol(df) > 0L) {
         # Same test as nzchar(trimws(v)), in one regex pass instead of two.

@@ -4914,6 +4914,11 @@
     "en": "%d record(s) have only one filled cell and can be a footer or a title (records %s).",
     "es": "%d registro(s) tienen solo una celda llena y pueden ser pie o título (registros %s)."
   },
+  "upload_report_dos_accents": {
+    "pt": "%d célula(s) tinham acentos de um arquivo DOS (CP850) lidos com a tabela errada, como \"SÆo\" em vez de \"São\", e foram corrigidas.",
+    "en": "%d cell(s) had accents from a DOS (CP850) file read with the wrong code page, as \"SÆo\" for \"São\", and were repaired.",
+    "es": "%d celda(s) tenían acentos de un archivo DOS (CP850) leídos con la tabla equivocada, como \"SÆo\" en lugar de \"São\", y se corrigieron."
+  },
   "upload_report_invisible": {
     "pt": "%d célula(s) tinham caracteres invisíveis (espaço não separável, espaço de largura zero, controle de direção) e foram limpas.",
     "en": "%d cell(s) had invisible characters (non-breaking space, zero-width space, direction control) and were cleaned.",

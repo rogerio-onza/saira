@@ -3416,3 +3416,13 @@ Formato: ADR leve (Architecture Decision Record).
   - `website/assets/js/umami.js` e uma copia revisada do tracker, com a origem e o SHA-256 no comentario do topo. `assets/analytics.html` carrega a copia pelo `quarto:offset` de cada pagina. O tracker envia os dados ao mesmo endpoint de antes.
   - Os workflows usam cada Action por SHA de commit, com a versao num comentario. O Dependabot (`.github/dependabot.yml`) propoe as atualizacoes uma vez por mes. No `publish-site.yml`, so o job `deploy` tem `pages: write` e `id-token: write`.
 - **Consequencias**: uma versao nova do tracker entra so por PR, depois de uma leitura do arquivo. Uma Action nova chega como PR do Dependabot.
+
+## ADR-184: Acentos de arquivos DOS (CP850)
+
+- **Data**: 2026-10-29
+- **Status**: Aceito.
+- **Contexto**: o Excel grava "CSV (MS-DOS)" em CP850. O leitor lia as linhas fora de UTF-8 como Windows-1252, e o Saira 0.11 lia como Latin-1. Em Latin-1, o "a" com til vira AE (U+00C6) e o "c" cedilha vira o controle U+0087. `clean_invisible_chars()` removia o controle, e o acento se perdia de vez.
+- **Decisao**:
+  - `decode_text_file()` le como CP850 as linhas fora de UTF-8 quando `is_cp850_text()` conta mais bytes de letras minusculas exclusivas de CP850 que de Windows-1252.
+  - `repair_dos_accents()` roda antes de `clean_invisible_chars()`, no CSV e no xlsx. Uma celula com marca de CP850 ao lado de uma letra volta a CP850 pelos bytes Latin-1. Numa coluna com essa celula, as marcas sem letra ao lado tambem voltam (NBSP por "a" agudo, micro por "A" agudo). O texto reparado so pode ter ASCII e letras do portugues e do espanhol.
+- **Consequencias**: o upload mostra quantas celulas voltaram. Uma celula com acento correto fica igual, mesmo numa coluna reparada. Um "µm" fica igual numa coluna sem marca forte e vira "Ám" numa coluna com marca forte.

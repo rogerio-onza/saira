@@ -105,6 +105,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **upload:** Read DOS (CP850) files and repair their accents in Saira 0.11 exports, ADR-184
+- **mapping:** Fill the license and language cards from a data column with one value, such as `Licença` or `idioma`
 - **preview:** Show "&", "<" and ">" as typed in the Preview table, not as "&amp;"
 - **preview:** Keep quotes in the tooltip of long values in the Preview and Names tables
 - **upload:** Read only the tables inside a Camtrap DP ZIP, ADR-180

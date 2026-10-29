@@ -2303,6 +2303,40 @@ build_term_value <- function(
 
     list(values = values, eventdate_failure_count = failure_count)
 }
+
+# The license and language cards take a fixed value, not a column, so the
+# Rostrum engine does not score them (manual_only_terms). A spreadsheet can
+# have both as columns ("Licenca", "dcterms:license", "Idioma"). When every
+# filled cell of the column holds the same value, and the card offers that
+# value, it fills the card, and the card is no longer a pending required
+# term. Returns a list with `license` and `language` when found.
+card_values_from_columns <- function(df) {
+    out <- list()
+    if (!is.data.frame(df)) return(out)
+    headers <- sub("^(dcterms|dc) ", "", normalize_for_matching(names(df)))
+    single_value <- function(names_in) {
+        col <- which(headers %in% names_in)
+        if (length(col) != 1L) return(NA_character_)
+        v <- unique(trimws(as.character(df[[col]])))
+        v <- v[!is.na(v) & nzchar(v)]
+        if (length(v) == 1L) v else NA_character_
+    }
+    # "CC-BY-NC 4.0" and "CC BY NC" are spellings people type.
+    lic <- single_value(c("license", "licence", "licenca", "licencia"))
+    key <- normalize_license_key(gsub("[ _-]+", "-", tolower(lic)))
+    if (!is.na(key)) out$license <- unname(cc_license_names()[[key]])
+    # The language card offers pt, en and es. "pt-BR" is pt.
+    lang_codes <- c(
+        pt = "pt", por = "pt", portugues = "pt", portuguese = "pt",
+        en = "en", eng = "en", english = "en", ingles = "en",
+        es = "es", spa = "es", espanol = "es", spanish = "es"
+    )
+    lang <- sub(" .*$", "", normalize_for_matching(single_value(c("language", "idioma", "lingua"))))
+    lang <- unname(lang_codes[lang])
+    if (!is.na(lang)) out$language <- lang
+    out
+}
+
 # Detect raw/source columns selected for more than one Darwin Core term. Mapping
 # one column to several terms is allowed (the same value is published under each),
 # but it is usually a mistake worth flagging -- e.g. a camera-trap `type` column
