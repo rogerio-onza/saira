@@ -9,8 +9,14 @@
     return String(value === null || value === undefined ? '' : value);
   }
 
+  // Quotes too: the value also goes into title="...".
   function escapeHtml(value) {
-    return $('<div/>').text(value).html();
+    return text(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function onModalHidden(el, callback) {
@@ -102,7 +108,7 @@
         var label = alien ? cfg.invasiveLabel : cfg.translocatedLabel;
         var tip = alien ? cfg.invasiveTip : cfg.translocatedTip;
         var cls = alien ? 'badge-invasive' : 'badge-translocated';
-        var tipEsc = escapeHtml(String(tip)).replace(/"/g, '&quot;');
+        var tipEsc = escapeHtml(String(tip));
         content += '<div class="vn-cell-invasive"><span class="vn-status-badge ' + cls + '" title="' +
           tipEsc + '">' + escapeHtml(String(label)) + '</span>';
         var detail = text(row[7]).trim();

@@ -133,3 +133,22 @@ testthat::test_that("tokenize_for_matching handles multi-separator strings", {
     tokens <- saira:::tokenize_for_matching("decimal_Latitude-2")
     testthat::expect_equal(tokens, c("decimal", "latitude", "2"))
 })
+
+testthat::test_that("session_has_access needs the key cookie and the same origin", {
+    request <- list(
+        HTTP_HOST = "127.0.0.1:38838",
+        HTTP_ORIGIN = "http://127.0.0.1:38838",
+        HTTP_COOKIE = "theme=dark; saira_access=k1"
+    )
+    testthat::expect_true(saira:::session_has_access(request, "k1"))
+    testthat::expect_false(saira:::session_has_access(request, "k2"))
+    testthat::expect_false(saira:::session_has_access(request, ""))
+    testthat::expect_false(saira:::session_has_access(
+        utils::modifyList(request, list(HTTP_ORIGIN = "http://example.org")), "k1"
+    ))
+    testthat::expect_false(saira:::session_has_access(
+        utils::modifyList(request, list(HTTP_COOKIE = "saira_access=k10")), "k1"
+    ))
+    request$HTTP_COOKIE <- NULL
+    testthat::expect_false(saira:::session_has_access(request, "k1"))
+})

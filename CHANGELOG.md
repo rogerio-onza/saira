@@ -102,6 +102,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **preview:** Keep quotes in the tooltip of long values in the Preview and Names tables
+- **upload:** Read only the tables inside a Camtrap DP ZIP, ADR-180
+- **desktop:** Open an app session only in the desktop window, ADR-181
 - **names:** Update Flora BR and Fauna BR without the Windows firewall prompt for public networks, ADR-177
 - **ui:** Stop the "column name not found" alert of the Names and Coordinates tables after a language change
 - **ui:** Stop the console errors when a tab or theme change skips its animation, for example in a hidden window

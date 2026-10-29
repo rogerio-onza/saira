@@ -114,3 +114,19 @@ rostrum_extract_column <- function(df, column_name) {
     values[is.na(df[[column_name]])] <- NA_character_
     values
 }
+
+# The desktop shell starts R with SAIRA_ACCESS_KEY and gives its own window
+# the same key in the saira_access cookie. A session opens only with that
+# cookie and an Origin that names the host of the request.
+session_has_access <- function(request, key) {
+    header <- function(name) {
+        value <- request[[name]]
+        if (is.character(value) && length(value) == 1L) value else ""
+    }
+    host <- header("HTTP_HOST")
+    cookies <- strsplit(header("HTTP_COOKIE"), ";[[:space:]]*")[[1]]
+    sent <- sub("^saira_access=", "", cookies[startsWith(cookies, "saira_access=")])
+    nzchar(key) && nzchar(host) &&
+        identical(header("HTTP_ORIGIN"), paste0("http://", host)) &&
+        key %in% sent
+}

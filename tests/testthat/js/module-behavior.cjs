@@ -64,4 +64,18 @@ assert.equal(zooms.at(-1), 2);
 width = 2048;
 events.get('resize')();
 assert.equal(zooms.at(-1), 3);
-console.log('DataTables search/page ports and Leaflet resize behavior passed.');
+// A cell value is encoded for both the title attribute and the text.
+const value = 'x'.repeat(80) + '"<b>&\'';
+const encoded = 'x'.repeat(80) + '&quot;&lt;b&gt;&amp;&#39;';
+const cells = { window: {} };
+vm.runInNewContext(fs.readFileSync(path.join(assets, 'module-preview.js'), 'utf8'), cells);
+vm.runInNewContext(fs.readFileSync(path.join(assets, 'module-validate-names.js'), 'utf8'), cells);
+const cellHtml = [
+  cells.window.sairaModuleBehavior.previewTruncateCell()(value, 'display'),
+  cells.window.sairaModuleBehavior.namesTaxonomicCell()(value, 'display'),
+  cells.window.sairaModuleBehavior.namesScientificCell({ sensitiveMark: 'mark' })(value, 'display', [])
+];
+for (const html of cellHtml) {
+  assert.ok(html.includes('title="' + encoded + '"'), html);
+}
+console.log('DataTables search/page ports, Leaflet resize and cell escape behavior passed.');
