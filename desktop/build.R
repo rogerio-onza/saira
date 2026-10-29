@@ -41,6 +41,8 @@ trace("install_npm_dependencies", where = asNamespace("shinyelectron"), print = 
     tracer = bquote({
         desktop_apply_shell(.(root), output_dir, .(config))
         desktop_prune_library(file.path(output_dir, "runtime", "R", "library"))
+        desktop_prune_runtime(Sys.glob(file.path(output_dir, "runtime", "R", "portable-r-*")),
+            file.path(output_dir, "runtime", "R", "library"))
         desktop_check_versions(.(root), file.path(output_dir, "runtime", "R", "library"), .(output))
     }))
 result <- shinyelectron::export(

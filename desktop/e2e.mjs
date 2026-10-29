@@ -9,7 +9,9 @@ import path from 'node:path';
 // Usage: node e2e.mjs <win-unpacked exe> <csv> [work folder]
 // The CSV must pass the export gate (see LOCAL-TEST.md). The work folder holds
 // LOCALAPPDATA, the downloads, the shell log and results.json.
-const [EXE, CSV] = process.argv.slice(2, 4);
+// DOM.setFileInputFiles with a relative path makes Chromium kill the renderer
+// (bad IPC message, reason 2), so both paths are absolute.
+const [EXE, CSV] = process.argv.slice(2, 4).map((p) => p && path.resolve(p));
 const WORK = process.argv[4] || path.join(path.dirname(CSV || '.'), `e2e-${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`);
 const DOWNLOADS = path.join(WORK, 'downloads');
 const LOCALAPPDATA = path.join(WORK, 'localappdata');

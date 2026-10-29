@@ -1,13 +1,15 @@
 # Saíra desktop: prévia local da v1.0
 
 Este piloto parte de `release/v1.0.0`, commit
-`46ba53e87c3853baa9f8ffdd2a1844f02fb56164` (#223). A base inclui as passagens
-exatas antes da busca aproximada (#219), a atualização da Flora BR e da Fauna BR
-num processo R separado (#220), o nome sugerido com o nome aceito (#221), a
-View Transition sem `InvalidStateError` (#222) e a consulta ao IPT a cada
-30 dias (#223).
+`3af52af1` (#225). A base inclui as passagens exatas antes da busca aproximada
+(#219), a atualização da Flora BR e da Fauna BR num processo R separado (#220),
+o nome sugerido com o nome aceito (#221), a View Transition sem
+`InvalidStateError` (#222), a consulta ao IPT a cada 30 dias (#223), as cópias
+exatas fora do pacote (#224) e a lista de correções do Pacote (#225).
+O worker da atualização usa `callr`, sem socket de rede, então o Windows não
+pede acesso do R às redes públicas (ADR-177).
 O `DESCRIPTION` da base ainda informa `0.11.2`. O instalador usa a versão
-`1.0.0-desktop.4` para identificar a prévia, sem antecipar a release do pacote.
+`1.0.0-desktop.5` para identificar a prévia, sem antecipar a release do pacote.
 
 Não há workflow, push, publicação nem atualização automática nesta etapa.
 O empacotamento usa Windows x64 e `runtime_strategy: bundled`. O R e as
@@ -85,7 +87,14 @@ As diferenças aceitas ficam em `version-differences.csv`. O build também grava
 `desktop_prune_library()` remove `doc`, `help`, `html`, `examples`, `demo` e
 `include` de cada pacote. O app não lê essas pastas. O Electron leva só os
 idiomas pt-BR, en-US, es e es-419, em vez de 55. A biblioteca R tem 140 pacotes;
-`sf`, `terra` e `V8` somam cerca de 300 MB dos 504 MB.
+`sf`, `terra` e `V8` somam cerca de 300 MB dos 504 MB. Os DLLs de `sf` e `terra`
+(109 e 114 MB) não têm símbolos de depuração, e os dois pacotes vêm de
+`CoordinateCleaner`, `rnaturalearth`, `florabr`, `faunabr` e `leaflet`.
+
+`desktop_prune_runtime()` tira do R portátil o Tcl/Tk, as traduções das
+mensagens do R, a ajuda dos pacotes base e os pacotes recomendados que nenhum
+pacote do bundle carrega (Depends, Imports ou LinkingTo). Na prévia 5, isso
+soma 75 MB. As mensagens de erro do R ficam em inglês.
 
 ## Shell do desktop
 
@@ -153,7 +162,8 @@ Depois do build, há um teste sem abrir a janela do Electron:
 
 Ele usa o R de `win-unpacked`, verifica que as dependências vêm do bundle e
 exercita bibliotecas nativas, CSV, coordenadas, XLSX e DwC-A com dados fictícios.
-Também confere que os workers R carregam o bundle e que a verificação offline
+Também confere que o worker `callr` carrega o bundle sem socket de escuta fora
+do loopback, e que a verificação offline
 de nomes sugere *Euterpe edulis*. Por fim, inicia o lançador empacotado numa
 porta local temporária e confere a página e o CSS. Os logs ficam em `diagnostics`.
 

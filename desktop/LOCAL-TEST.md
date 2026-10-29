@@ -1,5 +1,41 @@
 # Validação local do bundle
 
+## Quinta prévia: 27/10/2026
+
+Base: `release/v1.0.0` em `3af52af` (#225). O kit leva a correção do
+firewall ainda sem commit: a atualização da Flora BR e da Fauna BR usa
+`callr` em vez de um worker PSOCK (ADR-177).
+
+- Prévia desktop: `1.0.0-desktop.5`, pacote `saira 0.11.2`.
+- `desktop_prune_runtime()` tirou 75 MB do R portátil (159 para 92 MB).
+- Instalador: 311 MB (era 349). `win-unpacked`: 909 MB (era 977).
+  A biblioteca R continua com 505 MB.
+
+O `smoke.ps1` passou. O worker `callr` carregou o bundle e nenhum processo
+do teste abriu socket de escuta fora do loopback.
+
+A primeira execução do `e2e.mjs` parou depois de 3 verificações. O CSV foi
+passado com caminho relativo, e o Chromium encerrou o renderer no
+`DOM.setFileInputFiles` (`bad IPC message, reason 2`). Agora o E2E resolve
+os dois caminhos.
+
+Na segunda execução, o `e2e.mjs` passou 11 de 11 verificações:
+
+| Etapa | Resultado |
+| --- | --- |
+| Abertura até o Shiny conectado | 9,4 s |
+| Importação e mapeamento automático | `scientificName` <- `especie`, 12,9 s |
+| Validação de nomes | 49 nomes, 15 s |
+| Fechar antes de exportar | Aviso em inglês com 1.105 registros; "Go to Export" abre a aba |
+| Download do DwC-A | `saira-dwc-archive.zip`, 6,7 s |
+| Fechar depois de exportar | Fechar sai em 0,8 s, código 0; porta do R fechada |
+| Sockets do R | Até 4 processos R; só o Shiny escutou, em `127.0.0.1` |
+
+Depois da troca para inglês, a tabela de Nomes abriu o alerta do DataTables
+"The column name 'Nome Científico' is not found in data". O alerta segurou o
+E2E até um clique em OK. A correção está no branch `fix/dt-columns-language`
+e entra na próxima prévia.
+
 ## Quarta prévia: 26/10/2026
 
 Base: `release/v1.0.0` em `46ba53e87c3853baa9f8ffdd2a1844f02fb56164` (#223).

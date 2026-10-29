@@ -161,6 +161,29 @@ desktop_prune_library <- function(library) {
     message(sprintf("Pruned %d package folders (%.0f MB).", length(targets), bytes / 1024^2))
 }
 
+# The portable R also ships Tcl/Tk, the message translations, help pages and
+# recommended packages that no bundled package loads. The app uses none of them.
+desktop_prune_runtime <- function(r_home, library) {
+    if (length(r_home) != 1L || !dir.exists(r_home)) stop("Missing the portable R folder.")
+    base_lib <- file.path(r_home, "library")
+    db <- installed.packages(lib.loc = c(library, base_lib), noCache = TRUE)
+    db <- db[!duplicated(db[, "Package"]), , drop = FALSE]
+    needed <- tools::package_dependencies(rownames(installed.packages(library, noCache = TRUE)),
+        db = db, which = c("Depends", "Imports", "LinkingTo"), recursive = TRUE)
+    needed <- unique(unlist(needed))
+    shipped <- installed.packages(base_lib, noCache = TRUE)
+    optional <- shipped[shipped[, "Priority"] %in% "recommended", "Package"]
+    unused <- c(setdiff(optional, needed), setdiff("tcltk", needed))
+    targets <- c(file.path(r_home, "Tcl"), file.path(base_lib, c("translations", unused)),
+        as.vector(outer(list.dirs(base_lib, recursive = FALSE), c("doc", "help", "html"), file.path)))
+    targets <- targets[dir.exists(targets)]
+    bytes <- sum(file.size(list.files(targets, recursive = TRUE, full.names = TRUE, all.files = TRUE)))
+    unlink(targets, recursive = TRUE)
+    if (any(dir.exists(targets))) stop("Could not prune the portable R.")
+    message(sprintf("Pruned the portable R (%.0f MB). Removed packages: %s.",
+        bytes / 1024^2, toString(unused)))
+}
+
 # The bundle must ship the versions that the tests ran with (renv.lock). The
 # repository snapshot has only CRAN releases, so the r-universe development
 # builds in the lock change, and so do the recommended packages of the R build.

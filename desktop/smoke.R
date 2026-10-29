@@ -53,14 +53,25 @@ stopifnot(all(c("occurrence.txt", "meta.xml", "eml.xml") %in% zip::zip_list(arch
 stopifnot(inherits(saira::run_app(), "shiny.appobj"))
 message("PASS: native libraries, CSV, coordinates, XLSX, DwC-A and Shiny app construction.")
 
-# Rostrum and the Flora/Fauna BR updates start R workers with --vanilla. The
-# shell sets R_LIBS_USER so that a worker loads saira from the bundle too.
+# The Flora/Fauna BR update starts a callr worker with the same library paths
+# (ADR-177). The shell sets R_LIBS_USER so that a plain Rscript loads saira
+# from the bundle too.
 bundle <- paste0(tolower(normalizePath(library, winslash = "/")), "/")
 Sys.setenv(R_LIBS_USER = normalizePath(library, winslash = "/"))
-future::plan(future::multisession, workers = 1L)
-worker <- future::value(future::future(normalizePath(find.package("saira"), winslash = "/")))
-future::plan(future::sequential)
-stopifnot(startsWith(tolower(worker), bundle))
+worker <- callr::r_bg(function() { Sys.sleep(5); normalizePath(find.package("saira"), winslash = "/") },
+    libpath = .libPaths(), package = TRUE, user_profile = FALSE, stdout = NULL, stderr = NULL,
+    supervise = TRUE)
+# A listening socket outside the loopback opens the Windows firewall prompt.
+listen <- system2("powershell", c("-NoProfile", "-Command", shQuote(sprintf(paste0(
+    "$l = @(Get-NetTCPConnection -State Listen -ErrorAction Stop); ",
+    "$r = @($l | Where-Object { $_.OwningProcess -in @(%d, %d) -and ",
+    "$_.LocalAddress -notin @('127.0.0.1', '::1') }); ",
+    "Write-Output \"$($l.Count) $($r.Count)\""), Sys.getpid(), worker$get_pid()), type = "cmd")),
+    stdout = TRUE)
+counts <- as.integer(strsplit(trimws(tail(listen, 1L)), " ")[[1]])
+stopifnot(length(counts) == 2L, counts[[1]] > 0L, counts[[2]] == 0L)
+worker$wait(60000)
+stopifnot(startsWith(tolower(worker$get_result()), bundle))
 rscript <- file.path(R.home("bin"), "Rscript")
 plain <- system2(rscript, c("--vanilla", "-e",
     shQuote("cat(normalizePath(find.package('saira'), winslash = '/'))")), stdout = TRUE)
@@ -74,4 +85,4 @@ report <- saira:::finalize_taxadb_run(state)$report
 row <- report[report$query_name == "Euterpe eduls", , drop = FALSE]
 stopifnot(nrow(row) == 1L, identical(row$suggestedName, "Euterpe edulis"),
     identical(report$validation_status[report$query_name == "Panthera onca"], "accepted"))
-message("PASS: R workers load the bundle, and the offline names check suggests Euterpe edulis.")
+message("PASS: R workers load the bundle without a public socket, and the offline names check suggests Euterpe edulis.")
