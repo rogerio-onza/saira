@@ -1984,6 +1984,11 @@
     "en": "%d alias(es) saved to local Rostrum. Now upload your data spreadsheet (CSV) in this same dropzone.",
     "es": "%d alias guardado(s) en el Rostrum local. Ahora cargue su hoja de datos (CSV) en esta misma zona de carga."
   },
+  "upload_guide_not_kept": {
+    "pt": "Este servidor não guarda arquivos de mapeamento. Suba sua planilha de dados e use Importar modelo na aba Mapeamento.",
+    "en": "This server does not keep mapping files. Upload your data spreadsheet, then use Import template in the Mapping tab.",
+    "es": "Este servidor no guarda archivos de mapeo. Cargue su hoja de datos y use Importar modelo en la pestaña Mapeo."
+  },
   "upload_guide_invalid": {
     "pt": "Arquivo inválido como mapping guide do Saíra: %s",
     "en": "Invalid Saíra mapping guide file: %s",
