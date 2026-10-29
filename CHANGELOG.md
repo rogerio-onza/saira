@@ -102,6 +102,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **preview:** Show "&", "<" and ">" as typed in the Preview table, not as "&amp;"
 - **preview:** Keep quotes in the tooltip of long values in the Preview and Names tables
 - **upload:** Read only the tables inside a Camtrap DP ZIP, ADR-180
 - **desktop:** Open an app session only in the desktop window, ADR-181

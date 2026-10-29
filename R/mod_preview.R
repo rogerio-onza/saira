@@ -264,7 +264,10 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                     language = preview_dt_language(lang_r())
                 ),
                 class = "display compact stripe",
-                rownames = FALSE
+                rownames = FALSE,
+                # previewTruncateCell escapes every cell. A second escape on
+                # the server showed "&" as "&amp;".
+                escape = FALSE
             )
         })
 

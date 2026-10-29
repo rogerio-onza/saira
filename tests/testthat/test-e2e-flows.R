@@ -1276,3 +1276,35 @@ testthat::test_that("E2E: the names list shows settled names and keeps its rows 
     # Every name has an answer, so the run is complete, not partial.
     testthat::expect_false(app$get_js("!!document.querySelector('.shiny-notification-warning')"))
 })
+
+testthat::test_that("E2E: the Preview table shows a value as it is in the file", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 10000)
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("scientificName,occurrenceRemarks",
+          "Panthera onca,Mata & cerrado <borda>",
+          "Leopardus pardalis,curto"),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='preview']")
+    wait_until_js(app, "document.querySelectorAll('#preview-datatable tbody td').length > 2")
+
+    cells <- unlist(app$get_js(
+        "Array.from(document.querySelectorAll('#preview-datatable tbody td')).map(function (td) { return td.textContent; })"
+    ))
+    testthat::expect_true("Mata & cerrado <borda>" %in% cells)
+})
