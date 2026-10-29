@@ -3391,3 +3391,10 @@ Formato: ADR leve (Architecture Decision Record).
 - **Decisao**: `check_camtrap_references()` roda depois de `localize_camtrap_schemas()` e antes de `camtrapdp::read_camtrapdp()`. Cada `path`, `schema` e `dialect` em texto e um caminho relativo dentro da pasta do descriptor. O descriptor nao pode ter o campo `directory`. Um schema oficial passa, porque ja virou a copia local.
 - **Consequencias**: um pacote com tabela ou schema fora do ZIP nao importa e mostra `err_camtrap_external_reference`. Os ZIPs de `camtrapdp::write_camtrapdp()` e os loose CSV ou Wildlife Insights importam igual.
 
+## ADR-181: Chave de acesso da sessao no desktop
+
+- **Data**: 2026-10-28
+- **Status**: Aceito.
+- **Contexto**: o shell Electron abre o app numa porta de `127.0.0.1`. A sessao Shiny e so da janela do app.
+- **Decisao**: o shell cria uma chave aleatoria por execucao, passa a chave ao R em `SAIRA_ACCESS_KEY` e grava o cookie `saira_access` (`httpOnly`, `SameSite=Strict`) na sessao da janela. Com a variavel, `run_app()` fecha a sessao sem esse cookie ou com `Origin` diferente do host. Sem a variavel, nada muda.
+- **Consequencias**: upload e download pedem uma sessao aberta. O E2E do desktop roda pela janela e recebe o cookie. `saira::run_app()` no R nao usa chave.
