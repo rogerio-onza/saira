@@ -420,6 +420,56 @@ testthat::test_that("read_biodiversity_csv decodes each line in its own encoding
     testthat::expect_false(any(grepl("[\u0080-\u009f]", out$local)))
 })
 
+testthat::test_that("read_biodiversity_csv reads a DOS (CP850) file as CP850", {
+    habitat <- "Floresta Ombrófila, vegetação secundária"
+    tmp <- tempfile(fileext = ".csv")
+    on.exit(unlink(tmp), add = TRUE)
+    text <- paste0("estado;habitat\nSão Paulo;", habitat, "\n")
+    writeBin(charToRaw(iconv(text, "UTF-8", "CP850")), tmp)
+
+    out <- read_biodiversity_csv(tmp)
+
+    testthat::expect_identical(out$estado, "São Paulo")
+    testthat::expect_identical(out$habitat, habitat)
+    testthat::expect_identical(attr(out, "read_report")$encoding_lines[["CP850"]], 1L)
+})
+
+testthat::test_that("read_biodiversity_csv repairs CP850 accents that were read as Latin-1", {
+    # Saira 0.11 read a CP850 file as Latin-1 and wrote the text as UTF-8.
+    as_latin1 <- function(x) iconv(iconv(x, "UTF-8", "CP850"), "latin1", "UTF-8")
+    remarks <- c(
+        "Próximo a córrego",
+        "divisor de águas",
+        "Água do Fim e à vegetação"
+    )
+    note <- "Coordenadas omitidas: espécie ameaçada"
+    tmp <- write_temp_text_file(c(
+        "stateProvince,locationRemarks,dataGeneralizations,vernacularName",
+        paste(as_latin1("São Paulo"), as_latin1(remarks), note,
+              c("Panthera onca", "onça", "50 µm"), sep = ",")
+    ))
+    on.exit(unlink(tmp), add = TRUE)
+
+    out <- read_biodiversity_csv(tmp)
+
+    testthat::expect_identical(out$stateProvince, rep("São Paulo", 3L))
+    testthat::expect_identical(out$locationRemarks, remarks)
+    testthat::expect_identical(out$dataGeneralizations, rep(note, 3L))
+    # No CP850 mark in this column, so the NBSP is a space and the text stays.
+    testthat::expect_identical(out$vernacularName, c("Panthera onca", "onça", "50 µm"))
+    testthat::expect_identical(attr(out, "read_report")$dos_accent_cells, 6L)
+})
+
+testthat::test_that("repair_dos_accents keeps correct accents in a column it repairs", {
+    as_latin1 <- function(x) iconv(iconv(x, "UTF-8", "CP850"), "latin1", "UTF-8")
+    x <- c(as_latin1("carnívoros"), "espécie ameaçada", "D\u0092Avila", NA)
+
+    testthat::expect_identical(
+        saira:::repair_dos_accents(x),
+        c("carnívoros", "espécie ameaçada", "D\u0092Avila", NA)
+    )
+})
+
 testthat::test_that("read_biodiversity_csv splits records on a lone CR", {
     tmp <- tempfile(fileext = ".csv")
     on.exit(unlink(tmp), add = TRUE)

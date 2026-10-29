@@ -1325,6 +1325,25 @@ testthat::test_that("resolve_occurrence_ids generates for exactly the rows that 
 })
 
 # detect_duplicate_source_mappings (item 3) ------------------------------
+testthat::test_that("card_values_from_columns reads one license and one language from the data", {
+    card_values <- saira:::card_values_from_columns
+    df <- data.frame(license = c("CC BY-NC 4.0", "", NA), language = "pt-BR", x = 1:3)
+    testthat::expect_identical(card_values(df), list(license = "CC BY-NC 4.0", language = "pt"))
+
+    url <- data.frame(License = "http://creativecommons.org/licenses/by/4.0/legalcode")
+    testthat::expect_identical(card_values(url), list(license = "CC BY 4.0"))
+
+    sheet <- data.frame("Licença" = "CC-BY-NC 4.0", Idioma = "Português", check.names = FALSE)
+    testthat::expect_identical(card_values(sheet), list(license = "CC BY-NC 4.0", language = "pt"))
+    dc <- data.frame("dcterms:license" = "cc by nc", check.names = FALSE)
+    testthat::expect_identical(card_values(dc), list(license = "CC BY-NC 4.0"))
+
+    # Two licenses, an unknown language or no column: the cards stay empty.
+    two <- data.frame(license = c("CC0", "CC BY 4.0"), language = "fr")
+    testthat::expect_identical(card_values(two), list())
+    testthat::expect_identical(card_values(data.frame(x = 1)), list())
+})
+
 testthat::test_that("detect_duplicate_source_mappings flags a column used by two terms", {
     mv <- list(
         scientificName = "taxon",
