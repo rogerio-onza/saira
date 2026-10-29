@@ -342,6 +342,63 @@ testthat::test_that("localize_camtrap_schemas points schema URLs at bundled copi
     )
 })
 
+# check_camtrap_references -----------------------------------------------
+
+testthat::test_that("check_camtrap_references accepts paths inside the descriptor folder", {
+    dir <- tempfile("refs_ok_")
+    dir.create(file.path(dir, "data"), recursive = TRUE)
+    withr::defer(unlink(dir, recursive = TRUE))
+    writeLines("deploymentID", file.path(dir, "data", "deployments.csv"))
+    desc_path <- file.path(dir, "datapackage.json")
+    jsonlite::write_json(list(resources = list(
+        list(name = "deployments", path = "data/deployments.csv",
+             schema = "https://raw.githubusercontent.com/tdwg/camtrap-dp/1.0.2/deployments-table-schema.json"),
+        list(name = "inline", data = list(list(a = 1)), schema = list(fields = list()))
+    )), desc_path, auto_unbox = TRUE)
+    saira:::localize_camtrap_schemas(desc_path)
+    testthat::expect_silent(saira:::check_camtrap_references(desc_path))
+})
+
+testthat::test_that("check_camtrap_references refuses other references", {
+    dir <- tempfile("refs_bad_")
+    dir.create(dir)
+    withr::defer(unlink(dir, recursive = TRUE))
+    writeLines("deploymentID", file.path(dir, "deployments.csv"))
+    desc_path <- file.path(dir, "datapackage.json")
+    refuse <- function(resource, extra = list()) {
+        jsonlite::write_json(c(extra, list(resources = list(resource))),
+                             desc_path, auto_unbox = TRUE)
+        testthat::expect_error(saira:::check_camtrap_references(desc_path),
+                               class = "saira_camtrap_error")
+    }
+    ok <- list(name = "deployments", path = "deployments.csv")
+    for (path in c("../x.csv", "./../x.csv", "a/../../x.csv", "/data/x.csv",
+                   "~/x.csv", "C:/x.csv", "..\\x.csv", "\\\\host\\x.csv",
+                   "https://example.org/x.csv", "file:///data/x.csv")) {
+        refuse(list(name = "deployments", path = path))
+    }
+    refuse(list(name = "deployments", path = list("deployments.csv", "../x.csv")))
+    refuse(c(ok, schema = "https://example.org/schema.json"))
+    refuse(c(ok, dialect = "https://example.org/dialect.json"))
+    refuse(ok, extra = list(directory = "/"))
+})
+
+testthat::test_that("read_camtrap_dp_zip refuses a descriptor with an absolute path", {
+    table_path <- tempfile("deployments_", fileext = ".csv")
+    writeLines(c("deploymentID,locationName", "d1,L1"), table_path)
+    withr::defer(unlink(table_path))
+    fx <- build_zip_fixture(list("datapackage.json" = jsonlite::toJSON(list(
+        profile = "https://raw.githubusercontent.com/tdwg/camtrap-dp/1.0.2/camtrap-dp-profile.json",
+        resources = list(list(
+            name = "deployments", path = table_path, profile = "tabular-data-resource",
+            schema = "https://raw.githubusercontent.com/tdwg/camtrap-dp/1.0.2/deployments-table-schema.json"
+        ))
+    ), auto_unbox = TRUE)), prefix = "refs_zip_")
+    withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
+    testthat::expect_error(saira:::read_camtrap_dp_zip(fx$zip, lang = "en"),
+                           class = "saira_camtrap_error")
+})
+
 # read_camtrap_dp_zip round-trips --------------------------------------
 
 # Only example_dataset() needs internet. Table schemas come from inst/extdata.

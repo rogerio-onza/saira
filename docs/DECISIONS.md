@@ -3382,3 +3382,12 @@ Formato: ADR leve (Architecture Decision Record).
   - O automapeamento poe em `measurementValue`, como SUGERIDO, a coluna sem termo cujo nome termina numa unidade (`AREA_HA`, `peso (kg)`) e cujos valores sao 80% ou mais numeros. A unidade do nome preenche a Unidade do card. O Rostrum compara nomes e nenhum nome assim lembra `measurementValue`. Uma coluna numerica sem unidade no nome fica de fora, porque as partes de data (`dia_inicio`) tambem sao numeros.
   - O modo Problemas tem a familia "Medida". Numa coluna de medida com 80% ou mais de numeros, "10kg" e `measure_unit` e outro texto e `measure_number`. A sugestao e o numero com ponto. "1,500" e "10-20" ficam sem sugestao. Uma coluna de texto (sexo, estagio) nao e lida.
 - **Consequencias**: um pacote sem medida fica igual. O espelho xlsx mostra so o core. Uma edicao da Previa feita com uma coluna para de valer quando a segunda coluna entra, porque o nome da coluna do quadro muda.
+
+## ADR-180: Importacao Camtrap DP le so os arquivos do ZIP
+
+- **Data**: 2026-10-28
+- **Status**: Aceito.
+- **Contexto**: o `datapackage.json` diz onde ficam as tabelas, os schemas e os dialetos. O Saira importa o pacote que a pessoa enviou, e so ele.
+- **Decisao**: `check_camtrap_references()` roda depois de `localize_camtrap_schemas()` e antes de `camtrapdp::read_camtrapdp()`. Cada `path`, `schema` e `dialect` em texto e um caminho relativo dentro da pasta do descriptor. O descriptor nao pode ter o campo `directory`. Um schema oficial passa, porque ja virou a copia local.
+- **Consequencias**: um pacote com tabela ou schema fora do ZIP nao importa e mostra `err_camtrap_external_reference`. Os ZIPs de `camtrapdp::write_camtrapdp()` e os loose CSV ou Wildlife Insights importam igual.
+

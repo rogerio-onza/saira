@@ -4494,6 +4494,11 @@
     "en": "ZIP too large: the tables exceed 2 GB or 1000 files once unzipped. Upload only datapackage.json and the CSVs, with no photos.",
     "es": "ZIP demasiado grande: las tablas superan 2 GB o 1000 archivos al descomprimirlas. Envíe solo datapackage.json y los CSV, sin las fotos."
   },
+  "err_camtrap_external_reference": {
+    "pt": "Não foi possível ler o datapackage.json deste ZIP. Confira se o pacote Camtrap DP está completo.",
+    "en": "Could not read the datapackage.json in this ZIP. Check that the Camtrap DP package is complete.",
+    "es": "No se pudo leer el datapackage.json de este ZIP. Compruebe que el paquete Camtrap DP esté completo."
+  },
   "err_camtrap_invalid_zip": {
     "pt": "ZIP não reconhecido: precisa de CSVs do Camtrap DP (deployments + observations) ou de um export do Wildlife Insights (deployments + projects + images_*).",
     "en": "Unrecognized ZIP: expects Camtrap DP CSVs (deployments + observations) or a Wildlife Insights export (deployments + projects + images_*).",

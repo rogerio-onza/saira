@@ -506,6 +506,37 @@ localize_camtrap_schemas <- function(descriptor_path) {
     invisible(descriptor_path)
 }
 
+# The import reads only the unzipped tables: every resource path, schema and
+# dialect must be a relative path inside the descriptor folder. Run it after
+# localize_camtrap_schemas().
+check_camtrap_references <- function(descriptor_path, lang = "en") {
+    descriptor <- jsonlite::read_json(descriptor_path, simplifyVector = FALSE)
+    root <- normalizePath(dirname(descriptor_path), winslash = "/")
+    refs <- list()
+    for (resource in descriptor$resources) {
+        refs <- c(refs, as.list(resource$path))
+        if (!is.list(resource$schema)) refs <- c(refs, list(resource$schema))
+        if (!is.list(resource$dialect)) refs <- c(refs, list(resource$dialect))
+    }
+    refs <- Filter(Negate(is.null), refs)
+    inside <- vapply(refs, camtrap_path_inside, logical(1), root = root)
+    if (!is.null(descriptor$directory) || !all(inside)) {
+        camtrap_stop("err_camtrap_external_reference", lang)
+    }
+    invisible(descriptor_path)
+}
+
+# Data Package paths are POSIX and relative to the descriptor.
+camtrap_path_inside <- function(path, root) {
+    if (!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path)) {
+        return(FALSE)
+    }
+    if (grepl("^[A-Za-z][A-Za-z0-9+.-]*:|^[/~]|\\\\", path)) return(FALSE)
+    if (".." %in% strsplit(path, "/", fixed = TRUE)[[1]]) return(FALSE)
+    full <- normalizePath(file.path(root, path), winslash = "/", mustWork = FALSE)
+    startsWith(full, paste0(root, "/"))
+}
+
 # read_camtrapdp() requires a media resource, but loose Camtrap DP CSVs can
 # come without media.csv. A header-only file satisfies the reader.
 CAMTRAP_MEDIA_COLS <- c(
@@ -565,6 +596,7 @@ read_camtrap_dp_zip <- function(path, lang = "en") {
             camtrap_stop("err_camtrap_invalid_zip", lang)
         }
         localize_camtrap_schemas(descriptor[1])
+        check_camtrap_references(descriptor[1], lang = lang)
         pkg <- camtrapdp::read_camtrapdp(descriptor[1])
         attr(pkg, "saira_camtrap_source") <- source
         return(pkg)
