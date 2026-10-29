@@ -3398,3 +3398,12 @@ Formato: ADR leve (Architecture Decision Record).
 - **Contexto**: o shell Electron abre o app numa porta de `127.0.0.1`. A sessao Shiny e so da janela do app.
 - **Decisao**: o shell cria uma chave aleatoria por execucao, passa a chave ao R em `SAIRA_ACCESS_KEY` e grava o cookie `saira_access` (`httpOnly`, `SameSite=Strict`) na sessao da janela. Com a variavel, `run_app()` fecha a sessao sem esse cookie ou com `Origin` diferente do host. Sem a variavel, nada muda.
 - **Consequencias**: upload e download pedem uma sessao aberta. O E2E do desktop roda pela janela e recebe o cookie. `saira::run_app()` no R nao usa chave.
+## ADR-183: Site e CI usam codigo fixado
+
+- **Data**: 2026-10-29
+- **Status**: Aceito.
+- **Contexto**: o site de ajuda carregava o tracker do Umami de um endereco externo, e os workflows usavam Actions por tag. Nos dois casos, o codigo que rodava podia mudar sem um commit no Saira.
+- **Decisao**:
+  - `website/assets/js/umami.js` e uma copia revisada do tracker, com a origem e o SHA-256 no comentario do topo. `assets/analytics.html` carrega a copia pelo `quarto:offset` de cada pagina. O tracker envia os dados ao mesmo endpoint de antes.
+  - Os workflows usam cada Action por SHA de commit, com a versao num comentario. O Dependabot (`.github/dependabot.yml`) propoe as atualizacoes uma vez por mes. No `publish-site.yml`, so o job `deploy` tem `pages: write` e `id-token: write`.
+- **Consequencias**: uma versao nova do tracker entra so por PR, depois de uma leitura do arquivo. Uma Action nova chega como PR do Dependabot.
