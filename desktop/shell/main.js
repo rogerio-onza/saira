@@ -1,6 +1,7 @@
 // Saíra desktop shell. It replaces the main.js that shinyelectron generates and
 // keeps its native R backend (backends/native-r.js).
 const { app, BrowserWindow, Menu, clipboard, dialog, ipcMain, nativeTheme, screen, shell } = require('electron');
+const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs');
 const backend = require('./backends/native-r.js');
@@ -12,6 +13,8 @@ const PREFERRED_PORT = 38838;
 // navigator.clipboard (copy buttons) and fullscreen are the only permissions the app uses.
 const ALLOWED_PERMISSIONS = new Set(['clipboard-sanitized-write', 'fullscreen']);
 const ICON = path.join(__dirname, 'assets', 'icon.ico');
+// R opens a Shiny session only for the window that has this key (run_app()).
+const ACCESS_KEY = crypto.randomBytes(32).toString('hex');
 
 const info = readJson(path.join(__dirname, 'desktop-info.json')) || {};
 const unpacked = __dirname.replace('app.asar', 'app.asar.unpacked');
@@ -78,6 +81,7 @@ function prepareRuntimeEnvironment() {
     R_LIBS_USER: bundledLibrary,
     R_PROFILE_USER: empty,
     R_ENVIRON_USER: empty,
+    SAIRA_ACCESS_KEY: ACCESS_KEY,
     SAIRA_DESKTOP_HOME: desktopHome,
     R_USER_DATA_DIR: path.join(desktopHome, 'data'),
     R_USER_CACHE_DIR: path.join(desktopHome, 'cache'),
@@ -176,7 +180,10 @@ function startServer() {
   }).then(({ port }) => {
     actualPort = port;
     log('info', 'Server ready on port', port);
-    mainWindow.loadURL(`http://127.0.0.1:${port}/`);
+    return mainWindow.webContents.session.cookies.set({
+      url: `http://127.0.0.1:${port}/`, name: 'saira_access', value: ACCESS_KEY,
+      httpOnly: true, sameSite: 'strict'
+    }).then(() => mainWindow.loadURL(`http://127.0.0.1:${port}/`));
   }).catch((err) => {
     if (err && err.code === 'START_SUPERSEDED') return;
     log('error', 'Backend start failed:', err && err.message);

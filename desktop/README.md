@@ -65,7 +65,7 @@ O instalador `.exe` fica em `bundle\electron-app\dist` dentro do destino.
 Também existe `win-unpacked` para testes sem instalação.
 
 O shinyelectron fica fixado por commit e SHA-256 em `toolchain.dcf`.
-O R embarcado é 4.5.2 e o Electron é 45.0.0. Os comandos gerados pelo
+O R embarcado é 4.5.2 e o Electron é 45.1.0. Os comandos gerados pelo
 shinyelectron usam `electron-builder --publish never`.
 
 ### Versões dos pacotes
