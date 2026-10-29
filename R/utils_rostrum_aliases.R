@@ -374,7 +374,7 @@ rostrum_commit_session_aliases <- function(
     if (!inherits(conn, "DBIConnection") || !DBI::dbIsValid(conn)) {
         return(invisible(empty))
     }
-    if (!is.list(map_values) || length(map_values) == 0L) {
+    if (!rostrum_learning_enabled() || !is.list(map_values) || length(map_values) == 0L) {
         return(invisible(empty))
     }
 

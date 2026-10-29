@@ -425,6 +425,14 @@ mod_upload_server <- function(id, lang_r) {
                 return(invisible(NULL))
             }
 
+            # A shared server keeps no aliases (ADR-182). The Mapping tab can
+            # still apply the guide to the loaded data.
+            if (!rostrum_learning_enabled()) {
+                guide_payload_rv(NULL)
+                shiny::showNotification(tr("upload_guide_not_kept", lang_r()), type = "warning", duration = 10)
+                return(invisible(NULL))
+            }
+
             n_pairs <- if (is.data.frame(payload$pairs)) nrow(payload$pairs) else 0L
             guide_payload_rv(payload)
 
@@ -443,7 +451,9 @@ mod_upload_server <- function(id, lang_r) {
                     )
                 )
             ))
-        }, ignoreInit = TRUE)
+        # No ignoreInit: file_kind() stops on req(input$file) at startup, so
+        # ignoreInit skipped the first upload of the session instead.
+        })
 
         shiny::observeEvent(input$confirm_guide_import, {
             payload <- guide_payload_rv()

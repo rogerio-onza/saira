@@ -87,6 +87,12 @@ rostrum_resolve_data_dir <- function() {
     normalizePath(user_dir, winslash = "/", mustWork = FALSE)
 }
 
+# A server that more than one person uses sets SAIRA_PUBLIC=true. Its sessions
+# read the alias store but do not write to it (ADR-182).
+rostrum_learning_enabled <- function() {
+    !tolower(trimws(Sys.getenv("SAIRA_PUBLIC", unset = ""))) %in% c("true", "1", "yes")
+}
+
 rostrum_default_db_path <- function() {
     file.path(rostrum_resolve_data_dir(), "rostrum.sqlite")
 }

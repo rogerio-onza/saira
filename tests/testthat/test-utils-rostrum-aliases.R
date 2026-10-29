@@ -313,6 +313,36 @@ testthat::test_that("commit_session_aliases is a no-op when there is nothing to 
     )
 })
 
+testthat::test_that("rostrum_learning_enabled is off only when SAIRA_PUBLIC is set", {
+    withr::with_envvar(c(SAIRA_PUBLIC = NA), testthat::expect_true(rostrum_learning_enabled()))
+    withr::with_envvar(c(SAIRA_PUBLIC = "false"), testthat::expect_true(rostrum_learning_enabled()))
+    for (value in c("true", "TRUE", "1", " yes ")) {
+        withr::with_envvar(c(SAIRA_PUBLIC = value), testthat::expect_false(rostrum_learning_enabled()))
+    }
+})
+
+testthat::test_that("a shared server reads the aliases but does not learn new ones", {
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit(try(DBI::dbDisconnect(conn), silent = TRUE), add = TRUE)
+    withr::with_envvar(c(SAIRA_PUBLIC = NA), rostrum_commit_session_aliases(
+        conn, map_values = list(scientificName = "especie"), user_id = "anonymous"
+    ))
+
+    withr::local_envvar(SAIRA_PUBLIC = "true")
+    committed <- rostrum_commit_session_aliases(
+        conn, map_values = list(locality = "local"), user_id = "anonymous"
+    )
+    testthat::expect_identical(nrow(committed), 0L)
+    testthat::expect_null(alias_export_receipt(committed, "run-x"))
+    testthat::expect_identical(
+        DBI::dbGetQuery(conn, "SELECT dwc_term FROM rostrum_aliases")$dwc_term, "scientificName"
+    )
+    testthat::expect_identical(
+        rostrum_lookup_alias(conn, "especie", user_id = "anonymous")$dwc_term, "scientificName"
+    )
+})
+
 live_terms <- function(conn, col_name_norm) {
     DBI::dbGetQuery(
         conn,

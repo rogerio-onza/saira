@@ -68,7 +68,18 @@ O app abre numa aba do navegador. Para encerrar, feche a aba e pare a sessão R 
 
 ::: {.callout-warning}
 ## A aba não abriu?
-O `run_app()` mostra um endereço como `http://127.0.0.1:xxxx`. Abra esse endereço no navegador. Para servir a outros computadores da rede, rode `saira::run_app(options = list(host = "0.0.0.0", port = 3838))`.
+O `run_app()` mostra um endereço como `http://127.0.0.1:xxxx`. Abra esse endereço no navegador. Esse endereço só abre neste computador.
+:::
+
+::: {.callout-note}
+## Servir a outras pessoas
+O Saíra não tem login. Deixe o app em `127.0.0.1` e ponha na frente um proxy reverso com HTTPS e autenticação. Com `SAIRA_PUBLIC=true`, as sessões não gravam aliases no Rostrum do servidor.
+
+```r
+Sys.setenv(SAIRA_PUBLIC = "true")
+options(shiny.port = 3838)
+saira::run_app()
+```
 :::
 
 O seletor no canto superior troca o idioma entre PT, EN e ES a qualquer momento, sem perder o trabalho. O app aceita arquivos de até 500 MB.

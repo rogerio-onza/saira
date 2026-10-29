@@ -432,6 +432,26 @@ testthat::test_that("import_mapping_guide_to_aliases skips constants, splits com
     testthat::expect_identical(as.integer(n), 3L)
 })
 
+testthat::test_that("import_mapping_guide_to_aliases writes nothing on a shared server", {
+    withr::local_envvar(SAIRA_PUBLIC = "true")
+    db_path <- tempfile(fileext = ".sqlite")
+    conn <- rostrum_connect(path = db_path)
+    on.exit({
+        if (DBI::dbIsValid(conn)) DBI::dbDisconnect(conn)
+        unlink(db_path)
+    }, add = TRUE)
+
+    pairs <- data.frame(
+        source_column = "especie", dwc_term = "scientificName", kind = "column",
+        constant_value = NA_character_, stringsAsFactors = FALSE
+    )
+    n <- import_mapping_guide_to_aliases(list(meta = list(), pairs = pairs), conn = conn)
+    testthat::expect_identical(as.integer(n), 0L)
+    testthat::expect_identical(
+        DBI::dbGetQuery(conn, "SELECT COUNT(*) AS n FROM rostrum_aliases")$n[[1]], 0L
+    )
+})
+
 testthat::test_that("import_mapping_guide_to_aliases keeps a loaded column whose name has a plus (AUD-15)", {
     db_path <- tempfile(fileext = ".sqlite")
     conn <- rostrum_connect(path = db_path)
