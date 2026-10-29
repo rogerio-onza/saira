@@ -290,48 +290,32 @@
     seen.observe(term);
   }
 
-  // Why open data matters: each use lights in turn, then all five stay lit.
-  // The loop stops out of view and starts again from the first use.
-  function initWhy(sec) {
-    var uses = [].slice.call(sec.querySelectorAll(".lp-use"));
-    var num = sec.querySelector("[data-count]");
-    if (reduce || !("IntersectionObserver" in window)) {
-      uses.forEach(function (u) { u.classList.add("is-seen"); });
-      return;
+  // Install tabs. The visitor's system opens first: Linux opens the Linux app,
+  // macOS the R package (there is no macOS app).
+  function initInstall(box) {
+    var tabs = [].slice.call(box.querySelectorAll('[role="tab"]'));
+    function select(tab, focus) {
+      tabs.forEach(function (t) {
+        var on = t === tab;
+        t.setAttribute("aria-selected", on ? "true" : "false");
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+      });
+      if (focus) tab.focus();
     }
-    var token = 0, counted = false;
-
-    function wait(tok, ms) {
-      return new Promise(function (res, rej) { setTimeout(function () { tok === token ? res() : rej(STOP); }, ms); });
-    }
-    function count() {
-      var to = Number(num.getAttribute("data-count")), t0 = performance.now();
-      (function step(now) {
-        var p = Math.min(1, (now - t0) / 1200);
-        num.textContent = "+" + Math.round(to * (1 - Math.pow(1 - p, 3)));
-        if (p < 1) requestAnimationFrame(step);
-      })(t0);
-    }
-    async function loop(tok) {
-      for (;;) {
-        uses.forEach(function (u) { u.classList.remove("is-on", "is-seen", "is-drawn"); });
-        await wait(tok, 300);
-        for (var i = 0; i < uses.length; i++) {
-          void uses[i].offsetWidth;
-          uses[i].classList.add("is-drawn", "is-on");
-          await wait(tok, 1400);
-          uses[i].classList.remove("is-on");
-          uses[i].classList.add("is-seen");
-        }
-        await wait(tok, 2600);
-      }
-    }
-    new IntersectionObserver(function (entries) {
-      var tok = ++token;
-      if (!entries[0].isIntersecting) return;
-      if (!counted && num) { counted = true; count(); }
-      loop(tok).catch(quiet);
-    }, { threshold: 0.35 }).observe(sec);
+    tabs.forEach(function (t, i) {
+      t.addEventListener("click", function () { select(t); });
+      t.addEventListener("keydown", function (e) {
+        var k = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+        if (!k) return;
+        e.preventDefault();
+        select(tabs[(i + k + tabs.length) % tabs.length], true);
+      });
+    });
+    var ua = navigator.userAgent;
+    var os = /Android|iPhone|iPad/.test(ua) ? "" : /Linux/.test(ua) ? "linux" : /Mac OS X/.test(ua) ? "r" : "";
+    var first = os && box.querySelector('[data-os="' + os + '"]');
+    if (first) select(first);
   }
 
   // Hero: one photo per biome. The next photo comes into focus while the
@@ -549,11 +533,11 @@
     var map = document.querySelector(".lp-mapfig");
     var flow = document.querySelector(".lp-flow");
     var term = document.querySelector(".lp-term");
-    var why = document.querySelector(".lp-why");
+    var get = document.querySelector(".lp-get");
     if (hero) initHero(hero);
     if (map) initMap(map);
     if (flow) initFlow(flow);
-    if (why) initWhy(why);
+    if (get) initInstall(get);
     if (term) initTerm(term);
   }
 
