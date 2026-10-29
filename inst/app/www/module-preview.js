@@ -5,8 +5,14 @@
 
   var behavior = (window.sairaModuleBehavior = window.sairaModuleBehavior || {});
 
+  // Quotes too: the value also goes into title="...".
   function escapeHtml(text) {
-    return $('<div/>').text(text).html();
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function rowKey(d) {
@@ -126,7 +132,7 @@
       var text = String(data);
       var escaped = escapeHtml(text);
       if (text.length > 80) {
-        return '<span title="' + escaped + '">' + escaped.substr(0, 80) + '...</span>';
+        return '<span title="' + escaped + '">' + escapeHtml(text.substr(0, 80)) + '...</span>';
       }
       return escaped;
     };
@@ -148,9 +154,7 @@
   // Problems mode, Correction column. The row slots are set by the server:
   // 1 term, 5 actions HTML, 6 suggestion, 7 automatic value.
   behavior.previewFixValueCell = function (cfg) {
-    var esc = function (s) {
-      return escapeHtml(s).replace(/"/g, '&quot;');
-    };
+    var esc = escapeHtml;
     return function (data, type, row) {
       if (type !== 'display') return data;
       if (data) return '<span class="pf-done">' + esc(data) + '</span>';
