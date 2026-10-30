@@ -277,19 +277,16 @@
   }
 
   // Hero: one photo per biome. The next photo comes into focus while the
-  // last one goes soft, and the record card fades between species.
-  var FADE_MS = 350;
-
+  // last one goes soft, and the record card text scrambles to the next species.
   function initHero(hero) {
     var photos = [].slice.call(hero.querySelectorAll(".lp-photo"));
     var tabs = [].slice.call(hero.querySelectorAll(".lp-biome"));
     var rec = {
-      box: hero.querySelector(".lp-rec"),
       name: hero.querySelector(".lp-rec-name"), line: hero.querySelector(".lp-rec-line"),
       cat: hero.querySelector(".lp-rec-cat"), credit: hero.querySelector(".lp-rec-credit span")
     };
     var dur = (Number(hero.getAttribute("data-seconds")) || 7) * 1000;
-    var i = 0, timer = null, left = dur, t0 = 0, holds = {}, fade = null;
+    var i = 0, timer = null, left = dur, t0 = 0, holds = {};
     tabs.forEach(function (t, k) { if (t.getAttribute("aria-pressed") === "true") i = k; });
     hero.style.setProperty("--dur", dur / 1000 + "s");
 
@@ -330,11 +327,13 @@
       });
       // a photo that is still loading has nothing to focus, so it cuts in
       show(n, !reduce && loaded(photos[n]) ? prev : -1);
-      clearTimeout(fade);
       if (reduce) fill(to);
       else {
-        rec.box.classList.add("is-out");
-        fade = setTimeout(function () { fill(to); rec.box.classList.remove("is-out"); }, FADE_MS);
+        scramble(rec.name, rec.name.textContent, to.name);
+        scramble(rec.line, rec.line.textContent, to.line);
+        scramble(rec.credit, rec.credit.textContent, to.credit);
+        // the category color turns at the midpoint, with the text
+        scramble(rec.cat, rec.cat.textContent, to.cat, function (p) { if (p >= 0.5) rec.cat.setAttribute("data-code", to.code); });
       }
       left = dur;
       if (timer) { clearTimeout(timer); timer = null; run(); }

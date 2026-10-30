@@ -39,6 +39,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - **site:** Show the install options on the landing page as three cards with the Windows, Linux and R logos: the app for Windows or Linux (the `.deb` on Ubuntu 24.04 or later), or the R package. The card of the visitor's system gets the filled button. Put Install first in the hero. Remove the open data section
+- **site:** Scramble the hero record card text to the next species when the photo changes
 - **site:** Serve the analytics tracker from the site, not from an outside address, ADR-183
 - **build:** Pin the GitHub Actions to commit SHAs and give Pages write access to the deploy job only, ADR-183
 - **names:** Check the IPT for new Flora BR and Fauna BR versions every 30 days, not every day, ADR-174
