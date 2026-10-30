@@ -133,7 +133,7 @@ build_dynamic_properties_json <- function(df, cols, keys = NULL) {
         v <- df[[cols[[j]]]]
         blank <- is.na(v) | !nzchar(trimws(as.character(v)))
         escaped <- json_escape_string(v)
-        piece <- paste0("\"", resolved_keys[[j]], "\":\"", escaped, "\"")
+        piece <- paste0("\"", json_escape_string(resolved_keys[[j]]), "\":\"", escaped, "\"")
         # A cell that already holds an object (a re-imported
         # dynamicProperties) gives its members, not one escaped string (AUD-08).
         members <- json_object_members(v)
@@ -157,8 +157,9 @@ build_dynamic_properties_json <- function(df, cols, keys = NULL) {
 }
 
 # A JSON string, and a flat JSON object: string, number, boolean or null
-# values, no nesting.
-json_str_re <- "\"(?:[^\"\\\\]|\\\\.)*\""
+# values, no nesting. A string takes only the escapes and characters that RFC
+# 8259 allows, so a cell with any other one is read as text.
+json_str_re <- "\"(?:[^\"\\\\\\x00-\\x1f]|\\\\(?:[\"\\\\/bfnrt]|u[0-9a-fA-F]{4}))*\""
 
 json_flat_object_re <- local({
     val <- paste0("(?:", json_str_re,
@@ -241,7 +242,13 @@ merge_dynamic_property <- function(existing, key, value) {
         obj[flat] <- FALSE
         has_key[flat] <- FALSE
     }
-    for (i in which(has_key & obj)) {
+    # jsonlite reads each distinct (object, value) pair once: a re-imported
+    # column repeats a few nested objects. The byte count makes the pair key
+    # unambiguous.
+    nested <- which(has_key & obj)
+    pair_key <- paste0(nchar(existing[nested], type = "bytes"), ":", existing[nested], value[nested])
+    first <- nested[!duplicated(pair_key)]
+    for (i in first) {
         parsed <- tryCatch(jsonlite::parse_json(existing[[i]]), error = function(e) NULL)
         if (is.list(parsed) && key %in% names(parsed)) {
             parsed <- parsed[names(parsed) != key | seq_along(parsed) == match(key, names(parsed))]
@@ -252,6 +259,9 @@ merge_dynamic_property <- function(existing, key, value) {
             obj[[i]] <- FALSE
         }
     }
+    same <- first[match(pair_key, pair_key[!duplicated(pair_key)])]
+    out[nested] <- out[same]
+    obj[nested] <- obj[same]
     # Existing object -> splice the pair in before the closing brace.
     inner <- sub("\\}$", "", sub("^\\{", "", existing[obj]))
     joined <- ifelse(nzchar(inner), paste0(inner, ",", pair[obj]), pair[obj])

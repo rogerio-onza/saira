@@ -229,6 +229,17 @@ testthat::test_that("build_dynamic_properties_json merges a cell that holds a JS
     )
 })
 
+testthat::test_that("build_dynamic_properties_json always writes valid JSON", {
+    key <- build_dynamic_properties_json(data.frame(a = "v"), "a", keys = list(a = "key\\q"))
+    testthat::expect_identical(key, '{"key\\\\q":"v"}')
+    # A cell that only looks like an object is a text value.
+    cells <- c('{"key":"value\\q"}', '{"key":"line\tbreak"}', '{"key":"a\\u00e9\\n"}')
+    out <- build_dynamic_properties_json(data.frame(a = cells), "a")
+    testthat::expect_true(all(vapply(c(key, out), jsonlite::validate, logical(1))))
+    testthat::expect_identical(out[3], '{"key":"a\\u00e9\\n"}')
+    testthat::expect_identical(jsonlite::fromJSON(out[1])$a, cells[1])
+})
+
 testthat::test_that("build_dynamic_properties_json errors on missing column", {
     df <- data.frame(a = "x", stringsAsFactors = FALSE)
     testthat::expect_error(
@@ -1119,6 +1130,14 @@ testthat::test_that("build_eventdate_from_parts returns NULL when the selection 
     testthat::expect_null(build_eventdate_from_parts(df, c("a", "b")))
 })
 
+testthat::test_that("build_eventdate_from_parts fails a day with a fraction", {
+    parts <- data.frame(year = "2024", month = "2", day = c("29.9", "31.9", "2.95e1", "29", "29.0"),
+                        stringsAsFactors = FALSE)
+    out <- build_eventdate_from_parts(parts, names(parts))
+    testthat::expect_identical(out$failed_rows, c(TRUE, TRUE, TRUE, FALSE, FALSE))
+    testthat::expect_identical(out$values[4:5], c("2024-02-29", "2024-02-29"))
+})
+
 testthat::test_that("build_term_value: basisOfRecord applies mapping", {
     df <- data.frame(bor = c("humanobservation", "Unknown"), stringsAsFactors = FALSE)
     bmap <- c("humanobservation" = "HumanObservation")
@@ -1444,6 +1463,20 @@ testthat::test_that("merge_dynamic_property replaces a key the object already ha
         saira:::merge_dynamic_property("{\"mmaThreatStatus\":\"VU\"}", "mmaThreatStatus", NA),
         "{\"mmaThreatStatus\":\"VU\"}"
     )
+})
+
+testthat::test_that("merge_dynamic_property gives repeated nested objects the same result as one", {
+    a <- "{\"p\":{\"n\":\"a\"},\"iucnRedListCategory\":\"LC\"}"
+    b <- "{\"p\":{\"n\":\"b\"},\"iucnRedListCategory\":\"LC\"}"
+    existing <- c(a, b, a, a, b)
+    value <- c("EN", "EN", "CR", "EN", "EN")
+    one_by_one <- vapply(seq_along(existing), function(i) {
+        saira:::merge_dynamic_property(existing[[i]], "iucnRedListCategory", value[[i]])
+    }, character(1))
+    testthat::expect_identical(
+        saira:::merge_dynamic_property(existing, "iucnRedListCategory", value), one_by_one
+    )
+    testthat::expect_identical(one_by_one[[3]], "{\"p\":{\"n\":\"a\"},\"iucnRedListCategory\":\"CR\"}")
 })
 
 testthat::test_that("merge_dynamic_property leaves NA/blank values untouched", {

@@ -451,9 +451,11 @@ rostrum_eventdate_parse_day <- function(values) {
     values_chr[is.na(values)] <- ""
     values_chr <- trimws(values_chr)
 
-    out <- suppressWarnings(as.integer(values_chr))
-    invalid <- !nzchar(values_chr) | is.na(out) | out < 1L | out > 31L
-    out[invalid] <- NA_integer_
+    # as.integer("29.9") gives 29. A day with a fraction is not a day.
+    num <- suppressWarnings(as.numeric(values_chr))
+    invalid <- !nzchar(values_chr) | is.na(num) | num != round(num) | num < 1 | num > 31
+    out <- rep(NA_integer_, length(num))
+    out[!invalid] <- as.integer(num[!invalid])
     out
 }
 

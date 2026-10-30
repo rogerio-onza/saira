@@ -165,7 +165,8 @@ is_dwc_time_value <- function(x) {
     # End-of-day midnight is valid too (ISO 8601-1:2019/Amd 1:2022).
     # When the hour is 24, all smaller components must be zero.
     clock <- "(([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\\.[0-9]+)?)?|24:00(:00(\\.0+)?)?)"
-    one <- paste0(clock, "(Z|[+-][0-9]{2}(:?[0-9]{2})?)?")
+    # The zone offset has an hour up to 23 and a minute up to 59 (RFC 3339).
+    one <- paste0(clock, "(Z|[+-]([01][0-9]|2[0-3])(:?[0-5][0-9])?)?")
     grepl(paste0("^", one, "(/", one, ")?$"), x)
 }
 
