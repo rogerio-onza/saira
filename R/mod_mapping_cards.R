@@ -17,13 +17,20 @@
 #' @param cat_class CSS class for the category
 #' @param scientificname_mapped Logical; when TRUE, taxonRank and specificEpithet
 #'   are locked because they are derived from scientificName.
+#' @param required Logical; when TRUE the card shows a "Required" tag. The value
+#'   is fixed per term, so the per-card update path never has to change it.
+#' @param compact Logical; when TRUE the card renders as a one-line row (term
+#'   and column select) for the "Relevant" filter. It is the same card with a
+#'   CSS class, so its inputs stay bound when the row opens. The second class
+#'   (`field-card-collapsed`) puts the row under its class's line. "Fixed
+#'   value" removes only the one-line look.
 #'
 #'   Selection-dependent content (the source sample, the basisOfRecord assistant
 #'   button, and the dynamicProperties key inputs) is rendered into a per-term
 #'   `carddyn_<term>` uiOutput slot, so picking a column updates only that card
 #'   instead of rebuilding the whole 50-selectize grid (see mod_mapping.R).
 #' @noRd
-build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL) {
+build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL, required = FALSE, compact = FALSE) {
     term <- item$term
 
     # taxonRank/specificEpithet/infraspecificEpithet are inferred from
@@ -46,7 +53,8 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 "field-card no-break", cat_class,
                 if (is_mapped) "field-mapped" else "field-unmapped",
                 state_class,
-                if (term %in% wide_card_terms()) "field-card-wide"
+                if (term %in% wide_card_terms()) "field-card-wide",
+                if (isTRUE(compact)) "field-card-compact field-card-collapsed"
             ),
             collapse = " "
         ),
@@ -72,6 +80,9 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                         item$desc,
                         placement = "right"
                     )
+                },
+                if (isTRUE(required)) {
+                    shiny::tags$span(class = "field-required-tag", tr("mapping_required", lang_r))
                 }
             ),
             if (!is.null(badge_info) && term != "occurrenceID" && !locked_taxon) {
@@ -96,7 +107,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
             shiny::div(
                 class = "alert alert-info",
                 style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
-                shiny::icon("dna"),
+                ph_icon("dna"),
                 " ", tr("taxon_auto_derived", lang_r)
             )
         } else if (term == "occurrenceID") {
@@ -202,10 +213,11 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                     ns("custom_language"),
                     NULL,
                     choices = stats::setNames(
-                        c("pt", "en"),
+                        c("pt", "en", "es"),
                         c(
                             sprintf("%s (pt)", tr("lang_pt", lang_r)),
-                            sprintf("%s (en)", tr("lang_en", lang_r))
+                            sprintf("%s (en)", tr("lang_en", lang_r)),
+                            sprintf("%s (es)", tr("lang_es", lang_r))
                         )
                     ),
                     selected = if (!is.null(saved_lang)) saved_lang else character(0),
@@ -220,7 +232,9 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 ""
             }
 
-            shiny::tagList(
+            # A sheet with no basisOfRecord column has nothing for the assistant
+            # to read, so the card also takes one fixed value (D02).
+            wrap_constant_value_block(term, shiny::tagList(
                 shiny::selectInput(
                     ns(paste0("map_", term)),
                     NULL,
@@ -231,7 +245,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                     width = "100%"
                 ),
                 shiny::uiOutput(ns("carddyn_basisOfRecord"))
-            )
+            ), ns, lang_r, input)
         } else if (term == "dynamicProperties") {
             selected_cols <- if (has_selected_value(current_val)) {
                 as.character(current_val)
@@ -285,31 +299,51 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 ),
                 shiny::uiOutput(ns(paste0("carddyn_", term)))
             )
-            shiny::tagList(
-                if (is_const_term) {
-                    # Mutually exclusive with the fixed value: while "use a fixed
-                    # value" is on, hide the column selector (and its sample, plus
-                    # the "OU" divider) so a mapped column cannot be silently
-                    # overwritten by the constant at export -- the constant takes
-                    # precedence in build_processed_mapping_df. Client-side toggle,
-                    # no re-render.
-                    shiny::conditionalPanel(
-                        condition = paste0("!input.usecustom_", term),
-                        ns = ns,
-                        map_block,
-                        shiny::div(
-                            class = "field-or-divider",
-                            shiny::span(tr("mapping_or_separator", lang_r))
-                        )
-                    )
-                } else {
-                    map_block
-                },
-                if (is_const_term) {
-                    build_constant_value_input(term, ns, lang_r, input)
-                }
-            )
+            if (is_const_term) {
+                wrap_constant_value_block(term, map_block, ns, lang_r, input)
+            } else {
+                map_block
+            }
         }
+    )
+}
+
+#' Wrap a card's column selector with the opt-in fixed-value input
+#'
+#' Mutually exclusive with the fixed value: while "use a fixed value" is on,
+#' hide the column selector (and its sample, plus the "OU" divider) so a mapped
+#' column cannot be silently overwritten by the constant at export -- the
+#' constant takes precedence in build_processed_mapping_df. Client-side toggle,
+#' no re-render.
+#'
+#' @param term DwC term name (must be in `constant_value_terms()`).
+#' @param map_block The column selector UI of the card.
+#' @param ns Namespace function.
+#' @param lang_r Reactive language code (already evaluated).
+#' @param input Shiny input from parent module.
+#' @noRd
+wrap_constant_value_block <- function(term, map_block, ns, lang_r, input) {
+    shiny::tagList(
+        shiny::conditionalPanel(
+            condition = paste0("!input.usecustom_", term),
+            ns = ns,
+            map_block,
+            shiny::div(
+                class = "field-or-divider",
+                shiny::span(tr("mapping_or_separator", lang_r))
+            )
+        ),
+        build_constant_value_input(term, ns, lang_r, input),
+        # A compact row hides the fixed-value checkbox. This button removes the
+        # compact class in place (client-side), so the full card with the
+        # checkbox opens where the row was. Every card has it, because the
+        # browser decides which cards are compact (ADR-157). CSS shows it on a
+        # compact row only.
+        shiny::tags$button(
+            type = "button",
+            class = "field-compact-expand",
+            tr("mapping_fixed_value_link", lang_r)
+        )
     )
 }
 
@@ -344,21 +378,38 @@ build_constant_value_input <- function(term, ns, lang_r, input) {
                 tr("mapping_fixed_value_hint", lang_r)
             )
         ),
+        # No inline display: Shiny 1.14 shows the panel with a class, and an
+        # inline "display: none" kept it hidden after the checkbox was ticked.
         shiny::conditionalPanel(
             condition = paste0("input.usecustom_", term),
             ns = ns,
             shiny::div(
                 class = "field-allrows-note",
-                shiny::icon("info-circle"),
+                ph_icon("info-circle"),
                 " ", tr("mapping_fills_every_row", lang_r)
             ),
-            shiny::textInput(
-                ns(paste0("custom_", term)),
-                NULL,
-                value = if (!is.null(saved_val)) saved_val else "",
-                placeholder = tr(paste0("const_placeholder_", term), lang_r),
-                width = "100%"
-            )
+            # basisOfRecord takes only a vocabulary term, so it gets a list
+            # instead of free text.
+            if (identical(term, "basisOfRecord")) {
+                shiny::selectInput(
+                    ns(paste0("custom_", term)),
+                    NULL,
+                    choices = get_basis_of_record_term_choices(
+                        lang = lang_r,
+                        skip_label = tr("const_placeholder_basisOfRecord", lang_r)
+                    ),
+                    selected = if (!is.null(saved_val)) saved_val else "",
+                    width = "100%"
+                )
+            } else {
+                shiny::textInput(
+                    ns(paste0("custom_", term)),
+                    NULL,
+                    value = if (!is.null(saved_val)) saved_val else "",
+                    placeholder = tr(paste0("const_placeholder_", term), lang_r),
+                    width = "100%"
+                )
+            }
         )
     )
 }
@@ -382,7 +433,7 @@ build_basis_assistant_button <- function(current_val, ns, lang_r) {
         ns("open_basis_of_record_assistant"),
         tr("bor_assistant_button", lang_r),
         class = "btn btn-outline-primary btn-sm w-100 mt-2",
-        icon = shiny::icon("list-check")
+        icon = ph_icon("list-check")
     )
 }
 
@@ -403,7 +454,7 @@ build_establishment_assistant_button <- function(ns, lang_r) {
         ns("open_establishment_assistant"),
         tr("est_assistant_button", lang_r),
         class = "btn btn-outline-primary btn-sm w-100 mt-2",
-        icon = shiny::icon("seedling")
+        icon = ph_icon("seedling")
     )
 }
 
@@ -417,7 +468,7 @@ build_establishment_assistant_button <- function(ns, lang_r) {
 build_establishment_degree_hint <- function(ns, lang_r) {
     shiny::div(
         class = "alert alert-info est-degree-hint",
-        shiny::icon("link"),
+        ph_icon("link"),
         " ",
         tr("est_degree_card_hint", lang_r),
         " ",
@@ -445,7 +496,7 @@ build_establishment_status_note <- function(answered, missing_degree, lang_r) {
         if (answered > 0L) {
             shiny::div(
                 class = "est-card-status-line",
-                shiny::icon("wand-magic-sparkles"),
+                ph_icon("wand-magic-sparkles"),
                 " ",
                 sprintf(tr("est_card_filled_by_assistant", lang_r), answered)
             )
@@ -501,6 +552,60 @@ build_dynprops_keys_block <- function(current_val, ns, lang_r, input) {
                 )
             )
         })
+    )
+}
+
+#' Type, unit and method of each column mapped to measurementValue (ADR-179)
+#'
+#' Each column becomes one row of measurementorfact.txt. An empty type keeps
+#' the column name as the type, so the placeholder shows that name.
+#' @param cols Selected source columns.
+#' @param samples Named list of sample values, keyed by column.
+#' @param units Named character vector of units from the column names, the
+#'   start value of a unit input not typed yet.
+#' @noRd
+build_measurement_specs_block <- function(cols, samples, ns, lang_r, input, units = NULL) {
+    if (length(cols) == 0L) {
+        return(NULL)
+    }
+    field <- function(stem, col, label, placeholder = NULL) {
+        input_id <- paste0("mof_", stem, "_", make.names(col))
+        saved <- shiny::isolate(input[[input_id]])
+        start <- if (stem == "unit" && col %in% names(units)) units[[col]] else ""
+        htmltools::tagAppendAttributes(
+            shiny::textInput(ns(input_id), NULL,
+                             value = if (!is.null(saved)) saved else start,
+                             placeholder = placeholder, width = "100%"),
+            `aria-label` = paste(label, col),
+            .cssSelector = "input"
+        )
+    }
+    heads <- c(tr("mof_specs_column", lang_r), tr("mof_specs_type", lang_r),
+               tr("mof_specs_unit", lang_r), tr("mof_specs_method", lang_r))
+    shiny::div(
+        class = "mof-specs-block",
+        shiny::tags$label(class = "custom-field-label", tr("mof_specs_header", lang_r)),
+        shiny::tags$p(class = "mof-specs-help", tr("mof_specs_help", lang_r)),
+        shiny::div(
+            class = "mof-specs-grid",
+            lapply(heads, function(h) shiny::tags$span(class = "mof-specs-head", h)),
+            lapply(cols, function(col) {
+                sample <- samples[[col]]
+                shiny::tagList(
+                    shiny::div(
+                        class = "mof-specs-source",
+                        col,
+                        if (length(sample)) {
+                            shiny::tags$small(paste(tr("mapping_card_sample_prefix", lang_r),
+                                                    paste(sample, collapse = "  ")))
+                        }
+                    ),
+                    field("type", col, heads[2], placeholder = col),
+                    field("unit", col, heads[3]),
+                    field("method", col, heads[4], placeholder = tr("mof_specs_optional", lang_r))
+                )
+            })
+        )
     )
 }
 
@@ -635,6 +740,72 @@ field_state_class <- function(term, is_mapped, meta, required_terms) {
         return("field-attention")
     }
     NULL
+}
+
+#' Whether a card passes the Relevant / All / Mapped / Pending filter
+#'
+#' "relevant" keeps every card, like "all": it collapses some of them to rows
+#' instead (see [collapse_mapping_term()]). "pending" keeps the cards that need
+#' the user (see [field_state_class()]), the same queue as "Next pending". An
+#' unmapped optional term needs nothing, so it is not pending.
+#'
+#' @param mode "relevant", "all", "mapped" or "pending"
+#' @param is_mapped logical, the card's mapped state
+#' @param needs_action logical, TRUE when `field_state_class()` gives a class
+#' @return logical
+#' @noRd
+keep_by_mapped_filter <- function(mode, is_mapped, needs_action = FALSE) {
+    switch(mode %||% "all",
+        mapped = isTRUE(is_mapped),
+        pending = isTRUE(needs_action),
+        TRUE
+    )
+}
+
+#' The collapsed terms of one class under the "Relevant" filter
+#'
+#' One line ("+ N terms with no column", the term names, Show) that shows the
+#' compact rows. The toggle is client-side (see the mapping UI script): the
+#' rows are rendered and bound already, so opening them rebuilds nothing.
+#' The line is the last item of the class grid, and the CSS puts it after the
+#' cards and before the rows. Every class has the line, hidden while it is
+#' empty: a filter switch in the browser toggles the card classes in place
+#' and rewrites the line (ADR-157).
+#'
+#' @param terms Character vector of the collapsed term names.
+#' @param lang_r Language code (already evaluated).
+#' @noRd
+build_collapsed_terms <- function(terms, lang_r) {
+    n <- length(terms)
+    one <- tr("mapping_more_terms_one", lang_r)
+    other <- tr("mapping_more_terms_other", lang_r)
+    shiny::div(
+        class = "mapping-more-group",
+        `data-one` = one,
+        `data-other` = other,
+        hidden = if (n == 0L) NA,
+        shiny::tags$button(
+            type = "button",
+            class = "mapping-more",
+            `aria-expanded` = "false",
+            shiny::span(
+                class = "mapping-more-count",
+                shiny::span(class = "when-closed", "+"),
+                shiny::span(class = "when-open", "\u2212"),
+                " ",
+                shiny::span(
+                    class = "mapping-more-label",
+                    paste(n, if (n == 1L) one else other)
+                )
+            ),
+            shiny::span(class = "mapping-more-terms", paste(terms, collapse = ", ")),
+            shiny::span(
+                class = "mapping-more-action",
+                shiny::span(class = "when-closed", tr("mapping_more_show", lang_r)),
+                shiny::span(class = "when-open", tr("mapping_more_hide", lang_r))
+            )
+        )
+    )
 }
 
 #' Determine if a mapping field is considered mapped

@@ -7,11 +7,11 @@ testthat::test_that("app_ui references local vendored fonts and cache-busted cus
 
     testthat::expect_true(
         grepl("www/vendor/fonts/source-fonts\\.css", body_text, perl = TRUE),
-        info = "Missing local Source Serif 4 / Space Mono CSS link in app_ui output"
+        info = "Missing local Source Serif 4 / IBM Plex Sans / Space Mono CSS link in app_ui output"
     )
     testthat::expect_true(
-        grepl("www/vendor/fontawesome/css/all\\.min\\.css", body_text, perl = TRUE),
-        info = "Missing local FontAwesome CSS link in app_ui output"
+        grepl("www/vendor/phosphor/regular/style\\.css", body_text, perl = TRUE),
+        info = "Missing local Phosphor icon CSS link in app_ui output"
     )
     testthat::expect_false(
         grepl("fonts\\.googleapis\\.com|cdnjs\\.cloudflare\\.com|unpkg\\.com", body_text, perl = TRUE),
@@ -23,7 +23,7 @@ testthat::test_that("app_ui references local vendored fonts and cache-busted cus
     )
 })
 
-testthat::test_that("app_ui theme no longer references IBM Plex in bs_theme fonts", {
+testthat::test_that("app_ui theme fonts are local font collections, not font_google", {
     body_text <- paste(deparse(body(app_ui)), collapse = "\n")
 
     testthat::expect_true(
@@ -42,4 +42,14 @@ testthat::test_that("app_ui theme no longer references IBM Plex in bs_theme font
         grepl("font_google\\(\"IBM Plex", body_text, perl = TRUE),
         info = "app_ui should not reference IBM Plex via font_google in bs_theme"
     )
+})
+
+testthat::test_that("vendored font CSS declares IBM Plex Sans for UI text (ADR-134)", {
+    font_css <- system.file("app", "www", "vendor", "fonts", "source-fonts.css", package = "saira")
+    css_text <- paste(readLines(font_css, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+    files <- regmatches(css_text, gregexpr("url\\(([^)]+\\.woff2)\\)", css_text, perl = TRUE))[[1]]
+    files <- unique(gsub("^url\\(|\\)$", "", files))
+
+    testthat::expect_true(grepl("font-family: 'IBM Plex Sans'", css_text, fixed = TRUE))
+    testthat::expect_true(all(file.exists(file.path(dirname(font_css), files))))
 })

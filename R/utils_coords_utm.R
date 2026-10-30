@@ -192,18 +192,6 @@ coords_utm_to_wgs84 <- function(easting, northing, zone, hemisphere = "S",
     out
 }
 
-#' UTM zone covering a longitude
-#'
-#' @param lon Numeric longitude in degrees.
-#' @return Integer zone, `NA` for an unusable longitude.
-#' @noRd
-coords_utm_zone_from_lon <- function(lon) {
-    lon <- suppressWarnings(as.numeric(lon))
-    zone <- floor((lon + 180) / 6) + 1
-    zone[is.na(lon) | lon < -180 | lon > 180] <- NA_real_
-    as.integer(pmin(pmax(zone, 1), 60))
-}
-
 # Point-in-country reference used to rank zone candidates. Natural Earth ships
 # rings that the s2 spherical engine rejects, so the lookup runs in planar mode
 # and restores the previous setting on exit -- the setting is global, and the

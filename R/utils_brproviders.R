@@ -2,238 +2,25 @@
 # Author: Rogerio Nunes Oliveira
 # Date: 2026-03-05
 # Version: 1.0
-# Desc: Pure functions for florabr/faunabr data management, querying, and
-#       result normalisation to the taxadb common schema. No Shiny deps.
+# Download/update and background jobs for florabr/faunabr. No Shiny dependencies.
+# Storage and pure response adapters live in their respective domain files.
+#
+# Cache scope: public provider data shared by sessions in this R process.
+# Loaded frames persist until brprovider_clear_cache(); on-disk update checks
+# retain their 24-hour TTL, 15-minute retry backoff and existing lock ownership.
 
-# Private in-session cache so large data.frames are not re-read from disk on
+# Private in-process cache so large data.frames are not re-read from disk on
 # every validation run.
 .brprovider_cache <- new.env(parent = emptyenv())
 
-# Private in-session registry for background update jobs.
+# Private in-process registry for background update jobs.
 .brprovider_jobs <- new.env(parent = emptyenv())
 
-.brprovider_check_ttl_secs_default <- 24L * 60L * 60L
+# A new catalog version is a full download of about 2 min, and the names change
+# little in a month (ADR-174).
+.brprovider_check_ttl_secs_default <- 30L * 24L * 60L * 60L
 .brprovider_retry_backoff_secs_default <- 15L * 60L
 .brprovider_lock_stale_secs_default <- 60L * 60L
-
-# ---------------------------------------------------------------------------
-# Data directory helpers
-# ---------------------------------------------------------------------------
-
-#' Return the local data directory for a BR provider
-#' @param provider_id Character. "florabr" or "faunabr".
-#' @return Absolute path string.
-#' @noRd
-brprovider_data_dir <- function(provider_id) {
-    base <- tools::R_user_dir("saira", which = "data")
-    path <- file.path(base, "brproviders", as.character(provider_id))
-    normalizePath(path, winslash = "/", mustWork = FALSE)
-}
-
-#' @noRd
-.brprovider_rds_path <- function(provider_id) {
-    file.path(brprovider_data_dir(provider_id), paste0(as.character(provider_id), ".rds"))
-}
-
-#' @noRd
-.brprovider_meta_path <- function(provider_id) {
-    file.path(brprovider_data_dir(provider_id), paste0(as.character(provider_id), ".meta.json"))
-}
-
-#' @noRd
-.brprovider_backup_path <- function(provider_id) {
-    file.path(brprovider_data_dir(provider_id), paste0(as.character(provider_id), ".rds.bak"))
-}
-
-#' @noRd
-.brprovider_lock_path <- function(provider_id) {
-    file.path(brprovider_data_dir(provider_id), paste0(as.character(provider_id), ".update.lock"))
-}
-
-#' @noRd
-.brprovider_pkg_version_safe <- function(provider_id) {
-    tryCatch(as.character(utils::packageVersion(provider_id)), error = function(e) NA_character_)
-}
-
-#' @noRd
-.brprovider_now_utc <- function() {
-    Sys.time()
-}
-
-#' @noRd
-.brprovider_time_to_string <- function(value) {
-    if (length(value) == 0L || all(is.na(value))) {
-        return(NA_character_)
-    }
-    format(as.POSIXct(value, tz = "UTC"), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-}
-
-#' @noRd
-.brprovider_time_from_string <- function(value) {
-    if (is.null(value) || length(value) == 0L || is.na(value[[1L]]) || !nzchar(as.character(value[[1L]]))) {
-        return(as.POSIXct(NA_character_, tz = "UTC"))
-    }
-    as.POSIXct(as.character(value[[1L]]), format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-}
-
-#' @noRd
-.brprovider_meta_defaults <- function(provider_id) {
-    has_data <- file.exists(.brprovider_rds_path(provider_id))
-    list(
-        provider_id = as.character(provider_id),
-        local_version = NA_character_,
-        remote_version_last_seen = NA_character_,
-        last_checked_at = NA_character_,
-        last_updated_at = NA_character_,
-        status = if (has_data) "up_to_date" else "never_downloaded",
-        last_error = NA_character_,
-        source_package_version = .brprovider_pkg_version_safe(provider_id),
-        retry_after_at = NA_character_
-    )
-}
-
-#' @noRd
-.brprovider_scalar_chr <- function(value) {
-    if (is.null(value) || length(value) == 0L) {
-        return(NA_character_)
-    }
-    out <- as.character(value[[1L]])
-    if (length(out) == 0L) {
-        return(NA_character_)
-    }
-    out
-}
-
-#' @noRd
-.brprovider_read_meta <- function(provider_id) {
-    defaults <- .brprovider_meta_defaults(provider_id)
-    path <- .brprovider_meta_path(provider_id)
-    if (!file.exists(path)) {
-        return(defaults)
-    }
-
-    meta <- tryCatch(
-        jsonlite::fromJSON(path, simplifyVector = TRUE),
-        error = function(e) NULL
-    )
-    if (!is.list(meta)) {
-        return(defaults)
-    }
-
-    for (nm in names(defaults)) {
-        if (!nm %in% names(meta)) {
-            meta[[nm]] <- defaults[[nm]]
-        }
-    }
-
-    meta$provider_id <- .brprovider_scalar_chr(meta$provider_id)
-    meta$local_version <- .brprovider_scalar_chr(meta$local_version)
-    meta$remote_version_last_seen <- .brprovider_scalar_chr(meta$remote_version_last_seen)
-    meta$last_checked_at <- .brprovider_scalar_chr(meta$last_checked_at)
-    meta$last_updated_at <- .brprovider_scalar_chr(meta$last_updated_at)
-    meta$status <- .brprovider_scalar_chr(meta$status)
-    meta$last_error <- .brprovider_scalar_chr(meta$last_error)
-    meta$source_package_version <- .brprovider_scalar_chr(meta$source_package_version)
-    meta$retry_after_at <- .brprovider_scalar_chr(meta$retry_after_at)
-
-    if (!nzchar(meta$provider_id)) {
-        meta$provider_id <- as.character(provider_id)
-    }
-
-    meta
-}
-
-#' @noRd
-.brprovider_write_meta <- function(provider_id, meta) {
-    dir.create(brprovider_data_dir(provider_id), recursive = TRUE, showWarnings = FALSE)
-    meta_path <- .brprovider_meta_path(provider_id)
-    jsonlite::write_json(meta, path = meta_path, auto_unbox = TRUE, pretty = TRUE, null = "null")
-    invisible(meta)
-}
-
-#' @noRd
-.brprovider_patch_meta <- function(provider_id, fields) {
-    meta <- .brprovider_read_meta(provider_id)
-    for (nm in names(fields)) {
-        meta[[nm]] <- fields[[nm]]
-    }
-    .brprovider_write_meta(provider_id, meta)
-}
-
-#' Check whether a BR provider's data is available on disk
-#' @param provider_id Character. "florabr" or "faunabr".
-#' @return Single logical.
-#' @noRd
-brprovider_data_available <- function(provider_id) {
-    file.exists(.brprovider_rds_path(provider_id))
-}
-
-#' Return metadata status for one BR provider cache
-#' @param provider_id Character.
-#' @param poll Logical. If TRUE, collect completed background jobs first.
-#' @return Named list with cache metadata.
-#' @noRd
-brprovider_cache_status <- function(provider_id, poll = TRUE) {
-    provider_id <- as.character(provider_id)
-    if (isTRUE(poll)) {
-        brprovider_poll_updates(provider_id = provider_id)
-    }
-
-    meta <- .brprovider_read_meta(provider_id)
-    has_data <- brprovider_data_available(provider_id)
-
-    meta_changed <- FALSE
-
-    # Crash recovery: stale "in progress" without a job or lock.
-    if (identical(as.character(meta$status), "update_in_progress") &&
-        !exists(provider_id, envir = .brprovider_jobs, inherits = FALSE) &&
-        !file.exists(.brprovider_lock_path(provider_id))) {
-        meta$status <- if (has_data) "up_to_date" else "update_failed"
-        if (!has_data && (is.na(meta$last_error) || !nzchar(meta$last_error))) {
-            meta$last_error <- "Background update interrupted."
-        }
-        meta_changed <- TRUE
-    }
-
-    if (!has_data && !identical(as.character(meta$status), "update_in_progress") &&
-        !identical(as.character(meta$status), "update_failed") &&
-        !identical(as.character(meta$status), "never_downloaded")) {
-        meta$status <- "never_downloaded"
-        meta_changed <- TRUE
-    }
-
-    if (has_data && identical(as.character(meta$status), "never_downloaded")) {
-        meta$status <- "up_to_date"
-        meta_changed <- TRUE
-    }
-
-    if (has_data && identical(as.character(meta$status), "update_failed")) {
-        meta$status <- "up_to_date"
-        meta_changed <- TRUE
-    }
-
-    if (isTRUE(meta_changed)) {
-        .brprovider_write_meta(provider_id, meta)
-    }
-
-    meta$has_data <- has_data
-    meta
-}
-
-#' Return metadata status for multiple BR providers
-#' @param provider_ids Character vector.
-#' @param poll Logical. Poll updates before reading statuses.
-#' @return Named list.
-#' @noRd
-brprovider_cache_statuses <- function(provider_ids = c("florabr", "faunabr"), poll = TRUE) {
-    ids <- unique(as.character(provider_ids))
-    ids <- ids[!is.na(ids) & nzchar(ids)]
-    out <- stats::setNames(vector("list", length(ids)), ids)
-    for (id in ids) {
-        out[[id]] <- brprovider_cache_status(id, poll = poll)
-    }
-    out
-}
 
 # ---------------------------------------------------------------------------
 # Version helpers
@@ -385,96 +172,6 @@ brprovider_latest_remote_version <- function(provider_id) {
 }
 
 # ---------------------------------------------------------------------------
-# Locking and background coordination
-# ---------------------------------------------------------------------------
-
-#' @noRd
-.brprovider_acquire_lock <- function(provider_id, stale_secs = .brprovider_lock_stale_secs_default) {
-    path <- .brprovider_lock_path(provider_id)
-    dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
-
-    if (file.exists(path)) {
-        info <- file.info(path)
-        age <- as.numeric(difftime(Sys.time(), info$mtime, units = "secs"))
-        if (!is.na(age) && age > as.numeric(stale_secs)) {
-            unlink(path, force = TRUE)
-        }
-    }
-
-    if (file.exists(path)) {
-        return(FALSE)
-    }
-
-    handle <- tryCatch(file(path, open = "wx"), error = function(e) NULL)
-    if (is.null(handle)) {
-        return(FALSE)
-    }
-
-    on.exit(close(handle), add = TRUE)
-    writeLines(c(
-        paste0("pid=", Sys.getpid()),
-        paste0("started_at=", .brprovider_time_to_string(Sys.time()))
-    ), con = handle)
-    TRUE
-}
-
-#' @noRd
-.brprovider_release_lock <- function(provider_id) {
-    unlink(.brprovider_lock_path(provider_id), force = TRUE)
-    invisible(NULL)
-}
-
-#' @noRd
-.brprovider_retry_blocked <- function(meta, now = Sys.time()) {
-    retry_at <- .brprovider_time_from_string(meta$retry_after_at)
-    !is.na(retry_at) && retry_at > now
-}
-
-#' @noRd
-.brprovider_check_due <- function(meta, ttl_secs = .brprovider_check_ttl_secs_default, now = Sys.time()) {
-    ttl <- suppressWarnings(as.numeric(ttl_secs))
-    if (is.na(ttl) || ttl <= 0) {
-        return(TRUE)
-    }
-
-    checked_at <- .brprovider_time_from_string(meta$last_checked_at)
-    if (is.na(checked_at)) {
-        return(TRUE)
-    }
-
-    age <- as.numeric(difftime(now, checked_at, units = "secs"))
-    is.na(age) || age >= ttl
-}
-
-#' @noRd
-.brprovider_write_rds_atomic <- function(data, target_path, backup_path) {
-    dir.create(dirname(target_path), recursive = TRUE, showWarnings = FALSE)
-    tmp_path <- paste0(target_path, ".tmp")
-
-    saveRDS(data, tmp_path)
-    verify <- readRDS(tmp_path)
-    if (!is.data.frame(verify)) {
-        unlink(tmp_path, force = TRUE)
-        stop("Atomic write validation failed: object is not a data.frame.")
-    }
-
-    if (file.exists(target_path)) {
-        file.copy(target_path, backup_path, overwrite = TRUE)
-    }
-
-    renamed <- file.rename(tmp_path, target_path)
-    if (!isTRUE(renamed)) {
-        copied <- file.copy(tmp_path, target_path, overwrite = TRUE)
-        unlink(tmp_path, force = TRUE)
-        if (!isTRUE(copied)) {
-            stop("Atomic write failed: unable to move temporary file into place.")
-        }
-    }
-
-    invisible(TRUE)
-}
-
-# ---------------------------------------------------------------------------
 # Download
 # ---------------------------------------------------------------------------
 
@@ -486,14 +183,16 @@ brprovider_latest_remote_version <- function(provider_id) {
 #'   descriptive error including a partial directory tree.
 #' @noRd
 .brprovider_check_artifacts <- function(provider_id, tmp_dir) {
+    # florabr 1.4 writes a gzipped CSV. Older versions wrote an .rds, and
+    # load_florabr() still reads both.
     expected <- switch(provider_id,
-        florabr = "CompleteBrazilianFlora.rds",
+        florabr = c("CompleteBrazilianFlora.gz", "CompleteBrazilianFlora.rds"),
         faunabr = "CompleteBrazilianFauna.gz",
         NULL
     )
     if (is.null(expected)) return(invisible(NULL))
-    hits <- list.files(tmp_dir, pattern = expected, recursive = TRUE,
-                       full.names = TRUE)
+    hits <- list.files(tmp_dir, recursive = TRUE, full.names = TRUE)
+    hits <- hits[basename(hits) %in% expected]
     if (length(hits) == 0L) {
         all_files <- list.files(tmp_dir, recursive = TRUE, full.names = FALSE)
         tree <- if (length(all_files) == 0L) {
@@ -504,7 +203,7 @@ brprovider_latest_remote_version <- function(provider_id) {
         }
         stop(sprintf(
             "Expected artifact '%s' not found after get_%s().\nTemp dir: %s\nContents (up to 20):\n  %s",
-            expected, provider_id, tmp_dir, tree
+            paste(expected, collapse = "' or '"), provider_id, tmp_dir, tree
         ))
     }
     invisible(hits)
@@ -776,16 +475,29 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
 }
 
 #' @noRd
+.brprovider_update_job <- function() {
+    # pkgload runs the app from the source tree, without an installed saira.
+    # The new R process must then load the same tree to find the worker.
+    path <- getNamespaceInfo("saira", "path")
+    source_path <- if (file.exists(file.path(path, "R", "utils_brproviders.R"))) path
+    job <- function(provider_id, local_version) {
+        if (!is.null(source_path)) {
+            pkgload::load_all(source_path, quiet = TRUE, export_all = FALSE)
+        }
+        worker <- get(".brprovider_background_update_worker", envir = asNamespace("saira"))
+        worker(provider_id = provider_id, local_version = local_version)
+    }
+    environment(job) <- list2env(list(source_path = source_path), parent = baseenv())
+    job
+}
+
+#' @noRd
 .brprovider_start_background_update <- function(provider_id,
                                                 local_version = NA_character_,
                                                 retry_backoff_secs = .brprovider_retry_backoff_secs_default) {
     provider_id <- as.character(provider_id)
 
     if (exists(provider_id, envir = .brprovider_jobs, inherits = FALSE)) {
-        return(FALSE)
-    }
-
-    if (!requireNamespace("future", quietly = TRUE)) {
         return(FALSE)
     }
 
@@ -799,39 +511,30 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
         source_package_version = .brprovider_pkg_version_safe(provider_id)
     ))
 
-    future_obj <- tryCatch({
-        old_plan <- tryCatch(future::plan("list"), error = function(e) NULL)
-        changed_plan <- FALSE
-        if (is.list(old_plan) && length(old_plan) > 0L && inherits(old_plan[[1L]], "sequential")) {
-            future::plan(future::multisession, workers = 1L)
-            changed_plan <- TRUE
-        }
+    # The IPT check and the download get their own R process, so the app does
+    # not stop (LESSONS). A PSOCK worker listens on all network interfaces, and
+    # Windows then asks for firewall access. callr uses pipes, not a socket.
+    process <- tryCatch(
+        callr::r_bg(
+            .brprovider_update_job(),
+            args = list(provider_id = provider_id, local_version = local_version),
+            libpath = .libPaths(),
+            package = TRUE,
+            user_profile = FALSE,
+            stdout = NULL,
+            stderr = NULL,
+            supervise = TRUE
+        ),
+        error = function(e) e
+    )
 
-        on.exit({
-            if (isTRUE(changed_plan) && !is.null(old_plan)) {
-                try(future::plan(old_plan), silent = TRUE)
-            }
-        }, add = TRUE)
-
-        future::future(
-            {
-                .brprovider_background_update_worker(
-                    provider_id = provider_id,
-                    local_version = local_version
-                )
-            },
-            lazy = FALSE,
-            seed = TRUE
-        )
-    }, error = function(e) e)
-
-    if (inherits(future_obj, "error")) {
+    if (inherits(process, "error")) {
         .brprovider_release_lock(provider_id)
         now <- .brprovider_now_utc()
         .brprovider_patch_meta(provider_id, list(
             status = "update_failed",
             last_checked_at = .brprovider_time_to_string(now),
-            last_error = as.character(future_obj$message),
+            last_error = as.character(process$message),
             retry_after_at = .brprovider_time_to_string(now + as.numeric(retry_backoff_secs)),
             source_package_version = .brprovider_pkg_version_safe(provider_id)
         ))
@@ -839,7 +542,7 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
     }
 
     assign(provider_id, list(
-        future = future_obj,
+        process = process,
         retry_backoff_secs = as.integer(retry_backoff_secs),
         started_at = .brprovider_time_to_string(.brprovider_now_utc())
     ), envir = .brprovider_jobs)
@@ -852,10 +555,6 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
 #' @return List of update events completed during this poll.
 #' @noRd
 brprovider_poll_updates <- function(provider_id = NULL) {
-    if (!requireNamespace("future", quietly = TRUE)) {
-        return(list())
-    }
-
     job_ids <- ls(envir = .brprovider_jobs, all.names = TRUE)
     if (!is.null(provider_id)) {
         ids <- unique(as.character(provider_id))
@@ -868,26 +567,24 @@ brprovider_poll_updates <- function(provider_id = NULL) {
     events <- list()
     for (id in job_ids) {
         job <- get(id, envir = .brprovider_jobs, inherits = FALSE)
-        future_obj <- job$future
 
-        resolved <- tryCatch(
-            future::resolved(future_obj),
-            error = function(e) TRUE
-        )
-        if (!isTRUE(resolved)) {
+        alive <- tryCatch(job$process$is_alive(), error = function(e) FALSE)
+        if (isTRUE(alive)) {
             next
         }
 
         result <- tryCatch(
-            future::value(future_obj),
+            job$process$get_result(),
             error = function(e) {
+                # callr wraps the error of the R process. The cause is the message to keep.
+                cause <- if (inherits(e$parent, "condition")) e$parent else e
                 list(
                     ok = FALSE,
                     updated = FALSE,
                     provider_id = id,
                     remote_version = NA_character_,
                     local_version = NA_character_,
-                    error = as.character(e$message)
+                    error = conditionMessage(cause)
                 )
             }
         )
@@ -957,7 +654,7 @@ brprovider_poll_updates <- function(provider_id = NULL) {
 #' download (mandatory first run).
 #'
 #' @param provider_id Character.
-#' @param check_ttl_secs Numeric. Remote check TTL in seconds. Default 24h.
+#' @param check_ttl_secs Numeric. Remote check TTL in seconds. Default 30 days.
 #' @param retry_backoff_secs Numeric. Retry backoff after update failure.
 #' @param verbose Logical.
 #' @return Named list with status flags.
@@ -1100,307 +797,5 @@ brprovider_ensure_data <- function(provider_id,
 }
 
 # ---------------------------------------------------------------------------
-# Load (with in-session cache)
-# ---------------------------------------------------------------------------
-
-#' Load BR provider data, using an in-session cache to avoid repeated I/O
-#'
-#' Reads the pre-processed .rds file saved by brprovider_download_data().
-#' No florabr/faunabr package calls needed - the data frame is loaded directly.
-#'
-#' @param provider_id Character. "florabr" or "faunabr".
-#' @param force_reload Logical. Bypass cache and reload from disk. Default FALSE.
-#' @return Data frame of species records, or NULL on failure.
-#' @noRd
-brprovider_load_data <- function(provider_id, force_reload = FALSE) {
-    cache_key <- paste0("data_", provider_id)
-
-    if (!isTRUE(force_reload) &&
-        exists(cache_key, envir = .brprovider_cache, inherits = FALSE)) {
-        cached <- get(cache_key, envir = .brprovider_cache, inherits = FALSE)
-        if (is.data.frame(cached) && nrow(cached) > 0L) {
-            return(cached)
-        }
-    }
-
-    rds_path <- .brprovider_rds_path(provider_id)
-    result <- tryCatch({
-        if (!file.exists(rds_path)) {
-            stop(sprintf("Data not found. Download required for '%s'.", provider_id))
-        }
-        readRDS(rds_path)
-    }, error = function(e) {
-        warning(sprintf("brprovider_load_data failed for '%s': %s", provider_id, e$message))
-        NULL
-    })
-
-    if (!is.null(result) && is.data.frame(result) && nrow(result) > 0L) {
-        assign(cache_key, result, envir = .brprovider_cache)
-    }
-    result
-}
-
-#' Clear the in-session BR data cache
-#' @param provider_id Character or NULL. NULL clears all entries.
-#' @noRd
-brprovider_clear_cache <- function(provider_id = NULL) {
-    if (is.null(provider_id)) {
-        rm(list = ls(envir = .brprovider_cache, all.names = TRUE),
-           envir = .brprovider_cache)
-    } else {
-        cache_key <- paste0("data_", as.character(provider_id))
-        if (exists(cache_key, envir = .brprovider_cache, inherits = FALSE)) {
-            rm(list = cache_key, envir = .brprovider_cache)
-        }
-    }
-    invisible(NULL)
-}
-
-# ---------------------------------------------------------------------------
-# Result normalisation
-# ---------------------------------------------------------------------------
-
-#' Normalise a raw florabr/faunabr check_names result to the taxadb schema
-#'
-#' Key mappings:
-#'   input_name       -> query_name
-#'   Spelling         -> validation_status  (Correct -> accepted/synonym,
-#'                                           Probably_incorrect -> ambiguous,
-#'                                           Not_found -> not_found)
-#'   "Suggested name" -> scientificName
-#'   taxonomicStatus  -> taxonomicStatus    (lowercased)
-#'   family           -> family
-#'
-#' When multiple rows share the same input_name (multiple fuzzy suggestions)
-#' only the row with the smallest Distance is kept.
-#'
-#' @param raw_df Data frame from florabr::check_names or
-#'   faunabr::check_fauna_names.
-#' @param provider_id Character. "florabr" or "faunabr".
-#' @return Data frame compatible with the taxadb common schema.
-#' @noRd
-normalize_brprovider_result <- function(raw_df, provider_id) {
-    empty_out <- data.frame(
-        query_name        = character(0),
-        scientificName    = character(0),
-        taxonomicStatus   = character(0),
-        family            = character(0),
-        provider          = character(0),
-        validation_status = character(0),
-        match_count       = integer(0),
-        stringsAsFactors  = FALSE
-    )
-
-    if (!is.data.frame(raw_df) || nrow(raw_df) == 0L) {
-        return(empty_out)
-    }
-
-    names(raw_df) <- trimws(names(raw_df))
-
-    # Deduplicate: florabr/faunabr can return multiple suggestion rows per
-    # input_name when Spelling == "Probably_incorrect". Keep closest match.
-    if ("Distance" %in% names(raw_df) && "input_name" %in% names(raw_df)) {
-        dist_num <- suppressWarnings(as.numeric(raw_df[["Distance"]]))
-        dist_num[is.na(dist_num)] <- Inf
-        raw_df[["Distance"]] <- dist_num
-        split_list <- split(seq_len(nrow(raw_df)), raw_df[["input_name"]])
-        keep_rows <- vapply(split_list, function(idxs) {
-            if (length(idxs) == 1L) return(idxs[[1L]])
-            idxs[[which.min(raw_df[["Distance"]][idxs])]]
-        }, FUN.VALUE = integer(1))
-        raw_df <- raw_df[keep_rows, , drop = FALSE]
-        rownames(raw_df) <- NULL
-    }
-
-    n <- nrow(raw_df)
-
-    query_name <- if ("input_name" %in% names(raw_df)) {
-        as.character(raw_df[["input_name"]])
-    } else {
-        rep(NA_character_, n)
-    }
-
-    spelling <- if ("Spelling" %in% names(raw_df)) {
-        as.character(raw_df[["Spelling"]])
-    } else {
-        rep(NA_character_, n)
-    }
-
-    taxa_status_raw <- if ("taxonomicStatus" %in% names(raw_df)) {
-        tolower(as.character(raw_df[["taxonomicStatus"]]))
-    } else {
-        rep(NA_character_, n)
-    }
-
-    # Map Spelling + taxonomicStatus -> validation_status
-    validation_status <- vapply(seq_len(n), function(i) {
-        sp <- spelling[[i]]
-        ts <- taxa_status_raw[[i]]
-        if (is.na(sp)) return("not_found")
-        if (identical(sp, "Correct")) {
-            if (!is.na(ts) && grepl("synonym", ts, fixed = TRUE)) {
-                return("synonym")
-            }
-            return("accepted")
-        }
-        if (identical(sp, "Probably_incorrect")) return("ambiguous")
-        "not_found"
-    }, FUN.VALUE = character(1))
-
-    # scientificName: prefer "Suggested name" column, fall back to input
-    suggested_col <- if ("Suggested name" %in% names(raw_df)) {
-        "Suggested name"
-    } else {
-        NA_character_
-    }
-    scientific_name <- if (!is.na(suggested_col)) {
-        sugg <- as.character(raw_df[[suggested_col]])
-        ifelse(is.na(sugg) | !nzchar(sugg), query_name, sugg)
-    } else {
-        query_name
-    }
-
-    family <- if ("family" %in% names(raw_df)) {
-        as.character(raw_df[["family"]])
-    } else {
-        rep(NA_character_, n)
-    }
-
-    match_count <- as.integer(validation_status != "not_found")
-
-    out <- data.frame(
-        query_name        = query_name,
-        scientificName    = scientific_name,
-        taxonomicStatus   = taxa_status_raw,
-        family            = family,
-        provider          = as.character(provider_id),
-        validation_status = validation_status,
-        match_count       = match_count,
-        stringsAsFactors  = FALSE
-    )
-
-    # Fill taxadb expected columns absent from the BR schema
-    for (col_name in c("taxonID", "taxonRank", "acceptedNameUsageID",
-                       "update_date", "kingdom", "phylum", "class",
-                       "order", "genus", "specificEpithet",
-                       "vernacularName", "infraspecificEpithet")) {
-        if (!col_name %in% names(out)) {
-            out[[col_name]] <- NA_character_
-        }
-    }
-
-    rownames(out) <- NULL
-    out
-}
-
-# ---------------------------------------------------------------------------
-# Query
-# ---------------------------------------------------------------------------
-
-#' Query a BR provider with a vector of normalised scientific names
-#'
-#' @param query_names Character vector of normalised names.
-#' @param provider_id Character. "florabr" or "faunabr".
-#' @param data Pre-loaded provider data frame, or NULL to use cache.
-#' @param max_distance Numeric. Levenshtein fraction for fuzzy matching.
-#'   Default 0.1.
-#' @return Data frame in the taxadb common schema.
-#' @noRd
-query_brprovider <- function(query_names, provider_id,
-                             data = NULL, max_distance = 0.1) {
-    names_chr <- unique(as.character(query_names))
-    names_chr <- names_chr[!is.na(names_chr) & nzchar(names_chr)]
-    if (length(names_chr) == 0L) {
-        return(normalize_brprovider_result(data.frame(), provider_id))
-    }
-
-    if (is.null(data)) {
-        data <- brprovider_load_data(provider_id)
-    }
-    if (is.null(data) || !is.data.frame(data) || nrow(data) == 0L) {
-        stop(sprintf(
-            "No data available for provider '%s'. Download required.",
-            provider_id
-        ))
-    }
-
-    raw <- tryCatch({
-        if (identical(provider_id, "florabr")) {
-            if (!requireNamespace("florabr", quietly = TRUE)) {
-                stop("Package 'florabr' is not installed.")
-            }
-            florabr::check_names(
-                data             = data,
-                species          = names_chr,
-                max_distance     = max_distance,
-                include_subspecies = TRUE,
-                include_variety  = FALSE,
-                parallel         = FALSE,
-                progress_bar     = FALSE
-            )
-        } else if (identical(provider_id, "faunabr")) {
-            if (!requireNamespace("faunabr", quietly = TRUE)) {
-                stop("Package 'faunabr' is not installed.")
-            }
-            faunabr::check_fauna_names(
-                data               = data,
-                species            = names_chr,
-                max_distance       = max_distance,
-                include_subspecies = TRUE
-            )
-        } else {
-            stop(sprintf("Unknown BR provider: %s", provider_id))
-        }
-    }, error = function(e) e)
-
-    if (inherits(raw, "error")) {
-        stop(sprintf("BR provider '%s' query failed: %s", provider_id, raw$message))
-    }
-
-    normalize_brprovider_result(
-        as.data.frame(raw, stringsAsFactors = FALSE),
-        provider_id
-    )
-}
-
-# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-#' Inspect download parameters without performing any network calls
-#'
-#' Returns a named list of all relevant paths and metadata that
-#' brprovider_download_data() would use. Intended for local audit and debugging.
-#'
-#' @param provider_id Character. "florabr" or "faunabr".
-#' @param data_version Character. Version string. Default "latest".
-#' @return Named list with key paths and metadata.
-#' @noRd
-brprovider_download_params <- function(provider_id, data_version = "latest") {
-    list(
-        provider_id  = as.character(provider_id),
-        data_version = as.character(data_version),
-        tmp_dir      = file.path(tempdir(), as.character(provider_id)),
-        persist_dir  = brprovider_data_dir(provider_id),
-        rds_path     = .brprovider_rds_path(provider_id),
-        meta_path    = .brprovider_meta_path(provider_id),
-        lock_path    = .brprovider_lock_path(provider_id),
-        pkg_version  = .brprovider_pkg_version_safe(provider_id)
-    )
-}
-
-#' Return query names NOT resolved by a BR provider (validation_status == "not_found")
-#' @param result_df Data frame produced by query_brprovider / normalize_brprovider_result.
-#' @return Character vector of query_name values.
-#' @noRd
-brprovider_unresolved_names <- function(result_df) {
-    if (!is.data.frame(result_df) || nrow(result_df) == 0L) {
-        return(character(0))
-    }
-    if (!all(c("query_name", "validation_status") %in% names(result_df))) {
-        return(character(0))
-    }
-    idx <- result_df$validation_status == "not_found"
-    idx[is.na(idx)] <- FALSE
-    unique(as.character(result_df$query_name[idx]))
-}

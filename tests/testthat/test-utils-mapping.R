@@ -51,6 +51,41 @@ testthat::test_that("collapse_mapped_values preserves token order and ignores co
     testthat::expect_identical(out[[3]], "X | Y")
 })
 
+# ADR-116 made collapse_mapped_values() work a column at a time. This is the
+# correctness half of that change, so it runs on every test pass, not only
+# under RUN_PERF like the timing half in test-performance-regression.R.
+testthat::test_that("multi-column collapse matches the per-row reference exactly", {
+    reference <- function(df, cols, out_sep = " | ") {
+        normalized <- lapply(cols, function(cn) {
+            saira:::normalize_semicolon_tokens(df[[cn]], out_sep = out_sep)
+        })
+        vapply(seq_len(nrow(df)), function(i) {
+            tokens <- character(0)
+            for (col_values in normalized) {
+                tokens <- c(tokens,
+                            saira:::split_output_tokens(col_values[[i]], out_sep = out_sep))
+            }
+            if (length(tokens) == 0) return(NA_character_)
+            paste(tokens, collapse = out_sep)
+        }, FUN.VALUE = character(1))
+    }
+
+    # Blank cells, NA, internal empty tokens, all-separator, semicolons, factors.
+    df <- data.frame(
+        a = c("x |  | y", " | ", NA, "p;q", "solo", "", "  "),
+        b = c("z", "w", NA, " ; ", NA, "", "v"),
+        c = c(NA, "k |  ", "m", "n", " | | ", "t", NA),
+        stringsAsFactors = FALSE
+    )
+    cols <- c("a", "b", "c")
+    testthat::expect_identical(collapse_mapped_values(df, cols), reference(df, cols))
+
+    fct <- data.frame(a = factor(c("u |  | v", NA)), b = factor(c("s", "r")))
+    testthat::expect_identical(
+        collapse_mapped_values(fct, c("a", "b")), reference(fct, c("a", "b"))
+    )
+})
+
 testthat::test_that("derive_dynprops_key normalizes accents and special chars", {
     testthat::expect_identical(saira:::derive_dynprops_key("Localidade"), "localidade")
     testthat::expect_identical(saira:::derive_dynprops_key("ÁreaProtegida"), "areaprotegida")
@@ -161,6 +196,50 @@ testthat::test_that("build_dynamic_properties_json key override falls back to au
     testthat::expect_identical(out2[[1]], "{\"x\":\"v\"}")
 })
 
+testthat::test_that("build_dynamic_properties_json merges a cell that holds a JSON object (AUD-08)", {
+    df <- data.frame(
+        dynamicProperties = c(
+            "{\"temperature\":\"20\",\"mmaThreatStatus\":\"VU\"}",
+            " { \"a\": {\"b\": 1.50} } ",
+            "{}",
+            "{not json}",
+            ""
+        ),
+        cor = c("azul", "", "verde", "", ""),
+        check.names = FALSE,
+        stringsAsFactors = FALSE
+    )
+    out <- build_dynamic_properties_json(df, c("dynamicProperties", "cor"))
+    testthat::expect_identical(out, c(
+        "{\"temperature\":\"20\",\"mmaThreatStatus\":\"VU\",\"cor\":\"azul\"}",
+        "{\"a\":{\"b\":1.50}}",
+        "{\"cor\":\"verde\"}",
+        "{\"dynamicproperties\":\"{not json}\"}",
+        ""
+    ))
+    # A second import gives the same object, not a deeper one.
+    again <- data.frame(dynamicProperties = out[[1]], stringsAsFactors = FALSE)
+    testthat::expect_identical(build_dynamic_properties_json(again, "dynamicProperties"), out[[1]])
+    # Spaces outside the strings go, a brace inside a string stays.
+    spaced <- data.frame(dp = c("{ \"a\" : \"x y\" , \"n\": -2.5e3, \"t\": true }", "{\"s\":\"{x}\"}"),
+                         stringsAsFactors = FALSE)
+    testthat::expect_identical(
+        build_dynamic_properties_json(spaced, "dp"),
+        c("{\"a\":\"x y\",\"n\":-2.5e3,\"t\":true}", "{\"s\":\"{x}\"}")
+    )
+})
+
+testthat::test_that("build_dynamic_properties_json always writes valid JSON", {
+    key <- build_dynamic_properties_json(data.frame(a = "v"), "a", keys = list(a = "key\\q"))
+    testthat::expect_identical(key, '{"key\\\\q":"v"}')
+    # A cell that only looks like an object is a text value.
+    cells <- c('{"key":"value\\q"}', '{"key":"line\tbreak"}', '{"key":"a\\u00e9\\n"}')
+    out <- build_dynamic_properties_json(data.frame(a = cells), "a")
+    testthat::expect_true(all(vapply(c(key, out), jsonlite::validate, logical(1))))
+    testthat::expect_identical(out[3], '{"key":"a\\u00e9\\n"}')
+    testthat::expect_identical(jsonlite::fromJSON(out[1])$a, cells[1])
+})
+
 testthat::test_that("build_dynamic_properties_json errors on missing column", {
     df <- data.frame(a = "x", stringsAsFactors = FALSE)
     testthat::expect_error(
@@ -226,6 +305,18 @@ testthat::test_that("parse_month_to_number supports numeric, Portuguese and Engl
     testthat::expect_identical(parse_month_to_number("June"), "06")
     testthat::expect_identical(parse_month_to_number("Junho"), "06")
     testthat::expect_true(is.na(parse_month_to_number("foo")))
+})
+
+testthat::test_that("parse_month_to_number supports Spanish month names", {
+    testthat::expect_identical(parse_month_to_number("Enero"), "01")
+    testthat::expect_identical(parse_month_to_number("ene"), "01")
+    testthat::expect_identical(parse_month_to_number("Setiembre"), "09")
+    testthat::expect_identical(parse_month_to_number("Septiembre"), "09")
+    testthat::expect_identical(parse_month_to_number("dic"), "12")
+    testthat::expect_identical(
+        parse_month_to_number_vec(c("marzo", "Mayo", "OCTUBRE")),
+        c("03", "05", "10")
+    )
 })
 
 # Vectorized parser companions ------------------------------------------
@@ -514,37 +605,7 @@ testthat::test_that("compute_name_score prioritizes exact match and synonyms", {
     testthat::expect_true(low_res$score <= 0.60)
 })
 
-testthat::test_that("compute_value_score validates coordinates and blocks incompatible type", {
-    lat_ok <- c("-12.1", "-23.5", "0.0", "45.9")
-    lat_bad <- c("abc", "texto", "sem numero", "x")
-
-    ok_res <- compute_value_score(lat_ok, term = "decimalLatitude", name_score = 1.0)
-    bad_res <- compute_value_score(lat_bad, term = "decimalLatitude", name_score = 1.0)
-
-    testthat::expect_true(ok_res$score >= 0.90)
-    testthat::expect_true(ok_res$compatible_type)
-
-    testthat::expect_true(bad_res$score <= 0.60)
-    testthat::expect_false(bad_res$compatible_type)
-})
-
-testthat::test_that("compute_value_score validates scientificName and individualCount", {
-    sn_ok <- c("Panthera onca", "Leopardus sp.", "Leopardus cf. pardalis")
-    sn_bad <- c("foo", "123", "???")
-
-    count_ok <- c("1", "2", "0", "9")
-    count_bad <- c("one", "-1", "3.7", "abc")
-
-    sn_ok_res <- compute_value_score(sn_ok, term = "scientificName", name_score = 1.0)
-    sn_bad_res <- compute_value_score(sn_bad, term = "scientificName", name_score = 1.0)
-    count_ok_res <- compute_value_score(count_ok, term = "individualCount", name_score = 1.0)
-    count_bad_res <- compute_value_score(count_bad, term = "individualCount", name_score = 1.0)
-
-    testthat::expect_true(sn_ok_res$score > sn_bad_res$score)
-    testthat::expect_true(count_ok_res$score > count_bad_res$score)
-})
-
-testthat::test_that("run_rostrum_stage1 excludes temporal inference except exact match", {
+testthat::test_that("run_rostrum_stage1 caps a non-exact eventDate name at SUGERIDO", {
     syn <- data.frame(
         term = c("eventDate"),
         synonym = c("data coleta"),
@@ -560,8 +621,8 @@ testthat::test_that("run_rostrum_stage1 excludes temporal inference except exact
         stringsAsFactors = FALSE
     )
     out_synonym <- run_rostrum_stage1(df_synonym_only, dwc_terms, syn, options = rostrum_options())
-    testthat::expect_identical(out_synonym$status[[1]], "MANUAL")
-    testthat::expect_true(is.na(out_synonym$selected_col[[1]]))
+    testthat::expect_identical(out_synonym$status[[1]], "SUGERIDO")
+    testthat::expect_identical(out_synonym$selected_col[[1]], "data_coleta")
 
     df_exact <- data.frame(
         eventDate = c("2024-01-01", "2024-01-02"),
@@ -570,6 +631,20 @@ testthat::test_that("run_rostrum_stage1 excludes temporal inference except exact
     out_exact <- run_rostrum_stage1(df_exact, dwc_terms, syn, options = rostrum_options())
     testthat::expect_true(out_exact$status[[1]] %in% c("AUTO", "SUGERIDO", "AMBIGUO"))
     testthat::expect_identical(out_exact$selected_col[[1]], "eventDate")
+})
+
+testthat::test_that("the bundled synonyms suggest data_registro for eventDate", {
+    # The demo sheet names its date column data_registro. Without this synonym,
+    # a new install left eventDate blank and the export blocked.
+    syn <- load_dwc_synonyms_v1(path = test_data_path("dwc_synonyms_v1.rds"))
+    dwc_terms <- data.frame(term = c("eventDate"), stringsAsFactors = FALSE)
+    df <- data.frame(
+        data_registro = c("22/03/2024", "26/04/2020"),
+        stringsAsFactors = FALSE
+    )
+    out <- run_rostrum_stage1(df, dwc_terms, syn, options = rostrum_options())
+    testthat::expect_identical(out$status[[1]], "SUGERIDO")
+    testthat::expect_identical(out$selected_col[[1]], "data_registro")
 })
 
 testthat::test_that("run_rostrum_stage1 resolves conflicts by strongest score", {
@@ -803,9 +878,52 @@ testthat::test_that("build_processed_mapping_df injects constant_values across a
 testthat::test_that("basisOfRecord helpers normalize and auto-suggest canonical terms", {
     testthat::expect_identical(normalize_basis_of_record_key("  HumanObservation  "), "humanobservation")
     testthat::expect_identical(normalize_basis_of_record_key(NA_character_), "")
-    testthat::expect_identical(auto_suggest_basis_of_record_term("humanobservation"), "HumanObservation")
-    testthat::expect_identical(auto_suggest_basis_of_record_term("HumanObservation"), "HumanObservation")
-    testthat::expect_identical(auto_suggest_basis_of_record_term("camera trap"), "")
+    testthat::expect_identical(
+        auto_suggest_basis_of_record_terms(c("humanobservation", "HumanObservation", "Human_Observation")),
+        rep("HumanObservation", 3L)
+    )
+})
+
+testthat::test_that("auto_suggest_basis_of_record_terms matches labels and common synonyms", {
+    raw <- c(
+        "Observação", "Observação em campo", "Espécime preservado",
+        "Material preservado (herbário)", "Armadilha fotográfica", "Amostra de tecido",
+        "Machine Observation", "Espécime Fóssil"
+    )
+    testthat::expect_identical(
+        auto_suggest_basis_of_record_terms(raw),
+        c("HumanObservation", "HumanObservation", "PreservedSpecimen", "PreservedSpecimen",
+          "MachineObservation", "MaterialSample", "MachineObservation", "FossilSpecimen")
+    )
+})
+
+testthat::test_that("auto_suggest_basis_of_record_terms matches Spanish labels and synonyms", {
+    raw <- c("Observación humana", "Espécimen preservado", "Fototrampeo",
+             "Muestra de tejido", "Fósil")
+    testthat::expect_identical(
+        auto_suggest_basis_of_record_terms(raw),
+        c("HumanObservation", "PreservedSpecimen", "MachineObservation",
+          "MaterialSample", "FossilSpecimen")
+    )
+})
+
+testthat::test_that("auto_suggest_basis_of_record_terms leaves ambiguous and blank values empty", {
+    raw <- c("Coleta", "Unknown method", "", NA_character_)
+    testthat::expect_identical(auto_suggest_basis_of_record_terms(raw), rep("", 4L))
+})
+
+testthat::test_that("map_basis_of_record_values converts without the assistant and keeps its decisions", {
+    raw <- c("HumanObservation", "Observação", "Coleta", "Armadilha fotográfica")
+    testthat::expect_identical(
+        map_basis_of_record_values(raw, NULL),
+        c("HumanObservation", "HumanObservation", "", "MachineObservation")
+    )
+    # A saved decision wins over the suggestion, a skip ("") included.
+    decisions <- c("coleta" = "PreservedSpecimen", "armadilha fotográfica" = "")
+    testthat::expect_identical(
+        map_basis_of_record_values(raw, decisions),
+        c("HumanObservation", "HumanObservation", "PreservedSpecimen", "")
+    )
 })
 
 testthat::test_that("sanitize_basis_of_record_map filters invalid terms and keeps keys normalized", {
@@ -882,6 +1000,13 @@ testthat::test_that("map_occurrence_status_values converts 0/1 and common varian
     testthat::expect_identical(
         map_occurrence_status_values(inputs),
         expected
+    )
+})
+
+testthat::test_that("map_occurrence_status_values accepts Spanish yes values", {
+    testthat::expect_identical(
+        map_occurrence_status_values(c("Sí", "si", "SI", "no")),
+        c("present", "present", "present", "absent")
     )
 })
 
@@ -1005,6 +1130,14 @@ testthat::test_that("build_eventdate_from_parts returns NULL when the selection 
     testthat::expect_null(build_eventdate_from_parts(df, c("a", "b")))
 })
 
+testthat::test_that("build_eventdate_from_parts fails a day with a fraction", {
+    parts <- data.frame(year = "2024", month = "2", day = c("29.9", "31.9", "2.95e1", "29", "29.0"),
+                        stringsAsFactors = FALSE)
+    out <- build_eventdate_from_parts(parts, names(parts))
+    testthat::expect_identical(out$failed_rows, c(TRUE, TRUE, TRUE, FALSE, FALSE))
+    testthat::expect_identical(out$values[4:5], c("2024-02-29", "2024-02-29"))
+})
+
 testthat::test_that("build_term_value: basisOfRecord applies mapping", {
     df <- data.frame(bor = c("humanobservation", "Unknown"), stringsAsFactors = FALSE)
     bmap <- c("humanobservation" = "HumanObservation")
@@ -1086,6 +1219,17 @@ testthat::test_that("plan_mapping_guide_restore rebuilds concatenations, constan
     testthat::expect_identical(plan$constants$datasetName, "Rede Felinos")
 })
 
+testthat::test_that("plan_mapping_guide_restore keeps a column whose name has a plus (AUD-15)", {
+    pairs <- data.frame(source_column = c("lat + gps", "year + month"),
+                        dwc_term = c("decimalLatitude", "eventDate"), kind = "column",
+                        constant_value = NA_character_, stringsAsFactors = FALSE)
+    plan <- plan_mapping_guide_restore(list(meta = list(), pairs = pairs),
+                                       available_columns = c("lat + gps", "year", "month"))
+    testthat::expect_identical(plan$map_values$decimalLatitude, "lat + gps")
+    testthat::expect_identical(plan$map_values$eventDate, c("year", "month"))
+    testthat::expect_length(plan$missing_columns, 0L)
+})
+
 # resolve_occurrence_ids (C2) --------------------------------------------
 
 testthat::test_that("resolve_occurrence_ids preserves provided IDs and fills gaps", {
@@ -1100,6 +1244,66 @@ testthat::test_that("resolve_occurrence_ids preserves provided IDs and fills gap
     # Blank/NA entries are backfilled with non-empty UUIDs.
     testthat::expect_true(all(nchar(out[c(2L, 3L)]) > 10L))
     testthat::expect_false(anyNA(out))
+})
+
+testthat::test_that("replace_repeated_ids gives every repeated row a persistent id", {
+    basis <- data.frame(
+        occurrenceID = c("a1", "a2", "a2", "a4", "a2"),
+        sex = c("male", "female", "male", "male", "female"),
+        stringsAsFactors = FALSE
+    )
+    out <- replace_repeated_ids(basis)
+    testthat::expect_identical(out$occurrenceID[c(1L, 4L)], c("a1", "a4"))
+    # The first "a2" is replaced too: which row comes first depends on the order.
+    testthat::expect_true(all(startsWith(out$occurrenceID[c(2L, 3L, 5L)], "urn:uuid:")))
+    testthat::expect_false(anyDuplicated(out$occurrenceID) > 0L)
+    testthat::expect_identical(attr(out, "ids_replaced"), 3L)
+    testthat::expect_identical(replace_repeated_ids(basis)$occurrenceID, out$occurrenceID)
+
+    # A Preview correction changes neither the id basis nor the other ids.
+    edited <- basis
+    edited$sex[2] <- "male"
+    testthat::expect_identical(replace_repeated_ids(edited, basis = basis)$occurrenceID,
+                               out$occurrenceID)
+    # A row whose id the person corrected leaves the others unique.
+    edited$occurrenceID[c(3L, 5L)] <- c("a2-b", "a2-c")
+    fixed <- replace_repeated_ids(edited, basis = basis)
+    testthat::expect_identical(fixed$occurrenceID[2:3], c("a2", "a2-b"))
+    testthat::expect_null(attr(fixed, "ids_replaced"))
+})
+
+testthat::test_that("a new copy of a row with kept ids gets an id of its own", {
+    rows <- data.frame(occurrenceID = "", sex = rep("male", 2), stringsAsFactors = FALSE)
+    rows$occurrenceID <- as.character(resolve_occurrence_ids(rows))
+    # The export goes back in with one more copy of the same row.
+    again <- rbind(rows, data.frame(occurrenceID = "", sex = "male"))
+    ids <- as.character(resolve_occurrence_ids(again))
+    testthat::expect_identical(ids[1:2], rows$occurrenceID)
+    testthat::expect_false(anyDuplicated(ids) > 0L)
+    # The same three rows with no ids give the same three ids.
+    testthat::expect_setequal(as.character(resolve_occurrence_ids(transform(again, occurrenceID = ""))), ids)
+
+    shared <- again
+    shared$occurrenceID <- ids[c(1L, 2L, 1L)]
+    out <- replace_repeated_ids(shared)
+    testthat::expect_identical(out$occurrenceID[2], ids[2])
+    testthat::expect_false(anyDuplicated(out$occurrenceID) > 0L)
+})
+
+testthat::test_that("replace_repeated_ids does not count a row the export leaves out", {
+    basis <- data.frame(occurrenceID = c("r1", "r2", "r1"), stringsAsFactors = FALSE)
+    out <- replace_repeated_ids(basis, ignore = 3L)
+    testthat::expect_identical(out$occurrenceID, c("r1", "r2", "r1"))
+    testthat::expect_null(attr(out, "ids_replaced"))
+})
+
+testthat::test_that("occurrence_id_counts_after_repeats moves the replaced ids to generated", {
+    counts <- list(total = 10L, preserved = 8L, generated = 2L)
+    out <- occurrence_id_counts_after_repeats(counts, 3L)
+    testthat::expect_equal(out$preserved, 5L)
+    testthat::expect_equal(out$generated, 5L)
+    testthat::expect_identical(occurrence_id_counts_after_repeats(counts, 0L), counts)
+    testthat::expect_identical(occurrence_id_counts_after_repeats(counts, NULL), counts)
 })
 
 testthat::test_that("resolve_occurrence_ids generates UUIDs when no column exists", {
@@ -1143,7 +1347,7 @@ testthat::test_that("resolve_occurrence_ids generates for exactly the rows that 
 
     asked_for <- NULL
     testthat::local_mocked_bindings(
-        generate_persistent_ids = function(df, rows = NULL, exclude = NULL) {
+        generate_persistent_ids = function(df, rows = NULL, exclude = NULL, reserved = NULL) {
             asked_for <<- rows
             rep("generated-01", sum(rows))
         }
@@ -1158,6 +1362,25 @@ testthat::test_that("resolve_occurrence_ids generates for exactly the rows that 
 })
 
 # detect_duplicate_source_mappings (item 3) ------------------------------
+testthat::test_that("card_values_from_columns reads one license and one language from the data", {
+    card_values <- saira:::card_values_from_columns
+    df <- data.frame(license = c("CC BY-NC 4.0", "", NA), language = "pt-BR", x = 1:3)
+    testthat::expect_identical(card_values(df), list(license = "CC BY-NC 4.0", language = "pt"))
+
+    url <- data.frame(License = "http://creativecommons.org/licenses/by/4.0/legalcode")
+    testthat::expect_identical(card_values(url), list(license = "CC BY 4.0"))
+
+    sheet <- data.frame("Licença" = "CC-BY-NC 4.0", Idioma = "Português", check.names = FALSE)
+    testthat::expect_identical(card_values(sheet), list(license = "CC BY-NC 4.0", language = "pt"))
+    dc <- data.frame("dcterms:license" = "cc by nc", check.names = FALSE)
+    testthat::expect_identical(card_values(dc), list(license = "CC BY-NC 4.0"))
+
+    # Two licenses, an unknown language or no column: the cards stay empty.
+    two <- data.frame(license = c("CC0", "CC BY 4.0"), language = "fr")
+    testthat::expect_identical(card_values(two), list())
+    testthat::expect_identical(card_values(data.frame(x = 1)), list())
+})
+
 testthat::test_that("detect_duplicate_source_mappings flags a column used by two terms", {
     mv <- list(
         scientificName = "taxon",
@@ -1218,6 +1441,44 @@ testthat::test_that("merge_dynamic_property splices into an existing object", {
     )
 })
 
+testthat::test_that("merge_dynamic_property replaces a key the object already has (AUD-09)", {
+    out <- saira:::merge_dynamic_property(
+        c("{\"iucnRedListCategory\":\"LC\",\"n\":20}",
+          "{\"iucnRedListCategory\":\"LC\",\"iucnRedListCategory\":\"NT\"}",
+          "{\"x\":{\"iucnRedListCategory\":\"LC\"}}"),
+        "iucnRedListCategory", "EN"
+    )
+    testthat::expect_identical(out, c(
+        "{\"iucnRedListCategory\":\"EN\",\"n\":20}",
+        "{\"iucnRedListCategory\":\"EN\"}",
+        "{\"x\":{\"iucnRedListCategory\":\"LC\"},\"iucnRedListCategory\":\"EN\"}"
+    ))
+    # The key inside a string value is not a member, so the pair is added.
+    testthat::expect_identical(
+        saira:::merge_dynamic_property("{\"note\":\"x \\\"k\\\":1\"}", "k", "v"),
+        "{\"note\":\"x \\\"k\\\":1\",\"k\":\"v\"}"
+    )
+    # Without a new value the old one stays.
+    testthat::expect_identical(
+        saira:::merge_dynamic_property("{\"mmaThreatStatus\":\"VU\"}", "mmaThreatStatus", NA),
+        "{\"mmaThreatStatus\":\"VU\"}"
+    )
+})
+
+testthat::test_that("merge_dynamic_property gives repeated nested objects the same result as one", {
+    a <- "{\"p\":{\"n\":\"a\"},\"iucnRedListCategory\":\"LC\"}"
+    b <- "{\"p\":{\"n\":\"b\"},\"iucnRedListCategory\":\"LC\"}"
+    existing <- c(a, b, a, a, b)
+    value <- c("EN", "EN", "CR", "EN", "EN")
+    one_by_one <- vapply(seq_along(existing), function(i) {
+        saira:::merge_dynamic_property(existing[[i]], "iucnRedListCategory", value[[i]])
+    }, character(1))
+    testthat::expect_identical(
+        saira:::merge_dynamic_property(existing, "iucnRedListCategory", value), one_by_one
+    )
+    testthat::expect_identical(one_by_one[[3]], "{\"p\":{\"n\":\"a\"},\"iucnRedListCategory\":\"CR\"}")
+})
+
 testthat::test_that("merge_dynamic_property leaves NA/blank values untouched", {
     testthat::expect_identical(
         saira:::merge_dynamic_property(
@@ -1276,6 +1537,14 @@ test_that("auto_suggest_establishment_means only pre-fills listed invasives", {
     expect_equal(names(out), c("sus scrofa", "panthera onca"))
     # Never guesses "native" for an unlisted taxon: the app cannot know that.
     expect_false(any(out == "native"))
+})
+
+test_that("auto_suggest_establishment_means skips translocated natives", {
+    # Nasua nasua is on the Horus list but native to Brazil, so a record could
+    # sit either side of its natural range. Suggesting "introduced" would put
+    # a claim the app cannot support into the exported data.
+    out <- auto_suggest_establishment_means(c("Nasua nasua", "Sus scrofa"))
+    expect_equal(unname(out), c("", "introduced"))
 })
 
 test_that("map_establishment_values expands per-species answers to rows", {
@@ -1371,6 +1640,49 @@ test_that("build_processed_mapping_df emits establishment columns from the assis
     expect_true(all(c("establishmentMeans", "degreeOfEstablishment") %in% names(out)))
     expect_equal(out$establishmentMeans, c("introduced", "native", "introduced"))
     expect_equal(out$degreeOfEstablishment, c("invasive", "", "invasive"))
+})
+
+test_that("island records take the island answer, never the species answer", {
+    species <- c("Nasua nasua", "Nasua nasua", "Sus scrofa")
+    islands <- c("Fernando de Noronha", NA, NA)
+    map <- list(
+        means = c("nasua nasua" = "native", "sus scrofa" = "introduced"),
+        degree = c("nasua nasua" = "native"),
+        island_means = c("nasua nasua" = "introduced")
+    )
+    expect_equal(
+        map_establishment_values(species, map, "means", island_rows = islands),
+        c("introduced", "native", "introduced")
+    )
+    expect_equal(
+        map_establishment_values(species, map, "degree", island_rows = islands),
+        c("", "native", "")
+    )
+    expect_equal(establishment_pairs_missing_degree(map), c("sus scrofa", "nasua nasua"))
+    expect_equal(establishment_answer_count(map, "means"), 2L)
+})
+
+test_that("build_processed_mapping_df splits a species by island from the coordinates", {
+    df <- data.frame(
+        especie = c("Nasua nasua", "Nasua nasua"),
+        lat = c("-3.85", "-19.9"), lon = c("-32.42", "-43.9"),
+        stringsAsFactors = FALSE
+    )
+    map <- list(
+        means = c("nasua nasua" = "native"),
+        island_means = c("nasua nasua" = "introduced"),
+        island_degree = c("nasua nasua" = "invasive")
+    )
+    out <- build_processed_mapping_df(
+        df = df, dwc_terms = get_active_dwc_terms_list(),
+        map_values = list(
+            scientificName = "especie", decimalLatitude = "lat", decimalLongitude = "lon"
+        ),
+        occurrence_ids = paste0("id-", seq_len(nrow(df))),
+        establishment_map = map
+    )$data
+    expect_equal(out$establishmentMeans, c("introduced", "native"))
+    expect_equal(out$degreeOfEstablishment, c("invasive", ""))
 })
 
 test_that("build_processed_mapping_df omits establishment columns without answers", {
@@ -1948,7 +2260,7 @@ testthat::test_that("extract_scientific_name_components separates authorship fro
     )
     testthat::expect_identical(
         scientific_name_without_authorship(parts),
-        c("Panthera onca", "Puma concolor", "Panthera onca palustris",
+        c("Panthera onca", "Puma concolor", "Panthera onca subsp. palustris",
           "Dasypus septemcinctus hybridus", "Panthera onca")
     )
 })
@@ -2037,4 +2349,36 @@ testthat::test_that("a mapped authorship column wins over the parsed one", {
 
     testthat::expect_identical(res$data$scientificNameAuthorship, "Linnaeus")
     testthat::expect_identical(res$data$scientificName, "Panthera onca")
+})
+
+testthat::test_that("the basisOfRecord assistant lists blank cells last and maps them", {
+    raw <- c("Coleta", "", NA, "coleta", "Observa\u00e7\u00e3o")
+    entries <- extract_basis_of_record_unique_entries(raw)
+    testthat::expect_identical(entries$key, c("coleta", "observa\u00e7\u00e3o", saira:::bor_blank_key))
+    testthat::expect_identical(entries$raw[[3]], "")
+
+    out <- map_basis_of_record_values(raw, c(coleta = "PreservedSpecimen", "\u2205" = "HumanObservation"))
+    testthat::expect_identical(out[2:3], c("HumanObservation", "HumanObservation"))
+    # With no decision, a blank cell stays blank.
+    testthat::expect_identical(map_basis_of_record_values(c("", NA)), c("", ""))
+})
+
+testthat::test_that("a semicolon splits list terms only (B40)", {
+    df <- data.frame(a = "linha 2 com; separador", stringsAsFactors = FALSE)
+    testthat::expect_equal(build_term_value("occurrenceRemarks", df, "a")$values, "linha 2 com; separador")
+    testthat::expect_equal(build_term_value("recordedBy", df, "a")$values, "linha 2 com | separador")
+})
+
+testthat::test_that("photo, audio and specimen get a basisOfRecord suggestion (B30)", {
+    testthat::expect_equal(
+        auto_suggest_basis_of_record_terms(c("Foto", "Áudio", "Specimen", "gravador autônomo", "Registro fotográfico")),
+        c("HumanObservation", "HumanObservation", "PreservedSpecimen", "MachineObservation", "HumanObservation")
+    )
+    # "Coleta" names a specimen or a tissue sample, so the assistant asks.
+    testthat::expect_equal(auto_suggest_basis_of_record_terms("Coleta"), "")
+})
+
+testthat::test_that("sex values with both sexes or a hermaphrodite get a suggestion (B31)", {
+    testthat::expect_equal(vocabulary_suggestions("sex", "F | M"), "mixed")
+    testthat::expect_equal(vocabulary_suggestions("sex", "Hermafrodita"), "other")
 })

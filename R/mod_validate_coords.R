@@ -1,50 +1,16 @@
-# Title: Validate Coordinates Module
-# Author: Rogerio Nunes Oliveira
-# Date: 2026-02-21
-# Version: 3.0
 
-#' Validate Coordinates Module UI
+#' One fix in the coordinates toolbar: icon, short label and action
 #'
-#' @param id Module ID
-#' @return Shiny UI tagList
-#' @export
-mod_validate_coords_ui <- function(id) {
-    ns <- shiny::NS(id)
-
-    shiny::tagList(
-        shiny::div(
-            class = "container-fluid validate-coords-page",
-            shiny::uiOutput(ns("title")),
-            shiny::uiOutput(ns("subtitle")),
-            shiny::div(
-                class = "row g-4 validate-coords-layout",
-                shiny::div(
-                    class = "col-12 col-lg-2 validate-coords-left",
-                    shiny::uiOutput(ns("action_card")),
-                    shiny::uiOutput(ns("utm_panel")),
-                    shiny::uiOutput(ns("transposed_panel")),
-                    shiny::uiOutput(ns("swap_fill_panel")),
-                    shiny::uiOutput(ns("country_panel"))
-                ),
-                shiny::div(
-                    class = "col-12 col-lg-10 validate-coords-right",
-                    shiny::uiOutput(ns("pre_right_hint")),
-                    shiny::uiOutput(ns("progress_panel")),
-                    shiny::uiOutput(ns("filter_pills")),
-                    shiny::div(
-                        class = "row g-3 validate-coords-results-row",
-                        shiny::div(
-                            class = "col-12 col-lg-6 validate-coords-map-col",
-                            shiny::uiOutput(ns("map_panel"))
-                        ),
-                        shiny::div(
-                            class = "col-12 col-lg-6 validate-coords-table-col",
-                            shiny::uiOutput(ns("table_panel"))
-                        )
-                    )
-                )
-            )
-        )
+#' The full sentence and an example ride in the tooltip, so the fixes fit the
+#' toolbar row (ADR-132).
+#' @noRd
+coords_fix_chip <- function(applied, icon, label, detail, button) {
+    shiny::div(
+        class = paste("coords-transposed-card coords-fix-chip", if (applied) "is-applied" else ""),
+        title = detail,
+        ph_icon(if (applied) "circle-check" else icon),
+        shiny::span(class = "coords-transposed-title", label),
+        if (!applied) button
     )
 }
 
@@ -56,9 +22,11 @@ mod_validate_coords_ui <- function(id) {
 #' @param validation_gate_r Optional lightweight coordinate gate reactive
 #' @param reset_signal_r Optional reactive reset signal from the mapping module.
 #'   When it fires, module-local state and inputs are cleared.
-#' @return Reactive coordinate validation data frame
+#' @return A reactive with legacy attributes by default, or a named list of
+#'   reactives when return_contract is \code{"list"}.
+#' @param return_contract Return a legacy reactive (default) or a named list of reactives.
 #' @export
-mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL, reset_signal_r = NULL) {
+mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL, reset_signal_r = NULL, return_contract = c("legacy", "list")) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
@@ -75,8 +43,13 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             shiny::showNotification(ui = message, type = type, duration = duration, id = notification_id)
         }
 
-        coord_filter_values <- c("all", "problems", "validity", "sea", "zero_equal", "reference")
+        coord_filter_values <- c("all", "problems", "validity", "sea", "zero_equal", "reference", "edited")
         coord_validation_r <- shiny::reactiveVal(NULL)
+        # Coordinates fixed by hand in the table, one row per record (ADR-129):
+        # occurrenceID, row_index, the new decimalLatitude/decimalLongitude and
+        # the diagnosis of the revalidated point. Kept apart from
+        # rv$coords_corrections so validating again does not erase them.
+        manual_edits_rv <- shiny::reactiveVal(NULL)
 
         rv <- shiny::reactiveValues(
             starting = FALSE,
@@ -86,8 +59,10 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             stream_filter = "all",
             last_run_status = "idle",
             transposed_table = NULL,     # data.frame of correctable rows (preview)
+            outside_table = NULL,        # rows outside the informed country, no fix
             transposed_applied = FALSE,
             coords_corrections = NULL,    # transposed payload applied at export
+            validated_coords = NULL,      # the lat/lon text the last validation read
             country_fill_table = NULL,    # data.frame of fillable rows (preview)
             country_fill_applied = FALSE,
             country_fills = NULL,         # country-fill payload applied at export
@@ -210,12 +185,13 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             if (is.null(res)) {
                 return(res)
             }
-            apply_coord_corrections_to_result(
+            res <- apply_coord_corrections_to_result(
                 res,
                 coords_corrections = rv$coords_corrections,
                 country_fills = rv$country_fills,
                 occ_ids = rv$validation_occ_ids
             )
+            apply_manual_coord_edits_to_result(res, manual_edits_rv())
         })
 
         filtered_result_r <- shiny::reactive({
@@ -236,13 +212,15 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 sea = fam == "sea",
                 zero_equal = fam == "zero_equal",
                 reference = fam == "reference",
+                edited = res$edited %in% TRUE,
                 rep(TRUE, nrow(res))
             )
 
-            out <- res[keep, , drop = FALSE]
+            # No cache: a hash of the whole result costs more than this filter.
+            out <- if (all(keep)) res else res[keep, , drop = FALSE]
             rownames(out) <- NULL
             out
-        }) |> shiny::bindCache(effective_validation_r(), active_filter())
+        })
 
         family_counts <- shiny::reactive({
             res <- effective_validation_r()
@@ -253,7 +231,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     validity = 0L,
                     sea = 0L,
                     zero_equal = 0L,
-                    reference = 0L
+                    reference = 0L,
+                    edited = 0L
                 ))
             }
 
@@ -264,38 +243,15 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 validity = as.integer(counts$validity %||% 0L),
                 sea = as.integer(counts$sea %||% 0L),
                 zero_equal = as.integer(counts$zero_equal %||% 0L),
-                reference = as.integer(counts$reference %||% 0L)
+                reference = as.integer(counts$reference %||% 0L),
+                edited = sum(res$edited %in% TRUE)
             )
         })
 
         map_data_r <- shiny::reactive({
             res <- effective_validation_r()
             shiny::req(res)
-
-            label_keys <- c(
-                ok = "validate_coords_diag_ok",
-                validity_missing = "validate_coords_diag_validity_missing",
-                validity_bounds = "validate_coords_diag_validity_bounds",
-                swapped = "validate_coords_diag_swapped",
-                sea = "validate_coords_diag_sea",
-                zero_equal = "validate_coords_diag_zero_equal",
-                identical_all = "validate_coords_diag_identical_all",
-                reference = "validate_coords_diag_reference"
-            )
-            issue_labels <- vapply(label_keys, function(k) tr(k, lang_r()), FUN.VALUE = character(1))
-            popup_labels <- list(
-                row = tr("validate_coords_popup_row", lang_r()),
-                issue = tr("validate_coords_popup_issue", lang_r()),
-                lat = tr("validate_coords_col_lat", lang_r()),
-                lon = tr("validate_coords_col_lon", lang_r())
-            )
-
-            build_leaflet_data(
-                coords_result_df = res,
-                filter = active_filter(),
-                issue_labels = issue_labels,
-                popup_labels = popup_labels
-            )
+            build_leaflet_data(coords_result_df = res, filter = active_filter(), popups = FALSE)
         })
 
         for (filter_key in coord_filter_values) {
@@ -315,447 +271,189 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             identical(gate$status, "ok") && !isTRUE(rv$running) && !isTRUE(rv$starting)
         })
 
-        output$title <- shiny::renderUI({
-            shiny::h3(
-                shiny::icon("map-marker-alt", class = "me-2"),
-                tr("validate_coords_title", lang_r()),
-                class = "text-mono mb-2"
-            )
-        })
-
-        output$subtitle <- shiny::renderUI({
-            shiny::p(tr("validate_coords_subtitle", lang_r()), class = "text-accent mb-4")
-        })
-
-        output$action_card <- shiny::renderUI({
-            gate <- quick_gate()
-            is_busy <- isTRUE(rv$running) || isTRUE(rv$starting)
-            run_label <- if (is_busy) tr("validate_coords_run_running", lang_r()) else tr("validate_coords_run", lang_r())
-
-            lat_ok <- isTRUE(gate$has_lat)
-            lon_ok <- isTRUE(gate$has_lon)
-            country_ok <- isTRUE(gate$has_country)
-
-            lat_desc <- if (lat_ok) as.character(gate$lat_col) else tr("validate_coords_status_not_mapped", lang_r())
-            lon_desc <- if (lon_ok) as.character(gate$lon_col) else tr("validate_coords_status_not_mapped", lang_r())
-            # A fixed value is not a column, so name it as what it is instead of
-            # printing "Brasil" where the other two rows print a column name.
-            country_desc <- if (!country_ok) {
-                tr("validate_coords_status_not_mapped", lang_r())
-            } else if (isTRUE(gate$country_is_constant)) {
-                sprintf(
-                    tr("validate_coords_status_fixed_value", lang_r()),
-                    as.character(gate$country_col)
-                )
-            } else {
-                as.character(gate$country_col)
-            }
-
-            helper_text <- switch(gate$status,
-                no_data = tr("validate_coords_no_data", lang_r()),
-                missing_lat = tr("validate_coords_lat_missing", lang_r()),
-                missing_lon = tr("validate_coords_lon_missing", lang_r()),
-                missing_country = tr("validate_coords_country_missing", lang_r()),
-                missing_multiple = tr("validate_coords_missing_multiple", lang_r()),
-                ""
-            )
-
-            bslib::card(
-                class = "validate-coords-card mb-3",
-                bslib::card_header(
-                    shiny::div(
-                        class = "validate-card-title",
-                        shiny::icon("gear", class = "me-2"),
-                        tr("validate_coords_action_card_title", lang_r())
-                    )
-                ),
-                bslib::card_body(
-                    shiny::div(
-                        class = "coords-gate-list",
-                        shiny::div(
-                            class = "coords-gate-item",
-                            shiny::span(class = "coords-gate-label", tr("validate_coords_status_lat", lang_r())),
-                            shiny::span(class = paste("coords-gate-value", if (lat_ok) "coords-gate-ok" else "coords-gate-missing"), lat_desc)
-                        ),
-                        shiny::div(
-                            class = "coords-gate-item",
-                            shiny::span(class = "coords-gate-label", tr("validate_coords_status_lon", lang_r())),
-                            shiny::span(class = paste("coords-gate-value", if (lon_ok) "coords-gate-ok" else "coords-gate-missing"), lon_desc)
-                        ),
-                        shiny::div(
-                            class = "coords-gate-item",
-                            shiny::span(class = "coords-gate-label", tr("validate_coords_status_country", lang_r())),
-                            shiny::span(class = paste("coords-gate-value", if (country_ok) "coords-gate-ok" else "coords-gate-missing"), country_desc)
-                        )
-                    ),
-                    shiny::actionButton(
-                        inputId = ns("validate"),
-                        label = run_label,
-                        icon = shiny::icon(if (is_busy) "spinner" else "play", class = if (is_busy) "fa-spin" else ""),
-                        class = "btn-primary w-100",
-                        disabled = !isTRUE(can_run_validation())
-                    ),
-                    if (nzchar(helper_text)) {
-                        shiny::div(class = "validate-action-help mt-3", helper_text)
-                    }
-                )
-            )
-        })
-
-        output$pre_right_hint <- shiny::renderUI({
-            if (isTRUE(rv$running) || isTRUE(rv$starting) || !is.null(coord_validation_r())) {
-                return(NULL)
-            }
-            shiny::div(
-                class = "validate-pre-right",
-                shiny::div(
-                    class = "validate-ready-hint",
-                    shiny::icon("circle-info"),
-                    shiny::div(
-                        shiny::p(
-                            class = "mb-0",
-                            tr("validate_coords_pre_hint_prefix", lang_r()),
-                            shiny::strong("decimalLatitude"),
-                            ", ",
-                            shiny::strong("decimalLongitude"),
-                            " e ",
-                            shiny::strong("country"),
-                            tr("validate_coords_pre_hint_suffix", lang_r())
-                        )
-                    )
-                )
-            )
-        })
-
-        output$progress_panel <- shiny::renderUI({
-            if (!isTRUE(rv$starting) && !isTRUE(rv$running)) {
-                return(NULL)
-            }
-            bslib::card(
-                class = "validate-coords-card mb-3 validation-progress-panel",
-                bslib::card_body(
-                    shiny::div(
-                        class = "validation-progress-empty",
-                        shiny::icon("spinner", class = "me-2 fa-spin"),
-                        tr("validate_coords_run_running", lang_r())
-                    )
-                )
-            )
-        })
-
         # stats_panel removed: the four count boxes duplicated the filter pill
         # counts above the map. The left column now hosts the transposed-coords
         # correction card instead.
 
-        output$filter_pills <- shiny::renderUI({
-            res <- coord_validation_r()
-            if (is.null(res) || !is.data.frame(res) || nrow(res) == 0L) {
-                return(NULL)
-            }
-
-            counts <- family_counts()
-            active_key <- active_filter()
-            # Active-state colours mirror the map legend dots so each pill reads
-            # as its category: validity = error, sea = info, zero_equal =
-            # warning, reference = swapped/purple. "all" is the neutral reset
-            # (muted) and "problems" the primary accent, so the six are distinct.
-            pill_defs <- list(
-                list(key = "all", class = "pill-muted", label_key = "validate_coords_filter_all"),
-                list(key = "problems", class = "", label_key = "validate_coords_filter_problems"),
-                list(key = "validity", class = "pill-error", label_key = "validate_coords_filter_validity"),
-                list(key = "sea", class = "pill-info", label_key = "validate_coords_filter_sea"),
-                list(key = "zero_equal", class = "pill-warning", label_key = "validate_coords_filter_zero_equal"),
-                list(key = "reference", class = "pill-reference", label_key = "validate_coords_filter_reference")
-            )
-
-            shiny::div(
-                class = "coords-filter-pills",
-                lapply(pill_defs, function(item) {
-                    count_value <- suppressWarnings(as.integer(counts[[item$key]]))
-                    if (is.na(count_value) || count_value < 0L) count_value <- 0L
-                    is_active <- identical(active_key, item$key)
-                    shiny::actionButton(
-                        inputId = ns(paste0("coords_filter_", item$key)),
-                        label = shiny::tagList(
-                            tr(item$label_key, lang_r()),
-                            shiny::tags$span(class = "pill-count", count_value)
-                        ),
-                        class = trimws(paste("stream-pill", item$class, if (is_active) "active" else ""))
-                    )
-                })
-            )
-        })
-
-        output$map_note <- shiny::renderUI({
-            map_df <- map_data_r()
-            if (is.data.frame(map_df) && nrow(map_df) > 0L) {
-                return(NULL)
-            }
-            shiny::div(
-                class = "alert alert-warning mb-0",
-                shiny::icon("triangle-exclamation"),
-                " ",
-                tr("validate_coords_map_empty", lang_r())
-            )
+        shiny::observeEvent(input$map_show_hidden, {
+            rv$stream_filter <- "validity"
         })
 
         # NOTE: depend only on coord_validation_r() here. This renderUI hosts the
-        # leafletOutput, so any extra reactive dependency (e.g. on corrections)
-        # would recreate the map widget mid-session and break proxy repaints.
-        output$map_panel <- shiny::renderUI({
-            res <- coord_validation_r()
-            if (is.null(res) || !is.data.frame(res) || nrow(res) == 0L) {
-                return(NULL)
-            }
+        # leafletOutput, so any extra reactive dependency (e.g. on corrections
+        # or the language) would recreate the map widget mid-session and break
+        # proxy repaints. Translated text lives in map_legend for this reason.
 
-            bslib::card(
-                class = "validate-coords-card mb-3 validate-coords-map-card",
-                bslib::card_header(
-                    shiny::div(class = "validate-card-title", shiny::icon("earth-americas", class = "me-2"), tr("validate_coords_map_title", lang_r()))
-                ),
-                bslib::card_body(
-                    shiny::p(class = "coords-map-subtitle", tr("validate_coords_map_subtitle", lang_r())),
-                    shiny::div(class = "coords-map-container", leaflet::leafletOutput(ns("coords_map"), height = "560px")),
-                    shiny::uiOutput(ns("map_note")),
-                    shiny::div(
-                        class = "coords-map-legend",
-                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-ok"), shiny::span(tr("validate_coords_map_legend_ok", lang_r()))),
-                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-validity"), shiny::span(tr("validate_coords_map_legend_validity", lang_r()))),
-                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-sea"), shiny::span(tr("validate_coords_map_legend_sea", lang_r()))),
-                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-zero-equal"), shiny::span(tr("validate_coords_map_legend_zero_equal", lang_r()))),
-                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-reference"), shiny::span(tr("validate_coords_map_legend_reference", lang_r()))),
-                        shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-corrected"), shiny::span(tr("validate_coords_map_legend_corrected", lang_r())))
-                    ),
-                    shiny::div(
-                        class = "coords-reference-note",
-                        shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-reference coords-reference-note-dot"),
-                        tr("validate_coords_map_legend_reference_note", lang_r())
-                    ),
-                    shiny::div(
-                        class = "alert alert-warning coords-sea-precision-note mb-0 mt-2",
-                        shiny::icon("triangle-exclamation", class = "me-1"),
-                        tr("validate_coords_sea_precision_note", lang_r())
-                    )
-                )
-            )
-        })
-
-        output$table_panel <- shiny::renderUI({
-            res <- coord_validation_r()
-            if (is.null(res) || !is.data.frame(res) || nrow(res) == 0L) {
-                return(NULL)
-            }
-
-            filtered <- filtered_result_r()
-            table_body <- if (!is.data.frame(filtered) || nrow(filtered) == 0L) {
-                shiny::div(
-                    class = "alert alert-info mb-0",
-                    shiny::icon("filter"),
-                    " ",
-                    tr("validate_coords_datatable_zero_records", lang_r())
-                )
-            } else {
-                shiny::div(class = "saira-table-shell", DT::dataTableOutput(ns("issues_table")))
-            }
-
-            bslib::card(
-                class = "validate-coords-card mb-3 validate-coords-table-card",
-                bslib::card_header(
-                    shiny::div(class = "validate-card-title", shiny::icon("table", class = "me-2"), tr("validate_coords_table_title", lang_r()))
-                ),
-                bslib::card_body(table_body)
-            )
-        })
-
-        output$coords_map <- leaflet::renderLeaflet({
-            res <- coord_validation_r()
-            shiny::req(res)
-
-            map_obj <- leaflet::leaflet(options = leaflet::leafletOptions(preferCanvas = TRUE))
-            map_obj <- leaflet::addProviderTiles(
-                map = map_obj,
-                provider = leaflet::providers$OpenStreetMap,
-                group = "OpenStreetMap",
-                options = leaflet::providerTileOptions(noWrap = TRUE)
-            )
-            map_obj <- leaflet::addProviderTiles(
-                map = map_obj,
-                provider = leaflet::providers$Esri.WorldImagery,
-                group = "Esri.WorldImagery",
-                options = leaflet::providerTileOptions(noWrap = TRUE)
-            )
-            map_obj <- leaflet::addLayersControl(
-                map = map_obj,
-                baseGroups = c("OpenStreetMap", "Esri.WorldImagery"),
-                options = leaflet::layersControlOptions(collapsed = FALSE)
-            )
-            map_obj <- leaflet::hideGroup(map_obj, "Esri.WorldImagery")
-            leaflet::setView(map = map_obj, lng = 0, lat = 0, zoom = 2)
-        })
+        # Markers travel through a proxy, and Leaflet drops a proxy call made
+        # before the widget exists, which left the map empty after each run
+        # until a filter was clicked. The map reports its bounds once drawn,
+        # so that first report marks it ready and triggers the first draw.
+        map_ready <- shiny::reactiveVal(FALSE)
+        shiny::observeEvent(input$coords_map_bounds, map_ready(TRUE), ignoreInit = TRUE)
+        shiny::observeEvent(coord_validation_r(), {
+            if (is.null(coord_validation_r())) map_ready(FALSE)
+        }, ignoreNULL = FALSE)
 
         shiny::bindEvent(
             shiny::observe({
                 res <- coord_validation_r()
-                shiny::req(res)
-                map_df <- map_data_r()
-
-                proxy <- leaflet::leafletProxy(ns("coords_map"))
-                proxy <- leaflet::clearMarkers(proxy)
-                proxy <- leaflet::clearMarkerClusters(proxy)
-                if (!is.data.frame(map_df) || nrow(map_df) == 0L) {
-                    return(invisible(NULL))
-                }
-
-                marker_radius <- if (nrow(map_df) > 2000L) 4 else 6
-                leaflet::addCircleMarkers(
-                    map = proxy,
-                    data = map_df,
-                    lat = ~lat_num,
-                    lng = ~lon_num,
-                    radius = marker_radius,
-                    stroke = TRUE,
-                    weight = 1,
-                    color = ~color,
-                    fillColor = ~color,
-                    fillOpacity = 0.85,
-                    popup = ~popup_html
-                )
-
-                lon_values <- suppressWarnings(as.numeric(map_df$lon_num))
-                lat_values <- suppressWarnings(as.numeric(map_df$lat_num))
-                valid_bounds <- is.finite(lon_values) & is.finite(lat_values)
-                if (!any(valid_bounds)) {
-                    return(invisible(NULL))
-                }
-
-                lon_values <- lon_values[valid_bounds]
-                lat_values <- lat_values[valid_bounds]
-                lon_min <- min(lon_values)
-                lon_max <- max(lon_values)
-                lat_min <- min(lat_values)
-                lat_max <- max(lat_values)
-
-                if (isTRUE(all.equal(lon_min, lon_max)) && isTRUE(all.equal(lat_min, lat_max))) {
-                    leaflet::setView(
-                        map = proxy,
-                        lng = lon_min,
-                        lat = lat_min,
-                        zoom = 8
-                    )
-                    return(invisible(NULL))
-                }
-
-                leaflet::fitBounds(
-                    map = proxy,
-                    lng1 = lon_min,
-                    lat1 = lat_min,
-                    lng2 = lon_max,
-                    lat2 = lat_max
-                )
+                shiny::req(res, map_ready())
+                draw_markers(map_data_r())
             }),
-            effective_validation_r(),
-            active_filter()
+            # Not effective_validation_r(): a manual edit moves its own marker
+            # (refresh_marker below) and must not redraw or re-zoom the map.
+            coord_validation_r(),
+            rv$coords_corrections,
+            rv$country_fills,
+            active_filter(),
+            map_ready()
         )
 
-        diag_label_key <- function(diag) {
-            switch(as.character(diag),
-                ok = "validate_coords_diag_ok",
-                validity_missing = "validate_coords_diag_validity_missing",
-                validity_bounds = "validate_coords_diag_validity_bounds",
-                swapped = "validate_coords_diag_swapped",
-                sea = "validate_coords_diag_sea",
-                zero_equal = "validate_coords_diag_zero_equal",
-                identical_all = "validate_coords_diag_identical_all",
-                reference = "validate_coords_diag_reference",
-                corrected = "validate_coords_diag_corrected",
-                "validate_coords_diag_validity_bounds"
+        # The popup is built for the clicked marker only, in the current
+        # language. One layer id keeps one popup open.
+        shiny::observeEvent(input$coords_map_marker_click, {
+            row_index <- suppressWarnings(as.integer(sub("^r", "", input$coords_map_marker_click$id %||% "")))
+            eff <- effective_validation_r()
+            shiny::req(is.data.frame(eff), !is.na(row_index))
+            labels <- map_labels()
+            md <- build_leaflet_data(
+                eff[eff$.row_index %in% row_index, , drop = FALSE],
+                filter = "all", issue_labels = labels$issue, popup_labels = labels$popup
             )
-        }
-
-        diag_badge_class <- function(fam) {
-            fam <- as.character(fam)
-            if (identical(fam, "ok")) {
-                return("coord-issue-badge-ok")
-            }
-            if (identical(fam, "corrected")) {
-                return("coord-issue-badge-corrected")
-            }
-            if (identical(fam, "validity")) {
-                return("coord-issue-badge-error")
-            }
-            "coord-issue-badge-warning"
-        }
-
-        output$issues_table <- DT::renderDataTable({
-            res <- filtered_result_r()
-            shiny::req(res, nrow(res) > 0L)
-
-            diag <- as.character(res$diagnostic)
-            diag[is.na(diag) | !nzchar(diag)] <- "validity_bounds"
-            fam <- as.character(res$diagnostic_family)
-            fam[is.na(fam) | !nzchar(fam)] <- "validity"
-
-            # Resolve one label per distinct diagnostic (~9) and one class per
-            # distinct family (~4), then expand by name. Called per row this
-            # ran tr() and the reactive read once per record.
-            label_map <- vapply(
-                unique(diag),
-                function(x) tr(diag_label_key(x), lang_r()),
-                FUN.VALUE = character(1)
-            )
-            class_map <- vapply(unique(fam), diag_badge_class, FUN.VALUE = character(1))
-            labels <- unname(label_map[diag])
-            classes <- unname(class_map[fam])
-            badges <- paste0("<span class=\"coord-issue-badge ", classes, "\">", labels, "</span>")
-
-            lat_display <- ifelse(is.na(res$lat_num), "", format(round(res$lat_num, 6), trim = TRUE))
-            lon_display <- ifelse(is.na(res$lon_num), "", format(round(res$lon_num, 6), trim = TRUE))
-
-            table_df <- data.frame(
-                row_col = res$.row_index,
-                diag_col = badges,
-                lat_col = lat_display,
-                lon_col = lon_display,
-                country_col = if ("country" %in% names(res)) as.character(res$country) else "",
-                iso3_col = if ("country_iso3" %in% names(res)) as.character(res$country_iso3) else "",
-                stringsAsFactors = FALSE
-            )
-
-            colnames(table_df) <- c(
-                tr("validate_coords_col_row", lang_r()),
-                tr("validate_coords_col_issue", lang_r()),
-                tr("validate_coords_col_lat", lang_r()),
-                tr("validate_coords_col_lon", lang_r()),
-                tr("validate_coords_col_country", lang_r()),
-                tr("validate_coords_col_iso3", lang_r())
-            )
-
-            DT::datatable(
-                table_df,
-                options = list(
-                    pageLength = 10,
-                    lengthMenu = c(10, 25, 50, 100),
-                    scrollX = TRUE,
-                    autoWidth = FALSE,
-                    language = list(
-                        search = tr("validate_coords_datatable_search", lang_r()),
-                        lengthMenu = tr("validate_coords_datatable_length_menu", lang_r()),
-                        info = tr("validate_coords_datatable_info", lang_r()),
-                        emptyTable = tr("validate_coords_datatable_empty", lang_r()),
-                        zeroRecords = tr("validate_coords_datatable_zero_records", lang_r()),
-                        paginate = list(
-                            first = tr("validate_coords_datatable_first", lang_r()),
-                            last = tr("validate_coords_datatable_last", lang_r()),
-                            `next` = tr("validate_coords_datatable_next", lang_r()),
-                            previous = tr("validate_coords_datatable_prev", lang_r())
-                        )
-                    )
-                ),
-                class = "display compact validate-results-table",
-                rownames = FALSE,
-                escape = FALSE
+            shiny::req(nrow(md) > 0L)
+            leaflet::addPopups(
+                leaflet::leafletProxy(ns("coords_map")), lng = md$lon_num[[1L]], lat = md$lat_num[[1L]],
+                popup = md$popup_html[[1L]], layerId = "coords-popup"
             )
         })
+
+        # One row per record: badge, point, country. Built for the first render
+        # and again for each proxy update after a manual edit.
+
+        # The rows the table shows. It changes with a new validation, a filter
+        # or a bulk correction, never with a manual edit: an edit patches the
+        # rendered rows through the proxy, so the page, the sort order and the
+        # search stay where the person left them (ADR-129).
+        table_base_r <- shiny::reactive({
+            coord_validation_r()
+            active_filter()
+            rv$coords_corrections
+            rv$country_fills
+            shiny::isolate(filtered_result_r())
+        })
+        table_proxy <- DT::dataTableProxy("issues_table")
+
+        # "Show in table": select the row and open its page. The page comes
+        # from the order and search the table shows now; a search that hides
+        # the row is cleared first.
+        shiny::observeEvent(input$locate_row, {
+            base <- table_base_r()
+            i <- match(as.integer(input$locate_row$row), base$.row_index)
+            if (is.na(i)) return(invisible(NULL))
+            shown <- input$issues_table_rows_all
+            if (!i %in% shown) {
+                DT::updateSearch(table_proxy, keywords = list(global = ""))
+                shown <- seq_len(nrow(base))
+            }
+            per_page <- suppressWarnings(as.integer(input$locate_row$len))
+            if (length(per_page) != 1L || is.na(per_page) || per_page < 1L) per_page <- 10L
+            DT::selectRows(table_proxy, i)
+            DT::selectPage(table_proxy, ceiling(match(i, shown) / per_page))
+        }, ignoreInit = TRUE)
+
+        # A double-clicked latitude or longitude, typed and confirmed with
+        # Enter. The value is checked, the point revalidated, and the edit
+        # stored by occurrenceID.
+        shiny::observeEvent(input$issues_table_cell_edit, {
+            info <- input$issues_table_cell_edit
+            base <- table_base_r()
+            row_pos <- suppressWarnings(as.integer(info$row))
+            if (!is.data.frame(base) || length(row_pos) != 1L || is.na(row_pos) ||
+                    row_pos < 1L || row_pos > nrow(base)) {
+                return(invisible(NULL))
+            }
+            axis <- if (identical(as.integer(info$col), 2L)) "lat" else if (identical(as.integer(info$col), 3L)) "lon" else NA
+            if (is.na(axis)) return(invisible(NULL))
+
+            row_index <- base$.row_index[[row_pos]]
+            occ_ids <- rv$validation_occ_ids
+            occ <- if (length(occ_ids) >= row_index) occ_ids[[row_index]] else NA_character_
+            if (!isTRUE(coords_edit_allowed(occ_ids)[row_index])) {
+                notify_saira(tr("validate_coords_edit_blocked_id", lang_r()), type = "warning", key = "coords_edit")
+                refresh_table_rows()
+                return(invisible(NULL))
+            }
+
+            parsed <- parse_coord_edit(info$value, axis)
+            if (!is.null(parsed$error)) {
+                notify_saira(tr(parsed$error, lang_r()), type = "error", key = "coords_edit")
+                refresh_table_rows()
+                return(invisible(NULL))
+            }
+
+            eff <- effective_validation_r()
+            current <- eff[match(row_index, eff$.row_index), , drop = FALSE]
+            lat_new <- if (axis == "lat") parsed$value else current$lat_num[[1]]
+            lon_new <- if (axis == "lon") parsed$value else current$lon_num[[1]]
+
+            df <- mapped_data_r()
+            row_df <- df[row_index, c("decimalLatitude", "decimalLongitude", "country"), drop = FALSE]
+            row_df$decimalLatitude <- as.character(lat_new)
+            row_df$decimalLongitude <- as.character(lon_new)
+            reval <- tryCatch(
+                revalidate_coord_rows(row_df, row_index = row_index, profile = "complete"),
+                error = function(e) NULL
+            )
+            if (!is.data.frame(reval) || nrow(reval) != 1L) {
+                notify_saira(tr("validate_coords_edit_failed", lang_r()), type = "error", key = "coords_edit")
+                refresh_table_rows()
+                return(invisible(NULL))
+            }
+
+            new_row <- data.frame(
+                occurrenceID = as.character(occ),
+                row_index = as.integer(row_index),
+                decimalLatitude = as.character(lat_new),
+                decimalLongitude = as.character(lon_new),
+                diagnostic = as.character(reval$diagnostic[[1]]),
+                diagnostic_family = as.character(reval$diagnostic_family[[1]]),
+                valid = isTRUE(reval$valid[[1]]),
+                stringsAsFactors = FALSE
+            )
+            new_row <- with_coord_source(new_row)
+            edits <- manual_edits_rv()
+            edits <- if (is.data.frame(edits)) {
+                rbind(edits[edits$row_index != row_index, , drop = FALSE], new_row)
+            } else {
+                new_row
+            }
+            manual_edits_rv(edits)
+            refresh_table_rows()
+            refresh_marker(row_index)
+
+            if (identical(new_row$diagnostic_family, "ok")) {
+                notify_saira(tr("validate_coords_edit_saved_ok", lang_r()), type = "message", key = "coords_edit")
+            } else {
+                notify_saira(
+                    sprintf(tr("validate_coords_edit_saved_issue", lang_r()),
+                            tr(diag_label_key(new_row$diagnostic), lang_r())),
+                    type = "warning", key = "coords_edit"
+                )
+            }
+        }, ignoreInit = TRUE)
+
+        shiny::observeEvent(input$undo_edit, {
+            row_index <- suppressWarnings(as.integer(input$undo_edit))
+            edits <- manual_edits_rv()
+            if (!is.data.frame(edits) || is.na(row_index) || !row_index %in% edits$row_index) {
+                return(invisible(NULL))
+            }
+            edits <- edits[edits$row_index != row_index, , drop = FALSE]
+            manual_edits_rv(if (nrow(edits) == 0L) NULL else edits)
+            refresh_table_rows()
+            refresh_marker(row_index)
+            notify_saira(tr("validate_coords_edit_undone", lang_r()), type = "message", key = "coords_edit")
+        }, ignoreInit = TRUE)
 
         shiny::observeEvent(input$validate,
             {
@@ -795,16 +493,12 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rv$running <- TRUE
                 rv$starting <- FALSE
                 rv$last_run_status <- "running"
-                tryCatch(
-                    show_validate_coords_loading_modal(ns, lang_r),
-                    error = function(e) {
-                        notify_saira(
-                            message = tr("validate_coords_modal_fallback", lang_r()),
-                            type = "warning",
-                            key = "coords_modal_fallback"
-                        )
-                    }
-                )
+                df <- mapped_data_r()
+                session$sendCustomMessage("coordsRun", list(
+                    stage = "start",
+                    id = ns("run_stage"),
+                    progress = coords_run_progress(1L, integer(0), if (is.data.frame(df)) nrow(df) else 0L, lang_r())
+                ))
 
                 session$onFlushed(function() {
                     rv$run_requested <- TRUE
@@ -819,17 +513,21 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     return(invisible(NULL))
                 }
                 rv$run_requested <- FALSE
-                if (!isTRUE(rv$running)) {
-                    return(invisible(NULL))
-                }
-
+                # Registered before the early return, so the run stage never
+                # stays on the page.
                 on.exit(
                     {
-                        hide_validate_coords_loading_modal()
+                        session$sendCustomMessage("coordsRun", list(
+                            stage = "end",
+                            failed = !identical(rv$last_run_status, "success")
+                        ))
                         rv$running <- FALSE
                     },
                     add = TRUE
                 )
+                if (!isTRUE(rv$running)) {
+                    return(invisible(NULL))
+                }
 
                 result <- tryCatch(
                     {
@@ -849,7 +547,14 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                             lon_col = "decimalLongitude",
                             country_col = "country",
                             profile = profile_value,
-                            seas_scale = 10L
+                            seas_scale = 10L,
+                            # Custom messages leave at once, even while this
+                            # observer holds the session.
+                            on_step = coords_run_reporter(
+                                function(msg) session$sendCustomMessage("coordsRun", msg),
+                                n_records = nrow(df),
+                                lang = lang_r()
+                            )
                         )
                     },
                     error = function(e) {
@@ -877,12 +582,44 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 } else {
                     character(0)
                 }
+                rv$validated_coords <- data.frame(
+                    decimalLatitude = coord_source_text(df$decimalLatitude),
+                    decimalLongitude = coord_source_text(df$decimalLongitude),
+                    stringsAsFactors = FALSE
+                )
+
+                # Manual edits survive a new validation. The row of each is
+                # looked up again by occurrenceID, and an edit whose record
+                # left the data is dropped with a notice.
+                kept <- drop_orphan_coord_edits(manual_edits_rv(), rv$validation_occ_ids)
+                if (is.data.frame(kept$edits)) {
+                    kept$edits$row_index <- match(kept$edits$occurrenceID, rv$validation_occ_ids)
+                }
+                # So is an edit whose point changed after it (AUD-05).
+                stale <- stale_coord_rows(kept$edits, df)
+                if (any(stale)) {
+                    kept$edits <- if (all(stale)) NULL else kept$edits[!stale, , drop = FALSE]
+                }
+                manual_edits_rv(kept$edits)
+                if (kept$dropped > 0L) {
+                    notify_saira(
+                        sprintf(tr("validate_coords_edit_orphans", lang_r()), kept$dropped),
+                        type = "warning", key = "coords_edit_orphans"
+                    )
+                }
+                if (any(stale)) {
+                    notify_saira(
+                        sprintf(tr("validate_coords_edit_stale", lang_r()), sum(stale)),
+                        type = "warning", key = "coords_edit_stale"
+                    )
+                }
 
                 # Detect transposed / sign-flipped coordinates correctable
                 # against the informed country (reuses the same data frame).
                 rv$transposed_applied <- FALSE
                 rv$coords_corrections <- NULL
                 rv$transposed_table <- NULL
+                rv$outside_table <- NULL
                 tr_res <- tryCatch(
                     coords_transposed_corrections(
                         df,
@@ -912,6 +649,17 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                         decimalLatitude = tr_res$lat_new[ci],
                         decimalLongitude = tr_res$lon_new[ci],
                         transform = tr_res$transform[ci],
+                        stringsAsFactors = FALSE
+                    )
+                }
+
+                if (!is.null(tr_res) && isTRUE(tr_res$available) && any(tr_res$outside)) {
+                    oi <- which(tr_res$outside)
+                    rv$outside_table <- data.frame(
+                        row = oi,
+                        country = as.character(df$country)[oi],
+                        lat = as_coord_numeric(df$decimalLatitude)$num[oi],
+                        lon = as_coord_numeric(df$decimalLongitude)$num[oi],
                         stringsAsFactors = FALSE
                     )
                 }
@@ -1016,49 +764,9 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
 
         # Transposed-coordinate correction panel (shown after validation when
         # one or more records can be corrected against the informed country).
-        output$transposed_panel <- shiny::renderUI({
-            tbl <- rv$transposed_table
-            if (is.null(tbl) || nrow(tbl) == 0L) return(NULL)
-            n <- nrow(tbl)
-            applied <- isTRUE(rv$transposed_applied)
-            ex <- tbl[1, ]
 
-            shiny::div(
-                class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
-                shiny::div(
-                    class = "coords-transposed-head",
-                    shiny::icon(if (applied) "circle-check" else "right-left"),
-                    shiny::span(
-                        class = "coords-transposed-title",
-                        if (applied) {
-                            sprintf(tr("validate_coords_transposed_applied", lang_r()), n)
-                        } else {
-                            sprintf(tr("validate_coords_transposed_found", lang_r()), n)
-                        }
-                    )
-                ),
-                # One compact, stacked example (fits the narrow left column).
-                shiny::div(
-                    class = "coords-transposed-example",
-                    shiny::div(class = "coords-transposed-ex-country", ex$country),
-                    shiny::div(sprintf("(%.2f, %.2f)", ex$lat_old, ex$lon_old)),
-                    shiny::div(class = "coords-transposed-ex-arrow",
-                               sprintf("\u2192 (%.2f, %.2f)", ex$decimalLatitude, ex$decimalLongitude))
-                ),
-                if (n > 1L) {
-                    shiny::p(class = "coords-transposed-more",
-                             sprintf(tr("validate_coords_transposed_more", lang_r()), n - 1L))
-                },
-                if (!applied) {
-                    shiny::actionButton(
-                        ns("apply_transposed"),
-                        tr("validate_coords_transposed_apply", lang_r()),
-                        icon = shiny::icon("wand-magic-sparkles"),
-                        class = "btn btn-primary btn-sm w-100"
-                    )
-                }
-            )
-        })
+        # Points outside the informed country that no swap or sign fix brings
+        # back. Only the person can say which value is wrong, so no button.
 
         # Projected-coordinate (UTM) conversion panel. Unlike the other cards
         # this one cannot propose a single answer: the same easting/northing is
@@ -1130,89 +838,21 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             out[!is.na(out$decimalLatitude) & !is.na(out$decimalLongitude), , drop = FALSE]
         })
 
-        output$utm_panel <- shiny::renderUI({
-            rows <- rv$utm_rows
-            if (is.null(rows) || !length(rows)) return(NULL)
-            lang <- lang_r()
-            n <- length(rows)
-            applied <- isTRUE(rv$utm_applied)
-            cand <- rv$utm_candidates
-            zones <- if (is.data.frame(cand) && nrow(cand) > 0L) {
-                as.integer(cand$zone)
-            } else {
-                # No country to score against: offer the zones the datum covers.
-                as.integer(coords_utm_datums()[[coords_utm_default_datum()]]$zones)
-            }
-            preview <- utm_converted_r()
-
-            datum_choices <- stats::setNames(
-                names(coords_utm_datums()),
-                vapply(coords_utm_datums(), function(x) x$label, character(1))
-            )
-
-            shiny::div(
-                class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
-                shiny::div(
-                    class = "coords-transposed-head",
-                    shiny::icon(if (applied) "circle-check" else "compass"),
-                    shiny::span(
-                        class = "coords-transposed-title",
-                        if (applied) {
-                            sprintf(tr("validate_coords_utm_applied", lang), n)
-                        } else {
-                            sprintf(tr("validate_coords_utm_found", lang), n)
-                        }
-                    )
-                ),
-                if (!applied) {
-                    shiny::tagList(
-                        shiny::p(class = "coords-transposed-more",
-                                 tr("validate_coords_utm_help", lang)),
-                        shiny::selectInput(
-                            ns("utm_zone"), tr("validate_coords_utm_zone", lang),
-                            choices = zones, selected = zones[[1]],
-                            width = "100%"
-                        ),
-                        shiny::selectInput(
-                            ns("utm_datum"), tr("validate_coords_utm_datum", lang),
-                            choices = datum_choices, selected = coords_utm_default_datum(),
-                            width = "100%"
-                        ),
-                        if (is.data.frame(cand) && nrow(cand) > 1L) {
-                            shiny::p(class = "coords-transposed-more",
-                                     sprintf(tr("validate_coords_utm_ambiguous", lang), nrow(cand)))
-                        },
-                        if (is.data.frame(preview) && nrow(preview) > 0L) {
-                            shiny::div(
-                                class = "coords-transposed-example",
-                                shiny::div(class = "coords-transposed-ex-arrow", sprintf(
-                                    "\u2192 (%.4f, %.4f)",
-                                    preview$decimalLatitude[[1]], preview$decimalLongitude[[1]]
-                                ))
-                            )
-                        } else {
-                            # An older datum covers fewer zones than SIRGAS 2000,
-                            # so a valid zone can become unreachable when the
-                            # datum changes. Say so instead of leaving the
-                            # button inert.
-                            shiny::p(class = "coords-transposed-more",
-                                     tr("validate_coords_utm_unavailable", lang))
-                        },
-                        shiny::actionButton(
-                            ns("apply_utm"),
-                            tr("validate_coords_utm_apply", lang),
-                            icon = shiny::icon("wand-magic-sparkles"),
-                            class = "btn btn-primary btn-sm w-100"
-                        )
-                    )
-                }
-            )
-        })
+        # Each fix keeps the values it replaces, so a later change of the same
+        # point drops it from the export (AUD-05, ADR-166).
+        with_coord_source <- function(tbl) {
+            src <- rv$validated_coords
+            i <- match(as.character(tbl$occurrenceID), rv$validation_occ_ids)
+            tbl$from_decimalLatitude <- if (is.data.frame(src)) src$decimalLatitude[i] else NA_character_
+            tbl$from_decimalLongitude <- if (is.data.frame(src)) src$decimalLongitude[i] else NA_character_
+            tbl
+        }
 
         # Payload merge helpers: the transposed, swap-fill and country cards act
         # on disjoint rows but two of them write coordinate/country payloads, so
         # we accumulate (dedupe by occurrenceID) instead of overwriting.
         merge_coords_corrections <- function(new_df) {
+            new_df <- with_coord_source(new_df)
             cur <- rv$coords_corrections$corrections
             # The UTM card carries verbatim columns the other cards do not, so
             # the two payloads no longer share a column set. Align on the union
@@ -1231,6 +871,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             rv$coords_corrections <- list(corrections = merged)
         }
         merge_country_fills <- function(new_df) {
+            new_df <- with_coord_source(new_df)
             cur <- rv$country_fills$country
             merged <- if (is.null(cur)) new_df else rbind(cur, new_df)
             merged <- merged[!duplicated(merged$occurrenceID, fromLast = TRUE), , drop = FALSE]
@@ -1264,48 +905,6 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
         }, ignoreInit = TRUE)
 
         # Combined swap + country-fill panel (blank country, sea point).
-        output$swap_fill_panel <- shiny::renderUI({
-            tbl <- rv$swap_fill_table
-            if (is.null(tbl) || nrow(tbl) == 0L) return(NULL)
-            n <- nrow(tbl)
-            applied <- isTRUE(rv$swap_fill_applied)
-            ex <- tbl[1, ]
-
-            shiny::div(
-                class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
-                shiny::div(
-                    class = "coords-transposed-head",
-                    shiny::icon(if (applied) "circle-check" else "right-left"),
-                    shiny::span(
-                        class = "coords-transposed-title",
-                        if (applied) {
-                            sprintf(tr("validate_coords_swapfill_applied", lang_r()), n)
-                        } else {
-                            sprintf(tr("validate_coords_swapfill_found", lang_r()), n)
-                        }
-                    )
-                ),
-                shiny::div(
-                    class = "coords-transposed-example",
-                    shiny::div(sprintf("(%.2f, %.2f)", ex$lat_old, ex$lon_old)),
-                    shiny::div(class = "coords-transposed-ex-arrow",
-                               sprintf("\u2192 (%.2f, %.2f) \u00b7 %s",
-                                       ex$decimalLatitude, ex$decimalLongitude, ex$country))
-                ),
-                if (n > 1L) {
-                    shiny::p(class = "coords-transposed-more",
-                             sprintf(tr("validate_coords_transposed_more", lang_r()), n - 1L))
-                },
-                if (!applied) {
-                    shiny::actionButton(
-                        ns("apply_swap_fill"),
-                        tr("validate_coords_swapfill_apply", lang_r()),
-                        icon = shiny::icon("wand-magic-sparkles"),
-                        class = "btn btn-primary btn-sm w-100"
-                    )
-                }
-            )
-        })
 
         shiny::observeEvent(input$apply_swap_fill, {
             tbl <- rv$swap_fill_table
@@ -1323,46 +922,6 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
         }, ignoreInit = TRUE)
 
         # Country-from-coordinates fill panel.
-        output$country_panel <- shiny::renderUI({
-            tbl <- rv$country_fill_table
-            if (is.null(tbl) || nrow(tbl) == 0L) return(NULL)
-            n <- nrow(tbl)
-            applied <- isTRUE(rv$country_fill_applied)
-            ex <- tbl[1, ]
-
-            shiny::div(
-                class = paste("coords-transposed-card", if (applied) "is-applied" else ""),
-                shiny::div(
-                    class = "coords-transposed-head",
-                    shiny::icon(if (applied) "circle-check" else "earth-americas"),
-                    shiny::span(
-                        class = "coords-transposed-title",
-                        if (applied) {
-                            sprintf(tr("validate_coords_country_filled", lang_r()), n)
-                        } else {
-                            sprintf(tr("validate_coords_country_found", lang_r()), n)
-                        }
-                    )
-                ),
-                shiny::div(
-                    class = "coords-transposed-example",
-                    shiny::div(sprintf("(%.2f, %.2f)", ex$lat, ex$lon)),
-                    shiny::div(class = "coords-transposed-ex-arrow", sprintf("\u2192 %s", ex$country))
-                ),
-                if (n > 1L) {
-                    shiny::p(class = "coords-transposed-more",
-                             sprintf(tr("validate_coords_transposed_more", lang_r()), n - 1L))
-                },
-                if (!applied) {
-                    shiny::actionButton(
-                        ns("apply_country_fill"),
-                        tr("validate_coords_country_apply", lang_r()),
-                        icon = shiny::icon("wand-magic-sparkles"),
-                        class = "btn btn-primary btn-sm w-100"
-                    )
-                }
-            )
-        })
 
         shiny::observeEvent(input$apply_country_fill, {
             tbl <- rv$country_fill_table
@@ -1385,8 +944,10 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rv$stream_filter <- "all"
                 rv$last_run_status <- "idle"
                 rv$transposed_table <- NULL
+                rv$outside_table <- NULL
                 rv$transposed_applied <- FALSE
                 rv$coords_corrections <- NULL
+                rv$validated_coords <- NULL
                 rv$country_fill_table <- NULL
                 rv$country_fill_applied <- FALSE
                 rv$country_fills <- NULL
@@ -1396,6 +957,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rv$utm_axes <- NULL
                 rv$utm_candidates <- NULL
                 rv$utm_applied <- FALSE
+                manual_edits_rv(NULL)
                 rv$starting <- FALSE
                 rv$running <- FALSE
                 rv$start_requested <- FALSE
@@ -1403,11 +965,68 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             }, ignoreInit = TRUE)
         }
 
+        presentation <- mount_mod_validate_coords_presentation(
+            active_filter = active_filter,
+            can_run_validation = can_run_validation,
+            coord_validation_r = coord_validation_r,
+            effective_validation_r = effective_validation_r,
+            family_counts = family_counts,
+            input = input,
+            lang_r = lang_r,
+            map_data_r = map_data_r,
+            ns = ns,
+            output = output,
+            quick_gate = quick_gate,
+            session = session,
+            table_base_r = table_base_r,
+            table_proxy = table_proxy,
+            utm_converted_r = utm_converted_r,
+            view = list(
+                country_fill_applied = shiny::reactive(rv$country_fill_applied),
+                country_fill_table = shiny::reactive(rv$country_fill_table),
+                outside_table = shiny::reactive(rv$outside_table),
+                running = shiny::reactive(rv$running),
+                starting = shiny::reactive(rv$starting),
+                swap_fill_applied = shiny::reactive(rv$swap_fill_applied),
+                swap_fill_table = shiny::reactive(rv$swap_fill_table),
+                transposed_applied = shiny::reactive(rv$transposed_applied),
+                transposed_table = shiny::reactive(rv$transposed_table),
+                utm_applied = shiny::reactive(rv$utm_applied),
+                utm_candidates = shiny::reactive(rv$utm_candidates),
+                utm_rows = shiny::reactive(rv$utm_rows)
+            ),
+            filtered_result_r = filtered_result_r
+        )
+        map_labels <- presentation$map_labels
+        draw_markers <- presentation$draw_markers
+        refresh_marker <- presentation$refresh_marker
+        diag_label_key <- presentation$diag_label_key
+        diag_badge_class <- presentation$diag_badge_class
+        build_issues_table_df <- presentation$build_issues_table_df
+        refresh_table_rows <- presentation$refresh_table_rows
+
         result_r <- shiny::reactive(coord_validation_r())
-        attr(result_r, "filtered_data") <- filtered_result_r
-        attr(result_r, "active_filter") <- active_filter
-        attr(result_r, "coords_correction_payload") <- shiny::reactive(rv$coords_corrections)
-        attr(result_r, "country_fill_payload") <- shiny::reactive(rv$country_fills)
-        return(result_r)
+        # Generalization, Export and the summary read this one payload, so the
+        # manual edits reach them with no change in app_server.R (ADR-129).
+        corrections_r <- shiny::reactive({
+            edits <- manual_edits_rv()
+            manual <- if (is.data.frame(edits)) {
+                keep <- c("occurrenceID", "decimalLatitude", "decimalLongitude", coord_source_cols)
+                edits[, intersect(keep, names(edits)), drop = FALSE]
+            } else {
+                NULL
+            }
+            payload <- merge_manual_coord_edits(rv$coords_corrections, manual)
+            if (!is.list(payload) || !is.data.frame(payload$corrections) ||
+                    nrow(payload$corrections) == 0L) {
+                return(payload)
+            }
+            drop_stale_coord_corrections(payload, mapped_data_r())
+        })
+        country_r <- shiny::reactive(reconcile_country_fill(rv$country_fills, mapped_data_r()))
+        module_result_return(
+            new_module_result(result_r, filtered_data_r = filtered_result_r, active_filter_r = active_filter, corrections_r = corrections_r, country_r = country_r),
+            c("filtered_data" = "filtered_data_r", "active_filter" = "active_filter_r", "coords_correction_payload" = "corrections_r", "country_fill_payload" = "country_r"), return_contract
+        )
     })
 }

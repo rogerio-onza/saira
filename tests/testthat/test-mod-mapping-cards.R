@@ -199,6 +199,16 @@ test_that("build_field_card marks state, wide span and the hidden-text tooltip",
         state_class = "field-required-missing"
     ))
     expect_match(flagged, "field-required-missing", fixed = TRUE)
+
+    # A required term carries the "Required" tag; other terms do not.
+    expect_false(grepl("field-required-tag", flagged, fixed = TRUE))
+    required <- as.character(build_field_card(
+        item = terms[["eventDate"]], cols = cols, current_val = "",
+        is_mapped = FALSE, badge_info = NULL, ns = ns, lang_r = "pt",
+        input = list(), cat_class = "cat-event", required = TRUE
+    ))
+    expect_match(required, "field-required-tag", fixed = TRUE)
+    expect_match(required, tr("mapping_required", "pt"), fixed = TRUE)
 })
 
 test_that("build_field_row renders a read-only row that links back to its card", {
@@ -243,4 +253,95 @@ test_that("build_field_row_header names the four list columns in both languages"
             expect_match(html, tr(key, lang), fixed = TRUE)
         }
     }
+})
+
+test_that("a compact card keeps its select and adds Fixed value only for constant terms", {
+    ns <- shiny::NS("map")
+    cols <- c("-- " = "", colA = "colA")
+
+    const_html <- as.character(build_field_card(
+        item = list(term = "country", desc = "x", category = "Location", sep = ""),
+        cols = cols, current_val = "", is_mapped = FALSE, badge_info = NULL,
+        ns = ns, lang_r = "en", input = list(), cat_class = "cat-location",
+        compact = TRUE
+    ))
+    expect_match(const_html, "field-card-compact field-card-collapsed", fixed = TRUE)
+    expect_match(const_html, ns("map_country"), fixed = TRUE)
+    expect_match(const_html, "field-compact-expand", fixed = TRUE)
+
+    plain_html <- as.character(build_field_card(
+        item = list(term = "recordedBy", desc = "x", category = "Occurrence", sep = ""),
+        cols = cols, current_val = "", is_mapped = FALSE, badge_info = NULL,
+        ns = ns, lang_r = "en", input = list(), cat_class = "cat-occurrence",
+        compact = TRUE
+    ))
+    expect_false(grepl("field-compact-expand", plain_html, fixed = TRUE))
+
+    full_html <- as.character(build_field_card(
+        item = list(term = "country", desc = "x", category = "Location", sep = ""),
+        cols = cols, current_val = "", is_mapped = FALSE, badge_info = NULL,
+        ns = ns, lang_r = "en", input = list(), cat_class = "cat-location"
+    ))
+    # The browser can make it compact later (ADR-157), so the button is
+    # there already. CSS shows it on a compact row only.
+    expect_false(grepl("field-card-compact", full_html, fixed = TRUE))
+    expect_match(full_html, "field-compact-expand", fixed = TRUE)
+})
+
+test_that("the fixed value panel has no inline display", {
+    ns <- shiny::NS("map")
+    off <- as.character(build_constant_value_input("country", ns, "en", list()))
+    on <- as.character(build_constant_value_input(
+        "country", ns, "en", list(usecustom_country = TRUE)
+    ))
+    # Shiny 1.14 hides a panel with its own CSS rule until the condition is
+    # true. An inline "display: none" kept the panel hidden after that.
+    expect_match(off, 'data-display-if="input.usecustom_country"', fixed = TRUE)
+    expect_false(grepl("display: none", off, fixed = TRUE))
+    expect_false(grepl("display: none", on, fixed = TRUE))
+})
+
+test_that("build_collapsed_terms counts the terms", {
+    html <- as.character(build_collapsed_terms(c("recordedBy", "sex"), "en"))
+    expect_match(html, paste("2", tr("mapping_more_terms_other", "en")), fixed = TRUE)
+    expect_match(html, "recordedBy, sex", fixed = TRUE)
+    expect_match(html, tr("mapping_more_show", "en"), fixed = TRUE)
+    # The rows are items of the class grid, not of the line (ADR-157).
+    expect_false(grepl("field-card", html, fixed = TRUE))
+
+    one <- as.character(build_collapsed_terms("sex", "en"))
+    expect_match(one, paste("1", tr("mapping_more_terms_one", "en")), fixed = TRUE)
+    expect_no_match(one, " hidden", fixed = TRUE)
+
+    # Every class has the group, so the browser can fill it (ADR-157).
+    empty <- as.character(build_collapsed_terms(character(0), "en"))
+    expect_match(empty, " hidden>", fixed = TRUE)
+    expect_match(empty, paste0('data-one="', tr("mapping_more_terms_one", "en"), '"'), fixed = TRUE)
+    expect_match(empty, paste0('data-other="', tr("mapping_more_terms_other", "en"), '"'), fixed = TRUE)
+})
+
+test_that("build_measurement_specs_block gives each column a type, unit and method", {
+    ns <- shiny::NS("map")
+    testthat::expect_null(build_measurement_specs_block(character(0), list(), ns, "pt", list()))
+
+    html <- as.character(build_measurement_specs_block(
+        c("AREA_HA", "Annual rainfall"), list(AREA_HA = c("10", "5")), ns, "pt",
+        list(mof_unit_AREA_HA = "ha")
+    ))
+    expect_match(html, 'id="map-mof_type_AREA_HA"', fixed = TRUE)
+    expect_match(html, 'id="map-mof_method_Annual.rainfall"', fixed = TRUE)
+    # An empty type keeps the column name, so the placeholder shows it.
+    expect_match(html, 'placeholder="Annual rainfall"', fixed = TRUE)
+    expect_match(html, 'value="ha"', fixed = TRUE)
+    expect_match(html, "ex.: 10  5", fixed = TRUE)
+    expect_match(html, 'aria-label="Unidade AREA_HA"', fixed = TRUE)
+
+    # The unit from the column name fills an input not typed yet, and a typed
+    # value wins.
+    html <- as.character(build_measurement_specs_block(
+        c("AREA_HA", "chuva_mm"), list(), ns, "pt", list(mof_unit_AREA_HA = ""),
+        units = c(AREA_HA = "ha", chuva_mm = "mm")
+    ))
+    expect_match(html, 'id="map-mof_unit_chuva_mm"[^>]*value="mm"')
+    expect_no_match(html, 'value="ha"', fixed = TRUE)
 })

@@ -10,7 +10,7 @@
 #' assistant UI outputs, pagination, and save/open observers.
 #'
 #' @param input,output,session Shiny module scope
-#' @param rv reactiveValues from parent module
+#' @param rv Assistant-owned reactive state (accepted answers, draft and pagination)
 #' @param ns namespace function
 #' @param lang_r reactive language code
 #' @param raw_data_r reactive raw data frame
@@ -113,19 +113,24 @@ setup_basis_of_record_assistant <- function(
                     if (is.null(current_target)) {
                         current_target <- ""
                     }
+                    raw_label <- if (identical(entry$key[[1]], bor_blank_key)) {
+                        tr("bor_assistant_blank_cells", lang_r())
+                    } else {
+                        entry$raw[[1]]
+                    }
 
                     shiny::tags$tr(
                         shiny::tags$td(
                             shiny::div(
                                 class = "bor-assistant-raw-value",
-                                entry$raw[[1]]
+                                raw_label
                             )
                         ),
                         shiny::tags$td(
                             shiny::selectInput(
                                 ns(paste0("basis_of_record_target_", entry$idx[[1]])),
                                 label = shiny::tags$span(
-                                    sprintf(tr("a11y_bor_target_label", lang_r()), entry$raw[[1]]),
+                                    sprintf(tr("a11y_bor_target_label", lang_r()), raw_label),
                                     class = "visually-hidden"
                                 ),
                                 choices = choices,
@@ -169,7 +174,7 @@ setup_basis_of_record_assistant <- function(
             tr("bor_assistant_empty_value", lang_r())
         )
 
-        keys <- normalize_basis_of_record_keys(all_raw)
+        keys <- bor_value_keys(all_raw)
         clean_map <- sanitize_basis_of_record_map(effective_map)
         mapped_all <- unname(clean_map[keys])
         mapped_all[is.na(mapped_all)] <- ""
@@ -246,15 +251,10 @@ setup_basis_of_record_assistant <- function(
                 next_auto <- stats::setNames(character(0), character(0))
 
                 if (nrow(entries) > 0) {
-                    allowed_terms <- get_basis_of_record_terms()
-                    match_idx <- match(
-                        tolower(trimws(entries$raw)),
-                        tolower(allowed_terms)
+                    next_auto <- stats::setNames(
+                        auto_suggest_basis_of_record_terms(entries$raw),
+                        entries$key
                     )
-                    suggested <- rep("", nrow(entries))
-                    matched <- !is.na(match_idx)
-                    suggested[matched] <- allowed_terms[match_idx[matched]]
-                    next_auto <- stats::setNames(suggested, entries$key)
                 }
 
                 rv$basis_of_record_entries <- entries
@@ -331,4 +331,116 @@ setup_basis_of_record_assistant <- function(
     })
 
     invisible(NULL)
+}
+
+new_mapping_basis_model <- function(input, raw_data_r, lang_r, map_values_r) {
+    rv <- shiny::reactiveValues(
+        basis_of_record_map = stats::setNames(character(0), character(0)),
+        basis_of_record_auto_map = stats::setNames(character(0), character(0)),
+        basis_of_record_source_col = "",
+        basis_of_record_draft_map = stats::setNames(character(0), character(0)),
+        basis_of_record_entries = data.frame(
+            idx = integer(0),
+            key = character(0),
+            raw = character(0),
+            stringsAsFactors = FALSE
+        ),
+        basis_of_record_page = 1L
+    )
+    basis_of_record_page_size <- 20L
+
+    get_basis_of_record_source_col <- function() {
+        selected <- sanitize_map_selection("basisOfRecord", map_values_r()[["basisOfRecord"]])
+        if (has_selected_value(selected)) {
+            return(as.character(selected[[1]]))
+        }
+
+        input_selected <- sanitize_map_selection("basisOfRecord", input$map_basisOfRecord)
+        if (has_selected_value(input_selected)) {
+            return(as.character(input_selected[[1]]))
+        }
+
+        ""
+    }
+
+    basis_of_record_page_count <- function() {
+        total_items <- nrow(rv$basis_of_record_entries)
+        if (total_items <= 0) {
+            return(1L)
+        }
+
+        max(1L, as.integer(ceiling(total_items / basis_of_record_page_size)))
+    }
+
+    get_basis_of_record_page_entries <- function() {
+        entries <- rv$basis_of_record_entries
+        if (nrow(entries) == 0) {
+            return(entries)
+        }
+
+        total_pages <- basis_of_record_page_count()
+        current_page <- max(1L, min(as.integer(rv$basis_of_record_page), total_pages))
+        start_idx <- ((current_page - 1L) * basis_of_record_page_size) + 1L
+        end_idx <- min(nrow(entries), start_idx + basis_of_record_page_size - 1L)
+        entries[start_idx:end_idx, , drop = FALSE]
+    }
+
+    basis_of_record_target_choices <- function() {
+        get_basis_of_record_term_choices(
+            lang = lang_r(),
+            include_skip = TRUE,
+            with_description = TRUE,
+            skip_label = tr("bor_assistant_skip_option", lang_r())
+        )
+    }
+
+    get_effective_basis_of_record_map <- function() {
+        entries <- rv$basis_of_record_entries
+        if (nrow(entries) == 0) {
+            return(stats::setNames(character(0), character(0)))
+        }
+
+        keys <- entries$key
+        auto_map <- sanitize_basis_of_record_map(rv$basis_of_record_auto_map)
+        draft_map <- sanitize_basis_of_record_map(rv$basis_of_record_draft_map)
+
+        effective <- auto_map[keys]
+        effective[is.na(effective)] <- ""
+
+        draft_values <- draft_map[keys]
+        has_draft <- !is.na(draft_values)
+        effective[has_draft] <- draft_values[has_draft]
+
+        effective <- sanitize_basis_of_record_terms(effective)
+        stats::setNames(as.character(effective), keys)
+    }
+
+    sync_current_page_to_draft <- function() {
+        entries <- get_basis_of_record_page_entries()
+        if (nrow(entries) == 0) {
+            return(invisible(NULL))
+        }
+
+        for (i in seq_len(nrow(entries))) {
+            entry <- entries[i, , drop = FALSE]
+            input_id <- paste0("basis_of_record_target_", entry$idx[[1]])
+            input_value <- input[[input_id]]
+            if (is.null(input_value)) {
+                next
+            }
+
+            sanitized_value <- sanitize_basis_of_record_term(input_value)
+            key <- entry$key[[1]]
+            has_key <- key %in% names(rv$basis_of_record_draft_map)
+            current_value <- if (has_key) as.character(rv$basis_of_record_draft_map[[key]])[[1]] else NA_character_
+
+            if (!has_key || !identical(current_value, sanitized_value)) {
+                rv$basis_of_record_draft_map[[entry$key[[1]]]] <- sanitized_value
+            }
+        }
+
+        invisible(NULL)
+    }
+
+    list(state = rv, basis_of_record_page_size = basis_of_record_page_size, get_basis_of_record_source_col = get_basis_of_record_source_col, basis_of_record_page_count = basis_of_record_page_count, get_basis_of_record_page_entries = get_basis_of_record_page_entries, basis_of_record_target_choices = basis_of_record_target_choices, get_effective_basis_of_record_map = get_effective_basis_of_record_map, sync_current_page_to_draft = sync_current_page_to_draft)
 }
