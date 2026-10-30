@@ -1,5 +1,5 @@
 // Landing page animations: the hero species, the flow panel (one sheet that
-// the app tabs fix in place), the network map and the install console. All visible
+// the app tabs fix in place), the network map and the install cards. All visible
 // text comes from the page markup, so the PT, EN and ES pages share this file.
 (function () {
   "use strict";
@@ -251,8 +251,19 @@
     sync();
   }
 
-  function initTerm(term) {
-    var copy = term.querySelector(".lp-copy");
+  // Install cards. The card of the visitor's system gets the filled button and
+  // a tag. macOS gets the filled button on the R package (there is no macOS app).
+  function initInstall(box) {
+    var ua = navigator.userAgent;
+    var os = /Android|iPhone|iPad/.test(ua) ? "" : /Windows/.test(ua) ? "windows" : /Linux/.test(ua) ? "linux" : /Mac OS X/.test(ua) ? "r" : "";
+    var card = os && box.querySelector('[data-os="' + os + '"]');
+    if (card) {
+      card.classList.add("is-yours");
+      var tag = card.querySelector(".lp-os-you");
+      if (tag) tag.hidden = false;
+    }
+
+    var copy = box.querySelector(".lp-copy");
     var label = copy.querySelector("span");
     var idle = label.textContent;
     copy.addEventListener("click", function () {
@@ -263,59 +274,6 @@
       }
       if (navigator.clipboard) navigator.clipboard.writeText(copy.getAttribute("data-copy")).then(flash, function () {});
     });
-
-    if (window.SAIRA_VERSION) {
-      term.querySelectorAll("[data-saira-version]").forEach(function (v) { v.textContent = window.SAIRA_VERSION; });
-    }
-    if (reduce || !("IntersectionObserver" in window)) return;
-
-    // the script is on screen from the start; only the output replays, in about 3 s
-    var outs = [].slice.call(term.querySelectorAll("[data-out]"));
-    outs.forEach(function (l) { l.classList.add("is-hidden"); });
-
-    function play(i) {
-      if (i >= outs.length) return;
-      var l = outs[i], bar = l.querySelector(".lp-term-prog");
-      l.classList.remove("is-hidden");
-      if (bar) { void bar.offsetWidth; bar.classList.add("is-on"); }
-      setTimeout(function () { play(i + 1); }, Number(l.getAttribute("data-wait")) || 0);
-    }
-
-    // plays once, when the window comes into view
-    var seen = new IntersectionObserver(function (entries) {
-      if (!entries[0].isIntersecting) return;
-      seen.disconnect();
-      setTimeout(function () { play(0); }, 500);
-    }, { threshold: 0.4 });
-    seen.observe(term);
-  }
-
-  // Install tabs. The visitor's system opens first: Linux opens the Linux app,
-  // macOS the R package (there is no macOS app).
-  function initInstall(box) {
-    var tabs = [].slice.call(box.querySelectorAll('[role="tab"]'));
-    function select(tab, focus) {
-      tabs.forEach(function (t) {
-        var on = t === tab;
-        t.setAttribute("aria-selected", on ? "true" : "false");
-        t.tabIndex = on ? 0 : -1;
-        document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
-      });
-      if (focus) tab.focus();
-    }
-    tabs.forEach(function (t, i) {
-      t.addEventListener("click", function () { select(t); });
-      t.addEventListener("keydown", function (e) {
-        var k = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
-        if (!k) return;
-        e.preventDefault();
-        select(tabs[(i + k + tabs.length) % tabs.length], true);
-      });
-    });
-    var ua = navigator.userAgent;
-    var os = /Android|iPhone|iPad/.test(ua) ? "" : /Linux/.test(ua) ? "linux" : /Mac OS X/.test(ua) ? "r" : "";
-    var first = os && box.querySelector('[data-os="' + os + '"]');
-    if (first) select(first);
   }
 
   // Hero: one photo per biome. The next photo comes into focus while the
@@ -532,13 +490,11 @@
     var hero = document.querySelector(".lp-hero");
     var map = document.querySelector(".lp-mapfig");
     var flow = document.querySelector(".lp-flow");
-    var term = document.querySelector(".lp-term");
     var get = document.querySelector(".lp-get");
     if (hero) initHero(hero);
     if (map) initMap(map);
     if (flow) initFlow(flow);
     if (get) initInstall(get);
-    if (term) initTerm(term);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

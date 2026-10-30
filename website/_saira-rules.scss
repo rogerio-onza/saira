@@ -287,75 +287,49 @@ a { color: inherit; }
   .lp-status { color: var(--text); }
   .lp-note { margin: -10px 0 0; font-family: var(--sans); font-size: 12px; line-height: 1.6; color: var(--lp-soft); }
 
-  // ---------- install: the app (Windows, Linux) or the R package, in tabs ----------
-  .lp-install { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 40px 64px; align-items: center; }
-  .lp-install-text { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-  .lp-install-text p, .lp-get-r p { margin: 0; color: var(--lp-soft); }
-  .lp-get-r code { padding: 0; background: none; font-family: var(--mono); font-size: 15px; color: var(--text); }
+  // ---------- install: one card per way to install; landing.js fills the visitor's card ----------
+  .lp-install { display: flex; flex-direction: column; gap: 40px; }
+  .lp-install-text { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 64px; align-items: end; }
+  .lp-install-text > div { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .lp-install-text p { margin: 0; color: var(--lp-soft); }
   .lp-small { font-size: 16px; }
 
-  .lp-get { min-width: 0; background: var(--surface); border: 1px solid var(--lp-line); border-radius: var(--r); overflow: hidden; box-shadow: none; }
-  .lp-get-tabs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0 28px; padding: 0 32px; border-bottom: 1px solid var(--lp-line); }
-  .lp-get-group { display: flex; flex-direction: column; gap: 2px; padding-top: 14px; }
-  .lp-get-group > div { display: flex; gap: 20px; }
-  .lp-get-label { font-family: var(--sans); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--lp-soft); }
-  .lp-get-sep { align-self: stretch; width: 1px; margin: 14px 0; background: var(--lp-line); }
-  .lp-get-tabs button {
-    min-height: 44px; padding: 0; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--lp-soft);
-    font-family: var(--sans); font-size: 15px; font-weight: 600; cursor: pointer; transition: color .2s ease, border-color .2s ease;
+  .lp-get { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  // each logo takes one plumage color of the Tangara fastuosa
+  .lp-os {
+    --ink: var(--accent);
+    display: flex; flex-direction: column; gap: 14px; min-width: 0; padding: 32px 28px 28px;
+    background: var(--surface); border: 1px solid var(--lp-line); border-radius: var(--r); box-shadow: none;
   }
-  .lp-get-tabs button:hover { color: var(--text); }
-  .lp-get-tabs button[aria-selected="true"] { border-bottom-color: var(--primary); color: var(--text); }
-  .lp-get-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .lp-app, .lp-get-r { display: flex; flex-direction: column; gap: 22px; padding: 32px; }
-  .lp-get-r { gap: 16px; padding-top: 24px; }
-  .lp-app[hidden], .lp-get-r[hidden] { display: none; }
-  .lp-app-head { display: flex; align-items: center; gap: 16px; }
-  .lp-app-head svg { flex: none; width: 44px; height: 44px; color: var(--accent); }
-  .lp-app-head > div { display: flex; flex-direction: column; }
-  .lp-app h3 { margin: 0; font-family: var(--sans); font-size: 20px; font-weight: 600; line-height: 1.3; }
-  .lp-app-meta { font-family: var(--sans); font-size: 14px; color: var(--lp-soft); }
-  .lp-app ul { margin: 0; padding-left: 20px; font-size: 17px; color: var(--lp-soft); }
-  .lp-dl { align-self: flex-start; gap: 10px; min-height: 48px; background: var(--primary); border-color: var(--primary); color: var(--on-primary); font-size: 15px; font-weight: 700; }
-  .lp-dl:hover { background: #5bd9f8; border-color: #5bd9f8; color: var(--on-primary); }
-  .lp-dl svg { width: 18px; height: 18px; }
-  .lp-get-r .lp-term { border-radius: var(--r-sm); }
+  .lp-os[data-os="windows"] { --ink: var(--primary-dark); }
+  .lp-os[data-os="r"] { --ink: var(--success); }
+  .lp-os-logo { display: block; width: 36px; height: 36px; margin-bottom: 10px; color: var(--ink); }
+  .lp-os h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 0; font-family: var(--sans); font-size: 20px; font-weight: 600; line-height: 1.3; }
+  .lp-os-you {
+    padding: 2px 8px; border-radius: 999px; background: color-mix(in srgb, var(--primary) 16%, var(--surface));
+    color: color-mix(in srgb, var(--primary) 40%, var(--text)); font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  }
+  .lp-os-you[hidden] { display: none; }
+  .lp-os-meta { margin-top: -8px; font-family: var(--sans); font-size: 14px; color: var(--lp-soft); }
+  .lp-os p { margin: 0; font-size: 16px; line-height: 1.6; color: var(--lp-soft); }
+  .lp-os code { padding: 0; background: none; font-family: var(--mono); font-size: 13.5px; color: var(--text); }
+  .lp-os-acts { display: flex; flex-direction: column; gap: 10px; margin-top: auto; padding-top: 14px; }
+  .lp-os-acts .lp-btn { justify-content: center; gap: 8px; min-height: 48px; padding: 10px 16px; background: none; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .lp-os-acts .lp-btn svg { flex: none; width: 17px; height: 17px; }
+  .lp-os-acts .lp-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  // the card of the visitor's system takes the brand cyan
+  .lp-os.is-yours .lp-btn { background: var(--primary); border-color: var(--primary); color: var(--on-primary); font-weight: 700; }
+  .lp-os.is-yours .lp-btn:hover { background: #5bd9f8; border-color: #5bd9f8; color: var(--on-primary); }
+  .lp-os-acts .lp-copy.is-copied { border-color: var(--tip-title); color: var(--tip-title); }
+  .lp-os-alt { font-family: var(--sans); font-size: 14px; text-align: center; color: var(--lp-soft); }
+  .lp-os-alt a { font-weight: 600; }
 
-  .lp-term {
-    margin: 0; min-width: 0; overflow: hidden; color-scheme: dark;
-    background: var(--code-bg); border: 1px solid color-mix(in srgb, var(--code-text) 10%, var(--code-bg)); border-radius: var(--r);
+  // three cards under 1000px squeeze the Spanish download label onto two lines
+  @media (max-width: 1000px) {
+    .lp-get { grid-template-columns: minmax(0, 1fr); }
+    .lp-os-acts { align-items: flex-start; }
+    .lp-os-alt { text-align: left; }
   }
-  .lp-term-bar { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 16px; border-bottom: 1px solid rgba(255, 255, 255, .08); }
-  .lp-tl { display: flex; gap: 7px; }
-  .lp-tl span { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; }
-  .lp-tl span:nth-child(2) { background: #febc2e; }
-  .lp-tl span:nth-child(3) { background: #28c840; }
-  .lp-term-label { margin: 0 0 0 6px; font-family: var(--sans); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: rgba(233, 231, 223, .55); }
-  // the copy button is the first thing to find, so it takes the brand cyan
-  .lp-copy {
-    margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px;
-    background: var(--primary); border: 1px solid var(--primary); border-radius: 8px;
-    color: var(--on-primary); font-family: var(--sans); font-size: 13px; font-weight: 700; cursor: pointer;
-    transition: background-color .2s ease, border-color .2s ease;
-  }
-  .lp-copy:hover { background: #5bd9f8; border-color: #5bd9f8; }
-  .lp-copy svg { width: 15px; height: 15px; }
-  .lp-copy.is-copied { background: #6fe3ac; border-color: #6fe3ac; }
-  .lp-term-body {
-    padding: 20px 22px 22px; overflow-x: auto; scrollbar-color: rgba(233, 231, 223, .25) transparent;
-    font-family: var(--mono); font-size: 13px; line-height: 1.85; color: var(--code-text);
-  }
-  // pre per line: on the body it would keep the markup indentation
-  .lp-term-line { white-space: pre; min-height: 1.85em; }
-  .lp-term-line.is-hidden { visibility: hidden; }
-  .lp-term-prog { display: inline-block; vertical-align: middle; width: 160px; height: 6px; margin-left: 10px; border-radius: 3px; background: rgba(255, 255, 255, .1); overflow: hidden; }
-  .lp-term-prog i { display: block; width: 0; height: 100%; background: #6fe3ac; transition: width 1s cubic-bezier(.3, .6, .2, 1); }
-  .lp-term-prog.is-on i { width: 100%; }
-  .lp-term-body .pr { color: #5bd9f8; }
-  .lp-term-body .fn { color: #ffb838; }
-  .lp-term-body .str { color: #6fe3ac; }
-  .lp-term-body .out { color: rgba(233, 231, 223, .62); }
-
   @media (max-width: 900px) {
     .lp-mod.lp-map { grid-template-columns: minmax(0, 1fr); }
   }
@@ -367,13 +341,13 @@ a { color: inherit; }
     .lp-biome { padding-top: 10px; }
     .lp-biome-sp { display: none; }
     .lp-panel { --px: 16px; }
-    .lp-install { grid-template-columns: minmax(0, 1fr); }
-    .lp-get-tabs { gap: 0 20px; padding: 0 16px; }
-    .lp-app, .lp-get-r { padding: 20px 16px; }
-    .lp-term-body { padding: 16px; font-size: 12px; }
+    .lp-install-text { grid-template-columns: minmax(0, 1fr); }
+    .lp-os { padding: 24px 20px 20px; }
   }
   // a narrow map has no room beside the pin, so the card sits in the top right corner (sea)
   @media (max-width: 560px) {
+    .lp-os-acts { align-items: stretch; }
+    .lp-os-alt { text-align: center; }
     .lp-card, .lp-card.is-left { left: auto; right: 8px; top: 8px; width: 210px; transform: none; }
     .lp-card img { width: 44px; height: 44px; }
   }
