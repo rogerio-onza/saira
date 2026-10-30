@@ -86,7 +86,9 @@ unparsed_date_cells <- function(df, sample_n = 5L) {
     found <- lapply(intersect(preview_date_terms, names(df)), function(term) {
         v <- trimws(as.character(df[[term]]))
         v[is.na(v)] <- ""
-        rows <- which(nzchar(v) & !is_dwc_date_value(v))
+        # A date column repeats its values: each distinct value is parsed once.
+        u <- unique(v)
+        rows <- which(nzchar(v) & !is_dwc_date_value(u)[match(v, u)])
         data.frame(row = rows, column = rep(term, length(rows)), value = v[rows],
                    stringsAsFactors = FALSE)
     })
@@ -120,7 +122,8 @@ formula_like_cells <- function(df, sample_n = 5L) {
     cols <- if (is.data.frame(df)) names(df) else character(0)
     found <- lapply(cols, function(term) {
         v <- as.character(df[[term]])
-        rows <- which(is_formula_like(v))
+        u <- unique(v)
+        rows <- which(is_formula_like(u)[match(v, u)])
         data.frame(row = rows, column = rep(term, length(rows)), value = trimws(v[rows]),
                    stringsAsFactors = FALSE)
     })

@@ -76,6 +76,16 @@ testthat::test_that("is_dwc_date_value rejects an impossible time, offset or int
     testthat::expect_identical(found$count, length(bad))
 })
 
+testthat::test_that("the Export scans give every row of a repeated value", {
+    df <- data.frame(eventDate = c("2024-13-01", "2024-01-01", NA, "2024-13-01"),
+                     locality = c("=1+1", "Serra", "=1+1", NA), stringsAsFactors = FALSE)
+    dates <- unparsed_date_cells(df)
+    testthat::expect_identical(dates$sample$row, c(1L, 4L))
+    formulas <- formula_like_cells(df)
+    testthat::expect_identical(formulas$sample$row, c(1L, 3L))
+    testthat::expect_identical(formulas$sample$value, c("=1+1", "=1+1"))
+})
+
 testthat::test_that("apply_preview_edits writes only over the value it replaces", {
     df <- fix_frame()
     edits <- data.frame(row = c(2L, 3L), term = c("individualCount", "individualCount"),

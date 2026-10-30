@@ -257,6 +257,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Performance
 - **export:** Add the conservation status to repeated nested dynamicProperties objects once per distinct object
+- **coords:** Send the map points without popups, and build the popup of a point when it is clicked, ADR-188
+- **coords:** Filter the coordinate results with no cache, because the cache key cost more than the filter, ADR-188
+- **export:** Check each distinct date and cell value once, and assess the download from the Export summary, ADR-188
 - **names:** Check the names found in the Flora BR and Fauna BR catalogs before the slow spelling search, ADR-172
 - **upload:** Read a large CSV in a third of the time and about half the peak memory
 - **mapping:** Switch the Mapping filter in the browser, with no grid rebuild and no card moves: Relevant and All now change at once, not after 2 s, ADR-157

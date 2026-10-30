@@ -375,6 +375,7 @@ mount_mod_validate_coords_presentation <- function(
         proxy <- leaflet::leafletProxy(ns("coords_map"))
         proxy <- leaflet::clearMarkers(proxy)
         proxy <- leaflet::clearMarkerClusters(proxy)
+        proxy <- leaflet::clearPopups(proxy)
         if (!is.data.frame(map_df) || nrow(map_df) == 0L) {
             return(invisible(NULL))
         }
@@ -398,7 +399,6 @@ mount_mod_validate_coords_presentation <- function(
             color = ~color,
             fillColor = ~color,
             fillOpacity = 0.85,
-            popup = ~popup_html,
             layerId = ~paste0("r", .row_index),
             # leaflet-hex.js draws the point as a hexagon (ADR-160).
             options = leaflet::pathOptions(hex = TRUE)
@@ -426,16 +426,15 @@ mount_mod_validate_coords_presentation <- function(
         if (!is.data.frame(eff)) return(invisible(NULL))
         proxy <- leaflet::leafletProxy(ns("coords_map"))
         leaflet::removeMarker(proxy, layerId = paste0("r", row_index))
-        labels <- shiny::isolate(map_labels())
+        leaflet::clearPopups(proxy)
         md <- build_leaflet_data(
-            eff[eff$.row_index %in% row_index, , drop = FALSE],
-            filter = "all", issue_labels = labels$issue, popup_labels = labels$popup
+            eff[eff$.row_index %in% row_index, , drop = FALSE], filter = "all", popups = FALSE
         )
         if (nrow(md) == 0L) return(invisible(NULL))
         leaflet::addCircleMarkers(
             map = proxy, data = md, lat = ~lat_num, lng = ~lon_num,
             radius = 6, stroke = TRUE, weight = 1, color = ~color,
-            fillColor = ~color, fillOpacity = 0.85, popup = ~popup_html,
+            fillColor = ~color, fillOpacity = 0.85,
             layerId = ~paste0("r", .row_index),
             options = leaflet::pathOptions(hex = TRUE)
         )

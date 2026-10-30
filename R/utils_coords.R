@@ -2143,7 +2143,8 @@ leaflet_fill_world <- function(map_obj) {
     module_behavior_on_render(map_obj, "leafletFillWorld")
 }
 
-build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = NULL, popup_labels = NULL) {
+build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = NULL, popup_labels = NULL,
+                               popups = TRUE) {
     empty <- data.frame(
         .row_index = integer(0),
         lat_num = numeric(0),
@@ -2213,6 +2214,15 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
         )
         color_vec <- unname(color_map[out$diagnostic_family])
         color_vec[is.na(color_vec)] <- "#C0392B"
+        # The map builds a popup for one row when its marker is clicked: the
+        # popups of all rows were most of the data sent to the map.
+        if (!popups) {
+            out$issue_type <- out$diagnostic
+            out$color <- color_vec
+            out$popup_html <- rep(NA_character_, nrow(out))
+            rownames(out) <- NULL
+            return(out[, names(empty), drop = FALSE])
+        }
 
         label_map <- c(
             ok = "OK",

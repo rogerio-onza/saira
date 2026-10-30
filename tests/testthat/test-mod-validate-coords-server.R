@@ -570,6 +570,58 @@ testthat::test_that("a fix leaves the payload when its point changes later (AUD-
     )
 })
 
+testthat::test_that("the map sends markers without popups and builds the popup of a clicked marker", {
+    mapped_df <- data.frame(
+        decimalLatitude = c(-10, -11),
+        decimalLongitude = c(-50, -51),
+        country = c("Brasil", "Brasil"),
+        stringsAsFactors = FALSE
+    )
+    lang <- shiny::reactiveVal("pt")
+
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = lang
+        ),
+        {
+            calls <- list()
+            real_session <- base::.subset2(session, "parent")
+            real_session$sendCustomMessage <- function(type, message) {
+                if (identical(type, "leaflet-calls")) calls <<- c(calls, message$calls)
+                invisible(NULL)
+            }
+            method_args <- function(method) {
+                hit <- Filter(function(cl) identical(cl$method, method), calls)
+                if (length(hit)) hit[[length(hit)]]$args else NULL
+            }
+            coord_validation_r(data.frame(
+                .row_index = 1:2, lat_num = c(-10, -11), lon_num = c(-50, -51),
+                diagnostic = c("ok", "sea"), diagnostic_family = c("ok", "sea"),
+                stringsAsFactors = FALSE
+            ))
+            session$flushReact()
+            session$setInputs(coords_filter_all = 1)
+            # The map reports its bounds once drawn, which starts the first draw.
+            session$setInputs(coords_map_bounds = list(north = 0))
+            markers <- method_args("addCircleMarkers")
+            testthat::expect_false(is.null(markers))
+            # Arguments: lat, lng, radius, layerId, group, options, popup.
+            testthat::expect_null(markers[[7]])
+
+            lang("en")
+            session$setInputs(coords_map_marker_click = list(id = "r2", lat = -11, lng = -51))
+            session$flushReact()
+            popup <- method_args("addPopups")
+            testthat::expect_identical(popup[[1]], -11)
+            testthat::expect_match(popup[[3]], tr("validate_coords_popup_row", "en"), fixed = TRUE)
+            testthat::expect_match(popup[[3]], "data-row=\"2\"", fixed = TRUE)
+            testthat::expect_identical(popup[[4]], "coords-popup")
+        }
+    )
+})
+
 testthat::test_that("a language switch keeps the map widget and translates the legend", {
     mapped_df <- data.frame(
         decimalLatitude = c(-10),
