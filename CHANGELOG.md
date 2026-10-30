@@ -108,6 +108,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - **generalization:** Write the published point in every copy of a protected point, in any text field or format, ADR-185
 - **occurrenceID:** Give a new copy of a row with kept IDs an ID of its own, ADR-186
+- **eventDate:** Fail a day with a fraction in a split date
+- **eventTime:** Accept a time zone offset only with a valid hour and minute
+- **dynamicProperties:** Write valid JSON for any key and any re-imported value
 - **upload:** Read DOS (CP850) files and repair their accents in Saira 0.11 exports, ADR-184
 - **mapping:** Fill the license and language cards from a data column with one value, such as `Licença` or `idioma`
 - **preview:** Show "&", "<" and ">" as typed in the Preview table, not as "&amp;"
@@ -252,6 +255,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **names:** Show a name in the run list only with its last answer, and keep the scroll while the list grows, ADR-168
 
 ### Performance
+- **export:** Add the conservation status to repeated nested dynamicProperties objects once per distinct object
 - **names:** Check the names found in the Flora BR and Fauna BR catalogs before the slow spelling search, ADR-172
 - **upload:** Read a large CSV in a third of the time and about half the peak memory
 - **mapping:** Switch the Mapping filter in the browser, with no grid rebuild and no card moves: Relevant and All now change at once, not after 2 s, ADR-157

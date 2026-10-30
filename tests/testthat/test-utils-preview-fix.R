@@ -244,6 +244,13 @@ testthat::test_that("detect_preview_problems checks eventTime, uncertainty, coor
     testthat::expect_true(all(p$family[startsWith(p$type, "name_")] == "name"))
 })
 
+testthat::test_that("eventTime takes a zone offset only with a valid hour and minute", {
+    testthat::expect_true(all(is_dwc_time_value(c("12:00Z", "12:00-03:00", "12:00+0530", "12:00+23:59",
+                                                  "08:00-03/09:30-03"))))
+    testthat::expect_false(any(is_dwc_time_value(c("12:00+99:99", "12:00-00:99", "12:00+24:00",
+                                                   "08:00/09:30+25"))))
+})
+
 testthat::test_that("Preview accepts end-of-day midnight without changing the day", {
     valid <- c("24:00", "24:00:00", "24:00:00.000Z", "24:00-03:00", "23:00/24:00")
     invalid <- c("24:01", "24:00:01", "24:00:00.001", "25:00", "23:00/24:10")
