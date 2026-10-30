@@ -645,15 +645,43 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
         }
         d
     }
-    # The unmapped columns of these rows are scrubbed at export. Only the
-    # generalized and withheld rows have a real point to look for.
+    # Copies of the point in the other mapped fields, such as a GPS pair in
+    # dynamicProperties or occurrenceRemarks, get the published value (AUD-02).
+    # A cell that is one number is the value of its own term and stays.
+    redact_copies <- function(d, rows, lat, lon, grid, pub_lat, pub_lon, skip) {
+        for (col in setdiff(names(d), skip)) {
+            cell <- as.character(d[[col]][rows])
+            text <- which(is.na(suppressWarnings(as.numeric(sub(",", ".", trimws(cell), fixed = TRUE)))))
+            if (!length(text)) next
+            new <- cell
+            new[text] <- redact_point_numbers(cell[text], lat[text], lon[text], grid[text],
+                                              pub_lat[text], pub_lon[text])
+            if (!identical(new, cell)) {
+                d[[col]] <- as.character(d[[col]])
+                d[[col]][rows] <- new
+            }
+        }
+        d
+    }
+    # A row the publisher already generalized has no real point here. A number
+    # finer than its published point and less than one step away, such as a GPS
+    # value in the remarks, is still a copy of the real point.
+    keep_lat <- coord_text_with_dot(df$decimalLatitude)[kept]
+    keep_lon <- coord_text_with_dot(df$decimalLongitude)[kept]
+    redact_kept <- function(d) {
+        redact_copies(d, kept, lat_num[kept], lon_num[kept], exist_prec[kept], keep_lat, keep_lon,
+                      c("occurrenceID", "scientificName", "decimalLatitude", "decimalLongitude",
+                        "footprintWKT", "footprintSRS", blank_cols))
+    }
+    # The unmapped columns of these rows are scrubbed at export, against the
+    # real point or, on a kept row, the published one.
     set_scrub <- function(res, idx, real_lat, real_lon, grid) {
         res$scrub_rows <- c(idx, kept)
         if (length(res$scrub_rows)) {
             res$scrub_points <- data.frame(
-                decimalLatitude = c(real_lat, rep(NA_character_, length(kept))),
-                decimalLongitude = c(real_lon, rep(NA_character_, length(kept))),
-                grid = c(grid, rep(NA_real_, length(kept))),
+                decimalLatitude = c(real_lat, keep_lat),
+                decimalLongitude = c(real_lon, keep_lon),
+                grid = c(grid, exist_prec[kept]),
                 stringsAsFactors = FALSE
             )
         }
@@ -662,7 +690,7 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
 
     if (!any(target | withheld)) {
         if (length(kept)) {
-            result$masked <- blank_verbatim(df, kept)
+            result$masked <- redact_kept(blank_verbatim(df, kept))
             result <- set_scrub(result, integer(0), character(0), character(0), numeric(0))
         }
         return(result)
@@ -777,7 +805,9 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
             )
         )
         masked$dataGeneralizations[rows] <- after_prior_note(
-            masked$dataGeneralizations[rows],
+            redact_point_numbers(masked$dataGeneralizations[rows], lat_num[rows], lon_num[rows],
+                                 rep(g, length(rows)), as.character(masked$decimalLatitude[rows]),
+                                 as.character(masked$decimalLongitude[rows])),
             trimws(paste(
                 sprintf(
                     tr("sensitive_data_generalizations", lang),
@@ -800,7 +830,8 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
         masked$footprintWKT[wh] <- ""
         masked$footprintSRS[wh] <- ""
         masked$dataGeneralizations[wh] <- after_prior_note(
-            masked$dataGeneralizations[wh],
+            redact_point_numbers(masked$dataGeneralizations[wh], lat_num[wh], lon_num[wh],
+                                 eff_grid[wh], rep("", length(wh)), rep("", length(wh))),
             trimws(paste(
                 sprintf(tr("sensitive_withheld_invalid", lang),
                         row_cat_display[match(wh, idx)]),
@@ -818,25 +849,12 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
         masked[[col]] <- as.character(masked[[col]])
         masked[[col]][idx] <- iw_text
     }
-    # Copies of the point in the other mapped fields, such as a GPS pair in
-    # dynamicProperties or occurrenceRemarks, get the published value (AUD-02).
-    # A cell that is one number is the value of its own term and stays.
     managed <- c("occurrenceID", "scientificName", "decimalLatitude", "decimalLongitude",
                  ensure_cols, blank_cols, scrub_cols)
-    pub_lat <- as.character(masked$decimalLatitude[idx])
-    pub_lon <- as.character(masked$decimalLongitude[idx])
-    for (col in setdiff(names(masked), managed)) {
-        cell <- as.character(masked[[col]][idx])
-        text <- which(is.na(suppressWarnings(as.numeric(sub(",", ".", trimws(cell), fixed = TRUE)))))
-        if (!length(text)) next
-        new <- cell
-        new[text] <- redact_point_numbers(cell[text], lat_num[idx][text], lon_num[idx][text],
-                                          eff_grid[idx][text], pub_lat[text], pub_lon[text])
-        if (!identical(new, cell)) {
-            masked[[col]] <- as.character(masked[[col]])
-            masked[[col]][idx] <- new
-        }
-    }
+    masked <- redact_copies(masked, idx, lat_num[idx], lon_num[idx], eff_grid[idx],
+                            as.character(masked$decimalLatitude[idx]),
+                            as.character(masked$decimalLongitude[idx]), managed)
+    if (length(kept)) masked <- redact_kept(masked)
 
     # Newly created columns land at the right side; re-sort into their DwC
     # blocks. Skipped when the columns already existed (positions unchanged).
@@ -871,14 +889,15 @@ after_prior_note <- function(prior, note) {
 # and every argument has one value per cell (AUD-02).
 redact_point_numbers <- function(x, lat, lon, grid, pub_lat, pub_lon) {
     x <- as.character(x)
-    cand <- which(!is.na(x) & grepl("[0-9][.,][0-9]", x))
+    cand <- which(!is.na(x) & grepl("[0-9][.,][0-9]|[0-9]\\s*['\u2032\u2019\u00b4`]", x))
     if (!length(cand)) {
         return(x)
     }
     pub_lat[is.na(pub_lat)] <- ""
     pub_lon[is.na(pub_lon)] <- ""
     places <- pmax(0, round(-log10(grid)))
-    cells <- x[cand]
+    cells <- redact_dms_copies(x[cand], lat[cand], lon[cand], grid[cand],
+                               pub_lat[cand], pub_lon[cand])
     found <- gregexpr("[-+]?[0-9]+[.,][0-9]+", cells)
     tokens <- regmatches(cells, found)
     regmatches(cells, found) <- lapply(seq_along(cand), function(k) {
@@ -903,6 +922,50 @@ redact_point_numbers <- function(x, lat, lon, grid, pub_lat, pub_lon) {
     })
     x[cand] <- cells
     x
+}
+
+# Degrees and minutes, with optional seconds and hemisphere, in the forms that
+# parse_coordinate_text() reads: 23°33'1.872"S, 46°37.999' W. The optional
+# backslash reads an escaped second mark inside a JSON string.
+POINT_DMS_PATTERN <- paste0(
+    "([-+\u2212]?)(\\d{1,3})\\s*[\u00b0\u00ba]?\\s*(\\d{1,2}(?:[.,]\\d+)?)\\s*['\u2032\u2019\u00b4`]",
+    "(?:\\s*(\\d{1,2}(?:[.,]\\d+)?)\\s*\\\\?(?:[\"\u2033\u201d]|''))?",
+    "(?:\\s*([NSEWOLnsewol])\\b)?"
+)
+
+# The degrees-minutes step of redact_point_numbers(): a copy finer than the
+# grid and less than one grid step from either axis gets the published value,
+# with the hemisphere letter or the sign of the copy. Arguments as there.
+redact_dms_copies <- function(cells, lat, lon, grid, pub_lat, pub_lon) {
+    found <- gregexpr(POINT_DMS_PATTERN, cells, perl = TRUE)
+    tokens <- regmatches(cells, found)
+    num <- function(v) suppressWarnings(as.numeric(sub(",", ".", v, fixed = TRUE)))
+    regmatches(cells, found) <- lapply(seq_along(cells), function(i) {
+        tok <- tokens[[i]]
+        if (!length(tok)) {
+            return(tok)
+        }
+        p <- do.call(rbind, regmatches(tok, regexec(POINT_DMS_PATTERN, tok, perl = TRUE)))
+        has_sec <- nzchar(p[, 5])
+        value <- num(p[, 3]) + num(p[, 4]) / 60 + ifelse(has_sec, num(p[, 5]), 0) / 3600
+        # The finest step the copy carries: a minute or a second, with its decimals.
+        last <- ifelse(has_sec, p[, 5], p[, 4])
+        step <- ifelse(has_sec, 1 / 3600, 1 / 60) * 10^-nchar(sub("^[^.,]*[.,]?", "", last))
+        near_lat <- !is.na(lat[i]) & abs(value - abs(lat[i])) < grid[i]
+        near_lon <- !is.na(lon[i]) & abs(value - abs(lon[i])) < grid[i]
+        hit <- step < grid[i] & (near_lat | near_lon)
+        hit[is.na(hit)] <- FALSE
+        if (!any(hit)) {
+            return(tok)
+        }
+        value <- sub("^-", "", ifelse(near_lat, pub_lat[i], pub_lon[i]))
+        hemi <- toupper(p[, 6])
+        sign <- ifelse(nzchar(p[, 2]) & p[, 2] != "+", "-", "")
+        tok[hit] <- ifelse(!nzchar(value), "",
+                           ifelse(nzchar(hemi), paste(value, hemi), paste0(sign, value)))[hit]
+        tok
+    })
+    cells
 }
 
 # A coordinate as typed, with a decimal comma turned into a dot when the value

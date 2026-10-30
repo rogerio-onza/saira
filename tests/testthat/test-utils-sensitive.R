@@ -1047,6 +1047,48 @@ testthat::test_that("copies of the point inside mapped text and JSON are general
     testthat::expect_equal(res$masked$minimumElevationInMeters, "23.551")
 })
 
+testthat::test_that("the publisher note and degree-minute text get the published point", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = c("id-1", "id-2"), scientificName = "Panthera onca",
+        decimalLatitude = "-23.55052", decimalLongitude = "-46.63331",
+        dataGeneralizations = c("GPS -23.55052, -46.63331", ""),
+        occurrenceRemarks = c("", "Nest 23DEG33'1.872\"S, 46DEG37.9995' W, slope 10DEG20'"),
+        stringsAsFactors = FALSE
+    )
+    df$occurrenceRemarks <- gsub("DEG", "\u00b0", df$occurrenceRemarks, fixed = TRUE)
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    testthat::expect_match(res$masked$dataGeneralizations[1], "^GPS -23.6, -46.6 \\| Coordinates of a ")
+    testthat::expect_equal(res$masked$occurrenceRemarks[2], "Nest 23.6 S, 46.6 W, slope 10\u00b020'")
+    # A JSON string escapes the second mark.
+    json <- '{"gps":"23DEG33\'1.872\\"S"}' |> gsub(pattern = "DEG", replacement = "\u00b0", fixed = TRUE)
+    testthat::expect_equal(
+        saira:::redact_point_numbers(json, -23.55052, -46.63331, 0.1, "-23.6", "-46.6"),
+        '{"gps":"23.6 S"}'
+    )
+})
+
+testthat::test_that("a row generalized before keeps no finer copy of its point", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = "id-1", scientificName = "Panthera onca",
+        decimalLatitude = "-23.6", decimalLongitude = "-46.6",
+        dataGeneralizations = "coordinates rounded to 0.1 degree",
+        occurrenceRemarks = "GPS -23.55052, -46.63331, 23.6 C", stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    testthat::expect_equal(res$n_skipped_already_masked, 1L)
+    testthat::expect_equal(res$masked$decimalLatitude, "-23.6")
+    testthat::expect_equal(res$masked$occurrenceRemarks, "GPS -23.6, -46.6, 23.6 C")
+    testthat::expect_equal(res$masked$dataGeneralizations, "coordinates rounded to 0.1 degree")
+    # The export checks the unmapped columns against the published point.
+    out <- saira:::blank_coordinate_like_cells(
+        data.frame(notes = "GPS -23.55052, -46.63331", stringsAsFactors = FALSE),
+        res$scrub_rows, res$scrub_points
+    )
+    testthat::expect_equal(out$notes, "GPS -23.6, -46.6")
+})
+
 testthat::test_that("a note about other data does not stop the generalization (AUD-03)", {
     local_sensitive_fixture("Panthera onca")
     df <- data.frame(

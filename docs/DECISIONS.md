@@ -3426,3 +3426,14 @@ Formato: ADR leve (Architecture Decision Record).
   - `decode_text_file()` le como CP850 as linhas fora de UTF-8 quando `is_cp850_text()` conta mais bytes de letras minusculas exclusivas de CP850 que de Windows-1252.
   - `repair_dos_accents()` roda antes de `clean_invisible_chars()`, no CSV e no xlsx. Uma celula com marca de CP850 ao lado de uma letra volta a CP850 pelos bytes Latin-1. Numa coluna com essa celula, as marcas sem letra ao lado tambem voltam (NBSP por "a" agudo, micro por "A" agudo). O texto reparado so pode ter ASCII e letras do portugues e do espanhol.
 - **Consequencias**: o upload mostra quantas celulas voltaram. Uma celula com acento correto fica igual, mesmo numa coluna reparada. Um "µm" fica igual numa coluna sem marca forte e vira "Ám" numa coluna com marca forte.
+
+## ADR-185: Toda copia do ponto recebe o valor publicado
+
+- **Data**: 2026-10-30
+- **Status**: Aceito. Revisa ADR-164.
+- **Contexto**: passe de reforco da protecao de coordenadas.
+- **Decisao**:
+  - A regra de ADR-164 para texto e JSON vale tambem para graus e minutos e para graus, minutos e segundos. A copia recebe o valor publicado em decimal, com a letra do hemisferio ou o sinal da copia.
+  - A nota anterior de `dataGeneralizations` passa pela mesma regra antes da nota da Saira.
+  - Uma linha que fica como esta (ADR-164) tambem passa pela regra. A grade e a incerteza da linha, e o valor publicado e o ponto da linha.
+- **Consequencias**: numa linha que fica como esta, um numero de outro dado perto do ponto tambem muda, como ja acontece nas linhas generalizadas.
