@@ -216,10 +216,11 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rep(TRUE, nrow(res))
             )
 
-            out <- res[keep, , drop = FALSE]
+            # No cache: a hash of the whole result costs more than this filter.
+            out <- if (all(keep)) res else res[keep, , drop = FALSE]
             rownames(out) <- NULL
             out
-        }) |> shiny::bindCache(effective_validation_r(), active_filter())
+        })
 
         family_counts <- shiny::reactive({
             res <- effective_validation_r()
@@ -250,13 +251,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
         map_data_r <- shiny::reactive({
             res <- effective_validation_r()
             shiny::req(res)
-            labels <- map_labels()
-            build_leaflet_data(
-                coords_result_df = res,
-                filter = active_filter(),
-                issue_labels = labels$issue,
-                popup_labels = labels$popup
-            )
+            build_leaflet_data(coords_result_df = res, filter = active_filter(), popups = FALSE)
         })
 
         for (filter_key in coord_filter_values) {
@@ -314,11 +309,23 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             map_ready()
         )
 
-        # The popups carry translated labels. Keep the view the user chose.
-        shiny::observeEvent(lang_r(), {
-            shiny::req(coord_validation_r(), map_ready())
-            draw_markers(map_data_r(), fit_view = FALSE)
-        }, ignoreInit = TRUE)
+        # The popup is built for the clicked marker only, in the current
+        # language. One layer id keeps one popup open.
+        shiny::observeEvent(input$coords_map_marker_click, {
+            row_index <- suppressWarnings(as.integer(sub("^r", "", input$coords_map_marker_click$id %||% "")))
+            eff <- effective_validation_r()
+            shiny::req(is.data.frame(eff), !is.na(row_index))
+            labels <- map_labels()
+            md <- build_leaflet_data(
+                eff[eff$.row_index %in% row_index, , drop = FALSE],
+                filter = "all", issue_labels = labels$issue, popup_labels = labels$popup
+            )
+            shiny::req(nrow(md) > 0L)
+            leaflet::addPopups(
+                leaflet::leafletProxy(ns("coords_map")), lng = md$lon_num[[1L]], lat = md$lat_num[[1L]],
+                popup = md$popup_html[[1L]], layerId = "coords-popup"
+            )
+        })
 
         # One row per record: badge, point, country. Built for the first render
         # and again for each proxy update after a manual edit.

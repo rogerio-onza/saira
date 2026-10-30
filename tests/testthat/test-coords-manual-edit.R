@@ -195,4 +195,8 @@ testthat::test_that("build_leaflet_data keeps only edited rows under the edited 
     )
     testthat::expect_identical(build_leaflet_data(res, filter = "edited")$.row_index, 2L)
     testthat::expect_identical(nrow(build_leaflet_data(res, filter = "all")), 2L)
+    no_popups <- build_leaflet_data(res, popups = FALSE)
+    testthat::expect_identical(no_popups[names(no_popups) != "popup_html"],
+                               build_leaflet_data(res)[names(no_popups) != "popup_html"])
+    testthat::expect_true(all(is.na(no_popups$popup_html)))
 })

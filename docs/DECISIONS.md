@@ -3456,3 +3456,15 @@ Formato: ADR leve (Architecture Decision Record).
   - O shell conta so o download `export-download_real` concluido. O arquivo privado nao conta, e o inicio de um novo download do pacote zera a marca.
   - O shell fecha sem aviso so com as duas marcas: download concluido e `current`.
 - **Consequencias**: o observer suspenso nao calcula as entradas depois de uma mudanca. Ele le de novo so no pacote seguinte, quando o download ja calculou. Trocar o idioma nao conta como mudanca.
+
+## ADR-188: O mapa e a exportacao nao repetem trabalho
+
+- **Data**: 2026-10-30
+- **Status**: Aceito. Revisa ADR-129 (cache de `filtered_result_r`).
+- **Contexto**: medicoes com 20 mil e 100 mil linhas (ADR-116). O HTML dos popups era 80% da mensagem do mapa. O hash da chave de `bindCache` custava mais que o filtro. O resumo e o download do Export avaliavam as mesmas entradas duas vezes.
+- **Decisao**:
+  - O mapa de coordenadas recebe os marcadores sem popup (`build_leaflet_data(popups = FALSE)`). Um clique num marcador monta o popup daquela linha, no idioma atual, com o layer id `coords-popup`. A troca de idioma nao redesenha os marcadores.
+  - `filtered_result_r` nao tem `bindCache`. Com 100 mil linhas, o hash custa 17 ms e o filtro de problemas custa 6 ms. Quando todas as linhas ficam, o filtro devolve o resultado sem copia.
+  - `unparsed_date_cells()` e `formula_like_cells()` verificam cada valor distinto de uma coluna uma vez.
+  - `prepare_masked_rows()` usa `export_blocked()`, o veredito do resumo sobre as mesmas entradas, e nao chama `assess_publication()` de novo. O servidor continua a bloquear os dois downloads.
+- **Consequencias**: com 100 mil pontos, a mensagem do mapa cai de 32,4 MB para 6,7 MB. Com 100 mil linhas, o resumo cai de 3,5 s para 1,8 s e o download do pacote de 11,7 s para 8,1 s. O popup abre depois de uma ida ao servidor. Um redesenho manda todos os marcadores de novo: sem os popups, 20 mil pontos custam 1,3 MB.

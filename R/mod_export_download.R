@@ -404,16 +404,13 @@ mount_export_download <- function(input, output, session, lang_r,
                 )
                 shiny::req(FALSE)
             }
+            # The Export summary already assessed these same inputs.
+            if (isTRUE(export_blocked())) {
+                stop(tr("export_download_blocked", lang_r()), call. = FALSE)
+            }
             effective <- prepare_effective_records(
                 download_data(), export_name_review_payload(), coords_payload, country_payload
             )
-            assessment <- assess_publication(
-                effective, gen, raw_df, mv, overridden_mapping_terms(cv),
-                coords_correction_payload = drop_stale_coord_corrections(coords_payload, download_data())
-            )
-            if (isTRUE(assessment$export_blocked)) {
-                stop(tr("export_download_blocked", lang_r()), call. = FALSE)
-            }
             # Masks before process_for_export_with_unmapped(): that step turns
             # the coordinates into numbers, "-19.900" loses its trailing zeros,
             # and the precision clamp then picks a coarser grid than the
