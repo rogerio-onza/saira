@@ -3445,3 +3445,14 @@ Formato: ADR leve (Architecture Decision Record).
 - **Contexto**: `generate_persistent_ids()` numera as linhas de mesmo conteudo na ordem. Um ID que a planilha traz e que fica pode ter o mesmo numero.
 - **Decisao**: `generate_persistent_ids()` recebe `reserved`, os IDs que ficam. Um ID gerado que esta em `reserved` ou que repete outro passa ao proximo numero do grupo, ate ficar livre. `resolve_occurrence_ids()` e `replace_repeated_ids()` passam os IDs que mantem.
 - **Consequencias**: os IDs ja publicados ficam iguais, e o mesmo arquivo gera os mesmos IDs.
+
+## ADR-187: O desktop sabe se os dados mudaram depois do pacote
+
+- **Data**: 2026-10-30
+- **Status**: Aceito.
+- **Contexto**: ao fechar, o shell do desktop avisa quando a sessao tem dados sem pacote salvo.
+- **Decisao**:
+  - Depois de cada pacote `.zip`, `mount_export_download()` liga um observer que le as entradas do pacote e manda `saira-bundle-state` = `current`. Na primeira mudanca, o observer se suspende e manda `stale`. A pagina guarda o estado em `data-saira-bundle` no `<html>`.
+  - O shell conta so o download `export-download_real` concluido. O arquivo privado nao conta, e o inicio de um novo download do pacote zera a marca.
+  - O shell fecha sem aviso so com as duas marcas: download concluido e `current`.
+- **Consequencias**: o observer suspenso nao calcula as entradas depois de uma mudanca. Ele le de novo so no pacote seguinte, quando o download ja calculou. Trocar o idioma nao conta como mudanca.

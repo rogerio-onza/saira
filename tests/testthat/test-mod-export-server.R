@@ -67,6 +67,43 @@ testthat::test_that("mod_export_server enables the .ZIP download once required t
     )
 })
 
+testthat::test_that("mod_export_server tells the page when the data change after a bundle", {
+    data_rv <- shiny::reactiveVal(complete_df())
+    shiny::testServer(
+        mod_export_server,
+        args = list(
+            mapped_data_r = shiny::reactive(data_rv()),
+            lang_r = shiny::reactive("pt")
+        ),
+        {
+            sent <- character(0)
+            real_session <- base::.subset2(session, "parent")
+            real_session$sendCustomMessage <- function(type, message) {
+                if (identical(type, "saira-bundle-state")) sent[[length(sent) + 1L]] <<- message
+                invisible(NULL)
+            }
+            session$flushReact()
+            testthat::expect_length(sent, 0L)
+
+            zip_path <- output$download_real
+            testthat::expect_true("occurrence.txt" %in% zip::zip_list(zip_path)$filename)
+            session$flushReact()
+            testthat::expect_identical(sent, "current")
+
+            data_rv(complete_df(6))
+            session$flushReact()
+            testthat::expect_identical(sent, c("current", "stale"))
+            data_rv(complete_df(7))
+            session$flushReact()
+            testthat::expect_identical(sent, c("current", "stale"))
+
+            zip_path <- output$download_real
+            session$flushReact()
+            testthat::expect_identical(sent, c("current", "stale", "current"))
+        }
+    )
+})
+
 testthat::test_that("mod_export_server blocks the download and offers a fix CTA in the banner", {
     incomplete <- data.frame(
         scientificName = c("Aus bus", "Cus dus"),

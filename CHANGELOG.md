@@ -111,6 +111,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **eventDate:** Fail a day with a fraction in a split date
 - **eventTime:** Accept a time zone offset only with a valid hour and minute
 - **dynamicProperties:** Write valid JSON for any key and any re-imported value
+- **desktop:** Warn on close when the data changed after the last export package, ADR-187
 - **upload:** Read DOS (CP850) files and repair their accents in Saira 0.11 exports, ADR-184
 - **mapping:** Fill the license and language cards from a data column with one value, such as `Licença` or `idioma`
 - **preview:** Show "&", "<" and ">" as typed in the Preview table, not as "&amp;"
