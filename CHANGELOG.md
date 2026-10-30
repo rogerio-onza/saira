@@ -107,6 +107,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - **generalization:** Write the published point in every copy of a protected point, in any text field or format, ADR-185
+- **occurrenceID:** Give a new copy of a row with kept IDs an ID of its own, ADR-186
 - **upload:** Read DOS (CP850) files and repair their accents in Saira 0.11 exports, ADR-184
 - **mapping:** Fill the license and language cards from a data column with one value, such as `Licença` or `idioma`
 - **preview:** Show "&", "<" and ">" as typed in the Preview table, not as "&amp;"

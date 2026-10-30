@@ -3437,3 +3437,11 @@ Formato: ADR leve (Architecture Decision Record).
   - A nota anterior de `dataGeneralizations` passa pela mesma regra antes da nota da Saira.
   - Uma linha que fica como esta (ADR-164) tambem passa pela regra. A grade e a incerteza da linha, e o valor publicado e o ponto da linha.
 - **Consequencias**: numa linha que fica como esta, um numero de outro dado perto do ponto tambem muda, como ja acontece nas linhas generalizadas.
+
+## ADR-186: Copia nova de uma linha com ID mantido ganha ID proprio
+
+- **Data**: 2026-10-30
+- **Status**: Aceito. Completa ADR-152.
+- **Contexto**: `generate_persistent_ids()` numera as linhas de mesmo conteudo na ordem. Um ID que a planilha traz e que fica pode ter o mesmo numero.
+- **Decisao**: `generate_persistent_ids()` recebe `reserved`, os IDs que ficam. Um ID gerado que esta em `reserved` ou que repete outro passa ao proximo numero do grupo, ate ficar livre. `resolve_occurrence_ids()` e `replace_repeated_ids()` passam os IDs que mantem.
+- **Consequencias**: os IDs ja publicados ficam iguais, e o mesmo arquivo gera os mesmos IDs.

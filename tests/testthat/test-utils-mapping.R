@@ -1253,6 +1253,24 @@ testthat::test_that("replace_repeated_ids gives every repeated row a persistent 
     testthat::expect_null(attr(fixed, "ids_replaced"))
 })
 
+testthat::test_that("a new copy of a row with kept ids gets an id of its own", {
+    rows <- data.frame(occurrenceID = "", sex = rep("male", 2), stringsAsFactors = FALSE)
+    rows$occurrenceID <- as.character(resolve_occurrence_ids(rows))
+    # The export goes back in with one more copy of the same row.
+    again <- rbind(rows, data.frame(occurrenceID = "", sex = "male"))
+    ids <- as.character(resolve_occurrence_ids(again))
+    testthat::expect_identical(ids[1:2], rows$occurrenceID)
+    testthat::expect_false(anyDuplicated(ids) > 0L)
+    # The same three rows with no ids give the same three ids.
+    testthat::expect_setequal(as.character(resolve_occurrence_ids(transform(again, occurrenceID = ""))), ids)
+
+    shared <- again
+    shared$occurrenceID <- ids[c(1L, 2L, 1L)]
+    out <- replace_repeated_ids(shared)
+    testthat::expect_identical(out$occurrenceID[2], ids[2])
+    testthat::expect_false(anyDuplicated(out$occurrenceID) > 0L)
+})
+
 testthat::test_that("replace_repeated_ids does not count a row the export leaves out", {
     basis <- data.frame(occurrenceID = c("r1", "r2", "r1"), stringsAsFactors = FALSE)
     out <- replace_repeated_ids(basis, ignore = 3L)
@@ -1310,7 +1328,7 @@ testthat::test_that("resolve_occurrence_ids generates for exactly the rows that 
 
     asked_for <- NULL
     testthat::local_mocked_bindings(
-        generate_persistent_ids = function(df, rows = NULL, exclude = NULL) {
+        generate_persistent_ids = function(df, rows = NULL, exclude = NULL, reserved = NULL) {
             asked_for <<- rows
             rep("generated-01", sum(rows))
         }
