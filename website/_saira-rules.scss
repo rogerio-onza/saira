@@ -109,9 +109,6 @@ a { color: inherit; }
 
   // the occurrence record of the species on screen
   .lp-rec { right: clamp(16px, 5.6vw, 72px); top: clamp(24px, 3.4vw, 44px); text-align: right; font-family: var(--mono); font-size: 12px; line-height: 1.7; }
-  // the children fade, because the lp-rise animation holds the box opacity
-  .lp-rec > * { transition: opacity .35s ease, transform .35s ease; }
-  .lp-rec.is-out > * { opacity: 0; transform: translateY(4px); }
   .lp-rec-name { font-family: var(--serif); font-size: 22px; font-style: italic; white-space: pre; }
   .lp-rec-line { color: var(--on-soft); white-space: pre; }
   .lp-rec-cat {
