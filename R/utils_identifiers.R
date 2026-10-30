@@ -33,10 +33,15 @@ seq_within_groups <- function(x) {
 # value changes that row's identifier, and reordering rows that are identical in
 # every column can swap their identifiers between them.
 #
+# `reserved` holds the identifiers that other rows keep. A row whose identifier
+# is one of them takes the next free occurrence number of its content group: a
+# re-imported export with a new copy of a row gives that copy the number after
+# the copies already published.
+#
 # The encoding is confined to this function on purpose: swapping UUID v5 for a
 # ULID or another digest must not reach any caller, or the vocabulary the user
 # reads.
-generate_persistent_ids <- function(df, rows = NULL, exclude = NULL) {
+generate_persistent_ids <- function(df, rows = NULL, exclude = NULL, reserved = character(0)) {
     n <- if (is.data.frame(df)) nrow(df) else 0L
     if (n == 0L) {
         return(character(0))
@@ -61,14 +66,24 @@ generate_persistent_ids <- function(df, rows = NULL, exclude = NULL) {
         ))
     }
 
-    keys <- paste0(content, "\u001e", seq_within_groups(content))
-
+    number <- seq_within_groups(content)
     # UUID v5 is itself SHA-1 over (namespace + name), so the key goes in as the
     # name and no separate digest step is needed. Feed the distinct keys only,
     # in one vectorized call: UUIDfromName over a 40k vector is ~80x the loop.
-    uniq <- unique(keys)
-    hashed <- paste0("urn:uuid:", uuid::UUIDfromName(saira_id_namespace(), uniq))
-    hashed[match(keys, uniq)]
+    mint <- function(content, number) {
+        keys <- paste0(content, "\u001e", number)
+        uniq <- unique(keys)
+        hashed <- paste0("urn:uuid:", uuid::UUIDfromName(saira_id_namespace(), uniq))
+        hashed[match(keys, uniq)]
+    }
+    ids <- mint(content, number)
+    clash <- which(ids %in% reserved | duplicated(ids))
+    while (length(clash)) {
+        number[clash] <- number[clash] + 1L
+        ids[clash] <- mint(content[clash], number[clash])
+        clash <- which(ids %in% reserved | duplicated(ids))
+    }
+    ids
 }
 
 # RFC 4122 URL namespace. Fixed forever: changing it would re-mint every
@@ -146,7 +161,8 @@ resolve_occurrence_ids <- function(df, n = NULL, map_values = NULL) {
 
     n_preserved <- sum(keep)
     if (n_preserved < n) {
-        out[!keep] <- generate_persistent_ids(df, rows = !keep, exclude = src_col)
+        out[!keep] <- generate_persistent_ids(df, rows = !keep, exclude = src_col,
+                                              reserved = out[keep])
     }
 
     attr(out, "id_strategy") <- occurrence_id_strategy_label(n_preserved, n)
@@ -183,7 +199,8 @@ replace_repeated_ids <- function(df, basis = df, ignore = integer(0)) {
     repeated <- !is.na(v) & nzchar(v) & (duplicated(v, incomparables = NA) |
         duplicated(v, fromLast = TRUE, incomparables = NA))
     if (any(repeated)) {
-        df$occurrenceID[repeated] <- generate_persistent_ids(basis, rows = repeated)
+        df$occurrenceID[repeated] <- generate_persistent_ids(basis, rows = repeated,
+                                                             reserved = v[!repeated])
         attr(df, "ids_replaced") <- sum(repeated)
     }
     df
