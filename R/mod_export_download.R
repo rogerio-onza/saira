@@ -443,6 +443,25 @@ mount_export_download <- function(input, output, session, lang_r,
                  changes = changes)
         }
 
+        # The desktop shell asks before it closes when the data changed after
+        # the last bundle. The watcher starts after a bundle and suspends at
+        # the first change of its inputs, so it never computes them again.
+        bundle_inputs <- c(
+            download_data, export_name_review_payload, export_sensitivity_payload,
+            raw_data_r, map_values_r, custom_values_r, coords_correction_payload_r,
+            country_fill_payload_r, sensitive_generalization_payload_r,
+            conservation_payload_r, occurrence_id_info_r, rows_left_out_r,
+            preview_changes_r, measurement_specs_r
+        )
+        bundle_watch <- shiny::observe({
+            for (r in bundle_inputs) tryCatch(r(), error = function(e) NULL)
+            session$sendCustomMessage("saira-bundle-state", "current")
+        }, suspended = TRUE)
+        bundle_watch$onInvalidate(function() {
+            bundle_watch$suspend()
+            session$sendCustomMessage("saira-bundle-state", "stale")
+        })
+
         output$download_real <- shiny::downloadHandler(
             filename = function() {
                 cv_fn <- if (!is.null(custom_values_r) && shiny::is.reactive(custom_values_r)) {
@@ -615,6 +634,7 @@ mount_export_download <- function(input, output, session, lang_r,
                                 }
                             )
                         }
+                        bundle_watch$resume()
 
                         session$sendCustomMessage(download_finish_channel, finish_payload)
                         shiny::showNotification(

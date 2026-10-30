@@ -18,6 +18,7 @@ mod_export_ui <- function(id) {
         # One-time handler: when the blocked banner's "fix" CTA navigates to
         # Mapping, scroll the targeted field card into view and flash it.
         shiny::tags$script(module_behavior_html("exportFocusField")),
+        shiny::tags$script(module_behavior_html("exportBundleState")),
 
         shiny::div(
             class = "container-fluid export-page",

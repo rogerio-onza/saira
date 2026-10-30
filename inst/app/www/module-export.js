@@ -14,6 +14,16 @@
     });
   };
 
+  // The desktop shell reads this flag on close. "current" means that the data
+  // did not change after the last bundle. One handler per page.
+  behavior.exportBundleState = function () {
+    if (window.__sairaBundleStateHandler || !window.Shiny) return;
+    window.__sairaBundleStateHandler = true;
+    Shiny.addCustomMessageHandler('saira-bundle-state', function (state) {
+      document.documentElement.dataset.sairaBundle = state === 'current' ? 'current' : 'stale';
+    });
+  };
+
   // The "fix" link of the blocked banner opens Mapping and names a field
   // card. The card scrolls into view and flashes. One handler per page.
   behavior.exportFocusField = function () {
