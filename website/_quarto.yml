@@ -8,8 +8,10 @@ project:
   # Generates _variables.yml (version), assets/version.html (navbar badge) and
   # the PT/EN release cards from website/data/releases.py. Standard-library
   # Python only, so it runs in the Quarto-only publish CI.
+  # check_landing.py stops the build when the home species keys disagree.
   pre-render:
     - python3 scripts/build_releases.py
+    - python3 scripts/check_landing.py
 
 website:
   title: "Saíra"
