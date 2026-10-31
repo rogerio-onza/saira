@@ -3468,3 +3468,20 @@ Formato: ADR leve (Architecture Decision Record).
   - `unparsed_date_cells()` e `formula_like_cells()` verificam cada valor distinto de uma coluna uma vez.
   - `prepare_masked_rows()` usa `export_blocked()`, o veredito do resumo sobre as mesmas entradas, e nao chama `assess_publication()` de novo. O servidor continua a bloquear os dois downloads.
 - **Consequencias**: com 100 mil pontos, a mensagem do mapa cai de 32,4 MB para 6,7 MB. Com 100 mil linhas, o resumo cai de 3,5 s para 1,8 s e o download do pacote de 11,7 s para 8,1 s. O popup abre depois de uma ida ao servidor. Um redesenho manda todos os marcadores de novo: sem os popups, 20 mil pontos custam 1,3 MB.
+
+## ADR-189: Uma regra por decisao (auditoria de 2026-10-31)
+
+- **Data**: 2026-10-31
+- **Status**: Aceito. Completa ADR-095, ADR-137 e ADR-157.
+- **Contexto**: uma auditoria de codigo de 2026-10-31 achou regras repetidas em dois ou mais lugares, que ja discordavam ou podiam discordar.
+- **Decisao**:
+  - Exportacao: `capture_sources()` le cada fonte uma vez. Uma fonte que falha nao e "sem decisao": o resumo e os dois downloads param e dizem a etapa. Uma so lista de fontes serve o resumo, o download e o observador do pacote. `prepare_export_product()` monta o produto fora do Shiny, e o handler so grava os arquivos.
+  - Mapeamento: o estado dos valores fixos fica no servidor, por termo. Reset e importacao chegam tambem ao card fora da pagina. Um upload novo desliga os valores fixos, porque eles preenchem colunas do arquivo anterior. `datasetName`, `license`, `language` e `modified` descrevem a publicacao e ficam. `column_input_id()` e o unico id de controle por coluna.
+  - `dynamicProperties`: um leitor de membros de objeto JSON serve o construtor e o merge. A primeira chave ganha.
+  - Catalogos DwC: `data-raw/build_dwc_catalogs.R` gera tudo da lista do TDWG e de `dwc_base_terms.csv`, sem ler um catalogo anterior. Se a troca de um arquivo falha, a publicacao devolve os dois catalogos anteriores.
+  - Coordenadas: uma checagem de mar que falha deixa a linha valida, mas marcada (`unchecked`), nunca aprovada. Atualizacao BR: uma regra de lock, e um status "em andamento" sem processo volta sozinho. O lock guarda o PID de quem o pegou, e o job morre com esse processo. O lock e velho se o processo morreu, ou se e o proprio processo sem job. Lock de processo vivo vale ate 24 h, por causa do reuso de PID. Lock sem PID vale pela idade (1 h).
+  - Nomes: `parse_scientific_name()` e o unico parser. `canonicalName` e a consulta sao projecoes dele. Diferem so em "Genus sp." (consulta NA) e em texto extra (canonicalName NA). O parser le a autoria botanica antes do marcador ("Inga nobilis Willd. subsp. nobilis"), a cadeia de ranks ("var. pallidum f. oblongifolium", o ultimo rank vale), iniciais ("L.", "DC.") e particulas de sobrenome ("da Silva", "van der Werff") como autoria.
+  - Generalizacao: `sensitive_generalization_plan()` decide linha, grade, ponto publicado e incerteza. O mapa e a exportacao leem o mesmo plano. `COORDINATE_NOTE_OPENINGS` e uma lista congelada: uma redacao nova acrescenta sua abertura e mantem as antigas.
+  - Navegador: um patch de card reaplica o filtro so na visibilidade (ADR-137). O upload observa so as proprias barras de progresso. A geometria do painel de nomes tem teste E2E em tema claro e escuro.
+  - Site: foto, especie, pino, card e bioma se ligam por `data-sp`. `website/scripts/check_landing.py` para o build quando as chaves discordam ou quando o arquivo da foto nao tem o nome da chave.
+- **Consequencias**: a reimportacao de `dynamicProperties` fica cerca de 0,5 s mais lenta a cada 100 mil linhas. O pacote importa `ps`, que ja vinha com `callr`. A consulta de nomes muda para "ssp.", "forma", epiteto com maiuscula apos o marcador, subgenero, iniciais e particulas de autor. Numa amostra de 25 mil nomes BR, a consulta muda em cerca de 400 nomes, todos por autoria que a regra antiga mantinha. Um numero depois do genero ("Scinax 1") e texto extra, entao a consulta e o genero. Com as opcoes, a consulta mantem o qualificador antes do epiteto e a autoria como foi digitada.
