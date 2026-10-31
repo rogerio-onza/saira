@@ -4139,6 +4139,11 @@
     "en": "Background update of the BR catalogs",
     "es": "Actualización de los catálogos BR en segundo plano"
   },
+  "help_pkg_ps": {
+    "pt": "Verifica se a atualização das bases BR ainda roda",
+    "en": "Checks whether the BR catalogs update still runs",
+    "es": "Comprueba si la actualización de los catálogos BR sigue en curso"
+  },
   "help_pkg_dbi": {
     "pt": "Interface de banco de dados",
     "en": "Database interface",

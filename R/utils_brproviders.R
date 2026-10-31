@@ -21,6 +21,7 @@
 .brprovider_check_ttl_secs_default <- 30L * 24L * 60L * 60L
 .brprovider_retry_backoff_secs_default <- 15L * 60L
 .brprovider_lock_stale_secs_default <- 60L * 60L
+.brprovider_lock_max_secs_default <- 24L * 60L * 60L
 
 # ---------------------------------------------------------------------------
 # Version helpers
@@ -387,29 +388,12 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
     )
 
     if (isTRUE(result$ok)) {
-        brprovider_clear_cache(provider_id)
-        .brprovider_patch_meta(provider_id, list(
-            provider_id = provider_id,
-            local_version = as.character(result$local_version),
-            remote_version_last_seen = as.character(result$local_version),
-            last_checked_at = .brprovider_time_to_string(now),
-            last_updated_at = .brprovider_time_to_string(now),
-            status = "up_to_date",
-            last_error = NA_character_,
-            source_package_version = .brprovider_pkg_version_safe(provider_id),
-            retry_after_at = NA_character_
-        ))
+        .brprovider_record_success(provider_id, result$local_version, now = now)
         return(TRUE)
     }
 
-    .brprovider_patch_meta(provider_id, list(
-        provider_id = provider_id,
-        status = "update_failed",
-        last_checked_at = .brprovider_time_to_string(now),
-        last_error = as.character(result$error),
-        source_package_version = .brprovider_pkg_version_safe(provider_id),
-        retry_after_at = .brprovider_time_to_string(now + .brprovider_retry_backoff_secs_default)
-    ))
+    .brprovider_record_failure(provider_id, result$error,
+                               .brprovider_retry_backoff_secs_default, now = now)
 
     warning(sprintf(
         "brprovider_download_data failed [provider=%s version=%s tempdir=%s]: %s",
@@ -530,14 +514,7 @@ brprovider_download_data <- function(provider_id, verbose = TRUE,
 
     if (inherits(process, "error")) {
         .brprovider_release_lock(provider_id)
-        now <- .brprovider_now_utc()
-        .brprovider_patch_meta(provider_id, list(
-            status = "update_failed",
-            last_checked_at = .brprovider_time_to_string(now),
-            last_error = as.character(process$message),
-            retry_after_at = .brprovider_time_to_string(now + as.numeric(retry_backoff_secs)),
-            source_package_version = .brprovider_pkg_version_safe(provider_id)
-        ))
+        .brprovider_record_failure(provider_id, process$message, retry_backoff_secs)
         return(FALSE)
     }
 
@@ -598,20 +575,8 @@ brprovider_poll_updates <- function(provider_id = NULL) {
         }
 
         if (isTRUE(result$ok)) {
-            fields <- list(
-                status = "up_to_date",
-                local_version = as.character(result$local_version),
-                remote_version_last_seen = as.character(result$remote_version),
-                last_checked_at = .brprovider_time_to_string(now),
-                last_error = NA_character_,
-                source_package_version = .brprovider_pkg_version_safe(id),
-                retry_after_at = NA_character_
-            )
-            if (isTRUE(result$updated)) {
-                fields$last_updated_at <- .brprovider_time_to_string(now)
-                brprovider_clear_cache(id)
-            }
-            .brprovider_patch_meta(id, fields)
+            .brprovider_record_success(id, result$local_version, result$remote_version,
+                                       updated = result$updated, now = now)
 
             events[[length(events) + 1L]] <- list(
                 provider_id = as.character(id),
@@ -622,14 +587,8 @@ brprovider_poll_updates <- function(provider_id = NULL) {
                 error = NA_character_
             )
         } else {
-            .brprovider_patch_meta(id, list(
-                status = "update_failed",
-                remote_version_last_seen = as.character(result$remote_version),
-                last_checked_at = .brprovider_time_to_string(now),
-                last_error = as.character(result$error),
-                source_package_version = .brprovider_pkg_version_safe(id),
-                retry_after_at = .brprovider_time_to_string(now + retry_backoff)
-            ))
+            .brprovider_record_failure(id, result$error, retry_backoff,
+                                       remote_version = result$remote_version, now = now)
 
             events[[length(events) + 1L]] <- list(
                 provider_id = as.character(id),
@@ -706,13 +665,7 @@ brprovider_ensure_data <- function(provider_id,
         .brprovider_release_lock(provider_id)
 
         if (!isTRUE(bootstrap$ok)) {
-            .brprovider_patch_meta(provider_id, list(
-                status = "update_failed",
-                last_checked_at = .brprovider_time_to_string(now),
-                last_error = as.character(bootstrap$error),
-                source_package_version = .brprovider_pkg_version_safe(provider_id),
-                retry_after_at = .brprovider_time_to_string(now + as.numeric(retry_backoff_secs))
-            ))
+            .brprovider_record_failure(provider_id, bootstrap$error, retry_backoff_secs, now = now)
             return(list(
                 ok = FALSE,
                 available = FALSE,
@@ -725,18 +678,8 @@ brprovider_ensure_data <- function(provider_id,
             ))
         }
 
-        brprovider_clear_cache(provider_id)
         local_version <- as.character(bootstrap$local_version)
-        .brprovider_patch_meta(provider_id, list(
-            status = "up_to_date",
-            local_version = local_version,
-            remote_version_last_seen = local_version,
-            last_checked_at = .brprovider_time_to_string(now),
-            last_updated_at = .brprovider_time_to_string(now),
-            last_error = NA_character_,
-            source_package_version = .brprovider_pkg_version_safe(provider_id),
-            retry_after_at = NA_character_
-        ))
+        .brprovider_record_success(provider_id, local_version, now = now)
 
         return(list(
             ok = TRUE,
@@ -759,9 +702,11 @@ brprovider_ensure_data <- function(provider_id,
         meta <- .brprovider_read_meta(provider_id)
     }
 
+    # A stale lock or an orphan "in progress" status must not block the update.
+    state <- .brprovider_reconcile_update(provider_id, meta, has_data = TRUE)
+    meta <- state$meta
+    in_progress <- state$in_progress
     due <- .brprovider_check_due(meta, ttl_secs = check_ttl_secs, now = now)
-    in_progress <- identical(as.character(meta$status), "update_in_progress") ||
-        exists(provider_id, envir = .brprovider_jobs, inherits = FALSE)
     retry_blocked <- .brprovider_retry_blocked(meta, now = now)
 
     background_started <- FALSE
