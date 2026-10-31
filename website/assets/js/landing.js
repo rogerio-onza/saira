@@ -37,20 +37,27 @@
   // Real GBIF records of the hero species, in the hero order. Raw cells are
   // [before, bad part, after], with errors inserted for the demo. All six are
   // on the MMA list, so the export generalizes their coordinates to 0.1 degree.
+  // The id is the data-sp key of the pins, cards and biomes of the three home
+  // pages: scripts/check_landing.py stops the site build on a missing key.
   var ROWS = [
-    { raw: [["Podocnemis sextuberculat", "ta", ""], ["-2", ",", "82514"], ["-64", ",", "889433"], ["", "11/08/2004", ""], ["Amazonas", "", ""]],
+    { id: "podocnemis-sextuberculata", raw: [["Podocnemis sextuberculat", "ta", ""], ["-2", ",", "82514"], ["-64", ",", "889433"], ["", "11/08/2004", ""], ["Amazonas", "", ""]],
       fix: ["Podocnemis sextuberculata", "-2.82514", "-64.889433", "2004-08-11", "Amazonas"], gen: ["-2.8", "-64.9"], cat: "EN" },
-    { raw: [["Micranthocereus p", "i", "lyanthus"], ["", "-42.595426", ""], ["", "-14.321965", ""], ["", "24/07/2023", ""], ["Bahia", "", ""]],
+    { id: "micranthocereus-polyanthus", raw: [["Micranthocereus p", "i", "lyanthus"], ["", "-42.595426", ""], ["", "-14.321965", ""], ["", "24/07/2023", ""], ["Bahia", "", ""]],
       fix: ["Micranthocereus polyanthus", "-14.321965", "-42.595426", "2023-07-24", "Bahia"], gen: ["-14.3", "-42.6"], cat: "EN" },
-    { raw: [["Boana buriti", "", ""], ["-16", ",", "787468"], ["-47", ",", "781879"], ["", "17/12/2025", ""], ["Goi", "Ã¡", "s"]],
+    { id: "boana-buriti", raw: [["Boana buriti", "", ""], ["-16", ",", "787468"], ["-47", ",", "781879"], ["", "17/12/2025", ""], ["Goi", "Ã¡", "s"]],
       fix: ["Boana buriti", "-16.787468", "-47.781879", "2025-12-17", "Goiás"], gen: ["-16.8", "-47.8"], cat: "VU" },
-    { raw: [["Tangara fastuosa", "", ""], ["-6", ",", "931549"], ["-35", ",", "718407"], ["", "28/07/2019", ""], ["Para", "Ã­", "ba"]],
+    { id: "tangara-fastuosa", raw: [["Tangara fastuosa", "", ""], ["-6", ",", "931549"], ["-35", ",", "718407"], ["", "28/07/2019", ""], ["Para", "Ã­", "ba"]],
       fix: ["Tangara fastuosa", "-6.931549", "-35.718407", "2019-07-28", "Paraíba"], gen: ["-6.9", "-35.7"], cat: "VU" },
-    { raw: [["Acanthochelys macroce", "f", "ala"], ["", "-17.061441", ""], ["", "-56.813209", ""], ["", "01/08/2022", ""], ["Mato Grosso", "", ""]],
+    { id: "acanthochelys-macrocephala", raw: [["Acanthochelys macroce", "f", "ala"], ["", "-17.061441", ""], ["", "-56.813209", ""], ["", "01/08/2022", ""], ["Mato Grosso", "", ""]],
       fix: ["Acanthochelys macrocephala", "-17.061441", "-56.813209", "2022-08-01", "Mato Grosso"], gen: ["-17.1", "-56.8"], cat: "VU" },
-    { raw: [["Leopardus munoai", "", ""], ["-30", ",", "225021"], ["-54", ",", "345336"], ["", "27/01/2017", ""], ["Rio Grande do Sul", "", ""]],
+    { id: "leopardus-munoai", raw: [["Leopardus munoai", "", ""], ["-30", ",", "225021"], ["-54", ",", "345336"], ["", "27/01/2017", ""], ["Rio Grande do Sul", "", ""]],
       fix: ["Leopardus munoai", "-30.225021", "-54.345336", "2017-01-27", "Rio Grande do Sul"], gen: ["-30.2", "-54.3"], cat: "CR" }
   ];
+  function rowOf(node) {
+    var id = node.getAttribute("data-sp");
+    for (var r = 0; r < ROWS.length; r++) if (ROWS[r].id === id) return ROWS[r];
+    throw new Error("landing.js: no ROWS entry for data-sp=" + id);
+  }
   var TERMS = ["scientificName", "decimalLatitude", "decimalLongitude", "eventDate", "stateProvince"];
   var STOP = {};
 
@@ -279,8 +286,12 @@
   // Hero: one photo per biome. The next photo comes into focus while the
   // last one goes soft, and the record card text scrambles to the next species.
   function initHero(hero) {
-    var photos = [].slice.call(hero.querySelectorAll(".lp-photo"));
     var tabs = [].slice.call(hero.querySelectorAll(".lp-biome"));
+    // photos[k] is the photo of tabs[k] by data-sp, so the order of the photos
+    // in the page does not matter (check_landing.py checks the keys)
+    var photos = tabs.map(function (t) {
+      return hero.querySelector('.lp-photo[data-sp="' + t.getAttribute("data-sp") + '"]');
+    });
     var rec = {
       name: hero.querySelector(".lp-rec-name"), line: hero.querySelector(".lp-rec-line"),
       cat: hero.querySelector(".lp-rec-cat"), credit: hero.querySelector(".lp-rec-credit span")
@@ -381,9 +392,14 @@
   // the six table species, one at a time, with their generalized coordinates.
   function initMap(fig) {
     var pins = [].slice.call(fig.querySelectorAll(".lp-pin"));
-    var cards = [].slice.call(fig.querySelectorAll(".lp-card"));
+    // The card of each pin by key, so the page order does not matter.
+    var cards = pins.map(function (p) {
+      var card = fig.querySelector('.lp-card[data-sp="' + p.getAttribute("data-sp") + '"]');
+      if (!card) throw new Error("landing.js: no card for data-sp=" + p.getAttribute("data-sp"));
+      return card;
+    });
     var light = fig.querySelector(".lp-map-light");
-    cards.forEach(function (c, i) { c.querySelector(".lp-card-xy").textContent = ROWS[i].gen.join(", "); });
+    cards.forEach(function (c) { c.querySelector(".lp-card-xy").textContent = rowOf(c).gen.join(", "); });
     if (reduce || !("IntersectionObserver" in window)) return;
 
     var gh = make("span", "lp-guide is-h"), gv = make("span", "lp-guide is-v");
@@ -401,8 +417,8 @@
         cards.forEach(function (c) { c.classList.remove("is-on"); });
         gh.style.top = al.style.top = y;
         gv.style.left = ao.style.left = x;
-        al.textContent = ROWS[i].gen[0] + "°";
-        ao.textContent = ROWS[i].gen[1] + "°";
+        al.textContent = rowOf(pins[i]).gen[0] + "°";
+        ao.textContent = rowOf(pins[i]).gen[1] + "°";
         [gh, gv, al, ao].forEach(function (n) { n.classList.add("is-on"); });
         await C.wait(tok, 650);
         void pins[i].offsetWidth;
