@@ -171,3 +171,17 @@ testthat::test_that("table callbacks receive the widget and retain search, pagin
                       stdout = TRUE, stderr = TRUE)
     testthat::expect_null(attr(result, "status"), info = paste(result, collapse = "\n"))
 })
+
+for (case in list(
+    c("a card patch keeps the Mapping filter on screen", "mapping-filter.cjs"),
+    c("the upload observes only its own progress bars", "upload-dropzone.cjs")
+)) {
+    testthat::test_that(case[[1]], {
+        node <- Sys.which("node")
+        testthat::skip_if(!nzchar(node), "node is needed for the JavaScript behavior check")
+        result <- system2(node, c(shQuote(testthat::test_path("js", case[[2]])),
+                                 shQuote(system.file("app", "www", package = "saira"))),
+                          stdout = TRUE, stderr = TRUE)
+        testthat::expect_null(attr(result, "status"), info = paste(result, collapse = "\n"))
+    })
+}

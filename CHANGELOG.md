@@ -117,6 +117,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **names:** Recover the Flora BR and Fauna BR update after a crash, but not while another Saira still updates, ADR-189
 - **names:** Parse authorship before subsp. or var., rank chains, author initials and subgenera alike in mapping and lookups, ADR-189
 - **generalization:** Recognize the coordinate notes of Saira 0.2.5 as already generalized, ADR-189
+- **mapping:** Hide a card from the Mapped or Pending filter as soon as its state changes, ADR-189
 - **generalization:** Write the published point in every copy of a protected point, in any text field or format, ADR-185
 - **occurrenceID:** Give a new copy of a row with kept IDs an ID of its own, ADR-186
 - **eventDate:** Fail a day with a fraction in a split date
@@ -267,6 +268,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **names:** Show a name in the run list only with its last answer, and keep the scroll while the list grows, ADR-168
 
 ### Performance
+- **upload:** Watch only the upload progress bars, not every change on the page, ADR-189
 - **export:** Add the conservation status to repeated nested dynamicProperties objects once per distinct object
 - **coords:** Send the map points without popups, and build the popup of a point when it is clicked, ADR-188
 - **coords:** Filter the coordinate results with no cache, because the cache key cost more than the filter, ADR-188
@@ -282,6 +284,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **docs:** Describe the current tabs, export files and CI in the architecture and contributing guides
 
 ### Tests
+- **build:** Check the names report panel position in light and dark themes in the E2E flows, ADR-189
 - **build:** Update every R package in renv.lock, Shiny 1.14 and roxygen2 8.1.1 included, and run the gate job with the roxygen2 version of DESCRIPTION. The fixed value field and the Generalization questions show and hide again with the Shiny 1.14 conditional panels
 - **build:** Run the E2E flows and the roxygen and CSS checks in CI, from the release gate step list
 - **build:** Check the roxygen output and the CSS bundle in a temp dir, without a change to the working tree

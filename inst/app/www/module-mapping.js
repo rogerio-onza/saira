@@ -89,6 +89,15 @@
     });
   }
 
+  // The filter for one card after a server patch changes its state classes.
+  // Only the visibility follows: a compact row that gets a column stays a row
+  // until the next render (ADR-137), and a card the user opened stays open.
+  function projectCard(el) {
+    var m = /^(.*-)field(card|row)_/.exec(el.id);
+    var picked = m && document.querySelector('input[name="' + m[1] + 'mapped_filter"]:checked');
+    if (picked) setHidden(el, !keepByFilter(picked.value, el));
+  }
+
   // A card or row that the filter hides cannot scroll into view.
   // Relevant keeps every card, so switch to it.
   function revealFiltered(el) {
@@ -288,6 +297,9 @@
       // keep its red border after it is filled.
       el.classList.remove('field-required-missing', 'field-attention');
       if (payload.state) el.classList.add(payload.state);
+      // Mapped and Pending read these classes, so a card that no longer
+      // matches the picked filter leaves the screen now.
+      projectCard(el);
       // Sync the status badge (e.g. -> EDITADO) without a render. The badge
       // span carries a stable .field-status-badge hook: create it if the
       // term had no badge, remove it when the recomputed badge is null.
