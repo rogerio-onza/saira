@@ -28,6 +28,8 @@
 #' @param rows_left_out Rows of exact copies the Preview left out of the
 #'   package. They do not count as records.
 #' @param preview_changes `cell_changes()` of the Preview edits, or NULL.
+#' @param failed_sources Names of the export sources that raised an error
+#'   (`capture_sources()`). Any name blocks the export.
 #' @return Named list: `record_count`, `term_count`, `corrections`
 #'   (`names_corrected`/`names_confirmed`/`coord_fixes`/`coord_fixes_stale`/`country_fills`),
 #'   `generalization` (data.frame `scientificName`/`category`/`tier`),
@@ -42,7 +44,7 @@
 #'   `coord_invalid_rows` (a coordinate the export cannot read, after the
 #'   accepted corrections), `coord_flags` (Coordinates-tab flags with no
 #'   correction, NULL when the tab did not run), `preview_problems_n`,
-#'   `all_required_present`, `export_blocked`, `changes`
+#'   `all_required_present`, `failed_sources`, `export_blocked`, `changes`
 #'   (`build_change_log()`), and `files` (list `dwca` + `auxiliary`).
 #' @noRd
 build_export_summary <- function(mapped_data,
@@ -58,7 +60,8 @@ build_export_summary <- function(mapped_data,
                                  map_values = NULL,
                                  overridden_terms = character(0),
                                  rows_left_out = integer(0),
-                                 preview_changes = NULL) {
+                                 preview_changes = NULL,
+                                 failed_sources = character(0)) {
     df <- if (is.data.frame(mapped_data)) mapped_data else data.frame()
     coords_correction_payload <- drop_stale_coord_corrections(coords_correction_payload, df)
     country_fill_payload <- reconcile_country_fill(country_fill_payload, df)
@@ -160,12 +163,33 @@ build_export_summary <- function(mapped_data,
         coord_flags = assessment$coord_flags,
         preview_problems_n = as.integer(preview_problems_n %||% 0L),
         all_required_present = assessment$all_required_present,
-        export_blocked = assessment$export_blocked,
+        failed_sources = failed_sources,
+        # A decision that could not be read is not "no decision" (SP-01).
+        export_blocked = assessment$export_blocked || length(failed_sources) > 0L,
         changes = changes,
         files = files
     )
 }
 
+
+# The app step that owns each export source, for the message that names the
+# steps whose decision could not be read.
+export_source_steps <- function(sources, lang) {
+    step_of <- c(
+        mapped_data = "nav_mapping", raw_data = "nav_mapping", map_values = "nav_mapping",
+        custom_values = "nav_mapping", measurement_specs = "nav_mapping",
+        occurrence_id_info = "nav_mapping",
+        download_data = "nav_preview", rows_left_out = "nav_preview",
+        preview_changes = "nav_preview", preview_problems_n = "nav_preview",
+        name_review = "nav_validate_names", sensitivity = "nav_validate_names",
+        conservation = "nav_validate_names",
+        coords_correction = "nav_validate_coords", country_fill = "nav_validate_coords",
+        coord_validation = "nav_validate_coords",
+        generalization = "nav_generalize"
+    )
+    keys <- unique(stats::na.omit(unname(step_of[sources])))
+    paste(vapply(keys, tr, character(1), lang = lang, USE.NAMES = FALSE), collapse = ", ")
+}
 
 # Row numbers for a pending item: the first ones, then how many more.
 format_row_list <- function(rows, max_n = 10L) {

@@ -104,6 +104,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
+        # Display-only sources: a failure hides its row and blocks nothing.
         call_r <- function(r) {
             if (!is.null(r) && shiny::is.reactive(r)) {
                 tryCatch(r(), error = function(e) NULL)
@@ -112,27 +113,59 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }
         }
 
+        # Every decision the export package reads, named once. The summary and
+        # the download capture this one list, so a source that fails blocks
+        # both (SP-01).
+        export_sources <- list(
+            name_review = name_review_payload_r,
+            coords_correction = coords_correction_payload_r,
+            country_fill = country_fill_payload_r,
+            sensitivity = sensitivity_payload_r,
+            generalization = sensitive_generalization_payload_r,
+            conservation = conservation_payload_r,
+            raw_data = raw_data_r,
+            map_values = map_values_r,
+            custom_values = custom_values_r,
+            rows_left_out = rows_left_out_r,
+            preview_changes = preview_changes_r,
+            measurement_specs = measurement_specs_r,
+            occurrence_id_info = occurrence_id_info_r
+        )
+
+        # One read of every source. A source that fails blocks the export
+        # instead of reading as "no decision".
+        sources_r <- shiny::reactive({
+            capture_sources(c(list(
+                mapped_data = mapped_data_r,
+                coord_validation = coord_validation_r,
+                preview_problems_n = preview_problems_n_r
+            ), export_sources))
+        })
+
         dataset_name_r <- shiny::reactive({
-            cv <- call_r(custom_values_r)
+            cv <- sources_r()$values$custom_values
             if (is.list(cv)) cv$datasetName else NULL
         })
 
         summary_r <- shiny::reactive({
+            src <- sources_r()
+            v <- src$values
             build_export_summary(
-                mapped_data = call_r(mapped_data_r),
-                name_review_payload = call_r(name_review_payload_r),
-                coords_correction_payload = call_r(coords_correction_payload_r),
-                country_fill_payload = call_r(country_fill_payload_r),
-                sensitivity_payload = call_r(sensitivity_payload_r),
-                generalization_payload = call_r(sensitive_generalization_payload_r),
+                mapped_data = v$mapped_data,
+                name_review_payload = v$name_review,
+                coords_correction_payload = v$coords_correction,
+                country_fill_payload = v$country_fill,
+                sensitivity_payload = v$sensitivity,
+                generalization_payload = v$generalization,
                 dataset_name = dataset_name_r(),
-                coord_validation = call_r(coord_validation_r),
-                preview_problems_n = call_r(preview_problems_n_r),
-                raw_data = call_r(raw_data_r),
-                map_values = call_r(map_values_r),
-                overridden_terms = overridden_mapping_terms(call_r(custom_values_r)),
-                rows_left_out = call_r(rows_left_out_r),
-                preview_changes = call_r(preview_changes_r)
+                coord_validation = v$coord_validation,
+                preview_problems_n = v$preview_problems_n,
+                raw_data = v$raw_data,
+                map_values = v$map_values,
+                overridden_terms = overridden_mapping_terms(v$custom_values),
+                rows_left_out = v$rows_left_out,
+                preview_changes = v$preview_changes,
+                failed_sources = names(src$failed)
             )
         })
 
@@ -150,19 +183,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             input, output, session, lang_r,
             mapped_data_r = mapped_data_r,
             download_data_r = download_data_r,
-            name_review_payload_r = name_review_payload_r,
-            sensitivity_payload_r = sensitivity_payload_r,
-            sensitive_generalization_payload_r = sensitive_generalization_payload_r,
-            conservation_payload_r = conservation_payload_r,
-            raw_data_r = raw_data_r,
-            map_values_r = map_values_r,
-            custom_values_r = custom_values_r,
-            occurrence_id_info_r = occurrence_id_info_r,
-            coords_correction_payload_r = coords_correction_payload_r,
-            country_fill_payload_r = country_fill_payload_r,
-            rows_left_out_r = rows_left_out_r,
-            preview_changes_r = preview_changes_r,
-            measurement_specs_r = measurement_specs_r,
+            sources = export_sources,
             blocked_r = blocked_r,
             on_export_success = on_export_success
         )
@@ -373,6 +394,10 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }
             rows <- list()
             add <- function(x) rows[[length(rows) + 1L]] <<- x
+            if (length(s$failed_sources) > 0L) {
+                add(pending_row("block", sprintf(tr("export_blocked_source_failed", lang),
+                                                 export_source_steps(s$failed_sources, lang))))
+            }
             if (length(s$missing_required) > 0L) {
                 add(pending_row("block", shiny::tagList(
                     tr("export_blocked_missing", lang), " ",
@@ -494,9 +519,10 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             # Preserving unmapped columns in the CSV does not publish them:
             # meta.xml declares only recognized DwC terms, so GBIF drops the
             # rest. The call stays in step with process_for_export_with_unmapped().
+            v <- sources_r()$values
             unmapped_cols <- unmapped_raw_columns(
-                call_r(raw_data_r), call_r(map_values_r),
-                overridden_terms = overridden_mapping_terms(call_r(custom_values_r))
+                v$raw_data, v$map_values,
+                overridden_terms = overridden_mapping_terms(v$custom_values)
             )
             if (length(s$rows_left_out) > 0L) {
                 add(pending_row("info", shiny::tagList(

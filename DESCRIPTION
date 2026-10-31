@@ -94,6 +94,7 @@ Collate:
     'utils_dynamic_properties.R'
     'utils_export.R'
     'utils_export_metadata.R'
+    'utils_export_product.R'
     'utils_export_summary.R'
     'utils_export_writers.R'
     'utils_generalization.R'
