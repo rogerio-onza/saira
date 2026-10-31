@@ -114,6 +114,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give each column its own control, so "body length" and "body-length" no longer share one, ADR-189
 - **dynamicProperties:** Write a key once when two cells or a merge repeat it, ADR-189
 - **coords:** Mark the rows a failed sea check did not reach, not approve them, ADR-189
+- **names:** Recover the Flora BR and Fauna BR update after a crash, but not while another Saira still updates, ADR-189
 - **generalization:** Write the published point in every copy of a protected point, in any text field or format, ADR-185
 - **occurrenceID:** Give a new copy of a row with kept IDs an ID of its own, ADR-186
 - **eventDate:** Fail a day with a fraction in a split date

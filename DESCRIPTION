@@ -39,7 +39,8 @@ Imports:
     xml2 (>= 1.3.0),
     camtrapdp (>= 0.5.0),
     httr2 (>= 1.1.1),
-    callr (>= 3.7.0)
+    callr (>= 3.7.0),
+    ps (>= 1.6.0)
 Additional_repositories: https://ropensci.r-universe.dev
 Suggests:
     testthat (>= 3.0.0),

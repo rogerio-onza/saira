@@ -529,7 +529,10 @@ testthat::test_that("provider lock prevents concurrent starts", {
         {
             pid <- "faunabr"
             first <- .brprovider_acquire_lock(pid)
+            # The lock holder registers its job, as start_background_update does.
+            assign(pid, list(), envir = .brprovider_jobs())
             second <- .brprovider_acquire_lock(pid)
+            rm(list = pid, envir = .brprovider_jobs())
             .brprovider_release_lock(pid)
             third <- .brprovider_acquire_lock(pid)
             .brprovider_release_lock(pid)
@@ -539,6 +542,95 @@ testthat::test_that("provider lock prevents concurrent starts", {
             testthat::expect_true(isTRUE(third))
         }
     )
+})
+
+# Cache on disk, an "in progress" status, no job of this session, and a lock of
+# the given age (NULL: no lock) taken by `lock_pid` (NULL: no PID in the file).
+# Returns ensure_data() and whether it started.
+ensure_after_restart <- function(lock_age_secs, lock_pid = NULL) {
+    tmp <- tempfile(pattern = "brp_restart_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+    testthat::with_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .package = "saira",
+        {
+            pid <- "faunabr"
+            dir.create(brprovider_data_dir(pid), recursive = TRUE, showWarnings = FALSE)
+            saveRDS(data.frame(scientificName = "Panthera onca", stringsAsFactors = FALSE),
+                    file.path(brprovider_data_dir(pid), paste0(pid, ".rds")))
+            .brprovider_write_meta(pid, list(
+                provider_id = pid, local_version = "1.47", remote_version_last_seen = "1.47",
+                last_checked_at = "2000-01-01T00:00:00Z", last_updated_at = "2000-01-01T00:00:00Z",
+                status = "update_in_progress", last_error = NA_character_,
+                source_package_version = NA_character_, retry_after_at = NA_character_
+            ))
+            if (!is.null(lock_age_secs)) {
+                writeLines(if (is.null(lock_pid)) character(0) else paste0("pid=", lock_pid),
+                           .brprovider_lock_path(pid))
+                Sys.setFileTime(.brprovider_lock_path(pid), Sys.time() - lock_age_secs)
+            }
+            started <- FALSE
+            out <- testthat::with_mocked_bindings(
+                .brprovider_start_background_update = function(...) {
+                    started <<- TRUE
+                    TRUE
+                },
+                .package = "saira",
+                brprovider_ensure_data(provider_id = pid, check_ttl_secs = 1L, verbose = FALSE)
+            )
+            list(out = out, started = started, lock = file.exists(.brprovider_lock_path(pid)),
+                 status = .brprovider_read_meta(pid)$status)
+        }
+    )
+}
+
+testthat::test_that("a stale lock after a restart no longer blocks the update (SP-07)", {
+    res <- ensure_after_restart(lock_age_secs = 7200)
+    testthat::expect_true(res$started)
+    testthat::expect_identical(res$out$background_reason, "started")
+    testthat::expect_false(res$lock)
+})
+
+testthat::test_that("an orphan in-progress status without a lock is recovered (SP-07)", {
+    res <- ensure_after_restart(lock_age_secs = NULL)
+    testthat::expect_true(res$started)
+    testthat::expect_identical(res$status, "up_to_date")
+})
+
+testthat::test_that("an active lock of another process is kept (SP-07)", {
+    res <- ensure_after_restart(lock_age_secs = 10)
+    testthat::expect_false(res$started)
+    testthat::expect_identical(res$out$background_reason, "already_running")
+    testthat::expect_true(res$lock)
+    testthat::expect_identical(res$status, "update_in_progress")
+})
+
+testthat::test_that("a long update of another live process keeps its lock (SP-07)", {
+    res <- ensure_after_restart(lock_age_secs = 7200, lock_pid = ps::ps_ppid())
+    testthat::expect_false(res$started)
+    testthat::expect_identical(res$out$background_reason, "already_running")
+    testthat::expect_true(res$lock)
+})
+
+testthat::test_that("the lock of a process that is gone is recovered at once (SP-07)", {
+    dead_pid <- callr::r(function() Sys.getpid())
+    testthat::skip_if(dead_pid %in% ps::ps_pids(), "the PID is in use again")
+    res <- ensure_after_restart(lock_age_secs = 10, lock_pid = dead_pid)
+    testthat::expect_true(res$started)
+    testthat::expect_false(res$lock)
+})
+
+testthat::test_that("a lock of this process without a job is a leftover (SP-07)", {
+    res <- ensure_after_restart(lock_age_secs = 7200, lock_pid = Sys.getpid())
+    testthat::expect_true(res$started)
+    testthat::expect_false(res$lock)
+})
+
+testthat::test_that("a lock older than the limit is stale even when its PID lives (SP-07)", {
+    res <- ensure_after_restart(lock_age_secs = 2 * 24 * 3600, lock_pid = ps::ps_ppid())
+    testthat::expect_true(res$started)
+    testthat::expect_false(res$lock)
 })
 
 testthat::test_that("poll_updates marks update_failed and preserves cache (DEP-05)", {

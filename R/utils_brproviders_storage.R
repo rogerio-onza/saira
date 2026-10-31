@@ -219,18 +219,8 @@ brprovider_cache_status <- function(provider_id, poll = TRUE) {
     has_data <- brprovider_data_available(provider_id)
     meta <- .brprovider_read_meta(provider_id)
 
+    meta <- .brprovider_reconcile_update(provider_id, meta, has_data)$meta
     meta_changed <- FALSE
-
-    # Crash recovery: stale "in progress" without a job or lock.
-    if (identical(as.character(meta$status), "update_in_progress") &&
-        !exists(provider_id, envir = .brprovider_jobs, inherits = FALSE) &&
-        !file.exists(.brprovider_lock_path(provider_id))) {
-        meta$status <- if (has_data) "up_to_date" else "update_failed"
-        if (!has_data && (is.na(meta$last_error) || !nzchar(meta$last_error))) {
-            meta$last_error <- "Background update interrupted."
-        }
-        meta_changed <- TRUE
-    }
 
     if (!has_data && !identical(as.character(meta$status), "update_in_progress") &&
         !identical(as.character(meta$status), "update_failed") &&
@@ -280,20 +270,62 @@ brprovider_cache_statuses <- function(provider_ids = c("florabr", "faunabr"), po
 # Locking and background coordination
 # ---------------------------------------------------------------------------
 
+# The one lock expiry rule: "none", "active" (an update may still run) or
+# "stale". The lock names the process that took it, and the update job dies
+# with that process (callr supervise = TRUE). So the lock is stale when that
+# process is gone, or when it is this process and no job of this session runs:
+# R runs one call at a time, so the bootstrap cannot hold it now. A PID can be
+# reused, so a lock older than `max_secs` is stale even when its
+# process lives. A lock without a readable PID goes by its age (`stale_secs`).
+#' @noRd
+.brprovider_lock_state <- function(provider_id, stale_secs = .brprovider_lock_stale_secs_default,
+                                   max_secs = .brprovider_lock_max_secs_default) {
+    path <- .brprovider_lock_path(provider_id)
+    if (!file.exists(path)) return("none")
+    age <- as.numeric(difftime(Sys.time(), file.info(path)$mtime, units = "secs"))
+    older_than <- function(secs) !is.na(age) && age > as.numeric(secs)
+    lines <- tryCatch(readLines(path, warn = FALSE), error = function(e) character(0))
+    pid <- suppressWarnings(as.integer(sub("^pid=", "", grep("^pid=", lines, value = TRUE)[1])))
+    if (is.na(pid)) {
+        return(if (older_than(stale_secs)) "stale" else "active")
+    }
+    if (identical(pid, Sys.getpid())) {
+        return(if (exists(provider_id, envir = .brprovider_jobs, inherits = FALSE)) "active" else "stale")
+    }
+    if (pid %in% ps::ps_pids() && !older_than(max_secs)) "active" else "stale"
+}
+
+# Job, lock and metadata decide together whether an update runs (SP-07). A job
+# of this session or an active lock means it runs. A stale lock is removed. An
+# "in progress" status that nothing runs is recovered and written, so a crash
+# never blocks the next update. Returns the metadata and `in_progress`.
+#' @noRd
+.brprovider_reconcile_update <- function(provider_id, meta, has_data) {
+    running <- exists(provider_id, envir = .brprovider_jobs, inherits = FALSE)
+    if (!running) {
+        lock <- .brprovider_lock_state(provider_id)
+        if (identical(lock, "stale")) .brprovider_release_lock(provider_id)
+        running <- identical(lock, "active")
+    }
+    if (!running && identical(as.character(meta$status), "update_in_progress")) {
+        meta$status <- if (has_data) "up_to_date" else "update_failed"
+        if (!has_data && (is.na(meta$last_error) || !nzchar(meta$last_error))) {
+            meta$last_error <- "Background update interrupted."
+        }
+        .brprovider_write_meta(provider_id, meta)
+    }
+    list(meta = meta, in_progress = running)
+}
+
 #' @noRd
 .brprovider_acquire_lock <- function(provider_id, stale_secs = .brprovider_lock_stale_secs_default) {
     path <- .brprovider_lock_path(provider_id)
     dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
 
-    if (file.exists(path)) {
-        info <- file.info(path)
-        age <- as.numeric(difftime(Sys.time(), info$mtime, units = "secs"))
-        if (!is.na(age) && age > as.numeric(stale_secs)) {
-            unlink(path, force = TRUE)
-        }
-    }
-
-    if (file.exists(path)) {
+    state <- .brprovider_lock_state(provider_id, stale_secs)
+    if (identical(state, "stale")) {
+        unlink(path, force = TRUE)
+    } else if (identical(state, "active")) {
         return(FALSE)
     }
 
@@ -308,6 +340,43 @@ brprovider_cache_statuses <- function(provider_ids = c("florabr", "faunabr"), po
         paste0("started_at=", .brprovider_time_to_string(Sys.time()))
     ), con = handle)
     TRUE
+}
+
+# The two ends of every update (manual download, bootstrap, background job).
+# `updated = FALSE` is a check that found no newer version: the cache and
+# last_updated_at stay.
+#' @noRd
+.brprovider_record_success <- function(provider_id, local_version,
+                                       remote_version = local_version,
+                                       updated = TRUE, now = .brprovider_now_utc()) {
+    fields <- list(
+        status = "up_to_date",
+        local_version = as.character(local_version),
+        remote_version_last_seen = as.character(remote_version),
+        last_checked_at = .brprovider_time_to_string(now),
+        last_error = NA_character_,
+        source_package_version = .brprovider_pkg_version_safe(provider_id),
+        retry_after_at = NA_character_
+    )
+    if (isTRUE(updated)) {
+        fields$last_updated_at <- .brprovider_time_to_string(now)
+        brprovider_clear_cache(provider_id)
+    }
+    .brprovider_patch_meta(provider_id, fields)
+}
+
+#' @noRd
+.brprovider_record_failure <- function(provider_id, error, retry_backoff_secs,
+                                       remote_version = NULL, now = .brprovider_now_utc()) {
+    fields <- list(
+        status = "update_failed",
+        last_checked_at = .brprovider_time_to_string(now),
+        last_error = as.character(error),
+        source_package_version = .brprovider_pkg_version_safe(provider_id),
+        retry_after_at = .brprovider_time_to_string(now + as.numeric(retry_backoff_secs))
+    )
+    if (!is.null(remote_version)) fields$remote_version_last_seen <- as.character(remote_version)
+    .brprovider_patch_meta(provider_id, fields)
 }
 
 #' @noRd
