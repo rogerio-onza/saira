@@ -636,9 +636,17 @@ testthat::test_that("unchecked names leave the list for the block, and the retry
     )
 })
 
+# Lowercase epithets "aa", "ab", ... so each fake name is a distinct binomial.
+fake_epithets <- function(n) {
+    i <- seq_len(n) - 1L
+    paste0(letters[i %/% 26L + 1L], letters[i %% 26L + 1L])
+}
+
 testthat::test_that("module stream state grows incrementally per processed batch", {
     mapped_df <- data.frame(
-        scientificName = paste("Species", seq_len(250)),
+        # Distinct binomials: a number after the genus is extra text, and
+        # "Species 1" and "Species 2" both query "Species".
+        scientificName = paste("Species", fake_epithets(250)),
         stringsAsFactors = FALSE
     )
     # Pin the default provider set to GBIF-only (no BR cache). With a real
@@ -703,7 +711,9 @@ testthat::test_that("module stream state grows incrementally per processed batch
 
 testthat::test_that("cancel path marks unresolved names after abort flag", {
     mapped_df <- data.frame(
-        scientificName = paste("Species", seq_len(240)),
+        # Distinct binomials: a number after the genus is extra text, and
+        # "Species 1" and "Species 2" both query "Species".
+        scientificName = paste("Species", fake_epithets(240)),
         stringsAsFactors = FALSE
     )
     # Pin the default provider set to GBIF-only (no BR cache) so the single-
