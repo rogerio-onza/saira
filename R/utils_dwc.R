@@ -603,6 +603,26 @@ constant_value_terms <- function() {
     )
 }
 
+#' Fixed values that fill every row
+#'
+#' @param state Named list keyed by term, each entry `list(on, value)`: the
+#'   fixed-value state the mapping module keeps for `constant_value_terms()`.
+#' @return Named list of trimmed values whose box is ticked and value filled,
+#'   in `constant_value_terms()` order.
+#' @noRd
+enabled_fixed_values <- function(state) {
+    vals <- list()
+    for (term in constant_value_terms()) {
+        entry <- state[[term]]
+        if (!isTRUE(entry$on)) next
+        value <- trimws(as.character(entry$value %||% ""))
+        if (length(value) == 1L && !is.na(value) && nzchar(value)) {
+            vals[[term]] <- value
+        }
+    }
+    vals
+}
+
 #' Terms the mapping screen treats as required
 #'
 #' Single source of truth for the sidebar readiness strip, the card state

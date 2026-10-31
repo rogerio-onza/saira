@@ -29,6 +29,27 @@ split_output_tokens <- function(value, out_sep = " | ") {
     parts[nzchar(parts)]
 }
 
+#' Input ID of a per-column control
+#'
+#' One rule for the card builders and for the observers that read the
+#' inputs. A letter or digit stays, and every other byte becomes `_` plus two
+#' hex digits, so two column names never share an ID. make.names() gave
+#' "body length", "body-length" and "body.length" the same one.
+#'
+#' @param prefix Input ID prefix, such as `"dynprops_key_"`.
+#' @param col_name Character vector of literal column names.
+#' @return Character vector of input IDs, same length as `col_name`.
+#' @noRd
+column_input_id <- function(prefix, col_name) {
+    vapply(enc2utf8(as.character(col_name)), function(x) {
+        b <- as.integer(charToRaw(x))
+        keep <- (b >= 48L & b <= 57L) | (b >= 65L & b <= 90L) | (b >= 97L & b <= 122L)
+        chars <- sprintf("_%02x", b)
+        chars[keep] <- intToUtf8(b[keep], multiple = TRUE)
+        paste0(prefix, paste(chars, collapse = ""))
+    }, character(1), USE.NAMES = FALSE)
+}
+
 has_selected_value <- function(value) {
     !is.null(value) && length(value) > 0 && any(value != "")
 }

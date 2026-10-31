@@ -123,8 +123,8 @@ test_that("build_dynprops_keys_block renders a key input per selected column", {
     expect_null(build_dynprops_keys_block(character(0), ns, "en", list()))
 
     html <- as.character(build_dynprops_keys_block(c("colA", "colB"), ns, "en", list()))
-    expect_match(html, ns(paste0("dynprops_key_", make.names("colA"))), fixed = TRUE)
-    expect_match(html, ns(paste0("dynprops_key_", make.names("colB"))), fixed = TRUE)
+    expect_match(html, ns(column_input_id("dynprops_key_", "colA")), fixed = TRUE)
+    expect_match(html, ns(column_input_id("dynprops_key_", "colB")), fixed = TRUE)
 })
 
 test_that("field_state_class flags required gaps and uncertain matches only", {
@@ -290,9 +290,9 @@ test_that("a compact card keeps its select and adds Fixed value only for constan
 
 test_that("the fixed value panel has no inline display", {
     ns <- shiny::NS("map")
-    off <- as.character(build_constant_value_input("country", ns, "en", list()))
+    off <- as.character(build_constant_value_input("country", ns, "en", NULL))
     on <- as.character(build_constant_value_input(
-        "country", ns, "en", list(usecustom_country = TRUE)
+        "country", ns, "en", list(on = TRUE, value = "Brasil")
     ))
     # Shiny 1.14 hides a panel with its own CSS rule until the condition is
     # true. An inline "display: none" kept the panel hidden after that.
@@ -326,10 +326,10 @@ test_that("build_measurement_specs_block gives each column a type, unit and meth
 
     html <- as.character(build_measurement_specs_block(
         c("AREA_HA", "Annual rainfall"), list(AREA_HA = c("10", "5")), ns, "pt",
-        list(mof_unit_AREA_HA = "ha")
+        list(mof_unit_AREA_5fHA = "ha")
     ))
-    expect_match(html, 'id="map-mof_type_AREA_HA"', fixed = TRUE)
-    expect_match(html, 'id="map-mof_method_Annual.rainfall"', fixed = TRUE)
+    expect_match(html, 'id="map-mof_type_AREA_5fHA"', fixed = TRUE)
+    expect_match(html, 'id="map-mof_method_Annual_20rainfall"', fixed = TRUE)
     # An empty type keeps the column name, so the placeholder shows it.
     expect_match(html, 'placeholder="Annual rainfall"', fixed = TRUE)
     expect_match(html, 'value="ha"', fixed = TRUE)
@@ -339,9 +339,30 @@ test_that("build_measurement_specs_block gives each column a type, unit and meth
     # The unit from the column name fills an input not typed yet, and a typed
     # value wins.
     html <- as.character(build_measurement_specs_block(
-        c("AREA_HA", "chuva_mm"), list(), ns, "pt", list(mof_unit_AREA_HA = ""),
+        c("AREA_HA", "chuva_mm"), list(), ns, "pt", list(mof_unit_AREA_5fHA = ""),
         units = c(AREA_HA = "ha", chuva_mm = "mm")
     ))
-    expect_match(html, 'id="map-mof_unit_chuva_mm"[^>]*value="mm"')
+    expect_match(html, 'id="map-mof_unit_chuva_5fmm"[^>]*value="mm"')
     expect_no_match(html, 'value="ha"', fixed = TRUE)
+})
+
+# make.names() gave these three columns one ID, so the browser and the server
+# shared one field for three columns.
+test_that("per-column inputs get one ID per column name", {
+    ns <- shiny::NS("map")
+    cols <- c("body length", "body-length", "body.length", "comprimento \u00e1rea")
+    ids <- column_input_id("mof_type_", cols)
+    expect_false(anyDuplicated(ids) > 0L)
+    expect_match(ids, "^mof_type_[A-Za-z0-9_]+$")
+    expect_identical(column_input_id("mof_type_", cols), ids)
+
+    mof <- as.character(build_measurement_specs_block(cols, list(), ns, "en", list()))
+    mof_ids <- regmatches(mof, gregexpr('<input id="map-mof_[^"]+"', mof))[[1]]
+    expect_length(mof_ids, 12L)
+    expect_false(anyDuplicated(mof_ids) > 0L)
+
+    dyn <- as.character(build_dynprops_keys_block(cols, ns, "en", list()))
+    dyn_ids <- regmatches(dyn, gregexpr('<input id="map-dynprops_key_[^"]+"', dyn))[[1]]
+    expect_length(dyn_ids, 4L)
+    expect_false(anyDuplicated(dyn_ids) > 0L)
 })

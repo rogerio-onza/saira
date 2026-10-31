@@ -144,6 +144,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             ambiguity_queue = list(),
             dyn_props_keys = list(),
             measurement_specs = list(),
+            # Fixed-value state of the constant_value_terms() cards, keyed by
+            # term: list(on, value). The inputs write here and the export reads
+            # from here, so a reset or an import also reaches a card that is
+            # not on the page.
+            fixed_values = list(),
             # Unit from the name of each column auto-map put in measurementValue.
             measurement_unit_hints = character(0),
             # Counter bumped on every event that invalidates the dataset baseline
@@ -354,7 +359,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     meta <- default_meta()
                 }
                 card_state <- apply_establishment_card_state(
-                    term, current_val, is_field_mapped(term, current_val, input), meta
+                    term, current_val,
+                    is_field_mapped(term, current_val, input, rv$fixed_values), meta
                 )
                 meta <- card_state$meta
                 badge <- build_badge_info(meta)
@@ -627,6 +633,15 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 }
                 shiny::updateSelectInput(session, input_id, selected = sanitized_value)
             }
+            },
+            write_fixed = function(term, state) { rv$fixed_values[[term]] <- state },
+            sync_fixed = function(term, state) {
+                shiny::updateCheckboxInput(session, paste0("usecustom_", term), value = state$on)
+                if (identical(term, "basisOfRecord")) {
+                    shiny::updateSelectInput(session, "custom_basisOfRecord", selected = state$value)
+                } else {
+                    shiny::updateTextInput(session, paste0("custom_", term), value = state$value)
+                }
             }
         )
         set_map_value <- mapping_commands$select
@@ -809,6 +824,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
                 rv$map_values <- empty_map_values(term_names)
                 rv$map_meta <- empty_map_meta(term_names)
+                # A fixed value fills a column of the rows, so it belongs to the
+                # file it was set for: a new upload turns it off, as the reset
+                # does. datasetName, license, language and modified describe the
+                # publication and stay (ADR-189).
+                for (term in names(rv$fixed_values)) {
+                    mapping_commands$fixed_value(term, NULL)
+                }
                 rm(list = ls(id_cache, all.names = TRUE), envir = id_cache)
                 rv$eventdate_parse_failures <- 0L
                 rv$last_eventdate_warn_count <- NA_integer_
@@ -1011,7 +1033,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             new_keys <- list()
             for (col_name in selected_cols) {
-                input_id <- paste0("dynprops_key_", make.names(col_name))
+                input_id <- column_input_id("dynprops_key_", col_name)
                 raw_value <- input[[input_id]]
                 if (is.null(raw_value)) {
                     next
@@ -1043,7 +1065,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             for (col_name in selected_cols[nzchar(selected_cols)]) {
                 spec <- list()
                 for (term in names(stems)) {
-                    raw_value <- input[[paste0("mof_", stems[[term]], "_", make.names(col_name))]]
+                    raw_value <- input[[column_input_id(paste0("mof_", stems[[term]], "_"), col_name)]]
                     trimmed <- trimws(as.character(raw_value %||% ""))
                     if (length(trimmed) == 1L && nzchar(trimmed)) spec[[term]] <- trimmed
                 }
@@ -1257,7 +1279,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     current_val <- input[[paste0("map_", term)]]
                 }
                 current_val <- sanitize_map_selection(term, current_val)
-                is_mapped <- is_field_mapped(term, current_val, input)
+                is_mapped <- is_field_mapped(term, current_val, input, rv$fixed_values)
                 if (isTRUE(rv$scientificname_mapped) &&
                     term %in% locked_taxon_terms()) {
                     is_mapped <- TRUE
@@ -1278,7 +1300,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     )),
                     compact = collapse_mapping_term(
                         term, card_state$is_mapped,
-                        fixed_value_on = input[[paste0("usecustom_", term)]],
+                        fixed_value_on = rv$fixed_values[[term]]$on,
                         extra = rv$extra_terms
                     )
                 )
@@ -1569,7 +1591,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     rows <- lapply(cat_fields, function(item) {
                         term <- item$term
                         current_val <- sanitize_map_selection(term, rv$map_values[[term]])
-                        is_mapped <- is_field_mapped(term, current_val, input)
+                        is_mapped <- is_field_mapped(term, current_val, input, rv$fixed_values)
                         locked_taxon <- isTRUE(scientificname_mapped) &&
                             term %in% locked_taxon_terms()
                         if (locked_taxon) {
@@ -1724,7 +1746,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                                 current_val <- input[[paste0("map_", term)]]
                             }
                             current_val <- sanitize_map_selection(term, current_val)
-                            is_mapped <- is_field_mapped(term, current_val, input)
+                            is_mapped <- is_field_mapped(term, current_val, input, rv$fixed_values)
                             # The derived taxon terms lock (and read as
                             # mapped) once scientificName is set; they are
                             # derived from it at export.
@@ -1754,7 +1776,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             compact <- identical(mapped_filter, "relevant") &&
                                 collapse_mapping_term(
                                     term, is_mapped,
-                                    fixed_value_on = input[[paste0("usecustom_", term)]],
+                                    fixed_value_on = rv$fixed_values[[term]]$on,
                                     extra = rv$extra_terms
                                 )
 
@@ -1768,7 +1790,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                                 scientificname_mapped = scientificname_mapped,
                                 required = term %in% required_fields_strip,
                                 state_class = state_class,
-                                compact = compact
+                                compact = compact,
+                                fixed_values = rv$fixed_values
                             )
                             card <- shiny::tagAppendAttributes(
                                 card,
@@ -2186,6 +2209,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             shiny::updateDateInput(session, "custom_modified_date", value = Sys.Date())
             shiny::updateCheckboxGroupInput(session, "custom_license", selected = character(0))
             shiny::updateCheckboxGroupInput(session, "custom_language", selected = character(0))
+            for (term in names(rv$fixed_values)) {
+                mapping_commands$fixed_value(term, NULL)
+            }
             reset_basis_of_record_state(basis_state)
             reset_establishment_state()
             rv$is_programmatic_update <- FALSE
@@ -2243,39 +2269,35 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         lapply(constant_value_terms(), function(term) {
             use_id <- paste0("usecustom_", term)
             val_id <- paste0("custom_", term)
-            has_fixed_value <- function() {
-                isTRUE(input[[use_id]]) &&
-                    !is.null(input[[val_id]]) &&
-                    nzchar(trimws(input[[val_id]]))
+            # Each input writes its own half of the term's state. The browser
+            # echo of a reset or an import carries the value the state already
+            # has, so it changes nothing, not even the card's meta.
+            write_fixed_input <- function(field, value) {
+                state <- rv$fixed_values[[term]] %||% list(on = FALSE, value = "")
+                if (identical(state[[field]], value)) {
+                    return(invisible(NULL))
+                }
+                state[[field]] <- value
+                rv$fixed_values[[term]] <- state
+                set_custom_term_meta(term, !is.null(enabled_fixed_values(rv$fixed_values)[[term]]))
+                push_card_state(term)
             }
-            # The free-text read is isolated in the renderUI (ADR-098), so typing
-            # a fixed value does not re-render the card. push_card_state() flips
+            # The renderUI reads the state isolated (ADR-098), so typing a
+            # fixed value does not re-render the card. push_card_state() flips
             # the card's border/badge client-side to match the next full render --
             # no re-render, no blur.
             shiny::observeEvent(input[[val_id]], {
-                set_custom_term_meta(term, has_fixed_value())
-                push_card_state(term)
+                write_fixed_input("value", as.character(input[[val_id]]))
             }, ignoreInit = TRUE)
             shiny::observeEvent(input[[use_id]], {
-                set_custom_term_meta(term, has_fixed_value())
-                push_card_state(term)
+                write_fixed_input("on", isTRUE(input[[use_id]]))
             }, ignoreInit = TRUE)
         })
 
-        # Collect enabled fixed values (usecustom_<term> on + non-empty) for the
-        # constant-value allowlist. Reused by build_mapped_result (export/preview)
-        # and custom_values_r (mapping-guide serialization).
-        collect_constant_values <- function() {
-            vals <- list()
-            for (term in constant_value_terms()) {
-                if (!isTRUE(input[[paste0("usecustom_", term)]])) next
-                value <- input[[paste0("custom_", term)]]
-                if (!is.null(value) && nzchar(trimws(value))) {
-                    vals[[term]] <- trimws(value)
-                }
-            }
-            vals
-        }
+        # Enabled fixed values for the constant-value allowlist. Reused by
+        # build_mapped_result (export/preview) and custom_values_r
+        # (mapping-guide serialization).
+        collect_constant_values <- function() enabled_fixed_values(rv$fixed_values)
 
         build_mapped_result <- function(df_input, occurrence_ids_input) {
             build_processed_mapping_df(
@@ -2441,14 +2463,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # card goes green while coordinate validation stays blocked -- which
             # is the whole point of the fixed value on a single-country dataset
             # whose spreadsheet carries no country column at all.
-            country_const <- if (isTRUE(input$usecustom_country)) {
-                trimws(as.character(input$custom_country %||% ""))
-            } else {
-                ""
-            }
-            if (length(country_const) != 1L || is.na(country_const)) {
-                country_const <- ""
-            }
+            country_const <- collect_constant_values()$country %||% ""
 
             has_lat <- nzchar(lat_col) && lat_col %in% names(raw_df)
             has_lon <- nzchar(lon_col) && lon_col %in% names(raw_df)

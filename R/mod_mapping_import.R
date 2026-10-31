@@ -129,12 +129,8 @@ mount_mapping_import <- function(input, session, lang_r, raw_data_r, commands,
         # longer as a column mapping, so without this the import restores
         # it nowhere and the term leaves the next export.
         for (term in intersect(names(consts), constant_value_terms())) {
-            shiny::updateCheckboxInput(session, paste0("usecustom_", term), value = TRUE)
-            if (identical(term, "basisOfRecord")) {
-                shiny::updateSelectInput(session, "custom_basisOfRecord", selected = consts[[term]])
-            } else {
-                shiny::updateTextInput(session, paste0("custom_", term), value = consts[[term]])
-            }
+            commands$fixed_value(term, consts[[term]])
+            commands$manual_meta(term)
         }
 
         # Seed personal aliases for cross-dataset auto-mapping (ADR-087);
