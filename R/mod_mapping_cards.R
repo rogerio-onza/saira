@@ -19,6 +19,7 @@
 #'   are locked because they are derived from scientificName.
 #' @param required Logical; when TRUE the card shows a "Required" tag. The value
 #'   is fixed per term, so the per-card update path never has to change it.
+#' @param fixed_values Fixed-value state of the mapping module, keyed by term.
 #' @param compact Logical; when TRUE the card renders as a one-line row (term
 #'   and column select) for the "Relevant" filter. It is the same card with a
 #'   CSS class, so its inputs stay bound when the row opens. The second class
@@ -30,7 +31,7 @@
 #'   `carddyn_<term>` uiOutput slot, so picking a column updates only that card
 #'   instead of rebuilding the whole 50-selectize grid (see mod_mapping.R).
 #' @noRd
-build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL, required = FALSE, compact = FALSE) {
+build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns, lang_r, input, cat_class, scientificname_mapped = FALSE, state_class = NULL, required = FALSE, compact = FALSE, fixed_values = list()) {
     term <- item$term
 
     # taxonRank/specificEpithet/infraspecificEpithet are inferred from
@@ -245,7 +246,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                     width = "100%"
                 ),
                 shiny::uiOutput(ns("carddyn_basisOfRecord"))
-            ), ns, lang_r, input)
+            ), ns, lang_r, fixed_values[[term]])
         } else if (term == "dynamicProperties") {
             selected_cols <- if (has_selected_value(current_val)) {
                 as.character(current_val)
@@ -300,7 +301,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
                 shiny::uiOutput(ns(paste0("carddyn_", term)))
             )
             if (is_const_term) {
-                wrap_constant_value_block(term, map_block, ns, lang_r, input)
+                wrap_constant_value_block(term, map_block, ns, lang_r, fixed_values[[term]])
             } else {
                 map_block
             }
@@ -320,9 +321,9 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
 #' @param map_block The column selector UI of the card.
 #' @param ns Namespace function.
 #' @param lang_r Reactive language code (already evaluated).
-#' @param input Shiny input from parent module.
+#' @param fixed The term's fixed-value state, `list(on, value)` or NULL.
 #' @noRd
-wrap_constant_value_block <- function(term, map_block, ns, lang_r, input) {
+wrap_constant_value_block <- function(term, map_block, ns, lang_r, fixed) {
     shiny::tagList(
         shiny::conditionalPanel(
             condition = paste0("!input.usecustom_", term),
@@ -333,7 +334,7 @@ wrap_constant_value_block <- function(term, map_block, ns, lang_r, input) {
                 shiny::span(tr("mapping_or_separator", lang_r))
             )
         ),
-        build_constant_value_input(term, ns, lang_r, input),
+        build_constant_value_input(term, ns, lang_r, fixed),
         # A compact row hides the fixed-value checkbox. This button removes the
         # compact class in place (client-side), so the full card with the
         # checkbox opens where the row was. Every card has it, because the
@@ -351,17 +352,17 @@ wrap_constant_value_block <- function(term, map_block, ns, lang_r, input) {
 #'
 #' A `usecustom_<term>` checkbox (with a one-line hint that it ignores the
 #' column mapping) reveals (client-side) a tinted "every row" note plus a
-#' free-text `custom_<term>` input. Saved values are read with `isolate()` so
-#' live typing never re-renders the mapping UI (ADR-098).
+#' free-text `custom_<term>` input. The controls show the server-side state, so
+#' a reset or an import also reaches a card that was not on the page.
 #'
 #' @param term DwC term name (must be in `constant_value_terms()`).
 #' @param ns Namespace function.
 #' @param lang_r Reactive language code (already evaluated).
-#' @param input Shiny input from parent module.
+#' @param fixed The term's fixed-value state, `list(on, value)` or NULL.
 #' @noRd
-build_constant_value_input <- function(term, ns, lang_r, input) {
-    saved_use <- shiny::isolate(input[[paste0("usecustom_", term)]])
-    saved_val <- shiny::isolate(input[[paste0("custom_", term)]])
+build_constant_value_input <- function(term, ns, lang_r, fixed) {
+    saved_use <- fixed$on
+    saved_val <- fixed$value
     shiny::tagList(
         shiny::div(
             class = "fixed-value-toggle",
@@ -532,7 +533,7 @@ build_dynprops_keys_block <- function(current_val, ns, lang_r, input) {
         ),
         lapply(selected_cols, function(col_name) {
             auto_key <- derive_dynprops_key(col_name)
-            input_id <- paste0("dynprops_key_", make.names(col_name))
+            input_id <- column_input_id("dynprops_key_", col_name)
             saved <- shiny::isolate(input[[input_id]])
             bslib::layout_columns(
                 col_widths = c(5, 7),
@@ -569,7 +570,7 @@ build_measurement_specs_block <- function(cols, samples, ns, lang_r, input, unit
         return(NULL)
     }
     field <- function(stem, col, label, placeholder = NULL) {
-        input_id <- paste0("mof_", stem, "_", make.names(col))
+        input_id <- column_input_id(paste0("mof_", stem, "_"), col)
         saved <- shiny::isolate(input[[input_id]])
         start <- if (stem == "unit" && col %in% names(units)) units[[col]] else ""
         htmltools::tagAppendAttributes(
@@ -813,9 +814,11 @@ build_collapsed_terms <- function(terms, lang_r) {
 #' @param term DwC term name
 #' @param current_val current mapping value
 #' @param input Shiny input
+#' @param fixed_values Fixed-value state of the mapping module (see
+#'   `enabled_fixed_values()`).
 #' @return logical
 #' @noRd
-is_field_mapped <- function(term, current_val, input) {
+is_field_mapped <- function(term, current_val, input, fixed_values = list()) {
     is_mapped <- has_selected_value(current_val)
 
     if (term == "datasetName") {
@@ -837,13 +840,7 @@ is_field_mapped <- function(term, current_val, input) {
         is_mapped <- !is.null(input$custom_language) && length(input$custom_language) > 0
     } else if (term %in% constant_value_terms()) {
         # Mapped if a column is selected OR a fixed value is enabled and filled.
-        # The checkbox read stays reactive so the mapped border updates live on
-        # toggle (a discrete event, like license/language); the free-text value
-        # is isolated so typing it does not re-render and blur the field (ADR-098,
-        # like datasetName -- the border refreshes on the next render).
-        use_const <- input[[paste0("usecustom_", term)]]
-        const_val <- shiny::isolate(input[[paste0("custom_", term)]])
-        if (isTRUE(use_const) && !is.null(const_val) && nchar(trimws(const_val)) > 0) {
+        if (!is.null(enabled_fixed_values(fixed_values)[[term]])) {
             is_mapped <- TRUE
         }
     }

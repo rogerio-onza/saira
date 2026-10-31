@@ -1,5 +1,5 @@
 # Title: Tests for Mapping Module Server
-# Author: RogÃ©rio Nunes Oliveira
+# Author: Rogerio Nunes Oliveira
 # Date: 2026-02-12
 # Version: 1.0
 
@@ -328,6 +328,106 @@ testthat::test_that("reset clears mapping state and keeps processed_data contrac
             out_after <- processed_data()
             testthat::expect_true(is.data.frame(out_after))
             testthat::expect_true("occurrenceID" %in% names(out_after))
+        }
+    )
+})
+
+# Reset used to clear a hand-picked list of inputs and left every fixed value
+# on, so the export kept filling all rows with the old value.
+testthat::test_that("reset turns off every fixed value", {
+    df <- data.frame(
+        especie = c("Panthera onca", "Leopardus pardalis"),
+        pais = c("Peru", "Chile"),
+        stringsAsFactors = FALSE
+    )
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(
+            raw_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$setInputs(map_scientificName = "especie", map_country = "pais")
+            for (term in setdiff(constant_value_terms(), "basisOfRecord")) {
+                do.call(session$setInputs, stats::setNames(
+                    list(TRUE, paste("fixed", term)),
+                    paste0(c("usecustom_", "custom_"), term)
+                ))
+            }
+            session$setInputs(usecustom_basisOfRecord = TRUE, custom_basisOfRecord = "HumanObservation")
+            testthat::expect_setequal(names(custom_values_r()), constant_value_terms())
+            testthat::expect_identical(unique(processed_data()$country), "fixed country")
+
+            session$setInputs(confirm_reset = 1)
+            session$flushReact()
+
+            testthat::expect_length(enabled_fixed_values(rv$fixed_values), 0L)
+            testthat::expect_false(any(constant_value_terms() %in% names(custom_values_r())))
+            testthat::expect_false(any(constant_value_terms() %in% names(processed_data())))
+
+            # A column picked after the reset is read again, not the old value.
+            session$setInputs(map_country = NULL)
+            session$setInputs(map_country = "pais")
+            testthat::expect_identical(processed_data()$country, c("Peru", "Chile"))
+        }
+    )
+})
+
+# A fixed value belongs to the file it was set for. The next upload read its own
+# country column as "Brasil" from the previous file. The dataset metadata stays.
+testthat::test_that("a new upload turns off the fixed values and keeps the dataset metadata", {
+    first <- data.frame(especie = "Panthera onca", stringsAsFactors = FALSE)
+    second <- data.frame(especie = "Leopardus pardalis", pais = "Chile", stringsAsFactors = FALSE)
+    raw_r <- shiny::reactiveVal(first)
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(raw_data_r = raw_r, lang_r = shiny::reactive("en")),
+        {
+            session$flushReact()
+            session$setInputs(usecustom_country = TRUE, custom_country = "Brasil",
+                              custom_datasetName = "Survey 2026")
+            testthat::expect_identical(custom_values_r()$country, "Brasil")
+
+            raw_r(second)
+            session$flushReact()
+            testthat::expect_length(enabled_fixed_values(rv$fixed_values), 0L)
+            testthat::expect_null(custom_values_r()$country)
+            testthat::expect_identical(custom_values_r()$datasetName, "Survey 2026")
+
+            session$setInputs(map_scientificName = "especie", map_country = "pais")
+            testthat::expect_identical(processed_data()$country, "Chile")
+        }
+    )
+})
+
+# Columns whose names differ only in punctuation used to share their inputs.
+testthat::test_that("each measurement and JSON key column reads its own input", {
+    df <- data.frame(
+        `body length` = "10", `body-length` = "20",
+        check.names = FALSE, stringsAsFactors = FALSE
+    )
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(raw_data_r = shiny::reactive(df), lang_r = shiny::reactive("en")),
+        {
+            cols <- names(df)
+            # The data load observer resets the extra terms on the first flush.
+            session$flushReact()
+            rv$extra_terms <- "measurementValue"
+            session$flushReact()
+            # Both default JSON keys are body_length until the keys below arrive.
+            suppressWarnings(
+                session$setInputs(map_measurementValue = cols, map_dynamicProperties = cols)
+            )
+            do.call(session$setInputs, stats::setNames(
+                list("Body length", "Head-body length", "k1", "k2"),
+                c(column_input_id("mof_type_", cols), column_input_id("dynprops_key_", cols))
+            ))
+            testthat::expect_identical(rv$measurement_specs[["body length"]]$measurementType, "Body length")
+            testthat::expect_identical(rv$measurement_specs[["body-length"]]$measurementType, "Head-body length")
+            testthat::expect_identical(rv$dyn_props_keys, list(`body length` = "k1", `body-length` = "k2"))
         }
     )
 })
@@ -743,7 +843,7 @@ testthat::test_that("dynamicProperties observer captures per-column key override
             )
 
             # User overrides the second column's key
-            session$setInputs(dynprops_key_protect_area_type = "type")
+            session$setInputs(dynprops_key_protect_5farea_5ftype = "type")
             session$flushReact()
 
             testthat::expect_identical(rv$dyn_props_keys[["protect_area_type"]], "type")
@@ -755,7 +855,7 @@ testthat::test_that("dynamicProperties observer captures per-column key override
             )
 
             # Blanking the override returns to auto-derived
-            session$setInputs(dynprops_key_protect_area_type = "")
+            session$setInputs(dynprops_key_protect_5farea_5ftype = "")
             session$flushReact()
 
             testthat::expect_null(rv$dyn_props_keys[["protect_area_type"]])
@@ -1882,7 +1982,7 @@ testthat::test_that("a fixed country value opens the coordinate gate", {
             session$setInputs(usecustom_country = TRUE)
             session$flushReact()
             testthat::expect_true(
-                is_field_mapped("country", rv$map_values[["country"]], input)
+                is_field_mapped("country", rv$map_values[["country"]], input, rv$fixed_values)
             )
         }
     )
