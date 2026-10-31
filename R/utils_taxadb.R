@@ -30,40 +30,12 @@ taxadb_expected_columns <- function() {
     )
 }
 
-strip_taxadb_token <- function(token) {
-    gsub("^[^A-Za-z0-9x.-]+|[^A-Za-z0-9x.-]+$", "", token)
-}
-
-format_scientific_tokens <- function(tokens, rank_tokens) {
-    if (length(tokens) == 0L) {
-        return(tokens)
-    }
-
-    formatted <- tokens
-    for (idx in seq_along(tokens)) {
-        token <- tokens[[idx]]
-        lower <- tolower(token)
-
-        if (lower %in% rank_tokens) {
-            formatted[[idx]] <- lower
-            next
-        }
-
-        if (lower %in% c("x")) {
-            formatted[[idx]] <- lower
-            next
-        }
-
-        if (idx == 1L) {
-            formatted[[idx]] <- paste0(toupper(substr(lower, 1, 1)), substr(lower, 2, nchar(lower)))
-        } else {
-            formatted[[idx]] <- lower
-        }
-    }
-
-    formatted
-}
-
+# The name to query, built from the same parse as canonicalName (SP-09).
+# The two differ on purpose in two cases:
+#   - "Panthera sp." names no species: canonicalName is "Panthera", the query is NA.
+#   - Text after the name that is not an authorship ("Panthera onca juvenile"):
+#     canonicalName is NA so the cell stays as typed, the query is the name.
+# The options add the qualifier after the genus and the authorship as typed.
 normalize_scientific_name <- function(
   name,
   remove_authors = TRUE,
@@ -75,120 +47,27 @@ normalize_scientific_name <- function(
     if (is_blank_value(name)) {
         return(NA_character_)
     }
-
-    value <- gsub("\\s+", " ", trimws(as.character(name)))
-
     # A placeholder, two names in one cell, a hybrid formula or an
-    # abbreviated genus has no single name to query. "P. onca" finds
-    # nothing, and a hybrid must not match one of its parents.
-    if (scientific_name_kind(value) != "name") {
+    # abbreviated genus parses to no genus: "P. onca" finds nothing, and a
+    # hybrid must not match one of its parents.
+    parts <- parse_scientific_name(name)
+    head <- if (is.na(parts$genus)) parts$uninomial else parts$genus
+    if (is.na(head)) {
         return(NA_character_)
     }
-    value <- trimws(sub("\\?+$", "", value))
-    value <- sub(name_unidentified_prefix_re, "", fold_name_diacritics(value), ignore.case = TRUE)
-
-    if (remove_authors) {
-        value <- gsub("\\([^\\)]*\\)|\\[[^]]*\\]", " ", value)
-    }
-
-    value <- gsub("\\s+", " ", trimws(value))
-    if (!nzchar(value)) {
+    qualifier <- sub("\\s*\\?$", "", parts$identificationQualifier)
+    no_species <- identical(parts$taxonRank, "genus") &&
+        grepl("^spp?\\.?( |$)", qualifier, ignore.case = TRUE)
+    if (ignore_qualifiers && no_species) {
         return(NA_character_)
     }
-
-    rank_tokens <- c("subsp", "subsp.", "var", "var.", "f", "f.", "forma")
-    qualifier_tokens <- c("cf", "cf.", "aff", "aff.", "nr", "nr.", "sp", "sp.", "spp", "spp.")
-    # A life stage or a sex typed after the name is not an epithet.
-    noise_tokens <- setdiff(name_non_epithet_words, c(qualifier_tokens, "x"))
-
-    raw_tokens <- strsplit(value, " ", fixed = TRUE)[[1]]
-    tokens <- unname(vapply(raw_tokens, strip_taxadb_token, FUN.VALUE = character(1)))
-    # The author test needs the comma or the year that strip_taxadb_token()
-    # removes, so it reads the typed tokens.
-    evidence <- vapply(seq_along(raw_tokens), function(i) author_evidence(raw_tokens, i), logical(1))
-    kept <- nzchar(tokens) & !(tolower(tokens) %in% noise_tokens)
-    tokens <- tokens[kept]
-    evidence <- evidence[kept]
-
-    if (length(tokens) == 0L) {
-        return(NA_character_)
-    }
-
-    if (remove_authors) {
-        author_connectors <- c("ex", "in", "et", "al.", "and", "&")
-        keep <- logical(length(tokens))
-        epithet_seen <- FALSE
-        for (idx in seq_along(tokens)) {
-            token <- tokens[[idx]]
-            lower <- tolower(token)
-
-            if (idx == 1L) {
-                keep[[idx]] <- TRUE
-                next
-            }
-
-            if (lower %in% c(rank_tokens, qualifier_tokens)) {
-                keep[[idx]] <- TRUE
-                next
-            }
-
-            if (lower %in% author_connectors) {
-                keep[[idx]] <- FALSE
-                next
-            }
-
-            if (grepl("^[0-9]{4}$", token)) {
-                keep[[idx]] <- FALSE
-                next
-            }
-
-            # The first word after the genus is the epithet even with a
-            # capital ("Mimus Saturninus", "PANTHERA ONCA"), unless
-            # author_evidence() finds a comma or a year ("Panthera Oken, 1816").
-            if (grepl("^[A-Z]", token) && (epithet_seen || evidence[[idx]])) {
-                keep[[idx]] <- FALSE
-                next
-            }
-
-            keep[[idx]] <- TRUE
-            epithet_seen <- TRUE
-        }
-        tokens <- tokens[keep]
-    }
-
-    if (length(tokens) == 0L) {
-        return(NA_character_)
-    }
-
-    if (ignore_qualifiers) {
-        sp_at <- which(tolower(tokens) %in% c("sp", "sp.", "spp", "spp."))
-        had_sp_marker <- length(sp_at) > 0L
-        # "Scinax sp. nov. 1": what follows the marker is not part of a name.
-        if (had_sp_marker) tokens <- tokens[seq_len(sp_at[[1L]] - 1L)]
-        tokens <- tokens[!(tolower(tokens) %in% qualifier_tokens)]
-        if (length(tokens) == 1L && had_sp_marker) {
-            return(NA_character_)
-        }
-    }
-
-    tokens <- tokens[nzchar(tokens)]
-    if (length(tokens) == 0L) {
-        return(NA_character_)
-    }
-
-    # "Panthera onca." ends a sentence, not an abbreviation.
-    last <- length(tokens)
-    if (!tolower(tokens[[last]]) %in% c(rank_tokens, qualifier_tokens)) {
-        tokens[[last]] <- sub("\\.$", "", tokens[[last]])
-    }
-    tokens <- format_scientific_tokens(tokens, rank_tokens)
-    normalized <- gsub("\\s+", " ", trimws(paste(tokens, collapse = " ")))
-
-    if (!nzchar(normalized)) {
-        return(NA_character_)
-    }
-
-    normalized
+    pieces <- c(
+        head,
+        if (!ignore_qualifiers) qualifier,
+        parts$specificEpithet, parts$infraspecific,
+        if (!remove_authors) parts$scientificNameAuthorship
+    )
+    paste(pieces[!is.na(pieces) & nzchar(pieces)], collapse = " ")
 }
 
 prepare_taxadb_inputs <- function(

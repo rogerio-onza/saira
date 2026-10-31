@@ -114,8 +114,13 @@ infraspecific_rank_markers <- function() {
         "subsp" = "subspecies", "subsp." = "subspecies",
         "ssp" = "subspecies", "ssp." = "subspecies",
         "var" = "variety", "var." = "variety",
-        "f" = "form", "f." = "form", "forma" = "form"
+        "f" = "form", "f." = "form", "forma" = "form", "form" = "form", "form." = "form"
     )
+}
+
+# A capital "F." is an author initial ("F. Muller"), not the form marker.
+is_rank_marker <- function(token) {
+    tolower(token) %in% names(infraspecific_rank_markers()) && !grepl("^[A-Z]\\.?$", token)
 }
 
 # The marker as the name writes it, for each taxonRank.
@@ -128,6 +133,21 @@ name_non_epithet_words <- c(
     "indet", "indet.", "juvenile", "juvenil", "jovem", "adult", "adulto",
     "adulta", "macho", "femea", "male", "female"
 )
+
+# Surname particles that open an authorship: "da Silva", "van der Werff",
+# "Rocha e Silva".
+author_particles <- c("da", "das", "de", "del", "della", "der", "des", "di",
+                      "do", "dos", "du", "e", "la", "le", "ten", "ter", "van",
+                      "von", "y", "zu")
+
+# A particle counts only before a capitalised word or another particle, so a
+# lowercase epithet keeps its place.
+is_author_particle <- function(tokens, i) {
+    if (!(tolower(tokens[[i]]) %in% author_particles) || i >= length(tokens)) {
+        return(FALSE)
+    }
+    grepl("^[A-Z]", tokens[[i + 1L]]) || is_author_particle(tokens, i + 1L)
+}
 
 # Diacritics have no place in a scientific name (ICN Art. 60.6, ICZN Art. 27):
 # "araraúna" is "ararauna" and "onça" is "onca". The old token filter cut the
@@ -190,6 +210,7 @@ author_evidence <- function(tokens, i) {
         nxt <- tokens[[i + 1L]]
         if (grepl("^\\(?[0-9]{4}\\)?[,.;]?$", nxt)) return(TRUE)
         if (tolower(nxt) %in% c("&", "ex", "et", "and", "in")) return(TRUE)
+        if (is_author_particle(tokens, i + 1L)) return(TRUE)
     }
     FALSE
 }
@@ -218,7 +239,7 @@ higher_rank_of <- function(word) {
 # digits and the usual punctuation. "(cultivado)", "[antigo]" and an emoji
 # are not authorship.
 plausible_authorship <- function(rest) {
-    grepl("^\\(?([A-Z]|d'|de |da |do |du |van |von |la |le )", rest) &&
+    grepl(paste0("^\\(?([A-Z]|d'|(", paste(author_particles, collapse = "|"), ") )"), rest) &&
         grepl("^[[:alpha:][:space:].,&'()0-9-]+$", rest)
 }
 
@@ -237,59 +258,54 @@ extract_infraspecific_part <- function(tokens, start) {
         return(NULL)
     }
 
+    # The marker form can repeat down the ranks ("var. pallidum f.
+    # oblongifolium"). The last rank names the taxon, and `text` keeps the
+    # whole chain so a form never reads as its variety. `used` counts the
+    # tokens the part consumed.
     markers <- infraspecific_rank_markers()
-    marker_idx <- match(tolower(tokens[[start]]), names(markers))
-    if (!is.na(marker_idx)) {
-        if (length(tokens) < start + 1L) {
-            return(NULL)
-        }
-        epithet <- format_epithet_token(tokens[[start + 1L]])
-        if (is.na(epithet)) {
-            return(NULL)
-        }
-        rank <- unname(markers[[marker_idx]])
-        return(list(
-            infraspecificEpithet = epithet,
-            taxonRank = rank,
-            marker = unname(infraspecific_marker_text[[rank]])
-        ))
+    pos <- start
+    chain <- character()
+    while (pos < length(tokens) && is_rank_marker(tokens[[pos]]) &&
+           !is_rank_marker(tokens[[pos + 1L]])) {
+        next_epithet <- format_epithet_token(tokens[[pos + 1L]])
+        if (is.na(next_epithet)) break
+        epithet <- next_epithet
+        rank <- unname(markers[[tolower(tokens[[pos]])]])
+        chain <- c(chain, infraspecific_marker_text[[rank]], epithet)
+        pos <- pos + 2L
+    }
+    if (length(chain) > 0L) {
+        return(list(infraspecificEpithet = epithet, taxonRank = rank,
+                    text = paste(chain, collapse = " "), used = pos - start))
     }
 
     if (!grepl("^[a-z][a-z-]*$", tokens[[start]]) ||
-        tolower(tokens[[start]]) %in% name_non_epithet_words) {
+        tolower(tokens[[start]]) %in% name_non_epithet_words ||
+        is_author_particle(tokens, start)) {
         return(NULL)
     }
     epithet <- format_epithet_token(tokens[[start]])
     if (is.na(epithet)) {
         return(NULL)
     }
-    list(infraspecificEpithet = epithet, taxonRank = "subspecies", marker = NA_character_)
+    list(infraspecificEpithet = epithet, taxonRank = "subspecies", text = epithet, used = 1L)
 }
 
-extract_scientific_name_components <- function(scientific_names) {
-    # Parse over UNIQUE names and expand back: the genus/epithet/rank of a row
-    # depends only on its scientificName, and a dataset repeats a handful of
-    # species across thousands of rows (camera traps especially). The per-name
-    # regex (gsub/sub/trimws via format_*_token) is otherwise the dominant cost
-    # of build_processed_mapping_df. (LESSONS: unique -> resolve -> match back.)
-    sn <- as.character(scientific_names)
-    if (length(sn) > 1L) {
-        u <- unique(sn)
-        if (length(u) < length(sn)) {
-            res_u <- extract_scientific_name_components(u)
-            out <- res_u[match(sn, u), , drop = FALSE]
-            rownames(out) <- NULL
-            return(out)
-        }
-    }
+scientific_name_fields <- c(
+    "genus", "specificEpithet", "infraspecificEpithet", "taxonRank",
+    "scientificNameAuthorship", "identificationQualifier", "canonicalName",
+    "nameIssue"
+)
 
+# One parse of a scientificName cell. The mapping reads canonicalName and the
+# taxon terms from it, and normalize_scientific_name() builds the name query
+# from it, so both agree on the genus, the epithets and the marker (SP-09).
+# Next to the Darwin Core fields it keeps `uninomial` and `infraspecific` (the
+# rank chain as written, "subsp. concolor") for the query.
+parse_scientific_name <- function(value) {
     unknown_markers <- c("sp", "sp.", "spp", "spp.")
     qualifier_markers <- c("cf", "cf.", "aff", "aff.", "nr", "nr.")
-    fields <- c(
-        "genus", "specificEpithet", "infraspecificEpithet", "taxonRank",
-        "scientificNameAuthorship", "identificationQualifier", "canonicalName",
-        "nameIssue"
-    )
+    fields <- c(scientific_name_fields, "uninomial", "infraspecific")
     blank_result <- stats::setNames(as.list(rep(NA_character_, length(fields))), fields)
 
     # An epithet and a bare author occupy the same position ("Panthera onca" vs
@@ -301,6 +317,10 @@ extract_scientific_name_components <- function(scientific_names) {
     # authorship when author_evidence() finds a comma, a year or a connector.
     looks_like_author <- function(tokens, i) {
         token <- tokens[[i]]
+        # An initial ("L.", "DC.", "P. Fischer", "O.Berg") is never an epithet.
+        if (grepl("^[A-Z]{1,2}\\.", token) || is_author_particle(tokens, i)) {
+            return(TRUE)
+        }
         grepl("^[A-Z]", token) && !identical(token, toupper(token)) &&
             author_evidence(tokens, i)
     }
@@ -317,8 +337,9 @@ extract_scientific_name_components <- function(scientific_names) {
         out$infraspecificEpithet <- if (is.null(infra)) NA_character_ else infra$infraspecificEpithet
         out$taxonRank <- rank
         out$identificationQualifier <- qualifier
-        marker <- if (is.null(infra)) NA_character_ else infra$marker
-        pieces <- c(uninomial, genus, specific, marker, out$infraspecificEpithet)
+        out$uninomial <- uninomial
+        out$infraspecific <- if (is.null(infra)) NA_character_ else infra$text
+        pieces <- c(uninomial, genus, specific, out$infraspecific)
         out$canonicalName <- paste(pieces[!is.na(pieces)], collapse = " ")
         if (!is.na(rest)) {
             if (!plausible_authorship(rest)) {
@@ -400,6 +421,18 @@ extract_scientific_name_components <- function(scientific_names) {
         if (is.na(genus)) {
             return(blank_result)
         }
+        # A bracket after the genus is a subgenus when an epithet follows it
+        # ("Panthera (Panthera) onca", "Arrenurus (Incertae sedis) acutiepimeratus").
+        # Without an epithet it opens the authorship ("Leptodictyum (Schimp.) Warnst.").
+        if (length(tokens) > 2L && grepl("^\\([A-Z]", tokens[[2]])) {
+            close <- which(grepl(")", tokens, fixed = TRUE))
+            close <- close[close >= 2L][1]
+            if (!is.na(close) && close < length(tokens) &&
+                grepl("^[a-z]", tokens[[close + 1L]]) && !is_author_particle(tokens, close + 1L)) {
+                tokens <- tokens[-seq(2L, close)]
+                raw_tokens <- raw_tokens[-seq(2L, close)]
+            }
+        }
 
         # `start` is the first token the genus did not account for, so a name
         # given at genus rank still yields its author ("Panthera Oken, 1816").
@@ -438,7 +471,7 @@ extract_scientific_name_components <- function(scientific_names) {
         }
         qualifier_all <- join_qualifier(qualifier, doubt)
 
-        if (looks_like_author(tokens, epithet_at)) {
+        if (grepl("^\\(", tokens[[epithet_at]]) || looks_like_author(tokens, epithet_at)) {
             return(genus_only(epithet_at, qualifier = qualifier_all))
         }
         specific <- format_epithet_token(tokens[[epithet_at]])
@@ -448,32 +481,69 @@ extract_scientific_name_components <- function(scientific_names) {
 
         start <- epithet_at + 1L
         infra <- extract_infraspecific_part(tokens, start)
+        # Botanical names put the species author before the rank
+        # ("Inga nobilis Willd. subsp. nobilis"). That author is the
+        # authorship only when none follows the infraspecific epithet.
+        species_author <- NA_character_
+        if (is.null(infra) && length(tokens) > start + 1L) {
+            for (k in seq(start + 1L, length(tokens) - 1L)) {
+                if (!is_rank_marker(tokens[[k]])) next
+                author <- paste(raw_tokens[start:(k - 1L)], collapse = " ")
+                infra <- if (plausible_authorship(author)) extract_infraspecific_part(tokens, k)
+                if (!is.null(infra)) {
+                    species_author <- author
+                    start <- k
+                    break
+                }
+            }
+        }
         # An infraspecific epithet consumes tokens; authorship is whatever sits
-        # after it. The marker form ("subsp. concolor") consumes two.
+        # after it.
         if (!is.null(infra)) {
-            start <- start + if (is.na(infra$marker)) 1L else 2L
+            start <- start + infra$used
         }
         # A qualifier typed after the name ("Panthera onca cf").
         if (length(tokens) >= start && tolower(tokens[[start]]) %in% qualifier_markers) {
             qualifier_all <- join_qualifier(qualifier_text(tokens[[start]]), qualifier_all)
             start <- start + 1L
         }
+        rest <- rest_from(raw_tokens, start)
         make_result(
             genus, specific, infra,
             rank = if (is.null(infra)) "species" else infra$taxonRank,
-            rest = rest_from(raw_tokens, start),
+            rest = if (is.na(rest)) species_author else rest,
             qualifier = qualifier_all
         )
     }
 
-    parsed <- lapply(scientific_names, parse_one)
+    parse_one(value)
+}
+
+extract_scientific_name_components <- function(scientific_names) {
+    # Parse over UNIQUE names and expand back: the genus/epithet/rank of a row
+    # depends only on its scientificName, and a dataset repeats a handful of
+    # species across thousands of rows (camera traps especially). The per-name
+    # regex (gsub/sub/trimws via format_*_token) is otherwise the dominant cost
+    # of build_processed_mapping_df. (LESSONS: unique -> resolve -> match back.)
+    sn <- as.character(scientific_names)
+    if (length(sn) > 1L) {
+        u <- unique(sn)
+        if (length(u) < length(sn)) {
+            res_u <- extract_scientific_name_components(u)
+            out <- res_u[match(sn, u), , drop = FALSE]
+            rownames(out) <- NULL
+            return(out)
+        }
+    }
+
+    parsed <- lapply(scientific_names, parse_scientific_name)
 
     pluck <- function(field) {
         vapply(parsed, function(x) x[[field]], FUN.VALUE = character(1))
     }
 
-    out <- lapply(fields, pluck)
-    names(out) <- fields
+    out <- lapply(scientific_name_fields, pluck)
+    names(out) <- scientific_name_fields
     as.data.frame(out, stringsAsFactors = FALSE)
 }
 
