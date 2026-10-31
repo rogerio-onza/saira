@@ -38,6 +38,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **build:** Build the Darwin Core catalogs from the TDWG list and one base terms file, in one script, ADR-189
 - **site:** Show the install options on the landing page as three cards with the Windows, Linux and R logos: the app for Windows or Linux (the `.deb` on Ubuntu 24.04 or later), or the R package. The card of the visitor's system gets the filled button. Put Install first in the hero. Remove the open data section
 - **site:** Scramble the hero record card text to the next species when the photo changes
 - **site:** Serve the analytics tracker from the site, not from an outside address, ADR-183
