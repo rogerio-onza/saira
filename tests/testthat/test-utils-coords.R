@@ -458,6 +458,59 @@ testthat::test_that("coords_cc_sea_flagged falls back to scale 50 globally when 
     testthat::expect_identical(calls[[1]]$scale, 50L)
 })
 
+testthat::test_that("coords_cc_sea_flagged marks the rows of a failed run as unchecked (SP-06)", {
+    testthat::local_mocked_bindings(
+        coords_load_ne_land = function(scale, download = TRUE) {
+            if (identical(as.integer(scale), 10L)) "ref10" else "ref50"
+        },
+        coords_ne_land_coverage_ref = function(scale = 10L, download = TRUE) "coverage10",
+        coords_ne_land_coverage_boxes = function(scale = 10L, download = TRUE) NULL,
+        coords_points_in_coverage = function(x, coverage_ref = NULL, coverage_boxes = NULL, margin = 0) {
+            c(TRUE, FALSE, TRUE)
+        },
+        coords_cc_sea_run = function(x, ref = NULL, scale = NULL, timeout = NULL, crop_ref = FALSE) {
+            if (identical(ref, "ref10")) simpleError("forced sea failure") else rep(FALSE, nrow(x))
+        },
+        .package = "saira"
+    )
+    x <- data.frame(decimalLatitude = c(-10, 40, -11), decimalLongitude = c(-50, 20, -51))
+
+    flagged <- testthat::expect_warning(coords_cc_sea_flagged(x, scale = 10L), "not run for 2 row")
+    testthat::expect_identical(as.vector(flagged), c(TRUE, FALSE, TRUE))
+    testthat::expect_identical(attr(flagged, "unchecked"), c(TRUE, FALSE, TRUE))
+    testthat::expect_identical(attr(flagged, "errors"), "forced sea failure")
+})
+
+testthat::test_that("a sea check timeout marks every row as unchecked", {
+    testthat::local_mocked_bindings(
+        coords_load_ne_land = function(scale, download = TRUE) "ref50",
+        coords_with_optional_time_limit = function(fn, timeout = NULL) stop("reached elapsed time limit"),
+        .package = "saira"
+    )
+    x <- data.frame(decimalLatitude = c(-10, 10), decimalLongitude = c(-50, -51))
+    flagged <- testthat::expect_warning(coords_cc_sea_flagged(x, scale = 50L), "time limit")
+    testthat::expect_identical(attr(flagged, "unchecked"), c(TRUE, TRUE))
+})
+
+testthat::test_that("validate_coords_cc_df reports a sea check that did not run (SP-06)", {
+    testthat::local_mocked_bindings(
+        coords_assert_cc_dependencies = function() NULL,
+        coords_country_to_iso3 = function(country_values) rep("BRA", length(country_values)),
+        coords_cc_sea_flagged = function(x, scale, timeout = NULL) {
+            structure(rep(TRUE, nrow(x)), unchecked = rep(TRUE, nrow(x)), errors = "forced sea failure")
+        },
+        coords_cc_flagged = function(fun_name, x, ...) rep(TRUE, nrow(x)),
+        .package = "saira"
+    )
+    df <- data.frame(decimalLatitude = c(-10, -11, NA), decimalLongitude = c(-50, -51, NA),
+                     country = "Brasil", stringsAsFactors = FALSE)
+    out <- validate_coords_cc_df(df = df, lat_col = "decimalLatitude", lon_col = "decimalLongitude",
+                                 country_col = "country", profile = "fast")
+    testthat::expect_identical(out$flag_sea_unchecked, c(TRUE, TRUE, FALSE))
+    testthat::expect_identical(attr(out, "sea_check"),
+                               list(status = "failed", unchecked = 2L, errors = "forced sea failure"))
+})
+
 testthat::test_that("coords_crop_land_ref reduces geometry without changing cc_sea result", {
     testthat::skip_if_not_installed("CoordinateCleaner")
     ref <- coords_load_ne_land(10L, download = FALSE)

@@ -747,6 +747,16 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     )
                 }
 
+                # A sea check that did not run is not an approval (SP-06).
+                sea_check <- attr(result, "sea_check")
+                if (is.list(sea_check) && isTRUE(sea_check$unchecked > 0L)) {
+                    notify_saira(
+                        message = sprintf(tr("validate_coords_sea_unchecked", lang_r()), sea_check$unchecked),
+                        type = "warning",
+                        key = "coords_sea_unchecked"
+                    )
+                }
+
                 conversion <- attr(result, "conversion_failures")
                 total_conversion_failures <- suppressWarnings(as.integer(conversion$total))
                 if (length(total_conversion_failures) == 1L &&
