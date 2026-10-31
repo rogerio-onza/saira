@@ -384,6 +384,11 @@
     "en": "Some generalized species lack the written justification required for categories 1–3.",
     "es": "Hay especies generalizadas sin la justificación escrita que exigen las categorías 1–3."
   },
+  "export_blocked_source_failed": {
+    "pt": "Não foi possível ler uma decisão destas etapas: %s. Abra essas etapas de novo e confira. A exportação fica bloqueada até lá.",
+    "en": "A decision from these steps could not be read: %s. Open these steps again and check them. Export stays blocked until then.",
+    "es": "No se pudo leer una decisión de estas etapas: %s. Abra esas etapas de nuevo y revíselas. La exportación queda bloqueada hasta entonces."
+  },
   "export_blocked_bor_blank": {
     "pt": "basisOfRecord vazio em %d registro(s). A célula da planilha está vazia ou tem um valor sem termo DwC. Escolha o termo no assistente do card basisOfRecord. Linhas:",
     "en": "basisOfRecord is empty in %d record(s). The spreadsheet cell is empty or has a value with no DwC term. Select the term with the assistant on the basisOfRecord card. Rows:",

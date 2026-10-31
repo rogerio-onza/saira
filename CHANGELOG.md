@@ -107,6 +107,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **export:** Stop the export when a step's decision cannot be read, not treat it as no decision, ADR-189
 - **generalization:** Write the published point in every copy of a protected point, in any text field or format, ADR-185
 - **occurrenceID:** Give a new copy of a row with kept IDs an ID of its own, ADR-186
 - **eventDate:** Fail a day with a fraction in a split date

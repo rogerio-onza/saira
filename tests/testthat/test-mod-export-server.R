@@ -281,3 +281,50 @@ testthat::test_that("mod_export_server shows no alias receipt before an export",
         }
     )
 })
+
+testthat::test_that("mod_export_server blocks the summary and the download when a decision fails (SP-01)", {
+    learned <- FALSE
+    shiny::testServer(
+        mod_export_server,
+        args = list(
+            mapped_data_r = shiny::reactive(complete_df()),
+            coords_correction_payload_r = shiny::reactive(stop("injected correction failure")),
+            lang_r = shiny::reactive("en"),
+            on_export_success = function() learned <<- TRUE
+        ),
+        {
+            suppressWarnings(session$flushReact())
+            s <- suppressWarnings(summary_r())
+            testthat::expect_true(s$export_blocked)
+            testthat::expect_identical(s$failed_sources, "coords_correction")
+            html <- paste(suppressWarnings(output$summary$html), collapse = " ")
+            testthat::expect_match(html, "could not be read: Coordinates", fixed = TRUE)
+            zip_path <- suppressWarnings(output$download_real)
+            testthat::expect_identical(zip::zip_list(zip_path)$filename, "export_error.csv")
+        }
+    )
+    testthat::expect_false(learned)
+})
+
+testthat::test_that("every export source that fails blocks the summary and the download (SP-01)", {
+    arg_of <- c(
+        name_review = "name_review_payload_r", coords_correction = "coords_correction_payload_r",
+        country_fill = "country_fill_payload_r", sensitivity = "sensitivity_payload_r",
+        generalization = "sensitive_generalization_payload_r", conservation = "conservation_payload_r",
+        raw_data = "raw_data_r", map_values = "map_values_r", custom_values = "custom_values_r",
+        rows_left_out = "rows_left_out_r", preview_changes = "preview_changes_r",
+        measurement_specs = "measurement_specs_r", occurrence_id_info = "occurrence_id_info_r"
+    )
+    for (source in names(arg_of)) {
+        args <- list(mapped_data_r = shiny::reactive(complete_df()), lang_r = shiny::reactive("en"))
+        args[[arg_of[[source]]]] <- shiny::reactive(stop("injected failure"))
+        shiny::testServer(mod_export_server, args = args, {
+            suppressWarnings(session$flushReact())
+            s <- suppressWarnings(summary_r())
+            testthat::expect_true(s$export_blocked, info = source)
+            testthat::expect_identical(s$failed_sources, source, info = source)
+            zip_path <- suppressWarnings(output$download_real)
+            testthat::expect_identical(zip::zip_list(zip_path)$filename, "export_error.csv", info = source)
+        })
+    }
+})

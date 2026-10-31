@@ -20,3 +20,26 @@ optional_reactive_value <- function(value_r, default = NULL) {
     if (!shiny::is.reactive(value_r)) stop("Expected an optional reactive.", call. = FALSE)
     value_r()
 }
+
+# Reads each optional source once. NULL is an absent source and gives its
+# default. A req() stop means "not ready" and also gives the default. Any other
+# error is a decision that exists but failed: the source name and message go to
+# `failed`, so the caller can block instead of reading it as "no decision".
+capture_sources <- function(sources, defaults = list()) {
+    values <- list()
+    failed <- character(0)
+    for (name in names(sources)) {
+        default <- defaults[[name]]
+        result <- tryCatch(
+            list(value = optional_reactive_value(sources[[name]], default)),
+            shiny.silent.error = function(e) list(value = default),
+            error = function(e) list(value = default, error = conditionMessage(e))
+        )
+        values[name] <- list(result$value)
+        if (!is.null(result$error)) {
+            failed[[name]] <- result$error
+            warning("[export] Could not read ", name, ": ", result$error, call. = FALSE)
+        }
+    }
+    list(values = values, failed = failed)
+}

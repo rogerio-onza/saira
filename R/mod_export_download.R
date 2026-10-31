@@ -6,23 +6,13 @@
 # Real coordinates are written only by the separate private download.
 
 #' Mount the DwC-A export download flow inside a module server
+#' @param sources Named list of the export decision sources (reactives or
+#'   NULL), the one list the export summary also captures.
 #' @noRd
 mount_export_download <- function(input, output, session, lang_r,
                                   mapped_data_r,
                                   download_data_r,
-                                  name_review_payload_r = NULL,
-                                  sensitivity_payload_r = NULL,
-                                  sensitive_generalization_payload_r = NULL,
-                                  conservation_payload_r = NULL,
-                                  raw_data_r = NULL,
-                                  map_values_r = NULL,
-                                  custom_values_r = NULL,
-                                  occurrence_id_info_r = NULL,
-                                  coords_correction_payload_r = NULL,
-                                  country_fill_payload_r = NULL,
-                                  rows_left_out_r = NULL,
-                                  preview_changes_r = NULL,
-                                  measurement_specs_r = NULL,
+                                  sources = list(),
                                   blocked_r = NULL,
                                   on_export_success = NULL) {
     ns <- session$ns
@@ -54,13 +44,13 @@ mount_export_download <- function(input, output, session, lang_r,
                 isTRUE(blocked_r())
             } else {
                 isTRUE(build_export_summary(
-                    mapped_data_r(), name_review_payload = export_name_review_payload(),
-                    coords_correction_payload = optional_reactive_value(coords_correction_payload_r),
-                    country_fill_payload = optional_reactive_value(country_fill_payload_r),
-                    generalization_payload = optional_reactive_value(sensitive_generalization_payload_r),
-                    raw_data = optional_reactive_value(raw_data_r),
-                    map_values = optional_reactive_value(map_values_r),
-                    overridden_terms = overridden_mapping_terms(optional_reactive_value(custom_values_r))
+                    mapped_data_r(), name_review_payload = optional_reactive_value(sources$name_review),
+                    coords_correction_payload = optional_reactive_value(sources$coords_correction),
+                    country_fill_payload = optional_reactive_value(sources$country_fill),
+                    generalization_payload = optional_reactive_value(sources$generalization),
+                    raw_data = optional_reactive_value(sources$raw_data),
+                    map_values = optional_reactive_value(sources$map_values),
+                    overridden_terms = overridden_mapping_terms(optional_reactive_value(sources$custom_values))
                 )$export_blocked)
             }
         })
@@ -101,21 +91,6 @@ mount_export_download <- function(input, output, session, lang_r,
         download_data <- shiny::reactive({
             shiny::req(download_data_r())
             download_data_r()
-        })
-
-        export_name_review_payload <- shiny::reactive({
-            if (is.null(name_review_payload_r) || !shiny::is.reactive(name_review_payload_r)) {
-                return(NULL)
-            }
-            name_review_payload_r()
-        })
-
-        export_sensitivity_payload <- shiny::reactive({
-            if (is.null(sensitivity_payload_r) ||
-                !shiny::is.reactive(sensitivity_payload_r)) {
-                return(NULL)
-            }
-            sensitivity_payload_r()
         })
 
         download_validation <- shiny::reactive({
@@ -346,110 +321,26 @@ mount_export_download <- function(input, output, session, lang_r,
                 type = "warning"
             )
         }, ignoreInit = TRUE)
-        # The steps both downloads share. The private file must hold the same
-        # real points that the bundle generalizes.
-        prepare_masked_rows <- function() {
-            # Transposed-coordinate corrections approved in the coordinate
-            # validation tab (preserves verbatim coords), and the country
-            # derived from coordinates where missing.
-            coords_payload <- if (!is.null(coords_correction_payload_r) &&
-                                  shiny::is.reactive(coords_correction_payload_r)) {
-                tryCatch(coords_correction_payload_r(), error = function(e) NULL)
-            } else {
-                NULL
-            }
-            country_payload <- if (!is.null(country_fill_payload_r) &&
-                                   shiny::is.reactive(country_fill_payload_r)) {
-                tryCatch(country_fill_payload_r(), error = function(e) NULL)
-            } else {
-                NULL
-            }
-
-            raw_df <- if (!is.null(raw_data_r) && shiny::is.reactive(raw_data_r)) {
-                tryCatch(raw_data_r(), error = function(e) data.frame())
-            } else {
-                data.frame()
-            }
-            mv <- if (!is.null(map_values_r) && shiny::is.reactive(map_values_r)) {
-                tryCatch(map_values_r(), error = function(e) list())
-            } else {
-                list()
-            }
-            cv <- if (!is.null(custom_values_r) && shiny::is.reactive(custom_values_r)) {
-                tryCatch(custom_values_r(), error = function(e) list())
-            } else {
-                list()
-            }
-
-            # Generalize coordinates of sensitive/threatened species
-            # before they reach the IPT bundle, each to the grid its
-            # Chapman assessment derived (decided in the Validation >
-            # Coordinates tab, ADR-100); the real coordinates go to a
-            # separate companion file.
-            gen <- if (is.null(sensitive_generalization_payload_r) ||
-                       !shiny::is.reactive(sensitive_generalization_payload_r)) {
-                NULL
-            } else {
-                sensitive_generalization_payload_r()
-            }
-            # Mandatory justification: block export when any record is
-            # generalized to Category 1/2/3 without a written reason
-            # (decided in the Generalization tab).
-            if (is.list(gen) && isTRUE(gen$enabled) &&
-                isTRUE(gen$needs_justification) &&
-                !nzchar(trimws(gen$justification %||% ""))) {
-                shiny::showNotification(
-                    tr("preview_export_needs_justification", lang_r()),
-                    type = "error", duration = 8
-                )
-                shiny::req(FALSE)
-            }
-            # The Export summary already assessed these same inputs.
-            if (isTRUE(export_blocked())) {
-                stop(tr("export_download_blocked", lang_r()), call. = FALSE)
-            }
-            effective <- prepare_effective_records(
-                download_data(), export_name_review_payload(), coords_payload, country_payload
+        # Every export source, read once. A source that fails stops the
+        # download with the message the summary shows (SP-01). The product
+        # itself is built outside Shiny (prepare_export_product()).
+        capture_export_inputs <- function() {
+            src <- capture_sources(
+                sources,
+                defaults = list(raw_data = data.frame(), map_values = list(),
+                                custom_values = list(), rows_left_out = integer(0))
             )
-            # Masks before process_for_export_with_unmapped(): that step turns
-            # the coordinates into numbers, "-19.900" loses its trailing zeros,
-            # and the precision clamp then picks a coarser grid than the
-            # Generalization tab shows.
-            masked <- prepare_publication_records(
-                effective,
-                sensitivity = rekey_sensitivity_decisions(export_sensitivity_payload(), export_name_review_payload()),
-                generalization = gen, lang = lang_r()
-            )
-            # Exact copies the Preview left out. The rows go after the
-            # unmapped columns join, which match the upload by row.
-            drop <- intersect(optional_reactive_value(rows_left_out_r, integer(0)),
-                              seq_len(nrow(effective)))
-            if (length(drop) && nrow(masked$real)) {
-                ids <- if ("occurrenceID" %in% names(effective)) {
-                    as.character(effective$occurrenceID)
-                } else {
-                    as.character(seq_len(nrow(effective)))
-                }
-                masked$real <- masked$real[!masked$real$occurrenceID %in% ids[drop], , drop = FALSE]
+            if (length(src$failed)) {
+                stop(sprintf(tr("export_blocked_source_failed", lang_r()),
+                             export_source_steps(names(src$failed), lang_r())), call. = FALSE)
             }
-            changes <- build_change_log(
-                download_data(), effective, optional_reactive_value(preview_changes_r, NULL),
-                union(masked$rows, generalized_record_rows(effective, gen)), drop
-            )
-            list(masked = masked, gen = gen, cv = cv, raw_df = raw_df, mv = mv, drop = drop,
-                 changes = changes)
+            c(list(download_data = download_data()), src$values)
         }
 
         # The desktop shell asks before it closes when the data changed after
         # the last bundle. The watcher starts after a bundle and suspends at
         # the first change of its inputs, so it never computes them again.
-        bundle_inputs <- c(
-            download_data, export_name_review_payload, export_sensitivity_payload,
-            raw_data_r, map_values_r, custom_values_r, coords_correction_payload_r,
-            country_fill_payload_r, sensitive_generalization_payload_r,
-            conservation_payload_r, occurrence_id_info_r, rows_left_out_r,
-            preview_changes_r, measurement_specs_r
-        )
+        bundle_inputs <- c(download_data, Filter(shiny::is.reactive, sources))
         bundle_watch <- shiny::observe({
             for (r in bundle_inputs) tryCatch(r(), error = function(e) NULL)
             session$sendCustomMessage("saira-bundle-state", "current")
@@ -461,8 +352,8 @@ mount_export_download <- function(input, output, session, lang_r,
 
         output$download_real <- shiny::downloadHandler(
             filename = function() {
-                cv_fn <- if (!is.null(custom_values_r) && shiny::is.reactive(custom_values_r)) {
-                    tryCatch(custom_values_r(), error = function(e) list())
+                cv_fn <- if (shiny::is.reactive(sources$custom_values)) {
+                    tryCatch(sources$custom_values(), error = function(e) list())
                 } else {
                     list()
                 }
@@ -491,64 +382,7 @@ mount_export_download <- function(input, output, session, lang_r,
                         if (isTRUE(export_blocked())) {
                             stop(tr("export_download_blocked", lang_r()), call. = FALSE)
                         }
-                        prep <- prepare_masked_rows()
-                        masked <- prep$masked
-                        gen <- prep$gen
-                        cv <- prep$cv
-                        raw_df <- prep$raw_df
-                        mv <- prep$mv
-
-                        # Add conservation status (MMA and/or IUCN) to
-                        # dynamicProperties, keyed to the providers chosen in the
-                        # Name tab. Runs on the corrected scientificName and after
-                        # the country fill, because the MMA list is national and is
-                        # scoped to records that resolve to Brazil. The GBIF IUCN
-                        # call is optional/non-blocking (NA on any failure).
-                        conservation_payload <- if (!is.null(conservation_payload_r) &&
-                                                    shiny::is.reactive(conservation_payload_r)) {
-                            tryCatch(conservation_payload_r(), error = function(e) NULL)
-                        } else {
-                            NULL
-                        }
-                        # After the mask, so a generalized row outside Brazil
-                        # still gets the MMA category its dataGeneralizations cites.
-                        masked$masked <- apply_conservation_status(
-                            masked$masked, conservation_payload,
-                            generalized = seq_len(nrow(masked$masked)) %in% masked$rows
-                        )
-                        export_data <- process_for_export_with_unmapped(
-                            masked$masked,
-                            raw_data = raw_df,
-                            map_values = mv,
-                            overridden_terms = overridden_mapping_terms(cv),
-                            sensitive_rows = masked$scrub_rows,
-                            sensitive_points = masked$scrub_points
-                        )
-
-                        if (length(prep$drop)) {
-                            id_attr <- attr(export_data, "id_strategy")
-                            export_data <- export_data[-prep$drop, , drop = FALSE]
-                            rownames(export_data) <- NULL
-                            attr(export_data, "id_strategy") <- id_attr
-                        }
-
-                        # GBIF reads no measurement term in the core, so the
-                        # measurements go to their own extension file.
-                        value_column <- if ("measurementValue" %in% overridden_mapping_terms(cv)) {
-                            NULL
-                        } else {
-                            map_value_sources(mv["measurementValue"])[1L]
-                        }
-                        measurement_specs <- if (shiny::is.reactive(measurement_specs_r)) {
-                            tryCatch(measurement_specs_r(), error = function(e) NULL)
-                        }
-                        mof <- split_measurements(export_data, value_column, measurement_specs)
-                        export_data <- mof$core
-
-                        if (formula_like_cells(export_data)$count > 0L ||
-                            formula_like_cells(mof$measurements)$count > 0L) {
-                            stop(tr("export_download_blocked", lang_r()), call. = FALSE)
-                        }
+                        product <- prepare_export_product(capture_export_inputs(), lang_r())
 
                         tmpdir <- tempfile("saira_export_")
                         dir.create(tmpdir, showWarnings = FALSE, recursive = TRUE)
@@ -560,62 +394,28 @@ mount_export_download <- function(input, output, session, lang_r,
                         # names at archive root; the Excel
                         # mirror and mapping guide are renamed after the dataset.
                         # The real coordinates have their own download (ADR-163).
-                        fnames <- export_bundle_filenames(dataset_name = cv$datasetName,
-                                                          n_records = nrow(export_data),
-                                                          has_changes = nrow(prep$changes) > 0L,
-                                                          has_measurements = !is.null(mof$measurements))
+                        fnames <- export_bundle_filenames(dataset_name = product$dataset_name,
+                                                          n_records = nrow(product$core),
+                                                          has_changes = nrow(product$changes) > 0L,
+                                                          has_measurements = !is.null(product$measurements))
                         xlsx_path  <- if (!is.null(fnames$auxiliary$xlsx)) {
                             file.path(tmpdir, fnames$auxiliary$xlsx)
                         }
                         guide_path <- file.path(tmpdir, fnames$auxiliary[["mapping_guide"]])
 
-                        # The mapping stage is what actually resolves the
-                        # identifiers, so it is the only place that knows how
-                        # many came from the user's data. Reading the attribute
-                        # off export_data only ever reported "user_supplied",
-                        # because by then the column is always full.
-                        id_info <- if (!is.null(occurrence_id_info_r) &&
-                                       shiny::is.reactive(occurrence_id_info_r)) {
-                            tryCatch(occurrence_id_info_r(), error = function(e) NULL)
-                        } else {
-                            NULL
-                        }
-                        id_strategy <- id_info$strategy %||% attr(export_data, "id_strategy")
-                        if (is.null(id_strategy)) id_strategy <- NA_character_
-                        # The Preview replaces the ids that still repeat
-                        # after its corrections (ADR-152).
-                        id_counts <- occurrence_id_counts_after_repeats(
-                            id_info$counts, attr(download_data(), "ids_replaced")
-                        )
-                        if (!identical(id_counts, id_info$counts)) {
-                            id_strategy <- occurrence_id_strategy_label(id_counts$preserved, id_counts$total)
-                        }
-
-                        eml_metadata <- publication_metadata(export_data, masked$real, gen, lang_r())
-                        if (!is.null(xlsx_path)) write_xlsx_text_only(export_data, xlsx_path)
-                        writeLines(
-                            build_mapping_guide_txt(
-                                mv, raw_df,
-                                lang = lang_r(),
-                                id_strategy = id_strategy,
-                                constants = cv,
-                                id_counts = id_counts,
-                                source_file = attr(raw_df, "source_file") %||% NA_character_
-                            ),
-                            guide_path,
-                            useBytes = TRUE
-                        )
+                        if (!is.null(xlsx_path)) write_xlsx_text_only(product$core, xlsx_path)
+                        writeLines(product$mapping_guide, guide_path, useBytes = TRUE)
 
                         extras <- list()
                         if (!is.null(xlsx_path)) extras[[basename(xlsx_path)]] <- xlsx_path
                         extras[[basename(guide_path)]] <- guide_path
                         if (!is.null(fnames$auxiliary$changes)) {
                             changes_path <- file.path(tmpdir, fnames$auxiliary$changes)
-                            write_change_log_csv(prep$changes, changes_path)
+                            write_change_log_csv(product$changes, changes_path)
                             extras[[basename(changes_path)]] <- changes_path
                         }
-                        build_dwca_bundle(export_data, file, metadata = eml_metadata, extras = extras,
-                                          measurements = mof$measurements)
+                        build_dwca_bundle(product$core, file, metadata = product$metadata,
+                                          extras = extras, measurements = product$measurements)
 
                         # The bundle is written: the mapping is now confirmed, so
                         # the mapping module may learn its aliases. Fires only
@@ -688,8 +488,8 @@ mount_export_download <- function(input, output, session, lang_r,
         # bundle, so a shared .zip never carries the exact points (ADR-163).
         output$download_private <- shiny::downloadHandler(
             filename = function() {
-                cv_fn <- if (!is.null(custom_values_r) && shiny::is.reactive(custom_values_r)) {
-                    tryCatch(custom_values_r(), error = function(e) list())
+                cv_fn <- if (shiny::is.reactive(sources$custom_values)) {
+                    tryCatch(sources$custom_values(), error = function(e) list())
                 } else {
                     list()
                 }
@@ -700,7 +500,7 @@ mount_export_download <- function(input, output, session, lang_r,
                 if (isTRUE(export_blocked())) {
                     stop(tr("export_download_blocked", lang_r()), call. = FALSE)
                 }
-                prep <- prepare_masked_rows()
+                prep <- prepare_masked_export(capture_export_inputs(), lang_r())
                 write_sensitive_coords_xlsx(
                     prep$masked$real,
                     notice = tr("sensitive_real_coords_notice", lang_r()),
