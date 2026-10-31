@@ -16,6 +16,12 @@
     if (!modalEl) return;
     var instance = window.bootstrap && window.bootstrap.Modal &&
       window.bootstrap.Modal.getInstance(modalEl);
+    // Bootstrap ignores hide() while the modal still fades in. A fast export
+    // ends before that, and the modal stayed open.
+    if (instance && instance._isTransitioning && modalEl.classList.contains('show')) {
+      modalEl.addEventListener('shown.bs.modal', function () { instance.hide(); }, { once: true });
+      return;
+    }
     if (instance) {
       instance.hide();
     } else if (window.jQuery) {

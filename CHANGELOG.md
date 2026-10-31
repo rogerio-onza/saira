@@ -119,6 +119,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **names:** Parse authorship before subsp. or var., rank chains, author initials and subgenera alike in mapping and lookups, ADR-189
 - **generalization:** Recognize the coordinate notes of Saira 0.2.5 as already generalized, ADR-189
 - **mapping:** Hide a card from the Mapped or Pending filter as soon as its state changes, ADR-189
+- **export:** Close the loading modal when a fast export ends before the modal fades in
 - **generalization:** Write the published point in every copy of a protected point, in any text field or format, ADR-185
 - **occurrenceID:** Give a new copy of a row with kept IDs an ID of its own, ADR-186
 - **eventDate:** Fail a day with a fraction in a split date
