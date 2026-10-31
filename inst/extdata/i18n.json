@@ -3234,6 +3234,11 @@
     "en": "Coordinate validation failed: %s",
     "es": "Falló la validación de coordenadas: %s"
   },
+  "validate_coords_sea_unchecked": {
+    "pt": "A verificação de mar não rodou para %s registro(s). Esses pontos não foram conferidos contra o mar. Rode a validação de novo antes de exportar.",
+    "en": "The sea check did not run for %s record(s). These points were not checked against the sea. Run the validation again before you export.",
+    "es": "La verificación de mar no se ejecutó para %s registro(s). Esos puntos no se compararon con el mar. Ejecute la validación de nuevo antes de exportar."
+  },
   "validate_coords_conversion_warning": {
     "pt": "%s valor(es) não puderam ser convertidos para número e foram tratados como ausentes.",
     "en": "%s value(s) could not be converted to numbers and were treated as missing.",

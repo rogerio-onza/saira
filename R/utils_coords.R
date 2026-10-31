@@ -747,142 +747,77 @@ coords_cc_flagged <- function(fun_name, x, ...) {
     flagged
 }
 
+# TRUE means the point is on land, as in CoordinateCleaner. A run that fails
+# keeps its rows TRUE, so the dataset can continue, but they are not approved:
+# the attribute `unchecked` marks them and `errors` keeps the reasons (SP-06).
+# Both attributes are present only when a run failed.
 coords_cc_sea_flagged <- function(x, scale, timeout = NULL) {
     scale <- as.integer(scale)
     timeout <- coords_normalize_cc_sea_timeout(timeout)
+    n <- nrow(x)
+    all_rows <- rep(TRUE, n)
 
-    run_scale <- function(x_subset, scale_value, ref = NULL, crop_ref = FALSE) {
-        coords_cc_sea_run(
-            x = x_subset,
-            ref = ref,
-            scale = scale_value,
-            timeout = timeout,
-            crop_ref = crop_ref
-        )
-    }
-
-    if (identical(scale, 10L)) {
+    # Each group of rows gets one cc_sea run against one reference.
+    groups <- if (identical(scale, 10L)) {
         land_ref_10 <- coords_load_ne_land(10L)
         coverage_ref_10 <- coords_ne_land_coverage_ref(10L, download = FALSE)
         coverage_boxes <- coords_ne_land_coverage_boxes(10L, download = FALSE)
-
-        if (is.null(land_ref_10) ||
-            (is.null(coverage_ref_10) &&
-            (is.null(coverage_boxes) || nrow(coverage_boxes) == 0L))) {
-            land_ref_50 <- coords_load_ne_land(50L)
-            flagged_50 <- run_scale(x, 50L, ref = land_ref_50, crop_ref = FALSE)
-            if (!inherits(flagged_50, "error")) {
-                return(flagged_50)
-            }
-
-            warning(
-                sprintf(
-                    "[Saira] cc_sea(scale=10) could not use the embedded Americas reference and scale=50 fallback failed: %s; skipping sea check for this run.",
-                    conditionMessage(flagged_50)
-                ),
-                call. = FALSE
+        no_embedded <- is.null(land_ref_10) ||
+            (is.null(coverage_ref_10) && (is.null(coverage_boxes) || nrow(coverage_boxes) == 0L))
+        inside_americas <- if (no_embedded) {
+            rep(FALSE, n)
+        } else {
+            coords_points_in_coverage(
+                x,
+                coverage_ref = coverage_ref_10,
+                coverage_boxes = coverage_boxes,
+                margin = coords_embedded_land_margin_deg
             )
-            return(rep(TRUE, nrow(x)))
         }
+        out <- list()
+        if (any(inside_americas)) {
+            out[[length(out) + 1L]] <- list(rows = inside_americas, scale = 10L,
+                                             ref = land_ref_10, crop_ref = TRUE)
+        }
+        if (!all(inside_americas)) {
+            out[[length(out) + 1L]] <- list(rows = !inside_americas, scale = 50L,
+                                             ref = coords_load_ne_land(50L), crop_ref = FALSE)
+        }
+        out
+    } else {
+        list(list(rows = all_rows, scale = scale, ref = coords_load_ne_land(scale), crop_ref = FALSE))
+    }
 
-        inside_americas <- coords_points_in_coverage(
-            x,
-            coverage_ref = coverage_ref_10,
-            coverage_boxes = coverage_boxes,
-            margin = coords_embedded_land_margin_deg
+    flagged <- all_rows
+    unchecked <- rep(FALSE, n)
+    errors <- character(0)
+    for (g in groups) {
+        res <- coords_cc_sea_run(
+            x = x[g$rows, , drop = FALSE],
+            ref = g$ref,
+            scale = g$scale,
+            timeout = timeout,
+            crop_ref = g$crop_ref
         )
-
-        # Short-circuit: dataset 100% nas Americas -> um unico cc_sea(10m)
-        if (all(inside_americas)) {
-            flagged_10 <- run_scale(x, 10L, ref = land_ref_10, crop_ref = TRUE)
-            if (inherits(flagged_10, "error")) {
-                warning(
-                    sprintf(
-                        "[Saira] cc_sea(scale=10, embedded Americas) failed: %s; skipping sea check for all rows.",
-                        conditionMessage(flagged_10)
-                    ),
-                    call. = FALSE
-                )
-                return(rep(TRUE, nrow(x)))
-            }
-            return(flagged_10)
-        }
-
-        # Short-circuit: dataset 100% fora das Americas -> um unico cc_sea(50m)
-        if (!any(inside_americas)) {
-            land_ref_50 <- coords_load_ne_land(50L)
-            flagged_50 <- run_scale(x, 50L, ref = land_ref_50, crop_ref = FALSE)
-            if (inherits(flagged_50, "error")) {
-                warning(
-                    sprintf(
-                        "[Saira] cc_sea(scale=50 fallback outside embedded Americas coverage) failed: %s; skipping sea check for all rows.",
-                        conditionMessage(flagged_50)
-                    ),
-                    call. = FALSE
-                )
-                return(rep(TRUE, nrow(x)))
-            }
-            return(flagged_50)
-        }
-
-        # Caso misto: dois cc_sea para grupos distintos
-        flagged <- rep(TRUE, nrow(x))
-
-        flagged_10 <- run_scale(
-            x[inside_americas, , drop = FALSE],
-            10L,
-            ref = land_ref_10,
-            crop_ref = TRUE
-        )
-        if (inherits(flagged_10, "error")) {
+        if (inherits(res, "error")) {
+            unchecked[g$rows] <- TRUE
+            errors <- c(errors, conditionMessage(res))
             warning(
                 sprintf(
-                    "[Saira] cc_sea(scale=10, embedded Americas) failed: %s; skipping sea check for affected rows.",
-                    conditionMessage(flagged_10)
+                    "[Saira] cc_sea(scale=%s) failed: %s; sea check not run for %d row(s).",
+                    g$scale, conditionMessage(res), sum(g$rows)
                 ),
                 call. = FALSE
             )
         } else {
-            flagged[inside_americas] <- flagged_10
+            flagged[g$rows] <- res
         }
-
-        land_ref_50 <- coords_load_ne_land(50L)
-        flagged_50 <- run_scale(
-            x[!inside_americas, , drop = FALSE],
-            50L,
-            ref = land_ref_50,
-            crop_ref = FALSE
-        )
-        if (inherits(flagged_50, "error")) {
-            warning(
-                sprintf(
-                    "[Saira] cc_sea(scale=50 fallback outside embedded Americas coverage) failed: %s; skipping sea check for affected rows.",
-                    conditionMessage(flagged_50)
-                ),
-                call. = FALSE
-            )
-        } else {
-            flagged[!inside_americas] <- flagged_50
-        }
-
-        return(flagged)
     }
-
-    land_ref <- coords_load_ne_land(scale)
-    flagged <- run_scale(x, scale, ref = land_ref, crop_ref = FALSE)
-    if (!inherits(flagged, "error")) {
-        return(flagged)
+    if (any(unchecked)) {
+        attr(flagged, "unchecked") <- unchecked
+        attr(flagged, "errors") <- errors
     }
-
-    warning(
-        sprintf(
-            "[Saira] cc_sea(scale=%s) failed: %s; skipping sea check for this run.",
-            scale,
-            conditionMessage(flagged)
-        ),
-        call. = FALSE
-    )
-    rep(TRUE, nrow(x))
+    flagged
 }
 
 coords_family_from_diag <- function(diagnostic) {
@@ -1023,6 +958,8 @@ validate_coords_cc_df <- function(
         (lat_num < -90 | lat_num > 90 | lon_num < -180 | lon_num > 180)
 
     sea_flag <- rep(FALSE, n)
+    sea_unchecked <- rep(FALSE, n)
+    sea_errors <- character(0)
     zero_equal <- rep(FALSE, n)
     reference_flag <- rep(FALSE, n)
 
@@ -1061,6 +998,8 @@ validate_coords_cc_df <- function(
                 scale = seas_scale
             )
             sea_flag[rows_clean] <- !flag_sea
+            sea_unchecked[rows_clean] <- attr(flag_sea, "unchecked") %||% FALSE
+            sea_errors <- attr(flag_sea, "errors") %||% character(0)
             .plog("cc_sea")
             .step("sea", which(sea_flag))
 
@@ -1179,6 +1118,8 @@ validate_coords_cc_df <- function(
     out$flag_validity_bounds <- validity_bounds
     out$flag_swapped <- swapped
     out$flag_sea <- sea_flag
+    # A row the sea check did not reach stays "ok", but is not approved.
+    out$flag_sea_unchecked <- sea_unchecked
     out$flag_zero_equal <- zero_equal
     out$flag_reference <- reference_flag
 
@@ -1191,6 +1132,17 @@ validate_coords_cc_df <- function(
     attr(out, "engine") <- "CoordinateCleaner"
     attr(out, "profile") <- profile
     attr(out, "seas_scale") <- seas_scale
+    attr(out, "sea_check") <- list(
+        status = if (!any(sea_unchecked)) {
+            "complete"
+        } else if (all(sea_unchecked[!validity_missing & !validity_bounds & !swapped])) {
+            "failed"
+        } else {
+            "partial"
+        },
+        unchecked = sum(sea_unchecked),
+        errors = sea_errors
+    )
     .plog("TOTAL")
     out
 }
