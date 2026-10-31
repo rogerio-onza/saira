@@ -268,6 +268,7 @@ Indexado por **tema** -- consulte antes de implementar algo similar.
 - **Para hardening de startup, adicionar teste de modulo com dependencia mockada em erro**: validar que o modulo sobe mesmo com falha externa previne regressao de disponibilidade.
 
 - **Para testar o que vai no `<head>`, usar `htmltools::renderTags(x)$head`**. `as.character()` de uma `tagList` com `tags$head` nao separa o head do body, e o teste nao prova que o script de tema roda antes do CSS.
+- **Teste de layout CSS mede o app real, nao uma pagina estatica** (ADR-189). Um guardrail que procura texto no CSS passou com uma regra que zerava a largura do painel de nomes. Uma pagina estatica com o bundle tambem errava: sem o CSS do Shiny e do Bootstrap, os outputs nao ficam `display: contents` e as bordas mudam a largura. Regra: a checagem de geometria roda no E2E, mede os retangulos nos dois temas e prova que falha com uma regra injetada.
 
 ## Package Check / Deploy
 

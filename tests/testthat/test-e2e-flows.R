@@ -661,6 +661,76 @@ testthat::test_that("E2E: the Mapping filter runs in the browser and Next pendin
     app$wait_for_idle(timeout = 10000)
     testthat::expect_identical(app$get_value(input = "mapping-mapped_filter"), "relevant")
     testthat::expect_identical(app$get_js("document.querySelectorAll('#mapping-mapping_ui .field-card[hidden]').length"), 0L)
+
+    # A card patch from the server keeps the picked filter on screen: a
+    # pending card that gets a fixed value leaves Pending with no switch.
+    hidden <- function(term) {
+        app$get_js(sprintf("document.getElementById('mapping-fieldcard_%s').hidden", term))
+    }
+    pick("pending")
+    testthat::expect_false(hidden("basisOfRecord"))
+    app$set_inputs(`mapping-usecustom_basisOfRecord` = TRUE)
+    app$set_inputs(`mapping-custom_basisOfRecord` = "HumanObservation")
+    wait_until_js(app, "document.getElementById('mapping-fieldcard_basisOfRecord').hidden === true")
+    app$set_inputs(`mapping-usecustom_basisOfRecord` = FALSE)
+    wait_until_js(app, "document.getElementById('mapping-fieldcard_basisOfRecord').hidden === false")
+    testthat::expect_identical(app$get_js("window.__gridRenders"), 0L)
+})
+
+testthat::test_that("E2E: the names report panel keeps its column in light and dark themes", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+
+    app$wait_for_idle(timeout = 10000)
+    app$click(selector = "a[data-value='validate_names']")
+    wait_until_js(app, "!!document.querySelector('.vn-report-panel') && !!document.querySelector('.vn-stream-panel')")
+
+    # test-css-guardrails.R finds a rule in the bundle, not the rule that wins
+    # the cascade: a later `.vn-report-panel { width: 0 }` passed it. Shiny
+    # 1.14 also makes each uiOutput a pass-through box, so a static page of
+    # custom.css does not show the real layout.
+    measure <- function(width, theme = "light") {
+        app$set_window_size(width = width, height = 900)
+        app$run_js(sprintf("document.documentElement.setAttribute('data-bs-theme', '%s');", theme))
+        app$get_js("(function () {
+          var r = document.querySelector('.vn-report-panel').getBoundingClientRect();
+          var s = document.querySelector('.vn-stream-panel').getBoundingClientRect();
+          return { report_left: r.left, report_top: r.top, report_width: r.width,
+                   stream_right: s.right, stream_top: s.top, stream_width: s.width };
+        })()")
+    }
+    # ADR-132: clamp(520px, 31vw, 640px) at the right of the stream panel.
+    problems <- function(m) {
+        as.character(c(
+            if (m$report_width < 519.5 || m$report_width > 640.5) sprintf("report width %.0f px", m$report_width),
+            if (m$report_left < m$stream_right) "report panel is not at the right of the stream panel",
+            if (abs(m$report_top - m$stream_top) > 1) "report and stream panels are not on one row",
+            if (m$stream_width < m$report_width) sprintf("stream width %.0f px", m$stream_width)
+        ))
+    }
+
+    for (theme in c("light", "dark")) {
+        for (width in c(1280, 1440, 1920)) {
+            testthat::expect_identical(problems(measure(width, theme)), character(0), info = paste(theme, width))
+        }
+        testthat::expect_equal(measure(1920, theme)$report_width, 0.31 * 1920, tolerance = 1e-3)
+        # Below 992 px the panels stack and the report panel takes the full width.
+        m <- measure(800, theme)
+        testthat::expect_gt(m$report_top, m$stream_top)
+        testthat::expect_equal(m$report_width, m$stream_width, tolerance = 0.01)
+    }
+
+    # The same check fails on a later rule that collapses the panel.
+    app$run_js("document.head.insertAdjacentHTML('beforeend',
+      '<style>.vn-report-panel { width: 0; flex: 0 0 0; }</style>');")
+    testthat::expect_match(problems(measure(1440)), "^report width", all = FALSE)
 })
 
 testthat::test_that("E2E: Table | Problems in the Preview switches in the browser", {
