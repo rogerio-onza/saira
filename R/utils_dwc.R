@@ -454,7 +454,7 @@ get_active_dwc_terms <- function(extra = character(0)) {
 #' Short card text for each term, falling back to the full definition
 #'
 #' `card_hint_pt`/`card_hint_en` are filled only for the terms whose definition
-#' is too long for a mapping card (see data-raw/build_dwc_terms.R). Everywhere
+#' is too long for a mapping card (see data-raw/build_dwc_catalogs.R). Everywhere
 #' else the card shows the definition itself. Returns `desc` unchanged when the
 #' columns are absent, so an older cached rds still works.
 #'
