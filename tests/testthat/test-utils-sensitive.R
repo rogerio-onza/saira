@@ -930,6 +930,51 @@ testthat::test_that("generalization accepts a decimal comma and keeps trailing z
     testthat::expect_equal(as.numeric(masked$masked$coordinateUncertaintyInMeters), preview$unc_m)
 })
 
+testthat::test_that("the map preview and the export read the same generalization plan", {
+    local_sensitive_fixture(c("Panthera onca", "Tapirus terrestris", "Leopardus wiedii",
+                              "Puma concolor"), category = c("CR", "EN", "VU", "VU"))
+    df <- data.frame(
+        occurrenceID = sprintf("o%02d", 1:10),
+        scientificName = c("Panthera onca", "Tapirus terrestris", "Leopardus wiedii",
+                           "Felis catus", "Puma concolor", "Panthera onca", "Panthera onca",
+                           "Tapirus terrestris", "Leopardus wiedii", "Tapirus terrestris"),
+        decimalLatitude = c("-23.5612345", "-10.5612", "-5.123456", "-15.55555", "-20.1234",
+                            "-23.6", "-23.561234", "95", "-5.1", "-10,5612"),
+        decimalLongitude = c("-46.6543210", "-40.6543", "-45.987654", "-47.44444", "-50.1234",
+                             "-46.7", "-46.654321", "-46.6", "-45.9", "-40,6543"),
+        coordinateUncertaintyInMeters = c("", "30", "", "", "", "", "15000", "", "", ""),
+        dataGeneralizations = c(rep("", 5), "Coordinates of a Category 1 species", rep("", 4)),
+        stringsAsFactors = FALSE
+    )
+    levels <- c("Panthera onca" = "extreme", "Tapirus terrestris" = "high",
+                "Leopardus wiedii" = "medium", "Felis catus" = "low", "Puma concolor" = "low")
+    # A manual decision adds a species outside the list and removes a listed one.
+    dec <- data.frame(scientificName = c("Felis catus", "Puma concolor"),
+                      sensitive = c(TRUE, FALSE), stringsAsFactors = FALSE)
+
+    preview <- saira:::generalization_map_preview(df, levels, decisions = dec)
+    res <- saira:::mask_sensitive_coordinates(df, decisions = dec, generalization = levels)
+    out <- res$masked
+    moved <- res$rows[nzchar(out$decimalLatitude[res$rows])]
+
+    # o05 is not sensitive, o06 is already protected, o08 cannot move.
+    testthat::expect_identical(out$occurrenceID[moved], sprintf("o%02d", c(1:4, 7, 9, 10)))
+    testthat::expect_identical(out$occurrenceID[setdiff(res$rows, moved)], "o08")
+    testthat::expect_identical(out$decimalLatitude[c(5, 6)], df$decimalLatitude[c(5, 6)])
+    testthat::expect_identical(res$n_snapped_to_uncertainty, 1L)
+    testthat::expect_gte(res$n_clamped_to_precision, 1L)
+
+    # The map shows every moved row, at the point and uncertainty the export writes.
+    testthat::expect_identical(nrow(preview), res$n_masked)
+    testthat::expect_equal(preview$gen_lat, as.numeric(out$decimalLatitude[moved]))
+    testthat::expect_equal(preview$gen_lon, as.numeric(out$decimalLongitude[moved]))
+    testthat::expect_equal(preview$unc_m, as.numeric(out$coordinateUncertaintyInMeters[moved]))
+    testthat::expect_identical(preview$tier, unname(levels[df$scientificName[moved]]))
+    testthat::expect_identical(attr(preview, "n_withheld"), res$n_withheld)
+    testthat::expect_identical(attr(preview, "n_upstream_preserved"), res$n_skipped_already_masked)
+    testthat::expect_identical(attr(preview, "n_clamped_to_precision"), res$n_clamped_to_precision)
+})
+
 testthat::test_that("mask withholds out-of-range points and ignores an invalid uncertainty", {
     local_sensitive_fixture("Panthera onca")
     df <- data.frame(
@@ -1117,6 +1162,38 @@ testthat::test_that("a note about other data does not stop the generalization (A
     testthat::expect_true(saira:::coordinate_generalization_note(
         c(res$masked$dataGeneralizations, "coordinates rounded to 0.001 degree", "Dates normalized", NA)
     ) |> identical(c(TRUE, TRUE, FALSE, FALSE)))
+})
+
+testthat::test_that("notes from older versions stay recognized after a new wording", {
+    # Frozen notes as each version wrote them. Not built from tr(): a new
+    # translation must not change what an older file means.
+    old_notes <- c(
+        v025_pt = paste0("Coordenadas generalizadas para 0.1 grau (~11.1 km) por se tratar de ",
+                         "espécie sensível/ameaçada de extinção (lista nacional MMA)."),
+        v025_en = paste0("Coordinates generalized to 0.1 degree (~11.1 km) for a ",
+                         "sensitive/threatened species (MMA national red list)."),
+        v030_pt = "Coordenadas de espécie EN (lista nacional MMA) generalizadas para 0.1 grau (~11.1 km).",
+        v030_en = "Coordinates of a EN species (MMA national red list) generalized to 0.1 degree (~11.1 km).",
+        v100_pt = paste0("Coordenadas de espécie Categoria 2 (lista nacional MMA) generalizadas ",
+                         "para 0.1 grau pois a espécie está ameaçada."),
+        v100_es = paste0("Coordenadas de una especie Categoría 2 (lista roja nacional MMA) ",
+                         "generalizadas a 0.1 grado porque la especie está amenazada."),
+        after_publisher = "Dates normalized | Coordinates generalized to 0.1 degree (~11.1 km).",
+        camtrapdp = "coordinates rounded to 0.001 degree"
+    )
+    testthat::expect_true(all(saira:::coordinate_generalization_note(old_notes)))
+    testthat::expect_false(any(saira:::coordinate_generalization_note(
+        c("Dates normalized", "Coordenadas conferidas em campo", "", NA)
+    )))
+    # A v0.2.5 row with no uncertainty is already masked by its note alone.
+    df <- data.frame(coordinateUncertaintyInMeters = "", dataGeneralizations = old_notes[["v025_en"]])
+    testthat::expect_true(saira:::sensitive_already_masked_rows(df))
+
+    # The note each language writes now has its opening in the frozen list.
+    for (lang in get_languages()) {
+        note <- sprintf(tr("sensitive_data_generalizations", lang), "Categoria 2", "0.1")
+        testthat::expect_true(saira:::coordinate_generalization_note(note), info = lang)
+    }
 })
 
 testthat::test_that("the cell polygon stays inside the world bounds (AUD-17)", {

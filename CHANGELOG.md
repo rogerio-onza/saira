@@ -116,6 +116,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **coords:** Mark the rows a failed sea check did not reach, not approve them, ADR-189
 - **names:** Recover the Flora BR and Fauna BR update after a crash, but not while another Saira still updates, ADR-189
 - **names:** Parse authorship before subsp. or var., rank chains, author initials and subgenera alike in mapping and lookups, ADR-189
+- **generalization:** Recognize the coordinate notes of Saira 0.2.5 as already generalized, ADR-189
 - **generalization:** Write the published point in every copy of a protected point, in any text field or format, ADR-185
 - **occurrenceID:** Give a new copy of a row with kept IDs an ID of its own, ADR-186
 - **eventDate:** Fail a day with a fraction in a split date

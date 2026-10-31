@@ -291,15 +291,25 @@ sensitive_point_ok <- function(lat, lon) {
         !(abs(lat) < 0.5 & abs(lon) < 0.5) & lat != lon
 }
 
-# A `dataGeneralizations` note that says the coordinates were generalized: the
-# Saira note in any interface language, or the camtrapdp `write_dwc()` note
-# "coordinates rounded to ...". A note about other data, such as "Dates
+# The openings of every coordinate note that a Saira version wrote, and of the
+# camtrapdp `write_dwc()` note. Frozen text, not tr(): a new wording of
+# `sensitive_data_generalizations` adds its opening here and keeps the old
+# ones, so a file from an older version stays recognized.
+# test-utils-sensitive.R fails when the current note has no opening here.
+COORDINATE_NOTE_OPENINGS <- c(
+    "Coordenadas generalizadas para ",     # pt, v0.2.5
+    "Coordinates generalized to ",         # en, v0.2.5
+    "Coordenadas de esp\u00e9cie ",        # pt, v0.3.0 and later
+    "Coordinates of a ",                   # en, v0.3.0 and later
+    "Coordenadas de una especie ",         # es, v1.0.0 and later
+    "coordinates rounded to"               # camtrapdp write_dwc()
+)
+
+# A `dataGeneralizations` note that says the coordinates were generalized
+# (COORDINATE_NOTE_OPENINGS). A note about other data, such as "Dates
 # normalized", says nothing about the point (AUD-03). Vectorized.
 coordinate_generalization_note <- function(x) {
-    prefixes <- vapply(get_languages(), function(l) {
-        sub("%s.*$", "", tr("sensitive_data_generalizations", l))
-    }, character(1))
-    escaped <- gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", c(prefixes, "coordinates rounded to"))
+    escaped <- gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", COORDINATE_NOTE_OPENINGS)
     pattern <- paste0("(^|\\| )(", paste(escaped, collapse = "|"), ")")
     x <- trimws(as.character(x))
     !is.na(x) & grepl(pattern, x, ignore.case = TRUE)
@@ -514,6 +524,118 @@ rekey_sensitivity_decisions <- function(decisions, name_payload = NULL) {
     )
 }
 
+# The generalization plan of every row: the decision, the grid, the published
+# point and its uncertainty. The export and the map preview read the same plan,
+# so the map never shows a point the export does not write (SP-10). `df` has
+# scientificName, decimalLatitude and decimalLongitude.
+#
+# Returns per-row vectors (NA or FALSE where the field does not apply):
+#   target   : the row is generalized
+#   withheld : a sensitive point the grid cannot move, so it is removed
+#   kept     : a sensitive row the publisher already generalized (ADR-095)
+#   snap     : the grid comes from the row uncertainty (D04)
+#   eff_grid : the grid after the precision clamp
+#   pub_lat, pub_lon, unc_m : the published point and its uncertainty
+# plus the counts the banners show.
+sensitive_generalization_plan <- function(df, generalization, decisions = NULL) {
+    n <- nrow(df)
+    decided <- sensitive_resolve(df$scientificName, decisions)
+    # Per-row Chapman tier and its grid. Rows whose species resolve to
+    # "not_sensitive"/unassessed get NA grid and are left untouched.
+    row_tier <- resolve_row_tiers(df$scientificName, generalization)
+    # Grid per row, resolved over the few unique tiers (<= 5) and mapped back --
+    # calling sensitive_generalization_grid per record is O(n) for no reason.
+    row_tier_u <- unique(row_tier)
+    row_grid <- vapply(row_tier_u, sensitive_generalization_grid,
+                       FUN.VALUE = numeric(1), USE.NAMES = FALSE)[match(row_tier, row_tier_u)]
+    # Decimal comma accepted, as in the Coordinates tab: the mapped frame keeps
+    # the value as typed, and a plain as.numeric() dropped "-19,91" rows.
+    lat <- as_coord_numeric(df$decimalLatitude)$num
+    lon <- as_coord_numeric(df$decimalLongitude)$num
+    point_ok <- sensitive_point_ok(lat, lon)
+    has_coord <- !is_blank_cell(df$decimalLatitude) | !is_blank_cell(df$decimalLongitude)
+    sensitive <- decided$sensitive & !is.na(row_grid) & row_grid > 0
+    target <- sensitive & point_ok
+
+    # Honour upstream generalization (ADR-095). Two signals:
+    #   1. `coordinateUncertaintyInMeters` >= 1000 m -- publisher who fuzzed
+    #      via grid >= 0.01 deg, or who explicitly set a wide uncertainty.
+    #   2. A coordinate note in `dataGeneralizations`: the Saira note, or the
+    #      one `camtrapdp::write_dwc()` writes when the publisher set
+    #      `coordinatePrecision` (PDF p.26), covering Chapman category 4
+    #      generalization (3 digits -> ~150 m uncertainty, below 1000 m).
+    # Skip those rows so we neither overwrite their values nor leak them
+    # into the `real` companion file (we do not have the originals).
+    # A row that only the uncertainty marks, with more decimals than that
+    # uncertainty justifies, is rounded to the uncertainty grid (D04).
+    snap_grid <- sensitive_uncertainty_snap_grid(df, lat, lon)
+    snap <- target & !is.na(snap_grid)
+    already_masked <- sensitive_already_masked_rows(df) & !snap
+    n_skipped <- sum(target & already_masked)
+    target <- target & !already_masked
+    base_grid <- row_grid
+    base_grid[snap] <- snap_grid[snap]
+
+    # Precision clamp (Chapman 2020 sec. 4.1-4.3 + glossary). Generalization
+    # REDUCES precision and must never increase it: rounding a 2-decimal value
+    # (~0.01 deg) to the 0.001 grid would invent false precision the data never
+    # had ("precision"/"randomization" glossary). So each row's grid is widened
+    # to never be finer than the precision the coordinates already carry. The
+    # records are NOT skipped -- sec. 5.1 requires the sensitivity record-level
+    # metadata (informationWithheld, dataGeneralizations, precision provided +
+    # stored, locality scrub) regardless of whether the coordinate moves; only
+    # the grid is clamped to the data's real precision.
+    exist_prec <- existing_precision_grid(df)
+    eff_grid <- base_grid
+    has_prec <- !is.na(exist_prec) & !is.na(base_grid)
+    eff_grid[has_prec] <- pmax(base_grid[has_prec], exist_prec[has_prec])
+
+    # One rounding rule for every grid (generalize_coord). The uncertainty is
+    # the geographic radial of the cell (centre -> furthest corner) COMBINED
+    # with any original record uncertainty (Best Practices sec. 3.4.7: combine
+    # sources, not take the max). The original point lies within its own radius
+    # of the published cell centre, so the guaranteed maximum distance is additive.
+    pub_lat <- pub_lon <- unc_m <- rep(NA_real_, n)
+    for (g in unique(eff_grid[target])) {
+        rows <- which(target & eff_grid == g)
+        pub_lat[rows] <- generalize_coord(lat[rows], g)
+        pub_lon[rows] <- generalize_coord(lon[rows], g)
+    }
+    unc_prior <- if ("coordinateUncertaintyInMeters" %in% names(df)) {
+        uncertainty_meters(as.character(df$coordinateUncertaintyInMeters))
+    } else {
+        rep(NA_real_, n)
+    }
+    unc_prior[is.na(unc_prior)] <- 0
+    unc_m[target] <- ceiling(
+        sensitive_grid_uncertainty_m(eff_grid[target], pub_lon[target], pub_lat[target]) +
+            unc_prior[target]
+    )
+
+    list(
+        category = decided$category,
+        tier = row_tier,
+        row_grid = row_grid,
+        lat = lat,
+        lon = lon,
+        target = target,
+        # A sensitive point the grid cannot move (out of range, one axis only, a
+        # UTM pair) is removed and kept in the private file (B09, B23).
+        withheld = sensitive & has_coord & !point_ok & !already_masked,
+        kept = sensitive & already_masked,
+        snap = snap,
+        exist_prec = exist_prec,
+        eff_grid = eff_grid,
+        pub_lat = pub_lat,
+        pub_lon = pub_lon,
+        unc_prior = unc_prior,
+        unc_m = unc_m,
+        n_skipped_already_masked = n_skipped,
+        n_snapped_to_uncertainty = sum(snap),
+        n_clamped_to_precision = sum(target & has_prec & base_grid < exist_prec)
+    )
+}
+
 # Mask sensitive records on the post-process_for_export frame (which already
 # carries occurrenceID, scientificName and the coordinate columns).
 #
@@ -572,64 +694,22 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
         return(result)
     }
 
-    decided <- sensitive_resolve(df$scientificName, decisions)
-    # Per-row Chapman tier and its grid. Rows whose species resolve to
-    # "not_sensitive"/unassessed get NA grid and are left untouched below.
-    row_tier <- resolve_row_tiers(df$scientificName, generalization)
-    # Grid per row, resolved over the few unique tiers (<= 5) and mapped back --
-    # calling sensitive_generalization_grid per record is O(n) for no reason.
-    row_tier_u <- unique(row_tier)
-    row_grid <- vapply(row_tier_u, sensitive_generalization_grid,
-                       FUN.VALUE = numeric(1), USE.NAMES = FALSE)[match(row_tier, row_tier_u)]
-    # Decimal comma accepted, as in the Coordinates tab: the mapped frame keeps
-    # the value as typed, and a plain as.numeric() dropped "-19,91" rows.
-    lat_num <- as_coord_numeric(df$decimalLatitude)$num
-    lon_num <- as_coord_numeric(df$decimalLongitude)$num
-    point_ok <- sensitive_point_ok(lat_num, lon_num)
-    has_coord <- !is_blank_cell(df$decimalLatitude) | !is_blank_cell(df$decimalLongitude)
-    target <- decided$sensitive & point_ok & !is.na(row_grid) & row_grid > 0
-
-    # Honour upstream generalization (ADR-095). Two signals:
-    #   1. `coordinateUncertaintyInMeters` >= 1000 m -- publisher who fuzzed
-    #      via grid >= 0.01 deg, or who explicitly set a wide uncertainty.
-    #   2. A coordinate note in `dataGeneralizations`: the Saira note, or the
-    #      one `camtrapdp::write_dwc()` writes when the publisher set
-    #      `coordinatePrecision` (PDF p.26), covering Chapman category 4
-    #      generalization (3 digits -> ~150 m uncertainty, below 1000 m).
-    # Skip those rows so we neither overwrite their values nor leak them
-    # into the `real` companion file (we do not have the originals).
-    # A row that only the uncertainty marks, with more decimals than that
-    # uncertainty justifies, is rounded to the uncertainty grid (D04).
-    snap_grid <- sensitive_uncertainty_snap_grid(df, lat_num, lon_num)
-    snap <- target & !is.na(snap_grid)
-    already_masked <- sensitive_already_masked_rows(df) & !snap
-    result$n_skipped_already_masked <- sum(target & already_masked)
-    result$n_snapped_to_uncertainty <- sum(snap)
-    target <- target & !already_masked
+    plan <- sensitive_generalization_plan(df, generalization, decisions)
+    row_tier <- plan$tier
+    row_grid <- plan$row_grid
+    lat_num <- plan$lat
+    lon_num <- plan$lon
+    target <- plan$target
+    withheld <- plan$withheld
+    snap <- plan$snap
+    exist_prec <- plan$exist_prec
+    eff_grid <- plan$eff_grid
+    result$n_skipped_already_masked <- plan$n_skipped_already_masked
+    result$n_snapped_to_uncertainty <- plan$n_snapped_to_uncertainty
+    result$n_clamped_to_precision <- plan$n_clamped_to_precision
     # A skipped row keeps its point, but its verbatim and unmapped copies of
     # the original point still go (AUD-03).
-    kept <- which(decided$sensitive & !is.na(row_grid) & row_grid > 0 & already_masked)
-    base_grid <- row_grid
-    base_grid[snap] <- snap_grid[snap]
-    # A sensitive point the grid cannot move (out of range, one axis only, a
-    # UTM pair) is removed and kept in the private file (B09, B23).
-    withheld <- decided$sensitive & !is.na(row_grid) & row_grid > 0 &
-        has_coord & !point_ok & !already_masked
-
-    # Precision clamp (Chapman 2020 sec. 4.1-4.3 + glossary). Generalization
-    # REDUCES precision and must never increase it: rounding a 2-decimal value
-    # (~0.01 deg) to the 0.001 grid would invent false precision the data never
-    # had ("precision"/"randomization" glossary). So each row's grid is widened
-    # to never be finer than the precision the coordinates already carry. The
-    # records are NOT skipped -- sec. 5.1 requires the sensitivity record-level
-    # metadata (informationWithheld, dataGeneralizations, precision provided +
-    # stored, locality scrub) regardless of whether the coordinate moves; only
-    # the grid is clamped to the data's real precision.
-    exist_prec <- existing_precision_grid(df)
-    eff_grid <- base_grid
-    has_prec <- !is.na(exist_prec) & !is.na(base_grid)
-    eff_grid[has_prec] <- pmax(base_grid[has_prec], exist_prec[has_prec])
-    result$n_clamped_to_precision <- sum(target & has_prec & base_grid < exist_prec)
+    kept <- which(plan$kept)
 
     # Verbatim coordinate fields must be blank (Darwin Core forbids prose
     # there), the other locality/remarks fields carry replacement wording
@@ -696,7 +776,7 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
         return(result)
     }
     idx <- which(target | withheld)
-    row_cat <- decided$category[idx]
+    row_cat <- plan$category[idx]
     row_cat_display <- ifelse(is.na(row_cat) | !nzchar(row_cat), "\u2014", row_cat)
 
     occ <- if ("occurrenceID" %in% names(df)) {
@@ -735,30 +815,21 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     just_text <- if (is.null(justification)) "" else trimws(as.character(justification)[1])
     if (is.na(just_text)) just_text <- ""
 
-    # Apply each species' own grid. Grouping by grid (one of four distinct
-    # values, bijective with the Chapman tier) keeps `generalize_coord` the
-    # single source of the rounding rule. `dataGeneralizations` carries the MMA
-    # category, the grid, and the Chapman Table 5 reason for the record.
+    # Write the plan, one grid at a time (one of four distinct values, bijective
+    # with the Chapman tier). `dataGeneralizations` carries the MMA category,
+    # the grid, and the Chapman Table 5 reason for the record.
     gen_idx <- which(target)
     for (g in unique(eff_grid[gen_idx])) {
         in_group <- eff_grid[idx] == g & target[idx]
         rows <- idx[in_group]
         cat_disp <- row_cat_display[in_group]
-        masked$decimalLatitude[rows]  <- generalize_coord(lat_num[rows], g)
-        masked$decimalLongitude[rows] <- generalize_coord(lon_num[rows], g)
+        gen_lat <- plan$pub_lat[rows]
+        gen_lon <- plan$pub_lon[rows]
+        masked$decimalLatitude[rows]  <- gen_lat
+        masked$decimalLongitude[rows] <- gen_lon
         masked$coordinatePrecision[rows] <- format(g, trim = TRUE, scientific = FALSE)
-        gen_lon <- suppressWarnings(as.numeric(masked$decimalLongitude[rows]))
-        gen_lat <- suppressWarnings(as.numeric(masked$decimalLatitude[rows]))
-        # coordinateUncertaintyInMeters = geographic radial of the cell (centre
-        # -> furthest corner) COMBINED with any original record uncertainty
-        # (Best Practices sec. 3.4.7: combine sources, not take the max). The
-        # original point lies within its own radius of the published cell
-        # centre, so the guaranteed maximum distance is additive.
-        existing <- uncertainty_meters(masked$coordinateUncertaintyInMeters[rows])
-        existing[is.na(existing)] <- 0
-        masked$coordinateUncertaintyInMeters[rows] <- as.character(ceiling(
-            sensitive_grid_uncertainty_m(g, gen_lon, gen_lat) + existing
-        ))
+        existing <- plan$unc_prior[rows]
+        masked$coordinateUncertaintyInMeters[rows] <- as.character(plan$unc_m[rows])
         # Capture the cell as a polygon (Best Practices sec. 2.3.4: "the ideal
         # way to record [a grid cell] ... is the polygon consisting of the
         # corners"). Safe to publish -- it is the coarse cell, not the point.
@@ -998,71 +1069,26 @@ generalization_map_preview <- function(df, generalization, decisions = NULL) {
     if (!is.data.frame(df) || nrow(df) == 0L || !all(needed %in% names(df))) {
         return(empty)
     }
-    decided <- sensitive_resolve(df$scientificName, decisions)
-    row_tier <- resolve_row_tiers(df$scientificName, generalization)
-    # Grid per row, resolved over the few unique tiers (<= 5) and mapped back --
-    # calling sensitive_generalization_grid per record is O(n) for no reason.
-    row_tier_u <- unique(row_tier)
-    row_grid <- vapply(row_tier_u, sensitive_generalization_grid,
-                       FUN.VALUE = numeric(1), USE.NAMES = FALSE)[match(row_tier, row_tier_u)]
-    lat <- as_coord_numeric(df$decimalLatitude)$num
-    lon <- as_coord_numeric(df$decimalLongitude)$num
-    # The export withholds a point the grid cannot move, so the map does not
-    # show it as generalized (B16).
-    point_ok <- sensitive_point_ok(lat, lon)
-    target <- decided$sensitive & point_ok & !is.na(row_grid) & row_grid > 0
-
-    # The export leaves publisher-generalized rows intact (ADR-095) -- exclude
-    # them so the map shows only what Saira changes; the count rides to the
-    # banner. Every other sensitive row IS generalized (Chapman sec. 5.1), but
-    # its grid is clamped to never be finer than the data's own precision
-    # (sec. 4.1: generalization reduces precision, it never invents it).
-    snap_grid <- sensitive_uncertainty_snap_grid(df, lat, lon)
-    snap <- target & !is.na(snap_grid)
-    already_masked <- sensitive_already_masked_rows(df) & !snap
-    n_upstream_preserved <- sum(target & already_masked)
-    target <- target & !already_masked
-    has_coord <- !is_blank_cell(df$decimalLatitude) | !is_blank_cell(df$decimalLongitude)
-    n_withheld <- sum(decided$sensitive & !is.na(row_grid) & row_grid > 0 &
-                          has_coord & !point_ok & !already_masked)
-
-    exist_prec <- existing_precision_grid(df)
-    base_grid <- row_grid
-    base_grid[snap] <- snap_grid[snap]
-    eff_grid <- base_grid
-    has_prec <- !is.na(exist_prec) & !is.na(base_grid)
-    eff_grid[has_prec] <- pmax(base_grid[has_prec], exist_prec[has_prec])
-    n_clamped_to_precision <- sum(target & has_prec & base_grid < exist_prec)
-
+    # The map shows only what Saira changes: publisher-generalized rows
+    # (ADR-095) and withheld points (B16) ride to the banner as counts.
+    plan <- sensitive_generalization_plan(df, generalization, decisions)
     set_lock_attrs <- function(d) {
-        attr(d, "n_clamped_to_precision") <- n_clamped_to_precision
-        attr(d, "n_upstream_preserved") <- n_upstream_preserved
-        attr(d, "n_withheld") <- n_withheld
+        attr(d, "n_clamped_to_precision") <- plan$n_clamped_to_precision
+        attr(d, "n_upstream_preserved") <- plan$n_skipped_already_masked
+        attr(d, "n_withheld") <- sum(plan$withheld)
         d
     }
 
-    if (!any(target)) {
+    if (!any(plan$target)) {
         return(set_lock_attrs(empty))
     }
-    idx <- which(target)
-    g <- eff_grid[idx]
-    gen_lat <- round(round(lat[idx] / g) * g, 6L)
-    gen_lon <- round(round(lon[idx] / g) * g, 6L)
-    # Same point-radius uncertainty the export writes (centre -> furthest
-    # corner, combined additively with any original record uncertainty).
-    unc0 <- if ("coordinateUncertaintyInMeters" %in% names(df)) {
-        uncertainty_meters(df$coordinateUncertaintyInMeters)[idx]
-    } else {
-        rep(0, length(idx))
-    }
-    unc0[is.na(unc0)] <- 0
-
+    idx <- which(plan$target)
     out <- data.frame(
         scientificName = as.character(df$scientificName)[idx],
-        tier = row_tier[idx],
-        lat = lat[idx], lon = lon[idx],
-        gen_lat = gen_lat, gen_lon = gen_lon,
-        unc_m = ceiling(sensitive_grid_uncertainty_m(g, gen_lon, gen_lat) + unc0),
+        tier = plan$tier[idx],
+        lat = plan$lat[idx], lon = plan$lon[idx],
+        gen_lat = plan$pub_lat[idx], gen_lon = plan$pub_lon[idx],
+        unc_m = plan$unc_m[idx],
         country_orig = NA_character_, country_gen = NA_character_,
         crosses = NA, stringsAsFactors = FALSE
     )
