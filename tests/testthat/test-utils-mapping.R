@@ -1,5 +1,5 @@
 # Title: Tests for Mapping Utilities
-# Author: RogÃ©rio Nunes Oliveira
+# Author: Rogerio Nunes Oliveira
 # Date: 2026-02-11
 # Version: 1.0
 
@@ -227,6 +227,24 @@ testthat::test_that("build_dynamic_properties_json merges a cell that holds a JS
         build_dynamic_properties_json(spaced, "dp"),
         c("{\"a\":\"x y\",\"n\":-2.5e3,\"t\":true}", "{\"s\":\"{x}\"}")
     )
+})
+
+testthat::test_that("build_dynamic_properties_json keeps the first copy of a key across cells", {
+    df <- data.frame(
+        a = c('{"k":"1"}', '{"k":"1","k":"2"}', '{"x":{"k":0}}'),
+        b = c('{"k":"2"}', "", '{"k":"3"}'),
+        k = c("4", "", ""),
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_warning(
+        out <- build_dynamic_properties_json(df, c("a", "b", "k")),
+        "Keys: k"
+    )
+    testthat::expect_identical(out, c('{"k":"1"}', '{"k":"1"}', '{"x":{"k":0},"k":"3"}'))
+    for (o in out) {
+        parsed <- jsonlite::parse_json(o)
+        testthat::expect_false(anyDuplicated(names(parsed)) > 0L)
+    }
 })
 
 testthat::test_that("build_dynamic_properties_json always writes valid JSON", {
@@ -1463,6 +1481,48 @@ testthat::test_that("merge_dynamic_property replaces a key the object already ha
         saira:::merge_dynamic_property("{\"mmaThreatStatus\":\"VU\"}", "mmaThreatStatus", NA),
         "{\"mmaThreatStatus\":\"VU\"}"
     )
+})
+
+testthat::test_that("merge_dynamic_property finds the key with spaces or an escape", {
+    out <- saira:::merge_dynamic_property(
+        c('{"mmaThreatStatus" : "VU"}', '{ "a" : 1 , "mmaThreatStatus":"VU" }',
+          '{"\\u006dmaThreatStatus":"VU"}'),
+        "mmaThreatStatus", "EN"
+    )
+    testthat::expect_identical(out, c(
+        '{"mmaThreatStatus":"EN"}', '{"a":1,"mmaThreatStatus":"EN"}', '{"mmaThreatStatus":"EN"}'
+    ))
+})
+
+# The flat fast path and the member path must agree. The reference here reads
+# every object member by member, then replaces the first copy of the key.
+testthat::test_that("merge_dynamic_property fast path matches the member reference", {
+    reference <- function(existing, key, value) {
+        pair <- paste0('"', key, '":"', saira:::json_escape_string(value), '"')
+        vapply(existing, function(x) {
+            m <- saira:::json_object_member_list(x)[[1]]
+            hit <- saira:::json_member_keys(m) == key
+            if (any(hit)) {
+                at <- which(hit)[[1]]
+                m[[at]] <- pair
+                m <- m[!hit | seq_along(m) == at]
+            } else {
+                m <- c(m, pair)
+            }
+            paste0("{", paste(m, collapse = ","), "}")
+        }, character(1), USE.NAMES = FALSE)
+    }
+    corpus <- c(
+        '{"k":"1"}', '{ "k" : "1" }', '{"a":"x,\\"k\\":1","k":2}', '{"a":"x,","k":true}',
+        '{"k":null,"b":-2.5e3,"k":"z"}', '{"b":"\\\\","k":"q"}', '{"kk":"1","k ":"2"}',
+        '{"a":"1"}', '{}', '{"a":"\\"k\\""}'
+    )
+    for (value in c("EN", 'a"b')) {
+        testthat::expect_identical(
+            saira:::merge_dynamic_property(corpus, "k", value),
+            reference(corpus, "k", value)
+        )
+    }
 })
 
 testthat::test_that("merge_dynamic_property gives repeated nested objects the same result as one", {
