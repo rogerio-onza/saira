@@ -13,6 +13,8 @@
 #'
 #' @param file_path Path to CSV file
 #' @param encoding Optional encoding override
+#' @param header If FALSE, the first line is a data row and the columns are
+#'   named col_1, col_2, ...
 #' @return Data frame
 #' @examples
 #' \dontrun{
@@ -22,63 +24,476 @@
 #'   df <- read_biodiversity_csv("data/biodiversity.csv", encoding = "UTF-8")
 #' }
 #' @export
-read_biodiversity_csv <- function(file_path, encoding = NULL) {
-    forced_encoding <- !is.null(encoding)
-    if (!forced_encoding) encoding <- detect_encoding(file_path)
+read_biodiversity_csv <- function(file_path, encoding = NULL, header = TRUE) {
+    decoded <- decode_text_file(file_path, encoding)
+    lines <- decoded$lines
+    report <- decoded$report
 
-    delimiter <- detect_delimiter(file_path)
+    # Excel writes "sep=;" as line 1 of a CSV it saves for another locale.
+    delimiter <- NULL
+    if (length(lines) > 0L && grepl("^sep=.$", lines[[1L]])) {
+        delimiter <- substr(lines[[1L]], 5L, 5L)
+        lines <- lines[-1L]
+        report$sep_line <- TRUE
+    }
+    if (is.null(delimiter)) delimiter <- delimiter_from_line(header_record(lines))
 
-    read_with_enc <- function(enc) {
-        as.data.frame(tryCatch(
+    tmp <- tempfile(fileext = ".csv")
+    on.exit(unlink(tmp), add = TRUE)
+    writeLines(lines, tmp, useBytes = TRUE)
+    # The lines are as large as the data frame. Free them before readr runs:
+    # readr allocates outside the R heap, so it does not start a collection.
+    rm(lines, decoded)
+    invisible(gc(verbose = FALSE))
+
+    parsed <- withCallingHandlers(
+        tryCatch(
             readr::read_delim(
-                file_path,
+                tmp,
                 delim = delimiter,
-                locale = readr::locale(encoding = enc),
+                locale = readr::locale(encoding = "UTF-8"),
+                col_names = header,
                 col_types = readr::cols(.default = readr::col_character()),
                 show_col_types = FALSE,
-                name_repair = "unique"
+                name_repair = "minimal",
+                progress = FALSE
             ),
             error = function(e) {
                 utils::read.csv(
-                    file_path,
-                    fileEncoding = enc,
+                    tmp,
+                    fileEncoding = "UTF-8",
                     sep = delimiter,
+                    header = header,
                     colClasses = "character",
-                    stringsAsFactors = FALSE
+                    stringsAsFactors = FALSE,
+                    check.names = FALSE
                 )
             }
-        ))
-    }
-
-    df <- read_with_enc(encoding)
-
-    if (!forced_encoding) {
-        candidates <- c("Latin1", "Windows-1252")
-        candidates <- candidates[candidates != encoding]
-
-        invalid <- find_first_invalid_utf8_cell(df)
-        if (!is.null(invalid)) {
-            warning(sprintf(
-                "Invalid UTF-8 in column %s row %d; retrying with alternative encoding",
-                invalid$column, invalid$row
-            ))
-            for (retry_enc in candidates) {
-                df <- read_with_enc(retry_enc)
-                encoding <- retry_enc
-                if (is.null(find_first_invalid_utf8_cell(df))) break
+        ),
+        # The ragged lines go to the read report. The readr warning only
+        # reached the console, and under warn = 2 it became an error.
+        warning = function(w) {
+            if (grepl("parsing issues", conditionMessage(w), fixed = TRUE)) {
+                invokeRestart("muffleWarning")
             }
         }
+    )
+    probs <- if (inherits(parsed, "tbl_df")) readr::problems(parsed) else NULL
+    if (is.data.frame(probs) && nrow(probs) > 0L) {
+        bad <- sort(unique(probs$row[grepl("columns", probs$expected, fixed = TRUE)]))
+        report$ragged_count <- length(bad)
+        report$ragged_lines <- utils::head(bad, 5L)
+    }
+    df <- as.data.frame(parsed, stringsAsFactors = FALSE)
+    if (!header) names(df) <- paste0("col_", seq_len(ncol(df)))
+    finish_upload_frame(df, report)
+}
 
-        remaining <- find_first_invalid_utf8_cell(df)
-        if (!is.null(remaining)) {
-            warning(sprintf(
-                "Invalid UTF-8 bytes remain in column %s row %d after encoding retry",
-                remaining$column, remaining$row
-            ))
+# Reads a text file into UTF-8 lines. The file can mix encodings (rows pasted
+# from two exports), so each line is decoded on its own: UTF-8 when it is
+# valid, else Windows-1252, else Latin-1. Windows-1252 goes first because
+# Latin-1 decodes every byte, and its curly quote 0x92 becomes the invisible
+# C1 control U+0092. A DOS export (Excel "CSV (MS-DOS)") is CP850, and its
+# lines are read as CP850 (is_cp850_text()). CR, CRLF and LF all end a line:
+# readr does not split on a lone CR and merged the next record into the last
+# cell.
+decode_text_file <- function(file_path, encoding = NULL) {
+    report <- list(encoding_lines = c(), utf16 = FALSE)
+    size <- file.info(file_path)$size
+    bytes <- if (is.na(size) || size == 0L) raw(0) else readBin(file_path, "raw", n = size)
+    n <- length(bytes)
+    utf16 <- NULL
+    if (n >= 2L && bytes[1L] == as.raw(0xff) && bytes[2L] == as.raw(0xfe)) {
+        utf16 <- "UTF-16LE"
+    } else if (n >= 2L && bytes[1L] == as.raw(0xfe) && bytes[2L] == as.raw(0xff)) {
+        utf16 <- "UTF-16BE"
+    }
+    if (!is.null(utf16)) {
+        text <- iconv(list(bytes[-(1:2)]), from = utf16, to = "UTF-8")
+        if (is.na(text)) stop("The file has a UTF-16 mark, but its bytes are not valid UTF-16.")
+        report$utf16 <- TRUE
+        encoding <- "UTF-8"
+    } else {
+        if (n >= 3L && all(bytes[1:3] == as.raw(c(0xef, 0xbb, 0xbf)))) bytes <- bytes[-(1:3)]
+        # bytes == 0 builds a logical vector 4 times the file size (1 GB for a
+        # 250 MB file). grepRaw() scans the bytes with no copy.
+        if (length(grepRaw(as.raw(0L), bytes, fixed = TRUE)) > 0L) {
+            stop("The file has NUL bytes. Save it as UTF-8 text (CSV UTF-8 in Excel).")
+        }
+        text <- rawToChar(bytes)
+    }
+    rm(bytes)
+    # A split on a fixed "\n" is about 15 times faster than the regex. Only a
+    # file with a lone CR needs the regex.
+    if (!grepl("\r", text, fixed = TRUE, useBytes = TRUE)) {
+        lines <- strsplit(text, "\n", fixed = TRUE, useBytes = TRUE)[[1L]]
+    } else if (!grepl("\r([^\n]|$)", text, useBytes = TRUE)) {
+        lines <- strsplit(text, "\n", fixed = TRUE, useBytes = TRUE)[[1L]]
+        lines <- sub("\r$", "", lines, useBytes = TRUE)
+    } else {
+        lines <- strsplit(text, "\r\n|\r|\n", useBytes = TRUE)[[1L]]
+    }
+    rm(text)
+    if (length(lines) == 0L) lines <- character(0)
+
+    if (!is.null(encoding)) {
+        lines <- iconv(lines, from = encoding, to = "UTF-8", sub = "?")
+        Encoding(lines) <- "UTF-8"
+        return(list(lines = lines, report = report))
+    }
+    ok <- validUTF8(lines)
+    enc <- ifelse(ok, "UTF-8", "Windows-1252")
+    if (any(!ok) && is_cp850_text(lines[!ok])) {
+        # CP850 decodes every byte.
+        lines[!ok] <- iconv(lines[!ok], from = "CP850", to = "UTF-8")
+        enc[!ok] <- "CP850"
+    } else if (any(!ok)) {
+        cp <- iconv(lines[!ok], from = "CP1252", to = "UTF-8")
+        # Bytes 0x81, 0x8D, 0x8F, 0x90 and 0x9D have no CP1252 character.
+        miss <- is.na(cp)
+        if (any(miss)) {
+            cp[miss] <- iconv(lines[!ok][miss], from = "latin1", to = "UTF-8")
+            enc[which(!ok)[miss]] <- "Latin-1"
+        }
+        lines[!ok] <- cp
+    }
+    Encoding(lines) <- "UTF-8"
+    counts <- table(enc)
+    report$encoding_lines <- stats::setNames(as.integer(counts), names(counts))
+    list(lines = lines, report = report)
+}
+
+# In CP850, "c-cedilla" is 0x87 and "a-tilde" is 0xC6, which Windows-1252
+# shows as a double dagger and "AE". Each set below holds the bytes that are
+# Portuguese lowercase letters in only one of the two code pages. The first
+# 5000 lines are enough to decide, and a full copy of a large file is not.
+is_cp850_text <- function(lines) {
+    bytes <- charToRaw(paste(utils::head(lines, 5000L), collapse = ""))
+    counts <- tabulate(as.integer(bytes), nbins = 255L)
+    dos <- c(0x81:0x83, 0x87, 0x88, 0xA1:0xA4, 0xC6)
+    win <- c(0xE1, 0xE3, 0xE7, 0xEA, 0xED, 0xF3:0xF5, 0xFA)
+    sum(counts[dos]) > sum(counts[win])
+}
+
+# The header record: a quoted column name can hold a line break, so the lines
+# join until the quotes close (AUD-14). After 50 lines with an open quote, the
+# first line is the header.
+header_record <- function(lines) {
+    quotes <- 0L
+    for (i in seq_len(min(length(lines), 50L))) {
+        quotes <- quotes + nchar(gsub("[^\"]", "", lines[[i]], useBytes = TRUE), type = "bytes")
+        if (quotes %% 2L == 0L) return(paste(lines[seq_len(i)], collapse = "\n"))
+    }
+    lines[1L]
+}
+
+# Delimiter from the header line: the most frequent of tab, ";" and ",",
+# with quoted text removed ("nome, autor" is one column name).
+delimiter_from_line <- function(first_line) {
+    if (length(first_line) == 0L || is.na(first_line) || !nzchar(first_line)) return(",")
+    first_line <- gsub("\"[^\"]*\"", "", first_line, useBytes = TRUE)
+    count_byte <- function(ch) {
+        sum(gregexpr(ch, first_line, fixed = TRUE, useBytes = TRUE)[[1]] > 0L)
+    }
+    comma_count <- count_byte(",")
+    semicolon_count <- count_byte(";")
+    tab_count <- count_byte("\t")
+    if (tab_count >= comma_count && tab_count >= semicolon_count) {
+        "\t"
+    } else if (semicolon_count > comma_count) {
+        ";"
+    } else {
+        ","
+    }
+}
+
+# Characters a user cannot see but that break a match: NBSP between genus and
+# epithet, a zero-width space inside a word, bidi controls before a locality,
+# a C1 control from a mis-decoded byte (U+0092 for a curly quote).
+# NBSP and the line/paragraph separators become a plain space. The others go.
+invisible_char_pattern <- "(*UTF)[\\x{0080}-\\x{009F}\\x{200B}-\\x{200F}\\x{202A}-\\x{202E}\\x{2060}\\x{FEFF}\\x{00AD}]"
+space_char_pattern <- "(*UTF)[\\x{00A0}\\x{2028}\\x{2029}\\x{2007}\\x{202F}]"
+
+clean_invisible_chars <- function(x) {
+    if (!is.character(x)) return(x)
+    # Every pattern character is outside ASCII, so only those cells can change.
+    # One byte test is about 6 times faster than the two gsub() calls.
+    hit <- grepl("[^\\x01-\\x7f]", x, perl = TRUE, useBytes = TRUE)
+    if (!any(hit)) return(x)
+    out <- gsub(space_char_pattern, " ", x[hit], perl = TRUE)
+    x[hit] <- gsub(invisible_char_pattern, "", out, perl = TRUE)
+    x
+}
+
+# Text that a tool read from CP850 as Latin-1, as Saira 0.11 did: "Sao Paulo"
+# with an a-tilde arrives as "SAEo Paulo", and the c-cedilla as the C1 control
+# U+0087. Every character is still one Latin-1 byte, so the CP850 text comes
+# back whole. clean_invisible_chars() removes the C1 controls, so the repair
+# runs first. The marks below are the Latin-1 forms of Portuguese and Spanish
+# letters in CP850. A cell needs a mark next to a letter. U+0080, U+0085 and
+# U+0093 need a letter on both sides, because they are also the Windows-1252
+# euro sign, ellipsis and left quote. A column with such a cell also has its
+# other marks repaired: an a-acute read as NBSP often stands alone, and an
+# A-acute read as the micro sign is also a real symbol. The repaired text must
+# hold only ASCII, Portuguese and Spanish letters, so a correct "e-acute"
+# (CP850 "U-acute") stays as it is.
+dos_letter_marks <- "\\x{0081}-\\x{0083}\\x{0087}\\x{0088}\\x{0090}\\x{009A}\\x{00A1}-\\x{00A5}\\x{00C6}"
+dos_mark_pattern <- paste0(
+    "(*UTF)[A-Za-z][", dos_letter_marks, "]|[", dos_letter_marks, "][A-Za-z]",
+    "|[A-Za-z][\\x{0080}\\x{0085}\\x{0093}][A-Za-z]"
+)
+dos_weak_pattern <- paste0(
+    "(*UTF)[", dos_letter_marks, "\\x{0080}\\x{0085}\\x{0093}",
+    "\\x{00A6}\\x{00A7}\\x{00B5}-\\x{00B7}\\x{00D2}\\x{00D6}\\x{00E4}\\x{00E5}\\x{00F8}]",
+    "|[A-Za-z]\\x{00A0}|\\x{00A0}[A-Za-z]"
+)
+dos_plain_pattern <- paste0(
+    "(*UTF)^[\\x{0001}-\\x{007F}",
+    "\u00e1\u00e0\u00e2\u00e3\u00e9\u00ea\u00ed\u00f3\u00f4\u00f5\u00fa\u00fc\u00e7\u00f1",
+    "\u00c1\u00c0\u00c2\u00c3\u00c9\u00ca\u00cd\u00d3\u00d4\u00d5\u00da\u00dc\u00c7\u00d1",
+    "\u00aa\u00ba\u00b0]*$"
+)
+
+repair_dos_accents <- function(x) {
+    if (!is.character(x)) return(x)
+    # The letter marks as UTF-8 bytes. A correct accent is 0xC3 and one more
+    # byte, and of those only "AE" (0xC3 0x86) is a mark. One byte test skips
+    # a column of correct accents about 4 times faster than the letter test.
+    marked <- which(grepl("\\xc2[\\x80-\\x9f\\xa1-\\xa5]|\\xc3\\x86", x, perl = TRUE, useBytes = TRUE))
+    if (length(marked) == 0L) return(x)
+    strong <- marked[grepl(dos_mark_pattern, x[marked], perl = TRUE)]
+    if (length(strong) == 0L) return(x)
+    wide <- which(grepl("[^\\x01-\\x7f]", x, perl = TRUE, useBytes = TRUE))
+    cand <- wide[grepl(dos_weak_pattern, x[wide], perl = TRUE)]
+    fixed <- iconv(iconv(x[cand], "UTF-8", "latin1"), "CP850", "UTF-8")
+    ok <- !is.na(fixed) & grepl(dos_plain_pattern, fixed, perl = TRUE)
+    if (!any(ok & cand %in% strong)) return(x)
+    x[cand[ok]] <- fixed[ok]
+    x
+}
+
+# Column names as the user sees them: trimmed, a blank header named after its
+# position, a repeated header given a suffix. readr's "...18" suffix reached
+# the UI and the occurrence.txt header.
+repair_column_names <- function(x) {
+    x <- clean_invisible_chars(trimws(as.character(x)))
+    x[is.na(x)] <- ""
+    blank <- !nzchar(x)
+    x[blank] <- paste0("col_", which(blank))
+    make.unique(x, sep = "_")
+}
+
+# A header line that is a data row: its cells are numbers, coordinates or
+# dates. Two such cells, or one in four, is enough to ask the user.
+probable_data_header <- function(header) {
+    h <- trimws(as.character(header))
+    h <- h[!is.na(h) & nzchar(h)]
+    if (length(h) == 0L) return(FALSE)
+    data_like <- grepl(
+        paste0(
+            "^[-+\u2212]?[0-9]+([.,][0-9]+)?\\s*(\u00b0|m|km)?$",
+            "|^[0-9]{1,4}[/.-][0-9]{1,2}[/.-][0-9]{1,4}$",
+            "|^[0-9]+\u00b0"
+        ),
+        h, perl = TRUE
+    )
+    sum(data_like) >= 2L || mean(data_like) >= 0.25
+}
+
+# One line per adjustment the reader made, for the upload notice. The parse
+# warnings used to reach only the R console.
+upload_read_notes <- function(report, lang = "en") {
+    if (!is.list(report)) return(character(0))
+    notes <- character(0)
+    if (isTRUE(report$utf16)) notes <- c(notes, tr("upload_report_utf16", lang))
+    enc <- report$encoding_lines
+    other <- enc[names(enc) != "UTF-8"]
+    if (length(other) > 0L && sum(other) > 0L) {
+        notes <- c(notes, sprintf(
+            tr("upload_report_encoding", lang),
+            sum(other), paste(names(other), collapse = " / ")
+        ))
+    }
+    if (isTRUE(report$sep_line)) notes <- c(notes, tr("upload_report_sep_line", lang))
+    if (isTRUE(report$ragged_count > 0L)) {
+        notes <- c(notes, sprintf(
+            tr("upload_report_ragged", lang),
+            report$ragged_count, paste(report$ragged_lines, collapse = ", ")
+        ))
+    }
+    if (isTRUE(report$empty_rows > 0L)) {
+        notes <- c(notes, sprintf(tr("upload_report_empty_rows", lang), report$empty_rows))
+    }
+    if (length(report$footer_rows) > 0L) {
+        notes <- c(notes, sprintf(
+            tr("upload_report_footer", lang),
+            length(report$footer_rows),
+            paste(utils::head(report$footer_rows, 5L), collapse = ", ")
+        ))
+    }
+    if (isTRUE(report$dos_accent_cells > 0L)) {
+        notes <- c(notes, sprintf(tr("upload_report_dos_accents", lang), report$dos_accent_cells))
+    }
+    if (isTRUE(report$invisible_cells > 0L)) {
+        notes <- c(notes, sprintf(tr("upload_report_invisible", lang), report$invisible_cells))
+    }
+    if (length(report$duplicated_names) > 0L) {
+        notes <- c(notes, sprintf(
+            tr("upload_report_dup_names", lang),
+            paste(report$duplicated_names, collapse = ", ")
+        ))
+    }
+    if (isTRUE(report$blank_names > 0L)) {
+        notes <- c(notes, sprintf(tr("upload_report_blank_names", lang), report$blank_names))
+    }
+    notes
+}
+
+# Shared end of the CSV and xlsx readers: repaired names, invisible
+# characters, blank rows and probable footer rows. The findings go to the
+# "read_report" attribute, which the upload tab shows to the user.
+finish_upload_frame <- function(df, report = list()) {
+    raw_names <- names(df)
+    report$headerless_suspect <- probable_data_header(raw_names)
+    trimmed <- trimws(raw_names)
+    dup <- unique(trimmed[nzchar(trimmed) & duplicated(trimmed)])
+    report$duplicated_names <- dup
+    report$blank_names <- sum(!nzchar(trimmed))
+    names(df) <- repair_column_names(raw_names)
+
+    changed <- 0L
+    repaired <- 0L
+    for (col in names(df)) {
+        v <- df[[col]]
+        if (!is.character(v)) next
+        accents <- repair_dos_accents(v)
+        fixed <- !is.na(v) & accents != v
+        repaired <- repaired + sum(fixed)
+        cleaned <- clean_invisible_chars(accents)
+        diff <- !is.na(v) & cleaned != accents
+        if (any(diff)) changed <- changed + sum(diff)
+        if (any(diff | fixed)) df[[col]] <- cleaned
+    }
+    report$invisible_cells <- changed
+    report$dos_accent_cells <- repaired
+
+    if (nrow(df) > 0L && ncol(df) > 0L) {
+        # Same test as nzchar(trimws(v)), in one regex pass instead of two.
+        filled <- vapply(df, function(v) grepl("[^ \t\r\n]", v), logical(nrow(df)))
+        if (!is.matrix(filled)) filled <- matrix(filled, nrow = nrow(df))
+        n_filled <- rowSums(filled)
+        empty <- n_filled == 0L
+        report$empty_rows <- sum(empty)
+        # One filled cell in a wide row reads like "Total de registros: 138".
+        footer <- which(n_filled[!empty] == 1L & ncol(df) >= 4L)
+        df <- df[!empty, , drop = FALSE]
+        rownames(df) <- NULL
+        report$footer_rows <- footer
+    }
+    attr(df, "read_report") <- report
+    df
+}
+
+#' Read the first sheet of an Excel .xlsx file as text
+#'
+#' Every column comes back as character, like \code{read_biodiversity_csv()}.
+#' A plain \code{col_types = "text"} read turns a date cell into its Excel
+#' serial number ("45372"), so the sheet is read cell by cell and each cell is
+#' converted from its own type: dates to ISO 8601, numbers without scientific
+#' notation.
+#'
+#' @param file_path Path to the .xlsx file
+#' @param header If FALSE, the first row is a data row and the columns are
+#'   named col_1, col_2, ...
+#' @return Data frame of character columns
+#' @export
+read_biodiversity_xlsx <- function(file_path, header = TRUE) {
+    # readxl prints a message for each renamed blank header.
+    sheet <- suppressMessages(readxl::read_xlsx(
+        file_path,
+        sheet = 1L,
+        col_names = header,
+        col_types = "list",
+        .name_repair = "minimal"
+    ))
+    df <- as.data.frame(lapply(sheet, function(col) {
+        vapply(col, xlsx_cell_to_text, character(1))
+    }), stringsAsFactors = FALSE, check.names = FALSE)
+    # In a 1904 workbook, serial zero is a real date and also the base of a
+    # time-only value. Only the cell format tells them apart.
+    has_mac_origin <- any(vapply(sheet, function(col) any(vapply(col, function(x) {
+        inherits(x, "POSIXt") && !is.na(x) && format(x, "%Y-%m-%d", tz = "UTC") == "1904-01-01"
+    }, logical(1))), logical(1)))
+    if (has_mac_origin) {
+        cells <- xlsx_1904_time_cells(file_path)
+        for (i in seq_len(nrow(cells))) {
+            row <- cells$row[i] - as.integer(header)
+            col <- cells$col[i]
+            if (row < 1L || row > nrow(df) || col < 1L || col > ncol(df)) next
+            value <- sheet[[col]][[row]]
+            if (inherits(value, "POSIXt") && !is.na(value)) {
+                df[[col]][row] <- format(value, "%H:%M:%S", tz = "UTC")
+            }
         }
     }
+    names(df) <- if (header) names(sheet) else paste0("col_", seq_len(ncol(sheet)))
+    finish_upload_frame(df)
+}
 
-    df
+# Time-only cells, as positions from the first populated row and column that
+# readxl reads. The header row counts as row 1.
+xlsx_1904_time_cells <- function(file_path) {
+    read_part <- function(part) {
+        con <- unz(file_path, part, open = "rb")
+        on.exit(close(con), add = TRUE)
+        xml2::xml_ns_strip(xml2::read_xml(con))
+    }
+    empty <- data.frame(row = integer(0), col = integer(0))
+    workbook <- read_part("xl/workbook.xml")
+    if (!xml2::xml_attr(xml2::xml_find_first(workbook, ".//workbookPr"), "date1904") %in% c("1", "true")) return(empty)
+    styles <- read_part("xl/styles.xml")
+    custom <- xml2::xml_find_all(styles, ".//numFmts/numFmt")
+    formats <- tolower(xml2::xml_attr(custom, "formatCode"))
+    formats <- gsub('"[^"]*"|\\\\.', "", formats)
+    formats <- gsub("\\[([hms]+)\\]", "\\1", formats)
+    formats <- gsub("\\[[^]]*\\]", "", formats)
+    time_ids <- c(18:21, 45:47, as.integer(xml2::xml_attr(custom, "numFmtId"))[
+        grepl("[hs]", formats) & !grepl("[yd]", formats)
+    ])
+    xf <- xml2::xml_find_all(styles, ".//cellXfs/xf")
+    time_styles <- which(as.integer(xml2::xml_attr(xf, "numFmtId")) %in% time_ids) - 1L
+    if (!length(time_styles)) return(empty)
+
+    # The workbook relationships give the sheet order, not the sheet filename.
+    first <- xml2::xml_find_first(workbook, ".//sheets/sheet")
+    rels <- xml2::xml_find_all(read_part("xl/_rels/workbook.xml.rels"), ".//Relationship")
+    target <- xml2::xml_attr(rels, "Target")[match(xml2::xml_attr(first, "id"), xml2::xml_attr(rels, "Id"))]
+    part <- if (startsWith(target, "/")) substring(target, 2L) else paste0("xl/", target)
+    cells <- xml2::xml_find_all(read_part(part), ".//sheetData/row/c[v or is]")
+    if (!length(cells)) return(empty)
+    refs <- xml2::xml_attr(cells, "r")
+    rows <- as.integer(sub("^[A-Z]+", "", refs))
+    cols <- vapply(sub("[0-9]+$", "", refs), function(x) {
+        digits <- utf8ToInt(x) - utf8ToInt("A") + 1L
+        sum(digits * 26 ^ rev(seq_along(digits) - 1L))
+    }, numeric(1))
+    serial <- suppressWarnings(as.numeric(xml2::xml_text(xml2::xml_find_first(cells, "./v"))))
+    keep <- which(xml2::xml_attr(cells, "s") %in% as.character(time_styles) &
+                  !is.na(serial) & serial >= 0 & serial < 1)
+    data.frame(row = rows[keep] - min(rows) + 1L, col = as.integer(cols[keep] - min(cols) + 1L))
+}
+
+xlsx_cell_to_text <- function(x) {
+    if (length(x) == 0L || is.na(x)) return(NA_character_)
+    if (inherits(x, "POSIXt")) {
+        # A time-only cell ("h:mm") is a fraction of a day, which readxl reads
+        # as a time on 1899-12-31. No date cell has that day (AUD-13).
+        if (format(x, "%Y-%m-%d", tz = "UTC") == "1899-12-31") return(format(x, "%H:%M:%S", tz = "UTC"))
+        fmt <- if (format(x, "%H:%M:%S", tz = "UTC") == "00:00:00") "%Y-%m-%d" else "%Y-%m-%dT%H:%M:%S"
+        return(format(x, fmt, tz = "UTC"))
+    }
+    if (is.numeric(x)) return(format(x, scientific = FALSE, digits = 15L, trim = TRUE))
+    as.character(x)
 }
 
 #' Detect file encoding
@@ -132,12 +547,18 @@ detect_encoding <- function(file_path) {
 #' @param text Character vector
 #' @return Character vector without BOM prefix
 strip_bom <- function(text) {
-    sub("^\ufeff", "", text)
+    # useBytes: a Latin-1 header is not valid UTF-8, and a character match on it
+    # fails with "input string is invalid".
+    sub("^\ufeff", "", text, useBytes = TRUE)
 }
 
 # Returns list(column, row) for the first character cell with invalid UTF-8 bytes,
 # or NULL if all columns are clean.
 find_first_invalid_utf8_cell <- function(df) {
+    # Row 0 is the header: a Latin-1 file with ASCII data rows has its only
+    # accents in the column names.
+    bad_names <- which(is.na(iconv(names(df), from = "UTF-8", to = "UTF-8")))
+    if (length(bad_names) > 0L) return(list(column = names(df)[[bad_names[[1L]]]], row = 0L))
     for (col in names(df)) {
         if (!is.character(df[[col]])) next
         converted <- iconv(df[[col]], from = "UTF-8", to = "UTF-8")
@@ -158,55 +579,101 @@ detect_delimiter <- function(file_path) {
     if (length(first_line) == 0L || !nzchar(first_line)) {
         return(",")
     }
-    first_line <- strip_bom(first_line)
+    # Bytes, not characters: the header can still be Latin-1 here.
+    delimiter_from_line(strip_bom(first_line))
+}
 
-    # Count potential delimiters
-    comma_count <- stringr::str_count(first_line, ",")
-    semicolon_count <- stringr::str_count(first_line, ";")
-    tab_count <- stringr::str_count(first_line, "\t")
+# Day/month/year with a separator, the only shape whose field order a
+# spreadsheet hides. A two-digit year counts only after "/".
+.dmy_re <- "^(\\d{1,2})([/.-])(\\d{1,2})\\2(\\d{4}|\\d{2})$"
 
-    # Return most common delimiter
-    if (tab_count >= comma_count && tab_count >= semicolon_count) {
-        return("\t")
-    } else if (semicolon_count > comma_count) {
-        return(";")
-    } else {
-        return(",")
+dmy_fields <- function(date_chr) {
+    m <- regmatches(date_chr, regexec(.dmy_re, date_chr))
+    hit <- lengths(m) == 5L
+    na <- rep(NA_integer_, length(hit))
+    out <- data.frame(hit = hit, a = na, b = na, year = na)
+    if (!any(hit)) {
+        return(out)
     }
+    parts <- do.call(rbind, m[hit])
+    year <- parts[, 5]
+    short <- nchar(year) == 2L
+    out$hit[hit] <- !short | parts[, 3] == "/"
+    out$a[hit] <- as.integer(parts[, 2])
+    out$b[hit] <- as.integer(parts[, 4])
+    yy <- as.integer(year)
+    current_yy <- as.integer(format(Sys.Date(), "%y"))
+    yy[short] <- ifelse(yy[short] <= current_yy, 2000L + yy[short], 1900L + yy[short])
+    out$year[hit] <- yy
+    out
+}
+
+dmy_iso <- function(year, month, day) {
+    iso <- sprintf("%04d-%02d-%02d", year, month, day)
+    ok <- !is.na(as.Date(iso, format = "%Y-%m-%d"))
+    ifelse(ok, iso, NA_character_)
 }
 
 # Decide whether a column of slash/dash/dot dates is day-first (DD/MM) or
-# month-first (MM/DD). Any value with a first component > 12 proves day-first;
-# otherwise any value with a second component > 12 proves month-first. When no
-# value disambiguates (every component <= 12), default to month-first (MM/DD):
-# most published datasets use the English convention, so this is the safer
-# long-term guess. Year-first ISO dates are ignored here.
+# month-first (MM/DD). A value with one field > 12 is a vote, but only when it
+# is a real date: "31/04/2020" proves nothing. The majority wins. A tie, or a
+# column with no vote, returns NA: the order is unknown, and parse_dates_to_iso()
+# then leaves the ambiguous values raw for the Preview instead of a guess.
 detect_day_first <- function(date_chr) {
-    orderable <- "^(\\d{1,2})[/.-](\\d{1,2})[/.-]\\d{2,4}$"
-    parts <- regmatches(date_chr, regexec(orderable, date_chr))
-    parts <- parts[lengths(parts) == 3L]
-    if (!length(parts)) {
-        return(FALSE)
+    f <- dmy_fields(as.character(date_chr))
+    f <- f[f$hit, , drop = FALSE]
+    if (!nrow(f)) {
+        return(NA)
     }
-    first_comp <- as.integer(vapply(parts, `[`, character(1), 2L))
-    second_comp <- as.integer(vapply(parts, `[`, character(1), 3L))
-    if (any(first_comp > 12, na.rm = TRUE)) {
-        return(TRUE)
+    day_votes <- sum(f$a > 12L & !is.na(dmy_iso(f$year, f$b, f$a)))
+    month_votes <- sum(f$b > 12L & !is.na(dmy_iso(f$year, f$a, f$b)))
+    if (day_votes == month_votes) {
+        return(NA)
     }
-    if (any(second_comp > 12, na.rm = TRUE)) {
-        return(FALSE)
+    day_votes > month_votes
+}
+
+# A value with a field > 12, or with the same day and month, has one reading
+# and parses by itself. The column vote orders the rest. Because only valid
+# dates vote, a second pass over the values the first pass left raw finds no
+# vote and leaves them raw again, so the Preview and the export agree.
+parse_dmy_dates <- function(date_chr) {
+    f <- dmy_fields(date_chr)
+    result <- rep(NA_character_, length(date_chr))
+    if (!any(f$hit)) {
+        return(result)
     }
-    FALSE
+    day_first <- detect_day_first(date_chr[f$hit])
+    a <- f$a
+    b <- f$b
+    order <- rep(NA, length(a))
+    order[which(a > 12L & b <= 12L)] <- TRUE
+    order[which(b > 12L & a <= 12L)] <- FALSE
+    order[which(a == b)] <- TRUE
+    order[which(f$hit & is.na(order) & a <= 12L & b <= 12L)] <- day_first
+    use <- f$hit & !is.na(order)
+    day <- ifelse(order, a, b)
+    month <- ifelse(order, b, a)
+    result[use] <- dmy_iso(f$year[use], month[use], day[use])
+    result
+}
+
+# Values the column vote cannot order: both fields <= 12 and different.
+is_ambiguous_dmy <- function(date_chr) {
+    f <- dmy_fields(as.character(date_chr))
+    (f$hit & f$a <= 12L & f$b <= 12L & f$a != f$b) %in% TRUE
 }
 
 # A spreadsheet or a GPS logger writes the collection time next to the date
 # ("25/12/2023 14:30"), and only the date half needs normalising. Splitting the
 # time off here is what lets the day-first vote and every format spec below see
 # a bare date; the time half is re-attached with the ISO "T" separator, so an
-# hour the collector recorded is never dropped on the way to the export.
+# hour the collector recorded is never dropped on the way to the export. An
+# impossible time ("25:61") does not split, so the value stays as typed and the
+# Preview flags it (AUD-10).
 .datetime_split_re <- paste0(
-    "^(.+?)[ T]([0-9]{1,2}:[0-9]{2}(:[0-9]{2})?)",
-    "[[:space:]]*(Z|[+-][0-9]{2}:?[0-9]{2})?$"
+    "^(.+?)[ T](([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?)",
+    "[[:space:]]*(Z|[+-](0[0-9]|1[0-4]):?[0-5][0-9])?$"
 )
 
 split_time_suffix <- function(x) {
@@ -222,7 +689,7 @@ split_time_suffix <- function(x) {
     date_part[has_time] <- trimws(sub(.datetime_split_re, "\\1", with_time, perl = TRUE))
     time_part[has_time] <- paste0(
         sub("^([0-9]):", "0\\1:", sub(.datetime_split_re, "\\2", with_time, perl = TRUE)),
-        sub(.datetime_split_re, "\\4", with_time, perl = TRUE)
+        sub(.datetime_split_re, "\\5", with_time, perl = TRUE)
     )
 
     list(date = date_part, time = time_part)
@@ -246,25 +713,16 @@ parse_dates_to_iso <- function(date_vector) {
     date_chr <- split$date
     time_suffix <- split$time
 
-    # Disambiguate day-first (DD/MM) vs month-first (MM/DD) for slash/dash/dot
-    # dates by voting over the whole column: a value whose first component is
-    # > 12 proves day-first; one whose second component is > 12 proves
-    # month-first. A fully ambiguous column (every component <= 12) falls back
-    # to month-first (MM/DD), the safer guess for English-published datasets.
-    day_first <- detect_day_first(date_chr)
+    # Day/month/year values follow the column vote (see parse_dmy_dates()).
+    dmy <- parse_dmy_dates(ifelse(remaining, date_chr, ""))
+    result[!is.na(dmy)] <- dmy[!is.na(dmy)]
+    remaining[!is.na(dmy)] <- FALSE
 
     # Parse in batches by format to avoid element-wise loops.
-    # Day/month accept 1-2 digits so unpadded inputs (e.g. 2/9/2021, exported by
-    # spreadsheets) parse the same as zero-padded ones (02/09/2021).
-    # Year-first values are never ambiguous, so they carry no day-first vote.
-    dm <- if (day_first) c("%d", "%m") else c("%m", "%d")
     format_specs <- list(
         list(regex = "^\\d{4}-\\d{1,2}-\\d{1,2}$", fmt = "%Y-%m-%d"), # 2023-12-25 (ISO)
         list(regex = "^\\d{4}/\\d{1,2}/\\d{1,2}$", fmt = "%Y/%m/%d"),
-        list(regex = "^\\d{4}\\.\\d{1,2}\\.\\d{1,2}$", fmt = "%Y.%m.%d"),
-        list(regex = "^\\d{1,2}/\\d{1,2}/\\d{4}$", fmt = sprintf("%s/%s/%%Y", dm[1], dm[2])),
-        list(regex = "^\\d{1,2}-\\d{1,2}-\\d{4}$", fmt = sprintf("%s-%s-%%Y", dm[1], dm[2])),
-        list(regex = "^\\d{1,2}\\.\\d{1,2}\\.\\d{4}$", fmt = sprintf("%s.%s.%%Y", dm[1], dm[2]))
+        list(regex = "^\\d{4}\\.\\d{1,2}\\.\\d{1,2}$", fmt = "%Y.%m.%d")
     )
 
     for (spec in format_specs) {
@@ -286,39 +744,6 @@ parse_dates_to_iso <- function(date_vector) {
             resolved_idx <- idx[matches][success]
             result[resolved_idx] <- format(parsed[success], "%Y-%m-%d")
             remaining[resolved_idx] <- FALSE
-        }
-    }
-
-    # Handle DD/MM/YY with dynamic century cutoff.
-    idx <- which(remaining)
-    if (length(idx)) {
-        yy_candidates <- date_chr[idx]
-        yy_re <- "^(\\d{1,2})/(\\d{1,2})/(\\d{2})$"
-        yy_mask <- grepl(yy_re, yy_candidates)
-
-        if (any(yy_mask)) {
-            yy_values <- yy_candidates[yy_mask]
-            comp1 <- as.integer(sub(yy_re, "\\1", yy_values))
-            comp2 <- as.integer(sub(yy_re, "\\2", yy_values))
-            day <- if (day_first) comp1 else comp2
-            month <- if (day_first) comp2 else comp1
-            year_two_digits <- as.integer(sub(yy_re, "\\3", yy_values))
-            current_yy <- as.integer(format(Sys.Date(), "%y"))
-            full_year <- ifelse(
-                year_two_digits <= current_yy,
-                2000L + year_two_digits,
-                1900L + year_two_digits
-            )
-
-            iso_candidates <- sprintf("%04d-%02d-%02d", full_year, month, day)
-            parsed <- as.Date(iso_candidates, format = "%Y-%m-%d")
-            success <- !is.na(parsed)
-
-            if (any(success)) {
-                resolved_idx <- idx[yy_mask][success]
-                result[resolved_idx] <- format(parsed[success], "%Y-%m-%d")
-                remaining[resolved_idx] <- FALSE
-            }
         }
     }
 

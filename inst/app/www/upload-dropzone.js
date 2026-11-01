@@ -72,11 +72,15 @@
     }
 
     dropzone.dataset.dropzoneBound = "true";
+    observeProgress(section);
     var dragDepth = 0;
+
+    var fileNameEl = dropzone.querySelector(".upload-dropzone-filename");
 
     function syncHasFileState() {
       var hasFile = fileInput.files && fileInput.files.length > 0;
       dropzone.classList.toggle("has-file", !!hasFile);
+      if (fileNameEl) fileNameEl.textContent = hasFile ? fileInput.files[0].name : "";
     }
 
     fileInput.addEventListener("change", syncHasFileState);
@@ -124,6 +128,53 @@
       if (event.target === fileInput) return;
       fileInput.click();
     });
+
+    // The Home dropzone is a role="button" with no visible picker button, so
+    // Enter and Space must open the picker as a click does.
+    dropzone.addEventListener("keydown", function (event) {
+      if (event.target !== dropzone) return;
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      fileInput.click();
+    });
+  }
+
+  // Shiny writes "Upload complete" in English into the progress bar, with no
+  // option to translate it. The server sends the label in the current
+  // language, and each upload's bar swaps the text whenever Shiny writes it.
+  var uploadCompleteLabel = null;
+
+  function localizeBar(bar) {
+    // In English the label equals Shiny's text: writing it again would fire
+    // the bar's MutationObserver, which calls this again, without end.
+    if (uploadCompleteLabel && bar.textContent === "Upload complete" &&
+        uploadCompleteLabel !== bar.textContent) {
+      bar.textContent = uploadCompleteLabel;
+    }
+  }
+
+  function localizeUploadProgress() {
+    var bars = document.querySelectorAll(".shiny-file-input-progress .progress-bar");
+    Array.prototype.forEach.call(bars, localizeBar);
+  }
+
+  // One observer per upload bar: an observer on the page body ran on each
+  // change of every tab, table and modal.
+  function observeProgress(section) {
+    var bar = section && section.querySelector(".shiny-file-input-progress .progress-bar");
+    if (!bar) return;
+    new MutationObserver(function () {
+      localizeBar(bar);
+    }).observe(bar, { childList: true, characterData: true, subtree: true });
+  }
+
+  function registerUploadLabelHandler() {
+    if (!window.Shiny || window.__sairaUploadLabelHandler) return;
+    window.__sairaUploadLabelHandler = true;
+    window.Shiny.addCustomMessageHandler("saira-upload-complete-label", function (msg) {
+      uploadCompleteLabel = msg && msg.label ? msg.label : null;
+      localizeUploadProgress();
+    });
   }
 
   function bindAllDropzones() {
@@ -133,15 +184,22 @@
 
   function init() {
     bindAllDropzones();
+    registerUploadLabelHandler();
 
-    if (!window.__finchUploadDropzoneObserver && document.body) {
-      window.__finchUploadDropzoneObserver = new MutationObserver(function () {
-        bindAllDropzones();
-      });
-
-      window.__finchUploadDropzoneObserver.observe(document.body, {
-        childList: true,
-        subtree: true
+    // A modal (the mapping guide import) brings its own dropzone. Shiny binds
+    // its file input, then the dropzone around it gets bound. jQuery, not
+    // addEventListener: Shiny triggers shiny:bound as a jQuery event.
+    if (window.jQuery && !window.__sairaUploadBoundHandler) {
+      window.__sairaUploadBoundHandler = true;
+      window.jQuery(document).on("shiny:bound", function (event) {
+        var target = event.target;
+        if (event.bindingType !== "input" || !target || target.type !== "file") return;
+        var section = target.closest(".upload-section");
+        if (!section) return;
+        // After Shiny binds the rest of the content: the bind moves this input.
+        setTimeout(function () {
+          Array.prototype.forEach.call(section.querySelectorAll(".upload-dropzone"), bindDropzone);
+        }, 0);
       });
     }
   }

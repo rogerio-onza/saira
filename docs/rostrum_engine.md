@@ -113,8 +113,8 @@ Match direto no dicionário de sinônimos, com confiança variável.
 "lat" → dicionário → decimalLatitude (confidence: 0.95)
 → score = 0.95
 
-"y" → dicionário → decimalLatitude (confidence: 0.6, contexto cartesiano)
-→ score = 0.6 (requer validação forte de conteúdo)
+"y" → dicionário → decimalLatitude (confidence: 0.90)
+→ score = 0.90, mas o card fica no máximo em SUGERIDO (coluna de uma letra)
 ```
 
 #### 3. Token Overlap Completo (score = 0.7-0.8)
@@ -188,6 +188,13 @@ Cenário B: value_score = 0.7 (valores ambíguos)
 → Rejeitado (value_score abaixo de 0.8 necessário para token overlap)
 ```
 
+**Regras de nome do Stage 1 (ADR-139)**:
+- Sinônimo só casa com o nome normalizado inteiro. Sem acerto, o Stage 1 tenta o nome com abreviações expandidas: `inds` → `individuals`, `eff` → `effort`, `veg` → `vegetation`, `sp`/`spp` → `species`.
+- `#`, `n`, `num`, `nr` e `nro` viram `number` só nessa busca (`# of inds.` → `number of individuals`). Como token, `number` levaria `n_points` para `catalogNumber`.
+- Sinônimo achado pela expansão e coluna de uma letra (`X`, `Y`) ficam no máximo em SUGERIDO.
+- Termos temporais (`eventDate`, `year`, `month`, `day`, `modified`, `dateIdentified`) pedem nome exato. Só `eventDate` aceita sinônimo ou token overlap, quando 90% ou mais dos valores são datas. Esse card fica no máximo em SUGERIDO.
+- Coluna com o nome exato de um termo pertence a esse termo e não concorre a outro (`locationRemarks` não empata com `OBS` em `occurrenceRemarks`).
+
 ### 3.2 Value Score (Peso: 0.5)
 
 **Princípios**:
@@ -206,6 +213,10 @@ Cenário B: value_score = 0.7 (valores ambíguos)
 | `scientificName` | Padrão binomial (`Genus species`) + sem números isolados | 80% das amostras válidas |
 | `year` | Range 1600..2100 + inteiro | 95% das amostras válidas |
 | `individualCount` | Inteiro positivo | 100% das amostras válidas |
+| `occurrenceStatus` | Valor traduzível para `present`/`absent` | Abaixo de 30% → veto |
+| `basisOfRecord` | Valor traduzível para o vocabulário GBIF | Abaixo de 30% → veto |
+
+Nos dois termos de vocabulário, um nome exato ou sinônimo com menos de 80% de valores válidos fica com o score neutro (0.80): a etapa de valores traduz os valores desconhecidos depois. Um nome fraco com valores fora da lista é vetado (`IUCN_status` não vira `occurrenceStatus`). ADR-138.
 
 3. **Cálculo do score**:
 ```
@@ -247,6 +258,11 @@ Reduzem score quando há evidência contextual contrária.
 - Nome contém `depth`, `profund`, `altura` → penalidade -0.3 para coordenadas
 - Nome contém `count`, `numero`, `qtd` → penalidade -0.2 para datas
 - Nome é genérico (`campo1`, `col_a`) → penalidade -0.1 para qualquer termo
+- Nome de identificador (`id`, `identifier`, `codigo`, `cod`) → penalidade -0.3 (`identifier_context`) quando:
+  - o termo não guarda código (só `occurrenceID`, `locationID`, `eventID`, `parentEventID`, `identifiedByID`, `catalogNumber`, `recordNumber`, `associatedMedia` e `associatedReferences` aceitam);
+  - o qualificador nomeia outra entidade (`species_id` em `locationID`);
+  - o `id` está sozinho e o termo não é `occurrenceID`.
+- Qualificador que nomeia só a entidade do termo (`location_id`, `Road_ID` → `locationID`) soma +0.10 ao name score. Qualificador desconhecido não pune nem soma. ADR-138.
 
 **Aplicação**:
 ```
@@ -515,6 +531,10 @@ Se alias "collector" → decimalLatitude foi erro:
 3. Próximos uploads não usam esse alias
 4. Notificar usuário que criou
 ```
+
+**Substituição (ADR-140)**: a exportação é a decisão mais nova para cada coluna que ela mapeia. Os aliases vivos do mesmo escopo, dono e coluna que apontam para outro termo ficam `deprecated = 1`, com evento `alias_superseded`. Dois termos da mesma coluna na mesma exportação (`altitude` → elevação mínima e máxima) ficam os dois. `undo_session_aliases()` reativa o que a exportação substituiu. A busca ordena pelo horário completo de `updated_at`.
+
+**Desfazer (ADR-141)**: cada exportação grava com um `run_id` próprio. `undo_session_aliases(run_id)` deprecia só os aliases que a exportação criou (`alias_created`) ou reativou (`alias_reactivated`), e reativa os que ela substituiu. Um alias que já estava vivo e a exportação só confirmou (`alias_updated`) fica vivo.
 
 **Aprendizado incremental**:
 - Quando usuário **confirma** sugestão (score 0.75-0.89):

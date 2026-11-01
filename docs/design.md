@@ -1,8 +1,8 @@
 # Design System — Saíra Scientific Application
 
-> **Background:** `#f4f3ee` (warm beige) — non-negotiable  
+> **Background:** `#f5f6f8` (cinza frio) com painéis brancos (ADR-135)  
 > **Palette:** *Tangara fastuosa* + estados semânticos com personalidade  
-> **Version:** 4.3 — tipografia atualizada (Spectral → Source Serif 4) + auditoria de contraste
+> **Version:** 5.1 — visual plano e leve (ADR-127): sem sombra, sem gradiente, bordas neutras frias (ADR-135), IBM Plex Sans na interface (ADR-134)
 
 ---
 
@@ -58,10 +58,10 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 
 ```css
 /* ── Base ── */
---bg-main:       #f4f3ee;   /* NON-NEGOTIABLE */
+--bg-main:       #f5f6f8;   /* cinza frio, ADR-135 */
 --bg-card:       #ffffff;   /* NON-NEGOTIABLE */
 --text-primary:  #1C1C26;   /* Cauda */
---text-muted:    #6c757d;
+--text-muted:    #5F6570;   /* 5.4:1 sobre o cinza frio */
 
 /* ── Brand — do pássaro ── */
 --primary:       #38CFF6;   /* Peito */
@@ -87,32 +87,53 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 --info-border:    rgba(37, 38, 89, 0.20);
 
 /* ── Borders ── */
---border-light:   rgba(40, 51, 172, 0.08);
---border-default: rgba(40, 51, 172, 0.18);
---border-strong:  rgba(40, 51, 172, 0.35);
---border:         rgba(40, 51, 172, 0.18);
+--border-light:   #ECEEF2;
+--border-default: #E3E6EB;
+--border-strong:  #D3D8E0;
+--border:         var(--border-default);
+--warning-border-strong: rgba(255, 162, 4, 0.55);
+--error-border-strong:   rgba(192, 57, 43, 0.50);
 
 /* ── Backgrounds ── */
 --overlay:    rgba(28, 28, 38, 0.50);
 --hover-bg:   rgba(40, 51, 172, 0.07);
 --active-bg:  rgba(40, 51, 172, 0.13);
+--selected-bg: rgba(56, 207, 246, 0.12);  /* card selecionado, alvo de drop */
 
 /* ── Coordinate validation ── */
 --coord-ok:      #00A86B;
 --coord-missing: rgba(28, 28, 38, 0.35);
---coord-swapped: #8b5cf6;
+--coord-swapped:   #6D28D9;
+--coord-corrected: #0E7C86;
+
+/* ── Mapping badges ── */
+/* Estados do card (fundo claro + borda de 1px) */
+--state-mapped-border:    #A9D8C4;
+--state-attention-bg:     #FFFAF0;  --state-attention-border: #EFC98A;
+--state-missing-bg:       #FDF3F1;  --state-missing-border:   #E3A69D;
+
+/* Badges de status: pílula pastel, texto escuro (AA 5.1:1 ou mais) */
+--badge-auto-*       #E2F4EC / #0B6B47
+--badge-suggested-*  #FFF1D6 / #7A4D00
+--badge-alias-*      #E7E9FA / #2833AC
+--badge-manual-*     #EEF0F3 / #5F6570
+--badge-ambiguous-*  #FDE6D6 / #8A3F0A
+--badge-template-*   #F1E4F7 / #6B2D86
+--badge-assistant-*  #E6E9EF / #3D4656
+--badge-edited-*     #E1EEF8 / #1F5585
 ```
+
+Os badges do mapeamento usam `field-status-badge--<status>`, nunca `bg-*` do Bootstrap: esses utilitários forçam a cor.
 
 ---
 
 ## 📝 Typography
 
-### Google Fonts Import
+### Fontes locais
 
-```html
-<!-- Importar apenas os pesos efetivamente usados -->
-<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400;1,8..60,500&family=Space+Mono:ital@0;1&display=swap" rel="stylesheet">
-```
+As três famílias ficam em `inst/app/www/vendor/fonts/` (woff2, latin e latin-ext), declaradas em `source-fonts.css`. O app funciona offline (ADR-100): nada de Google Fonts ou CDN em runtime.
+
+> **Três papéis (ADR-134):** Source Serif 4 para leitura, IBM Plex Sans para a interface, Space Mono só para código e dados.
 
 > **Nota v4.3:** A Source Serif 4 substitui o Spectral. O problema da Spectral era o alto contraste old-style entre traços grossos e finos — ótimo em impressão, porém fatigante em interfaces densas com múltiplos tamanhos. A Source Serif 4 (Adobe) foi desenhada especificamente para legibilidade em tela: contraste de traço equilibrado, abertura generosa e **eixo óptico variável** (`opsz: 8..60`), que ajusta automaticamente a forma dos glifos conforme o tamanho — solução direta dos problemas relatados em contextos menores. O itálico é elegante e adequado para nomes científicos em latim. Usar sempre `font-optical-sizing: auto`. Não importar pesos não-utilizados reduz tempo de carregamento no Shiny.
 
@@ -121,6 +142,7 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 ```css
 /* Famílias */
 --font-serif: 'Source Serif 4', Georgia, serif;
+--font-ui:    'IBM Plex Sans', system-ui, sans-serif;
 --font-mono:  'Space Mono', 'IBM Plex Mono', monospace;
 
 /* Scale */
@@ -147,10 +169,13 @@ Cores com personalidade visual própria — complementam a paleta sem conflitar.
 | Body / `<p>` | Source Serif 4 | 400 | font-optical-sizing: auto — eixo óptico ativo |
 | Ênfase em body | Source Serif 4 | 500 | subtítulos, descrições longas |
 | Nomes científicos | Source Serif 4 | 400 italic | *Tangara fastuosa* — itálico nativo calibrado |
-| Botões | Space Mono | 400 | preserva sensação de "ferramenta" |
-| Labels de inputs | Space Mono | 400 | legibilidade em tamanho pequeno |
-| Dados / tabelas / coordenadas | Space Mono | 400 | ⚠️ testar em `0.75rem` e `0.8rem` — ver nota abaixo |
-| Código | Space Mono | 400 | — |
+| Abas, botões, labels, badges, filtros, eyebrows | IBM Plex Sans | 400-600 | `var(--font-ui)` |
+| Cabeçalhos de tabelas de interface | IBM Plex Sans | 600-700 | Wiki, nomes, exportação |
+| Nomes de termos DwC, cabeçalhos da Prévia | Space Mono | 400 | `var(--font-mono)`: é dado |
+| Células de tabela, amostras "ex.:", coordenadas, nomes de arquivo | Space Mono | 400 | ⚠️ testar em `0.75rem` e `0.8rem`, ver nota abaixo |
+| Código, badge de versão | Space Mono | 400 | — |
+
+**Regra:** se o texto vem do dataset ou do padrão (termo, valor, arquivo, código), use `--font-mono`. Se o texto é da interface, use `--font-ui`. Nunca use `--font-mono` para um rótulo.
 
 > ⚠️ **Atenção — Space Mono em tamanhos pequenos:** O Space Mono pode apresentar kerning apertado em `font-size < 0.85rem`, especialmente nos pares `fi`, `fl` e nos dígitos `1` e `7`. Testar obrigatoriamente nas tabelas de coordenadas antes de fazer deploy. Se necessário, usar `IBM Plex Mono` como fallback apenas nesses contextos menores (já declarado no stack acima).
 
@@ -176,11 +201,14 @@ body, p, .body-text {
   color: var(--text-primary);   /* melhor contraste para texto longo */
 }
 
-/* UI — botões, labels, dados */
-button, .btn, label, .ui-label,
-code, .data-cell, .coord-value {
+/* UI: botões, labels */
+button, .btn, label, .ui-label {
+  font-family: var(--font-ui);
+}
+
+/* Dados: código, células, coordenadas */
+code, .data-cell, .coord-value, .dataTable tbody td {
   font-family: var(--font-mono);
-  font-weight: 400;
 }
 ```
 
@@ -201,26 +229,21 @@ code, .data-cell, .coord-value {
 --space-4: 1rem;     --space-5: 1.25rem;  --space-6: 1.5rem;
 --space-8: 2rem;     --space-10: 2.5rem;  --space-12: 3rem;
 
---radius-sm: 4px;  --radius: 8px;  --radius-lg: 12px;  --radius-full: 9999px;
+--radius-sm: 4px;  --radius: 8px;  --radius-lg: 12px;  --radius-xl: 14px;  --radius-full: 9999px;  --radius-chip: 6px;
+```
+
+Controles 8px, cards 12px, painéis 14px. Filtros e tags de status usam `--radius-chip` (6px, ADR-130); `--radius-full` fica para o selo de versão, interruptores e barras de progresso. Não use número fixo: `50%` só para círculo.
+
+```css
 ```
 
 ---
 
 ## 💫 Shadows & Focus Rings
 
-```css
---shadow-sm:            0 1px 4px  rgba(28,28,38,0.05);
---shadow:               0 2px 8px  rgba(28,28,38,0.08);
---shadow-md:            0 4px 12px rgba(28,28,38,0.10);
---shadow-hover:         0 4px 16px rgba(28,28,38,0.12);
---shadow-lg:            0 8px 24px rgba(28,28,38,0.15);
---shadow-primary:       0 2px 6px  rgba(56,207,246,0.35);
---shadow-primary-hover: 0 4px 12px rgba(56,207,246,0.45);
---shadow-success:       0 2px 6px  rgba(0,168,107,0.30);
---shadow-error:         0 2px 6px  rgba(192,57,43,0.30);
---shadow-accent:        0 2px 4px  rgba(40,51,172,0.30);
---shadow-accent-hover:  0 4px 8px  rgba(40,51,172,0.40);
+O visual é plano (ADR-127). Todo token `--shadow-*` vale `none`: nenhum card, botão, modal ou menu tem sombra. Um card mostra o limite com a borda de 1px e o fundo branco sobre o cinza frio. Um estado selecionado usa `--selected-bg` e um anel `inset 0 0 0 1px`. Os anéis de foco ficam.
 
+```css
 --focus-ring-primary: 0 0 0 3px rgba(56,207,246,0.25);
 --focus-ring-accent:  0 0 0 3px rgba(40,51,172,0.22);
 --focus-ring-success: 0 0 0 3px rgba(0,168,107,0.22);
@@ -250,7 +273,7 @@ code, .data-cell, .coord-value {
 .btn-primary {
   background: #38CFF6;
   color: #1C1C26;        /* preto azulado — contraste 8.1:1 ✅ */
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   box-shadow: var(--shadow-primary);
 }
 .btn-primary:hover { background: #16B3BD; transform: translateY(-1px); }
@@ -259,7 +282,7 @@ code, .data-cell, .coord-value {
 .btn-success {
   background: #00A86B;
   color: #ffffff;        /* contraste 4.7:1 ✅ */
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   box-shadow: var(--shadow-success);
 }
 .btn-success:hover { background: #009960; }
@@ -268,7 +291,7 @@ code, .data-cell, .coord-value {
 .btn-warning {
   background: #FFA204;
   color: #1C1C26;        /* contraste 9.8:1 ✅ */
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
 }
 .btn-warning:hover { background: #E09000; }
 
@@ -276,7 +299,7 @@ code, .data-cell, .coord-value {
 .btn-error {
   background: #C0392B;
   color: #ffffff;        /* contraste 5.9:1 ✅ */
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   box-shadow: var(--shadow-error);
 }
 .btn-error:hover { background: #A93226; }
@@ -286,7 +309,7 @@ code, .data-cell, .coord-value {
   background: transparent;
   border: 1.5px solid #2833AC;
   color: #2833AC;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
 }
 .btn-secondary:hover { background: #2833AC; color: #ffffff; }
 ```
@@ -304,10 +327,10 @@ code, .data-cell, .coord-value {
 ### Alerts
 
 ```css
-.alert-success → success-bg / border-left: --success / title: #007A4D
-.alert-warning → warning-bg / border-left: --warning / title: #C07800
-.alert-error   → error-bg   / border-left: --error   / title: #C0392B
-.alert-info    → info-bg    / border-left: --info    / title: #252659
+.alert-success → success-bg / border: 1px --success-border / title: #007A4D
+.alert-warning → warning-bg / border: 1px --warning-border / title: #C07800
+.alert-error   → error-bg   / border: 1px --error-border   / title: #C0392B
+.alert-info    → info-bg    / border: 1px --info-border    / title: #252659
 ```
 
 ### Forms
@@ -323,8 +346,8 @@ code, .data-cell, .coord-value {
 --input-bg-disabled:      rgba(40,51,172,0.05);
 --input-text-disabled:    rgba(28,28,38,0.35);
 
-/* Labels de input usam Space Mono */
-label, .input-label { font-family: var(--font-mono); font-size: var(--text-sm); }
+/* Labels de input usam IBM Plex Sans (ADR-134) */
+label, .input-label { font-family: var(--font-ui); font-size: var(--text-sm); }
 ```
 
 ### Navbar
@@ -333,8 +356,17 @@ label, .input-label { font-family: var(--font-mono); font-size: var(--text-sm); 
 --navbar-link-color:       #2833AC;    /* azul-violeta */
 --navbar-link-hover-bg:    var(--hover-bg);
 --navbar-link-active-bg:   #38CFF6;   /* ciano peito */
---navbar-link-active-text: #1C1C26;   /* contraste 8.1:1 ✅ */
+--navbar-link-active-text: #1C1C26;   /* contraste 8.1:1 ✅ (menu recolhido) */
+
+/* Cabeçalho em duas linhas a partir de 992px (ADR-128) */
+--header-row-height:  56px;   /* marca, Wiki DwC, Ajuda, idioma, versão */
+--step-row-height:    48px;   /* etapas 1 a 7 */
+--app-header-height:  calc(56px + 48px + 2px);  /* 80px abaixo de 992px */
+--step-active:        var(--accent);  /* azul da marca: etapa ativa, caixas marcadas, filtro Todos; 8.75:1 (ADR-130) */
+--navbar-brand-width: 7.5rem;
 ```
+
+A etapa ativa usa cor e sublinhado, sem fundo. Abaixo de 992px, o menu recolhido mantém o fundo ciano na aba ativa. Todo deslocamento de página que desconta o cabeçalho usa `--app-header-height`, nunca um número fixo.
 
 ---
 
@@ -354,11 +386,20 @@ label, .input-label { font-family: var(--font-mono); font-size: var(--text-sm); 
 .coord-issue-badge-warning → warning-bg / --warning   (#FFA204)
 .coord-issue-badge-missing → rgba(40,51,172,.06) / --text-muted
 
-/* Stream pills active */
-.stream-pill.active   → #2833AC, white text
-.pill-error.active    → #C0392B
-.pill-warning.active  → #FFA204, dark text
-.pill-info.active     → #252659
+/* Filter chips (ADR-130): label | count, --radius-chip, the color of what they filter */
+--pill-fg / --pill-bg per class: pill-problems, pill-error → missing red;
+  pill-warning → suggested amber; pill-info → --info; pill-success → auto green;
+  pill-invasive → --badge-invasive-*; pill-translocated → --badge-translocated-*;
+  pill-reference → --coord-swapped; pill-edited;
+  none (All) → --step-active
+count part → --pill-bg tint; active chip → --pill-bg fill, --pill-fg border, count filled --pill-fg
+
+/* Status tags (.vn-status-badge): no border, light fill, dark text */
+.badge-success → --badge-auto-*      .badge-warning → --badge-suggested-*
+.badge-error   → --state-missing-bg / --badge-missing-fg
+.badge-info    → --badge-assistant-* .badge-accent → --badge-alias-*
+.badge-muted   → --badge-manual-*     .badge-invasive → --badge-invasive-* (brown)
+.badge-translocated → --badge-translocated-* (violet, ADR-142)
 ```
 
 ---
@@ -367,14 +408,17 @@ label, .input-label { font-family: var(--font-mono); font-size: var(--text-sm); 
 
 | Foreground | Background | Ratio | Status |
 |---|---|---|---|
-| `#1C1C26` on `#f4f3ee` | text on bg | **15.2:1** | ✅ AAA |
-| `#2833AC` on `#f4f3ee` | accent on bg | **8.75:1** | ✅ AAA |
+| `#1C1C26` on `#f5f6f8` | text on bg | **15.6:1** | ✅ AAA |
+| `#2833AC` on `#f5f6f8` | accent on bg | **8.99:1** | ✅ AAA |
 | `#1C1C26` on `#38CFF6` | dark text on primary | **9.19:1** | ✅ AAA — botões |
 | `#ffffff` on `#00A86B` | white on success | **3.08:1** | ⚠️ FALHA — ver nota abaixo |
 | `#1C1C26` on `#FFA204` | dark text on warning | **8.38:1** | ✅ AAA |
 | `#ffffff` on `#C0392B` | white on error | **5.44:1** | ✅ AA |
-| `#252659` on `#f4f3ee` | info on bg | **12.6:1** | ✅ AAA |
-| `#38CFF6` on `#f4f3ee` | primary on bg | **1.65:1** | ❌ NUNCA como texto |
+| `#252659` on `#f5f6f8` | info on bg | **12.9:1** | ✅ AAA |
+| `#38CFF6` on `#f5f6f8` | primary on bg | **1.70:1** | ❌ NUNCA como texto |
+| `#5F6570` on `#f5f6f8` | text-muted on bg | **5.42:1** | ✅ AA |
+| `#5F6570` on `#ffffff` | text-muted on card | **5.86:1** | ✅ AA |
+| `#6D28D9` on `#f5f6f8` | coord-swapped on bg | **6.57:1** | ✅ AA |
 
 ---
 
@@ -384,11 +428,9 @@ As cores abaixo são fiéis ao saíra e **não devem ser alteradas**. Os conflit
 
 | Cor | Uso pretendido | Ratio real | Problema | Decisão sugerida |
 |---|---|---|---|---|
-| `#6c757d` (text-muted) on `#f4f3ee` | Texto secundário | **4.22:1** | Falha AA (mínimo 4.5:1) | Usar apenas para texto não-essencial (decorativo, metadata) ou aumentar tamanho para 18px+ (AA large = 3:1) |
-| `#00A86B` (success) on `#f4f3ee` | Texto de status | **2.77:1** | Falha AA e AAA | Usar `#00A86B` **apenas como fundo/ícone/borda** — nunca como texto. Para texto, o token `#007A4D` (já no doc em badges) tem 4.86:1 ✅ |
+| `#00A86B` (success) on `#f5f6f8` | Texto de status | **2.85:1** | Falha AA e AAA | Usar `#00A86B` **apenas como fundo/ícone/borda** — nunca como texto. Para texto, o token `#007A4D` (já no doc em badges) tem 4.86:1 ✅ |
 | `#ffffff` on `#00A86B` (btn-success) | Texto branco no botão | **3.08:1** | Falha AA — o doc afirma 4.7:1, mas o valor real é 3.08:1 | Usar texto `#1C1C26` no lugar de branco (contraste 4.43:1 ✅ AA), ou aceitar o desvio em botões grandes |
-| `#C07800` (warning dark) on `#f4f3ee` | Texto em badges warning | **3.19:1** | Falha AA | Usar apenas em badges grandes (18px+) onde AA large (3:1) se aplica, ou escurecer só nesse contexto de uso |
-| `#8b5cf6` (coord-swapped) on `#f4f3ee` | Label de coordenada | **3.81:1** | Falha AA | Cor não vem do pássaro — pode ser ajustada sem conflito de identidade. `#6d28d9` tem 6.4:1 ✅ |
+| `#C07800` (warning dark) on `#f5f6f8` | Texto em badges warning | **3.28:1** | Falha AA | Usar apenas em badges grandes (18px+) onde AA large (3:1) se aplica, ou escurecer só nesse contexto de uso |
 
 > **Nota sobre `btn-success`:** O valor `4.7:1` documentado na seção anterior está incorreto. O contraste real de `#ffffff` sobre `#00A86B` é **3.08:1**, abaixo do mínimo AA. O único conflito de identidade visual entre os problemas listados acima é o `btn-success` — os demais ou têm workarounds contextuais ou (no caso do `coord-swapped`) envolvem uma cor que não é do pássaro.
 
@@ -403,8 +445,9 @@ As cores abaixo são fiéis ao saíra e **não devem ser alteradas**. Os conflit
 5. ❌ **Não remover focus rings**
 6. ❌ **Não criar componentes sem os 5 estados** (default/hover/active/focus/disabled)
 7. ❌ **Não usar Source Serif 4 sem `font-optical-sizing: auto`** — perde o benefício do eixo óptico variável
-8. ❌ **Não usar Source Serif 4 em labels de input ou dados tabulares** — usar Space Mono nesses contextos
+8. ❌ **Não usar Space Mono em rótulos de interface** — usar IBM Plex Sans; Space Mono só para código e dados (ADR-134)
 9. ❌ **Não importar pesos tipográficos não-utilizados** — impacta performance de carregamento no Shiny
+10. ❌ **Não usar sombra, gradiente decorativo nem borda lateral grossa** — ADR-127, ADR-040
 
 ---
 
@@ -430,14 +473,15 @@ As cores abaixo são fiéis ao saíra e **não devem ser alteradas**. Os conflit
 
 - **Pixel sampling:** Pillow/Python sobre 3 fotografias originais de *Tangara fastuosa*
 - **Source Serif 4:** [Google Fonts](https://fonts.google.com/specimen/Source+Serif+4)
+- **IBM Plex Sans:** [Google Fonts](https://fonts.google.com/specimen/IBM+Plex+Sans)
 - **Space Mono:** [Google Fonts](https://fonts.google.com/specimen/Space+Mono)
 - **Contrast:** [WebAIM](https://webaim.org/resources/contrastchecker/)
 
 ---
 
-**Version:** 4.3 — Source Serif 4 + Space Mono; auditoria de contraste WCAG  
-**Previous:** 4.2 — Spectral + Space Mono  
-**Last Updated:** Fevereiro 2026  
+**Version:** 5.2 — fundo cinza frio `#f5f6f8` e bordas frias (ADR-135)  
+**Previous:** 5.1 — IBM Plex Sans para a interface, Space Mono só para código e dados (ADR-134)  
+**Last Updated:** Outubro 2026  
 **Maintained By:** Rogério Nunes Oliveira
 
 

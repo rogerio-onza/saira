@@ -2,7 +2,7 @@
 
 Saíra é um aplicativo em R/Shiny para padronizar planilhas de ocorrências de
 biodiversidade no padrão Darwin Core (DwC) e publicá-las no GBIF e no SiBBr.
-A interface é visual e bilíngue (PT-BR/EN-US); não é preciso programar para usar.
+A interface é visual e trilíngue (PT-BR/EN-US/ES); não é preciso programar para usar.
 
 [🇧🇷 Português](#português) · [🇺🇸 English](#english)
 
@@ -54,8 +54,8 @@ instalação.
 - `occurrenceID` estável: preenche IDs faltantes de forma determinística (a mesma
   combinação gera sempre o mesmo ID), então republicar no GBIF conta como
   atualização, não como registro novo.
-- Armadilhas fotográficas (opcional): importa pacotes Camtrap DP e exportações do
-  Wildlife Insights. Requer o pacote `camtrapdp` (`install.packages("camtrapdp")`).
+- Armadilhas fotográficas: importa pacotes Camtrap DP e exportações do
+  Wildlife Insights.
 
 ### 📦 Instalação
 
@@ -127,7 +127,7 @@ Antes de abrir um pull request, leia [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### 🧩 Tecnologias e créditos
 
-O Saíra usa pacotes R de código aberto (Shiny, `taxadb`/`florabr`/`faunabr`,
+O Saíra usa pacotes R de código aberto (Shiny, `httr2`/`florabr`/`faunabr`,
 `CoordinateCleaner`/`sf`/`terra`, entre outros) e embute dados de fontes públicas
 (camada Natural Earth, termos Darwin Core do TDWG sob CC-BY, Lista Nacional de
 Espécies Ameaçadas — Portarias MMA nº 148/2022, nº 1.704/2026 e GM/MMA
@@ -187,8 +187,8 @@ only at install time.
 - Stable `occurrenceID`: fills missing IDs deterministically (the same combination
   always yields the same ID), so republishing to GBIF counts as an update, not a
   new record.
-- Camera-trap data (optional): imports Camtrap DP packages and Wildlife Insights
-  exports. Requires the `camtrapdp` package (`install.packages("camtrapdp")`).
+- Camera-trap data: imports Camtrap DP packages and Wildlife Insights
+  exports.
 
 ### 📦 Installation
 
@@ -259,7 +259,7 @@ Before opening a pull request, read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### 🧩 Technologies and credits
 
-Saíra uses open-source R packages (Shiny, `taxadb`/`florabr`/`faunabr`,
+Saíra uses open-source R packages (Shiny, `httr2`/`florabr`/`faunabr`,
 `CoordinateCleaner`/`sf`/`terra`, among others) and bundles data from public
 sources (Natural Earth layer, Darwin Core terms from TDWG under CC-BY, the
 Brazilian Official List of Threatened Species — Portarias MMA nº 148/2022,

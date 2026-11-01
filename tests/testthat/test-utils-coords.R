@@ -134,6 +134,8 @@ testthat::test_that("validate_coords_cc_df maps cc flags to sea, zero_equal and 
             if (fun_name %in% c("cc_cen", "cc_gbif", "cc_inst")) return(rep(TRUE, n))
             rep(TRUE, n)
         },
+        # The mock calls inland points sea; the real coastline would undo that.
+        coords_coastal_tolerance = function(x, land, ...) land,
         .package = "saira"
     )
 
@@ -203,6 +205,8 @@ testthat::test_that("validate_coords_cc_df prioritizes sea without country diagn
             }
             rep(TRUE, nrow(x))
         },
+        # The mock calls inland points sea; the real coastline would undo that.
+        coords_coastal_tolerance = function(x, land, ...) land,
         .package = "saira"
     )
 
@@ -373,6 +377,21 @@ testthat::test_that("coords_points_in_coverage uses polygon coverage before bbox
     testthat::expect_identical(inside, c(TRUE, FALSE, FALSE))
 })
 
+testthat::test_that("coords_points_in_coverage agrees with terra::extract on the embedded Americas layer", {
+    coverage_ref <- coords_read_embedded_ne_land()$coverage_ref
+    testthat::skip_if(is.null(coverage_ref), "embedded Natural Earth layer not available")
+    set.seed(42)
+    x <- data.frame(
+        decimalLongitude = stats::runif(2000, -130, 10),
+        decimalLatitude = stats::runif(2000, -60, 40)
+    )
+    pts <- terra::vect(x, geom = c("decimalLongitude", "decimalLatitude"),
+                       crs = "+proj=longlat +datum=WGS84 +no_defs")
+    extracted <- terra::extract(coverage_ref, pts)
+    expected <- !is.na(extracted[!duplicated(extracted[, 1]), 2])
+    testthat::expect_identical(coords_points_in_coverage(x, coverage_ref = coverage_ref), expected)
+})
+
 testthat::test_that("coords_cc_sea_flagged splits embedded Americas and global fallback rows", {
     calls <- list()
 
@@ -437,6 +456,59 @@ testthat::test_that("coords_cc_sea_flagged falls back to scale 50 globally when 
     testthat::expect_length(calls, 1L)
     testthat::expect_identical(calls[[1]]$ref, "ref50")
     testthat::expect_identical(calls[[1]]$scale, 50L)
+})
+
+testthat::test_that("coords_cc_sea_flagged marks the rows of a failed run as unchecked (SP-06)", {
+    testthat::local_mocked_bindings(
+        coords_load_ne_land = function(scale, download = TRUE) {
+            if (identical(as.integer(scale), 10L)) "ref10" else "ref50"
+        },
+        coords_ne_land_coverage_ref = function(scale = 10L, download = TRUE) "coverage10",
+        coords_ne_land_coverage_boxes = function(scale = 10L, download = TRUE) NULL,
+        coords_points_in_coverage = function(x, coverage_ref = NULL, coverage_boxes = NULL, margin = 0) {
+            c(TRUE, FALSE, TRUE)
+        },
+        coords_cc_sea_run = function(x, ref = NULL, scale = NULL, timeout = NULL, crop_ref = FALSE) {
+            if (identical(ref, "ref10")) simpleError("forced sea failure") else rep(FALSE, nrow(x))
+        },
+        .package = "saira"
+    )
+    x <- data.frame(decimalLatitude = c(-10, 40, -11), decimalLongitude = c(-50, 20, -51))
+
+    flagged <- testthat::expect_warning(coords_cc_sea_flagged(x, scale = 10L), "not run for 2 row")
+    testthat::expect_identical(as.vector(flagged), c(TRUE, FALSE, TRUE))
+    testthat::expect_identical(attr(flagged, "unchecked"), c(TRUE, FALSE, TRUE))
+    testthat::expect_identical(attr(flagged, "errors"), "forced sea failure")
+})
+
+testthat::test_that("a sea check timeout marks every row as unchecked", {
+    testthat::local_mocked_bindings(
+        coords_load_ne_land = function(scale, download = TRUE) "ref50",
+        coords_with_optional_time_limit = function(fn, timeout = NULL) stop("reached elapsed time limit"),
+        .package = "saira"
+    )
+    x <- data.frame(decimalLatitude = c(-10, 10), decimalLongitude = c(-50, -51))
+    flagged <- testthat::expect_warning(coords_cc_sea_flagged(x, scale = 50L), "time limit")
+    testthat::expect_identical(attr(flagged, "unchecked"), c(TRUE, TRUE))
+})
+
+testthat::test_that("validate_coords_cc_df reports a sea check that did not run (SP-06)", {
+    testthat::local_mocked_bindings(
+        coords_assert_cc_dependencies = function() NULL,
+        coords_country_to_iso3 = function(country_values) rep("BRA", length(country_values)),
+        coords_cc_sea_flagged = function(x, scale, timeout = NULL) {
+            structure(rep(TRUE, nrow(x)), unchecked = rep(TRUE, nrow(x)), errors = "forced sea failure")
+        },
+        coords_cc_flagged = function(fun_name, x, ...) rep(TRUE, nrow(x)),
+        .package = "saira"
+    )
+    df <- data.frame(decimalLatitude = c(-10, -11, NA), decimalLongitude = c(-50, -51, NA),
+                     country = "Brasil", stringsAsFactors = FALSE)
+    out <- validate_coords_cc_df(df = df, lat_col = "decimalLatitude", lon_col = "decimalLongitude",
+                                 country_col = "country", profile = "fast")
+    testthat::expect_identical(out$flag_sea_unchecked, c(TRUE, TRUE, FALSE))
+    testthat::expect_identical(attr(out, "sea_check"),
+                               list(status = "failed", unchecked = 2L, errors = "forced sea failure"))
 })
 
 testthat::test_that("coords_crop_land_ref reduces geometry without changing cc_sea result", {
@@ -602,4 +674,35 @@ testthat::test_that("coords_match_country_case ignores blanks and uncased values
         saira:::coords_match_country_case(c("Peru"), c("1234", "5678")),
         "Peru"
     )
+})
+
+test_that("parse_coordinate_text() reads DMS, hemisphere letters and the Unicode minus (B08)", {
+  v <- c("23°33'S", "23°33'44\"S", "23.5505 S", "-23.5°", "−23.5", "29°58' N",
+         "aprox. -23.5", "-23.5,-46.6", "-23.5", "-23.5 N", "23.5 E", "99° S")
+  expect_equal(parse_coordinate_text(v, "lat"),
+               c(-23.55, -23.562222, -23.5505, -23.5, -23.5, 29.966667, rep(NA, 6)))
+  expect_equal(parse_coordinate_text(c("46°38'W", "46.6 O", "46,6 L"), "lon"),
+               c(-46.633333, -46.6, 46.6))
+  df <- data.frame(a = c("23°33'S", "-46,6559"), stringsAsFactors = FALSE)
+  expect_equal(build_term_value("decimalLatitude", df, "a")$values, c("-23.55", "-46,6559"))
+})
+
+test_that("coords_transposed_corrections() marks points outside the country with no fix (B04)", {
+  skip_if_not_installed("terra")
+  df <- data.frame(decimalLatitude = c("23.5", "40.713", "-23.5"),
+                   decimalLongitude = c("46.6", "-74.0", "-46.6"),
+                   country = rep("Brasil", 3), stringsAsFactors = FALSE)
+  r <- coords_transposed_corrections(df)
+  skip_if_not(isTRUE(r$available), "country layer not available")
+  expect_equal(r$corrected, c(TRUE, FALSE, FALSE))
+  expect_equal(r$outside, c(FALSE, TRUE, FALSE))
+})
+
+test_that("a point next to a generalized coastline is not sea (B13)", {
+  ref <- tryCatch(coords_load_ne_land(10L), error = function(e) NULL)
+  skip_if(is.null(ref), "land layer not available")
+  x <- data.frame(decimalLatitude = c(-1.4558, -15.79, -10, 0),
+                  decimalLongitude = c(-48.5039, -47.88, -30, -48.5039 + 30), species = "a")
+  land <- c(FALSE, TRUE, FALSE, FALSE)
+  expect_equal(coords_coastal_tolerance(x, land, ref, 10L), c(TRUE, TRUE, FALSE, FALSE))
 })

@@ -1,0 +1,58 @@
+---
+title: "Carga de sus datos"
+pagetitle: "Carga de datos · Tutoriales de Saíra"
+---
+
+::: {.tut-standfirst}
+Cargue la hoja de cálculo de ocurrencias en la etapa **Inicio**.
+:::
+
+## Envíe el archivo
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t02-upload-ES.png" width="720" alt="Etapa Inicio después de la carga, con las pestañas de formato, el área de carga y el resumen del archivo resaltados"></figure>
+```
+
+::: {.marks}
+1. Elija el formato: **Hoja de cálculo** para CSV, XLSX o TXT, **Camtrap DP** para el ZIP de cámaras trampa.
+2. Arrastre el archivo al área de carga, o haga clic en ella.
+3. Revise el resumen: registros, columnas y tamaño.
+:::
+
+| Formato | Archivos |
+|---|---|
+| Hoja de cálculo | `.csv`, `.tsv`, `.txt`, `.xlsx` (solo la primera hoja) |
+| Cámara trampa | `.zip` Camtrap DP o exportación de Wildlife Insights |
+
+Cada fila es una ocurrencia. Cada columna es un atributo. La primera fila debe tener los nombres de las columnas.
+
+::: {.callout-tip}
+## Hoja de cálculo de ejemplo
+[`ocorrencias-demo.csv`](../../assets/exemplo/ocorrencias-demo.csv) tiene 1.107 ocurrencias con errores a propósito: fechas mezcladas, números de catálogo repetidos, coordenadas invertidas, especies amenazadas e invasoras. Los tutoriales usan este archivo.
+:::
+
+## Si la lectura sale mal
+
+Saíra detecta la codificación (UTF-8, Latin-1, Windows-1252) y el separador (coma, punto y coma, tabulación). Si el resumen o los datos parecen incorrectos:
+
+| Síntoma | Causa | Solución |
+|---|---|---|
+| `SÃ£o Paulo` o `S?o Paulo` | Codificación | En Excel, guarde como **CSV UTF-8** y envíelo de nuevo. |
+| Una sola columna en el resumen | Separador mezclado | Guarde con un solo separador, `;` o `,`. |
+| Nombres de columna extraños | Filas encima del encabezado | Borre títulos, logos y celdas combinadas encima del encabezado. |
+
+## Cámaras trampa
+
+En la pestaña **Camtrap DP**, Saíra acepta tres tipos de `.zip`:
+
+- **Camtrap DP** con el descriptor `datapackage.json` y las tablas `deployments`, `observations` y, si existe, `media`.
+- Las mismas tablas **sin el descriptor**. Saíra crea el descriptor a partir de los CSV.
+- La **exportación de Wildlife Insights**. Saíra renombra las columnas al formato Camtrap DP. En un proyecto de imágenes, cada imagen identificada se vuelve un registro. En un proyecto de secuencias, cada identificación de la secuencia se vuelve un registro, con el tamaño del grupo.
+
+Saíra une las tablas en una sola hoja de cálculo, con nombre científico, fecha y lugar. Después el flujo es igual al de una hoja de cálculo.
+
+Los datos de Wildlife Insights ya vienen con las especies sensibles protegidas. Vea la [generalización](06-generalizacion.qmd).
+
+## Guía de mapeo
+
+Si ya tiene el `<dataset>-mapping-guide.txt` de una exportación anterior, envíe la guía en la misma área. Saíra importa el mapeo. Vea [Reutilice el mapeo](03-mapeo-dwc.qmd#reutilice-el-mapeo).

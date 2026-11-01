@@ -16,49 +16,42 @@ mod_mapping_ui <- function(id) {
         sidebar = bslib::sidebar(
             width = 280,
             class = "mapping-sidebar",
-            shiny::uiOutput(ns("required_fields_strip")),
-            shiny::hr(),
             shiny::uiOutput(ns("sidebar_actions_label")),
             shiny::actionButton(
                 ns("auto_map"),
                 shiny::uiOutput(ns("btn_auto_map_label"), inline = TRUE),
                 class = "btn-primary w-100 mb-2",
-                icon = shiny::icon("wand-magic-sparkles")
+                icon = ph_icon("wand-magic-sparkles")
             ),
             shiny::actionButton(
                 ns("reset_mapping"),
                 shiny::uiOutput(ns("btn_reset_label"), inline = TRUE),
-                class = "btn-warning w-100 mb-2",
-                icon = shiny::icon("rotate-left", class = "fa-solid")
+                class = "btn-outline-secondary w-100 mb-2",
+                icon = ph_icon("rotate-left")
             ),
             shiny::actionButton(
                 ns("add_term"),
                 shiny::uiOutput(ns("btn_add_term_label"), inline = TRUE),
                 class = "btn-outline-secondary w-100 mb-2",
-                icon = shiny::icon("plus")
+                icon = ph_icon("plus")
             ),
             shiny::actionButton(
                 ns("import_template"),
                 shiny::uiOutput(ns("btn_import_template_label"), inline = TRUE),
                 class = "btn-outline-secondary w-100 mb-2",
-                icon = shiny::icon("file-import")
+                icon = ph_icon("file-import")
             ),
             shiny::hr(),
             shiny::uiOutput(ns("sidebar_view_label")),
-            shiny::uiOutput(ns("view_mode_control")),
-            shiny::hr(),
-            shiny::uiOutput(ns("sidebar_filters_label")),
-            shiny::checkboxInput(
-                ns("show_only_mapped"),
-                shiny::uiOutput(ns("filter_mapped_label"), inline = TRUE),
-                value = FALSE
-            )
+            shiny::uiOutput(ns("view_mode_control"))
         ),
 
         # Main content
         bslib::card(
             bslib::card_header(
-                shiny::uiOutput(ns("card_title"))
+                class = "mapping-card-header",
+                shiny::uiOutput(ns("card_title")),
+                shiny::uiOutput(ns("mapped_filter_control"))
             ),
             bslib::card_body(
                 min_height = "70vh",
@@ -68,14 +61,20 @@ mod_mapping_ui <- function(id) {
                         class = "mapping-scroll-container",
                         shiny::uiOutput(ns("duplicate_source_warning")),
                         shiny::uiOutput(ns("class_pills")),
-                        shiny::uiOutput(ns("mapping_ui"))
+                        # A uiOutput with content has no box of its own
+                        # (display: contents), so this box is what the filter
+                        # motion slides (ADR-156).
+                        shiny::div(
+                            id = ns("grid_box"), class = "mapping-grid-box",
+                            shiny::uiOutput(ns("mapping_ui"))
+                        )
                     )
                 ),
                 shiny::conditionalPanel(
                     condition = paste0("!output['", ns("file_uploaded"), "']"),
                     shiny::div(
                         class = "mapping-empty-state",
-                        shiny::icon("upload", class = "mapping-empty-icon"),
+                        ph_icon("upload", class = "mapping-empty-icon"),
                         shiny::h4(shiny::uiOutput(ns("no_file_msg"))),
                         shiny::p(shiny::uiOutput(ns("upload_first_msg")))
                     )
@@ -83,114 +82,7 @@ mod_mapping_ui <- function(id) {
             )
         )
     ),
-    shiny::tags$script(shiny::HTML(
-        "(function () {
-          if (window.__sairaMappingScrollRegistered) { return; }
-          window.__sairaMappingScrollRegistered = true;
-          Shiny.addCustomMessageHandler('saira-mapping-scroll-to-class', function (payload) {
-            var id = payload && payload.anchor_id;
-            if (!id) { return; }
-            // Poll until the target element exists, then scroll. For a class
-            // anchor it is already in the DOM (resolves immediately); for a
-            // freshly added term card the grid is still rebuilding (~50
-            // selectize inputs), which can take a few seconds, so poll on a
-            // time budget rather than a fixed frame count.
-            var deadline = (window.performance ? performance.now() : Date.now()) + 8000;
-            (function tryScroll() {
-              var el = document.getElementById(id);
-              if (el) {
-                el.scrollIntoView({ behavior: 'smooth', block: payload.block || 'start' });
-                // Optional highlight, used by the 'next pending' button so the
-                // card that was scrolled to is identifiable among its
-                // neighbours. Outline only, so nothing shifts.
-                if (payload.flash) {
-                  el.classList.remove('field-card-flash');
-                  void el.offsetWidth;
-                  el.classList.add('field-card-flash');
-                  setTimeout(function () {
-                    el.classList.remove('field-card-flash');
-                  }, 2200);
-                }
-                return;
-              }
-              var now = (window.performance ? performance.now() : Date.now());
-              if (now < deadline) { window.requestAnimationFrame(tryScroll); }
-            })();
-          });
-          // Patch the class pills' state dots and the pending counter in place.
-          // Same reason as saira-toggle-field-mapped below: re-rendering the
-          // pill bar would recreate its actionButtons on every mapping change.
-          Shiny.addCustomMessageHandler('saira-mapping-triage', function (payload) {
-            if (!payload) { return; }
-            // The first push can land before renderUI has put the pill bar in
-            // the DOM (auto-map writes the mapping as the tab is drawn), so
-            // poll on a short budget the same way the scroll handler does
-            // rather than dropping the update.
-            var deadline = (window.performance ? performance.now() : Date.now()) + 3000;
-            (function apply() {
-              var counter = document.getElementById(payload.count_id);
-              if (!counter) {
-                var now = (window.performance ? performance.now() : Date.now());
-                if (now < deadline) { window.requestAnimationFrame(apply); }
-                return;
-              }
-              counter.textContent = payload.count > 0 ? String(payload.count) : '';
-              (payload.dots || []).forEach(function (item) {
-                var dot = document.getElementById(item.id);
-                if (!dot) { return; }
-                dot.className = 'pill-state-dot is-' + item.state;
-                dot.title = item.title || '';
-              });
-              var btn = document.getElementById(payload.button_id);
-              if (btn) {
-                btn.classList.toggle('is-idle', !(payload.count > 0));
-              }
-            })();
-          });
-          // Live-toggle a field card's mapped border without re-rendering the
-          // whole mapping grid. Used for fixed-value terms whose free-text read
-          // is isolated (ADR-098): the server recomputes is_field_mapped() after
-          // typing settles and flips the class here, matching the next render.
-          Shiny.addCustomMessageHandler('saira-toggle-field-mapped', function (payload) {
-            var id = payload && payload.id;
-            if (!id) { return; }
-            var el = document.getElementById(id);
-            if (!el) { return; }
-            if (payload.mapped) {
-              el.classList.add('field-mapped');
-              el.classList.remove('field-unmapped');
-            } else {
-              el.classList.add('field-unmapped');
-              el.classList.remove('field-mapped');
-            }
-            // Same for the state modifier: it is decided at render time, and
-            // the grid does not re-render on a selection, so a required card
-            // would keep its red border after being filled.
-            el.classList.remove('field-required-missing', 'field-attention');
-            if (payload.state) { el.classList.add(payload.state); }
-            // Sync the status badge (e.g. -> EDITADO) without re-rendering. The
-            // badge span carries a stable .field-status-badge hook; create it if
-            // the term had no badge, remove it when the recomputed badge is null.
-            var badge = payload.badge;
-            if (badge) {
-              var span = el.querySelector('.field-status-badge');
-              if (badge.show) {
-                if (!span) {
-                  var row = el.querySelector('.field-header-row');
-                  if (row) { span = document.createElement('span'); row.appendChild(span); }
-                }
-                if (span) {
-                  span.className = badge.class;
-                  span.title = badge.title || '';
-                  span.textContent = badge.label || '';
-                }
-              } else if (span && span.parentNode) {
-                span.parentNode.removeChild(span);
-              }
-            }
-          });
-        })();"
-    ))
+    shiny::tags$script(module_behavior_html("mappingGrid"))
     )
 }
 #' @noRd
@@ -239,38 +131,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             extra_terms = character(0),
             rostrum_decisions = NULL,
             rostrum_run_stats = list(),
-            basis_of_record_map = stats::setNames(character(0), character(0)),
-            basis_of_record_auto_map = stats::setNames(character(0), character(0)),
-            basis_of_record_source_col = "",
-            basis_of_record_draft_map = stats::setNames(character(0), character(0)),
-            basis_of_record_entries = data.frame(
-                idx = integer(0),
-                key = character(0),
-                raw = character(0),
-                stringsAsFactors = FALSE
-            ),
-            basis_of_record_page = 1L,
-            # Per-species establishment answers (ADR-110). Keyed on the species,
-            # not on a source column: one answer covers every record of that
-            # taxon. `map` is what reaches the data; `draft` is in-modal only.
-            establishment_map = list(
-                means = stats::setNames(character(0), character(0)),
-                degree = stats::setNames(character(0), character(0))
-            ),
-            establishment_draft = list(
-                means = stats::setNames(character(0), character(0)),
-                degree = stats::setNames(character(0), character(0))
-            ),
-            establishment_auto_map = stats::setNames(character(0), character(0)),
-            establishment_entries = data.frame(
-                idx = integer(0),
-                key = character(0),
-                raw = character(0),
-                n_records = integer(0),
-                invasive = logical(0),
-                stringsAsFactors = FALSE
-            ),
-            establishment_page = 1L,
             is_programmatic_update = FALSE,
             programmatic_terms = character(0),
             # Deduped boolean tracked by an observer below. Drives the only
@@ -283,14 +143,44 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             automap_phrase_order = integer(0),
             ambiguity_queue = list(),
             dyn_props_keys = list(),
+            measurement_specs = list(),
+            # Fixed-value state of the constant_value_terms() cards, keyed by
+            # term: list(on, value). The inputs write here and the export reads
+            # from here, so a reset or an import also reaches a card that is
+            # not on the page.
+            fixed_values = list(),
+            # Unit from the name of each column auto-map put in measurementValue.
+            measurement_unit_hints = character(0),
             # Counter bumped on every event that invalidates the dataset baseline
             # (re-upload or a confirmed Reset). Exposed as reset_signal_r so the
             # downstream tabs (names/coords/generalization) can wipe their retained
             # decision state. had_first_upload distinguishes the initial upload
             # (nothing downstream to clear) from a true re-upload.
             downstream_reset = 0L,
-            had_first_upload = FALSE
+            had_first_upload = FALSE,
+            # What the last export taught the alias store, for its undo.
+            alias_receipt = NULL
         )
+        basis_model <- new_mapping_basis_model(input, raw_data_r, lang_r, shiny::reactive(rv$map_values))
+        basis_state <- basis_model$state
+        basis_of_record_page_size <- basis_model$basis_of_record_page_size
+        get_basis_of_record_source_col <- basis_model$get_basis_of_record_source_col
+        basis_of_record_page_count <- basis_model$basis_of_record_page_count
+        get_basis_of_record_page_entries <- basis_model$get_basis_of_record_page_entries
+        basis_of_record_target_choices <- basis_model$basis_of_record_target_choices
+        get_effective_basis_of_record_map <- basis_model$get_effective_basis_of_record_map
+        sync_current_page_to_draft <- basis_model$sync_current_page_to_draft
+        establishment_model <- new_mapping_establishment_model(input, raw_data_r, lang_r, shiny::reactive(rv$map_values))
+        establishment_state <- establishment_model$state
+        establishment_page_size <- establishment_model$establishment_page_size
+        get_establishment_species <- establishment_model$get_establishment_species
+        get_establishment_island_rows <- establishment_model$get_establishment_island_rows
+        establishment_page_count <- establishment_model$establishment_page_count
+        get_establishment_page_entries <- establishment_model$get_establishment_page_entries
+        establishment_choices <- establishment_model$establishment_choices
+        get_effective_establishment_map <- establishment_model$get_effective_establishment_map
+        sync_establishment_page_to_draft <- establishment_model$sync_establishment_page_to_draft
+        reset_establishment_state <- establishment_model$reset_establishment_state
 
         # SQLite connection for alias and template persistence
         conn <- tryCatch(
@@ -311,44 +201,25 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         if (!is.null(export_signal_r) && shiny::is.reactive(export_signal_r)) {
             shiny::observeEvent(export_signal_r(), {
                 if (is.null(conn) || !DBI::dbIsValid(conn)) return(invisible(NULL))
-                tryCatch(
+                run_id <- rostrum_new_run_id()
+                committed <- tryCatch(
                     rostrum_commit_session_aliases(
                         conn = conn,
                         map_values = shiny::isolate(rv$map_values),
-                        run_id = shiny::isolate(rv$rostrum_run_stats[["run_id"]])
+                        run_id = run_id
                     ),
                     error = function(e) {
                         warning("[rostrum] Could not commit aliases: ", e$message)
+                        NULL
                     }
                 )
+                rv$alias_receipt <- alias_export_receipt(committed, run_id)
             }, ignoreInit = TRUE)
         }
 
         # i18n keys for all 21 catalog classes (base + on-demand extras).
         # Falls back to raw class name if a future class isn't covered.
-        class_tr_keys_map <- c(
-            "Record-level"          = "class_record",
-            "Occurrence"            = "class_occurrence",
-            "Event"                 = "class_event",
-            "Location"              = "class_location",
-            "Taxon"                 = "class_taxon",
-            "Identification"        = "class_identification",
-            "GeologicalContext"     = "class_geologicalcontext",
-            "MaterialEntity"        = "class_materialentity",
-            "MaterialSample"        = "class_materialsample",
-            "MeasurementOrFact"     = "class_measurementorfact",
-            "Organism"              = "class_organism",
-            "ResourceRelationship"  = "class_resourcerelationship",
-            "Agent"                 = "class_agent",
-            "Assertion"             = "class_assertion",
-            "BibliographicResource" = "class_bibliographicresource",
-            "MolecularProtocol"     = "class_molecularprotocol",
-            "NucleotideAnalysis"    = "class_nucleotideanalysis",
-            "NucleotideSequence"    = "class_nucleotidesequence",
-            "OrganismInteraction"   = "class_organisminteraction",
-            "Protocol"              = "class_protocol",
-            "Provenance"            = "class_provenance"
-        )
+        class_tr_keys_map <- dwc_class_translation_keys()
 
         # Required DwC terms surfaced as a live status strip in the sidebar
         required_fields_strip <- required_mapping_terms()
@@ -366,11 +237,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             key <- unname(class_tr_keys_map[category_value])
             if (is.na(key)) category_value else tr(key, lang_r())
         }
-
-        category_labels <- function() {
-            vapply(all_filter_categories(), category_label, FUN.VALUE = character(1))
-        }
-
 
         # Active DwC terms list: base 50 + any extras added in this session
         dwc_all <- shiny::reactive({
@@ -415,17 +281,19 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             }
 
             status <- toupper(as.character(meta$status)[1])
-            badge_class <- switch(status,
-                AUTO = "badge field-status-badge bg-success",
-                SUGERIDO = "badge field-status-badge bg-warning",
-                AMBIGUO = "badge field-status-badge badge-ambiguous",
-                EDITADO = "badge field-status-badge bg-info",
-                ALIAS = "badge field-status-badge bg-primary",
-                TEMPLATE = "badge field-status-badge badge-template",
-                ASSISTENTE = "badge field-status-badge badge-assistant",
-                MANUAL = "badge field-status-badge bg-light text-muted border",
-                "badge field-status-badge bg-light text-muted border"
+            # Own modifiers rather than Bootstrap's bg-* utilities, which carry
+            # an important flag and would pin the old saturated colors (ADR-127).
+            badge_modifier <- switch(status,
+                AUTO = "auto",
+                SUGERIDO = "suggested",
+                AMBIGUO = "ambiguous",
+                EDITADO = "edited",
+                ALIAS = "alias",
+                TEMPLATE = "template",
+                ASSISTENTE = "assistant",
+                "manual"
             )
+            badge_class <- paste0("badge field-status-badge field-status-badge--", badge_modifier)
 
             badge_label <- switch(status,
                 AUTO = tr("rostrum_badge_auto", lang_r()),
@@ -471,7 +339,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 return(list(is_mapped = is_mapped, meta = meta))
             }
             field <- if (identical(term, "establishmentMeans")) "means" else "degree"
-            if (establishment_answer_count(rv$establishment_map, field) > 0L) {
+            if (establishment_answer_count(establishment_state$establishment_map, field) > 0L) {
                 is_mapped <- TRUE
                 if (!has_selected_value(current_val)) {
                     meta$status <- "ASSISTENTE"
@@ -491,7 +359,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     meta <- default_meta()
                 }
                 card_state <- apply_establishment_card_state(
-                    term, current_val, is_field_mapped(term, current_val, input), meta
+                    term, current_val,
+                    is_field_mapped(term, current_val, input, rv$fixed_values), meta
                 )
                 meta <- card_state$meta
                 badge <- build_badge_info(meta)
@@ -565,7 +434,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # head(200) sample for every mapped standard term (camtrap maps ~25-40 ->
         # noticeable lag). Dataset-scoped: cleared on a new upload. Restricted to
         # standard terms, whose preview depends only on (term, columns,
-        # raw_data) -- never on rv$basis_of_record_map / rv$dyn_props_keys.
+        # raw_data) -- never on basis_state$basis_of_record_map / rv$dyn_props_keys.
         preview_cache <- new.env(parent = emptyenv())
 
         # Tracks which map_<term> inputs have reported a non-NULL value at least
@@ -575,6 +444,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # purpose: writing here must not re-trigger the observer. Reset per
         # upload alongside preview_cache.
         rendered_map_inputs <- new.env(parent = emptyenv())
+
+        # The input value a map_<term> input held when code changed it through
+        # set_map_value(). Until the client echoes the update, the server still
+        # sees this old value, and the input-sync observer must not write it
+        # back over the new one. Non-reactive and reset per upload, like
+        # rendered_map_inputs.
+        pending_map_echo <- new.env(parent = emptyenv())
 
         # Tracks the inputs the occurrenceID vector was last built from, so the
         # ids are rebuilt when the user remaps occurrenceID and only then.
@@ -637,20 +513,24 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             result <- tryCatch(
                 if (is_establishment) {
                     species <- utils::head(get_establishment_species(), 200L)
+                    if (length(species) != nrow(slice)) species <- NULL
                     list(values = build_establishment_term_value(
                         term = term,
                         df = slice,
                         user_cols = user_cols,
-                        species_values = if (length(species) == nrow(slice)) species else NULL,
-                        establishment_map = rv$establishment_map,
-                        out_sep = " | "
+                        species_values = species,
+                        establishment_map = establishment_state$establishment_map,
+                        out_sep = " | ",
+                        island_rows = establishment_island_rows_for_df(
+                            slice, rv$map_values, species
+                        )
                     ))
                 } else {
                     build_term_value(
                         term = term,
                         df = slice,
                         user_cols = user_cols,
-                        basis_of_record_map = rv$basis_of_record_map,
+                        basis_of_record_map = basis_state$basis_of_record_map,
                         dyn_props_keys = rv$dyn_props_keys,
                         out_sep = " | "
                     )
@@ -729,255 +609,47 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             ))
         }
 
-        set_map_value <- function(term, value, update_input = TRUE) {
-            sanitized_value <- sanitize_map_selection(term, value)
-            rv$map_values[[term]] <- sanitized_value
-
+        mapping_commands <- new_mapping_commands(
+            write_selection = function(term, value) { rv$map_values[[term]] <- value },
+            write_meta = function(term, meta) { rv$map_meta[[term]] <- meta },
+            add_terms = function(terms) { rv$extra_terms <- unique(c(rv$extra_terms, terms)) },
+            begin_restore = function() { rv$is_programmatic_update <- TRUE },
+            end_restore = function() {
+                rv$is_programmatic_update <- FALSE
+                rv$programmatic_terms <- character(0)
+            },
+            sync_selection = function(term, sanitized_value, update_input) {
             input_id <- paste0("map_", term)
-            if (isTRUE(update_input) && !is.null(input[[input_id]])) {
+            old_input <- shiny::isolate(input[[input_id]])
+            # A select the user cleared reports NULL, like one not rendered yet.
+            # It needs the update too, or a restored card stays blank while the
+            # export maps the column.
+            rendered <- !is.null(old_input) || isTRUE(rendered_map_inputs[[term]])
+            if (isTRUE(update_input) && rendered) {
                 rv$programmatic_terms <- unique(c(rv$programmatic_terms, term))
+                if (!identical(sanitize_map_selection(term, old_input), sanitized_value)) {
+                    # The input-sync observer reads a cleared select as "".
+                    pending_map_echo[[term]] <- if (is.null(old_input)) "" else old_input
+                }
                 shiny::updateSelectInput(session, input_id, selected = sanitized_value)
             }
-        }
-
-        basis_of_record_page_size <- 20L
-
-        get_basis_of_record_source_col <- function() {
-            selected <- sanitize_map_selection("basisOfRecord", rv$map_values[["basisOfRecord"]])
-            if (has_selected_value(selected)) {
-                return(as.character(selected[[1]]))
-            }
-
-            input_selected <- sanitize_map_selection("basisOfRecord", input$map_basisOfRecord)
-            if (has_selected_value(input_selected)) {
-                return(as.character(input_selected[[1]]))
-            }
-
-            ""
-        }
-
-        basis_of_record_page_count <- function() {
-            total_items <- nrow(rv$basis_of_record_entries)
-            if (total_items <= 0) {
-                return(1L)
-            }
-
-            max(1L, as.integer(ceiling(total_items / basis_of_record_page_size)))
-        }
-
-        get_basis_of_record_page_entries <- function() {
-            entries <- rv$basis_of_record_entries
-            if (nrow(entries) == 0) {
-                return(entries)
-            }
-
-            total_pages <- basis_of_record_page_count()
-            current_page <- max(1L, min(as.integer(rv$basis_of_record_page), total_pages))
-            start_idx <- ((current_page - 1L) * basis_of_record_page_size) + 1L
-            end_idx <- min(nrow(entries), start_idx + basis_of_record_page_size - 1L)
-            entries[start_idx:end_idx, , drop = FALSE]
-        }
-
-        basis_of_record_target_choices <- function() {
-            get_basis_of_record_term_choices(
-                lang = lang_r(),
-                include_skip = TRUE,
-                with_description = TRUE,
-                skip_label = tr("bor_assistant_skip_option", lang_r())
-            )
-        }
-
-        get_effective_basis_of_record_map <- function() {
-            entries <- rv$basis_of_record_entries
-            if (nrow(entries) == 0) {
-                return(stats::setNames(character(0), character(0)))
-            }
-
-            keys <- entries$key
-            auto_map <- sanitize_basis_of_record_map(rv$basis_of_record_auto_map)
-            draft_map <- sanitize_basis_of_record_map(rv$basis_of_record_draft_map)
-
-            effective <- auto_map[keys]
-            effective[is.na(effective)] <- ""
-
-            draft_values <- draft_map[keys]
-            has_draft <- !is.na(draft_values)
-            effective[has_draft] <- draft_values[has_draft]
-
-            effective <- sanitize_basis_of_record_terms(effective)
-            stats::setNames(as.character(effective), keys)
-        }
-
-        sync_current_page_to_draft <- function() {
-            entries <- get_basis_of_record_page_entries()
-            if (nrow(entries) == 0) {
-                return(invisible(NULL))
-            }
-
-            for (i in seq_len(nrow(entries))) {
-                entry <- entries[i, , drop = FALSE]
-                input_id <- paste0("basis_of_record_target_", entry$idx[[1]])
-                input_value <- input[[input_id]]
-                if (is.null(input_value)) {
-                    next
-                }
-
-                sanitized_value <- sanitize_basis_of_record_term(input_value)
-                key <- entry$key[[1]]
-                has_key <- key %in% names(rv$basis_of_record_draft_map)
-                current_value <- if (has_key) as.character(rv$basis_of_record_draft_map[[key]])[[1]] else NA_character_
-
-                if (!has_key || !identical(current_value, sanitized_value)) {
-                    rv$basis_of_record_draft_map[[entry$key[[1]]]] <- sanitized_value
+            },
+            write_fixed = function(term, state) { rv$fixed_values[[term]] <- state },
+            sync_fixed = function(term, state) {
+                shiny::updateCheckboxInput(session, paste0("usecustom_", term), value = state$on)
+                if (identical(term, "basisOfRecord")) {
+                    shiny::updateSelectInput(session, "custom_basisOfRecord", selected = state$value)
+                } else {
+                    shiny::updateTextInput(session, paste0("custom_", term), value = state$value)
                 }
             }
-
-            invisible(NULL)
-        }
+        )
+        set_map_value <- mapping_commands$select
 
         # --- establishmentMeans / degreeOfEstablishment assistant (ADR-110) ---
         # Same page size and snapshot-sync contract as the basisOfRecord
         # assistant, but keyed on the species read from the scientificName
         # column instead of on the unique values of the term's own column.
-        establishment_page_size <- 20L
-
-        get_establishment_species <- function() {
-            df <- raw_data_r()
-            if (!is.data.frame(df) || nrow(df) == 0L) {
-                return(character(0))
-            }
-            selected <- sanitize_map_selection(
-                "scientificName", rv$map_values[["scientificName"]]
-            )
-            if (!has_selected_value(selected)) {
-                selected <- sanitize_map_selection(
-                    "scientificName", input$map_scientificName
-                )
-            }
-            if (!has_selected_value(selected)) {
-                return(character(0))
-            }
-            col <- as.character(selected[[1]])
-            if (!(col %in% names(df))) {
-                return(character(0))
-            }
-            as.character(df[[col]])
-        }
-
-        establishment_page_count <- function() {
-            total_items <- nrow(rv$establishment_entries)
-            if (total_items <= 0) {
-                return(1L)
-            }
-            max(1L, as.integer(ceiling(total_items / establishment_page_size)))
-        }
-
-        get_establishment_page_entries <- function() {
-            entries <- rv$establishment_entries
-            if (nrow(entries) == 0) {
-                return(entries)
-            }
-            total_pages <- establishment_page_count()
-            current_page <- max(1L, min(as.integer(rv$establishment_page), total_pages))
-            start_idx <- ((current_page - 1L) * establishment_page_size) + 1L
-            end_idx <- min(nrow(entries), start_idx + establishment_page_size - 1L)
-            entries[start_idx:end_idx, , drop = FALSE]
-        }
-
-        establishment_choices <- function(field = "means") {
-            catalog <- if (identical(field, "degree")) {
-                degree_of_establishment_vocab_catalog
-            } else {
-                establishment_means_vocab_catalog
-            }
-            dwc_vocab_choices(
-                catalog,
-                lang = lang_r(),
-                include_skip = TRUE,
-                skip_label = tr("est_assistant_skip_option", lang_r())
-            )
-        }
-
-        # Auto-suggestions overlaid by the user's in-modal edits. Only
-        # establishmentMeans has suggestions; degreeOfEstablishment starts empty
-        # by design (it depends on the record, not on the species).
-        get_effective_establishment_map <- function() {
-            entries <- rv$establishment_entries
-            empty <- stats::setNames(character(0), character(0))
-            if (nrow(entries) == 0) {
-                return(list(means = empty, degree = empty))
-            }
-
-            keys <- entries$key
-            auto <- sanitize_establishment_field_map(rv$establishment_auto_map, "means")
-            draft <- sanitize_establishment_map(rv$establishment_draft)
-
-            means <- auto[keys]
-            means[is.na(means)] <- ""
-            draft_means <- draft$means[keys]
-            has_draft <- !is.na(draft_means)
-            means[has_draft] <- draft_means[has_draft]
-
-            degree <- draft$degree[keys]
-            degree[is.na(degree)] <- ""
-
-            list(
-                means = stats::setNames(
-                    as.character(sanitize_establishment_terms(means, "means")), keys
-                ),
-                degree = stats::setNames(
-                    as.character(sanitize_establishment_terms(degree, "degree")), keys
-                )
-            )
-        }
-
-        sync_establishment_page_to_draft <- function() {
-            entries <- get_establishment_page_entries()
-            if (nrow(entries) == 0) {
-                return(invisible(NULL))
-            }
-            for (i in seq_len(nrow(entries))) {
-                key <- entries$key[[i]]
-                idx <- entries$idx[[i]]
-                for (field in c("means", "degree")) {
-                    input_value <- input[[paste0("est_", field, "_", idx)]]
-                    if (is.null(input_value)) {
-                        next
-                    }
-                    sanitized <- sanitize_establishment_terms(
-                        as.character(input_value)[[1]], field
-                    )
-                    # [[ ]] on a named character vector errors for an absent
-                    # name (unlike a list), so gate the read like the
-                    # basisOfRecord assistant does.
-                    draft_field <- rv$establishment_draft[[field]]
-                    has_key <- key %in% names(draft_field)
-                    current <- if (has_key) as.character(draft_field[[key]]) else NA_character_
-                    if (!has_key || !identical(current, sanitized)) {
-                        rv$establishment_draft[[field]][[key]] <- sanitized
-                    }
-                }
-            }
-            invisible(NULL)
-        }
-
-        reset_establishment_state <- function() {
-            empty <- stats::setNames(character(0), character(0))
-            rv$establishment_map <- list(means = empty, degree = empty)
-            rv$establishment_draft <- list(means = empty, degree = empty)
-            rv$establishment_auto_map <- empty
-            rv$establishment_entries <- data.frame(
-                idx = integer(0), key = character(0), raw = character(0),
-                n_records = integer(0), invasive = logical(0),
-                stringsAsFactors = FALSE
-            )
-            rv$establishment_page <- 1L
-            invisible(NULL)
-        }
-
-        # Loading modal helpers (delegated to mod_mapping_loading.R)
-        loading_phrase_specs <- mapping_loading_phrase_specs()
-
 
         # Translated labels
         output$btn_auto_map_label <- shiny::renderUI({
@@ -990,10 +662,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
         output$sidebar_actions_label <- shiny::renderUI({
             shiny::tags$label(tr("mapping_sidebar_actions", lang_r()), class = "form-label")
-        })
-
-        output$sidebar_filters_label <- shiny::renderUI({
-            shiny::tags$label(tr("mapping_sidebar_filters", lang_r()), class = "form-label")
         })
 
         output$sidebar_view_label <- shiny::renderUI({
@@ -1020,73 +688,38 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             )
         })
 
-        output$filter_mapped_label <- shiny::renderUI({
-            tr("filter_mapped_only", lang_r())
+        # Relevant / All / Mapped / Pending: filters the cards and the list. It
+        # sits in the panel header because it acts on the whole panel (ADR-132).
+        # Relevant, the default, collapses the unmapped optional terms to one
+        # line per class (ADR-137).
+        # The counts come from triage_state(); the saira-mapping-triage
+        # handler patches them in place after each mapping change.
+        # The mapping UI script applies the filter in the browser (ADR-157),
+        # and motion.js slides the grid in (ADR-156).
+        output$mapped_filter_control <- shiny::renderUI({
+            lang <- lang_r()
+            modes <- c("relevant", "all", "mapped", "pending")
+            counts <- shiny::isolate(triage_state(lang))$filters
+            shiny::div(
+                class = "saira-seg",
+                `data-seg-target` = ns("grid_box"),
+                shiny::radioButtons(
+                    ns("mapped_filter"),
+                    label = shiny::tags$span(tr("mapping_filter_label", lang), class = "visually-hidden"),
+                    choiceNames = lapply(modes, function(mode) seg_choice(
+                        tr(paste0("mapping_filter_", mode), lang),
+                        seg_count(counts[[mode]], action = identical(mode, "pending"),
+                                  id = ns(paste0("filter_n_", mode)))
+                    )),
+                    choiceValues = modes,
+                    selected = shiny::isolate(input$mapped_filter %||% "relevant"),
+                    inline = TRUE
+                )
+            )
         })
 
         output$card_title <- shiny::renderUI({
             tr("mapping_title", lang_r())
-        })
-
-        # Live required-fields status pills in the sidebar (mapped-based, reactive
-        # on every mapping change). occurrenceID is auto-UUID -> is_field_mapped()
-        # already returns TRUE for it.
-        output$required_fields_strip <- shiny::renderUI({
-            mapped_flags <- vapply(required_fields_strip, function(term) {
-                current_val <- rv$map_values[[term]]
-                if (is.null(current_val)) {
-                    current_val <- input[[paste0("map_", term)]]
-                }
-                current_val <- sanitize_map_selection(term, current_val)
-                is_field_mapped(term, current_val, input)
-            }, FUN.VALUE = logical(1))
-
-            chips <- lapply(required_fields_strip, function(term) {
-                mapped <- mapped_flags[[term]]
-                status_label <- if (mapped) {
-                    tr("preview_readiness_present", lang_r())
-                } else {
-                    tr("preview_readiness_missing", lang_r())
-                }
-                shiny::span(
-                    class = paste(
-                        "mapping-required-chip",
-                        if (mapped) "is-mapped" else "is-missing"
-                    ),
-                    title = status_label,
-                    `aria-label` = paste(term, status_label),
-                    shiny::tags$i(
-                        class = if (mapped) {
-                            "fa-solid fa-circle-check"
-                        } else {
-                            "fa-solid fa-circle-xmark"
-                        }
-                    ),
-                    term
-                )
-            })
-
-            n_total <- length(required_fields_strip)
-            n_mapped <- sum(mapped_flags)
-
-            shiny::div(
-                class = "mapping-required-sidebar",
-                shiny::div(
-                    class = "mapping-required-header",
-                    shiny::tags$span(
-                        class = "mapping-required-strip-label",
-                        tr("preview_readiness_title", lang_r())
-                    ),
-                    shiny::tags$span(
-                        class = paste(
-                            "mapping-required-count",
-                            if (n_mapped == n_total) "is-complete" else ""
-                        ),
-                        paste0(n_mapped, "/", n_total)
-                    )
-                ),
-                chips
-            )
         })
 
         output$no_file_msg <- shiny::renderUI({
@@ -1102,11 +735,16 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             !is.null(raw_data_r())
         })
         shiny::outputOptions(output, "file_uploaded", suspendWhenHidden = FALSE)
+        # The grid reads these two inputs. Rendered only on the visible tab,
+        # their first value arrived after the tab opened and rebuilt the grid a
+        # second time; rendered in the background they are set before it.
+        shiny::outputOptions(output, "view_mode_control", suspendWhenHidden = FALSE)
+        shiny::outputOptions(output, "mapped_filter_control", suspendWhenHidden = FALSE)
 
         # BasisOfRecord assistant (delegated to mod_mapping_basis_assistant.R)
         setup_basis_of_record_assistant(
             input = input, output = output, session = session,
-            rv = rv, ns = ns, lang_r = lang_r, raw_data_r = raw_data_r,
+            rv = basis_state, ns = ns, lang_r = lang_r, raw_data_r = raw_data_r,
             basis_of_record_page_size = basis_of_record_page_size,
             basis_of_record_page_count = basis_of_record_page_count,
             get_basis_of_record_page_entries = get_basis_of_record_page_entries,
@@ -1119,7 +757,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # The grid only re-renders on structural changes (ADR-098), so saving
         # the assistant would leave the two cards showing their old badge and
         # border. Refresh them surgically, the same way a column selection does.
-        shiny::observeEvent(rv$establishment_map, {
+        shiny::observeEvent(establishment_state$establishment_map, {
             for (term in establishment_terms) {
                 push_card_state(term)
             }
@@ -1127,16 +765,16 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
         setup_establishment_assistant(
             input = input, output = output, session = session,
-            rv = rv, ns = ns, lang_r = lang_r,
+            rv = establishment_state, ns = ns, lang_r = lang_r,
             establishment_page_size = establishment_page_size,
             establishment_page_count = establishment_page_count,
             get_establishment_page_entries = get_establishment_page_entries,
             establishment_choices = establishment_choices,
             get_effective_establishment_map = get_effective_establishment_map,
             get_establishment_species = get_establishment_species,
+            get_establishment_island_rows = get_establishment_island_rows,
             sync_establishment_page_to_draft = sync_establishment_page_to_draft
         )
-
 
         shiny::observe({
             term_names <- all_term_names()
@@ -1163,13 +801,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             }
         })
 
-        # Camtrap-origin uploads should auto-map without an "Auto-map" click, but
-        # we cannot run the engine the instant data loads: the mapping field
-        # cards have not rendered yet, so the programmatic selections would be
-        # read back as NULL by the input-sync observer below and wiped (it treats
-        # a not-yet-rendered input as a user clear). This flag defers the run
-        # until the UI is up (see the scientificName-triggered observer).
-        camtrap_automap_pending <- shiny::reactiveVal(FALSE)
+        # Every upload auto-maps without an "Auto-map" click, but we cannot run
+        # the engine the instant data loads: the mapping field cards have not
+        # rendered yet, so the programmatic selections would be read back as
+        # NULL by the input-sync observer below and wiped (it treats a
+        # not-yet-rendered input as a user clear). This flag defers the run
+        # until the UI is up (see the cards_bound observer).
+        automap_pending <- shiny::reactiveVal(FALSE)
 
         shiny::observeEvent(raw_data_r(),
             {
@@ -1186,6 +824,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
                 rv$map_values <- empty_map_values(term_names)
                 rv$map_meta <- empty_map_meta(term_names)
+                # A fixed value fills a column of the rows, so it belongs to the
+                # file it was set for: a new upload turns it off, as the reset
+                # does. datasetName, license, language and modified describe the
+                # publication and stay (ADR-189).
+                for (term in names(rv$fixed_values)) {
+                    mapping_commands$fixed_value(term, NULL)
+                }
                 rm(list = ls(id_cache, all.names = TRUE), envir = id_cache)
                 rv$eventdate_parse_failures <- 0L
                 rv$last_eventdate_warn_count <- NA_integer_
@@ -1195,25 +840,27 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 rv$rostrum_decisions <- NULL
                 rv$rostrum_run_stats <- list()
                 rv$dyn_props_keys <- list()
-                reset_basis_of_record_state(rv)
+                rv$measurement_specs <- list()
+                rv$measurement_unit_hints <- character(0)
+                reset_basis_of_record_state(basis_state)
                 reset_establishment_state()
                 rm(list = ls(preview_cache, all.names = TRUE), envir = preview_cache)
                 rm(
                     list = ls(rendered_map_inputs, all.names = TRUE),
                     envir = rendered_map_inputs
                 )
+                rm(list = ls(pending_map_echo, all.names = TRUE), envir = pending_map_echo)
 
-                # Camtrap columns are Darwin Core terms already: queue the
-                # automatic mapping (run once the cards render). Non-camtrap
-                # uploads leave the flag FALSE and require the manual click.
-                camtrap_automap_pending(
-                    !is.null(attr(raw_data_r(), "saira_camtrap_source"))
-                )
+                # Queue the automatic mapping (run once the cards render).
+                # perform_auto_map() picks the identity path for camtrap and
+                # the Rostrum engine for every other upload.
+                automap_pending(TRUE)
 
                 # Signal the downstream tabs to clear their retained decisions.
                 # The first upload has nothing downstream to clear (silent); a
                 # re-upload warns the user why their validations disappeared.
                 rv$downstream_reset <- rv$downstream_reset + 1L
+                rv$alias_receipt <- NULL
                 if (isTRUE(rv$had_first_upload)) {
                     shiny::showNotification(
                         tr("notif_reupload_cleared", lang_r()),
@@ -1223,20 +870,24 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     rv$had_first_upload <- TRUE
                 }
             },
-            ignoreNULL = TRUE
+            ignoreNULL = TRUE,
+            # Ahead of output$mapping_ui and the scientificName flag (priority 1)
+            # in the flush. The grid ran first and drew the cards from the old
+            # sheet's mapping, and with no flag flip nothing redrew them.
+            priority = 2
         )
 
-        # Consume the deferred camtrap auto-map: the first non-NULL scientificName
-        # means the field cards have rendered, so perform_auto_map()'s selections
-        # land on real inputs (and survive the sync observer). Fires only when the
-        # flag was set by a camtrap upload; otherwise a no-op on every remap.
-        shiny::observeEvent(input$map_scientificName, {
-            if (!isTRUE(camtrap_automap_pending())) {
+        # Consume the deferred auto-map: cards_bound comes from the client after
+        # each grid render, so perform_auto_map()'s selections land on real
+        # inputs (and survive the sync observer). Fires once per upload; a
+        # no-op on every later render.
+        shiny::observeEvent(input$cards_bound, {
+            if (!isTRUE(automap_pending())) {
                 return(invisible(NULL))
             }
-            camtrap_automap_pending(FALSE)
+            automap_pending(FALSE)
             perform_auto_map()
-        }, ignoreInit = TRUE, ignoreNULL = TRUE)
+        }, ignoreInit = TRUE)
 
         shiny::observe({
             shiny::req(raw_data_r())
@@ -1271,6 +922,12 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     old_value_isolated <- shiny::isolate(rv$map_values[[term]])
                     if (is.null(old_value_isolated) ||
                         !nzchar(trimws(as.character(old_value_isolated)[[1]]))) {
+                        # A clear set by code (Reset) echoes as NULL. Without
+                        # this, the old column stayed pending, and picking it
+                        # again was read as the stale echo and ignored.
+                        if (exists(term, envir = pending_map_echo, inherits = FALSE)) {
+                            rm(list = term, envir = pending_map_echo)
+                        }
                         next
                     }
                     input_value <- ""
@@ -1278,6 +935,17 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     # First non-NULL report for this input: the card rendered and
                     # the client echoed it. A later NULL is then a real clear.
                     rendered_map_inputs[[term]] <- TRUE
+                }
+
+                # Code set this term and the client has not echoed it yet: the
+                # input still holds the old value. Writing it back would undo the
+                # set (a guide import added terms, this observer re-ran, and
+                # every restored card went blank until the echo).
+                if (exists(term, envir = pending_map_echo, inherits = FALSE)) {
+                    if (identical(input_value, pending_map_echo[[term]])) {
+                        next
+                    }
+                    rm(list = term, envir = pending_map_echo)
                 }
 
                 sanitized <- sanitize_map_selection(term, input_value)
@@ -1302,11 +970,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         } else {
                             ""
                         }
-                        previous_source_col <- shiny::isolate(rv$basis_of_record_source_col)
+                        previous_source_col <- shiny::isolate(basis_state$basis_of_record_source_col)
 
                         if (!identical(previous_source_col, next_source_col)) {
-                            rv$basis_of_record_source_col <- next_source_col
-                            reset_basis_of_record_state(rv, reset_source_col = FALSE)
+                            basis_state$basis_of_record_source_col <- next_source_col
+                            reset_basis_of_record_state(basis_state, reset_source_col = FALSE)
                         }
                     }
 
@@ -1343,7 +1011,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             if (!identical(isTRUE(rv$scientificname_mapped), mapped)) {
                 rv$scientificname_mapped <- mapped
             }
-        })
+        # Ahead of output$mapping_ui in the flush: a guide import sets
+        # scientificName and adds terms at once, and the grid must see the flag
+        # already flipped, or it renders twice.
+        }, priority = 1)
 
         # Sync dynamicProperties per-column JSON key overrides.
         # Depends reactively on (a) selected columns and (b) each per-column
@@ -1362,7 +1033,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             new_keys <- list()
             for (col_name in selected_cols) {
-                input_id <- paste0("dynprops_key_", make.names(col_name))
+                input_id <- column_input_id("dynprops_key_", col_name)
                 raw_value <- input[[input_id]]
                 if (is.null(raw_value)) {
                     next
@@ -1377,6 +1048,31 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             current_keys <- shiny::isolate(rv$dyn_props_keys)
             if (!identical(current_keys, new_keys)) {
                 rv$dyn_props_keys <- new_keys
+            }
+        })
+
+        # Type, unit and method of each column mapped to measurementValue, for
+        # the measurement extension (ADR-179). Only the export reads them, so
+        # typing does not rebuild the mapped frame.
+        shiny::observe({
+            if (isTRUE(rv$is_programmatic_update)) {
+                return(invisible(NULL))
+            }
+            selected_cols <- as.character(rv$map_values[["measurementValue"]] %||% character(0))
+            stems <- c(measurementType = "type", measurementUnit = "unit",
+                       measurementMethod = "method")
+            new_specs <- list()
+            for (col_name in selected_cols[nzchar(selected_cols)]) {
+                spec <- list()
+                for (term in names(stems)) {
+                    raw_value <- input[[column_input_id(paste0("mof_", stems[[term]], "_"), col_name)]]
+                    trimmed <- trimws(as.character(raw_value %||% ""))
+                    if (length(trimmed) == 1L && nzchar(trimmed)) spec[[term]] <- trimmed
+                }
+                if (length(spec)) new_specs[[col_name]] <- spec
+            }
+            if (!identical(shiny::isolate(rv$measurement_specs), new_specs)) {
+                rv$measurement_specs <- new_specs
             }
         })
 
@@ -1508,12 +1204,18 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
         # Class pill bar: pure scroll-navigation anchors. Clicking a pill scrolls
         # to its category section. No filter toggle — all sections always render.
-        # The state dots and the pending counter are NOT rendered here: this
-        # output must not depend on rv$map_meta, or every column pick would
-        # recreate the pill actionButtons. They are placeholders patched in
-        # place by the saira-mapping-triage handler (see the observer below).
+        # The state dots and the pending counter must not make this output
+        # depend on rv$map_meta, or every column pick would recreate the pill
+        # actionButtons: the saira-mapping-triage handler patches them in place
+        # (see the observer below). A language switch still re-renders the bar,
+        # after the handler has patched the old one, so the render reads the
+        # current state (isolated) instead of drawing empty placeholders.
         output$class_pills <- shiny::renderUI({
             cats <- all_filter_categories()
+            triage <- shiny::isolate(triage_state(lang_r()))
+            dot_by_id <- stats::setNames(triage$dots, vapply(
+                triage$dots, function(d) d$id, FUN.VALUE = character(1)
+            ))
 
             shiny::div(
                 class = "mapping-class-pillbar",
@@ -1521,15 +1223,18 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     ns("class_pill_all"),
                     tr("mapping_pill_all", lang_r()),
                     class = "stream-pill",
-                    icon = shiny::icon("arrows-up-to-line")
+                    icon = ph_icon("arrows-up-to-line")
                 ),
                 lapply(cats, function(cat) {
+                    dot_id <- ns(paste0("pill_dot_", slug(cat)))
+                    dot <- dot_by_id[[dot_id]]
                     shiny::actionButton(
                         ns(paste0("class_pill_", slug(cat))),
                         shiny::tagList(
                             shiny::span(
-                                id = ns(paste0("pill_dot_", slug(cat))),
-                                class = "pill-state-dot is-clear"
+                                id = dot_id,
+                                class = paste0("pill-state-dot is-", dot$state),
+                                title = dot$title
                             ),
                             category_label(cat)
                         ),
@@ -1542,19 +1247,23 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         tr("mapping_next_pending", lang_r()),
                         shiny::span(
                             id = ns("next_pending_count"),
-                            class = "next-pending-count"
+                            class = "next-pending-count",
+                            if (triage$count > 0L) as.character(triage$count)
                         )
                     ),
-                    class = "stream-pill next-pending-pill is-idle",
-                    icon = shiny::icon("arrow-right")
+                    class = paste(
+                        "stream-pill next-pending-pill",
+                        if (triage$count > 0L) "" else "is-idle"
+                    ),
+                    icon = ph_icon("arrow-right")
                 )
             )
         })
 
-        # Terms that still need the user, in grid order: a required term with no
-        # mapping, or one the Rostrum was not sure about. Feeds both the pill
-        # dots and the "next pending" queue, so the count and the jump target
-        # can never disagree.
+        # State of every term, in grid order. A pending term still needs the
+        # user: a required term with no mapping, or one the Rostrum was not sure
+        # about. Feeds the pill dots, the "next pending" queue and the filter
+        # counts, so the counts and the jump target can never disagree.
         # Fully isolated: the caller declares what it wakes on. Reading the 66
         # map_ and usecustom_ inputs here would make the triage observer depend
         # on all of them, and auto-map writes each term separately with
@@ -1562,16 +1271,15 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # once per flush. rv$map_values is the source of truth anyway; the sync
         # observer fills it one flush after a selection, which is what the
         # observer below wakes on.
-        pending_terms <- function() shiny::isolate({
-            fields <- dwc_all()
-            keep <- vapply(fields, function(item) {
+        term_states <- function() shiny::isolate({
+            lapply(dwc_all(), function(item) {
                 term <- item$term
                 current_val <- rv$map_values[[term]]
                 if (is.null(current_val)) {
                     current_val <- input[[paste0("map_", term)]]
                 }
                 current_val <- sanitize_map_selection(term, current_val)
-                is_mapped <- is_field_mapped(term, current_val, input)
+                is_mapped <- is_field_mapped(term, current_val, input, rv$fixed_values)
                 if (isTRUE(rv$scientificname_mapped) &&
                     term %in% locked_taxon_terms()) {
                     is_mapped <- TRUE
@@ -1583,24 +1291,33 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 card_state <- apply_establishment_card_state(
                     term, current_val, is_mapped, field_meta
                 )
-                !is.null(field_state_class(
-                    term, card_state$is_mapped, card_state$meta,
-                    required_fields_strip
-                ))
-            }, FUN.VALUE = logical(1))
-
-            fields[keep]
+                list(
+                    item = item,
+                    is_mapped = isTRUE(card_state$is_mapped),
+                    pending = !is.null(field_state_class(
+                        term, card_state$is_mapped, card_state$meta,
+                        required_fields_strip
+                    )),
+                    compact = collapse_mapping_term(
+                        term, card_state$is_mapped,
+                        fixed_value_on = rv$fixed_values[[term]]$on,
+                        extra = rv$extra_terms
+                    )
+                )
+            })
         })
 
-        # Push the dot states and the counter whenever the mapping changes.
-        shiny::observe({
-            rv$map_values
-            rv$map_meta
-            rv$extra_terms
-            rv$scientificname_mapped
-            lang <- lang_r()
+        pending_terms <- function() {
+            pending <- Filter(function(x) x$pending, term_states())
+            lapply(pending, function(x) x$item)
+        }
 
-            pending <- pending_terms()
+        # Dot state per category plus the pending count. Read by the pill bar
+        # render and by the observer below, so both always draw the same state.
+        triage_state <- function(lang) {
+            states <- term_states()
+            flag <- function(key) vapply(states, function(x) x[[key]], FUN.VALUE = logical(1))
+            pending <- lapply(states[flag("pending")], function(x) x$item)
             blocked <- vapply(
                 pending, function(x) x$term %in% required_fields_strip,
                 FUN.VALUE = logical(1)
@@ -1627,11 +1344,30 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 )
             })
 
+            # Cards each Relevant / All / Mapped / Pending option shows.
+            filters <- list(
+                relevant = sum(!flag("compact")), all = length(states),
+                mapped = sum(flag("is_mapped")), pending = length(pending)
+            )
+
+            list(dots = dots, count = length(pending), filters = filters)
+        }
+
+        # Push the dot states and the counter whenever the mapping changes.
+        shiny::observe({
+            rv$map_values
+            rv$map_meta
+            rv$extra_terms
+            rv$scientificname_mapped
+            triage <- triage_state(lang_r())
+
             session$sendCustomMessage("saira-mapping-triage", list(
-                dots = dots,
-                count = length(pending),
+                dots = triage$dots,
+                count = triage$count,
                 count_id = ns("next_pending_count"),
-                button_id = ns("next_pending")
+                button_id = ns("next_pending"),
+                filters = triage$filters,
+                filter_prefix = ns("filter_n_")
             ))
         })
 
@@ -1717,162 +1453,17 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # rebuilds the mapping in the cards — concatenations and typed
         # constants — by matching the guide's source columns to the loaded
         # dataset, and (2) seeds rostrum_aliases for cross-dataset auto-mapping.
-        shiny::observeEvent(input$import_template, {
-            shiny::showModal(shiny::modalDialog(
-                title = tr("modal_import_template_title", lang_r()),
-                shiny::p(
-                    class = "mb-3",
-                    tr("modal_import_template_help", lang_r())
-                ),
-                shiny::fileInput(
-                    inputId = ns("import_template_file"),
-                    label = tr("modal_import_template_label", lang_r()),
-                    accept = c(".txt", "text/plain"),
-                    buttonLabel = shiny::icon("upload", class = "fa-solid"),
-                    placeholder = ""
-                ),
-                footer = shiny::tagList(
-                    shiny::modalButton(tr("btn_cancel", lang_r())),
-                    shiny::actionButton(
-                        ns("confirm_import_template"),
-                        tr("modal_import_template_confirm", lang_r()),
-                        class = "btn-primary"
-                    )
-                ),
-                easyClose = TRUE
-            ))
-        })
-
-        shiny::observeEvent(input$confirm_import_template, {
-            f <- input$import_template_file
-            if (is.null(f) || !nzchar(f$datapath)) {
-                shiny::showNotification(
-                    tr("modal_import_template_no_file", lang_r()),
-                    type = "warning",
-                    duration = 5
-                )
-                return(invisible(NULL))
-            }
-
-            if (!is_saira_mapping_guide(f$datapath)) {
-                shiny::showNotification(
-                    tr("modal_import_template_invalid_magic", lang_r()),
-                    type = "error",
-                    duration = 8
-                )
-                return(invisible(NULL))
-            }
-
-            payload <- tryCatch(
-                parse_mapping_guide_txt(f$datapath),
-                error = function(e) e
+        mount_mapping_import(
+            input, session, lang_r, raw_data_r, mapping_commands,
+            show_loading = function() show_mapping_loading_modal(
+                rv, ns, lang_r, specs = mapping_import_phrase_specs(),
+                title_key = "loading_import_title", status_key = "loading_import_status"
+            ),
+            hide_loading = function() hide_mapping_loading_modal(session),
+            seed_aliases = function(payload, columns) import_mapping_guide_to_aliases(
+                payload, conn = conn, available_columns = columns
             )
-            if (inherits(payload, "error")) {
-                shiny::showNotification(
-                    sprintf(tr("upload_guide_invalid", lang_r()), conditionMessage(payload)),
-                    type = "error",
-                    duration = 8
-                )
-                return(invisible(NULL))
-            }
-
-            # From here on the import is committed and takes a couple of
-            # seconds: the alias upserts, then a full grid rebuild (restoring
-            # scientificName flips rv$scientificname_mapped, one of the four
-            # structural dependencies of output$mapping_ui). Nothing above this
-            # line is slow, so the modal opens here and no early return has to
-            # take it back down. showModal writes to the socket immediately, so
-            # it paints while the loop below still runs.
-            show_mapping_loading_modal(
-                rv, ns, lang_r,
-                specs = mapping_import_phrase_specs(),
-                title_key = "loading_import_title",
-                status_key = "loading_import_status"
-            )
-            # The modal has no footer and no easyClose, so anything that throws
-            # before the handover below would strand the user behind it.
-            handed_to_flush <- FALSE
-            on.exit({
-                if (!handed_to_flush) hide_mapping_loading_modal(session)
-            }, add = TRUE)
-
-            # Faithful restore: rebuild the exact mapping in the cards by
-            # matching the guide's source columns to the loaded dataset.
-            available_columns <- tryCatch(names(raw_data_r()), error = function(e) character(0))
-            plan <- plan_mapping_guide_restore(payload, available_columns)
-
-            # Register any catalog terms the guide maps that are outside the
-            # default set, so their cards render (mirrors the Add-term flow).
-            # Without this the value is restored into rv$map_values but no card
-            # is ever shown for it.
-            restore_extras <- detect_extra_dwc_terms(names(plan$map_values))
-            if (length(restore_extras) > 0L) {
-                rv$extra_terms <- unique(c(rv$extra_terms, restore_extras))
-            }
-
-            rv$is_programmatic_update <- TRUE
-            on.exit({
-                rv$is_programmatic_update <- FALSE
-                rv$programmatic_terms <- character(0)
-            }, add = TRUE)
-
-            for (term in names(plan$map_values)) {
-                set_map_value(term, plan$map_values[[term]], update_input = TRUE)
-                rv$map_meta[[term]] <- build_manual_meta(previous_meta = NULL, has_value = TRUE)
-            }
-
-            consts <- plan$constants
-            if (!is.null(consts$datasetName)) {
-                shiny::updateTextInput(session, "custom_datasetName", value = consts$datasetName)
-                rv$map_meta[["datasetName"]] <- build_manual_meta(previous_meta = NULL, has_value = TRUE)
-            }
-            if (!is.null(consts$license)) {
-                shiny::updateCheckboxGroupInput(session, "custom_license", selected = consts$license)
-            }
-            if (!is.null(consts$language)) {
-                shiny::updateCheckboxGroupInput(session, "custom_language", selected = consts$language)
-            }
-            # Fixed values from the constant_value_terms() allowlist. A term
-            # overridden by one is written to the guide as a constant and no
-            # longer as a column mapping, so without this the import restores
-            # it nowhere and the term leaves the next export.
-            for (term in intersect(names(consts), constant_value_terms())) {
-                shiny::updateCheckboxInput(session, paste0("usecustom_", term), value = TRUE)
-                shiny::updateTextInput(session, paste0("custom_", term), value = consts[[term]])
-            }
-
-            # Seed personal aliases for cross-dataset auto-mapping (ADR-087);
-            # non-fatal if it fails (the faithful restore already happened).
-            # Reuses the module's connection: opening a second one to the same
-            # file re-runs the schema migration check and makes the two contend
-            # for the same write lock through BEGIN IMMEDIATE.
-            tryCatch(
-                import_mapping_guide_to_aliases(payload, conn = conn),
-                error = function(e) NULL
-            )
-
-            n_terms <- length(plan$applied_terms)
-            msg <- sprintf(tr("modal_import_template_restored", lang_r()), n_terms)
-            if (length(plan$missing_columns) > 0L) {
-                msg <- paste0(msg, " ", sprintf(
-                    tr("modal_import_template_missing_cols", lang_r()),
-                    length(plan$missing_columns),
-                    paste(utils::head(plan$missing_columns, 5L), collapse = ", ")
-                ))
-            }
-
-            # The grid rebuild happens in the output pass of this same flush,
-            # after the observer returns. Closing the modal here would hand the
-            # user back a stale screen and let them click into cards that are
-            # about to be replaced, so hold it until the flush is done.
-            session$onFlushed(function() {
-                hide_mapping_loading_modal(session)
-                shiny::showNotification(
-                    msg, type = "message", duration = 10, session = session
-                )
-            }, once = TRUE)
-            handed_to_flush <- TRUE
-        }, ignoreInit = TRUE)
+        )
 
         # "Add term" modal
         shiny::observeEvent(input$add_term, {
@@ -1976,7 +1567,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             shiny::div(
                 class = "alert alert-warning mapping-dup-warning",
                 shiny::div(
-                    shiny::icon("triangle-exclamation"), " ",
+                    ph_icon("triangle-exclamation"), " ",
                     tr("mapping_dup_source_warning", lang)
                 ),
                 shiny::tags$ul(class = "mapping-dup-list", rows)
@@ -1986,7 +1577,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # List view: one read-only row per term, grouped by class, for reviewing
         # what auto-mapping decided. Reads rv$map_values rather than the map_
         # inputs, which are not on the page while this view is rendered.
-        build_mapping_list <- function(lang, show_only_mapped, scientificname_mapped) {
+        build_mapping_list <- function(lang, mapped_filter, scientificname_mapped) {
             fields_to_show <- dwc_all()
             categories <- unique(vapply(
                 fields_to_show, function(x) x$category, FUN.VALUE = character(1)
@@ -2000,7 +1591,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     rows <- lapply(cat_fields, function(item) {
                         term <- item$term
                         current_val <- sanitize_map_selection(term, rv$map_values[[term]])
-                        is_mapped <- is_field_mapped(term, current_val, input)
+                        is_mapped <- is_field_mapped(term, current_val, input, rv$fixed_values)
                         locked_taxon <- isTRUE(scientificname_mapped) &&
                             term %in% locked_taxon_terms()
                         if (locked_taxon) {
@@ -2016,10 +1607,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         )
                         is_mapped <- card_state$is_mapped
                         field_meta <- card_state$meta
-
-                        if (show_only_mapped && !is_mapped) {
-                            return(NULL)
-                        }
+                        state_class <- field_state_class(
+                            term, is_mapped, field_meta, required_fields_strip
+                        )
 
                         source_label <- if (locked_taxon) {
                             tr("mapping_row_derived", lang)
@@ -2037,17 +1627,19 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             character(0)
                         }
 
-                        build_field_row(
+                        row <- build_field_row(
                             item = item,
                             source_label = source_label,
                             sample_text = paste(sample_vals, collapse = "  "),
                             is_mapped = is_mapped,
                             badge_info = if (locked_taxon) NULL else build_badge_info(field_meta),
-                            state_class = field_state_class(
-                                term, is_mapped, field_meta, required_fields_strip
-                            ),
+                            state_class = state_class,
                             ns = ns, lang_r = lang
                         )
+                        # Like the cards: every row is here, and the browser
+                        # applies the filter (ADR-157).
+                        keep <- keep_by_mapped_filter(mapped_filter, is_mapped, !is.null(state_class))
+                        shiny::tagAppendAttributes(row, hidden = if (!keep) NA)
                     })
 
                     shiny::tagList(
@@ -2080,22 +1672,46 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             )
         })
 
+        # Build the card grid once per upload in the background, one flush after
+        # the upload is on screen: the Home page does not wait for it, and the
+        # Mapping tab opens with the cards already there. Shiny suspends hidden
+        # outputs, so the grid is resumed for that one render and suspended
+        # again afterwards; a hidden tab then costs nothing, as before (ADR-114).
+        grid_prewarm <- shiny::reactiveVal(FALSE)
+        shiny::observeEvent(raw_data_r(), {
+            session$onFlushed(function() {
+                grid_prewarm(TRUE)
+                shiny::outputOptions(output, "mapping_ui", suspendWhenHidden = FALSE)
+            }, once = TRUE)
+        }, ignoreInit = FALSE)
+        end_grid_prewarm <- function() {
+            if (!shiny::isolate(grid_prewarm())) return(invisible(NULL))
+            session$onFlushed(function() {
+                grid_prewarm(FALSE)
+                shiny::outputOptions(output, "mapping_ui", suspendWhenHidden = TRUE)
+            }, once = TRUE)
+        }
+
         # Mapping UI generation (card builder delegated to mod_mapping_cards.R).
         # All category sections always render so scroll-anchors are always in DOM.
         output$mapping_ui <- shiny::renderUI({
+            on.exit(end_grid_prewarm(), add = TRUE)
             shiny::req(raw_data_r())
 
             # The grid (50 selectize inputs) is expensive to rebuild, so it is
             # rendered only on a real structural change: a new upload, a language
-            # switch, the show-only-mapped toggle, a change to the active term set
+            # switch, a change to the active term set
             # (Add-term modal, template import, reset), or when scientificName's
             # mapped-state flips (which locks/unlocks taxonRank/specificEpithet).
             # These are the only reactive dependencies. Everything else --
             # per-term map_values, fixed-value inputs, meta -- is read inside the
             # isolate() below, so selecting a column updates just that card via
             # its carddyn_<term> output and push_card_state(), never the grid.
+            # The Relevant/All/Mapped/Pending filter runs in the browser
+            # (ADR-157): the grid holds every card, and the filter is read
+            # here only so the cards come in at their place.
             lang <- lang_r()
-            show_only_mapped <- isTRUE(input$show_only_mapped)
+            mapped_filter <- shiny::isolate(input$mapped_filter) %||% "relevant"
             scientificname_mapped <- isTRUE(rv$scientificname_mapped)
             # Structural dependency: adding/removing terms must rebuild the grid
             # so the new card actually appears. dwc_all() carries rv$extra_terms
@@ -2108,7 +1724,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # track the mapping reactively and always show what is currently
             # mapped. The dependency is only registered when this branch runs.
             if (identical(input$view_mode, "list")) {
-                return(build_mapping_list(lang, show_only_mapped, scientificname_mapped))
+                return(build_mapping_list(lang, mapped_filter, scientificname_mapped))
             }
 
             shiny::isolate({
@@ -2123,6 +1739,71 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         cat_fields <- Filter(function(x) x$category == cat, fields_to_show)
                         cat_class <- paste0("cat-", tolower(gsub("-", "", cat)))
 
+                        entries <- lapply(cat_fields, function(item) {
+                            term <- item$term
+                            current_val <- rv$map_values[[term]]
+                            if (is.null(current_val)) {
+                                current_val <- input[[paste0("map_", term)]]
+                            }
+                            current_val <- sanitize_map_selection(term, current_val)
+                            is_mapped <- is_field_mapped(term, current_val, input, rv$fixed_values)
+                            # The derived taxon terms lock (and read as
+                            # mapped) once scientificName is set; they are
+                            # derived from it at export.
+                            locked_taxon <- isTRUE(scientificname_mapped) &&
+                                term %in% locked_taxon_terms()
+                            if (locked_taxon) {
+                                is_mapped <- TRUE
+                            }
+                            field_meta <- rv$map_meta[[term]]
+                            if (is.null(field_meta)) {
+                                field_meta <- default_meta()
+                            }
+                            card_state <- apply_establishment_card_state(
+                                term, current_val, is_mapped, field_meta
+                            )
+                            is_mapped <- card_state$is_mapped
+                            field_meta <- card_state$meta
+                            badge_info <- build_badge_info(field_meta)
+                            state_class <- field_state_class(
+                                term, is_mapped, field_meta, required_fields_strip
+                            )
+
+                            # The mapping UI script repeats this on each
+                            # filter switch, with the classes and the
+                            # data attributes set here.
+                            keep <- keep_by_mapped_filter(mapped_filter, is_mapped, !is.null(state_class))
+                            compact <- identical(mapped_filter, "relevant") &&
+                                collapse_mapping_term(
+                                    term, is_mapped,
+                                    fixed_value_on = rv$fixed_values[[term]]$on,
+                                    extra = rv$extra_terms
+                                )
+
+                            card <- build_field_card(
+                                item = item, cols = cols,
+                                current_val = current_val,
+                                is_mapped = is_mapped,
+                                badge_info = badge_info,
+                                ns = ns, lang_r = lang,
+                                input = input, cat_class = cat_class,
+                                scientificname_mapped = scientificname_mapped,
+                                required = term %in% required_fields_strip,
+                                state_class = state_class,
+                                compact = compact,
+                                fixed_values = rv$fixed_values
+                            )
+                            card <- shiny::tagAppendAttributes(
+                                card,
+                                `data-collapse` = if (collapsible_mapping_term(term, rv$extra_terms)) "true",
+                                hidden = if (!keep) NA
+                            )
+                            list(term = term, compact = compact, card = card)
+                        })
+                        compact <- vapply(entries, function(x) x$compact, FUN.VALUE = logical(1))
+
+                        # One grid per class in the term order, so a
+                        # filter switch never moves a card (ADR-157).
                         shiny::tagList(
                             shiny::div(
                                 id = ns(paste0("cat_anchor_", slug(cat))),
@@ -2131,52 +1812,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             ),
                             shiny::div(
                                 class = "mapping-card-grid",
-                                lapply(cat_fields, function(item) {
-                                    term <- item$term
-                                    current_val <- rv$map_values[[term]]
-                                    if (is.null(current_val)) {
-                                        current_val <- input[[paste0("map_", term)]]
-                                    }
-                                    current_val <- sanitize_map_selection(term, current_val)
-                                    is_mapped <- is_field_mapped(term, current_val, input)
-                                    # The derived taxon terms lock (and read as
-                                    # mapped) once scientificName is set; they are
-                                    # derived from it at export.
-                                    locked_taxon <- isTRUE(scientificname_mapped) &&
-                                        term %in% locked_taxon_terms()
-                                    if (locked_taxon) {
-                                        is_mapped <- TRUE
-                                    }
-                                    field_meta <- rv$map_meta[[term]]
-                                    if (is.null(field_meta)) {
-                                        field_meta <- default_meta()
-                                    }
-                                    card_state <- apply_establishment_card_state(
-                                        term, current_val, is_mapped, field_meta
-                                    )
-                                    is_mapped <- card_state$is_mapped
-                                    field_meta <- card_state$meta
-                                    badge_info <- build_badge_info(field_meta)
-
-                                    # Apply "show only mapped" filter
-                                    if (show_only_mapped && !is_mapped) {
-                                        return(NULL)
-                                    }
-
-                                    build_field_card(
-                                        item = item, cols = cols,
-                                        current_val = current_val,
-                                        is_mapped = is_mapped,
-                                        badge_info = badge_info,
-                                        ns = ns, lang_r = lang,
-                                        input = input, cat_class = cat_class,
-                                        scientificname_mapped = scientificname_mapped,
-                                        state_class = field_state_class(
-                                            term, is_mapped, field_meta,
-                                            required_fields_strip
-                                        )
-                                    )
-                                })
+                                lapply(entries, function(x) x$card),
+                                build_collapsed_terms(
+                                    vapply(entries[compact], function(x) x$term, FUN.VALUE = character(1)),
+                                    lang
+                                )
                             )
                         )
                     })
@@ -2194,6 +1834,19 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             "occurrenceID", "datasetName", "modified", "license", "language"
         )
         carddyn_created <- new.env(parent = emptyenv())
+        # One reactive slot per term. rv$map_values is a single value, so
+        # reading rv$map_values[[term]] depends on the whole list, and every pick
+        # or guide import re-rendered all ~60 of these outputs. reactiveValues
+        # skips a write of an identical value, so only the changed terms
+        # invalidate. Ahead of the outputs in the flush, so they read it fresh.
+        map_value_by_term <- shiny::reactiveValues()
+        shiny::observe({
+            mv <- rv$map_values
+            known <- names(shiny::isolate(shiny::reactiveValuesToList(map_value_by_term)))
+            for (term in union(names(mv), known)) {
+                map_value_by_term[[term]] <- mv[[term]]
+            }
+        }, priority = 1)
         make_carddyn_output <- function(term) {
             force(term)
             output[[paste0("carddyn_", term)]] <- shiny::renderUI({
@@ -2202,7 +1855,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 # sync observer fills rv$map_values one flush after the client
                 # echoes a selection, so reading rv alone leaves a freshly
                 # mapped card with no sample line.
-                current_val <- rv$map_values[[term]]
+                current_val <- map_value_by_term[[term]]
                 if (is.null(current_val)) {
                     current_val <- input[[paste0("map_", term)]]
                 }
@@ -2215,9 +1868,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     # inputs with the same id on the page. The degree card gets
                     # a pointer instead.
                     field <- if (identical(term, "establishmentMeans")) "means" else "degree"
-                    answered <- establishment_answer_count(rv$establishment_map, field)
+                    answered <- establishment_answer_count(establishment_state$establishment_map, field)
                     pending <- if (identical(field, "degree")) {
-                        length(establishment_pairs_missing_degree(rv$establishment_map))
+                        length(establishment_pairs_missing_degree(establishment_state$establishment_map))
                     } else {
                         0L
                     }
@@ -2247,6 +1900,16 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             )
                         }
                     )
+                } else if (identical(term, "measurementValue")) {
+                    # One line per column, with its own sample, in place of
+                    # the joined sample.
+                    cols <- if (has_selected_value(current_val)) as.character(current_val) else character(0)
+                    cols <- cols[nzchar(cols)]
+                    samples <- lapply(stats::setNames(cols, cols), function(col) {
+                        processed_preview_for_term(term, col, 2L)
+                    })
+                    build_measurement_specs_block(cols, samples, ns, lang, input,
+                                                  units = shiny::isolate(rv$measurement_unit_hints))
                 } else if (has_selected_value(current_val)) {
                     build_field_sample(
                         processed_preview_for_term(term, current_val, 1L), lang
@@ -2255,6 +1918,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     NULL
                 }
             })
+            # The filter shows and hides cards in the browser (ADR-157). To
+            # resume a suspended output, Shiny checks all outputs, and that
+            # blocks the page for 50 to 90 ms. This content changes only on an
+            # upload, a language switch or a pick for this term.
+            shiny::outputOptions(output, paste0("carddyn_", term), suspendWhenHidden = FALSE)
         }
         shiny::observe({
             for (term in all_term_names()) {
@@ -2264,7 +1932,6 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 carddyn_created[[term]] <- TRUE
             }
         })
-
 
         # Camtrap DP columns are already canonical Darwin Core terms
         # (camtrapdp::write_dwc() emits them by name), so the mapping is a
@@ -2315,7 +1982,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             rv$ambiguity_queue <- list()
 
             shiny::showNotification(
-                sprintf(tr("notif_auto_mapping_v1", lang_r()), mapped_n, 0L),
+                sprintf(tr("notif_auto_mapping_done", lang_r()), mapped_n, 0L, mapped_n, 0L),
                 type = "message",
                 duration = 6
             )
@@ -2326,6 +1993,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # identity path above; everything else runs the fuzzy Rostrum engine.
         perform_auto_map <- function() {
             shiny::req(raw_data_r())
+            # An empty card only: the license is the publisher's choice.
+            card_values <- card_values_from_columns(raw_data_r())
+            if (!is.null(card_values$license) && length(input$custom_license) == 0L) {
+                shiny::updateCheckboxGroupInput(session, "custom_license", selected = card_values$license)
+            }
+            if (!is.null(card_values$language) && length(input$custom_language) == 0L) {
+                shiny::updateCheckboxGroupInput(session, "custom_language", selected = card_values$language)
+            }
             if (!is.null(attr(raw_data_r(), "saira_camtrap_source"))) {
                 perform_camtrap_automap()
                 return(invisible(NULL))
@@ -2337,6 +2012,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             auto_count <- 0L
             suggested_count <- 0L
+            learned_count <- 0L
 
             tryCatch(
                 {
@@ -2421,6 +2097,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                                 auto_count <- auto_count + 1L
                             } else if (identical(effective_status, "SUGERIDO")) {
                                 suggested_count <- suggested_count + 1L
+                            } else if (effective_status %in% c("ALIAS", "TEMPLATE")) {
+                                learned_count <- learned_count + 1L
                             }
                         }
 
@@ -2429,6 +2107,24 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
                     if (nrow(auto_results) == 0) {
                         update_automap_loading(rv, 1L, 1L)
+                    }
+
+                    # Columns named after a unit ("AREA_HA") go to
+                    # measurementValue as a suggestion (ADR-179).
+                    if (!has_selected_value(rv$map_values[["measurementValue"]])) {
+                        used <- unlist(rv$map_values, use.names = FALSE)
+                        units <- suggest_measurement_columns(raw_data_r(), exclude = used)
+                        if (length(units) > 0L) {
+                            rv$extra_terms <- unique(c(rv$extra_terms, "measurementValue"))
+                            rv$measurement_unit_hints <- units
+                            set_map_value("measurementValue", names(units), update_input = TRUE)
+                            next_meta[["measurementValue"]] <- list(
+                                status = "SUGERIDO", score = NA_real_,
+                                reason = "measurement_unit_in_name", source = "auto",
+                                alternatives_json = "[]"
+                            )
+                            suggested_count <- suggested_count + 1L
+                        }
                     }
 
                     rv$map_meta <- next_meta
@@ -2450,7 +2146,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     }
 
                     shiny::showNotification(
-                        sprintf(tr("notif_auto_mapping_v1", lang_r()), auto_count, suggested_count),
+                        sprintf(
+                            tr("notif_auto_mapping_done", lang_r()),
+                            learned_count + auto_count + suggested_count,
+                            learned_count, auto_count, suggested_count
+                        ),
                         type = "message",
                         duration = 6
                     )
@@ -2509,7 +2209,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             shiny::updateDateInput(session, "custom_modified_date", value = Sys.Date())
             shiny::updateCheckboxGroupInput(session, "custom_license", selected = character(0))
             shiny::updateCheckboxGroupInput(session, "custom_language", selected = character(0))
-            reset_basis_of_record_state(rv)
+            for (term in names(rv$fixed_values)) {
+                mapping_commands$fixed_value(term, NULL)
+            }
+            reset_basis_of_record_state(basis_state)
             reset_establishment_state()
             rv$is_programmatic_update <- FALSE
             rv$programmatic_terms <- character(0)
@@ -2534,7 +2237,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 set_custom_term_meta("license", has_value)
                 push_card_state("license")
             },
-            ignoreInit = TRUE
+            ignoreInit = TRUE,
+            # Unticking the last box sends NULL. With the default ignoreNULL
+            # the card kept its mapped state after the clear.
+            ignoreNULL = FALSE
         )
 
         # Enforce single-selection for language checkboxGroupInput
@@ -2551,7 +2257,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 set_custom_term_meta("language", has_value)
                 push_card_state("language")
             },
-            ignoreInit = TRUE
+            ignoreInit = TRUE,
+            # Unticking the last box sends NULL. With the default ignoreNULL
+            # the card kept its mapped state after the clear.
+            ignoreNULL = FALSE
         )
 
         # Track fixed-value edits for the constant-value allowlist (mirrors the
@@ -2560,39 +2269,35 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         lapply(constant_value_terms(), function(term) {
             use_id <- paste0("usecustom_", term)
             val_id <- paste0("custom_", term)
-            has_fixed_value <- function() {
-                isTRUE(input[[use_id]]) &&
-                    !is.null(input[[val_id]]) &&
-                    nzchar(trimws(input[[val_id]]))
+            # Each input writes its own half of the term's state. The browser
+            # echo of a reset or an import carries the value the state already
+            # has, so it changes nothing, not even the card's meta.
+            write_fixed_input <- function(field, value) {
+                state <- rv$fixed_values[[term]] %||% list(on = FALSE, value = "")
+                if (identical(state[[field]], value)) {
+                    return(invisible(NULL))
+                }
+                state[[field]] <- value
+                rv$fixed_values[[term]] <- state
+                set_custom_term_meta(term, !is.null(enabled_fixed_values(rv$fixed_values)[[term]]))
+                push_card_state(term)
             }
-            # The free-text read is isolated in the renderUI (ADR-098), so typing
-            # a fixed value does not re-render the card. push_card_state() flips
+            # The renderUI reads the state isolated (ADR-098), so typing a
+            # fixed value does not re-render the card. push_card_state() flips
             # the card's border/badge client-side to match the next full render --
             # no re-render, no blur.
             shiny::observeEvent(input[[val_id]], {
-                set_custom_term_meta(term, has_fixed_value())
-                push_card_state(term)
+                write_fixed_input("value", as.character(input[[val_id]]))
             }, ignoreInit = TRUE)
             shiny::observeEvent(input[[use_id]], {
-                set_custom_term_meta(term, has_fixed_value())
-                push_card_state(term)
+                write_fixed_input("on", isTRUE(input[[use_id]]))
             }, ignoreInit = TRUE)
         })
 
-        # Collect enabled fixed values (usecustom_<term> on + non-empty) for the
-        # constant-value allowlist. Reused by build_mapped_result (export/preview)
-        # and custom_values_r (mapping-guide serialization).
-        collect_constant_values <- function() {
-            vals <- list()
-            for (term in constant_value_terms()) {
-                if (!isTRUE(input[[paste0("usecustom_", term)]])) next
-                value <- input[[paste0("custom_", term)]]
-                if (!is.null(value) && nzchar(trimws(value))) {
-                    vals[[term]] <- trimws(value)
-                }
-            }
-            vals
-        }
+        # Enabled fixed values for the constant-value allowlist. Reused by
+        # build_mapped_result (export/preview) and custom_values_r
+        # (mapping-guide serialization).
+        collect_constant_values <- function() enabled_fixed_values(rv$fixed_values)
 
         build_mapped_result <- function(df_input, occurrence_ids_input) {
             build_processed_mapping_df(
@@ -2606,11 +2311,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 custom_license = input$custom_license,
                 custom_language = input$custom_language,
                 constant_values = collect_constant_values(),
-                basis_of_record_map = rv$basis_of_record_map,
+                basis_of_record_map = basis_state$basis_of_record_map,
                 now_utc = Sys.time(),
                 out_sep = " | ",
                 dyn_props_keys = rv$dyn_props_keys,
-                establishment_map = rv$establishment_map
+                establishment_map = establishment_state$establishment_map
             )
         }
 
@@ -2651,7 +2356,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             shiny::div(
                 class = alert_class,
                 style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
-                shiny::icon(if (dup > 0L) "triangle-exclamation" else "info-circle"),
+                ph_icon(if (dup > 0L) "triangle-exclamation" else "info-circle"),
                 " ",
                 paste(unlist(lines), collapse = " "),
                 if (dup > 0L) {
@@ -2758,14 +2463,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # card goes green while coordinate validation stays blocked -- which
             # is the whole point of the fixed value on a single-country dataset
             # whose spreadsheet carries no country column at all.
-            country_const <- if (isTRUE(input$usecustom_country)) {
-                trimws(as.character(input$custom_country %||% ""))
-            } else {
-                ""
-            }
-            if (length(country_const) != 1L || is.na(country_const)) {
-                country_const <- ""
-            }
+            country_const <- collect_constant_values()$country %||% ""
 
             has_lat <- nzchar(lat_col) && lat_col %in% names(raw_df)
             has_lon <- nzchar(lon_col) && lon_col %in% names(raw_df)
@@ -2974,8 +2672,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 dropped <- establishment_dropped_values(
                     term = term, df = df, user_cols = cols,
                     species_values = species,
-                    establishment_map = rv$establishment_map,
-                    out_sep = " | "
+                    establishment_map = establishment_state$establishment_map,
+                    out_sep = " | ",
+                    island_rows = establishment_island_rows_for_df(
+                        df, rv$map_values, species
+                    )
                 )
                 if (nrow(dropped) > 0L) out[[term]] <- dropped
             }
@@ -2997,7 +2698,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             occurrence_id_info_r        = occurrence_id_info_r,
             custom_values_r             = custom_values_r,
             establishment_dropped_r     = establishment_dropped_r,
-            reset_signal_r              = shiny::reactive(rv$downstream_reset)
+            reset_signal_r              = shiny::reactive(rv$downstream_reset),
+            alias_receipt_r             = shiny::reactive(rv$alias_receipt),
+            measurement_specs_r         = shiny::reactive(rv$measurement_specs)
         ))
     })
 }

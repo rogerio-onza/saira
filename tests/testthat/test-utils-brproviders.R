@@ -4,10 +4,8 @@
 # Version: 1.0
 
 normalize_brprovider_result    <- function(...) saira:::normalize_brprovider_result(...)
-brprovider_unresolved_names    <- function(...) saira:::brprovider_unresolved_names(...)
 brprovider_data_available      <- function(...) saira:::brprovider_data_available(...)
 brprovider_data_dir            <- function(...) saira:::brprovider_data_dir(...)
-brprovider_download_params     <- function(...) saira:::brprovider_download_params(...)
 .brprovider_read_meta          <- function(...) saira:::.brprovider_read_meta(...)
 .brprovider_write_meta         <- function(...) saira:::.brprovider_write_meta(...)
 .brprovider_lock_path          <- function(...) saira:::.brprovider_lock_path(...)
@@ -33,11 +31,26 @@ testthat::test_that("normalize_brprovider_result: empty input returns empty df",
     testthat::expect_true("validation_status" %in% names(out))
 })
 
+testthat::test_that("normalize_brprovider_result: a homonym tie keeps the accepted row in any order", {
+    raw <- data.frame(
+        input_name      = c("Victoria amazonica", "Victoria amazonica"),
+        Spelling        = c("Correct", "Correct"),
+        Suggested_name  = c("Victoria amazonica", "Victoria amazonica"),
+        Distance        = c(0, 0),
+        taxonomicStatus = c("Synonym", "Accepted"),
+        family          = "Nymphaeaceae",
+        stringsAsFactors = FALSE,
+        check.names     = FALSE
+    )
+    testthat::expect_equal(normalize_brprovider_result(raw, "florabr")$validation_status, "accepted")
+    testthat::expect_equal(normalize_brprovider_result(raw[2:1, ], "florabr")$validation_status, "accepted")
+})
+
 testthat::test_that("normalize_brprovider_result: Correct + Accepted -> accepted", {
     raw <- data.frame(
         input_name      = "Panthera onca",
         Spelling        = "Correct",
-        `Suggested name` = "Panthera onca",
+        Suggested_name  = "Panthera onca",
         Distance        = 0L,
         taxonomicStatus = "valid",
         family          = "Felidae",
@@ -50,13 +63,14 @@ testthat::test_that("normalize_brprovider_result: Correct + Accepted -> accepted
     testthat::expect_equal(out$provider, "faunabr")
     testthat::expect_equal(out$query_name, "Panthera onca")
     testthat::expect_equal(out$scientificName, "Panthera onca")
+    testthat::expect_true(is.na(out$suggestedName))
 })
 
 testthat::test_that("normalize_brprovider_result: Correct + Synonym -> synonym", {
     raw <- data.frame(
         input_name      = "Araucaria angustifolia",
         Spelling        = "Correct",
-        `Suggested name` = "Araucaria angustifolia",
+        Suggested_name  = "Araucaria angustifolia",
         Distance        = 0L,
         taxonomicStatus = "Synonym",
         family          = "Araucariaceae",
@@ -68,11 +82,61 @@ testthat::test_that("normalize_brprovider_result: Correct + Synonym -> synonym",
     testthat::expect_equal(out$provider, "florabr")
 })
 
+testthat::test_that("normalize_brprovider_result: a synonym carries the accepted name of each base", {
+    flora <- data.frame(
+        input_name          = c("Caesalpinia echinata", "Euterpe edulis"),
+        Spelling            = "Correct",
+        Suggested_name      = c("Caesalpinia echinata", "Euterpe edulis"),
+        Distance            = 0,
+        taxonomicStatus     = c("Synonym", "Accepted"),
+        nomenclaturalStatus = c("", "Correct"),
+        acceptedName        = c("Paubrasilia echinata", ""),
+        family              = c("Fabaceae", "Arecaceae"),
+        stringsAsFactors    = FALSE
+    )
+    out <- normalize_brprovider_result(flora, "florabr")
+    testthat::expect_identical(out$acceptedNameUsage, c("Paubrasilia echinata", NA_character_))
+
+    # Fauna BR fills validName on valid rows too, with the name itself.
+    fauna <- data.frame(
+        input_name          = c("Habronema waltoni", "Panthera onca"),
+        Spelling            = "Correct",
+        Suggested_name      = c("Habronema waltoni", "Panthera onca"),
+        Distance            = 0,
+        taxonomicStatus     = c("synonym", "valid"),
+        nomenclaturalStatus = NA_character_,
+        validName           = c("Lispirurus waltoni", "Panthera onca"),
+        family              = c("Habronematidae", "Felidae"),
+        matches             = "single",
+        stringsAsFactors    = FALSE
+    )
+    out <- normalize_brprovider_result(fauna, "faunabr")
+    testthat::expect_identical(out$acceptedNameUsage, c("Lispirurus waltoni", NA_character_))
+})
+
+testthat::test_that("a Flora BR synonym of an MMA species reaches the sensitive lookup (B18)", {
+    listed <- "Paubrasilia echinata"
+    testthat::skip_if(is.na(saira:::sensitive_category_for(listed)), "Paubrasilia echinata not on the bundled MMA list")
+    report <- normalize_brprovider_result(data.frame(
+        input_name      = "Caesalpinia echinata",
+        Spelling        = "Correct",
+        Suggested_name  = "Caesalpinia echinata",
+        Distance        = 0,
+        taxonomicStatus = "Synonym",
+        acceptedName    = listed,
+        family          = "Fabaceae",
+        stringsAsFactors = FALSE
+    ), "florabr")
+    out <- saira:::synonym_sensitivity_entries(report)
+    testthat::expect_identical(out$scientificName, "Caesalpinia echinata")
+    testthat::expect_true(out$sensitive)
+})
+
 testthat::test_that("normalize_brprovider_result: Probably_incorrect -> ambiguous", {
     raw <- data.frame(
         input_name      = "Pantera onca",
         Spelling        = "Probably_incorrect",
-        `Suggested name` = "Panthera onca",
+        Suggested_name  = "Panthera onca",
         Distance        = 1L,
         taxonomicStatus = "valid",
         family          = "Felidae",
@@ -81,14 +145,16 @@ testthat::test_that("normalize_brprovider_result: Probably_incorrect -> ambiguou
     )
     out <- normalize_brprovider_result(raw, "faunabr")
     testthat::expect_equal(out$validation_status, "ambiguous")
-    testthat::expect_equal(out$scientificName, "Panthera onca")
+    # The report and the export look up threat status by scientificName.
+    testthat::expect_equal(out$scientificName, "Pantera onca")
+    testthat::expect_equal(out$suggestedName, "Panthera onca")
 })
 
 testthat::test_that("normalize_brprovider_result: Not_found -> not_found with match_count 0", {
     raw <- data.frame(
         input_name      = "Xyz abc",
         Spelling        = "Not_found",
-        `Suggested name` = NA_character_,
+        Suggested_name  = NA_character_,
         Distance        = NA_real_,
         taxonomicStatus = NA_character_,
         family          = NA_character_,
@@ -104,7 +170,7 @@ testthat::test_that("normalize_brprovider_result: dedup keeps closest Distance p
     raw <- data.frame(
         input_name      = c("Pantera onca", "Pantera onca", "Pantera onca"),
         Spelling        = c("Probably_incorrect", "Probably_incorrect", "Probably_incorrect"),
-        `Suggested name` = c("Panthera onca", "Pantera once", "Pantera oncaa"),
+        Suggested_name  = c("Panthera onca", "Pantera once", "Pantera oncaa"),
         Distance        = c(1L, 2L, 3L),
         taxonomicStatus = c("valid", "valid", "valid"),
         family          = c("Felidae", "Felidae", "Felidae"),
@@ -113,14 +179,14 @@ testthat::test_that("normalize_brprovider_result: dedup keeps closest Distance p
     )
     out <- normalize_brprovider_result(raw, "faunabr")
     testthat::expect_equal(nrow(out), 1L)
-    testthat::expect_equal(out$scientificName, "Panthera onca")
+    testthat::expect_equal(out$suggestedName, "Panthera onca")
 })
 
 testthat::test_that("normalize_brprovider_result: taxadb expected columns are present", {
     raw <- data.frame(
         input_name      = "Panthera onca",
         Spelling        = "Correct",
-        `Suggested name` = "Panthera onca",
+        Suggested_name  = "Panthera onca",
         Distance        = 0L,
         taxonomicStatus = "valid",
         family          = "Felidae",
@@ -134,36 +200,6 @@ testthat::test_that("normalize_brprovider_result: taxadb expected columns are pr
                               info = paste("missing column:", col_name))
         testthat::expect_true(is.na(out[[col_name]]))
     }
-})
-
-# ---------------------------------------------------------------------------
-# brprovider_unresolved_names
-# ---------------------------------------------------------------------------
-
-testthat::test_that("brprovider_unresolved_names: returns only not_found names", {
-    df <- data.frame(
-        query_name        = c("Panthera onca", "Xyz abc", "Butia capita"),
-        validation_status = c("accepted", "not_found", "not_found"),
-        stringsAsFactors  = FALSE
-    )
-    out <- brprovider_unresolved_names(df)
-    testthat::expect_equal(sort(out), sort(c("Xyz abc", "Butia capita")))
-})
-
-testthat::test_that("brprovider_unresolved_names: empty df returns character(0)", {
-    testthat::expect_equal(
-        brprovider_unresolved_names(data.frame()),
-        character(0)
-    )
-})
-
-testthat::test_that("brprovider_unresolved_names: all accepted returns character(0)", {
-    df <- data.frame(
-        query_name        = "Panthera onca",
-        validation_status = "accepted",
-        stringsAsFactors  = FALSE
-    )
-    testthat::expect_equal(brprovider_unresolved_names(df), character(0))
 })
 
 # ---------------------------------------------------------------------------
@@ -184,32 +220,6 @@ testthat::test_that("brprovider_data_available: empty dir returns FALSE", {
     testthat::expect_false(
         length(list.files(tmp, pattern = "\\.rds$")) > 0L
     )
-})
-
-# ---------------------------------------------------------------------------
-# brprovider_download_params
-# ---------------------------------------------------------------------------
-
-testthat::test_that("brprovider_download_params: default data_version is 'latest'", {
-    p <- brprovider_download_params("florabr")
-    testthat::expect_equal(p$data_version, "latest")
-    testthat::expect_equal(p$provider_id, "florabr")
-    testthat::expect_type(p$tmp_dir, "character")
-    testthat::expect_type(p$persist_dir, "character")
-    testthat::expect_type(p$pkg_version, "character")
-})
-
-testthat::test_that("brprovider_download_params: fixed version propagates correctly", {
-    p <- brprovider_download_params("florabr", "393.319")
-    testthat::expect_equal(p$data_version, "393.319")
-    p2 <- brprovider_download_params("faunabr", "1.2")
-    testthat::expect_equal(p2$data_version, "1.2")
-    testthat::expect_equal(p2$provider_id, "faunabr")
-})
-
-testthat::test_that("brprovider_download_params: tmp_dir ends with provider_id", {
-    p <- brprovider_download_params("faunabr")
-    testthat::expect_true(endsWith(p$tmp_dir, "faunabr"))
 })
 
 # ---------------------------------------------------------------------------
@@ -234,10 +244,19 @@ testthat::test_that(".brprovider_check_artifacts: florabr missing artifact menti
     dir.create(tmp)
     on.exit(unlink(tmp, recursive = TRUE))
 
-    testthat::expect_error(
-        .brprovider_check_artifacts("florabr", tmp),
-        regexp = "CompleteBrazilianFlora\\.rds"
-    )
+    err <- testthat::expect_error(.brprovider_check_artifacts("florabr", tmp))
+    testthat::expect_match(err$message, "CompleteBrazilianFlora.gz", fixed = TRUE)
+    testthat::expect_match(err$message, "CompleteBrazilianFlora.rds", fixed = TRUE)
+})
+
+testthat::test_that(".brprovider_check_artifacts: florabr 1.4 gz artifact is accepted (DEP-04)", {
+    tmp <- tempfile(pattern = "brp_flora_gz_")
+    dir.create(file.path(tmp, "393.420"), recursive = TRUE)
+    on.exit(unlink(tmp, recursive = TRUE))
+    writeLines("", file.path(tmp, "393.420", "CompleteBrazilianFlora.gz"))
+
+    result <- .brprovider_check_artifacts("florabr", tmp)
+    testthat::expect_match(result[[1L]], "CompleteBrazilianFlora\\.gz$")
 })
 
 testthat::test_that(".brprovider_check_artifacts: florabr present artifact returns invisibly", {
@@ -249,6 +268,44 @@ testthat::test_that(".brprovider_check_artifacts: florabr present artifact retur
     result <- .brprovider_check_artifacts("florabr", tmp)
     testthat::expect_true(length(result) >= 1L)
     testthat::expect_match(result[[1L]], "CompleteBrazilianFlora\\.rds")
+})
+
+testthat::test_that("florabr download loads the 1.4 gz artifact end to end (DEP-04)", {
+    testthat::skip_if_not_installed("florabr", minimum_version = "1.4.0")
+    tmp <- tempfile(pattern = "brp_flora_load_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+
+    # get_florabr() 1.4 writes <version>/CompleteBrazilianFlora.gz, a gzipped
+    # CSV that load_florabr() reads with data.table::fread().
+    short_cols <- c(
+        "species", "scientificName", "acceptedName", "kingdom", "group", "subgroup",
+        "phylum", "class", "order", "family", "genus", "lifeForm", "habitat", "biome",
+        "states", "vegetation", "origin", "endemism", "taxonomicStatus",
+        "nomenclaturalStatus", "vernacularName", "taxonRank", "id"
+    )
+    fake_get <- function(output_dir, data_version, overwrite, verbose) {
+        version_dir <- file.path(output_dir, "393.420")
+        dir.create(version_dir, recursive = TRUE)
+        row <- stats::setNames(as.list(rep("x", length(short_cols))), short_cols)
+        row$species <- "Paubrasilia echinata"
+        con <- gzfile(file.path(version_dir, "CompleteBrazilianFlora.gz"), "w")
+        utils::write.csv(as.data.frame(row), con, row.names = FALSE)
+        close(con)
+        invisible(NULL)
+    }
+
+    testthat::local_mocked_bindings(get_florabr = fake_get, .package = "florabr")
+    testthat::local_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .package = "saira"
+    )
+    out <- saira:::.brprovider_download_data_impl("florabr", verbose = FALSE)
+
+    testthat::expect_true(isTRUE(out$ok), info = out$error)
+    testthat::expect_identical(out$local_version, "393.420")
+    cached <- readRDS(out$persist_path)
+    testthat::expect_identical(cached$species, "Paubrasilia echinata")
 })
 
 testthat::test_that(".brprovider_check_artifacts: present artifact returns invisibly", {
@@ -288,6 +345,7 @@ testthat::test_that("brprovider_cache_status returns never_downloaded without ca
 
     testthat::with_mocked_bindings(
         brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .brprovider_bundle_path = function(file) "",
         .package = "saira",
         {
             st <- brprovider_cache_status("faunabr", poll = FALSE)
@@ -399,6 +457,7 @@ testthat::test_that("bootstrap failure without cache is reported clearly", {
 
     testthat::with_mocked_bindings(
         brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .brprovider_bundle_path = function(file) "",
         .brprovider_download_data_impl = function(provider_id, verbose = TRUE, data_version = "latest") {
             list(
                 ok = FALSE,
@@ -470,7 +529,10 @@ testthat::test_that("provider lock prevents concurrent starts", {
         {
             pid <- "faunabr"
             first <- .brprovider_acquire_lock(pid)
+            # The lock holder registers its job, as start_background_update does.
+            assign(pid, list(), envir = .brprovider_jobs())
             second <- .brprovider_acquire_lock(pid)
+            rm(list = pid, envir = .brprovider_jobs())
             .brprovider_release_lock(pid)
             third <- .brprovider_acquire_lock(pid)
             .brprovider_release_lock(pid)
@@ -482,9 +544,96 @@ testthat::test_that("provider lock prevents concurrent starts", {
     )
 })
 
-testthat::test_that("poll_updates marks update_failed and preserves cache", {
-    testthat::skip_if_not_installed("future")
+# Cache on disk, an "in progress" status, no job of this session, and a lock of
+# the given age (NULL: no lock) taken by `lock_pid` (NULL: no PID in the file).
+# Returns ensure_data() and whether it started.
+ensure_after_restart <- function(lock_age_secs, lock_pid = NULL) {
+    tmp <- tempfile(pattern = "brp_restart_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+    testthat::with_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .package = "saira",
+        {
+            pid <- "faunabr"
+            dir.create(brprovider_data_dir(pid), recursive = TRUE, showWarnings = FALSE)
+            saveRDS(data.frame(scientificName = "Panthera onca", stringsAsFactors = FALSE),
+                    file.path(brprovider_data_dir(pid), paste0(pid, ".rds")))
+            .brprovider_write_meta(pid, list(
+                provider_id = pid, local_version = "1.47", remote_version_last_seen = "1.47",
+                last_checked_at = "2000-01-01T00:00:00Z", last_updated_at = "2000-01-01T00:00:00Z",
+                status = "update_in_progress", last_error = NA_character_,
+                source_package_version = NA_character_, retry_after_at = NA_character_
+            ))
+            if (!is.null(lock_age_secs)) {
+                writeLines(if (is.null(lock_pid)) character(0) else paste0("pid=", lock_pid),
+                           .brprovider_lock_path(pid))
+                Sys.setFileTime(.brprovider_lock_path(pid), Sys.time() - lock_age_secs)
+            }
+            started <- FALSE
+            out <- testthat::with_mocked_bindings(
+                .brprovider_start_background_update = function(...) {
+                    started <<- TRUE
+                    TRUE
+                },
+                .package = "saira",
+                brprovider_ensure_data(provider_id = pid, check_ttl_secs = 1L, verbose = FALSE)
+            )
+            list(out = out, started = started, lock = file.exists(.brprovider_lock_path(pid)),
+                 status = .brprovider_read_meta(pid)$status)
+        }
+    )
+}
 
+testthat::test_that("a stale lock after a restart no longer blocks the update (SP-07)", {
+    res <- ensure_after_restart(lock_age_secs = 7200)
+    testthat::expect_true(res$started)
+    testthat::expect_identical(res$out$background_reason, "started")
+    testthat::expect_false(res$lock)
+})
+
+testthat::test_that("an orphan in-progress status without a lock is recovered (SP-07)", {
+    res <- ensure_after_restart(lock_age_secs = NULL)
+    testthat::expect_true(res$started)
+    testthat::expect_identical(res$status, "up_to_date")
+})
+
+testthat::test_that("an active lock of another process is kept (SP-07)", {
+    res <- ensure_after_restart(lock_age_secs = 10)
+    testthat::expect_false(res$started)
+    testthat::expect_identical(res$out$background_reason, "already_running")
+    testthat::expect_true(res$lock)
+    testthat::expect_identical(res$status, "update_in_progress")
+})
+
+testthat::test_that("a long update of another live process keeps its lock (SP-07)", {
+    res <- ensure_after_restart(lock_age_secs = 7200, lock_pid = ps::ps_ppid())
+    testthat::expect_false(res$started)
+    testthat::expect_identical(res$out$background_reason, "already_running")
+    testthat::expect_true(res$lock)
+})
+
+testthat::test_that("the lock of a process that is gone is recovered at once (SP-07)", {
+    dead_pid <- callr::r(function() Sys.getpid())
+    testthat::skip_if(dead_pid %in% ps::ps_pids(), "the PID is in use again")
+    res <- ensure_after_restart(lock_age_secs = 10, lock_pid = dead_pid)
+    testthat::expect_true(res$started)
+    testthat::expect_false(res$lock)
+})
+
+testthat::test_that("a lock of this process without a job is a leftover (SP-07)", {
+    res <- ensure_after_restart(lock_age_secs = 7200, lock_pid = Sys.getpid())
+    testthat::expect_true(res$started)
+    testthat::expect_false(res$lock)
+})
+
+testthat::test_that("a lock older than the limit is stale even when its PID lives (SP-07)", {
+    res <- ensure_after_restart(lock_age_secs = 2 * 24 * 3600, lock_pid = ps::ps_ppid())
+    testthat::expect_true(res$started)
+    testthat::expect_false(res$lock)
+})
+
+testthat::test_that("poll_updates marks update_failed and preserves cache (DEP-05)", {
     tmp <- tempfile(pattern = "brp_poll_fail_")
     dir.create(tmp)
     on.exit(unlink(tmp, recursive = TRUE))
@@ -511,29 +660,180 @@ testthat::test_that("poll_updates marks update_failed and preserves cache", {
             dir.create(dirname(.brprovider_lock_path(pid)), recursive = TRUE, showWarnings = FALSE)
             writeLines("lock", .brprovider_lock_path(pid))
 
-            assign(pid, list(future = structure(list(), class = "fake_future"), retry_backoff_secs = 60L),
-                   envir = .brprovider_jobs())
-
-            testthat::with_mocked_bindings(
-                resolved = function(future_obj) TRUE,
-                value = function(future_obj) list(
+            process <- list(
+                is_alive = function() FALSE,
+                get_result = function() list(
                     ok = FALSE,
                     updated = FALSE,
                     provider_id = pid,
                     remote_version = "1.49",
                     local_version = "1.48",
                     error = "timeout"
-                ),
-                .package = "future",
-                {
-                    events <- brprovider_poll_updates(provider_id = pid)
-                    testthat::expect_true(length(events) == 1L)
-                }
+                )
             )
+            assign(pid, list(process = process, retry_backoff_secs = 60L),
+                   envir = .brprovider_jobs())
 
+            events <- brprovider_poll_updates(provider_id = pid)
+            testthat::expect_true(length(events) == 1L)
+
+            # Version 1.49 is known and newer: the cache is stale, so the
+            # badge keeps the failure.
+            st <- brprovider_cache_status(pid, poll = FALSE)
+            testthat::expect_identical(as.character(st$status), "update_failed")
+            testthat::expect_true(isTRUE(st$has_data))
+
+            # No newer version known: the old cache is current (ADR-073).
+            saira:::.brprovider_patch_meta(pid, list(remote_version_last_seen = "1.48"))
             st <- brprovider_cache_status(pid, poll = FALSE)
             testthat::expect_identical(as.character(st$status), "up_to_date")
-            testthat::expect_true(isTRUE(st$has_data))
         }
+    )
+})
+
+testthat::test_that("background update runs in its own R process, and the poll stops it", {
+    tmp <- tempfile(pattern = "brp_worker_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+
+    job <- function(provider_id, local_version) {
+        list(ok = TRUE, updated = FALSE, provider_id = provider_id,
+             remote_version = "1", local_version = "1", error = NA_character_,
+             pid = Sys.getpid())
+    }
+    environment(job) <- baseenv()
+
+    testthat::with_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .brprovider_update_job = function() job,
+        .package = "saira",
+        {
+            testthat::expect_true(.brprovider_start_background_update("faunabr"))
+            started <- get("faunabr", envir = .brprovider_jobs())
+            started$process$wait(30000)
+            testthat::expect_false(identical(started$process$get_result()$pid, Sys.getpid()))
+
+            events <- brprovider_poll_updates(provider_id = "faunabr")
+            testthat::expect_length(events, 1L)
+            testthat::expect_identical(events[[1L]]$status, "up_to_date")
+            testthat::expect_false(exists("faunabr", envir = .brprovider_jobs(), inherits = FALSE))
+            testthat::expect_false(file.exists(.brprovider_lock_path("faunabr")))
+            testthat::expect_false(started$process$is_alive())
+        }
+    )
+})
+
+testthat::test_that("a worker that stops with an error keeps the cause as last_error", {
+    tmp <- tempfile(pattern = "brp_worker_error_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+
+    job <- function(provider_id, local_version) stop("IPT unavailable")
+    environment(job) <- baseenv()
+
+    testthat::with_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .brprovider_update_job = function() job,
+        .package = "saira",
+        {
+            testthat::expect_true(.brprovider_start_background_update("faunabr"))
+            get("faunabr", envir = .brprovider_jobs())$process$wait(30000)
+            events <- brprovider_poll_updates(provider_id = "faunabr")
+            testthat::expect_length(events, 1L)
+            meta <- .brprovider_read_meta("faunabr")
+            testthat::expect_identical(meta$status, "update_failed")
+            testthat::expect_identical(meta$last_error, "IPT unavailable")
+            testthat::expect_false(file.exists(.brprovider_lock_path("faunabr")))
+        }
+    )
+})
+
+testthat::test_that("a worker that does not start releases the lock and backs off", {
+    tmp <- tempfile(pattern = "brp_worker_fail_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+
+    testthat::with_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .package = "saira",
+        testthat::with_mocked_bindings(
+            r_bg = function(...) stop("worker unavailable"),
+            .package = "callr",
+            {
+                testthat::expect_false(.brprovider_start_background_update("faunabr"))
+                meta <- .brprovider_read_meta("faunabr")
+                testthat::expect_identical(meta$status, "update_failed")
+                testthat::expect_identical(meta$last_error, "worker unavailable")
+                testthat::expect_false(is.na(meta$retry_after_at))
+                testthat::expect_false(file.exists(.brprovider_lock_path("faunabr")))
+                testthat::expect_false(exists("faunabr", envir = .brprovider_jobs(), inherits = FALSE))
+            }
+        )
+    )
+})
+
+testthat::test_that("bundled snapshot fills an empty cache with its version", {
+    tmp <- tempfile(pattern = "brp_seed_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+
+    testthat::with_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .package = "saira",
+        {
+            snap <- jsonlite::fromJSON(system.file(
+                "extdata", "brproviders", "snapshot.json", package = "saira"
+            ))
+            # The status call is the first touch, as in the Names tab.
+            st <- brprovider_cache_status("florabr", poll = FALSE)
+            testthat::expect_true(isTRUE(st$has_data))
+            testthat::expect_identical(as.character(st$status), "up_to_date")
+            testthat::expect_identical(as.character(st$local_version), snap$florabr$version)
+
+            # The snapshot date counts as a check, so the IPT waits 30 days from it.
+            meta <- .brprovider_read_meta("florabr")
+            testthat::expect_identical(meta$last_checked_at, snap$florabr$downloaded_at)
+            snapshot_at <- .brprovider_time_from_string(snap$florabr$downloaded_at)
+            testthat::expect_false(.brprovider_check_due(meta, now = snapshot_at + 29 * 86400))
+            testthat::expect_true(.brprovider_check_due(meta, now = snapshot_at + 30 * 86400))
+        }
+    )
+})
+
+testthat::test_that("bundled snapshot never replaces a user cache", {
+    tmp <- tempfile(pattern = "brp_seed_keep_")
+    dir.create(tmp)
+    on.exit(unlink(tmp, recursive = TRUE))
+
+    testthat::with_mocked_bindings(
+        brprovider_data_dir = function(provider_id) file.path(tmp, provider_id),
+        .package = "saira",
+        {
+            pid <- "faunabr"
+            dir.create(brprovider_data_dir(pid), recursive = TRUE, showWarnings = FALSE)
+            rds <- file.path(brprovider_data_dir(pid), paste0(pid, ".rds"))
+            saveRDS(data.frame(scientificName = "user cache", stringsAsFactors = FALSE), rds)
+            testthat::expect_true(brprovider_data_available(pid))
+            testthat::expect_identical(readRDS(rds)$scientificName, "user cache")
+        }
+    )
+})
+
+testthat::test_that("brprovider_keep_queried() drops rows for names that were not queried (B43)", {
+    res <- data.frame(
+        query_name = c("Canis lupus", "panthera onca"),
+        validation_status = c("accepted", "accepted"),
+        stringsAsFactors = FALSE
+    )
+    out <- saira:::brprovider_keep_queried(res, c("Canis lupus familiaris", "Panthera onca"))
+    testthat::expect_equal(out$query_name, "Panthera onca")
+})
+
+# Guard for the R_USER_DATA_DIR line in setup.R. Without it the names tests
+# wrote "never_downloaded" into the developer's real provider meta.
+testthat::test_that("the suite never resolves the provider data outside tempdir", {
+    testthat::expect_true(
+        startsWith(brprovider_data_dir("florabr"),
+                   normalizePath(tempdir(), winslash = "/", mustWork = FALSE))
     )
 })
