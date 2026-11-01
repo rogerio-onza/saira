@@ -828,3 +828,12 @@ testthat::test_that("brprovider_keep_queried() drops rows for names that were no
     out <- saira:::brprovider_keep_queried(res, c("Canis lupus familiaris", "Panthera onca"))
     testthat::expect_equal(out$query_name, "Panthera onca")
 })
+
+# Guard for the R_USER_DATA_DIR line in setup.R. Without it the names tests
+# wrote "never_downloaded" into the developer's real provider meta.
+testthat::test_that("the suite never resolves the provider data outside tempdir", {
+    testthat::expect_true(
+        startsWith(brprovider_data_dir("florabr"),
+                   normalizePath(tempdir(), winslash = "/", mustWork = FALSE))
+    )
+})
