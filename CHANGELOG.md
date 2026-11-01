@@ -286,6 +286,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **docs:** Describe the current tabs, export files and CI in the architecture and contributing guides
 
 ### Tests
+- **tests:** Isolate the Flora BR and Fauna BR data folder for the whole suite
 - **build:** Check the names report panel position in light and dark themes in the E2E flows, ADR-189
 - **build:** Update every R package in renv.lock, Shiny 1.14 and roxygen2 8.1.1 included, and run the gate job with the roxygen2 version of DESCRIPTION. The fixed value field and the Generalization questions show and hide again with the Shiny 1.14 conditional panels
 - **build:** Run the E2E flows and the roxygen and CSS checks in CI, from the release gate step list
