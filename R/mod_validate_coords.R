@@ -43,7 +43,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             shiny::showNotification(ui = message, type = type, duration = duration, id = notification_id)
         }
 
-        coord_filter_values <- c("all", "problems", "validity", "sea", "zero_equal", "reference", "edited")
+        coord_filter_values <- c("all", "problems", "validity", "sea", "zero_equal", "reference", "unchecked", "edited")
         coord_validation_r <- shiny::reactiveVal(NULL)
         # Coordinates fixed by hand in the table, one row per record (ADR-129):
         # occurrenceID, row_index, the new decimalLatitude/decimalLongitude and
@@ -212,6 +212,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 sea = fam == "sea",
                 zero_equal = fam == "zero_equal",
                 reference = fam == "reference",
+                unchecked = fam == "unchecked",
                 edited = res$edited %in% TRUE,
                 rep(TRUE, nrow(res))
             )
@@ -232,6 +233,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                     sea = 0L,
                     zero_equal = 0L,
                     reference = 0L,
+                    unchecked = 0L,
                     edited = 0L
                 ))
             }
@@ -244,6 +246,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 sea = as.integer(counts$sea %||% 0L),
                 zero_equal = as.integer(counts$zero_equal %||% 0L),
                 reference = as.integer(counts$reference %||% 0L),
+                unchecked = as.integer(counts$unchecked %||% 0L),
                 edited = sum(res$edited %in% TRUE)
             )
         })
@@ -290,9 +293,12 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
         # so that first report marks it ready and triggers the first draw.
         map_ready <- shiny::reactiveVal(FALSE)
         shiny::observeEvent(input$coords_map_bounds, map_ready(TRUE), ignoreInit = TRUE)
+        # Priority: a new validation brings a new widget, so the draw that follows
+        # must not count on the markers of the old one.
         shiny::observeEvent(coord_validation_r(), {
             if (is.null(coord_validation_r())) map_ready(FALSE)
-        }, ignoreNULL = FALSE)
+            forget_markers()
+        }, ignoreNULL = FALSE, priority = 1L)
 
         shiny::bindEvent(
             shiny::observe({
@@ -301,7 +307,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 draw_markers(map_data_r())
             }),
             # Not effective_validation_r(): a manual edit moves its own marker
-            # (refresh_marker below) and must not redraw or re-zoom the map.
+            # (refresh_marker below) and must not re-zoom the map.
             coord_validation_r(),
             rv$coords_corrections,
             rv$country_fills,
@@ -321,9 +327,13 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 filter = "all", issue_labels = labels$issue, popup_labels = labels$popup
             )
             shiny::req(nrow(md) > 0L)
+            n_here <- coords_records_at_marker(map_data_r(), md[1L, , drop = FALSE])
+            count_line <- if (n_here > 1L) {
+                paste0("<b>", sprintf(tr("validate_coords_popup_records_here", lang_r()), n_here), "</b><br>")
+            }
             leaflet::addPopups(
                 leaflet::leafletProxy(ns("coords_map")), lng = md$lon_num[[1L]], lat = md$lat_num[[1L]],
-                popup = md$popup_html[[1L]], layerId = "coords-popup"
+                popup = paste0(count_line, md$popup_html[[1L]]), layerId = "coords-popup"
             )
         })
 
@@ -1009,6 +1019,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
         )
         map_labels <- presentation$map_labels
         draw_markers <- presentation$draw_markers
+        forget_markers <- presentation$forget_markers
         refresh_marker <- presentation$refresh_marker
         diag_label_key <- presentation$diag_label_key
         diag_badge_class <- presentation$diag_badge_class

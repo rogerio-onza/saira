@@ -14,9 +14,10 @@ coord_diag_levels <- c(
     "sea",
     "zero_equal",
     "identical_all",
-    "reference"
+    "reference",
+    "sea_unchecked"
 )
-coord_family_levels <- c("ok", "validity", "sea", "zero_equal", "reference", "corrected")
+coord_family_levels <- c("ok", "validity", "sea", "zero_equal", "reference", "unchecked", "corrected")
 
 as_coord_numeric <- function(x) {
     raw_chr <- as.character(x)
@@ -829,7 +830,8 @@ coords_family_from_diag <- function(diagnostic) {
         sea = "sea",
         zero_equal = "zero_equal",
         identical_all = "zero_equal",
-        reference = "reference"
+        reference = "reference",
+        sea_unchecked = "unchecked"
     )
     out <- unname(family_map[diagnostic])
     out[is.na(out)] <- "validity"
@@ -1080,9 +1082,13 @@ validate_coords_cc_df <- function(
         }
     }
 
+    # A point the sea check did not read has no known fault, so the row stays
+    # valid. It has no approval either, so it never reads as OK (ADR-190).
+    diagnostic[sea_unchecked & diagnostic == "ok"] <- "sea_unchecked"
+
     diagnostic[is.na(diagnostic) | !nzchar(diagnostic)] <- "validity_bounds"
     diagnostic_family <- coords_family_from_diag(diagnostic)
-    valid <- diagnostic == "ok"
+    valid <- diagnostic %in% c("ok", "sea_unchecked")
 
     error_key_map <- c(
         ok = "",
@@ -1092,7 +1098,8 @@ validate_coords_cc_df <- function(
         sea = "validate_coords_diag_sea",
         zero_equal = "validate_coords_diag_zero_equal",
         identical_all = "validate_coords_diag_identical_all",
-        reference = "validate_coords_diag_reference"
+        reference = "validate_coords_diag_reference",
+        sea_unchecked = "validate_coords_diag_sea_unchecked"
     )
     error_key <- unname(error_key_map[diagnostic])
     error_key[is.na(error_key)] <- ""
@@ -1581,7 +1588,7 @@ apply_manual_coord_edits_to_result <- function(res, edits = NULL) {
     if ("diagnostic_family" %in% names(res)) {
         res$diagnostic_family[p] <- ifelse(passes, "corrected", as.character(e$diagnostic_family))
     }
-    if ("valid" %in% names(res)) res$valid[p] <- passes
+    if ("valid" %in% names(res)) res$valid[p] <- passes | e$valid %in% TRUE
     res$edited[p] <- TRUE
     res
 }
@@ -2049,6 +2056,57 @@ count_coords_diagnostics <- function(result_df) {
     ))
 }
 
+#' One map marker per place and color
+#'
+#' Records at one point with one color draw one marker. The first record names
+#' the marker, so a click finds that record. `key` changes when anything the
+#' map shows about the marker changes.
+#' @param map_df Rows from \code{build_leaflet_data()}.
+#' @return data.frame with \code{layer_id}, \code{key}, \code{lat_num},
+#'   \code{lon_num} and \code{color}, one row per marker.
+#' @noRd
+coords_map_markers <- function(map_df) {
+    map_df <- map_df[coords_plottable(map_df$lat_num, map_df$lon_num), , drop = FALSE]
+    place <- paste(map_df$lat_num, map_df$lon_num, map_df$color)
+    first <- !duplicated(place)
+    layer_id <- sprintf("r%d", map_df$.row_index[first])
+    data.frame(
+        layer_id = layer_id,
+        key = paste(layer_id, place[first]),
+        lat_num = map_df$lat_num[first],
+        lon_num = map_df$lon_num[first],
+        color = map_df$color[first],
+        stringsAsFactors = FALSE
+    )
+}
+
+#' The map calls that turn the drawn markers into the target markers
+#'
+#' @param drawn,target Frames from \code{coords_map_markers()}. A NULL
+#'   \code{drawn} means that the map state is not known.
+#' @return List with \code{clear} (remove every marker first), \code{remove}
+#'   (layer ids) and \code{add} (markers).
+#' @noRd
+coords_marker_changes <- function(drawn, target) {
+    kept <- if (is.null(drawn)) logical(nrow(target)) else target$key %in% drawn$key
+    stale <- if (is.null(drawn)) character(0) else drawn$layer_id[!drawn$key %in% target$key]
+    # One clear costs less than many removals when few markers stay.
+    if (is.null(drawn) || length(stale) > sum(kept)) {
+        return(list(clear = TRUE, remove = character(0), add = target))
+    }
+    list(clear = FALSE, remove = stale, add = target[!kept, , drop = FALSE])
+}
+
+#' The records that one marker draws
+#'
+#' @param map_df Rows from \code{build_leaflet_data()}.
+#' @param row One row of the same frame.
+#' @return Integer count, at least 1 for a row of \code{map_df}.
+#' @noRd
+coords_records_at_marker <- function(map_df, row) {
+    sum(map_df$lat_num == row$lat_num & map_df$lon_num == row$lon_num & map_df$color == row$color, na.rm = TRUE)
+}
+
 #' Coordinates a web map can place
 #'
 #' A latitude beyond 90 or a longitude beyond 180 has no place on the map: the
@@ -2124,7 +2182,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
 
     if (all(c(".row_index", "lat_num", "lon_num", "diagnostic", "diagnostic_family") %in% names(coords_result_df))) {
         filter_key <- as.character(if (is.null(filter)) "all" else filter)
-        allowed_filters <- c("all", "problems", "validity", "sea", "zero_equal", "reference", "edited")
+        allowed_filters <- c("all", "problems", "validity", "sea", "zero_equal", "reference", "unchecked", "edited")
         if (!(filter_key %in% allowed_filters)) {
             filter_key <- "all"
         }
@@ -2141,6 +2199,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             sea = fam == "sea",
             zero_equal = fam == "zero_equal",
             reference = fam == "reference",
+            unchecked = fam == "unchecked",
             edited = if ("edited" %in% names(coords_result_df)) coords_result_df$edited %in% TRUE else rep(FALSE, nrow(coords_result_df)),
             rep(TRUE, nrow(coords_result_df))
         )
@@ -2162,6 +2221,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             sea = "#252659",
             zero_equal = "#FFA204",
             reference = "#8b5cf6",
+            unchecked = "#5f6570",
             corrected = "#0e7c86"
         )
         color_vec <- unname(color_map[out$diagnostic_family])
@@ -2185,6 +2245,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             zero_equal = "Zero/Equal",
             identical_all = "Identical coordinates",
             reference = "Reference hotspot",
+            sea_unchecked = "Sea not checked",
             corrected = "Corrected"
         )
         if (!is.null(issue_labels) && length(issue_labels) > 0L) {

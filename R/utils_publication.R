@@ -191,7 +191,7 @@ coord_export_issues <- function(df, coords_correction_payload = NULL, coord_vali
         idx <- as.integer(cv$.row_index)
         fam <- as.character(cv$diagnostic_family)
         keep <- !is.na(idx) & idx >= 1L & idx <= nrow(df) &
-            !is.na(fam) & fam %in% c("sea", "zero_equal", "reference")
+            !is.na(fam) & fam %in% c("sea", "zero_equal", "reference", "unchecked")
         rows <- sort(unique(idx[keep]))
         corrected <- as.character(slot_df(coords_correction_payload, "corrections")$occurrenceID)
         if (length(corrected) && "occurrenceID" %in% names(df)) {

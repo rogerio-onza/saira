@@ -96,6 +96,7 @@ mount_mod_validate_coords_presentation <- function(
             zero_equal = "validate_coords_diag_zero_equal",
             identical_all = "validate_coords_diag_identical_all",
             reference = "validate_coords_diag_reference",
+            sea_unchecked = "validate_coords_diag_sea_unchecked",
             corrected = "validate_coords_diag_corrected"
         )
         issue_labels <- vapply(label_keys, function(k) tr(k, lang_r()), FUN.VALUE = character(1))
@@ -223,6 +224,11 @@ mount_mod_validate_coords_presentation <- function(
             list(key = "zero_equal", class = "pill-warning", label_key = "validate_coords_filter_zero_equal"),
             list(key = "reference", class = "pill-reference", label_key = "validate_coords_filter_reference")
         )
+        if (isTRUE(counts[["unchecked"]] > 0L)) {
+            pill_defs <- c(pill_defs, list(
+                list(key = "unchecked", class = "pill-muted", label_key = "validate_coords_filter_unchecked")
+            ))
+        }
         if (isTRUE(counts[["edited"]] > 0L)) {
             pill_defs <- c(pill_defs, list(
                 list(key = "edited", class = "pill-edited", label_key = "validate_coords_filter_edited")
@@ -299,6 +305,9 @@ mount_mod_validate_coords_presentation <- function(
                 `aria-label` = text, ph_icon("circle-info")
             )
         }
+        unchecked_item <- if (isTRUE(family_counts()[["unchecked"]] > 0L)) {
+            shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-unchecked"), shiny::span(tr("validate_coords_map_legend_unchecked", lang_r())))
+        }
         shiny::tagList(
             shiny::span(id = ns("map_title"), class = "visually-hidden", tr("validate_coords_map_title", lang_r())),
             shiny::div(
@@ -308,6 +317,7 @@ mount_mod_validate_coords_presentation <- function(
                     shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-sea"), shiny::span(tr("validate_coords_map_legend_sea", lang_r()))),
                     shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-zero-equal"), shiny::span(tr("validate_coords_map_legend_zero_equal", lang_r()))),
                     shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-reference"), shiny::span(tr("validate_coords_map_legend_reference", lang_r())), info_icon(tr("validate_coords_map_legend_reference_note", lang_r()))),
+                    unchecked_item,
                     shiny::div(class = "coords-map-legend-item", shiny::span(class = "coords-map-legend-dot coords-map-legend-dot-corrected"), shiny::span(tr("validate_coords_map_legend_corrected", lang_r()))),
                     info_icon(tr("validate_coords_sea_precision_note", lang_r()))
             )
@@ -347,6 +357,7 @@ mount_mod_validate_coords_presentation <- function(
     output$coords_map <- leaflet::renderLeaflet({
         res <- coord_validation_r()
         shiny::req(res)
+        forget_markers()
 
         map_obj <- leaflet::leaflet(options = leaflet::leafletOptions(preferCanvas = TRUE))
         map_obj <- leaflet::addProviderTiles(
@@ -371,43 +382,56 @@ mount_mod_validate_coords_presentation <- function(
         leaflet_fill_world(map_obj)
     })
 
-    draw_markers <- function(map_df, fit_view = TRUE) {
-        proxy <- leaflet::leafletProxy(ns("coords_map"))
-        proxy <- leaflet::clearMarkers(proxy)
-        proxy <- leaflet::clearMarkerClusters(proxy)
-        proxy <- leaflet::clearPopups(proxy)
-        if (!is.data.frame(map_df) || nrow(map_df) == 0L) {
-            return(invisible(NULL))
-        }
+    # The markers on the map, so an update sends only what changed. NULL when
+    # the map state is not known: the next update then draws all the markers.
+    drawn_markers <- shiny::reactiveVal(NULL)
+    forget_markers <- function() drawn_markers(NULL)
 
-        # A point outside the valid range has no place on the map. The
-        # map note counts these rows, and the table lists them.
-        map_df <- map_df[coords_plottable(map_df$lat_num, map_df$lon_num), , drop = FALSE]
-        if (nrow(map_df) == 0L) {
-            return(invisible(NULL))
-        }
-
-        marker_radius <- if (nrow(map_df) > 2000L) 4 else 6
-        leaflet::addCircleMarkers(
-            map = proxy,
-            data = map_df,
-            lat = ~lat_num,
-            lng = ~lon_num,
-            radius = marker_radius,
-            stroke = TRUE,
-            weight = 1,
-            color = ~color,
-            fillColor = ~color,
-            fillOpacity = 0.85,
-            layerId = ~paste0("r", .row_index),
-            # leaflet-hex.js draws the point as a hexagon (ADR-160).
-            options = leaflet::pathOptions(hex = TRUE)
+    # A point outside the valid range has no place on the map. The map note
+    # counts these rows, and the table lists them (coords_map_markers).
+    sync_markers <- function(map_df) {
+        target <- coords_map_markers(map_df)
+        marker_radius <- if (nrow(target) > 2000L) 4 else 6
+        drawn <- shiny::isolate(drawn_markers())
+        changes <- coords_marker_changes(
+            if (identical(drawn$radius, marker_radius)) drawn$markers, target
         )
+        proxy <- leaflet::leafletProxy(ns("coords_map"))
+        proxy <- leaflet::clearPopups(proxy)
+        if (changes$clear) {
+            proxy <- leaflet::clearMarkers(proxy)
+            proxy <- leaflet::clearMarkerClusters(proxy)
+        } else if (length(changes$remove)) {
+            proxy <- leaflet::removeMarker(proxy, layerId = changes$remove)
+        }
+        if (nrow(changes$add)) {
+            leaflet::addCircleMarkers(
+                map = proxy,
+                data = changes$add,
+                lat = ~lat_num,
+                lng = ~lon_num,
+                radius = marker_radius,
+                stroke = TRUE,
+                weight = 1,
+                color = ~color,
+                fillColor = ~color,
+                fillOpacity = 0.85,
+                layerId = ~layer_id,
+                # leaflet-hex.js draws the point as a hexagon (ADR-160).
+                options = leaflet::pathOptions(hex = TRUE)
+            )
+        }
+        drawn_markers(list(markers = target, radius = marker_radius, rows = map_df$.row_index))
+        target
+    }
 
-        if (!fit_view) {
+    draw_markers <- function(map_df, fit_view = TRUE) {
+        markers <- sync_markers(map_df)
+        if (!fit_view || nrow(markers) == 0L) {
             return(invisible(NULL))
         }
-        view <- coords_map_view(map_df$lat_num, map_df$lon_num)
+        proxy <- leaflet::leafletProxy(ns("coords_map"))
+        view <- coords_map_view(markers$lat_num, markers$lon_num)
         if (identical(view$type, "point")) {
             leaflet::setView(map = proxy, lng = view$lng, lat = view$lat, zoom = 8)
         } else if (identical(view$type, "bounds")) {
@@ -423,21 +447,15 @@ mount_mod_validate_coords_presentation <- function(
 
     refresh_marker <- function(row_index) {
         eff <- shiny::isolate(effective_validation_r())
-        if (!is.data.frame(eff)) return(invisible(NULL))
-        proxy <- leaflet::leafletProxy(ns("coords_map"))
-        leaflet::removeMarker(proxy, layerId = paste0("r", row_index))
-        leaflet::clearPopups(proxy)
-        md <- build_leaflet_data(
-            eff[eff$.row_index %in% row_index, , drop = FALSE], filter = "all", popups = FALSE
-        )
-        if (nrow(md) == 0L) return(invisible(NULL))
-        leaflet::addCircleMarkers(
-            map = proxy, data = md, lat = ~lat_num, lng = ~lon_num,
-            radius = 6, stroke = TRUE, weight = 1, color = ~color,
-            fillColor = ~color, fillOpacity = 0.85,
-            layerId = ~paste0("r", .row_index),
-            options = leaflet::pathOptions(hex = TRUE)
-        )
+        drawn <- shiny::isolate(drawn_markers())
+        if (!is.data.frame(eff) || is.null(drawn)) return(invisible(NULL))
+        # An edited row stays on the map until the next filter change, as its
+        # table row does. One record can name a marker that others share.
+        rows <- union(drawn$rows, row_index)
+        sync_markers(build_leaflet_data(
+            eff[eff$.row_index %in% rows, , drop = FALSE], filter = "all", popups = FALSE
+        ))
+        invisible(NULL)
     }
 
     diag_label_key <- function(diag) {
@@ -450,6 +468,7 @@ mount_mod_validate_coords_presentation <- function(
             zero_equal = "validate_coords_diag_zero_equal",
             identical_all = "validate_coords_diag_identical_all",
             reference = "validate_coords_diag_reference",
+            sea_unchecked = "validate_coords_diag_sea_unchecked",
             corrected = "validate_coords_diag_corrected",
             "validate_coords_diag_validity_bounds"
         )
@@ -752,7 +771,8 @@ mount_mod_validate_coords_presentation <- function(
     })
 
     list(
-        map_labels = map_labels, draw_markers = draw_markers, refresh_marker = refresh_marker,
+        map_labels = map_labels, draw_markers = draw_markers, forget_markers = forget_markers,
+        refresh_marker = refresh_marker,
         diag_label_key = diag_label_key, diag_badge_class = diag_badge_class,
         build_issues_table_df = build_issues_table_df, refresh_table_rows = refresh_table_rows
     )
