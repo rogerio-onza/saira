@@ -379,6 +379,56 @@ testthat::test_that("E2E: importing a guide restores a fixed value into the card
     )
 })
 
+testthat::test_that("E2E: a new term keeps the typed measurement fields", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(c(
+        "scientificName,decimalLatitude,decimalLongitude,massa",
+        "Panthera onca,-10.5,-55.2,68.2",
+        "Panthera onca,-13.2,-52.7,70.1"
+    ), csv_path)
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app <- shinytest2::AppDriver$new(app = build_e2e_app, timeout = 60000, load_timeout = 30000)
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 20000)
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 20000)
+    app$set_inputs(main_nav = "mapping", wait_ = FALSE)
+    wait_until_js(app, "!!document.getElementById('mapping-add_term')")
+    app$wait_for_idle(timeout = 20000)
+
+    add_term <- function(term) {
+        app$click(selector = "#mapping-add_term")
+        wait_until_js(app, "!!document.getElementById('mapping-confirm_add_term')")
+        app$wait_for_idle(timeout = 20000)
+        app$run_js(sprintf("document.getElementById('mapping-add_term_select').selectize.setValue('%s')", term))
+        app$wait_for_idle(timeout = 20000)
+        app$click(selector = "#mapping-confirm_add_term")
+        app$wait_for_idle(timeout = 20000)
+    }
+    add_term("measurementValue")
+    app$run_js("document.getElementById('mapping-map_measurementValue').selectize.setValue(['massa'])")
+    wait_until_js(app, "!!document.getElementById('mapping-mof_method_massa')")
+    app$wait_for_idle(timeout = 20000)
+
+    typed <- c(`mapping-mof_type_massa` = "body mass", `mapping-mof_unit_massa` = "g",
+               `mapping-mof_method_massa` = "scale")
+    do.call(app$set_inputs, as.list(typed))
+    app$wait_for_idle(timeout = 20000)
+
+    add_term("references")
+    wait_until_js(app, "!!document.getElementById('mapping-fieldcard_references')")
+    app$wait_for_idle(timeout = 20000)
+
+    for (id in names(typed)) {
+        testthat::expect_identical(app$get_js(sprintf("document.getElementById('%s').value", id)), typed[[id]], info = id)
+        testthat::expect_identical(app$get_value(input = id), typed[[id]], info = id)
+    }
+})
+
 # --- Flow 7: slash dates and an impossible year ---
 #
 # The bug this guards against was reported from a real export: dates left the
