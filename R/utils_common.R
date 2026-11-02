@@ -92,8 +92,9 @@ tokenize_for_matching <- function(x) {
     parts[nzchar(parts)]
 }
 
-# Common fallback: NULL, scalar NA or an empty string. Vectors are retained.
-`%||%` <- function(a, b) if (is.null(a) || (length(a) == 1L && (is.na(a) || identical(a, "")))) b else a
+# Common fallback: NULL, scalar NA or an empty string. Vectors and tables are
+# retained. A table with one column has length 1, and is.na() of it is a matrix.
+`%||%` <- function(a, b) if (is.null(a) || (length(a) == 1L && !is.data.frame(a) && (is.na(a) || identical(a, "")))) b else a
 
 normalize_domain_keys <- function(values) {
     chr <- as.character(values)

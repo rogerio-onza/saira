@@ -3,6 +3,15 @@
 # Date: 2026-03-06
 # Version: 1.0
 
+# %||% --------------------------------------------------------------------
+
+testthat::test_that("the fallback operator keeps a table with one column", {
+    many_rows <- data.frame(a = 1:3)
+    one_na <- data.frame(a = NA)
+    testthat::expect_identical(saira:::`%||%`(many_rows, "fallback"), many_rows)
+    testthat::expect_identical(saira:::`%||%`(one_na, "fallback"), one_na)
+})
+
 # create_rds_cache --------------------------------------------------------
 
 testthat::test_that("create_rds_cache returns NULL before first set", {
