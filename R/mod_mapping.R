@@ -1694,9 +1694,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
         # Mapping UI generation (card builder delegated to mod_mapping_cards.R).
         # All category sections always render so scroll-anchors are always in DOM.
+        grid_render_count <- shiny::reactiveVal(0L)
         output$mapping_ui <- shiny::renderUI({
             on.exit(end_grid_prewarm(), add = TRUE)
             shiny::req(raw_data_r())
+            grid_render_count(shiny::isolate(grid_render_count()) + 1L)
 
             # The grid (50 selectize inputs) is expensive to rebuild, so it is
             # rendered only on a real structural change: a new upload, a language
@@ -1902,7 +1904,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     )
                 } else if (identical(term, "measurementValue")) {
                     # One line per column, with its own sample, in place of
-                    # the joined sample.
+                    # the joined sample. A new grid binds this output again,
+                    # and the browser then draws its last copy, which has the
+                    # field values of the last run. So each grid runs this
+                    # output again, with the values typed since then.
+                    grid_render_count()
                     cols <- if (has_selected_value(current_val)) as.character(current_val) else character(0)
                     cols <- cols[nzchar(cols)]
                     samples <- lapply(stats::setNames(cols, cols), function(col) {

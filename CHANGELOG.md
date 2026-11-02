@@ -122,6 +122,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **build:** Stop the release gate when E2E flows do not run, ADR-190 ([#263](https://github.com/rogerio-onza/saira/pull/263))
 - **mapping:** Give each column its own control, so "body length" and "body-length" no longer share one, ADR-189
 - **dynamicProperties:** Write a key once when two cells or a merge repeat it, ADR-189
+- **mapping:** Keep the typed measurement type, unit and method when the grid of cards redraws ([#264](https://github.com/rogerio-onza/saira/pull/264))
 - **coords:** Mark the rows a failed sea check did not reach, not approve them, ADR-189
 - **names:** Recover the Flora BR and Fauna BR update after a crash, but not while another Saira still updates, ADR-189
 - **names:** Parse authorship before subsp. or var., rank chains, author initials and subgenera alike in mapping and lookups, ADR-189
