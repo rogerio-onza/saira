@@ -115,6 +115,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **generalization:** Replace copies of the exact point in measurement fields, fixed values and the mapping guide, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **generalization:** Close each generalized note with a versioned mark, so a new wording still counts as generalized, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **export:** Stop the export when a step's decision cannot be read, not treat it as no decision, ADR-189
+- **coords:** Show a point the sea check did not read in gray, as a problem, with its own filter, ADR-190 ([#260](https://github.com/rogerio-onza/saira/pull/260))
 - **mapping:** Clear and import the fixed values of every card, also the cards that are not on the page, ADR-189
 - **mapping:** Turn off the fixed values when a new file arrives, keep the dataset name, license and language, ADR-189
 - **mapping:** Give each column its own control, so "body length" and "body-length" no longer share one, ADR-189
@@ -275,6 +276,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **names:** Show a name in the run list only with its last answer, and keep the scroll while the list grows, ADR-168
 
 ### Performance
+- **coords:** Send the map only the markers that changed, with one marker for each place, ADR-190 ([#260](https://github.com/rogerio-onza/saira/pull/260))
 - **upload:** Watch only the upload progress bars, not every change on the page, ADR-189
 - **export:** Add the conservation status to repeated nested dynamicProperties objects once per distinct object
 - **coords:** Send the map points without popups, and build the popup of a point when it is clicked, ADR-188

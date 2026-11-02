@@ -622,6 +622,62 @@ testthat::test_that("the map sends markers without popups and builds the popup o
     )
 })
 
+testthat::test_that("the map gets one marker per place and only the markers that changed", {
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(
+            mapped_data_r = shiny::reactive(data.frame(decimalLatitude = -10, decimalLongitude = -50)),
+            lang_r = shiny::reactiveVal("en")
+        ),
+        {
+            calls <- list()
+            real_session <- base::.subset2(session, "parent")
+            real_session$sendCustomMessage <- function(type, message) {
+                if (identical(type, "leaflet-calls")) calls <<- c(calls, message$calls)
+                invisible(NULL)
+            }
+            sent <- function(method) {
+                hit <- Filter(function(cl) identical(cl$method, method), calls)
+                calls <<- list()
+                # Arguments of addCircleMarkers: lat, lng, radius, layerId.
+                unlist(lapply(hit, function(cl) if (identical(method, "addCircleMarkers")) cl$args[[4]] else cl$args[[1]]))
+            }
+            count <- function(method) sum(vapply(calls, function(cl) identical(cl$method, method), logical(1)))
+            validation <- function(row) data.frame(
+                .row_index = row, lat_num = c(-10, -10, -11, -12), lon_num = c(-50, -50, -51, -52),
+                diagnostic = c("ok", "ok", "sea", "sea"), diagnostic_family = c("ok", "ok", "sea", "sea"),
+                stringsAsFactors = FALSE
+            )
+            coord_validation_r(validation(1:4))
+            session$flushReact()
+            session$setInputs(coords_map_bounds = list(north = 0))
+            # Rows 1 and 2 share a place and a color.
+            testthat::expect_identical(count("clearMarkers"), 1L)
+            testthat::expect_identical(sent("addCircleMarkers"), c("r1", "r3", "r4"))
+
+            session$setInputs(coords_filter_sea = 1)
+            testthat::expect_identical(count("clearMarkers"), 0L)
+            testthat::expect_identical(sent("removeMarker"), "r1")
+
+            session$setInputs(coords_filter_all = 1)
+            testthat::expect_identical(count("clearMarkers"), 0L)
+            testthat::expect_identical(sent("addCircleMarkers"), "r1")
+
+            session$setInputs(coords_map_marker_click = list(id = "r1", lat = -10, lng = -50))
+            session$flushReact()
+            popup <- Filter(function(cl) identical(cl$method, "addPopups"), calls)
+            testthat::expect_match(popup[[1]]$args[[3]], sprintf(tr("validate_coords_popup_records_here", "en"), 2L), fixed = TRUE)
+            calls <- list()
+
+            # A new validation brings a new widget, so all the markers go again.
+            coord_validation_r(validation(5:8))
+            session$flushReact()
+            testthat::expect_identical(count("clearMarkers"), 1L)
+            testthat::expect_identical(sent("addCircleMarkers"), c("r5", "r7", "r8"))
+        }
+    )
+})
+
 testthat::test_that("a language switch keeps the map widget and translates the legend", {
     mapped_df <- data.frame(
         decimalLatitude = c(-10),

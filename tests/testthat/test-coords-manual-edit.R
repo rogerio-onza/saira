@@ -185,6 +185,14 @@ testthat::test_that("apply_manual_coord_edits_to_result shows the edited point a
     testthat::expect_identical(out$diagnostic_family, c("ok", "corrected", "sea"))
     testthat::expect_identical(out$valid, c(TRUE, TRUE, FALSE))
     testthat::expect_identical(apply_manual_coord_edits_to_result(res, NULL)$edited, rep(FALSE, 3))
+
+    # A point the sea check did not read stays valid and never reads as corrected.
+    edits$diagnostic[[2]] <- "sea_unchecked"
+    edits$diagnostic_family[[2]] <- "unchecked"
+    edits$valid[[2]] <- TRUE
+    out <- apply_manual_coord_edits_to_result(res, edits)
+    testthat::expect_identical(out$diagnostic_family, c("ok", "corrected", "unchecked"))
+    testthat::expect_identical(out$valid, c(TRUE, TRUE, TRUE))
 })
 
 testthat::test_that("build_leaflet_data keeps only edited rows under the edited filter", {

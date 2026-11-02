@@ -1391,3 +1391,81 @@ testthat::test_that("E2E: the Preview table shows a value as it is in the file",
     ))
     testthat::expect_true("Mata & cerrado <borda>" %in% cells)
 })
+
+testthat::test_that("E2E: a point the sea check did not read is not green and counts as a problem", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    build_no_sea_app <- function() {
+        pkgload::load_all(app_root, export_all = FALSE, quiet = TRUE)
+        utils::assignInNamespace("coords_cc_sea_flagged", function(x, scale, timeout = NULL) {
+            structure(rep(TRUE, nrow(x)), unchecked = rep(TRUE, nrow(x)), errors = "forced failure")
+        }, ns = "saira")
+        run_app()
+    }
+    build_no_sea_app <- utils::removeSource(build_no_sea_app)
+    environment(build_no_sea_app) <- list2env(list(app_root = app_root), parent = globalenv())
+
+    # Rows 1 and 2 share a point, so 4 records draw 3 markers.
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(c(
+        "occurrenceID,scientificName,decimalLatitude,decimalLongitude,country",
+        "e2e-1,Panthera onca,-10.5,-55.2,Brasil",
+        "e2e-2,Panthera onca,-10.5,-55.2,Brasil",
+        "e2e-3,Panthera onca,-13.2,-52.7,Brasil",
+        "e2e-4,Panthera onca,-15.1,-50.3,Brasil"
+    ), csv_path)
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app <- shinytest2::AppDriver$new(app = build_no_sea_app, timeout = 60000, load_timeout = 30000)
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 20000)
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 20000)
+    app$set_inputs(main_nav = "mapping", wait_ = FALSE)
+    app$wait_for_idle(timeout = 20000)
+    app$click(selector = "#mapping-auto_map")
+    app$wait_for_idle(timeout = 20000)
+    app$set_inputs(main_nav = "validate_coords", wait_ = FALSE)
+    wait_until_js(app, "!!document.getElementById('validate_coords-validate')")
+    app$click(selector = "#validate_coords-validate")
+
+    markers_js <- "(function () {
+      var widget = HTMLWidgets.find('#validate_coords-coords_map');
+      var out = [];
+      if (widget && widget.getMap()) {
+        widget.getMap().eachLayer(function (layer) {
+          if (layer.options && layer.options.hex) out.push(layer.options.fillColor);
+        });
+      }
+      return out;
+    })()"
+    wait_markers <- function(n) {
+        wait_until_js(app, sprintf("%s.length === %d", markers_js, n), timeout = 120000)
+        as.character(unlist(app$get_js(markers_js)))
+    }
+    testthat::expect_identical(wait_markers(3L), rep("#5f6570", 3L))
+    pill_count <- function(key) {
+        app$get_js(sprintf("document.querySelector('#validate_coords-coords_filter_%s .pill-count').textContent.trim()", key))
+    }
+    testthat::expect_identical(pill_count("unchecked"), "4")
+    testthat::expect_identical(pill_count("problems"), "4")
+    testthat::expect_true(app$get_js("!!document.querySelector('.coords-map-legend-dot-unchecked')"))
+
+    # The real Leaflet layers follow each filter, with the updates sent as changes.
+    app$click(selector = "#validate_coords-coords_filter_problems")
+    testthat::expect_length(wait_markers(3L), 3L)
+    app$click(selector = "#validate_coords-coords_filter_validity")
+    testthat::expect_length(wait_markers(0L), 0L)
+    app$click(selector = "#validate_coords-coords_filter_all")
+    testthat::expect_length(wait_markers(3L), 3L)
+
+    # A click on the shared marker reads its two records.
+    app$run_js("HTMLWidgets.find('#validate_coords-coords_map').getMap().eachLayer(function (layer) {
+      if (layer.options && layer.options.hex && layer.getLatLng().lat === -10.5) {
+        layer.fire('click', { latlng: layer.getLatLng() });
+      }
+    });")
+    wait_until_js(app, "!!document.querySelector('.leaflet-popup-content b')")
+    testthat::expect_match(app$get_js("document.querySelector('.leaflet-popup-content b').textContent"), "^2 ")
+})

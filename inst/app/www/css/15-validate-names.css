@@ -756,6 +756,10 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   --dot: var(--coord-corrected);
 }
 
+.coords-map-legend-dot-unchecked {
+  --dot: var(--text-muted);
+}
+
 .coords-cluster-note {
   font-size: var(--text-xs, 0.75rem);
   color: var(--text-muted);

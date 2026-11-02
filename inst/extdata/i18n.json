@@ -405,9 +405,9 @@
     "es": "Coordenadas con alerta"
   },
   "export_coord_flags_body": {
-    "pt": "%d registro(s) seguem com alerta na aba Coordenadas (no mar, 0/0 ou ponto de referência) e sem correção. Linhas:",
-    "en": "%d record(s) still have a flag in the Coordinates tab (at sea, 0/0 or a reference point) and no correction. Rows:",
-    "es": "%d registro(s) siguen con alerta en la pestaña Coordenadas (en el mar, 0/0 o punto de referencia) y sin corrección. Filas:"
+    "pt": "%d registro(s) seguem com alerta na aba Coordenadas (no mar, mar não verificado, 0/0 ou ponto de referência) e sem correção. Linhas:",
+    "en": "%d record(s) still have a flag in the Coordinates tab (at sea, sea not checked, 0/0 or a reference point) and no correction. Rows:",
+    "es": "%d registro(s) siguen con alerta en la pestaña Coordenadas (en el mar, mar no verificado, 0/0 o punto de referencia) y sin corrección. Filas:"
   },
   "export_coord_fixes_stale": {
     "pt": "%d correção(ões) da aba Coordenadas saíram do pacote: o ponto mudou depois da correção. Valide as coordenadas de novo.",
@@ -3419,6 +3419,11 @@
     "en": "Diagnosis",
     "es": "Diagnóstico"
   },
+  "validate_coords_popup_records_here": {
+    "pt": "%d registros neste ponto",
+    "en": "%d records at this point",
+    "es": "%d registros en este punto"
+  },
   "validate_coords_popup_show_row": {
     "pt": "Mostrar na tabela",
     "en": "Show in table",
@@ -3448,6 +3453,11 @@
     "pt": "Mar",
     "en": "Sea",
     "es": "Mar"
+  },
+  "validate_coords_filter_unchecked": {
+    "pt": "Sem verificação",
+    "en": "Not checked",
+    "es": "Sin verificación"
   },
   "validate_coords_filter_zero_equal": {
     "pt": "Zero/Equal",
@@ -3614,6 +3624,11 @@
     "en": "At sea",
     "es": "En mar abierto"
   },
+  "validate_coords_diag_sea_unchecked": {
+    "pt": "Mar não verificado",
+    "en": "Sea not checked",
+    "es": "Mar no verificado"
+  },
   "validate_coords_diag_zero_equal": {
     "pt": "Zero/Equal",
     "en": "Zero/Equal",
@@ -3658,6 +3673,11 @@
     "pt": "Corrigida",
     "en": "Corrected",
     "es": "Corregida"
+  },
+  "validate_coords_map_legend_unchecked": {
+    "pt": "Mar não verificado",
+    "en": "Sea not checked",
+    "es": "Mar no verificado"
   },
   "validate_coords_map_legend_reference_note": {
     "pt": "Referência sensível = ponto próximo de capital, centróide, sede GBIF ou instituição biológica.",

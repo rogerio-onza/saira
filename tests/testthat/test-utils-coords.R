@@ -509,6 +509,83 @@ testthat::test_that("validate_coords_cc_df reports a sea check that did not run 
     testthat::expect_identical(out$flag_sea_unchecked, c(TRUE, TRUE, FALSE))
     testthat::expect_identical(attr(out, "sea_check"),
                                list(status = "failed", unchecked = 2L, errors = "forced sea failure"))
+
+    # Valid, but never approved: no OK count, no green marker, in the problems.
+    testthat::expect_identical(out$diagnostic, c("sea_unchecked", "sea_unchecked", "validity_missing"))
+    testthat::expect_identical(out$diagnostic_family, c("unchecked", "unchecked", "validity"))
+    testthat::expect_identical(out$valid, c(TRUE, TRUE, FALSE))
+    counts <- count_coords_diagnostics(out)
+    testthat::expect_identical(counts$ok, 0L)
+    testthat::expect_identical(counts$unchecked, 2L)
+    testthat::expect_identical(counts$problems, 3L)
+    for (filter in c("problems", "unchecked")) {
+        markers <- build_leaflet_data(out, filter = filter, popups = FALSE)
+        testthat::expect_identical(markers$.row_index, 1:2, info = filter)
+        testthat::expect_false(any(markers$color == "#00A86B"), info = filter)
+    }
+    testthat::expect_match(build_leaflet_data(out, popup_labels = list())$popup_html[[1]], "Sea not checked")
+})
+
+testthat::test_that("a publication check lists a point with no sea check", {
+    df <- data.frame(decimalLatitude = c("-10", "-11"), decimalLongitude = c("-50", "-51"))
+    cv <- data.frame(.row_index = 1:2, diagnostic_family = c("unchecked", "ok"))
+    testthat::expect_identical(coord_export_issues(df, coord_validation = cv)$flags$rows, 1L)
+})
+
+# One marker per place -----------------------------------------------------
+
+coords_map_rows <- function(row, lat, lon, color = "#00A86B") {
+    data.frame(.row_index = row, lat_num = lat, lon_num = lon, color = color, stringsAsFactors = FALSE)
+}
+
+testthat::test_that("coords_map_markers draws one marker per place and color", {
+    rows <- coords_map_rows(1:5, c(-10, -10, -10, -20, 95), c(-50, -50, -50, -60, 0),
+                            c("#00A86B", "#00A86B", "#C0392B", "#00A86B", "#00A86B"))
+    markers <- coords_map_markers(rows)
+    testthat::expect_identical(markers$layer_id, c("r1", "r3", "r4"))
+    testthat::expect_identical(markers$color, c("#00A86B", "#C0392B", "#00A86B"))
+    testthat::expect_identical(nrow(coords_map_markers(rows[5L, ])), 0L)
+
+    testthat::expect_identical(coords_records_at_marker(rows, rows[1L, ]), 2L)
+    testthat::expect_identical(coords_records_at_marker(rows, rows[3L, ]), 1L)
+})
+
+testthat::test_that("coords_marker_changes sends only what changed", {
+    all_rows <- coords_map_rows(1:6, -(1:6), -(1:6))
+    drawn <- coords_map_markers(all_rows)
+
+    same <- coords_marker_changes(drawn, drawn)
+    testthat::expect_false(same$clear)
+    testthat::expect_length(same$remove, 0L)
+    testthat::expect_identical(nrow(same$add), 0L)
+
+    # One record moved: only its marker goes and comes back.
+    moved <- all_rows
+    moved$lat_num[[2]] <- 40
+    one <- coords_marker_changes(drawn, coords_map_markers(moved))
+    testthat::expect_false(one$clear)
+    testthat::expect_identical(one$remove, "r2")
+    testthat::expect_identical(one$add$layer_id, "r2")
+
+    # A narrow filter leaves few markers, so one clear replaces the removals.
+    narrow <- coords_marker_changes(drawn, coords_map_markers(all_rows[1L, ]))
+    testthat::expect_true(narrow$clear)
+    testthat::expect_identical(narrow$add$layer_id, "r1")
+
+    # A map with no known state gets all the markers.
+    unknown <- coords_marker_changes(NULL, drawn)
+    testthat::expect_true(unknown$clear)
+    testthat::expect_identical(unknown$add, drawn)
+})
+
+testthat::test_that("the first record of a shared marker can move and the others stay drawn", {
+    rows <- coords_map_rows(1:3, c(-10, -10, -10), c(-50, -50, -50))
+    drawn <- coords_map_markers(rows)
+    testthat::expect_identical(drawn$layer_id, "r1")
+    rows$lat_num[[1]] <- -11
+    changes <- coords_marker_changes(drawn, coords_map_markers(rows))
+    testthat::expect_setequal(changes$add$layer_id, c("r1", "r2"))
+    testthat::expect_true(changes$clear || identical(changes$remove, "r1"))
 })
 
 testthat::test_that("coords_crop_land_ref reduces geometry without changing cc_sea result", {
