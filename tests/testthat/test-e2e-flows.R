@@ -951,13 +951,14 @@ testthat::test_that("E2E: the zip carries generalized points and the private fil
     # Both species are VU on the MMA list, so they form the "vu" group.
     csv_path <- tempfile(fileext = ".csv")
     writeLines(
-        c("scientificName,decimalLatitude,decimalLongitude,basisOfRecord,eventDate",
-          "Panthera onca,-10.512345,-55.234567,HumanObservation,2023-12-25",
-          "Chrysocyon brachyurus,-13.276543,-52.712345,HumanObservation,2023-11-02"),
+        c("scientificName,decimalLatitude,decimalLongitude,basisOfRecord,eventDate,occurrenceRemarks,eventTime",
+          "Panthera onca,-10.512345,-55.234567,HumanObservation,2023-12-25,-10.512345,10:30:44.442",
+          "Chrysocyon brachyurus,-13.276543,-52.712345,HumanObservation,2023-11-02,-1.3276543e1,13:16:35.555"),
         csv_path
     )
     on.exit(unlink(csv_path), add = TRUE)
     real_lat <- c("-10.512345", "-13.276543")
+    real_points <- c(real_lat, "-55.234567", "-52.712345", "-1.0512345e1", "-5.5234567e1", "-1.3276543e1")
 
     app$upload_file(`upload-file` = csv_path)
     app$wait_for_idle(timeout = 15000)
@@ -974,7 +975,8 @@ testthat::test_that("E2E: the zip carries generalized points and the private fil
     # 4.3 "yes" puts the group at Category 2, which needs a justification.
     app$set_inputs(`sensitive_coords-q43_vu` = "yes")
     app$wait_for_idle(timeout = 10000)
-    app$set_inputs(`sensitive_coords-sensitive_justification` = "Hunting pressure.")
+    # The custodian can quote the point. It must not leave with the note.
+    app$set_inputs(`sensitive_coords-sensitive_justification` = "Hunting pressure. GPS: -10.512345, -55.234567. Base: -1.0512345e1, -5.5234567e1.")
     app$wait_for_idle(timeout = 10000)
 
     app$set_inputs(main_nav = "export", wait_ = FALSE)
@@ -1002,10 +1004,21 @@ testthat::test_that("E2E: the zip carries generalized points and the private fil
     )
     testthat::expect_identical(nrow(occurrence), 2L)
     testthat::expect_false(any(occurrence$decimalLatitude %in% real_lat))
+    # These times read as the point in degrees and minutes, and they stay.
+    testthat::expect_setequal(occurrence$eventTime, c("10:30:44.442", "13:16:35.555"))
+    testthat::expect_true(all(grepl("Hunting pressure. GPS:", occurrence$dataGeneralizations, fixed = TRUE)))
+    testthat::expect_true(all(grepl("[saira:coordinates-generalized:v1]", occurrence$dataGeneralizations, fixed = TRUE)))
     # The exact points are nowhere in the package, not only off the column.
     for (file in list.files(unzip_dir, recursive = TRUE, full.names = TRUE, pattern = "\\.(txt|xml)$")) {
         text <- paste(readLines(file, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
-        testthat::expect_false(any(vapply(real_lat, grepl, logical(1), x = text, fixed = TRUE)))
+        testthat::expect_false(any(vapply(real_points, grepl, logical(1), x = text, fixed = TRUE)), info = basename(file))
+    }
+    # The public spreadsheet too: the private one is the only copy of them.
+    mirror <- list.files(unzip_dir, recursive = TRUE, full.names = TRUE, pattern = "\\.xlsx$")
+    testthat::expect_length(mirror, 1L)
+    for (sheet in readxl::excel_sheets(mirror)) {
+        text <- paste(unlist(readxl::read_xlsx(mirror, sheet = sheet, col_types = "text")), collapse = "\n")
+        testthat::expect_false(any(vapply(real_points, grepl, logical(1), x = text, fixed = TRUE)), info = sheet)
     }
 
     testthat::expect_true(grepl("-sensitive-coords\\.xlsx$", private_path))

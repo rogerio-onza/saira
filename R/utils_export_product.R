@@ -59,6 +59,12 @@ prepare_export_product <- function(inputs, lang = "en") {
     mv <- inputs$map_values %||% list()
     cv <- inputs$custom_values %||% list()
 
+    # A fixed value fills every row, so the filter of one row cannot clear it.
+    public_cv <- lapply(cv, redact_masked_text, masked)
+    for (term in intersect(overridden_mapping_terms(cv), names(masked$masked))) {
+        masked$masked[[term]] <- redact_masked_text(masked$masked[[term]], masked)
+    }
+
     # Conservation status (MMA and/or IUCN) in dynamicProperties, on the
     # corrected names and after the country fill. After the mask, so a
     # generalized row outside Brazil still gets the MMA category its
@@ -89,7 +95,8 @@ prepare_export_product <- function(inputs, lang = "en") {
     } else {
         map_value_sources(mv["measurementValue"])[1L]
     }
-    mof <- split_measurements(core, value_column, inputs$measurement_specs)
+    specs <- lapply(inputs$measurement_specs, lapply, redact_masked_text, masked)
+    mof <- split_measurements(core, value_column, specs)
     core <- mof$core
     if (formula_like_cells(core)$count > 0L ||
         formula_like_cells(mof$measurements)$count > 0L) {
@@ -120,10 +127,10 @@ prepare_export_product <- function(inputs, lang = "en") {
             mv, raw_df,
             lang = lang,
             id_strategy = id_strategy,
-            constants = cv,
+            constants = public_cv,
             id_counts = id_counts,
-            source_file = attr(raw_df, "source_file") %||% NA_character_
+            source_file = redact_masked_text(attr(raw_df, "source_file") %||% NA_character_, masked)
         ),
-        dataset_name = cv$datasetName
+        dataset_name = public_cv$datasetName
     )
 }

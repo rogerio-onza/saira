@@ -731,7 +731,7 @@ testthat::test_that("mask appends the custodian justification to dataGeneralizat
         df, generalization = c("Panthera onca" = "high"), lang = "en",
         justification = "Documented poaching risk."
     )
-    testthat::expect_match(res$masked$dataGeneralizations[1], "Documented poaching risk\\.$")
+    testthat::expect_match(res$masked$dataGeneralizations[1], "Documented poaching risk\\. \\[saira:")
 })
 
 testthat::test_that("sensitive_tier_category_number matches the numbers the UI shows", {
@@ -1092,6 +1092,87 @@ testthat::test_that("copies of the point inside mapped text and JSON are general
     testthat::expect_equal(res$masked$minimumElevationInMeters, "23.551")
 })
 
+testthat::test_that("a text term gets the published value when one number fills the cell (ADR-190)", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = c("id-1", "id-2", "id-3"), scientificName = "Panthera onca",
+        decimalLatitude = "-23.55052", decimalLongitude = "-46.63331",
+        occurrenceRemarks = c("-23.55052", "-2.355052e1", "-46.63331"),
+        fieldNotes = c("12.345", "23.5", NA),
+        minimumElevationInMeters = "23.55",
+        eventTime = "23.55",
+        catalogNumber = "23.551",
+        organismQuantity = "GPS -23.55052",
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    testthat::expect_equal(res$masked$occurrenceRemarks, c("-23.6", "-23.6", "-46.6"))
+    # Far from the point, or no finer than the grid.
+    testthat::expect_equal(res$masked$fieldNotes, c("12.345", "23.5", NA))
+    testthat::expect_equal(unique(res$masked$minimumElevationInMeters), "23.55")
+    testthat::expect_equal(unique(res$masked$eventTime), "23.55")
+    testthat::expect_equal(unique(res$masked$catalogNumber), "23.551")
+    # Text in a numeric term still goes through the filter.
+    testthat::expect_equal(unique(res$masked$organismQuantity), "GPS -23.6")
+})
+
+testthat::test_that("times, dates and measurements near the point stay (ADR-190)", {
+    stays <- function(x, lat, pub_lat) {
+        n <- length(x)
+        testthat::expect_identical(
+            saira:::redact_point_numbers(x, rep(lat, n), rep(-46.63331, n), rep(0.1, n),
+                                         rep(pub_lat, n), rep("-46.6", n)),
+            x
+        )
+    }
+    stays(c("23:33:01", "23:33:01.872", "23:33:01,872", "23:33:01.872Z",
+            "2024-05-12T23:33:01.872", "2024-05-12 23:33:01.872-03:00",
+            "entre 23:33:01 e 23:40:12", "entre 23:33 e 23:40"),
+          -23.55052, "-23.6")
+    stays(c("12.05.2024", "2024.12.05", "v12.05.3"), -12.05052, "-12.1")
+
+    # A hemisphere letter makes the same digits a coordinate.
+    testthat::expect_identical(
+        saira:::redact_point_numbers("23:33:01.872S; 23.55052.", -23.55052, -46.63331, 0.1, "-23.6", "-46.6"),
+        "23.6 S; 23.6."
+    )
+
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = "id-1", scientificName = "Panthera onca",
+        decimalLatitude = "-23.55052", decimalLongitude = "-46.63331",
+        stringsAsFactors = FALSE
+    )
+    df[[saira:::measurement_value_column("mass")]] <- "23.55052"
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    testthat::expect_identical(res$masked[[saira:::measurement_value_column("mass")]], "23.55052")
+})
+
+testthat::test_that("redact_masked_text clears the point of any masked row", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = c("id-1", "id-2", "id-3"),
+        scientificName = c("Panthera onca", "Panthera onca", "Aus bus"),
+        decimalLatitude = c("-23.55052", "-10.51234", "-1.12345"),
+        decimalLongitude = c("-46.63331", "-55.23456", "-50.12345"),
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    testthat::expect_identical(
+        saira:::redact_masked_text(c("-23.55052, -46.63331 and -10.51234", NA, "-1.12345", ""), res),
+        c("-23.6, -46.6 and -10.5", NA, "-1.12345", "")
+    )
+    testthat::expect_null(saira:::redact_masked_text(NULL, res))
+    testthat::expect_identical(saira:::redact_masked_text("-23.55052", list(scrub_points = NULL)), "-23.55052")
+})
+
+testthat::test_that("the one-number terms exist in the Darwin Core catalog", {
+    testthat::expect_setequal(
+        intersect(saira:::ONE_NUMBER_TERMS, saira:::get_dwc_full_catalog()$term),
+        saira:::ONE_NUMBER_TERMS
+    )
+})
+
 testthat::test_that("the publisher note and degree-minute text get the published point", {
     local_sensitive_fixture("Panthera onca")
     df <- data.frame(
@@ -1189,11 +1270,101 @@ testthat::test_that("notes from older versions stay recognized after a new wordi
     df <- data.frame(coordinateUncertaintyInMeters = "", dataGeneralizations = old_notes[["v025_en"]])
     testthat::expect_true(saira:::sensitive_already_masked_rows(df))
 
-    # The note each language writes now has its opening in the frozen list.
+})
+
+testthat::test_that("the mark decides, whatever the wording of the note (ADR-190)", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(scientificName = "Panthera onca", decimalLatitude = "-23.55052",
+                     decimalLongitude = "-46.63331", stringsAsFactors = FALSE)
     for (lang in get_languages()) {
-        note <- sprintf(tr("sensitive_data_generalizations", lang), "Categoria 2", "0.1")
+        note <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = lang)$masked$dataGeneralizations
+        testthat::expect_true(endsWith(note, saira:::COORDINATE_NOTE_MARK), info = lang)
         testthat::expect_true(saira:::coordinate_generalization_note(note), info = lang)
     }
+    new_wording <- "Pontos agrupados em uma grade maior."
+    testthat::expect_false(saira:::coordinate_generalization_note(new_wording))
+    testthat::expect_true(saira:::coordinate_generalization_note(c(
+        paste(new_wording, saira:::COORDINATE_NOTE_MARK),
+        paste("Dates normalized |", new_wording, saira:::COORDINATE_NOTE_MARK),
+        paste(new_wording, "[saira:coordinates-generalized:v2]")
+    )) |> all())
+
+    # A row with no published point has no generalized coordinates to mark.
+    withheld <- df
+    withheld$decimalLatitude <- "not a number"
+    note <- saira:::mask_sensitive_coordinates(withheld, generalization = "high", lang = "en")$masked$dataGeneralizations
+    testthat::expect_false(grepl("[saira:", note, fixed = TRUE))
+})
+
+testthat::test_that("a justification keeps no exact point of any masked row (ADR-190)", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        scientificName = "Panthera onca",
+        decimalLatitude = c("-23.55052", "-10.512345"),
+        decimalLongitude = c("-46.63331", "-55.234567"),
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(
+        df, generalization = "high", lang = "en",
+        justification = "GPS: -23.55052, -46.63331. Second: 10\u00b030'44.442\"S 55\u00b014'4.441\"W. Hunting pressure at km 12."
+    )
+    note <- res$masked$dataGeneralizations
+    for (exact in c("23.55052", "46.63331", "44.442", "4.441")) {
+        testthat::expect_false(any(grepl(exact, note, fixed = TRUE)), info = exact)
+    }
+    # The words of the custodian stay, and so do numbers that are not the point.
+    testthat::expect_true(all(grepl("Hunting pressure at km 12.", note, fixed = TRUE)))
+    # The same text on every row, with the published value in each place.
+    testthat::expect_true(all(grepl("GPS: -23.6, -46.6", note, fixed = TRUE)))
+
+    # A row with no published point loses the numbers with no replacement.
+    df$decimalLatitude[[2]] <- "not a number"
+    res <- saira:::mask_sensitive_coordinates(
+        df, generalization = "high", lang = "en", justification = "GPS: -23.55052, -46.63331."
+    )
+    testthat::expect_false(any(grepl("23.55052", res$masked$dataGeneralizations, fixed = TRUE)))
+})
+
+testthat::test_that("each written form of the point gets the published value (ADR-190)", {
+    redact <- function(x) {
+        n <- length(x)
+        saira:::redact_point_numbers(x, rep(-23.55052, n), rep(-46.63331, n), rep(0.1, n),
+                                     rep("-23.6", n), rep("-46.6", n))
+    }
+    forms <- c(
+        "-2.355052e1" = "-23.6", "-2.355052E+01" = "-23.6", "2,355052e1" = "23,6",
+        "-2355052e-5" = "-23.6", "-.2355052e2" = "-23.6", "-235.5052e-1" = "-23.6",
+        "-4.663331e1" = "-46.6", "-2.355052 x 10^1" = "-23.6", "2.355052*10^1" = "23.6",
+        "23 33 1.872 S" = "23.6 S", "23:33:01.872S" = "23.6 S", "-23:33:01" = "-23.6",
+        "23 33.03 S" = "23.6 S", "23d33m1.872s" = "23.6", "23d 33.03m S" = "23.6 S"
+    )
+    forms[paste0("2.355052×10¹")] <- "23.6"
+    forms[paste0("23° 33.03 S")] <- "23.6 S"
+    testthat::expect_equal(redact(names(forms)), unname(forms))
+    testthat::expect_equal(
+        redact("GPS -2.355052e1, -4.663331e1, 23 33 1.872 S"),
+        "GPS -23.6, -46.6, 23.6 S"
+    )
+
+    # Numbers that only look close stay: the grid value, times, dates, counts.
+    other <- c(
+        "2.4e1", "2.36e1", "1e-5", "3 x 10^5 cells", "23:33", "23 33", "23:33:01",
+        "2024-05-12 23:33:01", "2024-05-23T23:33:01Z", "12 05 2024", "Table 23 33 individuals"
+    )
+    testthat::expect_equal(redact(other), other)
+})
+
+testthat::test_that("a justification in exponent form keeps no exact point (ADR-190)", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        scientificName = "Panthera onca", decimalLatitude = "-23.55052",
+        decimalLongitude = "-46.63331", stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(
+        df, generalization = "high", lang = "en", justification = "GPS: -2.355052e1, -4.663331e1."
+    )
+    testthat::expect_match(res$masked$dataGeneralizations, "GPS: -23.6, -46.6.", fixed = TRUE)
+    testthat::expect_false(grepl("355052|663331", res$masked$dataGeneralizations))
 })
 
 testthat::test_that("the cell polygon stays inside the world bounds (AUD-17)", {
