@@ -124,6 +124,15 @@
     };
   };
 
+  // DataTables writes a hidden cell with innerHTML too, so its value needs the
+  // same escape as a visible one. The cell renderers read the raw row, so
+  // nothing gets a second escape.
+  behavior.namesHiddenCell = function () {
+    return function (data, type) {
+      return type === 'display' ? escapeHtml(data) : data;
+    };
+  };
+
   behavior.namesTaxonomicCell = function () {
     return function (data, type) {
       if (type !== 'display') return data;
