@@ -35,6 +35,13 @@ testthat::test_that("prepare_export_product composes the core, the measurements 
     testthat::expect_true(is.data.frame(product$real))
 })
 
+testthat::test_that("prepare_export_product takes a source table with one column", {
+    inputs <- product_inputs()
+    inputs$raw_data <- inputs$raw_data["especie"]
+    product <- prepare_export_product(inputs, "en")
+    testthat::expect_identical(product$core$occurrenceID, c("o1", "o3"))
+})
+
 testthat::test_that("prepare_export_product stops on a formula that the unmapped columns bring", {
     testthat::expect_error(
         prepare_export_product(product_inputs(notes = c("a", "a", "=1+1")), "en"),

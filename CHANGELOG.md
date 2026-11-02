@@ -124,6 +124,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **dynamicProperties:** Write a key once when two cells or a merge repeat it, ADR-189
 - **mapping:** Keep the typed measurement type, unit and method when the grid of cards redraws ([#264](https://github.com/rogerio-onza/saira/pull/264))
 - **coords:** Mark the rows a failed sea check did not reach, not approve them, ADR-189
+- **export:** Export a file with one source column ([#265](https://github.com/rogerio-onza/saira/pull/265))
 - **names:** Recover the Flora BR and Fauna BR update after a crash, but not while another Saira still updates, ADR-189
 - **names:** Parse authorship before subsp. or var., rank chains, author initials and subgenera alike in mapping and lookups, ADR-189
 - **generalization:** Recognize the coordinate notes of Saira 0.2.5 as already generalized, ADR-189
