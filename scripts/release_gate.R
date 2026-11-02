@@ -93,12 +93,42 @@ check_perf <- function() {
     })
 }
 
+# A skip here means that a flow did not run. Only the demo flow has a reason
+# to skip, on a checkout with no site assets.
+e2e_unexpected_skips <- function(results) {
+    reasons <- unlist(lapply(results, function(test) {
+        skips <- Filter(function(e) inherits(e, "expectation_skip"), test$results)
+        vapply(skips, conditionMessage, character(1))
+    }))
+    reasons[!grepl("demo dataset not found", reasons, fixed = TRUE)]
+}
+
+# A skip outside test_that() ends the file and leaves no record of the flows
+# after it, so the results alone cannot show that a flow is absent.
+e2e_flow_names <- function(path) {
+    calls <- Filter(is.call, as.list(parse(path, keep.source = FALSE)))
+    flows <- Filter(function(call) deparse(call[[1]]) %in% c("test_that", "testthat::test_that"), calls)
+    vapply(flows, function(call) as.character(call[[2]]), character(1))
+}
+
+E2E_FLOWS <- "tests/testthat/test-e2e-flows.R"
+
 check_e2e <- function() {
     # test_file() does not load the package, and the flows call its functions.
     pkgload::load_all(".", quiet = TRUE)
-    withr::with_envvar(c(RUN_E2E = "true", NOT_CRAN = "true"), {
-        testthat::test_file("tests/testthat/test-e2e-flows.R", stop_on_failure = TRUE)
+    results <- withr::with_envvar(c(RUN_E2E = "true", NOT_CRAN = "true"), {
+        testthat::test_file(E2E_FLOWS, stop_on_failure = TRUE)
     })
+    skipped <- e2e_unexpected_skips(results)
+    if (length(skipped)) {
+        stop(length(skipped), " E2E flow(s) did not run: ", paste(unique(skipped), collapse = "; "), call. = FALSE)
+    }
+    flows <- e2e_flow_names(E2E_FLOWS)
+    absent <- setdiff(flows, vapply(results, function(test) test$test, character(1)))
+    if (!length(flows) || length(absent)) {
+        stop(length(absent), " of ", length(flows), " E2E flow(s) did not run: ",
+             paste(absent, collapse = "; "), call. = FALSE)
+    }
 }
 
 steps <- list(

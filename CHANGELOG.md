@@ -119,6 +119,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Clear and import the fixed values of every card, also the cards that are not on the page, ADR-189
 - **names:** Escape the hidden cells of the names report, ADR-190 ([#261](https://github.com/rogerio-onza/saira/pull/261))
 - **mapping:** Turn off the fixed values when a new file arrives, keep the dataset name, license and language, ADR-189
+- **build:** Stop the release gate when E2E flows do not run, ADR-190 ([#263](https://github.com/rogerio-onza/saira/pull/263))
 - **mapping:** Give each column its own control, so "body length" and "body-length" no longer share one, ADR-189
 - **dynamicProperties:** Write a key once when two cells or a merge repeat it, ADR-189
 - **coords:** Mark the rows a failed sea check did not reach, not approve them, ADR-189
