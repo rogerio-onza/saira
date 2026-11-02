@@ -1772,6 +1772,50 @@ test_that("build_processed_mapping_df needs scientificName for the assistant to 
     expect_false("establishmentMeans" %in% names(out))
 })
 
+testthat::test_that("the nested reader agrees with jsonlite on what an object is", {
+    cases <- c(
+        '{"a":{"b":1}}', '{ "a" : [1, 2, {"c":"x, y"}], "d":null }', '{"a":[]}', '{"a":{}}',
+        '{"a":[true,false,null]}', '{"a":[1e5,-0.5,1E+2]}', '{"a":[[[[1]]]]}', '{"a":[ "x  y" , " z " ]}',
+        '{"a":[1,]}', '{"a":{"b":1}', '{"a":{"b":01}}', 'plain {text}', '{not json}', '{"a":[1]} tail'
+    )
+    bodies <- saira:::json_object_members(cases)
+    for (i in seq_along(cases)) {
+        if (isTRUE(jsonlite::validate(cases[[i]]))) {
+            testthat::expect_identical(
+                bodies[[i]], sub("^\\{(.*)\\}$", "\\1", as.character(jsonlite::minify(cases[[i]]))), info = cases[[i]]
+            )
+        } else {
+            testthat::expect_true(is.na(bodies[[i]]), info = cases[[i]])
+        }
+    }
+    # An array is JSON, but it has no members to merge into.
+    testthat::expect_true(is.na(saira:::json_object_members('[{"a":1}]')))
+})
+
+testthat::test_that("repeated and distinct nested cells merge the same way", {
+    cell <- c('{"p":{"n":"a"},"k":"old"}', '{"p":{"n":"a"},"k":"old"}', '{"p":["x"]}', '{"\\u006b":"old","p":[1]}', "")
+    out <- saira:::merge_dynamic_property(cell, "k", c("A", "B", "C", "D", "E"))
+    testthat::expect_identical(out, c(
+        '{"p":{"n":"a"},"k":"A"}', '{"p":{"n":"a"},"k":"B"}', '{"p":["x"],"k":"C"}', '{"k":"D","p":[1]}', '{"k":"E"}'
+    ))
+    testthat::expect_identical(
+        saira:::merge_dynamic_property(cell[[1]], "k", "A"),
+        saira:::merge_dynamic_property(cell[c(1, 1)], "k", "A")[[2]]
+    )
+})
+
+testthat::test_that("a very long JSON string reads with no warning from the regex engine", {
+    long <- strrep("x", 5e6)
+    testthat::expect_no_warning(
+        nested <- saira:::merge_dynamic_property(paste0('{"a":["', long, '"]}'), "k", "v")
+    )
+    testthat::expect_identical(nchar(nested), nchar(long) + 18L)
+    testthat::expect_no_warning(
+        flat <- saira:::merge_dynamic_property(paste0('{"a":"', long, '"}'), "k", "v")
+    )
+    testthat::expect_identical(nchar(flat), nchar(long) + 16L)
+})
+
 # occurrenceID resolution (mapping is authoritative) ----------------------
 
 test_that("resolve_occurrence_ids honours the mapping, not the column name", {

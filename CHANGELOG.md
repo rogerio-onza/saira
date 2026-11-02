@@ -271,6 +271,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Performance
 - **upload:** Watch only the upload progress bars, not every change on the page, ADR-189
+- **dynamicProperties:** Read nested JSON without a second pass over each cell, ADR-190 ([#262](https://github.com/rogerio-onza/saira/pull/262))
 - **export:** Add the conservation status to repeated nested dynamicProperties objects once per distinct object
 - **coords:** Send the map points without popups, and build the popup of a point when it is clicked, ADR-188
 - **coords:** Filter the coordinate results with no cache, because the cache key cost more than the filter, ADR-188

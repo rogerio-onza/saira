@@ -190,8 +190,9 @@ build_dynamic_properties_json <- function(df, cols, keys = NULL) {
 
 # A JSON string, and a flat JSON object: string, number, boolean or null
 # values, no nesting. A string takes only the escapes and characters that RFC
-# 8259 allows, so a cell with any other one is read as text.
-json_str_re <- "\"(?:[^\"\\\\\\x00-\\x1f]|\\\\(?:[\"\\\\/bfnrt]|u[0-9a-fA-F]{4}))*\""
+# 8259 allows, so a cell with any other one is read as text. The possessive
+# quantifiers keep the match limit away from a very long string.
+json_str_re <- "\"(?:[^\"\\\\\\x00-\\x1f]++|\\\\(?:[\"\\\\/bfnrt]|u[0-9a-fA-F]{4}))*+\""
 
 json_flat_object_re <- local({
     val <- paste0("(?:", json_str_re,
@@ -200,27 +201,44 @@ json_flat_object_re <- local({
     paste0("^\\{(?:", mem, "(?:,", mem, ")*|\\s*)\\}$")
 })
 
+# A JSON object with any nesting. Each value recurses through the DEFINE group.
+json_object_re <- local({
+    mem <- paste0("\\s*", json_str_re, "\\s*:\\s*(?&val)\\s*")
+    num <- "-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?"
+    paste0(
+        "^\\{(?:", mem, "(?:,", mem, ")*|\\s*)\\}$",
+        "(?(DEFINE)(?<val>", json_str_re, "|", num, "|true|false|null",
+        "|\\{(?:", mem, "(?:,", mem, ")*|\\s*)\\}",
+        "|\\[\\s*(?:(?&val)\\s*(?:,\\s*(?&val)\\s*)*)?\\]))"
+    )
+})
+
 # The members of a cell that holds a JSON object, minified and without the
-# outer braces ("" for `{}`), or NA for any other value. A regex reads the
-# flat objects in one pass. jsonlite reads the nested ones, one at a time.
+# outer braces ("" for `{}`), or NA for any other value. Regexes read the
+# objects in one pass. jsonlite decides only the cells they do not accept.
 # The "flat" attribute marks the bodies whose values hold no array or object.
 json_object_members <- function(x) {
     x <- as.character(x)
-    out <- rep(NA_character_, length(x))
-    is_flat <- logical(length(x))
-    cand <- which(grepl("{", x, fixed = TRUE))
-    if (!length(cand)) return(structure(out, flat = is_flat))
-    cell <- trimws(x[cand])
+    uniq <- unique(x)
+    at <- match(x, uniq)
+    out <- rep(NA_character_, length(uniq))
+    is_flat <- logical(length(uniq))
+    cand <- which(grepl("{", uniq, fixed = TRUE))
+    if (!length(cand)) return(structure(out[at], flat = is_flat[at]))
+    cell <- trimws(uniq[cand])
     flat <- grepl(json_flat_object_re, cell, perl = TRUE)
     is_flat[cand[flat]] <- TRUE
-    tight <- gsub(paste0("(", json_str_re, ")|\\s+"), "\\1", cell[flat], perl = TRUE)
-    out[cand[flat]] <- substr(tight, 2L, nchar(tight) - 1L)
-    for (i in which(!flat & startsWith(cell, "{") & endsWith(cell, "}"))) {
+    braced <- which(!flat & startsWith(cell, "{") & endsWith(cell, "}"))
+    read <- flat
+    read[braced] <- grepl(json_object_re, cell[braced], perl = TRUE)
+    tight <- gsub(paste0("(", json_str_re, ")|\\s+"), "\\1", cell[read], perl = TRUE)
+    out[cand[read]] <- substr(tight, 2L, nchar(tight) - 1L)
+    for (i in braced[!read[braced]]) {
         if (isTRUE(jsonlite::validate(cell[[i]]))) {
             out[[cand[[i]]]] <- sub("^\\{(.*)\\}$", "\\1", as.character(jsonlite::minify(cell[[i]])))
         }
     }
-    structure(out, flat = is_flat)
+    structure(out[at], flat = is_flat[at])
 }
 
 # The members of each value that holds a JSON object: one minified
@@ -228,22 +246,27 @@ json_object_members <- function(x) {
 # is the one reader of object members: the builder and the merge both use it,
 # so they agree on what a key is.
 json_object_member_list <- function(x) {
-    x <- as.character(x)
-    uniq <- unique(x)
-    inner <- json_object_members(uniq)
+    json_members_of_bodies(json_object_members(x))
+}
+
+# The same list from the bodies that json_object_members() already read.
+json_members_of_bodies <- function(inner) {
+    first <- !duplicated(inner)
+    uniq <- inner[first]
+    is_flat <- attr(inner, "flat")[first]
     out <- vector("list", length(uniq))
-    flat <- which(attr(inner, "flat"))
-    nested <- setdiff(which(!is.na(inner)), flat)
+    flat <- which(is_flat)
+    nested <- which(!is.na(uniq) & !is_flat)
     if (length(flat)) {
         # Split on the commas outside the strings: PCRE skips each string.
         out[flat] <- strsplit(
-            inner[flat], "\"(?:[^\"\\\\]|\\\\.)*\"(*SKIP)(*FAIL)|,", perl = TRUE
+            uniq[flat], "\"(?:[^\"\\\\]|\\\\.)*\"(*SKIP)(*FAIL)|,", perl = TRUE
         )
     }
     if (length(nested)) {
-        out[nested] <- json_split_nested_members(inner[nested])
+        out[nested] <- json_split_nested_members(uniq[nested])
     }
-    out[match(x, uniq)]
+    out[match(inner, uniq)]
 }
 
 # Top-level members of minified object bodies with nested values. Commas
@@ -378,9 +401,10 @@ merge_dynamic_property <- function(existing, key, value) {
         out[cand[flat]] <- paste0("{", body, "}")
         obj[cand[flat]] <- FALSE
     }
-    rows <- cand[!is.na(inner) & !flat]
+    by_member <- !is.na(inner) & !flat
+    rows <- cand[by_member]
     if (length(rows)) {
-        listed <- json_object_member_list(existing[rows])
+        listed <- json_members_of_bodies(structure(inner[by_member], flat = attr(inner, "flat")[by_member]))
         members <- unlist(listed, use.names = FALSE)
         row_id <- rep.int(seq_along(rows), lengths(listed))
         hit <- which(json_member_keys(members) == key)
