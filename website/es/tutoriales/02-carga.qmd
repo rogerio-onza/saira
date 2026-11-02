@@ -26,9 +26,12 @@ Cargue la hoja de cálculo de ocurrencias en la etapa **Inicio**.
 
 Cada fila es una ocurrencia. Cada columna es un atributo. La primera fila debe tener los nombres de las columnas.
 
+Un archivo nuevo borra las validaciones y la generalización anteriores. Saíra avisa cuando esto ocurre.
+
 ::: {.callout-tip}
 ## Hoja de cálculo de ejemplo
 [`ocorrencias-demo.csv`](../../assets/exemplo/ocorrencias-demo.csv) tiene 1.107 ocurrencias con errores a propósito: fechas mezcladas, números de catálogo repetidos, coordenadas invertidas, especies amenazadas e invasoras. Los tutoriales usan este archivo.
+[`ocorrencias-casos.csv`](../../assets/exemplo/ocorrencias-casos.csv) es más pequeño y trae los casos de la [Vista previa](04-vista-previa.qmd#casos-comunes), medidas y coordenadas UTM.
 :::
 
 ## Si la lectura sale mal
@@ -51,7 +54,7 @@ En la pestaña **Camtrap DP**, Saíra acepta tres tipos de `.zip`:
 
 Saíra une las tablas en una sola hoja de cálculo, con nombre científico, fecha y lugar. Después el flujo es igual al de una hoja de cálculo.
 
-Los datos de Wildlife Insights ya vienen con las especies sensibles protegidas. Vea la [generalización](06-generalizacion.qmd).
+Los datos de Wildlife Insights ya vienen con las especies sensibles protegidas. Vea la [generalización](07-generalizacion.qmd).
 
 ## Guía de mapeo
 

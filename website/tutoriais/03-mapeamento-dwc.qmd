@@ -7,16 +7,44 @@ pagetitle: "Mapeamento Darwin Core · Tutoriais Saíra"
 Associe cada coluna da planilha a um termo Darwin Core na etapa **Mapeamento**.
 :::
 
-## Rode o Auto-mapear
+## Revise o mapeamento automático
 
 ```{=html}
-<figure class="shot"><img src="../assets/img/t03-automap.png" width="1440" alt="Etapa Mapeamento após o Auto-mapear, com o botão Auto-mapear, o botão Próximo pendente e um card sugerido destacados"></figure>
+<figure class="shot"><img src="../assets/img/t03-automap.png" width="1440" alt="Etapa Mapeamento depois do envio, com o botão Auto-mapear, o botão Próximo pendente e um card sugerido destacados"></figure>
 ```
 
 ::: {.marks}
-1. Clique em **Auto-mapear**. O Saíra propõe um termo para cada coluna.
+1. O Saíra mapeia uma vez, logo depois do envio. **Auto-mapear** roda de novo.
 2. **Próximo pendente** pula para o próximo card que pede revisão. O número diz quantos faltam. Nos filtros de classe, ponto vermelho é obrigatório vazio, laranja é revisar.
 3. Card amarelo é **SUGERIDO**: confirme ou troque.
+:::
+
+## Filtre os termos
+
+```{=html}
+<figure class="shot"><img src="../assets/img/t03-filters.png" width="1440" alt="Etapa Mapeamento com o filtro Mostrar termos, os modos Cartões e Lista e o bloco de termos sem coluna destacados"></figure>
+```
+
+::: {.marks}
+1. **Mostrar termos** filtra os cards. Cada filtro mostra a contagem.
+2. **Cartões** e **Lista** mudam a forma da tela.
+3. O bloco **termos sem coluna** agrupa os termos opcionais sem coluna. **Mostrar** abre o bloco, e o botão de cada linha abre o card.
+:::
+
+| Filtro | Mostra |
+|---|---|
+| Relevantes | Os termos que não estão recolhidos. |
+| Todos | Todos os termos, também os recolhidos. |
+| Mapeados | Os termos com coluna ou valor fixo. |
+| Pendentes | A mesma fila do **Próximo pendente**: obrigatórios vazios e sugestões para revisar. Um termo opcional sem coluna não é pendente. |
+
+## Mapeie os termos obrigatórios
+
+Seis termos são obrigatórios: <span class="term">scientificName</span> <span class="term">eventDate</span> <span class="term">decimalLatitude</span> <span class="term">decimalLongitude</span> <span class="term">basisOfRecord</span> <span class="term">license</span>. Sem um deles, a exportação bloqueia.
+
+::: {.callout-warning}
+## Mapeie o occurrenceID
+<span class="term">occurrenceID</span> aparece como **Obrigatório** no card, mas não bloqueia a exportação. Sem ele, o Saíra cria um UUID a partir do conteúdo da linha. O UUID fica igual a cada exportação, mas muda se o conteúdo da linha mudar. Mapeie a coluna com os seus identificadores. O Saíra só preenche as linhas vazias.
 :::
 
 ## Revise cada card
@@ -42,6 +70,20 @@ Associe cada coluna da planilha a um termo Darwin Core na etapa **Mapeamento**.
 | MANUAL | Sem sugestão automática. |
 
 Se a mesma coluna vai para mais de um termo, o Saíra avisa. Confira se é intencional.
+
+## Confira os valores padronizados
+
+O Saíra traduz valores conhecidos para o vocabulário Darwin Core:
+
+| Termo | Na planilha | Sai como |
+|---|---|---|
+| <span class="term">occurrenceStatus</span> | `visto` | `present` |
+| <span class="term">sex</span> | `M`, `macho` | `male` |
+| <span class="term">sex</span> | `F`, `fêmea` | `female` |
+| <span class="term">lifeStage</span> | `adulto` | `adult` |
+| <span class="term">lifeStage</span> | `jovem`, `juvenil` | `juvenile` |
+
+Um valor que o Saíra não reconhece fica como está e vai para **Problemas** na [Pré-visualização](04-pre-visualizacao.qmd#corrija-um-valor). `filhote` só recebe sugestão, porque serve para `juvenile` e `nestling`.
 
 ## Defina o basisOfRecord
 
@@ -78,7 +120,9 @@ Opcional. O assistente fica no card <span class="term">establishmentMeans</span>
 3. **Salvar respostas**.
 :::
 
-Espécies invasoras já chegam como `introduced`. O grau nunca é sugerido: só você sabe se o animal está em cativeiro ou solto. Se uma coluna da planilha também preenche o termo, a coluna vence.
+Espécies invasoras já chegam como `introduced`. Uma nativa translocada com registros em ilha oceânica se divide em duas linhas: **No continente** e **Em ilha oceânica**. A linha da ilha sugere `introduced` e só você aplica, com **Aplicar**. As ilhas são Fernando de Noronha, Atol das Rocas, Trindade e Martim Vaz e São Pedro e São Paulo.
+
+O grau nunca é sugerido: só você sabe se o animal está em cativeiro ou solto. Se uma coluna da planilha também preenche o termo, a coluna vence.
 
 ## Use um valor fixo para o conjunto
 
@@ -91,11 +135,13 @@ Espécies invasoras já chegam como `introduced`. O grau nunca é sugerido: só 
 2. Digite o valor uma vez. Ele vai para todas as linhas.
 :::
 
-Aceitam valor fixo: <span class="term">rightsHolder</span> <span class="term">institutionCode</span> <span class="term">collectionCode</span> <span class="term">country</span> <span class="term">references</span> <span class="term">bibliographicCitation</span> <span class="term">geodeticDatum</span>. Os três últimos entram com **Adicionar termo**.
+Aceitam valor fixo: <span class="term">rightsHolder</span> <span class="term">institutionCode</span> <span class="term">collectionCode</span> <span class="term">country</span> <span class="term">references</span> <span class="term">bibliographicCitation</span> <span class="term">geodeticDatum</span> <span class="term">basisOfRecord</span>. Use o valor fixo em <span class="term">basisOfRecord</span> quando a planilha não tem coluna com o tipo de registro.
 
-## Escolha a licença
+## Escolha a licença e o nome do conjunto
 
-O card <span class="term">license</span> é obrigatório. Escolha CC0, CC-BY ou CC-BY-NC, as três licenças que o GBIF aceita. Sem licença, a exportação bloqueia.
+O card <span class="term">license</span> é obrigatório. Escolha `CC0`, `CC BY 4.0` ou `CC BY-NC 4.0`, as três licenças que o GBIF aceita. Sem licença, a exportação bloqueia.
+
+Em <span class="term">datasetName</span>, escolha uma coluna ou digite o nome. Ele dá o título do `eml.xml` e o início do nome dos arquivos.
 
 ## Adicione um termo que não aparece
 
@@ -104,7 +150,7 @@ O card <span class="term">license</span> é obrigatório. Escolha CC0, CC-BY ou 
 ```
 
 ::: {.marks}
-1. Busque o termo. O catálogo tem cerca de 218.
+1. Busque o termo.
 2. **Adicionar**. O termo vira um card novo.
 :::
 
@@ -120,7 +166,20 @@ O card <span class="term">license</span> é obrigatório. Escolha CC0, CC-BY ou 
 3. Confira o JSON da primeira linha.
 :::
 
-O status de conservação entra no mesmo campo, a partir da [validação de nomes](04-validacao-nomes.qmd).
+O status de conservação entra no mesmo campo, a partir da [validação de nomes](05-validacao-nomes.qmd).
+
+## Registre medidas
+
+```{=html}
+<figure class="shot"><img src="../assets/img/t03-measure.png" width="775" alt="Card measurementValue com duas colunas e os campos Tipo, Unidade e Método de cada coluna destacados"></figure>
+```
+
+::: {.marks}
+1. No card <span class="term">measurementValue</span>, escolha uma ou mais colunas. O Saíra sugere colunas de números com a unidade no nome, como `AREA_HA` ou `peso (kg)`.
+2. Em cada coluna, preencha **Tipo**, **Unidade** e, se quiser, **Método**. Sem tipo, a linha usa o nome da coluna.
+:::
+
+Cada coluna vira uma linha em `measurementorfact.txt`, ligada à ocorrência, e sai do `occurrence.txt`. A [Pré-visualização](04-pre-visualizacao.qmd) mostra cada medida separada, como `measurementValue [AREA_HA]`.
 
 ## Reaproveite o mapeamento
 
@@ -135,4 +194,8 @@ O `.zip` exportado traz o `<dataset>-mapping-guide.txt`. Na próxima planilha, c
 2. **Importar**. Colunas com o mesmo nome são mapeadas sozinhas.
 :::
 
-Colunas que você não mapear saem no fim do arquivo, com o nome original. O GBIF ignora essas colunas.
+O guia restaura os termos mapeados, <span class="term">datasetName</span>, a licença, o idioma e os valores fixos. Cada coluna vira um alias. Se uma coluna do modelo não existe na planilha, o Saíra avisa e lista até cinco. O guia não restaura nomes, coordenadas, generalização nem correções da pré-visualização.
+
+O Saíra aprende aliases só na exportação. Veja [Confira o que o Rostrum aprendeu](08-exportacao.qmd#confira-o-que-o-rostrum-aprendeu).
+
+Colunas com dados que você não mapear saem no fim do arquivo, com o nome original, fora do `meta.xml`. O GBIF ignora essas colunas. Colunas vazias sem mapeamento saem do arquivo.

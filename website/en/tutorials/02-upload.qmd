@@ -26,9 +26,12 @@ Load the occurrence spreadsheet in the **Home** step.
 
 Each row is an occurrence. Each column is an attribute. The first row must have the column names.
 
+A new file clears the earlier validations and generalization. Saíra warns you when this happens.
+
 ::: {.callout-tip}
 ## Sample spreadsheet
 [`ocorrencias-demo.csv`](../../assets/exemplo/ocorrencias-demo.csv) has 1,107 occurrences with deliberate errors: mixed dates, repeated catalog numbers, swapped coordinates, threatened and invasive species. The tutorials use this file.
+[`ocorrencias-casos.csv`](../../assets/exemplo/ocorrencias-casos.csv) is smaller and has the cases of [Preview](04-preview.qmd#common-cases), measurements and UTM coordinates.
 :::
 
 ## If the file reads wrong
@@ -51,7 +54,7 @@ In the **Camtrap DP** tab, Saíra accepts three kinds of `.zip`:
 
 Saíra joins the tables into one spreadsheet, with scientific name, date and location. After that, the workflow is the same as for a spreadsheet.
 
-Wildlife Insights data already comes with the sensitive species protected. See [generalization](06-generalization.qmd).
+Wildlife Insights data already comes with the sensitive species protected. See [generalization](07-generalization.qmd).
 
 ## Mapping guide
 

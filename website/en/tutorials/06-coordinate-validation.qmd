@@ -1,6 +1,8 @@
 ---
 title: "Validating coordinates"
 pagetitle: "Coordinate validation · Saíra Tutorials"
+aliases:
+  - 05-coordinate-validation.html
 ---
 
 ::: {.tut-standfirst}
@@ -31,13 +33,43 @@ The validation needs <span class="term">decimalLatitude</span>, <span class="ter
 | At sea | The point falls in water. |
 | Zero/Equal | Point at (0, 0) or latitude equal to longitude. |
 | Reference hotspot | Point near a capital, a country centroid, the GBIF headquarters or a biological institution. |
+| Outside the stated country | The point falls outside the country of the row. Saíra lists the rows, with no automatic fix. |
 
-The tests run offline, with the Natural Earth country layer embedded in Saíra.
+The tests run offline, with the Natural Earth country layer embedded in Saíra. Only the background map needs internet.
+
+During the validation, the panel shows the running test and how many records it checks. On the map, each hexagon is a point and the color gives the status: Valid, Invalid, Sea, Sea not checked, Zero/Equal, Reference hotspot or Corrected.
+
+Click a point and use **Show in table** to open the record. If many records fall at one place, the point says **N records at this point**. A coordinate outside the valid range does not show on the map: the note above the map has **Show in the table**.
 
 ::: {.callout-warning}
 ## The sea test is approximate
 The coastline is simplified. A point very near the coast can show as **At sea**. Check it on the map before you discard the record.
 :::
+
+## Coordinates in other formats
+
+Saíra reads degrees, minutes and seconds (`23°33'1.872"S`) and decimal minutes (`46°37.999' W`). The hemisphere letter can come at the start or at the end: N, S, E, W, O (oeste) or L (leste). Comma and decimal point both work. Saíra rejects a letter that contradicts the sign (`-23.5 N`) and minutes or seconds of 60 or more.
+
+## Convert UTM coordinates
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t05-utm-EN.png" width="1440" alt="Panel of projected coordinates with the UTM zone, the source datum and the Convert to decimal degrees button highlighted"></figure>
+```
+
+::: {.marks}
+1. Choose the **UTM zone**. The zone does not come from the numbers: the same pair is valid in all zones.
+2. Choose the **Source datum**.
+3. Check the points on the map and click **Convert to decimal degrees**.
+:::
+
+If more than one zone puts the points in the stated country, Saíra tells how many. Check on the map which one is correct. The original values and the reference system stay in <span class="term">verbatimLatitude</span>, <span class="term">verbatimLongitude</span>, <span class="term">verbatimCoordinateSystem</span> and <span class="term">verbatimSRS</span>.
+
+| Datum | Zones | Hemisphere |
+|---|---|---|
+| SIRGAS 2000 (default) | 17 to 25 | North and south |
+| WGS 84 | 1 to 60 | North and south |
+| SAD69 | 18 to 25 | South |
+| Corrego Alegre | 21 to 25 | South |
 
 ## Apply the proposed fixes
 
@@ -63,7 +95,7 @@ The fixes apply on export. The original data does not change. If <span class="te
 3. The new value. Saíra validates the point again. **Undo** restores the original value.
 :::
 
-Validating again does not remove the manual fixes. A row without a unique <span class="term">occurrenceID</span> does not accept edits.
+Validating again does not remove the manual fixes. A fix keeps the source point: if the point changed after the fix or the record left the data, Saíra discards the fix and warns you. A row without a unique <span class="term">occurrenceID</span> does not accept edits.
 
 Saíra does not make a coordinate from the locality text. A record without coordinates stays as it is, unless you type both coordinates in the table.
 

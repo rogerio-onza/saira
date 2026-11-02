@@ -1,13 +1,15 @@
 ---
 title: "Generalización de especies sensibles"
 pagetitle: "Generalización de especies sensibles · Tutoriales de Saíra"
+aliases:
+  - 06-generalizacion.html
 ---
 
 ::: {.tut-standfirst}
 Decida si reducir la precisión de las coordenadas de especies amenazadas, y cuánto, en la etapa **Generalización**. La etapa sigue la tabla de decisión de [Chapman (2020)](https://doi.org/10.15468/doc-5jp4-5g10).
 :::
 
-La etapa trabaja con las especies marcadas como **Sensible** en la [validación de nombres](04-validacion-nombres.qmd). Sin especies sensibles, no hay nada que hacer aquí.
+La etapa trabaja con las especies marcadas como **Sensible** en la [validación de nombres](05-validacion-nombres.qmd). Sin especies sensibles, no hay nada que hacer aquí.
 
 ## Elija el camino
 
@@ -20,7 +22,9 @@ La etapa trabaja con las especies marcadas como **Sensible** en la [validación 
 2. **Evaluar la sensibilidad** abre la tabla de decisión. Elija este camino solo si hay un riesgo real de recolecta o persecución.
 :::
 
-Saíra no generaliza de nuevo una coordenada que ya llegó generalizada: <span class="term">coordinateUncertaintyInMeters</span> de 1 km o más, o <span class="term">dataGeneralizations</span> completado.
+Una coordenada ya protegida queda fuera: <span class="term">coordinateUncertaintyInMeters</span> de 1 km o más, o una nota de generalización de coordenada en <span class="term">dataGeneralizations</span>. Una nota sobre otro dato no cuenta.
+
+Solo con la incertidumbre grande, la coordenada con demasiados decimales va a la cuadrícula más gruesa que cabe en la incertidumbre: `-24.4873` con 2.500 m sale como `-24.49`. `-24.5` con 10 km queda como está. Con la nota de generalización de coordenada, el valor no cambia.
 
 ::: {.callout-important}
 ## Los datos de Wildlife Insights ya vienen protegidos
@@ -49,14 +53,14 @@ La exportación de Wildlife Insights ya oculta la ubicación de las especies sen
 3. Vea en el mapa el efecto de cada categoría antes de decidir.
 :::
 
-| Primer Sí | Categoría | Cuadrícula | Resultado espacial |
+| Primer Sí | Categoría | Cuadrícula | Escala aproximada |
 |---|---|---|---|
 | 4.3 · perturbación o explotación | 2 | 0,1° (~11 km) | Estado o provincia |
 | 4.4 · recolecta o daño deliberado | 3 | 0,01° (~1 km) | Ciudad o distrito |
 | 4.5 · amenaza baja a media | 4 | 0,001° (~100 m) | Área local |
 | Ninguno | No sensible | Sin cuadrícula | Coordenada original |
 
-Un grupo sin respuesta sale sin generalización. La generalización nunca aumenta la precisión: una coordenada menos precisa que la cuadrícula sale con su precisión real.
+Un grupo sin respuesta sale sin generalización. La cuadrícula es regular e ignora los límites administrativos: estado y ciudad son solo escalas aproximadas. La incertidumbre publicada combina el radio de la celda y la incertidumbre anterior.
 
 ## Trate una especie aparte
 
@@ -80,6 +84,14 @@ La justificación es obligatoria para las Categorías 1, 2 y 3. La fecha de revi
 ## Revise el mapa
 
 El mapa muestra el punto original, el área de generalización y el radio de incertidumbre. Un punto que **salió del país** pide una cuadrícula menor: una coordenada en el país equivocado es peor que una coordenada imprecisa.
+
+## Entienda los avisos
+
+| Aviso | Qué significa | Qué hacer |
+|---|---|---|
+| **registro(s) tienen una coordenada inválida** | El punto sensible está fuera del intervalo, tiene un solo eje, es un par UTM, está cerca de (0, 0) o tiene latitud igual a la longitud. Saíra quita el registro de la publicación y lo guarda en el archivo privado. | **Corregir en Coordenadas**. |
+| **registro(s) mantienen la precisión del dato original** | Generalizar nunca aumenta la precisión. El dato ya era menos preciso que la cuadrícula o ya venía generalizado de la fuente. | Nada, si la fuente es confiable. |
+| Nota **Precisión original conservada por el custodio** | <span class="term">dataGeneralizations</span> guarda la precisión que el custodio conservó. | Nada. |
 
 ## Qué sale en el paquete
 

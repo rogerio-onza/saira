@@ -12,38 +12,31 @@ Dúvidas comuns de quem está começando a usar o Saíra para preparar e publica
 ### Preciso saber programar para usar o Saíra?
 
 ::: {.faq-card}
-Não. Depois de instalado, todo o uso acontece por uma interface visual no navegador: menus, botões e tabelas. A única linha de código necessária é a que abre o aplicativo.
+Não. O app para Windows e Linux abre como qualquer programa, e todo o uso acontece por menus, botões e tabelas. O pacote R, para macOS ou para quem prefere R, pede uma linha de código para abrir o app.
 :::
 
 ### O que preciso ter instalado?
 
 ::: {.faq-card}
-O **R** (versão 4.1 ou superior). O RStudio é recomendado, mas não obrigatório. Veja o passo a passo em [Instalação e primeiros passos](tutoriais/01-instalacao.qmd).
+No app para Windows ou Linux, nada: ele traz o R. O pacote R pede o **R** 4.1 ou superior. O RStudio é opcional. Veja os requisitos em [Instalação e primeiros passos](tutoriais/01-instalacao.qmd).
 :::
 
 ### Como instalo o Saíra?
 
 ::: {.faq-card}
-Recomendamos o `pak`, que resolve as dependências automaticamente:
-
-```r
-install.packages("pak")
-pak::pak("rogerio-onza/saira")
-```
-
-Como alternativa, `remotes::install_github("rogerio-onza/saira")` também funciona.
+Baixe o app na [página de versões](https://github.com/rogerio-onza/saira/releases/latest) ou instale o pacote R. [Instalação e primeiros passos](tutoriais/01-instalacao.qmd) mostra os dois caminhos.
 :::
 
-### A primeira instalação está demorando muito. É normal?
+### A instalação do pacote R está demorando muito. É normal?
 
 ::: {.faq-card}
-Sim. O Saíra depende de vários pacotes (Shiny, leitura de planilhas, bases taxonômicas e geográficas). A primeira instalação baixa e compila essas dependências e pode levar alguns minutos.
+Sim. A primeira instalação do pacote R baixa e compila as dependências e pode levar alguns minutos. O app já vem com elas.
 :::
 
 ### Atualizei o Saíra, mas ele parece a versão antiga. O que houve?
 
 ::: {.faq-card}
-Quase sempre é o **R que não foi reiniciado**. Ao atualizar o pacote (via `pak` ou reinstalação) com o R aberto, a sessão continua rodando a versão antiga já carregada na memória — o app "parece" não ter mudado. **Feche e reabra o R** (no RStudio, *Session › Restart R*) e abra o app de novo. O Saíra detecta essa situação e mostra um aviso pedindo para reiniciar; ele também exibe, na barra de navegação (ao lado do seletor de idioma), a versão em uso (ex.: `v0.9.1`) — que leva a esta página de atualizações — então confira se bate com a que você instalou.
+**No pacote R**, quase sempre o R não foi reiniciado: a sessão aberta continua com a versão antiga na memória. Feche e reabra o R (no RStudio, *Session › Restart R*) e abra o app de novo. O Saíra detecta essa situação e mostra um aviso. **No app**, `pak::pak()` não muda nada: baixe e instale a versão nova. A barra de navegação mostra a versão em uso. Veja [Atualize](tutoriais/01-instalacao.qmd#atualize).
 :::
 
 ## Usando o aplicativo
@@ -51,7 +44,14 @@ Quase sempre é o **R que não foi reiniciado**. Ao atualizar o pacote (via `pak
 ### O Saíra envia meus dados para a internet?
 
 ::: {.faq-card}
-Não. O aplicativo roda **localmente** no seu computador (ou em um servidor da sua instituição). Seus dados não saem do ambiente onde o app está rodando.
+A planilha não sai do computador ou do servidor onde o app roda. Estas operações usam a internet:
+
+- **Validação de nomes no GBIF** envia o nome científico. A categoria IUCN vem da mesma consulta.
+- **Mapas de fundo** pedem as imagens da região que você vê ao provedor de mapas.
+- **Atualização da Flora BR e da Fauna BR** procura e baixa a versão nova no IPT do JBRJ. Ela não envia dados seus.
+- **`check_publication()`**, função do pacote R, consulta o conjunto publicado no GBIF ou no SiBBr.
+
+O mapeamento, as bases brasileiras e os testes de coordenadas funcionam sem internet.
 :::
 
 ### Em quais idiomas o aplicativo funciona?
@@ -63,7 +63,7 @@ O Saíra é trilíngue: **Português (PT-BR)**, **Inglês (EN-US)** e **Espanhol
 ### Posso voltar a uma etapa anterior sem perder o trabalho?
 
 ::: {.faq-card}
-Sim. O fluxo é flexível: você pode remapear um campo, recarregar a planilha ou revalidar a qualquer momento.
+Sim. Voltar a uma etapa mantém o trabalho: você pode remapear um campo ou validar de novo. Recarregar a planilha é diferente: um arquivo novo limpa as validações, a generalização e as correções da pré-visualização.
 :::
 
 ### Quais formatos de planilha o Saíra aceita?
@@ -75,7 +75,7 @@ CSV (`.csv`, `.tsv`, `.txt`), com detecção automática de codificação e sepa
 ### Posso definir um valor fixo para o conjunto todo?
 
 ::: {.faq-card}
-Sim. Sete termos de nível de conjunto (`rightsHolder`, `institutionCode`, `collectionCode`, `country`, `references`, `bibliographicCitation` e `geodeticDatum`) aceitam um **valor fixo**: você o digita uma vez no card do termo e o Saíra o aplica a todas as linhas na exportação. Veja [Mapeando campos para Darwin Core](tutoriais/03-mapeamento-dwc.qmd).
+Sim. Estes termos aceitam um **valor fixo**: `rightsHolder`, `institutionCode`, `collectionCode`, `country`, `references`, `bibliographicCitation`, `geodeticDatum` e `basisOfRecord`. Você digita o valor uma vez no card do termo e o Saíra o aplica a todas as linhas na exportação. Veja [Mapeando campos para Darwin Core](tutoriais/03-mapeamento-dwc.qmd).
 :::
 
 ## Dados e qualidade
@@ -83,25 +83,25 @@ Sim. Sete termos de nível de conjunto (`rightsHolder`, `institutionCode`, `coll
 ### Os acentos da minha planilha aparecem quebrados. O que fazer?
 
 ::: {.faq-card}
-É um problema de codificação. Troque a codificação na importação (geralmente **UTF-8** ou **Latin-1**) até a prévia ficar correta. Veja [Importando seus dados](tutoriais/02-upload.qmd).
+É um problema de codificação. O Saíra detecta a codificação sozinho. Se os acentos continuam errados, salve a planilha como **CSV UTF-8** e envie de novo. Veja [Se a leitura sair errada](tutoriais/02-upload.qmd#se-a-leitura-sair-errada).
 :::
 
 ### O Saíra corrige automaticamente os nomes científicos?
 
 ::: {.faq-card}
-Ele **sugere** correções a partir de bases taxonômicas, mas a decisão final é sempre do especialista. Veja [Validando nomes científicos](tutoriais/04-validacao-nomes.qmd).
+Ele **sugere** correções a partir de bases taxonômicas, mas a decisão final é sempre do especialista. Veja [Validando nomes científicos](tutoriais/05-validacao-nomes.qmd).
 :::
 
 ### Como o Saíra trata espécies ameaçadas?
 
 ::: {.faq-card}
-Numa etapa dedicada de **generalização**, ele sinaliza táxons ameaçados (Lista Nacional do MMA) e ajuda você a decidir, espécie por espécie, se e quanto reduzir a precisão das coordenadas, seguindo a tabela de decisão de Chapman (2020). Veja [Generalizando espécies sensíveis](tutoriais/06-generalizacao.qmd).
+Numa etapa dedicada de **generalização**, ele sinaliza táxons ameaçados (Lista Nacional do MMA) e ajuda você a decidir, espécie por espécie, se e quanto reduzir a precisão das coordenadas, seguindo a tabela de decisão de Chapman (2020). Veja [Generalizando espécies sensíveis](tutoriais/07-generalizacao.qmd).
 :::
 
 ### O Saíra adiciona o status de conservação das espécies?
 
 ::: {.faq-card}
-Sim. Na exportação, ele grava o status no campo `dynamicProperties` conforme as bases escolhidas na validação de nomes: uma base brasileira (Flora BR / Fauna BR) adiciona a categoria **MMA** (`mmaThreatStatus`) e a portaria de origem (`mmaSource`); o **GBIF** adiciona a categoria **IUCN** global (`iucnRedListCategory`). A categoria MMA vem da lista vermelha nacional, então só é gravada nos registros cujo `country` (ou `countryCode`) resolve para o Brasil; a categoria IUCN é uma avaliação global e vale para qualquer localidade.
+Sim. Na exportação, ele grava o status no campo `dynamicProperties` conforme as bases escolhidas na validação de nomes: uma base brasileira (Flora BR ou Fauna BR) adiciona a categoria **MMA** (`mmaThreatStatus`) e a portaria de origem (`mmaSource`); o **GBIF** adiciona a categoria **IUCN** global (`iucnRedListCategory`). A categoria MMA vem da lista nacional. O Saíra a grava em registros do Brasil, pelo `country` ou `countryCode`, e em registros que ele generalizou. A categoria IUCN vale para qualquer localidade.
 :::
 
 ## Exportação e publicação
@@ -109,7 +109,7 @@ Sim. Na exportação, ele grava o status no campo `dynamicProperties` conforme a
 ### O que o Saíra gera no final?
 
 ::: {.faq-card}
-Um **Darwin Core Archive (DwC-A)**: um pacote `.zip` com `occurrence.txt`, `meta.xml` e `eml.xml`, pronto para publicação. No mesmo `.zip` vão também um espelho em Excel (`.xlsx`), o modelo de mapeamento reutilizável (`<dataset>-mapping-guide.txt`) e, quando há espécies generalizadas, um arquivo com as coordenadas precisas que você guarda mas não publica.
+Um **Darwin Core Archive (DwC-A)**: um `.zip` com `occurrence.txt`, `meta.xml`, `eml.xml` e, se houver medidas, `measurementorfact.txt`. No mesmo `.zip` vão a cópia em Excel, o guia de mapeamento e, se houver correções, `<dataset>-changes.csv`. As coordenadas precisas ficam **fora** do `.zip`, em `<dataset>-sensitive-coords.xlsx`, que você baixa à parte e não publica. Veja [Arquivos do pacote](tutoriais/08-exportacao.qmd#arquivos-do-pacote).
 :::
 
 ### Como publico o arquivo no SiBBr ou no GBIF?
