@@ -292,10 +292,8 @@ sensitive_point_ok <- function(lat, lon) {
 }
 
 # The openings of every coordinate note that a Saira version wrote, and of the
-# camtrapdp `write_dwc()` note. Frozen text, not tr(): a new wording of
-# `sensitive_data_generalizations` adds its opening here and keeps the old
-# ones, so a file from an older version stays recognized.
-# test-utils-sensitive.R fails when the current note has no opening here.
+# camtrapdp `write_dwc()` note. Frozen text, not tr(): these are the notes of
+# the versions before COORDINATE_NOTE_MARK, so a new wording adds nothing here.
 COORDINATE_NOTE_OPENINGS <- c(
     "Coordenadas generalizadas para ",     # pt, v0.2.5
     "Coordinates generalized to ",         # en, v0.2.5
@@ -305,14 +303,21 @@ COORDINATE_NOTE_OPENINGS <- c(
     "coordinates rounded to"               # camtrapdp write_dwc()
 )
 
-# A `dataGeneralizations` note that says the coordinates were generalized
-# (COORDINATE_NOTE_OPENINGS). A note about other data, such as "Dates
-# normalized", says nothing about the point (AUD-03). Vectorized.
+# Each note Saira writes ends with this mark. It is the same in every language
+# and a new wording keeps it, so the text of a translation decides nothing. A
+# later format changes the number, and the reader accepts any number (ADR-190).
+COORDINATE_NOTE_MARK <- "[saira:coordinates-generalized:v1]"
+
+# A `dataGeneralizations` note that says the coordinates were generalized: the
+# mark, or a note of an older version or of camtrapdp (COORDINATE_NOTE_OPENINGS).
+# A note about other data, such as "Dates normalized", says nothing about the
+# point (AUD-03). Vectorized.
 coordinate_generalization_note <- function(x) {
     escaped <- gsub("([][{}()+*^$|\\\\?.])", "\\\\\\1", COORDINATE_NOTE_OPENINGS)
     pattern <- paste0("(^|\\| )(", paste(escaped, collapse = "|"), ")")
     x <- trimws(as.character(x))
-    !is.na(x) & grepl(pattern, x, ignore.case = TRUE)
+    !is.na(x) & (grepl("[saira:coordinates-generalized:v", x, fixed = TRUE) |
+        grepl(pattern, x, ignore.case = TRUE))
 }
 
 # Rows the publisher already generalized (ADR-095): `coordinateUncertaintyInMeters`
@@ -727,15 +732,20 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     }
     # Copies of the point in the other mapped fields, such as a GPS pair in
     # dynamicProperties or occurrenceRemarks, get the published value (AUD-02).
-    # A cell that is one number is the value of its own term and stays.
+    # In a numeric or identifier term, a cell that is one number is the value of
+    # that term and stays.
     redact_copies <- function(d, rows, lat, lon, grid, pub_lat, pub_lon, skip) {
         for (col in setdiff(names(d), skip)) {
             cell <- as.character(d[[col]][rows])
-            text <- which(is.na(suppressWarnings(as.numeric(sub(",", ".", trimws(cell), fixed = TRUE)))))
-            if (!length(text)) next
+            check <- seq_along(cell)
+            if (col %in% ONE_NUMBER_TERMS || is_measurement_value_term(col) ||
+                grepl(IDENTIFIER_TERM_PATTERN, col)) {
+                check <- which(is.na(suppressWarnings(as.numeric(sub(",", ".", trimws(cell), fixed = TRUE)))))
+            }
+            if (!length(check)) next
             new <- cell
-            new[text] <- redact_point_numbers(cell[text], lat[text], lon[text], grid[text],
-                                              pub_lat[text], pub_lon[text])
+            new[check] <- redact_point_numbers(cell[check], lat[check], lon[check], grid[check],
+                                               pub_lat[check], pub_lon[check])
             if (!identical(new, cell)) {
                 d[[col]] <- as.character(d[[col]])
                 d[[col]][rows] <- new
@@ -814,6 +824,8 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     # the auto Chapman reason on every masked row.
     just_text <- if (is.null(justification)) "" else trimws(as.character(justification)[1])
     if (is.na(just_text)) just_text <- ""
+    just_text <- redact_shared_text(just_text, lat_num[idx], lon_num[idx], eff_grid[idx],
+                                    as.character(plan$pub_lat[idx]), as.character(plan$pub_lon[idx]))
 
     # Write the plan, one grid at a time (one of four distinct values, bijective
     # with the Chapman tier). `dataGeneralizations` carries the MMA category,
@@ -888,7 +900,8 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
                 sensitive_reason_statement(row_tier[rows], lang),
                 grid_note,
                 stored_note,
-                just_text
+                just_text,
+                COORDINATE_NOTE_MARK
             ))
         )
     }
@@ -952,6 +965,57 @@ after_prior_note <- function(prior, note) {
     ifelse(nzchar(prior), paste(prior, note, sep = " | "), note)
 }
 
+# Darwin Core terms where one number is a normal value. The catalog cannot give
+# this list: its data_type says "string" for most of these terms.
+ONE_NUMBER_TERMS <- c(
+    "individualCount", "organismQuantity", "objectQuantity",
+    "sampleSizeValue", "samplingEffort",
+    "minimumElevationInMeters", "maximumElevationInMeters", "verbatimElevation",
+    "minimumDepthInMeters", "maximumDepthInMeters", "verbatimDepth",
+    "minimumDistanceAboveSurfaceInMeters", "maximumDistanceAboveSurfaceInMeters",
+    "coordinateUncertaintyInMeters", "coordinatePrecision",
+    "pointRadiusSpatialFit", "footprintSpatialFit",
+    "year", "month", "day", "startDayOfYear", "endDayOfYear",
+    "eventTime", "verbatimEventDate", "namePublishedInYear",
+    "measurementValue", "measurementAccuracy", "assertionValue",
+    "readCount", "processedTotalReadCount"
+)
+# A changed identifier points to a different record, so it keeps its number too.
+IDENTIFIER_TERM_PATTERN <- "(ID|Numbers?)$"
+
+# The exponent of a number: e1, E+01, x 10^1, or a superscript after 10.
+POINT_EXPONENT_PATTERN <- paste0(
+    "(?:[eE][-+]?[0-9]+|\\s*[x*\u00d7]\\s*10",
+    "(?:\\^[-+]?[0-9]+|[\u207a\u207b]?[\u2070\u00b9\u00b2\u00b3\u2074-\u2079]+))"
+)
+# A number with a decimal separator, an exponent, or both.
+# A dotted date or version, such as 12.05.2024, holds no number. The atomic group
+# and the lookbehinds stop a shorter match inside it.
+POINT_NUMBER_PATTERN <- paste0(
+    "(?<![0-9])(?<![0-9]\\.)[-+]?(?:(?>[0-9]+[.,][0-9]+)(?!\\.[0-9])", POINT_EXPONENT_PATTERN,
+    "?|[.,]?[0-9]+", POINT_EXPONENT_PATTERN, ")"
+)
+# A cell with none of these has no number or degrees-minutes copy to read.
+POINT_TEXT_HINT <- paste0(
+    "[0-9][.,][0-9]|[0-9]\\s*['\u2032\u2019\u00b4`]|[0-9]", POINT_EXPONENT_PATTERN,
+    "|[0-9][\\s:dD\u00b0\u00ba]+[0-9]"
+)
+
+# The absolute value of a POINT_NUMBER_PATTERN token, and the decimals it holds
+# after its exponent moves the separator.
+read_point_number <- function(tok) {
+    text <- sub(",", ".", tok, fixed = TRUE)
+    text <- sub("\\s*[x*\u00d7]\\s*10\\^?", "e", text, perl = TRUE)
+    text <- chartr("\u2070\u00b9\u00b2\u00b3\u2074\u2075\u2076\u2077\u2078\u2079\u207a\u207b",
+                   "0123456789+-", text)
+    exponent <- as.numeric(sub("^[^eE]*[eE]?", "", text))
+    exponent[is.na(exponent)] <- 0
+    list(
+        value = abs(as.numeric(text)),
+        decimals = nchar(sub("^[^.]*\\.?", "", sub("[eE].*$", "", text))) - exponent
+    )
+}
+
 # Replace each copy of the real point inside a text cell, such as
 # '{"gps":"-23.55052,-46.63331"}' or "23.55052 S", with the published value.
 # A copy is a number with more decimals than the grid, less than one grid step
@@ -960,39 +1024,95 @@ after_prior_note <- function(prior, note) {
 # and every argument has one value per cell (AUD-02).
 redact_point_numbers <- function(x, lat, lon, grid, pub_lat, pub_lon) {
     x <- as.character(x)
-    cand <- which(!is.na(x) & grepl("[0-9][.,][0-9]|[0-9]\\s*['\u2032\u2019\u00b4`]", x))
+    cand <- which(!is.na(x) & grepl(POINT_TEXT_HINT, x, perl = TRUE))
     if (!length(cand)) {
         return(x)
     }
+    lat <- lat[cand]
+    lon <- lon[cand]
+    grid <- grid[cand]
+    pub_lat <- pub_lat[cand]
+    pub_lon <- pub_lon[cand]
     pub_lat[is.na(pub_lat)] <- ""
     pub_lon[is.na(pub_lon)] <- ""
-    places <- pmax(0, round(-log10(grid)))
-    cells <- redact_dms_copies(x[cand], lat[cand], lon[cand], grid[cand],
-                               pub_lat[cand], pub_lon[cand])
-    found <- gregexpr("[-+]?[0-9]+[.,][0-9]+", cells)
-    tokens <- regmatches(cells, found)
-    regmatches(cells, found) <- lapply(seq_along(cand), function(k) {
-        i <- cand[k]
-        tok <- tokens[[k]]
-        num <- abs(as.numeric(sub(",", ".", tok, fixed = TRUE)))
-        decimals <- nchar(sub("^[^.,]*[.,]", "", tok))
-        near_lat <- !is.na(lat[i]) & abs(num - abs(lat[i])) < grid[i]
-        near_lon <- !is.na(lon[i]) & abs(num - abs(lon[i])) < grid[i]
-        hit <- decimals > places[i] & (near_lat | near_lon)
-        hit[is.na(hit)] <- FALSE
-        if (!any(hit)) {
-            return(tok)
-        }
-        pub <- ifelse(near_lat, pub_lat[i], pub_lon[i])[hit]
-        value <- sub("^-", "", pub)
+    cells <- x[cand]
+    for (pattern in c(POINT_DMS_PATTERN, POINT_DMS_LETTER_PATTERN, POINT_DMS_SPACED_PATTERN)) {
+        cells <- redact_dms_copies(cells, pattern, lat, lon, grid, pub_lat, pub_lon)
+    }
+    matched <- match_each_cell(POINT_NUMBER_PATTERN, cells)
+    tok <- unlist(matched$tokens, use.names = FALSE)
+    owner <- rep(seq_along(cells), lengths(matched$tokens))
+    number <- read_point_number(tok)
+    near_lat <- !is.na(lat[owner]) & abs(number$value - abs(lat[owner])) < grid[owner]
+    near_lon <- !is.na(lon[owner]) & abs(number$value - abs(lon[owner])) < grid[owner]
+    hit <- number$decimals > pmax(0, round(-log10(grid[owner]))) & (near_lat | near_lon)
+    hit[is.na(hit)] <- FALSE
+    if (any(hit)) {
+        value <- sub("^-", "", ifelse(near_lat, pub_lat[owner], pub_lon[owner])[hit])
         comma <- grepl(",", tok[hit], fixed = TRUE)
         value[comma] <- sub(".", ",", value[comma], fixed = TRUE)
         sign <- ifelse(startsWith(tok[hit], "-") & nzchar(value), "-", "")
         tok[hit] <- paste0(sign, value)
-        tok
-    })
+        cells <- write_back_tokens(cells, matched$found, tok, owner, hit)
+    }
     x[cand] <- cells
     x
+}
+
+# gregexpr() and regmatches() once per distinct text, because one text often
+# fills many rows.
+match_each_cell <- function(pattern, cells) {
+    distinct <- unique(cells)
+    found <- gregexpr(pattern, distinct, perl = TRUE)
+    at <- match(cells, distinct)
+    list(found = found[at], tokens = regmatches(distinct, found)[at])
+}
+
+# Put the tokens of gregexpr() matches back into the cells that have a change.
+# `owner` gives the cell of each token.
+write_back_tokens <- function(cells, found, tok, owner, hit) {
+    changed <- unique(owner[hit])
+    keep <- owner %in% changed
+    regmatches(cells[changed], found[changed]) <- unname(split(
+        tok[keep], factor(owner[keep], levels = changed)
+    ))
+    cells
+}
+
+# One text for many rows, such as the justification. It can hold the point of
+# any of them, and each point found gets its published value. Arguments as in
+# redact_point_numbers(), with one value per row.
+redact_shared_text <- function(text, lat, lon, grid, pub_lat, pub_lon) {
+    if (!nzchar(text) || !length(lat)) {
+        return(text)
+    }
+    found <- redact_point_numbers(rep(text, length(lat)), lat, lon, grid, pub_lat, pub_lon) != text
+    for (i in which(found)) {
+        text <- redact_point_numbers(text, lat[i], lon[i], grid[i], pub_lat[i], pub_lon[i])
+    }
+    text
+}
+
+# Values that reach the public files from one input for many rows, such as a
+# fixed value of the mapping or the method of a measurement. `masked` is the
+# result of mask_sensitive_coordinates().
+redact_masked_text <- function(text, masked) {
+    points <- masked$scrub_points
+    if (!length(text) || is.null(points) || !any(grepl(POINT_TEXT_HINT, text, perl = TRUE))) {
+        return(text)
+    }
+    first <- !duplicated(points)
+    rows <- masked$scrub_rows[first]
+    points <- points[first, , drop = FALSE]
+    lat <- as_coord_numeric(points$decimalLatitude)$num
+    lon <- as_coord_numeric(points$decimalLongitude)$num
+    pub_lat <- as.character(masked$masked$decimalLatitude[rows])
+    pub_lon <- as.character(masked$masked$decimalLongitude[rows])
+    text <- as.character(text)
+    distinct <- unique(text[!is.na(text)])
+    clean <- vapply(distinct, redact_shared_text, character(1), lat, lon, points$grid, pub_lat, pub_lon)
+    text[!is.na(text)] <- unname(clean[match(text[!is.na(text)], distinct)])
+    text
 }
 
 # Degrees and minutes, with optional seconds and hemisphere, in the forms that
@@ -1003,40 +1123,62 @@ POINT_DMS_PATTERN <- paste0(
     "(?:\\s*(\\d{1,2}(?:[.,]\\d+)?)\\s*\\\\?(?:[\"\u2033\u201d]|''))?",
     "(?:\\s*([NSEWOLnsewol])\\b)?"
 )
+# The start of a copy with no minute mark. A digit, a separator or a date in
+# front of it means that the number belongs to something else.
+POINT_DMS_START <- "(?<![0-9.,])(?<![0-9][-/])([-+\u2212]?)(\\d{1,3})"
+POINT_DMS_PART <- "(\\d{1,2}(?:[.,]\\d+)?)"
+# Lowercase e and o are words in Portuguese ("23:33 e 23:40"), not hemispheres.
+POINT_DMS_HEMISPHERE <- "(?:\\s*([NSEWOLnswl])\\b)?"
+# 23d33m1.872s, 23d 33.03m S
+POINT_DMS_LETTER_PATTERN <- paste0(
+    POINT_DMS_START, "\\s*[dD]\\s*", POINT_DMS_PART, "\\s*[mM]",
+    "(?:\\s*", POINT_DMS_PART, "\\s*[sS])?", POINT_DMS_HEMISPHERE
+)
+# 23 33 1.872 S, 23:33:01.872S, 23 33.03 S
+POINT_DMS_SPACED_PATTERN <- paste0(
+    POINT_DMS_START, "[\\s:\u00b0\u00ba]+", POINT_DMS_PART, "(?![0-9])",
+    "(?:[\\s:]+", POINT_DMS_PART, "(?![0-9]))?", POINT_DMS_HEMISPHERE
+)
+# Two bare integers, or a clock time, say too little to count as a copy.
+POINT_DMS_BARE <- "^[-+\u2212]?\\d+[\\s:]+\\d+$|^\\d+:\\d+:\\d+(?:[.,]\\d+)?$"
 
-# The degrees-minutes step of redact_point_numbers(): a copy finer than the
-# grid and less than one grid step from either axis gets the published value,
-# with the hemisphere letter or the sign of the copy. Arguments as there.
-redact_dms_copies <- function(cells, lat, lon, grid, pub_lat, pub_lon) {
-    found <- gregexpr(POINT_DMS_PATTERN, cells, perl = TRUE)
-    tokens <- regmatches(cells, found)
+# The degrees-minutes step of redact_point_numbers(): a copy in the form of
+# `pattern`, finer than the grid and less than one grid step from either axis,
+# gets the published value, with the hemisphere letter or the sign of the copy.
+# Other arguments as there.
+redact_dms_copies <- function(cells, pattern, lat, lon, grid, pub_lat, pub_lon) {
+    matched <- match_each_cell(pattern, cells)
+    tok <- unlist(matched$tokens, use.names = FALSE)
+    if (!length(tok)) {
+        return(cells)
+    }
+    owner <- rep(seq_along(cells), lengths(matched$tokens))
+    lat <- lat[owner]
+    lon <- lon[owner]
+    grid <- grid[owner]
     num <- function(v) suppressWarnings(as.numeric(sub(",", ".", v, fixed = TRUE)))
-    regmatches(cells, found) <- lapply(seq_along(cells), function(i) {
-        tok <- tokens[[i]]
-        if (!length(tok)) {
-            return(tok)
-        }
-        p <- do.call(rbind, regmatches(tok, regexec(POINT_DMS_PATTERN, tok, perl = TRUE)))
-        has_sec <- nzchar(p[, 5])
-        value <- num(p[, 3]) + num(p[, 4]) / 60 + ifelse(has_sec, num(p[, 5]), 0) / 3600
-        # The finest step the copy carries: a minute or a second, with its decimals.
-        last <- ifelse(has_sec, p[, 5], p[, 4])
-        step <- ifelse(has_sec, 1 / 3600, 1 / 60) * 10^-nchar(sub("^[^.,]*[.,]?", "", last))
-        near_lat <- !is.na(lat[i]) & abs(value - abs(lat[i])) < grid[i]
-        near_lon <- !is.na(lon[i]) & abs(value - abs(lon[i])) < grid[i]
-        hit <- step < grid[i] & (near_lat | near_lon)
-        hit[is.na(hit)] <- FALSE
-        if (!any(hit)) {
-            return(tok)
-        }
-        value <- sub("^-", "", ifelse(near_lat, pub_lat[i], pub_lon[i]))
-        hemi <- toupper(p[, 6])
-        sign <- ifelse(nzchar(p[, 2]) & p[, 2] != "+", "-", "")
-        tok[hit] <- ifelse(!nzchar(value), "",
-                           ifelse(nzchar(hemi), paste(value, hemi), paste0(sign, value)))[hit]
-        tok
-    })
-    cells
+    # Sign, degrees, minutes, seconds and hemisphere, one row per token.
+    m <- regexpr(pattern, tok, perl = TRUE)
+    first <- attr(m, "capture.start")
+    p <- array(substring(tok, first, first + attr(m, "capture.length") - 1L), dim(first))
+    has_sec <- nzchar(p[, 4])
+    value <- num(p[, 2]) + num(p[, 3]) / 60 + ifelse(has_sec, num(p[, 4]), 0) / 3600
+    # The finest step the copy carries: a minute or a second, with its decimals.
+    last <- ifelse(has_sec, p[, 4], p[, 3])
+    step <- ifelse(has_sec, 1 / 3600, 1 / 60) * 10^-nchar(sub("^[^.,]*[.,]?", "", last))
+    near_lat <- !is.na(lat) & abs(value - abs(lat)) < grid
+    near_lon <- !is.na(lon) & abs(value - abs(lon)) < grid
+    hit <- step < grid & (near_lat | near_lon) & !grepl(POINT_DMS_BARE, tok, perl = TRUE)
+    hit[is.na(hit)] <- FALSE
+    if (!any(hit)) {
+        return(cells)
+    }
+    published <- sub("^-", "", ifelse(near_lat, pub_lat[owner], pub_lon[owner]))
+    hemi <- toupper(p[, 5])
+    sign <- ifelse(nzchar(p[, 1]) & p[, 1] != "+", "-", "")
+    tok[hit] <- ifelse(!nzchar(published), "",
+                       ifelse(nzchar(hemi), paste(published, hemi), paste0(sign, published)))[hit]
+    write_back_tokens(cells, matched$found, tok, owner, hit)
 }
 
 # A coordinate as typed, with a decimal comma turned into a dot when the value
