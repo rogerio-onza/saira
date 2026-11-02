@@ -1347,6 +1347,67 @@ testthat::test_that("E2E: the names list shows settled names and keeps its rows 
     testthat::expect_false(app$get_js("!!document.querySelector('.shiny-notification-warning')"))
 })
 
+# --- The names report, in a real table ---
+
+testthat::test_that("E2E: each cell of the names report holds a value of the file as text", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    build_names_app <- function() {
+        pkgload::load_all(app_root, export_all = FALSE, quiet = TRUE)
+        fixtures <- file.path(app_root, "tests", "testthat", "fixtures", "colxr")
+        utils::assignInNamespace("gbif_api_get_many", function(requests) {
+            lapply(requests, function(r) jsonlite::read_json(file.path(fixtures, "Panthera_onca.json")))
+        }, ns = "saira")
+        run_app()
+    }
+    build_names_app <- utils::removeSource(build_names_app)
+    environment(build_names_app) <- list2env(list(app_root = app_root), parent = globalenv())
+
+    marked <- "Gatedgenus <i>italicus</i> & sons"
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(c("occurrenceID,scientificName", "e2e-1,Panthera onca", paste0("e2e-2,", marked)), csv_path)
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app <- shinytest2::AppDriver$new(app = build_names_app, timeout = 60000, load_timeout = 30000)
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 20000)
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 20000)
+    app$set_inputs(main_nav = "mapping", wait_ = FALSE)
+    app$wait_for_idle(timeout = 20000)
+    app$click(selector = "#mapping-auto_map")
+    app$wait_for_idle(timeout = 20000)
+    app$set_inputs(main_nav = "validate_names", wait_ = FALSE)
+    wait_until_js(app, "!!document.getElementById('validate_names-validate')")
+    app$click("validate_names-validate")
+    wait_until_js(
+        app,
+        "(function () { var t = $('.vn-report-table');
+           return t.length > 0 && $.fn.dataTable.isDataTable(t) && t.DataTable().rows().count() === 2; })()",
+        timeout = 120000
+    )
+
+    # DataTables writes a hidden cell with innerHTML too, off the page.
+    cells <- app$get_js("(function () {
+      var table = $('.vn-report-table').DataTable();
+      var out = [];
+      table.rows().every(function (i) {
+        for (var c = 3; c <= 7; c++) {
+          var node = table.cell(i, c).node();
+          out.push({ value: String(this.data()[c]), text: node.textContent, elements: node.children.length });
+        }
+      });
+      return out;
+    })()")
+    testthat::expect_identical(sum(vapply(cells, function(cell) cell$elements, integer(1))), 0L)
+    # One escape: the raw value stays in the data, and the text reads the same.
+    hit <- Filter(function(cell) identical(cell$value, marked), cells)
+    testthat::expect_gte(length(hit), 1L)
+    testthat::expect_identical(hit[[1]]$text, marked)
+    testthat::expect_identical(app$get_js("document.querySelectorAll('.vn-report-table tbody .vn-cell-scientific i').length"), 0L)
+})
+
 testthat::test_that("E2E: the Preview table shows a value as it is in the file", {
     testthat::skip_on_cran()
     testthat::skip_if_not_installed("shinytest2")

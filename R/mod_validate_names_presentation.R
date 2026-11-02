@@ -508,6 +508,7 @@ mount_mod_validate_names_presentation <- function(
             translocatedTip = tr("validate_names_translocated_tooltip", lang_r())
         )))
         taxonomic_status_js <- DT::JS(module_behavior_call("namesTaxonomicCell"))
+        hidden_cell_js <- DT::JS(module_behavior_call("namesHiddenCell"))
         row_callback_js <- DT::JS(module_behavior_call("namesRowClass"))
         header_callback_js <- DT::JS(module_behavior_call("namesTableHeader"))
         filter_callback_js <- DT::JS(module_behavior_call("namesTableFilters", list(
@@ -540,11 +541,7 @@ mount_mod_validate_names_presentation <- function(
                     list(targets = 0, render = scientific_name_js, className = "vn-col-scientific", width = "56%"),
                     list(targets = 1, render = status_badge_js, className = "vn-col-status", width = "16%"),
                     list(targets = 2, render = taxonomic_status_js, className = "vn-col-taxonomic", width = "28%"),
-                    list(targets = 3, visible = FALSE, searchable = FALSE),
-                    list(targets = 4, visible = FALSE, searchable = FALSE),
-                    list(targets = 5, visible = FALSE, searchable = FALSE),
-                    list(targets = 6, visible = FALSE, searchable = FALSE),
-                    list(targets = 7, visible = FALSE, searchable = FALSE)
+                    list(targets = 3:7, visible = FALSE, searchable = FALSE, render = hidden_cell_js)
                 ),
                 rowCallback = row_callback_js,
                 headerCallback = header_callback_js,
@@ -565,6 +562,8 @@ mount_mod_validate_names_presentation <- function(
             callback = filter_callback_js,
             class = "display compact validate-results-table vn-report-table",
             rownames = FALSE,
+            # Each column has a renderer that escapes its values. A second
+            # escape on the server would show "&" as "&amp;".
             escape = FALSE
         )
     })

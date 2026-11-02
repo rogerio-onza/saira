@@ -111,6 +111,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - **export:** Stop the export when a step's decision cannot be read, not treat it as no decision, ADR-189
 - **mapping:** Clear and import the fixed values of every card, also the cards that are not on the page, ADR-189
+- **names:** Escape the hidden cells of the names report, ADR-190 ([#261](https://github.com/rogerio-onza/saira/pull/261))
 - **mapping:** Turn off the fixed values when a new file arrives, keep the dataset name, license and language, ADR-189
 - **mapping:** Give each column its own control, so "body length" and "body-length" no longer share one, ADR-189
 - **dynamicProperties:** Write a key once when two cells or a merge repeat it, ADR-189
