@@ -292,6 +292,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **ui:** Stop loading the unused Lottie player on every page, and remove 9 MB of unused images from the package ([#168](https://github.com/rogerio-onza/saira/pull/168))
 
 ### Documentation
+- **site:** Align the help site tutorials with the v1.0 app ([#258](https://github.com/rogerio-onza/saira/pull/258))
 - **site:** Show how to serve Saíra to other people, and fix the network example of the install tutorial
 - **docs:** Describe the current tabs, export files and CI in the architecture and contributing guides
 
