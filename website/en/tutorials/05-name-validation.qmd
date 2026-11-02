@@ -1,6 +1,8 @@
 ---
 title: "Validating scientific names"
 pagetitle: "Name validation · Saíra Tutorials"
+aliases:
+  - 04-name-validation.html
 ---
 
 ::: {.tut-standfirst}
@@ -21,9 +23,13 @@ Check each <span class="term">scientificName</span> against a taxonomic backbone
 
 The number on the provider is the query order. Saíra queries Flora BR and Fauna BR first, then GBIF. Each distinct name is queried once.
 
+The author goes to <span class="term">scientificNameAuthorship</span> and the qualifier (`cf.`, `aff.`, `sp.`, `?`) goes to <span class="term">identificationQualifier</span>. The name keeps only the taxon. A column mapped to these terms wins. A name that Saíra cannot split stays as typed.
+
+During the validation, the panel shows how many names are checked and the backbone in use. GBIF receives only the names left. The legend splits Accepted, Synonyms, Ambiguous and Not found, and tells how many names each cell stands for.
+
 ::: {.callout-note}
-## Flora BR and Fauna BR stay on your computer
-Saíra downloads both backbones on first use. After that, the validation works offline. If the provider shows **Update failed**, reinstall Saíra with `pak::pak("rogerio-onza/saira")`.
+## Flora BR and Fauna BR come with Saíra
+Both backbones come with Saíra and the query works offline. Every 30 days, Saíra looks for a new version in the background. If the update fails, the local backbone keeps answering and the provider shows **Update failed**. GBIF (COL XR) needs internet and receives the scientific name. See [what leaves the computer](../faq.qmd#does-saíra-send-my-data-to-the-internet).
 :::
 
 ## Read the result
@@ -45,8 +51,20 @@ Saíra downloads both backbones on first use. After that, the validation works o
 | Synonym | The backbone points to another accepted name. Also applies to spellings that the backbone marks as invalid. |
 | Ambiguous | More than one strong candidate. You choose. |
 | Not found | The name is in none of the backbones queried. |
+| Not checked | The provider did not answer, for example without internet. It does not count as not found. |
 
 Saíra does not fix spelling by itself. It only shows what the backbone returns.
+
+## Try the names with no answer again
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t04-unchecked-EN.png" width="1440" alt="Names step with the block of names with no answer and the Try again button highlighted"></figure>
+```
+
+::: {.marks}
+1. The **name(s) with no answer** block lists the names that stayed not checked.
+2. **Try again** queries these names. The reviews and the earlier answers stay.
+:::
 
 ## Review a name
 
@@ -88,7 +106,7 @@ The Brazilian national list from MMA comes embedded in Saíra. Species on the li
 2. **+ mark** makes a species outside the list sensitive.
 :::
 
-The threat category does not change: it comes from the ordinances. This step only marks. The protection of the coordinates happens in [generalization](06-generalization.qmd).
+The threat category does not change: it comes from the ordinances. This step only marks. The protection of the coordinates happens in [generalization](07-generalization.qmd).
 
 ::: {.callout-note}
 ## Where the list comes from
@@ -105,6 +123,6 @@ The embedded list comes from the official lists of the Brazilian Ministry of the
 1. The **Invasive** filter shows the species on the invasive alien species list of the Hórus Institute (483 taxa).
 :::
 
-This filter uses the species list, not the validation status. Reviews do not change the count. In [mapping](03-dwc-mapping.qmd), these species arrive in the <span class="term">establishmentMeans</span> assistant as `introduced`.
+This filter uses the species list, not the validation status. Reviews do not change the count. **Transl. natives** shows natives of Brazil that are invasive outside their natural range. In [mapping](03-dwc-mapping.qmd#answer-establishmentmeans-per-species), invasive species arrive in the <span class="term">establishmentMeans</span> assistant as `introduced`, and translocated natives split between mainland and oceanic island.
 
-The checked backbones set the conservation status written in the export: Flora BR and Fauna BR give the MMA category, GBIF gives the IUCN category. See [Preview and export](07-preview-export.qmd#conservation-status-in-dynamicproperties).
+The checked backbones set the conservation status written in the export: Flora BR and Fauna BR give the MMA category, GBIF gives the IUCN category. See [Export](08-export.qmd#conservation-status-in-dynamicproperties).

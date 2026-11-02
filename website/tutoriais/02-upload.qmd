@@ -26,9 +26,12 @@ Carregue a planilha de ocorrências na etapa **Início**.
 
 Cada linha é uma ocorrência. Cada coluna é um atributo. A primeira linha precisa ter os nomes das colunas.
 
+Enviar outro arquivo limpa as validações e a generalização anteriores. O Saíra avisa quando isso acontece.
+
 ::: {.callout-tip}
 ## Planilha de exemplo
 [`ocorrencias-demo.csv`](../assets/exemplo/ocorrencias-demo.csv) tem 1.107 ocorrências com erros de propósito: datas misturadas, tombos repetidos, coordenadas trocadas, espécies ameaçadas e invasoras. Os tutoriais usam esse arquivo.
+[`ocorrencias-casos.csv`](../assets/exemplo/ocorrencias-casos.csv) é menor e traz os casos da [Pré-visualização](04-pre-visualizacao.qmd#casos-comuns), medidas e coordenadas UTM.
 :::
 
 ## Se a leitura sair errada
@@ -51,7 +54,7 @@ Na aba **Camtrap DP**, o Saíra aceita três tipos de `.zip`:
 
 O Saíra junta as tabelas numa planilha só, com nome científico, data e local. Depois o fluxo é igual ao de uma planilha.
 
-Dados do Wildlife Insights já vêm com as espécies sensíveis protegidas. Veja a [generalização](06-generalizacao.qmd).
+Dados do Wildlife Insights já vêm com as espécies sensíveis protegidas. Veja a [generalização](07-generalizacao.qmd).
 
 ## Guia de mapeamento
 

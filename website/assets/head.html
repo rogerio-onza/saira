@@ -43,10 +43,11 @@
     ["tutoriais/01-instalacao.html",            "en/tutorials/01-installation.html",       "es/tutoriales/01-instalacion.html"],
     ["tutoriais/02-upload.html",                "en/tutorials/02-upload.html",             "es/tutoriales/02-carga.html"],
     ["tutoriais/03-mapeamento-dwc.html",        "en/tutorials/03-dwc-mapping.html",        "es/tutoriales/03-mapeo-dwc.html"],
-    ["tutoriais/04-validacao-nomes.html",       "en/tutorials/04-name-validation.html",    "es/tutoriales/04-validacion-nombres.html"],
-    ["tutoriais/05-validacao-coordenadas.html", "en/tutorials/05-coordinate-validation.html", "es/tutoriales/05-validacion-coordenadas.html"],
-    ["tutoriais/06-generalizacao.html",         "en/tutorials/06-generalization.html",     "es/tutoriales/06-generalizacion.html"],
-    ["tutoriais/07-preview-exportacao.html",    "en/tutorials/07-preview-export.html",     "es/tutoriales/07-vista-previa-exportacion.html"]
+    ["tutoriais/04-pre-visualizacao.html",      "en/tutorials/04-preview.html",            "es/tutoriales/04-vista-previa.html"],
+    ["tutoriais/05-validacao-nomes.html",       "en/tutorials/05-name-validation.html",    "es/tutoriales/05-validacion-nombres.html"],
+    ["tutoriais/06-validacao-coordenadas.html", "en/tutorials/06-coordinate-validation.html", "es/tutoriales/06-validacion-coordenadas.html"],
+    ["tutoriais/07-generalizacao.html",         "en/tutorials/07-generalization.html",     "es/tutoriales/07-generalizacion.html"],
+    ["tutoriais/08-exportacao.html",             "en/tutorials/08-export.html",             "es/tutoriales/08-exportacion.html"]
   ];
   // Navbar labels for EN and ES, keyed by the PT path. PT labels come from _quarto.yml.
   // Glossary and technologies have no navbar tab, but keep their PAGES rows for
@@ -69,9 +70,9 @@
     es: { theme: "Tema", light: "Tema claro", dark: "Tema oscuro", system: "Seguir el sistema", lang: "Seleccionar el idioma de la página", releases: "Novedades", close: "Cerrar" }
   };
   // Navbar order of each PAGES row, so a page change slides in the direction
-  // of the step: Projeto, the seven tutorials, FAQ, Glossário, Tecnologias,
+  // of the step: Projeto, the eight tutorials, FAQ, Glossário, Tecnologias,
   // Atualizações.
-  var RANK = [0, 8, 9, 10, 11, 1, 2, 3, 4, 5, 6, 7];
+  var RANK = [0, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8];
 
   function norm(path) {
     if (path.charAt(path.length - 1) === "/") path += "index.html";

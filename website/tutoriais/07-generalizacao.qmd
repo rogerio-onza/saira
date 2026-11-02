@@ -1,13 +1,15 @@
 ---
 title: "Generalizando espécies sensíveis"
 pagetitle: "Generalização de espécies sensíveis · Tutoriais Saíra"
+aliases:
+  - 06-generalizacao.html
 ---
 
 ::: {.tut-standfirst}
 Decida se e quanto reduzir a precisão das coordenadas de espécies ameaçadas na etapa **Generalização**. A etapa segue a tabela de decisão de [Chapman (2020)](https://doi.org/10.15468/doc-5jp4-5g10).
 :::
 
-A etapa trabalha com as espécies marcadas como **Sensível** na [validação de nomes](04-validacao-nomes.qmd). Sem espécie sensível, não há nada a fazer aqui.
+A etapa trabalha com as espécies marcadas como **Sensível** na [validação de nomes](05-validacao-nomes.qmd). Sem espécie sensível, não há nada a fazer aqui.
 
 ## Escolha o caminho
 
@@ -20,7 +22,9 @@ A etapa trabalha com as espécies marcadas como **Sensível** na [validação de
 2. **Avaliar sensibilidade** abre a tabela de decisão. Escolha este caminho só se há risco real de coleta ou perseguição.
 :::
 
-O Saíra não generaliza de novo uma coordenada que já chegou generalizada: <span class="term">coordinateUncertaintyInMeters</span> de 1 km ou mais, ou <span class="term">dataGeneralizations</span> preenchido.
+Uma coordenada já protegida fica de fora: <span class="term">coordinateUncertaintyInMeters</span> de 1 km ou mais, ou uma nota de generalização de coordenada em <span class="term">dataGeneralizations</span>. Uma nota sobre outro dado não conta.
+
+Só com a incerteza grande, a coordenada com casas decimais demais vai para a grade mais grossa que cabe na incerteza: `-24.4873` com 2.500 m sai como `-24.49`. `-24.5` com 10 km fica como está. Com a nota de generalização de coordenada, o valor não muda.
 
 ::: {.callout-important}
 ## Dados do Wildlife Insights já vêm protegidos
@@ -49,14 +53,14 @@ A exportação do Wildlife Insights já esconde a localização das espécies se
 3. Veja no mapa o efeito de cada categoria antes de decidir.
 :::
 
-| Primeiro Sim | Categoria | Grade | Resultado espacial |
+| Primeiro Sim | Categoria | Grade | Escala aproximada |
 |---|---|---|---|
 | 4.3 · perturbação ou exploração | 2 | 0,1° (~11 km) | Estado ou província |
 | 4.4 · coleta ou dano deliberado | 3 | 0,01° (~1 km) | Cidade ou distrito |
 | 4.5 · ameaça baixa a média | 4 | 0,001° (~100 m) | Área local |
 | Nenhum | Não sensível | Sem grade | Coordenada original |
 
-Grupo sem resposta sai sem generalização. A generalização nunca aumenta a precisão: uma coordenada menos precisa que a grade sai na precisão real.
+Grupo sem resposta sai sem generalização. A grade é regular e ignora limites administrativos: estado e cidade são só escalas aproximadas. A incerteza publicada combina o raio da célula e a incerteza anterior.
 
 ## Trate uma espécie à parte
 
@@ -80,6 +84,14 @@ A justificativa é obrigatória para as Categorias 1, 2 e 3. A data de revisão 
 ## Confira o mapa
 
 O mapa mostra o ponto original, a área de generalização e o raio de incerteza. Um ponto que **saiu do país** pede uma grade menor: coordenada no país errado é pior que coordenada imprecisa.
+
+## Entenda os avisos
+
+| Aviso | O que significa | O que fazer |
+|---|---|---|
+| **registro(s) têm coordenada inválida** | O ponto sensível está fora do intervalo, tem um eixo só, é um par UTM, está perto de (0, 0) ou tem latitude igual à longitude. O Saíra tira o registro da publicação e guarda no arquivo privado. | **Corrigir em Coordenadas**. |
+| **registro(s) mantêm a precisão do dado original** | Generalizar nunca aumenta a precisão. O dado já era menos preciso que a grade ou já veio generalizado da fonte. | Nada, se a fonte é confiável. |
+| Nota **Precisão original retida pelo custodiante** | <span class="term">dataGeneralizations</span> guarda a precisão que o custodiante reteve. | Nada. |
 
 ## O que sai no pacote
 

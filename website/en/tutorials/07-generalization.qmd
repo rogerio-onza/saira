@@ -1,13 +1,15 @@
 ---
 title: "Generalizing sensitive species"
 pagetitle: "Sensitive-species generalization · Saíra Tutorials"
+aliases:
+  - 06-generalization.html
 ---
 
 ::: {.tut-standfirst}
 Decide whether and how much to reduce the coordinate precision of threatened species in the **Generalization** step. The step follows the decision table of [Chapman (2020)](https://doi.org/10.15468/doc-5jp4-5g10).
 :::
 
-The step works with the species marked **Sensitive** in [name validation](04-name-validation.qmd). Without sensitive species, there is nothing to do here.
+The step works with the species marked **Sensitive** in [name validation](05-name-validation.qmd). Without sensitive species, there is nothing to do here.
 
 ## Choose the path
 
@@ -20,7 +22,9 @@ The step works with the species marked **Sensitive** in [name validation](04-nam
 2. **Assess sensitivity** opens the decision table. Choose this path only if there is a real risk of collection or persecution.
 :::
 
-Saíra does not generalize again a coordinate that already arrived generalized: <span class="term">coordinateUncertaintyInMeters</span> of 1 km or more, or <span class="term">dataGeneralizations</span> filled in.
+A coordinate that is already protected stays out: <span class="term">coordinateUncertaintyInMeters</span> of 1 km or more, or a coordinate generalization note in <span class="term">dataGeneralizations</span>. A note about other data does not count.
+
+With only a large uncertainty, a coordinate with too many decimals goes to the coarsest grid that fits the uncertainty: `-24.4873` with 2,500 m goes out as `-24.49`. `-24.5` with 10 km stays as it is. With the coordinate generalization note, the value does not change.
 
 ::: {.callout-important}
 ## Wildlife Insights data is already protected
@@ -49,14 +53,14 @@ The Wildlife Insights export already hides the location of sensitive species. Ch
 3. See on the map the effect of each category before you decide.
 :::
 
-| First Yes | Category | Grid | Spatial result |
+| First Yes | Category | Grid | Approximate scale |
 |---|---|---|---|
 | 4.3 · disturbance or exploitation | 2 | 0.1° (~11 km) | State or province |
 | 4.4 · collection or deliberate harm | 3 | 0.01° (~1 km) | City or district |
 | 4.5 · low to medium threat | 4 | 0.001° (~100 m) | Local area |
 | None | Not sensitive | No grid | Original coordinate |
 
-A group without an answer goes out without generalization. Generalization never increases precision: a coordinate less precise than the grid goes out at its real precision.
+A group without an answer goes out without generalization. The grid is regular and ignores administrative limits: state and city are only approximate scales. The published uncertainty combines the cell radius and the earlier uncertainty.
 
 ## Handle one species separately
 
@@ -80,6 +84,14 @@ The justification is required for Categories 1, 2 and 3. The review date suggest
 ## Check the map
 
 The map shows the original point, the generalization area and the uncertainty radius. A point that **left the country** needs a smaller grid: a coordinate in the wrong country is worse than an imprecise coordinate.
+
+## Understand the warnings
+
+| Warning | What it means | What to do |
+|---|---|---|
+| **record(s) have an invalid coordinate** | The sensitive point is out of range, has one axis only, is a UTM pair, is near (0, 0) or has latitude equal to longitude. Saíra removes the record from the publication and keeps it in the private file. | **Correct in Coordinates**. |
+| **record(s) keep the precision of the original data** | Generalization never increases precision. The data was already coarser than the grid, or the source already generalized it. | Nothing, if the source is reliable. |
+| **Original precision retained by the custodian** note | <span class="term">dataGeneralizations</span> keeps the precision that the custodian retained. | Nothing. |
 
 ## What goes into the package
 

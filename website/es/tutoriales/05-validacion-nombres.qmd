@@ -1,6 +1,8 @@
 ---
 title: "Validación de nombres científicos"
 pagetitle: "Validación de nombres · Tutoriales de Saíra"
+aliases:
+  - 04-validacion-nombres.html
 ---
 
 ::: {.tut-standfirst}
@@ -21,9 +23,13 @@ Verifique cada <span class="term">scientificName</span> contra una base taxonóm
 
 El número en el proveedor es el orden de la consulta. Saíra consulta Flora BR y Fauna BR primero, después GBIF. Cada nombre distinto se consulta una vez.
 
+El autor va a <span class="term">scientificNameAuthorship</span> y el calificador (`cf.`, `aff.`, `sp.`, `?`) va a <span class="term">identificationQualifier</span>. El nombre queda solo con el taxón. Una columna mapeada en estos términos gana. Un nombre que Saíra no puede separar queda como se escribió.
+
+Durante la validación, el panel muestra cuántos nombres ya se revisaron y la base en uso. GBIF recibe solo los nombres restantes. La leyenda separa Aceptados, Sinónimos, Ambiguos y No encontrados, e indica cuántos nombres representa cada celda.
+
 ::: {.callout-note}
-## Flora BR y Fauna BR quedan en su computadora
-Saíra descarga las dos bases en el primer uso. Después la validación funciona sin internet. Si el proveedor muestra **Falló la actualización**, reinstale Saíra con `pak::pak("rogerio-onza/saira")`.
+## Flora BR y Fauna BR ya vienen en Saíra
+Las dos bases vienen en Saíra y la consulta funciona sin internet. Cada 30 días, Saíra busca una versión nueva en segundo plano. Si la actualización falla, la base local sigue respondiendo y el proveedor muestra **Falló la actualización**. GBIF (COL XR) necesita internet y recibe el nombre científico. Vea [qué sale de la computadora](../faq.qmd#saíra-envía-mis-datos-a-internet).
 :::
 
 ## Lea el resultado
@@ -45,8 +51,20 @@ Saíra descarga las dos bases en el primer uso. Después la validación funciona
 | Sinónimo | La base apunta a otro nombre aceptado. También vale para grafías que la base marca como inválidas. |
 | Ambiguo | Más de un candidato fuerte. Usted elige. |
 | No encontrado | El nombre no está en ninguna base consultada. |
+| No verificado | El proveedor no respondió, por ejemplo sin internet. No cuenta como no encontrado. |
 
 Saíra no corrige la grafía por sí solo. Solo muestra lo que la base devuelve.
+
+## Reintente los nombres sin respuesta
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t04-unchecked-ES.png" width="1440" alt="Etapa Nombres con el bloque de nombres sin respuesta y el botón Reintentar resaltados"></figure>
+```
+
+::: {.marks}
+1. El bloque **nombre(s) sin respuesta** lista los nombres que quedaron sin verificar.
+2. **Reintentar** consulta esos nombres. Las revisiones y las respuestas anteriores se mantienen.
+:::
 
 ## Revise un nombre
 
@@ -88,7 +106,7 @@ La lista nacional del MMA de Brasil viene incorporada en Saíra. Las especies de
 2. **+ marcar** vuelve sensible una especie fuera de la lista.
 :::
 
-La categoría de amenaza no cambia: viene de las ordenanzas. La etapa solo marca. La protección de las coordenadas ocurre en la [generalización](06-generalizacion.qmd).
+La categoría de amenaza no cambia: viene de las ordenanzas. La etapa solo marca. La protección de las coordenadas ocurre en la [generalización](07-generalizacion.qmd).
 
 ::: {.callout-note}
 ## De dónde viene la lista
@@ -105,6 +123,6 @@ La lista incorporada viene de las listas oficiales del Ministerio de Medio Ambie
 1. El filtro **Invasoras** muestra las especies de la lista de exóticas invasoras del Instituto Hórus (483 taxones).
 :::
 
-Este filtro usa la lista de especies, no el estado de la validación. Las revisiones no cambian el conteo. En el [mapeo](03-mapeo-dwc.qmd), estas especies llegan al asistente de <span class="term">establishmentMeans</span> como `introduced`.
+Este filtro usa la lista de especies, no el estado de la validación. Las revisiones no cambian el conteo. **Nativas transl.** muestra las nativas de Brasil que son invasoras fuera de su distribución natural. En el [mapeo](03-mapeo-dwc.qmd#responda-establishmentmeans-por-especie), las invasoras llegan al asistente de <span class="term">establishmentMeans</span> como `introduced`, y las nativas translocadas se dividen entre continente e isla oceánica.
 
-Las bases marcadas definen el estado de conservación grabado en la exportación: Flora BR y Fauna BR dan la categoría MMA, GBIF da la categoría UICN. Vea [Vista previa y exportación](07-vista-previa-exportacion.qmd#estado-de-conservación-en-dynamicproperties).
+Las bases marcadas definen el estado de conservación grabado en la exportación: Flora BR y Fauna BR dan la categoría MMA, GBIF da la categoría UICN. Vea [Exportación](08-exportacion.qmd#estado-de-conservación-en-dynamicproperties).

@@ -1,6 +1,8 @@
 ---
 title: "Validando coordenadas"
 pagetitle: "Validação de coordenadas · Tutoriais Saíra"
+aliases:
+  - 05-validacao-coordenadas.html
 ---
 
 ::: {.tut-standfirst}
@@ -31,13 +33,43 @@ A validação precisa de <span class="term">decimalLatitude</span>, <span class=
 | Em mar aberto | O ponto cai na água. |
 | Zero/Equal | Ponto em (0, 0) ou latitude igual à longitude. |
 | Referência sensível | Ponto perto de capital, centróide de país, sede do GBIF ou instituição biológica. |
+| Fora do país informado | O ponto cai fora do país da linha. O Saíra lista as linhas, sem correção automática. |
 
-Os testes rodam sem internet, com a camada de países do Natural Earth embutida no Saíra.
+Os testes rodam sem internet, com a camada de países do Natural Earth embutida no Saíra. Só o mapa de fundo precisa de internet.
+
+Durante a validação, o painel mostra o teste em curso e quantos registros ele confere. No mapa, cada hexágono é um ponto e a cor diz a situação: Válida, Inválida, Mar, Mar não verificado, Zero/Equal, Referência sensível ou Corrigida.
+
+Clique num ponto e use **Mostrar na tabela** para abrir o registro. Se vários registros caem no mesmo lugar, o ponto diz **N registros neste ponto**. Coordenada fora do intervalo válido não aparece no mapa: o aviso sobre o mapa tem **Ver na tabela**.
 
 ::: {.callout-warning}
 ## O teste de mar é aproximado
 A costa é simplificada. Um ponto muito perto da costa pode aparecer como **Em mar aberto**. Confira no mapa antes de descartar o registro.
 :::
+
+## Coordenadas em outros formatos
+
+O Saíra lê graus, minutos e segundos (`23°33'1.872"S`) e minutos decimais (`46°37.999' W`). A letra do hemisfério pode vir no início ou no fim: N, S, E, W, O (oeste) ou L (leste). Vírgula e ponto decimal valem. O Saíra rejeita letra que contradiz o sinal (`-23.5 N`) e minutos ou segundos de 60 ou mais.
+
+## Converta coordenadas UTM
+
+```{=html}
+<figure class="shot"><img src="../assets/img/t05-utm.png" width="1440" alt="Painel de coordenadas projetadas com a zona UTM, o datum de origem e o botão Converter para graus decimais destacados"></figure>
+```
+
+::: {.marks}
+1. Escolha a **Zona UTM**. A zona não sai dos números: o mesmo par vale em todas as zonas.
+2. Escolha o **Datum de origem**.
+3. Confira os pontos no mapa e clique em **Converter para graus decimais**.
+:::
+
+Se mais de uma zona põe os pontos no país informado, o Saíra diz quantas. Confira no mapa qual está certa. Os valores originais e o sistema de referência ficam em <span class="term">verbatimLatitude</span>, <span class="term">verbatimLongitude</span>, <span class="term">verbatimCoordinateSystem</span> e <span class="term">verbatimSRS</span>.
+
+| Datum | Zonas | Hemisfério |
+|---|---|---|
+| SIRGAS 2000 (padrão) | 17 a 25 | Norte e sul |
+| WGS 84 | 1 a 60 | Norte e sul |
+| SAD69 | 18 a 25 | Sul |
+| Córrego Alegre | 21 a 25 | Sul |
 
 ## Aplique as correções propostas
 
@@ -63,7 +95,7 @@ As correções valem na exportação. O dado original não muda. Se <span class=
 3. O valor novo. O Saíra valida o ponto de novo. **Desfazer** devolve o valor original.
 :::
 
-Validar de novo não apaga as correções manuais. Uma linha sem <span class="term">occurrenceID</span> único não aceita edição.
+Validar de novo não apaga as correções manuais. A correção guarda o ponto de origem: se o ponto mudou depois da correção ou o registro saiu dos dados, o Saíra descarta a correção e avisa. Uma linha sem <span class="term">occurrenceID</span> único não aceita edição.
 
 O Saíra não cria coordenada a partir do texto da localidade. Um registro sem coordenada fica como está, a não ser que você digite as duas coordenadas na tabela.
 

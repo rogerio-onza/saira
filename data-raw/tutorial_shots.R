@@ -9,10 +9,14 @@
 #   (the navbar badge shows the version).
 #
 # Usage (from the repo root, NOT_CRAN=true, Chrome installed):
-#   Rscript data-raw/tutorial_shots.R [langs] [app_root] [themes]
+#   Rscript data-raw/tutorial_shots.R [langs] [app_root] [themes] [scenarios]
 #   langs     comma list of pt, en, es (default: all three)
 #   app_root  package root of the app to capture (default: the repo root)
 #   themes    comma list of light, dark (default: both)
+#   scenarios comma list of demo, cases, offline, package (default: all four)
+#             demo uses ocorrencias-demo.csv, the others ocorrencias-casos.csv.
+#             offline blocks the name providers with an unreachable proxy.
+#             package removes the problem rows (CS-9*) to reach a ready export.
 #
 # Output: website/assets/img/tNN-name.png (PT), tNN-name-EN.png, tNN-name-ES.png,
 # and the same names with -dark for the dark theme. The site shows the -dark
@@ -24,9 +28,11 @@ args <- commandArgs(trailingOnly = TRUE)
 langs <- if (length(args) >= 1L) strsplit(args[[1]], ",")[[1]] else c("pt", "en", "es")
 app_root <- normalizePath(if (length(args) >= 2L) args[[2]] else ".", mustWork = TRUE)
 themes <- if (length(args) >= 3L) strsplit(args[[3]], ",")[[1]] else c("light", "dark")
+scenarios <- if (length(args) >= 4L) strsplit(args[[4]], ",")[[1]] else c("demo", "cases", "offline", "package")
 repo <- normalizePath(".", mustWork = TRUE)
 img_dir <- file.path(repo, "website", "assets", "img")
 demo_csv <- file.path(repo, "website", "assets", "exemplo", "ocorrencias-demo.csv")
+cases_csv <- file.path(repo, "website", "assets", "exemplo", "ocorrencias-casos.csv")
 marks_js <- paste(readLines(file.path(repo, "data-raw", "tutorial_marks.js")), collapse = "\n")
 
 if (!nzchar(Sys.getenv("NOT_CRAN"))) Sys.setenv(NOT_CRAN = "true")
@@ -52,7 +58,7 @@ chromote::set_chrome_args(c(
     "--disable-backgrounding-occluded-windows"
 ))
 
-run_lang <- function(lang, theme = "light") {
+run_lang <- function(lang, theme = "light", scenario = "demo") {
     suffix <- paste0(
         if (identical(lang, "pt")) "" else paste0("-", toupper(lang)),
         if (identical(theme, "dark")) "-dark" else ""
@@ -125,7 +131,7 @@ run_lang <- function(lang, theme = "light") {
         tryCatch(expr, error = function(e) message("  FAIL ", name, ": ", conditionMessage(e)))
     }
 
-    message("[", lang, " ", theme, "]")
+    message("[", lang, " ", theme, " ", scenario, "]")
     app$wait_for_idle(timeout = 20000)
     # The app opens in PT, and setting the same value updates no output.
     if (!identical(lang, "pt")) app$set_inputs(lang_switch = lang)
@@ -134,6 +140,13 @@ run_lang <- function(lang, theme = "light") {
     js(sprintf("document.querySelector('.theme-switch button[data-theme=\"%s\"]').click()", theme))
     Sys.sleep(1)
     inject()
+
+    if (!identical(scenario, "demo")) {
+        run_cases <- list(cases = shots_cases, offline = shots_offline, package = shots_package)[[scenario]]
+        environment(run_cases) <- environment()
+        run_cases()
+        return(invisible(NULL))
+    }
 
     # 02 Upload -----------------------------------------------------------
     app$upload_file(`upload-file` = demo_csv)
@@ -158,8 +171,6 @@ run_lang <- function(lang, theme = "light") {
 
     # 03 Mapping ----------------------------------------------------------
     go("mapping", 1)
-    js("document.querySelector('#mapping-auto_map').click()")
-    idle(60000)
     safe("t03-automap", {
         M("tutMarks.spotlight(['#mapping-auto_map', '.next-pending-pill', '#mapping-fieldcard_recordedBy']);
            tutMarks.badge('#mapping-auto_map', 1, {corner: 'or', pad: 8});
@@ -244,15 +255,6 @@ run_lang <- function(lang, theme = "light") {
            tutMarks.mark('#mapping-dynprops_key_nome_comum', 2);
            tutMarks.mark('#tut-ex2', 3);", C))
         shot("t03-dyn", C, 44)
-    })
-
-    # 07a Preview (before the validations change the data) ---------------
-    go("preview")
-    safe("t07-preview", {
-        M("tutMarks.mark('#preview-datatable .dataTables_scrollHead', 1);
-           tutMarks.mark('#preview-datatable .dataTables_length', 2, {corner: 'ot'});
-           tutMarks.mark('#preview-datatable .dataTables_filter', 3, {corner: 'ot'});")
-        shot("t07-preview", "body", 0)
     })
 
     # 04 Names ------------------------------------------------------------
@@ -391,8 +393,108 @@ run_lang <- function(lang, theme = "light") {
            tutMarks.mark('#sensitive_coords-gen_map', 3, {corner: 'ot'});")
         shot("t06-assess", "body", 0)
     })
+    invisible(NULL)
+}
 
-    # 07b Export ----------------------------------------------------------
+map_terms <- c(
+    occurrenceID = "numero_tombo", sex = "sexo", lifeStage = "estagio",
+    eventTime = "hora", coordinateUncertaintyInMeters = "incerteza_m"
+)
+
+# Mapping filters and measurements, Preview modes and fixes, UTM, blocked export.
+shots_cases <- function() {
+    map_cases <- function() {
+        for (term in names(map_terms)) {
+            do.call(app$set_inputs, stats::setNames(list(map_terms[[term]]), paste0("mapping-map_", term)))
+            idle()
+        }
+        # countryCode has no card until the user adds the term.
+        open_modal("#mapping-add_term")
+        app$set_inputs(`mapping-add_term_select` = "countryCode")
+        idle()
+        js("document.querySelector('#mapping-confirm_add_term').click()")
+        idle()
+        Sys.sleep(1)
+        app$set_inputs(`mapping-map_countryCode` = "codigo_pais")
+        idle()
+    }
+    app$upload_file(`upload-file` = cases_csv)
+    idle(60000)
+    go("mapping", 1)
+    safe("t03-filters", {
+        M("tutMarks.mark('#mapping-mapped_filter_control', 1, {fit: true});
+           tutMarks.mark('#mapping-view_mode_control', 2, {fit: true});
+           tutMarks.mark('.mapping-more-group', 3, {corner: 'ot'});")
+        shot("t03-filters", "body", 0)
+    })
+    # Auto-map leaves these empty, and the Preview cases need them.
+    app$set_inputs(`mapping-mapped_filter` = "all")
+    idle()
+    map_cases()
+    safe("t03-measure", {
+        C <- "#mapping-fieldcard_measurementValue"
+        app$set_inputs(`mapping-map_measurementValue` = c("AREA_HA", "peso (kg)"))
+        idle()
+        Sys.sleep(1)
+        types <- list(pt = c("\u00c1rea", "Massa corporal"), en = c("Area", "Body mass"), es = c("\u00c1rea", "Masa corporal"))[[lang]]
+        js(sprintf("var f = document.querySelectorAll('%s .mof-specs-grid input');
+            ['%s', 'ha', '', '%s', 'kg', ''].forEach(function (v, i) {
+                f[i].value = v; f[i].dispatchEvent(new Event('input', {bubbles: true}));
+            });", C, types[[1]], types[[2]]))
+        idle()
+        scroll_to(C)
+        M(sprintf("tutMarks.mark('%1$s .selectize-control', 1);
+           tutMarks.mark('%1$s .mof-specs-grid', 2);", C))
+        shot("t03-measure", C, 44)
+        app$set_inputs(`mapping-mapped_filter` = "relevant")
+        idle()
+    })
+
+    # Select each mode: the module remembers the last one.
+    go("preview")
+    app$set_inputs(`preview-mode` = "table")
+    idle()
+    Sys.sleep(1)
+    safe("t07-preview", {
+        M("tutMarks.mark('#preview-datatable .dataTables_scrollHead', 1);
+           tutMarks.mark('#preview-datatable .dataTables_length', 2, {corner: 'ot'});
+           tutMarks.mark('#preview-datatable .dataTables_filter', 3, {corner: 'ot'});")
+        shot("t07-preview", "body", 0)
+    })
+    app$set_inputs(`preview-mode` = "problems")
+    idle()
+    # The row list scrolls sideways below 1900 px and hides its last buttons.
+    app$set_window_size(1900, 1000)
+    idle()
+    Sys.sleep(1)
+    safe("t07-problems", {
+        M("tutMarks.mark('.preview-fix-pills', 1, {corner: 'ot'});
+           tutMarks.mark('#preview-rows_table', 2, {corner: 'ol'});")
+        shot("t07-problems", "body", 0)
+    })
+    pill <- function(key) {
+        js(sprintf("document.querySelector('#preview-fix_filter_%s').click()", key))
+        idle()
+        Sys.sleep(1)
+    }
+    safe("t07-fix", {
+        js("document.querySelector('.preview-fix-use').click()")
+        idle()
+        Sys.sleep(1)
+        M("tutMarks.mark('.preview-fix-use', 1, {corner: 'ol'});
+           tutMarks.mark('.preview-fix-same', 2);
+           tutMarks.mark('.preview-fix-undo', 3, {corner: 'or'});")
+        shot("t07-fix", ".preview-fix-section:has(#preview-rows_table)", 8)
+    })
+    safe("t07-copies", {
+        pill("copy")
+        M("tutMarks.mark('.preview-copy-table .is-original', 1);
+           tutMarks.mark('.preview-copy-choice', 2, {corner: 'or'});
+           tutMarks.mark('.preview-copy-box .btn', 3, {corner: 'or'});")
+        shot("t07-copies", ".preview-copies", 36)
+    })
+    window(900)
+
     go("export", 3)
     window(1100)
     safe("t07-export", {
@@ -402,7 +504,85 @@ run_lang <- function(lang, theme = "light") {
            tutMarks.mark('.export-download-bar', 4, {corner: 'ot'});")
         shot("t07-export", "body", 0)
     })
-    invisible(NULL)
+    window(900)
+
+    go("validate_coords")
+    js("document.querySelector('#validate_coords-validate').click()")
+    idle(120000)
+    Sys.sleep(4)
+    safe("t05-utm", {
+        scroll_to(".coords-utm-band")
+        # The clip pad leaves room for the marks, so hide the neighbors it would show.
+        js("var panel = document.querySelector('#validate_coords-utm_panel');
+            Array.from(panel.parentElement.children).forEach(function (el) {
+                if (el !== panel) el.style.visibility = 'hidden';
+            });")
+        M("tutMarks.mark('.shiny-input-container:has(#validate_coords-utm_zone)', 1, {corner: 'ot'});
+           tutMarks.mark('.shiny-input-container:has(#validate_coords-utm_datum)', 2, {corner: 'ot'});
+           tutMarks.mark('#validate_coords-apply_utm', 3, {corner: 'or'});")
+        shot("t05-utm", ".coords-utm-band", 36)
+    })
 }
 
-for (lang in langs) for (theme in themes) run_lang(lang, theme)
+# A proxy that does not answer makes GBIF fail, so names stay not checked.
+shots_offline <- function() {
+    app$upload_file(`upload-file` = cases_csv)
+    idle(60000)
+    go("validate_names")
+    js("document.querySelector('#validate_names-validate').click()")
+    wait_js("!document.querySelector('#validate_names-cancel_validation:not([disabled])') && !!document.querySelector('#validate_names-retry_unchecked')", 300)
+    idle()
+    Sys.sleep(2)
+    safe("t04-unchecked", {
+        M("tutMarks.mark('.vn-unchecked-title', 1, {corner: 'ot'});
+           tutMarks.mark('#validate_names-retry_unchecked', 2, {corner: 'or'});")
+        shot("t04-unchecked", "body", 0)
+    })
+}
+
+shots_package <- function() {
+    rows <- utils::read.csv(cases_csv, colClasses = "character", check.names = FALSE, encoding = "UTF-8")
+    clean <- file.path(tempdir(), "ocorrencias-casos.csv")
+    utils::write.csv(rows[!startsWith(rows$numero_tombo, "CS-9"), ], clean, row.names = FALSE, fileEncoding = "UTF-8")
+    app$upload_file(`upload-file` = clean)
+    idle(60000)
+    go("mapping", 1)
+    app$set_inputs(`mapping-mapped_filter` = "all")
+    idle()
+    app$set_inputs(`mapping-custom_license` = "CC BY 4.0")
+    idle()
+    app$set_inputs(`mapping-custom_datasetName` = "Ocorrencias de exemplo")
+    idle()
+    go("validate_names")
+    js("document.querySelector('#validate_names-validate').click()")
+    wait_js(paste0(
+        "!!document.querySelector('#validate_names-report_table table tbody tr td') && ",
+        "!document.querySelector('#validate_names-cancel_validation:not([disabled])')"
+    ))
+    idle()
+    go("sensitive_coords", 3)
+    app$set_inputs(`sensitive_coords-sensitive_mode` = "generalize")
+    idle()
+    Sys.sleep(2)
+    answers <- c(q43 = "no", q44 = "no", q45 = "yes")
+    for (cc in c("en", "vu")) for (q in names(answers)) {
+        do.call(app$set_inputs, stats::setNames(list(answers[[q]]), paste0("sensitive_coords-", q, "_", cc)))
+        idle()
+    }
+    idle()
+    go("export", 3)
+    window(1250)
+    safe("t07-package", {
+        M("tutMarks.mark('.export-files', 1, {corner: 'ot'});
+           tutMarks.mark('.export-private', 2, {corner: 'ot'});
+           tutMarks.mark('.export-download-bar', 3, {corner: 'ot'});")
+        shot("t07-package", "body", 0)
+    })
+}
+
+for (lang in langs) for (theme in themes) for (scenario in scenarios) {
+    # The app inherits the proxy; localhost must stay direct for the driver.
+    offline <- identical(scenario, "offline")
+    if (offline) Sys.setenv(HTTPS_PROXY = "http://127.0.0.1:9", https_proxy = "http://127.0.0.1:9", NO_PROXY = "localhost,127.0.0.1", no_proxy = "localhost,127.0.0.1")
+    tryCatch(run_lang(lang, theme, scenario), finally = if (offline) Sys.unsetenv(c("HTTPS_PROXY", "https_proxy", "NO_PROXY", "no_proxy")))
+}
