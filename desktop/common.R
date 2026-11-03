@@ -308,13 +308,15 @@ desktop_apply_shell <- function(root, project, config, origin) {
     # which replaces the helper of shinyelectron, so the R workers stop too.
     # --vanilla: R reads no profile or environment file of the host.
     # The crash report shows the last lines of stderr, so a tail is enough.
-    # A bundled app uses only its own R: no saved path, no R of the host.
+    # A bundled app uses only its own R and library: no saved path, no R of the host.
     desktop_patch_text(file.path(project, "backends", "native-r.js"), c(
         "spawn(rscript, ['-e', rCode], {" =
             "spawn(rscript, ['--vanilla', '-e', rCode], { detached: process.platform !== 'win32',",
         "stderr += msg + '\\n';" = "stderr = (stderr + msg + '\\n').slice(-256 * 1024);",
         "if (pickerPrefs && pickerPrefs.runtime_path) {" =
             "if (config?.runtime_strategy !== 'bundled' && pickerPrefs && pickerPrefs.runtime_path) {",
+        "if (userLibPath) libPaths.push(" =
+            "if (config?.runtime_strategy !== 'bundled' && userLibPath) libPaths.push(",
         "    // 3. Try system PATH first\n" = paste0(
             "    if (config && config.runtime_strategy === 'bundled') {\n",
             "      const message = 'The bundled R is missing. Reinstall the app.';\n",

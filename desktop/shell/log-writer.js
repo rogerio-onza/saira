@@ -27,12 +27,20 @@ function createLogWriter(dir, { maxBytes = MAX_FILE_BYTES, now = Date.now } = {}
     return fs.existsSync(file) ? fs.statSync(file).size : 0;
   }
 
-  // A restart on the same day continues the last part that has space.
+  function lastPart(forDay) {
+    const first = logFileName(forDay, 0);
+    const parts = fs.readdirSync(dir).filter((name) => name.startsWith(`${first}.`))
+      .map((name) => Number(name.slice(first.length + 1)));
+    return Math.max(0, ...parts.filter(Number.isInteger));
+  }
+
+  // A restart on the same day continues the newest part. Retention removes the
+  // first parts, and the age order fails if a new log uses their numbers again.
   function open(nextDay, nextPart) {
     if (stream) stream.end();
     fs.mkdirSync(dir, { recursive: true });
     day = nextDay;
-    part = nextPart;
+    part = nextPart ?? lastPart(nextDay);
     while (sizeOf(path.join(dir, logFileName(day, part))) >= maxBytes) part += 1;
     const file = path.join(dir, logFileName(day, part));
     bytes = sizeOf(file);
@@ -47,7 +55,7 @@ function createLogWriter(dir, { maxBytes = MAX_FILE_BYTES, now = Date.now } = {}
     if (stopped) return;
     try {
       const today = new Date(now()).toISOString().slice(0, 10);
-      if (today !== day) open(today, 0);
+      if (today !== day) open(today);
       else if (bytes >= maxBytes) open(day, part + 1);
       bytes += Buffer.byteLength(line);
       stream.write(line);

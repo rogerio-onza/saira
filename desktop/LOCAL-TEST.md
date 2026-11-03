@@ -1,5 +1,16 @@
 # Validação local do bundle
 
+## Biblioteca salva e logs após reinício: 03/11/2026
+
+Base: `d1d139d`, com as duas correções ainda sem commit.
+
+- Linux: `1.0.0-rc.1-linux-20261103-152851`. O `smoke.R` e o `shell-check.mjs`
+  passaram. O `e2e.mjs` passou 19 de 19 verificações. A verificação nova semeia
+  `runtime_path` e `lib_path` e confere o comando do R.
+- Windows: `1.0.0-rc.1-win-20261103-154339`. O `smoke.ps1` e o `shell-check.mjs`
+  passaram. O `e2e.mjs` passou 18 de 18 verificações. O Windows não semeia as
+  preferências, porque o Electron cai com `USERPROFILE` trocado.
+
 ## Identidade final, `1.0.0-rc.1`: 03/11/2026
 
 Base: `a7b57bb`, com a identidade final e o vigia do R do ADR-192 ainda sem

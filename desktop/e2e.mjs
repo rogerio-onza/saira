@@ -15,6 +15,7 @@ const [EXE, CSV] = process.argv.slice(2, 4).map((p) => p && path.resolve(p));
 const WORK = process.argv[4] || path.join(path.dirname(CSV || '.'), `e2e-${new Date().toISOString().replace(/\D/g, '').slice(0, 14)}`);
 const DOWNLOADS = path.join(WORK, 'downloads');
 const LOCALAPPDATA = path.join(WORK, 'localappdata');
+const HOST_LIBRARY = path.join(WORK, 'host-library');
 const RENDERER_PORT = 9333;
 const MAIN_PORT = 9339;
 const APP_ORIGIN = 'http://127.0.0.1:38838';
@@ -210,6 +211,17 @@ async function main() {
   // On Linux the shell keeps the data in XDG_DATA_HOME and Electron keeps its state in XDG_CONFIG_HOME.
   const env = { ...process.env, LOCALAPPDATA, XDG_DATA_HOME: LOCALAPPDATA, XDG_CONFIG_HOME: path.join(WORK, 'config'),
     SAIRA_DESKTOP_DOWNLOAD_DIR: DOWNLOADS };
+  // A saved preference must not bring R or packages of the host into the app.
+  // Linux only: the packaged Electron on Windows ends if USERPROFILE points to a test folder.
+  if (process.platform === 'linux') {
+    env.HOME = path.join(WORK, 'home');
+    const prefs = path.join(env.HOME, '.shinyelectron', 'apps', 'saira-desktop');
+    fs.mkdirSync(prefs, { recursive: true });
+    fs.mkdirSync(HOST_LIBRARY, { recursive: true });
+    fs.writeFileSync(path.join(HOST_LIBRARY, 'Rscript'), '');
+    fs.writeFileSync(path.join(prefs, 'preferences.json'),
+      JSON.stringify({ runtime_path: path.join(HOST_LIBRARY, 'Rscript'), lib_path: HOST_LIBRARY }));
+  }
   child = spawn(exe, [`--remote-debugging-port=${RENDERER_PORT}`, `--inspect=${MAIN_PORT}`], {
     env,
     stdio: ['ignore', 'pipe', 'pipe']
@@ -277,6 +289,11 @@ async function main() {
   const backendUnpacked = await main.eval(`process.mainModule.require('fs').existsSync(
     process.mainModule.require('path').join(process.resourcesPath, 'app.asar.unpacked', 'backends'))`);
   record('backend code only in app.asar', backendUnpacked === false);
+  if (process.platform === 'linux') {
+    const commands = rProcesses(path.dirname(exe)).map((pid) => fs.readFileSync(`/proc/${pid}/cmdline`, 'latin1'));
+    record('saved R paths ignored', commands.some((c) => c.includes('runtime/R/library')) &&
+      !commands.some((c) => c.includes(HOST_LIBRARY)), `${commands.length} R process(es)`);
+  }
 
   // 3. Upload the demo CSV.
   const doc = await (await renderer()).send('DOM.getDocument', { depth: 1 });

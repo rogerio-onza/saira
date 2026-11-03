@@ -105,6 +105,26 @@ await flush();
 check('log writer: a restart on the same day continues the log',
   fs.readFileSync(path.join(writerDir, 'app-2026-11-03.log'), 'utf8') === 'next dayafter restart');
 
+// Retention removes the first parts of the day, so a restart must not use their numbers again.
+const PART_BYTES = 10 * 1024 * 1024;
+const gapDir = fs.mkdtempSync(path.join(os.tmpdir(), 'saira-logs-'));
+const gapPart = (suffix) => path.join(gapDir, `app-2026-11-03.log${suffix}`);
+for (const suffix of ['', '.001', '.002', '.003', '.004', '.005', '.006']) {
+  fs.writeFileSync(gapPart(suffix), Buffer.alloc(PART_BYTES));
+}
+pruneLogs(gapDir, clock);
+const afterGap = createLogWriter(gapDir, { now: () => clock });
+afterGap.write('new session');
+await flush();
+afterGap.write('x'.repeat(PART_BYTES));
+await flush();
+afterGap.write('next part');
+await flush();
+check('log writer: a restart after retention keeps the new log and removes the old part',
+  fs.existsSync(gapPart('.007')) && fs.readFileSync(gapPart('.007'), 'utf8').startsWith('new session') &&
+  !fs.existsSync(gapPart('.002')) && !fs.existsSync(gapPart('')));
+fs.rmSync(gapDir, { recursive: true, force: true });
+
 const part = path.join(writerDir, 'app-2026-10-30.log.001');
 fs.writeFileSync(part, 'x');
 pruneLogs(writerDir, Date.parse('2027-01-01T00:00:00Z'));
