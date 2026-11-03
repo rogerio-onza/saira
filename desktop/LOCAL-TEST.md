@@ -1,5 +1,19 @@
 # Validação local do bundle
 
+## Identidade final, `1.0.0-rc.1`: 03/11/2026
+
+Base: `a7b57bb`, com a identidade final e o vigia do R do ADR-192 ainda sem
+commit.
+
+- Linux: `1.0.0-rc.1-linux-20261103-143816`. O `smoke.R` e o `shell-check.mjs`
+  passaram.
+- Windows: `1.0.0-rc.1-win-20261103-143913`, instalador de 327 MB. O `smoke.ps1`
+  e o `shell-check.mjs` passaram.
+
+O `e2e.mjs` passou 18 de 18 verificações nos dois. A verificação nova abre o app
+de novo e mata o Electron à força numa sessão parada. O R encerrou em 4,1 s no
+Linux e em 2,4 s no Windows, com a porta livre.
+
 ## Sexta prévia, novo build: 31/10/2026
 
 Base: `feature/desktop-bundle` rebaseado sobre `release/v1.0.0` em `639e480`

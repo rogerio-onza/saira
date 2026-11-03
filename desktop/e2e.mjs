@@ -171,6 +171,35 @@ async function inspectableCopy(exe) {
   return target;
 }
 
+// The R processes that run from one unpacked folder, workers too.
+function rProcesses(folder) {
+  if (process.platform === 'win32') {
+    const script = `Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and $_.Name -match '^(R|Rscript|Rterm|cmd)\\.exe$' -and $_.CommandLine.Contains('${folder}') } | ForEach-Object { $_.ProcessId }`;
+    return spawnSync('powershell', ['-NoProfile', '-Command', script], { encoding: 'utf8' }).stdout.split(/\s+/).filter(Boolean);
+  }
+  return spawnSync('pgrep', ['-f', `${folder}.*portable-r`], { encoding: 'utf8' }).stdout.split(/\s+/).filter(Boolean);
+}
+
+// A hard kill gives the shell no time to stop R, so R has to see that the shell left.
+async function hardKillCheck(exe, env) {
+  const folder = path.dirname(exe);
+  const launched = spawn(exe, [`--remote-debugging-port=${RENDERER_PORT}`], { env, stdio: 'ignore' });
+  await waitFor(async () => (await targets(RENDERER_PORT)).some((t) => t.type === 'page' && t.url.startsWith(APP_ORIGIN)),
+    { timeout: 240000, interval: 200, what: 'app URL after a restart' });
+  const before = rProcesses(folder);
+  if (process.platform === 'win32') spawnSync('taskkill', ['/PID', String(launched.pid), '/F']);
+  else launched.kill('SIGKILL');
+  const killedAt = Date.now();
+  const gone = await waitFor(() => rProcesses(folder).length === 0, { timeout: 30000, interval: 500, what: 'R stops' }).catch(() => false);
+  const portFree = await fetch(APP_ORIGIN).then(() => false, () => true);
+  record('hard kill of the shell stops R', before.length > 0 && !!gone && portFree,
+    `${before.length} R process(es), ${((Date.now() - killedAt) / 1000).toFixed(1)} s`);
+  for (const pid of rProcesses(folder)) {
+    if (process.platform === 'win32') spawnSync('taskkill', ['/PID', pid, '/T', '/F']);
+    else spawnSync('kill', ['-KILL', pid]);
+  }
+}
+
 async function main() {
   if (!EXE || !fs.existsSync(EXE)) throw new Error(`Missing exe: ${EXE}`);
   if (!CSV || !fs.existsSync(CSV)) throw new Error(`Missing CSV: ${CSV}`);
@@ -178,10 +207,11 @@ async function main() {
   const exe = await inspectableCopy(EXE);
 
   const launchedAt = Date.now();
+  // On Linux the shell keeps the data in XDG_DATA_HOME and Electron keeps its state in XDG_CONFIG_HOME.
+  const env = { ...process.env, LOCALAPPDATA, XDG_DATA_HOME: LOCALAPPDATA, XDG_CONFIG_HOME: path.join(WORK, 'config'),
+    SAIRA_DESKTOP_DOWNLOAD_DIR: DOWNLOADS };
   child = spawn(exe, [`--remote-debugging-port=${RENDERER_PORT}`, `--inspect=${MAIN_PORT}`], {
-    // On Linux the shell keeps the data in XDG_DATA_HOME and Electron keeps its state in XDG_CONFIG_HOME.
-    env: { ...process.env, LOCALAPPDATA, XDG_DATA_HOME: LOCALAPPDATA, XDG_CONFIG_HOME: path.join(WORK, 'config'),
-      SAIRA_DESKTOP_DOWNLOAD_DIR: DOWNLOADS },
+    env,
     stdio: ['ignore', 'pipe', 'pipe']
   });
   const shellLog = fs.createWriteStream(path.join(WORK, 'shell-stdout.log'));
@@ -398,6 +428,8 @@ async function main() {
 
   const portFree = await fetch(APP_ORIGIN).then(() => false, () => true);
   record('R server port closed', portFree);
+
+  if (exitedAt) await hardKillCheck(exe, env);
 
   fs.writeFileSync(path.join(WORK, 'results.json'), JSON.stringify({ startup, results }, null, 2));
   const failed = results.filter((r) => !r.ok).length;

@@ -9,7 +9,7 @@ const backend = require('./backends/native-r.js');
 const strings = require('./i18n.js');
 const { createLogWriter } = require('./log-writer.js');
 
-const SLUG = 'saira-desktop-preview';
+const SLUG = 'saira-desktop';
 // A fixed port keeps one origin, so the theme in localStorage survives a restart.
 const PREFERRED_PORT = 38838;
 // These directives do not touch scripts: Shiny and DT need inline and dynamic scripts.
@@ -78,8 +78,8 @@ function t() {
   return strings[lang] || strings['pt-BR'];
 }
 
-function previewVersion() {
-  return info.preview_version || app.getVersion();
+function desktopVersion() {
+  return info.desktop_version || app.getVersion();
 }
 
 // R reads only the bundle: no user library, no ~/.Rprofile or ~/.Renviron of an
@@ -96,6 +96,7 @@ function prepareRuntimeEnvironment() {
     R_ENVIRON_USER: empty,
     SAIRA_ACCESS_KEY: ACCESS_KEY,
     SAIRA_DESKTOP_HOME: desktopHome,
+    SAIRA_DESKTOP_SHELL_PID: String(process.pid),
     R_USER_DATA_DIR: path.join(desktopHome, 'data'),
     R_USER_CACHE_DIR: path.join(desktopHome, 'cache'),
     R_USER_CONFIG_DIR: path.join(desktopHome, 'config')
@@ -103,7 +104,7 @@ function prepareRuntimeEnvironment() {
   // The rostrum.sqlite file follows SAIRA_DATA_DIR, the BR snapshots follow R_USER_DATA_DIR.
   process.env.SAIRA_DATA_DIR = path.join(desktopHome, 'data', 'R', 'saira');
   if (process.platform === 'linux') {
-    // In the C locale, R cannot read the install path /opt/Saíra (prévia).
+    // In the C locale, R cannot read the install path /opt/Saíra.
     const locale = process.env.LC_ALL || process.env.LC_CTYPE || process.env.LANG || '';
     if (!/utf-?8/i.test(locale)) process.env.LC_ALL = 'C.UTF-8';
     // The bundled libcurl looks for the Debian CA file. Fedora and openSUSE keep it elsewhere.
@@ -156,7 +157,7 @@ function pageOptions(fields) {
 
 function lifecycleOptions(view, fields) {
   const text = t().lifecycle;
-  return pageOptions({ view, text, version: `${text.preview} ${previewVersion().split('-')[0]}`, ...fields });
+  return pageOptions({ view, text, version: `v${desktopVersion()}`, ...fields });
 }
 
 // Small shell windows: no menu, no navigation away from the page.
@@ -189,7 +190,7 @@ function crashReport(data) {
   return [
     ...(stderr ? stderr.split(/\r?\n/).slice(-40) : []),
     '',
-    `Saíra desktop ${previewVersion()} · saira ${info.saira_version || '?'} (${(info.source_commit || '').slice(0, 7)}${info.source_dirty ? ' dirty' : ''})`,
+    `Saíra desktop ${desktopVersion()} · saira ${info.saira_version || '?'} (${(info.source_commit || '').slice(0, 7)}${info.source_dirty ? ' dirty' : ''})`,
     `R ${info.r_version || '?'} · Electron ${process.versions.electron} · ${process.platform} ${process.arch}`,
     data.message || ''
   ].join('\n');
@@ -467,7 +468,7 @@ if (!app.requestSingleInstanceLock()) {
   });
   app.whenReady().then(() => {
     logWriter = createLogWriter(logDir);
-    log('info', `Saíra desktop ${previewVersion()}, saira ${info.saira_version}, ${process.platform} ${process.arch}`);
+    log('info', `Saíra desktop ${desktopVersion()}, saira ${info.saira_version}, ${process.platform} ${process.arch}`);
     prepareRuntimeEnvironment();
     buildMenu();
     createWindow();

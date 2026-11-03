@@ -1,8 +1,8 @@
 app:
-  name: "Saíra (prévia)"
-  slug: saira-desktop-preview
-  version: "1.0.0-desktop.6"
-  description: "Prévia local do Saíra desktop, baseada na preparação da v1.0."
+  name: "Saíra"
+  slug: saira-desktop
+  version: "1.0.0-rc.1"
+  description: "Padronize dados de biodiversidade em Darwin Core."
   author: "Rogério Nunes Oliveira"
 
 build:
@@ -54,7 +54,7 @@ signing:
   sign: false
 
 installer:
-  app_id: org.saira.desktop.preview
+  app_id: org.saira.desktop
   one_click: false
   per_machine: false
   allow_to_change_installation_directory: true

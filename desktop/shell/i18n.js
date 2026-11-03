@@ -13,7 +13,6 @@ module.exports = {
       confirm: 'Fechar', cancel: 'Cancelar'
     },
     lifecycle: {
-      preview: 'Prévia desktop',
       runtime: 'Preparando o R…', packages: 'Carregando os pacotes do R…', ui: 'Abrindo a interface…',
       wait: 'Isto pode levar alguns segundos.',
       photoAlt: 'Saíra-pintor pousada num talo verde', commonName: 'saíra-pintor', photo: 'Foto',
@@ -42,7 +41,6 @@ module.exports = {
       confirm: 'Close', cancel: 'Cancel'
     },
     lifecycle: {
-      preview: 'Desktop preview',
       runtime: 'Preparing R…', packages: 'Loading the R packages…', ui: 'Opening the interface…',
       wait: 'This can take some seconds.',
       photoAlt: 'Tangara fastuosa on a green stem', commonName: '', photo: 'Photo',
@@ -71,7 +69,6 @@ module.exports = {
       confirm: 'Cerrar', cancel: 'Cancelar'
     },
     lifecycle: {
-      preview: 'Vista previa de escritorio',
       runtime: 'Preparando R…', packages: 'Cargando los paquetes de R…', ui: 'Abriendo la interfaz…',
       wait: 'Esto puede tardar unos segundos.',
       photoAlt: 'Tangara fastuosa posada en un tallo verde', commonName: '', photo: 'Foto',

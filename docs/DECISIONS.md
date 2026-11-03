@@ -3515,6 +3515,17 @@ Formato: ADR leve (Architecture Decision Record).
   - A v1.0 sai sem assinatura (decisao do dono, 2026-11-03): o projeto nao tem orcamento para certificado. O tutorial de instalacao explica o aviso do Windows, e o site publica o SHA-256 de cada instalador no lancamento. Um programa gratuito para codigo aberto pode entrar depois da v1.0.
 - **Consequencias**: uma versao nova do electron-builder pede rever o override e o lockfile. O fuse de integridade so tem efeito no Windows e no macOS, e o README diz isso. Sem assinatura, o Windows mostra o aviso de editor desconhecido.
 
+## ADR-192: Identidade final do desktop e R que encerra sem o shell
+
+- **Data**: 2026-11-03
+- **Status**: Aceito.
+- **Contexto**: o desktop ainda usava a identidade de previa (`org.saira.desktop.preview`, `saira-desktop-preview`, `Saíra (prévia)`). O instalador e a pasta de dados derivam dessa identidade, entao troca-la depois da publicacao instala um segundo app em vez de atualizar o primeiro. Separadamente, uma morte forcada do Electron deixou `cmd.exe` e `Rscript.exe` vivos por 1,5 h no Windows: o R tem grupo de processos proprio, e `backend.stop()` nao roda nesse caminho.
+- **Decisao**:
+  - Nome `Saíra`, `slug` `saira-desktop`, `app_id` `org.saira.desktop`, sem rotulo de previa na tela de inicio. Os builds de teste usam `1.0.0-rc.1`, e o corte usa `1.0.0`.
+  - Essa identidade nao muda depois da primeira publicacao. As previas nunca foram publicadas, entao nao ha migracao de dados.
+  - O `app.R` do desktop guarda um `ps_handle()` do shell e confere a cada 5 s se ele continua vivo. Sem o shell, o R encerra. O handle guarda o horario de inicio, entao outro processo com o mesmo PID nao conta como o shell.
+- **Consequencias**: durante uma operacao longa e sincrona, o R so nota a saida do shell quando a operacao termina. O teste de atualizar por cima so vale entre duas versoes com a identidade final.
+
 ## ADR-193: Correcoes do nucleo da auditoria de 2026-11-03
 
 - **Data**: 2026-11-03

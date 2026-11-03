@@ -1,4 +1,4 @@
-# Saíra desktop: prévia local da v1.0
+# Saíra desktop
 
 Este piloto parte de `release/v1.0.0`. O `build-info.json` de cada build grava o
 commit, o branch e se havia arquivos sem commit (campo `source`). O `desktop-info.json`
@@ -6,7 +6,9 @@ leva o commit para o relatório de falha do app.
 O worker da atualização usa `callr`, sem socket de rede, então o Windows não
 pede acesso do R às redes públicas (ADR-177).
 O `DESCRIPTION` da base ainda informa `0.11.2`. O instalador usa a versão
-`1.0.0-desktop.6` para identificar a prévia, sem antecipar a release do pacote.
+`1.0.0-rc.1` para identificar o candidato, sem antecipar a release do pacote. No
+corte, a versão passa a `1.0.0`. O nome, o `slug` e o `app_id` não mudam depois da
+primeira publicação (ADR-192).
 
 Não há workflow, push, publicação nem atualização automática nesta etapa.
 O empacotamento usa Windows x64 ou Linux x64 e `runtime_strategy: bundled`. O R e as
@@ -157,7 +159,7 @@ O shinyelectron não tem R portátil para Linux. Por isso, o build:
 
 O app precisa de glibc 2.39 ou mais nova: Ubuntu 24.04, Debian 13, Fedora 40
 ou posterior. A glibc da máquina de build define esse mínimo. O `.deb` instala
-em `/opt/Saíra (prévia)`.
+em `/opt/Saíra`.
 
 O build muda dois arquivos gerados (`desktop_apply_shell()` e
 `desktop_patch_apprun()`). Se o texto original mudar numa versão nova do
@@ -178,8 +180,9 @@ shinyelectron. O build copia esses arquivos sobre o app gerado. O shell:
 - isola o R da instalação pessoal: roda só o R do bundle, com `--vanilla`, e usa
   biblioteca só do bundle. Sem o R do bundle, o app mostra um erro e não procura
   outro R;
-- guarda os dados em `%LOCALAPPDATA%\saira-desktop-preview` (no Linux,
-  `~/.local/share/saira-desktop-preview`), separados do uso convencional em R;
+- se o Electron morrer à força, o R nota a saída em até 5 s e encerra (ADR-192);
+- guarda os dados em `%LOCALAPPDATA%\saira-desktop` (no Linux,
+  `~/.local/share/saira-desktop`), separados do uso convencional em R;
 - no Linux, usa `C.UTF-8` se o locale não for UTF-8, porque o R não lê o
   caminho com acento no locale C;
 - abre com a foto da saíra-pintor e as etapas da partida do R, no tema
@@ -211,10 +214,9 @@ Linux). Para gerar de novo, rode
 o arquivo. As fontes vêm de `inst/app/www/vendor/fonts` e a foto vem de
 `website/assets/img/landing`. O `prepare-windows.R` copia as duas para o kit.
 
-## Testar a prévia
+## Testar o app
 
-O aplicativo aparece como **Saíra (prévia)** e usa identidade de instalação
-própria. O lançador não altera configurações permanentes do Windows.
+O aplicativo aparece como **Saíra** e usa identidade de instalação própria. O lançador não altera configurações permanentes do Windows.
 
 Teste no Windows com uma planilha real:
 
@@ -232,7 +234,7 @@ Teste no Windows com uma planilha real:
   exportação e memória total da árvore de processos.
 - Testar também numa máquina/VM sem R e Node para confirmar a independência do bundle.
 
-Sem certificado, a prévia não é assinada, e o Windows pode exibir o aviso de
+Sem certificado, o app não é assinado, e o Windows pode exibir o aviso de
 editor desconhecido. Atualizações e distribuição pública ficam para uma etapa
 posterior. Os algoritmos do pacote permanecem os da base, para separar
 problemas de empacotamento de alterações funcionais.
@@ -278,7 +280,7 @@ Ele não usa pacotes npm: controla a janela pelo CDP e o processo principal pelo
 inspector do Node. Rode com o Node do Windows, a partir de uma pasta do Windows:
 
 ```powershell
-node .\desktop\e2e.mjs 'C:\caminho\do\build\bundle\electron-app\dist\win-unpacked\saira-desktop-preview.exe' .\desktop\examples\ocorrencias-e2e.csv
+node .\desktop\e2e.mjs 'C:\caminho\do\build\bundle\electron-app\dist\win-unpacked\saira-desktop.exe' .\desktop\examples\ocorrencias-e2e.csv
 ```
 
 O executável distribuído ignora `--inspect` (fuse do Electron). O teste confere

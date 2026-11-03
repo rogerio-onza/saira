@@ -210,7 +210,7 @@ desktop_check_source <- function(origin, version, allow_dirty) {
 
 desktop_write_provenance <- function(root, output, archive, config, origin) {
     metadata <- list(
-        preview_version = config$app$version,
+        desktop_version = config$app$version,
         saira_package_version = read.dcf(file.path(root, "DESCRIPTION"))[1L, "Version"],
         source = origin,
         base = desktop_toolchain(root),
@@ -297,7 +297,7 @@ desktop_apply_shell <- function(root, project, config, origin) {
     }
     description <- read.dcf(file.path(root, "DESCRIPTION"))[1L, ]
     info <- list(
-        preview_version = config$app$version,
+        desktop_version = config$app$version,
         saira_version = description[["Version"]],
         source_commit = origin$commit,
         source_dirty = origin$dirty,
