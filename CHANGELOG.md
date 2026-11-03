@@ -185,6 +185,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **upload:** Keep a literal `NA` in a data cell, and report the ID cells a file leaves empty, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
 - **year:** Stop reading a year from a decimal or a longer number, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
 - **upload:** Report Wildlife Insights timestamps with extra text, instead of reading part of them, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
+- **desktop:** Keep the app open when the log file fails, and stop R when the main process fails
+- **desktop:** Limit the log file and the kept R error text during a long session
+- **desktop:** Stop the build without the approved npm lockfile, and record the source commit, ADR-191
+- **desktop:** Update Electron to 45.2.1 and replace the minimatch version of the build tools, ADR-191
+- **desktop:** Keep the backend code in `app.asar`, and show an error when the bundled R is missing, ADR-191
 - **generalization:** Remove the coordinates of masked rows from the justification text in dataGeneralizations, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **generalization:** Apply the protection to every location field of a protected record, ADR-193 ([#268](https://github.com/rogerio-onza/saira/pull/268))
 - **export:** Block a protected record while a free-text or unmapped field still shows its location, ADR-193 ([#268](https://github.com/rogerio-onza/saira/pull/268))

@@ -1,15 +1,17 @@
-// IPC bridge. lifecycle.html needs window.lifecycle. On the Shiny page the
-// shell reads <html lang> and the theme.
+// IPC bridge. Only lifecycle.html, a file: page, gets window.lifecycle. On the
+// Shiny page the shell reads <html lang> and the theme.
 const { contextBridge, ipcRenderer } = require('electron');
 
-contextBridge.exposeInMainWorld('lifecycle', {
-  onStatus: (callback) => {
-    ipcRenderer.on('lifecycle-status', (_event, data) => callback(data));
-  },
-  retry: () => ipcRenderer.send('lifecycle-action', { type: 'retry' }),
-  quit: () => ipcRenderer.send('lifecycle-action', { type: 'quit' }),
-  copy: () => ipcRenderer.send('lifecycle-action', { type: 'copy' })
-});
+if (location.protocol === 'file:') {
+  contextBridge.exposeInMainWorld('lifecycle', {
+    onStatus: (callback) => {
+      ipcRenderer.on('lifecycle-status', (_event, data) => callback(data));
+    },
+    retry: () => ipcRenderer.send('lifecycle-action', { type: 'retry' }),
+    quit: () => ipcRenderer.send('lifecycle-action', { type: 'quit' }),
+    copy: () => ipcRenderer.send('lifecycle-action', { type: 'copy' })
+  });
+}
 
 function storedTheme() {
   try { return localStorage.getItem('saira-theme') || 'system'; } catch { return 'system'; }

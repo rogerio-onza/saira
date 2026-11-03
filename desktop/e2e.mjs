@@ -1,4 +1,4 @@
-// End-to-end check of the packaged Saíra desktop app (win-unpacked, no install).
+// End-to-end check of the packaged Saíra desktop app (win-unpacked or linux-unpacked, no install).
 // It drives the renderer over CDP (--remote-debugging-port) and reads the main
 // process over the Node inspector (--inspect). No npm packages are necessary.
 import { spawn, spawnSync } from 'node:child_process';
@@ -6,7 +6,7 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
-// Usage: node e2e.mjs <win-unpacked exe> <csv> [work folder]
+// Usage: node e2e.mjs <unpacked executable> <csv> [work folder]
 // The CSV must pass the export gate (see LOCAL-TEST.md). The work folder holds
 // LOCALAPPDATA, the downloads, the shell log and results.json.
 // DOM.setFileInputFiles with a relative path makes Chromium kill the renderer
@@ -147,13 +147,41 @@ async function clickSel(selector) {
   if (!ok) throw new Error(`No element ${selector}`);
 }
 
+// The packaged exe ignores --inspect (Electron fuse). The test runs a copy of
+// the unpacked folder with that one fuse on, so the shipped exe keeps it off.
+async function inspectableCopy(exe) {
+  const unpacked = path.dirname(exe);
+  const project = path.resolve(unpacked, '..', '..');
+  const copy = path.join(WORK, path.basename(unpacked));
+  fs.cpSync(unpacked, copy, { recursive: true });
+  const fuses = createRequire(path.join(project, 'package.json'))('@electron/fuses');
+  const wire = await fuses.getCurrentFuseWire(exe);
+  // 49 is '1', FuseState.ENABLE. The package index does not export FuseState.
+  const state = (name) => (wire[fuses.FuseV1Options[name]] === 49 ? 'on' : 'off');
+  const names = ['RunAsNode', 'EnableNodeOptionsEnvironmentVariable', 'EnableNodeCliInspectArguments',
+    'EnableEmbeddedAsarIntegrityValidation', 'OnlyLoadAppFromAsar'];
+  const shipped = names.map((name) => `${name} ${state(name)}`);
+  record('shipped exe fuses', shipped.join(' ') === ['off', 'off', 'off', 'on', 'on'].map((s, i) => `${names[i]} ${s}`).join(' '),
+    shipped.join(', '));
+  const target = path.join(copy, path.basename(exe));
+  await fuses.flipFuses(target, {
+    version: fuses.FuseVersion.V1,
+    [fuses.FuseV1Options.EnableNodeCliInspectArguments]: true
+  });
+  return target;
+}
+
 async function main() {
   if (!EXE || !fs.existsSync(EXE)) throw new Error(`Missing exe: ${EXE}`);
   if (!CSV || !fs.existsSync(CSV)) throw new Error(`Missing CSV: ${CSV}`);
   for (const dir of [DOWNLOADS, LOCALAPPDATA]) fs.mkdirSync(dir, { recursive: true });
+  const exe = await inspectableCopy(EXE);
 
-  child = spawn(EXE, [`--remote-debugging-port=${RENDERER_PORT}`, `--inspect=${MAIN_PORT}`], {
-    env: { ...process.env, LOCALAPPDATA, SAIRA_DESKTOP_DOWNLOAD_DIR: DOWNLOADS },
+  const launchedAt = Date.now();
+  child = spawn(exe, [`--remote-debugging-port=${RENDERER_PORT}`, `--inspect=${MAIN_PORT}`], {
+    // On Linux the shell keeps the data in XDG_DATA_HOME and Electron keeps its state in XDG_CONFIG_HOME.
+    env: { ...process.env, LOCALAPPDATA, XDG_DATA_HOME: LOCALAPPDATA, XDG_CONFIG_HOME: path.join(WORK, 'config'),
+      SAIRA_DESKTOP_DOWNLOAD_DIR: DOWNLOADS },
     stdio: ['ignore', 'pipe', 'pipe']
   });
   const shellLog = fs.createWriteStream(path.join(WORK, 'shell-stdout.log'));
@@ -191,7 +219,7 @@ async function main() {
   page = null;
   await waitFor(() => js(`!!document.querySelector("a[data-value='mapping']") && ${idle}`),
     { timeout: 120000, interval: 200, what: 'Shiny connected' });
-  const startup = (Date.now() - t0) / 1000;
+  const startup = (Date.now() - launchedAt) / 1000;
   record('startup to connected Shiny UI', true, `${startup.toFixed(1)} s`);
 
   const windows = () => main.eval(`process.mainModule.require('electron').BrowserWindow.getAllWindows().length`);
@@ -212,6 +240,13 @@ async function main() {
   })()`);
   record('menu bar hidden, keys kept', menu.bar === false && ['copy', 'paste', 'zoomin', 'quit'].every((r) => menu.roles.includes(r)),
     `bar ${menu.bar}, roles ${menu.roles.join(' ')}`);
+  const bridge = await js('typeof window.lifecycle');
+  record('app page has no lifecycle bridge', bridge === 'undefined', `typeof window.lifecycle: ${bridge}`);
+  const csp = await js(`fetch(location.href).then((r) => r.headers.get('content-security-policy'))`);
+  record('app page has the CSP', /object-src 'none'/.test(csp || ''), csp || 'no header');
+  const backendUnpacked = await main.eval(`process.mainModule.require('fs').existsSync(
+    process.mainModule.require('path').join(process.resourcesPath, 'app.asar.unpacked', 'backends'))`);
+  record('backend code only in app.asar', backendUnpacked === false);
 
   // 3. Upload the demo CSV.
   const doc = await (await renderer()).send('DOM.getDocument', { depth: 1 });
@@ -235,17 +270,21 @@ async function main() {
     var el = document.querySelector('#validate_names-stream_filter_all .vn-pill-count');
     return el ? el.textContent.trim() : '';
   })()`;
-  let lastCount = '';
-  let stableSince = Date.now();
-  await waitFor(async () => {
-    const c = await js(countExpr);
-    if (c !== lastCount) { lastCount = c; stableSince = Date.now(); }
-    return c !== '' && Date.now() - stableSince > 6000 && (await js(idle));
-  }, { timeout: 300000, interval: 500, what: 'names run' });
-  const namesSecs = ((Date.now() - namesStart - 6000) / 1000).toFixed(1);
-  const namesErrors = await js(`document.querySelectorAll('.shiny-notification-error').length`);
+  // The run button spins until the run ends, also while the run waits for a
+  // Flora BR or Fauna BR download. The count stays at 0 during that wait.
+  const spinning = `!!document.querySelector('#validate_names-validate .ph-spin')`;
+  await waitFor(() => js(spinning), { timeout: 15000, what: 'names run start' }).catch(() => false);
+  // An error notification closes after 5 s, so the test counts it during the run.
+  let namesErrors = 0;
+  const ended = await waitFor(async () => {
+    namesErrors = Math.max(namesErrors, await js(`document.querySelectorAll('.shiny-notification-error').length`));
+    return !(await js(spinning)) && (await js(idle));
+  }, { timeout: 600000, interval: 1000, what: 'names run' }).catch(() => false);
+  const names = await js(countExpr);
+  const namesSecs = ((Date.now() - namesStart) / 1000).toFixed(1);
   const namesWarn = await js(`Array.from(document.querySelectorAll('.shiny-notification-warning')).map((n) => n.textContent.trim()).join(' | ')`);
-  record('names run', namesErrors === 0, `${lastCount} names, about ${namesSecs} s${namesWarn ? ', warning: ' + namesWarn : ''}`);
+  record('names run', ended && namesErrors === 0 && Number(names) > 0,
+    `${names} names, about ${namesSecs} s${namesErrors ? `, ${namesErrors} errors` : ''}${namesWarn ? ', warning: ' + namesWarn : ''}`);
 
   // 5. External links leave the app window.
   const before = (await external()).length;
@@ -319,6 +358,12 @@ async function main() {
       return fs.statSync(f).size > 0 ? f : false;
     }, { timeout: 180000, interval: 500, what: 'zip in the download folder' }).catch(() => null);
     record('export download', !!zip, zip ? `${path.basename(zip)}, ${fs.statSync(zip).size} bytes, ${((Date.now() - exportStart) / 1000).toFixed(1)} s` : 'no zip');
+    // R marks the bundle current in the flush after the download, about 0.1 s
+    // after the shell event. A close in that gap warns, as before the export.
+    const bundleStart = Date.now();
+    const current = await waitFor(() => js(`document.documentElement.dataset.sairaBundle === 'current'`),
+      { timeout: 10000, interval: 50, what: 'bundle current' }).catch(() => false);
+    record('bundle marked current after the download', !!current, `${Date.now() - bundleStart} ms after the zip`);
   }
 
   // 8. Close after Export: a plain question. Cancel keeps the window, Close stops R and the app.
@@ -329,9 +374,22 @@ async function main() {
   record('close after Export asks first, Cancel keeps the window', (await windows()) === 1 && asked.message === PT.close.message,
     `${asked.message} | ${JSON.stringify(asked.buttons)} | default ${asked.defaultId}`);
 
+  // 9. A change after Export: the warning comes back.
+  const license = await js(`(function () {
+    var box = Array.from(document.querySelectorAll("input[name='mapping-custom_license']")).find(function (b) { return !b.checked; });
+    if (box) box.click();
+    return box ? box.value : '';
+  })()`);
+  await waitIdle();
+  await main.eval(`process.mainModule.require('electron').BrowserWindow.getAllWindows()[0].close(); true`);
+  const changed = await waitFor(async () => (await dialogs())[2], { timeout: 5000, what: 'close after a change' }).catch(() => ({}));
+  await sleep(500);
+  record('close after a change warns again', !!license && changed.message === PT.close.unsaved && (await windows()) === 1,
+    `${license} | ${changed.message}`);
+
   // An open inspector session holds the process ("Waiting for the debugger to disconnect").
   // Close the window from a timer, then disconnect before the app exits.
-  await main.eval(`globalThis.__e2e.closeAnswer = ${JSON.stringify(PT.close.confirm)};
+  await main.eval(`globalThis.__e2e.closeAnswer = ${JSON.stringify(PT.close.discard)};
     setTimeout(() => process.mainModule.require('electron').BrowserWindow.getAllWindows()[0].close(), 300); true`);
   main.ws.close();
   const closeStart = Date.now();
@@ -350,7 +408,10 @@ async function main() {
 
 main().catch((err) => {
   console.error('E2E error:', err && err.stack || err);
-  if (child && child.exitCode === null) spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F']);
+  if (child && child.exitCode === null) {
+    if (process.platform === 'win32') spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F']);
+    else { spawnSync('pkill', ['-KILL', '-P', String(child.pid)]); child.kill('SIGKILL'); }
+  }
   fs.writeFileSync(path.join(WORK, 'results.json'), JSON.stringify({ error: String(err), results }, null, 2));
   process.exit(2);
 });

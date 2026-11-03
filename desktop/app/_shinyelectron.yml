@@ -1,20 +1,20 @@
 app:
   name: "Saíra (prévia)"
   slug: saira-desktop-preview
-  version: "1.0.0-desktop.5"
+  version: "1.0.0-desktop.6"
   description: "Prévia local do Saíra desktop, baseada na preparação da v1.0."
   author: "Rogério Nunes Oliveira"
 
 build:
   type: r-shiny
   runtime_strategy: bundled
-  platforms: [win]
+  platforms: [win, linux]
   architectures: [x64]
 
 dependencies:
   auto_detect: false
   r:
-    version: "4.5.2"
+    version: "4.6.1"
     # CRAN as it was on the renv.lock date. build.R checks the bundle against the lock.
     repos: ["https://packagemanager.posit.co/cran/2026-10-22"]
     packages: []
@@ -22,7 +22,7 @@ dependencies:
     # build.R supplies the exact local source archive in a staging folder.
     local_packages: []
   electron:
-    version: "45.1.0"
+    version: "45.2.1"
 
 window:
   width: 1280

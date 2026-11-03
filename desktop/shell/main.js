@@ -2,17 +2,21 @@
 // keeps its native R backend (backends/native-r.js).
 const { app, BrowserWindow, Menu, clipboard, dialog, ipcMain, nativeTheme, screen, shell } = require('electron');
 const crypto = require('crypto');
+const os = require('os');
 const path = require('path');
 const fs = require('fs');
 const backend = require('./backends/native-r.js');
 const strings = require('./i18n.js');
+const { createLogWriter } = require('./log-writer.js');
 
 const SLUG = 'saira-desktop-preview';
 // A fixed port keeps one origin, so the theme in localStorage survives a restart.
 const PREFERRED_PORT = 38838;
+// These directives do not touch scripts: Shiny and DT need inline and dynamic scripts.
+const APP_CSP = "object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
 // navigator.clipboard (copy buttons) and fullscreen are the only permissions the app uses.
 const ALLOWED_PERMISSIONS = new Set(['clipboard-sanitized-write', 'fullscreen']);
-const ICON = path.join(__dirname, 'assets', 'icon.ico');
+const ICON = path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
 // R opens a Shiny session only for the window that has this key (run_app()).
 const ACCESS_KEY = crypto.randomBytes(32).toString('hex');
 
@@ -20,17 +24,20 @@ const info = readJson(path.join(__dirname, 'desktop-info.json')) || {};
 const unpacked = __dirname.replace('app.asar', 'app.asar.unpacked');
 const appPath = path.join(unpacked, 'src', 'app');
 const bundledLibrary = path.join(unpacked, 'runtime', 'R', 'library');
-const desktopHome = path.join(process.env.LOCALAPPDATA || app.getPath('userData'), SLUG);
+const dataRoot = process.platform === 'linux'
+  ? (process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share'))
+  : (process.env.LOCALAPPDATA || app.getPath('userData'));
+const desktopHome = path.join(dataRoot, SLUG);
 const logDir = path.join(app.getPath('userData'), 'logs');
 const stateFile = path.join(app.getPath('userData'), 'window-state.json');
 
-let logStream = null;
+let logWriter = null;
 let mainWindow = null;
 let actualPort = null;
 let serverRunning = false;
 let quitting = false;
 let closePending = false;
-// A completed download from the Export tab in this R session.
+// The last download of the bundle in this R session completed.
 let exported = false;
 let lastReport = '';
 let lang = 'pt-BR';
@@ -43,22 +50,28 @@ function readJson(file) {
 
 function log(level, ...args) {
   const line = `[${new Date().toISOString()}] [${level.toUpperCase()}] ${args.join(' ')}`;
-  if (logStream) logStream.write(line + '\n');
+  if (logWriter) logWriter.write(line + '\n');
   if (level === 'error') console.error(line); else console.log(line);
 }
 
-function initLogging() {
-  try {
-    fs.mkdirSync(logDir, { recursive: true });
-    const file = path.join(logDir, `app-${new Date().toISOString().slice(0, 10)}.log`);
-    logStream = fs.createWriteStream(file, { flags: 'a' });
-  } catch { /* logging is best-effort */ }
+// taskkill /T ends R and the workers it started (a signal to the group on Linux). Do not wait more than 10 s.
+function stopBackend() {
+  return Promise.race([backend.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
 }
 
+// R has its own process group, so it does not stop with the shell. The status
+// listeners use the window, and the window can be the cause of the error.
+let fatalError = false;
 process.on('uncaughtException', (err) => {
   if (err && err.code === 'EPIPE') return;
   log('error', 'uncaughtException:', (err && err.stack) || err);
-  process.exit(1);
+  if (fatalError) return;
+  fatalError = true;
+  quitting = true;
+  backend.removeAllListeners('status');
+  Promise.resolve().then(stopBackend)
+    .catch((stopErr) => log('error', 'Backend stop failed:', stopErr && stopErr.message))
+    .finally(() => app.exit(1));
 });
 
 function t() {
@@ -76,7 +89,7 @@ function prepareRuntimeEnvironment() {
   const empty = path.join(app.getPath('userData'), 'empty-r-startup');
   fs.mkdirSync(path.dirname(empty), { recursive: true });
   fs.writeFileSync(empty, '');
-  for (const name of ['R_HOME', 'R_LIBS', 'R_LIBS_SITE']) delete process.env[name];
+  for (const name of ['R_HOME', 'R_LIBS', 'R_LIBS_SITE', 'R_PROFILE', 'R_ENVIRON']) delete process.env[name];
   Object.assign(process.env, {
     R_LIBS_USER: bundledLibrary,
     R_PROFILE_USER: empty,
@@ -89,6 +102,15 @@ function prepareRuntimeEnvironment() {
   });
   // The rostrum.sqlite file follows SAIRA_DATA_DIR, the BR snapshots follow R_USER_DATA_DIR.
   process.env.SAIRA_DATA_DIR = path.join(desktopHome, 'data', 'R', 'saira');
+  if (process.platform === 'linux') {
+    // In the C locale, R cannot read the install path /opt/Saíra (prévia).
+    const locale = process.env.LC_ALL || process.env.LC_CTYPE || process.env.LANG || '';
+    if (!/utf-?8/i.test(locale)) process.env.LC_ALL = 'C.UTF-8';
+    // The bundled libcurl looks for the Debian CA file. Fedora and openSUSE keep it elsewhere.
+    const ca = ['/etc/ssl/certs/ca-certificates.crt', '/etc/pki/tls/certs/ca-bundle.crt', '/etc/ssl/ca-bundle.pem']
+      .find((file) => fs.existsSync(file));
+    if (ca && !process.env.CURL_CA_BUNDLE) process.env.CURL_CA_BUNDLE = ca;
+  }
 }
 
 function isAppUrl(url) {
@@ -101,8 +123,11 @@ function isAppUrl(url) {
 }
 
 function openExternal(url) {
-  if (/^(https?|mailto):/i.test(url)) shell.openExternal(url);
-  else log('warn', 'Blocked URL:', url);
+  if (/^(https?|mailto):/i.test(url)) {
+    shell.openExternal(url).catch((err) => log('warn', 'Could not open URL:', err && err.message));
+  } else {
+    log('warn', 'Blocked URL:', url);
+  }
 }
 
 // The menu bar stays hidden. The menu keeps the edit, zoom and full screen shortcuts.
@@ -164,7 +189,7 @@ function crashReport(data) {
   return [
     ...(stderr ? stderr.split(/\r?\n/).slice(-40) : []),
     '',
-    `Saíra desktop ${previewVersion()} · saira ${info.saira_version || '?'} (${(info.source_commit || '').slice(0, 7)})`,
+    `Saíra desktop ${previewVersion()} · saira ${info.saira_version || '?'} (${(info.source_commit || '').slice(0, 7)}${info.source_dirty ? ' dirty' : ''})`,
     `R ${info.r_version || '?'} · Electron ${process.versions.electron} · ${process.platform} ${process.arch}`,
     data.message || ''
   ].join('\n');
@@ -222,6 +247,9 @@ function guardNavigation(contents) {
 }
 
 function configureSession(ses) {
+  ses.webRequest.onHeadersReceived({ urls: ['http://127.0.0.1/*'] }, ({ url, responseHeaders }, callback) => {
+    callback(isAppUrl(url) ? { responseHeaders: { ...responseHeaders, 'Content-Security-Policy': [APP_CSP] } } : {});
+  });
   ses.setPermissionRequestHandler((_wc, permission, callback, details) => {
     callback(ALLOWED_PERMISSIONS.has(permission) && isAppUrl(details.requestingUrl));
   });
@@ -241,36 +269,41 @@ function configureSession(ses) {
         filters: ext ? [{ name: t().download.type.replace('{ext}', ext.toUpperCase()), extensions: [ext] }] : []
       });
     }
-    // Shiny serves the files of the Export tab at /download/export-<output id>.
-    const fromExport = /\/download\/export-/.test(item.getURL());
+    // Shiny serves the bundle at /download/export-download_real. The private
+    // file of real points is not the bundle, so it does not count.
+    const bundle = /\/download\/export-download_real(\?|$)/.test(item.getURL());
+    if (bundle) exported = false;
     item.once('done', (_e, state) => {
-      if (state === 'completed' && fromExport) exported = true;
+      if (state === 'completed' && bundle) exported = true;
       log('info', `Download ${state}:`, item.getSavePath() || name);
     });
   });
 }
 
-// null: the session has no data. '': data, but the Home tab shows no count.
-async function sessionRecords() {
+// null: the session has no data. records '': the Home tab shows no count.
+// bundle 'current': the app built a bundle and the data did not change after it.
+async function sessionState() {
   const probe = `(function () {
     if (!document.querySelector("[id^='mapping-map_']")) return null;
     var count = document.querySelector('#upload-stats .stat-value');
-    return count ? count.textContent.trim() : '';
+    return { records: count ? count.textContent.trim() : '', bundle: document.documentElement.dataset.sairaBundle || '' };
   })()`;
-  const timeout = new Promise((resolve) => setTimeout(() => resolve(''), 1500));
+  const unknown = { records: '', bundle: '' };
+  const timeout = new Promise((resolve) => setTimeout(() => resolve(unknown), 1500));
   try {
     return await Promise.race([mainWindow.webContents.executeJavaScript(probe), timeout]);
   } catch {
-    return '';
+    return unknown;
   }
 }
 
 // Board Close-B: data that was not exported gets a warning with a way to Export.
 async function closeChoice() {
-  const records = await sessionRecords();
-  if (records === null) return 'close';
+  const state = await sessionState();
+  if (state === null) return 'close';
+  const records = state.records;
   const c = t().close;
-  if (exported) {
+  if (exported && state.bundle === 'current') {
     const answer = dialog.showMessageBoxSync(mainWindow, {
       type: 'question', title: c.title, message: c.message, detail: c.detail,
       buttons: [c.confirm, c.cancel], defaultId: 1, cancelId: 1, noLink: true
@@ -323,8 +356,7 @@ async function shutdown() {
   quitting = true;
   saveState();
   showClosingWindow();
-  // taskkill /T ends R and the workers it started. Do not wait more than 10 s.
-  await Promise.race([backend.stop(), new Promise((resolve) => setTimeout(resolve, 10000))]);
+  await stopBackend();
   app.exit(0);
 }
 
@@ -386,8 +418,24 @@ function fromMainWindow(event) {
   return Boolean(mainWindow) && event.sender === mainWindow.webContents;
 }
 
+// The shell takes IPC only from the top frame of the main window: the lifecycle
+// actions from lifecycle.html, the language and theme from the app page.
+function topFrameUrl(event) {
+  const frame = event.senderFrame;
+  return fromMainWindow(event) && frame && !frame.parent ? frame.url : '';
+}
+
+function fromLifecyclePage(event) {
+  const url = topFrameUrl(event);
+  return url.startsWith('file:') && url.split(/[?#]/)[0].endsWith('/lifecycle.html');
+}
+
+function fromAppPage(event) {
+  return isAppUrl(topFrameUrl(event));
+}
+
 ipcMain.on('lifecycle-action', (event, action) => {
-  if (!fromMainWindow(event)) return;
+  if (!fromLifecyclePage(event)) return;
   const type = action && action.type;
   if (type === 'retry') {
     showLifecycle('start');
@@ -400,11 +448,11 @@ ipcMain.on('lifecycle-action', (event, action) => {
 });
 
 ipcMain.on('saira:lang', (event, tag) => {
-  if (fromMainWindow(event)) setLanguage(String(tag || ''));
+  if (fromAppPage(event)) setLanguage(String(tag || ''));
 });
 
 ipcMain.on('saira:theme', (event, data) => {
-  if (!fromMainWindow(event) || !data) return;
+  if (!fromAppPage(event) || !data) return;
   themeDark = Boolean(data.dark);
   themeMode = data.mode === 'light' || data.mode === 'dark' ? data.mode : 'system';
 });
@@ -418,7 +466,7 @@ if (!app.requestSingleInstanceLock()) {
     mainWindow.focus();
   });
   app.whenReady().then(() => {
-    initLogging();
+    logWriter = createLogWriter(logDir);
     log('info', `Saíra desktop ${previewVersion()}, saira ${info.saira_version}, ${process.platform} ${process.arch}`);
     prepareRuntimeEnvironment();
     buildMenu();

@@ -1,18 +1,15 @@
 # Saíra desktop: prévia local da v1.0
 
-Este piloto parte de `release/v1.0.0`, commit
-`3af52af1` (#225). A base inclui as passagens exatas antes da busca aproximada
-(#219), a atualização da Flora BR e da Fauna BR num processo R separado (#220),
-o nome sugerido com o nome aceito (#221), a View Transition sem
-`InvalidStateError` (#222), a consulta ao IPT a cada 30 dias (#223), as cópias
-exatas fora do pacote (#224) e a lista de correções do Pacote (#225).
+Este piloto parte de `release/v1.0.0`. O `build-info.json` de cada build grava o
+commit, o branch e se havia arquivos sem commit (campo `source`). O `desktop-info.json`
+leva o commit para o relatório de falha do app.
 O worker da atualização usa `callr`, sem socket de rede, então o Windows não
 pede acesso do R às redes públicas (ADR-177).
 O `DESCRIPTION` da base ainda informa `0.11.2`. O instalador usa a versão
-`1.0.0-desktop.5` para identificar a prévia, sem antecipar a release do pacote.
+`1.0.0-desktop.6` para identificar a prévia, sem antecipar a release do pacote.
 
 Não há workflow, push, publicação nem atualização automática nesta etapa.
-O empacotamento usa Windows x64 e `runtime_strategy: bundled`. O R e as
+O empacotamento usa Windows x64 ou Linux x64 e `runtime_strategy: bundled`. O R e as
 dependências são incluídos no aplicativo; o usuário final não precisa instalar R.
 
 ## Preparar o kit no WSL
@@ -24,8 +21,8 @@ Rscript --vanilla desktop/build.R --check
 Rscript --vanilla desktop/prepare-windows.R
 ```
 
-O `prepare-windows.R` grava o branch e o commit do HEAD no `toolchain.dcf` do
-kit. O pacote-fonte vem do `R CMD build` da worktree, então arquivos do pacote
+O `prepare-windows.R` grava o branch, o commit do HEAD e o estado sem commit no
+`toolchain.dcf` do kit. O pacote-fonte vem do `R CMD build` da worktree, então arquivos do pacote
 ainda sem commit também entram no kit. Nesse caso, o script
 mostra um aviso com a lista desses arquivos.
 
@@ -64,8 +61,12 @@ O destino precisa ser novo. Um build existente nunca é apagado pelo script.
 O instalador `.exe` fica em `bundle\electron-app\dist` dentro do destino.
 Também existe `win-unpacked` para testes sem instalação.
 
+O build para se a árvore tiver arquivos sem commit. Numa prévia, aceite esse estado
+com `--allow-dirty` (`-AllowDirty` no `build.ps1`). Uma versão final, sem sufixo,
+sempre exige árvore limpa.
+
 O shinyelectron fica fixado por commit e SHA-256 em `toolchain.dcf`.
-O R embarcado é 4.5.2 e o Electron é 45.1.0. Os comandos gerados pelo
+O R embarcado é 4.6.1 e o Electron é 45.2.1. Os comandos gerados pelo
 shinyelectron usam `electron-builder --publish never`.
 
 ### Versões dos pacotes
@@ -82,6 +83,40 @@ As diferenças aceitas ficam em `version-differences.csv`. O build também grava
 `build-info.json`, `source-renv.lock`, `node-package-lock.json` e
 `bundled-packages.csv` para comparação.
 
+### Snapshot da Flora BR e da Fauna BR
+
+O snapshot do pacote (ADR-153) envelhece entre as releases. Com mais de 30 dias,
+a primeira checagem de nomes de uma instalação nova espera o download das duas
+bases. Por isso, o build baixa as versões do IPT com o R embarcado e as grava no
+saira embarcado. As versões ficam em `br_snapshot` no `build-info.json`. Se o IPT
+não responder, o build avisa e mantém o snapshot do pacote.
+
+### Pacotes npm, assinatura e fuses
+
+`desktop/node-package-lock.json` é o lockfile npm aprovado. O build para sem esse
+arquivo. O build o copia antes do `npm install` e para antes do electron-builder se
+o npm resolver outra versão ou outro hash. Para aprovar uma mudança, revise o
+`package-lock.json` de `bundle/electron-app` no destino e copie-o para
+`desktop/node-package-lock.json`.
+
+O `npm audit` lista 15 pacotes moderados por um único advisory do minimatch. O
+override leva o minimatch do electron-builder ao 11. A triagem das versões antigas
+que ficam está no ADR-191. Não rode `npm audit fix --force`: ele propõe um
+electron-builder antigo.
+
+Com um certificado em `WIN_CSC_LINK` ou `CSC_LINK` e a senha em
+`WIN_CSC_KEY_PASSWORD` ou `CSC_KEY_PASSWORD`, o electron-builder assina o app.
+Sem certificado, o build não assina. Nos dois casos, `dist\SHA256SUMS.txt` tem o
+SHA-256 de cada instalador.
+
+O `package.json` liga os fuses do Electron: sem `ELECTRON_RUN_AS_NODE`,
+`NODE_OPTIONS` e `--inspect`, e com o processo principal carregado do `app.asar`.
+O `main.js` e o backend ficam nesse arquivo. O R, as bibliotecas e o app Shiny ficam
+em `app.asar.unpacked`, porque precisam existir como arquivos no disco. Os fuses
+não verificam essa pasta. O Electron só confere a integridade do `app.asar` no
+Windows e no macOS, e não no Linux (ADR-191). Se o app não abrir depois de uma
+mudança nos fuses, investigue a causa: desligar um fuse tira uma proteção do pacote.
+
 ### Tamanho
 
 `desktop_prune_library()` remove `doc`, `help`, `html`, `examples`, `demo` e
@@ -96,15 +131,57 @@ mensagens do R, a ajuda dos pacotes base e os pacotes recomendados que nenhum
 pacote do bundle carrega (Depends, Imports ou LinkingTo). Na prévia 5, isso
 soma 75 MB. As mensagens de erro do R ficam em inglês.
 
+## Gerar o app Linux
+
+O build Linux roda no WSL ou num Linux x64, na raiz desta worktree, sem kit:
+
+```bash
+Rscript --vanilla desktop/bootstrap.R
+Rscript --vanilla desktop/build.R
+```
+
+O `bootstrap.R` instala o shinyelectron e o Node fixado em `desktop/_tools`.
+O destino padrão é `~/.local/share/saira-desktop-builds`. Em
+`bundle/electron-app/dist` ficam o `.AppImage`, o `.deb` e `linux-unpacked`.
+
+O shinyelectron não tem R portátil para Linux. Por isso, o build:
+
+- baixa o R 4.6.1 do Posit r-builds (`.deb` do Ubuntu 24.04), com o SHA-256 do
+  `toolchain.dcf`, e o torna relocável: `bin/R` e `bin/Rscript` acham o
+  `R_HOME` pelo próprio caminho;
+- instala os pacotes binários do snapshot P3M `__linux__/noble` na data do
+  `renv.lock`;
+- copia para `R_HOME/syslib` as bibliotecas que o `ldd` lista, menos glibc,
+  OpenGL, X11/xcb, fontconfig, freetype, harfbuzz e expat, que vêm do sistema;
+- copia os dados do PROJ e do GDAL para `syslib/share`.
+
+O app precisa de glibc 2.39 ou mais nova: Ubuntu 24.04, Debian 13, Fedora 40
+ou posterior. A glibc da máquina de build define esse mínimo. O `.deb` instala
+em `/opt/Saíra (prévia)`.
+
+O build muda dois arquivos gerados (`desktop_apply_shell()` e
+`desktop_patch_apprun()`). Se o texto original mudar numa versão nova do
+shinyelectron ou do electron-builder, o build para:
+
+- o R abre um grupo de processos próprio, e o encerramento sinaliza o grupo,
+  então os workers do R param junto;
+- o `AppRun` do AppImage não abre o app sem a sandbox do Chromium. Num sistema
+  que bloqueia namespaces de usuário (Ubuntu 24.04 com AppArmor), o AppImage
+  mostra uma mensagem e pede o `.deb`, que instala um perfil AppArmor. O texto
+  da mensagem fica em `desktop/apprun-sandbox.sh`.
+
 ## Shell do desktop
 
 `desktop/shell` substitui o `main.js`, o `preload.js` e a tela de abertura do
 shinyelectron. O build copia esses arquivos sobre o app gerado. O shell:
 
-- isola o R da instalação pessoal: biblioteca só do bundle, sem `.Rprofile`
-  nem `.Renviron` do usuário;
-- guarda os dados em `%LOCALAPPDATA%\saira-desktop-preview`, separados do uso
-  convencional em R;
+- isola o R da instalação pessoal: roda só o R do bundle, com `--vanilla`, e usa
+  biblioteca só do bundle. Sem o R do bundle, o app mostra um erro e não procura
+  outro R;
+- guarda os dados em `%LOCALAPPDATA%\saira-desktop-preview` (no Linux,
+  `~/.local/share/saira-desktop-preview`), separados do uso convencional em R;
+- no Linux, usa `C.UTF-8` se o locale não for UTF-8, porque o R não lê o
+  caminho com acento no locale C;
 - abre com a foto da saíra-pintor e as etapas da partida do R, no tema
   escolhido na última sessão;
 - não tem barra de menu, mas mantém os atalhos de edição, zoom, tela cheia e
@@ -114,14 +191,22 @@ shinyelectron. O build copia esses arquivos sobre o app gerado. O shell:
 - ao fechar com dados que não foram exportados, avisa quantos registros serão
   perdidos e oferece "Ir para Exportação". Depois de um download da Exportação,
   só pergunta se pode fechar;
-- encerra o R e os workers em até 10 s, numa janela pequena "Fechando o Saíra";
+- encerra o R e os workers em até 10 s, numa janela pequena "Fechando o Saíra".
+  No Linux, o shell sinaliza o grupo do R e espera o grupo sumir. O worker da
+  atualização BR (`callr`) roda em sessão própria, e o supervisor dele o encerra
+  em até 3 s depois do R;
+- divide o log do dia em partes de 10 MB e abre um log novo na virada do dia. Apaga
+  logs com mais de 30 dias e, acima de 50 MB no total, os logs mais antigos. Um erro
+  no arquivo de log para só o log em arquivo;
+- num erro fatal do processo principal, encerra o R antes de sair;
 - mostra as últimas linhas do R e um botão para copiar os detalhes se o R parar;
 - permite só uma janela e lembra o tamanho, a posição e o tema.
 
 As ferramentas de desenvolvedor só aparecem com `SAIRA_DESKTOP_DEVTOOLS=1`.
 
 O ícone é o S itálico do logotipo sobre o cinza do app
-(`desktop/shell/assets/icon.ico`, de 16 a 256 px). Para gerar de novo, rode
+(`desktop/shell/assets/icon.ico`, de 16 a 256 px, e `icon.png`, 256 px, para o
+Linux). Para gerar de novo, rode
 `Rscript desktop/icon.R` num ambiente com chromote e Chrome. O build só copia
 o arquivo. As fontes vêm de `inst/app/www/vendor/fonts` e a foto vem de
 `website/assets/img/landing`. O `prepare-windows.R` copia as duas para o kit.
@@ -147,9 +232,9 @@ Teste no Windows com uma planilha real:
   exportação e memória total da árvore de processos.
 - Testar também numa máquina/VM sem R e Node para confirmar a independência do bundle.
 
-Esta prévia é local e não assinada; o Windows pode exibir o aviso de editor
-desconhecido. Assinatura, atualizações e distribuição pública ficam para uma
-etapa posterior. Os algoritmos do pacote permanecem os da base, para separar
+Sem certificado, a prévia não é assinada, e o Windows pode exibir o aviso de
+editor desconhecido. Atualizações e distribuição pública ficam para uma etapa
+posterior. Os algoritmos do pacote permanecem os da base, para separar
 problemas de empacotamento de alterações funcionais.
 
 ### Smoke test
@@ -167,6 +252,25 @@ do loopback, e que a verificação offline
 de nomes sugere *Euterpe edulis*. Por fim, inicia o lançador empacotado numa
 porta local temporária e confere a página e o CSS. Os logs ficam em `diagnostics`.
 
+No Linux, rode o `smoke.R` com o R do `linux-unpacked`. Esse caminho não testa o
+lançador:
+
+```bash
+R=<build>/bundle/electron-app/dist/linux-unpacked/resources/app.asar.unpacked/runtime/R
+RENV_CONFIG_AUTOLOADER_ENABLED=FALSE "$R"/portable-r-4.6.1-linux-x64/bin/Rscript \
+  --vanilla desktop/smoke.R --library="$R/library"
+```
+
+### Teste do shell sem Electron
+
+`desktop/shell-check.mjs` confere o encerramento da árvore de processos, a
+limpeza de logs e o arquivo de log, sem abrir janela. Rode no Linux e com o Node do
+Windows:
+
+```bash
+node desktop/shell-check.mjs desktop/shell/process-tree.js desktop/shell/log-retention.js desktop/shell/log-writer.js
+```
+
 ### Teste ponta a ponta
 
 `desktop/e2e.mjs` abre o `win-unpacked` e percorre o app como um usuário.
@@ -177,7 +281,9 @@ inspector do Node. Rode com o Node do Windows, a partir de uma pasta do Windows:
 node .\desktop\e2e.mjs 'C:\caminho\do\build\bundle\electron-app\dist\win-unpacked\saira-desktop-preview.exe' .\desktop\examples\ocorrencias-e2e.csv
 ```
 
-O CSV precisa passar o bloqueio da exportação. O kit traz
+O executável distribuído ignora `--inspect` (fuse do Electron). O teste confere
+os fuses, copia o `win-unpacked` para a pasta do teste e liga só esse fuse na
+cópia. O CSV precisa passar o bloqueio da exportação. O kit traz
 `ocorrencias-e2e.csv`: é o exemplo do site sem os dois bloqueios de propósito.
 O teste cria uma pasta nova ao lado do CSV, com `LOCALAPPDATA`, downloads,
 `shell-stdout.log` e `results.json`. Ele verifica a abertura, a janela sem
@@ -186,6 +292,9 @@ os links externos, o aviso ao fechar antes de exportar (com o app em inglês),
 o download do DwC-A, a pergunta ao fechar depois da exportação e o
 encerramento do R. O teste substitui o diálogo nativo e o navegador por stubs,
 então nada abre fora do app.
+
+No Linux, rode com `desktop/_tools/node-linux/bin/node`. O teste precisa do
+`WebSocket` global, e o Node do sistema pode não ter essa API.
 
 ## Referências
 

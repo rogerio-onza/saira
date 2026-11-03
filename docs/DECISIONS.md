@@ -3501,6 +3501,20 @@ Formato: ADR leve (Architecture Decision Record).
 - **Consequencias**: o caminho aninhado de `dynamicProperties` mantem `\u00e9` e `\/` como estao, igual ao caminho plano. O significado do JSON nao muda.
   Mapa, medido no Chrome com o app real. Com 100 mil registros em 500 lugares, o filtro cai de ate 2,61 s para ate 1,35 s, o bloqueio da pagina de 1,77 s para 0,05 s e o heap de 598 MB para 21 MB. Com 100 mil pontos distintos, o ganho e pequeno, e o maior bloqueio continuo fica em 1,5 s. Com 300 mil pontos distintos, chega a 2,4 s, com 850 MB de heap. O mapa nao tem limite de marcadores: agrupar pontos muda o visual e pede uma escolha do dono do projeto.
 
+## ADR-191: Limites da cadeia de build e da integridade do desktop
+
+- **Data**: 2026-11-03
+- **Status**: Aceito.
+- **Contexto**: a auditoria do desktop de 2026-11-03 achou um advisory do minimatch no toolchain npm (GHSA-g3hv-75wg-m249, corrigido no 11.0.1) e codigo JS fora do `app.asar`. O electron-builder 26.18.0, a versao mais nova, ainda pede minimatch `^10`.
+- **Decisao**:
+  - Override `minimatch@^10` para `11.0.4`. Um override pela chave do pacote pai foi rejeitado: ele troca tambem o minimatch 3, 5 e 9 de toda a subarvore, e essas versoes tem outra API. O `npm audit` zera nesse caso, mas o resultado nao prova nada.
+  - O minimatch 3.1.5, 5.1.9 e 9.0.9 ficam. Medido com 8 segmentos `**/../a/b`: 3.1.5 e 5.1.9 nao amplificam, e 9.0.9 amplifica so com `optimizationLevel: 2`. Nenhum pacote da arvore define essa opcao, e o padrao gera 1 padrao. As dependencias npm nao entram no `app.asar`. O `npm audit` continua com 15 entradas moderadas por esse motivo.
+  - `npm install` continua, com a comparacao de versao e hash contra `desktop/node-package-lock.json` antes do electron-builder. O comando vem de dentro do shinyelectron, e o gate ja para o build numa diferenca.
+  - O backend JS entra no `app.asar`. R, bibliotecas e app Shiny ficam em `app.asar.unpacked`, porque precisam existir como arquivos.
+  - O app nao confere o hash do runtime R antes de abrir o processo. Quem escreve na pasta instalada tambem troca o executavel do Electron no Linux, e no Windows essa protecao depende da assinatura. A autenticidade fica com a politica de assinatura e distribuicao da v1.0.
+  - A v1.0 sai sem assinatura (decisao do dono, 2026-11-03): o projeto nao tem orcamento para certificado. O tutorial de instalacao explica o aviso do Windows, e o site publica o SHA-256 de cada instalador no lancamento. Um programa gratuito para codigo aberto pode entrar depois da v1.0.
+- **Consequencias**: uma versao nova do electron-builder pede rever o override e o lockfile. O fuse de integridade so tem efeito no Windows e no macOS, e o README diz isso. Sem assinatura, o Windows mostra o aviso de editor desconhecido.
+
 ## ADR-193: Correcoes do nucleo da auditoria de 2026-11-03
 
 - **Data**: 2026-11-03

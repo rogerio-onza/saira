@@ -1,5 +1,62 @@
 # Validação local do bundle
 
+## Sexta prévia, novo build: 31/10/2026
+
+Base: `feature/desktop-bundle` rebaseado sobre `release/v1.0.0` em `639e480`
+(#256), com as correções da auditoria de 31/10 (#245 a #256). O pacote passa a
+importar `ps`.
+
+- Linux: `1.0.0-desktop.6-linux-20261031-203525`. O `smoke.R` passou.
+- Windows: `1.0.0-desktop.6-win-20261031-204612`, instalador de 327 MB. O
+  `smoke.ps1` passou.
+
+No Linux, o `e2e.mjs` passou 13 de 14 verificações. Depois do export, o
+fechamento ainda avisou "Você ainda não exportou os dados". O E2E fechou a
+janela 39 ms depois do evento `Download completed` do shell. O R marca o
+pacote como atual no flush seguinte ao download, cerca de 0,1 s depois. No
+dia 30/10, o fechamento veio 491 ms depois e passou. Não houve regressão no
+pacote. Agora o E2E espera `data-saira-bundle="current"` antes de fechar.
+
+No Windows, com essa correção, o `e2e.mjs` passou 15 de 15 verificações:
+
+| Etapa | Resultado |
+| --- | --- |
+| Abertura até o Shiny conectado | 16,7 s |
+| Importação e mapeamento automático | `scientificName` <- `especie`, 13,5 s |
+| Validação de nomes | 56 nomes, 24,3 s |
+| Fechar antes de exportar | Aviso em inglês com 1.105 registros; "Go to Export" abre a aba |
+| Download do DwC-A | `saira-dwc-archive.zip`, 5,6 s |
+| Pacote atual depois do download | 1 ms depois do zip |
+| Fechar depois de exportar | Cancelar mantém a janela; Fechar sai em 0,9 s, código 0 |
+| R | Porta fechada |
+
+O E2E corrigido ainda não rodou no Linux.
+
+## Sexta prévia, Linux: 30/10/2026
+
+Base: `feature/desktop-bundle` em `9fef28e`, sobre `release/v1.0.0` em
+`5485e8f` (#232). As mudanças do build Linux ainda não têm commit. A base não
+tem #233 a #237.
+
+- Prévia desktop: `1.0.0-desktop.6`, pacote `saira 0.11.2`, R 4.6.1.
+- `.deb`: 272 MB. `.AppImage`: 326 MB. `linux-unpacked`: 681 MB.
+- O prune tirou 385 pastas de pacotes (94 MB) e 67 MB do R.
+- `syslib`: 131 bibliotecas e os dados do PROJ e do GDAL, 173 MB.
+- Versões iguais ao `renv.lock`, com 6 diferenças aceitas.
+- Snapshot BR: florabr 393.432 e faunabr 1.57, baixados com o R embarcado.
+
+O `smoke.R` passou com o R embarcado, numa cópia em `Saíra (prévia)`, com acento
+e espaço, em 47 s. O `ldd` dos objetos do bundle só acha fora dele as
+bibliotecas do sistema excluídas de propósito.
+
+O primeiro build parou nos pacotes recomendados. O `R CMD INSTALL` leu o Rscript
+de `bin/exec` como subarquitetura. Agora o Rscript real fica em
+`bin/Rscript.bin`. Com `env -i`, o R no locale C não leu o caminho com acento.
+Agora o shell usa `C.UTF-8`.
+
+Falta testar a janela, o `e2e.mjs`, o `.deb` instalado e o AppImage. No Linux,
+o shell envia SIGTERM só ao processo R. Falta conferir se os workers encerram junto.
+
 ## Quinta prévia: 27/10/2026
 
 Base: `release/v1.0.0` em `3af52af` (#225). O kit leva a correção do

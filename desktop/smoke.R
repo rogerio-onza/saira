@@ -62,13 +62,20 @@ worker <- callr::r_bg(function() { Sys.sleep(5); normalizePath(find.package("sai
     libpath = .libPaths(), package = TRUE, user_profile = FALSE, stdout = NULL, stderr = NULL,
     supervise = TRUE)
 # A listening socket outside the loopback opens the Windows firewall prompt.
-listen <- system2("powershell", c("-NoProfile", "-Command", shQuote(sprintf(paste0(
-    "$l = @(Get-NetTCPConnection -State Listen -ErrorAction Stop); ",
-    "$r = @($l | Where-Object { $_.OwningProcess -in @(%d, %d) -and ",
-    "$_.LocalAddress -notin @('127.0.0.1', '::1') }); ",
-    "Write-Output \"$($l.Count) $($r.Count)\""), Sys.getpid(), worker$get_pid()), type = "cmd")),
-    stdout = TRUE)
-counts <- as.integer(strsplit(trimws(tail(listen, 1L)), " ")[[1]])
+if (.Platform$OS.type == "windows") {
+    listen <- system2("powershell", c("-NoProfile", "-Command", shQuote(sprintf(paste0(
+        "$l = @(Get-NetTCPConnection -State Listen -ErrorAction Stop); ",
+        "$r = @($l | Where-Object { $_.OwningProcess -in @(%d, %d) -and ",
+        "$_.LocalAddress -notin @('127.0.0.1', '::1') }); ",
+        "Write-Output \"$($l.Count) $($r.Count)\""), Sys.getpid(), worker$get_pid()), type = "cmd")),
+        stdout = TRUE)
+    counts <- as.integer(strsplit(trimws(tail(listen, 1L)), " ")[[1]])
+} else {
+    listen <- system2("ss", c("-Hltnp"), stdout = TRUE)
+    own <- grepl(sprintf("pid=(%d|%d),", Sys.getpid(), worker$get_pid()), listen)
+    loopback <- grepl("^\\S+\\s+\\S+\\s+\\S+\\s+(127\\.0\\.0\\.1|\\[::1\\]):", listen)
+    counts <- c(length(listen), sum(own & !loopback))
+}
 stopifnot(length(counts) == 2L, counts[[1]] > 0L, counts[[2]] == 0L)
 worker$wait(60000)
 stopifnot(startsWith(tolower(worker$get_result()), bundle))

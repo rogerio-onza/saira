@@ -61,7 +61,9 @@ for (i in seq_along(blobs)) {
 }
 for (blob in blobs) writeBin(blob, con)
 close(con)
-message("Icon: ", output, " (", paste(sizes, collapse = ", "), " px)")
+# Linux reads PNG, not ICO.
+stopifnot(file.copy(pngs[[match(256L, sizes)]], file.path(dirname(output), "icon.png"), overwrite = TRUE))
+message("Icon: ", output, " (", paste(sizes, collapse = ", "), " px) and icon.png (256 px)")
 preview <- desktop_arg("preview")
 if (!is.null(preview)) {
     dir.create(preview, recursive = TRUE, showWarnings = FALSE)

@@ -123,7 +123,7 @@
     function showError(kind, report) {
       var crash = kind === 'crash';
       set('error-title', crash ? text.crashTitle : text.startTitle);
-      set('error-text', crash ? text.crashText : text.startText);
+      set('error-text', crash ? text.crashText : kind === 'missing' ? text.missingText : text.startText);
       set('btn-retry', crash ? text.reopen : text.retry);
       set('log-text', report);
       show('error');
@@ -168,7 +168,7 @@
           break;
         case 'error':
         case 'server_crashed':
-          showError('start', data.report);
+          showError(data.code === 'R_MISSING' ? 'missing' : 'start', data.report);
           break;
       }
     });

@@ -1,7 +1,8 @@
 param(
     [string]$Rscript,
     [string]$OutputDirectory,
-    [switch]$CheckOnly
+    [switch]$CheckOnly,
+    [switch]$AllowDirty
 )
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
@@ -27,6 +28,7 @@ try {
     }
     $BuildArguments = @('--vanilla', "$PSScriptRoot\build.R")
     if ($CheckOnly) { $BuildArguments += '--check' }
+    if ($AllowDirty) { $BuildArguments += '--allow-dirty' }
     if ($OutputDirectory) { $BuildArguments += "--output=$OutputDirectory" }
     & $Rscript @BuildArguments
     if ($LASTEXITCODE -ne 0) { throw 'Desktop build failed.' }
