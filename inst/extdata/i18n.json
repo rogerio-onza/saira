@@ -4954,6 +4954,16 @@
     "en": "%d cell(s) had accents from a DOS (CP850) file read with the wrong code page, as \"SÆo\" for \"São\", and were repaired.",
     "es": "%d celda(s) tenían acentos de un archivo DOS (CP850) leídos con la tabla equivocada, como \"SÆo\" en lugar de \"São\", y se corrigieron."
   },
+  "upload_report_na_empty": {
+    "pt": "%d célula(s) com o texto NA em colunas de identificador ou código foram lidas como vazias, porque o arquivo usa NA para célula vazia em outras colunas. Confira essas colunas se NA for um valor real.",
+    "en": "%d cell(s) with the text NA in identifier or code columns were read as empty, because the file uses NA for empty cells in other columns. Check these columns if NA is a real value.",
+    "es": "%d celda(s) con el texto NA en columnas de identificador o código se leyeron como vacías, porque el archivo usa NA para celdas vacías en otras columnas. Revise esas columnas si NA es un valor real."
+  },
+  "upload_report_lost_timestamps": {
+    "pt": "%d data(s) ou hora(s) em formato desconhecido ficaram vazias.",
+    "en": "%d dates or times in an unknown format stay empty.",
+    "es": "%d fechas u horas en un formato desconocido quedan vac\u00edas."
+  },
   "upload_report_invisible": {
     "pt": "%d célula(s) tinham caracteres invisíveis (espaço não separável, espaço de largura zero, controle de direção) e foram limpas.",
     "en": "%d cell(s) had invisible characters (non-breaking space, zero-width space, direction control) and were cleaned.",

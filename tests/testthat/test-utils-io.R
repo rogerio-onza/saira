@@ -555,3 +555,61 @@ testthat::test_that("a data row read as the header is detected and can be read a
     testthat::expect_identical(names(out), paste0("col_", 1:4))
     testthat::expect_false(probable_data_header(c("scientificName", "decimalLatitude", "Data")))
 })
+
+csv_with <- function(lines) {
+    path <- tempfile(fileext = ".csv")
+    withr::defer(unlink(path), envir = parent.frame())
+    writeLines(lines, path)
+    path
+}
+
+testthat::test_that("read_biodiversity_csv keeps NA as text in identifier and code columns", {
+    path <- csv_with(c(
+        "occurrenceID,scientificName,countryCode,catalogNumber,decimalLatitude",
+        "NA,Acacia erioloba,NA,NA,-22.57",
+        "o2,Acacia erioloba,BR,c2,"
+    ))
+    df <- read_biodiversity_csv(path)
+    testthat::expect_identical(df$occurrenceID, c("NA", "o2"))
+    testthat::expect_identical(df$countryCode, c("NA", "BR"))
+    testthat::expect_identical(df$catalogNumber, c("NA", "c2"))
+    testthat::expect_identical(df$decimalLatitude, c("-22.57", NA))
+    testthat::expect_length(upload_read_notes(attr(df, "read_report"), "en"), 0L)
+    ids <- resolve_occurrence_ids(df, map_values = list(occurrenceID = "occurrenceID"))
+    testthat::expect_identical(as.character(ids), c("NA", "o2"))
+})
+
+testthat::test_that("read_biodiversity_csv reads NA as empty in a file that uses it for empty cells", {
+    path <- csv_with(c(
+        "occurrenceID,scientificName,decimalLatitude,eventDate",
+        "o1,Aus bus,NA,2024-01-01",
+        "NA,Aus bus,-22.57,NA"
+    ))
+    df <- read_biodiversity_csv(path)
+    testthat::expect_identical(df$decimalLatitude, c(NA, "-22.57"))
+    testthat::expect_identical(df$eventDate, c("2024-01-01", NA))
+    testthat::expect_identical(df$occurrenceID, c("o1", NA))
+    report <- attr(df, "read_report")
+    testthat::expect_identical(report$na_empty_id_cells, 1L)
+    testthat::expect_length(upload_read_notes(report, "en"), 1L)
+})
+
+testthat::test_that("read_biodiversity_csv leaves N/A and quoted empty cells as they were", {
+    path <- csv_with(c("code,note", "N/A,\"\"", "x,NAN"))
+    df <- read_biodiversity_csv(path)
+    testthat::expect_identical(df$code, c("N/A", "x"))
+    testthat::expect_identical(df$note[2], "NAN")
+})
+
+testthat::test_that("the read.csv fallback keeps NA as text too", {
+    path <- tempfile(fileext = ".csv")
+    on.exit(unlink(path), add = TRUE)
+    writeLines(c("occurrenceID,countryCode,notes", "NA,NA,a", "007,BR,"), path)
+    testthat::local_mocked_bindings(
+        read_delim = function(...) stop("forced"),
+        .package = "readr"
+    )
+    out <- saira:::read_biodiversity_csv(path)
+    testthat::expect_identical(as.character(out$occurrenceID), c("NA", "007"))
+    testthat::expect_identical(as.character(out$countryCode), c("NA", "BR"))
+})

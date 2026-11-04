@@ -994,3 +994,66 @@ testthat::test_that("read_camtrap_dp_zip refuses a zip whose tables pass the lim
                                   class = "saira_camtrap_error")
     testthat::expect_match(conditionMessage(err), "too large")
 })
+
+# wi_parse_timestamp: strict forms ----------------------------------------
+
+testthat::test_that("wi_parse_timestamp reads the documented forms", {
+    testthat::expect_identical(
+        saira:::wi_parse_timestamp(c(
+            "2024-02-29 12:30:15", "2024-01-02T12:30:15", "2024-01-02 12:30",
+            "2024-01-02", " 2024-01-02 "
+        )),
+        c("2024-02-29T12:30:15Z", "2024-01-02T12:30:15Z", "2024-01-02T12:30:00Z",
+          "2024-01-02T00:00:00Z", "2024-01-02T00:00:00Z")
+    )
+    testthat::expect_identical(
+        saira:::wi_parse_timestamp(saira:::wi_end_of_day("2024-01-02")),
+        "2024-01-02T23:59:59Z"
+    )
+})
+
+testthat::test_that("wi_parse_timestamp gives NA for other text", {
+    bad <- c("2024-01-02garbage", "2024-01-02T12:30:00-03:00", "2024-01-02 25:00:00",
+             "2024-01-02 24:00:00", "2023-02-29", "", NA)
+    testthat::expect_identical(saira:::wi_parse_timestamp(bad), rep(NA_character_, length(bad)))
+})
+
+testthat::test_that("a WI package reports the timestamps it could not read", {
+    fx <- build_zip_fixture(list(
+        "deployments.csv" = c(
+            "project_id,deployment_id,placename,longitude,latitude,start_date,end_date,camera_id,quiet_period,feature_type,recorded_by,subproject_name,remarks",
+            "1,DEP1,site-a,-62.94,-8.57,2021-08-26 00:00:00,2021-09-01 00:00:00,c1,0,None,,UMF,"
+        ),
+        "cameras.csv" = c(
+            "project_id,camera_id,camera_name,make,model,serial_number,year_purchased",
+            "1,c1,n,Bushnell,T,c1,2020"
+        ),
+        "projects.csv" = c("project_id,project_name,project_short_name", "1,P,TP"),
+        "images_1.csv" = c(
+            paste0("project_id,deployment_id,image_id,filename,location,is_blank,",
+                   "identified_by,wi_taxon_id,class,order,family,genus,species,",
+                   "common_name,uncertainty,timestamp,number_of_objects,age,sex,",
+                   "animal_recognizable,individual_id,individual_animal_notes,",
+                   "behavior,highlighted,markings,cv_confidence,license,bounding_boxes"),
+            "1,DEP1,img-1,a.jpg,gs://a,0,me,,Mammalia,Carnivora,Felidae,Panthera,onca,Jaguar,,2021-08-26 10:00:00,1,,,,,,,false,,,CC-BY-NC,",
+            "1,DEP1,img-2,b.jpg,gs://b,0,me,,Mammalia,Carnivora,Felidae,Panthera,onca,Jaguar,,2021-08-26garbage,1,,,,,,,false,,,CC-BY-NC,"
+        )
+    ), prefix = "wi_time_")
+    withr::defer(unlink(c(fx$dir, fx$zip), recursive = TRUE))
+
+    pkg <- saira:::read_camtrap_dp_zip(fx$zip, lang = "en")
+    df <- saira:::convert_camtrap_to_dwc_occurrence(pkg, lang = "en")
+
+    testthat::expect_identical(attr(df, "read_report")$lost_timestamps, 1L)
+    testthat::expect_length(saira:::upload_read_notes(attr(df, "read_report"), "en"), 1L)
+    testthat::expect_false(any(grepl("garbage", unlist(df), fixed = TRUE)))
+})
+
+testthat::test_that("wi_read_csv keeps an NA identifier as text", {
+    path <- tempfile(fileext = ".csv")
+    on.exit(unlink(path), add = TRUE)
+    writeLines(c("deployment_id,image_id", "NA,007", ",008"), path)
+    out <- saira:::wi_read_csv(path)
+    testthat::expect_identical(out$deployment_id[1], "NA")
+    testthat::expect_identical(out$image_id, c("007", "008"))
+})

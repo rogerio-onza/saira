@@ -56,6 +56,7 @@ read_biodiversity_csv <- function(file_path, encoding = NULL, header = TRUE) {
                 col_types = readr::cols(.default = readr::col_character()),
                 show_col_types = FALSE,
                 name_repair = "minimal",
+                na = "",
                 progress = FALSE
             ),
             error = function(e) {
@@ -65,6 +66,7 @@ read_biodiversity_csv <- function(file_path, encoding = NULL, header = TRUE) {
                     sep = delimiter,
                     header = header,
                     colClasses = "character",
+                    na.strings = "",
                     stringsAsFactors = FALSE,
                     check.names = FALSE
                 )
@@ -86,7 +88,36 @@ read_biodiversity_csv <- function(file_path, encoding = NULL, header = TRUE) {
     }
     df <- as.data.frame(parsed, stringsAsFactors = FALSE)
     if (!header) names(df) <- paste0("col_", seq_len(ncol(df)))
-    finish_upload_frame(df, report)
+    na_text <- read_na_text(df)
+    report$na_empty_id_cells <- na_text$lost
+    finish_upload_frame(na_text$df, report)
+}
+
+# A column where the text NA can be a value: an identifier, or a code such as
+# the ISO code of Namibia. The test reads whole words of the header.
+na_value_column <- function(names) {
+    words <- c("id", "ids", "uuid", "guid", "code", "codes", "codigo", "codigos", "iso", "sigla",
+               "number", "numbers", "numero", "numeros", "tombo", "voucher", "catalog", "catalogo")
+    split <- tolower(chartr("\u00f3\u00fa\u00e1", "oua", gsub("([a-z])([A-Z])", "\\1 \\2", names)))
+    vapply(strsplit(split, "[^a-z0-9]+"), function(t) any(t %in% words), logical(1))
+}
+
+# R and other tools write NA for an empty cell, and a date or a coordinate has
+# no other reading of that text. So NA in any other column means that the file
+# uses it for empty cells, and every NA is empty. Otherwise NA is the value of
+# the identifier and code columns that hold it. `lost` counts the cells of these
+# columns that the first case empties, for the read report.
+read_na_text <- function(df) {
+    is_na_text <- lapply(df, function(v) !is.na(v) & v == "NA")
+    keeps <- na_value_column(names(df))
+    n_text <- lengths(lapply(is_na_text, which))
+    if (!any(n_text[!keeps] > 0L)) {
+        return(list(df = df, lost = 0L))
+    }
+    for (j in which(n_text > 0L)) {
+        df[[j]][is_na_text[[j]]] <- NA_character_
+    }
+    list(df = df, lost = as.integer(sum(n_text[keeps])))
 }
 
 # Reads a text file into UTF-8 lines. The file can mix encodings (rows pasted
@@ -324,12 +355,18 @@ upload_read_notes <- function(report, lang = "en") {
     if (isTRUE(report$empty_rows > 0L)) {
         notes <- c(notes, sprintf(tr("upload_report_empty_rows", lang), report$empty_rows))
     }
+    if (isTRUE(report$na_empty_id_cells > 0L)) {
+        notes <- c(notes, sprintf(tr("upload_report_na_empty", lang), report$na_empty_id_cells))
+    }
     if (length(report$footer_rows) > 0L) {
         notes <- c(notes, sprintf(
             tr("upload_report_footer", lang),
             length(report$footer_rows),
             paste(utils::head(report$footer_rows, 5L), collapse = ", ")
         ))
+    }
+    if (isTRUE(report$lost_timestamps > 0L)) {
+        notes <- c(notes, sprintf(tr("upload_report_lost_timestamps", lang), report$lost_timestamps))
     }
     if (isTRUE(report$dos_accent_cells > 0L)) {
         notes <- c(notes, sprintf(tr("upload_report_dos_accents", lang), report$dos_accent_cells))

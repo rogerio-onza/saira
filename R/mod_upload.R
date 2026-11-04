@@ -270,6 +270,19 @@ mod_upload_server <- function(id, lang_r) {
         # record". A new upload has a new datapath, so it starts with a header.
         no_header_for <- shiny::reactiveVal(NULL)
 
+        show_read_notes <- function(report, lang) {
+            notes <- upload_read_notes(report, lang)
+            if (length(notes) == 0L) return(invisible(NULL))
+            shiny::showNotification(
+                shiny::tagList(
+                    shiny::strong(tr("upload_report_title", lang)),
+                    shiny::tags$ul(lapply(notes, shiny::tags$li))
+                ),
+                type = "warning",
+                duration = 20
+            )
+        }
+
         show_headerless_modal <- function(col_names, lang) {
             shown <- utils::head(col_names[!grepl("^col_[0-9]+$", col_names)], 4L)
             shiny::showModal(shiny::modalDialog(
@@ -342,6 +355,7 @@ mod_upload_server <- function(id, lang_r) {
                         shiny::showNotification(
                             msg, type = "message", duration = 4
                         )
+                        show_read_notes(attr(df, "read_report"), lang)
                         attr(df, "source_file") <- input$file$name
                         df
                     },
@@ -370,17 +384,7 @@ mod_upload_server <- function(id, lang_r) {
                         duration = 3
                     )
                     report <- attr(df, "read_report")
-                    notes <- upload_read_notes(report, lang)
-                    if (length(notes) > 0L) {
-                        shiny::showNotification(
-                            shiny::tagList(
-                                shiny::strong(tr("upload_report_title", lang)),
-                                shiny::tags$ul(lapply(notes, shiny::tags$li))
-                            ),
-                            type = "warning",
-                            duration = 20
-                        )
-                    }
+                    show_read_notes(report, lang)
                     if (header && isTRUE(report$headerless_suspect)) {
                         show_headerless_modal(names(df), lang)
                     }
