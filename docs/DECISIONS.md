@@ -3500,3 +3500,20 @@ Formato: ADR leve (Architecture Decision Record).
   - Gate: `check_e2e()` para quando um fluxo foi pulado por um motivo que nao seja a falta do dataset de exemplo, ou quando um `test_that()` do arquivo nao aparece nos resultados.
 - **Consequencias**: o caminho aninhado de `dynamicProperties` mantem `\u00e9` e `\/` como estao, igual ao caminho plano. O significado do JSON nao muda.
   Mapa, medido no Chrome com o app real. Com 100 mil registros em 500 lugares, o filtro cai de ate 2,61 s para ate 1,35 s, o bloqueio da pagina de 1,77 s para 0,05 s e o heap de 598 MB para 21 MB. Com 100 mil pontos distintos, o ganho e pequeno, e o maior bloqueio continuo fica em 1,5 s. Com 300 mil pontos distintos, chega a 2,4 s, com 850 MB de heap. O mapa nao tem limite de marcadores: agrupar pontos muda o visual e pede uma escolha do dono do projeto.
+
+## ADR-193: Correcoes do nucleo da auditoria de 2026-11-03
+
+- **Data**: 2026-11-03
+- **Status**: Aceito. Completa ADR-120, ADR-166 e ADR-171.
+- **Contexto**: as auditorias de dados, validacao e interface de 2026-11-03 acharam perda de dados na leitura, texto que dizia mais do que o app fez e controles fora da tela.
+- **Decisao**:
+  - Leitura: so a celula vazia e ausente. `NA` e texto, tambem em CSV, no fallback e em Wildlife Insights. Um arquivo que usa `NA` para vazio em colunas de ID recebe uma nota no relatorio de leitura.
+  - Generalizacao: a limpeza alcanca todos os campos de local (`SENSITIVE_LOCATION_COLS`). Texto livre ou coluna nao mapeada que ainda mostra o local bloqueia o pacote. Uma linha protegida sem coordenada nao bloqueia so por isso. Uma especie sem nenhum ponto nao chega ao painel, e o bloqueio tambem vale para ela quando a generalizacao esta ligada. A mascara nao toca uma linha sem eixo e sem campo de local, nem a linha dessa especie: nelas, um numero em coluna nao mapeada com nome de coordenada e uma coordenada nos campos de local tambem bloqueiam.
+  - Ano: um inteiro de quatro digitos, com zeros decimais ou nao, ou um ano dentro de uma data. Um decimal ou um numero mais longo nao vira ano. A forma vetorial e a escalar usam o mesmo codigo.
+  - Guia de mapeamento v3: o layout do v2, com escape de texto. A escolha foi escape, nao JSON, porque o guia continua legivel e editavel a mao. Sao escapados `\\`, quebra de linha, tab, CR; tambem `+` ao lado de espaco ou na borda do nome, `#` e `=` no inicio e espaco na borda. O parser devolve as colunas exatas em `source_list`, sem adivinhar pelos cabecalhos. v1 e v2 continuam literais.
+  - Formulas: o nome de coluna e uma celula da primeira linha do arquivo. `formula_like_cells()` conta o nome como linha 0, e referencia assinada conta como formula, tambem seguida de soma (`-A1+1`). O app nao muda o nome: a pendencia pede para mudar na origem ou mapear a coluna.
+  - Timestamp WI: o parser exige a forma inteira e confere com round-trip. Um valor perdido vai para o relatorio de leitura.
+  - EML: nome de uma palavra vai para `surName`, e `coverage` so existe com dados. O texto de metodos diz so como o arquivo foi feito. Um teste valida o `eml.xml` do ZIP contra o XSD 2.2.0, baixado na hora: o esquema tem licenca GPL-2 e fica fora do repositorio. Registrar quais validacoes rodaram fica para depois da v1.
+  - UTM: o hemisferio e sempre uma escolha, e a ordem dos eixos tambem quando os dois valores cabem nos dois eixos. Sem a escolha, o botao fica desabilitado. Hemisferios misturados param a conversao.
+  - Relatorio de coordenadas: quando as colunas lidas mudam depois da validacao, o relatorio e os paineis saem e o usuario recebe um aviso. As correcoes aplicadas ficam, porque cada uma confere a origem (ADR-166).
+- **Consequencias**: um arquivo exportado do R com `NA` nas colunas de texto mostra `NA` e a nota. O guia v3 nao abre em versoes antigas do Saira. Com muitos nomes e celulas em formula, a amostra da pendencia tem os dois grupos.
