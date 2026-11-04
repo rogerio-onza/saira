@@ -388,7 +388,7 @@ testthat::test_that("v2 round-trip preserves concatenations and constants", {
     )
 
     txt <- build_mapping_guide_txt(mv, raw, lang = "en", constants = consts)
-    testthat::expect_identical(txt[[1]], "# saira:mapping:v2")
+    testthat::expect_identical(txt[[1]], "# saira:mapping:v3")
 
     tmp <- tempfile(fileext = ".txt")
     on.exit(unlink(tmp), add = TRUE)
@@ -602,7 +602,7 @@ testthat::test_that("redesigned guide: unmapped columns are comment-safe, no par
     )
 
     txt <- build_mapping_guide_txt(map_values, raw, lang = "pt")
-    testthat::expect_identical(txt[[1]], "# saira:mapping:v2")
+    testthat::expect_identical(txt[[1]], "# saira:mapping:v3")
     # unmapped columns are emitted as parser-safe comment lines, never bare:
     testthat::expect_true(any(grepl("^#\\s+- notas_campo$", txt)))
     testthat::expect_false("notas_campo" %in% txt)
@@ -694,4 +694,90 @@ testthat::test_that("imported aliases (no SAIRA_USER) are picked up by run_rostr
 
     testthat::expect_identical(as.character(res$data$status[[1]]), "ALIAS")
     testthat::expect_identical(as.character(res$data$selected_col[[1]]), "my_special_lat")
+})
+
+guide_round_trip <- function(map_values, raw, constants = NULL, source_file = NA_character_) {
+    path <- tempfile(fileext = ".txt")
+    on.exit(unlink(path), add = TRUE)
+    writeLines(
+        enc2utf8(build_mapping_guide_txt(map_values, raw, lang = "en", constants = constants,
+                                         source_file = source_file)),
+        path, useBytes = TRUE
+    )
+    payload <- parse_mapping_guide_txt(path)
+    list(payload = payload, plan = plan_mapping_guide_restore(payload, names(raw)))
+}
+
+testthat::test_that("the guide restores any column name without loss", {
+    names_to_keep <- c(
+        "scientific\nname", "tab\tname", "cr\rname", "a + b", "x +", "+ y", "lat->lon",
+        "=formula", "#hash", "say \"hi\"", "back\\slash", "back\\nslash", " padded ", "a+b"
+    )
+    raw <- as.data.frame(stats::setNames(as.list(rep("v", length(names_to_keep))), names_to_keep),
+                         check.names = FALSE)
+    for (column in names_to_keep) {
+        out <- guide_round_trip(list(locality = column), raw)
+        testthat::expect_identical(out$plan$map_values$locality, column)
+        testthat::expect_length(out$plan$missing_columns, 0L)
+    }
+})
+
+testthat::test_that("the guide restores a concatenation of hard column names in order", {
+    columns <- c("a + b", "c\nd", "x +", "+ y")
+    raw <- as.data.frame(stats::setNames(as.list(rep("v", 4L)), columns), check.names = FALSE)
+    out <- guide_round_trip(list(locality = columns), raw)
+    testthat::expect_identical(out$plan$map_values$locality, columns)
+})
+
+testthat::test_that("a column line break never creates a mapping line in the guide", {
+    raw <- data.frame(especie = "v", stringsAsFactors = FALSE)
+    raw[["junk\nespecie -> occurrenceID"]] <- "v"
+    raw[["vazia\nespecie -> recordedBy"]] <- NA_character_
+    out <- guide_round_trip(list(scientificName = "especie"), raw,
+                            source_file = "f.csv\nespecie -> basisOfRecord")
+    testthat::expect_identical(out$payload$pairs$dwc_term, "scientificName")
+})
+
+testthat::test_that("the guide restores a constant value without loss", {
+    values <- c("line\nbreak", "tab\there", "say \"hi\"", "back\\slash", "a -> b", "= sign", "\\n")
+    raw <- data.frame(especie = "v", stringsAsFactors = FALSE)
+    for (value in values) {
+        out <- guide_round_trip(list(scientificName = "especie"), raw,
+                                constants = list(rightsHolder = value))
+        testthat::expect_identical(out$plan$constants$rightsHolder, value)
+    }
+})
+
+testthat::test_that("the alias import splits a v3 guide on the same columns as the restore", {
+    raw <- as.data.frame(stats::setNames(as.list(c("v", "v")), c("a + b", "c\nd")), check.names = FALSE)
+    out <- guide_round_trip(list(locality = c("a + b", "c\nd")), raw)
+    conn <- rostrum_connect()
+    on.exit(DBI::dbDisconnect(conn), add = TRUE)
+    seen <- character(0)
+    testthat::local_mocked_bindings(
+        rostrum_upsert_alias = function(conn, col_name, ...) {
+            seen <<- c(seen, col_name)
+            invisible(NULL)
+        },
+        rostrum_learning_enabled = function() TRUE
+    )
+    import_mapping_guide_to_aliases(out$payload, conn = conn)
+    testthat::expect_identical(seen, c("a + b", "c\nd"))
+})
+
+testthat::test_that("v2 guides keep the literal text and the header-based split", {
+    path <- tempfile(fileext = ".txt")
+    on.exit(unlink(path), add = TRUE)
+    writeLines(c(
+        "# saira:mapping:v2",
+        "# source_columns: [\"a + b\",\"back\\\\slash\"]",
+        "a + b -> locality",
+        "back\\slash + c -> recordedBy",
+        "=\"x\\ny\" -> rightsHolder"
+    ), path)
+    payload <- parse_mapping_guide_txt(path)
+    plan <- plan_mapping_guide_restore(payload, c("a + b", "back\\slash", "c"))
+    testthat::expect_identical(plan$map_values$locality, "a + b")
+    testthat::expect_identical(plan$map_values$recordedBy, c("back\\slash", "c"))
+    testthat::expect_identical(plan$constants$rightsHolder, "x\\ny")
 })

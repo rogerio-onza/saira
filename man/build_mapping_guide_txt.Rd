@@ -50,5 +50,5 @@ apenas o vocabulario "Coluna -> Termo". Cada linha de mapping vira uma
 row em rostrum_aliases ao re-importar via parse_mapping_guide_txt().
 }
 \details{
-Header magico fixo: `# saira:mapping:v1` na primeira linha.
+Header magico fixo: `# saira:mapping:v3` na primeira linha.
 }

@@ -152,7 +152,7 @@ O ZIP `<slug>-dwc-archive.zip` contém (nomes em `export_bundle_filenames()`):
 | `meta.xml` | `build_meta_xml()` | Descritor do arquivo |
 | `eml.xml` | `build_eml_xml()` | Metadados: título, licença, cobertura, nota de sensibilidade |
 | `<slug>-occurrences.xlsx` | `write_xlsx_text_only()` | Cópia para Excel, todas as células como texto; omitida acima do limite de linhas do Excel |
-| `<slug>-mapping-guide.txt` | `build_mapping_guide_txt()` | Guia legível e reimportável (cabeçalho `# saira:mapping:v1`) |
+| `<slug>-mapping-guide.txt` | `build_mapping_guide_txt()` | Guia legível e reimportável (cabeçalho `# saira:mapping:v3`) |
 
 **Arquivo privado (ADR-163)**: quando há registro sensível generalizado, o ZIP
 só leva a coordenada generalizada (`mask_sensitive_coordinates()` em

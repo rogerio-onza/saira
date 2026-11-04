@@ -121,6 +121,52 @@ guide_source_columns <- function(src, available_columns = NULL) {
     cols[nzchar(cols)]
 }
 
+# The v3 guide escapes text, so a name or a value stays on one line and never
+# reads as guide syntax (D03). "\\" comes first: the later rules add backslashes.
+guide_escape <- function(x) {
+    x <- gsub("\\", "\\\\", x, fixed = TRUE)
+    x <- gsub("\n", "\\n", x, fixed = TRUE)
+    x <- gsub("\r", "\\r", x, fixed = TRUE)
+    gsub("\t", "\\t", x, fixed = TRUE)
+}
+
+# A "+" with a space or a name edge beside it can read as the separator of a
+# concatenation. A first "#" or "=" can read as a comment or a constant.
+guide_escape_column <- function(x) {
+    x <- guide_escape(x)
+    x <- gsub("(?<!\\S)\\+|\\+(?!\\S)", "\\\\+", x, perl = TRUE)
+    x <- sub("^([#=])", "\\\\\\1", x, perl = TRUE)
+    # The parser trims the source, so edge spaces need their own code.
+    x <- sub("^ ", "\\\\s", x, perl = TRUE)
+    sub(" $", "\\\\s", x, perl = TRUE)
+}
+
+# One pass from the left: the "\\n" of a literal backslash and "n" stays text.
+guide_unescape <- function(x) {
+    codes <- c(n = "\n", r = "\r", t = "\t", s = " ")
+    hits <- gregexpr("\\\\.", x, perl = TRUE)
+    regmatches(x, hits) <- lapply(regmatches(x, hits), function(tokens) {
+        out <- substr(tokens, 2L, 2L)
+        coded <- out %in% names(codes)
+        out[coded] <- codes[out[coded]]
+        unname(out)
+    })
+    x
+}
+
+# The escape rules leave a bare " + " only as the separator.
+guide_split_columns <- function(src) {
+    guide_unescape(strsplit(src, "\\s+\\+\\s+", perl = TRUE)[[1]])
+}
+
+# A v3 guide records the exact columns of each pair. An older guide needs the
+# header-based split.
+guide_pair_columns <- function(pairs, i, available_columns = NULL) {
+    exact <- if ("source_list" %in% names(pairs)) pairs$source_list[[i]]
+    if (length(exact) > 0L) return(exact)
+    guide_source_columns(pairs$source_column[[i]], available_columns)
+}
+
 #' Plan a faithful mapping restore from a parsed mapping guide
 #'
 #' Given a parsed guide payload (\code{parse_mapping_guide_txt()}) and the
@@ -170,7 +216,7 @@ plan_mapping_guide_restore <- function(payload, available_columns) {
 
         src <- as.character(pairs$source_column[[i]])
         if (is.na(src) || !nzchar(trimws(src))) next
-        cols <- guide_source_columns(src, available_columns)
+        cols <- guide_pair_columns(pairs, i, available_columns)
         present <- cols[cols %in% available_columns]
         absent <- cols[!cols %in% available_columns]
         matched <- c(matched, present)
