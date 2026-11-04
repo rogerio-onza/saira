@@ -123,6 +123,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Write `surName` for a one-word creator and leave out an empty EML `coverage`, ADR-193 ([#271](https://github.com/rogerio-onza/saira/pull/271))
 - **export:** Stop the EML methods from claiming checks that did not run, ADR-193 ([#271](https://github.com/rogerio-onza/saira/pull/271))
 - **generalization:** Close each generalized note with a versioned mark, so a new wording still counts as generalized, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
+- **coords:** Ask for the UTM hemisphere and, when the axes are ambiguous, their order before conversion, ADR-193 ([#272](https://github.com/rogerio-onza/saira/pull/272))
+- **coords:** Clear the coordinate report when the data changes after the run, ADR-193 ([#272](https://github.com/rogerio-onza/saira/pull/272))
 - **export:** Stop the export when a step's decision cannot be read, not treat it as no decision, ADR-189
 - **coords:** Show a point the sea check did not read in gray, as a problem, with its own filter, ADR-190 ([#260](https://github.com/rogerio-onza/saira/pull/260))
 - **mapping:** Clear and import the fixed values of every card, also the cards that are not on the page, ADR-189

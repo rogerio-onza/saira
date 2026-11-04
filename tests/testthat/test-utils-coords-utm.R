@@ -142,3 +142,29 @@ testthat::test_that("a payload without verbatim columns keeps the old preservati
     testthat::expect_identical(out$verbatimLongitude, "-50")
     testthat::expect_identical(out$decimalLatitude, "-11")
 })
+
+testthat::test_that("coords_utm_assign_axes needs an order when both values fit the easting", {
+    none <- coords_utm_assign_axes(300000, 500000)
+    testthat::expect_true(is.na(none$easting))
+    testthat::expect_true(is.na(none$northing))
+
+    lat_north <- coords_utm_assign_axes(300000, 500000, order = "lat_northing")
+    testthat::expect_identical(lat_north$northing, 300000)
+    testthat::expect_identical(lat_north$easting, 500000)
+
+    lat_east <- coords_utm_assign_axes(300000, 500000, order = "lat_easting")
+    testthat::expect_identical(lat_east$northing, 500000)
+    testthat::expect_identical(lat_east$easting, 300000)
+
+    # A northing under the easting floor has one reading, near the equator.
+    near <- coords_utm_assign_axes(50000, 500000)
+    testthat::expect_identical(near$northing, 50000)
+    testthat::expect_identical(near$easting, 500000)
+})
+
+testthat::test_that("coords_utm_hemispheres_mixed finds a set across the equator", {
+    testthat::expect_true(coords_utm_hemispheres_mixed(c(300000, 7400000)))
+    testthat::expect_false(coords_utm_hemispheres_mixed(c(7400000, 9900000)))
+    testthat::expect_false(coords_utm_hemispheres_mixed(c(300000, 4000000)))
+    testthat::expect_false(coords_utm_hemispheres_mixed(NA_real_))
+})

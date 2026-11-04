@@ -375,10 +375,13 @@ testthat::test_that("UTM conversion writes a corrections payload for the picked 
         {
             rv$validation_occ_ids <- mapped_df$occurrenceID
             rv$utm_rows <- 1:2
-            rv$utm_axes <- coords_utm_assign_axes(
-                mapped_df$decimalLatitude, mapped_df$decimalLongitude
-            )
+            rv$utm_pairs <- list(a = mapped_df$decimalLatitude, b = mapped_df$decimalLongitude)
             session$setInputs(utm_zone = "21", utm_datum = "SIRGAS2000")
+            session$flushReact()
+            # No hemisphere yet: nothing to apply.
+            testthat::expect_null(utm_converted_r())
+
+            session$setInputs(utm_hemisphere = "S")
             session$flushReact()
 
             converted <- utm_converted_r()
@@ -710,6 +713,163 @@ testthat::test_that("a language switch keeps the map widget and translates the l
                 tr("validate_coords_map_legend_ok", "en"),
                 fixed = TRUE
             )
+        }
+    )
+})
+
+testthat::test_that("the UTM card asks for the axes when the numbers cannot tell them", {
+    mapped_df <- data.frame(
+        occurrenceID = "occ-1", decimalLatitude = 300000, decimalLongitude = 500000,
+        country = "Brazil", stringsAsFactors = FALSE
+    )
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(mapped_data_r = shiny::reactive(mapped_df), lang_r = shiny::reactive("en")),
+        {
+            rv$validation_occ_ids <- mapped_df$occurrenceID
+            rv$utm_rows <- 1L
+            rv$utm_pairs <- list(a = mapped_df$decimalLatitude, b = mapped_df$decimalLongitude)
+            session$setInputs(utm_zone = "22", utm_datum = "WGS84", utm_hemisphere = "N")
+            session$flushReact()
+            testthat::expect_identical(utm_status_r(), "pick")
+            testthat::expect_null(utm_converted_r())
+
+            session$setInputs(utm_axes = "lat_northing")
+            session$flushReact()
+            converted <- utm_converted_r()
+            testthat::expect_equal(converted$decimalLatitude, 2.714174, tolerance = 1e-4)
+            testthat::expect_equal(converted$decimalLongitude, -51, tolerance = 1e-4)
+            testthat::expect_identical(converted$verbatimCoordinateSystem, "UTM zone 22N")
+            testthat::expect_identical(converted$verbatimSRS, "EPSG:32622")
+        }
+    )
+})
+
+testthat::test_that("the UTM card refuses one conversion across both hemispheres", {
+    mapped_df <- data.frame(
+        occurrenceID = c("ap", "sp"), decimalLatitude = c(300000, 7400000),
+        decimalLongitude = c(500000, 300000), country = "Brazil", stringsAsFactors = FALSE
+    )
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(mapped_data_r = shiny::reactive(mapped_df), lang_r = shiny::reactive("en")),
+        {
+            rv$validation_occ_ids <- mapped_df$occurrenceID
+            rv$utm_rows <- 1:2
+            rv$utm_pairs <- list(a = mapped_df$decimalLatitude, b = mapped_df$decimalLongitude)
+            session$setInputs(
+                utm_zone = "22", utm_datum = "WGS84", utm_hemisphere = "S", utm_axes = "lat_northing"
+            )
+            session$flushReact()
+            testthat::expect_identical(utm_status_r(), "mixed")
+            testthat::expect_null(utm_converted_r())
+        }
+    )
+})
+
+testthat::test_that("the UTM zones follow the datum", {
+    mapped_df <- data.frame(
+        occurrenceID = "occ-1", decimalLatitude = 7805441, decimalLongitude = 574699,
+        stringsAsFactors = FALSE
+    )
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(mapped_data_r = shiny::reactive(mapped_df), lang_r = shiny::reactive("en")),
+        {
+            rv$utm_rows <- 1L
+            rv$utm_pairs <- list(a = mapped_df$decimalLatitude, b = mapped_df$decimalLongitude)
+            session$setInputs(utm_datum = "WGS84")
+            session$flushReact()
+            testthat::expect_identical(utm_zone_choices_r(), 1:60)
+        }
+    )
+})
+
+testthat::test_that("a report ends when a column it read changes", {
+    lat <- shiny::reactiveVal("-23.6")
+    other <- shiny::reactiveVal("a")
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(
+            mapped_data_r = shiny::reactive(data.frame(
+                occurrenceID = "occ-1", decimalLatitude = lat(), decimalLongitude = "-46.6",
+                country = "Brazil", occurrenceRemarks = other(), stringsAsFactors = FALSE
+            )),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            report <- data.frame(.row_index = 1L, valid = TRUE, diagnostic = "ok", lat_num = -23.6)
+            start <- function() {
+                coord_validation_r(report)
+                validated_input_rv(coords_validation_input(mapped_data_r()))
+                rv$transposed_table <- data.frame(occurrenceID = "occ-1")
+                rv$utm_rows <- 1L
+                rv$last_run_status <- "success"
+                session$flushReact()
+            }
+            start()
+
+            # A column out of the report leaves it.
+            other("b")
+            session$flushReact()
+            testthat::expect_false(is.null(coord_validation_r()))
+
+            lat("-24.0")
+            session$flushReact()
+            testthat::expect_null(coord_validation_r())
+            testthat::expect_null(rv$transposed_table)
+            testthat::expect_null(rv$utm_rows)
+            testthat::expect_identical(rv$last_run_status, "stale")
+
+            # A reordered or edited row ends a report too, also with one more row.
+            start()
+            lat(c("-24.0", "-25.0"))
+            session$flushReact()
+            testthat::expect_null(coord_validation_r())
+        }
+    )
+})
+
+testthat::test_that("a fix card of an ended report applies nothing", {
+    lat <- shiny::reactiveVal("-23.6")
+    lang <- shiny::reactiveVal("en")
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(
+            mapped_data_r = shiny::reactive(data.frame(
+                occurrenceID = "occ-1", decimalLatitude = lat(), decimalLongitude = "-46.6",
+                country = "Brazil", stringsAsFactors = FALSE
+            )),
+            lang_r = lang
+        ),
+        {
+            fix <- data.frame(occurrenceID = "occ-1", decimalLatitude = "-46.6",
+                              decimalLongitude = "-23.6", country = "Brazil", stringsAsFactors = FALSE)
+            coord_validation_r(data.frame(.row_index = 1L, valid = TRUE, diagnostic = "ok", lat_num = -23.6))
+            validated_input_rv(coords_validation_input(mapped_data_r()))
+            rv$transposed_table <- fix
+            rv$swap_fill_table <- fix
+            rv$country_fill_table <- fix[, c("occurrenceID", "country")]
+            rv$utm_rows <- 1L
+            rv$last_run_status <- "success"
+            session$flushReact()
+
+            # A language switch leaves the report.
+            lang("pt")
+            session$flushReact()
+            testthat::expect_false(is.null(coord_validation_r()))
+
+            lat("-24.0")
+            session$flushReact()
+            testthat::expect_identical(rv$last_run_status, "stale")
+            session$setInputs(apply_transposed = 1L, apply_swap_fill = 1L,
+                              apply_country_fill = 1L, apply_utm = 1L)
+            testthat::expect_null(rv$coords_corrections)
+            testthat::expect_null(rv$country_fills)
+            testthat::expect_false(isTRUE(rv$transposed_applied))
+            testthat::expect_false(isTRUE(rv$swap_fill_applied))
+            testthat::expect_false(isTRUE(rv$country_fill_applied))
+            testthat::expect_false(isTRUE(rv$utm_applied))
         }
     )
 })

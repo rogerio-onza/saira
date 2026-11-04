@@ -3594,6 +3594,61 @@
     "en": "Convert to decimal degrees",
     "es": "Convertir a grados decimales"
   },
+  "validate_coords_utm_hemisphere": {
+    "pt": "Hemisf\u00e9rio",
+    "en": "Hemisphere",
+    "es": "Hemisferio"
+  },
+  "validate_coords_utm_south": {
+    "pt": "Sul",
+    "en": "South",
+    "es": "Sur"
+  },
+  "validate_coords_utm_north": {
+    "pt": "Norte",
+    "en": "North",
+    "es": "Norte"
+  },
+  "validate_coords_utm_choose": {
+    "pt": "Escolher",
+    "en": "Choose",
+    "es": "Elegir"
+  },
+  "validate_coords_utm_axes": {
+    "pt": "Eixos",
+    "en": "Axes",
+    "es": "Ejes"
+  },
+  "validate_coords_utm_lat_northing": {
+    "pt": "Latitude tem o northing",
+    "en": "Latitude holds the northing",
+    "es": "Latitud tiene el northing"
+  },
+  "validate_coords_utm_lat_easting": {
+    "pt": "Latitude tem o easting",
+    "en": "Latitude holds the easting",
+    "es": "Latitud tiene el easting"
+  },
+  "validate_coords_utm_pick_hemisphere": {
+    "pt": "Escolha o hemisf\u00e9rio da fonte dos dados.",
+    "en": "Choose the hemisphere from the data source.",
+    "es": "Elija el hemisferio de la fuente de los datos."
+  },
+  "validate_coords_utm_pick": {
+    "pt": "Escolha o hemisf\u00e9rio e os eixos da fonte dos dados.",
+    "en": "Choose the hemisphere and axes from the data source.",
+    "es": "Elija el hemisferio y los ejes de la fuente de los datos."
+  },
+  "validate_coords_utm_mixed": {
+    "pt": "Estes pontos est\u00e3o nos dois hemisf\u00e9rios. Separe o arquivo e converta cada parte.",
+    "en": "These points are in both hemispheres. Split the file and convert each part.",
+    "es": "Estos puntos est\u00e1n en los dos hemisferios. Separe el archivo y convierta cada parte."
+  },
+  "validate_coords_stale": {
+    "pt": "Os dados mudaram. Rode a valida\u00e7\u00e3o de novo.",
+    "en": "The data changed. Run the validation again.",
+    "es": "Los datos cambiaron. Ejecute la validaci\u00f3n de nuevo."
+  },
   "validate_coords_utm_unavailable": {
     "pt": "Esse datum n\u00e3o cobre a zona escolhida. Selecione outra combina\u00e7\u00e3o.",
     "en": "That datum does not cover the selected zone. Pick another combination.",

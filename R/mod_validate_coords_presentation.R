@@ -189,6 +189,9 @@ mount_mod_validate_coords_presentation <- function(
                 class = "validate-ready-hint",
                 ph_icon("circle-info"),
                 shiny::div(
+                    if (isTRUE(view$report_stale())) {
+                        shiny::p(class = "mb-1", shiny::strong(tr("validate_coords_stale", lang_r())))
+                    },
                     shiny::p(
                         class = "mb-0",
                         tr("validate_coords_pre_hint_prefix", lang_r()),
@@ -644,13 +647,9 @@ mount_mod_validate_coords_presentation <- function(
         lang <- lang_r()
         n <- length(rows)
         applied <- isTRUE(view$utm_applied())
-        cand <- view$utm_candidates()
-        zones <- if (is.data.frame(cand) && nrow(cand) > 0L) {
-            as.integer(cand$zone)
-        } else {
-            # No country to score against: offer the zones the datum covers.
-            as.integer(coords_utm_datums()[[coords_utm_default_datum()]]$zones)
-        }
+        # isolate(): the observer of the zones updates this picker. A rebuild
+        # here would discard the other picks.
+        zones <- shiny::isolate(view$utm_zone_choices())
 
         datum_choices <- stats::setNames(
             names(coords_utm_datums()),
@@ -673,9 +672,9 @@ mount_mod_validate_coords_presentation <- function(
         datum_sel <- shiny::isolate(input$utm_datum)
         if (!isTRUE(datum_sel %in% datum_choices)) datum_sel <- coords_utm_default_datum()
         help <- tr("validate_coords_utm_help", lang)
-        if (is.data.frame(cand) && nrow(cand) > 1L) {
-            help <- paste(help, sprintf(tr("validate_coords_utm_ambiguous", lang), nrow(cand)))
-        }
+        hemisphere_sel <- shiny::isolate(input$utm_hemisphere) %||% ""
+        axes_sel <- shiny::isolate(input$utm_axes) %||% ""
+        choose <- tr("validate_coords_utm_choose", lang)
         shiny::div(
             class = "coords-utm-band",
             ph_icon("compass"),
@@ -684,6 +683,27 @@ mount_mod_validate_coords_presentation <- function(
             shiny::span(class = "coords-utm-spacer"),
             # isolate(): this output must not depend on the pickers it
             # creates, or each pick would rebuild them.
+            shiny::selectInput(
+                ns("utm_hemisphere"), tr("validate_coords_utm_hemisphere", lang),
+                choices = stats::setNames(
+                    c("", "S", "N"),
+                    c(choose, tr("validate_coords_utm_south", lang), tr("validate_coords_utm_north", lang))
+                ),
+                selected = hemisphere_sel,
+                selectize = FALSE
+            ),
+            if (isTRUE(shiny::isolate(view$utm_order_needed()))) {
+                shiny::selectInput(
+                    ns("utm_axes"), tr("validate_coords_utm_axes", lang),
+                    choices = stats::setNames(
+                        c("", "lat_northing", "lat_easting"),
+                        c(choose, tr("validate_coords_utm_lat_northing", lang),
+                          tr("validate_coords_utm_lat_easting", lang))
+                    ),
+                    selected = axes_sel,
+                    selectize = FALSE
+                )
+            },
             shiny::selectInput(
                 ns("utm_zone"), tr("validate_coords_utm_zone", lang),
                 choices = zones,
@@ -701,18 +721,45 @@ mount_mod_validate_coords_presentation <- function(
                 ns("apply_utm"),
                 tr("validate_coords_utm_apply", lang),
                 icon = ph_icon("wand-magic-sparkles"),
-                class = "btn btn-primary btn-sm"
+                class = "btn btn-primary btn-sm",
+                disabled = !utm_ready_now()
             )
+        )
+    })
+
+    utm_ready_now <- function() {
+        preview <- shiny::isolate(utm_converted_r())
+        is.data.frame(preview) && nrow(preview) > 0L
+    }
+
+    shiny::observe({
+        preview <- utm_converted_r()
+        shiny::updateActionButton(
+            session, "apply_utm",
+            disabled = !(is.data.frame(preview) && nrow(preview) > 0L)
         )
     })
 
     output$utm_preview <- shiny::renderUI({
         preview <- utm_converted_r()
-        if (is.data.frame(preview) && nrow(preview) > 0L) {
-            shiny::span(class = "coords-utm-preview", sprintf(
-                "\u2192 (%.4f, %.4f)",
-                preview$decimalLatitude[[1]], preview$decimalLongitude[[1]]
+        status <- view$utm_status()
+        n_cand <- nrow(view$utm_candidates() %||% data.frame())
+        if (identical(status, "pick")) {
+            shiny::span(class = "coords-utm-preview", tr(
+                if (isTRUE(view$utm_order_needed())) "validate_coords_utm_pick" else "validate_coords_utm_pick_hemisphere",
+                lang_r()
             ))
+        } else if (identical(status, "mixed")) {
+            shiny::span(class = "coords-utm-preview is-unavailable", tr("validate_coords_utm_mixed", lang_r()))
+        } else if (is.data.frame(preview) && nrow(preview) > 0L) {
+            shiny::span(
+                class = "coords-utm-preview",
+                title = if (n_cand > 1L) sprintf(tr("validate_coords_utm_ambiguous", lang_r()), n_cand),
+                sprintf(
+                    "\u2192 (%.4f, %.4f)",
+                    preview$decimalLatitude[[1]], preview$decimalLongitude[[1]]
+                )
+            )
         } else {
             # An older datum covers fewer zones than SIRGAS 2000, so a valid
             # zone can become unreachable when the datum changes. Say so

@@ -1484,6 +1484,17 @@ coord_source_text <- function(x) {
     x
 }
 
+#' The columns a coordinate report reads
+#'
+#' @param df Mapped data.
+#' @return The columns as text, or \code{NULL} when \code{df} is not a data frame.
+#' @noRd
+coords_validation_input <- function(df) {
+    if (!is.data.frame(df)) return(NULL)
+    cols <- intersect(c("occurrenceID", "decimalLatitude", "decimalLongitude", "country"), names(df))
+    lapply(df[cols], coord_source_text)
+}
+
 #' Coordinate corrections whose record changed after the fix
 #'
 #' A correction finds its record by occurrenceID and replaces both axes. When
