@@ -2356,8 +2356,16 @@ label,
 @media (max-width: 991.98px) {
   .preview-card-head {
     position: static;
-    max-width: none;
+    height: auto;
+    max-width: 100%;
+    flex-wrap: wrap;
+    overflow: visible;
+    white-space: normal;
     margin-bottom: var(--space-2);
+  }
+
+  .preview-card-title {
+    flex-basis: 100%;
   }
 }
 
@@ -5392,6 +5400,33 @@ table.dataTable tbody tr.validate-invalid td {
   gap: var(--space-4);
 }
 
+/* With the sidebar open, the filter has no room beside the title. */
+@media (max-width: 991.98px) {
+  .mapping-card-header {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: var(--space-2);
+  }
+
+  /* All four options stay in view while they fit, each count under its label.
+     Under that width the filter scrolls. A block flex leaves no baseline gap
+     for the scroll box. */
+  .mapping-card-header .saira-seg {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .mapping-card-header .saira-seg .shiny-options-group {
+    display: flex;
+    min-width: min-content;
+  }
+
+  .mapping-card-header .saira-seg .radio-inline {
+    padding: 0 var(--space-2);
+  }
+}
+
 /* =============================================================================
    VALIDATE NAMES: TWO COLUMN UX + INCREMENTAL STREAM
    ============================================================================= */
@@ -5787,7 +5822,7 @@ table.dataTable tbody tr.validate-invalid td {
   width: auto;
   min-width: 5rem;
   height: 34px;
-  padding: 0 var(--space-6) 0 var(--space-2);
+  padding: 0 var(--space-8) 0 var(--space-2);
   font-family: var(--font-ui);
   font-size: var(--text-sm);
 }

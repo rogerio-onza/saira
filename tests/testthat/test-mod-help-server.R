@@ -32,7 +32,7 @@ testthat::test_that("the help page credits the author from DESCRIPTION, with a c
 testthat::test_that("the help page links tutorials, FAQ, issues and methods", {
     html <- help_page_html("en")
 
-    testthat::expect_match(html, "rogerio-onza.github.io/saira/en/tutorials/", fixed = TRUE)
+    testthat::expect_match(html, "rogerio-onza.github.io/saira/en/tutorials/01-installation.html", fixed = TRUE)
     testthat::expect_match(html, "rogerio-onza.github.io/saira/en/faq.html", fixed = TRUE)
     testthat::expect_match(html, "rogerio-onza.github.io/saira/en/technologies.html", fixed = TRUE)
     testthat::expect_match(html, "github.com/rogerio-onza/saira/issues", fixed = TRUE)
@@ -57,5 +57,6 @@ testthat::test_that("the help page links every package, with no AI tool chips", 
 testthat::test_that("the help page follows the language", {
     testthat::expect_match(help_page_html("pt"), tr("help_made_by", "pt"), fixed = TRUE)
     testthat::expect_match(help_page_html("es"), tr("help_made_by", "es"), fixed = TRUE)
-    testthat::expect_match(help_page_html("es"), "/es/tutoriales/", fixed = TRUE)
+    testthat::expect_match(help_page_html("pt"), "/tutoriais/01-instalacao.html", fixed = TRUE)
+    testthat::expect_match(help_page_html("es"), "/es/tutoriales/01-instalacion.html", fixed = TRUE)
 })

@@ -144,7 +144,10 @@ help_start_band <- function(lang, issues_url) {
                         shiny::tags$h2(class = "help-card-title", tr("help_tutorials_title", lang)),
                         shiny::tags$p(class = "help-card-body", tr("help_tutorials_body", lang)),
                         help_external_link(
-                            help_site_url(lang, pt = "/tutoriais/", en = "/en/tutorials/", es = "/es/tutoriales/"),
+                            help_site_url(lang,
+                                          pt = "/tutoriais/01-instalacao.html",
+                                          en = "/en/tutorials/01-installation.html",
+                                          es = "/es/tutoriales/01-instalacion.html"),
                             class = "help-button help-button--accent",
                             tr("help_tutorials_link", lang),
                             help_external_icon()

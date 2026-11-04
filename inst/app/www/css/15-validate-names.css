@@ -393,7 +393,7 @@
   width: auto;
   min-width: 5rem;
   height: 34px;
-  padding: 0 var(--space-6) 0 var(--space-2);
+  padding: 0 var(--space-8) 0 var(--space-2);
   font-family: var(--font-ui);
   font-size: var(--text-sm);
 }

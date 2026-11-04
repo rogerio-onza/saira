@@ -354,8 +354,16 @@
 @media (max-width: 991.98px) {
   .preview-card-head {
     position: static;
-    max-width: none;
+    height: auto;
+    max-width: 100%;
+    flex-wrap: wrap;
+    overflow: visible;
+    white-space: normal;
     margin-bottom: var(--space-2);
+  }
+
+  .preview-card-title {
+    flex-basis: 100%;
   }
 }
 

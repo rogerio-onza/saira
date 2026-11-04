@@ -115,6 +115,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **generalization:** Replace copies of the exact point in measurement fields, fixed values and the mapping guide, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **generalization:** Close each generalized note with a versioned mark, so a new wording still counts as generalized, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **export:** Stop the export when a step's decision cannot be read, not treat it as no decision, ADR-189
+- **ui:** Keep the Mapping filter and the Preview switch on screen in narrow windows ([#273](https://github.com/rogerio-onza/saira/pull/273))
+- **names:** Give the page-length control of the names report an accessible name ([#273](https://github.com/rogerio-onza/saira/pull/273))
+- **upload:** Translate the finished upload text at each language change ([#273](https://github.com/rogerio-onza/saira/pull/273))
+- **help:** Link the tutorials button to a page that exists in all three languages ([#273](https://github.com/rogerio-onza/saira/pull/273))
 - **coords:** Show a point the sea check did not read in gray, as a problem, with its own filter, ADR-190 ([#260](https://github.com/rogerio-onza/saira/pull/260))
 - **mapping:** Clear and import the fixed values of every card, also the cards that are not on the page, ADR-189
 - **names:** Escape the hidden cells of the names report, ADR-190 ([#261](https://github.com/rogerio-onza/saira/pull/261))

@@ -401,6 +401,11 @@ mount_mod_validate_names_presentation <- function(
                         autocomplete = "off",
                         spellcheck = "false"
                     ),
+                    shiny::tags$label(
+                        `for` = ns("report_page_length"),
+                        class = "visually-hidden",
+                        tr("validate_names_report_page_length_label", lang_r())
+                    ),
                     shiny::tags$select(
                         id = ns("report_page_length"),
                         class = "vn-report-select",
