@@ -128,6 +128,12 @@ build_export_summary <- function(mapped_data,
                                      drop_stale_coord_corrections(coords_correction_payload, df))
     changes <- build_change_log(df, effective, preview_changes,
                                 generalized_record_rows(effective, gp), rows_left_out)
+    unmapped <- unmapped_raw_columns(raw_data, map_values, overridden_terms = overridden_terms)
+    point_text_rows <- setdiff(protected_point_text_rows(
+        effective, gp,
+        rekey_sensitivity_decisions(sensitivity_payload, name_review_payload),
+        if (length(unmapped)) raw_data[, unmapped, drop = FALSE]
+    ), rows_left_out)
     # --- Files the bundle will contain -------------------------------------
     # Single source of truth shared with the download handler. The private
     # real-coordinates file exists only when a species is generalized.
@@ -165,7 +171,9 @@ build_export_summary <- function(mapped_data,
         all_required_present = assessment$all_required_present,
         failed_sources = failed_sources,
         # A decision that could not be read is not "no decision" (SP-01).
-        export_blocked = assessment$export_blocked || length(failed_sources) > 0L,
+        point_text_rows = point_text_rows,
+        export_blocked = assessment$export_blocked || length(failed_sources) > 0L ||
+            length(point_text_rows) > 0L,
         changes = changes,
         files = files
     )

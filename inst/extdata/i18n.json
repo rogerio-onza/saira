@@ -394,6 +394,11 @@
     "en": "basisOfRecord is empty in %d record(s). The spreadsheet cell is empty or has a value with no DwC term. Select the term with the assistant on the basisOfRecord card. Rows:",
     "es": "basisOfRecord vacío en %d registro(s). La celda de la hoja está vacía o tiene un valor sin término DwC. Elija el término con el asistente de la tarjeta basisOfRecord. Filas:"
   },
+  "export_blocked_point_text": {
+    "pt": "%d registro(s) de espécie protegida não têm coordenada completa, mas outro campo ainda mostra um valor parecido com coordenada. Preencha a coordenada ou apague esse valor na prévia. Se ele estiver em uma coluna não mapeada, apague na planilha original. Linhas:",
+    "en": "%d record(s) of a protected species have no full coordinate, but another field still shows a value like a coordinate. Fill in the coordinate or clear that value in the preview. If it is in an unmapped column, clear it in the original spreadsheet. Rows:",
+    "es": "%d registro(s) de especie protegida no tienen coordenada completa, pero otro campo aún muestra un valor parecido a una coordenada. Complete la coordenada o borre ese valor en la vista previa. Si está en una columna sin mapear, bórrelo en la hoja original. Filas:"
+  },
   "export_blocked_coord_invalid": {
     "pt": "Coordenada inválida em %d registro(s): não é um número ou está fora da faixa (latitude de -90 a 90, longitude de -180 a 180). Corrija ou apague o valor na prévia. Linhas:",
     "en": "Invalid coordinate in %d record(s): it is not a number or it is out of range (latitude -90 to 90, longitude -180 to 180). Correct or clear the value in the preview. Rows:",
@@ -5125,9 +5130,9 @@
     "es": "mar o fuera de un país"
   },
   "sc_withheld_invalid_desc": {
-    "pt": "registro(s) têm coordenada inválida",
-    "en": "record(s) have an invalid coordinate",
-    "es": "registro(s) tienen una coordenada inválida"
+    "pt": "registro(s) têm coordenada inválida ou ausente",
+    "en": "record(s) have an invalid or missing coordinate",
+    "es": "registro(s) tienen una coordenada inválida o ausente"
   },
   "sc_withheld_fix": {
     "pt": "Corrigir em Coordenadas",

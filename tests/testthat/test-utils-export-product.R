@@ -216,3 +216,71 @@ testthat::test_that("times, dates, numeric terms and measurements stay in the pu
     testthat::expect_identical(occurrence$eventDate, df$eventDate)
     testthat::expect_true(grepl("23.551", files[["measurementorfact.txt"]], fixed = TRUE))
 })
+
+point_gap_inputs <- function() {
+    df <- data.frame(
+        occurrenceID = c("o1", "o2"), scientificName = "Panthera onca",
+        eventDate = "2024-01-01", basisOfRecord = "HumanObservation", license = "CC0",
+        decimalLatitude = c("-23.55052", ""), decimalLongitude = c("-46.63331", ""),
+        verbatimCoordinates = "23.55052 S, 46.63331 W",
+        footprintWKT = "POINT (-46.63331 -23.55052)", footprintSRS = "EPSG:4326",
+        occurrenceRemarks = c("GPS -23.55052, -46.63331", "adult"),
+        stringsAsFactors = FALSE
+    )
+    list(
+        download_data = df,
+        generalization = list(enabled = TRUE, levels = c("Panthera onca" = "high"),
+                              needs_justification = TRUE, justification = "Test")
+    )
+}
+
+testthat::test_that("the public product holds no location field of a protected row with no point", {
+    testthat::local_mocked_bindings(
+        sensitive_resolve = function(names, decisions = NULL) {
+            data.frame(sensitive = rep(TRUE, length(names)), category = "CR", stringsAsFactors = FALSE)
+        }
+    )
+    product <- prepare_export_product(point_gap_inputs(), "en")
+    core <- product$core
+    testthat::expect_identical(core$verbatimCoordinates, c("", ""))
+    testthat::expect_identical(core$footprintWKT[2], "")
+    cells <- unlist(lapply(core, as.character), use.names = FALSE)
+    testthat::expect_false(any(grepl("55052|63331", cells)))
+    testthat::expect_false(any(grepl("55052|63331", product$mapping_guide)))
+})
+
+testthat::test_that("the export stops on a protected row with no point and a coordinate in text", {
+    testthat::local_mocked_bindings(
+        sensitive_resolve = function(names, decisions = NULL) {
+            data.frame(sensitive = rep(TRUE, length(names)), category = "CR", stringsAsFactors = FALSE)
+        }
+    )
+    inputs <- point_gap_inputs()
+    inputs$download_data$occurrenceRemarks[2] <- "GPS -23.55052, -46.63331"
+    testthat::expect_error(prepare_export_product(inputs, "en"),
+                           saira:::tr("export_download_blocked", "en"), fixed = TRUE)
+    # The row left out of the package does not count.
+    inputs$rows_left_out <- 2L
+    testthat::expect_identical(prepare_export_product(inputs, "en")$core$occurrenceID, "o1")
+})
+
+testthat::test_that("the export stops on a coordinate column of a protected row the mask leaves", {
+    testthat::local_mocked_bindings(
+        sensitive_resolve = function(names, decisions = NULL) {
+            data.frame(sensitive = rep(TRUE, length(names)), category = "CR", stringsAsFactors = FALSE)
+        }
+    )
+    inputs <- point_gap_inputs()
+    inputs$download_data$verbatimCoordinates <- ""
+    inputs$download_data$footprintWKT <- ""
+    inputs$download_data$footprintSRS <- ""
+    inputs$download_data$occurrenceRemarks <- ""
+    inputs$raw_data <- data.frame(especie = "Panthera onca", gps = c("x", "-23.55052, -46.63331"),
+                                  stringsAsFactors = FALSE)
+    inputs$map_values <- list(scientificName = "especie")
+    testthat::expect_error(prepare_export_product(inputs, "en"),
+                           saira:::tr("export_download_blocked", "en"), fixed = TRUE)
+    # On a row of the mask the export blanks the column by itself.
+    inputs$download_data$locality <- c("", "Fazenda Azul")
+    testthat::expect_true(is.na(prepare_export_product(inputs, "en")$core$gps[2]))
+})

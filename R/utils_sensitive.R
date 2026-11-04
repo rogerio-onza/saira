@@ -291,6 +291,12 @@ sensitive_point_ok <- function(lat, lon) {
         !(abs(lat) < 0.5 & abs(lon) < 0.5) & lat != lon
 }
 
+# The fields of a row that can say where it is, other than the decimal axes.
+SENSITIVE_LOCATION_COLS <- c(
+    "verbatimLatitude", "verbatimLongitude", "verbatimCoordinates", "footprintWKT",
+    "locality", "verbatimLocality", "georeferenceRemarks", "locationRemarks"
+)
+
 # The openings of every coordinate note that a Saira version wrote, and of the
 # camtrapdp `write_dwc()` note. Frozen text, not tr(): these are the notes of
 # the versions before COORDINATE_NOTE_MARK, so a new wording adds nothing here.
@@ -559,6 +565,8 @@ sensitive_generalization_plan <- function(df, generalization, decisions = NULL) 
     lon <- as_coord_numeric(df$decimalLongitude)$num
     point_ok <- sensitive_point_ok(lat, lon)
     has_coord <- !is_blank_cell(df$decimalLatitude) | !is_blank_cell(df$decimalLongitude)
+    has_location <- Reduce(`|`, lapply(df[intersect(SENSITIVE_LOCATION_COLS, names(df))],
+                                       function(v) !is_blank_cell(v)), rep(FALSE, n))
     sensitive <- decided$sensitive & !is.na(row_grid) & row_grid > 0
     target <- sensitive & point_ok
 
@@ -625,8 +633,10 @@ sensitive_generalization_plan <- function(df, generalization, decisions = NULL) 
         lon = lon,
         target = target,
         # A sensitive point the grid cannot move (out of range, one axis only, a
-        # UTM pair) is removed and kept in the private file (B09, B23).
-        withheld = sensitive & has_coord & !point_ok & !already_masked,
+        # UTM pair) is removed and kept in the private file (B09, B23). A row
+        # with no point but with a location field gets the same treatment.
+        withheld = sensitive & (has_coord | has_location) & !point_ok & !already_masked,
+        has_coord = has_coord,
         kept = sensitive & already_masked,
         snap = snap,
         exist_prec = exist_prec,
@@ -759,6 +769,12 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     keep_lat <- coord_text_with_dot(df$decimalLatitude)[kept]
     keep_lon <- coord_text_with_dot(df$decimalLongitude)[kept]
     redact_kept <- function(d) {
+        # A footprint from the file can hold the real point, and nothing here
+        # proves that it is coarse.
+        for (col in intersect(c("footprintWKT", "footprintSRS"), names(d))) {
+            d[[col]] <- as.character(d[[col]])
+            d[[col]][kept] <- ""
+        }
         redact_copies(d, kept, lat_num[kept], lon_num[kept], exist_prec[kept], keep_lat, keep_lon,
                       c("occurrenceID", "scientificName", "decimalLatitude", "decimalLongitude",
                         "footprintWKT", "footprintSRS", blank_cols))
@@ -953,8 +969,95 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
     # The grid of each row in `rows`, so the export knows how close a raw copy
     # of the point may be before it gives the point away (B52).
     result$grid <- eff_grid[idx]
-    set_scrub(result, idx, result$real$decimalLatitude, result$real$decimalLongitude,
-              result$grid)
+    result <- set_scrub(result, idx, result$real$decimalLatitude, result$real$decimalLongitude,
+                        result$grid)
+    # A row with no point has nothing for the private file.
+    result$real <- result$real[plan$has_coord[idx], , drop = FALSE]
+    result
+}
+
+# Rows of a protected species with no full point where a public cell still shows
+# a coordinate. With no point to compare, the mask cannot tell a copy from another
+# number, so the export stops and lists these rows. A copy is a number with more
+# decimals than the row grid, or a degrees-and-minutes value, as in
+# redact_point_numbers(). `extras` holds the unmapped columns that reach the file.
+protected_point_text_rows <- function(df, generalization, decisions = NULL, extras = NULL) {
+    needed <- c("scientificName", "decimalLatitude", "decimalLongitude")
+    if (!is.data.frame(df) || !all(needed %in% names(df)) ||
+        !is.list(generalization) || !isTRUE(generalization$enabled) ||
+        !length(generalization$levels)) {
+        return(integer(0))
+    }
+    tier <- resolve_row_tiers(df$scientificName, generalization$levels)
+    no_point <- is.na(as_coord_numeric(df$decimalLatitude)$num) |
+        is.na(as_coord_numeric(df$decimalLongitude)$num)
+    protected_tiers <- c("extreme", "high", "medium", "low")
+    on_panel <- tier %in% protected_tiers
+    # A species with no full point never reaches the panel, so it has no level.
+    tier[!df$scientificName %in% df$scientificName[!no_point]] <- "high"
+    rows <- which(no_point & tier %in% protected_tiers &
+                      sensitive_resolve(df$scientificName, decisions)$sensitive)
+    if (!length(rows)) {
+        return(integer(0))
+    }
+    grid <- vapply(tier[rows], sensitive_generalization_grid, numeric(1), USE.NAMES = FALSE)
+    min_text <- pmax(1, round(-log10(grid)))
+    found <- rep(FALSE, length(rows))
+    # The mask clears a row of a panel species with an axis or a location field.
+    # It leaves any other row as it is, with its coordinate fields and columns.
+    filled <- lapply(df[intersect(c(needed[-1L], SENSITIVE_LOCATION_COLS), names(df))],
+                     function(v) !is_blank_cell(v[rows]))
+    by_mask <- on_panel[rows] & Reduce(`|`, filled, rep(FALSE, length(rows)))
+    for (col in intersect(SENSITIVE_LOCATION_COLS, names(df))) {
+        cell <- as.character(df[[col]][rows])
+        cell[by_mask] <- NA
+        found <- found | point_text_cells(cell, min_text)
+    }
+    for (col in setdiff(names(df), c(needed, SENSITIVE_LOCATION_COLS, "footprintSRS"))) {
+        cell <- as.character(df[[col]][rows])
+        if (col %in% ONE_NUMBER_TERMS || is_measurement_value_term(col) ||
+            grepl(IDENTIFIER_TERM_PATTERN, col)) {
+            cell[!is.na(suppressWarnings(as.numeric(sub(",", ".", trimws(cell), fixed = TRUE))))] <- NA
+        }
+        # The note of a generalization names the grid, and that is no copy.
+        if (col == "dataGeneralizations") cell[coordinate_generalization_note(cell)] <- NA
+        found <- found | point_text_cells(cell, min_text)
+    }
+    if (is.data.frame(extras) && ncol(extras)) {
+        by_name <- coordinate_like_column(names(extras))
+        for (col in names(extras)[!by_name]) {
+            cell <- as.character(extras[[col]][rows])
+            # One number with few decimals is more often a measure than a copy.
+            one <- !is.na(suppressWarnings(as.numeric(sub(",", ".", trimws(cell), fixed = TRUE))))
+            found <- found | point_text_cells(cell, ifelse(one, 3, min_text))
+        }
+        # The export blanks a column with a coordinate name only on the rows of
+        # the mask. On another row, any number there can be the point, also UTM.
+        for (col in names(extras)[by_name]) {
+            found <- found | (!by_mask & grepl("[0-9]", as.character(extras[[col]][rows])))
+        }
+    }
+    rows[found]
+}
+
+# Text cells that hold a coordinate: `min_decimals` is the most decimals a number
+# can have and not count, per cell. A link holds numbers that are no coordinates.
+point_text_cells <- function(cell, min_decimals) {
+    out <- rep(FALSE, length(cell))
+    cand <- which(!is.na(cell) & grepl(POINT_TEXT_HINT, cell, perl = TRUE))
+    if (!length(cand)) {
+        return(out)
+    }
+    text <- gsub("(?:https?://|doi:|\\b10\\.[0-9]{4,}/)\\S*", "", cell[cand], perl = TRUE)
+    dms <- grepl(POINT_DMS_PATTERN, text, perl = TRUE) | grepl(POINT_DMS_LETTER_PATTERN, text, perl = TRUE)
+    matched <- match_each_cell(POINT_NUMBER_PATTERN, text)
+    tok <- unlist(matched$tokens, use.names = FALSE)
+    owner <- rep(seq_along(text), lengths(matched$tokens))
+    number <- read_point_number(tok)
+    hit <- number$value <= 180 & number$decimals > rep_len(min_decimals, length(cell))[cand][owner]
+    dms[unique(owner[which(hit)])] <- TRUE
+    out[cand] <- dms
+    out
 }
 
 # A publisher note in `dataGeneralizations` stays in front of the Saira note,

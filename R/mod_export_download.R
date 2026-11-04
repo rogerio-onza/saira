@@ -47,10 +47,12 @@ mount_export_download <- function(input, output, session, lang_r,
                     mapped_data_r(), name_review_payload = optional_reactive_value(sources$name_review),
                     coords_correction_payload = optional_reactive_value(sources$coords_correction),
                     country_fill_payload = optional_reactive_value(sources$country_fill),
+                    sensitivity_payload = optional_reactive_value(sources$sensitivity),
                     generalization_payload = optional_reactive_value(sources$generalization),
                     raw_data = optional_reactive_value(sources$raw_data),
                     map_values = optional_reactive_value(sources$map_values),
-                    overridden_terms = overridden_mapping_terms(optional_reactive_value(sources$custom_values))
+                    overridden_terms = overridden_mapping_terms(optional_reactive_value(sources$custom_values)),
+                    rows_left_out = optional_reactive_value(sources$rows_left_out) %||% integer(0)
                 )$export_blocked)
             }
         })

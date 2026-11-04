@@ -113,6 +113,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **year:** Stop reading a year from a decimal or a longer number, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
 - **upload:** Report Wildlife Insights timestamps with extra text, instead of reading part of them, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
 - **generalization:** Remove the coordinates of masked rows from the justification text in dataGeneralizations, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
+- **generalization:** Apply the protection to every location field of a protected record, ADR-193 ([#268](https://github.com/rogerio-onza/saira/pull/268))
+- **export:** Block a protected record while a free-text or unmapped field still shows its location, ADR-193 ([#268](https://github.com/rogerio-onza/saira/pull/268))
 - **generalization:** Replace copies of the exact point written with an exponent or with no degree marks, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **generalization:** Replace a copy of the exact point that fills a text term, and keep numeric terms and identifiers, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **generalization:** Replace copies of the exact point in measurement fields, fixed values and the mapping guide, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))

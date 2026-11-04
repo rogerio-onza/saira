@@ -424,6 +424,12 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     shiny::tags$code(format_row_list(s$coord_invalid_rows))
                 ), "go_preview_coord_invalid", tr("export_action_preview", lang)))
             }
+            if (length(s$point_text_rows) > 0L) {
+                add(pending_row("block", shiny::tagList(
+                    sprintf(tr("export_blocked_point_text", lang), length(s$point_text_rows)), " ",
+                    shiny::tags$code(format_row_list(s$point_text_rows))
+                ), "go_preview_coord_invalid", tr("export_action_preview", lang)))
+            }
             if (isTRUE(s$justification_pending)) {
                 add(pending_row("block", tr("export_blocked_justification", lang),
                                 "go_fix_justification", tr("export_fix_justification_cta", lang)))
