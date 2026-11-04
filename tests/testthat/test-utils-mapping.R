@@ -372,12 +372,12 @@ testthat::test_that("parse_month_to_number_vec handles empty, NA and factor inpu
 })
 
 testthat::test_that("parse_year_to_number_vec matches the scalar helper element by element", {
-    # "20201" and "19-07-2011" exercise the "first 4-digit run" branch, where a
-    # regmatches()-based rewrite would drop the non-matching elements and
+    # "coletado em 1975" and "19-07-2011" exercise the free-text branch, where
+    # a regmatches()-based rewrite would drop the non-matching elements and
     # misalign everything after the first miss.
     values <- c(
         "1998", "98", "2020-01-01", "coletado em 1975", "abc",
-        "", NA, "20201", "0000", "19-07-2011"
+        "", NA, "20201", "0000", "19-07-2011", "2024.0", "2024.9", "01.02.2024"
     )
 
     expected <- vapply(
@@ -2485,4 +2485,23 @@ testthat::test_that("photo, audio and specimen get a basisOfRecord suggestion (B
 testthat::test_that("sex values with both sexes or a hermaphrodite get a suggestion (B31)", {
     testthat::expect_equal(vocabulary_suggestions("sex", "F | M"), "mixed")
     testthat::expect_equal(vocabulary_suggestions("sex", "Hermafrodita"), "other")
+})
+
+testthat::test_that("year parsers do not cut a year out of a longer number", {
+    for (bad in c("20249", "12024", "2024.9", "2024,9", "-2024", "+2024", "1234.5678")) {
+        testthat::expect_identical(parse_year_to_number(bad), NA_integer_, info = bad)
+        testthat::expect_identical(parse_year_to_number_vec(bad), NA_integer_, info = bad)
+    }
+})
+
+testthat::test_that("year parsers keep a year written as a date, text or whole decimal", {
+    good <- c(
+        "2024" = 2024L, "ano 2024" = 2024L, "19-07-2011" = 2011L,
+        "2020-01-01" = 2020L, "01.02.2024" = 2024L, "2024.01.02" = 2024L,
+        "12/03/1998" = 1998L, "2024.0" = 2024L, "2024,00" = 2024L
+    )
+    for (value in names(good)) {
+        testthat::expect_identical(parse_year_to_number(value), good[[value]], info = value)
+        testthat::expect_identical(parse_year_to_number_vec(value), good[[value]], info = value)
+    }
 })

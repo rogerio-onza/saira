@@ -5,17 +5,7 @@ parse_year_to_number <- function(x) {
         return(NA_integer_)
     }
 
-    value <- trimws(as.character(x))
-    if (grepl("^\\d{4}$", value)) {
-        return(as.integer(value))
-    }
-
-    year_match <- regmatches(value, regexpr("\\d{4}", value, perl = TRUE))
-    if (length(year_match) == 0 || identical(year_match, "")) {
-        return(NA_integer_)
-    }
-
-    as.integer(year_match)
+    parse_year_to_number_vec(x)[[1L]]
 }
 
 #' Vectorized companion to parse_year_to_number()
@@ -25,8 +15,8 @@ parse_year_to_number <- function(x) {
 #' free-text date column.
 #'
 #' @param x Character vector of raw year values
-#' @return Integer vector of years, NA where no 4-digit run is present, same
-#'   length as the input
+#' @return Integer vector of years, NA where no 4-digit year is present or the
+#'   value is a number that is not a year, same length as the input
 #' @noRd
 parse_year_to_number_vec <- function(x) {
     values <- as.character(x)
@@ -45,20 +35,29 @@ parse_year_to_number_vec <- function(x) {
     uniq <- unique(trimmed[candidates])
     resolved <- rep(NA_integer_, length(uniq))
 
-    exact <- grepl("^\\d{4}$", uniq)
-    resolved[exact] <- as.integer(uniq[exact])
+    # A year column read as numeric arrives as "2024.0".
+    exact <- grepl("^[0-9]{4}([.,]0+)?$", uniq)
+    resolved[exact] <- as.integer(substr(uniq[exact], 1L, 4L))
 
-    rest <- which(!exact)
+    # Any other plain number is not a year: "20249" must not publish 2024.
+    number <- grepl("^[+-]?[0-9]+([.,][0-9]+)?$", uniq)
+
+    rest <- which(!exact & !number)
     if (length(rest) > 0L) {
         # Deliberately NOT regmatches(): it DROPS non-matching elements and so
         # silently shortens the vector, which would misalign every value after
         # the first miss. The match position is used directly instead.
-        m <- regexpr("\\d{4}", uniq[rest], perl = TRUE)
+        # A dotted date has two separators, so it is not a decimal number.
+        text <- gsub(
+            "(?<![0-9.,])([0-9]{1,4})[.]([0-9]{1,2})[.]([0-9]{1,4})(?![0-9.,])",
+            "\\1-\\2-\\3", uniq[rest], perl = TRUE
+        )
+        m <- regexpr("(?<![0-9.,])[0-9]{4}(?![0-9]|[.,][0-9])", text, perl = TRUE)
         hit <- m > 0L
         if (any(hit)) {
             starts <- m[hit]
             resolved[rest[hit]] <- as.integer(
-                substring(uniq[rest][hit], starts, starts + 3L)
+                substring(text[hit], starts, starts + 3L)
             )
         }
     }

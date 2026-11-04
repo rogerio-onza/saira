@@ -109,6 +109,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **upload:** Keep a literal `NA` in a data cell, and report the ID cells a file leaves empty, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
+- **year:** Stop reading a year from a decimal or a longer number, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
+- **upload:** Report Wildlife Insights timestamps with extra text, instead of reading part of them, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
 - **generalization:** Remove the coordinates of masked rows from the justification text in dataGeneralizations, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **generalization:** Replace copies of the exact point written with an exponent or with no degree marks, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **generalization:** Replace a copy of the exact point that fills a text term, and keep numeric terms and identifiers, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))

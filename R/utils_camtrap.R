@@ -77,14 +77,20 @@ WI_REQUIRED_SEQ_COLS <- c("deployment_id", "sequence_id", "start_time", "end_tim
 # Every column is text, so an ID such as "000123" keeps its zeros (AUD-07).
 # The normalizer converts the numeric fields itself.
 wi_read_csv <- function(path) {
-    utils::read.csv(
+    df <- utils::read.csv(
         path,
         stringsAsFactors = FALSE,
         colClasses = "character",
-        na.strings = c("", "NA"),
+        na.strings = "",
         check.names = FALSE,
         encoding = "UTF-8"
     )
+    # WI writes NA for an empty field. An identifier of these two keys is never
+    # empty, so there NA is the identifier.
+    for (col in setdiff(names(df), c("deployment_id", "image_id"))) {
+        df[[col]][which(df[[col]] == "NA")] <- NA_character_
+    }
+    df
 }
 
 # WI splits a large export into several files (images_1.csv, images_2.csv),
@@ -103,20 +109,34 @@ wi_read_split_csv <- function(paths, required) {
 
 # Parse WI timestamps ("YYYY-MM-DD HH:MM:SS", "YYYY-MM-DD", etc.) into ISO 8601
 # UTC strings. Returns NA for unparseable values without warning.
+# as.POSIXct() ignores text after the format and accepts 24:00:00, so a value
+# must match its whole form and read back the same.
 wi_parse_timestamp <- function(x) {
     if (length(x) == 0L) return(character(0))
-    x <- as.character(x)
+    x <- trimws(as.character(x))
     out <- rep(NA_character_, length(x))
-    fmts <- c("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S",
-              "%Y-%m-%d %H:%M", "%Y-%m-%d")
-    for (f in fmts) {
-        idx <- which(is.na(out) & !is.na(x) & nzchar(x))
+    date <- "^[0-9]{4}-[0-9]{2}-[0-9]{2}"
+    forms <- list(
+        c(paste0(date, " [0-9]{2}:[0-9]{2}:[0-9]{2}$"), "%Y-%m-%d %H:%M:%S"),
+        c(paste0(date, "T[0-9]{2}:[0-9]{2}:[0-9]{2}$"), "%Y-%m-%dT%H:%M:%S"),
+        c(paste0(date, " [0-9]{2}:[0-9]{2}$"), "%Y-%m-%d %H:%M"),
+        c(paste0(date, "$"), "%Y-%m-%d")
+    )
+    for (form in forms) {
+        idx <- which(is.na(out) & !is.na(x) & grepl(form[[1L]], x))
         if (length(idx) == 0L) next
-        parsed <- suppressWarnings(as.POSIXct(x[idx], format = f, tz = "UTC"))
-        ok <- !is.na(parsed)
+        parsed <- suppressWarnings(as.POSIXct(x[idx], format = form[[2L]], tz = "UTC"))
+        ok <- !is.na(parsed) & format(parsed, form[[2L]], tz = "UTC") == x[idx]
+        ok[is.na(ok)] <- FALSE
         out[idx[ok]] <- format(parsed[ok], "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
     }
     out
+}
+
+# Values with text that wi_parse_timestamp() did not read.
+wi_lost_timestamps <- function(raw, parsed) {
+    raw <- as.character(raw)
+    sum(!is.na(raw) & nzchar(trimws(raw)) & is.na(parsed))
 }
 
 # WI exports end_date as a calendar date (Data Dictionary: YYYY-MM-DD), padded
@@ -426,6 +446,11 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
     utils::write.csv(obs, file.path(out_dir, "observations.csv"),
                      row.names = FALSE, na = "", fileEncoding = "UTF-8")
 
+    attr(out_dir, "lost_timestamps") <- wi_lost_timestamps(
+        if (is_sequence) c(src$start_time, src$end_time) else src$timestamp,
+        c(event_start, if (is_sequence) event_end)
+    ) + wi_lost_timestamps(wi_dep$start_date, dep$deploymentStart) +
+        wi_lost_timestamps(wi_dep$end_date, dep$deploymentEnd)
     invisible(out_dir)
 }
 
@@ -622,6 +647,7 @@ read_camtrap_dp_zip <- function(path, lang = "en") {
             pkg$gbifIngestion$observationLevel <- "media"
         }
         attr(pkg, "saira_camtrap_source") <- source
+        attr(pkg, "saira_lost_timestamps") <- attr(norm_dir, "lost_timestamps")
         return(pkg)
     }
 
@@ -702,5 +728,7 @@ convert_camtrap_to_dwc_occurrence <- function(x, lang = "en") {
         }
     }
     if (!is.null(src)) attr(df, "saira_camtrap_source") <- src
+    lost <- attr(x, "saira_lost_timestamps")
+    if (isTRUE(lost > 0L)) attr(df, "read_report") <- list(lost_timestamps = lost)
     df
 }
