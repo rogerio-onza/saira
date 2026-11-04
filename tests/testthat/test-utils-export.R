@@ -1444,3 +1444,32 @@ testthat::test_that("unmapped text with a copy of the point gets the published v
     testthat::expect_equal(out$anotacao, c("GPS: -23.6, -46.6", "UTM  "))
     testthat::expect_equal(out$ponto, c("-23.6,-46.6", "ok"))
 })
+
+testthat::test_that("a signed cell reference reads as a formula, a signed number does not", {
+    testthat::expect_true(all(is_formula_like(c("+A1", "-A1", "-A1:B2", "+$A$1", "-$aa$10:$ab$20"))))
+    testthat::expect_false(any(is_formula_like(
+        c("-23.5", "+5", "-1e5", "-A", "-A0", "-AAAA1", "A1", "-Aus bus", "-23.5,-46.6")
+    )))
+})
+
+testthat::test_that("a column name that reads as a formula counts as row 0", {
+    df <- data.frame(ok = c("a", "=1+1"), stringsAsFactors = FALSE)
+    df[["=1+1"]] <- c("x", "y")
+    df[[" +A1"]] <- c("x", "y")
+    found <- formula_like_cells(df)
+    testthat::expect_identical(found$count, 3L)
+    testthat::expect_identical(found$sample$row, c(0L, 0L, 2L))
+    testthat::expect_identical(found$sample$column, c("=1+1", " +A1", "ok"))
+    testthat::expect_identical(found$headers, c("=1+1", " +A1"))
+    # Many names do not hide the cells from the sample.
+    wide <- as.data.frame(stats::setNames(as.list(rep("x", 6L)), paste0("=", 1:6)), check.names = FALSE)
+    wide$ok <- "=1+1"
+    testthat::expect_true("ok" %in% formula_like_cells(wide)$sample$column)
+    testthat::expect_identical(formula_like_cells(data.frame(ok = "a"))$headers, character(0))
+    testthat::expect_identical(formula_like_cells(NULL)$count, 0L)
+})
+
+testthat::test_that("is_formula_like finds a sum after a signed cell reference", {
+    testthat::expect_true(all(is_formula_like(c("-A1+1", "+A1+B1", "-$A$1-2"))))
+    testthat::expect_false(any(is_formula_like(c("-23.5", "+55", "-", "-A1 note", "Aus bus"))))
+})

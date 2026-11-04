@@ -5164,6 +5164,11 @@
     "en": "%d cell(s) in unmapped columns start with =, +, - or @ and stay in occurrence.txt. A spreadsheet runs the value as a formula. Correct the original spreadsheet and upload it again, or map the column and correct it in the preview.",
     "es": "%d celda(s) de columnas sin mapear empiezan con =, +, - o @ y siguen en occurrence.txt. Una hoja de cálculo ejecuta el valor como fórmula. Corrija la hoja original y súbala de nuevo, o mapee la columna y corríjala en la vista previa."
   },
+  "export_formula_header_body": {
+    "pt": "%d nome(s) de coluna n\u00e3o mapeada come\u00e7am como uma f\u00f3rmula e seguem no occurrence.txt. Uma planilha executa esse nome como f\u00f3rmula. Mude o nome na planilha original e envie de novo, ou mapeie a coluna para um termo.",
+    "en": "%d unmapped column name(s) start like a formula and stay in occurrence.txt. A spreadsheet runs the name as a formula. Change the name in the original spreadsheet and upload it again, or map the column to a term.",
+    "es": "%d nombre(s) de columna sin mapear empiezan como una f\u00f3rmula y siguen en occurrence.txt. Una hoja de c\u00e1lculo ejecuta ese nombre como f\u00f3rmula. Cambie el nombre en la hoja original y s\u00fabala de nuevo, o mapee la columna a un t\u00e9rmino."
+  },
   "export_blocked_sci_blank": {
     "pt": "scientificName vazio em %d registro(s). O GBIF exige o nome em todo registro. Preencha na pré-visualização. Linhas:",
     "en": "scientificName is empty in %d record(s). GBIF needs the name on every record. Fill it in the preview. Rows:",

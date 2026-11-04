@@ -393,6 +393,23 @@ testthat::test_that("write_change_log_csv quotes a formula so a spreadsheet does
     testthat::expect_identical(back$from, c("'=SUM(A1)", "-10.5"))
 })
 
+testthat::test_that("an unmapped column name that reads as a formula blocks the export", {
+    df <- data.frame(scientificName = "Puma concolor", stringsAsFactors = FALSE)
+    raw <- data.frame(especie = df$scientificName, stringsAsFactors = FALSE)
+    raw[["=1+1"]] <- "nota"
+    s <- saira:::build_export_summary(mapped_data = df, raw_data = raw,
+                                      map_values = list(scientificName = "especie"))
+    testthat::expect_identical(s$formula_cells_unmapped$headers, "=1+1")
+    testthat::expect_true(s$export_blocked)
+
+    # Mapping the column removes the name from the file.
+    s2 <- saira:::build_export_summary(
+        mapped_data = df, raw_data = raw,
+        map_values = list(scientificName = "especie", occurrenceRemarks = "=1+1")
+    )
+    testthat::expect_identical(s2$formula_cells_unmapped$count, 0L)
+})
+
 testthat::test_that("build_export_summary counts the measurement columns as one term", {
     df <- sample_mapped()
     df$occurrenceID <- c("o1", "o2")
