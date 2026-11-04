@@ -247,7 +247,7 @@ blank_coordinate_like_cells <- function(extras, rows, points = NULL) {
 #' apenas o vocabulario "Coluna -> Termo". Cada linha de mapping vira uma
 #' row em rostrum_aliases ao re-importar via parse_mapping_guide_txt().
 #'
-#' Header magico fixo: `# saira:mapping:v1` na primeira linha.
+#' Header magico fixo: `# saira:mapping:v3` na primeira linha.
 #'
 #' @param map_values Named list: nome = termo DwC, valor = char vec de colunas
 #'   fonte (multi-coluna serializa como "colA + colB").
@@ -295,11 +295,10 @@ build_mapping_guide_txt <- function(map_values,
     for (term in setdiff(names(map_values), overridden)) {
         cols <- as.character(unlist(map_values[[term]], recursive = TRUE, use.names = FALSE))
         cols <- cols[!is.na(cols)]
-        cols <- trimws(cols)
-        cols <- cols[nzchar(cols)]
+        cols <- cols[nzchar(trimws(cols))]
         if (length(cols) == 0L) next
         used_sources <- c(used_sources, cols)
-        source_repr <- if (length(cols) == 1L) cols[[1]] else paste(cols, collapse = " + ")
+        source_repr <- paste(guide_escape_column(cols), collapse = " + ")
         pairs[[length(pairs) + 1L]] <- list(source = source_repr, term = term)
     }
     used_sources <- unique(used_sources)
@@ -314,7 +313,7 @@ build_mapping_guide_txt <- function(map_values,
         if (is.null(val) || length(val) == 0L) next
         val <- trimws(as.character(val)[[1]])
         if (is.na(val) || !nzchar(val)) next
-        const_pairs[[length(const_pairs) + 1L]] <- list(value = val, term = term)
+        const_pairs[[length(const_pairs) + 1L]] <- list(value = guide_escape(val), term = term)
     }
 
     raw_cols <- names(raw_data)
@@ -422,14 +421,14 @@ build_mapping_guide_txt <- function(map_values,
     }
 
     out <- c(
-        "# saira:mapping:v2",
+        SAIRA_MAPPING_GUIDE_MAGIC_V3,
         "#",
         L$title,
         L$url,
         L$tagline,
         "#",
         sprintf("# created_at: %s", format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")),
-        sprintf("# source_file: %s", if (is.na(source_file)) "" else source_file),
+        sprintf("# source_file: %s", if (is.na(source_file)) "" else guide_escape(source_file)),
         # Without a loaded sheet, Home reads these headers to tell a name
         # with '+' from a concatenation (ADR-171).
         paste0("# source_columns: ", jsonlite::toJSON(raw_cols, auto_unbox = FALSE)),
@@ -502,7 +501,7 @@ build_mapping_guide_txt <- function(map_values,
         out <- c(out, paste0("#     ", L$none))
     } else {
         for (col in kept_cols) {
-            out <- c(out, paste0("#     - ", col))
+            out <- c(out, paste0("#     - ", guide_escape(col)))
         }
         # Preserving the columns in the CSV is only half the promise: GBIF reads
         # meta.xml, and an undeclared column is invisible in the published
@@ -514,7 +513,7 @@ build_mapping_guide_txt <- function(map_values,
     # absent, instead of dropping it from the guide without a word.
     if (length(empty_cols) > 0L) {
         out <- c(out, "#", L$unmp_empty,
-                 paste0("#       ", paste(empty_cols, collapse = ", ")))
+                 paste0("#       ", paste(guide_escape(empty_cols), collapse = ", ")))
     }
 
     if (!is.na(id_strategy) && nzchar(id_strategy)) {

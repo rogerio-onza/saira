@@ -1085,9 +1085,9 @@
     "es": "Seleccione el archivo .txt antes de confirmar."
   },
   "modal_import_template_invalid_magic": {
-    "pt": "Esse arquivo não é um modelo Saíra (cabeçalho '# saira:mapping:v1' ausente).",
-    "en": "This file is not a Saíra template (missing '# saira:mapping:v1' header).",
-    "es": "Este archivo no es un modelo de Saíra (falta el encabezado '# saira:mapping:v1')."
+    "pt": "Esse arquivo não é um modelo Saíra (cabeçalho '# saira:mapping:v3' ausente).",
+    "en": "This file is not a Saíra template (missing '# saira:mapping:v3' header).",
+    "es": "Este archivo no es un modelo de Saíra (falta el encabezado '# saira:mapping:v3')."
   },
   "modal_import_template_restored": {
     "pt": "Mapeamento restaurado: %d termo(s) aplicado(s) a partir do modelo.",

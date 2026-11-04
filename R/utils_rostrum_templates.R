@@ -24,12 +24,21 @@ SAIRA_MAPPING_GUIDE_MAGIC_V1 <- "# saira:mapping:v1"
 #' @noRd
 SAIRA_MAPPING_GUIDE_MAGIC_V2 <- "# saira:mapping:v2"
 
+#' Magic header for the v3 mapping guide
+#'
+#' v3 keeps the v2 layout and escapes names and values (\code{guide_escape()}),
+#' so a line break, a " + " or a first "=" stays data. v1 and v2 text stays
+#' literal.
+#' @keywords internal
+#' @noRd
+SAIRA_MAPPING_GUIDE_MAGIC_V3 <- "# saira:mapping:v3"
+
 #' Detect whether a file looks like a Saira mapping guide
 #'
 #' Reads only the first non-empty line; safe for large CSVs (no full read).
 #'
 #' @param path Character path to the candidate file.
-#' @return TRUE when line 1 matches the v1 or v2 magic header. FALSE otherwise
+#' @return TRUE when line 1 matches the v1, v2 or v3 magic header. FALSE otherwise
 #'   (including when the file is unreadable).
 #' @export
 is_saira_mapping_guide <- function(path) {
@@ -41,7 +50,7 @@ is_saira_mapping_guide <- function(path) {
         error = function(e) character(0)
     )
     if (length(first) == 0L) return(FALSE)
-    magic_re <- "^\\s*# saira:mapping:v[12]\\s*$"
+    magic_re <- "^\\s*# saira:mapping:v[123]\\s*$"
     grepl(magic_re, first[[1]], perl = TRUE)
 }
 
@@ -63,24 +72,29 @@ is_saira_mapping_guide <- function(path) {
 #'       \code{constant_value}. For column mappings \code{source_column} holds
 #'       the raw source (\code{"a + b"} for concatenations) and
 #'       \code{constant_value} is \code{NA}; for constants the reverse holds.
+#'       A v3 guide also gives \code{source_list}, a list column with the exact
+#'       columns of each pair.
 #'   }
 #' @export
 parse_mapping_guide_txt <- function(path) {
     if (!is_saira_mapping_guide(path)) {
         stop(
             "parse_mapping_guide_txt: file does not start with the magic ",
-            "header '", SAIRA_MAPPING_GUIDE_MAGIC_V1, "' or '",
-            SAIRA_MAPPING_GUIDE_MAGIC_V2, "'."
+            "header '", SAIRA_MAPPING_GUIDE_MAGIC_V1, "', '",
+            SAIRA_MAPPING_GUIDE_MAGIC_V2, "' or '",
+            SAIRA_MAPPING_GUIDE_MAGIC_V3, "'."
         )
     }
 
     lines <- readLines(path, encoding = "UTF-8", warn = FALSE)
+    escaped <- identical(trimws(lines[[1L]]), SAIRA_MAPPING_GUIDE_MAGIC_V3)
 
     meta <- list()
     pairs_src <- character(0)
     pairs_term <- character(0)
     pairs_kind <- character(0)
     pairs_const <- character(0)
+    pairs_list <- list()
     invalid_lines <- 0L
 
     meta_re <- "^#\\s*([A-Za-z_][A-Za-z0-9_]*)\\s*:\\s*(.*?)\\s*$"
@@ -116,10 +130,15 @@ parse_mapping_guide_txt <- function(path) {
                     if (startsWith(val, "\"") && endsWith(val, "\"") && nchar(val) >= 2L) {
                         val <- substr(val, 2L, nchar(val) - 1L)
                     }
+                    if (escaped) val <- guide_unescape(val)
                     pairs_src   <- c(pairs_src, NA_character_)
                     pairs_const <- c(pairs_const, val)
                     pairs_kind  <- c(pairs_kind, "constant")
+                    pairs_list  <- c(pairs_list, list(NULL))
                 } else {
+                    columns <- if (escaped) guide_split_columns(src)
+                    if (escaped) src <- paste(columns, collapse = " + ")
+                    pairs_list  <- c(pairs_list, list(columns))
                     pairs_src   <- c(pairs_src, src)
                     pairs_const <- c(pairs_const, NA_character_)
                     pairs_kind  <- c(pairs_kind, "column")
@@ -145,6 +164,7 @@ parse_mapping_guide_txt <- function(path) {
             dwc_term       = pairs_term,
             kind           = pairs_kind,
             constant_value = pairs_const,
+            source_list    = I(pairs_list),
             stringsAsFactors = FALSE
         )
     )
@@ -209,7 +229,7 @@ import_mapping_guide_to_aliases <- function(
         if (is.na(src_raw)) next
         term    <- pairs$dwc_term[[i]]
         # Split multi-column composites ("colA + colB") into independent aliases.
-        sources <- guide_source_columns(src_raw, available_columns)
+        sources <- guide_pair_columns(pairs, i, available_columns)
         for (src in sources) {
             tryCatch(
                 {
