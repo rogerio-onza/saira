@@ -279,8 +279,9 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
         given <- ""
         sur   <- ""
     } else if (length(name_parts) == 1L) {
-        given <- name_parts[1L]
-        sur   <- ""
+        # EML requires surName. The name stays whole, with no invented part.
+        given <- ""
+        sur   <- name_parts[1L]
     } else {
         given <- paste(name_parts[-length(name_parts)], collapse = " ")
         sur   <- name_parts[length(name_parts)]
@@ -334,8 +335,11 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
 
     xml2::xml_add_child(ds, xml2::read_xml(build_intellectual_rights_xml(license)))
 
-    cov <- xml2::xml_add_child(ds, "coverage")
-    if (all(is.finite(ext$bbox))) {
+    has_geo <- all(is.finite(ext$bbox))
+    has_dates <- !is.na(ext$dates[["begin"]]) && !is.na(ext$dates[["end"]])
+    # EML does not allow an empty coverage element.
+    cov <- if (has_geo || has_dates) xml2::xml_add_child(ds, "coverage")
+    if (has_geo) {
         geo <- xml2::xml_add_child(cov, "geographicCoverage")
         xml2::xml_add_child(geo, "geographicDescription",
             "Bounding box computed from decimalLatitude/decimalLongitude.")
@@ -349,7 +353,7 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
         xml2::xml_add_child(bc, "southBoundingCoordinate",
             format(ext$bbox[["south"]], nsmall = 6))
     }
-    if (!is.na(ext$dates[["begin"]]) && !is.na(ext$dates[["end"]])) {
+    if (has_dates) {
         tmp <- xml2::xml_add_child(cov, "temporalCoverage")
         if (ext$dates[["begin"]] == ext$dates[["end"]]) {
             sd <- xml2::xml_add_child(tmp, "singleDateTime")
@@ -377,12 +381,17 @@ build_eml_xml <- function(df, metadata = list(), package_id = NULL) {
     }
 
     methods <- xml2::xml_add_child(ds, "methods")
-    ms <- xml2::xml_add_child(methods, "methodStep")
-    desc <- xml2::xml_add_child(ms, "description")
-    xml2::xml_add_child(desc, "para", sprintf(
-        "Dataset prepared with Saira v%s (https://github.com/rogerio-onza/saira). Fields validated and mapped to Darwin Core; coordinates checked with CoordinateCleaner; taxonomy reconciled against the Catalogue of Life (COL XR) through the GBIF API.",
+    # State only what is known of this product. The optional validation steps
+    # can be skipped, so the default names none of them.
+    notes <- metadata$methods %||% sprintf(
+        "Dataset exported in Darwin Core format with Saira v%s (https://github.com/rogerio-onza/saira).",
         utils::packageVersion("saira")
-    ))
+    )
+    for (note in notes) {
+        ms <- xml2::xml_add_child(methods, "methodStep")
+        desc <- xml2::xml_add_child(ms, "description")
+        xml2::xml_add_child(desc, "para", note)
+    }
 
     as.character(doc)
 }
