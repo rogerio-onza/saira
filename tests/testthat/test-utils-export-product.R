@@ -178,6 +178,13 @@ testthat::test_that("no public file keeps the point, from any text input (ADR-19
     testthat::expect_true(any(grepl("Base -23.6, -46.6", product$mapping_guide, fixed = TRUE)))
 })
 
+testthat::test_that("prepare_export_product stops on a column name that reads as a formula", {
+    inputs <- product_inputs()
+    inputs$raw_data[["=1+1"]] <- "nota"
+    testthat::expect_error(prepare_export_product(inputs, "en"),
+                           saira:::tr("export_download_blocked", "en"), fixed = TRUE)
+})
+
 testthat::test_that("times, dates, numeric terms and measurements stay in the public files (ADR-190)", {
     local_panthera_fixture()
     df <- data.frame(

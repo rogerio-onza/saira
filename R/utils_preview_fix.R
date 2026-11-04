@@ -98,11 +98,15 @@ unparsed_date_cells <- function(df, sample_n = 5L) {
 
 # A cell that a spreadsheet runs as a formula when a person opens
 # occurrence.txt (B48). "=1+1" and "@SUM(A1)" always are. A sign starts a
-# formula only with an operator after it, so "-23.5" and "-23\u00b033'S" pass.
+# formula only with an operator or a cell reference after it, so "-23.5" and
+# "-23\u00b033'S" pass and "-A1" and "-A1+1" do not.
 is_formula_like <- function(x) {
     x <- trimws(as.character(x))
     x[is.na(x)] <- ""
-    grepl("^[=@]", x) |
+    cell <- "\\$?[A-Za-z]{1,3}\\$?[1-9][0-9]*"
+    reference <- paste0("^[+-]", cell, "(:", cell, ")?$")
+    sum_after_reference <- paste0("^[+-]", cell, "[+-]")
+    grepl("^[=@]", x) | grepl(reference, x) | grepl(sum_after_reference, x) |
         (grepl("^[+-]", x) & grepl("[=*/^(!|&]|^[+-][0-9.]+[+-][0-9]", x) &
             is.na(suppressWarnings(as.numeric(x))))
 }
@@ -115,7 +119,9 @@ suggest_formula_fix <- function(x) {
 }
 
 # Formula-like cells in every column, for the Export pending list. Same
-# shape as unparsed_date_cells().
+# shape as unparsed_date_cells(), plus the column names that read as formulas:
+# a name is a cell in row 1 of the file, so it runs the same way. Row 0 marks a
+# name. The Preview edits no names, so the sample shows them and the cells apart.
 formula_like_cells <- function(df, sample_n = 5L) {
     empty <- data.frame(row = integer(), column = character(), value = character(),
                         stringsAsFactors = FALSE)
@@ -127,8 +133,15 @@ formula_like_cells <- function(df, sample_n = 5L) {
         data.frame(row = rows, column = rep(term, length(rows)), value = trimws(v[rows]),
                    stringsAsFactors = FALSE)
     })
-    bad <- do.call(rbind, c(list(empty), found))
-    list(count = nrow(bad), sample = utils::head(bad, sample_n))
+    cells <- do.call(rbind, c(list(empty), found))
+    headers <- cols[is_formula_like(cols)]
+    named <- data.frame(row = rep(0L, length(headers)), column = headers, value = trimws(headers),
+                        stringsAsFactors = FALSE)
+    list(
+        count = length(headers) + nrow(cells),
+        sample = rbind(utils::head(named, sample_n), utils::head(cells, sample_n)),
+        headers = headers
+    )
 }
 
 is_blank_cell <- function(x) {

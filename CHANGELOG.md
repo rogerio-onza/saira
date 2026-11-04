@@ -112,6 +112,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **generalization:** Remove the coordinates of masked rows from the justification text in dataGeneralizations, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **generalization:** Replace copies of the exact point written with an exponent or with no degree marks, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **generalization:** Replace a copy of the exact point that fills a text term, and keep numeric terms and identifiers, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
+- **export:** Apply the spreadsheet formula check to column names and signed cell references, ADR-193 ([#270](https://github.com/rogerio-onza/saira/pull/270))
 - **generalization:** Replace copies of the exact point in measurement fields, fixed values and the mapping guide, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **generalization:** Close each generalized note with a versioned mark, so a new wording still counts as generalized, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **export:** Stop the export when a step's decision cannot be read, not treat it as no decision, ADR-189

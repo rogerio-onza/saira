@@ -469,13 +469,22 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }
             # The Preview shows only mapped terms, so these go back to Mapping.
             fu <- s$formula_cells_unmapped
-            if (is.list(fu) && isTRUE(fu$count > 0L)) {
+            fu_headers <- if (is.list(fu)) fu$headers else character(0)
+            if (length(fu_headers) > 0L) {
                 add(pending_row("block", shiny::tagList(
                     shiny::strong(tr("export_formula_title", lang)), " ",
-                    sprintf(tr("export_formula_unmapped_body", lang), fu$count), " ",
+                    sprintf(tr("export_formula_header_body", lang), length(fu_headers)), " ",
+                    shiny::tags$code(paste(fu_headers, collapse = ", "))
+                ), "go_map_unmapped", tr("export_action_mapping", lang)))
+            }
+            if (is.list(fu) && isTRUE(fu$count > length(fu_headers))) {
+                fu_cells <- fu$sample[fu$sample$row > 0L, , drop = FALSE]
+                add(pending_row("block", shiny::tagList(
+                    shiny::strong(tr("export_formula_title", lang)), " ",
+                    sprintf(tr("export_formula_unmapped_body", lang), fu$count - length(fu_headers)), " ",
                     shiny::tags$code(paste(
                         sprintf(tr("export_date_range_row", lang),
-                                fu$sample$row, fu$sample$column, fu$sample$value),
+                                fu_cells$row, fu_cells$column, fu_cells$value),
                         collapse = ", "
                     ))
                 ), "go_map_unmapped", tr("export_action_mapping", lang)))
