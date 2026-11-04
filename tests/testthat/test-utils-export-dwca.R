@@ -361,3 +361,93 @@ testthat::test_that("compute_dataset_extents skips placeholder points and future
     testthat::expect_equal(unname(ext$bbox), c(-46.6, -40, -10, -23.5))
     testthat::expect_equal(unname(ext$dates), c("2019-03-02", "2021-05-01"))
 })
+
+testthat::test_that("build_eml_xml omits coverage when no extent exists", {
+    df <- data.frame(
+        decimalLatitude = NA_real_, decimalLongitude = NA_real_,
+        eventDate = "sem data", stringsAsFactors = FALSE
+    )
+    doc <- xml2::read_xml(build_eml_xml(df))
+    testthat::expect_length(xml2::xml_find_all(doc, "//coverage"), 0L)
+    testthat::expect_length(xml2::xml_find_all(doc, "//contact"), 1L)
+})
+
+testthat::test_that("build_eml_xml keeps a coverage with only dates", {
+    df <- data.frame(
+        decimalLatitude = NA_real_, decimalLongitude = NA_real_,
+        eventDate = "2020-01-02", stringsAsFactors = FALSE
+    )
+    doc <- xml2::read_xml(build_eml_xml(df))
+    testthat::expect_length(xml2::xml_find_all(doc, "//coverage/temporalCoverage"), 1L)
+    testthat::expect_length(xml2::xml_find_all(doc, "//coverage/geographicCoverage"), 0L)
+})
+
+testthat::test_that("build_eml_xml puts a one-word creator name in surName", {
+    doc <- xml2::read_xml(build_eml_xml(
+        data.frame(eventDate = "2020-01-02", stringsAsFactors = FALSE),
+        metadata = list(creator = list(name = "Rogerio"))
+    ))
+    testthat::expect_identical(
+        xml2::xml_text(xml2::xml_find_first(doc, "//creator/individualName/surName")),
+        "Rogerio"
+    )
+    testthat::expect_length(xml2::xml_find_all(doc, "//creator/individualName/givenName"), 0L)
+    testthat::expect_identical(
+        xml2::xml_text(xml2::xml_find_first(doc, "//contact/individualName/surName")),
+        "Rogerio"
+    )
+})
+
+testthat::test_that("build_eml_xml methods state only the export by default", {
+    df <- data.frame(eventDate = "2020-01-02", stringsAsFactors = FALSE)
+    doc <- xml2::read_xml(build_eml_xml(df))
+    text <- xml2::xml_text(xml2::xml_find_first(doc, "//methods"))
+    testthat::expect_match(text, "Darwin Core", fixed = TRUE)
+    testthat::expect_false(grepl("CoordinateCleaner|Catalogue of Life|validated", text))
+
+    doc <- xml2::read_xml(build_eml_xml(df, metadata = list(methods = c("One.", "Two."))))
+    steps <- xml2::xml_find_all(doc, "//methods/methodStep/description/para")
+    testthat::expect_identical(xml2::xml_text(steps), c("One.", "Two."))
+})
+
+# The schema stays out of the repository: its license is not the package license.
+eml_schema <- function() {
+    testthat::skip_on_cran()
+    dir <- tempfile("eml-schema-")
+    dir.create(dir)
+    withr::defer(unlink(dir, recursive = TRUE), envir = parent.frame())
+    url <- "https://github.com/NCEAS/eml/archive/refs/tags/RELEASE_EML_2_2_0.tar.gz"
+    archive <- file.path(dir, "eml.tar.gz")
+    got <- tryCatch(utils::download.file(url, archive, quiet = TRUE, mode = "wb"),
+                    error = function(e) 1L, warning = function(w) 1L)
+    testthat::skip_if(got != 0L, "EML schema not available")
+    utils::untar(archive, exdir = dir)
+    xml2::read_xml(file.path(dir, "eml-RELEASE_EML_2_2_0", "xsd", "eml.xsd"))
+}
+
+testthat::test_that("the eml.xml of the package is valid against the EML 2.2.0 schema", {
+    schema <- eml_schema()
+    points <- data.frame(
+        occurrenceID = c("o1", "o2"), scientificName = c("Aus bus", "Cus dus"),
+        eventDate = c("2020-01-02", "2021-03-04"), decimalLatitude = c("-23.5", "-22.1"),
+        decimalLongitude = c("-46.6", "-45.0"), stringsAsFactors = FALSE
+    )
+    no_extent <- data.frame(occurrenceID = "o1", scientificName = "Aus bus", stringsAsFactors = FALSE)
+    sensitivity <- list(n_masked = 1L, review_date = "2028-06-10", lang = "en")
+    cases <- list(
+        list(points, list()),
+        list(no_extent, list()),
+        list(points, list(sensitivity = sensitivity)),
+        list(points, list(creator = list(name = "Plato", email = "", organization = ""))),
+        list(points, list(creator = list(name = "Ana Maria da Silva", email = "a@b.org", organization = ""))),
+        list(points, list(creator = list(name = "", email = "", organization = "Instituto <Fauna> & Flora")))
+    )
+    for (case in cases) {
+        path <- tempfile(fileext = ".zip")
+        saira::build_dwca_bundle(case[[1]], path, case[[2]])
+        doc <- xml2::read_xml(unz(path, "eml.xml"))
+        unlink(path)
+        result <- xml2::xml_validate(doc, schema)
+        testthat::expect_true(result, info = paste(attr(result, "errors"), collapse = "\n"))
+    }
+})
