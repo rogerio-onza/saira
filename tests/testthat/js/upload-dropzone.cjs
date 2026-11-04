@@ -78,6 +78,16 @@ home.bar.textContent = 'Upload complete';
 observed[0].fire();
 assert.equal(home.bar.textContent, 'Upload complete');
 
+// A finished bar follows each language change, and other text stays.
+messages['saira-upload-complete-label']({ label: 'Envio concluído' });
+assert.equal(home.bar.textContent, 'Envio concluído');
+messages['saira-upload-complete-label']({ label: 'Carga completa' });
+assert.equal(home.bar.textContent, 'Carga completa');
+modal.bar.textContent = 'Uploading 40%';
+messages['saira-upload-complete-label']({ label: 'Upload complete' });
+assert.equal(home.bar.textContent, 'Upload complete');
+assert.equal(modal.bar.textContent, 'Uploading 40%');
+
 // A bind of another input does not scan the page for dropzones.
 const scans = queries.filter(q => q === '.upload-dropzone').length;
 handlers['shiny:bound']({ bindingType: 'input', target: { type: 'select-one', closest: () => null } });

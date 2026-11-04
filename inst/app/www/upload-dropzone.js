@@ -144,18 +144,24 @@
   // language, and each upload's bar swaps the text whenever Shiny writes it.
   var uploadCompleteLabel = null;
 
-  function localizeBar(bar) {
+  // previousLabel is the text of a bar that finished in the language before
+  // this one. The text is Shiny's only until the first swap.
+  function localizeBar(bar, previousLabel) {
+    var current = bar.textContent;
+    var finished = current === "Upload complete" ||
+      (typeof previousLabel === "string" && current === previousLabel);
     // In English the label equals Shiny's text: writing it again would fire
     // the bar's MutationObserver, which calls this again, without end.
-    if (uploadCompleteLabel && bar.textContent === "Upload complete" &&
-        uploadCompleteLabel !== bar.textContent) {
+    if (uploadCompleteLabel && finished && uploadCompleteLabel !== current) {
       bar.textContent = uploadCompleteLabel;
     }
   }
 
-  function localizeUploadProgress() {
+  function localizeUploadProgress(previousLabel) {
     var bars = document.querySelectorAll(".shiny-file-input-progress .progress-bar");
-    Array.prototype.forEach.call(bars, localizeBar);
+    Array.prototype.forEach.call(bars, function (bar) {
+      localizeBar(bar, previousLabel);
+    });
   }
 
   // One observer per upload bar: an observer on the page body ran on each
@@ -172,8 +178,9 @@
     if (!window.Shiny || window.__sairaUploadLabelHandler) return;
     window.__sairaUploadLabelHandler = true;
     window.Shiny.addCustomMessageHandler("saira-upload-complete-label", function (msg) {
+      var previousLabel = uploadCompleteLabel;
       uploadCompleteLabel = msg && msg.label ? msg.label : null;
-      localizeUploadProgress();
+      localizeUploadProgress(previousLabel);
     });
   }
 

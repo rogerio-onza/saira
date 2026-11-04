@@ -2374,6 +2374,11 @@
     "en": "Search name...",
     "es": "Buscar nombre..."
   },
+  "validate_names_report_page_length_label": {
+    "pt": "Registros por p\u00e1gina no relat\u00f3rio de nomes",
+    "en": "Records per page in the names report",
+    "es": "Registros por p\u00e1gina en el informe de nombres"
+  },
   "validate_names_report_show_n": {
     "pt": "Mostrar %d",
     "en": "Show %d",
