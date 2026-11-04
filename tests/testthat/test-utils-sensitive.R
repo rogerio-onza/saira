@@ -1381,3 +1381,132 @@ testthat::test_that("the cell polygon stays inside the world bounds (AUD-17)", {
     testthat::expect_true(all(abs(lon) <= 180))
     testthat::expect_equal(res$masked$decimalLatitude, "90")
 })
+
+testthat::test_that("a row the publisher generalized leaves its footprint out", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = "o1", scientificName = "Panthera onca",
+        decimalLatitude = "-23.6", decimalLongitude = "-46.6",
+        dataGeneralizations = "coordinates rounded to 0.1 degree",
+        footprintWKT = "POINT (-46.63331 -23.55052)", footprintSRS = "EPSG:4326",
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    testthat::expect_identical(res$masked$footprintWKT, "")
+    testthat::expect_identical(res$masked$footprintSRS, "")
+    testthat::expect_identical(res$masked$decimalLatitude, "-23.6")
+
+    # A row outside the protected list keeps it.
+    other <- transform(df, scientificName = "Felis catus")
+    testthat::expect_identical(
+        saira:::mask_sensitive_coordinates(other, generalization = "high", lang = "en")$masked$footprintWKT,
+        other$footprintWKT
+    )
+})
+
+testthat::test_that("a protected row with no point loses its location fields", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = c("o1", "o2", "o3"),
+        scientificName = c("Panthera onca", "Panthera onca", "Felis catus"),
+        decimalLatitude = c("-23.55052", "", ""), decimalLongitude = c("-46.63331", "", ""),
+        verbatimCoordinates = c("a", "23 33 S, 46 37 W", "23 33 S, 46 37 W"),
+        footprintWKT = c("", "POINT (-46.6 -23.5)", "POINT (-46.6 -23.5)"),
+        locality = c("x", "Fazenda Azul", "Fazenda Azul"),
+        stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    testthat::expect_identical(res$masked$verbatimCoordinates[2], "")
+    testthat::expect_identical(res$masked$footprintWKT[2], "")
+    testthat::expect_false(identical(res$masked$locality[2], "Fazenda Azul"))
+    testthat::expect_true(nzchar(res$masked$informationWithheld[2]))
+    testthat::expect_identical(res$n_withheld, 1L)
+    # The private file holds real points only.
+    testthat::expect_identical(res$real$occurrenceID, "o1")
+    # Another species stays as it was.
+    testthat::expect_identical(res$masked$locality[3], "Fazenda Azul")
+    testthat::expect_identical(res$masked$verbatimCoordinates[3], "23 33 S, 46 37 W")
+})
+
+testthat::test_that("a protected row with nothing about its location stays as it was", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = "o1", scientificName = "Panthera onca",
+        decimalLatitude = "", decimalLongitude = "",
+        occurrenceRemarks = "adult male", stringsAsFactors = FALSE
+    )
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "high", lang = "en")
+    testthat::expect_identical(res$n_withheld, 0L)
+    testthat::expect_identical(res$masked, df)
+})
+
+testthat::test_that("protected_point_text_rows lists rows with no point and a coordinate in text", {
+    local_sensitive_fixture("Panthera onca")
+    gp <- list(enabled = TRUE, levels = c("Panthera onca" = "high"))
+    df <- data.frame(
+        scientificName = c(rep("Panthera onca", 6L), "Felis catus"),
+        decimalLatitude = c("-23.55", "", "", "", "-23.55", "", ""),
+        decimalLongitude = c("-46.63", "", "", "", "", "", ""),
+        occurrenceRemarks = c(
+            "GPS -23.55052, -46.63331", "GPS -23.55052, -46.63331", "adult, 2 cubs",
+            "see https://doi.org/10.1016/j.x.2020.12.345", "at 46°37'59\"W",
+            "CC-BY 4.0", "GPS -23.55052, -46.63331"
+        ),
+        stringsAsFactors = FALSE
+    )
+    rows <- saira:::protected_point_text_rows
+    testthat::expect_identical(rows(df, gp), c(2L, 5L))
+    # An explicit decision wins over the level left in the payload.
+    off <- data.frame(scientificName = "Panthera onca", sensitive = FALSE, stringsAsFactors = FALSE)
+    testthat::expect_identical(rows(df, gp, off), integer(0))
+    testthat::expect_identical(rows(df, list(enabled = FALSE, levels = gp$levels)), integer(0))
+
+    # Unmapped columns: text and a long number count, a short number does not,
+    # and the export blanks a column with a coordinate name on a row of the mask.
+    df$occurrenceRemarks <- ""
+    extras <- data.frame(
+        notas = c("", "", "pos -23.55052", "", "", "", ""),
+        posicao = c("", "-23.55052", "", "", "", "", ""),
+        ph = c("", "", "", "6.55", "", "", ""),
+        lat_gps = c("", "", "", "", "-23.55052", "", ""),
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_identical(rows(df, gp, extras = extras), c(2L, 3L))
+
+    # The mask does not touch a row with no axis and no location field, so a
+    # coordinate column stops the export there, also with a UTM value.
+    extras <- data.frame(lat_gps = c("", "", "", "", "", "-23.55052", ""),
+                         utm_e = c("", "", "", "500123", "", "", ""),
+                         coord_note = c("", "", "unknown", "", "", "", ""),
+                         stringsAsFactors = FALSE)
+    testthat::expect_identical(rows(df, gp, extras = extras), c(4L, 6L))
+    df$locality <- c("", "", "", "", "", "Fazenda Azul", "")
+    testthat::expect_identical(rows(df, gp, extras = extras), 4L)
+})
+
+testthat::test_that("protected_point_text_rows covers a species that never reached the panel", {
+    local_sensitive_fixture(c("Panthera onca", "Chrysocyon brachyurus"))
+    gp <- list(enabled = TRUE, levels = c("Panthera onca" = "high"))
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Chrysocyon brachyurus", "Chrysocyon brachyurus"),
+        decimalLatitude = c("-23.55", "", ""),
+        decimalLongitude = c("-46.63", "", ""),
+        occurrenceRemarks = c("", "GPS -13.276543 -52.712345", "adult, 2 cubs"),
+        stringsAsFactors = FALSE
+    )
+    rows <- saira:::protected_point_text_rows
+    testthat::expect_identical(rows(df, gp), 2L)
+
+    # The mask leaves this species, so its location fields count too.
+    copies <- df
+    copies$occurrenceRemarks <- ""
+    copies$verbatimCoordinates <- c("", "13.276543 S, 52.712345 W", "")
+    testthat::expect_identical(rows(copies, gp), 2L)
+    copies$scientificName[2L] <- "Panthera onca"
+    testthat::expect_identical(rows(copies, gp), integer(0))
+
+    # A species on the panel that the owner left out keeps its answer.
+    df$scientificName[1L] <- "Chrysocyon brachyurus"
+    gp$levels <- c("Chrysocyon brachyurus" = "not_sensitive")
+    testthat::expect_identical(rows(df, gp), integer(0))
+})

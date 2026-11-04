@@ -406,3 +406,28 @@ testthat::test_that("build_export_summary counts the measurement columns as one 
     s <- saira:::build_export_summary(mapped_data = df)
     testthat::expect_false("measurementorfact.txt" %in% s$files$dwca)
 })
+
+testthat::test_that("build_export_summary blocks and lists a protected row with no point and a coordinate in text", {
+    local_sensitive_fixture("Panthera onca", category = "EN")
+    df <- sample_mapped()
+    df$decimalLatitude[1] <- ""
+    df$decimalLongitude[1] <- ""
+    df$occurrenceRemarks <- c("GPS -23.55052, -46.63331", "")
+    gp <- list(enabled = TRUE, levels = c("Panthera onca" = "high"))
+    s <- saira:::build_export_summary(df, generalization_payload = gp)
+    testthat::expect_identical(s$point_text_rows, 1L)
+    testthat::expect_true(s$export_blocked)
+
+    # An explicit decision wins over the level left in the payload.
+    off <- data.frame(scientificName = "Panthera onca", sensitive = FALSE, stringsAsFactors = FALSE)
+    testthat::expect_identical(
+        saira:::build_export_summary(df, sensitivity_payload = off, generalization_payload = gp)$point_text_rows,
+        integer(0)
+    )
+    # The row left out of the package does not count.
+    df2 <- rbind(df, df[2, ])
+    s2 <- saira:::build_export_summary(df2, generalization_payload = gp, rows_left_out = 1L)
+    testthat::expect_identical(s2$point_text_rows, integer(0))
+    testthat::expect_false(s2$export_blocked)
+})
+

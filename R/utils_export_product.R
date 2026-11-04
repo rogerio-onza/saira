@@ -34,6 +34,16 @@ prepare_masked_export <- function(inputs, lang = "en") {
     # Exact copies the Preview left out. The rows go after the unmapped
     # columns join, which match the upload by row.
     drop <- intersect(as.integer(inputs$rows_left_out %||% integer(0)), seq_len(nrow(effective)))
+    # The summary blocks the same case, this is the last gate before a file exists.
+    unmapped <- unmapped_raw_columns(inputs$raw_data, inputs$map_values,
+                                     overridden_terms = overridden_mapping_terms(inputs$custom_values))
+    if (length(setdiff(protected_point_text_rows(
+        effective, gen,
+        rekey_sensitivity_decisions(inputs$sensitivity, inputs$name_review),
+        if (length(unmapped)) inputs$raw_data[, unmapped, drop = FALSE]
+    ), drop))) {
+        stop(tr("export_download_blocked", lang), call. = FALSE)
+    }
     if (length(drop) && nrow(masked$real)) {
         ids <- if ("occurrenceID" %in% names(effective)) {
             as.character(effective$occurrenceID)
