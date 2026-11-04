@@ -68,20 +68,34 @@ coords_is_projected_pair <- function(a, b) {
         ((in_east(a) & in_north(b)) | (in_north(a) & in_east(b)))
 }
 
-#' Decide which of the two values is the easting and which is the northing
+#' Rows where both values fit the easting range
 #'
-#' Told apart by magnitude: a northing carries the distance from the equator and
-#' runs to seven or eight digits, while an easting is bounded by the zone width
-#' and stays under six. Values that do not resolve come back as `NA`.
+#' Near the equator a northing has the same magnitude as an easting, so the
+#' numbers do not tell the axes apart.
 #'
 #' @param a,b Numeric vectors of the same length.
+#' @return Logical vector.
+#' @noRd
+coords_utm_axes_ambiguous <- function(a, b) {
+    east_rng <- coords_utm_easting_range()
+    in_east <- function(x) !is.na(x) & x >= east_rng[[1]] & x <= east_rng[[2]]
+    in_east(suppressWarnings(as.numeric(a))) & in_east(suppressWarnings(as.numeric(b)))
+}
+
+#' Decide which of the two values is the easting and which is the northing
+#'
+#' Told apart by magnitude when only one value fits the easting range. Otherwise
+#' `order` decides, as the person read it from the source of the data. Values
+#' that do not resolve come back as `NA`.
+#'
+#' @param a,b Numeric vectors of the same length (latitude and longitude columns).
+#' @param order `"lat_northing"`, `"lat_easting"`, or anything else for no order.
 #' @return List with `easting` and `northing` numeric vectors.
 #' @noRd
-coords_utm_assign_axes <- function(a, b) {
+coords_utm_assign_axes <- function(a, b, order = NULL) {
     a <- suppressWarnings(as.numeric(a))
     b <- suppressWarnings(as.numeric(b))
     n <- max(length(a), length(b))
-
     easting <- rep(NA_real_, n)
     northing <- rep(NA_real_, n)
     if (n == 0L) {
@@ -93,10 +107,11 @@ coords_utm_assign_axes <- function(a, b) {
     in_east <- function(x) !is.na(x) & x >= east_rng[[1]] & x <= east_rng[[2]]
     in_north <- function(x) !is.na(x) & x >= north_rng[[1]] & x <= north_rng[[2]]
 
-    # A northing above the easting ceiling is unambiguous. Below it both values
-    # are in range for either axis, and the larger one is the northing.
-    a_is_east <- in_east(a) & in_north(b) & (b > a | b > east_rng[[2]])
-    b_is_east <- in_east(b) & in_north(a) & (a > b | a > east_rng[[2]])
+    ambiguous <- coords_utm_axes_ambiguous(a, b)
+    a_is_east <- in_east(a) & in_north(b) & !ambiguous
+    b_is_east <- in_east(b) & in_north(a) & !ambiguous
+    if (identical(order, "lat_northing")) b_is_east <- b_is_east | ambiguous
+    if (identical(order, "lat_easting")) a_is_east <- a_is_east | ambiguous
 
     easting[a_is_east] <- a[a_is_east]
     northing[a_is_east] <- b[a_is_east]
@@ -104,6 +119,19 @@ coords_utm_assign_axes <- function(a, b) {
     northing[b_is_east] <- a[b_is_east]
 
     list(easting = easting, northing = northing)
+}
+
+#' Northing values that cannot share one hemisphere
+#'
+#' A northing under 1,000 km sits near the equator in the north, or at 81 S in
+#' the south, where no dataset of this app has land records. Above 5,000 km it
+#' sits within 45 degrees of the equator in the south, or over 45 N in the north.
+#'
+#' @param northing Numeric vector.
+#' @return `TRUE` when the set needs more than one hemisphere.
+#' @noRd
+coords_utm_hemispheres_mixed <- function(northing) {
+    any(northing < 1000000, na.rm = TRUE) && any(northing >= 5000000, na.rm = TRUE)
 }
 
 #' Resolve the EPSG code for a UTM zone, hemisphere and datum

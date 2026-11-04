@@ -45,6 +45,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
 
         coord_filter_values <- c("all", "problems", "validity", "sea", "zero_equal", "reference", "unchecked", "edited")
         coord_validation_r <- shiny::reactiveVal(NULL)
+        # The columns the last report read. A report describes those values only.
+        validated_input_rv <- shiny::reactiveVal(NULL)
         # Coordinates fixed by hand in the table, one row per record (ADR-129):
         # occurrenceID, row_index, the new decimalLatitude/decimalLongitude and
         # the diagnosis of the revalidated point. Kept apart from
@@ -69,8 +71,8 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             swap_fill_table = NULL,       # blank-country sea points fixable by swap
             swap_fill_applied = FALSE,
             utm_rows = NULL,              # row indices carrying projected (UTM) pairs
-            utm_axes = NULL,              # resolved easting/northing for those rows
-            utm_candidates = NULL,        # ranked zone candidates, best first
+            utm_pairs = NULL,             # the two raw values of those rows
+            utm_iso3 = NULL,              # resolved country of those rows
             utm_applied = FALSE
         )
 
@@ -487,6 +489,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 rv$starting <- TRUE
                 rv$last_run_status <- "starting"
                 coord_validation_r(NULL)
+                validated_input_rv(NULL)
                 rv$stream_filter <- "all"
 
                 rv$start_requested <- TRUE
@@ -583,6 +586,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 }
 
                 coord_validation_r(result)
+                validated_input_rv(coords_validation_input(df))
                 rv$stream_filter <- "problems"
                 rv$last_run_status <- "success"
                 # occurrenceID per row (aligned to .row_index) so accepted
@@ -681,28 +685,17 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 # only ranks candidates -- the user confirms one on the map.
                 rv$utm_applied <- FALSE
                 rv$utm_rows <- NULL
-                rv$utm_axes <- NULL
-                rv$utm_candidates <- NULL
+                rv$utm_pairs <- NULL
+                rv$utm_iso3 <- NULL
                 utm_mask <- tryCatch(
                     coords_is_projected_pair(df$decimalLatitude, df$decimalLongitude),
                     error = function(e) logical(0)
                 )
                 if (any(utm_mask) && "occurrenceID" %in% names(df)) {
                     ui <- which(utm_mask)
-                    axes <- coords_utm_assign_axes(
-                        df$decimalLatitude[ui], df$decimalLongitude[ui]
-                    )
                     rv$utm_rows <- ui
-                    rv$utm_axes <- axes
-                    rv$utm_candidates <- tryCatch(
-                        coords_utm_zone_candidates(
-                            easting = axes$easting,
-                            northing = axes$northing,
-                            country_iso3 = result$country_iso3[ui],
-                            hemisphere = if (any(axes$northing > 0, na.rm = TRUE)) "S" else "N"
-                        ),
-                        error = function(e) NULL
-                    )
+                    rv$utm_pairs <- list(a = df$decimalLatitude[ui], b = df$decimalLongitude[ui])
+                    rv$utm_iso3 <- result$country_iso3[ui]
                 }
 
                 # Derive country for records missing it from valid coordinates.
@@ -792,31 +785,84 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
         # this one cannot propose a single answer: the same easting/northing is
         # valid in every zone, six degrees of longitude apart, so the user picks
         # the zone and sees the result on the map before applying.
-        utm_selected_zone <- shiny::reactive({
-            z <- suppressWarnings(as.integer(input$utm_zone))
-            if (length(z) != 1L || is.na(z)) {
-                cand <- rv$utm_candidates
-                if (is.data.frame(cand) && nrow(cand) > 0L) {
-                    return(as.integer(cand$zone[[1]]))
-                }
-                return(NA_integer_)
-            }
-            z
-        })
-
         utm_selected_datum <- shiny::reactive({
             d <- input$utm_datum
             if (is.null(d) || !nzchar(d)) coords_utm_default_datum() else as.character(d)
         })
 
+        # The numbers do not give the hemisphere: a northing is positive in both.
+        utm_selected_hemisphere <- shiny::reactive({
+            h <- input$utm_hemisphere
+            if (isTRUE(h %in% c("N", "S"))) h else NA_character_
+        })
+
+        utm_order_needed_r <- shiny::reactive({
+            p <- rv$utm_pairs
+            !is.null(p) && any(coords_utm_axes_ambiguous(p$a, p$b))
+        })
+
+        utm_axes_r <- shiny::reactive({
+            p <- rv$utm_pairs
+            if (is.null(p)) return(NULL)
+            coords_utm_assign_axes(p$a, p$b, order = input$utm_axes)
+        })
+
+        # "pick" until the person gave what the numbers cannot tell.
+        utm_status_r <- shiny::reactive({
+            axes <- utm_axes_r()
+            if (is.null(axes)) return("pick")
+            if (is.na(utm_selected_hemisphere())) return("pick")
+            if (utm_order_needed_r() && !isTRUE(input$utm_axes %in% c("lat_northing", "lat_easting"))) {
+                return("pick")
+            }
+            if (coords_utm_hemispheres_mixed(axes$northing)) return("mixed")
+            "ready"
+        })
+
+        utm_candidates_r <- shiny::reactive({
+            if (!identical(utm_status_r(), "ready")) return(NULL)
+            axes <- utm_axes_r()
+            tryCatch(
+                coords_utm_zone_candidates(
+                    easting = axes$easting,
+                    northing = axes$northing,
+                    country_iso3 = rv$utm_iso3,
+                    hemisphere = utm_selected_hemisphere(),
+                    datum = utm_selected_datum()
+                ),
+                error = function(e) NULL
+            )
+        })
+
+        utm_zone_choices_r <- shiny::reactive({
+            cand <- utm_candidates_r()
+            if (is.data.frame(cand) && nrow(cand) > 0L) return(as.integer(cand$zone))
+            as.integer(coords_utm_datums()[[utm_selected_datum()]]$zones)
+        })
+
+        # Separate from the panel, which must not rebuild its own pickers.
+        shiny::observe({
+            shiny::req(rv$utm_rows)
+            zones <- utm_zone_choices_r()
+            current <- shiny::isolate(input$utm_zone)
+            selected <- if (isTRUE(as.integer(current) %in% zones)) current else zones[[1]]
+            shiny::updateSelectInput(session, "utm_zone", choices = zones, selected = selected)
+        })
+
+        utm_selected_zone <- shiny::reactive({
+            z <- suppressWarnings(as.integer(input$utm_zone))
+            if (length(z) == 1L && !is.na(z)) z else utm_zone_choices_r()[[1]]
+        })
+
         # Rows converted under the current zone/datum pick, ready to apply.
         utm_converted_r <- shiny::reactive({
             rows <- rv$utm_rows
-            axes <- rv$utm_axes
-            zone <- utm_selected_zone()
-            if (is.null(rows) || is.null(axes) || is.na(zone)) {
+            if (is.null(rows) || !identical(utm_status_r(), "ready")) {
                 return(NULL)
             }
+            axes <- utm_axes_r()
+            zone <- utm_selected_zone()
+            hemisphere <- utm_selected_hemisphere()
             occ <- rv$validation_occ_ids
             if (is.null(occ) || length(occ) < max(rows)) {
                 return(NULL)
@@ -825,7 +871,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 coords_utm_to_wgs84(
                     easting = axes$easting, northing = axes$northing,
                     zone = zone,
-                    hemisphere = if (any(axes$northing > 0, na.rm = TRUE)) "S" else "N",
+                    hemisphere = hemisphere,
                     datum = utm_selected_datum()
                 ),
                 error = function(e) NULL
@@ -841,7 +887,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             # to sit in, which in the reported upload was the wrong one.
             label <- coords_utm_srs_label(
                 zone = zone,
-                hemisphere = if (any(axes$northing > 0, na.rm = TRUE)) "S" else "N",
+                hemisphere = hemisphere,
                 datum = utm_selected_datum()
             )
 
@@ -955,28 +1001,51 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
             )
         }, ignoreInit = TRUE)
 
+        clear_fix_panels <- function() {
+            rv$stream_filter <- "all"
+            rv$transposed_table <- NULL
+            rv$outside_table <- NULL
+            rv$transposed_applied <- FALSE
+            rv$country_fill_table <- NULL
+            rv$country_fill_applied <- FALSE
+            rv$swap_fill_table <- NULL
+            rv$swap_fill_applied <- FALSE
+            rv$utm_rows <- NULL
+            rv$utm_pairs <- NULL
+            rv$utm_iso3 <- NULL
+            rv$utm_applied <- FALSE
+        }
+
+        # A change in the columns the report read ends the report. It stops
+        # acting as an approval and its fix cards stop being offered. Applied
+        # fixes stay: each one already checks its own source values (ADR-166).
+        # The early return keeps the data out of the dependencies without a report.
+        shiny::observe({
+            read <- validated_input_rv()
+            if (is.null(read)) return(invisible(NULL))
+            current <- tryCatch(coords_validation_input(mapped_data_r()), error = function(e) NULL)
+            if (identical(read, current)) return(invisible(NULL))
+            shiny::isolate({
+                validated_input_rv(NULL)
+                coord_validation_r(NULL)
+                clear_fix_panels()
+                rv$last_run_status <- "stale"
+                notify_saira(tr("validate_coords_stale", lang_r()), type = "warning", key = "coords_stale")
+            })
+        }, priority = 10L)
+
         # A re-upload or a confirmed Mapping reset invalidates the dataset
         # baseline: drop the validation result and every pending/applied
         # correction so nothing from the previous dataset carries over.
         if (!is.null(reset_signal_r)) {
             shiny::observeEvent(reset_signal_r(), {
                 coord_validation_r(NULL)
-                rv$stream_filter <- "all"
+                validated_input_rv(NULL)
                 rv$last_run_status <- "idle"
-                rv$transposed_table <- NULL
-                rv$outside_table <- NULL
-                rv$transposed_applied <- FALSE
+                clear_fix_panels()
                 rv$coords_corrections <- NULL
                 rv$validated_coords <- NULL
-                rv$country_fill_table <- NULL
-                rv$country_fill_applied <- FALSE
                 rv$country_fills <- NULL
-                rv$swap_fill_table <- NULL
-                rv$swap_fill_applied <- FALSE
-                rv$utm_rows <- NULL
-                rv$utm_axes <- NULL
-                rv$utm_candidates <- NULL
-                rv$utm_applied <- FALSE
                 manual_edits_rv(NULL)
                 rv$starting <- FALSE
                 rv$running <- FALSE
@@ -1005,6 +1074,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 country_fill_applied = shiny::reactive(rv$country_fill_applied),
                 country_fill_table = shiny::reactive(rv$country_fill_table),
                 outside_table = shiny::reactive(rv$outside_table),
+                report_stale = shiny::reactive(identical(rv$last_run_status, "stale")),
                 running = shiny::reactive(rv$running),
                 starting = shiny::reactive(rv$starting),
                 swap_fill_applied = shiny::reactive(rv$swap_fill_applied),
@@ -1012,8 +1082,11 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
                 transposed_applied = shiny::reactive(rv$transposed_applied),
                 transposed_table = shiny::reactive(rv$transposed_table),
                 utm_applied = shiny::reactive(rv$utm_applied),
-                utm_candidates = shiny::reactive(rv$utm_candidates),
-                utm_rows = shiny::reactive(rv$utm_rows)
+                utm_candidates = utm_candidates_r,
+                utm_order_needed = utm_order_needed_r,
+                utm_rows = shiny::reactive(rv$utm_rows),
+                utm_status = utm_status_r,
+                utm_zone_choices = utm_zone_choices_r
             ),
             filtered_result_r = filtered_result_r
         )
