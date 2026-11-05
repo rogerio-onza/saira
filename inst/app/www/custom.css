@@ -6112,6 +6112,23 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   white-space: nowrap;
 }
 
+/* Next to the zoom buttons, clear of the layer control. */
+.coords-map-sample-note {
+  position: absolute;
+  top: var(--space-3);
+  left: 3.5rem;
+  z-index: 500;
+  max-width: 24rem;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  box-shadow: none;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+}
+
 /* The legend sits over the map, bottom left, above the tiles. */
 .coords-map-legend {
   position: absolute;

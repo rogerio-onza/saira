@@ -664,7 +664,8 @@ testthat::test_that("the map gets one marker per place and only the markers that
 
             session$setInputs(coords_filter_all = 1)
             testthat::expect_identical(count("clearMarkers"), 0L)
-            testthat::expect_identical(sent("addCircleMarkers"), "r1")
+            # The new OK marker goes first, so the problems go again over it.
+            testthat::expect_identical(sent("addCircleMarkers"), c("r1", "r3", "r4"))
 
             session$setInputs(coords_map_marker_click = list(id = "r1", lat = -10, lng = -50))
             session$flushReact()

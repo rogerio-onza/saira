@@ -2091,6 +2091,53 @@ coords_map_markers <- function(map_df) {
     )
 }
 
+# Above this count of OK markers in the view, the map draws a sample of them.
+coords_map_point_limit <- 20000L
+coords_map_ok_color <- "#00A86B"
+
+#' The markers that the map draws for one view
+#'
+#' A marker with a problem is always drawn. OK markers go through a limit, and
+#' the rank of a marker does not depend on the view, so a marker stays drawn
+#' when the view moves closer and new markers join it.
+#' @param markers Frame from \code{coords_map_markers()}.
+#' @param bounds Map bounds (\code{north}, \code{south}, \code{east},
+#'   \code{west}), or NULL for the whole frame. A margin keeps a short move
+#'   from showing an empty edge.
+#' @param limit Largest count of OK markers.
+#' @return List with \code{markers}, \code{ok_shown} and \code{ok_total}, the
+#'   counts for the view, and \code{limited}, TRUE when the frame goes over
+#'   the limit.
+#' @noRd
+coords_map_sample <- function(markers, bounds = NULL, limit = coords_map_point_limit) {
+    ok <- toupper(markers$color) == coords_map_ok_color
+    if (sum(ok) <= limit) {
+        return(list(markers = markers, ok_shown = sum(ok), ok_total = sum(ok), limited = FALSE))
+    }
+    candidates <- which(ok)
+    edges <- c("north", "south", "east", "west")
+    if (all(edges %in% names(bounds))) {
+        lat_pad <- (bounds$north - bounds$south) / 4
+        lon_pad <- (bounds$east - bounds$west) / 4
+        candidates <- candidates[
+            markers$lat_num[candidates] >= bounds$south - lat_pad &
+                markers$lat_num[candidates] <= bounds$north + lat_pad &
+                markers$lon_num[candidates] >= bounds$west - lon_pad &
+                markers$lon_num[candidates] <= bounds$east + lon_pad
+        ]
+    }
+    # The golden ratio spreads the rows evenly, so the sample has no pattern of
+    # the file order and needs no random seed.
+    rank <- (as.numeric(sub("^r", "", markers$layer_id[candidates])) * 0.6180339887) %% 1
+    shown <- candidates[order(rank)[seq_len(min(limit, length(candidates)))]]
+    list(
+        markers = markers[sort(c(which(!ok), shown)), , drop = FALSE],
+        ok_shown = length(shown),
+        ok_total = length(candidates),
+        limited = TRUE
+    )
+}
+
 #' The map calls that turn the drawn markers into the target markers
 #'
 #' @param drawn,target Frames from \code{coords_map_markers()}. A NULL
@@ -2101,11 +2148,18 @@ coords_map_markers <- function(map_df) {
 coords_marker_changes <- function(drawn, target) {
     kept <- if (is.null(drawn)) logical(nrow(target)) else target$key %in% drawn$key
     stale <- if (is.null(drawn)) character(0) else drawn$layer_id[!drawn$key %in% target$key]
+    # The canvas draws in insertion order, so the points with problems go last
+    # and an OK point cannot cover them. A repeated layer id replaces its marker.
+    is_ok <- toupper(target$color) == coords_map_ok_color
+    ok_last <- function(send) {
+        target[send, , drop = FALSE][order(!is_ok[send]), , drop = FALSE]
+    }
     # One clear costs less than many removals when few markers stay.
     if (is.null(drawn) || length(stale) > sum(kept)) {
-        return(list(clear = TRUE, remove = character(0), add = target))
+        return(list(clear = TRUE, remove = character(0), add = ok_last(rep(TRUE, nrow(target)))))
     }
-    list(clear = FALSE, remove = stale, add = target[!kept, , drop = FALSE])
+    send <- if (any(!kept & is_ok)) !kept | !is_ok else !kept
+    list(clear = FALSE, remove = stale, add = ok_last(send))
 }
 
 #' The records that one marker draws

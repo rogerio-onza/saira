@@ -294,9 +294,24 @@ mount_mod_validate_coords_presentation <- function(
                 shiny::div(
                     class = "coords-map-container",
                     leaflet::leafletOutput(ns("coords_map"), height = "100%"),
-                    shiny::uiOutput(ns("map_legend"))
+                    shiny::uiOutput(ns("map_legend")),
+                    shiny::uiOutput(ns("map_sample_note"))
                 ),
                 shiny::uiOutput(ns("map_note"))
+            )
+        )
+    })
+
+    # Over the map, because a note above or below it would resize the map at
+    # each zoom.
+    output$map_sample_note <- shiny::renderUI({
+        count <- map_sample()
+        shiny::req(count, count$ok_shown < count$ok_total)
+        shiny::div(
+            class = "coords-map-sample-note", role = "status",
+            sprintf(
+                tr("validate_coords_map_sample", lang_r()),
+                format_count(count$ok_shown, lang_r()), format_count(count$ok_total, lang_r())
             )
         )
     })
@@ -389,12 +404,13 @@ mount_mod_validate_coords_presentation <- function(
     # the map state is not known: the next update then draws all the markers.
     drawn_markers <- shiny::reactiveVal(NULL)
     forget_markers <- function() drawn_markers(NULL)
+    map_sample <- shiny::reactiveVal(NULL)
 
-    # A point outside the valid range has no place on the map. The map note
-    # counts these rows, and the table lists them (coords_map_markers).
-    sync_markers <- function(map_df) {
-        target <- coords_map_markers(map_df)
-        marker_radius <- if (nrow(target) > 2000L) 4 else 6
+    # The radius follows all the markers, so a zoom does not change it.
+    paint_markers <- function(all_markers, rows, bounds) {
+        sample <- coords_map_sample(all_markers, bounds)
+        target <- sample$markers
+        marker_radius <- if (nrow(all_markers) > 2000L) 4 else 6
         drawn <- shiny::isolate(drawn_markers())
         changes <- coords_marker_changes(
             if (identical(drawn$radius, marker_radius)) drawn$markers, target
@@ -424,8 +440,26 @@ mount_mod_validate_coords_presentation <- function(
                 options = leaflet::pathOptions(hex = TRUE)
             )
         }
-        drawn_markers(list(markers = target, radius = marker_radius, rows = map_df$.row_index))
-        target
+        drawn_markers(list(
+            markers = target, radius = marker_radius, rows = rows, all = all_markers, limited = sample$limited
+        ))
+        map_sample(sample[c("ok_shown", "ok_total")])
+        invisible(NULL)
+    }
+
+    # A point outside the valid range has no place on the map. The map note
+    # counts these rows, and the table lists them (coords_map_markers).
+    sync_markers <- function(map_df, bounds = NULL) {
+        markers <- coords_map_markers(map_df)
+        paint_markers(markers, map_df$.row_index, bounds)
+        markers
+    }
+
+    # A move of the map changes the sample only when the data has one.
+    refresh_map_view <- function(bounds) {
+        drawn <- shiny::isolate(drawn_markers())
+        if (is.null(drawn) || !isTRUE(drawn$limited)) return(invisible(NULL))
+        paint_markers(drawn$all, drawn$rows, bounds)
     }
 
     draw_markers <- function(map_df, fit_view = TRUE) {
@@ -457,7 +491,7 @@ mount_mod_validate_coords_presentation <- function(
         rows <- union(drawn$rows, row_index)
         sync_markers(build_leaflet_data(
             eff[eff$.row_index %in% rows, , drop = FALSE], filter = "all", popups = FALSE
-        ))
+        ), shiny::isolate(input$coords_map_bounds))
         invisible(NULL)
     }
 
@@ -819,7 +853,7 @@ mount_mod_validate_coords_presentation <- function(
 
     list(
         map_labels = map_labels, draw_markers = draw_markers, forget_markers = forget_markers,
-        refresh_marker = refresh_marker,
+        refresh_marker = refresh_marker, refresh_map_view = refresh_map_view,
         diag_label_key = diag_label_key, diag_badge_class = diag_badge_class,
         build_issues_table_df = build_issues_table_df, refresh_table_rows = refresh_table_rows
     )

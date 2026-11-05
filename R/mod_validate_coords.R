@@ -294,7 +294,10 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
         # until a filter was clicked. The map reports its bounds once drawn,
         # so that first report marks it ready and triggers the first draw.
         map_ready <- shiny::reactiveVal(FALSE)
-        shiny::observeEvent(input$coords_map_bounds, map_ready(TRUE), ignoreInit = TRUE)
+        shiny::observeEvent(input$coords_map_bounds, {
+            map_ready(TRUE)
+            refresh_map_view(input$coords_map_bounds)
+        }, ignoreInit = TRUE)
         # Priority: a new validation brings a new widget, so the draw that follows
         # must not count on the markers of the old one.
         shiny::observeEvent(coord_validation_r(), {
@@ -1093,6 +1096,7 @@ mod_validate_coords_server <- function(id, mapped_data_r, lang_r, validation_gat
         map_labels <- presentation$map_labels
         draw_markers <- presentation$draw_markers
         forget_markers <- presentation$forget_markers
+        refresh_map_view <- presentation$refresh_map_view
         refresh_marker <- presentation$refresh_marker
         diag_label_key <- presentation$diag_label_key
         diag_badge_class <- presentation$diag_badge_class
