@@ -9683,11 +9683,18 @@ a.help-chip:hover {
     color: var(--text-primary);
 }
 
-.sp-exc-matrix .sp-exc-species {
-    min-width: 14rem;
+.sc-matrix-result {
+    white-space: nowrap;
 }
 
+.sp-exc-matrix .sp-exc-species {
+    width: 40%;
+    min-width: 8rem;
+}
+
+/* The long prompt must not widen the column and push the table past its card. */
 .sp-exc-matrix .sp-exc-species .shiny-input-container {
+    contain: inline-size;
     width: 100%;
     margin: 0;
 }
@@ -9695,6 +9702,20 @@ a.help-chip:hover {
 .sp-exc-matrix .selectize-input {
     font-family: var(--font-serif);
     font-style: italic;
+}
+
+/* The prompt and a long name stop before the caret. */
+.sp-exc-matrix .selectize-control.single .selectize-input {
+    padding-right: var(--space-8);
+}
+
+.sp-exc-matrix .selectize-input > input,
+.sp-exc-matrix .selectize-input > .item {
+    overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: top;
 }
 
 .sp-exc-actions {
@@ -10006,7 +10027,7 @@ a.help-chip:hover {
     text-transform: uppercase;
     color: var(--text-muted);
     text-align: left;
-    vertical-align: bottom;
+    vertical-align: top;
 }
 
 .sc-matrix th[title] {
@@ -10031,6 +10052,14 @@ a.help-chip:hover {
     vertical-align: middle;
 }
 
+/* The status chip stays on one line, so a narrow window needs the side space. */
+@media (max-width: 1100px) {
+    .sc-matrix th,
+    .sc-matrix td {
+        padding-inline: var(--space-1);
+    }
+}
+
 .sc-matrix-count {
     font-family: var(--font-ui);
     font-size: var(--text-xs);
@@ -10038,7 +10067,10 @@ a.help-chip:hover {
     cursor: help;
 }
 
+/* Flex removes the space glyph after the hidden label, so the buttons start at
+   the same x as their column title. */
 .sc-matrix-cell .shiny-input-container {
+    display: flex;
     width: auto;
     margin: 0;
 }
