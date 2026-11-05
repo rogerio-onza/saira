@@ -3404,6 +3404,11 @@
     "en": "%d record(s) with a coordinate outside the valid range do not show on the map.",
     "es": "%d registro(s) con coordenada fuera del intervalo válido no aparecen en el mapa."
   },
+  "validate_coords_map_sample": {
+    "pt": "Amostra de %s entre %s pontos OK nesta área. Aproxime para ver mais. Todos os problemas aparecem.",
+    "en": "Sample of %s among %s OK points in this area. Zoom in to see more. All the problems show.",
+    "es": "Muestra de %s entre %s puntos OK en esta zona. Acerque para ver más. Todos los problemas aparecen."
+  },
   "validate_coords_map_hidden_link": {
     "pt": "Ver na tabela",
     "en": "Show in the table",
