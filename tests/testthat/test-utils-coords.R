@@ -578,6 +578,24 @@ testthat::test_that("coords_marker_changes sends only what changed", {
     testthat::expect_identical(unknown$add, drawn)
 })
 
+testthat::test_that("coords_marker_changes draws the points with problems over the OK points", {
+    rows <- coords_map_rows(1:4, -(1:4), -(1:4))
+    rows$color <- c("#252659", coords_map_ok_color, "#252659", coords_map_ok_color)
+    markers <- coords_map_markers(rows)
+
+    testthat::expect_identical(coords_marker_changes(NULL, markers)$add$layer_id, c("r2", "r4", "r1", "r3"))
+
+    # A new OK point would cover the drawn problems, so they go again after it.
+    problems_only <- markers[markers$color != coords_map_ok_color, ]
+    wider <- coords_marker_changes(problems_only, markers)
+    testthat::expect_false(wider$clear)
+    testthat::expect_identical(wider$add$layer_id, c("r2", "r4", "r1", "r3"))
+
+    # A new problem needs nothing else: it goes on top.
+    new_problem <- coords_marker_changes(markers[markers$layer_id != "r3", ], markers)
+    testthat::expect_identical(new_problem$add$layer_id, "r3")
+})
+
 testthat::test_that("the first record of a shared marker can move and the others stay drawn", {
     rows <- coords_map_rows(1:3, c(-10, -10, -10), c(-50, -50, -50))
     drawn <- coords_map_markers(rows)
@@ -586,6 +604,36 @@ testthat::test_that("the first record of a shared marker can move and the others
     changes <- coords_marker_changes(drawn, coords_map_markers(rows))
     testthat::expect_setequal(changes$add$layer_id, c("r1", "r2"))
     testthat::expect_true(changes$clear || identical(changes$remove, "r1"))
+})
+
+testthat::test_that("coords_map_sample limits only the OK markers, and a closer view adds to the drawn ones", {
+    n <- 1000L
+    markers <- coords_map_markers(coords_map_rows(
+        seq_len(n), seq(-40, 10, length.out = n), seq(-70, -30, length.out = n),
+        rep(c("#00A86B", "#00A86B", "#00A86B", "#C0392B"), length.out = n)
+    ))
+    problems <- markers$layer_id[markers$color == "#C0392B"]
+
+    all_in <- coords_map_sample(markers, limit = n)
+    testthat::expect_false(all_in$limited)
+    testthat::expect_identical(all_in$markers, markers)
+
+    far <- coords_map_sample(markers, limit = 100L)
+    testthat::expect_true(far$limited)
+    testthat::expect_identical(far$ok_shown, 100L)
+    testthat::expect_identical(far$ok_total, 750L)
+    testthat::expect_true(all(problems %in% far$markers$layer_id))
+    testthat::expect_identical(far$markers, coords_map_sample(markers, limit = 100L)$markers)
+
+    # Lat -30 to -20 plus a margin of 2.5 degrees holds 150 OK markers.
+    close <- coords_map_sample(markers, list(north = -20, south = -30, east = -30, west = -70), limit = 100L)
+    testthat::expect_lt(close$ok_total, far$ok_total)
+    testthat::expect_true(all(problems %in% close$markers$layer_id))
+    near_ok <- far$markers[far$markers$color == "#00A86B" & far$markers$lat_num >= -32.5 & far$markers$lat_num <= -17.5, ]
+    testthat::expect_true(all(near_ok$layer_id %in% close$markers$layer_id))
+
+    # A partial bounds report counts as no view.
+    testthat::expect_identical(coords_map_sample(markers, list(north = 0), limit = 100L)$ok_total, 750L)
 })
 
 testthat::test_that("coords_crop_land_ref reduces geometry without changing cc_sea result", {
