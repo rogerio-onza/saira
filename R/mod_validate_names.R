@@ -466,7 +466,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
         }
 
         effective_report <- shiny::reactive({
-            report_df <- validation_result()
+            report_df <- vn_report_named_rows(validation_result())
             if (!is.data.frame(report_df) || nrow(report_df) == 0L) {
                 return(data.frame())
             }

@@ -469,6 +469,29 @@ test_that("vn_drop_unchecked keeps the names another provider answered (ADR-169)
     expect_identical(saira:::vn_drop_unchecked(stream, character(0)), stream)
 })
 
+test_that("vn_report_named_rows leaves out a blank name and keeps an ignored one", {
+    input <- saira:::prepare_taxadb_inputs(
+        c("Puma concolor", "", NA, "Morpho sp.", "Puma concolor"),
+        remove_authors = TRUE,
+        ignore_qualifiers = TRUE
+    )
+    report <- saira:::build_validation_report(input, data.frame(
+        query_name = "Puma concolor",
+        scientificName = "Puma concolor",
+        validation_status = "accepted",
+        stringsAsFactors = FALSE
+    ))
+    expect_identical(nrow(report), 5L)
+
+    out <- saira:::vn_report_named_rows(report)
+    expect_identical(nrow(out), 3L)
+    expect_identical(sort(unique(out$validation_status)), c("accepted", "ignored"))
+
+    no_marker <- data.frame(scientificName = "Puma concolor", stringsAsFactors = FALSE)
+    expect_identical(saira:::vn_report_named_rows(no_marker), no_marker)
+    expect_identical(saira:::vn_report_named_rows(NULL), NULL)
+})
+
 test_that("vn_unchecked_block_ui counts the names and limits the chips (ADR-169)", {
     failures <- data.frame(provider = "gbif", error = "offline", stringsAsFactors = FALSE)
     meta <- list(provider_failures = failures)

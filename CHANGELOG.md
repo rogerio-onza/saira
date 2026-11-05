@@ -109,6 +109,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **names:** Leave a row with no name out of the names report, so the report and the list agree ([#275](https://github.com/rogerio-onza/saira/pull/275))
 - **upload:** Keep a literal `NA` in a data cell, and report the ID cells a file leaves empty, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
 - **year:** Stop reading a year from a decimal or a longer number, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
 - **upload:** Report Wildlife Insights timestamps with extra text, instead of reading part of them, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))

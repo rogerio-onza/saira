@@ -60,6 +60,22 @@ vn_drop_unchecked <- function(stream_df, unchecked) {
     out
 }
 
+#' Report rows that hold a name
+#'
+#' A blank name cell has no answer in the list and nothing to review or to mark,
+#' so the report table and its counts leave it out too. A name that the run
+#' ignored (for example "sp.") keeps its row, because it shows what was skipped.
+#' @param report Validation report.
+#' @return Validation report.
+#' @noRd
+vn_report_named_rows <- function(report) {
+    if (!is.data.frame(report) || !"input_name" %in% names(report)) {
+        return(report)
+    }
+    name <- as.character(report$input_name)
+    report[!is.na(name) & nzchar(trimws(name)), , drop = FALSE]
+}
+
 #' Format provider IDs into display labels
 #' @param provider_values Character vector of provider IDs
 #' @return Character vector of display labels
