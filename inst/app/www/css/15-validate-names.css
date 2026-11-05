@@ -2351,11 +2351,13 @@ body.vn-review-open .modal-backdrop.show {
   outline: none;
 }
 
+/* The side space keeps the table frame off the card border. */
 .vn-report-table-shell {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  padding: 0 var(--space-4);
 }
 
 .vn-report-empty {
@@ -2490,7 +2492,7 @@ body.vn-review-open .modal-backdrop.show {
 .vn-report-pagination {
   margin-top: auto;
   border-top: 1px solid rgba(var(--accent-rgb), 0.08);
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
