@@ -232,7 +232,7 @@ code, .data-cell, .coord-value, .dataTable tbody td {
 --radius-sm: 4px;  --radius: 8px;  --radius-lg: 12px;  --radius-xl: 14px;  --radius-full: 9999px;  --radius-chip: 6px;
 ```
 
-Controles 8px, cards 12px, painéis 14px. Filtros e tags de status usam `--radius-chip` (6px, ADR-130); `--radius-full` fica para o selo de versão, interruptores e barras de progresso. Não use número fixo: `50%` só para círculo.
+Controles 8px, cards e tabelas 12px, painéis 14px. Toda tabela tem moldura de 1px em `--border-default` (`07-datatables.css`). Filtros e tags de status usam `--radius-chip` (6px, ADR-130); `--radius-full` fica para o selo de versão, interruptores e barras de progresso. Não use número fixo: `50%` só para círculo.
 
 ```css
 ```

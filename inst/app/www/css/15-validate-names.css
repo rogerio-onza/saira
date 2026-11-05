@@ -683,6 +683,23 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   white-space: nowrap;
 }
 
+/* Next to the zoom buttons, clear of the layer control. */
+.coords-map-sample-note {
+  position: absolute;
+  top: var(--space-3);
+  left: 3.5rem;
+  z-index: 500;
+  max-width: 24rem;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  box-shadow: none;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+}
+
 /* The legend sits over the map, bottom left, above the tiles. */
 .coords-map-legend {
   position: absolute;
@@ -2334,11 +2351,13 @@ body.vn-review-open .modal-backdrop.show {
   outline: none;
 }
 
+/* The side space keeps the table frame off the card border. */
 .vn-report-table-shell {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  padding: 0 var(--space-4);
 }
 
 .vn-report-empty {
@@ -2473,7 +2492,7 @@ body.vn-review-open .modal-backdrop.show {
 .vn-report-pagination {
   margin-top: auto;
   border-top: 1px solid rgba(var(--accent-rgb), 0.08);
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;

@@ -22,6 +22,12 @@
   padding: 0;
 }
 
+/* The shell is the frame of this table. */
+.wiki-table.saira-table-shell .dataTables_scroll {
+  border: 0;
+  border-radius: 0;
+}
+
 .wiki-table.saira-table-shell table.dataTable {
   margin: 0;
   border-collapse: separate;

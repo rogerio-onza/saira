@@ -43,3 +43,76 @@
   background-color: var(--hover-bg);
 }
 
+/* Every table has the frame of the cards around it. A scroll container clips
+   its own corners. A bare table cannot clip, because a dropdown or a sticky
+   header must pass its edge, so its corner cells carry the radius. */
+.dataTables_scroll,
+.preview-copy-scroll,
+.dataTables_wrapper > table.dataTable,
+.bor-assistant-preview-table,
+.export-gen-table,
+.sc-matrix {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+.dataTables_scroll {
+  overflow: hidden;
+}
+
+/* The header color reaches the frame. DataTables puts a margin with
+   !important over the header table and leaves a gap over the scrollbar. */
+.dataTables_scrollHead {
+  background-color: var(--bg-subtle);
+}
+
+.dataTables_scrollHead table.dataTable {
+  margin-top: 0 !important;
+}
+
+.dataTables_wrapper > table.dataTable,
+.bor-assistant-preview-table,
+.export-gen-table,
+.sc-matrix {
+  --table-corner: calc(var(--radius-lg) - 1px);
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.dataTables_wrapper > table.dataTable thead tr:first-child th:first-child,
+.bor-assistant-preview-table thead tr:first-child th:first-child,
+.export-gen-table thead tr:first-child th:first-child,
+.sc-matrix thead tr:first-child th:first-child {
+  border-top-left-radius: var(--table-corner);
+}
+
+.dataTables_wrapper > table.dataTable thead tr:first-child th:last-child,
+.bor-assistant-preview-table thead tr:first-child th:last-child,
+.export-gen-table thead tr:first-child th:last-child,
+.sc-matrix thead tr:first-child th:last-child {
+  border-top-right-radius: var(--table-corner);
+}
+
+.dataTables_wrapper > table.dataTable tbody tr:last-child td:first-child,
+.bor-assistant-preview-table tbody tr:last-child td:first-child,
+.export-gen-table tbody tr:last-child td:first-child,
+.sc-matrix tbody tr:last-child td:first-child {
+  border-bottom-left-radius: var(--table-corner);
+}
+
+.dataTables_wrapper > table.dataTable tbody tr:last-child td:last-child,
+.bor-assistant-preview-table tbody tr:last-child td:last-child,
+.export-gen-table tbody tr:last-child td:last-child,
+.sc-matrix tbody tr:last-child td:last-child {
+  border-bottom-right-radius: var(--table-corner);
+}
+
+/* The frame closes the table, so the last row needs no line of its own. */
+.dataTable tbody tr:last-child td,
+.preview-copy-table tbody tr:last-child td,
+.bor-assistant-preview-table tbody tr:last-child td,
+.export-gen-table tbody tr:last-child td,
+.sc-matrix tbody tr:last-child td {
+  border-bottom: 0;
+}
+
