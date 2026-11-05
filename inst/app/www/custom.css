@@ -1270,6 +1270,79 @@ label,
   background-color: var(--hover-bg);
 }
 
+/* Every table has the frame of the cards around it. A scroll container clips
+   its own corners. A bare table cannot clip, because a dropdown or a sticky
+   header must pass its edge, so its corner cells carry the radius. */
+.dataTables_scroll,
+.preview-copy-scroll,
+.dataTables_wrapper > table.dataTable,
+.bor-assistant-preview-table,
+.export-gen-table,
+.sc-matrix {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+.dataTables_scroll {
+  overflow: hidden;
+}
+
+/* The header color reaches the frame. DataTables puts a margin with
+   !important over the header table and leaves a gap over the scrollbar. */
+.dataTables_scrollHead {
+  background-color: var(--bg-subtle);
+}
+
+.dataTables_scrollHead table.dataTable {
+  margin-top: 0 !important;
+}
+
+.dataTables_wrapper > table.dataTable,
+.bor-assistant-preview-table,
+.export-gen-table,
+.sc-matrix {
+  --table-corner: calc(var(--radius-lg) - 1px);
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.dataTables_wrapper > table.dataTable thead tr:first-child th:first-child,
+.bor-assistant-preview-table thead tr:first-child th:first-child,
+.export-gen-table thead tr:first-child th:first-child,
+.sc-matrix thead tr:first-child th:first-child {
+  border-top-left-radius: var(--table-corner);
+}
+
+.dataTables_wrapper > table.dataTable thead tr:first-child th:last-child,
+.bor-assistant-preview-table thead tr:first-child th:last-child,
+.export-gen-table thead tr:first-child th:last-child,
+.sc-matrix thead tr:first-child th:last-child {
+  border-top-right-radius: var(--table-corner);
+}
+
+.dataTables_wrapper > table.dataTable tbody tr:last-child td:first-child,
+.bor-assistant-preview-table tbody tr:last-child td:first-child,
+.export-gen-table tbody tr:last-child td:first-child,
+.sc-matrix tbody tr:last-child td:first-child {
+  border-bottom-left-radius: var(--table-corner);
+}
+
+.dataTables_wrapper > table.dataTable tbody tr:last-child td:last-child,
+.bor-assistant-preview-table tbody tr:last-child td:last-child,
+.export-gen-table tbody tr:last-child td:last-child,
+.sc-matrix tbody tr:last-child td:last-child {
+  border-bottom-right-radius: var(--table-corner);
+}
+
+/* The frame closes the table, so the last row needs no line of its own. */
+.dataTable tbody tr:last-child td,
+.preview-copy-table tbody tr:last-child td,
+.bor-assistant-preview-table tbody tr:last-child td,
+.export-gen-table tbody tr:last-child td,
+.sc-matrix tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 /* =============================================================================
    WIKI TAB
    ============================================================================= */
@@ -1292,6 +1365,12 @@ label,
 
 .wiki-table.saira-table-shell .dataTables_wrapper {
   padding: 0;
+}
+
+/* The shell is the frame of this table. */
+.wiki-table.saira-table-shell .dataTables_scroll {
+  border: 0;
+  border-radius: 0;
 }
 
 .wiki-table.saira-table-shell table.dataTable {
@@ -4961,7 +5040,7 @@ table.dataTable tbody tr.validate-invalid td {
   scrollbar-gutter: stable both-edges;
   position: relative;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   padding: 0;
   background: var(--bg-card);
 }
@@ -7780,11 +7859,13 @@ body.vn-review-open .modal-backdrop.show {
   outline: none;
 }
 
+/* The side space keeps the table frame off the card border. */
 .vn-report-table-shell {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  padding: 0 var(--space-4);
 }
 
 .vn-report-empty {
@@ -7919,7 +8000,7 @@ body.vn-review-open .modal-backdrop.show {
 .vn-report-pagination {
   margin-top: auto;
   border-top: 1px solid rgba(var(--accent-rgb), 0.08);
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -10014,7 +10095,6 @@ a.help-chip:hover {
 
 .sc-matrix {
     width: 100%;
-    border-collapse: collapse;
 }
 
 .sc-matrix th {
@@ -10314,7 +10394,6 @@ button.sc-scale-chip:hover .sc-level-chip {
 
 .export-gen-table {
   width: 100%;
-  border-collapse: collapse;
   font-size: var(--text-sm);
 }
 
