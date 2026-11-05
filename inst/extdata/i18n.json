@@ -1609,6 +1609,11 @@
     "en": "Diagnosis",
     "es": "Diagnóstico"
   },
+  "preview_fix_col_problem": {
+    "pt": "Problema",
+    "en": "Problem",
+    "es": "Problema"
+  },
   "preview_fix_col_value": {
     "pt": "Na planilha",
     "en": "In the spreadsheet",

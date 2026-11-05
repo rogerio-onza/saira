@@ -35,23 +35,52 @@
 
     $(document).on('click', '.preview-vocab-apply', function (e) {
       e.preventDefault();
-      var sel = $(this).closest('.preview-vocab-item').find('select')[0];
+      var item = $(this).closest('.preview-vocab-item');
+      var sel = item.find('select')[0];
       if (!sel || !sel.value) return;
+      appliedVocab = item[0].dataset.key;
       Shiny.setInputValue(cfg.vocabApplyId, { id: parseInt(this.dataset.id, 10), to: sel.value },
         { priority: 'event' });
     });
 
-    // The vocabulary list renders again after each correction, so the
-    // choices not yet applied are kept here and put back.
+    // After an applied value, the next open value comes into view only when
+    // the list hides it. The applied line stays above it, as in the row list.
+    function revealNextVocab(list, key) {
+      var done = $(list).children('.preview-vocab-item').filter(function () {
+        return this.dataset.key === key;
+      });
+      var next = done.nextAll('.preview-vocab-item:not(.is-done)')[0];
+      if (!next) return;
+      var box = list.getBoundingClientRect();
+      var rect = next.getBoundingClientRect();
+      if (rect.top < box.top || rect.bottom > box.bottom) {
+        list.scrollTop += next.previousElementSibling.getBoundingClientRect().top - box.top;
+      }
+    }
+
+    // These lists render again after each correction, which returns them to
+    // the top. The scroll position and the vocabulary choices not yet applied
+    // are kept here and put back.
     var pickedVocab = {};
+    var appliedVocab = null;
+    var scrollLists = '.preview-vocab-list, .preview-copy-scroll';
     $(document).on('change', '.preview-vocab-item select', function () {
       var item = $(this).closest('.preview-vocab-item');
       pickedVocab[item.data('key')] = this.value;
       item.find('.preview-vocab-apply').prop('disabled', !this.value);
     });
     $(document).on('shiny:value', function (e) {
-      if (e.name !== cfg.vocabSectionId) return;
+      var isVocab = e.name === cfg.vocabSectionId;
+      if (!isVocab && e.name !== cfg.copiesSectionId) return;
+      var output = e.target;
+      var old = output.querySelector(scrollLists);
+      var top = old ? old.scrollTop : 0;
+      var applied = isVocab ? appliedVocab : null;
+      if (isVocab) appliedVocab = null;
       setTimeout(function () {
+        var list = output.querySelector(scrollLists);
+        if (list) list.scrollTop = top;
+        if (!isVocab) return;
         $('.preview-vocab-item').each(function () {
           var v = pickedVocab[$(this).data('key')];
           var sel = $(this).find('select')[0];
@@ -59,6 +88,23 @@
           sel.value = v;
           $(this).find('.preview-vocab-apply').prop('disabled', !sel.value);
         });
+        if (list && applied !== null) revealNextVocab(list, applied);
+      }, 0);
+    });
+
+    // The record can be taller than its panel. The marked column of the
+    // problem then scrolls into the panel.
+    $(document).on('shiny:value', function (e) {
+      if (e.name !== cfg.recordId) return;
+      var output = e.target;
+      setTimeout(function () {
+        var panel = output.querySelector('.preview-record');
+        var mark = panel && panel.querySelector('.preview-record-key.is-problem');
+        if (!mark) return;
+        var p = panel.getBoundingClientRect();
+        var m = mark.getBoundingClientRect();
+        if (m.top >= p.top && m.bottom <= p.bottom) return;
+        panel.scrollTop += m.top - p.top - (panel.clientHeight - m.height) / 2;
       }, 0);
     });
 

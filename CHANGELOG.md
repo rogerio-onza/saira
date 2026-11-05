@@ -38,6 +38,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **preview:** Show the record beside the Problems list on wide screens, and mark the column behind the problem, ADR-195 ([#278](https://github.com/rogerio-onza/saira/pull/278))
 - **build:** Build the Darwin Core catalogs from the TDWG list and one base terms file, in one script, ADR-189
 - **site:** Link the home photos, species, pins and cards by key, and stop the build when they disagree, ADR-189
 - **site:** Show the install options on the landing page as three cards with the Windows, Linux and R logos: the app for Windows or Linux (the `.deb` on Ubuntu 24.04 or later), or the R package. The card of the visitor's system gets the filled button. Put Install first in the hero. Remove the open data section
@@ -110,6 +111,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - **names:** Leave a row with no name out of the names report, so the report and the list agree ([#275](https://github.com/rogerio-onza/saira/pull/275))
+- **preview:** Stack the term over the diagnosis only in a narrow Problems list, so all its buttons fit ([#278](https://github.com/rogerio-onza/saira/pull/278))
+- **preview:** Keep the place in the Vocabulary and copies lists after a fix, and show the next open value ([#278](https://github.com/rogerio-onza/saira/pull/278))
 - **generalization:** Align the decision table titles and buttons, and keep the species prompt clear of the arrow ([#276](https://github.com/rogerio-onza/saira/pull/276))
 - **coords:** Draw a sample of the OK points on a large map, and keep all points with problems on top, ADR-194 ([#280](https://github.com/rogerio-onza/saira/pull/280))
 - **ui:** Frame every table with rounded corners, so the tables match the cards around them ([#277](https://github.com/rogerio-onza/saira/pull/277))

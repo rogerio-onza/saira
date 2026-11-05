@@ -10,6 +10,7 @@ mod_preview_server(
   lang_r,
   full_data_r = mapped_data_r,
   raw_data_r = NULL,
+  map_values_r = NULL,
   reset_signal_r = NULL,
   on_navigate = NULL,
   active_r = NULL,
@@ -29,6 +30,9 @@ tab shows and for the nav count, because building it costs the full
 mapping pipeline (ADR-021).}
 
 \item{raw_data_r}{Reactive uploaded data frame, for the record panel.}
+
+\item{map_values_r}{Reactive named list, term -> selected upload columns.
+The record panel marks the columns of the focused problem.}
 
 \item{reset_signal_r}{Reactive that changes on re-upload or a Mapping reset.}
 
