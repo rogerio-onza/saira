@@ -406,3 +406,21 @@ testthat::test_that("parse_preview_edit takes a number for a measurement", {
     testthat::expect_identical(parse_preview_edit("measurementValue [a]", "muito")$error,
                                "preview_fix_err_measure_number")
 })
+
+testthat::test_that("problem_source_columns finds the upload columns behind a term", {
+    cols <- c("numero_individuos", "dia", "mes", "area_ha", "obs ")
+    map <- list(individualCount = "numero_individuos", eventRemarks = "obs",
+                verbatimEventDate = c("dia", "mes"), country = "")
+    testthat::expect_identical(problem_source_columns("individualCount", map, cols), "numero_individuos")
+    # A measurement term names its column, also without a mapping.
+    testthat::expect_identical(problem_source_columns("measurementValue [area_ha]", NULL, cols), "area_ha")
+    # A concatenation marks each column, and a header with a space still matches.
+    testthat::expect_identical(problem_source_columns("verbatimEventDate", map, cols), c("dia", "mes"))
+    testthat::expect_identical(problem_source_columns("eventRemarks", map, cols), "obs ")
+    # No column: unmapped, blank, unknown or gone from the upload.
+    testthat::expect_identical(problem_source_columns("eventDate", map, cols), character(0))
+    testthat::expect_identical(problem_source_columns("country", map, cols), character(0))
+    testthat::expect_identical(problem_source_columns("individualCount", map, "other"), character(0))
+    testthat::expect_identical(problem_source_columns(NULL, map, cols), character(0))
+    testthat::expect_identical(problem_source_columns(NA, map, cols), character(0))
+})

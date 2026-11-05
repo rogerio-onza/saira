@@ -143,6 +143,7 @@ app_server <- function(input, output, session) {
         "preview", preview_data, lang_r,
         full_data_r = mapped_data,
         raw_data_r = raw_data,
+        map_values_r = mapping_result$map_values_r,
         reset_signal_r = reset_signal,
         on_navigate = navigate_to,
         active_r = shiny::reactive(identical(input$main_nav, "preview")),

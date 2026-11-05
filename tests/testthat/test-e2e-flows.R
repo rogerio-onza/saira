@@ -516,6 +516,93 @@ testthat::test_that("E2E: slash dates export as ISO and an out-of-range year is 
 # The Preview only stores the choice. The rows leave in the download handler,
 # after the unmapped columns join by row, so only a browser run covers it.
 
+testthat::test_that("E2E: a fix keeps the place in the Vocabulary list", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("shinytest2")
+
+    app <- shinytest2::AppDriver$new(
+        app = build_e2e_app,
+        timeout = 30000,
+        load_timeout = 30000
+    )
+    on.exit(app$stop(), add = TRUE)
+    app$wait_for_idle(timeout = 10000)
+
+    # Forty different values, so the list needs its own scroll.
+    csv_path <- tempfile(fileext = ".csv")
+    writeLines(
+        c("occurrenceID,scientificName,decimalLatitude,decimalLongitude,basisOfRecord,eventDate,sexo",
+          sprintf("r%d,Panthera onca,-10.5,-55.2,HumanObservation,2023-12-25,valor%d", 1:40, 1:40)),
+        csv_path
+    )
+    on.exit(unlink(csv_path), add = TRUE)
+
+    app$upload_file(`upload-file` = csv_path)
+    app$wait_for_idle(timeout = 15000)
+    app$click(selector = "a[data-value='mapping']")
+    app$wait_for_idle(timeout = 10000)
+    app$click(selector = "#mapping-auto_map")
+    app$wait_for_idle(timeout = 20000)
+    app$run_js("document.getElementById('mapping-map_sex').selectize.setValue('sexo');")
+    app$wait_for_idle(timeout = 10000)
+    app$set_inputs(`mapping-custom_license` = "CC BY 4.0")
+
+    app$click(selector = "a[data-value='preview']")
+    app$wait_for_idle(timeout = 15000)
+    app$set_inputs(`preview-mode` = "problems")
+    wait_until_js(app, "!!document.querySelector('.preview-vocab-list .preview-vocab-item')")
+
+    # Scrolls the list to 300 px and applies an open value in view. At the list
+    # bottom, the next value stays hidden even after the applied one shrinks.
+    apply_in_view <- function(pick, at_bottom = FALSE) {
+        app$run_js(sprintf(
+            "(function () {
+               var list = document.querySelector('.preview-vocab-list');
+               list.scrollTop = 300;
+               var box = list.getBoundingClientRect();
+               var open = Array.from(list.querySelectorAll('.preview-vocab-item:not(.is-done)'));
+               var shown = open.filter(function (i) {
+                 var r = i.getBoundingClientRect();
+                 return r.top >= box.top && r.bottom <= box.bottom;
+               });
+               var item = shown[%s];
+               if (%s) list.scrollTop += item.getBoundingClientRect().bottom - box.bottom;
+               window.__topBefore = list.scrollTop;
+               var next = open[open.indexOf(item) + 1];
+               window.__nextKey = next.dataset.key;
+               var sel = item.querySelector('select');
+               sel.value = Array.from(sel.options).filter(function (o) {
+                 return o.value && o.value !== '__blank__';
+               })[0].value;
+               sel.dispatchEvent(new Event('change', { bubbles: true }));
+               item.querySelector('.preview-vocab-apply').click();
+             })();", pick, tolower(at_bottom)))
+    }
+    done_count <- "document.querySelectorAll('.preview-vocab-item.is-done').length"
+    list_top <- "document.querySelector('.preview-vocab-list').scrollTop"
+
+    apply_in_view("0")
+    wait_until_js(app, paste(done_count, "=== 1"))
+    app$wait_for_idle(timeout = 10000)
+    testthat::expect_equal(app$get_js(list_top), app$get_js("window.__topBefore"))
+
+    # The next open value stays out of view, so the list moves to show it.
+    apply_in_view("shown.length - 1", at_bottom = TRUE)
+    wait_until_js(app, paste(done_count, "=== 2"))
+    app$wait_for_idle(timeout = 10000)
+    testthat::expect_gt(app$get_js(list_top), app$get_js("window.__topBefore"))
+    testthat::expect_true(app$get_js(
+        "(function () {
+           var list = document.querySelector('.preview-vocab-list');
+           var next = Array.from(list.querySelectorAll('.preview-vocab-item')).filter(function (i) {
+             return i.dataset.key === window.__nextKey;
+           })[0];
+           var box = list.getBoundingClientRect(), r = next.getBoundingClientRect();
+           return r.top >= box.top && r.bottom <= box.bottom;
+         })()"
+    ))
+})
+
 testthat::test_that("E2E: an exact copy left out in the Preview stays out of the zip", {
     testthat::skip_on_cran()
     testthat::skip_if_not_installed("shinytest2")

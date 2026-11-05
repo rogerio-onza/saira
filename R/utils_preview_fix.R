@@ -857,3 +857,25 @@ drop_copy_id_problems <- function(problems, copies) {
     rownames(out) <- NULL
     out
 }
+
+#' Upload columns behind a Preview term
+#'
+#' The record panel marks these columns, so the user sees the cell behind the
+#' problem. A measurement term names its own column. A term built from a date
+#' split or a constant has no column.
+#'
+#' @param term The term of the focused problem row.
+#' @param map_values Named list from the mapping, term -> selected columns.
+#' @param columns Column names of the upload.
+#' @return Character vector of names in `columns`, possibly empty.
+#' @noRd
+problem_source_columns <- function(term, map_values, columns) {
+    term <- as.character(term)
+    if (length(term) != 1L || is.na(term) || !nzchar(term)) {
+        return(character(0))
+    }
+    src <- measurement_value_source(term)
+    selected <- if (!is.na(src)) src else if (is.list(map_values)) map_values[[term]]
+    selected <- as.character(unlist(selected, use.names = FALSE))
+    intersect(resolve_selected_columns(selected, columns), columns)
+}

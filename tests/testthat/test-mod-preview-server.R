@@ -228,6 +228,35 @@ testthat::test_that("mod_preview_server record panel shows taxon clues for a sci
     )
 })
 
+testthat::test_that("mod_preview_server record panel marks the column of the focused problem", {
+    raw <- data.frame(especie = c("Puma concolor", "Nasua nasua"), n = c("muitos", "2"),
+                      stringsAsFactors = FALSE)
+    df <- data.frame(occurrenceID = c("a1", "a2"), scientificName = raw$especie,
+                     individualCount = raw$n, stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_preview_server,
+        args = list(
+            mapped_data_r = shiny::reactive(df),
+            lang_r = shiny::reactive("en"),
+            raw_data_r = shiny::reactive(raw),
+            map_values_r = shiny::reactive(list(scientificName = "especie", individualCount = "n"))
+        ),
+        {
+            session$setInputs(mode = "problems")
+            session$setInputs(focus = list(row = 1L, term = "individualCount"))
+            html <- output$record_panel$html
+            testthat::expect_match(html, "preview-record-key is-problem\">n<", fixed = TRUE)
+            testthat::expect_match(html, "preview-record-value is-problem\">muitos<", fixed = TRUE)
+            testthat::expect_no_match(html, "is-problem\">especie<", fixed = TRUE)
+
+            # A term without an upload column marks nothing.
+            session$setInputs(focus = list(row = 1L, term = "eventDate"))
+            testthat::expect_no_match(output$record_panel$html, "is-problem", fixed = TRUE)
+        }
+    )
+})
+
 testthat::test_that("mod_preview_server opens Problems on entry only while a problem is open", {
     df <- data.frame(
         occurrenceID = c("a1", "a2"),

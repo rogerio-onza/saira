@@ -2331,7 +2331,11 @@ label,
   white-space: nowrap;
 }
 
+/* In a narrow window the title gives way, so both modes stay on screen. */
 .preview-card-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   margin: 0;
   font-family: var(--font-ui);
   font-size: var(--text-lg);
@@ -2371,6 +2375,7 @@ label,
 
 /* Table | Problems uses the shared segmented control (.saira-seg, 05-forms). */
 .preview-card-head .saira-seg {
+  flex: none;
   align-self: center;
 }
 
@@ -2399,8 +2404,8 @@ label,
   /* Two columns that fill the screen, so the per-row table and the record
      need no page scroll. --pf-top is the room above the column lists: tune
      it if the title, hint, pill or section rows change. */
-  --pf-top: 16rem;
-  --pf-record-height: 10rem;
+  --pf-top: 13.25rem;
+  --pf-record-height: 12.75rem;
   --pf-col-height: calc(100vh - var(--app-header-height) - var(--pf-top));
   /* Less the DT header row, the info row and the gap above the record. */
   --pf-note-height: 0rem;
@@ -2408,7 +2413,7 @@ label,
 }
 
 .preview-problems:has(.preview-fix-banner) {
-  --pf-top: 20rem;
+  --pf-top: 17.25rem;
 }
 
 .preview-problems:has(.preview-fix-note) {
@@ -2695,24 +2700,201 @@ label,
   white-space: nowrap;
 }
 
-/* Scroller needs rows of one height, so a cell never wraps. Tighter cells
-   keep the action column inside the table next to the vocabulary column. */
+/* The width of the list decides its layout, because the vocabulary column
+   and the record take part of the window. The width of the section decides
+   where the record goes. */
+.preview-fix-section {
+  container: pf-section / inline-size;
+}
+
+.preview-fix-list {
+  container-type: inline-size;
+}
+
+/* A fixed layout keeps the list inside its column at each window width. */
+.preview-rows-table.dataTable {
+  table-layout: fixed;
+}
+
+.preview-rows-table.dataTable th,
+.preview-rows-table.dataTable td {
+  box-sizing: border-box;
+}
+
+.preview-rows-table .pf-col-row {
+  width: 4rem;
+}
+
+.preview-rows-table .pf-col-term {
+  display: none;
+  width: 15.5rem;
+  text-overflow: ellipsis;
+}
+
+.preview-rows-table .pf-col-value {
+  width: 7rem;
+}
+
+.preview-rows-table .pf-col-fix {
+  width: 11rem;
+}
+
+.preview-rows-table .pf-col-action {
+  width: 16rem;
+}
+
+/* Scroller needs rows of one height, so a long value is cut. */
 .preview-rows-table td {
+  overflow: hidden;
   vertical-align: middle;
   white-space: nowrap;
+}
+
+.preview-rows-table td.pf-fix-cell,
+.preview-rows-table td.pf-col-action {
+  white-space: normal;
+}
+
+.pf-term,
+.pf-diag {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A long value stays on one line, so the row keeps its height. */
+.pf-fix-cell .pf-done,
+.pf-fix-cell .pf-ghost,
+.pf-fix-cell .pf-empty {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* The diagnosis comes first in the cell, so a sort by this column groups the
+   same problems. The term shows first. */
+.pf-problem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.pf-term {
+  order: -1;
+  max-width: 100%;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.3;
+}
+
+.pf-diag {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 0.15rem;
+  line-height: 1.25;
+}
+
+.pf-col-action .pf-btn-icon {
+  display: none;
+}
+
+.pf-col-action .pf-muted {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@container (max-width: 58rem) {
+  .preview-rows-table .pf-col-action {
+    width: 6rem;
+  }
+
+  .pf-col-action .pf-btn-icon {
+    display: inline-block;
+  }
+
+  .pf-btn-label {
+    display: none;
+  }
+
+  .pf-col-action .btn {
+    padding: 0.15rem 0.35rem;
+  }
+}
+
+@container (max-width: 44rem) {
+  .preview-rows-table .pf-col-row {
+    width: 3.5rem;
+  }
+
+  .preview-rows-table .pf-col-value {
+    width: 4.5rem;
+  }
+
+  .preview-rows-table .pf-col-fix {
+    width: 7rem;
+  }
+
+  .preview-rows-table .pf-col-action {
+    width: 5.5rem;
+  }
 }
 
 /* Scroller measures its row on empty rows before the data comes, so every
    row takes the height of a row with a badge or a button. Without it, an
    edit far down the list moves the scroll by many rows. */
 .preview-rows-table.dataTable > tbody > tr > td {
-  height: 1.75rem;
+  height: 3.5rem;
   padding: var(--space-1) var(--space-2);
+}
+
+/* With room for one line, each row takes one line and the term has its own
+   column. A narrower list keeps the term over its diagnosis. */
+@container (min-width: 84rem) {
+  .preview-rows-table .pf-col-term {
+    display: table-cell;
+  }
+
+  .preview-rows-table .pf-col-fix {
+    width: 13rem;
+  }
+
+  .preview-rows-table .pf-col-action {
+    width: 20rem;
+  }
+
+  .preview-rows-table.dataTable > tbody > tr > td {
+    height: 2.3125rem;
+    white-space: nowrap;
+  }
+
+  .pf-problem .pf-term {
+    display: none;
+  }
+
+  .pf-diag {
+    margin-top: 0;
+  }
+
+  .pf-col-action .pf-muted {
+    display: inline;
+  }
+
+  /* The tag stays next to the value, so a long value gives way. */
+  .pf-fix-cell .pf-ghost,
+  .pf-fix-cell .pf-auto {
+    max-width: calc(100% - 5.25rem);
+  }
 }
 
 .pf-cut {
   display: inline-block;
-  max-width: 14rem;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: middle;
@@ -2752,25 +2934,70 @@ label,
   font-weight: 700;
 }
 
+/* Padding, not a column gap, keeps a marked key and its value in one shaded
+   band. The negative margin keeps the keys under the title. */
 .preview-record-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(9rem, 12rem) minmax(10rem, 1fr));
-  gap: var(--space-1) var(--space-3);
+  gap: var(--space-1) 0;
+  margin-left: calc(-1 * var(--space-1));
   font-size: var(--text-sm);
 }
 
 .preview-record-key {
+  padding: 0 var(--space-3) 0 var(--space-1);
   font-family: var(--font-mono);
   color: var(--text-muted);
 }
 
 .preview-record-value {
+  padding-right: var(--space-3);
   overflow-wrap: anywhere;
 }
 
 .preview-record-value.is-empty {
   color: var(--text-muted);
   font-style: italic;
+}
+
+/* The column behind the focused problem. */
+.preview-record-key.is-problem,
+.preview-record-value.is-problem {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.preview-record-key.is-problem {
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.preview-record-value.is-problem {
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-weight: 600;
+}
+
+/* At the right of the list, the record shows one field on each line and has
+   the height of the list. A vocabulary column would make the list too narrow,
+   so with it the record stays below the list. */
+@container pf-section (min-width: 88rem) {
+  .preview-fix-cols:has(> .preview-fix-vocab-col:empty) .preview-fix-body {
+    --pf-rows-height: calc(var(--pf-col-height) - var(--pf-note-height) - 4.5rem);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 26rem;
+    gap: var(--space-4);
+    align-items: start;
+  }
+
+  .preview-fix-cols:has(> .preview-fix-vocab-col:empty) .preview-record {
+    height: calc(var(--pf-col-height) - var(--pf-note-height) - 0.5rem);
+    margin-top: 0;
+  }
+
+  .preview-fix-cols:has(> .preview-fix-vocab-col:empty) .preview-record-grid {
+    grid-template-columns: 10rem minmax(0, 1fr);
+    row-gap: 0;
+    line-height: 1.4;
+  }
 }
 
 /* Common name and higher taxa, for a person who does not know the species. */
@@ -6112,6 +6339,23 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   white-space: nowrap;
 }
 
+/* Next to the zoom buttons, clear of the layer control. */
+.coords-map-sample-note {
+  position: absolute;
+  top: var(--space-3);
+  left: 3.5rem;
+  z-index: 500;
+  max-width: 24rem;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius);
+  background: var(--bg-card);
+  box-shadow: none;
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+}
+
 /* The legend sits over the map, bottom left, above the tiles. */
 .coords-map-legend {
   position: absolute;
@@ -7763,11 +8007,13 @@ body.vn-review-open .modal-backdrop.show {
   outline: none;
 }
 
+/* The side space keeps the table frame off the card border. */
 .vn-report-table-shell {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  padding: 0 var(--space-4);
 }
 
 .vn-report-empty {
@@ -7902,7 +8148,7 @@ body.vn-review-open .modal-backdrop.show {
 .vn-report-pagination {
   margin-top: auto;
   border-top: 1px solid rgba(var(--accent-rgb), 0.08);
-  padding: 0.5rem 0.75rem;
+  padding: 0.5rem 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -9666,11 +9912,18 @@ a.help-chip:hover {
     color: var(--text-primary);
 }
 
-.sp-exc-matrix .sp-exc-species {
-    min-width: 14rem;
+.sc-matrix-result {
+    white-space: nowrap;
 }
 
+.sp-exc-matrix .sp-exc-species {
+    width: 40%;
+    min-width: 8rem;
+}
+
+/* The long prompt must not widen the column and push the table past its card. */
 .sp-exc-matrix .sp-exc-species .shiny-input-container {
+    contain: inline-size;
     width: 100%;
     margin: 0;
 }
@@ -9678,6 +9931,20 @@ a.help-chip:hover {
 .sp-exc-matrix .selectize-input {
     font-family: var(--font-serif);
     font-style: italic;
+}
+
+/* The prompt and a long name stop before the caret. */
+.sp-exc-matrix .selectize-control.single .selectize-input {
+    padding-right: var(--space-8);
+}
+
+.sp-exc-matrix .selectize-input > input,
+.sp-exc-matrix .selectize-input > .item {
+    overflow: hidden;
+    max-width: 100%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: top;
 }
 
 .sp-exc-actions {
@@ -9976,7 +10243,6 @@ a.help-chip:hover {
 
 .sc-matrix {
     width: 100%;
-    border-collapse: collapse;
 }
 
 .sc-matrix th {
@@ -9989,7 +10255,7 @@ a.help-chip:hover {
     text-transform: uppercase;
     color: var(--text-muted);
     text-align: left;
-    vertical-align: bottom;
+    vertical-align: top;
 }
 
 .sc-matrix th[title] {
@@ -10014,6 +10280,14 @@ a.help-chip:hover {
     vertical-align: middle;
 }
 
+/* The status chip stays on one line, so a narrow window needs the side space. */
+@media (max-width: 1100px) {
+    .sc-matrix th,
+    .sc-matrix td {
+        padding-inline: var(--space-1);
+    }
+}
+
 .sc-matrix-count {
     font-family: var(--font-ui);
     font-size: var(--text-xs);
@@ -10021,7 +10295,10 @@ a.help-chip:hover {
     cursor: help;
 }
 
+/* Flex removes the space glyph after the hidden label, so the buttons start at
+   the same x as their column title. */
 .sc-matrix-cell .shiny-input-container {
+    display: flex;
     width: auto;
     margin: 0;
 }

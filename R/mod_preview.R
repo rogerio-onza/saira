@@ -21,6 +21,7 @@ mod_preview_ui <- function(id) {
         shiny::tags$script(module_behavior_html("previewFixControls", list(
             useId = ns("use"), blankId = ns("blank"), undoId = ns("undo"), otherId = ns("other"),
             vocabApplyId = ns("vocab_apply"), vocabSectionId = ns("vocab_section"),
+            copiesSectionId = ns("copies_section"), recordId = ns("record_panel"),
             focusId = ns("focus"), fixNextChannel = ns("fix_next"), tableId = ns("rows_table"),
             modeId = ns("mode"), contentId = ns("table_or_message"), copyId = ns("copy_set")
         )))
@@ -42,6 +43,8 @@ mod_preview_ui <- function(id) {
 #'   tab shows and for the nav count, because building it costs the full
 #'   mapping pipeline (ADR-021).
 #' @param raw_data_r Reactive uploaded data frame, for the record panel.
+#' @param map_values_r Reactive named list, term -> selected upload columns.
+#'   The record panel marks the columns of the focused problem.
 #' @param reset_signal_r Reactive that changes on re-upload or a Mapping reset.
 #' @param on_navigate Function(tab, term) that opens another tab.
 #' @param active_r Reactive, TRUE while the Preview tab is open. On each entry
@@ -55,7 +58,7 @@ mod_preview_ui <- function(id) {
 #' @param return_contract Return a legacy reactive (default) or a named list of reactives.
 #' @export
 mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_data_r,
-                               raw_data_r = NULL, reset_signal_r = NULL,
+                               raw_data_r = NULL, map_values_r = NULL, reset_signal_r = NULL,
                                on_navigate = NULL, active_r = NULL,
                                refresh_r = NULL, return_contract = c("legacy", "list")) {
     shiny::moduleServer(id, function(input, output, session) {
@@ -511,9 +514,20 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
 
             diag_class <- ifelse(p$family %in% c("date", "empty"), "coord-issue-badge-error",
                                  "coord-issue-badge-warning")
-            diag <- paste0("<span class=\"coord-issue-badge ", diag_class, "\">",
-                           vapply(p$type, function(t) tr(paste0("preview_fix_diag_", t), lang), character(1)),
-                           "</span>")
+            diag_text <- vapply(p$type, function(t) tr(paste0("preview_fix_diag_", t), lang), character(1))
+            # A narrow list shows the term over the diagnosis and hides the term
+            # column (09-preview.css). The diagnosis comes first for the sort.
+            term_text <- htmltools::htmlEscape(p$term)
+            diag <- paste0("<div class=\"pf-problem\"><div class=\"coord-issue-badge pf-diag ", diag_class, "\" title=\"",
+                           htmltools::htmlEscape(diag_text, attribute = TRUE), "\">", diag_text, "</div>",
+                           "<div class=\"pf-term\" title=\"", term_text, "\">", term_text, "</div></div>")
+            # A narrow list shows only the icon, and the name stays for screen readers.
+            fix_button <- function(class, id, label, icon) {
+                paste0("<button type=\"button\" class=\"btn btn-sm ", class, "\" data-id=\"", id,
+                       "\" title=\"", label, "\" aria-label=\"", label, "\"><i class=\"ph ph-", icon,
+                       " pf-btn-icon\" aria-hidden=\"true\"></i><span class=\"pf-btn-label\">", label,
+                       "</span></button>")
+            }
             fixed <- !is.na(hit)
             fix <- ifelse(fixed, edits$to[hit], "")
             # A fix in another cell names that cell's term.
@@ -529,25 +543,20 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                        "")
             )
             use <- !fixed & !is.na(p$suggestion)
-            action[use] <- paste0(
-                "<button type=\"button\" class=\"btn btn-primary btn-sm preview-fix-use\" data-id=\"",
-                ids[use], "\">", tr("preview_fix_use", lang), "</button>"
-            )
+            action[use] <- fix_button("btn-primary preview-fix-use", ids[use], tr("preview_fix_use", lang), "check")
             blank <- !fixed & !p$term %in% preview_required_terms
             action[blank] <- paste0(
                 action[blank], ifelse(use[blank], " ", ""),
-                "<button type=\"button\" class=\"btn btn-outline-secondary btn-sm preview-fix-blank\" data-id=\"",
-                ids[blank], "\">", tr("preview_fix_leave_empty", lang), "</button>"
+                fix_button("btn-outline-secondary preview-fix-blank", ids[blank], tr("preview_fix_leave_empty", lang), "eraser")
             )
             other <- match(p$type, preview_other_fix$type)
             other_ok <- !fixed & !is.na(other)
             if (any(other_ok)) {
                 action[other_ok] <- paste0(
                     action[other_ok], ifelse(nzchar(action[other_ok]), " ", ""),
-                    "<button type=\"button\" class=\"btn btn-primary btn-sm preview-fix-other\" data-id=\"",
-                    ids[other_ok], "\">",
-                    vapply(preview_other_fix$label[other[other_ok]], tr, character(1), lang = lang),
-                    "</button>"
+                    fix_button("btn-primary preview-fix-other", ids[other_ok],
+                               vapply(preview_other_fix$label[other[other_ok]], tr, character(1), lang = lang),
+                               "minus-circle")
                 )
             }
             # A repeated id left as it is shows the id the export writes.
@@ -597,8 +606,13 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                     shiny::div(class = "preview-fix-note", ph_icon("info"),
                                shiny::p(tr("preview_fix_id_note", lang)))
                 },
-                DT::dataTableOutput(ns("rows_table")),
-                shiny::uiOutput(ns("record_panel"))
+                # 09-preview.css puts the record at the right of the list when
+                # the section is wide and has no vocabulary column.
+                shiny::div(
+                    class = "preview-fix-body",
+                    shiny::div(class = "preview-fix-list", DT::dataTableOutput(ns("rows_table"))),
+                    shiny::uiOutput(ns("record_panel"))
+                )
             )
         })
 
@@ -625,7 +639,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                 # its columns (DT alerts "column name not found" otherwise).
                 colnames = c(
                     tr("preview_fix_col_row", lang), tr("preview_fix_col_term", lang),
-                    tr("preview_fix_col_diag", lang), tr("preview_fix_col_value", lang),
+                    tr("preview_fix_col_problem", lang), tr("preview_fix_col_value", lang),
                     tr("preview_fix_col_fix", lang), " ", "suggestion", "auto"
                 ),
                 # No pages: the rows scroll inside the table, and the record
@@ -639,11 +653,12 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                     scrollCollapse = TRUE,
                     autoWidth = FALSE,
                     columnDefs = list(
-                        list(targets = 3L, render = cut_js),
-                        list(targets = 4L, render = fix_js, className = "pf-fix-cell"),
+                        list(targets = 3L, render = cut_js, className = "pf-mono pf-col-value"),
+                        list(targets = 4L, render = fix_js, className = "pf-fix-cell pf-col-fix"),
+                        list(targets = 1L, className = "pf-mono pf-col-term"),
                         list(targets = c(6L, 7L), visible = FALSE),
-                        list(targets = 5L, orderable = FALSE),
-                        list(targets = c(0L, 1L, 3L), className = "pf-mono")
+                        list(targets = 5L, orderable = FALSE, className = "pf-col-action"),
+                        list(targets = 0L, className = "pf-mono pf-col-row")
                     ),
                     language = preview_dt_language(lang),
                     drawCallback = focus_js
@@ -671,6 +686,8 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                 v <- as.character(v)
                 if (is.na(v) || !nzchar(trimws(v))) "" else v
             }, character(1))
+            map_values <- if (is.function(map_values_r)) map_values_r()
+            hit <- names(values) %in% problem_source_columns(focus$term, map_values, names(raw))
             shiny::div(
                 class = "preview-record",
                 if (identical(focus$term, "scientificName")) taxon_clues(row, lang),
@@ -679,9 +696,10 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                 shiny::div(
                     class = "preview-record-grid",
                     lapply(seq_along(values), function(i) {
+                        mark <- if (hit[i]) " is-problem"
                         shiny::tagList(
-                            shiny::span(class = "preview-record-key", names(values)[i]),
-                            shiny::span(class = if (nzchar(values[i])) "preview-record-value" else "preview-record-value is-empty",
+                            shiny::span(class = paste0("preview-record-key", mark), names(values)[i]),
+                            shiny::span(class = paste0(if (nzchar(values[i])) "preview-record-value" else "preview-record-value is-empty", mark),
                                         if (nzchar(values[i])) values[i] else tr("preview_fix_empty_value", lang))
                         )
                     })
