@@ -3517,3 +3517,30 @@ Formato: ADR leve (Architecture Decision Record).
   - UTM: o hemisferio e sempre uma escolha, e a ordem dos eixos tambem quando os dois valores cabem nos dois eixos. Sem a escolha, o botao fica desabilitado. Hemisferios misturados param a conversao.
   - Relatorio de coordenadas: quando as colunas lidas mudam depois da validacao, o relatorio e os paineis saem e o usuario recebe um aviso. As correcoes aplicadas ficam, porque cada uma confere a origem (ADR-166).
 - **Consequencias**: um arquivo exportado do R com `NA` nas colunas de texto mostra `NA` e a nota. O guia v3 nao abre em versoes antigas do Saira. Com muitos nomes e celulas em formula, a amostra da pendencia tem os dois grupos.
+
+## ADR-194: Amostra dos pontos OK no mapa de coordenadas
+
+- **Data**: 2026-11-05
+- **Status**: Aceito. Completa ADR-190.
+- **Contexto**: com 60 mil pontos distintos, o filtro Todos bloqueia a pagina por 2,6 s. O dono escolheu a opcao "amostra dos OK, problemas sempre visiveis" entre os mockups de limite e agrupamento.
+- **Decisao**:
+  - `coords_map_sample()` limita a 20 mil os pontos OK da area visivel, com margem de 25% em cada lado. O limite nao alcanca os outros pontos.
+  - A amostra ordena as linhas pela razao aurea. A ordem nao depende da vista, e um marcador desenhado continua ao aproximar. A amostra nao precisa de semente aleatoria.
+  - Mover o mapa redesenha so quando a amostra esta ativa. O enquadramento e o raio usam todos os marcadores, e por isso nao mudam com o zoom.
+  - `coords_marker_changes()` manda os pontos com problema por ultimo. O canvas desenha na ordem de insercao, e um ponto OK novo cobriria um problema. Quando entra um ponto OK novo, os problemas ja desenhados vao de novo, e o mesmo `layerId` substitui o marcador.
+- **Consequencias**: medido no Firefox com o app real e 60 mil pontos, sem limite e com limite. O filtro Todos cai de 7,3 s para 4,2 s, o maior bloqueio de 2.613 ms para 415 ms, e a volta ao zoom 3 de 1.050 ms para 213 ms. O Firefox nao expoe o heap.
+  A contagem da nota inclui a margem de 25%, e por isso passa um pouco da area na tela. Um arquivo com muitos problemas paga o reenvio a cada ponto OK novo, e os problemas nao tem limite.
+
+## ADR-195: Painel do registro ao lado da lista de Problemas
+
+- **Data**: 2026-11-05
+- **Status**: Aceito.
+- **Contexto**: o painel do registro ficava abaixo da lista, com 10rem e rolagem interna. Em telas largas sobrava espaco ao lado da lista. O dono escolheu a opcao "B adaptavel" entre os mockups A, B e C.
+- **Decisao**:
+  - O painel vai a direita da lista, com 26rem, quando a secao tem pelo menos 88rem e a coluna de vocabulario esta vazia. Com a coluna de vocabulario, a lista ficaria estreita demais (598 px em 1536).
+  - Nos outros casos o painel fica abaixo da lista, com 12,75rem. `--pf-top` caiu 2,75rem, e a altura da lista nao muda.
+  - `.preview-fix-list` e o container das regras de largura das linhas. A largura da lista decide o layout das linhas, e a largura da secao decide onde fica o painel.
+  - O painel marca as colunas do upload que geram o problema em foco. `problem_source_columns()` le essas colunas de `map_values_r`, ou do nome do termo de medida. A marca usa so o fundo de aviso, sem barra a esquerda.
+  - Se a coluna marcada esta fora do painel, o painel rola ate ela a cada foco.
+- **Consequencias**: medido no Firefox com o app real. Em 1920x1000 o painel mostra os 29 campos sem rolagem, e a lista mostra 17 linhas. Em 1536x730 a lista mostra 6 linhas, e o painel rola ate o campo marcado. Em 1440x900 o painel fica abaixo, com 9 linhas na lista.
+  Em 1280x720 a lista mostra so 2 linhas inteiras, como antes desta mudanca.
