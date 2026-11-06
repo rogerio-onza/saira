@@ -410,6 +410,8 @@ testthat::test_that("E2E: a new term keeps the typed measurement fields", {
         app$wait_for_idle(timeout = 20000)
     }
     add_term("measurementValue")
+    # The cards out of view start selectize in small batches (ADR-197).
+    wait_until_js(app, "!!document.getElementById('mapping-map_measurementValue').selectize")
     app$run_js("document.getElementById('mapping-map_measurementValue').selectize.setValue(['massa'])")
     wait_until_js(app, "!!document.getElementById('mapping-mof_method_massa')")
     app$wait_for_idle(timeout = 20000)
@@ -543,6 +545,7 @@ testthat::test_that("E2E: a fix keeps the place in the Vocabulary list", {
     app$wait_for_idle(timeout = 10000)
     app$click(selector = "#mapping-auto_map")
     app$wait_for_idle(timeout = 20000)
+    wait_until_js(app, "!!document.getElementById('mapping-map_sex').selectize")
     app$run_js("document.getElementById('mapping-map_sex').selectize.setValue('sexo');")
     app$wait_for_idle(timeout = 10000)
     app$set_inputs(`mapping-custom_license` = "CC BY 4.0")

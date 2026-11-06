@@ -306,6 +306,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Build again only the output columns that a mapping change touched, ADR-196 ([#281](https://github.com/rogerio-onza/saira/pull/281))
 - **coords:** Send the map only the markers that changed, with one marker for each place, ADR-190 ([#260](https://github.com/rogerio-onza/saira/pull/260))
 - **mapping:** Mount the Mapping grid once per upload, and change the taxon cards in place, ADR-196 ([#282](https://github.com/rogerio-onza/saira/pull/282))
+- **mapping:** Start selectize first on the cards in view, and on the other cards in small batches, ADR-197 ([#286](https://github.com/rogerio-onza/saira/pull/286))
 - **upload:** Watch only the upload progress bars, not every change on the page, ADR-189
 - **upload:** Free memory after a CSV read only for files of 50 MB or more, ADR-196 ([#283](https://github.com/rogerio-onza/saira/pull/283))
 - **dynamicProperties:** Read nested JSON without a second pass over each cell, ADR-190 ([#262](https://github.com/rogerio-onza/saira/pull/262))

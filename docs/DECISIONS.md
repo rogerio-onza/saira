@@ -3561,3 +3561,20 @@ Formato: ADR leve (Architecture Decision Record).
 - **Consequencias**: medido com o app real e com scripts contra release/v1.0.0. A saida e igual em todos os passos.
   Com 63 mil linhas, uma mudanca de mapeamento conta em cerca de 0,6 s, antes de 14 a 16 s. A primeira contagem cai de 17 s para 10,9 s, e o pico de memoria de 879 MB para 739 MB. A data (`parse_dates_to_iso`) ainda custa 2,8 s, porque o voto da coluna conta linhas.
   `gc()` cortou o pico em 5 MB com 50 MB e em 87 MB com 100 MB. O motor de mapeamento caiu de 4,52 s para 4,07 s. A montagem unica ainda congela a pagina por cerca de 790 ms, no inicio dos selectize.
+
+## ADR-197: Selectize em lotes na grade de Mapeamento
+
+- **Data**: 2026-11-05
+- **Status**: Aceito. Completa ADR-196.
+- **Contexto**: depois da ADR-196, a montagem da grade ainda congelava a pagina por cerca de 700 ms no Firefox. O selectize dos 64 cards custava cerca de 370 ms desse bloco, perto de 6 ms por card. O usuario so ve dois ou tres cards ao mesmo tempo.
+- **Decisao**:
+  - No `shiny:value` de `mapping_ui`, o JS troca `data-for` da config de cada `map_<termo>` por `data-saira-defer-for`. Sem a config, o Shiny liga o select nativo, e o valor chega ao servidor no mesmo bind.
+  - No select multiplo, a opcao `""` fica `disabled`. O selectize ignora essa opcao, e o select nativo tambem passa a mandar `[]`, nao `[""]`.
+  - Uma copia estatica com as classes do selectize ocupa o lugar do controle. A largura do placeholder vem de `measureText` + 8 px, igual ao autoGrow do selectize.
+  - Os cards na area visivel iniciam o selectize antes da primeira pintura. Os outros iniciam em fatias de 8 ms com `setTimeout(0)`, do mais perto para o mais longe. A rolagem e o filtro refazem a ordem.
+  - `pointerover` e `focusin` iniciam o card na hora, antes do clique. O `change` de um select em espera refaz a copia, e o Auto-map, o Reset e o guia aparecem antes do selectize.
+  - Nao foi usado `requestIdleCallback`: no Firefox ele nao roda numa pagina parada, mesmo com `timeout`.
+- **Consequencias**: medido no Firefox contra release/v1.0.0, com `ocorrencias-demo.csv`. O bloco da grade cai de 690-752 ms para 389-423 ms, com 2 selectize no bloco, antes 64.
+  Todos os cards ficam prontos em cerca de 1,3 s. A maior pausa entre quadros depois do bloco fica em 71-86 ms (release 57-90 ms).
+  As copias congeladas dao 0 px de diferenca em 22 capturas, com a mesma altura de card. Os valores enviados ao servidor sao iguais nos fluxos de upload, Auto-map, Reset, novo upload e troca de idioma.
+  Um teste E2E que chama `selectize.setValue()` num card fora da tela precisa esperar o selectize do card.
