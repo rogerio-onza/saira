@@ -43,8 +43,12 @@ read_biodiversity_csv <- function(file_path, encoding = NULL, header = TRUE) {
     writeLines(lines, tmp, useBytes = TRUE)
     # The lines are as large as the data frame. Free them before readr runs:
     # readr allocates outside the R heap, so it does not start a collection.
+    # The collection takes about 0.3 s. Below 50 MB it cut the peak by 10 MB
+    # or less, and at 100 MB by 87 MB, so only a large file runs it.
     rm(lines, decoded)
-    invisible(gc(verbose = FALSE))
+    if (isTRUE(file.size(file_path) >= 50 * 1024^2)) {
+        invisible(gc(verbose = FALSE))
+    }
 
     parsed <- withCallingHandlers(
         tryCatch(
