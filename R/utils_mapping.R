@@ -1029,10 +1029,11 @@ score_token_overlap <- function(
     out$score
 }
 
-score_text_similarity <- function(col_name, term) {
-    col_norm <- normalize_for_matching(col_name)
-    term_norm <- normalize_for_matching(term)
-
+# The engine passes the norms of its name profiles: normalize_for_matching()
+# took most of the name scoring time when every fallback repeated it.
+score_text_similarity <- function(col_name, term,
+                                  col_norm = normalize_for_matching(col_name),
+                                  term_norm = normalize_for_matching(term)) {
     if (is_blank_value(col_norm) || is_blank_value(term_norm)) {
         return(0.30)
     }
@@ -1141,7 +1142,7 @@ compute_name_score <- function(
         ))
     }
 
-    similarity_score <- score_text_similarity(col_name, term)
+    similarity_score <- score_text_similarity(col_name, term, col_norm, term_norm)
     list(
         score = similarity_score,
         reason = "text_similarity",

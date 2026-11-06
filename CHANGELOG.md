@@ -309,6 +309,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **upload:** Watch only the upload progress bars, not every change on the page, ADR-189
 - **upload:** Free memory after a CSV read only for files of 50 MB or more, ADR-196 ([#283](https://github.com/rogerio-onza/saira/pull/283))
 - **dynamicProperties:** Read nested JSON without a second pass over each cell, ADR-190 ([#262](https://github.com/rogerio-onza/saira/pull/262))
+- **mapping:** Normalize each column name once in the name similarity score, ADR-196 ([#284](https://github.com/rogerio-onza/saira/pull/284))
 - **export:** Add the conservation status to repeated nested dynamicProperties objects once per distinct object
 - **coords:** Send the map points without popups, and build the popup of a point when it is clicked, ADR-188
 - **coords:** Filter the coordinate results with no cache, because the cache key cost more than the filter, ADR-188
