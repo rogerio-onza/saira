@@ -351,19 +351,30 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         push_card_state <- function(term) {
             shiny::isolate({
                 current_val <- sanitize_map_selection(term, rv$map_values[[term]])
-                if (!has_selected_value(current_val)) {
+                # Before the echo, the select still holds the value that code
+                # replaced, and a Reset card read as mapped from it.
+                if (!has_selected_value(current_val) &&
+                    !exists(term, envir = pending_map_echo, inherits = FALSE)) {
                     current_val <- sanitize_map_selection(term, input[[paste0("map_", term)]])
                 }
                 meta <- rv$map_meta[[term]]
                 if (is.null(meta)) {
                     meta <- default_meta()
                 }
+                # Same lock and badge rules as the grid render: a locked
+                # taxon card reads as mapped, and it and occurrenceID have
+                # no badge.
+                locked <- term %in% locked_taxon_terms() &&
+                    isTRUE(rv$scientificname_mapped)
                 card_state <- apply_establishment_card_state(
                     term, current_val,
-                    is_field_mapped(term, current_val, input, rv$fixed_values), meta
+                    locked || is_field_mapped(term, current_val, input, rv$fixed_values),
+                    meta
                 )
                 meta <- card_state$meta
-                badge <- build_badge_info(meta)
+                badge <- if (!locked && !identical(term, "occurrenceID")) {
+                    build_badge_info(meta)
+                }
                 badge_payload <- if (is.null(badge)) {
                     list(show = FALSE)
                 } else {
@@ -381,17 +392,34 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 state_class <- field_state_class(
                     term, card_state$is_mapped, meta, required_fields_strip
                 )
-                session$sendCustomMessage(
-                    "saira-toggle-field-mapped",
-                    list(
-                        id = ns(paste0("fieldcard_", term)),
-                        mapped = isTRUE(card_state$is_mapped),
-                        badge = badge_payload,
-                        state = if (is.null(state_class)) "" else state_class
-                    )
+                payload <- list(
+                    id = ns(paste0("fieldcard_", term)),
+                    mapped = isTRUE(card_state$is_mapped),
+                    badge = badge_payload,
+                    state = if (is.null(state_class)) "" else state_class
                 )
+                if (term %in% locked_taxon_terms()) {
+                    payload$locked <- locked
+                }
+                session$sendCustomMessage("saira-toggle-field-mapped", payload)
             })
             invisible(NULL)
+        }
+
+        # The browser filter collapses and opens the cards from their state
+        # classes, so it runs again after push_card_state() changes them.
+        apply_mapping_filter <- function() {
+            session$sendCustomMessage("saira-mapping-apply-filter", list(prefix = ns("")))
+        }
+
+        # The echo of a code change brings no new value, so the input-sync
+        # observer does not push it. Code that changes many cards pushes them
+        # here, as a grid render draws them (ADR-196).
+        push_all_card_states <- function() {
+            for (term in all_term_names()) {
+                push_card_state(term)
+            }
+            apply_mapping_filter()
         }
 
         parse_ambiguity_candidates <- function(alternatives_json) {
@@ -444,6 +472,12 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # purpose: writing here must not re-trigger the observer. Reset per
         # upload alongside preview_cache.
         rendered_map_inputs <- new.env(parent = emptyenv())
+
+        # The map_<term> inputs of the grid the client last bound (cards_bound).
+        # An empty multiple select reports NULL, so rendered_map_inputs never
+        # holds it, but the select is on the page and takes an update.
+        # Non-reactive and reset per upload, like rendered_map_inputs.
+        bound_map_inputs <- new.env(parent = emptyenv())
 
         # The input value a map_<term> input held when code changed it through
         # set_map_value(). Until the client echoes the update, the server still
@@ -617,6 +651,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             end_restore = function() {
                 rv$is_programmatic_update <- FALSE
                 rv$programmatic_terms <- character(0)
+                push_all_card_states()
             },
             sync_selection = function(term, sanitized_value, update_input) {
             input_id <- paste0("map_", term)
@@ -624,7 +659,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # A select the user cleared reports NULL, like one not rendered yet.
             # It needs the update too, or a restored card stays blank while the
             # export maps the column.
-            rendered <- !is.null(old_input) || isTRUE(rendered_map_inputs[[term]])
+            rendered <- !is.null(old_input) || isTRUE(rendered_map_inputs[[term]]) ||
+                isTRUE(bound_map_inputs[[term]])
             if (isTRUE(update_input) && rendered) {
                 rv$programmatic_terms <- unique(c(rv$programmatic_terms, term))
                 if (!identical(sanitize_map_selection(term, old_input), sanitized_value)) {
@@ -809,6 +845,23 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # until the UI is up (see the cards_bound observer).
         automap_pending <- shiny::reactiveVal(FALSE)
 
+        # TRUE while the measurementValue card is on the page for the unit
+        # columns only, before the first auto-map of the upload decides it.
+        # Non-reactive: the flag never redraws anything.
+        measurement_card <- new.env(parent = emptyenv())
+        measurement_card$hint <- FALSE
+        drop_unused_measurement_card <- function() {
+            if (!isTRUE(measurement_card$hint)) return(invisible(NULL))
+            measurement_card$hint <- FALSE
+            if (has_selected_value(rv$map_values[["measurementValue"]])) return(invisible(NULL))
+            # No unit column was left for it, so the card goes, as if the
+            # term never came.
+            rv$extra_terms <- setdiff(rv$extra_terms, "measurementValue")
+            rv$map_values[["measurementValue"]] <- NULL
+            rv$map_meta[["measurementValue"]] <- NULL
+            invisible(NULL)
+        }
+
         shiny::observeEvent(raw_data_r(),
             {
                 shiny::req(raw_data_r())
@@ -818,6 +871,15 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 # geodeticDatum, taxonID, organismID, coordinatePrecision, ...) so
                 # they appear as mapping targets instead of unknown columns.
                 rv$extra_terms <- detect_extra_dwc_terms(names(raw_data_r()))
+                # The auto-map suggests measurementValue for the columns named
+                # after a unit (ADR-179). Its card comes in the first grid,
+                # because a new term later builds every card again.
+                measurement_card$hint <- !("measurementValue" %in% rv$extra_terms) &&
+                    is.null(attr(raw_data_r(), "saira_camtrap_source")) &&
+                    length(suggest_measurement_columns(raw_data_r())) > 0L
+                if (measurement_card$hint) {
+                    rv$extra_terms <- c(rv$extra_terms, "measurementValue")
+                }
                 term_names <- names(get_active_dwc_terms_list(
                     extra = rv$extra_terms, lang = lang_r()
                 ))
@@ -850,6 +912,18 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     envir = rendered_map_inputs
                 )
                 rm(list = ls(pending_map_echo, all.names = TRUE), envir = pending_map_echo)
+                rm(list = ls(bound_map_inputs, all.names = TRUE), envir = bound_map_inputs)
+                # The cards of the old sheet keep their values until the new grid
+                # binds. This upload cleared those values, so the input-sync
+                # observer must not write them back as user picks. A written
+                # value stopped the measurementValue suggestion of the new sheet.
+                # The first upload has no old grid.
+                for (term in if (isTRUE(shiny::isolate(rv$had_first_upload))) term_names) {
+                    old_input <- shiny::isolate(input[[paste0("map_", term)]])
+                    if (!is.null(old_input)) {
+                        pending_map_echo[[term]] <- old_input
+                    }
+                }
 
                 # Queue the automatic mapping (run once the cards render).
                 # perform_auto_map() picks the identity path for camtrap and
@@ -882,6 +956,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # inputs (and survive the sync observer). Fires once per upload; a
         # no-op on every later render.
         shiny::observeEvent(input$cards_bound, {
+            for (term in all_term_names()) {
+                bound_map_inputs[[term]] <- TRUE
+            }
             if (!isTRUE(automap_pending())) {
                 return(invisible(NULL))
             }
@@ -1015,6 +1092,15 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # scientificName and adds terms at once, and the grid must see the flag
         # already flipped, or it renders twice.
         }, priority = 1)
+
+        # The lock changes three cards in place, not the grid. The filter then
+        # runs again, as it does after a grid render.
+        shiny::observeEvent(rv$scientificname_mapped, {
+            for (term in locked_taxon_terms()) {
+                push_card_state(term)
+            }
+            apply_mapping_filter()
+        }, ignoreInit = TRUE)
 
         # Sync dynamicProperties per-column JSON key overrides.
         # Depends reactively on (a) selected columns and (b) each per-column
@@ -1163,6 +1249,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 # No alias write here either: resolving the modal only settles
                 # rv$map_values, and the user is still free to change it before
                 # exporting. The export commit picks up whatever it ends on.
+                push_card_state(term)
             }
 
             rv$ambiguity_queue <- rv$ambiguity_queue[-1]
@@ -1702,19 +1789,19 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             # The grid (50 selectize inputs) is expensive to rebuild, so it is
             # rendered only on a real structural change: a new upload, a language
-            # switch, a change to the active term set
-            # (Add-term modal, template import, reset), or when scientificName's
-            # mapped-state flips (which locks/unlocks taxonRank/specificEpithet).
+            # switch, or a change to the active term set
+            # (Add-term modal, template import, reset).
             # These are the only reactive dependencies. Everything else --
-            # per-term map_values, fixed-value inputs, meta -- is read inside the
-            # isolate() below, so selecting a column updates just that card via
+            # per-term map_values, fixed-value inputs, meta, the taxon lock
+            # that follows scientificName -- is read inside isolate(), so
+            # selecting a column updates just that card via
             # its carddyn_<term> output and push_card_state(), never the grid.
             # The Relevant/All/Mapped/Pending filter runs in the browser
             # (ADR-157): the grid holds every card, and the filter is read
             # here only so the cards come in at their place.
             lang <- lang_r()
             mapped_filter <- shiny::isolate(input$mapped_filter) %||% "relevant"
-            scientificname_mapped <- isTRUE(rv$scientificname_mapped)
+            scientificname_mapped <- isTRUE(shiny::isolate(rv$scientificname_mapped))
             # Structural dependency: adding/removing terms must rebuild the grid
             # so the new card actually appears. dwc_all() carries rv$extra_terms
             # but is read inside isolate() below, so depend on the term set
@@ -1726,7 +1813,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # track the mapping reactively and always show what is currently
             # mapped. The dependency is only registered when this branch runs.
             if (identical(input$view_mode, "list")) {
-                return(build_mapping_list(lang, mapped_filter, scientificname_mapped))
+                return(build_mapping_list(lang, mapped_filter, isTRUE(rv$scientificname_mapped)))
             }
 
             shiny::isolate({
@@ -1999,6 +2086,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # identity path above; everything else runs the fuzzy Rostrum engine.
         perform_auto_map <- function() {
             shiny::req(raw_data_r())
+            # The cards stay on the page and take the mapping in place.
+            on.exit(push_all_card_states(), add = TRUE)
             # An empty card only: the license is the publisher's choice.
             card_values <- card_values_from_columns(raw_data_r())
             if (!is.null(card_values$license) && length(input$custom_license) == 0L) {
@@ -2015,6 +2104,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             special_fields <- c("modified", "license", "language")
             show_mapping_loading_modal(rv, ns, lang_r)
             on.exit(hide_mapping_loading_modal(session), add = TRUE)
+            on.exit(drop_unused_measurement_card(), add = TRUE)
 
             auto_count <- 0L
             suggested_count <- 0L
@@ -2022,7 +2112,14 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             tryCatch(
                 {
-                    dwc_terms_df <- get_active_dwc_terms(extra = rv$extra_terms)
+                    # The engine never had measurementValue as a target for
+                    # the unit columns, so the early card stays out of it.
+                    engine_extra <- if (isTRUE(measurement_card$hint)) {
+                        setdiff(rv$extra_terms, "measurementValue")
+                    } else {
+                        rv$extra_terms
+                    }
+                    dwc_terms_df <- get_active_dwc_terms(extra = engine_extra)
                     engine_result <- run_rostrum_engine(
                         df = raw_data_r(),
                         dwc_terms_df = dwc_terms_df,
@@ -2222,6 +2319,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             reset_establishment_state()
             rv$is_programmatic_update <- FALSE
             rv$programmatic_terms <- character(0)
+            push_all_card_states()
             # Clear the downstream tabs too (the existing notification covers it).
             rv$downstream_reset <- rv$downstream_reset + 1L
             shiny::removeModal()
