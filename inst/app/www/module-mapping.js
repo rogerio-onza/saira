@@ -163,6 +163,12 @@
       if (card && card.classList.contains('field-card-wide')) openCollapsedCard(m[1], m[2]);
     });
 
+    // The upload auto-map patches the cards in place, so the server asks for
+    // the filter once after it, as the grid render below does.
+    Shiny.addCustomMessageHandler('saira-mapping-apply-filter', function (payload) {
+      if (payload && payload.prefix) applyMappingFilter(payload.prefix);
+    });
+
     // A rebuild can start before the server gets a filter switch, so the
     // new grid gets the filter on screen.
     window.jQuery(document).on('shiny:value', function (ev) {
@@ -297,6 +303,14 @@
       // keep its red border after it is filled.
       el.classList.remove('field-required-missing', 'field-attention');
       if (payload.state) el.classList.add(payload.state);
+      // A taxon card derived from scientificName holds its select and its
+      // lock note, so the lock switches here and not in a grid render.
+      if (typeof payload.locked === 'boolean') {
+        var note = el.querySelector('.taxon-lock-note');
+        var pick = el.querySelector('.taxon-lock-select');
+        if (note) setHidden(note, !payload.locked);
+        if (pick) setHidden(pick, payload.locked);
+      }
       // Mapped and Pending read these classes, so a card that no longer
       // matches the picked filter leaves the screen now.
       projectCard(el);

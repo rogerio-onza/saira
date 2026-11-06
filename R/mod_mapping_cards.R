@@ -104,14 +104,7 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
             title = item$desc,
             card_text
         ),
-        if (locked_taxon) {
-            shiny::div(
-                class = "alert alert-info",
-                style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
-                ph_icon("dna"),
-                " ", tr("taxon_auto_derived", lang_r)
-            )
-        } else if (term == "occurrenceID") {
+        if (term == "occurrenceID") {
             # A plain column selector, like any other term. Point it at the
             # column carrying your identifiers and they are preserved; rows
             # without one get a generated identifier. Nothing else to decide --
@@ -302,6 +295,24 @@ build_field_card <- function(item, cols, current_val, is_mapped, badge_info, ns,
             )
             if (is_const_term) {
                 wrap_constant_value_block(term, map_block, ns, lang_r, fixed_values[[term]])
+            } else if (term %in% locked_taxon_terms()) {
+                # The card holds both states, and push_card_state() switches
+                # them. A scientificName pick then changes three cards, not
+                # the whole grid of selects.
+                shiny::tagList(
+                    shiny::div(
+                        class = "alert alert-info taxon-lock-note",
+                        style = "margin-top: 8px; padding: 8px; font-size: 0.85em;",
+                        hidden = if (!locked_taxon) NA,
+                        ph_icon("dna"),
+                        " ", tr("taxon_auto_derived", lang_r)
+                    ),
+                    shiny::div(
+                        class = "taxon-lock-select",
+                        hidden = if (locked_taxon) NA,
+                        map_block
+                    )
+                )
             } else {
                 map_block
             }
