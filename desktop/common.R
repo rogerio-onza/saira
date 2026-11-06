@@ -356,9 +356,10 @@ desktop_apply_shell <- function(root, project, config, origin) {
     package$build$electronLanguages <- list("pt-BR", "en-US", "es", "es-419")
     # shinyelectron writes "^" ranges. The exact version matches the approved lockfile.
     package$devDependencies$electron <- config$dependencies$electron$version
-    # ADR-191: electron-builder 26.18.0 asks for minimatch ^10. An override keyed by
-    # the parent package also replaces minimatch 3, 5 and 9 below it, which have another API.
-    package$overrides <- list(`minimatch@^10` = "11.0.4")
+    # ADR-191: electron-builder 26.18.0 asks for minimatch ^10, and the pinned
+    # @electron/universal 2.0.3 asks for ^9. Both are in the advisory range. Keys by
+    # range leave minimatch 3 and 5 alone: they have another API and are not affected.
+    package$overrides <- list(`minimatch@^9` = "11.0.4", `minimatch@^10` = "11.0.4")
     # The app does not start Electron as Node.js. The main process loads its code
     # from app.asar. The integrity check of that file works on Windows and macOS only.
     package$build$electronFuses <- list(runAsNode = FALSE,

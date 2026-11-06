@@ -101,9 +101,9 @@ o npm resolver outra versão ou outro hash. Para aprovar uma mudança, revise o
 `package-lock.json` de `bundle/electron-app` no destino e copie-o para
 `desktop/node-package-lock.json`.
 
-O `npm audit` lista 15 pacotes moderados por um único advisory do minimatch. O
-override leva o minimatch do electron-builder ao 11. A triagem das versões antigas
-que ficam está no ADR-191. Não rode `npm audit fix --force`: ele propõe um
+O override leva ao minimatch 11 as versões 9 e 10 que o electron-builder pede, e o
+`npm audit` fica sem alertas. O minimatch 3 e 5 ficam: estão fora da faixa do
+advisory (ADR-191). Não rode `npm audit fix --force`: ele propõe um
 electron-builder antigo.
 
 Com um certificado em `WIN_CSC_LINK` ou `CSC_LINK` e a senha em
