@@ -8,7 +8,9 @@ process_for_export_with_unmapped(
   df_processed,
   raw_data,
   map_values,
-  overridden_terms = character(0)
+  overridden_terms = character(0),
+  sensitive_rows = integer(0),
+  sensitive_points = NULL
 )
 }
 \arguments{
@@ -22,6 +24,12 @@ source column names.}
 
 \item{overridden_terms}{Character vector of terms whose fixed value won over
 their column mapping (`overridden_mapping_terms()`).}
+
+\item{sensitive_rows}{Integer rows whose coordinates the mask generalized or
+withheld. Their coordinate-like raw values are blanked.}
+
+\item{sensitive_points}{Optional data frame aligned with `sensitive_rows`:
+the real `decimalLatitude`, `decimalLongitude` and the mask `grid`.}
 }
 \value{
 Data frame: process_for_export(df_processed) + tail of unused raw cols.

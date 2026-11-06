@@ -6,7 +6,12 @@
 #
 # SAIRA_USER is deliberately NOT set: test-utils-rostrum-templates.R skips a
 # test when it is set, because that test covers the unset case on purpose.
+#
+# The Flora BR and Fauna BR caches have no override of their own. The names
+# module reads their status at start and writes it, so R_USER_DATA_DIR keeps
+# that meta and the snapshot copy out of the developer's real data folder.
 withr::local_envvar(
-    c(SAIRA_DATA_DIR = withr::local_tempdir(.local_envir = teardown_env())),
+    c(SAIRA_DATA_DIR = withr::local_tempdir(.local_envir = teardown_env()),
+      R_USER_DATA_DIR = withr::local_tempdir(.local_envir = teardown_env())),
     .local_envir = teardown_env()
 )

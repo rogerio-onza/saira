@@ -3,27 +3,116 @@
    ============================================================================= */
 
 .dataTables_wrapper {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
   font-weight: 400;
 }
 
+/* Light header, horizontal rules only: no vertical dividers (ADR-127). */
 .dataTable thead th {
-  background-color: var(--bg-main);
+  background-color: var(--bg-subtle);
   color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-weight: var(--weight-semibold);
-  font-size: var(--text-md);
-  border-bottom: 2px solid var(--border-strong);
-  padding: var(--space-3);
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--border-default);
+  padding: var(--space-2) var(--space-3);
 }
 
 .dataTable tbody td {
-  padding: var(--space-3);
+  font-family: var(--font-mono);
+  padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--border-light);
+}
+
+.dataTable thead th,
+.dataTable tbody td {
+  border-left: 0;
+  border-right: 0;
+}
+
+/* No zebra stripes. Bootstrap and DataTables paint them with an inset
+   box-shadow from these variables, under selectors no rule here outranks, so
+   the variables carry the fix: a transparent stripe and a white one at 5%. */
+.dataTable {
+  --bs-table-striped-bg: transparent;
+  --dt-row-stripe: 255, 255, 255;
 }
 
 .dataTable tbody tr:hover {
   background-color: var(--hover-bg);
+}
+
+/* Every table has the frame of the cards around it. A scroll container clips
+   its own corners. A bare table cannot clip, because a dropdown or a sticky
+   header must pass its edge, so its corner cells carry the radius. */
+.dataTables_scroll,
+.preview-copy-scroll,
+.dataTables_wrapper > table.dataTable,
+.bor-assistant-preview-table,
+.export-gen-table,
+.sc-matrix {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+.dataTables_scroll {
+  overflow: hidden;
+}
+
+/* The header color reaches the frame. DataTables puts a margin with
+   !important over the header table and leaves a gap over the scrollbar. */
+.dataTables_scrollHead {
+  background-color: var(--bg-subtle);
+}
+
+.dataTables_scrollHead table.dataTable {
+  margin-top: 0 !important;
+}
+
+.dataTables_wrapper > table.dataTable,
+.bor-assistant-preview-table,
+.export-gen-table,
+.sc-matrix {
+  --table-corner: calc(var(--radius-lg) - 1px);
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.dataTables_wrapper > table.dataTable thead tr:first-child th:first-child,
+.bor-assistant-preview-table thead tr:first-child th:first-child,
+.export-gen-table thead tr:first-child th:first-child,
+.sc-matrix thead tr:first-child th:first-child {
+  border-top-left-radius: var(--table-corner);
+}
+
+.dataTables_wrapper > table.dataTable thead tr:first-child th:last-child,
+.bor-assistant-preview-table thead tr:first-child th:last-child,
+.export-gen-table thead tr:first-child th:last-child,
+.sc-matrix thead tr:first-child th:last-child {
+  border-top-right-radius: var(--table-corner);
+}
+
+.dataTables_wrapper > table.dataTable tbody tr:last-child td:first-child,
+.bor-assistant-preview-table tbody tr:last-child td:first-child,
+.export-gen-table tbody tr:last-child td:first-child,
+.sc-matrix tbody tr:last-child td:first-child {
+  border-bottom-left-radius: var(--table-corner);
+}
+
+.dataTables_wrapper > table.dataTable tbody tr:last-child td:last-child,
+.bor-assistant-preview-table tbody tr:last-child td:last-child,
+.export-gen-table tbody tr:last-child td:last-child,
+.sc-matrix tbody tr:last-child td:last-child {
+  border-bottom-right-radius: var(--table-corner);
+}
+
+/* The frame closes the table, so the last row needs no line of its own. */
+.dataTable tbody tr:last-child td,
+.preview-copy-table tbody tr:last-child td,
+.bor-assistant-preview-table tbody tr:last-child td,
+.export-gen-table tbody tr:last-child td,
+.sc-matrix tbody tr:last-child td {
+  border-bottom: 0;
 }
 

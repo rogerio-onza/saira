@@ -40,9 +40,22 @@ run_app <- function(...) {
 
     shiny::addResourcePath("www", www_path)
 
+    # Only the desktop shell sets the key (see session_has_access()).
+    access_key <- Sys.getenv("SAIRA_ACCESS_KEY")
+    server <- app_server
+    if (nzchar(access_key)) {
+        server <- function(input, output, session) {
+            if (!session_has_access(session$request, access_key)) {
+                session$close()
+                return(invisible(NULL))
+            }
+            app_server(input, output, session)
+        }
+    }
+
     shiny::shinyApp(
         ui = app_ui(),
-        server = app_server,
+        server = server,
         options = list(launch.browser = getOption("shiny.launch.browser", interactive())),
         ...
     )

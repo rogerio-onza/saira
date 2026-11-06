@@ -22,7 +22,7 @@ fonte (multi-coluna serializa como "colA + colB").}
 
 \item{raw_data}{data.frame original (para listar colunas nao usadas).}
 
-\item{lang}{Character scalar "pt" ou "en" (ou reactive — extraido com `()` se for).}
+\item{lang}{Character scalar from `get_languages()` (ou reactive — extraido com `()` se for).}
 
 \item{required_terms}{Character vector de termos DwC obrigatorios (default = required do preview).}
 
@@ -50,5 +50,5 @@ apenas o vocabulario "Coluna -> Termo". Cada linha de mapping vira uma
 row em rostrum_aliases ao re-importar via parse_mapping_guide_txt().
 }
 \details{
-Header magico fixo: `# saira:mapping:v1` na primeira linha.
+Header magico fixo: `# saira:mapping:v3` na primeira linha.
 }

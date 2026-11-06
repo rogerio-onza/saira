@@ -2,7 +2,7 @@
 
 Saíra é um aplicativo em R/Shiny para padronizar planilhas de ocorrências de
 biodiversidade no padrão Darwin Core (DwC) e publicá-las no GBIF e no SiBBr.
-A interface é visual e bilíngue (PT-BR/EN-US); não é preciso programar para usar.
+A interface é visual e trilíngue (PT-BR/EN-US/ES); não é preciso programar para usar.
 
 [🇧🇷 Português](#português) · [🇺🇸 English](#english)
 
@@ -54,32 +54,35 @@ instalação.
 - `occurrenceID` estável: preenche IDs faltantes de forma determinística (a mesma
   combinação gera sempre o mesmo ID), então republicar no GBIF conta como
   atualização, não como registro novo.
-- Armadilhas fotográficas (opcional): importa pacotes Camtrap DP e exportações do
-  Wildlife Insights. Requer o pacote `camtrapdp` (`install.packages("camtrapdp")`).
+- Armadilhas fotográficas: importa pacotes Camtrap DP e exportações do
+  Wildlife Insights.
 
 ### 📦 Instalação
 
-O Saíra roda em R. Se você nunca usou R, faça isto uma vez:
+**App (Windows e Linux).** Baixe o instalador em
+[Releases](https://github.com/rogerio-onza/saira/releases/latest). O app traz o R
+e as dependências. Windows x64 usa o `.exe`. Linux x64 usa o `.deb` (Ubuntu 24.04+,
+Debian 13+) ou o AppImage (glibc 2.39+). Passo a passo:
+[Instalação](https://rogerio-onza.github.io/saira/tutoriais/01-instalacao.html).
 
-1. Instale o R (4.1.0 ou mais recente): <https://cloud.r-project.org>.
-2. Instale o RStudio Desktop — onde você cola e roda os comandos:
-   <https://posit.co/download/rstudio-desktop/>.
-3. Abra o RStudio e, no Console, cole e execute:
+**Pacote R (macOS, ou quem já usa R).** Instale o R 4.1.0 ou mais recente e rode:
 
-   ```r
-   # florabr e faunabr não estão no CRAN; este options() torna o R-universe visível
-   options(repos = c(
-     ropensci = "https://ropensci.r-universe.dev",
-     CRAN     = "https://cloud.r-project.org"
-   ))
+```r
+options(repos = c(
+  ropensci = "https://ropensci.r-universe.dev",
+  CRAN     = "https://cloud.r-project.org"
+))
 
-   install.packages("pak")
-   pak::pak("rogerio-onza/saira")
-   ```
+install.packages("pak")
+pak::pak("rogerio-onza/saira")
+```
 
+`florabr` e `faunabr` não estão no CRAN: o `options()` torna o R-universe visível.
 A primeira instalação pode levar alguns minutos.
 
 ### ▶️ Como abrir
+
+No app, abra o Saíra pelo menu do sistema. No pacote R, rode:
 
 ```r
 library(saira)
@@ -90,10 +93,9 @@ O app abre no navegador.
 
 Notas:
 
-- **Primeira verificação de nomes:** o Saíra baixa uma base taxonômica local na
-  primeira vez (uma vez só, precisa de internet); essa verificação inicial demora
-  mais.
-- **Linux (Debian/Ubuntu):** a dependência `sf` precisa de GDAL, GEOS e PROJ.
+- **Bases de nomes:** Flora BR e Fauna BR já vêm no Saíra e funcionam sem internet.
+  O GBIF precisa de internet.
+- **Linux (Debian/Ubuntu), pacote R:** a dependência `sf` precisa de GDAL, GEOS e PROJ.
   Instale antes: `sudo apt-get install -y libgdal-dev libgeos-dev libproj-dev libudunits2-dev`.
   No Windows e no macOS não há nada extra a fazer.
 
@@ -127,7 +129,7 @@ Antes de abrir um pull request, leia [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### 🧩 Tecnologias e créditos
 
-O Saíra usa pacotes R de código aberto (Shiny, `taxadb`/`florabr`/`faunabr`,
+O Saíra usa pacotes R de código aberto (Shiny, `httr2`/`florabr`/`faunabr`,
 `CoordinateCleaner`/`sf`/`terra`, entre outros) e embute dados de fontes públicas
 (camada Natural Earth, termos Darwin Core do TDWG sob CC-BY, Lista Nacional de
 Espécies Ameaçadas — Portarias MMA nº 148/2022, nº 1.704/2026 e GM/MMA
@@ -187,32 +189,35 @@ only at install time.
 - Stable `occurrenceID`: fills missing IDs deterministically (the same combination
   always yields the same ID), so republishing to GBIF counts as an update, not a
   new record.
-- Camera-trap data (optional): imports Camtrap DP packages and Wildlife Insights
-  exports. Requires the `camtrapdp` package (`install.packages("camtrapdp")`).
+- Camera-trap data: imports Camtrap DP packages and Wildlife Insights
+  exports.
 
 ### 📦 Installation
 
-Saíra runs in R. If you have never used R, do this once:
+**App (Windows and Linux).** Download the installer from
+[Releases](https://github.com/rogerio-onza/saira/releases/latest). The app has its
+own R and dependencies. Windows x64 uses the `.exe`. Linux x64 uses the `.deb`
+(Ubuntu 24.04+, Debian 13+) or the AppImage (glibc 2.39+). Step by step:
+[Installation](https://rogerio-onza.github.io/saira/en/tutorials/01-installation.html).
 
-1. Install R (4.1.0 or newer): <https://cloud.r-project.org>.
-2. Install RStudio Desktop — where you paste and run commands:
-   <https://posit.co/download/rstudio-desktop/>.
-3. Open RStudio and, in the Console, paste and run:
+**R package (macOS, or people who already use R).** Install R 4.1.0 or newer and run:
 
-   ```r
-   # florabr and faunabr are not on CRAN; this options() makes the R-universe visible
-   options(repos = c(
-     ropensci = "https://ropensci.r-universe.dev",
-     CRAN     = "https://cloud.r-project.org"
-   ))
+```r
+options(repos = c(
+  ropensci = "https://ropensci.r-universe.dev",
+  CRAN     = "https://cloud.r-project.org"
+))
 
-   install.packages("pak")
-   pak::pak("rogerio-onza/saira")
-   ```
+install.packages("pak")
+pak::pak("rogerio-onza/saira")
+```
 
+`florabr` and `faunabr` are not on CRAN: the `options()` call makes the R-universe visible.
 The first install may take a few minutes.
 
 ### ▶️ Running it
+
+In the app, open Saíra from the system menu. In the R package, run:
 
 ```r
 library(saira)
@@ -223,9 +228,9 @@ The app opens in your browser.
 
 Notes:
 
-- **First name check:** Saíra downloads a local taxonomic database the first time
-  (one time, needs network); that initial check takes longer.
-- **Linux (Debian/Ubuntu):** the `sf` dependency needs GDAL, GEOS, and PROJ.
+- **Name backbones:** Flora BR and Fauna BR come with Saíra and work offline.
+  GBIF needs internet.
+- **Linux (Debian/Ubuntu), R package:** the `sf` dependency needs GDAL, GEOS, and PROJ.
   Install them first: `sudo apt-get install -y libgdal-dev libgeos-dev libproj-dev libudunits2-dev`.
   On Windows and macOS there is nothing extra to do.
 
@@ -259,7 +264,7 @@ Before opening a pull request, read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### 🧩 Technologies and credits
 
-Saíra uses open-source R packages (Shiny, `taxadb`/`florabr`/`faunabr`,
+Saíra uses open-source R packages (Shiny, `httr2`/`florabr`/`faunabr`,
 `CoordinateCleaner`/`sf`/`terra`, among others) and bundles data from public
 sources (Natural Earth layer, Darwin Core terms from TDWG under CC-BY, the
 Brazilian Official List of Threatened Species — Portarias MMA nº 148/2022,

@@ -33,7 +33,8 @@ informed country border are left untouched. Default 0.2 (~22 km).}
 \value{
 Named list: \code{corrected} (logical), \code{lat_new}/\code{lon_new}
   (numeric, equal to originals where not corrected), \code{transform}
-  (character key or NA), \code{informed_country} (ISO3), \code{n_corrected},
+  (character key or NA), \code{informed_country} (ISO3), \code{outside}
+  (logical, outside the country with no fix), \code{n_corrected},
   \code{n_candidates}, \code{available} (FALSE when no country layer could be
   loaded, e.g. offline).
 }

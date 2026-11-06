@@ -237,113 +237,7 @@ rostrum_ensure_engine_columns <- function(decision_df) {
     data
 }
 
-rostrum_extract_column <- function(df, column_name) {
-    if (!is.character(column_name) || length(column_name) != 1L || is.na(column_name) || !nzchar(column_name)) {
-        return(rep(NA_character_, nrow(df)))
-    }
-    if (!(column_name %in% names(df))) {
-        return(rep(NA_character_, nrow(df)))
-    }
 
-    values <- as.character(df[[column_name]])
-    values[is.na(df[[column_name]])] <- NA_character_
-    values
-}
-
-rostrum_eventdate_parse_day <- function(values) {
-    values_chr <- as.character(values)
-    values_chr[is.na(values)] <- ""
-    values_chr <- trimws(values_chr)
-
-    out <- suppressWarnings(as.integer(values_chr))
-    invalid <- !nzchar(values_chr) | is.na(out) | out < 1L | out > 31L
-    out[invalid] <- NA_integer_
-    out
-}
-
-rostrum_is_leap_year <- function(year_values) {
-    year_num <- suppressWarnings(as.integer(year_values))
-    valid <- !is.na(year_num)
-    out <- rep(FALSE, length(year_num))
-    out[valid] <- ((year_num[valid] %% 4L == 0L) & (year_num[valid] %% 100L != 0L)) |
-        (year_num[valid] %% 400L == 0L)
-    out
-}
-
-rostrum_days_in_month <- function(year_values, month_values) {
-    month_num <- suppressWarnings(as.integer(month_values))
-    year_num <- suppressWarnings(as.integer(year_values))
-
-    out <- rep(NA_integer_, length(month_num))
-    valid_month <- !is.na(month_num) & month_num >= 1L & month_num <= 12L
-
-    out[valid_month & month_num %in% c(1L, 3L, 5L, 7L, 8L, 10L, 12L)] <- 31L
-    out[valid_month & month_num %in% c(4L, 6L, 9L, 11L)] <- 30L
-
-    feb_mask <- valid_month & month_num == 2L
-    if (any(feb_mask)) {
-        leap_mask <- rostrum_is_leap_year(year_num[feb_mask])
-        out[feb_mask] <- ifelse(leap_mask, 29L, 28L)
-    }
-
-    out
-}
-
-rostrum_compose_eventdate_values <- function(df, source_columns) {
-    n_rows <- nrow(df)
-    if (n_rows == 0) {
-        return(list(
-            values = character(0),
-            valid_mask = logical(0),
-            partial_mask = logical(0),
-            has_any_input = logical(0)
-        ))
-    }
-
-    year_values <- rostrum_extract_column(df, source_columns[["year"]])
-    month_values <- rostrum_extract_column(df, source_columns[["month"]])
-    day_values <- rostrum_extract_column(df, source_columns[["day"]])
-
-    year_blank <- is.na(year_values) | !nzchar(trimws(year_values))
-    month_blank <- is.na(month_values) | !nzchar(trimws(month_values))
-    day_blank <- is.na(day_values) | !nzchar(trimws(day_values))
-    has_any_input <- !(year_blank & month_blank & day_blank)
-
-    parsed_year <- parse_year_to_number_vec(year_values)
-    parsed_month <- parse_month_to_number_vec(month_values)
-    parsed_month_num <- suppressWarnings(as.integer(parsed_month))
-    parsed_day <- rostrum_eventdate_parse_day(day_values)
-
-    max_days <- rostrum_days_in_month(parsed_year, parsed_month_num)
-
-    valid_year_only <- !year_blank & month_blank & day_blank & !is.na(parsed_year)
-    valid_year_month <- !year_blank & !month_blank & day_blank &
-        !is.na(parsed_year) & !is.na(parsed_month_num)
-    valid_full <- !year_blank & !month_blank & !day_blank &
-        !is.na(parsed_year) & !is.na(parsed_month_num) & !is.na(parsed_day) &
-        !is.na(max_days) & parsed_day <= max_days
-
-    valid_mask <- valid_year_only | valid_year_month | valid_full
-    partial_mask <- valid_year_only | valid_year_month
-
-    composed <- rep(NA_character_, n_rows)
-    if (any(valid_year_only)) {
-        composed[valid_year_only] <- sprintf("%04d", parsed_year[valid_year_only])
-    }
-    if (any(valid_year_month)) {
-        composed[valid_year_month] <- sprintf("%04d-%02d", parsed_year[valid_year_month], parsed_month_num[valid_year_month])
-    }
-    if (any(valid_full)) {
-        composed[valid_full] <- sprintf("%04d-%02d-%02d", parsed_year[valid_full], parsed_month_num[valid_full], parsed_day[valid_full])
-    }
-
-    list(
-        values = composed,
-        valid_mask = valid_mask,
-        partial_mask = partial_mask,
-        has_any_input = has_any_input
-    )
-}
 
 rostrum_compose_scientific_name_values <- function(df, source_columns) {
     n_rows <- nrow(df)
@@ -781,6 +675,33 @@ rostrum_candidates_from_row <- function(row_data) {
     candidate_df
 }
 
+# A column filled in at least half of the rows, against one filled in less
+# than half as many: "Nome cientifico" (133 of 139) against "scientificName"
+# (2 of 139). The exact DwC name of an almost empty column must not win (B17).
+rostrum_much_fuller <- function(big, small) {
+    big <- suppressWarnings(as.numeric(big))
+    small <- suppressWarnings(as.numeric(small))
+    length(big) == 1L && length(small) == 1L && is.finite(big) && is.finite(small) &&
+        big >= 0.5 && small < 0.5 * big
+}
+
+# Puts the fullest confident candidate first when the top one is much emptier.
+rostrum_prefer_filled_candidate <- function(candidate_df, options) {
+    if (!is.data.frame(candidate_df) || nrow(candidate_df) < 2L) {
+        return(candidate_df)
+    }
+    confident <- which(candidate_df$final_score >= options$suggest_threshold)
+    if (length(confident) < 2L) {
+        return(candidate_df)
+    }
+    fullest <- confident[which.max(candidate_df$completeness[confident])]
+    if (fullest == 1L ||
+        !rostrum_much_fuller(candidate_df$completeness[[fullest]], candidate_df$completeness[[1]])) {
+        return(candidate_df)
+    }
+    candidate_df[c(fullest, setdiff(seq_len(nrow(candidate_df)), fullest)), , drop = FALSE]
+}
+
 rostrum_rank_candidate_rows <- function(candidate_df, tie_label = "column_name") {
     if (!is.data.frame(candidate_df) || nrow(candidate_df) == 0L) {
         return(integer(0))
@@ -832,16 +753,32 @@ rostrum_is_technical_tie <- function(first_row, second_row, ambiguity_gap) {
     if (!is.finite(score_gap) || score_gap >= ambiguity_gap) {
         return(FALSE)
     }
+    # Same score, but one column holds the data: no question to ask.
+    if (all(c("completeness") %in% names(first_row)) &&
+        rostrum_much_fuller(first_row$completeness[[1]], second_row$completeness[[1]])) {
+        return(FALSE)
+    }
     TRUE
 }
 
-rostrum_build_stage3_candidate_df <- function(term, candidate_df, df) {
+rostrum_build_stage3_candidate_df <- function(term, candidate_df, df, metric_cache = NULL) {
     if (!is.data.frame(candidate_df) || nrow(candidate_df) == 0L) {
         return(candidate_df)
     }
 
     out <- candidate_df
-    metrics <- lapply(out$column_name, function(col_name) rostrum_column_quality_metrics(df, col_name))
+    # The metric scans the whole column, and the same column is a candidate
+    # for many terms: a run-wide cache computes it once per column.
+    column_metrics <- function(col_name) {
+        key <- paste0("col:", col_name)
+        if (!is.null(metric_cache) && exists(key, envir = metric_cache, inherits = FALSE)) {
+            return(get(key, envir = metric_cache, inherits = FALSE))
+        }
+        m <- rostrum_column_quality_metrics(df, col_name)
+        if (!is.null(metric_cache)) assign(key, m, envir = metric_cache)
+        m
+    }
+    metrics <- lapply(out$column_name, column_metrics)
     overlap <- lapply(out$column_name, function(col_name) {
         score_token_overlap(col_name = col_name, term = term, with_details = TRUE)
     })
@@ -935,6 +872,7 @@ rostrum_apply_stage3_candidates <- function(stage2_data, df, options) {
     loser_pool <- list()
     terms_with_alternatives <- character(0)
     ambiguity_gap <- rostrum_ambiguity_gap_epsilon(options)
+    metric_cache <- new.env(parent = emptyenv())
 
     if (nrow(data) == 0L) {
         return(list(
@@ -952,9 +890,11 @@ rostrum_apply_stage3_candidates <- function(stage2_data, df, options) {
             next
         }
 
-        candidate_df <- rostrum_build_stage3_candidate_df(term = term, candidate_df = candidate_seed, df = df)
+        candidate_df <- rostrum_build_stage3_candidate_df(
+            term = term, candidate_df = candidate_seed, df = df, metric_cache = metric_cache
+        )
         ranking <- rostrum_rank_candidate_rows(candidate_df, tie_label = "column_name")
-        candidate_df <- candidate_df[ranking, , drop = FALSE]
+        candidate_df <- rostrum_prefer_filled_candidate(candidate_df[ranking, , drop = FALSE], options)
         rownames(candidate_df) <- NULL
 
         data$alternatives_json[[idx]] <- rostrum_serialize_top_candidates(candidate_df, top_n = 3L)
@@ -1391,6 +1331,14 @@ rostrum_apply_alias_overrides <- function(stage1_data, df, conn, options = rostr
         if (is.finite(current_score) &&
             identical(toupper(as.character(data$status[[idx]])), "ALIAS") &&
             current_score > confidence) {
+            next
+        }
+        # An alias does not replace a column that holds the data with an
+        # almost empty one (B17).
+        current_col <- as.character(data$selected_col[[idx]])
+        if (isTRUE(data$applied[[idx]]) && !is.na(current_col) && current_col %in% names(df) &&
+            rostrum_much_fuller(rostrum_column_quality_metrics(df, current_col)$completeness,
+                                rostrum_column_quality_metrics(df, col_name)$completeness)) {
             next
         }
 

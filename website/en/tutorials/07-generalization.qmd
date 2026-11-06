@@ -1,0 +1,109 @@
+---
+title: "Generalizing sensitive species"
+pagetitle: "Sensitive-species generalization · Saíra Tutorials"
+aliases:
+  - 06-generalization.html
+---
+
+::: {.tut-standfirst}
+Decide whether and how much to reduce the coordinate precision of threatened species in the **Generalization** step. The step follows the decision table of [Chapman (2020)](https://doi.org/10.15468/doc-5jp4-5g10).
+:::
+
+The step works with the species marked **Sensitive** in [name validation](05-name-validation.qmd). Without sensitive species, there is nothing to do here.
+
+## Choose the path
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t06-mode-EN.png" width="862" alt="The two mode cards: Publish original coordinates, recommended, and Assess sensitivity"></figure>
+```
+
+::: {.marks}
+1. **Publish original coordinates** is the recommended default. Precise data has more scientific value.
+2. **Assess sensitivity** opens the decision table. Choose this path only if there is a real risk of collection or persecution.
+:::
+
+A coordinate that is already protected stays out: <span class="term">coordinateUncertaintyInMeters</span> of 1 km or more, or a coordinate generalization note in <span class="term">dataGeneralizations</span>. A note about other data does not count.
+
+With only a large uncertainty, a coordinate with too many decimals goes to the coarsest grid that fits the uncertainty: `-24.4873` with 2,500 m goes out as `-24.49`. `-24.5` with 10 km stays as it is. With the coordinate generalization note, the value does not change.
+
+::: {.callout-important}
+## Wildlife Insights data is already protected
+The Wildlife Insights export already hides the location of sensitive species. Choose **Publish original coordinates**. Generalizing again only removes precision.
+:::
+
+## Answer the decision table
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t06-assess-EN.png" width="1440" alt="Generalization step in Assess sensitivity mode, with the mode cards, the decision table and the map highlighted"></figure>
+```
+
+::: {.marks}
+1. The **Assess sensitivity** mode.
+2. The decision table, one row per threat category.
+3. The map shows the result of each answer.
+:::
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t06-table-EN.png" width="862" alt="Decision table with the CR row answered, the Category 3 result and the map preview buttons highlighted"></figure>
+```
+
+::: {.marks}
+1. Answer the questions from left to right. Each **No** opens the next question. The first **Yes** sets the grid.
+2. The result applies to all species in the group.
+3. See on the map the effect of each category before you decide.
+:::
+
+| First Yes | Category | Grid | Approximate scale |
+|---|---|---|---|
+| 4.3 · disturbance or exploitation | 2 | 0.1° (~11 km) | State or province |
+| 4.4 · collection or deliberate harm | 3 | 0.01° (~1 km) | City or district |
+| 4.5 · low to medium threat | 4 | 0.001° (~100 m) | Local area |
+| None | Not sensitive | No grid | Original coordinate |
+
+A group without an answer goes out without generalization. The grid is regular and ignores administrative limits: state and city are only approximate scales. The published uncertainty combines the cell radius and the earlier uncertainty.
+
+## Handle one species separately
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t06-exceptions-EN.png" width="862" alt="Per-species exceptions card and the justification field, with the species selector, the Apply exception button and the justification highlighted"></figure>
+```
+
+::: {.marks}
+1. Choose the species and answer the same questions. The species leaves the group.
+2. **Apply exception**.
+3. Write the justification. It goes to <span class="term">dataGeneralizations</span>.
+:::
+
+The justification is required for Categories 1, 2 and 3. The review date suggests when to assess the decision again (Chapman recommends 2 to 5 years).
+
+::: {.callout-warning}
+## Category 1 (~111 km) only by exception
+**Use Category 1 (extreme)** is the only way to reach this level. At ~111 km the record loses almost all its spatial value. Use it only for low-mobility or endemic species.
+:::
+
+## Check the map
+
+The map shows the original point, the generalization area and the uncertainty radius. A point that **left the country** needs a smaller grid: a coordinate in the wrong country is worse than an imprecise coordinate.
+
+## Understand the warnings
+
+| Warning | What it means | What to do |
+|---|---|---|
+| **record(s) have an invalid coordinate** | The sensitive point is out of range, has one axis only, is a UTM pair, is near (0, 0) or has latitude equal to longitude. Saíra removes the record from the publication and keeps it in the private file. | **Correct in Coordinates**. |
+| **record(s) keep the precision of the original data** | Generalization never increases precision. The data was already coarser than the grid, or the source already generalized it. | Nothing, if the source is reliable. |
+| **Original precision retained by the custodian** note | <span class="term">dataGeneralizations</span> keeps the precision that the custodian retained. | Nothing. |
+
+## What goes into the package
+
+In the generalized records, Saíra:
+
+- publishes the coordinate of the cell, not the original;
+- fills <span class="term">coordinateUncertaintyInMeters</span>, <span class="term">dataGeneralizations</span> and <span class="term">informationWithheld</span>;
+- clears the fields that reveal the exact locality, such as the verbatim coordinates;
+- keeps the original coordinates in `<dataset>-sensitive-coords.xlsx`, a private file that you download apart, outside the `.zip`.
+
+## References
+
+- Chapman, A. D. (2020). *Current Best Practices for Generalizing Sensitive Species Occurrence Data.* Copenhagen: GBIF Secretariat. <https://doi.org/10.15468/doc-5jp4-5g10> (Table 5, decision cascade; Table 7, generalization grid).
+- Chapman, A. D., & Wieczorek, J. R. (2020). *Georeferencing Best Practices.* Copenhagen: GBIF Secretariat. <https://doi.org/10.15468/doc-gg7h-s853> (sec. 2.3.4, uncertainty by the point-radius method).
+- Zermoglio, P. F., Chapman, A. D., Wieczorek, J. R., Luna, M. C., & Bloom, D. A. (2020). *Georeferencing Quick Reference Guide.* Copenhagen: GBIF Secretariat. <https://doi.org/10.35035/e09p-h128>

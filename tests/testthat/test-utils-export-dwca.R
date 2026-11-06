@@ -103,6 +103,24 @@ testthat::test_that("compute_dataset_extents derives bbox and date range from va
     testthat::expect_identical(ext$dates[["end"]], "2024-03-01")
 })
 
+testthat::test_that("compute_dataset_extents reads both ends of an interval and partial dates (B53)", {
+    df <- data.frame(eventDate = c("2019-05-01/2020-11-30", "2018", "2007-11-13/15",
+                                   "2021-02", "2020-13-45"),
+                     stringsAsFactors = FALSE)
+    ext <- compute_dataset_extents(df)
+    testthat::expect_identical(ext$dates[["begin"]], "2007-11-13")
+    testthat::expect_identical(ext$dates[["end"]], "2021-02-28")
+    ext <- compute_dataset_extents(data.frame(eventDate = "2019-05-01/2020-11-30"))
+    testthat::expect_identical(unname(ext$dates), c("2019-05-01", "2020-11-30"))
+})
+
+testthat::test_that("compute_dataset_extents keeps a full month at the end of an interval (AUD-11)", {
+    ext <- compute_dataset_extents(data.frame(eventDate = c("2024-01", "2024-02-15/2024-03")))
+    testthat::expect_identical(unname(ext$dates), c("2024-01-01", "2024-03-31"))
+    ext <- compute_dataset_extents(data.frame(eventDate = "2024-02-15/03-10"))
+    testthat::expect_identical(unname(ext$dates), c("2024-02-15", "2024-03-10"))
+})
+
 testthat::test_that("compute_dataset_extents returns NA bbox/dates when columns absent", {
     df <- data.frame(scientificName = c("A"), stringsAsFactors = FALSE)
     ext <- compute_dataset_extents(df)
@@ -121,7 +139,10 @@ testthat::test_that("build_eml_xml emits required EML fields with defaults", {
 
     xml_str <- build_eml_xml(df)
     doc <- xml2::read_xml(xml_str)
-    ns <- c(eml = "https://eml.ecoinformatics.org/eml-2.1.1")
+    testthat::expect_identical(
+        xml2::xml_ns(doc)[["eml"]],
+        "https://eml.ecoinformatics.org/eml-2.2.0"
+    )
 
     testthat::expect_length(xml2::xml_find_all(doc, "//title"), 1L)
     testthat::expect_length(xml2::xml_find_all(doc, "//creator"), 1L)
@@ -131,6 +152,11 @@ testthat::test_that("build_eml_xml emits required EML fields with defaults", {
     testthat::expect_length(xml2::xml_find_all(doc, "//contact"), 1L)
     testthat::expect_length(xml2::xml_find_all(doc, "//geographicCoverage"), 1L)
     testthat::expect_length(xml2::xml_find_all(doc, "//temporalCoverage"), 1L)
+    # contact must precede methods (EML 2.2.0 dataset sequence).
+    kids <- xml2::xml_name(xml2::xml_children(
+        xml2::xml_find_first(doc, "//dataset")
+    ))
+    testthat::expect_lt(which(kids == "contact"), which(kids == "methods"))
     # Title default includes today's date.
     title_text <- xml2::xml_text(xml2::xml_find_first(doc, "//title"))
     testthat::expect_true(grepl("^Saira export ", title_text))
@@ -230,7 +256,7 @@ testthat::test_that("build_eml_xml emits a sensitivity access block when masking
     note <- xml2::xml_text(ai)
     testthat::expect_true(grepl("7", note))
     testthat::expect_true(grepl("2028-06-10", note))
-    # additionalInfo must precede intellectualRights (EML 2.1.1 sequence).
+    # additionalInfo must precede intellectualRights (EML 2.2.0 sequence).
     kids <- xml2::xml_name(xml2::xml_children(
         xml2::xml_find_first(doc, "//dataset")
     ))
@@ -322,4 +348,106 @@ testthat::test_that("process_for_export preserves id_strategy attribute through 
 
     out <- process_for_export(df)
     testthat::expect_identical(attr(out, "id_strategy"), "generated")
+})
+
+testthat::test_that("compute_dataset_extents skips placeholder points and future dates (B41)", {
+    df <- data.frame(
+        decimalLatitude = c("-23.5", "0", "-90", "-10", "12"),
+        decimalLongitude = c("-46.6", "0", "-180", "-40", "12"),
+        eventDate = c("2020-01-01", "2021-05-01", "2999-01-10", "", "2019-03-02"),
+        stringsAsFactors = FALSE
+    )
+    ext <- compute_dataset_extents(df)
+    testthat::expect_equal(unname(ext$bbox), c(-46.6, -40, -10, -23.5))
+    testthat::expect_equal(unname(ext$dates), c("2019-03-02", "2021-05-01"))
+})
+
+testthat::test_that("build_eml_xml omits coverage when no extent exists", {
+    df <- data.frame(
+        decimalLatitude = NA_real_, decimalLongitude = NA_real_,
+        eventDate = "sem data", stringsAsFactors = FALSE
+    )
+    doc <- xml2::read_xml(build_eml_xml(df))
+    testthat::expect_length(xml2::xml_find_all(doc, "//coverage"), 0L)
+    testthat::expect_length(xml2::xml_find_all(doc, "//contact"), 1L)
+})
+
+testthat::test_that("build_eml_xml keeps a coverage with only dates", {
+    df <- data.frame(
+        decimalLatitude = NA_real_, decimalLongitude = NA_real_,
+        eventDate = "2020-01-02", stringsAsFactors = FALSE
+    )
+    doc <- xml2::read_xml(build_eml_xml(df))
+    testthat::expect_length(xml2::xml_find_all(doc, "//coverage/temporalCoverage"), 1L)
+    testthat::expect_length(xml2::xml_find_all(doc, "//coverage/geographicCoverage"), 0L)
+})
+
+testthat::test_that("build_eml_xml puts a one-word creator name in surName", {
+    doc <- xml2::read_xml(build_eml_xml(
+        data.frame(eventDate = "2020-01-02", stringsAsFactors = FALSE),
+        metadata = list(creator = list(name = "Rogerio"))
+    ))
+    testthat::expect_identical(
+        xml2::xml_text(xml2::xml_find_first(doc, "//creator/individualName/surName")),
+        "Rogerio"
+    )
+    testthat::expect_length(xml2::xml_find_all(doc, "//creator/individualName/givenName"), 0L)
+    testthat::expect_identical(
+        xml2::xml_text(xml2::xml_find_first(doc, "//contact/individualName/surName")),
+        "Rogerio"
+    )
+})
+
+testthat::test_that("build_eml_xml methods state only the export by default", {
+    df <- data.frame(eventDate = "2020-01-02", stringsAsFactors = FALSE)
+    doc <- xml2::read_xml(build_eml_xml(df))
+    text <- xml2::xml_text(xml2::xml_find_first(doc, "//methods"))
+    testthat::expect_match(text, "Darwin Core", fixed = TRUE)
+    testthat::expect_false(grepl("CoordinateCleaner|Catalogue of Life|validated", text))
+
+    doc <- xml2::read_xml(build_eml_xml(df, metadata = list(methods = c("One.", "Two."))))
+    steps <- xml2::xml_find_all(doc, "//methods/methodStep/description/para")
+    testthat::expect_identical(xml2::xml_text(steps), c("One.", "Two."))
+})
+
+# The schema stays out of the repository: its license is not the package license.
+eml_schema <- function() {
+    testthat::skip_on_cran()
+    dir <- tempfile("eml-schema-")
+    dir.create(dir)
+    withr::defer(unlink(dir, recursive = TRUE), envir = parent.frame())
+    url <- "https://github.com/NCEAS/eml/archive/refs/tags/RELEASE_EML_2_2_0.tar.gz"
+    archive <- file.path(dir, "eml.tar.gz")
+    got <- tryCatch(utils::download.file(url, archive, quiet = TRUE, mode = "wb"),
+                    error = function(e) 1L, warning = function(w) 1L)
+    testthat::skip_if(got != 0L, "EML schema not available")
+    utils::untar(archive, exdir = dir)
+    xml2::read_xml(file.path(dir, "eml-RELEASE_EML_2_2_0", "xsd", "eml.xsd"))
+}
+
+testthat::test_that("the eml.xml of the package is valid against the EML 2.2.0 schema", {
+    schema <- eml_schema()
+    points <- data.frame(
+        occurrenceID = c("o1", "o2"), scientificName = c("Aus bus", "Cus dus"),
+        eventDate = c("2020-01-02", "2021-03-04"), decimalLatitude = c("-23.5", "-22.1"),
+        decimalLongitude = c("-46.6", "-45.0"), stringsAsFactors = FALSE
+    )
+    no_extent <- data.frame(occurrenceID = "o1", scientificName = "Aus bus", stringsAsFactors = FALSE)
+    sensitivity <- list(n_masked = 1L, review_date = "2028-06-10", lang = "en")
+    cases <- list(
+        list(points, list()),
+        list(no_extent, list()),
+        list(points, list(sensitivity = sensitivity)),
+        list(points, list(creator = list(name = "Plato", email = "", organization = ""))),
+        list(points, list(creator = list(name = "Ana Maria da Silva", email = "a@b.org", organization = ""))),
+        list(points, list(creator = list(name = "", email = "", organization = "Instituto <Fauna> & Flora")))
+    )
+    for (case in cases) {
+        path <- tempfile(fileext = ".zip")
+        saira::build_dwca_bundle(case[[1]], path, case[[2]])
+        doc <- xml2::read_xml(unz(path, "eml.xml"))
+        unlink(path)
+        result <- xml2::xml_validate(doc, schema)
+        testthat::expect_true(result, info = paste(attr(result, "errors"), collapse = "\n"))
+    }
 })

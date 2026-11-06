@@ -3,6 +3,15 @@
 # Date: 2026-03-06
 # Version: 1.0
 
+# %||% --------------------------------------------------------------------
+
+testthat::test_that("the fallback operator keeps a table with one column", {
+    many_rows <- data.frame(a = 1:3)
+    one_na <- data.frame(a = NA)
+    testthat::expect_identical(saira:::`%||%`(many_rows, "fallback"), many_rows)
+    testthat::expect_identical(saira:::`%||%`(one_na, "fallback"), one_na)
+})
+
 # create_rds_cache --------------------------------------------------------
 
 testthat::test_that("create_rds_cache returns NULL before first set", {
@@ -132,4 +141,45 @@ testthat::test_that("tokenize_for_matching drops empty tokens from splitting", {
 testthat::test_that("tokenize_for_matching handles multi-separator strings", {
     tokens <- saira:::tokenize_for_matching("decimal_Latitude-2")
     testthat::expect_equal(tokens, c("decimal", "latitude", "2"))
+})
+
+testthat::test_that("session_has_access needs the key cookie and the same origin", {
+    request <- list(
+        HTTP_HOST = "127.0.0.1:38838",
+        HTTP_ORIGIN = "http://127.0.0.1:38838",
+        HTTP_COOKIE = "theme=dark; saira_access=k1"
+    )
+    testthat::expect_true(saira:::session_has_access(request, "k1"))
+    testthat::expect_false(saira:::session_has_access(request, "k2"))
+    testthat::expect_false(saira:::session_has_access(request, ""))
+    testthat::expect_false(saira:::session_has_access(
+        utils::modifyList(request, list(HTTP_ORIGIN = "http://example.org")), "k1"
+    ))
+    testthat::expect_false(saira:::session_has_access(
+        utils::modifyList(request, list(HTTP_COOKIE = "saira_access=k10")), "k1"
+    ))
+    request$HTTP_COOKIE <- NULL
+    testthat::expect_false(saira:::session_has_access(request, "k1"))
+})
+
+testthat::test_that("create_step_cache reuses a part until one of its inputs changes", {
+    cache <- create_step_cache()
+    count <- new.env()
+    count$n <- 0L
+    compute <- function() {
+        count$n <- count$n + 1L
+        count$n
+    }
+    x <- c("a", "b")
+    testthat::expect_identical(cache$get("k", list(x), compute), 1L)
+    testthat::expect_identical(cache$get("k", list(x), compute), 1L)
+    testthat::expect_identical(cache$get("k", list(c("a", "c")), compute), 2L)
+
+    # The second run does not read "k", so prune() removes it.
+    cache$prune()
+    cache$get("other", list(x), compute)
+    cache$prune()
+    testthat::expect_identical(cache$get("k", list(c("a", "c")), compute), 4L)
+
+    testthat::expect_identical(step_cache_get(NULL, "k", list(x), compute), 5L)
 })

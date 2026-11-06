@@ -1,82 +1,39 @@
-# Title: Tests for conservation-status lookups (GBIF IUCN Red List)
+# Title: Tests for conservation-status lookups (IUCN Red List from COL XR)
 # Author: Rogerio Nunes Oliveira
 #
-# The GBIF calls are mocked at the gbif_api_get_many / has_httr2 boundary so the
-# tests are deterministic and offline: no real network is touched.
+# The GBIF calls are mocked at the gbif_api_get_many boundary with recorded
+# COL XR responses, so the tests are deterministic and offline.
 
-testthat::test_that("fetch_gbif_iucn_category returns the code and NA for misses", {
-    saira:::gbif_iucn_cache$reset()
-    withr::defer(saira:::gbif_iucn_cache$reset())
+colxr_fixture_bodies <- function(requests) {
+    lapply(requests, function(r) {
+        file <- testthat::test_path(
+            "fixtures", "colxr", paste0(gsub(" ", "_", r$query$scientificName), ".json")
+        )
+        if (file.exists(file)) jsonlite::read_json(file) else NULL
+    })
+}
+
+testthat::test_that("colxr_iucn_category reads the code and uses the accepted name of a synonym", {
+    saira:::colxr_match_cache$reset()
+    withr::defer(saira:::colxr_match_cache$reset())
+    testthat::local_mocked_bindings(gbif_api_get_many = colxr_fixture_bodies, .package = "saira")
+
+    out <- saira:::colxr_iucn_category(
+        c("Panthera onca", "Caesalpinia echinata", "Rhea americana americana", "Pantera onca", NA, "")
+    )
+    # Caesalpinia echinata is a synonym: the EN of Paubrasilia echinata applies.
+    testthat::expect_equal(out, c("NT", "EN", NA, NA, NA, NA))
+})
+
+testthat::test_that("colxr_iucn_category gives NA when GBIF does not answer", {
+    saira:::colxr_match_cache$reset()
+    withr::defer(saira:::colxr_match_cache$reset())
     testthat::local_mocked_bindings(
-        has_httr2 = function() TRUE,
-        gbif_api_get_many = function(requests) {
-            lapply(requests, function(r) {
-                key <- r$segments[[2L]]
-                if (identical(key, "111")) {
-                    list(category = "VULNERABLE", code = "VU")
-                } else if (identical(key, "222")) {
-                    list(category = "NEAR_THREATENED", code = "NT")
-                } else {
-                    NULL # taxon not assessed -> NULL body
-                }
-            })
-        },
+        gbif_api_get_many = function(requests) vector("list", length(requests)),
         .package = "saira"
     )
-    out <- saira:::fetch_gbif_iucn_category(c("111", "222", "999", NA))
-    testthat::expect_equal(out, c("VU", "NT", NA, NA))
-})
-
-testthat::test_that("fetch_gbif_iucn_category memoizes each usageKey once", {
-    saira:::gbif_iucn_cache$reset()
-    withr::defer(saira:::gbif_iucn_cache$reset())
-    calls <- 0L
-    testthat::local_mocked_bindings(
-        has_httr2 = function() TRUE,
-        gbif_api_get_many = function(requests) {
-            calls <<- calls + length(requests)
-            lapply(requests, function(r) list(code = "EN"))
-        },
-        .package = "saira"
-    )
-    saira:::fetch_gbif_iucn_category(c("500", "500"))
-    saira:::fetch_gbif_iucn_category("500")
-    testthat::expect_equal(calls, 1L)
-})
-
-testthat::test_that("fetch_gbif_iucn_category yields all NA when httr2 is absent", {
-    saira:::gbif_iucn_cache$reset()
-    withr::defer(saira:::gbif_iucn_cache$reset())
-    testthat::local_mocked_bindings(has_httr2 = function() FALSE, .package = "saira")
-    out <- saira:::fetch_gbif_iucn_category(c("111", "222"))
-    testthat::expect_true(all(is.na(out)))
-})
-
-testthat::test_that("fetch_gbif_iucn_category handles empty input", {
-    testthat::expect_equal(saira:::fetch_gbif_iucn_category(character(0)), character(0))
-})
-
-testthat::test_that("gbif_match_usage_keys resolves names to usage keys", {
-    saira:::gbif_match_cache$reset()
-    withr::defer(saira:::gbif_match_cache$reset())
-    testthat::local_mocked_bindings(
-        has_httr2 = function() TRUE,
-        gbif_api_get_many = function(requests) {
-            lapply(requests, function(r) {
-                if (identical(r$query$name, "Panthera onca")) list(usageKey = 5219426L) else NULL
-            })
-        },
-        .package = "saira"
-    )
-    out <- saira:::gbif_match_usage_keys(c("Panthera onca", "Nonexistent sp", NA))
-    testthat::expect_equal(out, c("5219426", NA, NA))
-})
-
-testthat::test_that("gbif_match_usage_keys yields all NA when httr2 is absent", {
-    saira:::gbif_match_cache$reset()
-    withr::defer(saira:::gbif_match_cache$reset())
-    testthat::local_mocked_bindings(has_httr2 = function() FALSE, .package = "saira")
-    testthat::expect_true(all(is.na(saira:::gbif_match_usage_keys(c("A b", "C d")))))
+    testthat::expect_equal(saira:::colxr_iucn_category(c("Panthera onca", "Sapajus apella")), c(NA_character_, NA_character_))
+    testthat::expect_equal(saira:::colxr_iucn_category(character(0)), character(0))
 })
 
 testthat::test_that("gbif_api_get_many keeps order, drops non-200 and retries a 429", {
@@ -102,10 +59,4 @@ testthat::test_that("gbif_api_get_many keeps order, drops non-200 and retries a 
     testthat::expect_null(out[[2L]])
     testthat::expect_equal(out[[3L]]$code, "429")
     testthat::expect_equal(tries[["429"]], 2L)
-})
-
-testthat::test_that("gbif_api_get_many returns NULL bodies without httr2", {
-    testthat::local_mocked_bindings(has_httr2 = function() FALSE, .package = "saira")
-    out <- saira:::gbif_api_get_many(list(list(segments = "x"), list(segments = "y")))
-    testthat::expect_equal(out, list(NULL, NULL))
 })

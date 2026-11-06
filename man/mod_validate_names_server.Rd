@@ -9,7 +9,8 @@ mod_validate_names_server(
   mapped_data_r,
   lang_r,
   validation_gate_r = NULL,
-  reset_signal_r = NULL
+  reset_signal_r = NULL,
+  return_contract = c("legacy", "list")
 )
 }
 \arguments{
@@ -23,9 +24,12 @@ mod_validate_names_server(
 
 \item{reset_signal_r}{Optional reactive reset signal from the mapping module.
 When it fires, module-local state and inputs are cleared.}
+
+\item{return_contract}{Return a legacy reactive (default) or a named list of reactives.}
 }
 \value{
-Reactive validation report data frame
+A reactive with legacy attributes by default, or a named list of
+  reactives when return_contract is \code{"list"}.
 }
 \description{
 Validate Names Module Server

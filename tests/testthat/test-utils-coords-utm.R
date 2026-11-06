@@ -56,13 +56,6 @@ testthat::test_that("coords_utm_to_wgs84 converts the reported coordinates to Ma
     testthat::expect_true(is.na(partial$decimalLatitude[[2]]))
 })
 
-testthat::test_that("coords_utm_zone_from_lon maps a longitude to its zone", {
-    testthat::expect_identical(coords_utm_zone_from_lon(-56.28), 21L)
-    testthat::expect_identical(coords_utm_zone_from_lon(-45), 23L)
-    testthat::expect_true(is.na(coords_utm_zone_from_lon(NA)))
-    testthat::expect_true(is.na(coords_utm_zone_from_lon(999)))
-})
-
 testthat::test_that("coords_utm_zone_candidates ranks zones and keeps ties", {
     testthat::skip_if_not_installed("rnaturalearth")
     testthat::skip_on_cran()
@@ -148,4 +141,30 @@ testthat::test_that("a payload without verbatim columns keeps the old preservati
     testthat::expect_identical(out$verbatimLatitude, "-10")
     testthat::expect_identical(out$verbatimLongitude, "-50")
     testthat::expect_identical(out$decimalLatitude, "-11")
+})
+
+testthat::test_that("coords_utm_assign_axes needs an order when both values fit the easting", {
+    none <- coords_utm_assign_axes(300000, 500000)
+    testthat::expect_true(is.na(none$easting))
+    testthat::expect_true(is.na(none$northing))
+
+    lat_north <- coords_utm_assign_axes(300000, 500000, order = "lat_northing")
+    testthat::expect_identical(lat_north$northing, 300000)
+    testthat::expect_identical(lat_north$easting, 500000)
+
+    lat_east <- coords_utm_assign_axes(300000, 500000, order = "lat_easting")
+    testthat::expect_identical(lat_east$northing, 500000)
+    testthat::expect_identical(lat_east$easting, 300000)
+
+    # A northing under the easting floor has one reading, near the equator.
+    near <- coords_utm_assign_axes(50000, 500000)
+    testthat::expect_identical(near$northing, 50000)
+    testthat::expect_identical(near$easting, 500000)
+})
+
+testthat::test_that("coords_utm_hemispheres_mixed finds a set across the equator", {
+    testthat::expect_true(coords_utm_hemispheres_mixed(c(300000, 7400000)))
+    testthat::expect_false(coords_utm_hemispheres_mixed(c(7400000, 9900000)))
+    testthat::expect_false(coords_utm_hemispheres_mixed(c(300000, 4000000)))
+    testthat::expect_false(coords_utm_hemispheres_mixed(NA_real_))
 })

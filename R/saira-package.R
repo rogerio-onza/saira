@@ -6,7 +6,6 @@
 #' @importFrom RSQLite SQLite
 #' @importFrom jsonlite fromJSON toJSON
 #' @importFrom digest digest2int
-#' @importFrom stringr str_detect str_trim str_split str_replace_all
 #' @importFrom shiny moduleServer NS reactive reactiveVal reactiveValues observeEvent req
 #' @importFrom shiny renderUI showNotification validate need
 #' @importFrom withr with_tempdir defer
@@ -22,7 +21,7 @@ NULL
 # progress modal. Warming it here cost ~5.8s of every package load: ~4.4s to
 # load the `terra` namespace and ~1.4s to convert the stored sf to a SpatVector.
 # `terra` is in Imports but intentionally absent from NAMESPACE (it is `::`-only,
-# like sf/taxadb/leaflet/DT), so it stays lazy unless something forces it --
+# like sf/leaflet/DT), so it stays lazy unless something forces it --
 # which is exactly what this line used to do. ne_land_env caches process-wide,
 # so the first validation pays the cost once and every later run is warm.
 .onLoad <- function(libname, pkgname) {

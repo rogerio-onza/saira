@@ -26,3 +26,5 @@
     - For multi-step helpers: pass state as explicit arguments and return a
       named list (`list(out_a = ..., out_b = ...)`) instead of mutating parent
       scope.
+11. CSV and Wildlife Insights readers treat only an empty cell as missing. `NA`
+    is text, because it can be an ID or the country code of Namibia (ADR-193).

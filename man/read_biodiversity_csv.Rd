@@ -4,12 +4,15 @@
 \alias{read_biodiversity_csv}
 \title{Read biodiversity CSV file with encoding detection}
 \usage{
-read_biodiversity_csv(file_path, encoding = NULL)
+read_biodiversity_csv(file_path, encoding = NULL, header = TRUE)
 }
 \arguments{
 \item{file_path}{Path to CSV file}
 
 \item{encoding}{Optional encoding override}
+
+\item{header}{If FALSE, the first line is a data row and the columns are
+named col_1, col_2, ...}
 }
 \value{
 Data frame

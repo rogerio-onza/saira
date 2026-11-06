@@ -8,8 +8,10 @@ project:
   # Generates _variables.yml (version), assets/version.html (navbar badge) and
   # the PT/EN release cards from website/data/releases.py. Standard-library
   # Python only, so it runs in the Quarto-only publish CI.
+  # check_landing.py stops the build when the home species keys disagree.
   pre-render:
     - python3 scripts/build_releases.py
+    - python3 scripts/check_landing.py
 
 website:
   title: "Saíra"
@@ -27,16 +29,10 @@ website:
     pinned: true
     title: "Saíra"
     right:
-      - text: "Projeto"
-        href: index.qmd
       - text: "Tutoriais"
-        href: tutoriais/index.qmd
+        href: tutoriais/01-instalacao.qmd
       - text: "FAQ"
         href: faq.qmd
-      - text: "Glossário"
-        href: glossario.qmd
-      - text: "Tecnologias"
-        href: tecnologias.qmd
       - text: "Atualizações"
         href: novidades.qmd
       - icon: github
@@ -48,33 +44,46 @@ website:
       style: floating
       collapse-level: 1
       contents:
-        - text: "Visão geral"
-          href: tutoriais/index.qmd
         - section: "Fluxo do dado bruto ao DwC-A"
           contents:
             - tutoriais/01-instalacao.qmd
             - tutoriais/02-upload.qmd
             - tutoriais/03-mapeamento-dwc.qmd
-            - tutoriais/04-validacao-nomes.qmd
-            - tutoriais/05-validacao-coordenadas.qmd
-            - tutoriais/06-generalizacao.qmd
-            - tutoriais/07-preview-exportacao.qmd
+            - tutoriais/04-pre-visualizacao.qmd
+            - tutoriais/05-validacao-nomes.qmd
+            - tutoriais/06-validacao-coordenadas.qmd
+            - tutoriais/07-generalizacao.qmd
+            - tutoriais/08-exportacao.qmd
     - id: tutorials-en
       title: "Tutorials"
       style: floating
       collapse-level: 1
       contents:
-        - text: "Overview"
-          href: en/tutorials/index.qmd
         - section: "From raw data to DwC-A"
           contents:
             - en/tutorials/01-installation.qmd
             - en/tutorials/02-upload.qmd
             - en/tutorials/03-dwc-mapping.qmd
-            - en/tutorials/04-name-validation.qmd
-            - en/tutorials/05-coordinate-validation.qmd
-            - en/tutorials/06-generalization.qmd
-            - en/tutorials/07-preview-export.qmd
+            - en/tutorials/04-preview.qmd
+            - en/tutorials/05-name-validation.qmd
+            - en/tutorials/06-coordinate-validation.qmd
+            - en/tutorials/07-generalization.qmd
+            - en/tutorials/08-export.qmd
+    - id: tutoriales-es
+      title: "Tutoriales"
+      style: floating
+      collapse-level: 1
+      contents:
+        - section: "Del dato bruto al DwC-A"
+          contents:
+            - es/tutoriales/01-instalacion.qmd
+            - es/tutoriales/02-carga.qmd
+            - es/tutoriales/03-mapeo-dwc.qmd
+            - es/tutoriales/04-vista-previa.qmd
+            - es/tutoriales/05-validacion-nombres.qmd
+            - es/tutoriales/06-validacion-coordenadas.qmd
+            - es/tutoriales/07-generalizacion.qmd
+            - es/tutoriales/08-exportacion.qmd
   page-footer:
     border: true
     left: "© 2026 Saíra · Licença GPL-3.0"

@@ -208,3 +208,19 @@ testthat::test_that("run_rostrum_engine returns list with stage errors field whe
     testthat::expect_type(result$errors, "character")
     testthat::expect_type(result$warnings, "character")
 })
+
+testthat::test_that("an almost empty exact-named column does not win over a full one (B17)", {
+    n <- 40
+    sparse <- function(k, v) c(rep(v, k), rep(NA, n - k))
+    df <- data.frame(
+        `Nome científico` = rep(c("Panthera onca", "Puma concolor"), n / 2),
+        scientificName = sparse(2, "Panthera onca"),
+        Lat = rep(c(-23.5, -10.2), n / 2), decimalLatitude = sparse(3, -23.5),
+        check.names = FALSE, stringsAsFactors = FALSE
+    )
+    terms <- data.frame(term = c("scientificName", "decimalLatitude"), stringsAsFactors = FALSE)
+    res <- run_rostrum_engine(df, terms)$data
+    picked <- stats::setNames(res$selected_col, res$term)
+    testthat::expect_equal(unname(picked[c("scientificName", "decimalLatitude")]),
+                           c("Nome científico", "Lat"))
+})

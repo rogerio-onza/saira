@@ -9,7 +9,7 @@ tr(key, lang = "en")
 \arguments{
 \item{key}{Character. Key from i18n_dict}
 
-\item{lang}{Character. "pt" or "en"}
+\item{lang}{Character. A code from \code{get_languages()}}
 }
 \value{
 Character. Translated string

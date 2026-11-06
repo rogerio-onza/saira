@@ -9,7 +9,7 @@
 # call, so a regression in mapping, occurrenceID, eventDate, coordinates or
 # license shows up here as a changed count.
 #
-# Deliberately offline and Shiny-free. Name validation queries GBIF and taxadb
+# Deliberately offline and Shiny-free. Name validation queries the GBIF API
 # over the network, so it is NOT part of this report -- that is the one screen
 # still worth opening by hand.
 

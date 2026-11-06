@@ -7,7 +7,7 @@
 get_language_name(lang_code)
 }
 \arguments{
-\item{lang_code}{Character. Language code ("pt" or "en")}
+\item{lang_code}{Character. Language code from \code{get_languages()}}
 }
 \value{
 Character. Display name

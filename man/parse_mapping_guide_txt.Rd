@@ -18,6 +18,8 @@ Named list:
       \code{constant_value}. For column mappings \code{source_column} holds
       the raw source (\code{"a + b"} for concatenations) and
       \code{constant_value} is \code{NA}; for constants the reverse holds.
+      A v3 guide also gives \code{source_list}, a list column with the exact
+      columns of each pair.
   }
 }
 \description{

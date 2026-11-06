@@ -71,3 +71,12 @@ testthat::test_that("validate_preview_download_requirements allows export when m
     testthat::expect_length(result$blocking_missing, 0L)
     testthat::expect_true("occurrenceID" %in% result$warning_missing)
 })
+
+testthat::test_that("preview_table_container shows the source above a measurement column", {
+    html <- as.character(preview_table_container(c("occurrenceID", "measurementValue [AREA_HA]")))
+    testthat::expect_match(html, "<th>occurrenceID</th>", fixed = TRUE)
+    html <- gsub("\\s*(<|>)\\s*", "\\1", html)
+    testthat::expect_match(
+        html, '<th><span class="preview-col-source">AREA_HA</span>measurementValue</th>', fixed = TRUE
+    )
+})
