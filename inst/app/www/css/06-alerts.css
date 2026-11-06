@@ -59,6 +59,23 @@
   opacity: 1;
 }
 
+/* A toast covers the right column of cards. It must not take the click
+   from the field under it, so only its close button and links get clicks.
+   While a dropdown is open, the toasts give way (ADR-198). */
+#shiny-notification-panel {
+  pointer-events: none;
+}
+
+#shiny-notification-panel .shiny-notification-close,
+#shiny-notification-panel a,
+#shiny-notification-panel button {
+  pointer-events: auto;
+}
+
+.saira-select-open #shiny-notification-panel {
+  visibility: hidden;
+}
+
 .shiny-notification-error {
   background: linear-gradient(var(--error-bg), var(--error-bg)) var(--bg-card);
   border: 1px solid var(--error-border);

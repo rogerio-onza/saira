@@ -3578,3 +3578,16 @@ Formato: ADR leve (Architecture Decision Record).
   Todos os cards ficam prontos em cerca de 1,3 s. A maior pausa entre quadros depois do bloco fica em 71-86 ms (release 57-90 ms).
   As copias congeladas dao 0 px de diferenca em 22 capturas, com a mesma altura de card. Os valores enviados ao servidor sao iguais nos fluxos de upload, Auto-map, Reset, novo upload e troca de idioma.
   Um teste E2E que chama `selectize.setValue()` num card fora da tela precisa esperar o selectize do card.
+
+## ADR-198: Selectize sem autofill, menu para cima e sem fade em Nomes
+
+- **Data**: 2026-11-06
+- **Status**: Aceito.
+- **Contexto**: auditoria de um video do uso real, 2026-11-06. O selectize do Shiny marca o campo de busca com `autocomplete="new-password"`, e o Bitwarden abria o proprio menu sobre a lista de colunas e deixava o Firefox lento. O menu de um card perto da borda inferior ficava cortado pela rolagem do Mapeamento. Os toasts cobriam a coluna direita dos cards. Em Nomes, o clique em Validar refazia os paineis em dois flushes, e o fade do Shiny para 0,3 piscava a tela duas vezes.
+- **Decisao**:
+  - `module-app-ui.js` envolve `_selectize` do binding de select e, na primeira chamada, muda o prototipo do selectize: `setup` poe `autocomplete="off"`, `data-bwignore`, `data-1p-ignore` e `data-lpignore` no campo de busca; `positionDropdown` abre o menu acima do campo quando o ancestral com rolagem ou a janela corta o menu e ha mais espaco acima; `open` e `close` marcam `html.saira-select-open`.
+  - O prototipo muda na hora do bind, nao no carregamento: a biblioteca chega com o primeiro `renderUI` que tem select.
+  - A copia estatica da ADR-197 leva os mesmos atributos. Um toque numa copia abre o selectize, porque os eventos seguintes do toque vao para a copia removida.
+  - O painel de toasts nao recebe clique, so o botao de fechar e os links. Com um menu aberto, os toasts ficam ocultos.
+  - `.validate-names-page` define `--shiny-fade-opacity: 1`. O botao de rodar e o card da rodada mostram o progresso.
+- **Consequencias**: verificado em Chrome e Firefox com `ocorrencias-demo.csv`: 65 de 65 campos sem `new-password`, menu de `associatedReferences` inteiro acima do campo, toasts ocultos com o menu aberto e opacidade 1 em `.recalculating` de Nomes. O efeito no Bitwarden nao foi medido aqui: a medicao pede o perfil com a extensao.
