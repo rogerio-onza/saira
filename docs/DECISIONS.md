@@ -3544,3 +3544,20 @@ Formato: ADR leve (Architecture Decision Record).
   - Se a coluna marcada esta fora do painel, o painel rola ate ela a cada foco.
 - **Consequencias**: medido no Firefox com o app real. Em 1920x1000 o painel mostra os 29 campos sem rolagem, e a lista mostra 17 linhas. Em 1536x730 a lista mostra 6 linhas, e o painel rola ate o campo marcado. Em 1440x900 o painel fica abaixo, com 9 linhas na lista.
   Em 1280x720 a lista mostra so 2 linhas inteiras, como antes desta mudanca.
+
+## ADR-196: Cache por coluna no processamento e na contagem da Previa
+
+- **Data**: 2026-11-05
+- **Status**: Aceito. Completa ADR-014 e ADR-116.
+- **Contexto**: um relatorio de desempenho achou quatro custos no fluxo de upload e mapeamento. A contagem da Previa processava a planilha inteira a cada mudanca de mapeamento, fora da aba, 1,5 s depois. O upload montava a grade de Mapeamento duas vezes. Cada CSV rodava `gc()`, e o fallback de similaridade normalizava os nomes de novo.
+- **Decisao**:
+  - `create_step_cache()` guarda as partes de um passo pela chave e pelas entradas. `identical()` volta na hora para o mesmo objeto, e uma coluna sem mudanca custa quase nada. `prune()` tira as chaves que a rodada nao leu, e o cache nao segura as colunas de um upload antigo.
+  - `build_processed_mapping_df()` guarda cada termo pelas colunas de origem e pelos parametros de `build_term_value()`. `detect_preview_problems()` guarda cada verificacao pelas colunas que ela le. A ordem das verificacoes nao muda, porque a primeira verificacao ganha o par linha e termo.
+  - A previa de 100 linhas nao usa cache. Nao foi usado `ExtendedTask`: ele pede uma dependencia nova (mirai ou future).
+  - O upload monta a grade uma vez e muda os cards de taxon no lugar. O card de measurementValue entra ja na primeira montagem.
+  - O eco de uma mudanca feita por codigo nao traz valor novo, e o sync nao atualiza o card. O Auto-map, o Reset e a importacao do guia mandam o estado de todos os cards (`push_all_card_states()`). Antes, a grade inteira refeita pela trava de taxon escondia essa falta.
+  - Os cards da grade antiga mantem o valor ate a grade nova ligar. O observer de upload registra esses valores em `pending_map_echo`, e o sync nao os grava como escolha do usuario.
+  - `read_biodiversity_csv()` roda `gc()` so para arquivos de 50 MB ou mais. `score_text_similarity()` recebe os nomes ja normalizados.
+- **Consequencias**: medido com o app real e com scripts contra release/v1.0.0. A saida e igual em todos os passos.
+  Com 63 mil linhas, uma mudanca de mapeamento conta em cerca de 0,6 s, antes de 14 a 16 s. A primeira contagem cai de 17 s para 10,9 s, e o pico de memoria de 879 MB para 739 MB. A data (`parse_dates_to_iso`) ainda custa 2,8 s, porque o voto da coluna conta linhas.
+  `gc()` cortou o pico em 5 MB com 50 MB e em 87 MB com 100 MB. O motor de mapeamento caiu de 4,52 s para 4,07 s. A montagem unica ainda congela a pagina por cerca de 790 ms, no inicio dos selectize.
