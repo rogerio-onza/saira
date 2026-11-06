@@ -114,10 +114,13 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
         # Both modes stay rendered while the tab shows, so a mode switch
         # sends nothing to the server (ADR-158). A hidden tab suspends the
         # outputs, so they do not scan while another tab shows.
+        # The checks of the columns that did not change come from the cache,
+        # so a new mapping checks one column again (ADR-196).
+        problem_cache <- create_step_cache()
         problems_r <- shiny::reactive({
             df <- full_data_r()
             shiny::req(is.data.frame(df))
-            drop_copy_id_problems(detect_preview_problems(df), copies_r())
+            drop_copy_id_problems(detect_preview_problems(df, cache = problem_cache), copies_r())
         })
 
         # Problems with no correction yet, for the nav badge and the Problems

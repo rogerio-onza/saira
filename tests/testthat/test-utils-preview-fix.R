@@ -424,3 +424,22 @@ testthat::test_that("problem_source_columns finds the upload columns behind a te
     testthat::expect_identical(problem_source_columns(NULL, map, cols), character(0))
     testthat::expect_identical(problem_source_columns(NA, map, cols), character(0))
 })
+
+testthat::test_that("detect_preview_problems gives the same result from its cache", {
+    cache <- create_step_cache()
+    df <- fix_frame()
+    same <- function(df) {
+        testthat::expect_identical(
+            detect_preview_problems(df, max_year = 2026, cache = cache),
+            detect_preview_problems(df, max_year = 2026)
+        )
+    }
+    same(df)
+    df$sex[2] <- "male"
+    same(df)
+    # year against eventDate: a check of two columns.
+    df$year[1] <- "2019"
+    same(df)
+    df$eventDate <- NULL
+    same(df)
+})

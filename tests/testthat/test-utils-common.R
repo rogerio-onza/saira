@@ -161,3 +161,25 @@ testthat::test_that("session_has_access needs the key cookie and the same origin
     request$HTTP_COOKIE <- NULL
     testthat::expect_false(saira:::session_has_access(request, "k1"))
 })
+
+testthat::test_that("create_step_cache reuses a part until one of its inputs changes", {
+    cache <- create_step_cache()
+    count <- new.env()
+    count$n <- 0L
+    compute <- function() {
+        count$n <- count$n + 1L
+        count$n
+    }
+    x <- c("a", "b")
+    testthat::expect_identical(cache$get("k", list(x), compute), 1L)
+    testthat::expect_identical(cache$get("k", list(x), compute), 1L)
+    testthat::expect_identical(cache$get("k", list(c("a", "c")), compute), 2L)
+
+    # The second run does not read "k", so prune() removes it.
+    cache$prune()
+    cache$get("other", list(x), compute)
+    cache$prune()
+    testthat::expect_identical(cache$get("k", list(c("a", "c")), compute), 4L)
+
+    testthat::expect_identical(step_cache_get(NULL, "k", list(x), compute), 5L)
+})

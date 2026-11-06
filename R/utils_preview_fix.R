@@ -302,11 +302,12 @@ has_unbalanced_brackets <- function(x) {
 #'
 #' @param df Mapped Darwin Core data frame.
 #' @param max_year Newest plausible year. Default: the current year.
+#' @param cache `create_step_cache()` object, or NULL to check every column.
 #' @return Data frame with `row`, `term`, `type`, `family`, `bulk`, `value`
 #'   (the mapped value, "" when empty) and `suggestion` (NA when none; several
 #'   concepts are joined with "|").
 #' @noRd
-detect_preview_problems <- function(df, max_year = NULL) {
+detect_preview_problems <- function(df, max_year = NULL, cache = NULL) {
     out <- list()
     cols <- if (is.data.frame(df) && nrow(df) > 0L) names(df) else character(0)
     text <- function(term) {
@@ -314,229 +315,276 @@ detect_preview_problems <- function(df, max_year = NULL) {
         v[is.na(v)] <- ""
         v
     }
+    if (!is.null(cache)) {
+        on.exit(cache$prune(), add = TRUE)
+    }
+    # Each check reads a few columns, and the cache keys it on them. A new
+    # mapping then checks its own column again, not the sheet (ADR-196).
+    check <- function(key, terms, compute, extra = NULL) {
+        inputs <- c(lapply(terms, function(term) df[[term]]), list(extra))
+        step_cache_get(cache, key, inputs, compute)
+    }
 
     # First, so a formula in a name or a date shows as a formula.
     for (term in cols) {
-        v <- text(term)
-        bad <- which(is_formula_like(v))
-        if (length(bad)) {
-            out[[length(out) + 1L]] <- problem_rows(bad, term, "cell_formula", v[bad],
-                                                    suggest_formula_fix(v[bad]))
-        }
+        out <- c(out, check(paste0("formula:", term), term, function() {
+            v <- text(term)
+            # A column repeats its values, so each one is read once.
+            u <- unique(v)
+            bad <- which(is_formula_like(u)[match(v, u)])
+            if (length(bad)) {
+                list(problem_rows(bad, term, "cell_formula", v[bad], suggest_formula_fix(v[bad])))
+            }
+        }))
     }
 
     for (term in intersect(vocabulary_terms, cols)) {
-        v <- text(term)
-        bad <- which(nzchar(v) & !v %in% vocabulary_concepts(term))
-        if (length(bad)) {
-            uniq <- unique(v[bad])
-            sugg <- vapply(uniq, function(x) paste(vocabulary_suggestions(term, x), collapse = "|"),
-                           character(1))
-            sugg[!nzchar(sugg)] <- NA_character_
-            out[[length(out) + 1L]] <- problem_rows(bad, term, "vocab_unknown", v[bad],
-                                                    unname(sugg[match(v[bad], uniq)]))
-        }
+        out <- c(out, check(paste0("vocab:", term), term, function() {
+            v <- text(term)
+            bad <- which(nzchar(v) & !v %in% vocabulary_concepts(term))
+            if (length(bad)) {
+                uniq <- unique(v[bad])
+                sugg <- vapply(uniq, function(x) paste(vocabulary_suggestions(term, x), collapse = "|"),
+                               character(1))
+                sugg[!nzchar(sugg)] <- NA_character_
+                list(problem_rows(bad, term, "vocab_unknown", v[bad],
+                                  unname(sugg[match(v[bad], uniq)])))
+            }
+        }))
     }
 
     for (term in intersect(preview_date_terms, cols)) {
-        v <- text(term)
-        bad <- which(nzchar(v) & !is_dwc_date_value(v))
-        # The column vote left these raw: "03/04/2021" reads two ways.
-        ambiguous <- bad[is_ambiguous_dmy(v[bad])]
-        bad <- setdiff(bad, ambiguous)
-        if (length(ambiguous)) {
-            out[[length(out) + 1L]] <- problem_rows(ambiguous, term, "date_ambiguous", v[ambiguous])
-        }
-        if (length(bad)) {
-            out[[length(out) + 1L]] <- problem_rows(bad, term, "date_unparsed", v[bad])
-        }
+        out <- c(out, check(paste0("date:", term), term, function() {
+            v <- text(term)
+            bad <- which(nzchar(v) & !is_dwc_date_value(v))
+            # The column vote left these raw: "03/04/2021" reads two ways.
+            ambiguous <- bad[is_ambiguous_dmy(v[bad])]
+            bad <- setdiff(bad, ambiguous)
+            found <- list()
+            if (length(ambiguous)) {
+                found <- c(found, list(problem_rows(ambiguous, term, "date_ambiguous", v[ambiguous])))
+            }
+            if (length(bad)) {
+                found <- c(found, list(problem_rows(bad, term, "date_unparsed", v[bad])))
+            }
+            found
+        }))
     }
 
     year_cols <- intersect(c(preview_date_terms, "year"), cols)
     if (length(year_cols)) {
-        issues <- date_year_issues(df[, year_cols, drop = FALSE], max_year = max_year,
-                                   sample_n = length(year_cols) * nrow(df))
-        hits <- issues$sample
-        for (term in unique(hits$column)) {
-            h <- hits[hits$column == term, , drop = FALSE]
-            out[[length(out) + 1L]] <- problem_rows(h$row, term, "year_range", h$value)
-        }
+        out <- c(out, check("year_range", year_cols, function() {
+            issues <- date_year_issues(df[, year_cols, drop = FALSE], max_year = max_year,
+                                       sample_n = length(year_cols) * nrow(df))
+            hits <- issues$sample
+            lapply(unique(hits$column), function(term) {
+                h <- hits[hits$column == term, , drop = FALSE]
+                problem_rows(h$row, term, "year_range", h$value)
+            })
+        }, extra = max_year %||% format(Sys.Date(), "%Y")))
     }
 
     if ("eventDate" %in% cols) {
-        v <- text("eventDate")
-        interval <- which(grepl("/", v, fixed = TRUE) & is_dwc_date_value(v))
-        start <- sub("/.*$", "", v[interval])
-        end <- sub("^[^/]*/", "", v[interval])
-        width <- pmin(nchar(start), nchar(end))
-        inverted <- grepl("^\\d{4}", end) & substr(start, 1L, width) > substr(end, 1L, width)
-        if (any(inverted)) {
-            rows <- interval[inverted]
-            out[[length(out) + 1L]] <- problem_rows(rows, "eventDate", "interval_inverted", v[rows],
-                                                    paste0(end[inverted], "/", start[inverted]))
-        }
+        out <- c(out, check("interval", "eventDate", function() {
+            v <- text("eventDate")
+            interval <- which(grepl("/", v, fixed = TRUE) & is_dwc_date_value(v))
+            start <- sub("/.*$", "", v[interval])
+            end <- sub("^[^/]*/", "", v[interval])
+            width <- pmin(nchar(start), nchar(end))
+            inverted <- grepl("^\\d{4}", end) & substr(start, 1L, width) > substr(end, 1L, width)
+            if (any(inverted)) {
+                rows <- interval[inverted]
+                list(problem_rows(rows, "eventDate", "interval_inverted", v[rows],
+                                  paste0(end[inverted], "/", start[inverted])))
+            }
+        }))
 
-        single <- !grepl("/", v, fixed = TRUE) & is_dwc_date_value(v) & nzchar(v)
         parts <- list(year = c(1L, 4L), month = c(6L, 7L), day = c(9L, 10L))
         for (term in intersect(names(parts), cols)) {
-            pos <- parts[[term]]
-            p <- text(term)
-            ref <- ifelse(single & nchar(v) >= pos[2],
-                          suppressWarnings(as.integer(substr(v, pos[1], pos[2]))), NA_integer_)
-            given <- suppressWarnings(as.integer(p))
-            bad <- which(!is.na(ref) & nzchar(p) & (is.na(given) | given != ref))
-            if (length(bad)) {
-                out[[length(out) + 1L]] <- problem_rows(bad, term, "date_mismatch", p[bad],
-                                                        as.character(ref[bad]))
-            }
+            out <- c(out, check(paste0("date_mismatch:", term), c("eventDate", term), function() {
+                v <- text("eventDate")
+                single <- !grepl("/", v, fixed = TRUE) & is_dwc_date_value(v) & nzchar(v)
+                pos <- parts[[term]]
+                p <- text(term)
+                ref <- ifelse(single & nchar(v) >= pos[2],
+                              suppressWarnings(as.integer(substr(v, pos[1], pos[2]))), NA_integer_)
+                given <- suppressWarnings(as.integer(p))
+                bad <- which(!is.na(ref) & nzchar(p) & (is.na(given) | given != ref))
+                if (length(bad)) {
+                    list(problem_rows(bad, term, "date_mismatch", p[bad], as.character(ref[bad])))
+                }
+            }))
         }
     }
 
     if ("individualCount" %in% cols) {
-        v <- text("individualCount")
-        bad <- which(nzchar(v) & !grepl("^\\d+$", v))
-        if (length(bad)) {
-            out[[length(out) + 1L]] <- problem_rows(bad, "individualCount", "count_invalid", v[bad],
-                                                    suggest_individual_count(v[bad]))
-        }
+        out <- c(out, check("count_invalid", "individualCount", function() {
+            v <- text("individualCount")
+            bad <- which(nzchar(v) & !grepl("^\\d+$", v))
+            if (length(bad)) {
+                list(problem_rows(bad, "individualCount", "count_invalid", v[bad],
+                                  suggest_individual_count(v[bad])))
+            }
+        }))
         # A count of 0 says absence, so "present" contradicts it (D07). The row
         # needs a person to say which one is right.
         if ("occurrenceStatus" %in% cols) {
-            status <- tolower(text("occurrenceStatus"))
-            bad <- which(grepl("^0+$", v) & status %in% c("present", "presente"))
-            if (length(bad)) {
-                out[[length(out) + 1L]] <- problem_rows(bad, "individualCount", "count_present_zero",
-                                                        v[bad])
-            }
+            out <- c(out, check("count_present_zero", c("individualCount", "occurrenceStatus"), function() {
+                v <- text("individualCount")
+                status <- tolower(text("occurrenceStatus"))
+                bad <- which(grepl("^0+$", v) & status %in% c("present", "presente"))
+                if (length(bad)) {
+                    list(problem_rows(bad, "individualCount", "count_present_zero", v[bad]))
+                }
+            }))
         }
     }
 
     if ("eventTime" %in% cols) {
-        v <- text("eventTime")
-        bad <- which(nzchar(v) & !is_dwc_time_value(v))
-        if (length(bad)) {
-            out[[length(out) + 1L]] <- problem_rows(bad, "eventTime", "time_invalid", v[bad],
-                                                    suggest_event_time(v[bad]))
-        }
+        out <- c(out, check("time", "eventTime", function() {
+            v <- text("eventTime")
+            bad <- which(nzchar(v) & !is_dwc_time_value(v))
+            if (length(bad)) {
+                list(problem_rows(bad, "eventTime", "time_invalid", v[bad], suggest_event_time(v[bad])))
+            }
+        }))
     }
 
     if ("coordinateUncertaintyInMeters" %in% cols) {
-        v <- text("coordinateUncertaintyInMeters")
-        bad <- which(nzchar(v) & !is_valid_uncertainty(v))
-        if (length(bad)) {
-            out[[length(out) + 1L]] <- problem_rows(bad, "coordinateUncertaintyInMeters",
-                                                    "uncertainty_invalid", v[bad],
-                                                    suggest_uncertainty(v[bad]))
-        }
+        out <- c(out, check("uncertainty", "coordinateUncertaintyInMeters", function() {
+            v <- text("coordinateUncertaintyInMeters")
+            bad <- which(nzchar(v) & !is_valid_uncertainty(v))
+            if (length(bad)) {
+                list(problem_rows(bad, "coordinateUncertaintyInMeters", "uncertainty_invalid", v[bad],
+                                  suggest_uncertainty(v[bad])))
+            }
+        }))
     }
 
     # The unit goes to measurementUnit, so "10kg" in a column of numbers is a
     # problem. One column per measurement keeps the check apart (ADR-179).
     for (term in cols[is_measurement_value_term(cols)]) {
-        v <- text(term)
-        type <- measure_problem_type(v)
-        bad <- which(!is.na(type))
-        if (length(bad)) {
-            out[[length(out) + 1L]] <- problem_rows(bad, term, type[bad], v[bad],
-                                                    suggest_measure_value(v[bad]))
-        }
+        out <- c(out, check(paste0("measure:", term), term, function() {
+            v <- text(term)
+            type <- measure_problem_type(v)
+            bad <- which(!is.na(type))
+            if (length(bad)) {
+                list(problem_rows(bad, term, type[bad], v[bad], suggest_measure_value(v[bad])))
+            }
+        }))
     }
 
     for (term in intersect(c("decimalLatitude", "decimalLongitude"), cols)) {
-        limit <- if (term == "decimalLatitude") 90 else 180
-        v <- text(term)
-        bad <- which(nzchar(v) & !coord_value_ok(v, limit))
-        if (length(bad)) {
-            out[[length(out) + 1L]] <- problem_rows(bad, term, "coord_invalid", v[bad],
-                                                    suggest_coordinate(v[bad], limit))
-        }
+        out <- c(out, check(paste0("coord:", term), term, function() {
+            limit <- if (term == "decimalLatitude") 90 else 180
+            v <- text(term)
+            bad <- which(nzchar(v) & !coord_value_ok(v, limit))
+            if (length(bad)) {
+                list(problem_rows(bad, term, "coord_invalid", v[bad], suggest_coordinate(v[bad], limit)))
+            }
+        }))
     }
 
     # (0, 0) is a filler, not a point in the Gulf of Guinea. A 0 next to a
     # blank axis stays flagged, so blanking one axis does not hide the other.
     if (all(c("decimalLatitude", "decimalLongitude") %in% cols)) {
-        lat <- text("decimalLatitude")
-        lon <- text("decimalLongitude")
-        zero <- function(v) {
-            num <- as_coord_numeric(v)$num
-            !is.na(num) & num == 0
-        }
-        filler <- (zero(lat) | !nzchar(lat)) & (zero(lon) | !nzchar(lon))
-        for (term in c("decimalLatitude", "decimalLongitude")) {
-            v <- text(term)
-            bad <- which(filler & zero(v))
-            if (length(bad)) {
-                out[[length(out) + 1L]] <- problem_rows(bad, term, "coord_zero", v[bad])
+        out <- c(out, check("coord_zero", c("decimalLatitude", "decimalLongitude"), function() {
+            lat <- text("decimalLatitude")
+            lon <- text("decimalLongitude")
+            zero <- function(v) {
+                num <- as_coord_numeric(v)$num
+                !is.na(num) & num == 0
             }
-        }
+            filler <- (zero(lat) | !nzchar(lat)) & (zero(lon) | !nzchar(lon))
+            found <- list()
+            for (term in c("decimalLatitude", "decimalLongitude")) {
+                v <- text(term)
+                bad <- which(filler & zero(v))
+                if (length(bad)) {
+                    found <- c(found, list(problem_rows(bad, term, "coord_zero", v[bad])))
+                }
+            }
+            found
+        }))
     }
 
     if ("scientificName" %in% cols) {
-        v <- text("scientificName")
-        uniq <- unique(v[nzchar(v)])
-        if (length(uniq)) {
-            issue <- extract_scientific_name_components(uniq)$nameIssue
-            type <- unname(name_issue_types[issue])
-            bad <- which(v %in% uniq[!is.na(type)])
-            if (length(bad)) {
-                out[[length(out) + 1L]] <- problem_rows(bad, "scientificName",
-                                                        type[match(v[bad], uniq)], v[bad])
+        out <- c(out, check("name", "scientificName", function() {
+            v <- text("scientificName")
+            uniq <- unique(v[nzchar(v)])
+            if (length(uniq)) {
+                issue <- extract_scientific_name_components(uniq)$nameIssue
+                type <- unname(name_issue_types[issue])
+                bad <- which(v %in% uniq[!is.na(type)])
+                if (length(bad)) {
+                    list(problem_rows(bad, "scientificName", type[match(v[bad], uniq)], v[bad]))
+                }
             }
-        }
+        }))
     }
 
     if ("scientificNameAuthorship" %in% cols) {
-        v <- text("scientificNameAuthorship")
-        bad <- which(nzchar(v) & has_unbalanced_brackets(v))
-        if (length(bad)) {
-            out[[length(out) + 1L]] <- problem_rows(bad, "scientificNameAuthorship",
-                                                    "name_authorship", v[bad])
-        }
+        out <- c(out, check("authorship", "scientificNameAuthorship", function() {
+            v <- text("scientificNameAuthorship")
+            u <- unique(v)
+            bad <- which(nzchar(v) & has_unbalanced_brackets(u)[match(v, u)])
+            if (length(bad)) {
+                list(problem_rows(bad, "scientificNameAuthorship", "name_authorship", v[bad]))
+            }
+        }))
     }
 
     for (term in intersect(c("scientificName", "basisOfRecord"), cols)) {
-        bad <- which(is_blank_cell(df[[term]]))
-        if (length(bad)) {
-            out[[length(out) + 1L]] <- problem_rows(bad, term, "required_empty", rep("", length(bad)))
-        }
+        out <- c(out, check(paste0("required:", term), term, function() {
+            bad <- which(is_blank_cell(df[[term]]))
+            if (length(bad)) {
+                list(problem_rows(bad, term, "required_empty", rep("", length(bad))))
+            }
+        }))
     }
 
     # A threat category in the country column is a shifted column, not a
     # country: "VU" reads as Vanuatu (B33). "CR" stays out, it is Costa Rica.
     if ("country" %in% cols) {
-        v <- text("country")
-        bad <- which(toupper(v) %in% c("EX", "EW", "EN", "VU", "NT", "LC", "DD"))
-        if (length(bad)) {
-            out[[length(out) + 1L]] <- problem_rows(bad, "country", "country_threat_code", v[bad])
-        }
+        out <- c(out, check("country_threat", "country", function() {
+            v <- text("country")
+            bad <- which(toupper(v) %in% c("EX", "EW", "EN", "VU", "NT", "LC", "DD"))
+            if (length(bad)) {
+                list(problem_rows(bad, "country", "country_threat_code", v[bad]))
+            }
+        }))
     }
 
     # MIX-065: country "Argentina", countryCode "BR" (B04). The row needs a
     # person to say which one is right, so one fix does not serve all rows.
     if (all(c("country", "countryCode") %in% cols)) {
-        both <- which(nzchar(text("country")) & nzchar(text("countryCode")))
-        if (length(both)) {
-            iso <- tryCatch(
-                list(coords_country_to_iso3(text("country")[both]),
-                     coords_country_to_iso3(text("countryCode")[both])),
-                error = function(e) NULL
-            )
-            if (!is.null(iso)) {
-                bad <- both[!is.na(iso[[1]]) & !is.na(iso[[2]]) & iso[[1]] != iso[[2]]]
-                if (length(bad)) {
-                    out[[length(out) + 1L]] <- problem_rows(bad, "countryCode", "country_conflict",
-                                                            text("countryCode")[bad])
+        out <- c(out, check("country_conflict", c("country", "countryCode"), function() {
+            both <- which(nzchar(text("country")) & nzchar(text("countryCode")))
+            if (length(both)) {
+                iso <- tryCatch(
+                    list(coords_country_to_iso3(text("country")[both]),
+                         coords_country_to_iso3(text("countryCode")[both])),
+                    error = function(e) NULL
+                )
+                if (!is.null(iso)) {
+                    bad <- both[!is.na(iso[[1]]) & !is.na(iso[[2]]) & iso[[1]] != iso[[2]]]
+                    if (length(bad)) {
+                        list(problem_rows(bad, "countryCode", "country_conflict",
+                                          text("countryCode")[bad]))
+                    }
                 }
             }
-        }
+        }))
     }
 
     if ("occurrenceID" %in% cols) {
-        v <- text("occurrenceID")
-        dup <- which(nzchar(v) & (duplicated(v) | duplicated(v, fromLast = TRUE)))
-        if (length(dup)) {
-            out[[length(out) + 1L]] <- problem_rows(dup, "occurrenceID", "id_duplicate", v[dup])
-        }
+        out <- c(out, check("id_duplicate", "occurrenceID", function() {
+            v <- text("occurrenceID")
+            dup <- which(nzchar(v) & (duplicated(v) | duplicated(v, fromLast = TRUE)))
+            if (length(dup)) {
+                list(problem_rows(dup, "occurrenceID", "id_duplicate", v[dup]))
+            }
+        }))
     }
 
     res <- do.call(rbind, out)
