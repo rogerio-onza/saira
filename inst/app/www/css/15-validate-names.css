@@ -1158,7 +1158,11 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
    VALIDATE NAMES V3 - TRI-COLUMN WORKSPACE
    ============================================================================= */
 
+/* No Shiny fade on this page. A click on Validate rebuilds the panels in
+   two flushes (starting, then running), and the fade to 0.3 made the page
+   blink grey twice. The run button and the run card show the progress. */
 .validate-names-page {
+  --shiny-fade-opacity: 1;
   width: 100%;
   max-width: none;
   padding: var(--space-2) var(--space-1) var(--space-4);

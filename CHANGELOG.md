@@ -110,6 +110,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **names:** Stop the grey blink of the panels on a click on Validate, ADR-198 ([#287](https://github.com/rogerio-onza/saira/pull/287))
+- **mapping:** Open a column list above its field when the scroll box cuts it at the bottom, ADR-198 ([#287](https://github.com/rogerio-onza/saira/pull/287))
+- **mapping:** Keep password managers off the column pickers, and open a picker on the first tap, ADR-198 ([#287](https://github.com/rogerio-onza/saira/pull/287))
+- **ui:** Let a click go through a toast to the field under it, and hide the toasts while a list is open, ADR-198 ([#287](https://github.com/rogerio-onza/saira/pull/287))
 - **names:** Leave a row with no name out of the names report, so the report and the list agree ([#275](https://github.com/rogerio-onza/saira/pull/275))
 - **preview:** Stack the term over the diagnosis only in a narrow Problems list, so all its buttons fit ([#278](https://github.com/rogerio-onza/saira/pull/278))
 - **preview:** Keep the place in the Vocabulary and copies lists after a fix, and show the next open value ([#278](https://github.com/rogerio-onza/saira/pull/278))

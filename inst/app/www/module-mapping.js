@@ -185,7 +185,7 @@
     var field = document.createElement('input');
     field.type = 'text';
     field.readOnly = true;
-    field.autocomplete = 'off';
+    window.jQuery(field).attr(window.sairaAutofillOff || { autocomplete: 'off' });
     if (picked.length || !placeholder) {
       field.style.width = '4px';
       if (full) {
@@ -222,7 +222,7 @@
     field.style.width = placeholderWidths[text] + 'px';
   }
 
-  function startSelectize(sel) {
+  function startSelectize(sel, open) {
     var at = deferred.indexOf(sel);
     if (at !== -1) deferred.splice(at, 1);
     var cfg = sel.parentElement && sel.parentElement.querySelector('script[' + DEFER_ATTR + ']');
@@ -239,7 +239,7 @@
     cfg.removeAttribute(DEFER_ATTR);
     // The same call that Shiny makes before it binds the select.
     binding.initialize(sel);
-    if (focused && sel.selectize) sel.selectize.focus();
+    if ((focused || open) && sel.selectize) sel.selectize.focus();
   }
 
   // Order by the distance in pixels to the visible part of the grid. A
@@ -298,7 +298,9 @@
       insertStandin(sel);
       deferred.push(sel);
     });
-    deferred.slice(0, sortDeferred()).forEach(startSelectize);
+    deferred.slice(0, sortDeferred()).forEach(function (sel) {
+      startSelectize(sel);
+    });
     scheduleDeferred();
   }
 
@@ -482,12 +484,16 @@
       }
     });
 
+    // A touch sends its later events to the copy that startSelectize
+    // removes, so selectize never gets the tap. The touch opens it here.
     function startFromEvent(ev) {
       var standin = ev.target.closest && ev.target.closest('.' + STANDIN_CLASS);
-      if (standin && standin.previousElementSibling) startSelectize(standin.previousElementSibling);
+      if (standin && standin.previousElementSibling) {
+        startSelectize(standin.previousElementSibling, ev.pointerType === 'touch');
+      }
     }
-    // The pointer enters a card before the click, for a mouse and for a
-    // touch, so the click reaches selectize.
+    // The pointer enters a card before the click, so a mouse click reaches
+    // selectize.
     document.addEventListener('pointerover', startFromEvent, true);
     document.addEventListener('focusin', startFromEvent, true);
     document.addEventListener('scroll', markDeferredOrderStale, { capture: true, passive: true });
