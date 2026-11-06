@@ -18,6 +18,7 @@
     var btn = group.querySelector('.mapping-more');
     if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     window.jQuery(group).trigger(open ? 'shown' : 'hidden');
+    markDeferredOrderStale();
   }
 
   // Relevant / All / Mapped / Pending in the browser (ADR-157). The grid
@@ -87,6 +88,7 @@
       });
       setMoreGroupText(group, terms);
     });
+    markDeferredOrderStale();
   }
 
   // The filter for one card after a server patch changes its state classes.
@@ -116,6 +118,188 @@
     setTimeout(function () {
       el.classList.remove('field-card-flash');
     }, 2200);
+  }
+
+  // Selectize takes about half of the grid mount, ~6 ms a card (ADR-197).
+  // The grid comes with the selectize config of each card under another
+  // attribute, so Shiny binds plain selects with their values at once: the
+  // auto-map and the counts see every card. A static copy of the selectize
+  // box keeps the card size until selectize starts. The cards in view start
+  // before the first paint, the others in small batches, nearest first. A
+  // card that the pointer or the focus reaches starts at once.
+  var DEFER_ATTR = 'data-saira-defer-for';
+  var STANDIN_CLASS = 'saira-selectize-standin';
+  var deferred = [];
+  var deferredBox = null;
+  var deferredOrderStale = false;
+  var deferredTask = null;
+  var deferredSetupPrefix = null;
+
+  function deferSelectize(value) {
+    if (!value || typeof value.html !== 'string') return false;
+    var html = value.html
+      .replace(/ data-for="([^"]*-map_[A-Za-z]+)"/g, ' ' + DEFER_ATTR + '="$1"')
+      // selectize leaves out the empty option, so a plain multiple select
+      // must not report it either: jQuery .val() skips a disabled option.
+      // Without this, a card with no column reports [""], not [].
+      .replace(/(<select id="[^"]*-map_[A-Za-z]+"[^>]* multiple[^>]*>\s*<option value="")/g, '$1 disabled');
+    if (html === value.html) return false;
+    value.html = html;
+    return true;
+  }
+
+  // A scroll or a filter change moves the cards nearest to the view.
+  function markDeferredOrderStale() {
+    if (deferred.length) deferredOrderStale = true;
+  }
+
+  function resetDeferred() {
+    if (deferredTask !== null) clearTimeout(deferredTask);
+    deferredTask = null;
+    deferred = [];
+    deferredOrderStale = false;
+  }
+
+  // The classes and the inline sizes that selectize gives its box.
+  function buildStandin(sel) {
+    var picked = [];
+    var placeholder = '';
+    for (var i = 0; i < sel.options.length; i++) {
+      var opt = sel.options[i];
+      if (opt.value === '') placeholder = opt.text;
+      else if (opt.selected) picked.push(opt.text);
+    }
+    var full = !sel.multiple && picked.length > 0;
+    var control = document.createElement('div');
+    control.className = 'shiny-input-select selectize-control ' +
+      (sel.multiple ? 'multi' : 'single') + ' plugin-selectize-plugin-a11y ' + STANDIN_CLASS;
+    var box = document.createElement('div');
+    box.className = 'selectize-input items has-options' +
+      (full ? ' full' : ' not-full') + (picked.length ? ' has-items' : '');
+    picked.forEach(function (text) {
+      var item = document.createElement('div');
+      item.className = 'item';
+      item.textContent = text;
+      box.appendChild(item);
+    });
+    var field = document.createElement('input');
+    field.type = 'text';
+    field.readOnly = true;
+    field.autocomplete = 'off';
+    if (picked.length || !placeholder) {
+      field.style.width = '4px';
+      if (full) {
+        field.style.opacity = '0';
+        field.style.position = 'absolute';
+        field.style.left = '0px';
+      }
+    } else {
+      field.placeholder = placeholder;
+    }
+    box.appendChild(field);
+    control.appendChild(box);
+    return control;
+  }
+
+  // selectize sizes the empty field to its placeholder text plus 8 px, and
+  // the card CSS centers the text in the field. One measure per render.
+  var measureContext = null;
+  var placeholderWidths = {};
+
+  function insertStandin(sel) {
+    var control = buildStandin(sel);
+    sel.insertAdjacentElement('afterend', control);
+    var field = control.querySelector('input[placeholder]');
+    if (!field) return;
+    var text = field.placeholder;
+    if (!(text in placeholderWidths)) {
+      var style = window.getComputedStyle(field);
+      measureContext = measureContext || document.createElement('canvas').getContext('2d');
+      measureContext.font = style.fontStyle + ' ' + style.fontWeight + ' ' +
+        style.fontSize + ' ' + style.fontFamily;
+      placeholderWidths[text] = measureContext.measureText(text).width + 8;
+    }
+    field.style.width = placeholderWidths[text] + 'px';
+  }
+
+  function startSelectize(sel) {
+    var at = deferred.indexOf(sel);
+    if (at !== -1) deferred.splice(at, 1);
+    var cfg = sel.parentElement && sel.parentElement.querySelector('script[' + DEFER_ATTR + ']');
+    var binding = window.jQuery(sel).data('shiny-input-binding');
+    if (!cfg || !binding) return;
+    var standin = sel.nextElementSibling;
+    var focused = false;
+    if (standin && standin.classList.contains(STANDIN_CLASS)) {
+      focused = standin.contains(document.activeElement);
+      standin.remove();
+    }
+    sel.style.display = '';
+    cfg.setAttribute('data-for', cfg.getAttribute(DEFER_ATTR));
+    cfg.removeAttribute(DEFER_ATTR);
+    // The same call that Shiny makes before it binds the select.
+    binding.initialize(sel);
+    if (focused && sel.selectize) sel.selectize.focus();
+  }
+
+  // Order by the distance in pixels to the visible part of the grid. A
+  // hidden card (filter, closed line) comes last. Returns how many cards
+  // are in view.
+  function sortDeferred() {
+    var r = deferredBox && deferredBox.isConnected ?
+      deferredBox.getBoundingClientRect() : { top: 0, bottom: window.innerHeight };
+    var top = Math.max(0, r.top);
+    var bottom = Math.min(window.innerHeight, r.bottom);
+    var scored = deferred.filter(function (sel) {
+      return sel.isConnected;
+    }).map(function (sel) {
+      var rect = (sel.nextElementSibling || sel).getBoundingClientRect();
+      var d = rect.height === 0 ? 1e9 : Math.max(0, top - rect.bottom, rect.top - bottom);
+      return { sel: sel, d: d };
+    });
+    scored.sort(function (a, b) {
+      return a.d - b.d;
+    });
+    deferred = scored.map(function (x) {
+      return x.sel;
+    });
+    return scored.filter(function (x) {
+      return x.d === 0;
+    }).length;
+  }
+
+  // Not requestIdleCallback: Firefox does not run it on a still page, even
+  // with a timeout, so the batches stopped until the next pointer move.
+  function scheduleDeferred() {
+    if (deferredTask === null && deferred.length) deferredTask = setTimeout(runDeferredBatch, 0);
+  }
+
+  // A slice of about 8 ms leaves the page free to answer a click or a key
+  // in the same frame.
+  function runDeferredBatch() {
+    deferredTask = null;
+    if (deferredOrderStale) {
+      deferredOrderStale = false;
+      sortDeferred();
+    }
+    var start = now();
+    while (deferred.length && now() - start < 8) startSelectize(deferred[0]);
+    scheduleDeferred();
+  }
+
+  function setupDeferred(out) {
+    resetDeferred();
+    deferredBox = out.closest('.mapping-scroll-container') || out;
+    placeholderWidths = {};
+    out.querySelectorAll('script[' + DEFER_ATTR + ']').forEach(function (cfg) {
+      var sel = document.getElementById(cfg.getAttribute(DEFER_ATTR));
+      if (!sel || sel.tagName !== 'SELECT') return;
+      sel.style.display = 'none';
+      insertStandin(sel);
+      deferred.push(sel);
+    });
+    deferred.slice(0, sortDeferred()).forEach(startSelectize);
+    scheduleDeferred();
   }
 
   // The handlers are delegated, so one registration serves every render.
@@ -174,6 +358,8 @@
     window.jQuery(document).on('shiny:value', function (ev) {
       var m = /^(.*-)mapping_ui$/.exec(ev.target.id || '');
       if (m) {
+        resetDeferred();
+        deferredSetupPrefix = deferSelectize(ev.value) ? m[1] : null;
         setTimeout(function () {
           applyMappingFilter(m[1]);
         }, 0);
@@ -272,6 +458,39 @@
         });
       })();
     });
+
+    // The first card bound means that the grid is in the DOM. The microtask
+    // runs after Shiny binds the other cards, and before the first paint.
+    window.jQuery(document).on('shiny:bound', function (ev) {
+      var prefix = deferredSetupPrefix;
+      if (!prefix || ev.bindingType !== 'input') return;
+      if ((ev.target.id || '').indexOf(prefix + 'map_') !== 0) return;
+      deferredSetupPrefix = null;
+      Promise.resolve().then(function () {
+        var out = document.getElementById(prefix + 'mapping_ui');
+        if (out) setupDeferred(out);
+      });
+    });
+
+    // A server update (auto-map, Reset, a guide import) reaches the plain
+    // select, so the copy shows the new value until selectize starts.
+    window.jQuery(document).on('change', 'select', function () {
+      var standin = this.nextElementSibling;
+      if (standin && standin.classList.contains(STANDIN_CLASS)) {
+        standin.remove();
+        insertStandin(this);
+      }
+    });
+
+    function startFromEvent(ev) {
+      var standin = ev.target.closest && ev.target.closest('.' + STANDIN_CLASS);
+      if (standin && standin.previousElementSibling) startSelectize(standin.previousElementSibling);
+    }
+    // The pointer enters a card before the click, for a mouse and for a
+    // touch, so the click reaches selectize.
+    document.addEventListener('pointerover', startFromEvent, true);
+    document.addEventListener('focusin', startFromEvent, true);
+    document.addEventListener('scroll', markDeferredOrderStale, { capture: true, passive: true });
 
     // Tell the server the field cards are bound, once per grid render. The
     // upload auto-map waits for this signal: a card value alone may not
