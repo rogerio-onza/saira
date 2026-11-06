@@ -2505,3 +2505,32 @@ testthat::test_that("year parsers keep a year written as a date, text or whole d
         testthat::expect_identical(parse_year_to_number_vec(value), good[[value]], info = value)
     }
 })
+
+testthat::test_that("build_processed_mapping_df builds the same frame from its cache", {
+    df <- data.frame(
+        sp = c("Puma concolor (Linnaeus, 1771)", "Puma concolor (Linnaeus, 1771)", "Nasua nasua"),
+        dt = c("01/02/2020", "2020-03-04", ""),
+        lat = c("-10.5", "10 30 00 S", ""),
+        loc = c("A", "B", NA),
+        stringsAsFactors = FALSE
+    )
+    dwc <- get_active_dwc_terms_list(lang = "en")
+    ids <- c("u1", "u2", "u3")
+    cache <- create_step_cache()
+    same <- function(df, mv) {
+        testthat::expect_identical(
+            build_processed_mapping_df(df = df, dwc_terms = dwc, map_values = mv,
+                                       occurrence_ids = ids, cache = cache),
+            build_processed_mapping_df(df = df, dwc_terms = dwc, map_values = mv,
+                                       occurrence_ids = ids)
+        )
+    }
+    mv <- list(scientificName = "sp", eventDate = "dt", decimalLatitude = "lat")
+    same(df, mv)
+    same(df, c(mv, locality = "loc"))
+    same(df, list(scientificName = "sp", eventDate = "loc", locality = "dt"))
+    same(df, list(eventDate = "dt"))
+    # A changed source column builds its term again.
+    df$dt[1] <- "2021-01-01"
+    same(df, mv)
+})

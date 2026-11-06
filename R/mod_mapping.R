@@ -2305,7 +2305,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # (mapping-guide serialization).
         collect_constant_values <- function() enabled_fixed_values(rv$fixed_values)
 
-        build_mapped_result <- function(df_input, occurrence_ids_input) {
+        # The full frame keeps its columns between runs, so a new mapping
+        # builds one column (ADR-196). The 100-row preview takes no cache.
+        processing_cache <- create_step_cache()
+
+        build_mapped_result <- function(df_input, occurrence_ids_input, cache = NULL) {
             build_processed_mapping_df(
                 df = df_input,
                 dwc_terms = dwc_all(),
@@ -2321,7 +2325,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 now_utc = Sys.time(),
                 out_sep = " | ",
                 dyn_props_keys = rv$dyn_props_keys,
-                establishment_map = establishment_state$establishment_map
+                establishment_map = establishment_state$establishment_map,
+                cache = cache
             )
         }
 
@@ -2382,7 +2387,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             processed_result <- build_mapped_result(
                 df_input = df,
-                occurrence_ids_input = occurrence_ids_r()
+                occurrence_ids_input = occurrence_ids_r(),
+                cache = processing_cache
             )
 
             if (!identical(rv$eventdate_parse_failures, processed_result$eventdate_failure_count)) {

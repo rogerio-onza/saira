@@ -42,6 +42,52 @@ create_rds_cache <- function(name = "unnamed") {
     )
 }
 
+#' Create a cache for the parts of a step that a rerun can reuse
+#'
+#' A reactive reruns the whole step when one input changes. The step keys each
+#' part on its inputs, so a rerun builds only the parts whose inputs changed.
+#' `identical()` returns at once for the same object, so an input that did not
+#' change costs almost nothing to check.
+#'
+#' `$get(key, inputs, compute)` returns the stored value when `inputs` are
+#' identical to the stored ones, otherwise it calls `compute()` and stores the
+#' result. `$prune()` removes the keys that the run did not read, so the cache
+#' does not keep the columns of an old upload or an unmapped term in memory.
+#'
+#' @return Named list with `get` and `prune`.
+#' @noRd
+create_step_cache <- function() {
+    entries <- new.env(parent = emptyenv())
+    state <- new.env(parent = emptyenv())
+    state$used <- character(0)
+
+    list(
+        get = function(key, inputs, compute) {
+            state$used <- c(state$used, key)
+            hit <- entries[[key]]
+            if (!is.null(hit) && identical(hit$inputs, inputs)) {
+                return(hit$value)
+            }
+            value <- compute()
+            entries[[key]] <- list(inputs = inputs, value = value)
+            value
+        },
+        prune = function() {
+            rm(list = setdiff(ls(entries, all.names = TRUE), state$used), envir = entries)
+            state$used <- character(0)
+            invisible(TRUE)
+        }
+    )
+}
+
+# Calls compute() directly when the caller passes no cache.
+step_cache_get <- function(cache, key, inputs, compute) {
+    if (is.null(cache)) {
+        return(compute())
+    }
+    cache$get(key, inputs, compute)
+}
+
 #' Check if a value is blank (NULL, NA, empty, or whitespace-only)
 #'
 #' @param x A scalar value to check

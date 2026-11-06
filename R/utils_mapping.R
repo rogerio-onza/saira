@@ -2485,10 +2485,14 @@ build_processed_mapping_df <- function(
   now_utc = Sys.time(),
   out_sep = " | ",
   dyn_props_keys = list(),
-  establishment_map = NULL
+  establishment_map = NULL,
+  cache = NULL
 ) {
     if (length(occurrence_ids) != nrow(df)) {
         stop("occurrence_ids must have the same length as nrow(df).")
+    }
+    if (!is.null(cache)) {
+        on.exit(cache$prune(), add = TRUE)
     }
 
     df_final <- data.frame(matrix(ncol = 0, nrow = nrow(df)))
@@ -2626,20 +2630,32 @@ build_processed_mapping_df <- function(
 
         selected_terms <- c(selected_terms, term)
 
-        term_result <- build_term_value(
-            term = term,
-            df = df,
-            user_cols = user_cols,
-            basis_of_record_map = basis_of_record_map,
-            dyn_props_keys = dyn_props_keys,
-            out_sep = out_sep
+        # The key holds every input of build_term_value(), so a change of one
+        # mapping builds one column again, not the sheet (ADR-196).
+        term_inputs <- list(
+            user_cols, lapply(user_cols, function(col) df[[col]]), out_sep,
+            if (term == "basisOfRecord") basis_of_record_map,
+            if (term == "dynamicProperties") dyn_props_keys
         )
+        term_result <- step_cache_get(cache, paste0("term:", term), term_inputs, function() {
+            build_term_value(
+                term = term,
+                df = df,
+                user_cols = user_cols,
+                basis_of_record_map = basis_of_record_map,
+                dyn_props_keys = dyn_props_keys,
+                out_sep = out_sep
+            )
+        })
         df_final[[term]] <- term_result$values
         eventdate_failure_count <- eventdate_failure_count + term_result$eventdate_failure_count
     }
 
     if ("scientificName" %in% names(df_final)) {
-        scientific_parts <- extract_scientific_name_components(df_final$scientificName)
+        names_in <- df_final$scientificName
+        scientific_parts <- step_cache_get(cache, "scientific_parts", list(names_in), function() {
+            extract_scientific_name_components(names_in)
+        })
         # infraspecificEpithet is deliberately absent from selected_terms: it
         # rides on the non-missing filter below, so a dataset without a single
         # trinomial does not ship (and meta.xml does not declare) an empty
