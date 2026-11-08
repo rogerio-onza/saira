@@ -26,3 +26,4 @@ Zone\.Identifier$
 ^task_onda_.*\.md\.resolved$
 
 ^website$
+^man/figures$
