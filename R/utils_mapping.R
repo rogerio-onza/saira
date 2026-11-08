@@ -2299,7 +2299,8 @@ build_term_value <- function(
     user_cols,
     basis_of_record_map = NULL,
     dyn_props_keys = list(),
-    out_sep = " | "
+    out_sep = " | ",
+    pair_column = FALSE
 ) {
     failure_count <- 0L
 
@@ -2366,10 +2367,21 @@ build_term_value <- function(
     # DMS, a hemisphere letter or a Unicode minus become decimal degrees, so
     # the Coordinates tab, the mask and the export read a number (B08).
     if (term %in% c("decimalLatitude", "decimalLongitude")) {
-        values <- convert_coordinate_text(values, if (term == "decimalLatitude") "lat" else "lon")
+        values <- convert_coordinate_text(values, if (term == "decimalLatitude") "lat" else "lon",
+                                          pair_column = pair_column)
     }
 
     list(values = values, eventdate_failure_count = failure_count)
+}
+
+# TRUE when `cols` of a coordinate card is the one column of the other
+# coordinate card. Such a column holds both axes in each cell (ADR-201).
+coordinate_pair_selection <- function(term, cols, map_values, col_names) {
+    other <- switch(term, decimalLatitude = "decimalLongitude",
+                    decimalLongitude = "decimalLatitude", NULL)
+    if (is.null(other) || length(cols) != 1L) return(FALSE)
+    other_cols <- resolve_selected_columns(sanitize_map_selection(other, map_values[[other]]), col_names)
+    length(other_cols) == 1L && identical(unname(other_cols), unname(cols))
 }
 
 # The license and language cards take a fixed value, not a column, so the
@@ -2413,7 +2425,8 @@ card_values_from_columns <- function(df) {
 # (only columns used by >= 2 terms); an empty list when there are no collisions.
 # `exclude` drops terms that do not draw from a source column (constants such as
 # license/language, the generated occurrenceID).
-detect_duplicate_source_mappings <- function(map_values, exclude = character(0)) {
+# `pair_cols` holds the columns of `coordinate_pair_columns()`.
+detect_duplicate_source_mappings <- function(map_values, exclude = character(0), pair_cols = character(0)) {
     if (!is.list(map_values) || length(map_values) == 0L) {
         return(list())
     }
@@ -2439,6 +2452,11 @@ detect_duplicate_source_mappings <- function(map_values, exclude = character(0))
         return(list())
     }
     dup_cols <- unique(cols[duplicated(cols)])
+    # A column with both axes in each cell belongs on both coordinate cards (ADR-201).
+    pair <- vapply(dup_cols, function(col) {
+        col %in% pair_cols && setequal(tms[cols == col], c("decimalLatitude", "decimalLongitude"))
+    }, logical(1))
+    dup_cols <- dup_cols[!pair]
     if (length(dup_cols) == 0L) {
         return(list())
     }
@@ -2630,13 +2648,15 @@ build_processed_mapping_df <- function(
         }
 
         selected_terms <- c(selected_terms, term)
+        pair_column <- coordinate_pair_selection(term, user_cols, map_values, names(df))
 
         # The key holds every input of build_term_value(), so a change of one
         # mapping builds one column again, not the sheet (ADR-196).
         term_inputs <- list(
             user_cols, lapply(user_cols, function(col) df[[col]]), out_sep,
             if (term == "basisOfRecord") basis_of_record_map,
-            if (term == "dynamicProperties") dyn_props_keys
+            if (term == "dynamicProperties") dyn_props_keys,
+            pair_column
         )
         term_result <- step_cache_get(cache, paste0("term:", term), term_inputs, function() {
             build_term_value(
@@ -2645,7 +2665,8 @@ build_processed_mapping_df <- function(
                 user_cols = user_cols,
                 basis_of_record_map = basis_of_record_map,
                 dyn_props_keys = dyn_props_keys,
-                out_sep = out_sep
+                out_sep = out_sep,
+                pair_column = pair_column
             )
         })
         df_final[[term]] <- term_result$values

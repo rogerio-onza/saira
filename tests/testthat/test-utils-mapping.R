@@ -2534,3 +2534,46 @@ testthat::test_that("build_processed_mapping_df builds the same frame from its c
     df$dt[1] <- "2021-01-01"
     same(df, mv)
 })
+
+testthat::test_that("a column of coordinate pairs on both cards fills both axes", {
+    df <- data.frame(Coordenadas = c("23°33'S 46°38'W", "-23.5, -46.6"),
+                     stringsAsFactors = FALSE)
+    dwc <- list(
+        list(term = "decimalLatitude", category = "Location", desc = "", sep = "", required = FALSE),
+        list(term = "decimalLongitude", category = "Location", desc = "", sep = "", required = FALSE)
+    )
+    map <- list(decimalLatitude = "Coordenadas", decimalLongitude = "Coordenadas")
+    res <- build_processed_mapping_df(df = df, dwc_terms = dwc, map_values = map,
+                                      occurrence_ids = c("u1", "u2"))
+    testthat::expect_identical(res$data$decimalLatitude, c("-23.55", "-23.5"))
+    testthat::expect_identical(res$data$decimalLongitude, c("-46.63333", "-46.6"))
+
+    # The warning for a column on two cards leaves this pair alone.
+    testthat::expect_length(detect_duplicate_source_mappings(map, pair_cols = "Coordenadas"), 0L)
+    testthat::expect_named(detect_duplicate_source_mappings(map), "Coordenadas")
+    map$locality <- "Coordenadas"
+    testthat::expect_named(detect_duplicate_source_mappings(map, pair_cols = "Coordenadas"), "Coordenadas")
+})
+
+testthat::test_that("a lone number on both coordinate cards gives no point in any slice", {
+    df <- data.frame(C = c(rep("-23.55", 100), rep("-23.5, -46.6", 900)), stringsAsFactors = FALSE)
+    dwc <- list(
+        list(term = "decimalLatitude", category = "Location", desc = "", sep = "", required = FALSE),
+        list(term = "decimalLongitude", category = "Location", desc = "", sep = "", required = FALSE)
+    )
+    build <- function(d, map) {
+        build_processed_mapping_df(df = d, dwc_terms = dwc, map_values = map,
+                                   occurrence_ids = paste0("u", seq_len(nrow(d))))$data
+    }
+    both <- list(decimalLatitude = "C", decimalLongitude = "C")
+    # The export, and the 200-row slice of the cards, agree.
+    for (d in list(df, utils::head(df, 200L))) {
+        res <- build(d, both)
+        testthat::expect_identical(unique(res$decimalLatitude[1:100]), "")
+        testthat::expect_identical(unique(res$decimalLongitude[1:100]), "")
+    }
+    testthat::expect_identical(build_term_value("decimalLatitude", utils::head(df, 200L), "C",
+                                                pair_column = TRUE)$values[1], "")
+    # On one card only, the number stays.
+    testthat::expect_identical(build(df, list(decimalLatitude = "C"))$decimalLatitude[1], "-23.55")
+})

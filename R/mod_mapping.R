@@ -262,6 +262,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 conflict_lost = "rostrum_reason_conflict_lost",
                 fallback_verbatim_from_loser = "rostrum_reason_conflict_won",
                 fallback_verbatim_from_primary = "rostrum_reason_conflict_won",
+                coordinate_pair_split = "rostrum_reason_coordinate_pair",
                 template_priority_override = "rostrum_reason_template_override",
                 content_validated = "badge_reason_content_validated",
                 manual_adjust = "badge_reason_manual_adjust",
@@ -534,8 +535,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             if (length(missing) > 0) return(character(0))
 
             cacheable <- !(term %in% c("basisOfRecord", "dynamicProperties", establishment_terms))
+            pair_column <- coordinate_pair_selection(term, user_cols, rv$map_values, names(df))
             key <- if (cacheable) {
-                paste(term, paste(user_cols, collapse = ""), n, sep = "")
+                paste(term, paste(user_cols, collapse = ""), n, pair_column, sep = "")
             } else {
                 NA_character_
             }
@@ -566,7 +568,8 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         user_cols = user_cols,
                         basis_of_record_map = basis_state$basis_of_record_map,
                         dyn_props_keys = rv$dyn_props_keys,
-                        out_sep = " | "
+                        out_sep = " | ",
+                        pair_column = pair_column
                     )
                 },
                 error = function(e) list(values = character(0))
@@ -1643,10 +1646,17 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # basisOfRecord and type). Amber, non-blocking; just reads rv$map_values
         # (no inputs recreated here, so no re-render loop).
         output$duplicate_source_warning <- shiny::renderUI({
+            shared <- intersect(as.character(rv$map_values$decimalLatitude),
+                                as.character(rv$map_values$decimalLongitude))
+            df <- raw_data_r()
             dups <- detect_duplicate_source_mappings(
                 rv$map_values,
                 exclude = c("occurrenceID", "datasetName", "modified",
-                            "license", "language")
+                            "license", "language"),
+                # A sample keeps this cheap: it runs again on every card change.
+                pair_cols = if (length(shared) && is.data.frame(df)) {
+                    coordinate_pair_columns(df, shared, max_values = 500L)
+                }
             )
             if (length(dups) == 0L) {
                 return(NULL)

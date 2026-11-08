@@ -1259,6 +1259,11 @@
     "en": "Ambiguity detected",
     "es": "Ambigüedad detectada"
   },
+  "rostrum_reason_coordinate_pair": {
+    "pt": "Latitude e longitude na mesma coluna",
+    "en": "Latitude and longitude in one column",
+    "es": "Latitud y longitud en la misma columna"
+  },
   "rostrum_reason_conflict_won": {
     "pt": "Conflito resolvido a favor",
     "en": "Conflict won",

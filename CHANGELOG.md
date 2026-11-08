@@ -8,6 +8,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **mapping:** Split a column with latitude and longitude in each cell, as `23°33'S 46°38'W` or `-23.55, -46.63`, between the two coordinate cards, and put it on both cards on auto-map, ADR-201
 - **mapping:** Add `SAIRA_PUBLIC=true` for a shared server, which reads aliases but saves no new ones, ADR-182
 - **export:** Move the measurements to a MeasurementOrFact extension file, one row per measurement, ADR-179
 - **mapping:** Give each column of the measurementValue card its own type, unit and method, ADR-179

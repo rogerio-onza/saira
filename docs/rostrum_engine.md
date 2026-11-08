@@ -481,6 +481,15 @@ Outros exemplos:
 
 **Benefício**: Preserva informação original mesmo quando há formato padronizado preferido.
 
+**Coluna com os dois eixos** (ADR-201):
+
+Depois do fallback de verbatim, `rostrum_apply_coordinate_pair()` procura uma coluna com latitude e longitude em cada célula (90% das linhas preenchidas, com os 500 primeiros valores distintos pesados pelo número de linhas). Ela vai para `decimalLatitude` e `decimalLongitude`, com status SUGERIDO, quando:
+1. Nenhum dos dois termos tem outra coluna, nem estado AMBIGUO, nem alternativas.
+2. A coluna tem nome de coordenada (`coordinate_like_column()`) ou um grau ou letra de hemisfério nos valores. Dois números simples podem ser um intervalo.
+3. Só uma coluna passa. Com duas, o usuário escolhe.
+
+A coluna sai de `verbatimLatitude` e `verbatimLongitude`.
+
 ---
 
 ## 7. Aprendizado Local (Aliases de Usuário)
