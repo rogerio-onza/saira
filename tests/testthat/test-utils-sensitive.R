@@ -1510,3 +1510,29 @@ testthat::test_that("protected_point_text_rows covers a species that never reach
     gp$levels <- c("Chrysocyon brachyurus" = "not_sensitive")
     testthat::expect_identical(rows(df, gp), integer(0))
 })
+
+testthat::test_that("protected_point_text_rows blocks when no sensitive species reaches the panel", {
+    local_sensitive_fixture("Panthera onca")
+    off <- list(enabled = FALSE, levels = stats::setNames(character(0), character(0)))
+    df <- data.frame(
+        scientificName = c("Panthera onca", "Panthera onca", "Felis catus"),
+        verbatimCoordinates = c("23°33'S 46°38'W", "", "23°33'S 46°38'W"),
+        occurrenceRemarks = c("", "adult, 2 cubs", ""),
+        stringsAsFactors = FALSE
+    )
+    rows <- saira:::protected_point_text_rows
+    # No decimal columns at all: the panel stays hidden and the default
+    # "publish" is no choice of the owner.
+    testthat::expect_identical(rows(df, off), 1L)
+    testthat::expect_identical(rows(df, NULL), 1L)
+    df$decimalLatitude <- ""
+    df$decimalLongitude <- ""
+    testthat::expect_identical(rows(df, off), 1L)
+    # An explicit "not sensitive" mark still wins.
+    no <- data.frame(scientificName = "Panthera onca", sensitive = FALSE, stringsAsFactors = FALSE)
+    testthat::expect_identical(rows(df, off, no), integer(0))
+    # With a point, the panel shows and "publish" is the owner's choice.
+    df$decimalLatitude[2L] <- "-23.55"
+    df$decimalLongitude[2L] <- "-46.63"
+    testthat::expect_identical(rows(df, off), integer(0))
+})

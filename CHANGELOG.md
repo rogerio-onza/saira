@@ -110,6 +110,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **export:** Stop the export when a sensitive species has no point but a text field shows its location, also when the Generalization panel did not appear, ADR-200
 - **ui:** Show gray shapes in place of the Mapping cards and the Problems list while they build, and the Mapping button labels at once, ADR-199
 - **names:** Stop the grey blink of the panels on a click on Validate, ADR-198 ([#287](https://github.com/rogerio-onza/saira/pull/287))
 - **mapping:** Open a column list above its field when the scroll box cuts it at the bottom, ADR-198 ([#287](https://github.com/rogerio-onza/saira/pull/287))

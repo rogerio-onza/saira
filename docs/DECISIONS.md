@@ -3603,3 +3603,11 @@ Formato: ADR leve (Architecture Decision Record).
   - Os seis rotulos da barra lateral do Mapeamento usam `suspendWhenHidden = FALSE` e chegam prontos com a pagina Inicio.
   - O esqueleto pulsa so sem `prefers-reduced-motion` e usa os tokens de borda, iguais nos dois temas.
 - **Consequencias**: medido no Firefox em 3 rodadas por tema: rotulos de 1,75 s para 0,02 s, cartoes sem mudanca (1,5 a 2,0 s). O esqueleto cobre so o primeiro valor de cada saida. Uma nova renderizacao continua com o fade do Shiny.
+
+## ADR-200: Bloqueio da localizacao em texto sem o painel de generalizacao
+
+- **Data**: 2026-11-08
+- **Status**: Aceito. Completa ADR-193.
+- **Contexto**: VAL-02. O painel de especies sensiveis so lista especies com um ponto completo. Quando nenhuma especie sensivel do arquivo tem ponto, o painel nao aparece, o modo fica em "publicar" e `protected_point_text_rows()` saia cedo. A coordenada exata em `verbatimCoordinates`, em observacao ou em coluna nao mapeada ia para o pacote sem aviso. O conversor de coordenadas so le as colunas mapeadas para `decimalLatitude` e `decimalLongitude`.
+- **Decisao**: com a generalizacao desligada, o guardiao tambem roda quando nenhuma linha sensivel tem ponto completo. Ele trata essas especies como nivel `high`, como ja fazia com a especie que nao chega ao painel (ADR-193). Faltar `decimalLatitude` ou `decimalLongitude` conta como linha sem ponto. O dono escolheu bloquear, nao so avisar. A mensagem e a de ADR-193: preencher a coordenada, apagar o valor na previa ou na planilha original.
+- **Consequencias**: com o painel visivel, "publicar" continua uma escolha do dono e nao bloqueia. Uma marcacao "nao sensivel" em Nomes tambem libera.
