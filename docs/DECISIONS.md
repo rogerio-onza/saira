@@ -3591,3 +3591,15 @@ Formato: ADR leve (Architecture Decision Record).
   - O painel de toasts nao recebe clique, so o botao de fechar e os links. Com um menu aberto, os toasts ficam ocultos.
   - `.validate-names-page` define `--shiny-fade-opacity: 1`. O botao de rodar e o card da rodada mostram o progresso.
 - **Consequencias**: verificado em Chrome e Firefox com `ocorrencias-demo.csv`: 65 de 65 campos sem `new-password`, menu de `associatedReferences` inteiro acima do campo, toasts ocultos com o menu aberto e opacidade 1 em `.recalculating` de Nomes. O efeito no Bitwarden nao foi medido aqui: a medicao pede o perfil com a extensao.
+
+## ADR-199: Esqueleto no preparo de Mapeamento e Pre-visualizacao
+
+- **Data**: 2026-11-08
+- **Status**: Aceito.
+- **Contexto**: secao 6 da auditoria de 2026-11-06. No Firefox, com `ocorrencias-demo.csv`, o Mapeamento fica 1,6 a 1,8 s sem cartoes e com os botoes laterais so com o icone. A area de Problemas fica 0,6 a 0,8 s vazia. O dono escolheu a opcao A (esqueleto) entre tres mockups: esqueleto, mensagem no lugar e etapas com contagem.
+- **Decisao**:
+  - `with_loading_skeleton()` poe formas cinza dentro de um `uiOutput`. O Shiny troca esse conteudo pelo primeiro valor, e nenhum codigo remove o esqueleto.
+  - Recebem esqueleto a grade de cartoes, o painel de Problemas, as pilulas e a lista por linha. O bloco de vocabulario so recebe esqueleto quando ha problema de vocabulario, para a coluna nao aparecer e sumir.
+  - Os seis rotulos da barra lateral do Mapeamento usam `suspendWhenHidden = FALSE` e chegam prontos com a pagina Inicio.
+  - O esqueleto pulsa so sem `prefers-reduced-motion` e usa os tokens de borda, iguais nos dois temas.
+- **Consequencias**: medido no Firefox em 3 rodadas por tema: rotulos de 1,75 s para 0,02 s, cartoes sem mudanca (1,5 a 2,0 s). O esqueleto cobre so o primeiro valor de cada saida. Uma nova renderizacao continua com o fade do Shiny.

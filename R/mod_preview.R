@@ -203,7 +203,8 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                     id = ns("mode_body"),
                     mode_part(shiny::div(class = "preview-mode-part", DT::dataTableOutput(ns("datatable"))), "table"),
                     mode_part(
-                        shiny::div(class = "preview-mode-part preview-problems", shiny::uiOutput(ns("problems_panel"))),
+                        shiny::div(class = "preview-mode-part preview-problems",
+                                   with_loading_skeleton(shiny::uiOutput(ns("problems_panel")), c("pills", "rows"))),
                         "problems"
                     )
                 )
@@ -297,14 +298,21 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             }
             shiny::tagList(
                 shiny::p(class = "preview-fix-hint", tr("preview_fix_hint", lang)),
-                shiny::uiOutput(ns("fix_pills")),
+                with_loading_skeleton(shiny::uiOutput(ns("fix_pills")), "pills"),
                 shiny::uiOutput(ns("fix_banner")),
                 # Vocabulary on the left, the per-row fixes and the record on
                 # the right, so no page or list needs more than one scroll.
+                # The skeletons hold the place until each part arrives
+                # (ADR-199). The vocabulary one only when there is vocabulary,
+                # else the column would come and go.
                 shiny::div(
                     class = "preview-fix-cols",
-                    shiny::uiOutput(ns("vocab_section"), class = "preview-fix-vocab-col"),
-                    shiny::uiOutput(ns("rows_section"), class = "preview-fix-rows-col")
+                    if (any(p$family == "vocab")) {
+                        with_loading_skeleton(shiny::uiOutput(ns("vocab_section"), class = "preview-fix-vocab-col"), "vocab")
+                    } else {
+                        shiny::uiOutput(ns("vocab_section"), class = "preview-fix-vocab-col")
+                    },
+                    with_loading_skeleton(shiny::uiOutput(ns("rows_section"), class = "preview-fix-rows-col"), "rows")
                 ),
                 shiny::uiOutput(ns("copies_section"))
             )
