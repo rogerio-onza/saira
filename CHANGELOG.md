@@ -331,6 +331,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **site:** Align the help site tutorials with the v1.0 app ([#258](https://github.com/rogerio-onza/saira/pull/258))
 - **site:** Show how to serve Saíra to other people, and fix the network example of the install tutorial
 - **docs:** Describe the current tabs, export files and CI in the architecture and contributing guides
+- **docs:** Rewrite the README with a photo banner, the 7 steps and a download block per system
 
 ### Tests
 - **tests:** Isolate the Flora BR and Fauna BR data folder for the whole suite
