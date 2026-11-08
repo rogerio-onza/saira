@@ -983,20 +983,27 @@ mask_sensitive_coordinates <- function(df, decisions = NULL,
 # redact_point_numbers(). `extras` holds the unmapped columns that reach the file.
 protected_point_text_rows <- function(df, generalization, decisions = NULL, extras = NULL) {
     needed <- c("scientificName", "decimalLatitude", "decimalLongitude")
-    if (!is.data.frame(df) || !all(needed %in% names(df)) ||
-        !is.list(generalization) || !isTRUE(generalization$enabled) ||
-        !length(generalization$levels)) {
+    if (!is.data.frame(df) || !"scientificName" %in% names(df)) {
         return(integer(0))
     }
-    tier <- resolve_row_tiers(df$scientificName, generalization$levels)
-    no_point <- is.na(as_coord_numeric(df$decimalLatitude)$num) |
-        is.na(as_coord_numeric(df$decimalLongitude)$num)
+    axis_num <- function(col) {
+        if (col %in% names(df)) as_coord_numeric(df[[col]])$num else rep(NA_real_, nrow(df))
+    }
+    no_point <- is.na(axis_num("decimalLatitude")) | is.na(axis_num("decimalLongitude"))
+    sensitive <- sensitive_resolve(df$scientificName, decisions)$sensitive
+    enabled <- is.list(generalization) && isTRUE(generalization$enabled) &&
+        length(generalization$levels) > 0L
+    # The panel lists only the species with a full point. With none, the owner
+    # never sees the choice to publish, so "publish" is not an answer (VAL-02).
+    if (!enabled && any(sensitive & !no_point)) {
+        return(integer(0))
+    }
+    tier <- resolve_row_tiers(df$scientificName, if (enabled) generalization$levels)
     protected_tiers <- c("extreme", "high", "medium", "low")
     on_panel <- tier %in% protected_tiers
     # A species with no full point never reaches the panel, so it has no level.
     tier[!df$scientificName %in% df$scientificName[!no_point]] <- "high"
-    rows <- which(no_point & tier %in% protected_tiers &
-                      sensitive_resolve(df$scientificName, decisions)$sensitive)
+    rows <- which(no_point & tier %in% protected_tiers & sensitive)
     if (!length(rows)) {
         return(integer(0))
     }
