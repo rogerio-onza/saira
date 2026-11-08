@@ -3611,3 +3611,18 @@ Formato: ADR leve (Architecture Decision Record).
 - **Contexto**: VAL-02. O painel de especies sensiveis so lista especies com um ponto completo. Quando nenhuma especie sensivel do arquivo tem ponto, o painel nao aparece, o modo fica em "publicar" e `protected_point_text_rows()` saia cedo. A coordenada exata em `verbatimCoordinates`, em observacao ou em coluna nao mapeada ia para o pacote sem aviso. O conversor de coordenadas so le as colunas mapeadas para `decimalLatitude` e `decimalLongitude`.
 - **Decisao**: com a generalizacao desligada, o guardiao tambem roda quando nenhuma linha sensivel tem ponto completo. Ele trata essas especies como nivel `high`, como ja fazia com a especie que nao chega ao painel (ADR-193). Faltar `decimalLatitude` ou `decimalLongitude` conta como linha sem ponto. O dono escolheu bloquear, nao so avisar. A mensagem e a de ADR-193: preencher a coordenada, apagar o valor na previa ou na planilha original.
 - **Consequencias**: com o painel visivel, "publicar" continua uma escolha do dono e nao bloqueia. Uma marcacao "nao sensivel" em Nomes tambem libera.
+
+## ADR-201: Coluna unica de coordenadas nos dois cartoes
+
+- **Data**: 2026-11-08
+- **Status**: Aceito. Completa ADR-200.
+- **Contexto**: muitas planilhas tem latitude e longitude na mesma celula, como `23°33'S 46°38'W` ou `-23.55, -46.63`. O conversor lia um eixo por celula, e o auto-mapeamento nao mapeava essa coluna. Sem ponto, o painel de generalizacao nao aparece (ADR-200).
+- **Decisao**:
+  - `parse_coordinate_pair()` separa a celula. A letra de hemisferio diz qual parte e qual. Sem letra, a latitude vem primeiro, a menos que o primeiro valor passe de 90. Dois numeros simples precisam de decimais, para um intervalo ou uma data nao virar par. Minutos e segundos so contam depois do simbolo de grau.
+  - A mesma coluna vai nos cartoes de latitude e de longitude, e `convert_coordinate_text()` da a cada cartao o seu eixo. O dono escolheu esta forma, nao derivar de `verbatimCoordinates`: o resultado fica visivel nos cartoes, e `verbatimCoordinates` nem e um cartao padrao.
+  - O auto-mapeamento poe a coluna nos dois cartoes com status SUGERIDO (`rostrum_apply_coordinate_pair()`). Ele nao mexe em um termo ambiguo ou com alternativas.
+  - Quando a mesma coluna esta nos dois cartoes, um numero sozinho fica sem ponto. Ele nao vira latitude e longitude iguais. A regra vem do mapeamento, nao das celulas, para os cartoes e o Preview, que leem um recorte de linhas, darem o mesmo resultado da exportacao.
+  - Uma coluna de pares tem pares em 90% das linhas preenchidas. A conta pesa cada valor pelo numero de linhas, para um numero repetido nao sumir na amostra de valores distintos.
+  - O auto-mapeamento tira a coluna dos cartoes verbatim. Com duas colunas elegiveis, como "Ponto inicial" e "Ponto final", ele nao escolhe nenhuma.
+  - O aviso de coluna em dois cartoes ignora esse par, so quando a coluna tem pares. Ele le uma amostra de 500 valores distintos, porque roda a cada mudanca de cartao.
+- **Consequencias**: 100 mil pares distintos levam cerca de 3 s por cartao (6 s em DMS), com cache por cartao. Decimais com virgula e numeros simples ficam no tempo anterior. Um par de numeros simples sem nome de coordenada, como `-23.55, -46.63` em "Ponto", nao entra no auto-mapeamento, mas o usuario pode escolher a coluna nos dois cartoes.

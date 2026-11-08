@@ -224,3 +224,44 @@ testthat::test_that("an almost empty exact-named column does not win over a full
     testthat::expect_equal(unname(picked[c("scientificName", "decimalLatitude")]),
                            c("Nome científico", "Lat"))
 })
+
+testthat::test_that("auto-map puts a column of coordinate pairs on both coordinate cards", {
+    pick <- function(df) {
+        x <- run_rostrum_engine(df, .make_minimal_dwc_terms(), synonyms_tbl = .make_minimal_synonyms())$data
+        stats::setNames(x$selected_col, x$term)[c("decimalLatitude", "decimalLongitude")]
+    }
+    base <- data.frame(`nome cientifico` = c("Panthera onca", "Leopardus pardalis"),
+                       check.names = FALSE, stringsAsFactors = FALSE)
+    df <- cbind(base, Coordenadas = c("23°33'S 46°38'W", "15.2 S, 45.3 W"))
+    testthat::expect_equal(unname(pick(df)), c("Coordenadas", "Coordenadas"))
+    x <- run_rostrum_engine(df, .make_minimal_dwc_terms(), synonyms_tbl = .make_minimal_synonyms())$data
+    testthat::expect_identical(unique(x$reason[x$term %in% c("decimalLatitude", "decimalLongitude")]),
+                               "coordinate_pair_split")
+
+    # Two plain numbers under a name that is no coordinate can be a range.
+    testthat::expect_true(all(is.na(pick(cbind(base, Intervalo = c("1.5, 2.5", "3.5, 4.5"))))))
+    # An ambiguous choice stays with the user.
+    sep <- cbind(.make_realistic_df(), LatLong = c("-10.1, -40.2", "-15.2, -45.3"))
+    testthat::expect_true(all(is.na(pick(sep))))
+})
+
+testthat::test_that("auto-map with the full catalog takes a column of pairs off the verbatim cards", {
+    terms <- readRDS(system.file("extdata", "dwc_terms.rds", package = "saira"))
+    run <- function(df) {
+        x <- run_rostrum_engine(df, terms)$data
+        stats::setNames(x$selected_col, x$term)[
+            c("decimalLatitude", "decimalLongitude", "verbatimLatitude", "verbatimLongitude")]
+    }
+    base <- data.frame(ID = c("r1", "r2"), Especie = "Panthera onca", stringsAsFactors = FALSE)
+    got <- run(cbind(base, Latitude = c("-23.55, -46.63", "-23.50, -46.60")))
+    testthat::expect_equal(unname(got[1:2]), c("Latitude", "Latitude"))
+    testthat::expect_true(all(is.na(got[3:4])))
+
+    # Two columns of pairs: the user picks, in any column order.
+    two <- data.frame(base,
+                 `Ponto inicial` = c("23\u00b033'S 46\u00b038'W", "23\u00b034'S 46\u00b039'W"),
+                 `Ponto final` = c("23\u00b040'S 46\u00b050'W", "23\u00b041'S 46\u00b051'W"),
+                 check.names = FALSE, stringsAsFactors = FALSE)
+    testthat::expect_true(all(is.na(run(two)[1:2])))
+    testthat::expect_true(all(is.na(run(two[, c(1, 2, 4, 3)])[1:2])))
+})

@@ -1277,6 +1277,62 @@ rostrum_apply_verbatim_fallback <- function(stage3_data, min_score = 0.75, block
     list(data = data, warnings = warnings)
 }
 
+# A column with both axes in each cell fills the two coordinate cards when
+# neither card has another column (ADR-201). A pair of plain numbers can be a
+# range, so the column also needs a coordinate name or a degree or hemisphere mark.
+# A term the user must settle (ambiguous, or with alternatives) keeps its state,
+# and two such columns leave the choice to the user too. A text column of pairs
+# often lands on a verbatim card first, so those cards do not hold it back.
+rostrum_apply_coordinate_pair <- function(data, df, blocked_terms = character(0)) {
+    terms <- c("decimalLatitude", "decimalLongitude")
+    if (!is.data.frame(data) || !nrow(data) || !is.data.frame(df) || !ncol(df) ||
+        any(terms %in% blocked_terms)) {
+        return(data)
+    }
+    idx <- vapply(terms, function(t) rostrum_term_index(data, t), integer(1))
+    if (anyNA(idx) || any(toupper(as.character(data$status[idx])) %in% "AMBIGUO")) {
+        return(data)
+    }
+    picked <- vapply(terms, function(t) rostrum_selected_column(data, t), character(1))
+    picked <- unique(picked[!is.na(picked) & nzchar(picked)])
+    if (length(picked) > 1L) {
+        return(data)
+    }
+    verbatim <- c("verbatimLatitude", "verbatimLongitude", "verbatimCoordinates")
+    others <- data$selected_col[!data$term %in% c(terms, verbatim)]
+    cands <- if (length(picked)) picked else setdiff(names(df), others)
+    marked <- vapply(cands, function(col) {
+        v <- utils::head(unique(as.character(df[[col]])), 200L)
+        any(grepl("[\u00b0\u00ba]|\\d\\s*[NSEWOL]\\b", toupper(v), perl = TRUE))
+    }, logical(1))
+    cands <- cands[coordinate_like_column(cands) | marked]
+    col <- coordinate_pair_columns(df, cands, max_values = 500L)
+    if (length(col) != 1L) {
+        return(data)
+    }
+    # The verbatim cards hold one axis, not the pair.
+    for (i in which(data$term %in% verbatim[1:2] & data$selected_col %in% col)) {
+        data$status[[i]] <- "MANUAL"
+        data$applied[[i]] <- FALSE
+        data$selected_col[[i]] <- NA_character_
+        data$reason[[i]] <- "no_confident_match"
+    }
+    for (i in idx) {
+        if (identical(data$selected_col[[i]], col)) next
+        data$selected_col[[i]] <- col
+        data$status[[i]] <- "SUGERIDO"
+        data$reason[[i]] <- "coordinate_pair_split"
+        data$applied[[i]] <- TRUE
+        data$penalty_score[[i]] <- 0
+        data$veto_code[[i]] <- ""
+        data$final_score[[i]] <- 0.9
+        data$explain_json[[i]] <- rostrum_update_explain_json(
+            data$explain_json[[i]], patch = list(coordinate_pair = list(from_column = col))
+        )
+    }
+    data
+}
+
 rostrum_apply_alias_overrides <- function(stage1_data, df, conn, options = rostrum_options(), context = list()) {
     if (!is.data.frame(stage1_data) || nrow(stage1_data) == 0L) {
         return(list(data = stage1_data, warnings = character(0)))
@@ -1505,6 +1561,9 @@ rostrum_stage3_resolve <- function(stage2_data, df = NULL, options = rostrum_opt
         min_score = options$suggest_threshold,
         blocked_terms = stage3_seed$terms_with_alternatives
     )
+
+    stage35$data <- rostrum_apply_coordinate_pair(stage35$data, base_df,
+                                                  stage3_seed$terms_with_alternatives)
 
     timing_ms <- as.numeric(difftime(Sys.time(), start_time, units = "secs")) * 1000
     build_rostrum_stage_result(

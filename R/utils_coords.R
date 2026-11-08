@@ -2506,45 +2506,175 @@ parse_coordinate_text <- function(x, axis = c("lat", "lon")) {
         "(?:(\\d+(?:[.,]\\d+)?)\\s*'\\s*)?(?:(\\d+(?:[.,]\\d+)?)\\s*\"\\s*)?",
         "([NSEWOL])?\\.?$"
     )
-    hit <- which(cand & grepl(re, toupper(s), perl = TRUE))
+    hit <- which(cand)
     if (!length(hit)) {
         return(out)
     }
-    parts <- regmatches(toupper(s[hit]), regexec(re, toupper(s[hit]), perl = TRUE))
+    # One regexpr() call reads every cell. A cell per call was the hot path of
+    # a column of pairs (ADR-201).
+    up <- toupper(s[hit])
+    r <- regexpr(re, up, perl = TRUE)
+    keep <- r > 0L
+    if (!any(keep)) {
+        return(out)
+    }
+    hit <- hit[keep]
+    up <- up[keep]
+    cs <- attr(r, "capture.start")[keep, , drop = FALSE]
+    cl <- attr(r, "capture.length")[keep, , drop = FALSE]
+    group <- function(k) substring(up, cs[, k], cs[, k] + cl[, k] - 1L)
+    h1 <- group(1L)
+    h2 <- group(6L)
+    mi <- group(4L)
+    se <- group(5L)
     num <- function(v) suppressWarnings(as.numeric(sub(",", ".", v, fixed = TRUE)))
     allowed <- if (axis == "lat") c("N", "S") else c("E", "W", "O", "L")
-    negative <- c("S", "W", "O")
     limit <- if (axis == "lat") 90 else 180
-    out[hit] <- vapply(parts, function(p) {
-        hemi <- unique(p[c(2L, 7L)][nzchar(p[c(2L, 7L)])])
-        if (length(hemi) > 1L || (length(hemi) == 1L && !hemi %in% allowed)) {
-            return(NA_real_)
-        }
-        deg <- num(p[[4]])
-        mins <- if (nzchar(p[[5]])) num(p[[5]]) else 0
-        secs <- if (nzchar(p[[6]])) num(p[[6]]) else 0
-        if (is.na(deg) || mins >= 60 || secs >= 60 ||
-            ((nzchar(p[[5]]) || nzchar(p[[6]])) && deg != round(deg))) {
-            return(NA_real_)
-        }
-        value <- deg + mins / 60 + secs / 3600
-        minus <- identical(p[[3]], "-")
-        south_west <- length(hemi) == 1L && hemi %in% negative
+    hemi <- ifelse(nzchar(h1), h1, h2)
+    deg <- num(group(3L))
+    mins <- ifelse(nzchar(mi), num(mi), 0)
+    secs <- ifelse(nzchar(se), num(se), 0)
+    minus <- group(2L) == "-"
+    south_west <- hemi %in% c("S", "W", "O")
+    bad <- (nzchar(h1) & nzchar(h2) & h1 != h2) | (nzchar(hemi) & !hemi %in% allowed) |
+        is.na(deg) | mins >= 60 | secs >= 60 |
+        ((nzchar(mi) | nzchar(se)) & deg != round(deg)) |
         # "-23.5 N" says two things at once.
-        if (minus && length(hemi) == 1L && !south_west) {
-            return(NA_real_)
-        }
-        value <- if (minus || south_west) -value else value
-        if (abs(value) > limit) NA_real_ else round(value, 6)
-    }, numeric(1))
+        (minus & nzchar(hemi) & !south_west)
+    value <- deg + mins / 60 + secs / 3600
+    value <- ifelse(minus | south_west, -value, value)
+    bad <- bad | abs(value) > limit
+    out[hit] <- ifelse(bad %in% TRUE, NA_real_, round(value, 6))
     out
 }
 
 # Mapped coordinate values with the text forms converted, and the other
-# values as they were.
-convert_coordinate_text <- function(values, axis) {
+# values as they were. `pair_column` is TRUE when the same column is on the
+# latitude and the longitude cards.
+convert_coordinate_text <- function(values, axis, pair_column = FALSE) {
     parsed <- parse_coordinate_text(values, axis)
+    # A cell with both axes gives each card its own axis (ADR-201). A plain
+    # number is one axis, so it skips the pair parser. The coordinate check
+    # reads a number with as_coord_numeric(), so this test uses it too.
+    plain <- !is.na(as_coord_numeric(values)$num)
+    rest <- which(is.na(parsed) & !plain)
+    pair <- rep(FALSE, length(values))
+    if (length(rest)) {
+        parsed[rest] <- parse_coordinate_pair(values[rest])[[axis]]
+        pair[rest] <- !is.na(parsed[rest])
+    }
+    # When one column is on both cards, one value alone is no axis for sure.
+    # The row gets no point, not the same number on both cards. The decision
+    # comes from the mapping, not from the cells, so a slice of rows for the
+    # cards or the Preview gives the same answer as the export. Other text
+    # stays for the coordinate check.
+    if (isTRUE(pair_column)) {
+        filled <- !is.na(values) & nzchar(trimws(values))
+        lone <- filled & !pair & (plain | !is.na(parsed))
+        parsed[lone] <- NA_real_
+        values[lone] <- ""
+    }
     ok <- !is.na(parsed)
     values[ok] <- format(parsed[ok], scientific = FALSE, drop0trailing = TRUE, trim = TRUE)
     values
+}
+
+# Share of the filled rows that must hold a pair for a column of pairs.
+COORDINATE_PAIR_SHARE <- 0.9
+
+# Both axes in one cell, as "23\u00b033'S 46\u00b038'W" or "-23.55, -46.63" (ADR-201).
+# A hemisphere letter says which part is which. With none, the latitude comes
+# first, the usual order, unless the first value cannot be a latitude. Two plain
+# numbers need decimals, so a range as "10/20" or a date is no pair.
+# Returns a data frame with the columns `lat` and `lon`, NA where no pair.
+parse_coordinate_pair <- function(x) {
+    s <- as.character(x)
+    u <- unique(s)
+    if (length(u) < length(s)) {
+        return(parse_coordinate_pair(u)[match(s, u), , drop = FALSE] |>
+                   `rownames<-`(NULL))
+    }
+    out <- data.frame(lat = rep(NA_real_, length(s)), lon = rep(NA_real_, length(s)))
+    t <- trimws(s)
+    t[is.na(t)] <- ""
+    t <- toupper(gsub("[\u2212\u2013\u2014]", "-", t))
+    num <- "\\d+(?:[.,]\\d+)?"
+    # Minutes and seconds come only after a degree mark.
+    body <- paste0(
+        "[-+]?\\s*", num, "(?:\\s*[\u00b0\u00ba](?:\\s*", num, "\\s*['\u2032\u2019\u00b4`]",
+        "(?:\\s*", num, "\\s*(?:\"|''|\u2033|\u201d))?)?)?"
+    )
+    part <- paste0("(?:[NSEWOL]\\s*", body, "|", body, "(?:\\s*[NSEWOL])?)")
+    # A part that ends in a letter or a mark needs no separator after it.
+    sep <- "(?:\\s*[;,/|]\\s*|\\s+|(?<=[NSEWOL\u00b0\u00ba'\"\u2032\u2019\u2033\u201d]))"
+    re <- paste0("^(", part, ")", sep, "(", part, ")$")
+    # One regexpr() call gives the place of both parts in every cell.
+    r <- regexpr(re, t, perl = TRUE)
+    hit <- which(r > 0L)
+    # A cell that already reads as one axis is no pair. Only a mark or a
+    # letter makes one axis of a text.
+    marked <- hit[grepl("[NSEWOL\u00b0\u00ba'\"\u2032\u2019\u00b4`\u2033\u201d]", t[hit])]
+    single <- marked[!is.na(parse_coordinate_text(t[marked], "lat")) |
+                         !is.na(parse_coordinate_text(t[marked], "lon"))]
+    hit <- setdiff(hit, single)
+    if (!length(hit)) {
+        return(out)
+    }
+    cs <- attr(r, "capture.start")[hit, , drop = FALSE]
+    cl <- attr(r, "capture.length")[hit, , drop = FALSE]
+    p1 <- trimws(substring(t[hit], cs[, 1L], cs[, 1L] + cl[, 1L] - 1L))
+    p2 <- trimws(substring(t[hit], cs[, 2L], cs[, 2L] + cl[, 2L] - 1L))
+    letter_axis <- function(p) {
+        ns <- grepl("[NS]", p)
+        ew <- grepl("[EWOL]", p)
+        ifelse(ns & ew, "bad", ifelse(ns, "lat", ifelse(ew, "lon", NA_character_)))
+    }
+    read_value <- function(p, axis) {
+        v <- rep(NA_real_, length(p))
+        marked <- grepl("[NSEWOL\u00b0\u00ba'\"\u2032\u2019\u00b4`\u2033\u201d]", p)
+        if (any(marked)) v[marked] <- parse_coordinate_text(p[marked], axis)
+        q <- gsub("\\s+", "", p[!marked])
+        n <- suppressWarnings(as.numeric(sub(",", ".", q, fixed = TRUE)))
+        n[!grepl("[.,]\\d", q) | abs(n) > if (axis == "lat") 90 else 180] <- NA_real_
+        v[!marked] <- n
+        v
+    }
+    a1 <- letter_axis(p1)
+    a2 <- letter_axis(p2)
+    bad <- a1 %in% "bad" | a2 %in% "bad" | (!is.na(a1) & !is.na(a2) & a1 == a2)
+    other <- c(lat = "lon", lon = "lat")
+    a1[is.na(a1) & !is.na(a2) & !bad] <- other[a2[is.na(a1) & !is.na(a2) & !bad]]
+    a2[is.na(a2) & !is.na(a1) & !bad] <- other[a1[is.na(a2) & !is.na(a1) & !bad]]
+    none <- is.na(a1) & is.na(a2)
+    if (any(none)) {
+        # Read the first part as degrees, so 23 degrees 33 minutes is 23.55.
+        swap <- abs(read_value(p1[none], "lon")) > 90
+        a1[none] <- ifelse(swap %in% TRUE, "lon", "lat")
+    }
+    first_lat <- a1 %in% "lat"
+    lat <- read_value(ifelse(first_lat, p1, p2), "lat")
+    lon <- read_value(ifelse(first_lat, p2, p1), "lon")
+    ok <- !bad & !is.na(lat) & !is.na(lon)
+    out$lat[hit[ok]] <- lat[ok]
+    out$lon[hit[ok]] <- lon[ok]
+    out
+}
+
+# Columns where most filled cells hold both axes. Auto-map puts such a column
+# on the latitude and the longitude cards, and the warning for a column on two
+# cards leaves that pair alone (ADR-201).
+# `max_values` parses only the first distinct values, to keep auto-map fast.
+# The share counts rows, so a value repeated in many rows weighs more.
+coordinate_pair_columns <- function(df, cols = names(df), min_share = COORDINATE_PAIR_SHARE,
+                                    max_values = Inf) {
+    cols <- intersect(cols, names(df))
+    keep <- vapply(cols, function(col) {
+        v <- as.character(df[[col]])
+        v <- v[!is.na(v) & nzchar(trimws(v))]
+        u <- utils::head(unique(v), max_values)
+        if (!length(u)) return(FALSE)
+        rows <- tabulate(match(v, u), length(u))
+        sum(rows[!is.na(parse_coordinate_pair(u)$lat)]) >= min_share * sum(rows)
+    }, logical(1))
+    cols[keep]
 }

@@ -831,3 +831,67 @@ test_that("a point next to a generalized coastline is not sea (B13)", {
   land <- c(FALSE, TRUE, FALSE, FALSE)
   expect_equal(coords_coastal_tolerance(x, land, ref, 10L), c(TRUE, TRUE, FALSE, FALSE))
 })
+
+testthat::test_that("parse_coordinate_pair splits one cell into latitude and longitude", {
+    pair <- saira:::parse_coordinate_pair
+    v <- c("23°33'S 46°38'W", "46°38'W, 23°33'S", "S23°33' W46°38'",
+           "-23.55, -46.63", "-23,55; -46,63", "23.55 S, 46.63 W", "-95.1, -23.55")
+    res <- pair(v)
+    testthat::expect_equal(res$lat, rep(-23.55, 7L))
+    # With no letter, the latitude comes first unless it cannot be one.
+    testthat::expect_equal(res$lon, c(rep(-46.63333, 3L), rep(-46.63, 3L), -95.1), tolerance = 1e-5)
+    # Dates, ranges, integers, one axis and two latitudes are no pair.
+    no <- pair(c("2024-03-10", "10/20", "-23 -46", "23°33'S", "-23.55",
+                 "23.5 N 10.2 S", "", NA))
+    testthat::expect_true(all(is.na(no$lat) & is.na(no$lon)))
+    # Degrees and minutes with no letter: 23 degrees 33 minutes is no 2333.
+    dm <- pair("-23\u00b033' -46\u00b038'")
+    testthat::expect_equal(c(dm$lat, dm$lon), c(-23.55, -46.63333), tolerance = 1e-5)
+})
+
+testthat::test_that("convert_coordinate_text gives each card its own axis of a pair", {
+    v <- c("23°33'S 46°38'W", "-23.55, -46.63", "23°33'S", "-23.55")
+    testthat::expect_identical(saira:::convert_coordinate_text(v, "lat"),
+                               c("-23.55", "-23.55", "-23.55", "-23.55"))
+    testthat::expect_identical(saira:::convert_coordinate_text(v, "lon"),
+                               c("-46.63333", "-46.63", "23°33'S", "-23.55"))
+})
+
+testthat::test_that("convert_coordinate_text gives no point to one value in a column of pairs", {
+    v <- c(sprintf("-23.%02d, -46.%02d", 1:9, 1:9), "-23.55")
+    conv <- function(x, axis) saira:::convert_coordinate_text(x, axis, pair_column = TRUE)
+    testthat::expect_identical(conv(v, "lat")[10L], "")
+    testthat::expect_identical(conv(v, "lon")[10L], "")
+    # The rule holds per cell: many repeated values, or a slice with no pair.
+    testthat::expect_identical(unique(conv(c(v[1:9], rep("-23.55", 10)), "lon")[10:19]), "")
+    testthat::expect_identical(conv(rep("-23.55", 5), "lat"), rep("", 5))
+    # Each form that the coordinate check reads as a number.
+    odd <- c("-2.355e1", "-.55", "-23.", " +23,5 ")
+    testthat::expect_identical(conv(c(v[1:9], odd), "lat")[10:13], rep("", 4))
+    testthat::expect_identical(conv(c(v[1:9], odd), "lon")[10:13], rep("", 4))
+    # Text that is no coordinate stays for the coordinate check.
+    v[10L] <- "sem GPS"
+    testthat::expect_identical(conv(v, "lat")[10L], "sem GPS")
+    # On one card only, a plain number keeps its text.
+    plain <- c("-23,000001", "-23.5", "-23.55, -46.63")
+    testthat::expect_identical(saira:::convert_coordinate_text(plain, "lat"), c("-23,000001", "-23.5", "-23.55"))
+})
+
+testthat::test_that("coordinate_pair_columns counts rows, not distinct values", {
+    pairs <- sprintf("-23.%02d, -46.%02d", 1:9, 1:9)
+    df <- data.frame(c = c(pairs, rep("-23.55", 10)), stringsAsFactors = FALSE)
+    testthat::expect_identical(saira:::coordinate_pair_columns(df, max_values = 500L), character(0))
+    df <- data.frame(c = c(rep(pairs[1], 10), "-23.55"), stringsAsFactors = FALSE)
+    testthat::expect_identical(saira:::coordinate_pair_columns(df, max_values = 500L), "c")
+})
+
+testthat::test_that("coordinate_pair_columns finds a column of pairs", {
+    df <- data.frame(
+        coords = c("-23.55, -46.63", "-23.50, -46.60", ""),
+        lat = c("-23.55", "-23.50", ""),
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_identical(saira:::coordinate_pair_columns(df), "coords")
+    df$coords[2L] <- "no GPS"
+    testthat::expect_identical(saira:::coordinate_pair_columns(df), character(0))
+})
