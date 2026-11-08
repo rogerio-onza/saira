@@ -125,6 +125,7 @@ Collate:
     'utils_rostrum_template_contracts.R'
     'utils_rostrum_templates.R'
     'utils_sensitive.R'
+    'utils_skeleton.R'
     'utils_species_photos.R'
     'utils_taxadb.R'
     'utils_threat_status.R'

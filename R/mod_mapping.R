@@ -66,7 +66,7 @@ mod_mapping_ui <- function(id) {
                         # motion slides (ADR-156).
                         shiny::div(
                             id = ns("grid_box"), class = "mapping-grid-box",
-                            shiny::uiOutput(ns("mapping_ui"))
+                            with_loading_skeleton(shiny::uiOutput(ns("mapping_ui")), "cards")
                         )
                     )
                 ),
@@ -1533,6 +1533,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         output$btn_import_template_label <- shiny::renderUI({
             tr("btn_import_template", lang_r())
         })
+
+        # Rendered on the Home page, so the first visit to Mapping shows the
+        # buttons with their labels while the grid builds (ADR-199).
+        for (label_id in c("sidebar_actions_label", "btn_auto_map_label", "btn_reset_label",
+                           "btn_add_term_label", "btn_import_template_label", "sidebar_view_label")) {
+            shiny::outputOptions(output, label_id, suspendWhenHidden = FALSE)
+        }
 
         # "Import mapping template" modal — ADR-087 + PR-A3.
         # Opens a modal with a fileInput for the .txt mapping_guide produced
