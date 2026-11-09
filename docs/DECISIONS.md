@@ -3674,3 +3674,14 @@ Formato: ADR leve (Architecture Decision Record).
   - A codificacao vale por celula. A mesma linha importada sozinha, em outra sessao, recebe o mesmo ID.
   - Codificar toda ausencia de outra forma foi rejeitado: mudaria o ID de quase toda linha sem `occurrenceID`.
 - **Consequencias**: muda o ID gerado de uma linha com uma celula igual a `NA` ou com aqueles bytes, porque a chave dela muda. Muda tambem o ID de uma linha com celula vazia que dividia o grupo com uma dessas linhas e vinha depois dela, porque o numero dela cai para 1. Para manter os IDs de um pacote ja publicado, importe a planilha exportada, que leva os `occurrenceID`. Um ID que a planilha traz sempre vence.
+
+## ADR-206: Pacote Wildlife Insights com projetos de imagens e de sequencias
+
+- **Data**: 2026-11-09
+- **Status**: Aceito.
+- **Contexto**: revisao pre-v1.0 (DATA-02). `wi_to_camtrap_csv()` le as observacoes de `images*.csv` ou de `sequences.csv`, nunca dos dois. Um pacote com um projeto Image e um projeto Sequence lia so as sequencias, e as observacoes das imagens sumiam sem aviso.
+- **Decisao**:
+  - Se `projects.csv` tem mais de um `project_type` nao vazio, a leitura para com `err_camtrap_wi_mixed_project_types`, que pede um arquivo por tipo de projeto.
+  - Caixa, espacos e tipo vazio nao contam como tipo novo. Dois projetos do mesmo tipo continuam a ler.
+  - Juntar os dois niveis fica para depois da v1.0: precisa ligar deployments e imagens ao `project_id` e aceitar os dois `observationLevel` na conversao DwC, sem contar duas vezes o animal da sequencia.
+- **Consequencias**: um pacote misto nao abre mais. O usuario exporta cada tipo de projeto no Wildlife Insights e importa cada arquivo.

@@ -843,6 +843,42 @@ testthat::test_that("WI sequence project without sequences.csv stops with a clea
     )
 })
 
+wi_unzip_with_projects <- function(fx, project_rows) {
+    dest <- tempfile("wi_seq_unzip_")
+    dir.create(dest)
+    utils::unzip(fx$zip, exdir = dest)
+    writeLines(c("project_id,project_name,project_short_name,project_type",
+                 project_rows),
+               file.path(dest, "projects.csv"))
+    dest
+}
+
+testthat::test_that("WI package with image and sequence projects stops with a clear error", {
+    fx <- wi_sequence_zip_fixture()
+    dest <- wi_unzip_with_projects(fx, c("1,P,TP,Sequence", "2,Q,TQ,Image"))
+    withr::defer(unlink(c(fx$dir, fx$zip, dest), recursive = TRUE))
+    err <- testthat::expect_error(
+        saira:::wi_to_camtrap_csv(dest, lang = "en"),
+        class = "saira_camtrap_error"
+    )
+    testthat::expect_identical(
+        conditionMessage(err),
+        saira:::tr("err_camtrap_wi_mixed_project_types", "en")
+    )
+})
+
+testthat::test_that("WI package with two projects of one type still reads", {
+    fx <- wi_sequence_zip_fixture()
+    # Case, spaces and an empty type do not count as a second type.
+    dest <- wi_unzip_with_projects(fx, c("1,P,TP,Sequence", "2,Q,TQ, sequence ",
+                                         "3,R,TR,"))
+    withr::defer(unlink(c(fx$dir, fx$zip, dest), recursive = TRUE))
+    norm_dir <- saira:::wi_to_camtrap_csv(dest, lang = "en")
+    obs <- utils::read.csv(file.path(norm_dir, "observations.csv"),
+                           stringsAsFactors = FALSE)
+    testthat::expect_true(all(obs$observationLevel == "event"))
+})
+
 testthat::test_that("WI projects.csv without a final newline reads without a warning", {
     fx <- wi_sequence_zip_fixture()
     dest <- tempfile("wi_seq_unzip_")

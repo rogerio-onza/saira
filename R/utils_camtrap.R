@@ -259,8 +259,16 @@ wi_to_camtrap_csv <- function(input_dir, lang = "en") {
         utils::read.csv(text = readLines(proj_paths[1], warn = FALSE),
                         stringsAsFactors = FALSE, check.names = FALSE)
     } else NULL
-    is_sequence <- "project_type" %in% names(wi_proj) &&
-        any(tolower(wi_proj$project_type) == "sequence", na.rm = TRUE)
+    # The observations come from images or from sequences, not from both. A
+    # package with both project types would lose one of them without a sign.
+    project_types <- if ("project_type" %in% names(wi_proj)) {
+        unique(tolower(trimws(as.character(wi_proj$project_type))))
+    } else character(0)
+    project_types <- project_types[!is.na(project_types) & nzchar(project_types)]
+    if (length(project_types) > 1L) {
+        camtrap_stop("err_camtrap_wi_mixed_project_types", lang)
+    }
+    is_sequence <- identical(project_types, "sequence")
     if (is_sequence) {
         seq_paths <- list.files(input_dir, pattern = "^sequences.*\\.csv$",
                                 recursive = TRUE, full.names = TRUE,
