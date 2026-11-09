@@ -3662,3 +3662,15 @@ Formato: ADR leve (Architecture Decision Record).
   - Coordenadas projetadas num registro protegido param a exportacao e listam as linhas: chave UTM, EPSG, CRS ou x/y, geometria GeoJSON ou WKT, com dois numeros de cinco ou mais digitos. A mascara nao converte projecoes.
   - Os eixos dos pontos ficam ordenados uma vez, e cada token busca so a sua janela. Um token que nao e mais fino que nenhuma grade sai antes da busca.
 - **Consequencias**: com 40 mil linhas, 20 mil pontos protegidos e numeros no texto de toda linha, a revisao leva 0,8 s e o filtro 1,8 s, num produto de 12,7 s. O resumo da Exportacao leva 1,45 s. Um eixo sozinho em outra linha, ou um ponto em outra forma, nao e lido.
+
+## ADR-205: Celula vazia e texto NA no hash do occurrenceID
+
+- **Data**: 2026-11-09
+- **Status**: Aceito. Emenda ADR-118.
+- **Contexto**: revisao pre-v1.0 (DATA-01). `paste()` escreve a celula vazia como `"NA"`, entao uma celula vazia e o texto `NA` davam a mesma chave. So o numero dentro do grupo separava as duas linhas, e reordenar a planilha trocava os IDs novos entre elas. O leitor de XLSX guarda a diferenca, e o de CSV guarda o texto `NA`.
+- **Decisao**:
+  - `id_hash_cells()` codifica cada celula antes da uniao. A celula vazia fica `"NA"` e o texto comum passa igual, entao os IDs ja publicados nao mudam.
+  - O texto `NA`, e a celula com U+001C, U+001E ou U+001F, recebe uma forma escapada que comeca com U+001C. Nenhuma celula comum tem esse byte, entao o mapa e um para um e os separadores nao aparecem dentro de uma celula.
+  - A codificacao vale por celula. A mesma linha importada sozinha, em outra sessao, recebe o mesmo ID.
+  - Codificar toda ausencia de outra forma foi rejeitado: mudaria o ID de quase toda linha sem `occurrenceID`.
+- **Consequencias**: muda o ID gerado de uma linha com uma celula igual a `NA` ou com aqueles bytes, porque a chave dela muda. Muda tambem o ID de uma linha com celula vazia que dividia o grupo com uma dessas linhas e vinha depois dela, porque o numero dela cai para 1. Para manter os IDs de um pacote ja publicado, importe a planilha exportada, que leva os `occurrenceID`. Um ID que a planilha traz sempre vence.

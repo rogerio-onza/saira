@@ -55,13 +55,13 @@ generate_persistent_ids <- function(df, rows = NULL, exclude = NULL, reserved = 
     # identifier must hash the same whether the column is absent or blank.
     cols <- setdiff(names(df), c(exclude, "occurrenceID"))
     # ASCII unit/record separators join the parts. A plain concatenation would
-    # let ("ab", "c") and ("a", "bc") hash to the same key; these bytes cannot
-    # occur in spreadsheet cells, so the join is unambiguous.
+    # let ("ab", "c") and ("a", "bc") hash to the same key. id_hash_cells()
+    # keeps these bytes out of the parts, so the join is unambiguous.
     content <- if (length(cols) == 0L) {
         rep("", sum(rows))
     } else {
         do.call(paste, c(
-            lapply(cols, function(col) as.character(df[[col]])[rows]),
+            lapply(cols, function(col) id_hash_cells(as.character(df[[col]])[rows])),
             list(sep = "\u001f")
         ))
     }
@@ -84,6 +84,28 @@ generate_persistent_ids <- function(df, rows = NULL, exclude = NULL, reserved = 
         clash <- which(ids %in% reserved | duplicated(ids))
     }
     ids
+}
+
+# Encode the cells of one column for the identifier hash (ADR-205).
+#
+# paste() writes an empty cell as "NA", so an empty cell and the text "NA"
+# gave the same key, and reordering the two rows swapped their identifiers.
+# The empty cell keeps that legacy form and ordinary text passes unchanged:
+# the identifiers already published stay the same. The text "NA", and a cell
+# that holds U+001C, U+001E or U+001F, gets an escaped form that starts with
+# U+001C. No ordinary cell holds that byte, so the map is one to one.
+id_hash_cells <- function(x) {
+    special <- !is.na(x) & (x == "NA" | grepl("[\u001c\u001e\u001f]", x))
+    if (any(special)) {
+        v <- x[special]
+        # The escape byte goes first, or the next two lines would escape their
+        # own output.
+        v <- gsub("\u001c", "\u001cc", v, fixed = TRUE)
+        v <- gsub("\u001e", "\u001ce", v, fixed = TRUE)
+        v <- gsub("\u001f", "\u001cf", v, fixed = TRUE)
+        x[special] <- paste0("\u001c", v)
+    }
+    x
 }
 
 # RFC 4122 URL namespace. Fixed forever: changing it would re-mint every
