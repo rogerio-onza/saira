@@ -173,7 +173,9 @@ jobs:
       # setup-renv installs no system libraries. renv lists them from the
       # records of renv.lock, the development packages too (gert needs
       # libgit2). chromote is not in the list: its requirement is Chromium,
-      # and chromote uses the Google Chrome of the runner image.
+      # and chromote uses the Google Chrome of the runner image. On Ubuntu
+      # 26.04 the list has no libgit2-dev, but the P3M gert binary links
+      # libgit2, so it is added by name.
       - name: Install the system requirements
         env:
           RENV_CONFIG_AUTOLOADER_ENABLED: false
@@ -182,7 +184,7 @@ jobs:
           pkgs=$(Rscript -e 'p <- setdiff(names(renv::lockfile_read()$Packages), "chromote"); s <- renv::sysreqs(p, source = "lockfile", recursive = FALSE, check = FALSE, report = FALSE); cat(unique(unlist(lapply(s, function(x) unlist(x$packages)))))')
           echo "System packages: $pkgs"
           sudo apt-get update
-          sudo apt-get install -y $pkgs
+          sudo apt-get install -y $pkgs libgit2-dev
 
       - uses: r-lib/actions/setup-renv@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2.14.0
 
