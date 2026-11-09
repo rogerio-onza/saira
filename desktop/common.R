@@ -283,6 +283,57 @@ desktop_patch_apprun <- function(root, project) {
     )
 }
 
+# The bundled R and its libraries come from Ubuntu 24.04 and need glibc 2.39.
+# The .deb declares it, so dpkg refuses an older system before the app fails to open.
+desktop_glibc_min <- "2.39"
+
+# The default Depends of electron-builder 26.18.0 (FpmTarget.js). A deb.depends
+# list replaces the defaults, so the build repeats them.
+desktop_electron_deb_depends <- c("libgtk-3-0", "libnotify4", "libnss3", "libxss1",
+    "libxtst6", "xdg-utils", "libatspi2.0-0", "libuuid1", "libsecret-1-0")
+
+desktop_deb_depends <- function() {
+    c(desktop_electron_deb_depends, sprintf("libc6 (>= %s)", desktop_glibc_min))
+}
+
+# A new electron-builder can change its default list. Then the build stops,
+# so a person compares the new list with desktop_electron_deb_depends.
+desktop_check_deb_defaults <- function(project) {
+    fpm <- file.path(project, "node_modules", "app-builder-lib", "out", "targets", "FpmTarget.js")
+    expected <- paste0("[", paste0("\"", desktop_electron_deb_depends, "\"", collapse = ", "), "]")
+    if (!file.exists(fpm) || !grepl(expected, paste(readLines(fpm, warn = FALSE), collapse = "\n"), fixed = TRUE)) {
+        stop("The default .deb Depends of electron-builder changed. Update desktop_electron_deb_depends.")
+    }
+    invisible(TRUE)
+}
+
+# The .deb must declare the full list, and no ELF file in the app can need a
+# glibc newer than the declared one. A newer build host raises that floor.
+desktop_check_linux_package <- function(dist) {
+    deb <- list.files(dist, pattern = "[.]deb$", full.names = TRUE)
+    if (length(deb) != 1L) stop("Expected one .deb in ", dist)
+    field <- system2("dpkg-deb", c("-f", shQuote(deb), "Depends"), stdout = TRUE)
+    depends <- trimws(strsplit(paste(field, collapse = " "), ",", fixed = TRUE)[[1L]])
+    if (!identical(depends, desktop_deb_depends())) {
+        stop("The .deb Depends is not the approved list: ", paste(field, collapse = " "))
+    }
+    files <- list.files(file.path(dist, "linux-unpacked"), recursive = TRUE, full.names = TRUE, all.files = TRUE)
+    elf <- files[vapply(files, function(f) {
+        identical(readBin(f, "raw", 4L), as.raw(c(0x7f, 0x45, 0x4c, 0x46)))
+    }, logical(1))]
+    if (!length(elf)) stop("No ELF files found in ", dist)
+    needs <- unlist(lapply(elf, function(f) {
+        lines <- suppressWarnings(system2("readelf", c("-V", "-W", shQuote(f)), stdout = TRUE, stderr = FALSE))
+        unlist(regmatches(lines, gregexpr("(?<=GLIBC_)[0-9]+[.][0-9]+([.][0-9]+)?", lines, perl = TRUE)))
+    }))
+    floor <- max(numeric_version(needs))
+    if (floor > numeric_version(desktop_glibc_min)) {
+        stop(sprintf("The app needs glibc %s, but the .deb declares %s.", floor, desktop_glibc_min))
+    }
+    message(sprintf("Linux package: Depends OK, glibc floor %s in %d ELF files.", floor, length(elf)))
+    invisible(floor)
+}
+
 desktop_apply_shell <- function(root, project, config, origin) {
     modules <- c("i18n.js", "log-retention.js", "log-writer.js")
     pages <- c("main.js", "preload.js", "lifecycle.html", modules)
@@ -349,6 +400,7 @@ desktop_apply_shell <- function(root, project, config, origin) {
         package$build$linux$icon <- "build/icon.png"
         package$build$linux$target <- list("AppImage", "deb")
         package$build$linux$category <- "Science"
+        package$build$deb$depends <- as.list(desktop_deb_depends())
     }
     # shinyelectron writes AGPL. The saira package is GPL-3 (DESCRIPTION).
     package$license <- "GPL-3.0-only"

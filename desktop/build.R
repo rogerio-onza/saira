@@ -72,7 +72,10 @@ trace("install_npm_dependencies", where = asNamespace("shinyelectron"), print = 
     }),
     exit = bquote({
         desktop_check_npm_lock(.(root), output_dir)
-        if (.(platform) == "linux") desktop_patch_apprun(.(root), output_dir)
+        if (.(platform) == "linux") {
+            desktop_patch_apprun(.(root), output_dir)
+            desktop_check_deb_defaults(output_dir)
+        }
     }))
 result <- shinyelectron::export(
     appdir = app,
@@ -94,6 +97,7 @@ metadata$br_snapshot <- jsonlite::read_json(
 jsonlite::write_json(metadata, file.path(output, "build-info.json"), auto_unbox = TRUE, pretty = TRUE)
 file.copy(file.path(project, "package-lock.json"), file.path(output, "node-package-lock.json"))
 dist <- file.path(project, "dist")
+if (platform == "linux") desktop_check_linux_package(dist)
 installers <- list.files(dist, pattern = "[.](exe|AppImage|deb)$", full.names = TRUE)
 writeLines(paste0(tools::sha256sum(installers), "  ", basename(installers)), file.path(dist, "SHA256SUMS.txt"))
 message("Local installer: ", dist)

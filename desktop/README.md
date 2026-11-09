@@ -158,7 +158,9 @@ O shinyelectron não tem R portátil para Linux. Por isso, o build:
 - copia os dados do PROJ e do GDAL para `syslib/share`.
 
 O app precisa de glibc 2.39 ou mais nova: Ubuntu 24.04, Debian 13, Fedora 40
-ou posterior. A glibc da máquina de build define esse mínimo. O `.deb` instala
+ou posterior. A glibc da máquina de build define esse mínimo. O `.deb`
+declara `libc6 (>= 2.39)` além das dependências padrão do electron-builder, e
+o build para se algum ELF do app pedir uma glibc mais nova. O `.deb` instala
 em `/opt/Saíra`.
 
 O build muda dois arquivos gerados (`desktop_apply_shell()` e
