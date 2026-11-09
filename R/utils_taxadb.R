@@ -70,6 +70,17 @@ normalize_scientific_name <- function(
     paste(pieces[!is.na(pieces) & nzchar(pieces)], collapse = " ")
 }
 
+# What a Names run read: the distinct names and the normalization options.
+# Other columns stay out, because their edits do not change a taxonomic query.
+names_validation_input <- function(df, remove_authors = TRUE, ignore_qualifiers = TRUE) {
+    if (!is.data.frame(df) || !"scientificName" %in% names(df)) return(NULL)
+    list(
+        names = sort(unique(as.character(df$scientificName)), method = "radix", na.last = TRUE),
+        remove_authors = isTRUE(remove_authors),
+        ignore_qualifiers = isTRUE(ignore_qualifiers)
+    )
+}
+
 prepare_taxadb_inputs <- function(
   names_vec,
   remove_authors = TRUE,
