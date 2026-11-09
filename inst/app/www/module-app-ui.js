@@ -67,18 +67,33 @@
     proto.sairaPatched = true;
     var setup = proto.setup;
     var position = proto.positionDropdown;
+    var refresh = proto.refreshOptions;
     var open = proto.open;
     var close = proto.close;
     proto.setup = function () {
       setup.apply(this, arguments);
       this.$control_input.attr(AUTOFILL_OFF);
     };
+    // Auto-map sets many cards in one message. For each card, selectize
+    // drew the hidden list again and read the layout, and each read forced
+    // a reflow of the grid. A closed list waits for the next focus or open.
     proto.positionDropdown = function () {
+      if (!this.isOpen) return;
       position.apply(this, arguments);
       placeDropdown(this);
     };
+    proto.refreshOptions = function () {
+      if (!this.isOpen && !this.isFocused) {
+        this.sairaStale = true;
+        return;
+      }
+      this.sairaStale = false;
+      return refresh.apply(this, arguments);
+    };
     proto.open = function () {
       open.apply(this, arguments);
+      // onFocus skips the refresh when a multi select has an active item.
+      if (this.isOpen && this.sairaStale) this.refreshOptions(false);
       if (this.isOpen) document.documentElement.classList.add('saira-select-open');
     };
     proto.close = function () {
@@ -86,6 +101,27 @@
       document.documentElement.classList.remove('saira-select-open');
     };
   }
+
+  // Shiny 1.14 queues one send for each deferred input, because its
+  // InputBatchSender never sets sendIsEnqueued. The first send takes all the
+  // values, and each next send has no data. An empty send is still a message
+  // to the server and a new check of every conditionalPanel. When the mapping
+  // grid binds, this gave about 120 empty sends in one block.
+  function skipEmptySends() {
+    var app = window.Shiny && Shiny.shinyapp;
+    if (!app || app.sairaSkipEmpty) return;
+    app.sairaSkipEmpty = true;
+    var send = app.sendInput;
+    app.sendInput = function (values) {
+      for (var key in values) {
+        if (Object.prototype.hasOwnProperty.call(values, key)) {
+          return send.apply(this, arguments);
+        }
+      }
+    };
+  }
+  skipEmptySends();
+  $(document).on('shiny:connected', skipEmptySends);
 
   // The selectize library comes with the first select that a renderUI
   // sends, so the patch waits for the binding that creates each selectize.
