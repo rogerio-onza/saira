@@ -192,6 +192,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **desktop:** Keep the backend code in `app.asar`, and show an error when the bundled R is missing, ADR-191
 - **desktop:** Load R packages only from the installed app, not from a saved library path
 - **desktop:** Stop R when the app window process ends by force, ADR-192
+- **desktop:** Show a restart page when the window renderer stops, and an error page when the app page does not load
 - **desktop:** Declare glibc 2.39 in the `.deb`, so an older Linux refuses the install, and stop the build when the app needs a newer glibc
 - **desktop:** Use the final app name and install identity, ADR-192
 - **generalization:** Remove the coordinates of masked rows from the justification text in dataGeneralizations, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))

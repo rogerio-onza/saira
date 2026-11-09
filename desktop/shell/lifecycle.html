@@ -120,11 +120,16 @@
       document.querySelectorAll('.view').forEach(function (el) { el.hidden = el.id !== 'view-' + view; });
     }
 
+    // kind: crash (R stopped), renderer (the window stopped), page (the app
+    // page did not load), missing (no bundled R), start (R did not start).
     function showError(kind, report) {
       var crash = kind === 'crash';
-      set('error-title', crash ? text.crashTitle : text.startTitle);
-      set('error-text', crash ? text.crashText : kind === 'missing' ? text.missingText : text.startText);
-      set('btn-retry', crash ? text.reopen : text.retry);
+      var renderer = kind === 'renderer';
+      var body = { crash: text.crashText, renderer: text.rendererText, page: text.pageText, missing: text.missingText };
+      set('error-title', crash ? text.crashTitle : renderer ? text.rendererTitle : text.startTitle);
+      set('error-text', body[kind] || text.startText);
+      set('btn-retry', crash || renderer ? text.reopen : text.retry);
+      set('log-title', renderer || kind === 'page' ? text.details : text.log);
       set('log-text', report);
       show('error');
       var log = document.getElementById('log-text');
@@ -140,7 +145,6 @@
     set('error-report', text.reportText);
     set('btn-quit', text.close);
     set('issue-link', text.issue);
-    set('log-title', text.log);
     set('btn-copy', text.copy);
     set('closing-step', text.closing);
 

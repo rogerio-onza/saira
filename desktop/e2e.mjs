@@ -201,6 +201,88 @@ async function hardKillCheck(exe, env) {
   }
 }
 
+function killPid(pid) {
+  if (process.platform === 'win32') spawnSync('taskkill', ['/PID', String(pid), '/F']);
+  else process.kill(pid, 'SIGKILL');
+}
+
+// The system can end the renderer (memory, GPU). The shell must offer a restart
+// that keeps one R, and the close must stay available on the shell page too.
+async function rendererCrashCheck(exe, env) {
+  const folder = path.dirname(exe);
+  const launched = spawn(exe, [`--remote-debugging-port=${RENDERER_PORT}`, `--inspect=${MAIN_PORT}`], { env, stdio: 'ignore' });
+  let exited = false;
+  launched.on('exit', () => { exited = true; });
+  const appOpen = () => waitFor(async () => (await targets(RENDERER_PORT)).some((t) => t.type === 'page' && t.url.startsWith(APP_ORIGIN)),
+    { timeout: 240000, interval: 200, what: 'app URL' });
+  const shellPage = (view) => waitFor(async () => (await targets(RENDERER_PORT)).find((t) => t.type === 'page' &&
+    t.url.includes('lifecycle.html') && decodeURIComponent(t.url).includes(`"view":"${view}"`)),
+  { timeout: 30000, interval: 200, what: `lifecycle ${view}` });
+  try {
+    await crashAndRestart(folder, appOpen, shellPage, () => exited);
+  } finally {
+    if (!exited) killPid(launched.pid);
+    for (const pid of rProcesses(folder)) {
+      if (process.platform === 'win32') spawnSync('taskkill', ['/PID', pid, '/T', '/F']);
+      else spawnSync('kill', ['-KILL', pid]);
+    }
+  }
+}
+
+async function crashAndRestart(folder, appOpen, shellPage, exited) {
+  const mainTarget = await waitFor(async () => (await targets(MAIN_PORT))[0], { timeout: 20000, what: 'main inspector' });
+  const main = await new CDP(mainTarget.webSocketDebuggerUrl).open();
+  await main.eval(`(function () {
+    const e = process.mainModule.require('electron');
+    globalThis.__e2e = { dialogs: [] };
+    e.dialog.showMessageBox = (win, opts) => { globalThis.__e2e.dialogs.push(opts || win); return Promise.resolve({ response: 0 }); };
+    const close = ${JSON.stringify([PT.close.discard, PT.close.confirm])};
+    e.dialog.showMessageBoxSync = (win, opts) => (opts || win).buttons.findIndex((b) => close.includes(b));
+    return true;
+  })()`);
+  const rendererPid = () => main.eval(`process.mainModule.require('electron').BrowserWindow.getAllWindows()[0].webContents.getOSProcessId()`);
+
+  // Before the app page commits, the window URL is still the shell page.
+  await appOpen();
+  page = null;
+  await waitFor(() => js(idle), { timeout: 120000, interval: 200, what: 'Shiny connected' });
+  const before = rProcesses(folder);
+  killPid(await rendererPid());
+  const target = await shellPage('error').catch(() => null);
+  let shown = {};
+  if (target) {
+    const shell = await new CDP(target.webSocketDebuggerUrl).open();
+    shown = await waitFor(() => shell.eval(`(function () {
+      var h = document.getElementById('error-title').textContent;
+      return h ? { title: h, button: document.getElementById('btn-retry').textContent } : null;
+    })()`), { timeout: 10000, what: 'error text' }).catch(() => ({}));
+    await shell.eval(`document.getElementById('btn-retry').click(); true`);
+    shell.ws.close();
+  }
+  record('renderer crash on the app shows the restart page', shown.title === PT.lifecycle.rendererTitle &&
+    shown.button === PT.lifecycle.reopen, `${shown.title} | ${shown.button}`);
+
+  // The second crash hits the start page while R starts again: a native dialog, no loop.
+  await shellPage('start');
+  killPid(await rendererPid());
+  const asked = await waitFor(async () => (await main.eval('globalThis.__e2e.dialogs'))[0], { timeout: 10000, what: 'dialog' })
+    .catch(() => ({}));
+  record('renderer crash on the shell page asks in a native dialog', asked.message === PT.lifecycle.rendererTitle &&
+    JSON.stringify(asked.buttons) === JSON.stringify([PT.lifecycle.reopen, PT.lifecycle.close]), asked.message || 'no dialog');
+
+  const reopened = await appOpen().then(() => true, () => false);
+  await sleep(2000);
+  const after = rProcesses(folder);
+  record('restart after a renderer crash keeps one R', reopened && after.length === before.length &&
+    !after.some((pid) => before.includes(pid)), `before ${before.join(',')}, after ${after.join(',')}`);
+
+  await main.eval(`setTimeout(() => process.mainModule.require('electron').BrowserWindow.getAllWindows()[0].close(), 300); true`);
+  main.ws.close();
+  await waitFor(exited, { timeout: 20000, what: 'app exit' }).catch(() => null);
+  const portFree = await fetch(APP_ORIGIN).then(() => false, () => true);
+  record('close after the restart ends the app and R', exited() && portFree && rProcesses(folder).length === 0);
+}
+
 async function main() {
   if (!EXE || !fs.existsSync(EXE)) throw new Error(`Missing exe: ${EXE}`);
   if (!CSV || !fs.existsSync(CSV)) throw new Error(`Missing CSV: ${CSV}`);
@@ -446,7 +528,10 @@ async function main() {
   const portFree = await fetch(APP_ORIGIN).then(() => false, () => true);
   record('R server port closed', portFree);
 
-  if (exitedAt) await hardKillCheck(exe, env);
+  if (exitedAt) {
+    await rendererCrashCheck(exe, env);
+    await hardKillCheck(exe, env);
+  }
 
   fs.writeFileSync(path.join(WORK, 'results.json'), JSON.stringify({ startup, results }, null, 2));
   const failed = results.filter((r) => !r.ok).length;

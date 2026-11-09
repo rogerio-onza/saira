@@ -37,6 +37,7 @@ let actualPort = null;
 let serverRunning = false;
 let quitting = false;
 let closePending = false;
+let restarting = false;
 // The last download of the bundle in this R session completed.
 let exported = false;
 let lastReport = '';
@@ -181,7 +182,8 @@ function setLanguage(tag) {
 
 function showLifecycle(view, fields) {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  mainWindow.loadFile('lifecycle.html', lifecycleOptions(view, fields));
+  mainWindow.loadFile('lifecycle.html', lifecycleOptions(view, fields))
+    .catch((err) => log('warn', 'Lifecycle page failed:', err && err.message));
 }
 
 // Board Crash-B: the last lines that R wrote, then the versions.
@@ -206,14 +208,66 @@ function startServer() {
   }).then(({ port }) => {
     actualPort = port;
     log('info', 'Server ready on port', port);
-    return mainWindow.webContents.session.cookies.set({
-      url: `http://127.0.0.1:${port}/`, name: 'saira_access', value: ACCESS_KEY,
-      httpOnly: true, sameSite: 'strict'
-    }).then(() => mainWindow.loadURL(`http://127.0.0.1:${port}/`));
-  }).catch((err) => {
+    return openApp(port);
+  }, (err) => {
+    // The backend already sent the error to the start page.
     if (err && err.code === 'START_SUPERSEDED') return;
     log('error', 'Backend start failed:', err && err.message);
   });
+}
+
+// R runs, but the window cannot show the app: the error page gives a way out.
+async function openApp(port) {
+  const url = `http://127.0.0.1:${port}/`;
+  try {
+    await mainWindow.webContents.session.cookies.set({
+      url, name: 'saira_access', value: ACCESS_KEY, httpOnly: true, sameSite: 'strict'
+    });
+    await mainWindow.loadURL(url);
+  } catch (err) {
+    // ERR_ABORTED: a newer navigation (an error page, a restart) replaced this one.
+    if (quitting || !mainWindow || mainWindow.isDestroyed() || (err && err.code === 'ERR_ABORTED')) return;
+    log('error', 'App page failed:', err && err.message);
+    serverRunning = false;
+    lastReport = crashReport({ message: `App page: ${err && err.message}` });
+    showLifecycle('error', { kind: 'page', report: lastReport });
+  }
+}
+
+// backend.start() does not stop a running R, so a restart without the stop
+// leaves two R process trees.
+async function restartServer() {
+  if (restarting || quitting) return;
+  restarting = true;
+  serverRunning = false;
+  try {
+    showLifecycle('start');
+    await stopBackend();
+    if (!quitting) startServer();
+  } finally {
+    restarting = false;
+  }
+}
+
+// A new page gets a new Shiny session, so a reload cannot bring back the work.
+// The error page says so and offers a restart.
+function rendererGone(details) {
+  log('error', `[renderer] gone: ${details.reason}`);
+  if (quitting || !mainWindow || mainWindow.isDestroyed()) return;
+  const onApp = isAppUrl(mainWindow.webContents.getURL());
+  serverRunning = false;
+  lastReport = crashReport({ message: `Renderer: ${details.reason} (exit code ${details.exitCode})` });
+  if (onApp) {
+    showLifecycle('error', { kind: 'renderer', report: lastReport });
+    return;
+  }
+  // The shell page stopped. A native dialog cannot start a loop of renderer crashes.
+  const l = t().lifecycle;
+  dialog.showMessageBox(mainWindow, {
+    type: 'error', title: 'Saíra', message: l.rendererTitle, detail: l.rendererText,
+    buttons: [l.reopen, l.close], defaultId: 0, cancelId: 1, noLink: true
+  }).then(({ response }) => (response === 0 ? restartServer() : shutdown()))
+    .catch((err) => log('error', 'Renderer dialog failed:', err && err.message));
 }
 
 function restoreBounds(saved) {
@@ -387,7 +441,7 @@ function createWindow() {
   contents.on('console-message', (e) => {
     if (e.level === 'error' || e.level === 'warning') log('warn', `[renderer] ${e.message}`);
   });
-  contents.on('render-process-gone', (_e, details) => log('error', `[renderer] gone: ${details.reason}`));
+  contents.on('render-process-gone', (_e, details) => rendererGone(details));
 
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.on('close', (event) => {
@@ -439,8 +493,7 @@ ipcMain.on('lifecycle-action', (event, action) => {
   if (!fromLifecyclePage(event)) return;
   const type = action && action.type;
   if (type === 'retry') {
-    showLifecycle('start');
-    startServer();
+    restartServer();
   } else if (type === 'quit') {
     shutdown();
   } else if (type === 'copy') {

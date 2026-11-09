@@ -294,7 +294,8 @@ O teste cria uma pasta nova ao lado do CSV, com `LOCALAPPDATA`, downloads,
 barra de menu, a importação com mapeamento automático, a validação de nomes,
 os links externos, o aviso ao fechar antes de exportar (com o app em inglês),
 o download do DwC-A, a pergunta ao fechar depois da exportação e o
-encerramento do R. O teste substitui o diálogo nativo e o navegador por stubs,
+encerramento do R. Depois ele mata o renderer no app e na tela de início, e
+confere a tela de reinício, o diálogo nativo e um só R após o reinício. O teste substitui o diálogo nativo e o navegador por stubs,
 então nada abre fora do app.
 
 No Linux, rode com `desktop/_tools/node-linux/bin/node`. O teste precisa do
