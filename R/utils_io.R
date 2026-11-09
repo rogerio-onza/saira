@@ -267,11 +267,13 @@ clean_invisible_chars <- function(x) {
 # runs first. The marks below are the Latin-1 forms of Portuguese and Spanish
 # letters in CP850. A cell needs a mark next to a letter. U+0080, U+0085 and
 # U+0093 need a letter on both sides, because they are also the Windows-1252
-# euro sign, ellipsis and left quote. A column with such a cell also has its
-# other marks repaired: an a-acute read as NBSP often stands alone, and an
-# A-acute read as the micro sign is also a real symbol. The repaired text must
-# hold only ASCII, Portuguese and Spanish letters, so a correct "e-acute"
-# (CP850 "U-acute") stays as it is.
+# euro sign, ellipsis and left quote. Only a cell with such a mark changes, and
+# all its marks change. A weak mark alone (an a-acute read as NBSP, an A-acute
+# read as the micro sign) is also real text, and a column can join cells from
+# files with different code pages, so another cell of the column is no proof
+# (ADR-207). The upload counts these cells. The repaired text must hold only
+# ASCII, Portuguese and Spanish letters, so a correct "e-acute" (CP850
+# "U-acute") stays as it is.
 dos_letter_marks <- "\\x{0081}-\\x{0083}\\x{0087}\\x{0088}\\x{0090}\\x{009A}\\x{00A1}-\\x{00A5}\\x{00C6}"
 dos_mark_pattern <- paste0(
     "(*UTF)[A-Za-z][", dos_letter_marks, "]|[", dos_letter_marks, "][A-Za-z]",
@@ -289,21 +291,30 @@ dos_plain_pattern <- paste0(
     "\u00aa\u00ba\u00b0]*$"
 )
 
-repair_dos_accents <- function(x) {
-    if (!is.character(x)) return(x)
+# The cells to repair, their repaired text, and the count of cells left with
+# only weak marks in a column that has a repaired cell.
+dos_accent_repairs <- function(x) {
+    none <- list(cells = integer(), text = character(), kept = 0L)
+    if (!is.character(x)) return(none)
     # The letter marks as UTF-8 bytes. A correct accent is 0xC3 and one more
     # byte, and of those only "AE" (0xC3 0x86) is a mark. One byte test skips
     # a column of correct accents about 4 times faster than the letter test.
     marked <- which(grepl("\\xc2[\\x80-\\x9f\\xa1-\\xa5]|\\xc3\\x86", x, perl = TRUE, useBytes = TRUE))
-    if (length(marked) == 0L) return(x)
+    if (length(marked) == 0L) return(none)
     strong <- marked[grepl(dos_mark_pattern, x[marked], perl = TRUE)]
-    if (length(strong) == 0L) return(x)
+    if (length(strong) == 0L) return(none)
     wide <- which(grepl("[^\\x01-\\x7f]", x, perl = TRUE, useBytes = TRUE))
     cand <- wide[grepl(dos_weak_pattern, x[wide], perl = TRUE)]
     fixed <- iconv(iconv(x[cand], "UTF-8", "latin1"), "CP850", "UTF-8")
     ok <- !is.na(fixed) & grepl(dos_plain_pattern, fixed, perl = TRUE)
-    if (!any(ok & cand %in% strong)) return(x)
-    x[cand[ok]] <- fixed[ok]
+    own <- cand %in% strong
+    if (!any(ok & own)) return(none)
+    list(cells = cand[ok & own], text = fixed[ok & own], kept = sum(ok & !own))
+}
+
+repair_dos_accents <- function(x) {
+    fix <- dos_accent_repairs(x)
+    x[fix$cells] <- fix$text
     x
 }
 
@@ -375,6 +386,9 @@ upload_read_notes <- function(report, lang = "en") {
     if (isTRUE(report$dos_accent_cells > 0L)) {
         notes <- c(notes, sprintf(tr("upload_report_dos_accents", lang), report$dos_accent_cells))
     }
+    if (isTRUE(report$dos_unsure_cells > 0L)) {
+        notes <- c(notes, sprintf(tr("upload_report_dos_unsure", lang), report$dos_unsure_cells))
+    }
     if (isTRUE(report$invisible_cells > 0L)) {
         notes <- c(notes, sprintf(tr("upload_report_invisible", lang), report$invisible_cells))
     }
@@ -404,10 +418,14 @@ finish_upload_frame <- function(df, report = list()) {
 
     changed <- 0L
     repaired <- 0L
+    kept <- 0L
     for (col in names(df)) {
         v <- df[[col]]
         if (!is.character(v)) next
-        accents <- repair_dos_accents(v)
+        fix <- dos_accent_repairs(v)
+        accents <- v
+        accents[fix$cells] <- fix$text
+        kept <- kept + fix$kept
         fixed <- !is.na(v) & accents != v
         repaired <- repaired + sum(fixed)
         cleaned <- clean_invisible_chars(accents)
@@ -417,6 +435,7 @@ finish_upload_frame <- function(df, report = list()) {
     }
     report$invisible_cells <- changed
     report$dos_accent_cells <- repaired
+    report$dos_unsure_cells <- kept
 
     if (nrow(df) > 0L && ncol(df) > 0L) {
         # Same test as nzchar(trimws(v)), in one regex pass instead of two.

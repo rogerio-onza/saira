@@ -3420,7 +3420,7 @@ Formato: ADR leve (Architecture Decision Record).
 ## ADR-184: Acentos de arquivos DOS (CP850)
 
 - **Data**: 2026-10-29
-- **Status**: Aceito.
+- **Status**: Aceito. Emendado por ADR-207.
 - **Contexto**: o Excel grava "CSV (MS-DOS)" em CP850. O leitor lia as linhas fora de UTF-8 como Windows-1252, e o Saira 0.11 lia como Latin-1. Em Latin-1, o "a" com til vira AE (U+00C6) e o "c" cedilha vira o controle U+0087. `clean_invisible_chars()` removia o controle, e o acento se perdia de vez.
 - **Decisao**:
   - `decode_text_file()` le como CP850 as linhas fora de UTF-8 quando `is_cp850_text()` conta mais bytes de letras minusculas exclusivas de CP850 que de Windows-1252.
@@ -3685,3 +3685,14 @@ Formato: ADR leve (Architecture Decision Record).
   - Caixa, espacos e tipo vazio nao contam como tipo novo. Dois projetos do mesmo tipo continuam a ler.
   - Juntar os dois niveis fica para depois da v1.0: precisa ligar deployments e imagens ao `project_id` e aceitar os dois `observationLevel` na conversao DwC, sem contar duas vezes o animal da sequencia.
 - **Consequencias**: um pacote misto nao abre mais. O usuario exporta cada tipo de projeto no Wildlife Insights e importa cada arquivo.
+
+## ADR-207: Reparo DOS so na celula com marca propria
+
+- **Data**: 2026-11-09
+- **Status**: Aceito. Emenda ADR-184.
+- **Contexto**: revisao pre-v1.0 (DATA-03). Uma celula com marca forte de CP850 autorizava o reparo das marcas fracas de toda a coluna. Uma coluna pode juntar celulas de arquivos com tabelas diferentes, e `5 µg` correto virava `5 Ág` ao lado de `SÆo Paulo`.
+- **Decisao**:
+  - `dos_accent_repairs()` repara so a celula com marca forte, e todas as marcas dela.
+  - A celula so com marcas fracas (NBSP, micro e os outros simbolos de ADR-184) fica igual. O NBSP continua a virar espaco em `clean_invisible_chars()`.
+  - O upload conta as celulas so com marcas fracas, numa coluna com celula reparada, que passariam no reparo, e mostra `upload_report_dos_unsure`.
+- **Consequencias**: um "a" agudo sozinho de um arquivo do Saira 0.11, como em `divisor de águas`, nao volta mais e vira espaco. O aviso pede para conferir essas celulas.
