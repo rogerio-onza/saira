@@ -1018,7 +1018,7 @@ protected_point_text_rows <- function(df, generalization, decisions = NULL, extr
     for (col in intersect(SENSITIVE_LOCATION_COLS, names(df))) {
         cell <- as.character(df[[col]][rows])
         cell[by_mask] <- NA
-        found <- found | point_text_cells(cell, min_text)
+        found <- found | point_text_cells(cell, min_text) | projected_point_cells(cell)
     }
     for (col in setdiff(names(df), c(needed, SENSITIVE_LOCATION_COLS, "footprintSRS"))) {
         cell <- as.character(df[[col]][rows])
@@ -1028,7 +1028,7 @@ protected_point_text_rows <- function(df, generalization, decisions = NULL, extr
         }
         # The note of a generalization names the grid, and that is no copy.
         if (col == "dataGeneralizations") cell[coordinate_generalization_note(cell)] <- NA
-        found <- found | point_text_cells(cell, min_text)
+        found <- found | point_text_cells(cell, min_text) | projected_point_cells(cell)
     }
     if (is.data.frame(extras) && ncol(extras)) {
         by_name <- coordinate_like_column(names(extras))
@@ -1036,7 +1036,8 @@ protected_point_text_rows <- function(df, generalization, decisions = NULL, extr
             cell <- as.character(extras[[col]][rows])
             # One number with few decimals is more often a measure than a copy.
             one <- !is.na(suppressWarnings(as.numeric(sub(",", ".", trimws(cell), fixed = TRUE))))
-            found <- found | point_text_cells(cell, ifelse(one, 3, min_text))
+            found <- found | point_text_cells(cell, ifelse(one, 3, min_text)) |
+                projected_point_cells(cell)
         }
         # The export blanks a column with a coordinate name only on the rows of
         # the mask. On another row, any number there can be the point, also UTM.
@@ -1158,15 +1159,20 @@ redact_point_numbers <- function(x, lat, lon, grid, pub_lat, pub_lon) {
     hit <- number$decimals > pmax(0, round(-log10(grid[owner]))) & (near_lat | near_lon)
     hit[is.na(hit)] <- FALSE
     if (any(hit)) {
-        value <- sub("^-", "", ifelse(near_lat, pub_lat[owner], pub_lon[owner])[hit])
-        comma <- grepl(",", tok[hit], fixed = TRUE)
-        value[comma] <- sub(".", ",", value[comma], fixed = TRUE)
-        sign <- ifelse(startsWith(tok[hit], "-") & nzchar(value), "-", "")
-        tok[hit] <- paste0(sign, value)
+        tok[hit] <- render_point_number(tok[hit], ifelse(near_lat, pub_lat[owner], pub_lon[owner])[hit])
         cells <- write_back_tokens(cells, matched$found, tok, owner, hit)
     }
     x[cand] <- cells
     x
+}
+
+# A decimal copy with the published value, and the sign and the decimal comma of
+# the copy. A blank published value removes the copy.
+render_point_number <- function(tok, published) {
+    value <- sub("^-", "", published)
+    comma <- grepl(",", tok, fixed = TRUE)
+    value[comma] <- sub(".", ",", value[comma], fixed = TRUE)
+    paste0(ifelse(startsWith(tok, "-") & nzchar(value), "-", ""), value)
 }
 
 # gregexpr() and regmatches() once per distinct text, because one text often
@@ -1266,29 +1272,247 @@ redact_dms_copies <- function(cells, pattern, lat, lon, grid, pub_lat, pub_lon) 
     lat <- lat[owner]
     lon <- lon[owner]
     grid <- grid[owner]
-    num <- function(v) suppressWarnings(as.numeric(sub(",", ".", v, fixed = TRUE)))
-    # Sign, degrees, minutes, seconds and hemisphere, one row per token.
-    m <- regexpr(pattern, tok, perl = TRUE)
-    first <- attr(m, "capture.start")
-    p <- array(substring(tok, first, first + attr(m, "capture.length") - 1L), dim(first))
-    has_sec <- nzchar(p[, 4])
-    value <- num(p[, 2]) + num(p[, 3]) / 60 + ifelse(has_sec, num(p[, 4]), 0) / 3600
-    # The finest step the copy carries: a minute or a second, with its decimals.
-    last <- ifelse(has_sec, p[, 4], p[, 3])
-    step <- ifelse(has_sec, 1 / 3600, 1 / 60) * 10^-nchar(sub("^[^.,]*[.,]?", "", last))
-    near_lat <- !is.na(lat) & abs(value - abs(lat)) < grid
-    near_lon <- !is.na(lon) & abs(value - abs(lon)) < grid
-    hit <- step < grid & (near_lat | near_lon) & !grepl(POINT_DMS_BARE, tok, perl = TRUE)
+    d <- read_dms_tokens(tok, pattern)
+    near_lat <- !is.na(lat) & abs(d$value - abs(lat)) < grid
+    near_lon <- !is.na(lon) & abs(d$value - abs(lon)) < grid
+    hit <- d$step < grid & (near_lat | near_lon) & !d$bare
     hit[is.na(hit)] <- FALSE
     if (!any(hit)) {
         return(cells)
     }
-    published <- sub("^-", "", ifelse(near_lat, pub_lat[owner], pub_lon[owner]))
-    hemi <- toupper(p[, 5])
-    sign <- ifelse(nzchar(p[, 1]) & p[, 1] != "+", "-", "")
-    tok[hit] <- ifelse(!nzchar(published), "",
-                       ifelse(nzchar(hemi), paste(published, hemi), paste0(sign, published)))[hit]
+    tok[hit] <- render_dms_tokens(ifelse(near_lat, pub_lat[owner], pub_lon[owner]), d)[hit]
     write_back_tokens(cells, matched$found, tok, owner, hit)
+}
+
+# Sign, degrees, minutes, seconds and hemisphere of the tokens of a degrees-
+# minutes `pattern`, one row per token. `value` is in degrees and `step` is the
+# finest step the token carries: a minute or a second, with its decimals.
+read_dms_tokens <- function(tok, pattern) {
+    num <- function(v) suppressWarnings(as.numeric(sub(",", ".", v, fixed = TRUE)))
+    m <- regexpr(pattern, tok, perl = TRUE)
+    first <- attr(m, "capture.start")
+    p <- array(substring(tok, first, first + attr(m, "capture.length") - 1L), dim(first))
+    has_sec <- nzchar(p[, 4])
+    last <- ifelse(has_sec, p[, 4], p[, 3])
+    list(
+        value = num(p[, 2]) + num(p[, 3]) / 60 + ifelse(has_sec, num(p[, 4]), 0) / 3600,
+        step = ifelse(has_sec, 1 / 3600, 1 / 60) * 10^-nchar(sub("^[^.,]*[.,]?", "", last)),
+        hemi = toupper(p[, 5]),
+        sign = ifelse(nzchar(p[, 1]) & p[, 1] != "+", "-", ""),
+        bare = grepl(POINT_DMS_BARE, tok, perl = TRUE)
+    )
+}
+
+# A degrees-minutes copy with the published value, and the hemisphere letter or
+# the sign of the copy. A blank published value removes the copy.
+render_dms_tokens <- function(published, d) {
+    published <- sub("^-", "", published)
+    ifelse(!nzchar(published), "",
+           ifelse(nzchar(d$hemi), paste(published, d$hemi), paste0(d$sign, published)))
+}
+
+# The token forms of a copy, in the order redact_point_numbers() reads them.
+# `hint` is a quick test: a cell without it has no token of that form.
+point_copy_stages <- function() {
+    dms <- Map(function(pattern, hint) {
+        list(
+            pattern = pattern,
+            hint = hint,
+            read = function(tok) {
+                d <- read_dms_tokens(tok, pattern)
+                list(value = d$value, step = d$step, keep = !d$bare)
+            },
+            render = function(tok, published) {
+                render_dms_tokens(published, read_dms_tokens(tok, pattern))
+            }
+        )
+    }, c(POINT_DMS_PATTERN, POINT_DMS_LETTER_PATTERN, POINT_DMS_SPACED_PATTERN),
+    c("['\u2032\u2019\u00b4`]", "[0-9]\\s*[dD]\\s*[0-9]", "[0-9][\\s:\u00b0\u00ba]+[0-9]"))
+    decimal <- list(
+        pattern = POINT_NUMBER_PATTERN,
+        hint = NULL,
+        read = function(tok) {
+            n <- read_point_number(tok)
+            list(value = n$value, step = 10^-n$decimals, keep = rep(TRUE, length(tok)))
+        },
+        render = render_point_number
+    )
+    c(unname(dms), list(decimal))
+}
+
+# The real points that the mask moves or withholds, one row per distinct point,
+# with the grid and the published value. A withheld point has a blank value.
+protected_point_set <- function(plan) {
+    at <- which((plan$target | plan$withheld) & !is.na(plan$lat) & !is.na(plan$lon))
+    published <- function(v) ifelse(plan$target[at], as.character(v[at]), "")
+    points <- data.frame(
+        lat = plan$lat[at], lon = plan$lon[at], grid = plan$eff_grid[at],
+        pub_lat = published(plan$pub_lat), pub_lon = published(plan$pub_lon),
+        stringsAsFactors = FALSE
+    )
+    points[!duplicated(points[c("lat", "lon", "grid")]), , drop = FALSE]
+}
+
+# Copies of a protected point in any text: the two numbers of one point in one
+# cell, each with more decimals than the grid of the point and equal to it at
+# those decimals. One number alone is too often a measure. A cell that shows the
+# point of its own row (`own_lat`, `own_lon`, numbers) keeps it, because the
+# row publishes that point. The axes are sorted once, so the cost does not grow
+# with cells times points (ADR-204). Returns the cells, each copy with the
+# published value, and which cells had a copy.
+replace_point_pairs <- function(cells, points, own_lat = NULL, own_lon = NULL) {
+    cells <- as.character(cells)
+    hit_cell <- rep(FALSE, length(cells))
+    cand <- which(!is.na(cells) & grepl(POINT_TEXT_HINT, cells, perl = TRUE))
+    if (!length(cand) || !is.data.frame(points) || !nrow(points)) {
+        return(list(cells = cells, hit = hit_cell))
+    }
+    own <- function(v) if (is.null(v)) rep(NA_real_, length(cand)) else abs(v[cand])
+    own_lat <- own(own_lat)
+    own_lon <- own(own_lon)
+    np <- nrow(points)
+    axis <- data.frame(value = abs(c(points$lat, points$lon)), point = rep(seq_len(np), 2L),
+                       is_lat = rep(c(TRUE, FALSE), each = np), grid = rep(points$grid, 2L))
+    axis <- axis[order(axis$value), , drop = FALSE]
+    max_grid <- max(points$grid, na.rm = TRUE)
+    text <- cells[cand]
+    for (stage in point_copy_stages()) {
+        at <- if (is.null(stage$hint)) seq_along(text) else which(grepl(stage$hint, text, perl = TRUE))
+        if (!length(at)) next
+        matched <- match_each_cell(stage$pattern, text[at])
+        tok <- unlist(matched$tokens, use.names = FALSE)
+        if (!length(tok)) next
+        owner <- rep(seq_along(at), lengths(matched$tokens))
+        read <- stage$read(tok)
+        tol <- read$step / 2 + 1e-9
+        lo <- findInterval(read$value - tol, axis$value, left.open = TRUE) + 1L
+        n <- findInterval(read$value + tol, axis$value) - lo + 1L
+        # A token no finer than every grid is no copy, and it can have many
+        # points inside its step.
+        n[is.na(n) | n < 0L | !read$keep | !(read$step < max_grid)] <- 0L
+        if (!any(n > 0L)) next
+        ti <- rep(seq_along(tok), n)
+        ai <- sequence(n[n > 0L], from = lo[n > 0L])
+        is_lat <- axis$is_lat[ai]
+        mine <- ifelse(is_lat, own_lat[at][owner[ti]], own_lon[at][owner[ti]])
+        ok <- read$step[ti] < axis$grid[ai] & !(!is.na(mine) & abs(read$value[ti] - mine) <= tol[ti])
+        key <- paste(owner[ti], axis$point[ai])
+        ok <- ok & key %in% key[ok & is_lat] & key %in% key[ok & !is_lat]
+        ok[is.na(ok)] <- FALSE
+        # A token near two points takes the first one.
+        ok[which(ok)[duplicated(ti[ok])]] <- FALSE
+        if (!any(ok)) next
+        ti <- ti[ok]
+        p <- axis$point[ai[ok]]
+        tok[ti] <- stage$render(tok[ti], ifelse(is_lat[ok], points$pub_lat[p], points$pub_lon[p]))
+        text[at] <- write_back_tokens(text[at], matched$found, tok, owner, seq_along(tok) %in% ti)
+        hit_cell[cand[at[unique(owner[ti])]]] <- TRUE
+    }
+    cells[cand] <- text
+    list(cells = cells, hit = hit_cell)
+}
+
+# replace_point_pairs() on every text column of a public frame. The coordinate
+# columns hold the published point, and occurrenceID stops the export instead.
+redact_point_pairs_in_frame <- function(df, points) {
+    if (!is.data.frame(points) || !nrow(points) || !nrow(df)) {
+        return(df)
+    }
+    axis <- function(col) {
+        if (col %in% names(df)) as_coord_numeric(df[[col]])$num else NULL
+    }
+    own_lat <- axis("decimalLatitude")
+    own_lon <- axis("decimalLongitude")
+    keep <- c("occurrenceID", "decimalLatitude", "decimalLongitude", "footprintWKT", "footprintSRS")
+    for (col in setdiff(names(df), keep)) {
+        res <- replace_point_pairs(df[[col]], points, own_lat, own_lon)
+        if (any(res$hit)) df[[col]] <- res$cells
+    }
+    df
+}
+
+# Projected coordinates in a structure: a UTM, CRS or x/y key, a GeoJSON
+# geometry or a WKT geometry, with two or more numbers of five or more digits.
+# A large measure with no such key is no position, and the code of a CRS is
+# no coordinate.
+PROJECTED_POINT_KEY <- paste0(
+    "(?i)(?<![a-z])(?:easting|northing|utm|epsg|srid|crs)(?![a-z])",
+    "|(?<![a-z0-9])[xy][\"']?\\s*[:=]",
+    "|\"coordinates\"\\s*:",
+    "|(?<![a-z])(?:multi)?(?:point|linestring|polygon)\\s*(?:zm|z|m)?\\s*\\("
+)
+PROJECTED_CRS_CODE <- "(?i)(?:epsg|srid|crs)[^0-9]{0,8}[0-9]+"
+PROJECTED_AXIS_NUMBER <- "(?<![0-9])(?<![0-9]\\.)[-+]?[0-9]{5,}(?:\\.[0-9]+)?(?![0-9])"
+
+projected_point_cells <- function(cell) {
+    cell <- as.character(cell)
+    out <- rep(FALSE, length(cell))
+    cand <- which(!is.na(cell) & grepl(PROJECTED_POINT_KEY, cell, perl = TRUE))
+    if (!length(cand)) {
+        return(out)
+    }
+    text <- gsub(PROJECTED_CRS_CODE, "", cell[cand], perl = TRUE)
+    out[cand] <- lengths(regmatches(text, gregexpr(PROJECTED_AXIS_NUMBER, text, perl = TRUE))) >= 2L
+    out
+}
+
+# What the export stops for in a generalization, because the mask does not
+# change it (ADR-204):
+#   projected_rows: rows of the mask with projected coordinates in a public
+#                   text cell (projected_point_cells()).
+#   point_columns:  the names in `columns`, and occurrenceID, that hold a copy
+#                   of a protected point (replace_point_pairs()).
+#   points:         protected_point_set(), for the text filter of the export.
+# `extras` holds the unmapped columns that reach the file, and `columns` the
+# headers of the upload.
+protected_copy_review <- function(df, generalization, decisions = NULL, extras = NULL,
+                                  columns = character(0)) {
+    out <- list(projected_rows = integer(0), point_columns = character(0), points = NULL)
+    needed <- c("scientificName", "decimalLatitude", "decimalLongitude")
+    if (!is.data.frame(df) || !nrow(df) || !all(needed %in% names(df)) ||
+        !is.list(generalization) || !isTRUE(generalization$enabled) ||
+        !length(generalization$levels)) {
+        return(out)
+    }
+    plan <- sensitive_generalization_plan(df, generalization$levels, decisions)
+    hide <- plan$target | plan$withheld
+    rows <- which(hide | plan$kept)
+    if (length(rows)) {
+        # The cells the mask blanks or replaces on these rows hold nothing.
+        blanked <- c(needed[-1L], "footprintWKT", "footprintSRS",
+                     "verbatimLatitude", "verbatimLongitude", "verbatimCoordinates")
+        replaced <- c("locality", "verbatimLocality", "georeferenceRemarks", "locationRemarks")
+        found <- rep(FALSE, length(rows))
+        for (col in setdiff(names(df), blanked)) {
+            cell <- as.character(df[[col]][rows])
+            if (col %in% replaced) cell[hide[rows]] <- NA
+            found <- found | projected_point_cells(cell)
+        }
+        if (is.data.frame(extras) && ncol(extras)) {
+            for (col in names(extras)[!coordinate_like_column(names(extras))]) {
+                found <- found | projected_point_cells(extras[[col]][rows])
+            }
+        }
+        out$projected_rows <- rows[found]
+    }
+    out$points <- protected_point_set(plan)
+    if (nrow(out$points)) {
+        heads <- unique(as.character(columns))
+        bad <- heads[replace_point_pairs(heads, out$points)$hit]
+        if ("occurrenceID" %in% names(df)) {
+            # The point each row publishes: the generalized one, none, or its own.
+            own_lat <- plan$lat
+            own_lon <- plan$lon
+            own_lat[plan$target] <- plan$pub_lat[plan$target]
+            own_lon[plan$target] <- plan$pub_lon[plan$target]
+            own_lat[plan$withheld] <- own_lon[plan$withheld] <- NA_real_
+            if (any(replace_point_pairs(df$occurrenceID, out$points, own_lat, own_lon)$hit)) {
+                bad <- c(bad, "occurrenceID")
+            }
+        }
+        out$point_columns <- bad
+    }
+    out
 }
 
 # A coordinate as typed, with a decimal comma turned into a dot when the value

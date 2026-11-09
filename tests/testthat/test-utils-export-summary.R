@@ -448,3 +448,25 @@ testthat::test_that("build_export_summary blocks and lists a protected row with 
     testthat::expect_false(s2$export_blocked)
 })
 
+
+testthat::test_that("build_export_summary blocks and lists projected coordinates and point columns (ADR-204)", {
+    local_sensitive_fixture("Panthera onca", category = "EN")
+    df <- sample_mapped()
+    gp <- list(enabled = TRUE, levels = c("Panthera onca" = "high"))
+    row <- which(df$scientificName == "Panthera onca")[1]
+    df$dynamicProperties <- ""
+    df$dynamicProperties[row] <- '{"easting":333286.9,"northing":7394586.1}'
+    s <- saira:::build_export_summary(df, generalization_payload = gp)
+    testthat::expect_identical(s$projected_point_rows, row)
+    testthat::expect_true(s$export_blocked)
+
+    df$dynamicProperties <- ""
+    df$decimalLatitude[row] <- "-27.17052"
+    df$decimalLongitude[row] <- "-53.93331"
+    pair <- paste(df$decimalLatitude[row], df$decimalLongitude[row])
+    raw <- data.frame(a = "x", stringsAsFactors = FALSE)
+    names(raw) <- paste("Station", pair)
+    s <- saira:::build_export_summary(df, generalization_payload = gp, raw_data = raw)
+    testthat::expect_identical(s$point_columns, names(raw))
+    testthat::expect_true(s$export_blocked)
+})

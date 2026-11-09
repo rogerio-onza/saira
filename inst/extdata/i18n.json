@@ -399,6 +399,16 @@
     "en": "%d record(s) of a protected species have no full coordinate, but another field still shows a value like a coordinate. Fill in the coordinate or clear that value in the preview. If it is in an unmapped column, clear it in the original spreadsheet. Rows:",
     "es": "%d registro(s) de especie protegida no tienen coordenada completa, pero otro campo aún muestra un valor parecido a una coordenada. Complete la coordenada o borre ese valor en la vista previa. Si está en una columna sin mapear, bórrelo en la hoja original. Filas:"
   },
+  "export_blocked_projected_point": {
+    "pt": "%d registro(s) de espécie generalizada têm coordenadas projetadas (UTM, WKT ou GeoJSON) em outro campo. Apague esse valor na prévia. Se ele estiver em uma coluna não mapeada, apague na planilha original. Linhas:",
+    "en": "%d record(s) of a generalized species have projected coordinates (UTM, WKT or GeoJSON) in another field. Clear that value in the preview. If it is in an unmapped column, clear it in the original spreadsheet. Rows:",
+    "es": "%d registro(s) de especie generalizada tienen coordenadas proyectadas (UTM, WKT o GeoJSON) en otro campo. Borre ese valor en la vista previa. Si está en una columna sin mapear, bórrelo en la hoja original. Filas:"
+  },
+  "export_blocked_point_column": {
+    "pt": "O nome de uma coluna ou um occurrenceID mostra a coordenada de um registro protegido. Renomeie a coluna na planilha original ou edite o occurrenceID. Colunas:",
+    "en": "A column name or an occurrenceID shows the coordinate of a protected record. Rename the column in the original spreadsheet, or edit the occurrenceID. Columns:",
+    "es": "El nombre de una columna o un occurrenceID muestra la coordenada de un registro protegido. Cambie el nombre de la columna en la hoja original o edite el occurrenceID. Columnas:"
+  },
   "export_blocked_coord_invalid": {
     "pt": "Coordenada inválida em %d registro(s): não é um número ou está fora da faixa (latitude de -90 a 90, longitude de -180 a 180). Corrija ou apague o valor na prévia. Linhas:",
     "en": "Invalid coordinate in %d record(s): it is not a number or it is out of range (latitude -90 to 90, longitude -180 to 180). Correct or clear the value in the preview. Rows:",

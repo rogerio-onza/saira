@@ -37,11 +37,12 @@ prepare_masked_export <- function(inputs, lang = "en") {
     # The summary blocks the same case, this is the last gate before a file exists.
     unmapped <- unmapped_raw_columns(inputs$raw_data, inputs$map_values,
                                      overridden_terms = overridden_mapping_terms(inputs$custom_values))
-    if (length(setdiff(protected_point_text_rows(
-        effective, gen,
-        rekey_sensitivity_decisions(inputs$sensitivity, inputs$name_review),
-        if (length(unmapped)) inputs$raw_data[, unmapped, drop = FALSE]
-    ), drop))) {
+    decisions <- rekey_sensitivity_decisions(inputs$sensitivity, inputs$name_review)
+    extras <- if (length(unmapped)) inputs$raw_data[, unmapped, drop = FALSE]
+    review <- protected_copy_review(effective, gen, decisions, extras, names(inputs$raw_data))
+    if (length(setdiff(c(protected_point_text_rows(effective, gen, decisions, extras),
+                         review$projected_rows), drop)) ||
+        length(review$point_columns)) {
         stop(tr("export_download_blocked", lang), call. = FALSE)
     }
     if (length(drop) && nrow(masked$real)) {
@@ -56,7 +57,7 @@ prepare_masked_export <- function(inputs, lang = "en") {
         data, effective, inputs$preview_changes,
         union(masked$rows, generalized_record_rows(effective, gen)), drop
     )
-    list(masked = masked, gen = gen, drop = drop, changes = changes)
+    list(masked = masked, gen = gen, drop = drop, changes = changes, points = review$points)
 }
 
 # The full product: core, measurements, real points, change log, EML metadata
@@ -97,6 +98,11 @@ prepare_export_product <- function(inputs, lang = "en") {
         rownames(core) <- NULL
         attr(core, "id_strategy") <- id_attr
     }
+    # The filter of one row reads only its own point. A text of any row can
+    # hold the point of another one (ADR-204).
+    id_attr <- attr(core, "id_strategy")
+    core <- redact_point_pairs_in_frame(core, prep$points)
+    attr(core, "id_strategy") <- id_attr
 
     # GBIF reads no measurement term in the core, so the measurements go to
     # their own extension file.
