@@ -1118,3 +1118,87 @@ testthat::test_that("the provider status poll runs only during a run or an updat
         }
     )
 })
+
+testthat::test_that("a change in the names or options ends the Names report", {
+    testthat::local_mocked_bindings(
+        brprovider_data_available = function(provider_id) FALSE,
+        .package = "saira"
+    )
+    sci <- shiny::reactiveVal(c("Puma concolor", "Panthera onca"))
+    habitat <- shiny::reactiveVal("forest")
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(data.frame(
+                scientificName = sci(), habitat = habitat(), stringsAsFactors = FALSE
+            )),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            start <- function() {
+                validation_result(data.frame(scientificName = "Puma concolor", query_name = "Puma concolor",
+                                             validation_status = "accepted", stringsAsFactors = FALSE))
+                validated_input_rv(names_validation_input(mapped_data_r()))
+                rv$manual_reviews <- data.frame(
+                    query_name = "Puma concolor", review_type = "confirm", original_name = "Puma concolor",
+                    corrected_name = NA_character_, reason = "ok", reviewed_at = Sys.time(),
+                    stringsAsFactors = FALSE
+                )
+                rv$last_run_status <- "success"
+                session$flushReact()
+            }
+            start()
+            rv$sensitivity_overrides <- list("Puma concolor" = list(sensitive = TRUE, category = "EN"))
+
+            # Other columns, row order and repeats leave the report.
+            habitat("river")
+            sci(c("Panthera onca", "Puma concolor", "Puma concolor"))
+            session$flushReact()
+            testthat::expect_false(is.null(validation_result()))
+            testthat::expect_identical(rv$last_run_status, "success")
+
+            sci(c("Pantera xyz", "Panthera onca"))
+            session$flushReact()
+            testthat::expect_null(validation_result())
+            testthat::expect_null(review_export_payload()$ranks)
+            testthat::expect_identical(nrow(rv$manual_reviews), 0L)
+            testthat::expect_length(rv$sensitivity_overrides, 1L)
+            testthat::expect_identical(rv$last_run_status, "stale")
+
+            start()
+            session$setInputs(remove_authors = FALSE)
+            testthat::expect_null(validation_result())
+            testthat::expect_identical(rv$last_run_status, "stale")
+        }
+    )
+})
+
+testthat::test_that("a change in the names stops a Names run in progress", {
+    testthat::local_mocked_bindings(
+        brprovider_data_available = function(provider_id) FALSE,
+        .package = "saira"
+    )
+    sci <- shiny::reactiveVal("Puma concolor")
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(data.frame(scientificName = sci(), stringsAsFactors = FALSE)),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            # The start observer ignores its first value.
+            session$flushReact()
+            rv$start_requested <- TRUE
+            session$flushReact()
+            testthat::expect_true(isTRUE(rv$running))
+            testthat::expect_false(is.null(validated_input_rv()))
+
+            sci("Pantera xyz")
+            session$flushReact()
+            testthat::expect_false(isTRUE(rv$running))
+            testthat::expect_null(rv$run_state)
+            testthat::expect_null(validation_result())
+            testthat::expect_identical(rv$last_run_status, "stale")
+        }
+    )
+})

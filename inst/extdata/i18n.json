@@ -3679,6 +3679,11 @@
     "en": "The data changed. Run the validation again.",
     "es": "Los datos cambiaron. Ejecute la validaci\u00f3n de nuevo."
   },
+  "validate_names_stale": {
+    "pt": "Os nomes ou as opções mudaram. Rode a validação de novo.",
+    "en": "The names or the options changed. Run the validation again.",
+    "es": "Los nombres o las opciones cambiaron. Ejecute la validación de nuevo."
+  },
   "validate_coords_utm_unavailable": {
     "pt": "Esse datum n\u00e3o cobre a zona escolhida. Selecione outra combina\u00e7\u00e3o.",
     "en": "That datum does not cover the selected zone. Pick another combination.",

@@ -3707,3 +3707,15 @@ Formato: ADR leve (Architecture Decision Record).
   - Os 15 digitos significativos mantem as casas da entrada e nao acrescentam casas.
   - A tabela de Coordenadas e os popups dos mapas usam a mesma funcao, com o `round(..., 6)` que ja tinham.
 - **Consequencias**: o ponto exportado tem os mesmos bytes com qualquer `options(digits)` e com qualquer conjunto de linhas. Um valor em graus, minutos e segundos sai com as seis casas do parser, como `-46.633333`, e nao `-46.63333`. O `round(..., 6)` do parser de texto continua igual.
+
+## ADR-209: Relatorio de Nomes termina quando os nomes ou as opcoes mudam
+
+- **Data**: 2026-11-09
+- **Status**: Aceito.
+- **Contexto**: revisao pre-v1.0 (RE-02). Nomes so limpava o relatorio com o reset do upload ou do Mapeamento. Uma edicao de `scientificName` na Pre-visualizacao, outra coluna no Mapeamento ou outra opcao de normalizacao deixava a rodada anterior como sucesso, e os nomes novos ficavam sem validacao.
+- **Decisao**:
+  - `names_validation_input()` guarda os nomes distintos e as duas opcoes quando a rodada comeca, como `coords_validation_input()` em Coordenadas.
+  - Um observer compara essa entrada com a atual. Na diferenca, o relatorio, os ranks, as revisoes e a rodada em curso saem, e o estado fica `stale` com um aviso.
+  - Ordem, repeticao de nomes e as outras colunas nao terminam o relatorio.
+  - As revisoes saem porque uma nova rodada tambem as limpa, e uma revisao fora da tela nao pode mudar o pacote. As marcas manuais de sensibilidade ficam: a chave delas e o nome.
+- **Consequencias**: depois de corrigir um nome, a pessoa roda Nomes de novo. O observer so le os dados depois de uma rodada.

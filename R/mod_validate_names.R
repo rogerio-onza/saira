@@ -47,6 +47,8 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
 
         validation_result <- shiny::reactiveVal(NULL)
         validation_meta <- shiny::reactiveVal(NULL)
+        # Names and options of the current run or report (RE-02).
+        validated_input_rv <- shiny::reactiveVal(NULL)
 
         # Empty schemas reused by the rv init, the validate-click reset, and the
         # upstream reset observer so the three stay in lockstep.
@@ -911,6 +913,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 rv$last_error <- NA_character_
                 validation_result(NULL)
                 validation_meta(NULL)
+                validated_input_rv(NULL)
                 rv$manual_reviews <- empty_manual_reviews()
                 rv$review_target <- NULL
                 rv$review_mode <- "confirm"
@@ -977,6 +980,11 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     return(invisible(NULL))
                 }
 
+                validated_input_rv(names_validation_input(
+                    mapped_data_r(),
+                    remove_authors = input$remove_authors %||% TRUE,
+                    ignore_qualifiers = input$ignore_qualifiers %||% TRUE
+                ))
                 run_card$last_sent <- NULL
                 rv$running <- TRUE
                 rv$starting <- FALSE
@@ -1023,6 +1031,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             rv$starting <- FALSE
 
             if (identical(state$phase, "failed")) {
+                validated_input_rv(NULL)
                 rv$last_run_status <- "failed"
                 rv$last_error <- sprintf(tr("validate_names_failed", lang_r()), as.character(state$error_message %||% tr("validate_names_error_unknown", lang_r())))
                 shiny::showNotification(rv$last_error, type = "error")
@@ -1102,6 +1111,41 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             )
         })
 
+        # A change in the names or options of a run or report ends it, as in
+        # Coordinates. The report and its reviews go, because a new run clears
+        # the reviews too and an unseen review must not change the export.
+        # Manual sensitivity marks stay: they are keyed by name. The early
+        # return keeps the data out of the dependencies without a run.
+        shiny::observe({
+            read <- validated_input_rv()
+            if (is.null(read)) return(invisible(NULL))
+            current <- tryCatch(
+                names_validation_input(
+                    mapped_data_r(),
+                    remove_authors = input$remove_authors %||% TRUE,
+                    ignore_qualifiers = input$ignore_qualifiers %||% TRUE
+                ),
+                error = function(e) NULL
+            )
+            if (identical(read, current)) return(invisible(NULL))
+            shiny::isolate({
+                validated_input_rv(NULL)
+                validation_result(NULL)
+                validation_meta(NULL)
+                rv$manual_reviews <- empty_manual_reviews()
+                rv$review_target <- NULL
+                rv$exiting_reviews <- empty_exiting_reviews()
+                rv$stream_df <- empty_validation_stream()
+                rv$stream_filter <- "all"
+                # Without run_state the tick of a run in progress stops.
+                rv$run_state <- NULL
+                rv$running <- FALSE
+                rv$last_run_status <- "stale"
+                rv$last_error <- NA_character_
+                shiny::showNotification(tr("validate_names_stale", lang_r()), type = "warning", id = session$ns("names_stale"))
+            })
+        }, priority = 10L)
+
         # A re-upload or a confirmed Mapping reset invalidates the dataset
         # baseline: drop every decision made for the previous dataset so nothing
         # leaks into the new one. Provider selection and runtime status are kept
@@ -1110,6 +1154,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             shiny::observeEvent(reset_signal_r(), {
                 validation_result(NULL)
                 validation_meta(NULL)
+                validated_input_rv(NULL)
                 sensitivity_target(NULL)
                 rv$manual_reviews <- empty_manual_reviews()
                 rv$review_target <- NULL
