@@ -553,8 +553,8 @@ mount_mod_validate_coords_presentation <- function(
             )
         }
 
-        lat_display <- ifelse(is.na(res$lat_num), "", format(round(res$lat_num, 6), trim = TRUE))
-        lon_display <- ifelse(is.na(res$lon_num), "", format(round(res$lon_num, 6), trim = TRUE))
+        lat_display <- ifelse(is.na(res$lat_num), "", coord_number_text(round(res$lat_num, 6)))
+        lon_display <- ifelse(is.na(res$lon_num), "", coord_number_text(round(res$lon_num, 6)))
 
         # The table renders HTML for the badges, so the country typed in the
         # spreadsheet goes in as text (SEG-01).

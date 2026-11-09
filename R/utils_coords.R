@@ -2337,8 +2337,8 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             )
         )
 
-        lat_text <- format(round(out$lat_num, 6), nsmall = 0L, trim = TRUE)
-        lon_text <- format(round(out$lon_num, 6), nsmall = 0L, trim = TRUE)
+        lat_text <- coord_number_text(round(out$lat_num, 6))
+        lon_text <- coord_number_text(round(out$lon_num, 6))
         popup_html <- paste0(
             "<b>", popup_defaults$row, ":</b> ", out$.row_index,
             "<br><b>", popup_defaults$lat, ":</b> ", lat_text,
@@ -2432,8 +2432,8 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
     issue_label <- unname(label_map[issue_chr])
     issue_label[is.na(issue_label)] <- label_map[["missing"]]
 
-    lat_text <- format(round(out$lat_num, 6), nsmall = 0L, trim = TRUE)
-    lon_text <- format(round(out$lon_num, 6), nsmall = 0L, trim = TRUE)
+    lat_text <- coord_number_text(round(out$lat_num, 6))
+    lon_text <- coord_number_text(round(out$lon_num, 6))
     badge_class <- ifelse(
         issue_chr %in% c("lat_range", "lon_range"),
         "coord-issue-badge-error",
@@ -2575,8 +2575,16 @@ convert_coordinate_text <- function(values, axis, pair_column = FALSE) {
         values[lone] <- ""
     }
     ok <- !is.na(parsed)
-    values[ok] <- format(parsed[ok], scientific = FALSE, drop0trailing = TRUE, trim = TRUE)
+    values[ok] <- coord_number_text(parsed[ok])
     values
+}
+
+# A coordinate as text with its own decimals (ADR-208). format() gives the
+# decimals of the whole vector and reads options(digits), so a point changed
+# with the other rows or the session. 15 significant digits keep the decimals
+# of the input and add no digit to it.
+coord_number_text <- function(x) {
+    trimws(formatC(x, digits = 15L, format = "fg"))
 }
 
 # Share of the filled rows that must hold a pair for a column of pairs.

@@ -3696,3 +3696,14 @@ Formato: ADR leve (Architecture Decision Record).
   - A celula so com marcas fracas (NBSP, micro e os outros simbolos de ADR-184) fica igual. O NBSP continua a virar espaco em `clean_invisible_chars()`.
   - O upload conta as celulas so com marcas fracas, numa coluna com celula reparada, que passariam no reparo, e mostra `upload_report_dos_unsure`.
 - **Consequencias**: um "a" agudo sozinho de um arquivo do Saira 0.11, como em `divisor de águas`, nao volta mais e vira espaco. O aviso pede para conferir essas celulas.
+
+## ADR-208: Coordenada com as casas do proprio ponto
+
+- **Data**: 2026-11-09
+- **Status**: Aceito.
+- **Contexto**: revisao pre-v1.0 (DATA-04). `convert_coordinate_text()` escrevia o ponto convertido com `format()`. O `format()` usa as casas comuns do vetor e le `options(digits)`. Uma longitude `-123.123456` sozinha virava `-123.1235`, e com outra linha voltava a ter seis casas. Com `digits = 3`, a perda chegava a quilometros.
+- **Decisao**:
+  - `coord_number_text()` escreve cada valor sozinho com `formatC(digits = 15, format = "fg")`, sem notacao cientifica e sem zeros no fim.
+  - Os 15 digitos significativos mantem as casas da entrada e nao acrescentam casas.
+  - A tabela de Coordenadas e os popups dos mapas usam a mesma funcao, com o `round(..., 6)` que ja tinham.
+- **Consequencias**: o ponto exportado tem os mesmos bytes com qualquer `options(digits)` e com qualquer conjunto de linhas. Um valor em graus, minutos e segundos sai com as seis casas do parser, como `-46.633333`, e nao `-46.63333`. O `round(..., 6)` do parser de texto continua igual.

@@ -2619,7 +2619,7 @@ testthat::test_that("a column of coordinate pairs on both cards fills both axes"
     res <- build_processed_mapping_df(df = df, dwc_terms = dwc, map_values = map,
                                       occurrence_ids = c("u1", "u2"))
     testthat::expect_identical(res$data$decimalLatitude, c("-23.55", "-23.5"))
-    testthat::expect_identical(res$data$decimalLongitude, c("-46.63333", "-46.6"))
+    testthat::expect_identical(res$data$decimalLongitude, c("-46.633333", "-46.6"))
 
     # The warning for a column on two cards leaves this pair alone.
     testthat::expect_length(detect_duplicate_source_mappings(map, pair_cols = "Coordenadas"), 0L)

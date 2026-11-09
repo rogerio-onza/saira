@@ -854,7 +854,26 @@ testthat::test_that("convert_coordinate_text gives each card its own axis of a p
     testthat::expect_identical(saira:::convert_coordinate_text(v, "lat"),
                                c("-23.55", "-23.55", "-23.55", "-23.55"))
     testthat::expect_identical(saira:::convert_coordinate_text(v, "lon"),
-                               c("-46.63333", "-46.63", "23°33'S", "-23.55"))
+                               c("-46.633333", "-46.63", "23°33'S", "-23.55"))
+})
+
+testthat::test_that("convert_coordinate_text keeps the decimals of each point", {
+    conv <- function(x, axis) saira:::convert_coordinate_text(x, axis, pair_column = TRUE)
+    v <- c("-23.123456, -123.123456", "23.12, 46.1", "-1.5, 120.125", "0.00001, -0.5")
+    lat <- c("-23.123456", "23.12", "-1.5", "0.00001")
+    lon <- c("-123.123456", "46.1", "120.125", "-0.5")
+    for (d in c(3L, 7L, 15L)) {
+        withr::with_options(list(digits = d), {
+            testthat::expect_identical(conv(v, "lat"), lat)
+            testthat::expect_identical(conv(v, "lon"), lon)
+        })
+    }
+    # A point keeps its text when other rows come or go.
+    testthat::expect_identical(conv(v[1L], "lon"), lon[1L])
+    testthat::expect_identical(conv(c(v[1L], "-1.123456, -2.123456"), "lon")[1L], lon[1L])
+    # A degree value keeps the six decimals of the text parser.
+    dms <- withr::with_options(list(digits = 3L), conv("23\u00b033'30\"S 46\u00b038'10\"W", "lat"))
+    testthat::expect_identical(dms, "-23.558333")
 })
 
 testthat::test_that("convert_coordinate_text gives no point to one value in a column of pairs", {
