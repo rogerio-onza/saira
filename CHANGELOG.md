@@ -112,8 +112,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - **occurrenceID:** Stop new ids moving between rows when one has an empty cell and another the text NA, ADR-205 ([#296](https://github.com/rogerio-onza/saira/pull/296))
-- **export:** Replace the point of a protected record in the text of every other row of the package, ADR-204
-- **export:** Stop the export when a column name, an occurrenceID or projected coordinates show a protected point, ADR-204
+- **export:** Replace the point of a protected record in the text of every other row of the package, ADR-204 ([#295](https://github.com/rogerio-onza/saira/pull/295))
+- **export:** Stop the export when a column name, an occurrenceID or projected coordinates show a protected point, ADR-204 ([#295](https://github.com/rogerio-onza/saira/pull/295))
 - **coords:** Put the table pager under the count when the two do not fit on one line
 - **coords:** Put the table search under the length menu when the two do not fit on one line
 - **tables:** Group the thousands of the table counts with a dot in Portuguese and Spanish
