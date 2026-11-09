@@ -2379,3 +2379,46 @@ testthat::test_that("the year gate reads a date split across day, month and year
         }
     )
 })
+
+testthat::test_that("the year gate reads a new upload with the same columns and row count", {
+    sheet <- function(date) {
+        data.frame(especie = "Puma concolor", data_registro = date, stringsAsFactors = FALSE)
+    }
+    raw <- shiny::reactiveVal(sheet("01/05/2098"))
+
+    shiny::testServer(
+        mod_mapping_server,
+        args = list(raw_data_r = raw, lang_r = shiny::reactive("en")),
+        {
+            pick_date <- function() {
+                session$flushReact()
+                rv$map_values$eventDate <- "data_registro"
+                session$flushReact()
+            }
+
+            pick_date()
+            testthat::expect_identical(date_year_gate_r()$count, 1L)
+
+            # A pick outside the date terms keeps the cached result.
+            key <- date_year_gate_key()
+            rv$map_values$scientificName <- "especie"
+            session$flushReact()
+            testthat::expect_identical(date_year_gate_key(), key)
+
+            # Future -> valid file, same structure.
+            raw(sheet("01/05/2024"))
+            pick_date()
+            testthat::expect_identical(date_year_gate_r()$count, 0L)
+
+            # Valid -> future file, same structure.
+            raw(sheet("01/05/2099"))
+            pick_date()
+            testthat::expect_identical(date_year_gate_r()$count, 1L)
+
+            # A pick of a column with no date clears the warning.
+            rv$map_values$eventDate <- "especie"
+            session$flushReact()
+            testthat::expect_identical(date_year_gate_r()$count, 0L)
+        }
+    )
+})

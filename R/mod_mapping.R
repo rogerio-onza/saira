@@ -2669,10 +2669,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # check costs ~0.2s on a 100k-row upload, and rv$map_values invalidates
         # on every column pick, so without this the Mapping tab would pay it per
         # click for a result that only changes when one of these changes
-        # (ADR-116). Session-scoped: the key is not the data itself.
+        # (ADR-116). Session-scoped: the key is not the data itself, so the
+        # upload counter is in it. Without it, a new file with the same columns
+        # and row count read the warning of the old file.
         date_year_gate_key <- function() {
             raw <- safe_raw_data_for_gate()
             list(
+                rv$downstream_reset,
                 rv$map_values[c("eventDate", "dateIdentified", "modified")],
                 dim(raw),
                 names(raw)
