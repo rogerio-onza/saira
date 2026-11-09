@@ -878,6 +878,26 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   flex: 1 1 auto;
 }
 
+/* The fixed half columns are too narrow in this card: at 1024 px the search
+   field crosses the card, and with thousands of pages the pager cuts its first
+   button. Each part takes its own width, and the right part goes under the left
+   part when both do not fit on one line. */
+.validate-coords-table-card .dataTables_wrapper > .row:first-child > [class*="col-"],
+.validate-coords-table-card .dataTables_wrapper > .row:last-child > [class*="col-"] {
+  flex: 1 1 auto;
+  width: auto;
+}
+
+.validate-coords-table-card .dataTables_wrapper > .row:first-child > [class*="col-"]:last-child,
+.validate-coords-table-card .dataTables_wrapper > .row:last-child > [class*="col-"]:last-child {
+  flex-grow: 0;
+  margin-left: auto;
+}
+
+.validate-coords-table-card .dataTables_paginate .pagination .page-item {
+  flex-shrink: 0;
+}
+
 .stream-pill {
   font-family: var(--font-ui);
   font-size: var(--text-xs);
@@ -2397,6 +2417,13 @@ body.vn-review-open .modal-backdrop.show {
   position: sticky;
   top: 0;
   z-index: 2;
+}
+
+/* DataTables gives a sort header position: relative, which stops sticky. */
+.vn-report-table.dataTable thead > tr > th.sorting,
+.vn-report-table.dataTable thead > tr > th.sorting_asc,
+.vn-report-table.dataTable thead > tr > th.sorting_desc {
+  position: sticky;
 }
 
 .vn-th-content {

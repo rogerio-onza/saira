@@ -139,8 +139,13 @@ lang_col <- function(df, stem, lang) {
 #'   es, \code{"1,234,567"} for en).
 #' @export
 format_count <- function(n, lang = "en") {
-    dot_group <- lang %in% c("pt", "es")
-    big <- if (dot_group) "." else ","
-    dec <- if (dot_group) "," else "."
+    big <- count_big_mark(lang)
+    dec <- if (big == ".") "," else "."
     format(n, big.mark = big, decimal.mark = dec, scientific = FALSE, trim = TRUE)
+}
+
+# The thousands mark of a language. DataTables takes it as the "thousands"
+# option of its counts, which default to the English comma.
+count_big_mark <- function(lang) {
+    if (lang %in% c("pt", "es")) "." else ","
 }
