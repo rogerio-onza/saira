@@ -349,7 +349,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             list(is_mapped = is_mapped, meta = meta)
         }
 
-        push_card_state <- function(term) {
+        card_state_payload <- function(term) {
             shiny::isolate({
                 current_val <- sanitize_map_selection(term, rv$map_values[[term]])
                 # Before the echo, the select still holds the value that code
@@ -402,8 +402,12 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 if (term %in% locked_taxon_terms()) {
                     payload$locked <- locked
                 }
-                session$sendCustomMessage("saira-toggle-field-mapped", payload)
+                payload
             })
+        }
+
+        push_card_state <- function(term) {
+            session$sendCustomMessage("saira-toggle-field-mapped", card_state_payload(term))
             invisible(NULL)
         }
 
@@ -416,10 +420,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
         # The echo of a code change brings no new value, so the input-sync
         # observer does not push it. Code that changes many cards pushes them
         # here, as a grid render draws them (ADR-196).
+        # One message for all cards: the browser checks every conditionalPanel
+        # after each message, and that check reads all inputs of the grid.
         push_all_card_states <- function() {
-            for (term in all_term_names()) {
-                push_card_state(term)
-            }
+            cards <- lapply(all_term_names(), card_state_payload)
+            session$sendCustomMessage("saira-toggle-field-mapped", list(cards = unname(cards)))
             apply_mapping_filter()
         }
 

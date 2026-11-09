@@ -3626,3 +3626,26 @@ Formato: ADR leve (Architecture Decision Record).
   - O auto-mapeamento tira a coluna dos cartoes verbatim. Com duas colunas elegiveis, como "Ponto inicial" e "Ponto final", ele nao escolhe nenhuma.
   - O aviso de coluna em dois cartoes ignora esse par, so quando a coluna tem pares. Ele le uma amostra de 500 valores distintos, porque roda a cada mudanca de cartao.
 - **Consequencias**: 100 mil pares distintos levam cerca de 3 s por cartao (6 s em DMS), com cache por cartao. Decimais com virgula e numeros simples ficam no tempo anterior. Um par de numeros simples sem nome de coordenada, como `-23.55, -46.63` em "Ponto", nao entra no auto-mapeamento, mas o usuario pode escolher a coluna nos dois cartoes.
+
+## ADR-202: Lista do selectize fechada sem desenho nem posicao
+
+- **Data**: 2026-11-09
+- **Status**: Aceito. Completa ADR-197 e ADR-198.
+- **Contexto**: depois do upload, a pagina parava duas vezes: na montagem da grade e na mensagem do auto-map. O perfil do Firefox mostrou o auto-map dentro de `selectize.setValue()`. Para cada card, `addItem` desenha de novo a lista fechada e chama `positionDropdown` duas vezes. Cada chamada le o layout depois de uma mudanca no DOM, e o Firefox refaz o estilo e o reflow da grade inteira a cada card.
+- **Decisao**:
+  - O patch de `module-app-ui.js` nao posiciona uma lista fechada. `open()` marca `isOpen` antes de posicionar, entao a lista aberta continua no lugar, para baixo ou para cima.
+  - Uma lista fechada e sem foco nao e desenhada. O selectize marca a lista como velha e a desenha no proximo foco. O `open()` desenha a lista velha, porque `onFocus` pula o desenho quando um select multiplo tem item ativo.
+- **Consequencias**: medido no Firefox com `ocorrencias-demo.csv`, 5 rodadas alternadas contra 9b34210 (antes da ADR-197). O bloco do auto-map cai de 288-384 ms para 119-161 ms, e o da grade fica em 289-300 ms (base 545-607 ms). A soma cai de cerca de 0,9 s para cerca de 0,43 s.
+  Nos 65 selects da grade, a lista aberta e igual a lista desenhada de novo. Uma lista fechada pode ficar sem opcoes no DOM, e um teste que le as opcoes abre a lista antes.
+  O bloco da grade que sobra vem do bind do Shiny, do selectize dos cards visiveis e de um observer do bslib que manda um input e reavalia os `conditionalPanel`.
+
+## ADR-203: Sem envio vazio de input e uma mensagem para todos os cards
+
+- **Data**: 2026-11-09
+- **Status**: Aceito. Completa ADR-202.
+- **Contexto**: o Shiny chama `$updateConditionals()` depois de cada envio de input e de cada mensagem do servidor. Essa chamada copia todos os inputs e os filtra de novo para cada `conditionalPanel`, entao o custo cresce com a grade. Na montagem da grade, o `InputBatchSender` do Shiny 1.14 enfileira um envio para cada input, porque nunca marca `sendIsEnqueued`. O primeiro envio leva todos os valores, e cerca de 117 envios seguem sem dados. Depois, `push_all_card_states()` mandava uma mensagem para cada um dos 75 cards.
+- **Decisao**:
+  - O patch de `module-app-ui.js` nao manda um envio sem dados.
+  - `push_all_card_states()` manda os cards numa mensagem, `{cards: [...]}`. O handler aceita um card ou a lista. Um card sozinho continua com a mensagem de antes.
+- **Consequencias**: medido no Firefox com `ocorrencias-demo.csv`, 6 rodadas alternadas contra a mesma arvore sem a mudanca. Os envios caem de 124 para 7 e as mensagens de 239 para 170. O bloco da grade cai de 282-365 ms para 182-279 ms, e o do auto-map de 124-174 ms para 97-137 ms. A soma cai de mediana 450 ms para 308 ms.
+  As 84 mensagens `recalculating` sao do proprio Shiny e ficam. Quando o Shiny marcar `sendIsEnqueued`, o patch do envio vazio nao tem mais efeito e pode sair.

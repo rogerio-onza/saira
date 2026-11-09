@@ -518,7 +518,13 @@
     // grid. Used for fixed-value terms whose free-text read is isolated
     // (ADR-098): the server recomputes is_field_mapped() after typing
     // settles and flips the class here, as the next render would.
+    // A change of many cards sends them in one message, as {cards: [...]}.
     Shiny.addCustomMessageHandler('saira-toggle-field-mapped', function (payload) {
+      var cards = payload && payload.cards ? payload.cards : [payload];
+      cards.forEach(toggleFieldMapped);
+    });
+
+    function toggleFieldMapped(payload) {
       var el = payload && payload.id && document.getElementById(payload.id);
       if (!el) return;
       el.classList.toggle('field-mapped', !!payload.mapped);
@@ -558,6 +564,6 @@
       span.className = badge.class;
       span.title = badge.title || '';
       span.textContent = badge.label || '';
-    });
+    }
   };
 })();
