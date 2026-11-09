@@ -111,6 +111,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **coords:** Put the table pager under the count when the two do not fit on one line
+- **coords:** Put the table search under the length menu when the two do not fit on one line
+- **tables:** Group the thousands of the table counts with a dot in Portuguese and Spanish
+- **names:** Keep the report header on top while the report scrolls
+- **preview:** Give the "In the spreadsheet" column room for its header in English on narrow screens
 - **export:** Stop the export when a sensitive species has no point but a text field shows its location, also when the Generalization panel did not appear, ADR-200
 - **ui:** Show gray shapes in place of the Mapping cards and the Problems list while they build, and the Mapping button labels at once, ADR-199
 - **names:** Stop the grey blink of the panels on a click on Validate, ADR-198 ([#287](https://github.com/rogerio-onza/saira/pull/287))

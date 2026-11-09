@@ -1014,6 +1014,7 @@ preview_dt_language <- function(lang) {
         search = tr("preview_datatable_search", lang),
         lengthMenu = tr("preview_datatable_length_menu", lang),
         info = tr("preview_datatable_info", lang),
+        thousands = count_big_mark(lang),
         emptyTable = tr("preview_datatable_empty", lang),
         zeroRecords = tr("preview_datatable_zero_records", lang),
         paginate = list(

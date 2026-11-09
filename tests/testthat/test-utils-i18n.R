@@ -274,6 +274,12 @@ testthat::test_that("format_count groups integers by locale without warning", {
     testthat::expect_identical(format_count(1234567L, "es"), "1.234.567")
 })
 
+testthat::test_that("count_big_mark gives the DataTables thousands mark of each language", {
+    testthat::expect_identical(count_big_mark("pt"), ".")
+    testthat::expect_identical(count_big_mark("es"), ".")
+    testthat::expect_identical(count_big_mark("en"), ",")
+})
+
 testthat::test_that("lang_col reads the language column and falls back to English", {
     df <- data.frame(
         definition_en = c("one", "two", "three"),

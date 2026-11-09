@@ -830,8 +830,9 @@
     width: 3.5rem;
   }
 
+  /* 5.5rem holds the longest word of the header, "spreadsheet" in EN. */
   .preview-rows-table .pf-col-value {
-    width: 4.5rem;
+    width: 5.5rem;
   }
 
   .preview-rows-table .pf-col-fix {

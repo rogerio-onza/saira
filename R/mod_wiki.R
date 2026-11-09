@@ -307,6 +307,7 @@ mod_wiki_server <- function(id, lang_r) {
                         search = tr("wiki_datatable_search", lang_r()),
                         lengthMenu = tr("wiki_datatable_length_menu", lang_r()),
                         info = tr("wiki_datatable_info", lang_r()),
+                        thousands = count_big_mark(lang_r()),
                         emptyTable = tr("wiki_datatable_empty", lang_r()),
                         zeroRecords = tr("wiki_datatable_zero_records", lang_r()),
                         paginate = list(
