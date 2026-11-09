@@ -4639,6 +4639,11 @@
     "en": "Wildlife Insights export is missing required columns (deployment_id, latitude, longitude, start_date, end_date, image_id or timestamp).",
     "es": "A la exportación de Wildlife Insights le faltan columnas obligatorias (deployment_id, latitude, longitude, start_date, end_date, image_id o timestamp)."
   },
+  "err_camtrap_wi_mixed_project_types": {
+    "pt": "Este export do Wildlife Insights tem projetos de imagens e de sequências. O Saíra ainda não junta os dois tipos. Exporte cada tipo de projeto em um arquivo e importe cada um separadamente.",
+    "en": "This Wildlife Insights export has image projects and sequence projects. Saíra does not combine the two types yet. Export each project type to its own file and import each file separately.",
+    "es": "Esta exportación de Wildlife Insights tiene proyectos de imágenes y de secuencias. Saíra todavía no combina los dos tipos. Exporte cada tipo de proyecto en un archivo e importe cada uno por separado."
+  },
   "err_camtrap_wi_sequences_missing": {
     "pt": "Este export do Wildlife Insights é de um projeto de sequências, mas falta o sequences.csv ou uma das colunas sequence_id, start_time e end_time.",
     "en": "This Wildlife Insights export is from a sequence project, but sequences.csv or one of the columns sequence_id, start_time and end_time is missing.",
