@@ -2043,6 +2043,79 @@ test_that("column parts are joined unambiguously", {
     expect_identical(length(unique(out)), 2L)
 })
 
+test_that("ordinary rows keep the identifiers of earlier releases", {
+    # Pinned before ADR-205. Absence and ordinary text keep their legacy hash
+    # form, so a published dataset without occurrenceID gets the same ids.
+    df <- data.frame(
+        sp = c("Dasypus", "Cabassous", "Dasypus"),
+        note = c(NA, "x", NA),
+        lat = c("-15.7", "", "-15.7"),
+        stringsAsFactors = FALSE
+    )
+    expect_identical(as.character(generate_persistent_ids(df)), c(
+        "urn:uuid:357d2011-7c19-564a-9418-2dff964820f3",
+        "urn:uuid:9ae210f4-23de-5a25-bacb-2da2e752adef",
+        "urn:uuid:b08a3bc4-dac3-597c-930e-98165b568401"
+    ))
+})
+
+test_that("an empty cell and the text NA give each row its own identifier", {
+    df <- data.frame(
+        sp = c("Aus bus", "Aus bus"), note = c(NA, "NA"),
+        stringsAsFactors = FALSE
+    )
+    straight <- as.character(generate_persistent_ids(df))
+    flipped <- as.character(generate_persistent_ids(df[2:1, ]))
+
+    # The empty row keeps its pre-ADR-205 id, and reordering moves no id.
+    expect_identical(straight[1], "urn:uuid:404fc5a4-1609-5552-b251-b79dc2b8c5bc")
+    expect_identical(straight, rev(flipped))
+    # The same row alone, in another import, gets the same id.
+    expect_identical(as.character(generate_persistent_ids(df[2, , drop = FALSE])), straight[2])
+})
+
+test_that("blank text, the text NA and an empty cell hash apart", {
+    df <- data.frame(sp = "A", note = c("", "NA", NA), stringsAsFactors = FALSE)
+    out <- as.character(generate_persistent_ids(df))
+    expect_identical(length(unique(out)), 3L)
+    expect_identical(out, rev(as.character(generate_persistent_ids(df[3:1, ]))))
+})
+
+test_that("separator bytes inside a cell cannot forge another row's key", {
+    # U+001F joins the cells and U+001E joins the occurrence number. A cell
+    # that held them could rebuild the key of a different row.
+    df <- data.frame(
+        one = c("a\u001fb", "a", "a\u001c", "a\u001cf"),
+        two = c("c", "b\u001fc", "f", ""),
+        stringsAsFactors = FALSE
+    )
+    out <- as.character(generate_persistent_ids(df))
+    expect_identical(length(unique(out)), 4L)
+    expect_identical(out, rev(as.character(generate_persistent_ids(df[4:1, ]))))
+    expect_identical(
+        saira:::id_hash_cells(c(NA, "x", "NA", "a\u001cb\u001ec\u001fd")),
+        c(NA, "x", "\u001cNA", "\u001ca\u001ccb\u001cec\u001cfd")
+    )
+})
+
+test_that("an appended row and kept ids leave the other ids unchanged", {
+    df <- data.frame(
+        sp = c("Aus bus", "Aus bus"), note = c(NA, "NA"),
+        stringsAsFactors = FALSE
+    )
+    first <- as.character(resolve_occurrence_ids(df))
+
+    grown <- rbind(df, data.frame(sp = "Aus bus", note = "NA"))
+    expect_identical(as.character(resolve_occurrence_ids(grown))[1:2], first)
+
+    # Re-import of the export: kept ids win, and the new copy of the "NA" row
+    # takes the next free number of its group.
+    grown$occurrenceID <- c(first, "")
+    again <- as.character(resolve_occurrence_ids(grown))
+    expect_identical(again[1:2], first)
+    expect_false(again[3] %in% first)
+})
+
 test_that("seq_within_groups numbers each value's repeats in order", {
     expect_identical(
         saira:::seq_within_groups(c("a", "b", "a", "a", "b")),

@@ -111,6 +111,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **occurrenceID:** Stop new ids moving between rows when one has an empty cell and another the text NA, ADR-205
 - **export:** Replace the point of a protected record in the text of every other row of the package, ADR-204
 - **export:** Stop the export when a column name, an occurrenceID or projected coordinates show a protected point, ADR-204
 - **coords:** Put the table pager under the count when the two do not fit on one line
