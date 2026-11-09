@@ -111,6 +111,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **upload:** Repair DOS accents only in a cell with its own CP850 mark, so a correct `µg` next to a DOS cell stays, ADR-207 ([#298](https://github.com/rogerio-onza/saira/pull/298))
 - **upload:** Refuse a Wildlife Insights package with image and sequence projects, which lost the image observations, ADR-206 ([#297](https://github.com/rogerio-onza/saira/pull/297))
 - **occurrenceID:** Stop new ids moving between rows when one has an empty cell and another the text NA, ADR-205 ([#296](https://github.com/rogerio-onza/saira/pull/296))
 - **export:** Replace the point of a protected record in the text of every other row of the package, ADR-204 ([#295](https://github.com/rogerio-onza/saira/pull/295))

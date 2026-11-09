@@ -5049,6 +5049,11 @@
     "en": "%d cell(s) had accents from a DOS (CP850) file read with the wrong code page, as \"SÆo\" for \"São\", and were repaired.",
     "es": "%d celda(s) tenían acentos de un archivo DOS (CP850) leídos con la tabla equivocada, como \"SÆo\" en lugar de \"São\", y se corrigieron."
   },
+  "upload_report_dos_unsure": {
+    "pt": "%d célula(s) nas mesmas colunas têm só sinais que também são texto comum, como \"µ\" (\"Á\" no DOS), e não foram corrigidas. Confira essas células.",
+    "en": "%d cell(s) in the same columns have only signs that are also common text, as \"µ\" (\"Á\" in DOS), and were not repaired. Check these cells.",
+    "es": "%d celda(s) en las mismas columnas tienen solo signos que también son texto común, como \"µ\" (\"Á\" en DOS), y no se corrigieron. Revise esas celdas."
+  },
   "upload_report_na_empty": {
     "pt": "%d célula(s) com o texto NA em colunas de identificador ou código foram lidas como vazias, porque o arquivo usa NA para célula vazia em outras colunas. Confira essas colunas se NA for um valor real.",
     "en": "%d cell(s) with the text NA in identifier or code columns were read as empty, because the file uses NA for empty cells in other columns. Check these columns if NA is a real value.",

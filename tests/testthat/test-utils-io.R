@@ -453,11 +453,35 @@ testthat::test_that("read_biodiversity_csv repairs CP850 accents that were read 
     out <- read_biodiversity_csv(tmp)
 
     testthat::expect_identical(out$stateProvince, rep("São Paulo", 3L))
-    testthat::expect_identical(out$locationRemarks, remarks)
+    # The NBSP of "aguas" is the only mark of its cell, so the cell is not
+    # repaired and the NBSP becomes a space.
+    testthat::expect_identical(out$locationRemarks, c(remarks[1], "divisor de  guas", remarks[3]))
     testthat::expect_identical(out$dataGeneralizations, rep(note, 3L))
-    # No CP850 mark in this column, so the NBSP is a space and the text stays.
     testthat::expect_identical(out$vernacularName, c("Panthera onca", "onça", "50 µm"))
-    testthat::expect_identical(attr(out, "read_report")$dos_accent_cells, 6L)
+    testthat::expect_identical(attr(out, "read_report")$dos_accent_cells, 5L)
+    testthat::expect_identical(attr(out, "read_report")$dos_unsure_cells, 1L)
+})
+
+testthat::test_that("the DOS repair keeps real symbols next to a DOS cell in CSV and xlsx", {
+    notes <- c("SÆo Paulo", "5 µg", "50 µm", "5\u00a0km", "Müller", "São Paulo", "Ponta Grossa")
+    df <- data.frame(scientificName = "Aus bus", notes = notes)
+    csv <- tempfile(fileext = ".csv")
+    xlsx <- tempfile(fileext = ".xlsx")
+    on.exit(unlink(c(csv, xlsx)), add = TRUE)
+    readr::write_csv(df, csv)
+    writexl::write_xlsx(df, xlsx)
+
+    for (out in list(read_biodiversity_csv(csv), read_biodiversity_xlsx(xlsx))) {
+        testthat::expect_identical(
+            out$notes,
+            c("São Paulo", "5 µg", "50 µm", "5 km", "Müller", "São Paulo", "Ponta Grossa")
+        )
+        report <- attr(out, "read_report")
+        testthat::expect_identical(report$dos_accent_cells, 1L)
+        # The NBSP and the two micro signs would also pass as CP850 letters.
+        testthat::expect_identical(report$dos_unsure_cells, 3L)
+        testthat::expect_true(any(grepl("^3 cell.*not repaired", upload_read_notes(report, "en"))))
+    }
 })
 
 testthat::test_that("repair_dos_accents keeps correct accents in a column it repairs", {
