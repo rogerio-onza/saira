@@ -111,6 +111,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **preview:** Start the Table mode below its title and controls, and give it the full card width again
+- **preview:** Keep the Problems list on one header line in English and Spanish, so a scrollbar no longer cuts the action buttons
 - **names:** End the Names report and a run in progress when the names or the normalization options change, ADR-209
 - **mapping:** Read the year warning of a new upload with the same columns and row count as the old one ([#300](https://github.com/rogerio-onza/saira/pull/300))
 - **mapping:** Keep the decimals of each converted coordinate, which lost digits with other rows or the R session options, ADR-208 ([#299](https://github.com/rogerio-onza/saira/pull/299))

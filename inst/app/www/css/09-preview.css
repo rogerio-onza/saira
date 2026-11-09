@@ -355,6 +355,12 @@
   margin-left: var(--space-4);
 }
 
+/* The frame of #277 clips the scroll block (overflow: hidden), so the block
+   no longer passes under the floated controls. It starts below them. */
+.preview-table-shell .dataTables_wrapper .dataTables_scroll {
+  clear: both;
+}
+
 @media (max-width: 991.98px) {
   .preview-card-head {
     position: static;
@@ -853,8 +859,14 @@
 }
 
 /* With room for one line, each row takes one line and the term has its own
-   column. A narrower list keeps the term over its diagnosis. */
-@container (min-width: 84rem) {
+   column. A narrower list keeps the term over its diagnosis. The limit stays
+   below the list width at 1440px with a scrollbar (1343px), so a scrollbar
+   does not change the layout. */
+@container (min-width: 82rem) {
+  .preview-rows-table thead th {
+    white-space: nowrap;
+  }
+
   .preview-rows-table .pf-col-term {
     display: table-cell;
   }

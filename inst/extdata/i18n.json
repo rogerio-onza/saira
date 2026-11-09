@@ -1476,8 +1476,8 @@
   },
   "preview_fix_hint": {
     "pt": "\"Na planilha\" nunca muda. O export usa a \"Correção\" quando ela existe.",
-    "en": "\"In the spreadsheet\" never changes. The export uses the \"Correction\" when there is one.",
-    "es": "\"En la planilla\" nunca cambia. La exportación usa la \"Corrección\" cuando existe."
+    "en": "\"Spreadsheet\" never changes. The export uses the \"Correction\" when there is one.",
+    "es": "\"Planilla\" nunca cambia. La exportación usa la \"Corrección\" cuando existe."
   },
   "preview_fix_none": {
     "pt": "Nenhum problema encontrado nos valores mapeados.",
@@ -1631,8 +1631,8 @@
   },
   "preview_fix_col_value": {
     "pt": "Na planilha",
-    "en": "In the spreadsheet",
-    "es": "En la planilla"
+    "en": "Spreadsheet",
+    "es": "Planilla"
   },
   "preview_fix_col_fix": {
     "pt": "Correção",
