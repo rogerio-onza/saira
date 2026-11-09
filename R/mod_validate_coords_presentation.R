@@ -613,6 +613,7 @@ mount_mod_validate_coords_presentation <- function(
                     search = tr("validate_coords_datatable_search", lang_r()),
                     lengthMenu = tr("validate_coords_datatable_length_menu", lang_r()),
                     info = tr("validate_coords_datatable_info", lang_r()),
+                    thousands = count_big_mark(lang_r()),
                     emptyTable = tr("validate_coords_datatable_empty", lang_r()),
                     zeroRecords = tr("validate_coords_datatable_zero_records", lang_r()),
                     paginate = list(
