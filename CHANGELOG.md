@@ -111,6 +111,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **export:** Replace the point of a protected record in the text of every other row of the package, ADR-204
+- **export:** Stop the export when a column name, an occurrenceID or projected coordinates show a protected point, ADR-204
 - **coords:** Put the table pager under the count when the two do not fit on one line
 - **coords:** Put the table search under the length menu when the two do not fit on one line
 - **tables:** Group the thousands of the table counts with a dot in Portuguese and Spanish

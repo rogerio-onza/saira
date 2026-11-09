@@ -291,3 +291,123 @@ testthat::test_that("the export stops on a coordinate column of a protected row 
     inputs$download_data$locality <- c("", "Fazenda Azul")
     testthat::expect_true(is.na(prepare_export_product(inputs, "en")$core$gps[2]))
 })
+
+# Two protected rows and one that is not, for the copies of a point in other
+# rows (ADR-204).
+cross_row_inputs <- function() {
+    df <- data.frame(
+        occurrenceID = c("o1", "o2", "o3", "o4"),
+        scientificName = c("Panthera onca", "Panthera onca", "Aus bus", "Aus bus"),
+        decimalLatitude = c("-23.55052", "-10.51234", "-1.5", "-23.55052"),
+        decimalLongitude = c("-46.63331", "-55.23456", "-50.5", "-46.63331"),
+        occurrenceRemarks = c("Other station -10.51234, -55.23456",
+                              "Other station -23.55052, -46.63331",
+                              "Near 23°33'1.872\"S 46°37'59.916\"W, pH 6.5",
+                              "Same station -23.55052, -46.63331"),
+        stringsAsFactors = FALSE
+    )
+    raw <- data.frame(especie = df$scientificName,
+                      notas = c("a", "b", "Base -10.51234 -55.23456", "length 23.551 cm"),
+                      stringsAsFactors = FALSE)
+    list(
+        download_data = df, raw_data = raw,
+        generalization = list(enabled = TRUE, levels = "high", needs_justification = FALSE),
+        map_values = list(scientificName = "especie")
+    )
+}
+
+testthat::test_that("no public file keeps the point of another row (ADR-204)", {
+    local_panthera_fixture()
+    product <- prepare_export_product(cross_row_inputs(), "en")
+    testthat::expect_identical(product$core$occurrenceRemarks[1:3], c(
+        "Other station -10.5, -55.2", "Other station -23.6, -46.6", "Near 23.6 S 46.6 W, pH 6.5"
+    ))
+    testthat::expect_identical(product$core$notas, c("a", "b", "Base -10.5 -55.2", "length 23.551 cm"))
+    # A row that is not protected keeps its own point, also in its text.
+    testthat::expect_identical(product$core$occurrenceRemarks[4], "Same station -23.55052, -46.63331")
+
+    files <- public_bundle_text(product)
+    for (name in names(files)) {
+        testthat::expect_false(grepl("10.51234|55.23456|1.872", files[[name]]), info = name)
+    }
+})
+
+testthat::test_that("one number of a point in another row stays", {
+    local_panthera_fixture()
+    inputs <- cross_row_inputs()
+    inputs$download_data$occurrenceRemarks[3] <- "Depth 10.51234 m"
+    product <- prepare_export_product(inputs, "en")
+    testthat::expect_identical(product$core$occurrenceRemarks[3], "Depth 10.51234 m")
+})
+
+testthat::test_that("the export stops on a column name or occurrenceID with a protected point", {
+    local_panthera_fixture()
+    inputs <- cross_row_inputs()
+    inputs$raw_data[["Station -23.55052 -46.63331"]] <- "10"
+    testthat::expect_error(prepare_export_product(inputs, "en"),
+                           tr("export_download_blocked", "en"), fixed = TRUE)
+    # Also when the column feeds a measurement.
+    inputs$map_values$measurementValue <- "Station -23.55052 -46.63331"
+    testthat::expect_error(prepare_export_product(inputs, "en"),
+                           tr("export_download_blocked", "en"), fixed = TRUE)
+    review <- protected_copy_review(inputs$download_data, inputs$generalization,
+                                    columns = names(inputs$raw_data))
+    testthat::expect_identical(review$point_columns, "Station -23.55052 -46.63331")
+
+    inputs <- cross_row_inputs()
+    inputs$download_data$occurrenceID[3] <- "ST-10.51234-55.23456"
+    testthat::expect_error(prepare_export_product(inputs, "en"),
+                           tr("export_download_blocked", "en"), fixed = TRUE)
+    # The occurrenceID of a row with the same point as its own stays.
+    inputs <- cross_row_inputs()
+    inputs$download_data$occurrenceID[4] <- "ST-23.55052-46.63331"
+    testthat::expect_identical(prepare_export_product(inputs, "en")$core$occurrenceID[4],
+                               "ST-23.55052-46.63331")
+})
+
+testthat::test_that("the export stops on projected coordinates in a protected row (ADR-204)", {
+    local_panthera_fixture()
+    blocked <- c(
+        '{"epsg":31983,"easting":333286.919,"northing":7394586.092}',
+        '{"type":"Point","coordinates":[333286.9,7394586.1]}',
+        "POINT (333286.9 7394586.1)",
+        "UTM 23K 333286 7394586"
+    )
+    for (value in blocked) {
+        inputs <- cross_row_inputs()
+        inputs$download_data$dynamicProperties <- c(value, "", "", "")
+        testthat::expect_error(prepare_export_product(inputs, "en"),
+                               tr("export_download_blocked", "en"), fixed = TRUE, info = value)
+        review <- protected_copy_review(inputs$download_data, inputs$generalization)
+        testthat::expect_identical(review$projected_rows, 1L, info = value)
+    }
+    # Also in an unmapped column.
+    inputs <- cross_row_inputs()
+    inputs$raw_data$notas[2] <- "x: 333286, y: 7394586"
+    testthat::expect_error(prepare_export_product(inputs, "en"),
+                           tr("export_download_blocked", "en"), fixed = TRUE)
+
+    passed <- c("area 250000 m2, plot 120000", "EPSG:31983", "UTM zone 23K",
+                '{"epsg":4326,"lat":-23.55052}')
+    for (value in passed) {
+        inputs <- cross_row_inputs()
+        inputs$download_data$dynamicProperties <- c(value, "", value, "")
+        testthat::expect_s3_class(prepare_export_product(inputs, "en")$core, "data.frame")
+    }
+    # A row that is not protected keeps its projected coordinates.
+    inputs <- cross_row_inputs()
+    inputs$download_data$dynamicProperties <- c("", "", blocked[1], "")
+    testthat::expect_identical(prepare_export_product(inputs, "en")$core$dynamicProperties[3], blocked[1])
+})
+
+testthat::test_that("the export stops on projected coordinates in a protected row with no point", {
+    testthat::local_mocked_bindings(
+        sensitive_resolve = function(names, decisions = NULL) {
+            data.frame(sensitive = rep(TRUE, length(names)), category = "CR", stringsAsFactors = FALSE)
+        }
+    )
+    inputs <- point_gap_inputs()
+    inputs$download_data$dynamicProperties <- c("", '{"easting":333286.9,"northing":7394586.1}')
+    testthat::expect_error(prepare_export_product(inputs, "en"),
+                           tr("export_download_blocked", "en"), fixed = TRUE)
+})

@@ -3649,3 +3649,16 @@ Formato: ADR leve (Architecture Decision Record).
   - `push_all_card_states()` manda os cards numa mensagem, `{cards: [...]}`. O handler aceita um card ou a lista. Um card sozinho continua com a mensagem de antes.
 - **Consequencias**: medido no Firefox com `ocorrencias-demo.csv`, 6 rodadas alternadas contra a mesma arvore sem a mudanca. Os envios caem de 124 para 7 e as mensagens de 239 para 170. O bloco da grade cai de 282-365 ms para 182-279 ms, e o do auto-map de 124-174 ms para 97-137 ms. A soma cai de mediana 450 ms para 308 ms.
   As 84 mensagens `recalculating` sao do proprio Shiny e ficam. Quando o Shiny marcar `sendIsEnqueued`, o patch do envio vazio nao tem mais efeito e pode sair.
+
+## ADR-204: Pontos protegidos em todo o pacote publico
+
+- **Data**: 2026-11-09
+- **Status**: Aceito. Completa ADR-190 e ADR-200.
+- **Contexto**: revisao pre-v1.0. A protecao precisa valer para o conjunto dos pontos protegidos e para todas as saidas publicas: o texto de qualquer linha, os cabecalhos, o guia, o MeasurementOrFact e as coordenadas projetadas.
+- **Decisao**:
+  - `replace_point_pairs()` le o texto publico de todas as linhas contra todos os pontos que a mascara move ou retira. Uma copia e o par dos dois numeros de um ponto na mesma celula, cada um mais fino que a grade e igual ao ponto nas suas casas. O par recebe o valor publicado. Um numero sozinho fica, porque muitas vezes e uma medida.
+  - A celula que mostra o ponto da propria linha fica, porque a linha ja publica esse ponto.
+  - Um nome de coluna ou um `occurrenceID` com um par para a exportacao e lista a coluna. Trocar um cabecalho quebraria o guia, e trocar um identificador mudaria o registro.
+  - Coordenadas projetadas num registro protegido param a exportacao e listam as linhas: chave UTM, EPSG, CRS ou x/y, geometria GeoJSON ou WKT, com dois numeros de cinco ou mais digitos. A mascara nao converte projecoes.
+  - Os eixos dos pontos ficam ordenados uma vez, e cada token busca so a sua janela. Um token que nao e mais fino que nenhuma grade sai antes da busca.
+- **Consequencias**: com 40 mil linhas, 20 mil pontos protegidos e numeros no texto de toda linha, a revisao leva 0,8 s e o filtro 1,8 s, num produto de 12,7 s. O resumo da Exportacao leva 1,45 s. Um eixo sozinho em outra linha, ou um ponto em outra forma, nao e lido.
