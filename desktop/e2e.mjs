@@ -215,9 +215,11 @@ async function rendererCrashCheck(exe, env) {
   launched.on('exit', () => { exited = true; });
   const appOpen = () => waitFor(async () => (await targets(RENDERER_PORT)).some((t) => t.type === 'page' && t.url.startsWith(APP_ORIGIN)),
     { timeout: 240000, interval: 200, what: 'app URL' });
-  const shellPage = (view) => waitFor(async () => (await targets(RENDERER_PORT)).find((t) => t.type === 'page' &&
-    t.url.includes('lifecycle.html') && decodeURIComponent(t.url).includes(`"view":"${view}"`)),
-  { timeout: 30000, interval: 200, what: `lifecycle ${view}` });
+  const shellPage = (view, kind) => waitFor(async () => (await targets(RENDERER_PORT)).find((t) => {
+    const url = decodeURIComponent(t.url);
+    return t.type === 'page' && url.includes('lifecycle.html') && url.includes(`"view":"${view}"`) &&
+      (!kind || url.includes(`"kind":"${kind}"`));
+  }), { timeout: 30000, interval: 200, what: `lifecycle ${view} ${kind || ''}` });
   try {
     await crashAndRestart(folder, appOpen, shellPage, () => exited);
   } finally {
@@ -240,6 +242,20 @@ async function crashAndRestart(folder, appOpen, shellPage, exited) {
     e.dialog.showMessageBoxSync = (win, opts) => (opts || win).buttons.findIndex((b) => close.includes(b));
     return true;
   })()`);
+  // Shows the error page of a kind, checks its text and clicks its main button.
+  const errorPage = async (kind) => {
+    const target = await shellPage('error', kind).catch(() => null);
+    if (!target) return {};
+    const shell = await new CDP(target.webSocketDebuggerUrl).open();
+    const shown = await waitFor(() => shell.eval(`(function () {
+      var h = document.getElementById('error-title').textContent;
+      return h ? { title: h, text: document.getElementById('error-text').textContent,
+        button: document.getElementById('btn-retry').textContent } : null;
+    })()`), { timeout: 10000, what: 'error text' }).catch(() => ({}));
+    await shell.eval(`document.getElementById('btn-retry').click(); true`);
+    shell.ws.close();
+    return shown;
+  };
   const rendererPid = () => main.eval(`process.mainModule.require('electron').BrowserWindow.getAllWindows()[0].webContents.getOSProcessId()`);
 
   // Before the app page commits, the window URL is still the shell page.
@@ -248,19 +264,18 @@ async function crashAndRestart(folder, appOpen, shellPage, exited) {
   await waitFor(() => js(idle), { timeout: 120000, interval: 200, what: 'Shiny connected' });
   const before = rProcesses(folder);
   killPid(await rendererPid());
-  const target = await shellPage('error').catch(() => null);
-  let shown = {};
-  if (target) {
-    const shell = await new CDP(target.webSocketDebuggerUrl).open();
-    shown = await waitFor(() => shell.eval(`(function () {
-      var h = document.getElementById('error-title').textContent;
-      return h ? { title: h, button: document.getElementById('btn-retry').textContent } : null;
-    })()`), { timeout: 10000, what: 'error text' }).catch(() => ({}));
-    await shell.eval(`document.getElementById('btn-retry').click(); true`);
-    shell.ws.close();
-  }
+  // Chromium blocks port 1 (ERR_UNSAFE_PORT), so the next app load fails for real.
+  await main.eval(`(function () {
+    const win = process.mainModule.require('electron').BrowserWindow.getAllWindows()[0];
+    win.loadURL = () => { delete win.loadURL; return win.webContents.loadURL('http://127.0.0.1:1/'); };
+    return true;
+  })()`);
+  const shown = await errorPage('renderer');
   record('renderer crash on the app shows the restart page', shown.title === PT.lifecycle.rendererTitle &&
     shown.button === PT.lifecycle.reopen, `${shown.title} | ${shown.button}`);
+  const failed = await errorPage('page');
+  record('failed app page load shows the error page', failed.title === PT.lifecycle.startTitle &&
+    failed.text === PT.lifecycle.pageText && failed.button === PT.lifecycle.retry, `${failed.title} | ${failed.text}`);
 
   // The second crash hits the start page while R starts again: a native dialog, no loop.
   await shellPage('start');
