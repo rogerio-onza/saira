@@ -844,6 +844,17 @@ parse_dates_to_iso <- function(date_vector) {
     return(result)
 }
 
+#' User text for the date-year warning
+#'
+#' @param issues Result of `date_year_issues()`.
+#' @param lang UI language code.
+#' @return Character scalar.
+#' @noRd
+date_year_warning_text <- function(issues, lang) {
+  sprintf(tr("notif_date_year_warning", lang),
+          issues$count, issues$min_year, issues$max_year)
+}
+
 #' Flag dates whose year is outside the plausible range
 #'
 #' A typo in a spreadsheet ("2098" for "2008") survives every format conversion:
