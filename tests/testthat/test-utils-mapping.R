@@ -437,6 +437,14 @@ testthat::test_that("build_eventdate_interval is unchanged when month/year value
     testthat::expect_identical(which(out$failed_rows), c(3L, 7L, 11L))
 })
 
+testthat::test_that("build_eventdate_interval writes one month when both ends are the same", {
+    df <- data.frame(mes_inicio = c("3", "5"), ano_inicio = c("2024", "2024"),
+                     mes_fim = c("3", "3"), ano_fim = c("2024", "2023"), stringsAsFactors = FALSE)
+    out <- build_eventdate_interval(df, names(df))
+    testthat::expect_identical(out$values, c("2024-03", "2024-05/2023-03"))
+    testthat::expect_identical(out$failure_count, 0L)
+})
+
 testthat::test_that("build_eventdate_interval produces YYYY-MM/YYYY-MM and keeps raw fallback on failures", {
     df <- data.frame(
         COL_START_MO = c("Aug", "Agosto", "foo"),
