@@ -790,7 +790,9 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             } else {
                 character(0)
             }
-            parsed <- parse_preview_edit(term, value, taken = taken)
+            dot <- term == "coordinateUncertaintyInMeters" &&
+                uncertainty_decimal_dot(corrected_data_r()$coordinateUncertaintyInMeters)
+            parsed <- parse_preview_edit(term, value, taken = taken, decimal_dot = dot)
             if (!is.null(parsed$error)) {
                 notify_fix(tr(parsed$error, lang_r()), "error")
                 refresh_rows()
