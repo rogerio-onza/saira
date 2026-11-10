@@ -2219,6 +2219,21 @@
     "en": "No names processed yet.",
     "es": "Todavía no se procesó ningún nombre."
   },
+  "validate_names_stream_pending": {
+    "pt": "%s nomes únicos esperam a validação.",
+    "en": "%s unique names wait for the validation.",
+    "es": "%s nombres únicos esperan la validación."
+  },
+  "validate_names_order_first": {
+    "pt": "1º",
+    "en": "1st",
+    "es": "1.º"
+  },
+  "validate_names_order_then": {
+    "pt": "depois",
+    "en": "then",
+    "es": "después"
+  },
   "validate_names_stream_empty_filter": {
     "pt": "Nenhum item para o filtro selecionado.",
     "en": "No items for the selected filter.",
@@ -2500,9 +2515,9 @@
     "es": "Archivo privado: coordenadas reales de las especies sensibles. No publicar en el IPT/GBIF. Uso exclusivo para el control del investigador."
   },
   "sensitive_mark_label": {
-    "pt": "marcar",
-    "en": "mark",
-    "es": "marcar"
+    "pt": "marcar sensível",
+    "en": "mark sensitive",
+    "es": "marcar sensible"
   },
   "sensitive_unmark_mma_warning": {
     "pt": "Esta espécie está na lista nacional MMA. Desmarcar é uma decisão de custodiante: as coordenadas serão publicadas sem generalização.",
