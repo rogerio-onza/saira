@@ -213,7 +213,9 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }, ignoreInit = TRUE)
         }
         navigate_on("go_fix_justification", "sensitive_coords")
-        for (id in c("go_preview_sci_blank", "go_preview_coord_invalid", "go_preview_date_range",
+        # Each row has its own button id: a repeated id breaks the second button.
+        for (id in c("go_preview_sci_blank", "go_preview_coord_invalid", "go_preview_point_text",
+                     "go_preview_projected_point", "go_preview_date_range",
                      "go_preview_date_unparsed", "go_preview_formula", "go_preview_problems",
                      "go_preview_copies")) {
             navigate_on(id, "preview")
@@ -224,7 +226,9 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
         navigate_on("go_changes_preview", "preview")
         navigate_on("go_coords_stale", "validate_coords")
         navigate_on("go_coords_flags", "validate_coords")
-        navigate_on("go_map_unmapped", "mapping")
+        for (id in c("go_map_unmapped", "go_map_formula_headers", "go_map_formula_cells")) {
+            navigate_on(id, "mapping")
+        }
         navigate_on("go_map_establishment", "mapping", term = "establishmentMeans")
         navigate_on("go_map_occid", "mapping", term = "occurrenceID")
 
@@ -428,13 +432,13 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 add(pending_row("block", shiny::tagList(
                     sprintf(tr("export_blocked_point_text", lang), length(s$point_text_rows)), " ",
                     shiny::tags$code(format_row_list(s$point_text_rows))
-                ), "go_preview_coord_invalid", tr("export_action_preview", lang)))
+                ), "go_preview_point_text", tr("export_action_preview", lang)))
             }
             if (length(s$projected_point_rows) > 0L) {
                 add(pending_row("block", shiny::tagList(
                     sprintf(tr("export_blocked_projected_point", lang), length(s$projected_point_rows)), " ",
                     shiny::tags$code(format_row_list(s$projected_point_rows))
-                ), "go_preview_coord_invalid", tr("export_action_preview", lang)))
+                ), "go_preview_projected_point", tr("export_action_preview", lang)))
             }
             if (length(s$point_columns) > 0L) {
                 add(pending_row("block", shiny::tagList(
@@ -493,7 +497,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     shiny::strong(tr("export_formula_title", lang)), " ",
                     sprintf(tr("export_formula_header_body", lang), length(fu_headers)), " ",
                     shiny::tags$code(paste(fu_headers, collapse = ", "))
-                ), "go_map_unmapped", tr("export_action_mapping", lang)))
+                ), "go_map_formula_headers", tr("export_action_mapping", lang)))
             }
             if (is.list(fu) && isTRUE(fu$count > length(fu_headers))) {
                 fu_cells <- fu$sample[fu$sample$row > 0L, , drop = FALSE]
@@ -505,7 +509,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                                 fu_cells$row, fu_cells$column, fu_cells$value),
                         collapse = ", "
                     ))
-                ), "go_map_unmapped", tr("export_action_mapping", lang)))
+                ), "go_map_formula_cells", tr("export_action_mapping", lang)))
             }
             if (isTRUE(s$corrections$coord_fixes_stale > 0L)) {
                 add(pending_row("warn", sprintf(tr("export_coord_fixes_stale", lang), s$corrections$coord_fixes_stale),
