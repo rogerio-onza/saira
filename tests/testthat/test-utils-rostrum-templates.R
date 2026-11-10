@@ -480,7 +480,8 @@ testthat::test_that("a guide imported without a sheet preserves literal plus hea
     on.exit(unlink(path), add = TRUE)
     writeLines(build_mapping_guide_txt(mapping, raw, lang = "en"), path)
     payload <- parse_mapping_guide_txt(path)
-    conn <- rostrum_connect(path = ":memory:")
+    # rostrum_connect() reads ":memory:" as a file path, which Windows refuses.
+    conn <- rostrum_connect(path = tempfile(fileext = ".sqlite"))
     on.exit(DBI::dbDisconnect(conn), add = TRUE)
     testthat::expect_identical(import_mapping_guide_to_aliases(payload, conn = conn, user_id = "home"), 3L)
     rows <- DBI::dbGetQuery(conn, "SELECT col_name_norm, dwc_term FROM rostrum_aliases")

@@ -5,7 +5,10 @@ website_dir <- testthat::test_path("..", "..", "website")
 
 run_landing_check <- function(dir) {
     python <- Sys.which("python3")
-    testthat::skip_if(!nzchar(python), "python3 is needed for the landing check")
+    # On Windows, python3 can be the Microsoft Store alias, which runs no script.
+    works <- nzchar(python) &&
+        identical(suppressWarnings(system2(python, "--version", stdout = FALSE, stderr = FALSE)), 0L)
+    testthat::skip_if(!works, "python3 is needed for the landing check")
     out <- suppressWarnings(system2(
         python, c(shQuote(file.path(website_dir, "scripts", "check_landing.py")), shQuote(dir)),
         stdout = TRUE, stderr = TRUE

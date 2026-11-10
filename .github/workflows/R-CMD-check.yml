@@ -31,6 +31,9 @@ jobs:
       matrix:
         config:
           - {os: ubuntu-latest, r: 'release'}
+          # The desktop app ships on Windows. Paths, encodings and the process
+          # tree differ there, so the package tests run on Windows too.
+          - {os: windows-latest, r: 'release'}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
@@ -51,12 +54,20 @@ jobs:
       # wait makes the fallback immediate. On a healthy mirror these limits are
       # never reached, so a good run is unaffected.
       - name: Fail over fast when an apt mirror stops answering
+        if: runner.os == 'Linux'
         run: |
           sudo tee /etc/apt/apt.conf.d/99-fast-failover >/dev/null <<'CONF'
           Acquire::http::Timeout "15";
           Acquire::https::Timeout "15";
           Acquire::Retries "1";
           CONF
+
+      # The Windows runner sets core.autocrlf, which gives CRLF line ends to
+      # the text files that .gitattributes does not name. The desktop build
+      # packages a tree with LF line ends, so the tests read the same bytes.
+      - name: Keep LF line ends on Windows
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf false
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

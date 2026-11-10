@@ -112,7 +112,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 - **upload:** Keep a line break inside a quoted CSV cell as LF on Windows, so the cell gets no CR ([#304](https://github.com/rogerio-onza/saira/pull/304))
-- **preview:** Show the whole Preview title and modes in a narrow window, with the first-records note under the table
+- **preview:** Show the whole Preview title and modes in a narrow window, with the first-records note under the table ([#305](https://github.com/rogerio-onza/saira/pull/305))
 - **preview:** Open the record of the first problem when the Problems list shows, so the record panel is never empty ([#303](https://github.com/rogerio-onza/saira/pull/303))
 - **preview:** Start the Table mode below its title and controls, and give it the full card width again ([#302](https://github.com/rogerio-onza/saira/pull/302))
 - **preview:** Keep the Problems list on one header line in English and Spanish, so a scrollbar no longer cuts the action buttons ([#302](https://github.com/rogerio-onza/saira/pull/302))
@@ -355,6 +355,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **docs:** Rewrite the README with a photo banner, the 7 steps and a download block per system
 
 ### Tests
+- **build:** Run the package tests on Windows in CI, and fix two tests that failed only there
 - **tests:** Isolate the Flora BR and Fauna BR data folder for the whole suite
 - **build:** Check the names report panel position in light and dark themes in the E2E flows, ADR-189
 - **build:** Update every R package in renv.lock, Shiny 1.14 and roxygen2 8.1.1 included, and run the gate job with the roxygen2 version of DESCRIPTION. The fixed value field and the Generalization questions show and hide again with the Shiny 1.14 conditional panels
