@@ -111,7 +111,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
-- **preview:** Open the record of the first problem when the Problems list shows, so the record panel is never empty
+- **upload:** Keep a line break inside a quoted CSV cell as LF on Windows, so the cell gets no CR
+- **preview:** Open the record of the first problem when the Problems list shows, so the record panel is never empty ([#303](https://github.com/rogerio-onza/saira/pull/303))
 - **preview:** Start the Table mode below its title and controls, and give it the full card width again ([#302](https://github.com/rogerio-onza/saira/pull/302))
 - **preview:** Keep the Problems list on one header line in English and Spanish, so a scrollbar no longer cuts the action buttons ([#302](https://github.com/rogerio-onza/saira/pull/302))
 - **names:** End the Names report and a run in progress when the names or the normalization options change, ADR-209
