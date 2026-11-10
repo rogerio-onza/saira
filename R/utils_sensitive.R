@@ -282,6 +282,15 @@ uncertainty_meters <- function(x) {
     suppressWarnings(as.numeric(suggest_uncertainty(x)))
 }
 
+# The declared uncertainty that can mark a row as already generalized. An
+# ambiguous value (ambiguous_uncertainty) marks nothing, so the tier grid
+# applies, which is the reading that protects more (ADR-210).
+masking_uncertainty_meters <- function(x) {
+    unc <- uncertainty_meters(x)
+    unc[ambiguous_uncertainty(x)] <- NA_real_
+    unc
+}
+
 # A point the generalization can move: both axes numeric and in range, not at
 # (0, 0) and not a copy of one axis into the other. Any other point of a
 # sensitive species is withheld, because a swapped or a UTM pair still shows
@@ -333,7 +342,7 @@ coordinate_generalization_note <- function(x) {
 sensitive_already_masked_rows <- function(df) {
     n <- if (is.data.frame(df)) nrow(df) else 0L
     unc <- if (is.data.frame(df) && "coordinateUncertaintyInMeters" %in% names(df)) {
-        uncertainty_meters(df$coordinateUncertaintyInMeters)
+        masking_uncertainty_meters(df$coordinateUncertaintyInMeters)
     } else {
         rep(NA_real_, n)
     }
@@ -358,7 +367,7 @@ sensitive_uncertainty_snap_grid <- function(df, lat, lon) {
     if (!is.data.frame(df) || !"coordinateUncertaintyInMeters" %in% names(df)) {
         return(out)
     }
-    unc <- uncertainty_meters(df$coordinateUncertaintyInMeters)
+    unc <- masking_uncertainty_meters(df$coordinateUncertaintyInMeters)
     dg <- if ("dataGeneralizations" %in% names(df)) df$dataGeneralizations else rep("", n)
     cand <- !is.na(unc) & unc >= SENSITIVE_ALREADY_MASKED_THRESHOLD_M &
         !coordinate_generalization_note(dg) & is.finite(lat) & is.finite(lon)
