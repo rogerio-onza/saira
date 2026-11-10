@@ -373,3 +373,12 @@ testthat::test_that("an exact copy left out reaches the export contract", {
         }
     )
 })
+
+testthat::test_that("a long record key breaks between its words", {
+    html <- function(x) as.character(saira:::preview_record_key_label(x))
+    testthat::expect_identical(html("coordinateUncertaintyInMeters"),
+                               "coordinate<wbr>Uncertainty<wbr>In<wbr>Meters")
+    testthat::expect_identical(html("precisao_gps"), "precisao_<wbr>gps")
+    testthat::expect_identical(html("n"), "n")
+    testthat::expect_identical(html("a<b"), "a&lt;b")
+})

@@ -3043,10 +3043,12 @@ label,
   font-size: var(--text-sm);
 }
 
+/* A long name breaks at its <wbr> first, and anywhere only without one. */
 .preview-record-key {
   padding: 0 var(--space-3) 0 var(--space-1);
   font-family: var(--font-mono);
   color: var(--text-muted);
+  overflow-wrap: anywhere;
 }
 
 .preview-record-value {
@@ -3093,7 +3095,7 @@ label,
   }
 
   .preview-fix-cols:has(> .preview-fix-vocab-col:empty) .preview-record-grid {
-    grid-template-columns: 10rem minmax(0, 1fr);
+    grid-template-columns: 12rem minmax(0, 1fr);
     row-gap: 0;
     line-height: 1.4;
   }
