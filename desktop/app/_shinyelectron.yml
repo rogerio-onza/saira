@@ -22,7 +22,7 @@ dependencies:
     # build.R supplies the exact local source archive in a staging folder.
     local_packages: []
   electron:
-    version: "45.2.1"
+    version: "45.2.3"
 
 window:
   width: 1280

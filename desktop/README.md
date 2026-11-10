@@ -68,7 +68,7 @@ com `--allow-dirty` (`-AllowDirty` no `build.ps1`). Uma versão final, sem sufix
 sempre exige árvore limpa.
 
 O shinyelectron fica fixado por commit e SHA-256 em `toolchain.dcf`.
-O R embarcado é 4.6.1 e o Electron é 45.2.1. Os comandos gerados pelo
+O R embarcado é 4.6.1 e o Electron é 45.2.3. Os comandos gerados pelo
 shinyelectron usam `electron-builder --publish never`.
 
 ### Versões dos pacotes

@@ -188,7 +188,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **desktop:** Keep the app open when the log file fails, and stop R when the main process fails
 - **desktop:** Limit the log file and the kept R error text during a long session
 - **desktop:** Stop the build without the approved npm lockfile, and record the source commit, ADR-191
-- **desktop:** Update Electron to 45.2.1 and replace the minimatch version of the build tools, ADR-191
+- **desktop:** Update Electron to 45.2.3 and replace the minimatch version of the build tools, ADR-191
 - **desktop:** Keep the backend code in `app.asar`, and show an error when the bundled R is missing, ADR-191
 - **desktop:** Load R packages only from the installed app, not from a saved library path
 - **desktop:** Stop R when the app window process ends by force, ADR-192
