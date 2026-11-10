@@ -13,7 +13,7 @@ class MutationObserver {
 }
 
 function upload(id) {
-  const bar = { textContent: '' };
+  const bar = { textContent: '', closest: () => null };
   const input = { type: 'file', id, files: [], addEventListener() {} };
   const dropzone = {
     dataset: {}, classList: { toggle() {}, add() {}, remove() {}, contains: () => false },
