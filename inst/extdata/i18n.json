@@ -255,9 +255,9 @@
     "es": "Deja fuera los valores de los registros generalizados: los puntos reales están solo en el archivo privado."
   },
   "export_kpi_generalized": {
-    "pt": "Espécies generalizadas",
-    "en": "Generalized species",
-    "es": "Especies generalizadas"
+    "pt": "Generalizadas",
+    "en": "Generalized",
+    "es": "Generalizadas"
   },
   "export_kpi_generalized_sub": {
     "pt": "espécies com coordenada generalizada",
