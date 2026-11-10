@@ -324,12 +324,14 @@
   display: flex;
   align-items: baseline;
   gap: var(--space-3);
-  max-width: calc(100% - 34rem);
+  /* The DT length and search controls take about 28rem (445 px in PT). */
+  max-width: calc(100% - 28.5rem);
   overflow: hidden;
   white-space: nowrap;
 }
 
-/* In a narrow window the title gives way, so both modes stay on screen. */
+/* If a long translation does not fit, the title gives way, so both modes
+   stay on screen. */
 .preview-card-title {
   min-width: 0;
   overflow: hidden;
@@ -339,14 +341,6 @@
   font-size: var(--text-lg);
   font-weight: 700;
   line-height: 34px;
-}
-
-.preview-card-subtitle {
-  font-family: var(--font-serif);
-  font-size: var(--text-base);
-  color: var(--accent);
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .preview-table-shell .dataTables_wrapper .dataTables_length,
@@ -390,10 +384,6 @@
   margin: 0;
   overflow: hidden;
   visibility: hidden;
-}
-
-.preview-card-subtitle.is-off {
-  display: none;
 }
 
 /* --- Problems mode (ADR-150) --- */

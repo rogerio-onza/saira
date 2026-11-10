@@ -1455,14 +1455,9 @@
     "es": "-- Elija un término --"
   },
   "preview_title": {
-    "pt": "Pré-visualização dos Dados",
-    "en": "Data Preview",
-    "es": "Vista previa de los datos"
-  },
-  "preview_subtitle": {
-    "pt": "Primeiros 100 registros",
-    "en": "First 100 records",
-    "es": "Primeros 100 registros"
+    "pt": "Pré-visualização",
+    "en": "Preview",
+    "es": "Vista previa"
   },
   "preview_mode_table": {
     "pt": "Tabela",
@@ -2053,6 +2048,11 @@
     "pt": "Mostrando _START_ a _END_ de _TOTAL_ registros",
     "en": "Showing _START_ to _END_ of _TOTAL_ entries",
     "es": "Mostrando _START_ a _END_ de _TOTAL_ registros"
+  },
+  "preview_datatable_info_first": {
+    "pt": " (os primeiros do arquivo)",
+    "en": " (the first in the file)",
+    "es": " (los primeros del archivo)"
   },
   "preview_datatable_empty": {
     "pt": "Nenhum registro na tabela",
