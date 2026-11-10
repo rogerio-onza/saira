@@ -10,7 +10,8 @@ mod_validate_names_server(
   lang_r,
   validation_gate_r = NULL,
   reset_signal_r = NULL,
-  return_contract = c("legacy", "list")
+  return_contract = c("legacy", "list"),
+  names_worker = names_worker_new()
 )
 }
 \arguments{
