@@ -40,7 +40,10 @@ read_biodiversity_csv <- function(file_path, encoding = NULL, header = TRUE) {
 
     tmp <- tempfile(fileext = ".csv")
     on.exit(unlink(tmp), add = TRUE)
-    writeLines(lines, tmp, useBytes = TRUE)
+    # In text mode, Windows ends each line with CRLF, and a quoted cell with a
+    # line break keeps the CR. Binary mode writes LF on each system.
+    con <- file(tmp, open = "wb")
+    tryCatch(writeLines(lines, con, useBytes = TRUE), finally = close(con))
     # The lines are as large as the data frame. Free them before readr runs:
     # readr allocates outside the R heap, so it does not start a collection.
     # The collection takes about 0.3 s. Below 50 MB it cut the peak by 10 MB

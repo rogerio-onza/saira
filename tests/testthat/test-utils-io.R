@@ -384,6 +384,14 @@ testthat::test_that("read_biodiversity_csv finds the delimiter of a header with 
     testthat::expect_identical(df$decimalLongitude, "-46.63")
 })
 
+testthat::test_that("read_biodiversity_csv gives LF to a quoted line break of a CRLF file", {
+    path <- tempfile(fileext = ".csv")
+    on.exit(unlink(path), add = TRUE)
+    writeBin(charToRaw("scientificName,occurrenceRemarks\r\nPanthera onca,\"first\r\nsecond\"\r\n"), path)
+    df <- read_biodiversity_csv(path)
+    testthat::expect_identical(df$occurrenceRemarks, "first\nsecond")
+})
+
 testthat::test_that("read_biodiversity_csv reads a Latin-1 file with accents in the header", {
     # Excel in Portuguese saves "CSV (separado por ponto e virgula)" this way.
     payload <- iconv("espécie;município\nPuma concolor;Belém\n", "UTF-8", "latin1", toRaw = TRUE)[[1]]
