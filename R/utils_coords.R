@@ -24,6 +24,12 @@ as_coord_numeric <- function(x) {
     raw_chr[is.na(x)] <- NA_character_
     normalized <- gsub(",", ".", raw_chr, fixed = TRUE)
     num <- suppressWarnings(as.numeric(normalized))
+    if (!is.numeric(x)) {
+        # as.numeric() also reads hex ("0x1A") and exponent ("1e2") text. A
+        # numeric column keeps its values: as.character() writes 1e-05 there.
+        plain <- grepl("^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)\\s*$", normalized, perl = TRUE)
+        num[!plain] <- NA_real_
+    }
     parse_failed <- !is.na(raw_chr) & nzchar(trimws(raw_chr)) & is.na(num)
     list(num = num, parse_failed = parse_failed)
 }

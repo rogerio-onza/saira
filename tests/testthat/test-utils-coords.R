@@ -885,9 +885,11 @@ testthat::test_that("convert_coordinate_text gives no point to one value in a co
     testthat::expect_identical(unique(conv(c(v[1:9], rep("-23.55", 10)), "lon")[10:19]), "")
     testthat::expect_identical(conv(rep("-23.55", 5), "lat"), rep("", 5))
     # Each form that the coordinate check reads as a number.
-    odd <- c("-2.355e1", "-.55", "-23.", " +23,5 ")
-    testthat::expect_identical(conv(c(v[1:9], odd), "lat")[10:13], rep("", 4))
-    testthat::expect_identical(conv(c(v[1:9], odd), "lon")[10:13], rep("", 4))
+    odd <- c("-.55", "-23.", " +23,5 ")
+    testthat::expect_identical(conv(c(v[1:9], odd), "lat")[10:12], rep("", 3))
+    testthat::expect_identical(conv(c(v[1:9], odd), "lon")[10:12], rep("", 3))
+    # The check reads no exponent, so that text stays for it to flag.
+    testthat::expect_identical(conv(c(v[1:9], "-2.355e1"), "lat")[10L], "-2.355e1")
     # Text that is no coordinate stays for the coordinate check.
     v[10L] <- "sem GPS"
     testthat::expect_identical(conv(v, "lat")[10L], "sem GPS")
