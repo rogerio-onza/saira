@@ -572,7 +572,7 @@ testthat::test_that("unchecked names leave the list for the block, and the retry
     gbif$up <- FALSE
     testthat::local_mocked_bindings(
         brprovider_data_available = function(provider_id) FALSE,
-        colxr_match_names = function(names) {
+        colxr_match_names = function(names, ...) {
             answered <- if (gbif$up) names else intersect(names, "Puma concolor")
             out <- data.frame(
                 query_name = answered,
@@ -596,7 +596,9 @@ testthat::test_that("unchecked names leave the list for the block, and the retry
         mod_validate_names_server,
         args = list(
             mapped_data_r = shiny::reactive(mapped_df),
-            lang_r = shiny::reactive("en")
+            lang_r = shiny::reactive("en"),
+            # The mocked GBIF lives in this process, not in the worker.
+            names_worker = NULL
         ),
         {
             rv$run_state <- state
@@ -658,7 +660,7 @@ testthat::test_that("module stream state grows incrementally per processed batch
     )
 
     testthat::with_mocked_bindings(
-        colxr_match_names = function(names) {
+        colxr_match_names = function(names, ...) {
             data.frame(
                 query_name = names,
                 scientificName = names,
@@ -725,7 +727,7 @@ testthat::test_that("cancel path marks unresolved names after abort flag", {
     )
 
     testthat::with_mocked_bindings(
-        colxr_match_names = function(names) {
+        colxr_match_names = function(names, ...) {
             data.frame(
                 query_name = names,
                 scientificName = names,

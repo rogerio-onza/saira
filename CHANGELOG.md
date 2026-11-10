@@ -39,6 +39,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **names:** Send the GBIF requests of a names run from a separate R process, so the app stays responsive, ADR-212
 - **preview:** Show the record beside the Problems list on wide screens, and mark the column behind the problem, ADR-195 ([#278](https://github.com/rogerio-onza/saira/pull/278))
 - **build:** Build the Darwin Core catalogs from the TDWG list and one base terms file, in one script, ADR-189
 - **site:** Link the home photos, species, pins and cards by key, and stop the build when they disagree, ADR-189

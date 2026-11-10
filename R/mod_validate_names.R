@@ -18,7 +18,8 @@ NULL
 #'   reactives when return_contract is \code{"list"}.
 #' @param return_contract Return a legacy reactive (default) or a named list of reactives.
 #' @export
-mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL, reset_signal_r = NULL, return_contract = c("legacy", "list")) {
+mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL, reset_signal_r = NULL, return_contract = c("legacy", "list"),
+                                      names_worker = names_worker_new()) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
@@ -985,6 +986,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     remove_authors = input$remove_authors %||% TRUE,
                     ignore_qualifiers = input$ignore_qualifiers %||% TRUE
                 ))
+                if (!is.null(names_worker)) names_worker_warm(names_worker)
                 run_card$last_sent <- NULL
                 rv$running <- TRUE
                 rv$starting <- FALSE
@@ -995,6 +997,44 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             },
             ignoreInit = TRUE
         )
+
+        # The GBIF requests of a run go to the worker (PERF-02). NULL while a
+        # batch is in flight, else the adapters for the next step.
+        net <- new.env(parent = emptyenv())
+        net$run_id <- NULL
+        net$spent <- 0
+        if (!is.null(names_worker)) {
+            session$onSessionEnded(function() names_worker_stop(names_worker))
+        }
+        names_run_fetch <- function(state, misses) {
+            if (!identical(net$run_id, state$run_id)) {
+                net$run_id <- state$run_id
+                net$spent <- 0
+            }
+            call <- names_worker$call
+            # An answer for an older run never reaches this one.
+            if (!is.null(call) && !identical(call$run_id, state$run_id)) {
+                names_worker_stop(names_worker)
+                call <- NULL
+            }
+            if (is.null(call)) {
+                if (net$spent >= NAMES_RUN_NETWORK_BUDGET_S) {
+                    return(names_provider_adapters(fetch = gbif_offline_fetch))
+                }
+                sent <- names_worker_start(names_worker, state$run_id, misses)
+                if (identical(sent, "failed")) {
+                    return(names_provider_adapters())
+                }
+                return(NULL)
+            }
+            done <- names_worker_poll(names_worker)
+            if (is.null(done)) {
+                return(NULL)
+            }
+            net$spent <- net$spent + done$elapsed
+            colxr_store_bodies(done$names, done$bodies)
+            names_provider_adapters(fetch = gbif_offline_fetch)
+        }
 
         shiny::observe({
             # rv$run_state is read under isolate(): the tick writes it, and a
@@ -1007,7 +1047,17 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             }
             shiny::invalidateLater(60, session)
 
-            state <- tryCatch(next_taxadb_run_step(state), error = function(e) {
+            adapters <- names_provider_adapters()
+            batch <- if (!is.null(names_worker)) next_colxr_batch(state)
+            misses <- if (length(batch) > 0L) colxr_unmemoized(batch) else character(0)
+            if (length(misses) > 0L) {
+                adapters <- names_run_fetch(state, misses)
+                if (is.null(adapters)) {
+                    return(invisible(NULL))
+                }
+            }
+
+            state <- tryCatch(next_taxadb_run_step(state, adapters), error = function(e) {
                 state$error_message <- as.character(e$message)
                 state$phase <- "failed"
                 state$completed <- TRUE

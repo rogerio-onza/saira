@@ -555,6 +555,21 @@ is_taxadb_run_done <- function(state) {
     isTRUE(state$completed) || identical(state$phase, "done") || identical(state$phase, "failed")
 }
 
+# The names of the next COL XR batch, or NULL when the next step sends no
+# GBIF request. The names worker fetches these before the step runs.
+next_colxr_batch <- function(state) {
+    if (is_taxadb_run_done(state) || isTRUE(state$aborted) ||
+        !identical(state$phase, "provider_query_batch")) {
+        return(NULL)
+    }
+    type <- as.character(state$provider_types[[state$current_provider]] %||% "colxr")
+    next_batch <- as.integer(state$provider_batch_idx) + 1L
+    if (!identical(type, "colxr") || next_batch > state$provider_batch_total) {
+        return(NULL)
+    }
+    state$current_batches[[next_batch]]
+}
+
 next_taxadb_run_step <- function(state, adapters = names_provider_adapters()) {
     # Collect completed background BR updates opportunistically while the
     # state machine advances.

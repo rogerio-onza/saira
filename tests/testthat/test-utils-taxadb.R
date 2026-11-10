@@ -220,7 +220,7 @@ testthat::test_that("state machine appends stream incrementally by batch", {
 
     status <- c("puma concolor" = "accepted", "abies alba" = "accepted",
                 "quercus robur" = "accepted", "canis lupus" = "synonym")
-    fake_match <- function(names) {
+    fake_match <- function(names, ...) {
         data.frame(
             query_name = names,
             scientificName = tools::toTitleCase(names),
@@ -273,7 +273,7 @@ testthat::test_that("aborted run moves to consolidate before next batch", {
     )
 
     testthat::with_mocked_bindings(
-        colxr_match_names = function(names) {
+        colxr_match_names = function(names, ...) {
             data.frame(
                 query_name = names,
                 scientificName = names,
@@ -455,7 +455,7 @@ testthat::test_that("vn_settled_stream shows a name only with its last answer (D
                 stringsAsFactors = FALSE
             )
         },
-        colxr_match_names = function(names) {
+        colxr_match_names = function(names, ...) {
             out <- data.frame(
                 query_name = names,
                 provider = "gbif",
@@ -644,7 +644,7 @@ testthat::test_that("next_taxadb_run_step: a GBIF failure lists the unchecked na
     )
 
     testthat::with_mocked_bindings(
-        colxr_match_names = function(names) {
+        colxr_match_names = function(names, ...) {
             # Batch 1 answers: "name 1" is found, "name 2" is not. Batch 2
             # loses "name 4" to a network error.
             answered <- setdiff(names, "name 4")
@@ -688,7 +688,7 @@ testthat::test_that("next_taxadb_run_step: names GBIF resolves after a BR failur
         brprovider_ensure_data = function(provider_id, verbose = FALSE, ...) {
             list(ok = FALSE, available = FALSE, provider_id = provider_id, error = "offline")
         },
-        colxr_match_names = function(names) {
+        colxr_match_names = function(names, ...) {
             data.frame(
                 query_name = names,
                 scientificName = names,
@@ -728,7 +728,7 @@ testthat::test_that("init_taxadb_retry_state queries the unchecked names again a
 
     sent <- list()
     first <- testthat::with_mocked_bindings(
-        colxr_match_names = function(names) {
+        colxr_match_names = function(names, ...) {
             # "name 2" is not found. GBIF does not answer for "name 4".
             answered <- setdiff(names, "name 4")
             out <- data.frame(
@@ -752,7 +752,7 @@ testthat::test_that("init_taxadb_retry_state queries the unchecked names again a
     testthat::expect_identical(retry$total_unique, 2L)
 
     done <- testthat::with_mocked_bindings(
-        colxr_match_names = function(names) {
+        colxr_match_names = function(names, ...) {
             sent[[length(sent) + 1L]] <<- names
             data.frame(
                 query_name = names,

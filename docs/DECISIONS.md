@@ -3731,3 +3731,16 @@ Formato: ADR leve (Architecture Decision Record).
   - A incerteza publicada continua a somar a leitura maior (4551 m), que e o limite seguro.
   - Na Pre-visualizacao, `uncertainty_decimal_dot()` decide pela coluna. Se outro valor tem ponto com um numero de decimais diferente de tres (`12.3`, `7.25`), o ponto e decimal: `4.551` e valido, e `aprox. 4.551 m` sugere `4.551`. Sem esse sinal, a sugestao continua `4551`.
 - **Consequencias**: uma linha com `4.551` sai com a mesma grade das linhas vizinhas. Um `4551` sem ponto continua a contar como generalizacao anterior. A generalizacao nao usa o sinal da coluna, porque a leitura ambigua protege mais.
+
+## ADR-212: Consultas GBIF da validacao de nomes num processo callr
+
+- **Data**: 2026-11-10
+- **Status**: Aceito.
+- **Contexto**: auditoria pre-v1 (PERF-02). `req_perform_parallel()` espera todas as respostas antes de voltar. Um lote de nomes com a API GBIF lenta segurava a sessao Shiny ate o fim do lote.
+- **Decisao**:
+  - Uma `callr::r_session` por sessao Shiny envia os pedidos GBIF de cada lote. A rodada inicia o processo no clique em Validar, e o processo carrega o saira enquanto os provedores BR respondem.
+  - O processo recebe so os nomes. O app guarda o memo COL XR, o parse e o estado da rodada. Depois do lote, o passo roda com `gbif_offline_fetch()`: um nome sem resposta nao gera um segundo pedido sincrono.
+  - Um lote pode esperar 60 s, e a rodada 300 s no total. Depois disso, os nomes que faltam ficam sem resposta, e o botao Tentar de novo abre uma rodada nova.
+  - Uma resposta de um `run_id` antigo nao entra na rodada nova: o app encerra o processo e abre outro.
+  - Se o processo nao inicia, o app envia os pedidos ele mesmo, como antes.
+- **Consequencias**: o R da sessao fica livre durante a espera da rede. A busca aproximada dos provedores BR continua no processo principal, porque e CPU, nao rede. A exportacao com IUCN reusa o memo. Sem uma rodada de nomes antes, ela ainda consulta a API no processo principal.
