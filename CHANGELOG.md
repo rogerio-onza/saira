@@ -330,6 +330,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **names:** Show a name in the run list only with its last answer, and keep the scroll while the list grows, ADR-168
 
 ### Performance
+- **generalization:** Compute the spatial preview once per decision, shared by the alerts and the map
 - **preview:** Check again only the columns that a mapping change touched, so the Preview count follows in under 1 s, ADR-196 ([#281](https://github.com/rogerio-onza/saira/pull/281))
 - **mapping:** Build again only the output columns that a mapping change touched, ADR-196 ([#281](https://github.com/rogerio-onza/saira/pull/281))
 - **coords:** Send the map only the markers that changed, with one marker for each place, ADR-190 ([#260](https://github.com/rogerio-onza/saira/pull/260))
