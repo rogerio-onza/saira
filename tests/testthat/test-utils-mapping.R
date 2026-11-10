@@ -1086,6 +1086,14 @@ testthat::test_that("detect_eventdate_dmy_roles resolves Portuguese and English 
     testthat::expect_true(all(vapply(
         detect_eventdate_dmy_roles(c("a", "b", "c")), is.na, logical(1)
     )))
+
+    # camelCase names and the letters of a date pattern.
+    for (cols in list(c("diaColeta", "mesColeta", "anoColeta"), c("DD", "MM", "YYYY"),
+                      c("dd", "mm", "aaaa"))) {
+        roles <- detect_eventdate_dmy_roles(cols)
+        testthat::expect_identical(unlist(roles), c(day = 1L, month = 2L, year = 3L))
+    }
+    testthat::expect_true(is.na(detect_eventdate_dmy_roles(c("anotacoesColeta", "ano"))$day))
 })
 
 testthat::test_that("build_term_value: eventDate from day/month/year columns is ISO 8601", {

@@ -121,7 +121,10 @@ detect_eventdate_roles <- function(col_names) {
 # date. Prefix matching is deliberately not attempted, since in Portuguese it
 # misfires on ordinary column names ("anotacoes" -> ano, "mesorregiao" -> mes).
 detect_eventdate_dmy_roles <- function(col_names) {
-    normalized_names <- normalize_for_matching(col_names)
+    # "diaColeta" splits at the case change, so "dia" is a whole word.
+    normalized_names <- normalize_for_matching(
+        gsub("([[:lower:]])([[:upper:]])", "\\1 \\2", col_names, perl = TRUE)
+    )
     used <- rep(FALSE, length(normalized_names))
 
     pick_first <- function(pattern) {
@@ -135,8 +138,8 @@ detect_eventdate_dmy_roles <- function(col_names) {
 
     list(
         day = pick_first("\\b(day|dia|dd)\\b"),
-        month = pick_first("\\b(month|mo|mes)\\b"),
-        year = pick_first("\\b(year|yr|ano)\\b")
+        month = pick_first("\\b(month|mo|mes|mm)\\b"),
+        year = pick_first("\\b(year|yr|ano|yyyy|aaaa)\\b")
     )
 }
 
