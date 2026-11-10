@@ -716,7 +716,8 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                     lapply(seq_along(values), function(i) {
                         mark <- if (hit[i]) " is-problem"
                         shiny::tagList(
-                            shiny::span(class = paste0("preview-record-key", mark), names(values)[i]),
+                            shiny::span(class = paste0("preview-record-key", mark),
+                                        preview_record_key_label(names(values)[i])),
                             shiny::span(class = paste0(if (nzchar(values[i])) "preview-record-value" else "preview-record-value is-empty", mark),
                                         if (nzchar(values[i])) values[i] else tr("preview_fix_empty_value", lang))
                         )
@@ -743,7 +744,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                     shiny::div(
                         class = "preview-record-grid",
                         lapply(names(values), function(t) shiny::tagList(
-                            shiny::span(class = "preview-record-key", t),
+                            shiny::span(class = "preview-record-key", preview_record_key_label(t)),
                             shiny::span(class = "preview-record-value", values[[t]])
                         ))
                     )
@@ -1014,6 +1015,15 @@ preview_nav_badge <- function(n, lang) {
     shiny::tags$span(
         class = "nav-count", title = sprintf(tr("preview_nav_count_title", lang), n), n
     )
+}
+
+# A long column name breaks between its words, as `coordinate` `Uncertainty`
+# or `precisao_` `gps`, so it never runs over its value in the record.
+preview_record_key_label <- function(x) {
+    x <- gsub("([a-z0-9])(?=[A-Z])", "\\1\001", x, perl = TRUE)
+    parts <- strsplit(gsub("([_.-])", "\\1\001", x), "\001", fixed = TRUE)[[1]]
+    # One string: a tagList puts a newline, so a space, between the parts.
+    shiny::HTML(paste(htmltools::htmlEscape(parts), collapse = "<wbr>"))
 }
 
 preview_dt_language <- function(lang) {
