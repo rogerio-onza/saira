@@ -313,8 +313,8 @@ parse_month_to_number <- function(x) {
     }
 
     value <- trimws(as.character(x))
-    if (grepl("^\\d{1,2}$", value)) {
-        month_num <- suppressWarnings(as.integer(value))
+    if (grepl("^\\d{1,2}(\\.0+)?$", value)) {
+        month_num <- suppressWarnings(as.integer(sub("\\..*$", "", value)))
         if (!is.na(month_num) && month_num >= 1 && month_num <= 12) {
             return(sprintf("%02d", month_num))
         }
@@ -352,9 +352,13 @@ parse_month_to_number_vec <- function(x) {
     trimmed <- trimws(values)
     blank <- is.na(values) | !nzchar(trimmed)
 
-    numeric_like <- !blank & grepl("^\\d{1,2}$", trimmed)
+    # pandas writes a month column with gaps as floats ("3.0"), like the day
+    # and year columns.
+    numeric_like <- !blank & grepl("^\\d{1,2}(\\.0+)?$", trimmed)
     month_num <- rep(NA_integer_, n)
-    month_num[numeric_like] <- suppressWarnings(as.integer(trimmed[numeric_like]))
+    month_num[numeric_like] <- suppressWarnings(
+        as.integer(sub("\\..*$", "", trimmed[numeric_like]))
+    )
     in_range <- numeric_like & !is.na(month_num) & month_num >= 1L & month_num <= 12L
     out[in_range] <- sprintf("%02d", month_num[in_range])
 
