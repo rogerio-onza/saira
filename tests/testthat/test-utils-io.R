@@ -264,6 +264,31 @@ testthat::test_that("parse_dates_to_iso leaves an impossible time unparsed (AUD-
     )
 })
 
+testthat::test_that("parse_dates_to_iso reads month names, roman months, compact dates and intervals", {
+    input <- c("25 Dec 2023", "25-dez-2023", "dez/2023", "25 de dezembro de 2023",
+               "12-III-2020", "12.iii.2020", "20231225", "12345678", "Rio 2023")
+    testthat::expect_identical(
+        parse_dates_to_iso(input),
+        c("2023-12-25", "2023-12-25", "2023-12", "2023-12-25", "2020-03-12",
+          "2020-03-12", "2023-12-25", NA, NA)
+    )
+    testthat::expect_identical(
+        parse_dates_to_iso(c("25/12/2023 - 27/12/2023", "25/12/2023 a 27/12/2023",
+                             "1999-2005", "2005-1999")),
+        c("2023-12-25/2023-12-27", "2023-12-25/2023-12-27", "1999/2005", NA)
+    )
+})
+
+testthat::test_that("parse_dates_to_iso keeps fractional seconds, UTC and a 12-hour clock", {
+    input <- c("2023-12-25 14:30:00.123", "2023-12-25 00:00:00 UTC",
+               "25/12/2023 2:30 PM", "25/12/2023 12:05 am", "25/12/2023 13:05 PM")
+    testthat::expect_identical(
+        parse_dates_to_iso(input),
+        c("2023-12-25T14:30:00.123", "2023-12-25T00:00:00Z", "2023-12-25T14:30",
+          "2023-12-25T00:05", NA)
+    )
+})
+
 testthat::test_that("parse_dates_to_iso keeps the day-first vote when the column carries times", {
     # 25 > 12 proves day-first, and the vote has to survive the time suffix.
     input <- c("25/12/2023 08:00", "05/06/2023 08:00")
