@@ -194,6 +194,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **desktop:** Stop R when the app window process ends by force, ADR-192
 - **desktop:** Show a restart page when the window renderer stops, and an error page when the app page does not load
 - **desktop:** Declare glibc 2.39 in the `.deb`, so an older Linux refuses the install, and stop the build when the app needs a newer glibc
+- **desktop:** Add a release gate for the candidates: each build gets a record of its source, smoke test and E2E, and the release accepts only two passed records of HEAD
 - **desktop:** Use the final app name and install identity, ADR-192
 - **generalization:** Remove the coordinates of masked rows from the justification text in dataGeneralizations, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **generalization:** Apply the protection to every location field of a protected record, ADR-193 ([#268](https://github.com/rogerio-onza/saira/pull/268))

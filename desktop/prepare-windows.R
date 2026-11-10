@@ -17,7 +17,7 @@ stage <- tempfile("saira-windows-kit-")
 kit <- file.path(stage, "saira-desktop")
 dir.create(file.path(kit, "desktop"), recursive = TRUE)
 files <- c("app", "shell", "common.R", "bootstrap.R", "build.R", "build.ps1",
-    "smoke.R", "smoke.ps1", "e2e.mjs", "shell-check.mjs", "toolchain.dcf", "node-package-lock.json", "README.md")
+    "smoke.R", "smoke.ps1", "e2e.mjs", "gate.R", "shell-check.mjs", "toolchain.dcf", "node-package-lock.json", "README.md")
 if (!all(file.copy(file.path(root, "desktop", files), file.path(kit, "desktop"), recursive = TRUE))) {
     stop("Could not prepare desktop source files.")
 }

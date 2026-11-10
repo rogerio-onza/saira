@@ -131,6 +131,19 @@ check_e2e <- function() {
     }
 }
 
+# The R checks above test the source. The desktop gate tests the two built
+# apps that ship, so an installer with an old source fails here.
+check_desktop <- function() {
+    builds <- Sys.getenv(c("SAIRA_DESKTOP_LINUX_BUILD", "SAIRA_DESKTOP_WINDOWS_BUILD"))
+    if (!all(nzchar(builds))) {
+        stop("Set SAIRA_DESKTOP_LINUX_BUILD and SAIRA_DESKTOP_WINDOWS_BUILD to the two candidate ",
+             "builds. See desktop/README.md.", call. = FALSE)
+    }
+    status <- system2("Rscript", c("--vanilla", file.path("desktop", "gate.R"), "--verify",
+        shQuote(paste0("--linux=", builds[[1L]])), shQuote(paste0("--windows=", builds[[2L]]))))
+    if (status != 0L) stop("desktop/gate.R --verify exited with ", status, call. = FALSE)
+}
+
 steps <- list(
     list(name = "Roxygen output is current", required = TRUE, ci = TRUE,
          run = check_roxygen),
@@ -155,7 +168,9 @@ steps <- list(
     # error_on stops the gate on an ERROR or a WARNING. NOTEs are only printed.
     list(name = "R CMD check", required = TRUE, ci = FALSE,
          run = function() devtools::check(document = FALSE, manual = FALSE,
-                                          error_on = "warning"))
+                                          error_on = "warning")),
+    list(name = "Desktop candidates", required = TRUE, ci = FALSE,
+         run = check_desktop)
 )
 
 if (ci) steps <- Filter(function(step) step$ci, steps)

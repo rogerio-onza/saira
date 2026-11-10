@@ -302,6 +302,40 @@ então nada abre fora do app.
 No Linux, rode com `desktop/_tools/node-linux/bin/node`. O teste precisa do
 `WebSocket` global, e o Node do sistema pode não ter essa API.
 
+### Gate de release
+
+O `desktop/gate.R` junta as verificações acima num registro por build. Rode na
+máquina de cada build, depois do `build.R` ou do `build.ps1`:
+
+```bash
+Rscript --vanilla desktop/gate.R --build=<pasta do build>
+```
+
+O gate confere a origem do build: commit sem arquivos pendentes, o SHA-256 do
+pacote-fonte, o saira instalado vindo desse pacote e os instaladores iguais ao
+`SHA256SUMS.txt`. Depois, ele roda o `shell-check.mjs`, o smoke e o `e2e.mjs`.
+O E2E abre a janela do app. O resultado fica em `gate.json` e os logs ficam em
+`gate-<data>`, na pasta do build. Um build com `--allow-dirty` precisa de
+`--preview`. Com `--skip-e2e`, o resultado é `INCOMPLETE`.
+
+Antes do corte, rode a verificação final no checkout da release, com os dois
+builds:
+
+```bash
+Rscript --vanilla desktop/gate.R --verify --linux=<build Linux> --windows=<build Windows>
+```
+
+A verificação falha se faltar um registro `PASS`, se os builds vierem de commits
+diferentes ou de uma prévia, se um instalador mudar depois do gate, se um
+pacote-fonte não tiver os arquivos do `HEAD` ou se o `HEAD` não tiver a ponta de
+`origin/release/v<versão>` (`--release=<ref>` escolhe outro ref). O
+`scripts/release_gate.R` roda essa verificação com os builds de
+`SAIRA_DESKTOP_LINUX_BUILD` e `SAIRA_DESKTOP_WINDOWS_BUILD`.
+
+O gate não instala o app. Antes do corte, teste à mão numa VM limpa a
+instalação, a atualização sobre o RC, a desinstalação e a nova instalação com
+os dados mantidos.
+
 ## Referências
 
 - [shinyelectron: runtime bundled](https://r-pkg.thecoatlessprofessor.com/shinyelectron/articles/runtime-strategies.html)
