@@ -679,6 +679,30 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             }
             },
             write_fixed = function(term, state) { rv$fixed_values[[term]] <- state },
+            read_selection = function(term) shiny::isolate(rv$map_values[[term]]),
+            read_meta = function(term) shiny::isolate(rv$map_meta[[term]]),
+            write_model = function(values, meta) {
+                if (!is.null(values)) rv$map_values <- values
+                if (!is.null(meta)) rv$map_meta <- meta
+            },
+            fixed_terms = function() names(shiny::isolate(rv$fixed_values)),
+            # Read without isolate(), as the input observer always did.
+            in_restore = function() isTRUE(rv$is_programmatic_update),
+            take_programmatic = function(term) {
+                pending <- shiny::isolate(rv$programmatic_terms)
+                if (!(term %in% pending)) return(FALSE)
+                rv$programmatic_terms <- setdiff(pending, term)
+                TRUE
+            },
+            # A new basisOfRecord column starts the assistant again.
+            selection_changed = function(term, value) {
+                if (!identical(term, "basisOfRecord")) return(invisible(NULL))
+                next_source_col <- if (has_selected_value(value)) as.character(value[[1]]) else ""
+                if (!identical(shiny::isolate(basis_state$basis_of_record_source_col), next_source_col)) {
+                    basis_state$basis_of_record_source_col <- next_source_col
+                    reset_basis_of_record_state(basis_state, reset_source_col = FALSE)
+                }
+            },
             sync_fixed = function(term, state) {
                 shiny::updateCheckboxInput(session, paste0("usecustom_", term), value = state$on)
                 if (identical(term, "basisOfRecord")) {
@@ -892,15 +916,11 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     extra = rv$extra_terms, lang = lang_r()
                 ))
 
-                rv$map_values <- empty_map_values(term_names)
-                rv$map_meta <- empty_map_meta(term_names)
                 # A fixed value fills a column of the rows, so it belongs to the
                 # file it was set for: a new upload turns it off, as the reset
                 # does. datasetName, license, language and modified describe the
                 # publication and stay (ADR-189).
-                for (term in names(rv$fixed_values)) {
-                    mapping_commands$fixed_value(term, NULL)
-                }
+                mapping_commands$reset(term_names)
                 rm(list = ls(id_cache, all.names = TRUE), envir = id_cache)
                 rv$eventdate_parse_failures <- 0L
                 rv$last_eventdate_warn_count <- NA_integer_
@@ -1041,45 +1061,12 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     rv$is_programmatic_update <- FALSE
                 }
 
-                old_value <- shiny::isolate(rv$map_values[[term]])
-                if (is.null(old_value)) {
-                    old_value <- ""
-                }
-
-                if (!identical(old_value, sanitized)) {
-                    rv$map_values[[term]] <- sanitized
-
-                    if (identical(term, "basisOfRecord")) {
-                        next_source_col <- if (has_selected_value(sanitized)) {
-                            as.character(sanitized[[1]])
-                        } else {
-                            ""
-                        }
-                        previous_source_col <- shiny::isolate(basis_state$basis_of_record_source_col)
-
-                        if (!identical(previous_source_col, next_source_col)) {
-                            basis_state$basis_of_record_source_col <- next_source_col
-                            reset_basis_of_record_state(basis_state, reset_source_col = FALSE)
-                        }
-                    }
-
-                    is_programmatic_term <- term %in% shiny::isolate(rv$programmatic_terms)
-                    if (is_programmatic_term) {
-                        rv$programmatic_terms <- setdiff(shiny::isolate(rv$programmatic_terms), term)
-                    }
-
-                    if (!isTRUE(rv$is_programmatic_update) && !is_programmatic_term) {
-                        previous_meta <- shiny::isolate(rv$map_meta[[term]])
-                        rv$map_meta[[term]] <- build_manual_meta(
-                            previous_meta = previous_meta,
-                            has_value = has_selected_value(sanitized)
-                        )
-                        # No alias write here. A selection is a hypothesis, not a
-                        # decision -- learning from every pick is what left
-                        # entries like `id -> basisOfRecord` behind when the user
-                        # cycled through columns on a card. Aliases are committed
-                        # once, from the final mapping, on a successful export.
-                    }
+                # No alias write here. A selection is a hypothesis, not a
+                # decision -- learning from every pick is what left entries
+                # like `id -> basisOfRecord` behind when the user cycled
+                # through columns on a card. Aliases are committed once, from
+                # the final mapping, on a successful export.
+                if (mapping_commands$select_user(term, sanitized)) {
                     # Surgically refresh this card's border/badge (no grid re-render).
                     push_card_state(term)
                 }
@@ -1170,19 +1157,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             }
         })
 
-        set_custom_term_meta <- function(term, has_value) {
-            if (isTRUE(rv$is_programmatic_update)) {
-                return(invisible(NULL))
-            }
-
-            previous_meta <- shiny::isolate(rv$map_meta[[term]])
-            rv$map_meta[[term]] <- build_manual_meta(
-                previous_meta = previous_meta,
-                has_value = has_value
-            )
-
-            invisible(NULL)
-        }
+        set_custom_term_meta <- mapping_commands$user_meta
 
         shiny::observeEvent(input$custom_datasetName,
             {
@@ -1246,13 +1221,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                     selected_score <- suppressWarnings(as.numeric(selected_candidate[[1]]$final_score))
                 }
 
-                rv$map_meta[[term]] <- list(
+                mapping_commands$set_meta(term, list(
                     status = "EDITADO",
                     score = selected_score,
                     reason = "ambiguity_resolved_manual",
                     source = "manual",
                     alternatives_json = jsonlite::toJSON(item$candidates, auto_unbox = TRUE)
-                )
+                ))
 
                 # No alias write here either: resolving the modal only settles
                 # rv$map_values, and the user is still free to change it before
@@ -2092,7 +2067,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 set_map_value(term, term, update_input = TRUE)
                 mapped_n <- mapped_n + 1L
             }
-            rv$map_meta <- next_meta
+            mapping_commands$replace_meta(next_meta)
             rv$rostrum_decisions <- NULL
             rv$ambiguity_queue <- list()
 
@@ -2252,7 +2227,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         }
                     }
 
-                    rv$map_meta <- next_meta
+                    mapping_commands$replace_meta(next_meta)
                     rv$ambiguity_queue <- ambiguity_queue
 
                     if (!isTRUE(engine_result$stage2$success)) {
@@ -2321,10 +2296,10 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 }
             }
             for (term in intersect(all_term_names(), special_no_dropdown)) {
-                rv$map_values[[term]] <- ""
+                set_map_value(term, "", update_input = FALSE)
             }
             rv$extra_terms <- character(0)
-            rv$map_meta <- empty_map_meta(all_term_names())
+            mapping_commands$replace_meta(empty_map_meta(all_term_names()))
             rv$ambiguity_queue <- list()
             rv$rostrum_decisions <- NULL
             rv$rostrum_run_stats <- list()
@@ -2334,9 +2309,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             shiny::updateDateInput(session, "custom_modified_date", value = Sys.Date())
             shiny::updateCheckboxGroupInput(session, "custom_license", selected = character(0))
             shiny::updateCheckboxGroupInput(session, "custom_language", selected = character(0))
-            for (term in names(rv$fixed_values)) {
-                mapping_commands$fixed_value(term, NULL)
-            }
+            mapping_commands$clear_fixed()
             reset_basis_of_record_state(basis_state)
             reset_establishment_state()
             rv$is_programmatic_update <- FALSE

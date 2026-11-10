@@ -185,3 +185,51 @@ for (case in list(
         testthat::expect_null(attr(result, "status"), info = paste(result, collapse = "\n"))
     })
 }
+
+testthat::test_that("mapping commands keep one model through user, auto-map, import and reset", {
+    values <- list(); meta <- list(); fixed <- list(); programmatic <- character(0); restoring <- FALSE
+    commands <- saira:::new_mapping_commands(
+        write_selection = function(term, value) values[[term]] <<- value,
+        write_meta = function(term, value) meta[[term]] <<- value,
+        add_terms = function(terms) NULL,
+        begin_restore = function() restoring <<- TRUE,
+        end_restore = function() restoring <<- FALSE,
+        sync_selection = function(term, value, update_input) {
+            if (isTRUE(update_input)) programmatic <<- unique(c(programmatic, term))
+        },
+        write_fixed = function(term, state) fixed[[term]] <<- state,
+        sync_fixed = function(term, state) NULL,
+        read_selection = function(term) values[[term]],
+        read_meta = function(term) meta[[term]],
+        write_model = function(v, m) {
+            if (!is.null(v)) values <<- v
+            if (!is.null(m)) meta <<- m
+        },
+        fixed_terms = function() names(fixed),
+        in_restore = function() restoring,
+        take_programmatic = function(term) {
+            hit <- term %in% programmatic
+            programmatic <<- setdiff(programmatic, term)
+            hit
+        }
+    )
+    # User pick: manual meta.
+    testthat::expect_true(commands$select_user("eventDate", "data"))
+    testthat::expect_identical(meta$eventDate$source, "manual")
+    testthat::expect_false(commands$select_user("eventDate", "data"))
+    # Auto-map: the echo of a value set by code keeps the auto meta.
+    commands$select("scientificName", "especie")
+    commands$set_meta("scientificName", list(status = "AUTO", source = "auto"))
+    commands$select_user("scientificName", "genero")
+    testthat::expect_identical(meta$scientificName$source, "auto")
+    # Import: values come with manual meta, the restore releases its flag.
+    commands$restore(list(map_values = list(locality = "local")))
+    testthat::expect_identical(values$locality, "local")
+    testthat::expect_false(restoring)
+    # Reset: no selection, no meta, no fixed value.
+    commands$fixed_value("country", "Brasil")
+    commands$reset(c("eventDate", "scientificName"))
+    testthat::expect_identical(values$eventDate, "")
+    testthat::expect_null(values$locality)
+    testthat::expect_false(fixed$country$on)
+})
