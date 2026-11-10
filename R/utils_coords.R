@@ -2188,10 +2188,12 @@ coords_plottable <- function(lat, lon) {
 #' Map view that frames the drawable points
 #'
 #' @param lat,lon Numeric vectors of equal length.
+#' @param trim Share of points cut at each end of each axis, from 20 points
+#'   on, so a few far points do not open the map at ocean scale.
 #' @return NULL when no point can be drawn, `list(type = "point", lng, lat)`
 #'   for one location, or `list(type = "bounds", lng1, lat1, lng2, lat2)`.
 #' @noRd
-coords_map_view <- function(lat, lon) {
+coords_map_view <- function(lat, lon, trim = 0) {
     keep <- coords_plottable(lat, lon)
     if (!any(keep)) {
         return(NULL)
@@ -2202,7 +2204,10 @@ coords_map_view <- function(lat, lon) {
     if (isTRUE(all.equal(min(lon), max(lon))) && isTRUE(all.equal(min(lat), max(lat)))) {
         return(list(type = "point", lng = lon[[1]], lat = lat[[1]]))
     }
-    list(type = "bounds", lng1 = min(lon), lat1 = min(lat), lng2 = max(lon), lat2 = max(lat))
+    probs <- if (trim > 0 && length(lat) >= 20L) c(trim, 1 - trim) else c(0, 1)
+    lat_r <- stats::quantile(lat, probs, names = FALSE, type = 1)
+    lon_r <- stats::quantile(lon, probs, names = FALSE, type = 1)
+    list(type = "bounds", lng1 = lon_r[[1]], lat1 = lat_r[[1]], lng2 = lon_r[[2]], lat2 = lat_r[[2]])
 }
 
 #' Keep a no-wrap Leaflet map filled by the world

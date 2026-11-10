@@ -29,3 +29,15 @@ testthat::test_that("leaflet_fill_world bounds the view and hooks the minimum zo
     asset <- system.file("app", "www", "module-utils-coords.js", package = "saira")
     testthat::expect_true(any(grepl("setMinZoom", readLines(asset), fixed = TRUE)))
 })
+
+testthat::test_that("coords_map_view trims far points when asked and the set is large", {
+    lat <- c(rep(-15, 30), seq(-20, -10, length.out = 30), 10)
+    lon <- c(rep(-47, 30), seq(-50, -40, length.out = 30), 0)
+    full <- coords_map_view(lat, lon)
+    testthat::expect_identical(full$lng2, 0)
+    core <- coords_map_view(lat, lon, trim = 0.02)
+    testthat::expect_lt(core$lng2, -39)
+    testthat::expect_lt(core$lat2, -9)
+    few <- coords_map_view(c(-15, -16, 10), c(-47, -48, 0), trim = 0.02)
+    testthat::expect_identical(few$lng2, 0)
+})
