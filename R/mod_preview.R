@@ -194,8 +194,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                             ),
                             choiceValues = list("table", "problems")
                         )
-                    ),
-                    mode_part(shiny::span(class = "preview-card-subtitle", tr("preview_subtitle", lang)), "table")
+                    )
                 ),
                 # One box for both modes, so motion.js slides in the mode the
                 # user picks (ADR-156).
@@ -247,6 +246,14 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                 "previewMarkEmptyColumns", list(emptyColumns = I(as.integer(empty_indices)))
             ))
 
+            # The note of the first records sits in the info line, so the
+            # title row has room for the title and both modes.
+            dt_language <- preview_dt_language(lang_r())
+            # mapped_data_r holds only the first rows, so the upload gives the total.
+            if (is.function(raw_data_r) && NROW(raw_data_r()) > nrow(preview_df)) {
+                dt_language$infoPostFix <- tr("preview_datatable_info_first", lang_r())
+            }
+
             DT::datatable(
                 preview_df,
                 container = preview_table_container(names(preview_df)),
@@ -268,7 +275,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                     autoWidth = FALSE,
                     columnDefs = column_defs,
                     initComplete = init_complete_js,
-                    language = preview_dt_language(lang_r())
+                    language = dt_language
                 ),
                 class = "display compact stripe",
                 rownames = FALSE,
