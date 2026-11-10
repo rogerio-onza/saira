@@ -29,3 +29,13 @@ suggest_uncertainty <- function(values) {
     out
 }
 
+# "4.551" or "4.551 m" can be 4.551 m (a GPS accuracy from ODK or KoboToolbox)
+# or 4551 m. A value in km is not in this group.
+ambiguous_uncertainty <- function(values) {
+    v <- tolower(trimws(as.character(values)))
+    v[is.na(v)] <- ""
+    v <- sub("^(aprox\\.?|approx\\.?|ca\\.?|cerca de|~|\\+/-|\u00b1)\\s*", "", v)
+    v <- trimws(sub("\\s*(m|metros|meters|metres)$", "", v))
+    grepl("^[0-9]{1,3}\\.[0-9]{3}$", v)
+}
+

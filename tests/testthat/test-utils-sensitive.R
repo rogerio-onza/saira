@@ -567,6 +567,29 @@ testthat::test_that("mask skips rows with dataGeneralizations even when uncertai
     testthat::expect_true("c2" %in% res$real$occurrenceID)
 })
 
+testthat::test_that("an ambiguous uncertainty does not count as a generalization (ADR-210)", {
+    local_sensitive_fixture("Panthera onca")
+    df <- data.frame(
+        occurrenceID = c("a1", "a2", "a3", "a4"),
+        scientificName = "Panthera onca",
+        decimalLatitude = "-24.4873",
+        decimalLongitude = "-46.6741",
+        coordinateUncertaintyInMeters = c("", "4.551", "aprox. 4.551 m", "4551"),
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_identical(saira:::ambiguous_uncertainty(c("4.551", "4.551 m", "4.551 km", "12.3", "4551")),
+                               c(TRUE, TRUE, FALSE, FALSE, FALSE))
+    res <- saira:::mask_sensitive_coordinates(df, generalization = "extreme", lang = "en")
+    # a2 and a3 get the tier grid of a1. Only the plain 4551 m snaps (D04).
+    testthat::expect_equal(res$masked$decimalLatitude, c("-24", "-24", "-24", "-24.49"))
+    testthat::expect_equal(res$masked$coordinatePrecision[1:3], rep("1", 3))
+    testthat::expect_equal(res$n_snapped_to_uncertainty, 1L)
+    testthat::expect_equal(res$n_skipped_already_masked, 0L)
+    # The published uncertainty keeps the larger reading, the safe bound.
+    testthat::expect_gt(as.numeric(res$masked$coordinateUncertaintyInMeters[2]),
+                        as.numeric(res$masked$coordinateUncertaintyInMeters[1]) + 4550)
+})
+
 testthat::test_that("mask rounds a point finer than its declared uncertainty, once (D04)", {
     local_sensitive_fixture("Panthera onca")
     df <- data.frame(

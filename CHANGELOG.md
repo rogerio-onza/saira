@@ -111,6 +111,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **generalization:** Apply the category grid to a sensitive record with a GPS accuracy as `4.551`, ADR-210
 - **upload:** Keep a line break inside a quoted CSV cell as LF on Windows, so the cell gets no CR ([#304](https://github.com/rogerio-onza/saira/pull/304))
 - **preview:** Show the whole Preview title and modes in a narrow window, with the first-records note under the table ([#305](https://github.com/rogerio-onza/saira/pull/305))
 - **preview:** Open the record of the first problem when the Problems list shows, so the record panel is never empty ([#303](https://github.com/rogerio-onza/saira/pull/303))

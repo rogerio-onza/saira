@@ -3719,3 +3719,14 @@ Formato: ADR leve (Architecture Decision Record).
   - Ordem, repeticao de nomes e as outras colunas nao terminam o relatorio.
   - As revisoes saem porque uma nova rodada tambem as limpa, e uma revisao fora da tela nao pode mudar o pacote. As marcas manuais de sensibilidade ficam: a chave delas e o nome.
 - **Consequencias**: depois de corrigir um nome, a pessoa roda Nomes de novo. O observer so le os dados depois de uma rodada.
+
+## ADR-210: Incerteza ambigua nao conta como generalizacao anterior
+
+- **Data**: 2026-11-10
+- **Status**: Aceito.
+- **Contexto**: auditoria de codigo e UX (GEN-01). `suggest_uncertainty()` le `4.551` como milhar (4551 m). ODK e KoboToolbox exportam a precisao do GPS nessa forma. Acima de 1000 m, a linha contava como ja generalizada (ADR-095), e a grade da incerteza substituia a grade da categoria (D04). Uma especie sensivel em modo `extreme` saia com cerca de 1 km de precisao, e as linhas vizinhas com cerca de 110 km.
+- **Decisao**:
+  - `ambiguous_uncertainty()` marca a forma de um a tres digitos, ponto e tres decimais, com ou sem `m`. Um valor em `km` fica fora.
+  - `masking_uncertainty_meters()` le esse valor como NA. `sensitive_already_masked_rows()` e `sensitive_uncertainty_snap_grid()` usam essa funcao, e a grade da categoria fica.
+  - A incerteza publicada continua a somar a leitura maior (4551 m), que e o limite seguro.
+- **Consequencias**: uma linha com `4.551` sai com a mesma grade das linhas vizinhas. Um `4551` sem ponto continua a contar como generalizacao anterior. A sugestao da Pre-visualizacao nao muda.
