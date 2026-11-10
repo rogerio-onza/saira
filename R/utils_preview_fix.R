@@ -453,10 +453,11 @@ detect_preview_problems <- function(df, max_year = NULL, cache = NULL) {
     if ("coordinateUncertaintyInMeters" %in% cols) {
         out <- c(out, check("uncertainty", "coordinateUncertaintyInMeters", function() {
             v <- text("coordinateUncertaintyInMeters")
-            bad <- which(nzchar(v) & !is_valid_uncertainty(v))
+            dot <- uncertainty_decimal_dot(v)
+            bad <- which(nzchar(v) & !is_valid_uncertainty(v, dot))
             if (length(bad)) {
                 list(problem_rows(bad, "coordinateUncertaintyInMeters", "uncertainty_invalid", v[bad],
-                                  suggest_uncertainty(v[bad])))
+                                  suggest_uncertainty(v[bad], dot)))
             }
         }))
     }
@@ -746,10 +747,12 @@ next_open_problem <- function(id, shown, open) {
 #' @param term Darwin Core term of the cell.
 #' @param value Typed text.
 #' @param taken Identifiers other rows already use (occurrenceID only).
+#' @param decimal_dot The uncertainty column writes decimals with a dot
+#'   (coordinateUncertaintyInMeters only).
 #' @return List with `value` (the text to store) and `error` (an i18n key or
 #'   NULL).
 #' @noRd
-parse_preview_edit <- function(term, value, taken = character(0)) {
+parse_preview_edit <- function(term, value, taken = character(0), decimal_dot = FALSE) {
     v <- trimws(as.character(value %||% ""))
     if (length(v) != 1L || is.na(v)) v <- ""
     fail <- function(key) list(value = NULL, error = key)
@@ -785,8 +788,8 @@ parse_preview_edit <- function(term, value, taken = character(0)) {
             if (is.na(v)) return(fail("preview_fix_err_time"))
         }
     } else if (term == "coordinateUncertaintyInMeters") {
-        if (!is_valid_uncertainty(v)) {
-            v <- suggest_uncertainty(v)
+        if (!is_valid_uncertainty(v, decimal_dot)) {
+            v <- suggest_uncertainty(v, decimal_dot)
             if (is.na(v)) return(fail("preview_fix_err_uncertainty"))
         }
     } else if (term %in% c("decimalLatitude", "decimalLongitude")) {

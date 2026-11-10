@@ -3729,4 +3729,5 @@ Formato: ADR leve (Architecture Decision Record).
   - `ambiguous_uncertainty()` marca a forma de um a tres digitos, ponto e tres decimais, com ou sem `m`. Um valor em `km` fica fora.
   - `masking_uncertainty_meters()` le esse valor como NA. `sensitive_already_masked_rows()` e `sensitive_uncertainty_snap_grid()` usam essa funcao, e a grade da categoria fica.
   - A incerteza publicada continua a somar a leitura maior (4551 m), que e o limite seguro.
-- **Consequencias**: uma linha com `4.551` sai com a mesma grade das linhas vizinhas. Um `4551` sem ponto continua a contar como generalizacao anterior. A sugestao da Pre-visualizacao nao muda.
+  - Na Pre-visualizacao, `uncertainty_decimal_dot()` decide pela coluna. Se outro valor tem ponto com um numero de decimais diferente de tres (`12.3`, `7.25`), o ponto e decimal: `4.551` e valido, e `aprox. 4.551 m` sugere `4.551`. Sem esse sinal, a sugestao continua `4551`.
+- **Consequencias**: uma linha com `4.551` sai com a mesma grade das linhas vizinhas. Um `4551` sem ponto continua a contar como generalizacao anterior. A generalizacao nao usa o sinal da coluna, porque a leitura ambigua protege mais.

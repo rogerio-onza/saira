@@ -254,6 +254,21 @@ testthat::test_that("detect_preview_problems checks eventTime, uncertainty, coor
     testthat::expect_true(all(p$family[startsWith(p$type, "name_")] == "name"))
 })
 
+testthat::test_that("a column with decimal dots reads 4.551 as 4.551 m (ADR-210)", {
+    gps <- data.frame(coordinateUncertaintyInMeters = c("4.551", "3.9", "12.345", "aprox. 4.551 m"))
+    p <- detect_preview_problems(gps)
+    testthat::expect_identical(p$row[p$term == "coordinateUncertaintyInMeters"], 4L)
+    testthat::expect_identical(p$suggestion[p$term == "coordinateUncertaintyInMeters"], "4.551")
+    # Without another decimal in the column, the dot stays a thousands dot.
+    br <- detect_preview_problems(data.frame(coordinateUncertaintyInMeters = c("4.551", "30")))
+    testthat::expect_identical(br$suggestion, "4551")
+    testthat::expect_false(uncertainty_decimal_dot(c("1.000", "2.500", "30", NA)))
+    testthat::expect_true(uncertainty_decimal_dot(c("1.000", "1234.567")))
+    testthat::expect_identical(parse_preview_edit("coordinateUncertaintyInMeters", "4.551 m",
+                                                  decimal_dot = TRUE)$value, "4.551")
+    testthat::expect_identical(parse_preview_edit("coordinateUncertaintyInMeters", "4.551")$value, "4551")
+})
+
 testthat::test_that("eventTime takes a zone offset only with a valid hour and minute", {
     testthat::expect_true(all(is_dwc_time_value(c("12:00Z", "12:00-03:00", "12:00+0530", "12:00+23:59",
                                                   "08:00-03/09:30-03"))))
