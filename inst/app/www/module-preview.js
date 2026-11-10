@@ -221,10 +221,18 @@
   };
 
   // A redraw recreates the rows, so the focus class is put back from the
-  // key kept on the table node.
-  behavior.previewFocusRow = function () {
+  // key kept on the table node. A new table has no key, so its first row
+  // takes the focus and the record panel never shows empty (UX-04).
+  behavior.previewFocusRow = function (cfg) {
     return function () {
-      var key = $(this.api().table().node()).data('pfFocus');
+      var node = $(this.api().table().node());
+      var key = node.data('pfFocus');
+      var first = this.api().rows({ page: 'current' }).data()[0];
+      if (!key && first) {
+        key = rowKey(first);
+        node.data('pfFocus', key);
+        Shiny.setInputValue(cfg.focusId, { row: first[0], term: first[1] });
+      }
       this.api().rows().every(function () {
         $(this.node()).toggleClass('pf-focus', rowKey(this.data()) === key);
       });
