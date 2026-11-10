@@ -8,6 +8,7 @@ const fs = require('fs');
 const backend = require('./backends/native-r.js');
 const strings = require('./i18n.js');
 const { createLogWriter } = require('./log-writer.js');
+const { unpackedRoot } = require('./asar-path.js');
 
 const SLUG = 'saira-desktop';
 // A fixed port keeps one origin, so the theme in localStorage survives a restart.
@@ -21,7 +22,7 @@ const ICON = path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon
 const ACCESS_KEY = crypto.randomBytes(32).toString('hex');
 
 const info = readJson(path.join(__dirname, 'desktop-info.json')) || {};
-const unpacked = __dirname.replace('app.asar', 'app.asar.unpacked');
+const unpacked = unpackedRoot(__dirname);
 const appPath = path.join(unpacked, 'src', 'app');
 const bundledLibrary = path.join(unpacked, 'runtime', 'R', 'library');
 const dataRoot = process.platform === 'linux'

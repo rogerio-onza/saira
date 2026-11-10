@@ -11,6 +11,8 @@ const require = createRequire(import.meta.url);
 const { killProcessTree } = require(path.resolve(process.argv[2]));
 const { pruneLogs } = require(path.resolve(process.argv[3]));
 const { createLogWriter } = require(path.resolve(process.argv[4]));
+// asar-path.js is copied next to log-retention.js, in the shell and in a build.
+const { unpackedRoot } = require(path.join(path.dirname(path.resolve(process.argv[3])), 'asar-path.js'));
 
 let failed = 0;
 function check(name, ok, detail = '') {
@@ -153,6 +155,13 @@ console.error = consoleError;
 check('log writer: file errors stop the file log and do not throw', reported.length === 2,
   reported.join(' | '));
 fs.rmSync(writerDir, { recursive: true, force: true });
+
+// Only the last component is the archive, not a user folder named app.asar-tests.
+const installed = 'C:\\Users\\Pessoa\\app.asar-tests\\Saira\\resources\\app.asar';
+check('asar path: only the archive component changes',
+  unpackedRoot(installed, path.win32) === 'C:\\Users\\Pessoa\\app.asar-tests\\Saira\\resources\\app.asar.unpacked',
+  unpackedRoot(installed, path.win32));
+check('asar path: a development folder stays', unpackedRoot('/home/dev/app.asar-tests/shell') === '/home/dev/app.asar-tests/shell');
 
 console.log(failed ? `${failed} check(s) failed` : 'All checks passed');
 process.exit(failed ? 1 : 0);

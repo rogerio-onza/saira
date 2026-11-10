@@ -335,7 +335,7 @@ desktop_check_linux_package <- function(dist) {
 }
 
 desktop_apply_shell <- function(root, project, config, origin) {
-    modules <- c("i18n.js", "log-retention.js", "log-writer.js")
+    modules <- c("asar-path.js", "i18n.js", "log-retention.js", "log-writer.js")
     pages <- c("main.js", "preload.js", "lifecycle.html", modules)
     shell <- file.path(root, "desktop", "shell", pages)
     if (!all(file.copy(shell, project, overwrite = TRUE))) stop("Could not copy the desktop shell.")
@@ -376,9 +376,15 @@ desktop_apply_shell <- function(root, project, config, origin) {
             "    }\n\n",
             "    // 3. Try system PATH first\n"),
         "      exited = waitForExit(child);\n      killProcessTree(child);" =
-            "      exited = Promise.all([waitForExit(child), killProcessTree(child)]);"
+            "      exited = Promise.all([waitForExit(child), killProcessTree(child)]);",
+        # Only the last path component is the archive (shell/asar-path.js).
+        "const unpackedBase = appBasePath.replace('app.asar', 'app.asar.unpacked');" =
+            "const unpackedBase = require('./asar-path').unpackedRoot(appBasePath);",
+        "const unpackedStart = appBasePath.replace('app.asar', 'app.asar.unpacked');" =
+            "const unpackedStart = require('./asar-path').unpackedRoot(appBasePath);"
     ))
-    if (!file.copy(file.path(root, "desktop", "shell", "process-tree.js"), file.path(project, "backends"), overwrite = TRUE)) {
+    if (!all(file.copy(file.path(root, "desktop", "shell", c("process-tree.js", "asar-path.js")),
+                       file.path(project, "backends"), overwrite = TRUE))) {
         stop("Could not copy the process tree module.")
     }
     desktop_patch_text(file.path(project, "backends", "utils.js"), c(
