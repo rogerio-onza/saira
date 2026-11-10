@@ -639,7 +639,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                 placeholderTaxon = tr("preview_fix_placeholder_taxon", lang),
                 placeholder = tr("preview_fix_placeholder", lang)
             )))
-            focus_js <- DT::JS(module_behavior_call("previewFocusRow"))
+            focus_js <- DT::JS(module_behavior_call("previewFocusRow", list(focusId = ns("focus"))))
             # The value is escaped on the server. The span cuts a long value,
             # because Scroller needs rows of one height.
             cut_js <- DT::JS(module_behavior_call("previewCutCell"))
@@ -688,8 +688,8 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
             lang <- lang_r()
             row <- suppressWarnings(as.integer(focus$row))
             raw <- if (is.function(raw_data_r)) raw_data_r()
-            # The panel keeps its place before a click, so the table does not
-            # move when a record shows.
+            # The first row takes the focus when the list draws. The empty
+            # panel keeps its place until then, so the table does not move.
             if (length(row) != 1L || is.na(row) || row < 1L || !is.data.frame(raw) || row > nrow(raw)) {
                 return(shiny::div(class = "preview-record is-empty", tr("preview_fix_record_empty", lang)))
             }
