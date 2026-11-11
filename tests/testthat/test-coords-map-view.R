@@ -41,3 +41,15 @@ testthat::test_that("coords_map_view trims far points when asked and the set is 
     few <- coords_map_view(c(-15, -16, 10), c(-47, -48, 0), trim = 0.02)
     testthat::expect_identical(few$lng2, 0)
 })
+
+testthat::test_that("coords_map_view cuts one far point from 20 to 49 points", {
+    for (n in c(20L, 49L)) {
+        lat <- c(seq(-20, -10, length.out = n - 1L), 50)
+        lon <- c(seq(-50, -40, length.out = n - 1L), 60)
+        view <- coords_map_view(lat, lon, trim = 0.02)
+        testthat::expect_lt(view$lat2, -9)
+        testthat::expect_lt(view$lng2, -39)
+    }
+    same <- coords_map_view(c(rep(-15, 24), 50), c(rep(-47, 24), 60), trim = 0.02)
+    testthat::expect_identical(same$type, "point")
+})

@@ -2204,9 +2204,15 @@ coords_map_view <- function(lat, lon, trim = 0) {
     if (isTRUE(all.equal(min(lon), max(lon))) && isTRUE(all.equal(min(lat), max(lat)))) {
         return(list(type = "point", lng = lon[[1]], lat = lat[[1]]))
     }
-    probs <- if (trim > 0 && length(lat) >= 20L) c(trim, 1 - trim) else c(0, 1)
-    lat_r <- stats::quantile(lat, probs, names = FALSE, type = 1)
-    lon_r <- stats::quantile(lon, probs, names = FALSE, type = 1)
+    n <- length(lat)
+    # A 2 % share of fewer than 50 points rounds to zero points, so the cut
+    # is at least one point at each end.
+    cut <- if (trim > 0 && n >= 20L) max(1L, as.integer(floor(n * trim))) else 0L
+    lat_r <- sort(lat)[c(cut + 1L, n - cut)]
+    lon_r <- sort(lon)[c(cut + 1L, n - cut)]
+    if (lat_r[[1]] == lat_r[[2]] && lon_r[[1]] == lon_r[[2]]) {
+        return(list(type = "point", lng = lon_r[[1]], lat = lat_r[[1]]))
+    }
     list(type = "bounds", lng1 = lon_r[[1]], lat1 = lat_r[[1]], lng2 = lon_r[[2]], lat2 = lat_r[[2]])
 }
 
