@@ -39,7 +39,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
-- **names:** Show the query order as Flora BR and Fauna BR first, then GBIF, and align the toolbar with the panels
+- **names:** Show the query order as Flora BR and Fauna BR first, then GBIF
 - **names:** Show dashes and the count of names to read before the first run, and label the mark as sensitive
 - **preview:** Show the record beside the Problems list on wide screens, and mark the column behind the problem, ADR-195 ([#278](https://github.com/rogerio-onza/saira/pull/278))
 - **build:** Build the Darwin Core catalogs from the TDWG list and one base terms file, in one script, ADR-189
