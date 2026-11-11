@@ -443,8 +443,10 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     )
                 )))
             } else if (identical(iucn$status, "skipped")) {
-                add(pending_row("info", sprintf(tr("export_iucn_skipped", lang), fmt_n(iucn$unanswered)),
-                                "go_iucn_undo", tr("export_iucn_undo", lang)))
+                kept <- iucn$total - iucn$unanswered
+                text <- sprintf(tr("export_iucn_skipped", lang), fmt_n(iucn$unanswered))
+                if (kept > 0L) text <- paste(text, sprintf(tr("export_iucn_skipped_kept", lang), fmt_n(kept)))
+                add(pending_row("info", text, "go_iucn_undo", tr("export_iucn_undo", lang)))
             }
             if (length(s$missing_required) > 0L) {
                 add(pending_row("block", shiny::tagList(
@@ -787,12 +789,26 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             iucn <- iucn_r()
             if (identical(iucn$status, "pending")) {
                 lang <- lang_r()
+                # With no new answer, the bar offers the choice of the Pending
+                # card, so the user does not wait for the whole budget.
+                choice <- if (isTRUE(iucn$stalled)) {
+                    shiny::span(
+                        class = "export-iucn-stalled",
+                        shiny::span(class = "export-iucn-stalled-text", tr("export_iucn_stalled", lang)),
+                        shiny::actionButton(ns("go_iucn_retry"),
+                                            shiny::tagList(ph_icon("arrow-clockwise"), tr("export_iucn_retry", lang)),
+                                            class = "btn btn-primary btn-sm"),
+                        shiny::actionButton(ns("go_iucn_skip"), tr("export_iucn_skip", lang),
+                                            class = "btn btn-outline-secondary btn-sm")
+                    )
+                }
                 return(shiny::tagList(
                     ph_icon("spinner", class = "ph-spin"),
                     shiny::span(class = "export-iucn-wait", tr("export_iucn_wait", lang)),
                     shiny::span(class = "export-iucn-count",
                                 sprintf(tr("export_iucn_wait_count", lang),
-                                        format_count(iucn$done, lang), format_count(iucn$total, lang)))
+                                        format_count(iucn$done, lang), format_count(iucn$total, lang))),
+                    choice
                 ))
             }
             shiny::tagList(

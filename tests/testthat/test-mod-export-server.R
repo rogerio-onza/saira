@@ -375,13 +375,15 @@ testthat::test_that("mod_export_server waits for the IUCN lookup and its downloa
         {
             for (i in 1:10) session$elapse(100)
             summary_html <- html_of(output$summary)
-            testthat::expect_match(summary_html, "Exportar sem IUCN", fixed = TRUE)
+            testthat::expect_match(summary_html, "Exportar sem a IUCN que falta", fixed = TRUE)
             testthat::expect_match(summary_html, "<strong>1 de 3</strong>", fixed = TRUE)
             testthat::expect_match(html_of(output$download_btn_container), "Resolva as pend", fixed = TRUE)
             testthat::expect_identical(zip::zip_list(output$download_real)$filename, "export_error.csv")
 
             session$setInputs(go_iucn_skip = 1)
             testthat::expect_match(html_of(output$summary), "go_iucn_undo", fixed = TRUE)
+            # The skip keeps the categories of the names that GBIF answered.
+            testthat::expect_match(html_of(output$summary), "Os outros 2 saem com a resposta do GBIF.", fixed = TRUE)
             testthat::expect_identical(
                 occurrence_dynprops(output$download_real),
                 c("{\"iucnRedListCategory\":\"NT\"}", "{\"iucnRedListCategory\":\"EN\"}", "")

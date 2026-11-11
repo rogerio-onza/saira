@@ -8,6 +8,9 @@
 # Total GBIF wait of one lookup. Past it, the Pending card offers a retry or
 # an export without the IUCN category.
 EXPORT_IUCN_BUDGET_S <- 120
+# A lookup with no new GBIF answer for this long offers the same choice in the
+# download bar. A slow GBIF that still answers gets the full budget.
+EXPORT_IUCN_STALL_S <- 15
 
 #' Mount the IUCN lookup inside the Export module server
 #'
@@ -17,24 +20,39 @@ EXPORT_IUCN_BUDGET_S <- 120
 #'   starts only then, so the upload of a file sends no GBIF request.
 #' @param worker Names worker of this lookup, apart from the one of the Names tab.
 #' @return Reactive list: `status` ("off", "pending", "failed", "skipped",
-#'   "done"), the counts and `snapshot` (IUCN code by name).
+#'   "done"), the counts, `stalled` (TRUE while a pending lookup gets no
+#'   answer) and `snapshot` (IUCN code by name).
 #' @noRd
 mount_export_iucn <- function(input, session, names_r, include_r,
                               active_r = function() TRUE,
                               worker = names_worker_new(),
                               budget_s = getOption("saira.export_iucn_budget_s", EXPORT_IUCN_BUDGET_S),
+                              stall_s = getOption("saira.export_iucn_stall_s", EXPORT_IUCN_STALL_S),
                               tick_ms = 100,
                               start = names_worker_start, poll = names_worker_poll) {
     state_rv <- shiny::reactiveVal(NULL)
     run_rv <- shiny::reactiveVal(0L)
     skipped <- shiny::reactiveVal(FALSE)
+    stalled <- shiny::reactiveVal(FALSE)
+    # The count of names with an answer, and when it last moved.
+    answers <- list(n = -1L, at = Sys.time())
     session$onSessionEnded(function() names_worker_stop(worker))
 
     # A new run id makes the worker drop the batch of the run before.
     start_run <- function(names) {
         run <- shiny::isolate(run_rv()) + 1L
         state_rv(iucn_lookup_new(names, paste0("export-iucn-", run)))
+        answers <<- list(n = -1L, at = Sys.time())
+        stalled(FALSE)
         run_rv(run)
+    }
+
+    # A lookup that fails ends with no category for any name.
+    iucn_lookup_give_up <- function(state) {
+        state$snapshot <- stats::setNames(rep(NA_character_, length(state$names)), state$names)
+        state$unanswered <- state$names
+        state$phase <- "done"
+        state
     }
 
     key_r <- shiny::reactive({
@@ -73,13 +91,12 @@ mount_export_iucn <- function(input, session, names_r, include_r,
             names_worker_fetch(worker, state$run_id, misses, budget_s = budget_s,
                                start = start, poll = poll)
         }
-        next_state <- tryCatch(iucn_lookup_step(state, fetch_for), error = function(e) {
-            state$snapshot <- stats::setNames(rep(NA_character_, length(state$names)), state$names)
-            state$unanswered <- state$names
-            state$phase <- "done"
-            state
-        })
+        next_state <- tryCatch(iucn_lookup_step(state, fetch_for),
+                               error = function(e) iucn_lookup_give_up(state))
         if (identical(next_state$phase, "done")) names_worker_cancel(worker)
+        n <- tryCatch(iucn_lookup_answered(next_state), error = function(e) answers$n)
+        if (!identical(n, answers$n)) answers <<- list(n = n, at = Sys.time())
+        stalled(as.numeric(difftime(Sys.time(), answers$at, units = "secs")) >= stall_s)
         if (!identical(next_state, state)) state_rv(next_state)
     })
 
@@ -90,7 +107,15 @@ mount_export_iucn <- function(input, session, names_r, include_r,
             start_run(state$names)
         }
     }, ignoreInit = TRUE)
-    shiny::observeEvent(input$go_iucn_skip, skipped(TRUE), ignoreInit = TRUE)
+    # A skip while the lookup waits ends it with the answers that came.
+    shiny::observeEvent(input$go_iucn_skip, {
+        state <- state_rv()
+        if (!is.null(state) && !identical(state$phase, "done")) {
+            names_worker_cancel(worker)
+            state_rv(tryCatch(iucn_lookup_finish(state), error = function(e) iucn_lookup_give_up(state)))
+        }
+        skipped(TRUE)
+    }, ignoreInit = TRUE)
     shiny::observeEvent(input$go_iucn_undo, skipped(FALSE), ignoreInit = TRUE)
 
     shiny::reactive({
@@ -101,7 +126,7 @@ mount_export_iucn <- function(input, session, names_r, include_r,
         if (!identical(state$phase, "done")) {
             progress <- iucn_lookup_progress(state)
             return(list(status = "pending", done = progress$done, total = progress$total,
-                        snapshot = NULL))
+                        stalled = isTRUE(stalled()), snapshot = NULL))
         }
         n <- length(state$unanswered)
         status <- if (n == 0L) "done" else if (isTRUE(skipped())) "skipped" else "failed"

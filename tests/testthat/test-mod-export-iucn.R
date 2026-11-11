@@ -159,3 +159,54 @@ testthat::test_that("the Export IUCN lookup offers a retry or an export without 
         testthat::expect_identical(iucn()$status, "failed")
     })
 })
+
+testthat::test_that("the Export IUCN lookup offers the choice when GBIF stops answering, and a skip keeps the answers", {
+    testthat::skip_on_cran()
+    testthat::skip_if_not_installed("httpuv")
+    saira:::colxr_match_cache$reset()
+    withr::defer(saira:::colxr_match_cache$reset())
+    start <- local_worker_start(local_colxr_server())
+    worker <- warm_worker()
+    # The Names run already has the answer for Panthera onca.
+    saira:::colxr_match_names("Panthera onca", fetch = function(requests) {
+        list(jsonlite::read_json(testthat::test_path("fixtures", "colxr", "Panthera_onca.json")))
+    })
+
+    module <- function(id) {
+        shiny::moduleServer(id, function(input, output, session) {
+            iucn <- saira:::mount_export_iucn(input, session,
+                                              names_r = shiny::reactive(c("Panthera onca", "Slow genus")),
+                                              include_r = function() TRUE, worker = worker,
+                                              budget_s = 30, stall_s = 0.5, start = start)
+        })
+    }
+    shiny::testServer(module, {
+        wait_for <- function(ok, max_s = 10) {
+            t0 <- Sys.time()
+            while (!isTRUE(ok()) && difftime(Sys.time(), t0, units = "secs") < max_s) {
+                session$elapse(100)
+                Sys.sleep(0.05)
+            }
+        }
+        session$flushReact()
+        session$elapse(100)
+        testthat::expect_identical(iucn()$status, "pending")
+        testthat::expect_false(iucn()$stalled)
+
+        # The server holds the slow name for 2 s, past the stall limit.
+        wait_for(function() isTRUE(iucn()$stalled))
+        testthat::expect_identical(iucn()$status, "pending")
+        testthat::expect_true(iucn()$stalled)
+
+        session$setInputs(go_iucn_retry = 1)
+        testthat::expect_identical(iucn()$status, "pending")
+        testthat::expect_false(iucn()$stalled)
+        wait_for(function() isTRUE(iucn()$stalled))
+
+        session$setInputs(go_iucn_skip = 1)
+        testthat::expect_identical(iucn()$status, "skipped")
+        testthat::expect_identical(iucn()$unanswered, 1L)
+        testthat::expect_identical(iucn()$snapshot, c("Panthera onca" = "NT", "Slow genus" = NA))
+        testthat::expect_null(worker$call)
+    })
+})

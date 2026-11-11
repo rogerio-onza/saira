@@ -405,14 +405,24 @@
     "es": "Intentar de nuevo"
   },
   "export_iucn_skip": {
-    "pt": "Exportar sem IUCN",
-    "en": "Export without IUCN",
-    "es": "Exportar sin UICN"
+    "pt": "Exportar sem a IUCN que falta",
+    "en": "Export without the missing IUCN",
+    "es": "Exportar sin la UICN que falta"
   },
   "export_iucn_skipped": {
     "pt": "%s nome(s) sem resposta do GBIF saem sem a categoria IUCN.",
     "en": "%s name(s) without a GBIF answer go out without the IUCN category.",
     "es": "%s nombre(s) sin respuesta de GBIF salen sin la categoría UICN."
+  },
+  "export_iucn_skipped_kept": {
+    "pt": "Os outros %s saem com a resposta do GBIF.",
+    "en": "The other %s go out with the GBIF answer.",
+    "es": "Los otros %s salen con la respuesta de GBIF."
+  },
+  "export_iucn_stalled": {
+    "pt": "Sem resposta do GBIF.",
+    "en": "No answer from GBIF.",
+    "es": "Sin respuesta de GBIF."
   },
   "export_iucn_undo": {
     "pt": "Desfazer",

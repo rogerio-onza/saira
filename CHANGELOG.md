@@ -40,7 +40,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 - **names:** Send the GBIF requests of a names run from a separate R process, so the app stays responsive, ADR-212
-- **export:** Look up the IUCN category before the download, and offer a retry or an export without IUCN, ADR-213
+- **export:** Look up the IUCN category before the download, with a retry or skip when GBIF stops answering, ADR-213
 - **preview:** Show the record beside the Problems list on wide screens, and mark the column behind the problem, ADR-195 ([#278](https://github.com/rogerio-onza/saira/pull/278))
 - **build:** Build the Darwin Core catalogs from the TDWG list and one base terms file, in one script, ADR-189
 - **site:** Link the home photos, species, pins and cards by key, and stop the build when they disagree, ADR-189

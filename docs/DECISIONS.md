@@ -3756,8 +3756,10 @@ Formato: ADR leve (Architecture Decision Record).
   - A aba Exportar consulta a categoria IUCN antes do download (`mount_export_iucn()`), com um worker de nomes proprio (ADR-212). A consulta envia lotes de 20 nomes, so os nomes corrigidos distintos que faltam no memo, e depois os nomes aceitos dos sinonimos sem categoria.
   - A consulta comeca so com a aba Exportar visivel, porque o GBIF vem marcado e o upload nao deve gerar pedidos. Uma consulta em curso continua se o usuario sai da aba.
   - A chave da consulta sao os nomes corrigidos e a opcao IUCN. Uma chave nova abre um `run_id` novo, e o worker descarta o lote da chave antiga.
-  - Um nome sem resposta vai uma vez por rodada. O total de espera e 120 s (`saira.export_iucn_budget_s`).
-  - Durante a consulta, a barra mostra a contagem e o botao fica inerte ("Aguarde a IUCN"). Com nomes sem resposta, uma pendencia que bloqueia oferece Tentar de novo ou Exportar sem IUCN. Depois da escolha, a pendencia vira informacao, com Desfazer.
+  - Um nome sem resposta vai uma vez por rodada. O limite de espera e 120 s (`saira.export_iucn_budget_s`), so para a consulta sempre terminar.
+  - Durante a consulta, a barra mostra a contagem e o botao fica inerte ("Aguarde a IUCN"). Sem resposta nova do GBIF por 15 s (`saira.export_iucn_stall_s`), a barra oferece Tentar de novo e Exportar sem a IUCN que falta. Um GBIF lento que ainda responde nao mostra a escolha, para o arquivo sair completo. Sem rede, o pedido falha logo e a consulta termina em segundos.
+  - Com nomes sem resposta no fim, uma pendencia que bloqueia oferece a mesma escolha. Depois da escolha, a pendencia vira informacao, com Desfazer.
+  - Exportar sem a IUCN que falta para o worker e monta o snapshot com as respostas do memo (`iucn_lookup_finish()`). Os nomes com resposta mantem a categoria, e so os outros saem sem ela.
   - O download passa o snapshot `iucn_by_name` para `apply_conservation_status()`, que nao envia pedido. Sem snapshot, o pacote sai sem a chave IUCN.
 - **Consequencias**: o download nao espera a rede. A categoria MMA e o resto do pacote nao dependem do GBIF. O arquivo privado de coordenadas nao espera a consulta. Uma rodada de nomes anterior deixa o memo pronto, e a consulta repete nenhum pedido.
 

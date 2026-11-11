@@ -116,6 +116,23 @@ testthat::test_that("the Export IUCN lookup repeats no query of a Names run", {
     testthat::expect_identical(state$snapshot, c("Panthera onca" = "NT", "Caesalpinia echinata" = "EN"))
 })
 
+testthat::test_that("a skip of the Export IUCN lookup keeps the answers that came", {
+    saira:::colxr_match_cache$reset()
+    withr::defer(saira:::colxr_match_cache$reset())
+    saira:::colxr_match_names(c("Panthera onca", "Caesalpinia echinata"), fetch = colxr_fixture_bodies)
+    state <- saira:::iucn_lookup_new(c("Panthera onca", "Caesalpinia echinata", "Genus sp01"), run_id = "test")
+    testthat::expect_identical(saira:::iucn_lookup_answered(state), 2L)
+
+    out <- saira:::iucn_lookup_finish(state)
+    testthat::expect_identical(out$phase, "done")
+    testthat::expect_identical(
+        out$snapshot,
+        c("Panthera onca" = "NT", "Caesalpinia echinata" = NA, "Genus sp01" = NA)
+    )
+    # The synonym has no answer for its accepted name yet.
+    testthat::expect_setequal(out$unanswered, c("Caesalpinia echinata", "Genus sp01"))
+})
+
 testthat::test_that("gbif_api_get_many keeps order, drops non-200 and retries a 429", {
     testthat::skip_if_not_installed("httr2", minimum_version = "1.1.1")
     tries <- list()

@@ -254,15 +254,29 @@ iucn_lookup_step <- function(state, fetch_for, batch_size = IUCN_LOOKUP_BATCH) {
         state$batches <- state$batches + 1L
         return(state)
     }
+    if (identical(state$phase, "match")) {
+        state$phase <- "accepted"
+        state$targets <- iucn_lookup_accepted(state$names)
+        return(state)
+    }
+    iucn_lookup_finish(state)
+}
+
+# The accepted names of the synonyms that have no category of their own.
+iucn_lookup_accepted <- function(names) {
+    matches <- colxr_match_names(names, fetch = gbif_offline_fetch)
+    syn <- matches$validation_status %in% "synonym" &
+        is.na(matches$iucnRedListCategory) & !is.na(matches$acceptedNameUsage)
+    colxr_clean_names(matches$acceptedNameUsage[syn])
+}
+
+# The snapshot from the answers in the memo. The lookup calls this at its end,
+# and a skip calls it at any phase, so the answers that came stay in the file.
+iucn_lookup_finish <- function(state) {
     matches <- colxr_match_names(state$names, fetch = gbif_offline_fetch)
     syn <- matches$validation_status %in% "synonym" &
         is.na(matches$iucnRedListCategory) & !is.na(matches$acceptedNameUsage)
     accepted <- matches$acceptedNameUsage[syn]
-    if (identical(state$phase, "match")) {
-        state$phase <- "accepted"
-        state$targets <- colxr_clean_names(accepted)
-        return(state)
-    }
     state$snapshot <- stats::setNames(
         colxr_iucn_category(state$names, fetch = gbif_offline_fetch), state$names
     )
@@ -281,4 +295,11 @@ iucn_lookup_progress <- function(state) {
     }
     left <- setdiff(colxr_unmemoized(state$names), state$tried)
     list(done = total - length(left), total = total)
+}
+
+# Names of the lookup that have a GBIF answer in the memo. A count that does
+# not move tells that GBIF does not answer, also while the batch waits.
+iucn_lookup_answered <- function(state) {
+    asked <- union(state$names, state$targets)
+    length(asked) - length(colxr_unmemoized(asked))
 }
