@@ -27,6 +27,9 @@ mod_validate_names_server(
 When it fires, module-local state and inputs are cleared.}
 
 \item{return_contract}{Return a legacy reactive (default) or a named list of reactives.}
+
+\item{names_worker}{Worker that sends the GBIF requests of a names run from
+a separate R process. \code{NULL} sends them from the app session.}
 }
 \value{
 A reactive with legacy attributes by default, or a named list of

@@ -17,6 +17,8 @@ NULL
 #' @return A reactive with legacy attributes by default, or a named list of
 #'   reactives when return_contract is \code{"list"}.
 #' @param return_contract Return a legacy reactive (default) or a named list of reactives.
+#' @param names_worker Worker that sends the GBIF requests of a names run from
+#'   a separate R process. \code{NULL} sends them from the app session.
 #' @export
 mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL, reset_signal_r = NULL, return_contract = c("legacy", "list"),
                                       names_worker = names_worker_new()) {

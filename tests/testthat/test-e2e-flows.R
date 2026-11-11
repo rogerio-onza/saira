@@ -1406,9 +1406,14 @@ testthat::test_that("E2E: the names list shows settled names and keeps its rows 
     build_gated_app <- function() {
         pkgload::load_all(app_root, export_all = FALSE, quiet = TRUE)
         fixtures <- file.path(app_root, "tests", "testthat", "fixtures", "colxr")
-        calls <- 0L
-        gated_gbif <- function(requests) {
-            calls <<- calls + 1L
+        # The GBIF batches run in the names worker, a separate R process, so
+        # the test replaces the worker job. callr sends the function without
+        # its environment, so the paths go into its body. The files in
+        # gate_dir count the batches, also across a worker restart.
+        gated_job <- eval(bquote(function(names, source_path = NULL) {
+            gate_dir <- .(gate_dir)
+            fixtures <- .(fixtures)
+            calls <- length(list.files(gate_dir, pattern = "^waiting_")) + 1L
             file.create(file.path(gate_dir, paste0("waiting_", calls)))
             deadline <- Sys.time() + 120
             repeat {
@@ -1420,13 +1425,13 @@ testthat::test_that("E2E: the names list shows settled names and keeps its rows 
             }
             # A name with no recording gets an accepted answer. A "no match"
             # answer keeps a name in the queue until the run ends.
-            lapply(requests, function(r) {
-                file <- file.path(fixtures, paste0(gsub(" ", "_", r$query$scientificName), ".json"))
+            lapply(names, function(name) {
+                file <- file.path(fixtures, paste0(gsub(" ", "_", name), ".json"))
                 if (!file.exists(file)) file <- file.path(fixtures, "Panthera_onca.json")
                 jsonlite::read_json(file)
             })
-        }
-        utils::assignInNamespace("gbif_api_get_many", gated_gbif, ns = "saira")
+        }))
+        utils::assignInNamespace("names_worker_job", gated_job, ns = "saira")
         run_app()
     }
     build_gated_app <- utils::removeSource(build_gated_app)
@@ -1509,9 +1514,12 @@ testthat::test_that("E2E: each cell of the names report holds a value of the fil
     build_names_app <- function() {
         pkgload::load_all(app_root, export_all = FALSE, quiet = TRUE)
         fixtures <- file.path(app_root, "tests", "testthat", "fixtures", "colxr")
-        utils::assignInNamespace("gbif_api_get_many", function(requests) {
-            lapply(requests, function(r) jsonlite::read_json(file.path(fixtures, "Panthera_onca.json")))
-        }, ns = "saira")
+        # The names worker runs the job in a separate R process (see above).
+        answer_job <- eval(bquote(function(names, source_path = NULL) {
+            file <- file.path(.(fixtures), "Panthera_onca.json")
+            lapply(names, function(name) jsonlite::read_json(file))
+        }))
+        utils::assignInNamespace("names_worker_job", answer_job, ns = "saira")
         run_app()
     }
     build_names_app <- utils::removeSource(build_names_app)
