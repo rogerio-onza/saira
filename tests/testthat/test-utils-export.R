@@ -787,18 +787,13 @@ testthat::test_that("apply_conservation_status adds MMA keys for a BR provider",
 })
 
 testthat::test_that("apply_conservation_status adds IUCN key and merges existing dynprops", {
-    testthat::local_mocked_bindings(
-        colxr_iucn_category = function(names) {
-            ifelse(names == "Harpia harpyja", "NT", NA_character_)
-        },
-        .package = "saira"
-    )
     df <- data.frame(
         scientificName = c("Harpia harpyja", "Foo bar"),
         dynamicProperties = c("{\"k\":\"v\"}", ""),
         stringsAsFactors = FALSE
     )
-    payload <- list(include_mma = FALSE, include_iucn = TRUE)
+    payload <- list(include_mma = FALSE, include_iucn = TRUE,
+                    iucn_by_name = c("Harpia harpyja" = "NT", "Foo bar" = NA))
     out <- saira:::apply_conservation_status(df, payload)
     testthat::expect_identical(
         out$dynamicProperties[[1]], "{\"k\":\"v\",\"iucnRedListCategory\":\"NT\"}"
@@ -809,15 +804,12 @@ testthat::test_that("apply_conservation_status adds IUCN key and merges existing
 
 testthat::test_that("apply_conservation_status merges both MMA and IUCN keys additively", {
     local_conservation_fixture()
-    testthat::local_mocked_bindings(
-        colxr_iucn_category = function(names) rep("NT", length(names)),
-        .package = "saira"
-    )
     df <- data.frame(
         scientificName = "Panthera onca", country = "Brasil",
         stringsAsFactors = FALSE
     )
-    payload <- list(include_mma = TRUE, include_iucn = TRUE)
+    payload <- list(include_mma = TRUE, include_iucn = TRUE,
+                    iucn_by_name = c("Panthera onca" = "NT"))
     out <- saira:::apply_conservation_status(df, payload)
     testthat::expect_identical(
         out$dynamicProperties[[1]],
@@ -842,10 +834,12 @@ testthat::test_that("apply_conservation_status is a no-op without name, payload 
     )
 })
 
-testthat::test_that("apply_conservation_status keeps MMA when the IUCN fetch errors", {
+testthat::test_that("apply_conservation_status sends no request and keeps MMA without an IUCN snapshot", {
     local_conservation_fixture()
+    saira:::colxr_match_cache$reset()
+    withr::defer(saira:::colxr_match_cache$reset())
     testthat::local_mocked_bindings(
-        colxr_iucn_category = function(names) stop("network down"),
+        gbif_api_get_many = function(requests) stop("no request expected"),
         .package = "saira"
     )
     df <- data.frame(
@@ -853,10 +847,8 @@ testthat::test_that("apply_conservation_status keeps MMA when the IUCN fetch err
         stringsAsFactors = FALSE
     )
     payload <- list(include_mma = TRUE, include_iucn = TRUE)
-    out <- testthat::expect_warning(
-        saira:::apply_conservation_status(df, payload), "IUCN skipped"
-    )
-    # MMA keys survive the independent IUCN failure; no iucn key written.
+    out <- saira:::apply_conservation_status(df, payload)
+    # MMA keys stay without the IUCN snapshot; no iucn key written.
     testthat::expect_identical(
         out$dynamicProperties[[1]],
         "{\"mmaThreatStatus\":\"VU\",\"mmaSource\":\"Portaria 1.704/2026\"}"
@@ -969,17 +961,14 @@ testthat::test_that("apply_conservation_status skips MMA when the country is unk
 
 testthat::test_that("apply_conservation_status keeps IUCN global while MMA stays national", {
     local_conservation_fixture()
-    testthat::local_mocked_bindings(
-        colxr_iucn_category = function(names) rep("NT", length(names)),
-        .package = "saira"
-    )
     df <- data.frame(
         scientificName = "Panthera onca",
         country = c("Brasil", "Peru"),
         stringsAsFactors = FALSE
     )
     out <- saira:::apply_conservation_status(
-        df, list(include_mma = TRUE, include_iucn = TRUE)
+        df, list(include_mma = TRUE, include_iucn = TRUE,
+                 iucn_by_name = c("Panthera onca" = "NT"))
     )
     testthat::expect_identical(
         out$dynamicProperties[[1]],

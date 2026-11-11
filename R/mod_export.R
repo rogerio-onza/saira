@@ -176,6 +176,30 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             isTRUE(s$export_blocked)
         })
 
+        # The IUCN category of the corrected names, looked up before the
+        # download (ADR-213).
+        iucn_r <- mount_export_iucn(
+            input, session,
+            names_r = shiny::reactive({
+                data <- download_data_r()
+                if (!is.data.frame(data) || !"scientificName" %in% names(data)) {
+                    return(character(0))
+                }
+                review <- optional_reactive_value(name_review_payload_r)
+                apply_name_review_payload(data, payload = review)$scientificName
+            }),
+            include_r = shiny::reactive(
+                isTRUE(optional_reactive_value(conservation_payload_r)$include_iucn)
+            )
+        )
+        # The Pending card changes only when the lookup ends or the choice
+        # changes, not with each batch: a reactiveVal skips an equal value.
+        iucn_row <- shiny::reactiveVal(NULL)
+        shiny::observe({
+            i <- iucn_r()
+            iucn_row(if (i$status %in% c("failed", "skipped")) i[c("status", "unanswered", "total")])
+        })
+
         # The download flow (validation -> confirmation -> animated modal ->
         # DwC-A bundle) is mounted from the relocated subsystem (ADR-103); it
         # renders output$download_btn_container into the header above.
@@ -185,6 +209,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             download_data_r = download_data_r,
             sources = export_sources,
             blocked_r = blocked_r,
+            iucn_r = iucn_r,
             on_export_success = on_export_success
         )
 
@@ -397,6 +422,25 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             if (length(s$failed_sources) > 0L) {
                 add(pending_row("block", sprintf(tr("export_blocked_source_failed", lang),
                                                  export_source_steps(s$failed_sources, lang))))
+            }
+            iucn <- iucn_row()
+            if (identical(iucn$status, "failed")) {
+                count <- sprintf(tr("export_iucn_count", lang), fmt_n(iucn$unanswered), fmt_n(iucn$total))
+                action <- function(id, label) {
+                    shiny::actionButton(ns(id), label, class = "btn btn-outline-secondary btn-sm export-pending-action")
+                }
+                add(pending_row("block", shiny::tagList(
+                    shiny::HTML(sprintf(htmltools::htmlEscape(tr("export_iucn_failed", lang)),
+                                        as.character(shiny::tags$strong(count)))),
+                    shiny::div(
+                        class = "export-pending-actions",
+                        action("go_iucn_retry", shiny::tagList(ph_icon("arrow-clockwise"), tr("export_iucn_retry", lang))),
+                        action("go_iucn_skip", tr("export_iucn_skip", lang))
+                    )
+                )))
+            } else if (identical(iucn$status, "skipped")) {
+                add(pending_row("info", sprintf(tr("export_iucn_skipped", lang), fmt_n(iucn$unanswered)),
+                                "go_iucn_undo", tr("export_iucn_undo", lang)))
             }
             if (length(s$missing_required) > 0L) {
                 add(pending_row("block", shiny::tagList(
@@ -736,6 +780,17 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
         output$download_status <- shiny::renderUI({
             s <- summary_r()
             if (is.null(s) || !is.list(s) || s$record_count == 0L) return(NULL)
+            iucn <- iucn_r()
+            if (identical(iucn$status, "pending")) {
+                lang <- lang_r()
+                return(shiny::tagList(
+                    ph_icon("spinner", class = "ph-spin"),
+                    shiny::span(class = "export-iucn-wait", tr("export_iucn_wait", lang)),
+                    shiny::span(class = "export-iucn-count",
+                                sprintf(tr("export_iucn_wait_count", lang),
+                                        format_count(iucn$done, lang), format_count(iucn$total, lang)))
+                ))
+            }
             shiny::tagList(
                 ph_icon("file-zipper"),
                 shiny::span(class = "export-zip-name", s$files$zip)

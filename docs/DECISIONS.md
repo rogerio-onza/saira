@@ -3745,4 +3745,18 @@ Formato: ADR leve (Architecture Decision Record).
   - Uma rodada que fica obsoleta, um reset ou o fim da rodada encerram o lote em curso (`names_worker_cancel()`).
   - Uma resposta que o parser nao le e erro do provedor, como no caminho sincrono.
   - Se o processo nao inicia, os nomes ficam sem resposta. O app nao envia os pedidos ele mesmo, porque nao consegue parar essa espera.
-- **Consequencias**: o R da sessao fica livre durante a espera da rede. A busca aproximada dos provedores BR continua no processo principal, porque e CPU, nao rede. A exportacao com IUCN reusa o memo. Sem uma rodada de nomes antes, ela ainda consulta a API no processo principal.
+- **Consequencias**: o R da sessao fica livre durante a espera da rede. A busca aproximada dos provedores BR continua no processo principal, porque e CPU, nao rede. A exportacao com IUCN reusa o memo, e consulta o resto antes do download (ADR-213).
+
+## ADR-213: Categoria IUCN consultada antes do download do pacote
+
+- **Data**: 2026-11-11
+- **Status**: Aceito.
+- **Contexto**: verificacao final das auditorias. Com IUCN marcado, o `downloadHandler` consultava a API GBIF no processo principal para cada nome fora do memo. Uma API lenta segurava a sessao durante o arquivo, e um nome sem resposta saia sem a categoria, sem aviso.
+- **Decisao**:
+  - A aba Exportar consulta a categoria IUCN antes do download (`mount_export_iucn()`), com um worker de nomes proprio (ADR-212). A consulta envia lotes de 20 nomes, so os nomes corrigidos distintos que faltam no memo, e depois os nomes aceitos dos sinonimos sem categoria.
+  - A chave da consulta sao os nomes corrigidos e a opcao IUCN. Uma chave nova abre um `run_id` novo, e o worker descarta o lote da chave antiga.
+  - Um nome sem resposta vai uma vez por rodada. O total de espera e 120 s (`saira.export_iucn_budget_s`).
+  - Durante a consulta, a barra mostra a contagem e o botao fica inerte ("Aguarde a IUCN"). Com nomes sem resposta, uma pendencia que bloqueia oferece Tentar de novo ou Exportar sem IUCN. Depois da escolha, a pendencia vira informacao, com Desfazer.
+  - O download passa o snapshot `iucn_by_name` para `apply_conservation_status()`, que nao envia pedido. Sem snapshot, o pacote sai sem a chave IUCN.
+- **Consequencias**: o download nao espera a rede. A categoria MMA e o resto do pacote nao dependem do GBIF. O arquivo privado de coordenadas nao espera a consulta. Uma rodada de nomes anterior deixa o memo pronto, e a consulta repete nenhum pedido.
+

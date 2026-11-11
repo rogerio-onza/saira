@@ -11188,6 +11188,18 @@ button.sc-scale-chip:hover .sc-level-chip {
   white-space: nowrap;
 }
 
+/* Two choices under the text of one row (IUCN lookup without an answer). */
+.export-pending-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.export-pending-actions .ph {
+  margin-right: var(--space-1);
+}
+
 .export-sev {
   flex-shrink: 0;
   min-width: 4.75rem;
@@ -11317,6 +11329,17 @@ button.sc-scale-chip:hover .sc-level-chip {
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
+}
+
+/* The IUCN lookup before the download (ADR-213). */
+.export-iucn-wait {
+  color: var(--text-primary);
+}
+
+.export-iucn-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
 }
 
 .export-zip-name {
