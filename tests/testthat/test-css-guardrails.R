@@ -331,3 +331,13 @@ testthat::test_that("all CSS modules in css/ are included in the bundle", {
     }
 })
 
+
+testthat::test_that("dark Wiki class badges keep light text on the tinted fill", {
+    css_path <- resolve_css_path()
+    css_text <- paste(readLines(css_path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+    rule <- regmatches(css_text, regexpr(
+        '\\[data-bs-theme="dark"\\] \\.wiki-class-badge[^{]*\\{[^}]*\\}', css_text
+    ))
+    testthat::expect_length(rule, 1L)
+    testthat::expect_match(rule, "color: var(--text-primary)", fixed = TRUE)
+})
