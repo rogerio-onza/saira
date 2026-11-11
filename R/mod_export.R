@@ -190,7 +190,11 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }),
             include_r = shiny::reactive(
                 isTRUE(optional_reactive_value(conservation_payload_r)$include_iucn)
-            )
+            ),
+            # Shiny reports a hidden output of a hidden tab (ADR-114).
+            active_r = shiny::reactive(!isTRUE(
+                session$clientData[[paste0("output_", ns("download_status"), "_hidden")]]
+            ))
         )
         # The Pending card changes only when the lookup ends or the choice
         # changes, not with each batch: a reactiveVal skips an equal value.

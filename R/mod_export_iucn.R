@@ -13,11 +13,14 @@ EXPORT_IUCN_BUDGET_S <- 120
 #'
 #' @param names_r Reactive with the corrected scientific names of the export.
 #' @param include_r Reactive, TRUE when the user picked the GBIF IUCN source.
+#' @param active_r Reactive, TRUE while the Export tab shows. A new lookup
+#'   starts only then, so the upload of a file sends no GBIF request.
 #' @param worker Names worker of this lookup, apart from the one of the Names tab.
 #' @return Reactive list: `status` ("off", "pending", "failed", "skipped",
 #'   "done"), the counts and `snapshot` (IUCN code by name).
 #' @noRd
 mount_export_iucn <- function(input, session, names_r, include_r,
+                              active_r = function() TRUE,
                               worker = names_worker_new(),
                               budget_s = getOption("saira.export_iucn_budget_s", EXPORT_IUCN_BUDGET_S),
                               tick_ms = 100,
@@ -42,14 +45,15 @@ mount_export_iucn <- function(input, session, names_r, include_r,
         sort(colxr_clean_names(tryCatch(names_r(), error = function(e) character(0))))
     })
     # A data change or a name review gives new names, and the answers for the
-    # old names no longer count.
-    shiny::observeEvent(key_r(), {
+    # old names no longer count. A lookup that runs goes on when the user
+    # leaves the tab.
+    shiny::observeEvent(list(key_r(), active_r()), {
         key <- key_r()
         if (identical(key, shiny::isolate(state_rv())$names)) {
             return(invisible(NULL))
         }
         skipped(FALSE)
-        if (length(key) == 0L) {
+        if (length(key) == 0L || !isTRUE(active_r())) {
             names_worker_cancel(worker)
             state_rv(NULL)
             return(invisible(NULL))

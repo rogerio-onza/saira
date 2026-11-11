@@ -3754,6 +3754,7 @@ Formato: ADR leve (Architecture Decision Record).
 - **Contexto**: verificacao final das auditorias. Com IUCN marcado, o `downloadHandler` consultava a API GBIF no processo principal para cada nome fora do memo. Uma API lenta segurava a sessao durante o arquivo, e um nome sem resposta saia sem a categoria, sem aviso.
 - **Decisao**:
   - A aba Exportar consulta a categoria IUCN antes do download (`mount_export_iucn()`), com um worker de nomes proprio (ADR-212). A consulta envia lotes de 20 nomes, so os nomes corrigidos distintos que faltam no memo, e depois os nomes aceitos dos sinonimos sem categoria.
+  - A consulta comeca so com a aba Exportar visivel, porque o GBIF vem marcado e o upload nao deve gerar pedidos. Uma consulta em curso continua se o usuario sai da aba.
   - A chave da consulta sao os nomes corrigidos e a opcao IUCN. Uma chave nova abre um `run_id` novo, e o worker descarta o lote da chave antiga.
   - Um nome sem resposta vai uma vez por rodada. O total de espera e 120 s (`saira.export_iucn_budget_s`).
   - Durante a consulta, a barra mostra a contagem e o botao fica inerte ("Aguarde a IUCN"). Com nomes sem resposta, uma pendencia que bloqueia oferece Tentar de novo ou Exportar sem IUCN. Depois da escolha, a pendencia vira informacao, com Desfazer.
