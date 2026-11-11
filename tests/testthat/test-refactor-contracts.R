@@ -222,6 +222,16 @@ testthat::test_that("mapping commands keep one model through user, auto-map, imp
     commands$set_meta("scientificName", list(status = "AUTO", source = "auto"))
     commands$select_user("scientificName", "genero")
     testthat::expect_identical(meta$scientificName$source, "auto")
+    # The echo has the value that code set, and the next pick is the user's.
+    commands$select("genus", "genero")
+    commands$set_meta("genus", list(status = "AUTO", source = "auto"))
+    testthat::expect_false(commands$select_user("genus", "genero"))
+    testthat::expect_true(commands$select_user("genus", "especie"))
+    testthat::expect_identical(meta$genus$source, "manual")
+    # A term that leaves the page loses its selection and its meta.
+    commands$drop_term("genus")
+    testthat::expect_false("genus" %in% names(values))
+    testthat::expect_false("genus" %in% names(meta))
     # Import: values come with manual meta, the restore releases its flag.
     commands$restore(list(map_values = list(locality = "local")))
     testthat::expect_identical(values$locality, "local")
@@ -232,4 +242,13 @@ testthat::test_that("mapping commands keep one model through user, auto-map, imp
     testthat::expect_identical(values$eventDate, "")
     testthat::expect_null(values$locality)
     testthat::expect_false(fixed$country$on)
+})
+
+testthat::test_that("fill_map_terms adds an empty entry only for a term without one", {
+    filled <- saira:::fill_map_terms(list(eventDate = "data"), list(), c("eventDate", "locality"))
+    testthat::expect_identical(filled$values, list(eventDate = "data", locality = ""))
+    testthat::expect_identical(names(filled$meta), c("eventDate", "locality"))
+    testthat::expect_identical(filled$meta$locality, saira:::default_meta())
+    same <- saira:::fill_map_terms(filled$values, filled$meta, c("eventDate", "locality"))
+    testthat::expect_identical(same, filled)
 })

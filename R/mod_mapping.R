@@ -670,8 +670,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             rendered <- !is.null(old_input) || isTRUE(rendered_map_inputs[[term]]) ||
                 isTRUE(bound_map_inputs[[term]])
             if (isTRUE(update_input) && rendered) {
-                rv$programmatic_terms <- unique(c(rv$programmatic_terms, term))
+                # Only a changed input echoes, so only then is a mark needed.
                 if (!identical(sanitize_map_selection(term, old_input), sanitized_value)) {
+                    rv$programmatic_terms <- unique(c(rv$programmatic_terms, term))
                     # The input-sync observer reads a cleared select as "".
                     pending_map_echo[[term]] <- if (is.null(old_input)) "" else old_input
                 }
@@ -850,22 +851,9 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                 return()
             }
 
-            if (length(rv$map_values) == 0) {
-                rv$map_values <- empty_map_values(term_names)
-            } else {
-                missing_terms <- setdiff(term_names, names(rv$map_values))
-                for (term in missing_terms) {
-                    rv$map_values[[term]] <- ""
-                }
-            }
-
-            if (length(rv$map_meta) == 0) {
-                rv$map_meta <- empty_map_meta(term_names)
-            } else {
-                missing_meta <- setdiff(term_names, names(rv$map_meta))
-                for (term in missing_meta) {
-                    rv$map_meta[[term]] <- default_meta()
-                }
+            model <- fill_map_terms(rv$map_values, rv$map_meta, term_names)
+            if (!identical(model$values, rv$map_values) || !identical(model$meta, rv$map_meta)) {
+                mapping_commands$replace_model(model$values, model$meta)
             }
         })
 
@@ -889,8 +877,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
             # No unit column was left for it, so the card goes, as if the
             # term never came.
             rv$extra_terms <- setdiff(rv$extra_terms, "measurementValue")
-            rv$map_values[["measurementValue"]] <- NULL
-            rv$map_meta[["measurementValue"]] <- NULL
+            mapping_commands$drop_term("measurementValue")
             invisible(NULL)
         }
 

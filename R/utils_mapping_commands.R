@@ -34,6 +34,9 @@ new_mapping_commands <- function(write_selection, write_meta, add_terms,
     select_user <- function(term, value) {
         selected <- sanitize_map_selection(term, value)
         if (identical(read_selection(term) %||% "", selected)) {
+            # The echo of a value that code set ends the mark of that set.
+            # A kept mark makes the next user pick look like code.
+            take_programmatic(term)
             return(invisible(FALSE))
         }
         write_selection(term, selected)
@@ -53,6 +56,14 @@ new_mapping_commands <- function(write_selection, write_meta, add_terms,
     }
     replace_meta <- function(meta) {
         write_model(NULL, meta)
+    }
+    replace_model <- function(values, meta) {
+        write_model(values, meta)
+    }
+    # A term that leaves the page loses its selection and its meta.
+    drop_term <- function(term) {
+        write_selection(term, NULL)
+        write_meta(term, NULL)
     }
     clear_fixed <- function() {
         for (term in fixed_terms()) {
@@ -87,6 +98,7 @@ new_mapping_commands <- function(write_selection, write_meta, add_terms,
     list(
         select = select, select_user = select_user, manual_meta = manual_meta,
         user_meta = user_meta, set_meta = set_meta, replace_meta = replace_meta,
+        replace_model = replace_model, drop_term = drop_term,
         fixed_value = fixed_value, clear_fixed = clear_fixed, reset = reset,
         restore = restore
     )
