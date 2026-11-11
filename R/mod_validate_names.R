@@ -1000,42 +1000,12 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             ignoreInit = TRUE
         )
 
-        # The GBIF requests of a run go to the worker (PERF-02). NULL while a
-        # batch is in flight, else the adapters for the next step.
-        net <- new.env(parent = emptyenv())
-        net$run_id <- NULL
-        net$spent <- 0
+        # The GBIF requests of a run go to the worker (PERF-02).
         if (!is.null(names_worker)) {
             session$onSessionEnded(function() names_worker_stop(names_worker))
         }
-        names_run_fetch <- function(state, misses) {
-            if (!identical(net$run_id, state$run_id)) {
-                net$run_id <- state$run_id
-                net$spent <- 0
-            }
-            call <- names_worker$call
-            # An answer for an older run never reaches this one.
-            if (!is.null(call) && !identical(call$run_id, state$run_id)) {
-                names_worker_stop(names_worker)
-                call <- NULL
-            }
-            if (is.null(call)) {
-                if (net$spent >= NAMES_RUN_NETWORK_BUDGET_S) {
-                    return(names_provider_adapters(fetch = gbif_offline_fetch))
-                }
-                sent <- names_worker_start(names_worker, state$run_id, misses)
-                if (identical(sent, "failed")) {
-                    return(names_provider_adapters())
-                }
-                return(NULL)
-            }
-            done <- names_worker_poll(names_worker)
-            if (is.null(done)) {
-                return(NULL)
-            }
-            net$spent <- net$spent + done$elapsed
-            colxr_store_bodies(done$names, done$bodies)
-            names_provider_adapters(fetch = gbif_offline_fetch)
+        cancel_names_batch <- function() {
+            if (!is.null(names_worker)) names_worker_cancel(names_worker)
         }
 
         shiny::observe({
@@ -1053,10 +1023,11 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             batch <- if (!is.null(names_worker)) next_colxr_batch(state)
             misses <- if (length(batch) > 0L) colxr_unmemoized(batch) else character(0)
             if (length(misses) > 0L) {
-                adapters <- names_run_fetch(state, misses)
-                if (is.null(adapters)) {
+                fetch <- names_worker_fetch(names_worker, state$run_id, misses)
+                if (is.null(fetch)) {
                     return(invisible(NULL))
                 }
+                adapters <- names_provider_adapters(fetch = fetch)
             }
 
             state <- tryCatch(next_taxadb_run_step(state, adapters), error = function(e) {
@@ -1081,6 +1052,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             run_card$fade_report <- TRUE
             rv$running <- FALSE
             rv$starting <- FALSE
+            cancel_names_batch()
 
             if (identical(state$phase, "failed")) {
                 validated_input_rv(NULL)
@@ -1192,6 +1164,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 # Without run_state the tick of a run in progress stops.
                 rv$run_state <- NULL
                 rv$running <- FALSE
+                cancel_names_batch()
                 rv$last_run_status <- "stale"
                 rv$last_error <- NA_character_
                 shiny::showNotification(tr("validate_names_stale", lang_r()), type = "warning", id = session$ns("names_stale"))
@@ -1221,6 +1194,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 rv$starting <- FALSE
                 rv$running <- FALSE
                 rv$start_requested <- FALSE
+                cancel_names_batch()
             }, ignoreInit = TRUE)
         }
 

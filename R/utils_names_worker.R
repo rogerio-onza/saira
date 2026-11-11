@@ -18,6 +18,9 @@ names_worker_new <- function() {
     worker$session <- NULL
     worker$call <- NULL
     worker$warm_started <- NULL
+    # The run that owns the worker, and when its first GBIF batch went out.
+    worker$run_id <- NULL
+    worker$run_started <- NULL
     worker
 }
 
@@ -98,7 +101,7 @@ names_worker_start <- function(worker, run_id, names, job = names_worker_job,
     if (identical(status, "failed")) {
         names_worker_stop(worker)
     } else if (identical(status, "sent")) {
-        worker$call <- list(run_id = run_id, names = names, started = Sys.time())
+        worker$call <- list(run_id = run_id, names = names, started = Sys.time(), limit_s = limit_s)
     }
     status
 }
@@ -106,11 +109,12 @@ names_worker_start <- function(worker, run_id, names, job = names_worker_job,
 # NULL while the batch is in flight. Then list(run_id, names, bodies, elapsed):
 # one body per name, NULL for a name without an answer. A batch past the
 # limit ends the worker, and all its names come back without an answer.
-names_worker_poll <- function(worker, limit_s = NAMES_WORKER_CALL_LIMIT_S) {
+names_worker_poll <- function(worker, limit_s = NULL) {
     call <- worker$call
     if (is.null(call)) {
         return(NULL)
     }
+    limit_s <- limit_s %||% call$limit_s %||% NAMES_WORKER_CALL_LIMIT_S
     elapsed <- as.numeric(difftime(Sys.time(), call$started, units = "secs"))
     unanswered <- vector("list", length(call$names))
     state <- tryCatch(worker$session$poll_process(0), error = function(e) "dead")
@@ -129,6 +133,65 @@ names_worker_poll <- function(worker, limit_s = NAMES_WORKER_CALL_LIMIT_S) {
         return(list(run_id = call$run_id, names = call$names, bodies = unanswered, elapsed = elapsed))
     }
     NULL
+}
+
+# The GBIF step of one tick of a names run. NULL while the worker has a batch,
+# and the tick then waits. Else the fetch for the step: answers come from the
+# memo, and a name without one stays unchecked. The worker alone holds the
+# batch, the run that sent it and the network budget of that run, so a
+# change of run, a cancel or the budget cannot leave a batch without owner.
+names_worker_fetch <- function(worker, run_id, misses,
+                               budget_s = NAMES_RUN_NETWORK_BUDGET_S,
+                               start = names_worker_start, poll = names_worker_poll) {
+    if (!identical(worker$run_id, run_id)) {
+        # An answer for an older run never reaches this one.
+        names_worker_cancel(worker)
+        worker$run_id <- run_id
+        worker$run_started <- Sys.time()
+    }
+    left <- budget_s - as.numeric(difftime(Sys.time(), worker$run_started, units = "secs"))
+    if (is.null(worker$call)) {
+        if (left <= 0) {
+            return(gbif_offline_fetch)
+        }
+        # A worker that does not start leaves the names unchecked. The app
+        # session does not send them itself, because it cannot stop a wait.
+        sent <- start(worker, run_id, misses, limit_s = min(NAMES_WORKER_CALL_LIMIT_S, left))
+        if (identical(sent, "failed")) {
+            return(gbif_offline_fetch)
+        }
+        return(NULL)
+    }
+    done <- poll(worker)
+    if (is.null(done)) {
+        return(NULL)
+    }
+    # An answer that the parser cannot read is an error of the provider, as
+    # when the app session sends the requests.
+    failed <- tryCatch({
+        colxr_store_bodies(done$names, done$bodies)
+        NULL
+    }, error = function(e) conditionMessage(e))
+    if (!is.null(failed)) {
+        return(function(requests) stop(failed, call. = FALSE))
+    }
+    # The answer was for an earlier batch that the memo already had. The next
+    # tick sends the names of this batch.
+    if (length(setdiff(misses, done$names))) {
+        return(NULL)
+    }
+    gbif_offline_fetch
+}
+
+# End the batch of a run that stops: stale, reset or done. The worker
+# process ends only when it has a batch.
+names_worker_cancel <- function(worker) {
+    if (!is.null(worker$call)) {
+        names_worker_stop(worker)
+    }
+    worker$run_id <- NULL
+    worker$run_started <- NULL
+    invisible(NULL)
 }
 
 names_worker_stop <- function(worker) {

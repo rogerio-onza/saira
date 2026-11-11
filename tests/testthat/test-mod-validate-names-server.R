@@ -1204,3 +1204,34 @@ testthat::test_that("a change in the names stops a Names run in progress", {
         }
     )
 })
+
+testthat::test_that("a stale run and a reset end the GBIF batch in the worker", {
+    worker <- names_worker_new()
+    kills <- 0L
+    worker$session <- list(kill = function() kills <<- kills + 1L)
+    original <- data.frame(scientificName = "Puma concolor")
+    mapped <- shiny::reactiveVal(original)
+    reset <- shiny::reactiveVal(0L)
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(mapped_data_r = shiny::reactive(mapped()), lang_r = shiny::reactive("en"),
+                    reset_signal_r = reset, names_worker = worker),
+        {
+            session$flushReact()
+            validated_input_rv(names_validation_input(original, TRUE, TRUE))
+            worker$call <- list(run_id = 1, names = "Puma concolor", started = Sys.time())
+            mapped(data.frame(scientificName = "Panthera onca"))
+            session$flushReact()
+            testthat::expect_identical(rv$last_run_status, "stale")
+            testthat::expect_null(worker$call)
+            testthat::expect_identical(kills, 1L)
+
+            worker$session <- list(kill = function() kills <<- kills + 1L)
+            worker$call <- list(run_id = 2, names = "Panthera onca", started = Sys.time())
+            reset(1L)
+            session$flushReact()
+            testthat::expect_null(worker$call)
+            testthat::expect_identical(kills, 2L)
+        }
+    )
+})
