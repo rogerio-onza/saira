@@ -2963,8 +2963,20 @@ label,
     width: 13rem;
   }
 
+  /* The problem column fits the longest PT and EN badge, and the action
+     column fits two buttons. The value as typed takes the rest of the row.
+     In the rare row with two buttons and a "+N alike" count, the count is
+     cut. */
+  .preview-rows-table .pf-col-problem {
+    width: 24.5rem;
+  }
+
+  .preview-rows-table .pf-col-value {
+    width: auto;
+  }
+
   .preview-rows-table .pf-col-action {
-    width: 20rem;
+    width: 17rem;
   }
 
   .preview-rows-table.dataTable > tbody > tr > td {
