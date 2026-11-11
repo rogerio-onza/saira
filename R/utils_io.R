@@ -700,13 +700,13 @@ detect_day_first <- function(date_chr) {
 # and parses by itself. The column vote orders the rest. Because only valid
 # dates vote, a second pass over the values the first pass left raw finds no
 # vote and leaves them raw again, so the Preview and the export agree.
-parse_dmy_dates <- function(date_chr) {
+parse_dmy_dates <- function(date_chr, day_first = NULL) {
     f <- dmy_fields(date_chr)
     result <- rep(NA_character_, length(date_chr))
     if (!any(f$hit)) {
         return(result)
     }
-    day_first <- detect_day_first(date_chr[f$hit])
+    if (is.null(day_first)) day_first <- detect_day_first(date_chr[f$hit])
     a <- f$a
     b <- f$b
     order <- rep(NA, length(a))
@@ -721,10 +721,26 @@ parse_dmy_dates <- function(date_chr) {
     result
 }
 
-# Values the column vote cannot order: both fields <= 12 and different.
+# Values the column vote cannot order: both fields <= 12 and different. An
+# interval is ambiguous when one end is and the other end is a date.
 is_ambiguous_dmy <- function(date_chr) {
-    f <- dmy_fields(as.character(date_chr))
-    (f$hit & f$a <= 12L & f$b <= 12L & f$a != f$b) %in% TRUE
+    date_chr <- as.character(date_chr)
+    simple <- function(x) {
+        f <- dmy_fields(x)
+        (f$hit & f$a <= 12L & f$b <= 12L & f$a != f$b) %in% TRUE
+    }
+    out <- simple(date_chr)
+    is_interval <- grepl(.date_interval_re, date_chr, useBytes = TRUE)
+    if (any(is_interval)) {
+        ends <- c(sub(.date_interval_re, "\\1", date_chr[is_interval], useBytes = TRUE),
+                  sub(.date_interval_re, "\\3", date_chr[is_interval], useBytes = TRUE))
+        amb <- simple(ends)
+        n <- sum(is_interval)
+        date_like <- amb | !is.na(parse_dates_to_iso(ends))
+        out[is_interval] <- (amb[seq_len(n)] | amb[n + seq_len(n)]) &
+            date_like[seq_len(n)] & date_like[n + seq_len(n)]
+    }
+    out
 }
 
 # A spreadsheet or a GPS logger writes the collection time next to the date
@@ -783,6 +799,15 @@ clock_24h <- function(x) {
 #' @return Character vector of ISO-formatted dates
 #' @export
 parse_dates_to_iso <- function(date_vector) {
+    parse_dates_iso(date_vector)
+}
+
+# "25/12/2023 - 27/12/2023" or "25/12/2023 a 27/12/2023".
+.date_interval_re <- "^(\\S+)\\s+(-|a)\\s+(\\S+)$"
+
+# `day_first` NULL: the plain dates and the interval ends of `date_vector`
+# vote together. The interval ends then parse with that one vote.
+parse_dates_iso <- function(date_vector, day_first = NULL) {
     date_chr <- as.character(date_vector)
     result <- rep(NA_character_, length(date_chr))
     remaining <- !is.na(date_chr) & nzchar(date_chr)
@@ -795,18 +820,22 @@ parse_dates_to_iso <- function(date_vector) {
     date_chr <- split$date
     time_suffix <- split$time
 
-    # "25/12/2023 - 27/12/2023" or "25/12/2023 a 27/12/2023": both ends parse
-    # together, so they share the day-first vote, and join with the ISO "/".
-    # Bytes that are not UTF-8 make the regex engines warn, and no date has them.
+    # The two ends of an interval join with the ISO "/". Bytes that are not
+    # UTF-8 make the regex engines warn, and no date has them.
     utf8_ok <- validUTF8(date_chr)
-    interval_re <- "^(\\S+)\\s+(-|a)\\s+(\\S+)$"
     is_interval <- remaining & utf8_ok & !nzchar(time_suffix)
-    is_interval[is_interval] <- grepl(interval_re, date_chr[is_interval])
+    is_interval[is_interval] <- grepl(.date_interval_re, date_chr[is_interval])
+    end_chr <- c(
+        sub(.date_interval_re, "\\1", date_chr[is_interval]),
+        sub(.date_interval_re, "\\3", date_chr[is_interval])
+    )
+    # One vote for the column: "05/06/2023 - 07/06/2023" next to "25/12/2023"
+    # is day-first, as the plain date is.
+    if (is.null(day_first)) {
+        day_first <- detect_day_first(c(date_chr[remaining & !is_interval], end_chr))
+    }
     if (any(is_interval)) {
-        ends <- parse_dates_to_iso(c(
-            sub(interval_re, "\\1", date_chr[is_interval]),
-            sub(interval_re, "\\3", date_chr[is_interval])
-        ))
+        ends <- parse_dates_iso(end_chr, day_first)
         n_int <- sum(is_interval)
         start <- ends[seq_len(n_int)]
         end <- ends[n_int + seq_len(n_int)]
@@ -817,7 +846,7 @@ parse_dates_to_iso <- function(date_vector) {
     }
 
     # Day/month/year values follow the column vote (see parse_dmy_dates()).
-    dmy <- parse_dmy_dates(ifelse(remaining, date_chr, ""))
+    dmy <- parse_dmy_dates(ifelse(remaining, date_chr, ""), day_first)
     result[!is.na(dmy)] <- dmy[!is.na(dmy)]
     remaining[!is.na(dmy)] <- FALSE
 
