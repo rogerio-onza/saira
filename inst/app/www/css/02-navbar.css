@@ -281,6 +281,13 @@
   color: inherit;
 }
 
+/* The count is taller than the text. Inline, it made the line taller and
+   moved the step name down from the other names. Centered, it does not. */
+.bslib-page-navbar .navbar .nav-link .nav-title-dynamic:has(.nav-count) {
+  display: inline-flex;
+  align-items: center;
+}
+
 /* -- Two-row header from 992px (ADR-128) --
    Row 1: brand, Wiki DwC, Help, language and version. Row 2: the numbered
    steps. bslib puts every item in one list, so the list wraps: `order` puts
