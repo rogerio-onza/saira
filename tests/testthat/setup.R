@@ -12,6 +12,8 @@
 # that meta and the snapshot copy out of the developer's real data folder.
 withr::local_envvar(
     c(SAIRA_DATA_DIR = withr::local_tempdir(.local_envir = teardown_env()),
-      R_USER_DATA_DIR = withr::local_tempdir(.local_envir = teardown_env())),
+      R_USER_DATA_DIR = withr::local_tempdir(.local_envir = teardown_env()),
+      # No test, AppDriver app included, may ask GitHub for a new release.
+      SAIRA_NO_UPDATE_CHECK = "true"),
     .local_envir = teardown_env()
 )

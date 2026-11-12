@@ -3809,3 +3809,18 @@ Formato: ADR leve (Architecture Decision Record).
   - A linha 1 do cabecalho reserva a largura dos botoes (`env(titlebar-area-*)`). No cabecalho de uma linha, o espaco da esquerda cresce na mesma largura.
   - Com os botoes, o cabecalho do desktop muda de largura em outros pontos: duas linhas ate 1811 px, uma linha a partir de 1812 px, Wiki e Ajuda so com o icone ate 2047 px e com a palavra a partir de 2048 px. Esses pontos deixam as etapas no centro e pelo menos 48 px livres antes das ferramentas. O app web nao muda.
 - **Consequencias**: entre 1360 e 1811 px, o desktop tem duas linhas e o app web tem uma, entao as regras de `app-frame.css` desfazem as regras de uma linha do pacote. Uma mudanca nessas regras do pacote (02-navbar.css, 00-tokens.css) precisa da mesma mudanca no `app-frame.css`. Em todas as larguras, as etapas ficam a ate 8 px do centro real. As telas de inicio e de erro tambem movem a janela.
+
+## ADR-215: Aviso de versao nova no selo de versao
+
+- **Data**: 2026-11-12
+- **Status**: Aceito.
+- **Contexto**: nem o app desktop nem a instalacao pelo R avisavam que saiu uma versao nova. O dono escolheu a opcao B do quadro de mockups, com um botao para copiar o comando do R.
+- **Decisao**:
+  - Na abertura da sessao, um processo `callr` pede ao GitHub o `tag_name` de `releases/latest`, com 5 s de limite. A sessao nao espera a rede. O app le o resultado uma vez por segundo, por 30 s no maximo.
+  - O resultado fica em `update_check.json` na pasta de dados por um dia, falha incluida. Uma maquina sem rede pergunta uma vez por dia.
+  - Com uma versao maior que a da sessao, o selo de versao ganha um ponto e abre um painel. No desktop (`SAIRA_ACCESS_KEY` definida), o painel tem o link do instalador. Na instalacao pelo R, o painel mostra `pak::pak("rogerio-onza/saira")` com o botao Copiar (ADR-146).
+  - O painel abre sozinho na primeira sessao depois que o app encontra cada versao nova. O campo `shown_for` de `update_check.json` guarda a versao ja mostrada e vale alem do prazo de um dia. Depois disso fica so o ponto. No menu recolhido do celular o painel nao abre sozinho.
+  - O selo simples vem no HTML estatico da pagina, como os titulos das etapas (ADR-128), e aparece junto com elas. O servidor troca o selo no primeiro envio.
+  - Sem verificacao com `SAIRA_PUBLIC=true` (o admin atualiza o servidor) ou `SAIRA_NO_UPDATE_CHECK=true`. O `setup.R` dos testes define a segunda.
+- **Alternativas**: o aviso flutuante da sessao desatualizada (A) e uma etiqueta ao lado do selo (C), rejeitadas pelo dono. A atualizacao automatica do Electron (`autoUpdater`) exige builds assinados, e a v1 nao tem assinatura.
+- **Consequencias**: uma vez por dia o app envia o IP da maquina ao GitHub. Uma tag fora do formato `vX.Y.Z` nao gera aviso.

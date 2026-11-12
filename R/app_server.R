@@ -74,17 +74,11 @@ app_server <- function(input, output, session) {
 
     # Version badge (navbar): links to the releases page in the active language.
     # Shows the version loaded in this session (not on disk) so it stays truthful
-    # when the package was updated without restarting R.
+    # when the package was updated without restarting R. A newer release on
+    # GitHub adds a dot and a panel with the way to update (ADR-215).
+    new_release_r <- new_release_reactive(session)
     output$version_badge <- shiny::renderUI({
-        version <- saira_running_version()
-        shiny::tags$a(
-            paste0("v", version),
-            class = "ver-badge",
-            href = saira_releases_url(lang_r()),
-            target = "_blank",
-            rel = "noopener",
-            title = tr("version_badge_title", lang_r())
-        )
+        version_badge_ui(saira_running_version(), new_release_r(), lang_r())
     })
 
     # Chain of Reactivity: Data Flow

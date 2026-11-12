@@ -221,8 +221,16 @@ app_ui <- function() {
             # Version badge \u2014 sits with the navbar items, beside the language
             # selector. Rendered server-side (output$version_badge) as a link to
             # the releases page, language-aware, mirroring the website navbar pill.
+            # The plain badge is static markup, so it shows with the step tabs.
+            # The server replaces it, with the new-release panel when one is out.
             bslib::nav_item(
-                shiny::uiOutput("version_badge", inline = TRUE)
+                shiny::uiOutput(
+                    "version_badge",
+                    inline = TRUE,
+                    container = function(...) {
+                        shiny::span(..., version_badge_ui(saira_running_version(), NULL, "pt"))
+                    }
+                )
             )
         )
     )
