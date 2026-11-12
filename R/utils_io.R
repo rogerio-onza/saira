@@ -700,13 +700,13 @@ detect_day_first <- function(date_chr) {
 # and parses by itself. The column vote orders the rest. Because only valid
 # dates vote, a second pass over the values the first pass left raw finds no
 # vote and leaves them raw again, so the Preview and the export agree.
-parse_dmy_dates <- function(date_chr) {
+parse_dmy_dates <- function(date_chr, day_first = NULL) {
     f <- dmy_fields(date_chr)
     result <- rep(NA_character_, length(date_chr))
     if (!any(f$hit)) {
         return(result)
     }
-    day_first <- detect_day_first(date_chr[f$hit])
+    if (is.null(day_first)) day_first <- detect_day_first(date_chr[f$hit])
     a <- f$a
     b <- f$b
     order <- rep(NA, length(a))
@@ -721,10 +721,26 @@ parse_dmy_dates <- function(date_chr) {
     result
 }
 
-# Values the column vote cannot order: both fields <= 12 and different.
+# Values the column vote cannot order: both fields <= 12 and different. An
+# interval is ambiguous when one end is and the other end is a date.
 is_ambiguous_dmy <- function(date_chr) {
-    f <- dmy_fields(as.character(date_chr))
-    (f$hit & f$a <= 12L & f$b <= 12L & f$a != f$b) %in% TRUE
+    date_chr <- as.character(date_chr)
+    simple <- function(x) {
+        f <- dmy_fields(x)
+        (f$hit & f$a <= 12L & f$b <= 12L & f$a != f$b) %in% TRUE
+    }
+    out <- simple(date_chr)
+    is_interval <- grepl(.date_interval_re, date_chr, useBytes = TRUE)
+    if (any(is_interval)) {
+        ends <- c(sub(.date_interval_re, "\\1", date_chr[is_interval], useBytes = TRUE),
+                  sub(.date_interval_re, "\\3", date_chr[is_interval], useBytes = TRUE))
+        amb <- simple(ends)
+        n <- sum(is_interval)
+        date_like <- amb | !is.na(parse_dates_to_iso(ends))
+        out[is_interval] <- (amb[seq_len(n)] | amb[n + seq_len(n)]) &
+            date_like[seq_len(n)] & date_like[n + seq_len(n)]
+    }
+    out
 }
 
 # A spreadsheet or a GPS logger writes the collection time next to the date
@@ -735,8 +751,8 @@ is_ambiguous_dmy <- function(date_chr) {
 # impossible time ("25:61") does not split, so the value stays as typed and the
 # Preview flags it (AUD-10).
 .datetime_split_re <- paste0(
-    "^(.+?)[ T](([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?)",
-    "[[:space:]]*(Z|[+-](0[0-9]|1[0-4]):?[0-5][0-9])?$"
+    "^(.+?)[ T](([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9]([.][0-9]+)?)?)",
+    "[[:space:]]*(Z|UTC|GMT|[+-](0[0-9]|1[0-4]):?[0-5][0-9])?$"
 )
 
 split_time_suffix <- function(x) {
@@ -752,10 +768,29 @@ split_time_suffix <- function(x) {
     date_part[has_time] <- trimws(sub(.datetime_split_re, "\\1", with_time, perl = TRUE))
     time_part[has_time] <- paste0(
         sub("^([0-9]):", "0\\1:", sub(.datetime_split_re, "\\2", with_time, perl = TRUE)),
-        sub(.datetime_split_re, "\\5", with_time, perl = TRUE)
+        sub("^(UTC|GMT)$", "Z", sub(.datetime_split_re, "\\6", with_time, perl = TRUE))
     )
 
     list(date = date_part, time = time_part)
+}
+
+# "2:30 PM" becomes "14:30", so split_time_suffix() reads a 12-hour clock.
+clock_24h <- function(x) {
+    re <- "^(.+?)\\s+(\\d{1,2})(:[0-5][0-9](:[0-5][0-9])?)\\s*([AaPp])\\.?[Mm]\\.?$"
+    hit <- grepl(re, x, perl = TRUE)
+    if (!any(hit, na.rm = TRUE)) {
+        return(x)
+    }
+    hit <- hit %in% TRUE
+    hour <- as.integer(sub(re, "\\2", x[hit], perl = TRUE))
+    pm <- tolower(sub(re, "\\5", x[hit], perl = TRUE)) == "p"
+    ok <- hour >= 1L & hour <= 12L
+    hour24 <- ifelse(pm, hour %% 12L + 12L, hour %% 12L)
+    out <- x[hit]
+    out[ok] <- paste0(sub(re, "\\1", out[ok], perl = TRUE), " ",
+                      sprintf("%02d", hour24[ok]), sub(re, "\\3", out[ok], perl = TRUE))
+    x[hit] <- out
+    x
 }
 
 #' Parse dates from various formats to ISO
@@ -764,6 +799,15 @@ split_time_suffix <- function(x) {
 #' @return Character vector of ISO-formatted dates
 #' @export
 parse_dates_to_iso <- function(date_vector) {
+    parse_dates_iso(date_vector)
+}
+
+# "25/12/2023 - 27/12/2023" or "25/12/2023 a 27/12/2023".
+.date_interval_re <- "^(\\S+)\\s+(-|a)\\s+(\\S+)$"
+
+# `day_first` NULL: the plain dates and the interval ends of `date_vector`
+# vote together. The interval ends then parse with that one vote.
+parse_dates_iso <- function(date_vector, day_first = NULL) {
     date_chr <- as.character(date_vector)
     result <- rep(NA_character_, length(date_chr))
     remaining <- !is.na(date_chr) & nzchar(date_chr)
@@ -772,12 +816,37 @@ parse_dates_to_iso <- function(date_vector) {
         return(result)
     }
 
-    split <- split_time_suffix(trimws(date_chr))
+    split <- split_time_suffix(clock_24h(trimws(date_chr)))
     date_chr <- split$date
     time_suffix <- split$time
 
+    # The two ends of an interval join with the ISO "/". Bytes that are not
+    # UTF-8 make the regex engines warn, and no date has them.
+    utf8_ok <- validUTF8(date_chr)
+    is_interval <- remaining & utf8_ok & !nzchar(time_suffix)
+    is_interval[is_interval] <- grepl(.date_interval_re, date_chr[is_interval])
+    end_chr <- c(
+        sub(.date_interval_re, "\\1", date_chr[is_interval]),
+        sub(.date_interval_re, "\\3", date_chr[is_interval])
+    )
+    # One vote for the column: "05/06/2023 - 07/06/2023" next to "25/12/2023"
+    # is day-first, as the plain date is.
+    if (is.null(day_first)) {
+        day_first <- detect_day_first(c(date_chr[remaining & !is_interval], end_chr))
+    }
+    if (any(is_interval)) {
+        ends <- parse_dates_iso(end_chr, day_first)
+        n_int <- sum(is_interval)
+        start <- ends[seq_len(n_int)]
+        end <- ends[n_int + seq_len(n_int)]
+        ok <- !is.na(start) & !is.na(end)
+        idx <- which(is_interval)[ok]
+        result[idx] <- paste0(start[ok], "/", end[ok])
+        remaining[which(is_interval)] <- FALSE
+    }
+
     # Day/month/year values follow the column vote (see parse_dmy_dates()).
-    dmy <- parse_dmy_dates(ifelse(remaining, date_chr, ""))
+    dmy <- parse_dmy_dates(ifelse(remaining, date_chr, ""), day_first)
     result[!is.na(dmy)] <- dmy[!is.na(dmy)]
     remaining[!is.na(dmy)] <- FALSE
 
@@ -836,12 +905,80 @@ parse_dates_to_iso <- function(date_vector) {
         }
     }
 
+    # Compact "20231225". The year range keeps an 8-digit catalog number from
+    # passing as a date in the eventDate column rescue.
+    idx <- which(remaining & grepl("^\\d{8}$", date_chr))
+    if (length(idx)) {
+        year <- as.integer(substr(date_chr[idx], 1L, 4L))
+        iso <- dmy_iso(year, as.integer(substr(date_chr[idx], 5L, 6L)),
+                       as.integer(substr(date_chr[idx], 7L, 8L)))
+        ok <- !is.na(iso) & year >= 1600L & year <= as.integer(format(Sys.Date(), "%Y"))
+        result[idx[ok]] <- iso[ok]
+        remaining[idx[ok]] <- FALSE
+    }
+
+    # A month name ("25 Dec 2023", "25-dez-2023", "25 de dezembro de 2023",
+    # "dez/2023") or a roman month ("12-III-2020", common on collection labels).
+    sep <- "(?:[ /.-]+de)?[ /.-]+"
+    dmy_name_re <- paste0("^(\\d{1,2})", sep, "(\\p{L}+)\\.?", sep, "(\\d{4})$")
+    my_name_re <- paste0("^(\\p{L}+)\\.?", sep, "(\\d{4})$")
+    idx <- which(remaining & utf8_ok)
+    idx <- idx[grepl("\\p{L}", date_chr[idx], perl = TRUE)]
+    if (length(idx)) {
+        cand <- date_chr[idx]
+        with_day <- grepl(dmy_name_re, cand, perl = TRUE)
+        no_day <- !with_day & grepl(my_name_re, cand, perl = TRUE)
+        token <- rep(NA_character_, length(cand))
+        token[with_day] <- sub(dmy_name_re, "\\2", cand[with_day], perl = TRUE)
+        token[no_day] <- sub(my_name_re, "\\1", cand[no_day], perl = TRUE)
+        roman <- c("i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii")
+        month <- match(tolower(token), roman)
+        by_name <- is.na(month) & !is.na(token)
+        month[by_name] <- as.integer(parse_month_to_number_vec(token[by_name]))
+        year <- rep(NA_integer_, length(cand))
+        year[with_day] <- as.integer(sub(dmy_name_re, "\\3", cand[with_day], perl = TRUE))
+        year[no_day] <- as.integer(sub(my_name_re, "\\2", cand[no_day], perl = TRUE))
+        iso <- rep(NA_character_, length(cand))
+        iso[with_day] <- dmy_iso(year[with_day], month[with_day],
+                                 as.integer(sub(dmy_name_re, "\\1", cand[with_day], perl = TRUE)))
+        ok_my <- no_day & !is.na(month)
+        iso[ok_my] <- sprintf("%04d-%02d", year[ok_my], month[ok_my])
+        ok <- !is.na(iso)
+        result[idx[ok]] <- iso[ok]
+        remaining[idx[ok]] <- FALSE
+    }
+
+    # A year range "1999-2005" becomes the ISO interval "1999/2005". An
+    # inverted range stays as typed for the Preview.
+    yr_re <- "^(\\d{4})\\s*-\\s*(\\d{4})$"
+    idx <- which(remaining & grepl(yr_re, date_chr))
+    if (length(idx)) {
+        start <- as.integer(sub(yr_re, "\\1", date_chr[idx]))
+        end <- as.integer(sub(yr_re, "\\2", date_chr[idx]))
+        ok <- start < end
+        result[idx[ok]] <- paste0(start[ok], "/", end[ok])
+        remaining[idx[ok]] <- FALSE
+    }
+
     with_time <- nzchar(time_suffix) & !is.na(result)
     if (any(with_time)) {
         result[with_time] <- paste0(result[with_time], "T", time_suffix[with_time])
     }
 
     return(result)
+}
+
+# Each end of a date or interval without its time part, so the time zone in
+# "T14:30:00-0300" or the compact time in "T0930" is no year.
+date_text_without_time <- function(x) {
+    ends <- strsplit(x, "/", fixed = TRUE)
+    flat <- split_time_suffix(unlist(ends, use.names = FALSE))$date
+    flat <- sub(
+        "T\\d{2}(:?\\d{2}){0,2}([.,]\\d+)?(Z|[+-]\\d{2}(:?\\d{2})?)?$", "", flat,
+        perl = TRUE
+    )
+    by_value <- factor(rep(seq_along(x), lengths(ends)), levels = seq_along(x))
+    vapply(split(flat, by_value), paste, character(1), collapse = "/", USE.NAMES = FALSE)
 }
 
 #' Flag dates whose year is outside the plausible range
@@ -896,7 +1033,10 @@ date_year_issues <- function(df, min_year = 1600L, max_year = NULL, sample_n = 5
         uniq <- unique(values)
         # The lookarounds keep a compact "20231225" from being read as the year
         # 2023 plus a bogus year 1225.
-        matches <- regmatches(uniq, gregexpr("(?<!\\d)\\d{4}(?!\\d)", uniq, perl = TRUE))
+        scan <- uniq
+        timed <- which(grepl("[T:]", uniq))
+        if (length(timed)) scan[timed] <- date_text_without_time(uniq[timed])
+        matches <- regmatches(scan, gregexpr("(?<!\\d)\\d{4}(?!\\d)", scan, perl = TRUE))
         uniq_future <- vapply(matches, function(y) any(as.integer(y) > max_year), logical(1))
         uniq_ancient <- vapply(matches, function(y) any(as.integer(y) < min_year), logical(1))
 
