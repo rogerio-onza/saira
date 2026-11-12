@@ -338,6 +338,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Draw a closed column list only when it opens, so auto-map holds the page for half the time, ADR-202
 - **mapping:** Cut the page hold after an upload by a third with fewer browser messages, ADR-203
 - **upload:** Watch only the upload progress bars, not every change on the page, ADR-189
+- **export:** Skip the JSON object reader for dynamicProperties columns that hold only plain text ([#310](https://github.com/rogerio-onza/saira/pull/310))
 - **upload:** Free memory after a CSV read only for files of 50 MB or more, ADR-196 ([#283](https://github.com/rogerio-onza/saira/pull/283))
 - **dynamicProperties:** Read nested JSON without a second pass over each cell, ADR-190 ([#262](https://github.com/rogerio-onza/saira/pull/262))
 - **mapping:** Normalize each column name once in the name similarity score, ADR-196 ([#284](https://github.com/rogerio-onza/saira/pull/284))
