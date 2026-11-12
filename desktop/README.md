@@ -5,9 +5,8 @@ commit, o branch e se havia arquivos sem commit (campo `source`). O `desktop-inf
 leva o commit para o relatório de falha do app.
 O worker da atualização usa `callr`, sem socket de rede, então o Windows não
 pede acesso do R às redes públicas (ADR-177).
-O `DESCRIPTION` da base ainda informa `0.11.2`. O instalador usa a versão
-`1.0.0-rc.1` para identificar o candidato, sem antecipar a release do pacote. No
-corte, a versão passa a `1.0.0`. O nome, o `slug` e o `app_id` não mudam depois da
+O instalador usa a versão `1.0.0`, a versão do corte. O `DESCRIPTION` da base
+passa a `1.0.0` no corte. O nome, o `slug` e o `app_id` não mudam depois da
 primeira publicação (ADR-192).
 
 Não há workflow, push, publicação nem atualização automática nesta etapa.
@@ -191,6 +190,9 @@ shinyelectron. O build copia esses arquivos sobre o app gerado. O shell:
   escolhido na última sessão;
 - não tem barra de menu, mas mantém os atalhos de edição, zoom, tela cheia e
   `Ctrl+Q`;
+- não tem barra de título do sistema: o cabeçalho do app move a janela, e os
+  botões da janela ficam no canto dele, na cor do tema (`shell/app-frame.css`,
+  ADR-214);
 - abre links externos no navegador e mantém a janela no app local;
 - pede uma pasta ao baixar arquivos, com o tipo do arquivo no filtro;
 - ao fechar com dados que não foram exportados, avisa quantos registros serão
@@ -209,11 +211,12 @@ shinyelectron. O build copia esses arquivos sobre o app gerado. O shell:
 
 As ferramentas de desenvolvedor só aparecem com `SAIRA_DESKTOP_DEVTOOLS=1`.
 
-O ícone é o S itálico do logotipo sobre o cinza do app
-(`desktop/shell/assets/icon.ico`, de 16 a 256 px, e `icon.png`, 256 px, para o
-Linux). Para gerar de novo, rode
-`Rscript desktop/icon.R` num ambiente com chromote e Chrome. O build só copia
-o arquivo. As fontes vêm de `inst/app/www/vendor/fonts` e a foto vem de
+O ícone é o S itálico do logotipo, branco sobre o índigo do logotipo
+(`desktop/shell/assets/icon.ico`, de 16 a 256 px, e `icon.png`, 512 px, para o
+Linux). A lateral do instalador e do desinstalador do Windows é a foto da tela
+de início (`installer-sidebar.bmp`, 164 × 314 px). Para gerar de novo, rode
+`Rscript desktop/icon.R` num ambiente com chromote, png e Chrome. O build só
+copia os arquivos. As fontes vêm de `inst/app/www/vendor/fonts` e a foto vem de
 `website/assets/img/landing`. O `prepare-windows.R` copia as duas para o kit.
 
 ## Testar o app

@@ -3796,3 +3796,16 @@ Formato: ADR leve (Architecture Decision Record).
   - O download passa o snapshot `iucn_by_name` para `apply_conservation_status()`, que nao envia pedido. Sem snapshot, o pacote sai sem a chave IUCN.
 - **Consequencias**: o download nao espera a rede. A categoria MMA e o resto do pacote nao dependem do GBIF. O arquivo privado de coordenadas nao espera a consulta. Uma rodada de nomes anterior deixa o memo pronto, e a consulta repete nenhum pedido.
 
+## ADR-214: Aparencia propria do app desktop
+
+- **Data**: 2026-11-11
+- **Status**: Aceito.
+- **Contexto**: o app desktop usava o icone cinza, a lateral padrao do instalador NSIS e a barra de titulo do sistema. A barra repetia o nome do cabecalho e seguia o tema do Windows, nao o tema do app. O dono escolheu as opcoes B do quadro de mockups.
+- **Decisao**:
+  - Icone: o S italico branco sobre o indigo `#2833ac` do logotipo. O ICO vai de 16 a 256 px, e o PNG do Linux tem 512 px. O `desktop/icon.R` gera os dois.
+  - Instalador: a lateral de 164 x 314 px e a foto da saira-pintor da tela de inicio, com o logotipo e o credito. O build copia o BMP para `build/installerSidebar.bmp` e `build/uninstallerSidebar.bmp`, os nomes que o electron-builder le.
+  - Janela: `titleBarStyle: 'hidden'` com `titleBarOverlay` de 32 px. Os botoes da janela ficam no canto do cabecalho, na cor do cabecalho e do tema. O shell injeta `app-frame.css` na pagina do app com `insertCSS`, entao o pacote R nao muda.
+  - O cabecalho move a janela (`-webkit-app-region: drag`). Links, botoes, campos e pop-ups ficam fora da area de arrasto. Com um modal aberto, o cabecalho todo sai dela, porque o Electron ignora o que cobre a area.
+  - A linha 1 do cabecalho reserva a largura dos botoes (`env(titlebar-area-*)`). No cabecalho de uma linha, o espaco da esquerda cresce na mesma largura.
+  - Com os botoes, o cabecalho do desktop muda de largura em outros pontos: duas linhas ate 1811 px, uma linha a partir de 1812 px, Wiki e Ajuda so com o icone ate 2047 px e com a palavra a partir de 2048 px. Esses pontos deixam as etapas no centro e pelo menos 48 px livres antes das ferramentas. O app web nao muda.
+- **Consequencias**: entre 1360 e 1811 px, o desktop tem duas linhas e o app web tem uma, entao as regras de `app-frame.css` desfazem as regras de uma linha do pacote. Uma mudanca nessas regras do pacote (02-navbar.css, 00-tokens.css) precisa da mesma mudanca no `app-frame.css`. Em todas as larguras, as etapas ficam a ate 8 px do centro real. As telas de inicio e de erro tambem movem a janela.

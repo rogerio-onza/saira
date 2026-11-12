@@ -8,14 +8,27 @@
   <style>
     .view { height: 100%; }
 
-    /* Start: photo and steps */
+    /* ADR-214: the page moves the window. Controls and the log take clicks. */
+    body { -webkit-app-region: drag; }
+    button, a, .log { -webkit-app-region: no-drag; }
+
+    /* Start: a species photo, the R phases and a tip */
     #view-start { display: flex; }
     #view-start .photo { flex: 0 0 46%; max-width: 640px; }
     .caption {
-      position: absolute; left: 16px; bottom: 16px; padding: 6px 10px; border-radius: 6px;
-      background: rgba(18, 20, 27, 0.78); color: #ffffff; font-size: 11px; line-height: 1.4;
+      position: absolute; left: 16px; right: 16px; bottom: 16px; width: fit-content;
+      display: flex; flex-direction: column; gap: 3px; padding: 12px 14px; border-radius: 8px;
+      background: rgba(18, 20, 27, 0.78); color: #ffffff; font-size: 12px; line-height: 1.45;
     }
-    .caption .credit { opacity: 0.85; }
+    .caption .biome { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.8; }
+    .caption .sci { font: italic 600 19px/1.25 var(--font-brand); }
+    .caption .category { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+    /* IUCN colors, as on the site (_saira-rules.scss). */
+    .chip { padding: 1px 5px; border-radius: 3px; font: 700 10px var(--font-ui); color: #1c1c26; }
+    .chip[data-code="VU"] { background: #f9e814; }
+    .chip[data-code="EN"] { background: #fc7f3f; }
+    .chip[data-code="CR"] { background: #d81e05; color: #ffffff; }
+    .caption .credit { margin-top: 2px; font-size: 10px; opacity: 0.75; }
     .start-text {
       flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center;
       padding: 0 64px;
@@ -23,9 +36,49 @@
     .start-text > * { max-width: 420px; }
     .start-text .wordmark { font-size: 56px; }
     .version { margin-top: 10px; font-size: 13px; color: var(--muted); }
-    .start-text .track { margin-top: 44px; width: 100%; }
-    .step { margin-top: 16px; font-size: 14px; }
-    .wait { margin-top: 4px; font-size: 12px; color: var(--muted); }
+    .steps { margin-top: 36px; list-style: none; padding: 0; }
+    .steps li {
+      position: relative; display: flex; align-items: center; gap: 12px; height: 34px;
+      font-size: 14px; color: var(--muted);
+    }
+    .steps li + li { margin-top: 10px; }
+    .steps li + li::before {
+      content: ""; position: absolute; left: 11px; top: -15px; width: 2px; height: 20px; background: var(--border);
+    }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .steps .dot {
+      flex: none; width: 24px; height: 24px; border-radius: 50%; box-sizing: border-box;
+      border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 600;
+    }
+    .steps li[data-state="now"] { color: var(--accent); font-weight: 600; }
+    .steps li[data-state="now"] .dot {
+      border: 2px solid var(--accent); border-right-color: var(--border); animation: spin 1s linear infinite;
+    }
+    .steps li[data-state="now"] .dot span { animation: spin 1s linear infinite reverse; }
+    .steps li[data-state="done"] .dot { border-color: var(--fill); background: var(--fill); color: var(--on-fill); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) {
+      .steps li[data-state="now"] .dot, .steps li[data-state="now"] .dot span { animation: none; }
+    }
+    .wait { margin-top: 14px; font-size: 12px; color: var(--muted); }
+    .tip {
+      margin-top: 28px; padding: 14px 16px; border-radius: 10px; box-shadow: none;
+      background: var(--card); border: 1px solid var(--border); font-size: 13px; line-height: 1.55;
+    }
+    .tip .label {
+      margin-bottom: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--muted);
+    }
+    .tip code { padding: 0 4px; border-radius: 3px; background: var(--subtle); font: 12px var(--font-mono); }
+    .tip p { min-height: 3.1em; transition: opacity 0.3s; }
+    .tip p.fade { opacity: 0; }
+    .tip .dots { display: flex; gap: 4px; margin-top: 10px; }
+    .tip .dots span { width: 6px; height: 6px; border-radius: 3px; background: var(--border); transition: width 0.3s; }
+    .tip .dots span.on { width: 16px; background: var(--fill); }
+    @media (prefers-reduced-motion: reduce) {
+      .tip p, .tip .dots span { transition: none; }
+    }
 
     /* Error: message and R log */
     #view-error { display: flex; gap: 40px; padding: 56px; }
@@ -63,18 +116,26 @@
 <body>
   <main id="view-start" class="view" hidden>
     <div class="photo">
-      <img src="assets/tangara-fastuosa.jpg" id="photo" alt="">
+      <img id="photo" alt="">
       <div class="caption">
-        <div><em>Tangara fastuosa</em><span id="common-name"></span></div>
+        <div class="biome" id="species-biome"></div>
+        <div class="sci" id="species-sci"></div>
+        <div id="species-common"></div>
+        <div class="category"><span class="chip" id="species-code"></span><span id="species-category"></span></div>
         <div class="credit" id="photo-credit"></div>
       </div>
     </div>
     <div class="start-text">
       <div class="wordmark">Saíra</div>
       <div class="version" id="start-version"></div>
-      <div class="track" aria-hidden="true"><span></span></div>
-      <div class="step" id="start-step" role="status"></div>
+      <ol class="steps" id="start-steps"></ol>
+      <div class="sr-only" id="start-status" role="status"></div>
       <div class="wait" id="start-wait"></div>
+      <section class="tip" id="start-tip">
+        <div class="label" id="tip-label"></div>
+        <p id="tip-text"></p>
+        <div class="dots" id="tip-dots" aria-hidden="true"></div>
+      </section>
     </div>
   </main>
 
@@ -136,11 +197,83 @@
       log.scrollTop = log.scrollHeight;
     }
 
-    document.getElementById('photo').alt = text.photoAlt || '';
-    set('common-name', text.commonName ? ' · ' + text.commonName : '');
-    set('photo-credit', text.photo + ': Renato Bandeira · CC BY 4.0');
+    function pick(list) { return Math.floor(Math.random() * list.length); }
+
+    // Each start shows one of the six species of the site.
+    var species = text.species || [];
+    if (species.length) {
+      var item = species[pick(species)];
+      var photo = document.getElementById('photo');
+      photo.src = 'assets/species/' + item.id + '.jpg';
+      photo.alt = item.alt;
+      photo.style.objectPosition = item.pos;
+      set('species-biome', item.biome);
+      set('species-sci', item.sci);
+      set('species-common', item.common);
+      document.getElementById('species-common').hidden = !item.common;
+      set('species-code', item.code);
+      document.getElementById('species-code').dataset.code = item.code;
+      set('species-category', (text.categories || {})[item.code]);
+      set('photo-credit', text.photo + ': ' + item.credit);
+    }
+
+    // The three R phases. The step that runs now has the ring, the steps
+    // before it have a check mark.
+    var steps = text.steps || [];
+    var stepList = document.getElementById('start-steps');
+    steps.forEach(function (label, i) {
+      var li = document.createElement('li');
+      var dot = document.createElement('span');
+      dot.className = 'dot';
+      dot.setAttribute('aria-hidden', 'true');
+      dot.appendChild(document.createElement('span'));
+      li.appendChild(dot);
+      li.appendChild(document.createTextNode(label));
+      stepList.appendChild(li);
+    });
+    function setStep(now) {
+      stepList.querySelectorAll('li').forEach(function (li, i) {
+        li.dataset.state = i < now ? 'done' : i === now ? 'now' : 'todo';
+        li.querySelector('.dot span').textContent = i < now ? '\u2713' : String(i + 1);
+        if (i === now) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+      });
+      set('start-status', steps[now]);
+    }
+    setStep(0);
+
+    // A tip from the list, then the next one every 5 s.
+    var tips = text.tips || [];
+    var tipText = document.getElementById('tip-text');
+    var tipDots = document.getElementById('tip-dots');
+    var tipIndex = pick(tips);
+    function showTip(index) {
+      tipText.textContent = '';
+      // Text in backticks shows as code.
+      tips[index].split('`').forEach(function (part, i) {
+        if (!part) return;
+        var node = i % 2 ? document.createElement('code') : document.createTextNode(part);
+        if (i % 2) node.textContent = part;
+        tipText.appendChild(node);
+      });
+      tipDots.querySelectorAll('span').forEach(function (dot, i) { dot.className = i === index ? 'on' : ''; });
+    }
+    if (tips.length) {
+      set('tip-label', text.tip);
+      tips.forEach(function () { tipDots.appendChild(document.createElement('span')); });
+      showTip(tipIndex);
+      setInterval(function () {
+        tipText.classList.add('fade');
+        setTimeout(function () {
+          tipIndex = (tipIndex + 1) % tips.length;
+          showTip(tipIndex);
+          tipText.classList.remove('fade');
+        }, 300);
+      }, 5000);
+    } else {
+      document.getElementById('start-tip').hidden = true;
+    }
+
     set('start-version', page.version);
-    set('start-step', text.runtime);
     set('start-wait', text.wait);
     set('error-report', text.reportText);
     set('btn-quit', text.close);
@@ -165,10 +298,10 @@
       if (page.view !== 'start' || !data) return;
       switch (data.phase) {
         case 'starting_server':
-          set('start-step', /listening/i.test(data.message || '') ? text.ui : text.packages);
+          setStep(/listening/i.test(data.message || '') ? 2 : 1);
           break;
         case 'server_ready':
-          set('start-step', text.ui);
+          setStep(2);
           break;
         case 'error':
         case 'server_crashed':

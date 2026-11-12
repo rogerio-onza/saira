@@ -448,7 +448,7 @@ async function main() {
     `${JSON.stringify(opened)}${linkInfo ? '' : ' (no visible https link in the page)'}`);
 
   // 6. Close before Export, with the app in English: the warning follows the app
-  // language, names the records and goes to Export.
+  // language, names the records when the page shows a count, and goes to Export.
   await setLang('en');
   const records = await js(`(function () { var el = document.querySelector('#upload-stats .stat-value'); return el ? el.textContent.trim() : ''; })()`);
   await main.eval(`globalThis.__e2e.closeAnswer = ${JSON.stringify(EN.close.goExport)}; true`);
@@ -459,7 +459,9 @@ async function main() {
     return !!a && a.classList.contains('active');
   })()`), { timeout: 10000, what: 'Export tab' }).catch(() => false);
   record('close before Export warns in English and goes to Export',
-    unsaved.message === EN.close.unsaved && !!records && unsaved.detail.includes(records) && onExport && (await windows()) === 1,
+    unsaved.message === EN.close.unsaved && onExport && (await windows()) === 1 &&
+      // The upload area shows no record count since #322, so the shell uses the text without a count.
+      (records ? unsaved.detail.includes(records) : unsaved.detail === EN.close.unsavedDetailNoCount),
     `${unsaved.message} | ${unsaved.detail} | ${JSON.stringify(unsaved.buttons)} | Export tab ${onExport}`);
   await setLang('pt');
 

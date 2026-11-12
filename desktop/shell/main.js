@@ -18,6 +18,9 @@ const APP_CSP = "object-src 'none'; base-uri 'self'; frame-ancestors 'none'";
 // navigator.clipboard (copy buttons) and fullscreen are the only permissions the app uses.
 const ALLOWED_PERMISSIONS = new Set(['clipboard-sanitized-write', 'fullscreen']);
 const ICON = path.join(__dirname, 'assets', process.platform === 'win32' ? 'icon.ico' : 'icon.png');
+// ADR-214: no system title bar. The window buttons sit in the corner of the page.
+const TITLE_BAR_HEIGHT = 32;
+const APP_FRAME_CSS = fs.readFileSync(path.join(__dirname, 'app-frame.css'), 'utf8');
 // R opens a Shiny session only for the window that has this key (run_app()).
 const ACCESS_KEY = crypto.randomBytes(32).toString('hex');
 
@@ -45,6 +48,7 @@ let lastReport = '';
 let lang = 'pt-BR';
 let themeMode = 'system';
 let themeDark = nativeTheme.shouldUseDarkColors;
+let onAppPage = false;
 
 function readJson(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
@@ -143,6 +147,17 @@ function buildMenu() {
 
 function background() {
   return themeDark ? '#0f1116' : '#f5f6f8';
+}
+
+// The buttons take the navbar color on the app page and the page color on the shell pages.
+function titleBarOverlay() {
+  const light = onAppPage ? '#ffffff' : '#f5f6f8';
+  const dark = onAppPage ? '#171a21' : '#0f1116';
+  return { color: themeDark ? dark : light, symbolColor: themeDark ? '#e6e8ee' : '#1c1c26', height: TITLE_BAR_HEIGHT };
+}
+
+function paintTitleBar() {
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.setTitleBarOverlay(titleBarOverlay());
 }
 
 function shellPreferences() {
@@ -431,6 +446,8 @@ function createWindow() {
     icon: ICON,
     show: false,
     backgroundColor: background(),
+    titleBarStyle: 'hidden',
+    titleBarOverlay: titleBarOverlay(),
     webPreferences: { ...shellPreferences(), partition: `persist:${SLUG}` }
   });
   mainWindow.setMenuBarVisibility(false);
@@ -443,6 +460,14 @@ function createWindow() {
     if (e.level === 'error' || e.level === 'warning') log('warn', `[renderer] ${e.message}`);
   });
   contents.on('render-process-gone', (_e, details) => rendererGone(details));
+  contents.on('did-navigate', (_e, url) => {
+    onAppPage = isAppUrl(url);
+    paintTitleBar();
+  });
+  contents.on('dom-ready', () => {
+    if (!isAppUrl(contents.getURL())) return;
+    contents.insertCSS(APP_FRAME_CSS).catch((err) => log('warn', 'Window frame CSS failed:', err && err.message));
+  });
 
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.on('close', (event) => {
@@ -510,6 +535,7 @@ ipcMain.on('saira:theme', (event, data) => {
   if (!fromAppPage(event) || !data) return;
   themeDark = Boolean(data.dark);
   themeMode = data.mode === 'light' || data.mode === 'dark' ? data.mode : 'system';
+  paintTitleBar();
 });
 
 if (!app.requestSingleInstanceLock()) {

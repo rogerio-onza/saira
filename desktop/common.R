@@ -228,19 +228,25 @@ desktop_write_provenance <- function(root, output, archive, config, origin) {
     file.copy(file.path(root, "renv.lock"), file.path(output, "source-renv.lock"))
 }
 
+# The six species photos of the site. shell/i18n.js has the same ids.
+desktop_species <- c("podocnemis-sextuberculata", "micranthocereus-polyanthus", "boana-buriti",
+    "tangara-fastuosa", "acanthochelys-macrocephala", "leopardus-munoai")
+
 # Files of desktop/shell/assets, named by their path in that folder. The start
-# page uses the app fonts and the site photo. The Windows
+# page uses the app fonts and the site photos. The Windows
 # kit has no inst/ or website/, so prepare-windows.R puts copies in the kit.
 desktop_shell_assets <- function(root) {
     shell <- file.path(root, "desktop", "shell", "assets")
     font_dir <- file.path(root, "inst", "app", "www", "vendor", "fonts")
     if (!dir.exists(font_dir)) font_dir <- file.path(shell, "fonts")
-    photo <- file.path(root, "website", "assets", "img", "landing", "tangara-fastuosa.jpg")
-    if (!file.exists(photo)) photo <- file.path(shell, "tangara-fastuosa.jpg")
+    photo_dir <- file.path(root, "website", "assets", "img", "landing")
+    if (!dir.exists(photo_dir)) photo_dir <- file.path(shell, "species")
+    photos <- file.path(photo_dir, paste0(desktop_species, ".jpg"))
     fonts <- list.files(font_dir, pattern = "\\.(css|woff2)$", full.names = TRUE)
-    own <- file.path(shell, c("shell.css", "icon.ico", "icon.png"))
-    files <- c(own, photo, fonts)
-    names(files) <- c(basename(own), basename(photo), file.path("fonts", basename(fonts)))
+    own <- file.path(shell, c("shell.css", "icon.ico", "icon.png", "installer-sidebar.bmp"))
+    files <- c(own, photos, fonts)
+    names(files) <- c(basename(own), file.path("species", basename(photos)),
+        file.path("fonts", basename(fonts)))
     if (!length(fonts) || !all(file.exists(files))) {
         stop("Missing desktop shell assets: ", toString(c(files[!file.exists(files)],
             if (!length(fonts)) file.path(font_dir, "*.woff2"))))
@@ -249,7 +255,9 @@ desktop_shell_assets <- function(root) {
 }
 
 desktop_copy_assets <- function(files, target) {
-    dir.create(file.path(target, "fonts"), recursive = TRUE, showWarnings = FALSE)
+    for (dir in c("fonts", "species")) {
+        dir.create(file.path(target, dir), recursive = TRUE, showWarnings = FALSE)
+    }
     if (!all(file.copy(files, file.path(target, names(files)), overwrite = TRUE))) {
         stop("Could not copy the desktop shell assets to ", target)
     }
@@ -336,15 +344,18 @@ desktop_check_linux_package <- function(dist) {
 
 desktop_apply_shell <- function(root, project, config, origin) {
     modules <- c("asar-path.js", "i18n.js", "log-retention.js", "log-writer.js")
-    pages <- c("main.js", "preload.js", "lifecycle.html", modules)
+    pages <- c("main.js", "preload.js", "lifecycle.html", "app-frame.css", modules)
     shell <- file.path(root, "desktop", "shell", pages)
     if (!all(file.copy(shell, project, overwrite = TRUE))) stop("Could not copy the desktop shell.")
     assets <- desktop_shell_assets(root)
     desktop_copy_assets(assets, file.path(project, "assets"))
-    # electron-builder reads build/icon.ico (Windows) or build/icon.png (Linux).
+    # electron-builder reads build/icon.ico (Windows) or build/icon.png (Linux), and
+    # the NSIS installer and uninstaller read their sidebar from build/ (ADR-214).
     dir.create(file.path(project, "build"), showWarnings = FALSE)
-    if (!all(file.copy(assets[c("icon.ico", "icon.png")], file.path(project, "build"), overwrite = TRUE))) {
-        stop("Could not copy the app icon.")
+    art <- c(icon.ico = "icon.ico", icon.png = "icon.png",
+        installerSidebar.bmp = "installer-sidebar.bmp", uninstallerSidebar.bmp = "installer-sidebar.bmp")
+    if (!all(file.copy(assets[art], file.path(project, "build", names(art)), overwrite = TRUE))) {
+        stop("Could not copy the app icon and the installer sidebar.")
     }
     description <- read.dcf(file.path(root, "DESCRIPTION"))[1L, ]
     info <- list(
@@ -393,7 +404,7 @@ desktop_apply_shell <- function(root, project, config, origin) {
     manifest <- file.path(project, "package.json")
     package <- jsonlite::read_json(manifest)
     package$build$files <- as.list(unique(c(unlist(package$build$files),
-        "lifecycle.html", modules, "desktop-info.json")))
+        "lifecycle.html", "app-frame.css", modules, "desktop-info.json")))
     # The main process loads the backend code, so it stays in app.asar. R and the
     # Shiny app must be real files on disk.
     package$build$asarUnpack <- as.list(setdiff(unlist(package$build$asarUnpack), "backends/**/*"))

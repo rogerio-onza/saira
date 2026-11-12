@@ -1,5 +1,22 @@
 // Shell text in the three app languages. The shell follows <html lang>.
 // {n} is the record count, as the app shows it on the Home tab.
+
+// The six threatened species of the site (one per biome). The start page shows
+// one of them at each start. pos is the CSS object-position of the photo.
+const SPECIES = [
+  { id: 'podocnemis-sextuberculata', sci: 'Podocnemis sextuberculata', code: 'EN', credit: 'Rafael Bernhard · CC BY 4.0', pos: '70% 40%' },
+  { id: 'micranthocereus-polyanthus', sci: 'Micranthocereus polyanthus', code: 'EN', credit: 'Brian Williams · CC BY 4.0', pos: '45% 50%' },
+  { id: 'boana-buriti', sci: 'Boana buriti', code: 'VU', credit: 'Reuber Brandão · CC BY 4.0', pos: '50% 54%' },
+  { id: 'tangara-fastuosa', sci: 'Tangara fastuosa', code: 'VU', credit: 'Renato Bandeira · CC BY 4.0', pos: '50% 28%' },
+  { id: 'acanthochelys-macrocephala', sci: 'Acanthochelys macrocephala', code: 'VU', credit: 'Thomas Galewski · CC BY 4.0', pos: '62% 55%' },
+  { id: 'leopardus-munoai', sci: 'Leopardus munoai', code: 'CR', credit: 'Felipe Peters · CC BY-NC 4.0', pos: '50% 65%' }
+];
+
+// names: [biome, common name, alt text] in the order of SPECIES.
+function species(names) {
+  return SPECIES.map((item, i) => ({ ...item, biome: names[i][0], common: names[i][1], alt: names[i][2] }));
+}
+
 module.exports = {
   'pt-BR': {
     close: {
@@ -13,9 +30,28 @@ module.exports = {
       confirm: 'Fechar', cancel: 'Cancelar'
     },
     lifecycle: {
-      runtime: 'Preparando o R…', packages: 'Carregando os pacotes do R…', ui: 'Abrindo a interface…',
+      steps: ['Preparar o R', 'Carregar os pacotes', 'Abrir a interface'],
       wait: 'Isto pode levar alguns segundos.',
-      photoAlt: 'Saíra-pintor pousada num talo verde', commonName: 'saíra-pintor', photo: 'Foto',
+      photo: 'Foto', tip: 'Dica',
+      categories: { VU: 'Vulnerável · MMA', EN: 'Em perigo · MMA', CR: 'Criticamente em perigo · MMA' },
+      species: species([
+        ['Amazônia', 'iaçá', 'Cabeça de um iaçá, quelônio de manchas amarelas, saindo do casco'],
+        ['Caatinga', '', 'Botões de flor rosa no topo lanoso de um cacto da Caatinga'],
+        ['Cerrado', 'perereca-do-buriti', 'Perereca listrada de dourado pousada numa folha seca, à noite'],
+        ['Mata Atlântica', 'saíra-pintor', 'Saíra-pintor pousada num talo verde, com folhas e fundo desfocado'],
+        ['Pantanal', 'cágado-do-pantanal', 'Cágado-do-pantanal atravessando uma estrada de terra'],
+        ['Pampa', 'gato-palheiro-pampeano', 'Gato-palheiro-pampeano caminhando em direção à câmera, lambendo o focinho']
+      ]),
+      // Text in backticks shows as code.
+      tips: [
+        'O Saíra reconhece a coluna `especie` como `scientificName`.',
+        'O Saíra confere os nomes na Flora e Funga do Brasil e no Catálogo Taxonômico da Fauna do Brasil.',
+        'O Saíra encontra latitude e longitude trocadas e propõe a correção.',
+        'O Saíra generaliza as coordenadas das espécies sensíveis. Os pontos reais ficam só num arquivo privado.',
+        'A Wiki DwC explica cada termo Darwin Core.',
+        'O Saíra gera um Darwin Core Archive para o IPT. Ele não publica no GBIF.',
+        'O Saíra não salva a sessão. Exporte os dados antes de fechar.'
+      ],
       crashTitle: 'O R do Saíra parou',
       crashText: 'O trabalho desta sessão foi perdido. Abra o Saíra de novo e carregue o arquivo outra vez.',
       startTitle: 'O Saíra não abriu',
@@ -44,9 +80,27 @@ module.exports = {
       confirm: 'Close', cancel: 'Cancel'
     },
     lifecycle: {
-      runtime: 'Preparing R…', packages: 'Loading the R packages…', ui: 'Opening the interface…',
+      steps: ['Prepare R', 'Load the packages', 'Open the interface'],
       wait: 'This can take some seconds.',
-      photoAlt: 'Tangara fastuosa on a green stem', commonName: '', photo: 'Photo',
+      photo: 'Photo', tip: 'Tip',
+      categories: { VU: 'Vulnerable · MMA', EN: 'Endangered · MMA', CR: 'Critically endangered · MMA' },
+      species: species([
+        ['Amazon', 'Six-tubercled river turtle', 'Head of an iaçá, a yellow-spotted river turtle, coming out of its shell'],
+        ['Caatinga', '', 'Pink flower buds on the woolly top of a Caatinga cactus'],
+        ['Cerrado', 'Cerrado tree frog', 'Gold-striped tree frog on a dry leaf at night'],
+        ['Atlantic Forest', 'Seven-colored tanager', 'Saíra-pintor perched on a green stem, with leaves and a blurred background'],
+        ['Pantanal', 'Pantanal swamp turtle', 'Pantanal swamp turtle crossing a dirt road'],
+        ['Pampa', 'Pampas cat', 'Pampas cat walking toward the camera, licking its nose']
+      ]),
+      tips: [
+        'Saíra knows the column `especie` as `scientificName`.',
+        'Saíra checks the names in Flora e Funga do Brasil and in the Catálogo Taxonômico da Fauna do Brasil.',
+        'Saíra finds swapped latitude and longitude and shows the correction.',
+        'Saíra generalizes the coordinates of sensitive species. The real points stay only in a private file.',
+        'The DwC Wiki explains each Darwin Core term.',
+        'Saíra makes a Darwin Core Archive for the IPT. It does not publish to GBIF.',
+        'Saíra does not save the session. Export the data before you close it.'
+      ],
       crashTitle: 'The R process of Saíra stopped',
       crashText: 'The work of this session is lost. Open Saíra again and load the file again.',
       startTitle: 'Saíra did not open',
@@ -75,9 +129,27 @@ module.exports = {
       confirm: 'Cerrar', cancel: 'Cancelar'
     },
     lifecycle: {
-      runtime: 'Preparando R…', packages: 'Cargando los paquetes de R…', ui: 'Abriendo la interfaz…',
+      steps: ['Preparar R', 'Cargar los paquetes', 'Abrir la interfaz'],
       wait: 'Esto puede tardar unos segundos.',
-      photoAlt: 'Tangara fastuosa posada en un tallo verde', commonName: '', photo: 'Foto',
+      photo: 'Foto', tip: 'Consejo',
+      categories: { VU: 'Vulnerable · MMA', EN: 'En peligro · MMA', CR: 'En peligro crítico · MMA' },
+      species: species([
+        ['Amazonía', 'iaçá', 'Cabeza de un iaçá, tortuga de río con manchas amarillas, saliendo del caparazón'],
+        ['Caatinga', '', 'Botones de flor rosados en la cima lanosa de un cactus de la Caatinga'],
+        ['Cerrado', 'rana arborícola del Cerrado', 'Rana arborícola con rayas doradas sobre una hoja seca, de noche'],
+        ['Mata Atlántica', 'tangara siete colores', 'Saíra-pintor posada en un tallo verde, con hojas y fondo desenfocado'],
+        ['Pantanal', 'tortuga del Pantanal', 'Tortuga del Pantanal cruzando un camino de tierra'],
+        ['Pampa', 'gato del pajonal pampeano', 'Gato del pajonal pampeano caminando hacia la cámara, lamiéndose el hocico']
+      ]),
+      tips: [
+        'Saíra reconoce la columna `especie` como `scientificName`.',
+        'Saíra verifica los nombres en Flora e Funga do Brasil y en el Catálogo Taxonômico da Fauna do Brasil.',
+        'Saíra encuentra latitud y longitud intercambiadas y propone la corrección.',
+        'Saíra generaliza las coordenadas de las especies sensibles. Los puntos reales quedan solo en un archivo privado.',
+        'La Wiki DwC explica cada término Darwin Core.',
+        'Saíra genera un Darwin Core Archive para el IPT. No publica en GBIF.',
+        'Saíra no guarda la sesión. Exporte los datos antes de cerrar.'
+      ],
       crashTitle: 'El proceso R de Saíra se detuvo',
       crashText: 'El trabajo de esta sesión se perdió. Abra Saíra otra vez y cargue el archivo de nuevo.',
       startTitle: 'Saíra no se abrió',

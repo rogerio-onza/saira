@@ -124,6 +124,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Read the IUCN category from the COL XR answer, and give a synonym the category of its accepted name, ADR-167
 - **build:** Run the tests in CI also on the package versions of `renv.lock`, ADR-167
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
+- **desktop:** Give the app an indigo icon and a photo in the Windows installer, and put the window buttons in the app header, ADR-214
+- **desktop:** Show one of the six threatened species of the site at each start, the three R start steps and a rotating tip on the start page
 
 ### Fixed
 - **upload:** Show the green upload complete bar again when the upload ends. The record and size boxes stay removed
