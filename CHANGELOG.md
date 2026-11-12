@@ -111,7 +111,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
-- **eventDate:** Read no year in a time zone such as -0300 or a compact time such as T0930
+- **eventDate:** Read no year in a time zone such as -0300 or a compact time such as T0930 ([#311](https://github.com/rogerio-onza/saira/pull/311))
 - **preview:** Accept a GPS accuracy as `4.551` when the column writes decimals with a dot, ADR-210 ([#309](https://github.com/rogerio-onza/saira/pull/309))
 - **generalization:** Apply the category grid to a sensitive record with a GPS accuracy as `4.551`, ADR-210 ([#307](https://github.com/rogerio-onza/saira/pull/307))
 - **preview:** Break a long column name between its words in the record panel, so it never covers its value ([#308](https://github.com/rogerio-onza/saira/pull/308))
