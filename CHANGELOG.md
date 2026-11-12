@@ -10,6 +10,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 - **app:** Mark the version badge when a newer release is out, with the installer link in the desktop app and a copy button for the R command. The panel opens by itself once per new release, ADR-215
 
+### Changed
+- **mma:** Refresh the threatened-flora list to Portaria GM/MMA 1.783/2026, which revokes Portaria 148/2022 (3,730 taxa)
+
 ## [1.0.0] - 2026-11-12
 
 ### Added
