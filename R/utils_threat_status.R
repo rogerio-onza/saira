@@ -30,7 +30,21 @@ gbif_request <- function(segments, query = NULL) {
     req |>
         httr2::req_timeout(GBIF_API_TIMEOUT_S) |>
         httr2::req_user_agent("saira R package") |>
-        httr2::req_retry(max_tries = 3L)
+        httr2::req_retry(max_tries = GBIF_API_MAX_TRIES, is_transient = gbif_transient_counter())
+}
+
+GBIF_API_MAX_TRIES <- 3L
+
+# req_perform_parallel() of httr2 1.3.0 does not read max_tries: it retries a
+# 429 or 503 until the API answers otherwise. So each request counts its own
+# tries, and its last answer counts as final.
+gbif_transient_counter <- function(max_tries = GBIF_API_MAX_TRIES) {
+    count <- new.env(parent = emptyenv())
+    count$tries <- 0L
+    function(resp) {
+        count$tries <- count$tries + 1L
+        count$tries < max_tries && httr2::resp_status(resp) %in% c(429L, 503L)
+    }
 }
 
 # Parsed JSON of a 200 response, or NULL for anything else (an HTTP error

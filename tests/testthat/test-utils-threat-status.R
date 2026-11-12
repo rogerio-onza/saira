@@ -60,3 +60,15 @@ testthat::test_that("gbif_api_get_many keeps order, drops non-200 and retries a 
     testthat::expect_equal(out[[3L]]$code, "429")
     testthat::expect_equal(tries[["429"]], 2L)
 })
+
+testthat::test_that("gbif_api_get_many stops after three rate-limit answers", {
+    testthat::skip_if_not_installed("httr2", minimum_version = "1.1.1")
+    tries <- 0L
+    httr2::local_mocked_responses(function(req) {
+        tries <<- tries + 1L
+        httr2::response(status_code = 429L, headers = list(`Retry-After` = "0"))
+    })
+    out <- saira:::gbif_api_get_many(list(list(segments = c("species", "1", "iucnRedListCategory"))))
+    testthat::expect_null(out[[1L]])
+    testthat::expect_identical(tries, 3L)
+})
