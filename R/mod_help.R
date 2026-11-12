@@ -171,7 +171,7 @@ help_start_band <- function(lang, issues_url) {
                     shiny::tags$p(class = "help-card-body", tr("help_bug_body", lang)),
                     help_external_link(
                         issues_url,
-                        class = "help-button help-button--danger",
+                        class = "help-button help-button--outline",
                         label = tr("a11y_help_bug_link", lang),
                         tr("help_bug_button", lang),
                         help_external_icon()

@@ -1985,7 +1985,9 @@ label,
   border: 1px solid rgba(142, 68, 173, 0.25);
 }
 
+/* Definitions are prose: body serif, not the data mono (ADR-134). */
 .wiki-table.saira-table-shell table.dataTable tbody td:nth-child(3) {
+  font-family: var(--font-serif);
   color: var(--text-primary);
   font-weight: 400;
   line-height: var(--leading-normal);
@@ -8638,16 +8640,6 @@ a.help-chip:hover {
 
 .help-button--accent:hover {
   background: var(--accent-fill-hover);
-}
-
-.help-button--danger,
-.help-button--danger:hover {
-  background: var(--error-fill);
-  color: var(--on-fill);
-}
-
-.help-button--danger:hover {
-  background: var(--error-fill-hover);
 }
 
 .help-button--outline {
