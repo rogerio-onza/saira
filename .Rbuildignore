@@ -27,3 +27,5 @@ Zone\.Identifier$
 
 ^website$
 ^man/figures$
+
+^desktop$

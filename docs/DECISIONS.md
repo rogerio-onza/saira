@@ -3501,6 +3501,32 @@ Formato: ADR leve (Architecture Decision Record).
 - **Consequencias**: o caminho aninhado de `dynamicProperties` mantem `\u00e9` e `\/` como estao, igual ao caminho plano. O significado do JSON nao muda.
   Mapa, medido no Chrome com o app real. Com 100 mil registros em 500 lugares, o filtro cai de ate 2,61 s para ate 1,35 s, o bloqueio da pagina de 1,77 s para 0,05 s e o heap de 598 MB para 21 MB. Com 100 mil pontos distintos, o ganho e pequeno, e o maior bloqueio continuo fica em 1,5 s. Com 300 mil pontos distintos, chega a 2,4 s, com 850 MB de heap. O mapa nao tem limite de marcadores: agrupar pontos muda o visual e pede uma escolha do dono do projeto.
 
+## ADR-191: Limites da cadeia de build e da integridade do desktop
+
+- **Data**: 2026-11-03
+- **Status**: Aceito.
+- **Contexto**: a auditoria do desktop de 2026-11-03 achou um advisory do minimatch no toolchain npm (GHSA-g3hv-75wg-m249, corrigido no 11.0.1) e codigo JS fora do `app.asar`. O electron-builder 26.18.0, a versao mais nova, ainda pede minimatch `^10`.
+- **Decisao**:
+  - Override `minimatch@^10` para `11.0.4`. Um override pela chave do pacote pai foi rejeitado: ele troca tambem o minimatch 3, 5 e 9 de toda a subarvore, e essas versoes tem outra API. O `npm audit` zera nesse caso, mas o resultado nao prova nada.
+  - O minimatch 3.1.5 e 5.1.9 ficam: o advisory cobre `>= 7.0.0, < 11.0.1`, e o teste com 8 segmentos `**/../a/b` nao amplifica nessas versoes. As dependencias npm nao entram no `app.asar`.
+  - Revisao de 2026-11-06: override `minimatch@^9` para `11.0.4`. O `app-builder-lib` 26.18.0 fixa o `@electron/universal` 2.0.3, que pede `^9`. O 26.18.1 (dist-tag `v26`) tambem fixa o 2.0.3, entao atualizar o electron-builder nao resolve esse ramo. O `@electron/universal` 3.0.4 corrigido pede Node 22.12 e outro `@electron/asar`. O pacote chama so `minimatch(path, pattern, { matchBase: true })`: 100 combinacoes de caminho e padrao dao o mesmo resultado no 9.0.9 e no 11.0.4. Essa e uma evidencia limitada: o pacote so roda no build universal de macOS, e o projeto nao gera esse build. Os builds de Linux e Windows provam so que a troca nao quebra esses dois. Com 14 segmentos e `optimizationLevel: 2`, o 9.0.9 leva 7,5 s e o 11.0.4 leva 0,1 s. O lockfile perde o minimatch 9.0.9, o brace-expansion 2.1.7 e o balanced-match 1.0.2, e o `npm audit` fica com 0 alertas.
+  - `npm install` continua, com a comparacao de versao e hash contra `desktop/node-package-lock.json` antes do electron-builder. O comando vem de dentro do shinyelectron, e o gate ja para o build numa diferenca.
+  - O backend JS entra no `app.asar`. R, bibliotecas e app Shiny ficam em `app.asar.unpacked`, porque precisam existir como arquivos.
+  - O app nao confere o hash do runtime R antes de abrir o processo. Quem escreve na pasta instalada tambem troca o executavel do Electron no Linux, e no Windows essa protecao depende da assinatura. A autenticidade fica com a politica de assinatura e distribuicao da v1.0.
+  - A v1.0 sai sem assinatura (decisao do dono, 2026-11-03): o projeto nao tem orcamento para certificado. O tutorial de instalacao explica o aviso do Windows, e o site publica o SHA-256 de cada instalador no lancamento. Um programa gratuito para codigo aberto pode entrar depois da v1.0.
+- **Consequencias**: uma versao nova do electron-builder pede rever o override e o lockfile. O fuse de integridade so tem efeito no Windows e no macOS, e o README diz isso. Sem assinatura, o Windows mostra o aviso de editor desconhecido.
+
+## ADR-192: Identidade final do desktop e R que encerra sem o shell
+
+- **Data**: 2026-11-03
+- **Status**: Aceito.
+- **Contexto**: o desktop ainda usava a identidade de previa (`org.saira.desktop.preview`, `saira-desktop-preview`, `Saíra (prévia)`). O instalador e a pasta de dados derivam dessa identidade, entao troca-la depois da publicacao instala um segundo app em vez de atualizar o primeiro. Separadamente, uma morte forcada do Electron deixou `cmd.exe` e `Rscript.exe` vivos por 1,5 h no Windows: o R tem grupo de processos proprio, e `backend.stop()` nao roda nesse caminho.
+- **Decisao**:
+  - Nome `Saíra`, `slug` `saira-desktop`, `app_id` `org.saira.desktop`, sem rotulo de previa na tela de inicio. Os builds de teste usam `1.0.0-rc.1`, e o corte usa `1.0.0`.
+  - Essa identidade nao muda depois da primeira publicacao. As previas nunca foram publicadas, entao nao ha migracao de dados.
+  - O `app.R` do desktop guarda um `ps_handle()` do shell e confere a cada 5 s se ele continua vivo. Sem o shell, o R encerra. O handle guarda o horario de inicio, entao outro processo com o mesmo PID nao conta como o shell.
+- **Consequencias**: durante uma operacao longa e sincrona, o R so nota a saida do shell quando a operacao termina. O teste de atualizar por cima so vale entre duas versoes com a identidade final.
+
 ## ADR-193: Correcoes do nucleo da auditoria de 2026-11-03
 
 - **Data**: 2026-11-03
@@ -3770,3 +3796,16 @@ Formato: ADR leve (Architecture Decision Record).
   - O download passa o snapshot `iucn_by_name` para `apply_conservation_status()`, que nao envia pedido. Sem snapshot, o pacote sai sem a chave IUCN.
 - **Consequencias**: o download nao espera a rede. A categoria MMA e o resto do pacote nao dependem do GBIF. O arquivo privado de coordenadas nao espera a consulta. Uma rodada de nomes anterior deixa o memo pronto, e a consulta repete nenhum pedido.
 
+## ADR-214: Aparencia propria do app desktop
+
+- **Data**: 2026-11-11
+- **Status**: Aceito.
+- **Contexto**: o app desktop usava o icone cinza, a lateral padrao do instalador NSIS e a barra de titulo do sistema. A barra repetia o nome do cabecalho e seguia o tema do Windows, nao o tema do app. O dono escolheu as opcoes B do quadro de mockups.
+- **Decisao**:
+  - Icone: o S italico branco sobre o indigo `#2833ac` do logotipo. O ICO vai de 16 a 256 px, e o PNG do Linux tem 512 px. O `desktop/icon.R` gera os dois.
+  - Instalador: a lateral de 164 x 314 px e a foto da saira-pintor da tela de inicio, com o logotipo e o credito. O build copia o BMP para `build/installerSidebar.bmp` e `build/uninstallerSidebar.bmp`, os nomes que o electron-builder le.
+  - Janela: `titleBarStyle: 'hidden'` com `titleBarOverlay` de 32 px. Os botoes da janela ficam no canto do cabecalho, na cor do cabecalho e do tema. O shell injeta `app-frame.css` na pagina do app com `insertCSS`, entao o pacote R nao muda.
+  - O cabecalho move a janela (`-webkit-app-region: drag`). Links, botoes, campos e pop-ups ficam fora da area de arrasto. Com um modal aberto, o cabecalho todo sai dela, porque o Electron ignora o que cobre a area.
+  - A linha 1 do cabecalho reserva a largura dos botoes (`env(titlebar-area-*)`). No cabecalho de uma linha, o espaco da esquerda cresce na mesma largura.
+  - Com os botoes, o cabecalho do desktop muda de largura em outros pontos: duas linhas ate 1811 px, uma linha a partir de 1812 px, Wiki e Ajuda so com o icone ate 2047 px e com a palavra a partir de 2048 px. Esses pontos deixam as etapas no centro e pelo menos 48 px livres antes das ferramentas. O app web nao muda.
+- **Consequencias**: entre 1360 e 1811 px, o desktop tem duas linhas e o app web tem uma, entao as regras de `app-frame.css` desfazem as regras de uma linha do pacote. Uma mudanca nessas regras do pacote (02-navbar.css, 00-tokens.css) precisa da mesma mudanca no `app-frame.css`. Em todas as larguras, as etapas ficam a ate 8 px do centro real. As telas de inicio e de erro tambem movem a janela.

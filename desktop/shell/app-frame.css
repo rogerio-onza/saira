@@ -1,0 +1,117 @@
+/* Desktop only (ADR-214). main.js adds this sheet to the app page. The window has
+   no system title bar: the navbar moves the window, and the window buttons
+   (titleBarOverlay) sit in its top right corner. The html prefix outranks the
+   package rules that set the same properties. */
+:root {
+  --saira-window-buttons: calc(100vw - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100vw));
+}
+
+html body .navbar {
+  -webkit-app-region: drag;
+}
+
+/* A drag area takes no clicks, so every control and pop-up stays out of it. */
+html body .navbar :is(a, button, input, select, textarea, label, [role="button"], [tabindex]),
+html body :is(.dropdown-menu, .popover, .tooltip, .offcanvas, .shiny-notification) {
+  -webkit-app-region: no-drag;
+}
+
+/* An open modal covers the navbar. Electron ignores what covers a drag area. */
+html body.modal-open .navbar {
+  -webkit-app-region: no-drag;
+}
+
+/* Header row 1 keeps its tools to the left of the window buttons. */
+@media (min-width: 992px) {
+  html .bslib-page-navbar .navbar .navbar-nav > li.bslib-nav-item:last-child {
+    padding-right: var(--saira-window-buttons);
+  }
+}
+
+/* The window buttons take the room of the package's one-row header. Up to
+   1811px the desktop keeps the two rows of the package below 1360px. The
+   rules undo the package's one-row rules (02-navbar.css, 00-tokens.css). */
+@media (min-width: 1360px) and (max-width: 1811.98px) {
+  html:root {
+    --app-header-height: calc(var(--header-row-height) + var(--step-row-height) + 2px);
+  }
+
+  html .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav {
+    flex-wrap: wrap;
+    --bs-navbar-nav-link-padding-x: var(--space-4);
+  }
+
+  html .bslib-page-navbar .navbar .navbar-nav > li.nav-item {
+    order: 3;
+    height: var(--step-row-height);
+  }
+
+  html .bslib-page-navbar .navbar .navbar-nav > li:has(> .nav-link[data-value="wiki"]),
+  html .bslib-page-navbar .navbar .navbar-nav > li:has(> .nav-link[data-value="help"]),
+  html .bslib-page-navbar .navbar .navbar-nav > .bslib-nav-spacer,
+  html .bslib-page-navbar .navbar .navbar-nav > li.bslib-nav-item {
+    order: 1;
+    height: var(--header-row-height);
+    --bs-navbar-nav-link-padding-x: var(--space-4);
+  }
+
+  html .bslib-page-navbar .navbar .navbar-nav > .bslib-nav-spacer {
+    flex: 1 1 auto;
+  }
+
+  html .bslib-page-navbar .navbar .navbar-nav > li.bslib-nav-item {
+    padding-left: var(--space-3);
+  }
+
+  html .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav::before {
+    flex: 0 0 var(--navbar-brand-width);
+  }
+
+  html .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav::after {
+    display: block;
+  }
+
+  html .navbar .nav-tool .nav-tool-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+}
+
+/* One header row: the left spacer grows by the same width, so the steps stay
+   in the true center (ADR-132). */
+@media (min-width: 1812px) {
+  html .bslib-page-navbar .navbar .navbar-collapse > .navbar-nav::before {
+    flex-basis: calc(var(--header-tools-width) + var(--saira-window-buttons));
+  }
+}
+
+/* Wiki and Help show the word only from 2048px: below that, the words and
+   the window buttons leave the steps no room in the center. */
+@media (min-width: 1680px) and (max-width: 2047.98px) {
+  html:root {
+    --header-tools-width: 18.8125rem;
+  }
+
+  html .navbar .nav-tool .nav-tool-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  html .bslib-page-navbar .navbar .navbar-nav > li.bslib-nav-item {
+    padding-left: var(--space-2);
+  }
+}
+
+/* Collapsed menu: at a large zoom the page is narrower than 992 CSS px. */
+@media (max-width: 991.98px) {
+  html body .navbar > .container-fluid {
+    padding-right: var(--saira-window-buttons);
+  }
+}

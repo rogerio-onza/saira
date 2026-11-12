@@ -55,3 +55,8 @@ tests/testthat/testthat-problems.rds
 # Richer Horus export: same database, carries the authoritative `origin`
 # (Native / Non-native / Cripto / Hybrid) and `native_distribution_area`.
 data-raw/invasive_species_horus_detail.csv
+
+# Local desktop build tools and generated artifacts
+/desktop/_tools/
+/desktop/_build/
+/desktop/package/

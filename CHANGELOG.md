@@ -124,6 +124,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Read the IUCN category from the COL XR answer, and give a synonym the category of its accepted name, ADR-167
 - **build:** Run the tests in CI also on the package versions of `renv.lock`, ADR-167
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
+- **desktop:** Give the app an indigo icon and a photo in the Windows installer, and put the window buttons in the app header, ADR-214
+- **desktop:** Show one of the six threatened species of the site at each start, the three R start steps and a rotating tip on the start page
 
 ### Fixed
 - **upload:** Show the green upload complete bar again when the upload ends. The record and size boxes stay removed
@@ -152,6 +154,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **preview:** Accept a GPS accuracy as `4.551` when the column writes decimals with a dot, ADR-210 ([#309](https://github.com/rogerio-onza/saira/pull/309))
 - **generalization:** Apply the category grid to a sensitive record with a GPS accuracy as `4.551`, ADR-210 ([#307](https://github.com/rogerio-onza/saira/pull/307))
 - **preview:** Break a long column name between its words in the record panel, so it never covers its value ([#308](https://github.com/rogerio-onza/saira/pull/308))
+- **desktop:** Find the unpacked app files in an install folder whose path has a name such as app.asar-tests
 - **upload:** Keep a line break inside a quoted CSV cell as LF on Windows, so the cell gets no CR ([#304](https://github.com/rogerio-onza/saira/pull/304))
 - **preview:** Show the whole Preview title and modes in a narrow window, with the first-records note under the table ([#305](https://github.com/rogerio-onza/saira/pull/305))
 - **preview:** Open the record of the first problem when the Problems list shows, so the record panel is never empty ([#303](https://github.com/rogerio-onza/saira/pull/303))
@@ -185,6 +188,17 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **upload:** Keep a literal `NA` in a data cell, and report the ID cells a file leaves empty, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
 - **year:** Stop reading a year from a decimal or a longer number, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
 - **upload:** Report Wildlife Insights timestamps with extra text, instead of reading part of them, ADR-193 ([#267](https://github.com/rogerio-onza/saira/pull/267))
+- **desktop:** Keep the app open when the log file fails, and stop R when the main process fails
+- **desktop:** Limit the log file and the kept R error text during a long session
+- **desktop:** Stop the build without the approved npm lockfile, and record the source commit, ADR-191
+- **desktop:** Update Electron to 45.2.3 and replace the minimatch version of the build tools, ADR-191
+- **desktop:** Keep the backend code in `app.asar`, and show an error when the bundled R is missing, ADR-191
+- **desktop:** Load R packages only from the installed app, not from a saved library path
+- **desktop:** Stop R when the app window process ends by force, ADR-192
+- **desktop:** Show a restart page when the window renderer stops, and an error page when the app page does not load
+- **desktop:** Declare glibc 2.39 in the `.deb`, so an older Linux refuses the install, and stop the build when the app needs a newer glibc
+- **desktop:** Add a release gate for the candidates: each build gets a record of its source, smoke test and E2E, and the release accepts only two passed records of HEAD
+- **desktop:** Use the final app name and install identity, ADR-192
 - **generalization:** Remove the coordinates of masked rows from the justification text in dataGeneralizations, ADR-190 ([#259](https://github.com/rogerio-onza/saira/pull/259))
 - **generalization:** Apply the protection to every location field of a protected record, ADR-193 ([#268](https://github.com/rogerio-onza/saira/pull/268))
 - **export:** Block a protected record while a free-text or unmapped field still shows its location, ADR-193 ([#268](https://github.com/rogerio-onza/saira/pull/268))
