@@ -1741,7 +1741,13 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                             source_label = source_label,
                             sample_text = paste(sample_vals, collapse = "  "),
                             is_mapped = is_mapped,
-                            badge_info = if (locked_taxon) NULL else build_badge_info(field_meta),
+                            # A term with no column shows no origin. MANUAL
+                            # there read as if someone had mapped it (UX-05).
+                            badge_info = if (locked_taxon || (!is_mapped && identical(field_meta$status, "MANUAL"))) {
+                                NULL
+                            } else {
+                                build_badge_info(field_meta)
+                            },
                             state_class = state_class,
                             ns = ns, lang_r = lang
                         )
@@ -2270,14 +2276,26 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
                         )
                     }
 
+                    # One toast for the run: the date-year warning joins the
+                    # summary instead of a second toast over the cards.
+                    done_text <- sprintf(
+                        tr("notif_auto_mapping_done", lang_r()),
+                        learned_count + auto_count + suggested_count,
+                        learned_count, auto_count, suggested_count
+                    )
+                    date_issues <- tryCatch(date_year_gate_r(), error = function(e) NULL)
+                    has_date_issues <- !is.null(date_issues) && date_issues$count > 0L
+                    if (has_date_issues) {
+                        rv$last_date_year_warn_count <- date_issues$count
+                    }
                     shiny::showNotification(
-                        sprintf(
-                            tr("notif_auto_mapping_done", lang_r()),
-                            learned_count + auto_count + suggested_count,
-                            learned_count, auto_count, suggested_count
-                        ),
-                        type = "message",
-                        duration = 6
+                        if (has_date_issues) {
+                            paste(done_text, date_year_warning_text(date_issues, lang_r()))
+                        } else {
+                            done_text
+                        },
+                        type = if (has_date_issues) "warning" else "message",
+                        duration = if (has_date_issues) 8 else 6
                     )
 
                     if (length(rv$ambiguity_queue) > 0) {
@@ -2725,10 +2743,7 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
                 if (!identical(rv$last_date_year_warn_count, issues$count)) {
                     shiny::showNotification(
-                        sprintf(
-                            tr("notif_date_year_warning", lang_r()),
-                            issues$count, issues$min_year, issues$max_year
-                        ),
+                        date_year_warning_text(issues, lang_r()),
                         type = "warning",
                         duration = 7
                     )

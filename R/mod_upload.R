@@ -159,7 +159,7 @@ mod_upload_ui <- function(id) {
                 )
             ),
 
-            # Stats after upload
+            # Format error of an invalid upload
             shiny::uiOutput(ns("stats"), class = "home-stats"),
             prefilled_ui_output(
                 ns("upload_notes"),
@@ -208,8 +208,14 @@ mod_upload_server <- function(id, lang_r) {
             ))
         })
 
+        # After an upload the dropzone names the file (UX-05). A rejected file
+        # keeps the empty hint, and the error shows under the dropzone.
         output$dropzone_hint_text <- shiny::renderUI({
-            home_dropzone_hint_ui(input$upload_mode %||% "csv", lang_r())
+            mode <- input$upload_mode %||% "csv"
+            if (!is.null(input$file) && !identical(file_kind(), "invalid")) {
+                return(home_dropzone_file_ui(input$file$name, lang_r()))
+            }
+            home_dropzone_hint_ui(mode, lang_r())
         })
 
         output$max_size_text <- shiny::renderUI({
@@ -485,7 +491,7 @@ mod_upload_server <- function(id, lang_r) {
             )
         }, ignoreInit = TRUE)
 
-        # Display stats after upload
+        # The format error of an invalid upload, under the drop area.
         output$stats <- shiny::renderUI({
             shiny::req(input$file)
             # Without this the validate() in raw_data() shows the message as
@@ -498,33 +504,10 @@ mod_upload_server <- function(id, lang_r) {
                     shiny::tags$span(tr(invalid_upload_msg_key(), lang_r()))
                 ))
             }
+            # raw_data() still runs here, so its read errors show under the
+            # drop area. A valid file shows no numbers: the drop area names it.
             shiny::req(raw_data())
-
-            df <- raw_data()
-
-            # Calculate file size
-            file_size_bytes <- file.info(input$file$datapath)$size
-            file_size_mb <- round(file_size_bytes / (1024 * 1024), 1)
-            file_size_str <- paste0(file_size_mb, " MB")
-
-            shiny::div(
-                class = "stats-container",
-                shiny::div(
-                    class = "stat-box",
-                    shiny::div(class = "stat-value", format_count(nrow(df), lang_r())),
-                    shiny::div(class = "stat-label", tr("upload_stats_rows", lang_r()))
-                ),
-                shiny::div(
-                    class = "stat-box",
-                    shiny::div(class = "stat-value", ncol(df)),
-                    shiny::div(class = "stat-label", tr("upload_stats_cols", lang_r()))
-                ),
-                shiny::div(
-                    class = "stat-box",
-                    shiny::div(class = "stat-value", file_size_str),
-                    shiny::div(class = "stat-label", tr("upload_stats_size", lang_r()))
-                )
-            )
+            NULL
         })
 
         # Explicit return
@@ -551,6 +534,13 @@ home_dropzone_hint_ui <- function(mode, lang) {
         shiny::tags$h2(class = "upload-dropzone-title", tr(key, lang)),
         shiny::div(class = "upload-dropzone-hint", tr("upload_dropzone_click", lang)),
         shiny::div(class = "upload-dropzone-formats", formats)
+    )
+}
+
+home_dropzone_file_ui <- function(file_name, lang) {
+    shiny::tagList(
+        shiny::tags$h2(class = "upload-dropzone-title upload-dropzone-file", file_name),
+        shiny::div(class = "upload-dropzone-hint", tr("upload_dropzone_replace", lang))
     )
 }
 

@@ -131,6 +131,36 @@ testthat::test_that("mod_export_server blocks the download and offers a fix CTA 
     )
 })
 
+testthat::test_that("the pending list sorts by severity, counts each one and keeps both mapping buttons", {
+    # A missing required term and a blank basisOfRecord at once used to share
+    # one button id, so the basisOfRecord row lost its button (UX-03).
+    df <- data.frame(
+        scientificName = c("Aus bus", "Cus dus"),
+        basisOfRecord = c("", "HumanObservation"),
+        stringsAsFactors = FALSE
+    )
+    shiny::testServer(
+        mod_export_server,
+        args = list(mapped_data_r = shiny::reactive(df), lang_r = shiny::reactive("en")),
+        {
+            session$flushReact()
+            s <- summary_r()
+            testthat::expect_gt(length(s$missing_required), 0L)
+            testthat::expect_gt(s$bor_blank_count, 0L)
+            html <- paste(output$summary$html, collapse = " ")
+            testthat::expect_match(html, "go_fix_terms", fixed = TRUE)
+            testthat::expect_match(html, "go_fix_bor", fixed = TRUE)
+
+            sev <- regmatches(html, gregexpr('data-sev="[a-z]+"', html))[[1]]
+            sev <- sub('data-sev="([a-z]+)"', "\\1", sev)
+            testthat::expect_identical(sev, sev[order(match(sev, c("block", "warn", "info")))])
+            testthat::expect_match(html, 'data-filter="all"', fixed = TRUE)
+            testthat::expect_match(html, sprintf("Blocking\\s*<span class=\"export-pending-chip-n\">%d</span>",
+                                                 sum(sev == "block")))
+        }
+    )
+})
+
 testthat::test_that("mod_export_server refuses a direct download while the export is blocked", {
     incomplete <- data.frame(
         scientificName = c("Aus bus", "Cus dus"),

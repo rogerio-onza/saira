@@ -468,3 +468,44 @@ testthat::test_that("the invalid-point alert keeps its optional navigation callb
         )
     }
 })
+
+testthat::test_that("the map overlay reuses the real decision preview (PERF-01)", {
+    local_sensitive_fixture("Panthera onca", category = "EN")
+    df <- sample_occurrence_df()
+    calls <- 0L
+    real_preview <- saira:::generalization_map_preview
+    testthat::local_mocked_bindings(
+        generalization_map_preview = function(...) {
+            calls <<- calls + 1L
+            real_preview(...)
+        },
+        .package = "saira"
+    )
+
+    shiny::testServer(
+        saira:::mod_sensitive_coords_server,
+        args = list(data_r = shiny::reactive(df), lang_r = shiny::reactive("en")),
+        {
+            session$setInputs(sensitive_mode = "generalize")
+            session$elapse(400)
+            gen_overlay_data_r()
+
+            # One real decision change computes the spatial preview once.
+            calls <<- 0L
+            group_levels_rv(list(en = "high"))
+            session$flushReact()
+            session$elapse(400)
+            overlay <- gen_overlay_data_r()
+            actual <- actual_preview_r()
+            testthat::expect_identical(calls, 1L)
+            testthat::expect_identical(overlay$prev, actual)
+
+            # A what-if tier stays its own computation.
+            preview_tier_rv("extreme")
+            session$flushReact()
+            session$elapse(400)
+            testthat::expect_false(identical(gen_overlay_data_r()$prev, actual))
+            testthat::expect_identical(calls, 2L)
+        }
+    )
+})

@@ -359,16 +359,18 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             is_gen <- identical(input$sensitive_mode %||% "publish", "generalize")
             prev <- NULL
             if (is_gen) {
+                # With no what-if tier the map shows the real decision, which
+                # actual_preview_r() already computed for the alerts.
                 pt <- preview_tier_rv()
-                levels <- if (!is.null(pt)) {
-                    stats::setNames(rep(pt, nrow(ov)), ov$scientificName)
+                prev <- if (is.null(pt)) {
+                    actual_preview_r()
                 } else {
-                    species_levels_r()
+                    tryCatch(
+                        generalization_map_preview(df, stats::setNames(rep(pt, nrow(ov)), ov$scientificName),
+                                                   export_sensitivity_payload()),
+                        error = function(e) NULL
+                    )
                 }
-                prev <- tryCatch(
-                    generalization_map_preview(df, levels, export_sensitivity_payload()),
-                    error = function(e) NULL
-                )
             }
             # A point takes its threat colour once its species has a decision:
             # a group answer, an exception, or "publish" for everything.
