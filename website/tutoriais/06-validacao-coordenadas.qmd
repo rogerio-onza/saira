@@ -1,0 +1,108 @@
+---
+title: "Validando coordenadas"
+pagetitle: "Validação de coordenadas · Tutoriais Saíra"
+aliases:
+  - 05-validacao-coordenadas.html
+---
+
+::: {.tut-standfirst}
+Encontre coordenadas trocadas, no mar ou fora do país na etapa **Coordenadas**. O Saíra propõe correções. Você decide quais aplicar.
+:::
+
+## Rode a validação
+
+A validação precisa de <span class="term">decimalLatitude</span>, <span class="term">decimalLongitude</span> e <span class="term">country</span> mapeados. Sem um deles, o botão **Validar Coordenadas** fica desativado.
+
+```{=html}
+<figure class="shot"><img src="../assets/img/t05-results.png" width="1440" alt="Etapa Coordenadas após a validação, com a barra de colunas, os painéis de correção, os filtros e a tabela de diagnóstico destacados"></figure>
+```
+
+::: {.marks}
+1. As colunas mapeadas e o botão **Validar Coordenadas**.
+2. Coordenadas transpostas. **Corrigir** aplica a troca.
+3. Países faltando. **Preencher** usa o país em que o ponto cai.
+4. Os filtros mudam o mapa e a tabela juntos.
+5. A tabela lista cada registro com o diagnóstico.
+:::
+
+| Diagnóstico | Significado |
+|---|---|
+| Coordenada ausente | Latitude ou longitude vazia ou não numérica. |
+| Inválida | Latitude além de ±90 ou longitude além de ±180. |
+| Possível inversão | Latitude e longitude parecem trocadas. |
+| Em mar aberto | O ponto cai na água. |
+| Zero/Equal | Ponto em (0, 0) ou latitude igual à longitude. |
+| Referência sensível | Ponto perto de capital, centróide de país, sede do GBIF ou instituição biológica. |
+| Fora do país informado | O ponto cai fora do país da linha. O Saíra lista as linhas, sem correção automática. |
+
+Os testes rodam sem internet, com a camada de países do Natural Earth embutida no Saíra. Só o mapa de fundo precisa de internet.
+
+Durante a validação, o painel mostra o teste em curso e quantos registros ele confere. No mapa, cada hexágono é um ponto e a cor diz a situação: Válida, Inválida, Mar, Mar não verificado, Zero/Equal, Referência sensível ou Corrigida. Num mapa grande, o Saíra desenha uma amostra dos pontos válidos e todos os pontos com problema.
+
+Clique num ponto e use **Mostrar na tabela** para abrir o registro. Se vários registros caem no mesmo lugar, o ponto diz **N registros neste ponto**. Coordenada fora do intervalo válido não aparece no mapa: o aviso sobre o mapa tem **Ver na tabela**.
+
+::: {.callout-warning}
+## O teste de mar é aproximado
+A costa é simplificada. Um ponto muito perto da costa pode aparecer como **Em mar aberto**. Confira no mapa antes de descartar o registro.
+:::
+
+## Coordenadas em outros formatos
+
+O Saíra lê graus, minutos e segundos (`23°33'1.872"S`) e minutos decimais (`46°37.999' W`). A letra do hemisfério pode vir no início ou no fim: N, S, E, W, O (oeste) ou L (leste). Vírgula e ponto decimal valem. O Saíra rejeita letra que contradiz o sinal (`-23.5 N`) e minutos ou segundos de 60 ou mais. Também rejeita número em forma hexadecimal ou com expoente, como `0x1A` ou `1e2`.
+
+## Converta coordenadas UTM
+
+```{=html}
+<figure class="shot"><img src="../assets/img/t05-utm.png" width="1440" alt="Painel de coordenadas projetadas com o hemisfério, a zona UTM, o datum de origem e o botão Converter para graus decimais destacados"></figure>
+```
+
+::: {.marks}
+1. Escolha o **Hemisfério**. Os números não dizem se os pontos estão ao sul ou ao norte do equador.
+2. Escolha a **Zona UTM**. A zona não sai dos números: o mesmo par vale em todas as zonas.
+3. Escolha o **Datum de origem**.
+4. Confira os pontos no mapa e clique em **Converter para graus decimais**.
+:::
+
+Se o Saíra não sabe qual coluna é o northing, ele também pede os **Eixos**. Se mais de uma zona põe os pontos no país informado, o Saíra diz quantas. Confira no mapa qual está certa. Os valores originais e o sistema de referência ficam em <span class="term">verbatimLatitude</span>, <span class="term">verbatimLongitude</span>, <span class="term">verbatimCoordinateSystem</span> e <span class="term">verbatimSRS</span>.
+
+| Datum | Zonas | Hemisfério |
+|---|---|---|
+| SIRGAS 2000 (padrão) | 17 a 25 | Norte e sul |
+| WGS 84 | 1 a 60 | Norte e sul |
+| SAD69 | 18 a 25 | Sul |
+| Córrego Alegre | 21 a 25 | Sul |
+
+## Aplique as correções propostas
+
+Os painéis aparecem só quando há candidatos:
+
+| Painel | O que o Saíra faz |
+|---|---|
+| **Corrigir** transpostas | Testa trocas de latitude e longitude e de sinal. Aceita a primeira que cai no país informado (margem de ~22 km). |
+| **Preencher** países | Preenche <span class="term">country</span> vazio com o país em que o ponto cai. Não troca um país já informado. |
+| **Trocar** no mar sem país | Troca latitude e longitude e preenche o país, se o ponto novo cai num só país. |
+
+As correções valem na exportação. O dado original não muda. Se <span class="term">verbatimLatitude</span> e <span class="term">verbatimLongitude</span> estão vazios, o valor original vai para eles.
+
+## Corrija um ponto na tabela
+
+```{=html}
+<figure class="shot"><img src="../assets/img/t05-edit.png" width="759" alt="Tabela de diagnóstico com uma longitude corrigida, o filtro Editadas e a dica de edição destacados"></figure>
+```
+
+::: {.marks}
+1. Clique duas vezes na latitude ou na longitude. Digite o valor em graus decimais, com vírgula ou ponto. Enter salva.
+2. O filtro **Editadas** mostra só as linhas que você corrigiu.
+3. O valor novo. O Saíra valida o ponto de novo. **Desfazer** devolve o valor original.
+:::
+
+Validar de novo não apaga as correções manuais. A correção guarda o ponto de origem: se o ponto mudou depois da correção ou o registro saiu dos dados, o Saíra descarta a correção e avisa. Uma linha sem <span class="term">occurrenceID</span> único não aceita edição.
+
+O Saíra não cria coordenada a partir do texto da localidade. Um registro sem coordenada fica como está, a não ser que você digite as duas coordenadas na tabela.
+
+::: {.callout-tip}
+## Sinal das coordenadas no Brasil
+Quase todo o Brasil tem latitude e longitude negativas. `-34.87, -8.04` (lat, lon) em vez de `-8.04, -34.87` põe um ponto de Pernambuco no meio do Atlântico.
+:::
+
+Registre também o <span class="term">geodeticDatum</span> (por exemplo, `WGS84`) e, se souber, <span class="term">coordinateUncertaintyInMeters</span>. Muitas análises filtram registros por esse campo.

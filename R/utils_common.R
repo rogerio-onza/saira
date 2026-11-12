@@ -42,6 +42,52 @@ create_rds_cache <- function(name = "unnamed") {
     )
 }
 
+#' Create a cache for the parts of a step that a rerun can reuse
+#'
+#' A reactive reruns the whole step when one input changes. The step keys each
+#' part on its inputs, so a rerun builds only the parts whose inputs changed.
+#' `identical()` returns at once for the same object, so an input that did not
+#' change costs almost nothing to check.
+#'
+#' `$get(key, inputs, compute)` returns the stored value when `inputs` are
+#' identical to the stored ones, otherwise it calls `compute()` and stores the
+#' result. `$prune()` removes the keys that the run did not read, so the cache
+#' does not keep the columns of an old upload or an unmapped term in memory.
+#'
+#' @return Named list with `get` and `prune`.
+#' @noRd
+create_step_cache <- function() {
+    entries <- new.env(parent = emptyenv())
+    state <- new.env(parent = emptyenv())
+    state$used <- character(0)
+
+    list(
+        get = function(key, inputs, compute) {
+            state$used <- c(state$used, key)
+            hit <- entries[[key]]
+            if (!is.null(hit) && identical(hit$inputs, inputs)) {
+                return(hit$value)
+            }
+            value <- compute()
+            entries[[key]] <- list(inputs = inputs, value = value)
+            value
+        },
+        prune = function() {
+            rm(list = setdiff(ls(entries, all.names = TRUE), state$used), envir = entries)
+            state$used <- character(0)
+            invisible(TRUE)
+        }
+    )
+}
+
+# Calls compute() directly when the caller passes no cache.
+step_cache_get <- function(cache, key, inputs, compute) {
+    if (is.null(cache)) {
+        return(compute())
+    }
+    cache$get(key, inputs, compute)
+}
+
 #' Check if a value is blank (NULL, NA, empty, or whitespace-only)
 #'
 #' @param x A scalar value to check
@@ -90,4 +136,44 @@ tokenize_for_matching <- function(x) {
     parts <- strsplit(normalized, " ", fixed = TRUE)[[1]]
     parts <- trimws(parts)
     parts[nzchar(parts)]
+}
+
+# Common fallback: NULL, scalar NA or an empty string. Vectors and tables are
+# retained. A table with one column has length 1, and is.na() of it is a matrix.
+`%||%` <- function(a, b) if (is.null(a) || (length(a) == 1L && !is.data.frame(a) && (is.na(a) || identical(a, "")))) b else a
+
+normalize_domain_keys <- function(values) {
+    chr <- as.character(values)
+    chr[is.na(values)] <- ""
+    tolower(trimws(chr))
+}
+
+# Shared column extraction; historical Rostrum name retained for callers.
+rostrum_extract_column <- function(df, column_name) {
+    if (!is.character(column_name) || length(column_name) != 1L || is.na(column_name) || !nzchar(column_name)) {
+        return(rep(NA_character_, nrow(df)))
+    }
+    if (!(column_name %in% names(df))) {
+        return(rep(NA_character_, nrow(df)))
+    }
+
+    values <- as.character(df[[column_name]])
+    values[is.na(df[[column_name]])] <- NA_character_
+    values
+}
+
+# The desktop shell starts R with SAIRA_ACCESS_KEY and gives its own window
+# the same key in the saira_access cookie. A session opens only with that
+# cookie and an Origin that names the host of the request.
+session_has_access <- function(request, key) {
+    header <- function(name) {
+        value <- request[[name]]
+        if (is.character(value) && length(value) == 1L) value else ""
+    }
+    host <- header("HTTP_HOST")
+    cookies <- strsplit(header("HTTP_COOKIE"), ";[[:space:]]*")[[1]]
+    sent <- sub("^saira_access=", "", cookies[startsWith(cookies, "saira_access=")])
+    nzchar(key) && nzchar(host) &&
+        identical(header("HTTP_ORIGIN"), paste0("http://", host)) &&
+        key %in% sent
 }

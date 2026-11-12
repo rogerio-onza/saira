@@ -7,10 +7,12 @@
 #'
 #' Starts the Saira app for biodiversity data standardization
 #'
+#' @param options Named list of Shiny app options, such as `port`. They
+#'   replace the defaults of the same name.
 #' @param ... Additional arguments passed to shinyApp
 #' @return A Shiny app object
 #' @export
-run_app <- function(...) {
+run_app <- function(options = list(), ...) {
     # Set max upload file size to 500 MB
     options(shiny.maxRequestSize = 500 * 1024^2)
 
@@ -40,10 +42,26 @@ run_app <- function(...) {
 
     shiny::addResourcePath("www", www_path)
 
+    # Only the desktop shell sets the key (see session_has_access()).
+    access_key <- Sys.getenv("SAIRA_ACCESS_KEY")
+    server <- app_server
+    if (nzchar(access_key)) {
+        server <- function(input, output, session) {
+            if (!session_has_access(session$request, access_key)) {
+                session$close()
+                return(invisible(NULL))
+            }
+            app_server(input, output, session)
+        }
+    }
+
     shiny::shinyApp(
         ui = app_ui(),
-        server = app_server,
-        options = list(launch.browser = getOption("shiny.launch.browser", interactive())),
+        server = server,
+        options = utils::modifyList(
+            list(launch.browser = getOption("shiny.launch.browser", interactive())),
+            options
+        ),
         ...
     )
 }

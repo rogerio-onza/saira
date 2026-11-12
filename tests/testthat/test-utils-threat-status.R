@@ -1,82 +1,136 @@
-# Title: Tests for conservation-status lookups (GBIF IUCN Red List)
+# Title: Tests for conservation-status lookups (IUCN Red List from COL XR)
 # Author: Rogerio Nunes Oliveira
 #
-# The GBIF calls are mocked at the gbif_api_get_many / has_httr2 boundary so the
-# tests are deterministic and offline: no real network is touched.
+# The GBIF calls are mocked at the gbif_api_get_many boundary with recorded
+# COL XR responses, so the tests are deterministic and offline.
 
-testthat::test_that("fetch_gbif_iucn_category returns the code and NA for misses", {
-    saira:::gbif_iucn_cache$reset()
-    withr::defer(saira:::gbif_iucn_cache$reset())
+colxr_fixture_bodies <- function(requests) {
+    lapply(requests, function(r) {
+        file <- testthat::test_path(
+            "fixtures", "colxr", paste0(gsub(" ", "_", r$query$scientificName), ".json")
+        )
+        if (file.exists(file)) jsonlite::read_json(file) else NULL
+    })
+}
+
+testthat::test_that("colxr_iucn_category reads the code and uses the accepted name of a synonym", {
+    saira:::colxr_match_cache$reset()
+    withr::defer(saira:::colxr_match_cache$reset())
+    testthat::local_mocked_bindings(gbif_api_get_many = colxr_fixture_bodies, .package = "saira")
+
+    out <- saira:::colxr_iucn_category(
+        c("Panthera onca", "Caesalpinia echinata", "Rhea americana americana", "Pantera onca", NA, "")
+    )
+    # Caesalpinia echinata is a synonym: the EN of Paubrasilia echinata applies.
+    testthat::expect_equal(out, c("NT", "EN", NA, NA, NA, NA))
+})
+
+testthat::test_that("colxr_iucn_category gives NA when GBIF does not answer", {
+    saira:::colxr_match_cache$reset()
+    withr::defer(saira:::colxr_match_cache$reset())
     testthat::local_mocked_bindings(
-        has_httr2 = function() TRUE,
-        gbif_api_get_many = function(requests) {
-            lapply(requests, function(r) {
-                key <- r$segments[[2L]]
-                if (identical(key, "111")) {
-                    list(category = "VULNERABLE", code = "VU")
-                } else if (identical(key, "222")) {
-                    list(category = "NEAR_THREATENED", code = "NT")
-                } else {
-                    NULL # taxon not assessed -> NULL body
-                }
-            })
-        },
+        gbif_api_get_many = function(requests) vector("list", length(requests)),
         .package = "saira"
     )
-    out <- saira:::fetch_gbif_iucn_category(c("111", "222", "999", NA))
-    testthat::expect_equal(out, c("VU", "NT", NA, NA))
+    testthat::expect_equal(saira:::colxr_iucn_category(c("Panthera onca", "Sapajus apella")), c(NA_character_, NA_character_))
+    testthat::expect_equal(saira:::colxr_iucn_category(character(0)), character(0))
 })
 
-testthat::test_that("fetch_gbif_iucn_category memoizes each usageKey once", {
-    saira:::gbif_iucn_cache$reset()
-    withr::defer(saira:::gbif_iucn_cache$reset())
-    calls <- 0L
+# Runs the Export IUCN lookup to its end. `fetch_for` gets the misses of each
+# batch, as names_worker_fetch() does.
+run_iucn_lookup <- function(names, fetch_for, max_ticks = 50L) {
+    state <- saira:::iucn_lookup_new(names, run_id = "test")
+    for (i in seq_len(max_ticks)) {
+        if (identical(state$phase, "done")) break
+        state <- saira:::iucn_lookup_step(state, fetch_for)
+    }
+    state
+}
+
+testthat::test_that("the Export IUCN lookup gives the codes of accepted names and synonyms", {
+    saira:::colxr_match_cache$reset()
+    withr::defer(saira:::colxr_match_cache$reset())
+    sent <- character(0)
+    fetch_for <- function(misses) {
+        sent <<- c(sent, misses)
+        colxr_fixture_bodies
+    }
+    state <- run_iucn_lookup(c("Panthera onca", "Caesalpinia echinata", "Pantera onca", NA, ""), fetch_for)
+    testthat::expect_identical(state$phase, "done")
+    # Caesalpinia echinata is a synonym: the EN of Paubrasilia echinata applies.
+    testthat::expect_identical(
+        state$snapshot,
+        c("Panthera onca" = "NT", "Caesalpinia echinata" = "EN", "Pantera onca" = NA)
+    )
+    testthat::expect_length(state$unanswered, 0L)
+    testthat::expect_setequal(sent, c("Panthera onca", "Caesalpinia echinata", "Pantera onca",
+                                      "Paubrasilia echinata"))
+
+    # The download step reads the snapshot and sends no request.
     testthat::local_mocked_bindings(
-        has_httr2 = function() TRUE,
-        gbif_api_get_many = function(requests) {
-            calls <<- calls + length(requests)
-            lapply(requests, function(r) list(code = "EN"))
-        },
+        gbif_api_get_many = function(requests) stop("no request expected"),
         .package = "saira"
     )
-    saira:::fetch_gbif_iucn_category(c("500", "500"))
-    saira:::fetch_gbif_iucn_category("500")
-    testthat::expect_equal(calls, 1L)
-})
-
-testthat::test_that("fetch_gbif_iucn_category yields all NA when httr2 is absent", {
-    saira:::gbif_iucn_cache$reset()
-    withr::defer(saira:::gbif_iucn_cache$reset())
-    testthat::local_mocked_bindings(has_httr2 = function() FALSE, .package = "saira")
-    out <- saira:::fetch_gbif_iucn_category(c("111", "222"))
-    testthat::expect_true(all(is.na(out)))
-})
-
-testthat::test_that("fetch_gbif_iucn_category handles empty input", {
-    testthat::expect_equal(saira:::fetch_gbif_iucn_category(character(0)), character(0))
-})
-
-testthat::test_that("gbif_match_usage_keys resolves names to usage keys", {
-    saira:::gbif_match_cache$reset()
-    withr::defer(saira:::gbif_match_cache$reset())
-    testthat::local_mocked_bindings(
-        has_httr2 = function() TRUE,
-        gbif_api_get_many = function(requests) {
-            lapply(requests, function(r) {
-                if (identical(r$query$name, "Panthera onca")) list(usageKey = 5219426L) else NULL
-            })
-        },
-        .package = "saira"
+    df <- data.frame(scientificName = c("Caesalpinia echinata", "Panthera onca", "Pantera onca"))
+    out <- saira:::apply_conservation_status(
+        df, list(include_iucn = TRUE, iucn_by_name = state$snapshot)
     )
-    out <- saira:::gbif_match_usage_keys(c("Panthera onca", "Nonexistent sp", NA))
-    testthat::expect_equal(out, c("5219426", NA, NA))
+    testthat::expect_identical(
+        out$dynamicProperties,
+        c("{\"iucnRedListCategory\":\"EN\"}", "{\"iucnRedListCategory\":\"NT\"}", "")
+    )
 })
 
-testthat::test_that("gbif_match_usage_keys yields all NA when httr2 is absent", {
-    saira:::gbif_match_cache$reset()
-    withr::defer(saira:::gbif_match_cache$reset())
-    testthat::local_mocked_bindings(has_httr2 = function() FALSE, .package = "saira")
-    testthat::expect_true(all(is.na(saira:::gbif_match_usage_keys(c("A b", "C d")))))
+testthat::test_that("the Export IUCN lookup asks a name without an answer once per run", {
+    saira:::colxr_match_cache$reset()
+    withr::defer(saira:::colxr_match_cache$reset())
+    sent <- character(0)
+    fetch_for <- function(misses) {
+        sent <<- c(sent, misses)
+        saira:::gbif_offline_fetch
+    }
+    names <- paste("Genus", sprintf("sp%02d", 1:25))
+    state <- run_iucn_lookup(names, fetch_for)
+    testthat::expect_identical(state$phase, "done")
+    testthat::expect_identical(sort(sent), sort(names))
+    testthat::expect_setequal(state$unanswered, names)
+    testthat::expect_true(all(is.na(state$snapshot)))
+    # A batch in flight leaves the state as it is.
+    pending <- saira:::iucn_lookup_new(names, run_id = "test")
+    testthat::expect_identical(saira:::iucn_lookup_step(pending, function(misses) NULL), pending)
+    testthat::expect_identical(saira:::iucn_lookup_progress(pending), list(done = 0L, total = 25L))
+})
+
+testthat::test_that("the Export IUCN lookup repeats no query of a Names run", {
+    saira:::colxr_match_cache$reset()
+    withr::defer(saira:::colxr_match_cache$reset())
+    saira:::colxr_match_names(c("Panthera onca", "Caesalpinia echinata"), fetch = colxr_fixture_bodies)
+    sent <- character(0)
+    fetch_for <- function(misses) {
+        sent <<- c(sent, misses)
+        colxr_fixture_bodies
+    }
+    state <- run_iucn_lookup(c("Panthera onca", "Caesalpinia echinata"), fetch_for)
+    # Only the accepted name of the synonym was not in the memo.
+    testthat::expect_identical(sent, "Paubrasilia echinata")
+    testthat::expect_identical(state$snapshot, c("Panthera onca" = "NT", "Caesalpinia echinata" = "EN"))
+})
+
+testthat::test_that("a skip of the Export IUCN lookup keeps the answers that came", {
+    saira:::colxr_match_cache$reset()
+    withr::defer(saira:::colxr_match_cache$reset())
+    saira:::colxr_match_names(c("Panthera onca", "Caesalpinia echinata"), fetch = colxr_fixture_bodies)
+    state <- saira:::iucn_lookup_new(c("Panthera onca", "Caesalpinia echinata", "Genus sp01"), run_id = "test")
+    testthat::expect_identical(saira:::iucn_lookup_answered(state), 2L)
+
+    out <- saira:::iucn_lookup_finish(state)
+    testthat::expect_identical(out$phase, "done")
+    testthat::expect_identical(
+        out$snapshot,
+        c("Panthera onca" = "NT", "Caesalpinia echinata" = NA, "Genus sp01" = NA)
+    )
+    # The synonym has no answer for its accepted name yet.
+    testthat::expect_setequal(out$unanswered, c("Caesalpinia echinata", "Genus sp01"))
 })
 
 testthat::test_that("gbif_api_get_many keeps order, drops non-200 and retries a 429", {
@@ -104,8 +158,14 @@ testthat::test_that("gbif_api_get_many keeps order, drops non-200 and retries a 
     testthat::expect_equal(tries[["429"]], 2L)
 })
 
-testthat::test_that("gbif_api_get_many returns NULL bodies without httr2", {
-    testthat::local_mocked_bindings(has_httr2 = function() FALSE, .package = "saira")
-    out <- saira:::gbif_api_get_many(list(list(segments = "x"), list(segments = "y")))
-    testthat::expect_equal(out, list(NULL, NULL))
+testthat::test_that("gbif_api_get_many stops after three rate-limit answers", {
+    testthat::skip_if_not_installed("httr2", minimum_version = "1.1.1")
+    tries <- 0L
+    httr2::local_mocked_responses(function(req) {
+        tries <<- tries + 1L
+        httr2::response(status_code = 429L, headers = list(`Retry-After` = "0"))
+    })
+    out <- saira:::gbif_api_get_many(list(list(segments = c("species", "1", "iucnRedListCategory"))))
+    testthat::expect_null(out[[1L]])
+    testthat::expect_identical(tries, 3L)
 })

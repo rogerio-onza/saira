@@ -9,7 +9,9 @@ mod_validate_names_server(
   mapped_data_r,
   lang_r,
   validation_gate_r = NULL,
-  reset_signal_r = NULL
+  reset_signal_r = NULL,
+  return_contract = c("legacy", "list"),
+  names_worker = names_worker_new()
 )
 }
 \arguments{
@@ -23,9 +25,15 @@ mod_validate_names_server(
 
 \item{reset_signal_r}{Optional reactive reset signal from the mapping module.
 When it fires, module-local state and inputs are cleared.}
+
+\item{return_contract}{Return a legacy reactive (default) or a named list of reactives.}
+
+\item{names_worker}{Worker that sends the GBIF requests of a names run from
+a separate R process. \code{NULL} sends them from the app session.}
 }
 \value{
-Reactive validation report data frame
+A reactive with legacy attributes by default, or a named list of
+  reactives when return_contract is \code{"list"}.
 }
 \description{
 Validate Names Module Server

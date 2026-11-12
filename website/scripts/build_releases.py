@@ -8,10 +8,11 @@ site. It produces three generated (git-ignored) artifacts:
 * ``_variables.yml``        — exposes the current version to pages via {{< var version >}}
 * ``assets/version.html``   — a <script> defining window.SAIRA_VERSION for the navbar badge
 * ``_releases-pt.md`` /
-  ``_releases-en.md``       — styled release cards, included by the two pages
+  ``_releases-en.md`` /
+  ``_releases-es.md``       — styled release cards, included by the three pages
 
 The version comes from the repo-root DESCRIPTION; the highlights come from the
-curated, bilingual website/data/releases.py.
+curated, trilingual website/data/releases.py.
 """
 
 from __future__ import annotations
@@ -28,6 +29,7 @@ REPO_ROOT = WEBSITE_DIR.parent
 TAG_LABELS = {
     "pt": {"added": "Novo", "changed": "Mudou", "fixed": "Corrigido"},
     "en": {"added": "Added", "changed": "Changed", "fixed": "Fixed"},
+    "es": {"added": "Nuevo", "changed": "Cambió", "fixed": "Corregido"},
 }
 
 
@@ -91,10 +93,10 @@ def main() -> None:
     (WEBSITE_DIR / "assets" / "version.html").write_text(
         f'<script>window.SAIRA_VERSION = "{version}";</script>\n', encoding="utf-8"
     )
-    (WEBSITE_DIR / "_releases-pt.md").write_text(render_cards(releases, "pt"), encoding="utf-8")
-    (WEBSITE_DIR / "_releases-en.md").write_text(render_cards(releases, "en"), encoding="utf-8")
+    for lang in TAG_LABELS:
+        (WEBSITE_DIR / f"_releases-{lang}.md").write_text(render_cards(releases, lang), encoding="utf-8")
 
-    print(f"build_releases: version {version}, {len(releases)} releases -> PT/EN cards")
+    print(f"build_releases: version {version}, {len(releases)} releases -> PT/EN/ES cards")
 
 
 if __name__ == "__main__":

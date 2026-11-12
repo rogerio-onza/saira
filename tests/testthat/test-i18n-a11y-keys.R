@@ -16,7 +16,6 @@ testthat::test_that("a11y/ui keys for this cycle exist in pt/en", {
         "a11y_wiki_page_length_label",
         "a11y_bor_target_label",
         "mapping_sidebar_actions",
-        "mapping_sidebar_filters",
         # Add Term modal (ADR-082)
         "btn_add_term",
         "modal_add_term_title",
@@ -76,7 +75,6 @@ testthat::test_that("a11y/ui keys resolve with tr in pt/en", {
         "a11y_wiki_page_length_label",
         "a11y_bor_target_label",
         "mapping_sidebar_actions",
-        "mapping_sidebar_filters",
         "btn_add_term",
         "modal_add_term_title",
         "modal_add_term_label",

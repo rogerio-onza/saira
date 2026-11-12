@@ -9,11 +9,11 @@ format_count(n, lang = "en")
 \arguments{
 \item{n}{Numeric or integer scalar.}
 
-\item{lang}{Character. \code{"pt"} or \code{"en"}.}
+\item{lang}{Character. Language code.}
 }
 \value{
-Character. Grouped integer string (\code{"1.234.567"} for pt,
-  \code{"1,234,567"} for en).
+Character. Grouped integer string (\code{"1.234.567"} for pt and
+  es, \code{"1,234,567"} for en).
 }
 \description{
 Format an integer with locale-aware thousands grouping

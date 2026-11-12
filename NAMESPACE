@@ -16,6 +16,7 @@ export(build_mapping_guide_txt)
 export(build_meta_xml)
 export(cc_license_names)
 export(cc_license_uris)
+export(check_publication)
 export(clean_coordinate_separators)
 export(clean_scientific_names)
 export(compute_dataset_extents)
@@ -69,6 +70,7 @@ export(parse_mapping_guide_txt)
 export(process_for_export)
 export(process_for_export_with_unmapped)
 export(read_biodiversity_csv)
+export(read_biodiversity_xlsx)
 export(rostrum_commit_session_aliases)
 export(rostrum_connect)
 export(rostrum_export_template_json)
@@ -92,31 +94,35 @@ export(validate_coords_df)
 export(validate_decision_df)
 export(validate_occurrence_id)
 export(write_xlsx_text_only)
-importFrom(DBI,dbConnect)
-importFrom(DBI,dbDisconnect)
-importFrom(DBI,dbExecute)
-importFrom(DBI,dbExistsTable)
-importFrom(DBI,dbGetQuery)
-importFrom(DBI,dbIsValid)
-importFrom(DBI,dbWithTransaction)
+importFrom(DBI,
+  dbConnect,
+  dbDisconnect,
+  dbExecute,
+  dbExistsTable,
+  dbGetQuery,
+  dbIsValid,
+  dbWithTransaction
+)
 importFrom(RSQLite,SQLite)
 importFrom(digest,digest2int)
-importFrom(jsonlite,fromJSON)
-importFrom(jsonlite,toJSON)
-importFrom(shiny,NS)
-importFrom(shiny,moduleServer)
-importFrom(shiny,need)
-importFrom(shiny,observeEvent)
-importFrom(shiny,reactive)
-importFrom(shiny,reactiveVal)
-importFrom(shiny,reactiveValues)
-importFrom(shiny,renderUI)
-importFrom(shiny,req)
-importFrom(shiny,showNotification)
-importFrom(shiny,validate)
-importFrom(stringr,str_detect)
-importFrom(stringr,str_replace_all)
-importFrom(stringr,str_split)
-importFrom(stringr,str_trim)
-importFrom(withr,defer)
-importFrom(withr,with_tempdir)
+importFrom(jsonlite,
+  fromJSON,
+  toJSON
+)
+importFrom(shiny,
+  NS,
+  moduleServer,
+  need,
+  observeEvent,
+  reactive,
+  reactiveVal,
+  reactiveValues,
+  renderUI,
+  req,
+  showNotification,
+  validate
+)
+importFrom(withr,
+  defer,
+  with_tempdir
+)

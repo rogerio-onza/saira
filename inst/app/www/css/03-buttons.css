@@ -3,7 +3,7 @@
    ============================================================================= */
 
 .btn {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
   font-weight: 400;
   font-size: var(--text-base);
   padding: 0.6rem 1.25rem;
@@ -15,8 +15,8 @@
 
 .btn-primary {
   background-color: var(--primary);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-primary);
+  color: var(--on-bright);
+  box-shadow: none;
 }
 
 .btn-primary:hover {
@@ -34,51 +34,58 @@
   transform: translateY(0);
 }
 
+/* Outlined buttons: 1px neutral border, a colored border on hover, no fill
+   inversion. .btn drops borders, so these put their 1px back. */
 .btn-secondary,
-.btn-outline-primary {
-  background-color: transparent;
-  border: 2px solid var(--accent);
-  color: var(--accent);
+.btn-outline-primary,
+.btn-outline-secondary {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
 }
 
 .btn-secondary:hover,
-.btn-outline-primary:hover {
-  background-color: var(--accent);
-  color: var(--bg-card);
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-secondary:focus-visible {
+  background-color: var(--bg-card);
+  border-color: var(--step-active);
+  color: var(--step-active);
 }
 
+/* Bright fills keep dark text in both themes (--on-bright). */
 .btn-success {
   background-color: var(--success);
-  color: var(--text-primary);
+  color: var(--on-bright);
   box-shadow: var(--shadow-success);
 }
 
 .btn-success:hover {
   background-color: #009960;
-  color: var(--text-primary);
+  color: var(--on-bright);
 }
 
 .btn-warning {
   background-color: var(--warning);
-  color: var(--text-primary);
+  color: var(--on-bright);
 }
 
 .btn-warning:hover {
   background-color: #e09000;
-  color: var(--text-primary);
+  color: var(--on-bright);
 }
 
 .btn-danger,
 .btn-error {
-  background-color: var(--error);
-  color: var(--bg-card);
+  background-color: var(--error-fill);
+  color: var(--on-fill);
   box-shadow: var(--shadow-error);
 }
 
 .btn-danger:hover,
 .btn-error:hover {
-  background-color: #a93226;
-  color: var(--bg-card);
+  background-color: var(--error-fill-hover);
+  color: var(--on-fill);
 }
 
 .btn:disabled {

@@ -1,0 +1,57 @@
+/* Shell page (lifecycle.html). Tokens follow inst/app/www/css/00-tokens.css. */
+@import url('fonts/source-fonts.css');
+
+:root {
+  --bg: #f5f6f8; --card: #ffffff; --subtle: #f8f9fb; --text: #1c1c26; --muted: #5f6570;
+  --border: #e3e6eb; --border-light: #eceef2; --border-strong: #d3d8e0;
+  --accent: #2833ac; --fill: #2833ac; --on-fill: #ffffff;
+  --font-ui: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-brand: 'Source Serif 4', Georgia, serif;
+  --font-mono: 'Space Mono', monospace;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #0f1116; --card: #171a21; --subtle: #13151b; --text: #e6e8ee; --muted: #9ba2ae;
+  --border: #292e37; --border-light: #1f232b; --border-strong: #384050;
+  --accent: #a3abff; --fill: #3d49cc;
+  color-scheme: dark;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-ui); background: var(--bg); color: var(--text);
+  overflow: hidden; user-select: none;
+}
+[hidden] { display: none !important; }
+
+.wordmark {
+  font-family: var(--font-brand); font-style: italic; font-weight: 600;
+  line-height: 1; color: var(--accent);
+}
+
+.track { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+.track > span {
+  display: block; width: 30%; height: 4px; border-radius: 2px; background: var(--fill);
+  animation: slide 1.6s ease-in-out infinite;
+}
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+@media (prefers-reduced-motion: reduce) {
+  .track > span { animation: none; transform: translateX(115%); }
+}
+
+.btn {
+  height: 40px; padding: 0 18px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--border-strong); background: var(--card); color: var(--text);
+  font: 500 14px var(--font-ui);
+}
+.btn-primary { border-color: var(--fill); background: var(--fill); color: var(--on-fill); }
+.btn:hover { filter: brightness(0.96); }
+:root[data-theme="dark"] .btn:hover { filter: brightness(1.15); }
+.btn:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+a { color: var(--accent); }
+
+.photo { position: relative; overflow: hidden; }
+.photo img {
+  display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 28%;
+}

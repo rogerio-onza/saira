@@ -1,0 +1,128 @@
+---
+title: "Validating scientific names"
+pagetitle: "Name validation · Saíra Tutorials"
+aliases:
+  - 04-name-validation.html
+---
+
+::: {.tut-standfirst}
+Check each <span class="term">scientificName</span> against a taxonomic backbone in the **Names** step. The step also flags threatened and invasive species.
+:::
+
+## Run the validation
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t04-run-EN.png" width="1440" alt="Configuration bar of the Names step with the providers, the validation options and the Validate Names button highlighted"></figure>
+```
+
+::: {.marks}
+1. Check **Flora BR** and **Fauna BR**. GBIF is always on.
+2. Both options start on. They remove author and year (`Harpia harpyja (Daudin, 1800)`) and qualifiers (`sp.`, `cf.`, `aff.`, `nr.`) before the query.
+3. Click **Validate Names**.
+:::
+
+The number on the provider is the query order. Saíra queries Flora BR and Fauna BR first, then GBIF. Each distinct name is queried once.
+
+The author goes to <span class="term">scientificNameAuthorship</span> and the qualifier (`cf.`, `aff.`, `sp.`, `?`) goes to <span class="term">identificationQualifier</span>. The name keeps only the taxon. A column mapped to these terms wins. A name that Saíra cannot split stays as typed.
+
+During the validation, the panel shows how many names are checked and the backbone in use. GBIF receives only the names left. The legend splits Accepted, Synonyms, Ambiguous and Not found, and tells how many names each cell stands for.
+
+::: {.callout-note}
+## Flora BR and Fauna BR come with Saíra
+Both backbones come with Saíra and the query works offline. Every 30 days, Saíra looks for a new version in the background. If the update fails, the local backbone keeps answering and the provider shows **Update failed**. GBIF (COL XR) needs internet and receives the scientific name. See [what leaves the computer](../faq.qmd#does-saíra-send-my-data-to-the-internet).
+:::
+
+## Read the result
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t04-results-EN.png" width="1440" alt="Names step after the validation, with the status filters, the Review button, the conservation counters and the names report highlighted"></figure>
+```
+
+::: {.marks}
+1. The filters group the names by status. **Problems only** shows what needs review.
+2. **Review** opens the decision for that name.
+3. How many species are on the MMA list, how many records get the IUCN status and how many species are invasive.
+4. The report lists all names, with status and sensitivity mark.
+:::
+
+| Status | Meaning |
+|---|---|
+| Accepted | The name is the accepted name in the backbone. |
+| Synonym | The backbone points to another accepted name. Also applies to spellings that the backbone marks as invalid. |
+| Ambiguous | More than one strong candidate. You choose. |
+| Not found | The name is in none of the backbones queried. |
+| Not checked | The provider did not answer, for example without internet. It does not count as not found. |
+
+Saíra does not fix spelling by itself. It only shows what the backbone returns.
+
+## Try the names with no answer again
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t04-unchecked-EN.png" width="1440" alt="Names step with the block of names with no answer and the Try again button highlighted"></figure>
+```
+
+::: {.marks}
+1. The **name(s) with no answer** block lists the names that stayed not checked.
+2. **Try again** queries these names. The reviews and the earlier answers stay.
+:::
+
+## Review a name
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t04-review-EN.png" width="572" alt="Review window for a name not found, with the confirmation and the correction button highlighted"></figure>
+```
+
+::: {.marks}
+1. Is the name correct, such as a newly described taxon? Check the box and click **Confirm**. The name goes out as it is.
+2. Is the name wrong? Click **No, I want to correct the name**.
+:::
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t04-review-edit-EN.png" width="572" alt="Review window in correction mode, with the corrected name field and the Save correction button highlighted"></figure>
+```
+
+::: {.marks}
+1. Type the correct name. The reason is optional.
+2. **Save correction**.
+:::
+
+The decision applies to all rows with the same name.
+
+::: {.callout-warning}
+## The taxonomic decision is yours
+In groups with unstable taxonomy, check each case. The correction replaces the name in the export. To keep the original name, also map the same column to <span class="term">verbatimIdentification</span> in [mapping](03-dwc-mapping.qmd).
+:::
+
+## Check the threatened species
+
+The Brazilian national list from MMA comes embedded in Saíra. Species on the list get the **Sensitive** mark with the category: VU, EN, CR or CR (PEX).
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t04-sensitive-EN.png" width="563" alt="Names report with the Sensitive mark of a listed species and the mark option of another species highlighted"></figure>
+```
+
+::: {.marks}
+1. Click the mark to remove the sensitivity. Without the mark, the coordinates of the species go out without generalization.
+2. **+ mark** makes a species outside the list sensitive.
+:::
+
+The threat category does not change: it comes from the ordinances. This step only marks. The protection of the coordinates happens in [generalization](07-generalization.qmd).
+
+::: {.callout-note}
+## Where the list comes from
+The embedded list comes from the official lists of the Brazilian Ministry of the Environment (MMA): **flora** from [**MMA Ordinance No. 148 of June 7, 2022**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733); **terrestrial fauna** from [**MMA Ordinance No. 1,704 of June 16, 2026**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917); and **aquatic fauna** (fish and invertebrates) from [**GM/MMA Ordinance No. 1,667 of April 27, 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623).
+:::
+
+## Find the invasive species
+
+```{=html}
+<figure class="shot"><img src="../../assets/img/t04-invasive-EN.png" width="907" alt="Processed Names panel with the Invasive filter on and the list of invasive species"></figure>
+```
+
+::: {.marks}
+1. The **Invasive** filter shows the species on the invasive alien species list of the Hórus Institute (483 taxa).
+:::
+
+This filter uses the species list, not the validation status. Reviews do not change the count. **Transl. natives** shows natives of Brazil that are invasive outside their natural range. In [mapping](03-dwc-mapping.qmd#answer-establishmentmeans-per-species), invasive species arrive in the <span class="term">establishmentMeans</span> assistant as `introduced`, and translocated natives split between mainland and oceanic island.
+
+The checked backbones set the conservation status written in the export: Flora BR and Fauna BR give the MMA category, GBIF gives the IUCN category. See [Export](08-export.qmd#conservation-status-in-dynamicproperties).

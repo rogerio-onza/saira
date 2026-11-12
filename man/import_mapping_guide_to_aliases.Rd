@@ -8,7 +8,8 @@ import_mapping_guide_to_aliases(
   payload,
   conn = NULL,
   scope = "personal",
-  user_id = NULL
+  user_id = NULL,
+  available_columns = NULL
 )
 }
 \arguments{
@@ -20,6 +21,10 @@ connection is opened via \code{rostrum_connect()} and closed on exit.}
 \item{scope}{Character, default "personal".}
 
 \item{user_id}{Character, default \code{Sys.getenv("SAIRA_USER", unset = "anonymous")}.}
+
+\item{available_columns}{Optional column names of the loaded data. A source
+that is one of them stays whole, so \code{"lat + gps"} is one alias.
+If NULL, the function uses the headers that the guide records (ADR-171).}
 }
 \value{
 Invisibly: integer count of (source, term) pairs upserted.

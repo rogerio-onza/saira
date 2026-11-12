@@ -1,8 +1,10 @@
+^\.git$
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^LICENSE\.md$
 ^README\.md$
 ^CHANGELOG\.md$
+^CONTRIBUTING\.md$
 ^docs$
 ^data-raw$
 ^app\.R$
@@ -24,3 +26,6 @@ Zone\.Identifier$
 ^task_onda_.*\.md\.resolved$
 
 ^website$
+^man/figures$
+
+^desktop$

@@ -14,15 +14,22 @@ coord_diag_levels <- c(
     "sea",
     "zero_equal",
     "identical_all",
-    "reference"
+    "reference",
+    "sea_unchecked"
 )
-coord_family_levels <- c("ok", "validity", "sea", "zero_equal", "reference", "corrected")
+coord_family_levels <- c("ok", "validity", "sea", "zero_equal", "reference", "unchecked", "corrected")
 
 as_coord_numeric <- function(x) {
     raw_chr <- as.character(x)
     raw_chr[is.na(x)] <- NA_character_
     normalized <- gsub(",", ".", raw_chr, fixed = TRUE)
     num <- suppressWarnings(as.numeric(normalized))
+    if (!is.numeric(x)) {
+        # as.numeric() also reads hex ("0x1A") and exponent ("1e2") text. A
+        # numeric column keeps its values: as.character() writes 1e-05 there.
+        plain <- grepl("^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)\\s*$", normalized, perl = TRUE)
+        num[!plain] <- NA_real_
+    }
     parse_failed <- !is.na(raw_chr) & nzchar(trimws(raw_chr)) & is.na(num)
     list(num = num, parse_failed = parse_failed)
 }
@@ -268,9 +275,14 @@ coords_points_in_coverage <- function(x, coverage_ref = NULL, coverage_boxes = N
             geom = c("decimalLongitude", "decimalLatitude"),
             crs = "+proj=longlat +datum=WGS84 +no_defs"
         )
-        extracted <- tryCatch(terra::extract(coverage_ref, pts), error = function(e) NULL)
-        if (!is.null(extracted) && ncol(extracted) >= 2L) {
-            return(!is.na(extracted[!duplicated(extracted[, 1]), 2]))
+        # A point-in-polygon test, not an attribute lookup: is.related()
+        # answers it about 16x faster than extract() with the same result.
+        inside <- tryCatch(
+            as.vector(terra::is.related(pts, coverage_ref, "intersects")),
+            error = function(e) NULL
+        )
+        if (is.logical(inside) && length(inside) == n) {
+            return(inside)
         }
     }
 
@@ -330,6 +342,39 @@ coords_with_optional_time_limit <- function(fn, timeout = NULL) {
     fn()
 }
 
+# Natural Earth coastlines are generalized: Belem sits 0.4 km off the 10m
+# land, Copenhagen 0.3 km off the 50m land, and cc_sea called both "sea"
+# (B13). A sea point with land within the tolerance of its scale counts as
+# land. The test samples two rings of 8 points around it, which is far
+# cheaper than a distance to every coastline vertex. A small island far
+# from the coast (Queimada Grande, 34 km) is not in the layer and stays sea.
+coords_coastal_tolerance_km <- c("10" = 1, "50" = 5, "110" = 10)
+
+coords_coastal_tolerance <- function(x, land, ref, scale) {
+    km <- coords_coastal_tolerance_km[as.character(scale)]
+    sea <- which(!land)
+    if (!length(sea) || length(km) != 1L || is.na(km) || is.null(ref)) {
+        return(land)
+    }
+    lat <- as.numeric(x$decimalLatitude[sea])
+    lon <- as.numeric(x$decimalLongitude[sea])
+    angle <- seq(0, 2 * pi, length.out = 9L)[-9L]
+    ring <- expand.grid(i = seq_along(sea), a = angle, r = c(0.5, 1) * km)
+    dlat <- ring$r / 111.32 * sin(ring$a)
+    dlon <- ring$r / (111.32 * pmax(cos(lat[ring$i] * pi / 180), 0.01)) * cos(ring$a)
+    plat <- lat[ring$i] + dlat
+    plon <- lon[ring$i] + dlon
+    ok <- is.finite(plat) & is.finite(plon) & abs(plat) <= 90 & abs(plon) <= 180
+    if (!any(ok)) {
+        return(land)
+    }
+    on_land <- rep(FALSE, nrow(ring))
+    on_land[ok] <- coords_points_in_poly(plon[ok], plat[ok], ref)
+    near <- tapply(on_land, ring$i, any)
+    land[sea[as.integer(names(near))[near]]] <- TRUE
+    land
+}
+
 coords_cc_sea_run <- function(x, ref = NULL, scale = NULL, timeout = NULL, crop_ref = FALSE) {
     if (nrow(x) == 0L) {
         return(logical(0))
@@ -352,7 +397,8 @@ coords_cc_sea_run <- function(x, ref = NULL, scale = NULL, timeout = NULL, crop_
         } else {
             dots$ref <- ref_to_use
         }
-        do.call(coords_cc_flagged, dots)
+        land <- do.call(coords_cc_flagged, dots)
+        if (is.null(ref_to_use)) land else coords_coastal_tolerance(x, land, ref_to_use, scale)
     }
 
     tryCatch(
@@ -360,8 +406,6 @@ coords_cc_sea_run <- function(x, ref = NULL, scale = NULL, timeout = NULL, crop_
         error = function(e) e
     )
 }
-
-
 
 resolve_country_aliases_path <- function() {
     candidates <- c(
@@ -433,11 +477,6 @@ coords_load_aliases <- function(force = FALSE) {
 
     coords_aliases_cache$set(alias_df, path = path)
     alias_df
-}
-
-coords_alias_map <- function() {
-    alias_df <- coords_load_aliases()
-    stats::setNames(alias_df$iso3c, alias_df$alias)
 }
 
 coords_build_fuzzy_reference <- function(force = FALSE) {
@@ -696,7 +735,15 @@ coords_cc_flagged <- function(fun_name, x, ...) {
         cc_gbif = CoordinateCleaner::cc_gbif,
         cc_inst = CoordinateCleaner::cc_inst
     )
-    flagged <- fn(x = x, value = "flagged", verbose = FALSE, ...)
+    # cc_zero() builds a point with no CRS, and terra 1.9 warns on each run.
+    flagged <- withCallingHandlers(
+        fn(x = x, value = "flagged", verbose = FALSE, ...),
+        warning = function(w) {
+            if (grepl("guessed crs", conditionMessage(w), fixed = TRUE)) {
+                invokeRestart("muffleWarning")
+            }
+        }
+    )
     flagged <- as.logical(flagged)
     if (length(flagged) != nrow(x)) {
         stop(
@@ -707,142 +754,77 @@ coords_cc_flagged <- function(fun_name, x, ...) {
     flagged
 }
 
+# TRUE means the point is on land, as in CoordinateCleaner. A run that fails
+# keeps its rows TRUE, so the dataset can continue, but they are not approved:
+# the attribute `unchecked` marks them and `errors` keeps the reasons (SP-06).
+# Both attributes are present only when a run failed.
 coords_cc_sea_flagged <- function(x, scale, timeout = NULL) {
     scale <- as.integer(scale)
     timeout <- coords_normalize_cc_sea_timeout(timeout)
+    n <- nrow(x)
+    all_rows <- rep(TRUE, n)
 
-    run_scale <- function(x_subset, scale_value, ref = NULL, crop_ref = FALSE) {
-        coords_cc_sea_run(
-            x = x_subset,
-            ref = ref,
-            scale = scale_value,
-            timeout = timeout,
-            crop_ref = crop_ref
-        )
-    }
-
-    if (identical(scale, 10L)) {
+    # Each group of rows gets one cc_sea run against one reference.
+    groups <- if (identical(scale, 10L)) {
         land_ref_10 <- coords_load_ne_land(10L)
         coverage_ref_10 <- coords_ne_land_coverage_ref(10L, download = FALSE)
         coverage_boxes <- coords_ne_land_coverage_boxes(10L, download = FALSE)
-
-        if (is.null(land_ref_10) ||
-            (is.null(coverage_ref_10) &&
-            (is.null(coverage_boxes) || nrow(coverage_boxes) == 0L))) {
-            land_ref_50 <- coords_load_ne_land(50L)
-            flagged_50 <- run_scale(x, 50L, ref = land_ref_50, crop_ref = FALSE)
-            if (!inherits(flagged_50, "error")) {
-                return(flagged_50)
-            }
-
-            warning(
-                sprintf(
-                    "[Saira] cc_sea(scale=10) could not use the embedded Americas reference and scale=50 fallback failed: %s; skipping sea check for this run.",
-                    conditionMessage(flagged_50)
-                ),
-                call. = FALSE
+        no_embedded <- is.null(land_ref_10) ||
+            (is.null(coverage_ref_10) && (is.null(coverage_boxes) || nrow(coverage_boxes) == 0L))
+        inside_americas <- if (no_embedded) {
+            rep(FALSE, n)
+        } else {
+            coords_points_in_coverage(
+                x,
+                coverage_ref = coverage_ref_10,
+                coverage_boxes = coverage_boxes,
+                margin = coords_embedded_land_margin_deg
             )
-            return(rep(TRUE, nrow(x)))
         }
+        out <- list()
+        if (any(inside_americas)) {
+            out[[length(out) + 1L]] <- list(rows = inside_americas, scale = 10L,
+                                             ref = land_ref_10, crop_ref = TRUE)
+        }
+        if (!all(inside_americas)) {
+            out[[length(out) + 1L]] <- list(rows = !inside_americas, scale = 50L,
+                                             ref = coords_load_ne_land(50L), crop_ref = FALSE)
+        }
+        out
+    } else {
+        list(list(rows = all_rows, scale = scale, ref = coords_load_ne_land(scale), crop_ref = FALSE))
+    }
 
-        inside_americas <- coords_points_in_coverage(
-            x,
-            coverage_ref = coverage_ref_10,
-            coverage_boxes = coverage_boxes,
-            margin = coords_embedded_land_margin_deg
+    flagged <- all_rows
+    unchecked <- rep(FALSE, n)
+    errors <- character(0)
+    for (g in groups) {
+        res <- coords_cc_sea_run(
+            x = x[g$rows, , drop = FALSE],
+            ref = g$ref,
+            scale = g$scale,
+            timeout = timeout,
+            crop_ref = g$crop_ref
         )
-
-        # Short-circuit: dataset 100% nas Americas -> um unico cc_sea(10m)
-        if (all(inside_americas)) {
-            flagged_10 <- run_scale(x, 10L, ref = land_ref_10, crop_ref = TRUE)
-            if (inherits(flagged_10, "error")) {
-                warning(
-                    sprintf(
-                        "[Saira] cc_sea(scale=10, embedded Americas) failed: %s; skipping sea check for all rows.",
-                        conditionMessage(flagged_10)
-                    ),
-                    call. = FALSE
-                )
-                return(rep(TRUE, nrow(x)))
-            }
-            return(flagged_10)
-        }
-
-        # Short-circuit: dataset 100% fora das Americas -> um unico cc_sea(50m)
-        if (!any(inside_americas)) {
-            land_ref_50 <- coords_load_ne_land(50L)
-            flagged_50 <- run_scale(x, 50L, ref = land_ref_50, crop_ref = FALSE)
-            if (inherits(flagged_50, "error")) {
-                warning(
-                    sprintf(
-                        "[Saira] cc_sea(scale=50 fallback outside embedded Americas coverage) failed: %s; skipping sea check for all rows.",
-                        conditionMessage(flagged_50)
-                    ),
-                    call. = FALSE
-                )
-                return(rep(TRUE, nrow(x)))
-            }
-            return(flagged_50)
-        }
-
-        # Caso misto: dois cc_sea para grupos distintos
-        flagged <- rep(TRUE, nrow(x))
-
-        flagged_10 <- run_scale(
-            x[inside_americas, , drop = FALSE],
-            10L,
-            ref = land_ref_10,
-            crop_ref = TRUE
-        )
-        if (inherits(flagged_10, "error")) {
+        if (inherits(res, "error")) {
+            unchecked[g$rows] <- TRUE
+            errors <- c(errors, conditionMessage(res))
             warning(
                 sprintf(
-                    "[Saira] cc_sea(scale=10, embedded Americas) failed: %s; skipping sea check for affected rows.",
-                    conditionMessage(flagged_10)
+                    "[Saira] cc_sea(scale=%s) failed: %s; sea check not run for %d row(s).",
+                    g$scale, conditionMessage(res), sum(g$rows)
                 ),
                 call. = FALSE
             )
         } else {
-            flagged[inside_americas] <- flagged_10
+            flagged[g$rows] <- res
         }
-
-        land_ref_50 <- coords_load_ne_land(50L)
-        flagged_50 <- run_scale(
-            x[!inside_americas, , drop = FALSE],
-            50L,
-            ref = land_ref_50,
-            crop_ref = FALSE
-        )
-        if (inherits(flagged_50, "error")) {
-            warning(
-                sprintf(
-                    "[Saira] cc_sea(scale=50 fallback outside embedded Americas coverage) failed: %s; skipping sea check for affected rows.",
-                    conditionMessage(flagged_50)
-                ),
-                call. = FALSE
-            )
-        } else {
-            flagged[!inside_americas] <- flagged_50
-        }
-
-        return(flagged)
     }
-
-    land_ref <- coords_load_ne_land(scale)
-    flagged <- run_scale(x, scale, ref = land_ref, crop_ref = FALSE)
-    if (!inherits(flagged, "error")) {
-        return(flagged)
+    if (any(unchecked)) {
+        attr(flagged, "unchecked") <- unchecked
+        attr(flagged, "errors") <- errors
     }
-
-    warning(
-        sprintf(
-            "[Saira] cc_sea(scale=%s) failed: %s; skipping sea check for this run.",
-            scale,
-            conditionMessage(flagged)
-        ),
-        call. = FALSE
-    )
-    rep(TRUE, nrow(x))
+    flagged
 }
 
 coords_family_from_diag <- function(diagnostic) {
@@ -854,7 +836,8 @@ coords_family_from_diag <- function(diagnostic) {
         sea = "sea",
         zero_equal = "zero_equal",
         identical_all = "zero_equal",
-        reference = "reference"
+        reference = "reference",
+        sea_unchecked = "unchecked"
     )
     out <- unname(family_map[diagnostic])
     out[is.na(out)] <- "validity"
@@ -888,6 +871,9 @@ coords_empty_cc_result <- function() {
 #' @param country_col Country column name
 #' @param profile Validation profile (`"complete"` or `"fast"`)
 #' @param seas_scale Landmass resolution for sea test (10 = embedded Americas detail, 50 = medium global fallback, 110 = coarse global). Default `10` uses the embedded Americas reference and falls back to `50` only for points outside that coverage.
+#' @param on_step Optional function `(key, rows, lat, lon)` called after each
+#'   step, in the order of `coords_run_step_keys()`. `rows` holds the rows that
+#'   the test flags, and `lat` and `lon` are the parsed coordinates.
 #' @return Data frame preserving input cardinality with flags and final diagnosis
 #' @export
 validate_coords_cc_df <- function(
@@ -896,7 +882,8 @@ validate_coords_cc_df <- function(
   lon_col,
   country_col,
   profile = c("complete", "fast"),
-  seas_scale = 10L
+  seas_scale = 10L,
+  on_step = NULL
 ) {
     if (!is.data.frame(df)) {
         stop("df must be a data.frame.", call. = FALSE)
@@ -935,6 +922,16 @@ validate_coords_cc_df <- function(
         NULL
     }
     .plog <- function(phase) if (!is.null(.perf)) .perf$log(phase)
+    # The run stage of the Coordinates page shows each step (ADR-160). A
+    # test that does not run still reports, with no rows. The stage only
+    # shows progress, so an error there must not stop the validation.
+    reported <- character(0)
+    .step <- function(key, rows = integer(0)) {
+        reported <<- c(reported, key)
+        if (is.function(on_step)) {
+            tryCatch(on_step(key, rows, lat_num, lon_num), error = function(e) NULL)
+        }
+    }
 
     n <- nrow(df)
     if (n == 0L) {
@@ -951,12 +948,14 @@ validate_coords_cc_df <- function(
     lat_num <- lat_parsed$num
     lon_num <- lon_parsed$num
     .plog("parse lat/lon")
+    .step("parse")
 
     country_raw <- as.character(df[[country_col]])
     country_raw[is.na(country_raw)] <- ""
     country_raw <- trimws(country_raw)
     country_iso3 <- coords_country_to_iso3(country_raw)
     .plog("country_to_iso3")
+    .step("iso3")
 
     validity_missing <- is.na(lat_num) | is.na(lon_num)
     swapped <- !validity_missing &
@@ -967,6 +966,8 @@ validate_coords_cc_df <- function(
         (lat_num < -90 | lat_num > 90 | lon_num < -180 | lon_num > 180)
 
     sea_flag <- rep(FALSE, n)
+    sea_unchecked <- rep(FALSE, n)
+    sea_errors <- character(0)
     zero_equal <- rep(FALSE, n)
     reference_flag <- rep(FALSE, n)
 
@@ -990,6 +991,7 @@ validate_coords_cc_df <- function(
         if (length(rows_val_fail) > 0L) {
             validity_bounds[rows_val_fail] <- TRUE
         }
+        .step("validity", which(validity_missing | validity_bounds | swapped))
 
         rows_clean <- rows_candidate[flag_val]
         if (length(rows_clean) > 0L) {
@@ -1004,7 +1006,10 @@ validate_coords_cc_df <- function(
                 scale = seas_scale
             )
             sea_flag[rows_clean] <- !flag_sea
+            sea_unchecked[rows_clean] <- attr(flag_sea, "unchecked") %||% FALSE
+            sea_errors <- attr(flag_sea, "errors") %||% character(0)
             .plog("cc_sea")
+            .step("sea", which(sea_flag))
 
             flag_zero <- coords_cc_flagged(
                 "cc_zero",
@@ -1022,6 +1027,7 @@ validate_coords_cc_df <- function(
             )
             zero_equal[rows_clean] <- (!flag_zero | !flag_equal)
             .plog("cc_zero + cc_equ")
+            .step("zero_equal", which(zero_equal))
 
             if (identical(profile, "complete")) {
                 flag_cap <- coords_cc_flagged(
@@ -1054,14 +1060,21 @@ validate_coords_cc_df <- function(
                     flag_cap & flag_cen & flag_gbif & flag_inst
                 )
                 .plog("cc_cap + cc_cen + cc_gbif + cc_inst")
+                .step("reference", which(reference_flag))
             }
         }
     }
+    if (!"validity" %in% reported) {
+        .step("validity", which(validity_missing | validity_bounds | swapped))
+    }
+    for (key in setdiff(c("sea", "zero_equal", "reference"), reported)) .step(key)
 
     diagnostic <- rep("ok", n)
     diagnostic[reference_flag] <- "reference"
-    diagnostic[zero_equal] <- "zero_equal"
+    # The point 0/0 is always at sea, so the zero/equal cause wins over the
+    # sea symptom (ADR-211).
     diagnostic[sea_flag] <- "sea"
+    diagnostic[zero_equal] <- "zero_equal"
     diagnostic[validity_bounds] <- "validity_bounds"
     diagnostic[swapped] <- "swapped"
     diagnostic[validity_missing] <- "validity_missing"
@@ -1077,9 +1090,13 @@ validate_coords_cc_df <- function(
         }
     }
 
+    # A point the sea check did not read has no known fault, so the row stays
+    # valid. It has no approval either, so it never reads as OK (ADR-190).
+    diagnostic[sea_unchecked & diagnostic == "ok"] <- "sea_unchecked"
+
     diagnostic[is.na(diagnostic) | !nzchar(diagnostic)] <- "validity_bounds"
     diagnostic_family <- coords_family_from_diag(diagnostic)
-    valid <- diagnostic == "ok"
+    valid <- diagnostic %in% c("ok", "sea_unchecked")
 
     error_key_map <- c(
         ok = "",
@@ -1089,7 +1106,8 @@ validate_coords_cc_df <- function(
         sea = "validate_coords_diag_sea",
         zero_equal = "validate_coords_diag_zero_equal",
         identical_all = "validate_coords_diag_identical_all",
-        reference = "validate_coords_diag_reference"
+        reference = "validate_coords_diag_reference",
+        sea_unchecked = "validate_coords_diag_sea_unchecked"
     )
     error_key <- unname(error_key_map[diagnostic])
     error_key[is.na(error_key)] <- ""
@@ -1115,6 +1133,8 @@ validate_coords_cc_df <- function(
     out$flag_validity_bounds <- validity_bounds
     out$flag_swapped <- swapped
     out$flag_sea <- sea_flag
+    # A row the sea check did not reach stays "ok", but is not approved.
+    out$flag_sea_unchecked <- sea_unchecked
     out$flag_zero_equal <- zero_equal
     out$flag_reference <- reference_flag
 
@@ -1127,6 +1147,17 @@ validate_coords_cc_df <- function(
     attr(out, "engine") <- "CoordinateCleaner"
     attr(out, "profile") <- profile
     attr(out, "seas_scale") <- seas_scale
+    attr(out, "sea_check") <- list(
+        status = if (!any(sea_unchecked)) {
+            "complete"
+        } else if (all(sea_unchecked[!validity_missing & !validity_bounds & !swapped])) {
+            "failed"
+        } else {
+            "partial"
+        },
+        unchecked = sum(sea_unchecked),
+        errors = sea_errors
+    )
     .plog("TOTAL")
     out
 }
@@ -1184,7 +1215,8 @@ coords_points_in_poly <- function(lon, lat, poly) {
 #' @param iso_col ISO3 attribute column name in \code{ref}.
 #' @return Named list: \code{corrected} (logical), \code{lat_new}/\code{lon_new}
 #'   (numeric, equal to originals where not corrected), \code{transform}
-#'   (character key or NA), \code{informed_country} (ISO3), \code{n_corrected},
+#'   (character key or NA), \code{informed_country} (ISO3), \code{outside}
+#'   (logical, outside the country with no fix), \code{n_corrected},
 #'   \code{n_candidates}, \code{available} (FALSE when no country layer could be
 #'   loaded, e.g. offline).
 #' @export
@@ -1205,6 +1237,7 @@ coords_transposed_corrections <- function(df,
         lat_new = lat0, lon_new = lon0,
         transform = rep(NA_character_, n),
         informed_country = rep(NA_character_, n),
+        outside = rep(FALSE, n),
         n_corrected = 0L, n_candidates = 0L, available = TRUE
     )
     if (n == 0L) return(base_out)
@@ -1275,6 +1308,9 @@ coords_transposed_corrections <- function(df,
         lat_new = lat_new, lon_new = lon_new,
         transform = transform,
         informed_country = country_iso3,
+        # Outside the informed country with no swap or sign fix that lands
+        # inside it: Rome or New York with country Brasil (B04).
+        outside = candidate & !corrected,
         n_corrected = sum(corrected),
         n_candidates = sum(candidate),
         available = TRUE
@@ -1318,13 +1354,17 @@ apply_coords_correction_payload <- function(df, payload = NULL) {
     if (length(idx) == 0L) return(df)
 
     # Preserve verbatim originals where the template provides the columns and
-    # they are not already populated.
+    # they are not already populated. Decided row by row: a payload that mixes
+    # a UTM conversion (which sends its own verbatim values) with a transposed
+    # or manual fix (which does not) must still keep the originals of the
+    # second kind.
     for (vcol in c("verbatimLatitude", "verbatimLongitude")) {
-        if (vcol %in% names(df) && !vcol %in% names(corr)) {
-            src <- if (vcol == "verbatimLatitude") "decimalLatitude" else "decimalLongitude"
-            blank <- is.na(df[[vcol]][idx]) | !nzchar(trimws(as.character(df[[vcol]][idx])))
-            df[[vcol]][idx[blank]] <- as.character(df[[src]][idx[blank]])
-        }
+        if (!vcol %in% names(df)) next
+        src <- if (vcol == "verbatimLatitude") "decimalLatitude" else "decimalLongitude"
+        supplied <- if (vcol %in% names(corr)) !is.na(corr[[vcol]]) else rep(FALSE, length(idx))
+        blank <- is.na(df[[vcol]][idx]) | !nzchar(trimws(as.character(df[[vcol]][idx])))
+        take <- blank & !supplied
+        df[[vcol]][idx[take]] <- as.character(df[[src]][idx[take]])
     }
 
     # A correction that changes the coordinate system (the UTM conversion) sends
@@ -1347,6 +1387,250 @@ apply_coords_correction_payload <- function(df, payload = NULL) {
     df$decimalLatitude[idx]  <- as.character(corr$decimalLatitude)
     df$decimalLongitude[idx] <- as.character(corr$decimalLongitude)
     df
+}
+
+#' Parse one coordinate typed into the coordinates table
+#'
+#' Accepts a decimal comma, like the validation itself (\code{as_coord_numeric()}).
+#'
+#' @param value Raw cell text.
+#' @param axis \code{"lat"} or \code{"lon"}.
+#' @return List with \code{value} (the number, or \code{NA}) and \code{error}
+#'   (\code{NULL}, or the i18n key that explains why the value was refused).
+#' @noRd
+parse_coord_edit <- function(value, axis = c("lat", "lon")) {
+    axis <- match.arg(axis)
+    raw <- if (length(value) == 0L) NA_character_ else trimws(as.character(value[[1]]))
+    if (is.na(raw) || !nzchar(raw)) {
+        return(list(value = NA_real_, error = "validate_coords_edit_error_empty"))
+    }
+    num <- as_coord_numeric(raw)$num[[1]]
+    if (is.na(num)) {
+        return(list(value = NA_real_, error = "validate_coords_edit_error_number"))
+    }
+    limit <- if (axis == "lat") 90 else 180
+    if (abs(num) > limit) {
+        return(list(value = NA_real_, error = paste0("validate_coords_edit_error_range_", axis)))
+    }
+    list(value = num, error = NULL)
+}
+
+#' Which rows of the coordinates table can be edited by hand
+#'
+#' An edit is stored by occurrenceID, so a row without one, or with one that
+#' repeats, cannot be told apart from its twins and stays read-only.
+#'
+#' @param occ_ids occurrenceID of each row.
+#' @return Logical vector, one value per row.
+#' @noRd
+coords_edit_allowed <- function(occ_ids) {
+    ids <- as.character(occ_ids)
+    present <- !is.na(ids) & nzchar(trimws(ids))
+    present & !(ids %in% ids[present & duplicated(ids)])
+}
+
+#' Merge manual coordinate edits into the automatic correction payload
+#'
+#' A manual edit replaces the automatic correction of the same occurrenceID.
+#' The row keeps the verbatim columns the automatic correction sent (a UTM
+#' conversion sends the projected pair), since those still describe the
+#' original record.
+#'
+#' @param auto Payload list with \code{corrections}, or \code{NULL}.
+#' @param manual data.frame with \code{occurrenceID}, \code{decimalLatitude} and
+#'   \code{decimalLongitude}, or \code{NULL}.
+#' @return A payload list with \code{corrections}; \code{auto} unchanged when
+#'   there is no manual edit.
+#' @noRd
+merge_manual_coord_edits <- function(auto = NULL, manual = NULL) {
+    if (!is.data.frame(manual) || nrow(manual) == 0L) return(auto)
+    man <- data.frame(
+        occurrenceID = as.character(manual$occurrenceID),
+        decimalLatitude = as.character(manual$decimalLatitude),
+        decimalLongitude = as.character(manual$decimalLongitude),
+        stringsAsFactors = FALSE
+    )
+    for (cl in intersect(coord_source_cols, names(manual))) man[[cl]] <- as.character(manual[[cl]])
+    man <- man[!duplicated(man$occurrenceID, fromLast = TRUE), , drop = FALSE]
+
+    auto_df <- if (is.list(auto) && is.data.frame(auto$corrections)) auto$corrections else NULL
+    if (is.null(auto_df) || nrow(auto_df) == 0L) {
+        out <- man
+    } else {
+        out <- auto_df
+        for (cl in c("occurrenceID", "decimalLatitude", "decimalLongitude")) {
+            out[[cl]] <- as.character(out[[cl]])
+        }
+        pos <- match(man$occurrenceID, out$occurrenceID)
+        hit <- !is.na(pos)
+        out$decimalLatitude[pos[hit]] <- man$decimalLatitude[hit]
+        out$decimalLongitude[pos[hit]] <- man$decimalLongitude[hit]
+        for (cl in intersect(coord_source_cols, names(man))) {
+            if (!cl %in% names(out)) out[[cl]] <- NA_character_
+            out[[cl]][pos[hit]] <- man[[cl]][hit]
+        }
+        extra <- man[!hit, , drop = FALSE]
+        if (nrow(extra) > 0L) {
+            for (cl in setdiff(names(out), names(extra))) extra[[cl]] <- NA_character_
+            out <- rbind(out, extra[, names(out), drop = FALSE])
+        }
+    }
+    rownames(out) <- NULL
+
+    payload <- if (is.list(auto)) auto else list()
+    payload$corrections <- out
+    payload
+}
+
+# Each coordinate correction keeps the two values it replaces, read from the
+# data the validation ran on (AUD-05, ADR-166).
+coord_source_cols <- c("from_decimalLatitude", "from_decimalLongitude")
+
+coord_source_text <- function(x) {
+    x <- trimws(as.character(x))
+    x[is.na(x)] <- ""
+    x
+}
+
+#' The columns a coordinate report reads
+#'
+#' @param df Mapped data.
+#' @return The columns as text, or \code{NULL} when \code{df} is not a data frame.
+#' @noRd
+coords_validation_input <- function(df) {
+    if (!is.data.frame(df)) return(NULL)
+    cols <- intersect(c("occurrenceID", "decimalLatitude", "decimalLongitude", "country"), names(df))
+    lapply(df[cols], coord_source_text)
+}
+
+#' Coordinate corrections whose record changed after the fix
+#'
+#' A correction finds its record by occurrenceID and replaces both axes. When
+#' the record now holds other values than the ones the correction replaced (a
+#' later Preview edit, another column in Mapping), or left the data, applying
+#' the correction would undo the newer value (AUD-05, ADR-166).
+#'
+#' @param corr data.frame with \code{occurrenceID} and \code{coord_source_cols}.
+#' @param df Current data.
+#' @return Logical vector, \code{TRUE} for a stale row. A row without the
+#'   source values is never stale.
+#' @noRd
+stale_coord_rows <- function(corr, df) {
+    n <- if (is.data.frame(corr)) nrow(corr) else 0L
+    if (n == 0L || !all(coord_source_cols %in% names(corr)) || !is.data.frame(df)) {
+        return(rep(FALSE, n))
+    }
+    from_lat <- as.character(corr$from_decimalLatitude)
+    from_lon <- as.character(corr$from_decimalLongitude)
+    ids <- if ("occurrenceID" %in% names(df)) as.character(df$occurrenceID) else character(0)
+    idx <- match(as.character(corr$occurrenceID), ids)
+    now <- function(col) {
+        if (col %in% names(df)) coord_source_text(df[[col]])[idx] else rep("", n)
+    }
+    !is.na(from_lat) & !is.na(from_lon) &
+        (is.na(idx) | now("decimalLatitude") != from_lat | now("decimalLongitude") != from_lon)
+}
+
+#' Drop the stale rows of a coordinate correction payload
+#'
+#' @param payload Payload list with \code{corrections}, or \code{NULL}.
+#' @param df Current data.
+#' @return The payload without the stale rows and the source columns, with
+#'   \code{stale}: the number of rows dropped.
+#' @noRd
+drop_stale_coord_corrections <- function(payload, df) {
+    corr <- if (is.list(payload)) payload$corrections else NULL
+    if (!is.data.frame(corr)) return(payload)
+    stale <- stale_coord_rows(corr, df)
+    payload$corrections <- corr[!stale, setdiff(names(corr), coord_source_cols), drop = FALSE]
+    payload$stale <- as.integer(payload$stale %||% 0L) + sum(stale)
+    payload
+}
+
+#' Revalidate the rows a person edited by hand
+#'
+#' Runs the same engine as the full validation, on the edited rows only. One
+#' warm row costs about 0.3 to 0.75 s, most of it in the sea test (0.38 s) and
+#' the reference tests (0.29 s). A range-and-sea check would still cost about
+#' 0.4 s and drop the reference flags, so the full engine is used (ADR-129).
+#'
+#' @param df data.frame with the edited rows, their coordinates already
+#'   replaced by the edit.
+#' @param row_index \code{.row_index} of each row in the full result.
+#' @param lat_col,lon_col,country_col Column names.
+#' @param profile Validation profile.
+#' @return \code{validate_coords_cc_df()} result with \code{.row_index} set to
+#'   \code{row_index}.
+#' @noRd
+revalidate_coord_rows <- function(df, row_index,
+                                  lat_col = "decimalLatitude",
+                                  lon_col = "decimalLongitude",
+                                  country_col = "country",
+                                  profile = "complete") {
+    stopifnot(is.data.frame(df), length(row_index) == nrow(df))
+    if (nrow(df) == 0L) return(coords_empty_cc_result())
+    res <- validate_coords_cc_df(df, lat_col, lon_col, country_col, profile = profile)
+    res$.row_index <- as.integer(row_index)
+    res
+}
+
+#' Overlay manual coordinate edits onto a validation result
+#'
+#' Runs after \code{apply_coord_corrections_to_result()}, so a manual edit wins
+#' over an automatic correction of the same row. A point that passes its
+#' revalidation reads as \code{"corrected"}; one that still fails shows the new
+#' problem, so the person sees at once whether the fix worked.
+#'
+#' @param res Validation result (after the automatic corrections).
+#' @param edits data.frame with \code{row_index}, \code{decimalLatitude},
+#'   \code{decimalLongitude}, \code{diagnostic}, \code{diagnostic_family} and
+#'   \code{valid}, or NULL.
+#' @return \code{res} with a logical \code{edited} column.
+#' @noRd
+apply_manual_coord_edits_to_result <- function(res, edits = NULL) {
+    if (!is.data.frame(res) || nrow(res) == 0L) return(res)
+    res$edited <- FALSE
+    if (!is.data.frame(edits) || nrow(edits) == 0L || !".row_index" %in% names(res)) {
+        return(res)
+    }
+    pos <- match(as.integer(edits$row_index), res$.row_index)
+    ok <- !is.na(pos)
+    if (!any(ok)) return(res)
+    p <- pos[ok]
+    e <- edits[ok, , drop = FALSE]
+    passes <- as.character(e$diagnostic_family) %in% "ok"
+    res$lat_num[p] <- suppressWarnings(as.numeric(e$decimalLatitude))
+    res$lon_num[p] <- suppressWarnings(as.numeric(e$decimalLongitude))
+    if ("diagnostic" %in% names(res)) {
+        res$diagnostic[p] <- ifelse(passes, "corrected", as.character(e$diagnostic))
+    }
+    if ("diagnostic_family" %in% names(res)) {
+        res$diagnostic_family[p] <- ifelse(passes, "corrected", as.character(e$diagnostic_family))
+    }
+    if ("valid" %in% names(res)) res$valid[p] <- passes | e$valid %in% TRUE
+    res$edited[p] <- TRUE
+    res
+}
+
+#' Drop manual edits whose occurrenceID left the data
+#'
+#' A new validation can run on different data (a new mapping, a new upload of
+#' the same file). An edit whose occurrenceID is gone would never be applied,
+#' so it is dropped and counted for a notice.
+#'
+#' @param edits data.frame of manual edits with \code{occurrenceID}, or NULL.
+#' @param occ_ids occurrenceIDs present in the new validation.
+#' @return List with \code{edits} (the kept rows, or NULL) and \code{dropped}.
+#' @noRd
+drop_orphan_coord_edits <- function(edits, occ_ids) {
+    if (!is.data.frame(edits) || nrow(edits) == 0L) {
+        return(list(edits = NULL, dropped = 0L))
+    }
+    keep <- as.character(edits$occurrenceID) %in% as.character(occ_ids)
+    list(
+        edits = if (any(keep)) edits[keep, , drop = FALSE] else NULL,
+        dropped = as.integer(sum(!keep))
+    )
 }
 
 #' Match filled country names to the casing the column already uses
@@ -1760,37 +2044,6 @@ validate_coords_df <- function(df, lat_col = "decimalLatitude", lon_col = "decim
     out
 }
 
-has_coord_columns <- function(df) {
-    !is.null(detect_coord_columns(df))
-}
-
-detect_coord_columns <- function(df) {
-    if (!is.data.frame(df) || length(names(df)) == 0L) {
-        return(NULL)
-    }
-
-    col_names <- names(df)
-    normalized <- tolower(trimws(col_names))
-
-    pick_col <- function(candidates) {
-        idx <- match(candidates, normalized)
-        idx <- idx[!is.na(idx)]
-        if (length(idx) == 0L) {
-            return("")
-        }
-        col_names[[idx[[1]]]]
-    }
-
-    lat_col <- pick_col(c("decimallatitude", "latitude", "lat", "decimal_latitude", "verbatimlatitude"))
-    lon_col <- pick_col(c("decimallongitude", "longitude", "lon", "lng", "decimal_longitude", "verbatimlongitude"))
-
-    if (!nzchar(lat_col) || !nzchar(lon_col) || identical(lat_col, lon_col)) {
-        return(NULL)
-    }
-
-    list(lat_col = lat_col, lon_col = lon_col)
-}
-
 count_coords_diagnostics <- function(result_df) {
     base_counts <- stats::setNames(as.integer(rep(0L, length(coord_family_levels))), coord_family_levels)
     if (!is.data.frame(result_df) || !"diagnostic_family" %in% names(result_df)) {
@@ -1822,40 +2075,170 @@ count_coords_diagnostics <- function(result_df) {
     ))
 }
 
-count_coords_issues <- function(result_df) {
-    if (is.data.frame(result_df) && "diagnostic_family" %in% names(result_df)) {
-        return(count_coords_diagnostics(result_df))
-    }
-
-    zero_counts <- stats::setNames(as.integer(rep(0L, length(coord_issue_levels))), coord_issue_levels)
-    if (!is.data.frame(result_df) || !"issue_type" %in% names(result_df)) {
-        out <- as.list(c(
-            total = 0L,
-            zero_counts,
-            invalid = 0L,
-            warnings = 0L
-        ))
-        return(out)
-    }
-
-    issue_chr <- as.character(result_df$issue_type)
-    issue_chr[is.na(issue_chr) | !nzchar(issue_chr)] <- "missing"
-    tab <- table(factor(issue_chr, levels = coord_issue_levels))
-    counts <- as.integer(tab)
-    names(counts) <- coord_issue_levels
-
-    invalid_count <- counts[["lat_range"]] + counts[["lon_range"]]
-    warnings_count <- counts[["zero_zero"]] + counts[["swapped"]] + counts[["identical_all"]]
-
-    as.list(c(
-        total = as.integer(nrow(result_df)),
-        counts,
-        invalid = as.integer(invalid_count),
-        warnings = as.integer(warnings_count)
-    ))
+#' One map marker per place and color
+#'
+#' Records at one point with one color draw one marker. The first record names
+#' the marker, so a click finds that record. `key` changes when anything the
+#' map shows about the marker changes.
+#' @param map_df Rows from \code{build_leaflet_data()}.
+#' @return data.frame with \code{layer_id}, \code{key}, \code{lat_num},
+#'   \code{lon_num} and \code{color}, one row per marker.
+#' @noRd
+coords_map_markers <- function(map_df) {
+    map_df <- map_df[coords_plottable(map_df$lat_num, map_df$lon_num), , drop = FALSE]
+    place <- paste(map_df$lat_num, map_df$lon_num, map_df$color)
+    first <- !duplicated(place)
+    layer_id <- sprintf("r%d", map_df$.row_index[first])
+    data.frame(
+        layer_id = layer_id,
+        key = paste(layer_id, place[first]),
+        lat_num = map_df$lat_num[first],
+        lon_num = map_df$lon_num[first],
+        color = map_df$color[first],
+        stringsAsFactors = FALSE
+    )
 }
 
-build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = NULL, popup_labels = NULL) {
+# Above this count of OK markers in the view, the map draws a sample of them.
+coords_map_point_limit <- 20000L
+coords_map_ok_color <- "#00A86B"
+
+#' The markers that the map draws for one view
+#'
+#' A marker with a problem is always drawn. OK markers go through a limit, and
+#' the rank of a marker does not depend on the view, so a marker stays drawn
+#' when the view moves closer and new markers join it.
+#' @param markers Frame from \code{coords_map_markers()}.
+#' @param bounds Map bounds (\code{north}, \code{south}, \code{east},
+#'   \code{west}), or NULL for the whole frame. A margin keeps a short move
+#'   from showing an empty edge.
+#' @param limit Largest count of OK markers.
+#' @return List with \code{markers}, \code{ok_shown} and \code{ok_total}, the
+#'   counts for the view, and \code{limited}, TRUE when the frame goes over
+#'   the limit.
+#' @noRd
+coords_map_sample <- function(markers, bounds = NULL, limit = coords_map_point_limit) {
+    ok <- toupper(markers$color) == coords_map_ok_color
+    if (sum(ok) <= limit) {
+        return(list(markers = markers, ok_shown = sum(ok), ok_total = sum(ok), limited = FALSE))
+    }
+    candidates <- which(ok)
+    edges <- c("north", "south", "east", "west")
+    if (all(edges %in% names(bounds))) {
+        lat_pad <- (bounds$north - bounds$south) / 4
+        lon_pad <- (bounds$east - bounds$west) / 4
+        candidates <- candidates[
+            markers$lat_num[candidates] >= bounds$south - lat_pad &
+                markers$lat_num[candidates] <= bounds$north + lat_pad &
+                markers$lon_num[candidates] >= bounds$west - lon_pad &
+                markers$lon_num[candidates] <= bounds$east + lon_pad
+        ]
+    }
+    # The golden ratio spreads the rows evenly, so the sample has no pattern of
+    # the file order and needs no random seed.
+    rank <- (as.numeric(sub("^r", "", markers$layer_id[candidates])) * 0.6180339887) %% 1
+    shown <- candidates[order(rank)[seq_len(min(limit, length(candidates)))]]
+    list(
+        markers = markers[sort(c(which(!ok), shown)), , drop = FALSE],
+        ok_shown = length(shown),
+        ok_total = length(candidates),
+        limited = TRUE
+    )
+}
+
+#' The map calls that turn the drawn markers into the target markers
+#'
+#' @param drawn,target Frames from \code{coords_map_markers()}. A NULL
+#'   \code{drawn} means that the map state is not known.
+#' @return List with \code{clear} (remove every marker first), \code{remove}
+#'   (layer ids) and \code{add} (markers).
+#' @noRd
+coords_marker_changes <- function(drawn, target) {
+    kept <- if (is.null(drawn)) logical(nrow(target)) else target$key %in% drawn$key
+    stale <- if (is.null(drawn)) character(0) else drawn$layer_id[!drawn$key %in% target$key]
+    # The canvas draws in insertion order, so the points with problems go last
+    # and an OK point cannot cover them. A repeated layer id replaces its marker.
+    is_ok <- toupper(target$color) == coords_map_ok_color
+    ok_last <- function(send) {
+        target[send, , drop = FALSE][order(!is_ok[send]), , drop = FALSE]
+    }
+    # One clear costs less than many removals when few markers stay.
+    if (is.null(drawn) || length(stale) > sum(kept)) {
+        return(list(clear = TRUE, remove = character(0), add = ok_last(rep(TRUE, nrow(target)))))
+    }
+    send <- if (any(!kept & is_ok)) !kept | !is_ok else !kept
+    list(clear = FALSE, remove = stale, add = ok_last(send))
+}
+
+#' The records that one marker draws
+#'
+#' @param map_df Rows from \code{build_leaflet_data()}.
+#' @param row One row of the same frame.
+#' @return Integer count, at least 1 for a row of \code{map_df}.
+#' @noRd
+coords_records_at_marker <- function(map_df, row) {
+    sum(map_df$lat_num == row$lat_num & map_df$lon_num == row$lon_num & map_df$color == row$color, na.rm = TRUE)
+}
+
+#' Coordinates a web map can place
+#'
+#' A latitude beyond 90 or a longitude beyond 180 has no place on the map: the
+#' marker falls outside the world and pulls the view out to zoom 1.
+#' @param lat,lon Numeric (or coercible) vectors of equal length.
+#' @return Logical vector, TRUE where the point can be drawn.
+#' @noRd
+coords_plottable <- function(lat, lon) {
+    lat <- suppressWarnings(as.numeric(lat))
+    lon <- suppressWarnings(as.numeric(lon))
+    is.finite(lat) & is.finite(lon) & abs(lat) <= 90 & abs(lon) <= 180
+}
+
+#' Map view that frames the drawable points
+#'
+#' @param lat,lon Numeric vectors of equal length.
+#' @param trim Share of points cut at each end of each axis, from 20 points
+#'   on, so a few far points do not open the map at ocean scale.
+#' @return NULL when no point can be drawn, `list(type = "point", lng, lat)`
+#'   for one location, or `list(type = "bounds", lng1, lat1, lng2, lat2)`.
+#' @noRd
+coords_map_view <- function(lat, lon, trim = 0) {
+    keep <- coords_plottable(lat, lon)
+    if (!any(keep)) {
+        return(NULL)
+    }
+    # Web Mercator stops near 85 degrees, so a pole point cannot widen the view.
+    lat <- pmin(pmax(as.numeric(lat[keep]), -85), 85)
+    lon <- as.numeric(lon[keep])
+    if (isTRUE(all.equal(min(lon), max(lon))) && isTRUE(all.equal(min(lat), max(lat)))) {
+        return(list(type = "point", lng = lon[[1]], lat = lat[[1]]))
+    }
+    n <- length(lat)
+    # A 2 % share of fewer than 50 points rounds to zero points, so the cut
+    # is at least one point at each end.
+    cut <- if (trim > 0 && n >= 20L) max(1L, as.integer(floor(n * trim))) else 0L
+    lat_r <- sort(lat)[c(cut + 1L, n - cut)]
+    lon_r <- sort(lon)[c(cut + 1L, n - cut)]
+    if (lat_r[[1]] == lat_r[[2]] && lon_r[[1]] == lon_r[[2]]) {
+        return(list(type = "point", lng = lon_r[[1]], lat = lat_r[[1]]))
+    }
+    list(type = "bounds", lng1 = lon_r[[1]], lat1 = lat_r[[1]], lng2 = lon_r[[2]], lat2 = lat_r[[2]])
+}
+
+#' Keep a no-wrap Leaflet map filled by the world
+#'
+#' The tiles do not wrap, so a zoom whose world is narrower than the map
+#' leaves grey bands. This bounds the view to the world and sets the minimum
+#' zoom to the first one whose world fills the map width (256 px per tile).
+#' @param map_obj A `leaflet::leaflet()` widget.
+#' @return The widget.
+#' @noRd
+leaflet_fill_world <- function(map_obj) {
+    map_obj <- leaflet::setMaxBounds(map_obj, -180, -85, 180, 85)
+    module_behavior_on_render(map_obj, "leafletFillWorld")
+}
+
+build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = NULL, popup_labels = NULL,
+                               popups = TRUE) {
     empty <- data.frame(
         .row_index = integer(0),
         lat_num = numeric(0),
@@ -1872,7 +2255,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
         return(empty)
     }
 
-    popup_defaults <- list(row = "Row", issue = "Issue", lat = "Lat", lon = "Lon")
+    popup_defaults <- list(row = "Row", issue = "Issue", lat = "Lat", lon = "Lon", show_row = "Show in table")
     if (is.list(popup_labels) && length(popup_labels) > 0L) {
         for (nm in names(popup_labels)) {
             if (is.character(nm) && nzchar(nm) && nm %in% names(popup_defaults)) {
@@ -1883,7 +2266,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
 
     if (all(c(".row_index", "lat_num", "lon_num", "diagnostic", "diagnostic_family") %in% names(coords_result_df))) {
         filter_key <- as.character(if (is.null(filter)) "all" else filter)
-        allowed_filters <- c("all", "problems", "validity", "sea", "zero_equal", "reference")
+        allowed_filters <- c("all", "problems", "validity", "sea", "zero_equal", "reference", "unchecked", "edited")
         if (!(filter_key %in% allowed_filters)) {
             filter_key <- "all"
         }
@@ -1900,6 +2283,8 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             sea = fam == "sea",
             zero_equal = fam == "zero_equal",
             reference = fam == "reference",
+            unchecked = fam == "unchecked",
+            edited = if ("edited" %in% names(coords_result_df)) coords_result_df$edited %in% TRUE else rep(FALSE, nrow(coords_result_df)),
             rep(TRUE, nrow(coords_result_df))
         )
 
@@ -1920,10 +2305,20 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             sea = "#252659",
             zero_equal = "#FFA204",
             reference = "#8b5cf6",
+            unchecked = "#5f6570",
             corrected = "#0e7c86"
         )
         color_vec <- unname(color_map[out$diagnostic_family])
         color_vec[is.na(color_vec)] <- "#C0392B"
+        # The map builds a popup for one row when its marker is clicked: the
+        # popups of all rows were most of the data sent to the map.
+        if (!popups) {
+            out$issue_type <- out$diagnostic
+            out$color <- color_vec
+            out$popup_html <- rep(NA_character_, nrow(out))
+            rownames(out) <- NULL
+            return(out[, names(empty), drop = FALSE])
+        }
 
         label_map <- c(
             ok = "OK",
@@ -1934,6 +2329,7 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             zero_equal = "Zero/Equal",
             identical_all = "Identical coordinates",
             reference = "Reference hotspot",
+            sea_unchecked = "Sea not checked",
             corrected = "Corrected"
         )
         if (!is.null(issue_labels) && length(issue_labels) > 0L) {
@@ -1960,14 +2356,17 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
             )
         )
 
-        lat_text <- format(round(out$lat_num, 6), nsmall = 0L, trim = TRUE)
-        lon_text <- format(round(out$lon_num, 6), nsmall = 0L, trim = TRUE)
+        lat_text <- coord_number_text(round(out$lat_num, 6))
+        lon_text <- coord_number_text(round(out$lon_num, 6))
         popup_html <- paste0(
             "<b>", popup_defaults$row, ":</b> ", out$.row_index,
             "<br><b>", popup_defaults$lat, ":</b> ", lat_text,
             " <b>", popup_defaults$lon, ":</b> ", lon_text,
             "<br><b>", popup_defaults$issue, ":</b> ",
-            "<span class=\"coord-issue-badge ", badge_class, "\">", diag_label, "</span>"
+            "<span class=\"coord-issue-badge ", badge_class, "\">", diag_label, "</span>",
+            # The module script pages the table to this row and marks it.
+            "<br><button type=\"button\" class=\"coords-show-row\" data-row=\"", out$.row_index, "\">",
+            popup_defaults$show_row, "</button>"
         )
 
         return(data.frame(
@@ -2052,8 +2451,8 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
     issue_label <- unname(label_map[issue_chr])
     issue_label[is.na(issue_label)] <- label_map[["missing"]]
 
-    lat_text <- format(round(out$lat_num, 6), nsmall = 0L, trim = TRUE)
-    lon_text <- format(round(out$lon_num, 6), nsmall = 0L, trim = TRUE)
+    lat_text <- coord_number_text(round(out$lat_num, 6))
+    lon_text <- coord_number_text(round(out$lon_num, 6))
     badge_class <- ifelse(
         issue_chr %in% c("lat_range", "lon_range"),
         "coord-issue-badge-error",
@@ -2083,4 +2482,226 @@ build_leaflet_data <- function(coords_result_df, filter = "all", issue_labels = 
         popup_html = popup_html,
         stringsAsFactors = FALSE
     )
+}
+
+# A Natural Earth country name ("Brazil") in the UI language ("Brasil"). NA
+# (a point in the sea or outside every country) reads as `none_label`.
+country_display_name <- function(admin, lang = "en", none_label = NA_character_) {
+    admin <- as.character(admin)
+    out <- admin
+    iso3 <- tryCatch(coords_country_to_iso3(admin), error = function(e) rep(NA_character_, length(admin)))
+    col <- paste0("cldr.name.", lang)
+    codelist <- countrycode::codelist
+    if (col %in% names(codelist)) {
+        local <- codelist[[col]][match(iso3, codelist$iso3c)]
+        out[!is.na(local)] <- local[!is.na(local)]
+    }
+    out[is.na(admin) | !nzchar(admin)] <- none_label
+    out
+}
+
+# Coordinate text a person types or a GPS writes, as a decimal degree (B08):
+# "23°33'44\"S", "29°58' N", "23.5505 S", "-23.5°" and the Unicode
+# minus. A plain number, a value with words ("aprox. -23.5") or two numbers
+# in one cell give NA: the Preview flags those for the person to fix.
+# `axis` is "lat" or "lon". A hemisphere letter of the other axis gives NA.
+# Portuguese and Spanish use O (oeste) for west, and Portuguese uses L
+# (leste) for east.
+parse_coordinate_text <- function(x, axis = c("lat", "lon")) {
+    axis <- match.arg(axis)
+    s <- trimws(as.character(x))
+    s[is.na(s)] <- ""
+    # Only text with a degree, minute or hemisphere mark, or a Unicode minus:
+    # a plain number keeps its own text and its own decimals.
+    cand <- grepl("[\u2212\u2013\u2014\u00b0\u00ba'\u2032\u2019\u00b4`\"\u2033\u201d]", s) |
+        grepl("^[NSEWOL]\\b|[NSEWOL]\\.?$", toupper(s))
+    s <- gsub("[\u2212\u2013\u2014]", "-", s)
+    s <- gsub("[\u2032\u2019\u00b4`]", "'", s)
+    s <- gsub("[\u2033\u201d]|''", "\"", s)
+    s <- gsub("\u00ba", "\u00b0", s, fixed = TRUE)
+    out <- rep(NA_real_, length(s))
+    re <- paste0(
+        "^([NSEWOL])?\\s*([-+])?\\s*(\\d+(?:[.,]\\d+)?)\\s*\u00b0?\\s*",
+        "(?:(\\d+(?:[.,]\\d+)?)\\s*'\\s*)?(?:(\\d+(?:[.,]\\d+)?)\\s*\"\\s*)?",
+        "([NSEWOL])?\\.?$"
+    )
+    hit <- which(cand)
+    if (!length(hit)) {
+        return(out)
+    }
+    # One regexpr() call reads every cell. A cell per call was the hot path of
+    # a column of pairs (ADR-201).
+    up <- toupper(s[hit])
+    r <- regexpr(re, up, perl = TRUE)
+    keep <- r > 0L
+    if (!any(keep)) {
+        return(out)
+    }
+    hit <- hit[keep]
+    up <- up[keep]
+    cs <- attr(r, "capture.start")[keep, , drop = FALSE]
+    cl <- attr(r, "capture.length")[keep, , drop = FALSE]
+    group <- function(k) substring(up, cs[, k], cs[, k] + cl[, k] - 1L)
+    h1 <- group(1L)
+    h2 <- group(6L)
+    mi <- group(4L)
+    se <- group(5L)
+    num <- function(v) suppressWarnings(as.numeric(sub(",", ".", v, fixed = TRUE)))
+    allowed <- if (axis == "lat") c("N", "S") else c("E", "W", "O", "L")
+    limit <- if (axis == "lat") 90 else 180
+    hemi <- ifelse(nzchar(h1), h1, h2)
+    deg <- num(group(3L))
+    mins <- ifelse(nzchar(mi), num(mi), 0)
+    secs <- ifelse(nzchar(se), num(se), 0)
+    minus <- group(2L) == "-"
+    south_west <- hemi %in% c("S", "W", "O")
+    bad <- (nzchar(h1) & nzchar(h2) & h1 != h2) | (nzchar(hemi) & !hemi %in% allowed) |
+        is.na(deg) | mins >= 60 | secs >= 60 |
+        ((nzchar(mi) | nzchar(se)) & deg != round(deg)) |
+        # "-23.5 N" says two things at once.
+        (minus & nzchar(hemi) & !south_west)
+    value <- deg + mins / 60 + secs / 3600
+    value <- ifelse(minus | south_west, -value, value)
+    bad <- bad | abs(value) > limit
+    out[hit] <- ifelse(bad %in% TRUE, NA_real_, round(value, 6))
+    out
+}
+
+# Mapped coordinate values with the text forms converted, and the other
+# values as they were. `pair_column` is TRUE when the same column is on the
+# latitude and the longitude cards.
+convert_coordinate_text <- function(values, axis, pair_column = FALSE) {
+    parsed <- parse_coordinate_text(values, axis)
+    # A cell with both axes gives each card its own axis (ADR-201). A plain
+    # number is one axis, so it skips the pair parser. The coordinate check
+    # reads a number with as_coord_numeric(), so this test uses it too.
+    plain <- !is.na(as_coord_numeric(values)$num)
+    rest <- which(is.na(parsed) & !plain)
+    pair <- rep(FALSE, length(values))
+    if (length(rest)) {
+        parsed[rest] <- parse_coordinate_pair(values[rest])[[axis]]
+        pair[rest] <- !is.na(parsed[rest])
+    }
+    # When one column is on both cards, one value alone is no axis for sure.
+    # The row gets no point, not the same number on both cards. The decision
+    # comes from the mapping, not from the cells, so a slice of rows for the
+    # cards or the Preview gives the same answer as the export. Other text
+    # stays for the coordinate check.
+    if (isTRUE(pair_column)) {
+        filled <- !is.na(values) & nzchar(trimws(values))
+        lone <- filled & !pair & (plain | !is.na(parsed))
+        parsed[lone] <- NA_real_
+        values[lone] <- ""
+    }
+    ok <- !is.na(parsed)
+    values[ok] <- coord_number_text(parsed[ok])
+    values
+}
+
+# A coordinate as text with its own decimals (ADR-208). format() gives the
+# decimals of the whole vector and reads options(digits), so a point changed
+# with the other rows or the session. 15 significant digits keep the decimals
+# of the input and add no digit to it.
+coord_number_text <- function(x) {
+    trimws(formatC(x, digits = 15L, format = "fg"))
+}
+
+# Share of the filled rows that must hold a pair for a column of pairs.
+COORDINATE_PAIR_SHARE <- 0.9
+
+# Both axes in one cell, as "23\u00b033'S 46\u00b038'W" or "-23.55, -46.63" (ADR-201).
+# A hemisphere letter says which part is which. With none, the latitude comes
+# first, the usual order, unless the first value cannot be a latitude. Two plain
+# numbers need decimals, so a range as "10/20" or a date is no pair.
+# Returns a data frame with the columns `lat` and `lon`, NA where no pair.
+parse_coordinate_pair <- function(x) {
+    s <- as.character(x)
+    u <- unique(s)
+    if (length(u) < length(s)) {
+        return(parse_coordinate_pair(u)[match(s, u), , drop = FALSE] |>
+                   `rownames<-`(NULL))
+    }
+    out <- data.frame(lat = rep(NA_real_, length(s)), lon = rep(NA_real_, length(s)))
+    t <- trimws(s)
+    t[is.na(t)] <- ""
+    t <- toupper(gsub("[\u2212\u2013\u2014]", "-", t))
+    num <- "\\d+(?:[.,]\\d+)?"
+    # Minutes and seconds come only after a degree mark.
+    body <- paste0(
+        "[-+]?\\s*", num, "(?:\\s*[\u00b0\u00ba](?:\\s*", num, "\\s*['\u2032\u2019\u00b4`]",
+        "(?:\\s*", num, "\\s*(?:\"|''|\u2033|\u201d))?)?)?"
+    )
+    part <- paste0("(?:[NSEWOL]\\s*", body, "|", body, "(?:\\s*[NSEWOL])?)")
+    # A part that ends in a letter or a mark needs no separator after it.
+    sep <- "(?:\\s*[;,/|]\\s*|\\s+|(?<=[NSEWOL\u00b0\u00ba'\"\u2032\u2019\u2033\u201d]))"
+    re <- paste0("^(", part, ")", sep, "(", part, ")$")
+    # One regexpr() call gives the place of both parts in every cell.
+    r <- regexpr(re, t, perl = TRUE)
+    hit <- which(r > 0L)
+    # A cell that already reads as one axis is no pair. Only a mark or a
+    # letter makes one axis of a text.
+    marked <- hit[grepl("[NSEWOL\u00b0\u00ba'\"\u2032\u2019\u00b4`\u2033\u201d]", t[hit])]
+    single <- marked[!is.na(parse_coordinate_text(t[marked], "lat")) |
+                         !is.na(parse_coordinate_text(t[marked], "lon"))]
+    hit <- setdiff(hit, single)
+    if (!length(hit)) {
+        return(out)
+    }
+    cs <- attr(r, "capture.start")[hit, , drop = FALSE]
+    cl <- attr(r, "capture.length")[hit, , drop = FALSE]
+    p1 <- trimws(substring(t[hit], cs[, 1L], cs[, 1L] + cl[, 1L] - 1L))
+    p2 <- trimws(substring(t[hit], cs[, 2L], cs[, 2L] + cl[, 2L] - 1L))
+    letter_axis <- function(p) {
+        ns <- grepl("[NS]", p)
+        ew <- grepl("[EWOL]", p)
+        ifelse(ns & ew, "bad", ifelse(ns, "lat", ifelse(ew, "lon", NA_character_)))
+    }
+    read_value <- function(p, axis) {
+        v <- rep(NA_real_, length(p))
+        marked <- grepl("[NSEWOL\u00b0\u00ba'\"\u2032\u2019\u00b4`\u2033\u201d]", p)
+        if (any(marked)) v[marked] <- parse_coordinate_text(p[marked], axis)
+        q <- gsub("\\s+", "", p[!marked])
+        n <- suppressWarnings(as.numeric(sub(",", ".", q, fixed = TRUE)))
+        n[!grepl("[.,]\\d", q) | abs(n) > if (axis == "lat") 90 else 180] <- NA_real_
+        v[!marked] <- n
+        v
+    }
+    a1 <- letter_axis(p1)
+    a2 <- letter_axis(p2)
+    bad <- a1 %in% "bad" | a2 %in% "bad" | (!is.na(a1) & !is.na(a2) & a1 == a2)
+    other <- c(lat = "lon", lon = "lat")
+    a1[is.na(a1) & !is.na(a2) & !bad] <- other[a2[is.na(a1) & !is.na(a2) & !bad]]
+    a2[is.na(a2) & !is.na(a1) & !bad] <- other[a1[is.na(a2) & !is.na(a1) & !bad]]
+    none <- is.na(a1) & is.na(a2)
+    if (any(none)) {
+        # Read the first part as degrees, so 23 degrees 33 minutes is 23.55.
+        swap <- abs(read_value(p1[none], "lon")) > 90
+        a1[none] <- ifelse(swap %in% TRUE, "lon", "lat")
+    }
+    first_lat <- a1 %in% "lat"
+    lat <- read_value(ifelse(first_lat, p1, p2), "lat")
+    lon <- read_value(ifelse(first_lat, p2, p1), "lon")
+    ok <- !bad & !is.na(lat) & !is.na(lon)
+    out$lat[hit[ok]] <- lat[ok]
+    out$lon[hit[ok]] <- lon[ok]
+    out
+}
+
+# Columns where most filled cells hold both axes. Auto-map puts such a column
+# on the latitude and the longitude cards, and the warning for a column on two
+# cards leaves that pair alone (ADR-201).
+# `max_values` parses only the first distinct values, to keep auto-map fast.
+# The share counts rows, so a value repeated in many rows weighs more.
+coordinate_pair_columns <- function(df, cols = names(df), min_share = COORDINATE_PAIR_SHARE,
+                                    max_values = Inf) {
+    cols <- intersect(cols, names(df))
+    keep <- vapply(cols, function(col) {
+        v <- as.character(df[[col]])
+        v <- v[!is.na(v) & nzchar(trimws(v))]
+        u <- utils::head(unique(v), max_values)
+        if (!length(u)) return(FALSE)
+        rows <- tabulate(match(v, u), length(u))
+        sum(rows[!is.na(parse_coordinate_pair(u)$lat)]) >= min_share * sum(rows)
+    }, logical(1))
+    cols[keep]
 }

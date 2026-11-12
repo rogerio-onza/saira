@@ -10,7 +10,8 @@ validate_coords_cc_df(
   lon_col,
   country_col,
   profile = c("complete", "fast"),
-  seas_scale = 10L
+  seas_scale = 10L,
+  on_step = NULL
 )
 }
 \arguments{
@@ -25,6 +26,10 @@ validate_coords_cc_df(
 \item{profile}{Validation profile (`"complete"` or `"fast"`)}
 
 \item{seas_scale}{Landmass resolution for sea test (10 = embedded Americas detail, 50 = medium global fallback, 110 = coarse global). Default `10` uses the embedded Americas reference and falls back to `50` only for points outside that coverage.}
+
+\item{on_step}{Optional function `(key, rows, lat, lon)` called after each
+step, in the order of `coords_run_step_keys()`. `rows` holds the rows that
+the test flags, and `lat` and `lon` are the parsed coordinates.}
 }
 \value{
 Data frame preserving input cardinality with flags and final diagnosis

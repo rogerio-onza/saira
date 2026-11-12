@@ -1,271 +1,106 @@
-# Saíra 🐦
+<a href="https://rogerio-onza.github.io/saira/">
+  <img src="man/figures/readme-banner.jpg" width="100%" alt="Saíra: Darwin Core para a biodiversidade brasileira. Foto de uma saíra-pintor (Tangara fastuosa), espécie vulnerável na lista do MMA.">
+</a>
 
-Saíra é um aplicativo em R/Shiny para padronizar planilhas de ocorrências de
-biodiversidade no padrão Darwin Core (DwC) e publicá-las no GBIF e no SiBBr.
-A interface é visual e bilíngue (PT-BR/EN-US); não é preciso programar para usar.
+<p align="center">
+  <a href="https://github.com/rogerio-onza/saira/releases/latest"><strong>Baixar para Windows ou Linux</strong></a> ·
+  <a href="https://rogerio-onza.github.io/saira/tutoriais/01-instalacao.html">Tutoriais</a> ·
+  <a href="#in-english">English</a> ·
+  <a href="https://github.com/rogerio-onza/saira/issues">Reportar um problema</a>
+</p>
 
-[🇧🇷 Português](#português) · [🇺🇸 English](#english)
+O Saíra converte planilhas de ocorrência para o padrão Darwin Core, o formato
+que o SiBBr e o GBIF aceitam. O app confere nomes e coordenadas, reduz a
+precisão das espécies ameaçadas e gera o pacote para o IPT. Você usa menus,
+tabelas e mapas. Não é preciso programar.
 
----
+## 7 etapas
 
-## Português
+![Aba Coordenadas do Saíra: mapa das ocorrências, contagem de problemas por tipo e tabela de correção.](man/figures/readme-coordinates.png)
 
-### 🔎 O que é
+| Etapa | O que faz |
+| --- | --- |
+| [1 · Início](https://rogerio-onza.github.io/saira/tutoriais/02-upload.html) | Lê CSV, TSV, TXT e XLSX, pacotes Camtrap DP e exportações do Wildlife Insights. |
+| [2 · Mapeamento](https://rogerio-onza.github.io/saira/tutoriais/03-mapeamento-dwc.html) | Associa cada coluna a um termo Darwin Core, com sugestões automáticas. |
+| [3 · Pré-visualização](https://rogerio-onza.github.io/saira/tutoriais/04-pre-visualizacao.html) | Mostra os registros mapeados e permite editar células. |
+| [4 · Nomes](https://rogerio-onza.github.io/saira/tutoriais/05-validacao-nomes.html) | Confere grafia e sinônimos no Flora BR e no Fauna BR, sem internet, e no GBIF. |
+| [5 · Coordenadas](https://rogerio-onza.github.io/saira/tutoriais/06-validacao-coordenadas.html) | Testa faixa, pontos no mar, país informado e inversão de latitude e longitude. |
+| [6 · Generalização](https://rogerio-onza.github.io/saira/tutoriais/07-generalizacao.html) | Reduz a precisão das espécies ameaçadas, pela tabela de decisão de Chapman (2020). |
+| [7 · Exportação](https://rogerio-onza.github.io/saira/tutoriais/08-exportacao.html) | Gera datas ISO, `occurrenceID` estáveis e o pacote final. |
 
-Você tem uma planilha (CSV/TSV) com registros de espécies e precisa
-publicá-la no Darwin Core — o conjunto de nomes de colunas e formatos que o GBIF
-e o SiBBr esperam. O Saíra carrega a planilha, ajuda a associar suas colunas aos
-termos do Darwin Core, valida nomes e coordenadas e gera o arquivo final.
+O pacote final tem um Darwin Core Archive (`occurrence.txt`, `meta.xml`,
+`eml.xml`), uma cópia em `.xlsx` e o guia de mapeamento, que serve para o
+próximo conjunto. O `eml.xml` traz a área geográfica e o intervalo de datas dos
+dados. Depois, você publica o arquivo no SiBBr ou no GBIF pelo IPT.
 
-O app abre no navegador; você usa por menus, botões e tabelas. Código, só na
-instalação.
+## Instalar
 
-📚 **Tutoriais completos e documentação** ficam no site do projeto:
-<https://rogerio-onza.github.io/saira/>. Este README é só um resumo.
+<table>
+<tr>
+<td width="33%" valign="top">
+<h3>Windows</h3>
+<p>Instalador <code>.exe</code> para x64. O R e as dependências vêm junto.</p>
+<p><a href="https://github.com/rogerio-onza/saira/releases/latest"><strong>Baixar para Windows</strong></a></p>
+</td>
+<td width="33%" valign="top">
+<h3>Linux</h3>
+<p><code>.deb</code> para Ubuntu 24.04+ e Debian 13+, ou <code>.AppImage</code> com glibc 2.39+.</p>
+<p><a href="https://github.com/rogerio-onza/saira/releases/latest"><strong>Baixar para Linux</strong></a></p>
+</td>
+<td width="33%" valign="top">
+<h3>macOS ou R</h3>
+<p>Pacote R para quem já usa R 4.1 ou mais recente.</p>
+<p><a href="#pacote-r"><strong>Ver os comandos</strong></a></p>
+</td>
+</tr>
+</table>
 
-![Onde a Saíra se encaixa no fluxo de dados do GBIF: ele atua na origem, entregando dados limpos e padronizados e evitando correções após a publicação na rede.](man/figures/saira-gbif-fit.svg)
+<sub>Passo a passo com capturas de tela: <a href="https://rogerio-onza.github.io/saira/tutoriais/01-instalacao.html">guia de instalação</a>.</sub>
 
-### 🔄 Como funciona
-
-![Os cinco passos da Saíra: Upload, Mapeamento, Validação, Generalização e Exportar.](man/figures/saira-how-it-works.svg)
-
-1. **Upload** — carregue seu CSV (`.csv`, `.tsv`, `.txt`) ou pacote de armadilha fotográfica.
-2. **Mapeamento** — associe cada coluna a um termo do Darwin Core (com sugestões automáticas).
-3. **Validação** — confira nomes científicos e coordenadas.
-4. **Generalização** — proteja coordenadas de espécies ameaçadas (Lista MMA), seguindo a tabela de decisão de Chapman (2020).
-5. **Exportar** — baixe o arquivo padronizado, pronto para o GBIF/IPT.
-
-### ✨ Recursos
-
-- Lê CSV (`.csv`, `.tsv`, `.txt`).
-- Mapeamento de colunas com sugestões automáticas para os termos Darwin Core.
-- Verificação de nomes científicos contra bases taxonômicas (grafia e sinônimos).
-- Validação de coordenadas: faixas de lat/lon, pontos no mar, país e coordenadas
-  trocadas, com correção em um clique.
-- Generalização de espécies sensíveis: para táxons ameaçados (Lista Nacional do
-  MMA), ajuda a reduzir a precisão das coordenadas espécie por espécie, seguindo
-  a tabela de decisão de Chapman (2020).
-- Status de conservação anexado na exportação (campo `dynamicProperties`):
-  categoria MMA (`mmaThreatStatus`) das bases brasileiras e categoria IUCN global
-  (`iucnRedListCategory`) do GBIF.
-- Exporta um Darwin Core Archive (`occurrence.txt`, `meta.xml`, `eml.xml`) pronto
-  para o GBIF/IPT, mais uma cópia em `.xlsx` e o guia de mapeamento. O `eml.xml`
-  já traz a área geográfica e o intervalo de datas calculados dos seus dados.
-- `occurrenceID` estável: preenche IDs faltantes de forma determinística (a mesma
-  combinação gera sempre o mesmo ID), então republicar no GBIF conta como
-  atualização, não como registro novo.
-- Armadilhas fotográficas (opcional): importa pacotes Camtrap DP e exportações do
-  Wildlife Insights. Requer o pacote `camtrapdp` (`install.packages("camtrapdp")`).
-
-### 📦 Instalação
-
-O Saíra roda em R. Se você nunca usou R, faça isto uma vez:
-
-1. Instale o R (4.1.0 ou mais recente): <https://cloud.r-project.org>.
-2. Instale o RStudio Desktop — onde você cola e roda os comandos:
-   <https://posit.co/download/rstudio-desktop/>.
-3. Abra o RStudio e, no Console, cole e execute:
-
-   ```r
-   # florabr e faunabr não estão no CRAN; este options() torna o R-universe visível
-   options(repos = c(
-     ropensci = "https://ropensci.r-universe.dev",
-     CRAN     = "https://cloud.r-project.org"
-   ))
-
-   install.packages("pak")
-   pak::pak("rogerio-onza/saira")
-   ```
-
-A primeira instalação pode levar alguns minutos.
-
-### ▶️ Como abrir
+### Pacote R
 
 ```r
-library(saira)
-run_app()
+options(repos = c(
+  ropensci = "https://ropensci.r-universe.dev",
+  CRAN     = "https://cloud.r-project.org"
+))
+install.packages("pak")
+pak::pak("rogerio-onza/saira")
+saira::run_app()
 ```
 
-O app abre no navegador.
-
-Notas:
-
-- **Primeira verificação de nomes:** o Saíra baixa uma base taxonômica local na
-  primeira vez (uma vez só, precisa de internet); essa verificação inicial demora
-  mais.
-- **Linux (Debian/Ubuntu):** a dependência `sf` precisa de GDAL, GEOS e PROJ.
-  Instale antes: `sudo apt-get install -y libgdal-dev libgeos-dev libproj-dev libudunits2-dev`.
-  No Windows e no macOS não há nada extra a fazer.
-
-### 🛠️ Desenvolvimento
+`florabr` e `faunabr` vêm do R-universe. No Linux, o pacote `sf` precisa de
+GDAL, GEOS e PROJ. Instale antes:
 
 ```bash
-git clone https://github.com/rogerio-onza/saira.git
-cd saira
+sudo apt-get install -y libgdal-dev libgeos-dev libproj-dev libudunits2-dev
 ```
 
+### Desenvolver
+
 ```r
-if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
+# git clone https://github.com/rogerio-onza/saira.git
 renv::restore()
 pkgload::load_all()
 run_app()
+devtools::test()
 ```
 
-Testes:
+Leia o [CONTRIBUTING.md](CONTRIBUTING.md) antes de abrir um pull request.
 
-```r
-devtools::test()                            # tudo
-devtools::test(filter = "rostrum-stage1")   # um arquivo
-```
+## In English
 
-```bash
-RUN_PERF=true Rscript -e "devtools::test(filter = 'performance')"  # performance
-RUN_E2E=true  Rscript -e "devtools::test(filter = 'e2e')"          # ponta a ponta (shinytest2 + navegador)
-```
-
-Antes de abrir um pull request, leia [CONTRIBUTING.md](CONTRIBUTING.md).
-
-### 🧩 Tecnologias e créditos
-
-O Saíra usa pacotes R de código aberto (Shiny, `taxadb`/`florabr`/`faunabr`,
-`CoordinateCleaner`/`sf`/`terra`, entre outros) e embute dados de fontes públicas
-(camada Natural Earth, termos Darwin Core do TDWG sob CC-BY, Lista Nacional de
-Espécies Ameaçadas — Portarias MMA nº 148/2022, nº 1.704/2026 e GM/MMA
-nº 1.667/2026). A lista completa, com links e
-licenças, está em
-[Tecnologias e créditos](https://rogerio-onza.github.io/saira/tecnologias.html).
-
-### 📄 Licença
-
-GNU General Public License v3.0 (GPL-3) — veja [LICENSE.md](LICENSE.md).
+Saíra converts biodiversity occurrence spreadsheets to Darwin Core for
+publication on GBIF and SiBBr. It runs as a desktop app (Windows, Linux) or as
+an R package, with a PT, EN and ES interface. Read the
+[English documentation](https://rogerio-onza.github.io/saira/en/) or the
+[installation guide](https://rogerio-onza.github.io/saira/en/tutorials/01-installation.html).
 
 ---
 
-## English
-
-### 🔎 What it is
-
-You have a spreadsheet (CSV/TSV) with species records and need to publish it
-in Darwin Core — the set of column names and formats that GBIF and SiBBr expect.
-Saíra loads the spreadsheet, helps you map your columns to Darwin Core terms,
-validates names and coordinates, and produces the final archive.
-
-The app opens in your browser; you work through menus, buttons, and tables. Code,
-only at install time.
-
-📚 **Full tutorials and documentation** live on the project site:
-<https://rogerio-onza.github.io/saira/en/>. This README is only a summary.
-
-![Where Saíra fits in the GBIF data flow: it acts at the source, delivering clean, standardized data and avoiding corrections after publication to the network.](man/figures/saira-gbif-fit-EN.svg)
-
-### 🔄 How it works
-
-![Saíra's five steps: Upload, Mapping, Validation, Generalization and Export.](man/figures/saira-how-it-works-EN.svg)
-
-1. **Upload** — load your CSV (`.csv`, `.tsv`, `.txt`) or camera-trap package.
-2. **Mapping** — match each column to a Darwin Core term (with automatic suggestions).
-3. **Validation** — check scientific names and coordinates.
-4. **Generalization** — protect coordinates of threatened species (MMA list), following Chapman's (2020) decision table.
-5. **Export** — download the standardized file, ready for GBIF/IPT.
-
-### ✨ Features
-
-- Reads CSV (`.csv`, `.tsv`, `.txt`).
-- Column mapping with automatic suggestions for Darwin Core terms.
-- Scientific-name verification against taxonomic backbones (spelling and synonyms).
-- Coordinate validation: lat/lon ranges, points at sea, country, and swapped
-  coordinates, with one-click correction.
-- Generalization of sensitive species: for threatened taxa (national MMA list),
-  helps reduce coordinate precision species by species, following Chapman's
-  (2020) decision table.
-- Conservation status attached at export (`dynamicProperties` field): the MMA
-  category (`mmaThreatStatus`) from the Brazilian databases and the global IUCN
-  category (`iucnRedListCategory`) from GBIF.
-- Exports a Darwin Core Archive (`occurrence.txt`, `meta.xml`, `eml.xml`) ready
-  for GBIF/IPT, plus an `.xlsx` copy and the mapping guide. The `eml.xml` already
-  carries the geographic bounding box and date range computed from your data.
-- Stable `occurrenceID`: fills missing IDs deterministically (the same combination
-  always yields the same ID), so republishing to GBIF counts as an update, not a
-  new record.
-- Camera-trap data (optional): imports Camtrap DP packages and Wildlife Insights
-  exports. Requires the `camtrapdp` package (`install.packages("camtrapdp")`).
-
-### 📦 Installation
-
-Saíra runs in R. If you have never used R, do this once:
-
-1. Install R (4.1.0 or newer): <https://cloud.r-project.org>.
-2. Install RStudio Desktop — where you paste and run commands:
-   <https://posit.co/download/rstudio-desktop/>.
-3. Open RStudio and, in the Console, paste and run:
-
-   ```r
-   # florabr and faunabr are not on CRAN; this options() makes the R-universe visible
-   options(repos = c(
-     ropensci = "https://ropensci.r-universe.dev",
-     CRAN     = "https://cloud.r-project.org"
-   ))
-
-   install.packages("pak")
-   pak::pak("rogerio-onza/saira")
-   ```
-
-The first install may take a few minutes.
-
-### ▶️ Running it
-
-```r
-library(saira)
-run_app()
-```
-
-The app opens in your browser.
-
-Notes:
-
-- **First name check:** Saíra downloads a local taxonomic database the first time
-  (one time, needs network); that initial check takes longer.
-- **Linux (Debian/Ubuntu):** the `sf` dependency needs GDAL, GEOS, and PROJ.
-  Install them first: `sudo apt-get install -y libgdal-dev libgeos-dev libproj-dev libudunits2-dev`.
-  On Windows and macOS there is nothing extra to do.
-
-### 🛠️ Development
-
-```bash
-git clone https://github.com/rogerio-onza/saira.git
-cd saira
-```
-
-```r
-if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
-renv::restore()
-pkgload::load_all()
-run_app()
-```
-
-Tests:
-
-```r
-devtools::test()                            # everything
-devtools::test(filter = "rostrum-stage1")   # a single file
-```
-
-```bash
-RUN_PERF=true Rscript -e "devtools::test(filter = 'performance')"  # performance
-RUN_E2E=true  Rscript -e "devtools::test(filter = 'e2e')"          # end-to-end (shinytest2 + browser)
-```
-
-Before opening a pull request, read [CONTRIBUTING.md](CONTRIBUTING.md).
-
-### 🧩 Technologies and credits
-
-Saíra uses open-source R packages (Shiny, `taxadb`/`florabr`/`faunabr`,
-`CoordinateCleaner`/`sf`/`terra`, among others) and bundles data from public
-sources (Natural Earth layer, Darwin Core terms from TDWG under CC-BY, the
-Brazilian Official List of Threatened Species — Portarias MMA nº 148/2022,
-nº 1.704/2026 and GM/MMA nº 1.667/2026). The full list,
-with links and licenses, is in [Technologies and credits](https://rogerio-onza.github.io/saira/en/technologies.html).
-
-### 📄 License
-
-GNU General Public License v3.0 (GPL-3) — see [LICENSE.md](LICENSE.md).
+<sub>
+Foto do banner: Renato Bandeira, CC BY 4.0.
+Fontes de dados e licenças: <a href="https://rogerio-onza.github.io/saira/tecnologias.html">Tecnologias e créditos</a>.
+Código sob <a href="LICENSE.md">GPL-3.0</a> ·
+<a href="CHANGELOG.md">Histórico de alterações</a>
+</sub>
