@@ -91,6 +91,15 @@ class CDP {
   }
 }
 
+// The inspector can attach before Electron loads the main script, and then
+// process.mainModule is still undefined.
+async function openMain() {
+  const mainTarget = await waitFor(async () => (await targets(MAIN_PORT))[0], { timeout: 20000, what: 'main inspector' });
+  const main = await new CDP(mainTarget.webSocketDebuggerUrl).open();
+  await waitFor(() => main.eval(`typeof process.mainModule !== 'undefined'`), { timeout: 20000, interval: 200, what: 'main module' });
+  return main;
+}
+
 async function targets(port) {
   const res = await fetch(`http://127.0.0.1:${port}/json/list`);
   return res.json();
@@ -232,8 +241,7 @@ async function rendererCrashCheck(exe, env) {
 }
 
 async function crashAndRestart(folder, appOpen, shellPage, exited) {
-  const mainTarget = await waitFor(async () => (await targets(MAIN_PORT))[0], { timeout: 20000, what: 'main inspector' });
-  const main = await new CDP(mainTarget.webSocketDebuggerUrl).open();
+  const main = await openMain();
   await main.eval(`(function () {
     const e = process.mainModule.require('electron');
     globalThis.__e2e = { dialogs: [] };
@@ -332,8 +340,7 @@ async function main() {
   child.on('exit', (code) => { exitedAt = Date.now(); console.log(`[${elapsed()} s] app exit code ${code}`); });
 
   // Main process inspector: stub the native dialog and the external browser.
-  const mainTarget = await waitFor(async () => (await targets(MAIN_PORT))[0], { timeout: 20000, what: 'main inspector' });
-  const main = await new CDP(mainTarget.webSocketDebuggerUrl).open();
+  const main = await openMain();
   await main.send('Runtime.enable');
   const stubbed = await main.eval(`(function () {
     const e = process.mainModule.require('electron');
