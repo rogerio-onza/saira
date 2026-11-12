@@ -48,6 +48,7 @@ Suggests:
     chromote,
     devtools,
     future,
+    httpuv,
     furrr,
     parallel,
     parallelly,

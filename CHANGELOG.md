@@ -412,6 +412,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **docs:** Rewrite the README with a photo banner, the 7 steps and a download block per system
 
 ### Tests
+- **build:** Declare `httpuv` in Suggests for the local COL XR server of the Export IUCN tests, so R CMD check has no warning
 - **build:** Run the package tests on Windows in CI, and fix two tests that failed only there
 - **tests:** Isolate the Flora BR and Fauna BR data folder for the whole suite
 - **build:** Check the names report panel position in light and dark themes in the E2E flows, ADR-189
