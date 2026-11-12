@@ -37,7 +37,7 @@ The validation needs <span class="term">decimalLatitude</span>, <span class="ter
 
 The tests run offline, with the Natural Earth country layer embedded in Saíra. Only the background map needs internet.
 
-During the validation, the panel shows the running test and how many records it checks. On the map, each hexagon is a point and the color gives the status: Valid, Invalid, Sea, Sea not checked, Zero/Equal, Reference hotspot or Corrected.
+During the validation, the panel shows the running test and how many records it checks. On the map, each hexagon is a point and the color gives the status: Valid, Invalid, Sea, Sea not checked, Zero/Equal, Reference hotspot or Corrected. On a large map, Saíra draws a sample of the valid points and all the points with problems.
 
 Click a point and use **Show in table** to open the record. If many records fall at one place, the point says **N records at this point**. A coordinate outside the valid range does not show on the map: the note above the map has **Show in the table**.
 
@@ -48,21 +48,22 @@ The coastline is simplified. A point very near the coast can show as **At sea**.
 
 ## Coordinates in other formats
 
-Saíra reads degrees, minutes and seconds (`23°33'1.872"S`) and decimal minutes (`46°37.999' W`). The hemisphere letter can come at the start or at the end: N, S, E, W, O (oeste) or L (leste). Comma and decimal point both work. Saíra rejects a letter that contradicts the sign (`-23.5 N`) and minutes or seconds of 60 or more.
+Saíra reads degrees, minutes and seconds (`23°33'1.872"S`) and decimal minutes (`46°37.999' W`). The hemisphere letter can come at the start or at the end: N, S, E, W, O (oeste) or L (leste). Comma and decimal point both work. Saíra rejects a letter that contradicts the sign (`-23.5 N`) and minutes or seconds of 60 or more. It also rejects a number in hexadecimal or exponent form, such as `0x1A` or `1e2`.
 
 ## Convert UTM coordinates
 
 ```{=html}
-<figure class="shot"><img src="../../assets/img/t05-utm-EN.png" width="1440" alt="Panel of projected coordinates with the UTM zone, the source datum and the Convert to decimal degrees button highlighted"></figure>
+<figure class="shot"><img src="../../assets/img/t05-utm-EN.png" width="1440" alt="Panel of projected coordinates with the hemisphere, the UTM zone, the source datum and the Convert to decimal degrees button highlighted"></figure>
 ```
 
 ::: {.marks}
-1. Choose the **UTM zone**. The zone does not come from the numbers: the same pair is valid in all zones.
-2. Choose the **Source datum**.
-3. Check the points on the map and click **Convert to decimal degrees**.
+1. Choose the **Hemisphere**. The numbers do not tell if the points are south or north of the equator.
+2. Choose the **UTM zone**. The zone does not come from the numbers: the same pair is valid in all zones.
+3. Choose the **Source datum**.
+4. Check the points on the map and click **Convert to decimal degrees**.
 :::
 
-If more than one zone puts the points in the stated country, Saíra tells how many. Check on the map which one is correct. The original values and the reference system stay in <span class="term">verbatimLatitude</span>, <span class="term">verbatimLongitude</span>, <span class="term">verbatimCoordinateSystem</span> and <span class="term">verbatimSRS</span>.
+If Saíra cannot tell which column is the northing, it also asks for the **Axes**. If more than one zone puts the points in the stated country, Saíra tells how many. Check on the map which one is correct. The original values and the reference system stay in <span class="term">verbatimLatitude</span>, <span class="term">verbatimLongitude</span>, <span class="term">verbatimCoordinateSystem</span> and <span class="term">verbatimSRS</span>.
 
 | Datum | Zones | Hemisphere |
 |---|---|---|
@@ -86,7 +87,7 @@ The fixes apply on export. The original data does not change. If <span class="te
 ## Fix a point in the table
 
 ```{=html}
-<figure class="shot"><img src="../../assets/img/t05-edit-EN.png" width="730" alt="Diagnosis table with a corrected longitude, the Edited filter and the edit hint highlighted"></figure>
+<figure class="shot"><img src="../../assets/img/t05-edit-EN.png" width="795" alt="Diagnosis table with a corrected longitude, the Edited filter and the edit hint highlighted"></figure>
 ```
 
 ::: {.marks}

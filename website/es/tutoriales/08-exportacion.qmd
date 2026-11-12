@@ -12,11 +12,11 @@ Resuelva los pendientes y descargue el Darwin Core Archive en la etapa **Exporta
 ## Resuelva los pendientes
 
 ```{=html}
-<figure class="shot"><img src="../../assets/img/t07-export-ES.png" width="1440" alt="Etapa Exportación bloqueada, con los pendientes, el botón de corrección, la tarjeta del paquete y la descarga desactivada resaltados"></figure>
+<figure class="shot"><img src="../../assets/img/t07-export-ES.png" width="1440" alt="Etapa Exportación bloqueada, con los filtros por tipo, el botón de corrección, la tarjeta del paquete y la descarga desactivada resaltados"></figure>
 ```
 
 ::: {.marks}
-1. **Bloquea** impide la descarga. **Aviso** deja descargar. **Info** solo informa.
+1. Los filtros cuentan los pendientes por tipo: **Todos**, **Bloquean**, **Avisos** e **Informativos**. Los que bloquean van primero. **Bloquea** impide la descarga. **Aviso** deja descargar. **Info** solo informa.
 2. Cada pendiente tiene un botón que lleva a la etapa que lo resuelve.
 3. El paquete: registros, correcciones, especies generalizadas y archivos.
 4. La descarga queda desactivada mientras haya un pendiente que bloquea.
@@ -30,6 +30,8 @@ Resuelva los pendientes y descargue el Darwin Core Archive en la etapa **Exporta
 | Celda que parece fórmula de hoja de cálculo, mapeada o no | Bloquea | [Vista previa](04-vista-previa.qmd#casos-comunes) |
 | Coordenada inválida | Bloquea | [Coordenadas](06-validacion-coordenadas.qmd) |
 | Generalización sin justificación | Bloquea | [Generalización](07-generalizacion.qmd#trate-una-especie-aparte) |
+| Un campo de texto, un nombre de columna o un <span class="term">occurrenceID</span> muestra el punto de un registro protegido | Bloquea | Vista previa, o la hoja original para una columna sin mapear. |
+| GBIF no respondió a la consulta UICN | Bloquea | **Intentar de nuevo**, o **Exportar sin la UICN que falta**. |
 | Decisión de una etapa que Saíra no pudo leer | Bloquea | Abra de nuevo las etapas que cita el mensaje y revíselas. |
 | Fecha no leída, año fuera del intervalo, conteo cero sin estado | Aviso | [Vista previa](04-vista-previa.qmd#casos-comunes) |
 | Marca de Coordenadas, problema abierto en la Vista previa | Aviso | El botón del pendiente lleva a la etapa. |
@@ -62,13 +64,13 @@ Haga clic en **Correcciones** para ver un ejemplo por tipo: Nombres, Coordenadas
 Saíra graba el estado de conservación según las bases de la [validación de nombres](05-validacion-nombres.qmd):
 
 - Flora BR o Fauna BR → `mmaThreatStatus` y `mmaSource`;
-- GBIF → `iucnRedListCategory`, consultado en la exportación.
+- GBIF → `iucnRedListCategory`, consultado cuando usted abre la Exportación.
 
 ```json
 {"mmaThreatStatus":"CR","mmaSource":"Portaria 1.704/2026","iucnRedListCategory":"NT"}
 ```
 
-Sin internet, la clave UICN queda fuera y la exportación continúa. Las claves MMA entran en registros de Brasil, por <span class="term">country</span> o <span class="term">countryCode</span>, y en registros que Saíra generalizó. Los demás registros quedan sin las claves MMA.
+Mientras la consulta UICN corre, la lista de pendientes la muestra con el conteo. Si GBIF no responde para algunos nombres, elija **Intentar de nuevo** o **Exportar sin la UICN que falta**. Esos nombres salen sin la clave UICN. Las claves MMA entran en registros de Brasil, por <span class="term">country</span> o <span class="term">countryCode</span>, y en registros que Saíra generalizó. Los demás registros quedan sin las claves MMA.
 
 ## Archivos del paquete
 

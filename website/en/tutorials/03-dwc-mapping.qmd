@@ -71,6 +71,8 @@ Six terms are required: <span class="term">scientificName</span> <span class="te
 
 If the same column goes to more than one term, Saíra warns you. Check that this is intentional.
 
+A column with latitude and longitude in each cell, such as `23°33'S 46°38'W` or `-23.55, -46.63`, goes to both coordinate cards. Saíra splits each cell between the two terms, without the warning.
+
 ## Check the standard values
 
 Saíra translates known values to the Darwin Core vocabulary:

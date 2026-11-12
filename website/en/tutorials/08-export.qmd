@@ -12,11 +12,11 @@ Resolve the pending items and download the Darwin Core Archive in the **Export**
 ## Resolve the pending items
 
 ```{=html}
-<figure class="shot"><img src="../../assets/img/t07-export-EN.png" width="1440" alt="Blocked Export step, with the pending items, the fix button, the package card and the disabled download highlighted"></figure>
+<figure class="shot"><img src="../../assets/img/t07-export-EN.png" width="1440" alt="Blocked Export step, with the severity filters, the fix button, the package card and the disabled download highlighted"></figure>
 ```
 
 ::: {.marks}
-1. **Blocks** stops the download. **Warning** lets you download. **Info** only informs.
+1. The filters count the items by type: **All**, **Blocking**, **Warnings** and **Info**. Blocking items come first. **Blocks** stops the download. **Warning** lets you download. **Info** only informs.
 2. Each pending item has a button that goes to the step that resolves it.
 3. The package: records, corrections, generalized species and files.
 4. The download stays disabled while a blocking item is left.
@@ -30,6 +30,8 @@ Resolve the pending items and download the Darwin Core Archive in the **Export**
 | Cell that looks like a spreadsheet formula, mapped or not | Blocks | [Preview](04-preview.qmd#common-cases) |
 | Invalid coordinate | Blocks | [Coordinates](06-coordinate-validation.qmd) |
 | Generalization without justification | Blocks | [Generalization](07-generalization.qmd#handle-one-species-separately) |
+| A text field, a column name or an <span class="term">occurrenceID</span> shows the point of a protected record | Blocks | Preview, or the original spreadsheet for an unmapped column. |
+| GBIF did not answer the IUCN lookup | Blocks | **Try again**, or **Export without the missing IUCN**. |
 | Decision of a step that Saíra could not read | Blocks | Open the steps in the message again and check them. |
 | Date not read, year out of range, zero count without status | Warning | [Preview](04-preview.qmd#common-cases) |
 | Coordinates flag, open problem in Preview | Warning | The button of the item goes to the step. |
@@ -62,13 +64,13 @@ Click **Corrections** to see one example per type: Names, Coordinates, Countries
 Saíra writes the conservation status from the backbones of [name validation](05-name-validation.qmd):
 
 - Flora BR or Fauna BR → `mmaThreatStatus` and `mmaSource`;
-- GBIF → `iucnRedListCategory`, queried at export.
+- GBIF → `iucnRedListCategory`, looked up when you open Export.
 
 ```json
 {"mmaThreatStatus":"CR","mmaSource":"Portaria 1.704/2026","iucnRedListCategory":"NT"}
 ```
 
-Without internet, the IUCN key is left out and the export continues. The MMA keys go into records from Brazil, by <span class="term">country</span> or <span class="term">countryCode</span>, and into records that Saíra generalized. Other records have no MMA keys.
+While the IUCN lookup runs, the pending list shows it with a count. If GBIF does not answer for some names, choose **Try again** or **Export without the missing IUCN**. These names go out without the IUCN key. The MMA keys go into records from Brazil, by <span class="term">country</span> or <span class="term">countryCode</span>, and into records that Saíra generalized. Other records have no MMA keys.
 
 ## Package files
 

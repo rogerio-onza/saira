@@ -10,13 +10,13 @@ Cargue la hoja de cálculo de ocurrencias en la etapa **Inicio**.
 ## Envíe el archivo
 
 ```{=html}
-<figure class="shot"><img src="../../assets/img/t02-upload-ES.png" width="720" alt="Etapa Inicio después de la carga, con las pestañas de formato, el área de carga y el resumen del archivo resaltados"></figure>
+<figure class="shot"><img src="../../assets/img/t02-upload-ES.png" width="1328" alt="Etapa Inicio después de la carga, con las pestañas de formato, el área de carga y el nombre del archivo resaltados"></figure>
 ```
 
 ::: {.marks}
 1. Elija el formato: **Hoja de cálculo** para CSV, XLSX o TXT, **Camtrap DP** para el ZIP de cámaras trampa.
 2. Arrastre el archivo al área de carga, o haga clic en ella.
-3. Revise el resumen: registros, columnas y tamaño.
+3. El área muestra el nombre del archivo. Para cambiar el archivo, arrastre otro o haga clic en el área.
 :::
 
 | Formato | Archivos |
@@ -50,7 +50,7 @@ En la pestaña **Camtrap DP**, Saíra acepta tres tipos de `.zip`:
 
 - **Camtrap DP** con el descriptor `datapackage.json` y las tablas `deployments`, `observations` y, si existe, `media`.
 - Las mismas tablas **sin el descriptor**. Saíra crea el descriptor a partir de los CSV.
-- La **exportación de Wildlife Insights**. Saíra renombra las columnas al formato Camtrap DP. En un proyecto de imágenes, cada imagen identificada se vuelve un registro. En un proyecto de secuencias, cada identificación de la secuencia se vuelve un registro, con el tamaño del grupo.
+- La **exportación de Wildlife Insights**. Saíra renombra las columnas al formato Camtrap DP. En un proyecto de imágenes, cada imagen identificada se vuelve un registro. En un proyecto de secuencias, cada identificación de la secuencia se vuelve un registro, con el tamaño del grupo. Saíra no acepta una exportación con los dos tipos de proyecto: exporte cada tipo en su propio archivo.
 
 Saíra une las tablas en una sola hoja de cálculo, con nombre científico, fecha y lugar. Después el flujo es igual al de una hoja de cálculo.
 

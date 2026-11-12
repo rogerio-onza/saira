@@ -24,15 +24,16 @@ Revise los datos en Darwin Core y corrija valores en la etapa **Vista previa**. 
 ## Encuentre los problemas
 
 ```{=html}
-<figure class="shot"><img src="../../assets/img/t07-problems-ES.png" width="1900" alt="Modo Problemas con los filtros por tipo y la lista por fila resaltados"></figure>
+<figure class="shot"><img src="../../assets/img/t07-problems-ES.png" width="1900" alt="Modo Problemas con los filtros por tipo, la lista por fila y el panel del registro resaltados"></figure>
 ```
 
 ::: {.marks}
 1. Los filtros separan los problemas por tipo, con el conteo. **Editadas** muestra lo que usted ya corrigió.
 2. Cada fila trae el término, el diagnóstico, el valor **En la planilla** y la **Corrección**.
+3. El registro de la fila elegida, tal como está en la planilla. La columna del problema queda marcada.
 :::
 
-**En la planilla** nunca cambia. La exportación usa la **Corrección** cuando existe. Haga clic en una fila para ver el registro completo tal como está en la planilla.
+**En la planilla** nunca cambia. La exportación usa la **Corrección** cuando existe. La lista abre en el primer problema. Haga clic en otra fila para ver su registro. En una ventana estrecha, el registro aparece debajo de la lista.
 
 ## Corrija un valor
 
@@ -58,6 +59,7 @@ Cuando un tipo de problema en un término cubre el 20% de los registros o más, 
 |---|---|---|
 | Vocabulario | `anotado` en <span class="term">occurrenceStatus</span> | Elija un valor sugerido o del vocabulario GBIF. |
 | Fecha | `03/04/2021` | El día y el mes pueden estar invertidos. Escríbala como `AAAA-MM-DD`. |
+| Fecha | `2021-13-40` | Saíra no leyó la fecha. Escríbala como `AAAA-MM-DD`. Saíra ya lee nombres de mes, meses en romano, fechas compactas e intervalos. |
 | Hora | `25:70` | Escríbala como `HH:MM`. |
 | Conteo | `muitos` | Escriba un número. |
 | Conteo | `0` con <span class="term">occurrenceStatus</span> `present` | `0` indica ausencia. Haga clic en **Marcar ausente** o corrija el conteo. |

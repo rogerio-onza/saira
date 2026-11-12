@@ -37,7 +37,7 @@ A validação precisa de <span class="term">decimalLatitude</span>, <span class=
 
 Os testes rodam sem internet, com a camada de países do Natural Earth embutida no Saíra. Só o mapa de fundo precisa de internet.
 
-Durante a validação, o painel mostra o teste em curso e quantos registros ele confere. No mapa, cada hexágono é um ponto e a cor diz a situação: Válida, Inválida, Mar, Mar não verificado, Zero/Equal, Referência sensível ou Corrigida.
+Durante a validação, o painel mostra o teste em curso e quantos registros ele confere. No mapa, cada hexágono é um ponto e a cor diz a situação: Válida, Inválida, Mar, Mar não verificado, Zero/Equal, Referência sensível ou Corrigida. Num mapa grande, o Saíra desenha uma amostra dos pontos válidos e todos os pontos com problema.
 
 Clique num ponto e use **Mostrar na tabela** para abrir o registro. Se vários registros caem no mesmo lugar, o ponto diz **N registros neste ponto**. Coordenada fora do intervalo válido não aparece no mapa: o aviso sobre o mapa tem **Ver na tabela**.
 
@@ -48,21 +48,22 @@ A costa é simplificada. Um ponto muito perto da costa pode aparecer como **Em m
 
 ## Coordenadas em outros formatos
 
-O Saíra lê graus, minutos e segundos (`23°33'1.872"S`) e minutos decimais (`46°37.999' W`). A letra do hemisfério pode vir no início ou no fim: N, S, E, W, O (oeste) ou L (leste). Vírgula e ponto decimal valem. O Saíra rejeita letra que contradiz o sinal (`-23.5 N`) e minutos ou segundos de 60 ou mais.
+O Saíra lê graus, minutos e segundos (`23°33'1.872"S`) e minutos decimais (`46°37.999' W`). A letra do hemisfério pode vir no início ou no fim: N, S, E, W, O (oeste) ou L (leste). Vírgula e ponto decimal valem. O Saíra rejeita letra que contradiz o sinal (`-23.5 N`) e minutos ou segundos de 60 ou mais. Também rejeita número em forma hexadecimal ou com expoente, como `0x1A` ou `1e2`.
 
 ## Converta coordenadas UTM
 
 ```{=html}
-<figure class="shot"><img src="../assets/img/t05-utm.png" width="1440" alt="Painel de coordenadas projetadas com a zona UTM, o datum de origem e o botão Converter para graus decimais destacados"></figure>
+<figure class="shot"><img src="../assets/img/t05-utm.png" width="1440" alt="Painel de coordenadas projetadas com o hemisfério, a zona UTM, o datum de origem e o botão Converter para graus decimais destacados"></figure>
 ```
 
 ::: {.marks}
-1. Escolha a **Zona UTM**. A zona não sai dos números: o mesmo par vale em todas as zonas.
-2. Escolha o **Datum de origem**.
-3. Confira os pontos no mapa e clique em **Converter para graus decimais**.
+1. Escolha o **Hemisfério**. Os números não dizem se os pontos estão ao sul ou ao norte do equador.
+2. Escolha a **Zona UTM**. A zona não sai dos números: o mesmo par vale em todas as zonas.
+3. Escolha o **Datum de origem**.
+4. Confira os pontos no mapa e clique em **Converter para graus decimais**.
 :::
 
-Se mais de uma zona põe os pontos no país informado, o Saíra diz quantas. Confira no mapa qual está certa. Os valores originais e o sistema de referência ficam em <span class="term">verbatimLatitude</span>, <span class="term">verbatimLongitude</span>, <span class="term">verbatimCoordinateSystem</span> e <span class="term">verbatimSRS</span>.
+Se o Saíra não sabe qual coluna é o northing, ele também pede os **Eixos**. Se mais de uma zona põe os pontos no país informado, o Saíra diz quantas. Confira no mapa qual está certa. Os valores originais e o sistema de referência ficam em <span class="term">verbatimLatitude</span>, <span class="term">verbatimLongitude</span>, <span class="term">verbatimCoordinateSystem</span> e <span class="term">verbatimSRS</span>.
 
 | Datum | Zonas | Hemisfério |
 |---|---|---|
@@ -86,7 +87,7 @@ As correções valem na exportação. O dado original não muda. Se <span class=
 ## Corrija um ponto na tabela
 
 ```{=html}
-<figure class="shot"><img src="../assets/img/t05-edit.png" width="730" alt="Tabela de diagnóstico com uma longitude corrigida, o filtro Editadas e a dica de edição destacados"></figure>
+<figure class="shot"><img src="../assets/img/t05-edit.png" width="759" alt="Tabela de diagnóstico com uma longitude corrigida, o filtro Editadas e a dica de edição destacados"></figure>
 ```
 
 ::: {.marks}
