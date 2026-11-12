@@ -1364,11 +1364,14 @@ protected_point_set <- function(plan) {
 
 # Copies of a protected point in any text: the two numbers of one point in one
 # cell, each with more decimals than the grid of the point and equal to it at
-# those decimals. One number alone is too often a measure. A cell that shows the
-# point of its own row (`own_lat`, `own_lon`, numbers) keeps it, because the
-# row publishes that point. The axes are sorted once, so the cost does not grow
-# with cells times points (ADR-204). Returns the cells, each copy with the
-# published value, and which cells had a copy.
+# those decimals. The two numbers can have different forms, such as a decimal
+# latitude and a degrees-minutes longitude. One number alone is too often a
+# measure. A cell that shows the point of its own row (`own_lat`, `own_lon`,
+# numbers) keeps it, because the row publishes that point. Only the full pair
+# counts: one equal axis does not make another point the row point. The axes
+# are sorted once, so the cost does not grow with cells times points
+# (ADR-204). Returns the cells, each copy with the published value, and which
+# cells had a copy.
 replace_point_pairs <- function(cells, points, own_lat = NULL, own_lon = NULL) {
     cells <- as.character(cells)
     hit_cell <- rep(FALSE, length(cells))
@@ -1385,13 +1388,17 @@ replace_point_pairs <- function(cells, points, own_lat = NULL, own_lon = NULL) {
     axis <- axis[order(axis$value), , drop = FALSE]
     max_grid <- max(points$grid, na.rm = TRUE)
     text <- cells[cand]
-    for (stage in point_copy_stages()) {
+    stages <- point_copy_stages()
+    found <- list()
+    for (s in seq_along(stages)) {
+        stage <- stages[[s]]
         at <- if (is.null(stage$hint)) seq_along(text) else which(grepl(stage$hint, text, perl = TRUE))
         if (!length(at)) next
         matched <- match_each_cell(stage$pattern, text[at])
         tok <- unlist(matched$tokens, use.names = FALSE)
         if (!length(tok)) next
         owner <- rep(seq_along(at), lengths(matched$tokens))
+        start <- unlist(lapply(matched$found, function(f) f[f > 0L]), use.names = FALSE)
         read <- stage$read(tok)
         tol <- read$step / 2 + 1e-9
         lo <- findInterval(read$value - tol, axis$value, left.open = TRUE) + 1L
@@ -1403,20 +1410,59 @@ replace_point_pairs <- function(cells, points, own_lat = NULL, own_lon = NULL) {
         ti <- rep(seq_along(tok), n)
         ai <- sequence(n[n > 0L], from = lo[n > 0L])
         is_lat <- axis$is_lat[ai]
-        mine <- ifelse(is_lat, own_lat[at][owner[ti]], own_lon[at][owner[ti]])
-        ok <- read$step[ti] < axis$grid[ai] & !(!is.na(mine) & abs(read$value[ti] - mine) <= tol[ti])
-        key <- paste(owner[ti], axis$point[ai])
-        ok <- ok & key %in% key[ok & is_lat] & key %in% key[ok & !is_lat]
-        ok[is.na(ok)] <- FALSE
-        # A token near two points takes the first one.
-        ok[which(ok)[duplicated(ti[ok])]] <- FALSE
-        if (!any(ok)) next
-        ti <- ti[ok]
-        p <- axis$point[ai[ok]]
-        tok[ti] <- stage$render(tok[ti], ifelse(is_lat[ok], points$pub_lat[p], points$pub_lon[p]))
-        text[at] <- write_back_tokens(text[at], matched$found, tok, owner, seq_along(tok) %in% ti)
-        hit_cell[cand[at[unique(owner[ti])]]] <- TRUE
+        cell <- at[owner[ti]]
+        mine <- ifelse(is_lat, own_lat[cell], own_lon[cell])
+        found[[length(found) + 1L]] <- data.frame(
+            stage = s, cell = cell, start = start[ti], len = nchar(tok[ti]), tok = tok[ti],
+            point = axis$point[ai], is_lat = is_lat,
+            finer = read$step[ti] < axis$grid[ai],
+            mine = !is.na(mine) & abs(read$value[ti] - mine) <= tol[ti],
+            stringsAsFactors = FALSE
+        )
     }
+    if (!length(found)) {
+        return(list(cells = cells, hit = hit_cell))
+    }
+    found <- do.call(rbind, found)
+    key <- paste(found$cell, found$point)
+    both <- function(flag) key %in% key[flag & found$is_lat] & key %in% key[flag & !found$is_lat]
+    ok <- found$finer & !both(found$mine)
+    ok <- ok & both(ok)
+    ok[is.na(ok)] <- FALSE
+    found <- found[ok, , drop = FALSE]
+    # A token near two points takes the first one.
+    found <- found[!duplicated(found[c("stage", "cell", "start")]), , drop = FALSE]
+    if (!nrow(found)) {
+        return(list(cells = cells, hit = hit_cell))
+    }
+    found$published <- ifelse(found$is_lat, points$pub_lat[found$point], points$pub_lon[found$point])
+    # The first form wins where two forms read the same text, such as the
+    # degrees and minutes of a full degrees-minutes-seconds copy. One form
+    # alone gives tokens that do not overlap.
+    found <- found[order(found$cell, found$stage, found$start), , drop = FALSE]
+    cell_form <- unique(found$cell * 10L + found$stage)
+    keep <- rep(TRUE, nrow(found))
+    for (i in unique((cell_form %/% 10L)[duplicated(cell_form %/% 10L)])) {
+        rows <- which(found$cell == i)
+        for (j in rows[-1L]) {
+            prior <- rows[rows < j & keep[rows]]
+            keep[j] <- !any(found$start[j] < found$start[prior] + found$len[prior] &
+                                found$start[prior] < found$start[j] + found$len[j])
+        }
+    }
+    found <- found[keep, , drop = FALSE]
+    found$value <- found$tok
+    for (s in unique(found$stage)) {
+        at <- found$stage == s
+        found$value[at] <- stages[[s]]$render(found$tok[at], found$published[at])
+    }
+    found <- found[order(found$cell, found$start), , drop = FALSE]
+    by_cell <- factor(found$cell, levels = unique(found$cell))
+    where <- Map(function(start, len) structure(start, match.length = len, useBytes = FALSE),
+                 split(found$start, by_cell), split(found$len, by_cell))
+    changed <- as.integer(levels(by_cell))
+    regmatches(text[changed], unname(where)) <- unname(split(found$value, by_cell))
+    hit_cell[cand[unique(found$cell)]] <- TRUE
     cells[cand] <- text
     list(cells = cells, hit = hit_cell)
 }
@@ -1451,7 +1497,9 @@ PROJECTED_POINT_KEY <- paste0(
     "|(?<![a-z])(?:multi)?(?:point|linestring|polygon)\\s*(?:zm|z|m)?\\s*\\("
 )
 PROJECTED_CRS_CODE <- "(?i)(?:epsg|srid|crs)[^0-9]{0,8}[0-9]+"
-PROJECTED_AXIS_NUMBER <- "(?<![0-9])(?<![0-9]\\.)[-+]?[0-9]{5,}(?:\\.[0-9]+)?(?![0-9])"
+# A number in plain or exponent form. An axis is one with a value of 10000 or
+# more, as 333286.9 or 3.332869e5.
+PROJECTED_AXIS_NUMBER <- "(?<![0-9])(?<![0-9]\\.)[-+]?[0-9]+(?:\\.[0-9]+)?(?:[eE][-+]?[0-9]+)?(?![0-9])"
 
 projected_point_cells <- function(cell) {
     cell <- as.character(cell)
@@ -1461,7 +1509,10 @@ projected_point_cells <- function(cell) {
         return(out)
     }
     text <- gsub(PROJECTED_CRS_CODE, "", cell[cand], perl = TRUE)
-    out[cand] <- lengths(regmatches(text, gregexpr(PROJECTED_AXIS_NUMBER, text, perl = TRUE))) >= 2L
+    tokens <- regmatches(text, gregexpr(PROJECTED_AXIS_NUMBER, text, perl = TRUE))
+    out[cand] <- vapply(tokens, function(tok) {
+        sum(abs(suppressWarnings(as.numeric(tok))) >= 1e4, na.rm = TRUE) >= 2L
+    }, logical(1))
     out
 }
 
