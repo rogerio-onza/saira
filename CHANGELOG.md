@@ -122,6 +122,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **upload:** Show the green upload complete bar again when the upload ends. The record and size boxes stay removed
 - **eventDate:** Read no year in a time zone such as -0300 or a compact time such as T0930 ([#311](https://github.com/rogerio-onza/saira/pull/311))
 - **eventDate:** Read a month written as 3.0 when the date comes from day, month and year columns ([#312](https://github.com/rogerio-onza/saira/pull/312))
 - **coords:** Translate the hint before a run, and ask to map a field only when one is missing ([#313](https://github.com/rogerio-onza/saira/pull/313))

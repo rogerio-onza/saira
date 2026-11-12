@@ -492,12 +492,6 @@
   padding: 0;
 }
 
-/* The dropzone names the file after the upload, so the finished bar hides.
-   Opacity, because Shiny writes the visibility inline. */
-.upload-native-input .shiny-file-input-progress.is-complete {
-  opacity: 0;
-}
-
 .upload-dropzone-file {
   max-width: 100%;
   overflow-wrap: anywhere;
