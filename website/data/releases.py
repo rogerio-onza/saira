@@ -15,6 +15,22 @@
 
 RELEASES = [
     {
+        "version": "1.0.1",
+        "date": "2026-11-12",
+        "pt": [
+            ("changed", "**Espécies ameaçadas**: a flora segue a Portaria GM/MMA 1.783/2026, que revoga a Portaria 148/2022"),
+            ("added", "**Versão**: o selo de versão avisa quando sai uma versão nova, com o instalador ou o comando do R"),
+        ],
+        "en": [
+            ("changed", "**Threatened species**: the flora follows Portaria GM/MMA 1.783/2026, which revokes Portaria 148/2022"),
+            ("added", "**Version**: the version badge tells you when a new version is out, with the installer or the R command"),
+        ],
+        "es": [
+            ("changed", "**Especies amenazadas**: la flora sigue la Portaria GM/MMA 1.783/2026, que revoca la Portaria 148/2022"),
+            ("added", "**Versión**: el sello de versión avisa cuando sale una versión nueva, con el instalador o el comando de R"),
+        ],
+    },
+    {
         "version": "1.0.0",
         "date": "2026-11-12",
         "pt": [

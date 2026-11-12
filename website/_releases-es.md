@@ -2,6 +2,17 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v1.0.1</span>
+    <time class="release-date">2026-11-12</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-changed">Cambió</span><span class="rel-text"><strong>Especies amenazadas</strong>: la flora sigue la Portaria GM/MMA 1.783/2026, que revoca la Portaria 148/2022</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Nuevo</span><span class="rel-text"><strong>Versión</strong>: el sello de versión avisa cuando sale una versión nueva, con el instalador o el comando de R</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v1.0.0</span>
     <time class="release-date">2026-11-12</time>
   </header>
