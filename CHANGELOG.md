@@ -111,6 +111,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **eventDate:** Read no year in a time zone such as -0300 or a compact time such as T0930 ([#311](https://github.com/rogerio-onza/saira/pull/311))
+- **eventDate:** Read a month written as 3.0 when the date comes from day, month and year columns ([#312](https://github.com/rogerio-onza/saira/pull/312))
+- **coords:** Translate the hint before a run, and ask to map a field only when one is missing ([#313](https://github.com/rogerio-onza/saira/pull/313))
+- **names:** Translate the note about a catalog update in progress ([#313](https://github.com/rogerio-onza/saira/pull/313))
+- **build:** Accept Shiny options such as the port in run_app(), and log a normal session end as a message ([#314](https://github.com/rogerio-onza/saira/pull/314))
+- **coords:** Show a point at 0/0 as Zero/Equal, not as open sea, ADR-211 ([#315](https://github.com/rogerio-onza/saira/pull/315))
+- **coords:** Refuse a coordinate written in hexadecimal or with an exponent, such as 0x1A or 1e2 ([#316](https://github.com/rogerio-onza/saira/pull/316))
+- **eventDate:** Find the day, month and year columns in names like diaColeta or DD, MM, YYYY ([#317](https://github.com/rogerio-onza/saira/pull/317))
 - **eventDate:** Write one month when both ends of a four-column interval are the same month
 - **preview:** Accept a GPS accuracy as `4.551` when the column writes decimals with a dot, ADR-210 ([#309](https://github.com/rogerio-onza/saira/pull/309))
 - **generalization:** Apply the category grid to a sensitive record with a GPS accuracy as `4.551`, ADR-210 ([#307](https://github.com/rogerio-onza/saira/pull/307))
@@ -339,6 +347,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Draw a closed column list only when it opens, so auto-map holds the page for half the time, ADR-202
 - **mapping:** Cut the page hold after an upload by a third with fewer browser messages, ADR-203
 - **upload:** Watch only the upload progress bars, not every change on the page, ADR-189
+- **export:** Skip the JSON object reader for dynamicProperties columns that hold only plain text ([#310](https://github.com/rogerio-onza/saira/pull/310))
 - **upload:** Free memory after a CSV read only for files of 50 MB or more, ADR-196 ([#283](https://github.com/rogerio-onza/saira/pull/283))
 - **dynamicProperties:** Read nested JSON without a second pass over each cell, ADR-190 ([#262](https://github.com/rogerio-onza/saira/pull/262))
 - **mapping:** Normalize each column name once in the name similarity score, ADR-196 ([#284](https://github.com/rogerio-onza/saira/pull/284))
