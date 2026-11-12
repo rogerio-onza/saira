@@ -18,6 +18,16 @@ testthat::test_that("parse_coord_edit refuses empty, non-numeric and out-of-rang
     testthat::expect_null(parse_coord_edit("-90", "lat")$error)
     testthat::expect_null(parse_coord_edit("180", "lon")$error)
     testthat::expect_true(is.na(parse_coord_edit("abc", "lat")$value))
+    testthat::expect_identical(parse_coord_edit("1e1", "lat")$error, "validate_coords_edit_error_number")
+    testthat::expect_identical(parse_coord_edit("0x1A", "lon")$error, "validate_coords_edit_error_number")
+})
+
+testthat::test_that("as_coord_numeric reads only plain decimals in text", {
+    out <- as_coord_numeric(c("0x1A", "1e2", "Inf", "-23,5", " 12.3 ", ".5", "+4", "12.", "", NA))
+    testthat::expect_identical(out$num, c(NA, NA, NA, -23.5, 12.3, 0.5, 4, 12, NA, NA))
+    testthat::expect_identical(out$parse_failed, c(TRUE, TRUE, TRUE, rep(FALSE, 7)))
+    # A numeric column keeps a small value that as.character() writes as 1e-05.
+    testthat::expect_identical(as_coord_numeric(c(1e-05, -23.5))$num, c(1e-05, -23.5))
 })
 
 testthat::test_that("the error keys exist in every language", {

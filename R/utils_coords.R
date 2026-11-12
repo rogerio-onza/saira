@@ -24,6 +24,12 @@ as_coord_numeric <- function(x) {
     raw_chr[is.na(x)] <- NA_character_
     normalized <- gsub(",", ".", raw_chr, fixed = TRUE)
     num <- suppressWarnings(as.numeric(normalized))
+    if (!is.numeric(x)) {
+        # as.numeric() also reads hex ("0x1A") and exponent ("1e2") text. A
+        # numeric column keeps its values: as.character() writes 1e-05 there.
+        plain <- grepl("^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)\\s*$", normalized, perl = TRUE)
+        num[!plain] <- NA_real_
+    }
     parse_failed <- !is.na(raw_chr) & nzchar(trimws(raw_chr)) & is.na(num)
     list(num = num, parse_failed = parse_failed)
 }
@@ -1065,8 +1071,10 @@ validate_coords_cc_df <- function(
 
     diagnostic <- rep("ok", n)
     diagnostic[reference_flag] <- "reference"
-    diagnostic[zero_equal] <- "zero_equal"
+    # The point 0/0 is always at sea, so the zero/equal cause wins over the
+    # sea symptom (ADR-211).
     diagnostic[sea_flag] <- "sea"
+    diagnostic[zero_equal] <- "zero_equal"
     diagnostic[validity_bounds] <- "validity_bounds"
     diagnostic[swapped] <- "swapped"
     diagnostic[validity_missing] <- "validity_missing"
