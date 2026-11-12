@@ -508,3 +508,18 @@ test_that("vn_unchecked_block_ui counts the names and limits the chips (ADR-169)
     expect_match(one, "1 name with no answer", fixed = TRUE)
     expect_match(one, "It does not count as not found.", fixed = TRUE)
 })
+
+testthat::test_that("taxonomic_status_label translates the known provider values", {
+    out <- saira:::taxonomic_status_label(c("valid", "accepted", "ACCEPTED", "Aceito", "synonym", "doubtful", NA), "pt")
+    testthat::expect_identical(out[1:4], rep("Aceito", 4))
+    testthat::expect_identical(out[5], "Sinônimo")
+    testthat::expect_identical(out[6], "doubtful")
+    testthat::expect_true(is.na(out[7]))
+    testthat::expect_identical(saira:::taxonomic_status_label("valid", "en"), "Accepted")
+})
+
+testthat::test_that("names_pending_count counts distinct queries and skips blank or sp. names", {
+    names_vec <- c("Cebus apella", "Cebus apella", "Cebus apella Linnaeus, 1758", "", NA, "Cebus sp.", "Tangara fastuosa")
+    testthat::expect_identical(saira:::names_pending_count(names_vec), 2L)
+    testthat::expect_identical(saira:::names_pending_count(character(0)), 0L)
+})

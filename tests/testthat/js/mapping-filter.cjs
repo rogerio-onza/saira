@@ -52,6 +52,7 @@ function jQuery() {
     on(event, selector, fn) {
       if (fn) handlers[event + '|' + selector] = fn; else handlers[event] = selector;
     },
+    one() {},
     trigger() {}
   };
 }

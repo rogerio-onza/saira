@@ -112,6 +112,7 @@ Collate:
     'utils_names.R'
     'utils_names_providers.R'
     'utils_names_reviews.R'
+    'utils_names_worker.R'
     'utils_oceanic_islands.R'
     'utils_preview.R'
     'utils_preview_fix.R'
