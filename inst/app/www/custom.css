@@ -11213,6 +11213,23 @@ button.sc-scale-chip:hover .sc-level-chip {
   color: var(--text-primary);
 }
 
+/* Phone width: the badge and the button share the first line, the text
+   takes the full width below them. */
+@media (max-width: 575.98px) {
+  .export-pending-row {
+    flex-wrap: wrap;
+  }
+
+  .export-pending-body {
+    flex-basis: 100%;
+    order: 1;
+  }
+
+  .export-pending-action.btn {
+    margin-left: auto;
+  }
+}
+
 .export-pending-body code {
   display: block;
   margin-top: var(--space-1);

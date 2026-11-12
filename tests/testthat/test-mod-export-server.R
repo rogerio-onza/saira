@@ -204,7 +204,7 @@ testthat::test_that("mod_export_server blocks a blank name and a formula in an u
             html <- paste(output$summary$html, collapse = " ")
             testthat::expect_match(html, "scientificName is empty in 1 record", fixed = TRUE)
             testthat::expect_match(html, "1 cell(s) in unmapped columns", fixed = TRUE)
-            testthat::expect_match(html, "go_map_unmapped", fixed = TRUE)
+            testthat::expect_match(html, "go_map_formula_cells", fixed = TRUE)
             zip_path <- output$download_real
             testthat::expect_identical(zip::zip_list(zip_path)$filename, "export_error.csv")
         }
