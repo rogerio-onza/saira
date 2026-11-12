@@ -48,7 +48,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **names:** Show dashes and the count of names to read before the first run, and label the mark as sensitive ([#323](https://github.com/rogerio-onza/saira/pull/323))
 - **names:** Send the GBIF requests of a names run from a separate R process, so the app stays responsive, ADR-212 ([#328](https://github.com/rogerio-onza/saira/pull/328))
 - **mapping:** Send every selection and meta write of the Mapping step through one command interface ([#329](https://github.com/rogerio-onza/saira/pull/329))
-- **names:** Send the GBIF requests of a names run from a separate R process, so the app stays responsive, ADR-212 ([#332](https://github.com/rogerio-onza/saira/pull/332))
 - **export:** Look up the IUCN category before the download, with a retry or skip when GBIF stops answering, ADR-213 ([#332](https://github.com/rogerio-onza/saira/pull/332))
 - **preview:** Show the record beside the Problems list on wide screens, and mark the column behind the problem, ADR-195 ([#278](https://github.com/rogerio-onza/saira/pull/278))
 - **build:** Build the Darwin Core catalogs from the TDWG list and one base terms file, in one script, ADR-189
