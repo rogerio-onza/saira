@@ -8,8 +8,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
-- **eventDate:** Convert month names, roman months, compact dates, 12-hour times, UTC and local or year intervals to ISO
-- **eventDate:** Order the two ends of a day/month interval with the vote of the whole column
+- **eventDate:** Convert month names, roman months, compact dates, 12-hour times, UTC and local or year intervals to ISO ([#319](https://github.com/rogerio-onza/saira/pull/319))
+- **eventDate:** Order the two ends of a day/month interval with the vote of the whole column ([#319](https://github.com/rogerio-onza/saira/pull/319))
 - **mapping:** Split a column with latitude and longitude in each cell, as `23°33'S 46°38'W` or `-23.55, -46.63`, between the two coordinate cards, and put it on both cards on auto-map, ADR-201
 - **mapping:** Add `SAIRA_PUBLIC=true` for a shared server, which reads aliases but saves no new ones, ADR-182
 - **export:** Move the measurements to a MeasurementOrFact extension file, one row per measurement, ADR-179
