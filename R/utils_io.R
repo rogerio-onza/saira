@@ -968,6 +968,19 @@ parse_dates_iso <- function(date_vector, day_first = NULL) {
     return(result)
 }
 
+# Each end of a date or interval without its time part, so the time zone in
+# "T14:30:00-0300" or the compact time in "T0930" is no year.
+date_text_without_time <- function(x) {
+    ends <- strsplit(x, "/", fixed = TRUE)
+    flat <- split_time_suffix(unlist(ends, use.names = FALSE))$date
+    flat <- sub(
+        "T\\d{2}(:?\\d{2}){0,2}([.,]\\d+)?(Z|[+-]\\d{2}(:?\\d{2})?)?$", "", flat,
+        perl = TRUE
+    )
+    by_value <- factor(rep(seq_along(x), lengths(ends)), levels = seq_along(x))
+    vapply(split(flat, by_value), paste, character(1), collapse = "/", USE.NAMES = FALSE)
+}
+
 #' Flag dates whose year is outside the plausible range
 #'
 #' A typo in a spreadsheet ("2098" for "2008") survives every format conversion:
@@ -1020,7 +1033,10 @@ date_year_issues <- function(df, min_year = 1600L, max_year = NULL, sample_n = 5
         uniq <- unique(values)
         # The lookarounds keep a compact "20231225" from being read as the year
         # 2023 plus a bogus year 1225.
-        matches <- regmatches(uniq, gregexpr("(?<!\\d)\\d{4}(?!\\d)", uniq, perl = TRUE))
+        scan <- uniq
+        timed <- which(grepl("[T:]", uniq))
+        if (length(timed)) scan[timed] <- date_text_without_time(uniq[timed])
+        matches <- regmatches(scan, gregexpr("(?<!\\d)\\d{4}(?!\\d)", scan, perl = TRUE))
         uniq_future <- vapply(matches, function(y) any(as.integer(y) > max_year), logical(1))
         uniq_ancient <- vapply(matches, function(y) any(as.integer(y) < min_year), logical(1))
 

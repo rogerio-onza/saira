@@ -375,6 +375,24 @@ testthat::test_that("date_year_issues reads both halves of an interval and ignor
     testthat::expect_identical(no_cols$count, 0L)
 })
 
+testthat::test_that("date_year_issues reads no year in a time zone or a compact time", {
+    timed <- data.frame(
+        eventDate = c(
+            "2023-12-25T14:30:00-0300", "2023-12-25T14:30:00+1200", "2023-12-25T0930",
+            "2023-12-25T14:30:00-0300/2023-12-26T10:00+1200"
+        ),
+        stringsAsFactors = FALSE
+    )
+    testthat::expect_identical(saira:::date_year_issues(timed, max_year = 2026L)$count, 0L)
+
+    old <- data.frame(
+        eventDate = c("1498-03-12", "1498-03-12T10:00-0300", "2023-12-25T0930/1450-01-01"),
+        stringsAsFactors = FALSE
+    )
+    old_issues <- saira:::date_year_issues(old, max_year = 2026L)
+    testthat::expect_identical(old_issues$ancient_count, 3L)
+})
+
 # A text read of an Excel date cell gives its serial number ("45372"), so each
 # cell is converted from its own type.
 testthat::test_that("read_biodiversity_xlsx returns text with ISO dates and plain numbers", {
