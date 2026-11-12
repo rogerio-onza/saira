@@ -17,6 +17,27 @@ COLXR_CHECKLIST_KEY <- "7ddf754f-d193-4cc9-b351-99906754a03b"
 # included, so a name is queried at most once.
 colxr_match_cache <- create_rds_cache("colxr_match")
 
+colxr_clean_names <- function(names) {
+    names <- unique(as.character(names))
+    names[!is.na(names) & nzchar(trimws(names))]
+}
+
+# Names that still need a GBIF request: not in the session memo.
+colxr_unmemoized <- function(names) {
+    names <- colxr_clean_names(names)
+    setdiff(names, colxr_match_cache$get()$query_name)
+}
+
+# Add the parsed answers to the memo. Returns the names without an answer.
+colxr_store_bodies <- function(misses, bodies) {
+    answered <- !vapply(bodies, is.null, logical(1))
+    if (any(answered)) {
+        memo <- colxr_match_cache$get() %||% parse_colxr_matches(list(), character(0))
+        colxr_match_cache$set(rbind(memo, parse_colxr_matches(bodies[answered], misses[answered])))
+    }
+    misses[!answered]
+}
+
 colxr_match_request <- function(name) {
     list(
         segments = c("species", "match"),
@@ -122,30 +143,22 @@ parse_colxr_matches <- function(bodies, query_names) {
 #' every answer for the session.
 #'
 #' @param names Character vector of scientific names.
+#' @param fetch Function that takes a list of requests and returns one parsed
+#'   body per request (NULL when unanswered). The names worker passes
+#'   `gbif_offline_fetch` after it stored the bodies it fetched (PERF-02).
 #' @return Data frame from `parse_colxr_matches()`, one row per answered
 #'   name, `validation_status = "not_found"` included. The attribute
 #'   `unanswered` lists the names GBIF did not answer (network or HTTP error).
 #' @noRd
-colxr_match_names <- function(names) {
-    names <- unique(as.character(names))
-    names <- names[!is.na(names) & nzchar(trimws(names))]
-    memo <- colxr_match_cache$get()
-    if (is.null(memo)) {
-        memo <- parse_colxr_matches(list(), character(0))
-    }
-
-    misses <- setdiff(names, memo$query_name)
+colxr_match_names <- function(names, fetch = gbif_api_get_many) {
+    names <- colxr_clean_names(names)
+    misses <- colxr_unmemoized(names)
     unanswered <- character(0)
     if (length(misses) > 0L) {
-        bodies <- gbif_api_get_many(lapply(misses, colxr_match_request))
-        answered <- !vapply(bodies, is.null, logical(1))
-        unanswered <- misses[!answered]
-        if (any(answered)) {
-            memo <- rbind(memo, parse_colxr_matches(bodies[answered], misses[answered]))
-            colxr_match_cache$set(memo)
-        }
+        unanswered <- colxr_store_bodies(misses, fetch(lapply(misses, colxr_match_request)))
     }
 
+    memo <- colxr_match_cache$get() %||% parse_colxr_matches(list(), character(0))
     out <- memo[memo$query_name %in% names, , drop = FALSE]
     out <- out[order(match(out$query_name, names)), , drop = FALSE]
     rownames(out) <- NULL

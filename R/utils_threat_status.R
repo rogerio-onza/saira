@@ -65,6 +65,11 @@ gbif_api_get_many <- function(requests) {
     )
 }
 
+# A fetch that sends nothing: every request stays unanswered. The names run
+# uses it after the worker stored its answers, so a name GBIF did not answer
+# gets no second, blocking request.
+gbif_offline_fetch <- function(requests) vector("list", length(requests))
+
 #' IUCN Red List category of scientific names, from COL XR
 #'
 #' The COL XR match carries the global IUCN category of the name. A synonym

@@ -81,6 +81,18 @@ names_validation_input <- function(df, remove_authors = TRUE, ignore_qualifiers 
     )
 }
 
+# How many distinct taxonomic queries a Names run would send. Blank and
+# ignored names ("Genus sp.") do not count, as in the run itself.
+names_pending_count <- function(names_vec, remove_authors = TRUE, ignore_qualifiers = TRUE) {
+    if (!length(names_vec)) return(0L)
+    prepared <- prepare_taxadb_inputs(
+        unique(as.character(names_vec)),
+        remove_authors = remove_authors,
+        ignore_qualifiers = ignore_qualifiers
+    )
+    length(unique(stats::na.omit(prepared$query_name)))
+}
+
 prepare_taxadb_inputs <- function(
   names_vec,
   remove_authors = TRUE,
@@ -553,6 +565,21 @@ init_taxadb_retry_state <- function(prev_state, run_id = as.numeric(Sys.time()) 
 
 is_taxadb_run_done <- function(state) {
     isTRUE(state$completed) || identical(state$phase, "done") || identical(state$phase, "failed")
+}
+
+# The names of the next COL XR batch, or NULL when the next step sends no
+# GBIF request. The names worker fetches these before the step runs.
+next_colxr_batch <- function(state) {
+    if (is_taxadb_run_done(state) || isTRUE(state$aborted) ||
+        !identical(state$phase, "provider_query_batch")) {
+        return(NULL)
+    }
+    type <- as.character(state$provider_types[[state$current_provider]] %||% "colxr")
+    next_batch <- as.integer(state$provider_batch_idx) + 1L
+    if (!identical(type, "colxr") || next_batch > state$provider_batch_total) {
+        return(NULL)
+    }
+    state$current_batches[[next_batch]]
 }
 
 next_taxadb_run_step <- function(state, adapters = names_provider_adapters()) {

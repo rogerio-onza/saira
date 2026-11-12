@@ -24,6 +24,23 @@
     });
   };
 
+  // The count chips of the pending card show one severity. The card renders
+  // again on each change, so one click handler on the page serves every copy.
+  behavior.exportPendingFilter = function () {
+    if (window.__sairaPendingFilterHandler) return;
+    window.__sairaPendingFilterHandler = true;
+    document.addEventListener('click', function (event) {
+      var chip = event.target.closest('.export-pending-chip');
+      if (!chip) return;
+      var card = chip.closest('.export-pending');
+      if (!card) return;
+      card.dataset.filter = chip.dataset.filter;
+      card.querySelectorAll('.export-pending-chip').forEach(function (el) {
+        el.setAttribute('aria-pressed', el === chip ? 'true' : 'false');
+      });
+    });
+  };
+
   // The "fix" link of the blocked banner opens Mapping and names a field
   // card. The card scrolls into view and flashes. One handler per page.
   behavior.exportFocusField = function () {

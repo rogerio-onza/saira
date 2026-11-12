@@ -210,7 +210,9 @@ testthat::test_that("times, dates, numeric terms and measurements stay in the pu
     ), "en")
 
     testthat::expect_identical(as.character(product$core$decimalLatitude), c("-23.6", "-12.1"))
-    testthat::expect_identical(product$core$eventDate, df$eventDate)
+    # The space before the time becomes the ISO "T"; no digit of the date is rounded.
+    iso_dates <- rep("2024-05-12T23:33:01.872", 2)
+    testthat::expect_identical(product$core$eventDate, iso_dates)
     testthat::expect_identical(product$core$eventTime, df$eventTime)
     testthat::expect_identical(product$core$verbatimEventDate, df$verbatimEventDate)
     testthat::expect_identical(as.character(product$core$minimumElevationInMeters), c("23.55", "23.55"))
@@ -220,7 +222,7 @@ testthat::test_that("times, dates, numeric terms and measurements stay in the pu
     files <- public_bundle_text(product)
     occurrence <- utils::read.csv(text = files[["occurrence.txt"]], colClasses = "character", encoding = "UTF-8")
     testthat::expect_identical(occurrence$eventTime, df$eventTime)
-    testthat::expect_identical(occurrence$eventDate, df$eventDate)
+    testthat::expect_identical(occurrence$eventDate, iso_dates)
     testthat::expect_true(grepl("23.551", files[["measurementorfact.txt"]], fixed = TRUE))
 })
 
