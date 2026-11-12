@@ -158,6 +158,26 @@ testthat::test_that("validate_coords_cc_df maps cc flags to sea, zero_equal and 
     testthat::expect_identical(out$diagnostic_family, c("ok", "sea", "zero_equal", "reference", "ok"))
 })
 
+testthat::test_that("validate_coords_cc_df names a zero point at sea zero_equal", {
+    testthat::local_mocked_bindings(
+        coords_assert_cc_dependencies = function() NULL,
+        coords_country_to_iso3 = function(country_values) rep("BRA", length(country_values)),
+        coords_cc_flagged = function(fun_name, x, ...) {
+            n <- nrow(x)
+            if (fun_name == "cc_sea") return(c(FALSE, FALSE))
+            if (fun_name == "cc_zero") return(c(FALSE, TRUE))
+            rep(TRUE, n)
+        },
+        coords_coastal_tolerance = function(x, land, ...) land,
+        .package = "saira"
+    )
+    df <- data.frame(decimalLatitude = c(0, -11), decimalLongitude = c(0, -51),
+                     country = "Brasil", stringsAsFactors = FALSE)
+    out <- validate_coords_cc_df(df, "decimalLatitude", "decimalLongitude", "country",
+                                 profile = "complete")
+    testthat::expect_identical(out$diagnostic, c("zero_equal", "sea"))
+})
+
 testthat::test_that("validate_coords_cc_df preserves swapped and identical_all heuristics", {
     testthat::local_mocked_bindings(
         coords_assert_cc_dependencies = function() NULL,
@@ -200,7 +220,7 @@ testthat::test_that("validate_coords_cc_df prioritizes sea without country diagn
         coords_assert_cc_dependencies = function() NULL,
         coords_country_to_iso3 = function(country_values) rep(NA_character_, length(country_values)),
         coords_cc_flagged = function(fun_name, x, ...) {
-            if (fun_name %in% c("cc_sea", "cc_zero", "cc_equ")) {
+            if (fun_name == "cc_sea") {
                 return(rep(FALSE, nrow(x)))
             }
             rep(TRUE, nrow(x))

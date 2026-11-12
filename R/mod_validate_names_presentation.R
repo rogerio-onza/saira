@@ -138,7 +138,7 @@ mount_mod_validate_names_presentation <- function(
                         shiny::div(
                             class = "vn-provider-note",
                             shiny::span(class = "vn-note-icon", shiny::HTML("&#8635;")),
-                            paste0("Background update in progress: ", paste(label, collapse = ", "))
+                            sprintf(tr("validate_names_provider_update_in_progress", lang_r()), paste(label, collapse = ", "))
                         )
                     }
                 }

@@ -1071,8 +1071,10 @@ validate_coords_cc_df <- function(
 
     diagnostic <- rep("ok", n)
     diagnostic[reference_flag] <- "reference"
-    diagnostic[zero_equal] <- "zero_equal"
+    # The point 0/0 is always at sea, so the zero/equal cause wins over the
+    # sea symptom (ADR-211).
     diagnostic[sea_flag] <- "sea"
+    diagnostic[zero_equal] <- "zero_equal"
     diagnostic[validity_bounds] <- "validity_bounds"
     diagnostic[swapped] <- "swapped"
     diagnostic[validity_missing] <- "validity_missing"

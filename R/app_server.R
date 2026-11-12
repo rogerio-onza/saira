@@ -238,6 +238,7 @@ app_server <- function(input, output, session) {
 
     # Cleanup on session end
     session$onSessionEnded(function() {
-        warning("[Sa\u00EDra] Session ended, cleanup complete")
+        # A normal end is no problem, so it logs a message, not a warning.
+        message("[Sa\u00EDra] Session ended, cleanup complete")
     })
 }
