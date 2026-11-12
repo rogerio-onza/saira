@@ -1286,6 +1286,15 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   color: var(--text-muted);
 }
 
+.vn-check-list-steps {
+  align-items: center;
+}
+
+.vn-check-step-arrow {
+  font-family: var(--font-ui);
+  color: var(--text-muted);
+}
+
 .vn-check-box {
   position: relative;
   width: 16px;

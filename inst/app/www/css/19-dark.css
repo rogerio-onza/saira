@@ -110,6 +110,13 @@
   --bs-light-rgb: 23, 26, 33;
 }
 
+/* The pill fills are light in this palette, so white text on the active
+   count fails contrast. The dark surface color reads on all of them. */
+[data-bs-theme="dark"] .stream-pill.active .pill-count,
+[data-bs-theme="dark"] .vn-stream-pill.is-active .vn-pill-count {
+  color: var(--bg-card);
+}
+
 /* Pastel scales with fixed dark text: tint the fill, light text. */
 [data-bs-theme="dark"] .wiki-class-badge,
 [data-bs-theme="dark"] .sp-cat-pill {
