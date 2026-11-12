@@ -113,6 +113,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Fixed
 - **eventDate:** Read no year in a time zone such as -0300 or a compact time such as T0930 ([#311](https://github.com/rogerio-onza/saira/pull/311))
 - **eventDate:** Read a month written as 3.0 when the date comes from day, month and year columns ([#312](https://github.com/rogerio-onza/saira/pull/312))
+- **coords:** Translate the hint before a run, and ask to map a field only when one is missing ([#313](https://github.com/rogerio-onza/saira/pull/313))
+- **names:** Translate the note about a catalog update in progress ([#313](https://github.com/rogerio-onza/saira/pull/313))
 - **preview:** Accept a GPS accuracy as `4.551` when the column writes decimals with a dot, ADR-210 ([#309](https://github.com/rogerio-onza/saira/pull/309))
 - **generalization:** Apply the category grid to a sensitive record with a GPS accuracy as `4.551`, ADR-210 ([#307](https://github.com/rogerio-onza/saira/pull/307))
 - **preview:** Break a long column name between its words in the record panel, so it never covers its value ([#308](https://github.com/rogerio-onza/saira/pull/308))
