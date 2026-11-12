@@ -6635,9 +6635,12 @@ table.dataTable.validate-results-table > tbody > tr.selected > * {
   white-space: nowrap;
 }
 
-.coords-edit-hint {
+/* An instruction, not a title: the card scope beats the base ".card p". */
+.validate-coords-table-card .coords-edit-hint {
   margin: 0 0 var(--space-2);
+  font-family: var(--font-ui);
   font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
   color: var(--text-muted);
 }
 
