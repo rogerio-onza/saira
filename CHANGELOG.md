@@ -412,6 +412,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **docs:** Rewrite the README with a photo banner, the 7 steps and a download block per system
 
 ### Tests
+- **desktop:** Wait for the main script in the E2E before the main process stubs, so a fast inspector attach no longer fails the restart check
 - **build:** Declare `httpuv` in Suggests for the local COL XR server of the Export IUCN tests, so R CMD check has no warning
 - **build:** Run the package tests on Windows in CI, and fix two tests that failed only there
 - **tests:** Isolate the Flora BR and Fauna BR data folder for the whole suite
