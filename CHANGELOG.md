@@ -44,6 +44,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** List blockers first in the pending card, with count chips that filter by severity ([#321](https://github.com/rogerio-onza/saira/pull/321))
 - **upload:** Show the file name in the drop area, hide the finished progress bar and remove the file stats boxes ([#322](https://github.com/rogerio-onza/saira/pull/322))
 - **mapping:** Join the auto-map summary and the date-year warning in one notice, and shorten the assistant buttons ([#322](https://github.com/rogerio-onza/saira/pull/322))
+- **names:** Show the query order as Flora BR and Fauna BR first, then GBIF ([#323](https://github.com/rogerio-onza/saira/pull/323))
+- **names:** Show dashes and the count of names to read before the first run, and label the mark as sensitive ([#323](https://github.com/rogerio-onza/saira/pull/323))
 - **preview:** Show the record beside the Problems list on wide screens, and mark the column behind the problem, ADR-195 ([#278](https://github.com/rogerio-onza/saira/pull/278))
 - **build:** Build the Darwin Core catalogs from the TDWG list and one base terms file, in one script, ADR-189
 - **site:** Link the home photos, species, pins and cards by key, and stop the build when they disagree, ADR-189
@@ -127,6 +129,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **eventDate:** Write one month when both ends of a four-column interval are the same month ([#318](https://github.com/rogerio-onza/saira/pull/318))
 - **export:** Keep the Mapping button on the blank basisOfRecord row when a required term is also missing ([#321](https://github.com/rogerio-onza/saira/pull/321))
 - **mapping:** Show no origin for an unmapped term in the List view instead of MANUAL ([#322](https://github.com/rogerio-onza/saira/pull/322))
+- **names:** Translate the provider taxonomic status in the report, and keep the active filter count readable in dark mode ([#323](https://github.com/rogerio-onza/saira/pull/323))
 - **preview:** Accept a GPS accuracy as `4.551` when the column writes decimals with a dot, ADR-210 ([#309](https://github.com/rogerio-onza/saira/pull/309))
 - **generalization:** Apply the category grid to a sensitive record with a GPS accuracy as `4.551`, ADR-210 ([#307](https://github.com/rogerio-onza/saira/pull/307))
 - **preview:** Break a long column name between its words in the record panel, so it never covers its value ([#308](https://github.com/rogerio-onza/saira/pull/308))

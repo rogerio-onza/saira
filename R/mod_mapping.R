@@ -2565,11 +2565,20 @@ mod_mapping_server <- function(id, raw_data_r, lang_r, export_signal_r = NULL) {
 
             scientific_col <- if (has_selected_value(selected)) as.character(selected[[1]]) else ""
             has_scientific <- nzchar(scientific_col) && scientific_col %in% names(raw_df)
+            # Distinct raw names, so Names can say how many a run will read
+            # without the processed data.
+            name_cols <- intersect(as.character(selected), names(raw_df))
+            scientific_names <- if (has_scientific && length(name_cols)) {
+                unique(do.call(paste, c(lapply(name_cols, function(col) as.character(raw_df[[col]])), list(sep = " "))))
+            } else {
+                character(0)
+            }
 
             list(
                 status = if (has_scientific) "ok" else "missing_scientific",
                 has_data = TRUE,
-                scientific_col = scientific_col
+                scientific_col = scientific_col,
+                scientific_names = scientific_names
             )
         })
 

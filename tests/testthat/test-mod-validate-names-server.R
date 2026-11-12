@@ -1202,3 +1202,56 @@ testthat::test_that("a change in the names stops a Names run in progress", {
         }
     )
 })
+
+testthat::test_that("before the first run the stream panel shows dashes and the pending names", {
+    mapped_df <- data.frame(scientificName = c("Cebus apella", "Cebus apella", "Tangara fastuosa", ""), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            html <- paste(output$stream_panel$html, collapse = " ")
+            testthat::expect_match(html, "2 unique names wait for the validation.", fixed = TRUE)
+            testthat::expect_match(html, "vn-pill-count\">—<", fixed = TRUE)
+
+            rv$stream_df <- data.frame(
+                query_name = "Cebus apella", validation_status = "accepted", provider = "gbif",
+                updated_at = as.POSIXct("2026-02-27 11:00:00", tz = "UTC"), display_order = 1L,
+                stringsAsFactors = FALSE
+            )
+            session$flushReact()
+            html <- paste(output$stream_panel$html, collapse = " ")
+            testthat::expect_false(grepl("wait for the validation", html, fixed = TRUE))
+            testthat::expect_false(grepl("vn-pill-count\">—<", html, fixed = TRUE))
+        }
+    )
+})
+
+testthat::test_that("the provider list shows the Brazilian step before GBIF", {
+    mapped_df <- data.frame(scientificName = "Cebus apella", stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            rv$selected_providers <- c("florabr", "gbif")
+            session$flushReact()
+            html <- paste(output$config_panel$html, collapse = " ")
+            testthat::expect_match(html, "vn-check-list-steps", fixed = TRUE)
+            testthat::expect_match(html, "1st", fixed = TRUE)
+            testthat::expect_match(html, ">then<", fixed = TRUE)
+
+            rv$selected_providers <- "gbif"
+            session$flushReact()
+            html <- paste(output$config_panel$html, collapse = " ")
+            testthat::expect_false(grepl("vn-check-list-steps", html, fixed = TRUE))
+        }
+    )
+})
