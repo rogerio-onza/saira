@@ -257,6 +257,25 @@ stream_filter_after_completion <- function(report_df) {
     "problems"
 }
 
+#' Display label for a provider taxonomicStatus value
+#'
+#' The providers answer in their own words ("valid", "accepted", "ACCEPTED",
+#' "Aceito"). The report shows the known values in the UI language and keeps
+#' any other value as the provider wrote it. The export keeps the raw value.
+#' @param status Character vector of raw taxonomicStatus values.
+#' @param lang UI language code.
+#' @return Character vector of the same length.
+#' @noRd
+taxonomic_status_label <- function(status, lang) {
+    out <- as.character(status)
+    key <- tolower(trimws(out))
+    accepted <- key %in% c("accepted", "valid", "aceito", "v\u00e1lido", "valido")
+    synonym <- key %in% c("synonym", "sin\u00f4nimo", "sinonimo")
+    out[accepted] <- tr("validate_names_status_badge_accepted", lang)
+    out[synonym] <- tr("validate_names_status_badge_synonym", lang)
+    out
+}
+
 #' Cascade step at which a provider is queried
 #'
 #' Mirrors the reorder in `init_taxadb_run_state()`: the Brazilian providers

@@ -226,6 +226,16 @@ testthat::test_that("a scientificName correction updates the derived taxon terms
     testthat::expect_false("infraspecificEpithet" %in% names(out))
 })
 
+testthat::test_that("an interval the column vote cannot order is an ambiguous date", {
+    df <- data.frame(eventDate = c("05/06/2023 - 07/06/2023", "05/06/2023 - sem data"), stringsAsFactors = FALSE)
+    p <- detect_preview_problems(df, max_year = 2026)
+    testthat::expect_setequal(paste(p$row, p$type), c("1 date_ambiguous", "2 date_unparsed"))
+    testthat::expect_identical(parse_preview_edit("eventDate", "05/06/2023 - 07/06/2023")$error,
+                               "preview_fix_err_date_ambiguous")
+    testthat::expect_identical(parse_preview_edit("eventDate", "2023-06-05/2023-06-07")$value,
+                               "2023-06-05/2023-06-07")
+})
+
 testthat::test_that("parse_preview_edit refuses a date whose day and month can swap", {
     testthat::expect_identical(parse_preview_edit("eventDate", "05/07/2016")$error, "preview_fix_err_date_ambiguous")
     testthat::expect_identical(parse_preview_edit("eventDate", "25/07/2016")$value, "2016-07-25")
