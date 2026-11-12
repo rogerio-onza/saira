@@ -110,7 +110,7 @@ The threat category does not change: it comes from the ordinances. This step onl
 
 ::: {.callout-note}
 ## Where the list comes from
-The embedded list comes from the official lists of the Brazilian Ministry of the Environment (MMA): **flora** from [**MMA Ordinance No. 148 of June 7, 2022**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733); **terrestrial fauna** from [**MMA Ordinance No. 1,704 of June 16, 2026**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917); and **aquatic fauna** (fish and invertebrates) from [**GM/MMA Ordinance No. 1,667 of April 27, 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623).
+The embedded list comes from the official lists of the Brazilian Ministry of the Environment (MMA): **flora** from [**GM/MMA Ordinance No. 1,783 of October 26, 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.783-de-26-de-outubro-de-2026-740664196); **terrestrial fauna** from [**MMA Ordinance No. 1,704 of June 16, 2026**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917); and **aquatic fauna** (fish and invertebrates) from [**GM/MMA Ordinance No. 1,667 of April 27, 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623).
 :::
 
 ## Find the invasive species

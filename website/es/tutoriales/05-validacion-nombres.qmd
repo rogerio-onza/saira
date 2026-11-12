@@ -110,7 +110,7 @@ La categoría de amenaza no cambia: viene de las ordenanzas. La etapa solo marca
 
 ::: {.callout-note}
 ## De dónde viene la lista
-La lista incorporada viene de las listas oficiales del Ministerio de Medio Ambiente de Brasil (MMA): la **flora** por la [**Portaria MMA nº 148, de 7 de junio de 2022**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-148-de-7-de-junho-de-2022-406272733); la **fauna terrestre** por la [**Portaria MMA nº 1.704, de 16 de junio de 2026**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917); y la **fauna acuática** (peces e invertebrados) por la [**Portaria GM/MMA nº 1.667, de 27 de abril de 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623).
+La lista incorporada viene de las listas oficiales del Ministerio de Medio Ambiente de Brasil (MMA): la **flora** por la [**Portaria GM/MMA nº 1.783, de 26 de octubre de 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.783-de-26-de-outubro-de-2026-740664196); la **fauna terrestre** por la [**Portaria MMA nº 1.704, de 16 de junio de 2026**](https://www.in.gov.br/en/web/dou/-/portaria-mma-n-1.704-de-16-de-junho-de-2026-712968917); y la **fauna acuática** (peces e invertebrados) por la [**Portaria GM/MMA nº 1.667, de 27 de abril de 2026**](https://www.in.gov.br/web/dou/-/portaria-gm/mma-n-1.667-de-27-de-abril-de-2026-702075623).
 :::
 
 ## Encuentre las especies invasoras

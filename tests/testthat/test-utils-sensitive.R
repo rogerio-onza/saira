@@ -830,7 +830,7 @@ testthat::test_that("generalization_map_preview is empty when nothing is masked"
     testthat::expect_equal(nrow(prev), 0L)
 })
 
-# shipped data integrity (Portarias 148/2022, 1.667/2026, 1.704/2026) ------
+# shipped data integrity (Portarias 1.783/2026, 1.667/2026, 1.704/2026) ----
 
 testthat::test_that("bundled sensitive_species.rds carries only canonical categories", {
     lk <- saira:::load_sensitive_species(force = TRUE)
@@ -845,7 +845,7 @@ testthat::test_that("bundled sensitive_species.rds carries only canonical catego
 })
 
 testthat::test_that("2026 fauna refresh: terrestrial, aquatic and flora resolve", {
-    # 1.704/2026 terrestrial, 1.667/2026 aquatic, 148/2022 flora; extinct -> NA.
+    # 1.704/2026 terrestrial, 1.667/2026 aquatic, 1.783/2026 flora; extinct -> NA.
     got <- saira:::sensitive_category_for(c(
         "Anomaloglossus apiau", "Crossodactylodes itambe",
         "Odontesthes bicudo", "Hippocampus reidi",
@@ -857,6 +857,21 @@ testthat::test_that("2026 fauna refresh: terrestrial, aquatic and flora resolve"
     testthat::expect_equal(got[4], "VU")          # seahorse
     testthat::expect_equal(got[5], "EN")          # flora (unchanged)
     testthat::expect_true(is.na(got[6]))          # extinct (EX) excluded
+})
+
+testthat::test_that("2026 flora refresh: Portaria 1.783/2026 replaces 148/2022", {
+    got <- saira:::sensitive_category_for(c(
+        "Staurogyne minarum", "Dyckia luxor", "Encholirium luxor",
+        "Hippeastrum vittatum", "Plinia rogersiana"
+    ))
+    testthat::expect_equal(got[1], "EN")          # new in 1.783/2026
+    testthat::expect_equal(got[2], "EN")          # new name of Encholirium luxor
+    testthat::expect_true(is.na(got[3]))          # old name left the list
+    testthat::expect_equal(got[4], "CR")          # was EN in 148/2022
+    testthat::expect_equal(got[5], "CR (PEX)")    # CR (PE) canonicalized
+    testthat::expect_identical(
+        saira:::sensitive_source_for("Staurogyne minarum"), "Portaria 1.783/2026"
+    )
 })
 
 # sensitive_source_for + load_sensitive_species source provenance ---------
@@ -907,7 +922,7 @@ testthat::test_that("bundled sensitive_species.rds carries the source column", {
     testthat::expect_false(anyNA(loaded$source))
     testthat::expect_true(all(
         loaded$source %in%
-            c("Portaria 148/2022", "Portaria 1.704/2026", "Portaria 1.667/2026")
+            c("Portaria 1.783/2026", "Portaria 1.704/2026", "Portaria 1.667/2026")
     ))
 })
 
