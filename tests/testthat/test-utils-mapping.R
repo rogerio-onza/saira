@@ -351,7 +351,8 @@ testthat::test_that("parse_month_to_number_vec matches the scalar helper element
     # "Março" guards the iconv transliteration inside normalize_for_matching().
     values <- c(
         "8", "08", "0", "13", "Aug", "August", "Ago", "Agosto",
-        "Mar\u00E7o", "  jun  ", "foo", "", NA, "12", "SET", "sept"
+        "Mar\u00E7o", "  jun  ", "foo", "", NA, "12", "SET", "sept",
+        "3.0", "12.00", "3.5", "13.0"
     )
 
     expected <- vapply(
@@ -435,6 +436,14 @@ testthat::test_that("build_eventdate_interval is unchanged when month/year value
     testthat::expect_identical(out$values[[11]], "13 | 2017 | Jun | 2018")
     testthat::expect_identical(out$failure_count, 3L)
     testthat::expect_identical(which(out$failed_rows), c(3L, 7L, 11L))
+})
+
+testthat::test_that("build_eventdate_interval writes one month when both ends are the same", {
+    df <- data.frame(mes_inicio = c("3", "5"), ano_inicio = c("2024", "2024"),
+                     mes_fim = c("3", "3"), ano_fim = c("2024", "2023"), stringsAsFactors = FALSE)
+    out <- build_eventdate_interval(df, names(df))
+    testthat::expect_identical(out$values, c("2024-03", "2024-05/2023-03"))
+    testthat::expect_identical(out$failure_count, 0L)
 })
 
 testthat::test_that("build_eventdate_interval produces YYYY-MM/YYYY-MM and keeps raw fallback on failures", {
@@ -1086,6 +1095,14 @@ testthat::test_that("detect_eventdate_dmy_roles resolves Portuguese and English 
     testthat::expect_true(all(vapply(
         detect_eventdate_dmy_roles(c("a", "b", "c")), is.na, logical(1)
     )))
+
+    # camelCase names and the letters of a date pattern.
+    for (cols in list(c("diaColeta", "mesColeta", "anoColeta"), c("DD", "MM", "YYYY"),
+                      c("dd", "mm", "aaaa"))) {
+        roles <- detect_eventdate_dmy_roles(cols)
+        testthat::expect_identical(unlist(roles), c(day = 1L, month = 2L, year = 3L))
+    }
+    testthat::expect_true(is.na(detect_eventdate_dmy_roles(c("anotacoesColeta", "ano"))$day))
 })
 
 testthat::test_that("build_term_value: eventDate from day/month/year columns is ISO 8601", {
@@ -1154,6 +1171,14 @@ testthat::test_that("build_eventdate_from_parts fails a day with a fraction", {
     out <- build_eventdate_from_parts(parts, names(parts))
     testthat::expect_identical(out$failed_rows, c(TRUE, TRUE, TRUE, FALSE, FALSE))
     testthat::expect_identical(out$values[4:5], c("2024-02-29", "2024-02-29"))
+})
+
+testthat::test_that("build_eventdate_from_parts reads the floats that pandas writes", {
+    parts <- data.frame(day = "15.0", month = c("3.0", "3.5"), year = "2024.0",
+                        stringsAsFactors = FALSE)
+    out <- build_eventdate_from_parts(parts, names(parts))
+    testthat::expect_identical(out$values[[1]], "2024-03-15")
+    testthat::expect_identical(out$failed_rows, c(FALSE, TRUE))
 })
 
 testthat::test_that("build_term_value: basisOfRecord applies mapping", {

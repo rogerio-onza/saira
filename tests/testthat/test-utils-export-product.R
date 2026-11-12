@@ -210,7 +210,9 @@ testthat::test_that("times, dates, numeric terms and measurements stay in the pu
     ), "en")
 
     testthat::expect_identical(as.character(product$core$decimalLatitude), c("-23.6", "-12.1"))
-    testthat::expect_identical(product$core$eventDate, df$eventDate)
+    # The space before the time becomes the ISO "T"; no digit of the date is rounded.
+    iso_dates <- rep("2024-05-12T23:33:01.872", 2)
+    testthat::expect_identical(product$core$eventDate, iso_dates)
     testthat::expect_identical(product$core$eventTime, df$eventTime)
     testthat::expect_identical(product$core$verbatimEventDate, df$verbatimEventDate)
     testthat::expect_identical(as.character(product$core$minimumElevationInMeters), c("23.55", "23.55"))
@@ -220,7 +222,7 @@ testthat::test_that("times, dates, numeric terms and measurements stay in the pu
     files <- public_bundle_text(product)
     occurrence <- utils::read.csv(text = files[["occurrence.txt"]], colClasses = "character", encoding = "UTF-8")
     testthat::expect_identical(occurrence$eventTime, df$eventTime)
-    testthat::expect_identical(occurrence$eventDate, df$eventDate)
+    testthat::expect_identical(occurrence$eventDate, iso_dates)
     testthat::expect_true(grepl("23.551", files[["measurementorfact.txt"]], fixed = TRUE))
 })
 
@@ -340,6 +342,29 @@ testthat::test_that("one number of a point in another row stays", {
     testthat::expect_identical(product$core$occurrenceRemarks[3], "Depth 10.51234 m")
 })
 
+testthat::test_that("a point of another row goes also with one axis of the row or mixed forms", {
+    local_panthera_fixture()
+    cases <- list(
+        list(note = "Base -23.55052 -46.63331", lat = "-23.55052", out = "Base -23.6 -46.6"),
+        list(note = "Base -23.55052, 46\u00b037'59.916\"W", lat = NULL, out = "Base -23.6, 46.6 W"),
+        list(note = "Base 23\u00b033'1.872\"S 46d37m59.916sW", lat = NULL, out = "Base 23.6 S 46.6 W")
+    )
+    for (case in cases) {
+        inputs <- cross_row_inputs()
+        inputs$download_data$occurrenceRemarks[3] <- case$note
+        if (!is.null(case$lat)) inputs$download_data$decimalLatitude[3] <- case$lat
+        product <- prepare_export_product(inputs, "en")
+        testthat::expect_identical(product$core$occurrenceRemarks[3], case$out, info = case$note)
+        # Row 4 is not protected and keeps its own point, so only the note counts.
+        files <- public_bundle_text(product)
+        for (name in names(files)) {
+            testthat::expect_false(grepl(case$note, files[[name]], fixed = TRUE) ||
+                                       grepl("59.916|1.872", files[[name]]),
+                                   info = paste(case$note, name))
+        }
+    }
+})
+
 testthat::test_that("the export stops on a column name or occurrenceID with a protected point", {
     local_panthera_fixture()
     inputs <- cross_row_inputs()
@@ -371,7 +396,9 @@ testthat::test_that("the export stops on projected coordinates in a protected ro
         '{"epsg":31983,"easting":333286.919,"northing":7394586.092}',
         '{"type":"Point","coordinates":[333286.9,7394586.1]}',
         "POINT (333286.9 7394586.1)",
-        "UTM 23K 333286 7394586"
+        "UTM 23K 333286 7394586",
+        '{"epsg":31983,"easting":3.33286919e5,"northing":7.394586092e6}',
+        '{"epsg":31983,"easting":3.33286919E+05,"northing":73945.86092e2}'
     )
     for (value in blocked) {
         inputs <- cross_row_inputs()
@@ -388,7 +415,7 @@ testthat::test_that("the export stops on projected coordinates in a protected ro
                            tr("export_download_blocked", "en"), fixed = TRUE)
 
     passed <- c("area 250000 m2, plot 120000", "EPSG:31983", "UTM zone 23K",
-                '{"epsg":4326,"lat":-23.55052}')
+                '{"epsg":4326,"lat":-23.55052}', '{"crs":"local","x":1.5e3,"y":2.5e2}')
     for (value in passed) {
         inputs <- cross_row_inputs()
         inputs$download_data$dynamicProperties <- c(value, "", value, "")

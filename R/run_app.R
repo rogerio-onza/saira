@@ -7,10 +7,12 @@
 #'
 #' Starts the Saira app for biodiversity data standardization
 #'
+#' @param options Named list of Shiny app options, such as `port`. They
+#'   replace the defaults of the same name.
 #' @param ... Additional arguments passed to shinyApp
 #' @return A Shiny app object
 #' @export
-run_app <- function(...) {
+run_app <- function(options = list(), ...) {
     # Set max upload file size to 500 MB
     options(shiny.maxRequestSize = 500 * 1024^2)
 
@@ -56,7 +58,10 @@ run_app <- function(...) {
     shiny::shinyApp(
         ui = app_ui(),
         server = server,
-        options = list(launch.browser = getOption("shiny.launch.browser", interactive())),
+        options = utils::modifyList(
+            list(launch.browser = getOption("shiny.launch.browser", interactive())),
+            options
+        ),
         ...
     )
 }

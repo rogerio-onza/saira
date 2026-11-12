@@ -1,9 +1,13 @@
 # Provider effects. Each query returns one common envelope, independent of the
 # round transition logic. Internal contract errors are checked outside I/O catches.
-names_provider_adapters <- function() list(
+# `fetch` sends the GBIF requests. The names worker swaps it for a fetch that
+# reads only the memo, after the worker filled it (PERF-02).
+names_provider_adapters <- function(fetch = gbif_api_get_many) list(
     poll = brprovider_poll_updates,
     load = names_provider_load,
-    query = names_provider_query
+    query = function(names, provider, type, data = NULL) {
+        names_provider_query(names, provider, type, data, fetch = fetch)
+    }
 )
 
 names_provider_load <- function(provider, type) {
@@ -24,10 +28,10 @@ names_provider_load <- function(provider, type) {
     list(data = loaded, error = NULL)
 }
 
-names_provider_query <- function(names, provider, type, data = NULL) {
+names_provider_query <- function(names, provider, type, data = NULL, fetch = gbif_api_get_many) {
     result <- tryCatch(
         if (identical(type, "br")) query_brprovider(names, provider, data = data)
-        else colxr_match_names(names),
+        else colxr_match_names(names, fetch = fetch),
         error = function(e) e
     )
     if (inherits(result, "error")) return(list(error = conditionMessage(result)))

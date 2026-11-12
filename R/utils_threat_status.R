@@ -30,7 +30,21 @@ gbif_request <- function(segments, query = NULL) {
     req |>
         httr2::req_timeout(GBIF_API_TIMEOUT_S) |>
         httr2::req_user_agent("saira R package") |>
-        httr2::req_retry(max_tries = 3L)
+        httr2::req_retry(max_tries = GBIF_API_MAX_TRIES, is_transient = gbif_transient_counter())
+}
+
+GBIF_API_MAX_TRIES <- 3L
+
+# req_perform_parallel() of httr2 1.3.0 does not read max_tries: it retries a
+# 429 or 503 until the API answers otherwise. So each request counts its own
+# tries, and its last answer counts as final.
+gbif_transient_counter <- function(max_tries = GBIF_API_MAX_TRIES) {
+    count <- new.env(parent = emptyenv())
+    count$tries <- 0L
+    function(resp) {
+        count$tries <- count$tries + 1L
+        count$tries < max_tries && httr2::resp_status(resp) %in% c(429L, 503L)
+    }
 }
 
 # Parsed JSON of a 200 response, or NULL for anything else (an HTTP error
@@ -65,6 +79,11 @@ gbif_api_get_many <- function(requests) {
     )
 }
 
+# A fetch that sends nothing: every request stays unanswered. The names run
+# uses it after the worker stored its answers, so a name GBIF did not answer
+# gets no second, blocking request.
+gbif_offline_fetch <- function(requests) vector("list", length(requests))
+
 #' IUCN Red List category of scientific names, from COL XR
 #'
 #' The COL XR match carries the global IUCN category of the name. A synonym
@@ -72,23 +91,25 @@ gbif_api_get_many <- function(requests) {
 #' Names GBIF did not answer, and names without an assessment, give NA.
 #'
 #' @param names Character vector of scientific names (NA allowed).
+#' @param fetch Fetch for the names the memo does not have, as in
+#'   `colxr_match_names()`. The export passes `gbif_offline_fetch`.
 #' @return Character vector of IUCN codes ("NT", "EN", ...), same length.
 #' @keywords internal
 #' @noRd
-colxr_iucn_category <- function(names) {
+colxr_iucn_category <- function(names, fetch = gbif_api_get_many) {
     nm <- as.character(names)
     out <- rep(NA_character_, length(nm))
     valid <- !is.na(nm) & nzchar(trimws(nm))
     if (!any(valid)) {
         return(out)
     }
-    matches <- colxr_match_names(nm[valid])
+    matches <- colxr_match_names(nm[valid], fetch = fetch)
     code <- stats::setNames(matches$iucnRedListCategory, matches$query_name)
     syn <- matches$validation_status %in% "synonym" & is.na(code) &
         !is.na(matches$acceptedNameUsage)
     if (any(syn)) {
         accepted <- matches$acceptedNameUsage[syn]
-        found <- colxr_match_names(accepted)
+        found <- colxr_match_names(accepted, fetch = fetch)
         code[syn] <- found$iucnRedListCategory[match(accepted, found$query_name)]
     }
     out[valid] <- unname(code[nm[valid]])
@@ -134,14 +155,16 @@ is_brazilian_record <- function(df) {
 #' are independent — a taxon can receive both, or only the MMA keys when GBIF
 #' does not assess it. The MMA list is national, so its keys go only to records
 #' that resolve to Brazil (see [is_brazilian_record()]); the IUCN assessment is
-#' global and is applied regardless of locality. The GBIF lookup is optional and
-#' non-blocking: any failure simply omits the IUCN key and never breaks the
-#' export. Runs after [apply_name_review_payload()] so it sees the corrected
+#' global and is applied regardless of locality. The IUCN codes come from
+#' `payload$iucn_by_name`, which the Export tab looks up before the download,
+#' so this step sends no request. Runs after [apply_name_review_payload()] so it sees the corrected
 #' `scientificName`, and after the country fill so coordinate-derived countries
 #' are already in place.
 #'
 #' @param df Data frame to export (post name review).
-#' @param payload Optional list with `include_mma` and `include_iucn` (logical).
+#' @param payload Optional list with `include_mma` and `include_iucn` (logical),
+#'   and `iucn_by_name`: IUCN code by scientific name, NA without a code. A
+#'   NULL `iucn_by_name` adds no IUCN key.
 #' @param generalized Optional logical vector, one per row: TRUE where
 #'   `mask_sensitive_coordinates()` protected the row.
 #' @return `df` with an updated `dynamicProperties` column.
@@ -193,18 +216,12 @@ apply_conservation_status <- function(df, payload = NULL, generalized = NULL) {
         )
     }
 
-    if (include_iucn) {
-        dynprops <- tryCatch(
-            {
-                merge_dynamic_property(
-                    dynprops, "iucnRedListCategory",
-                    colxr_iucn_category(names_vec)
-                )
-            },
-            error = function(e) {
-                warning("apply_conservation_status: IUCN skipped (", conditionMessage(e), ")")
-                dynprops
-            }
+    # The download sends no GBIF request: a slow GBIF held the session for
+    # the whole file. A name outside the snapshot gets no IUCN key.
+    iucn_by_name <- payload$iucn_by_name
+    if (include_iucn && length(iucn_by_name) > 0L) {
+        dynprops <- merge_dynamic_property(
+            dynprops, "iucnRedListCategory", unname(iucn_by_name[names_vec])
         )
     }
 
@@ -214,4 +231,89 @@ apply_conservation_status <- function(df, payload = NULL, generalized = NULL) {
         df[["dynamicProperties"]] <- dynprops
     }
     df
+}
+
+# The IUCN lookup of the Export tab (ADR-213). It runs before the download and
+# sends its requests through the names worker, so the download sends none and
+# a slow GBIF never holds the session. The memo of a Names run answers first.
+IUCN_LOOKUP_BATCH <- 20L
+
+iucn_lookup_new <- function(names, run_id) {
+    names <- colxr_clean_names(names)
+    list(run_id = run_id, names = names, phase = "match", targets = names,
+         tried = character(0), batches = 0L, snapshot = NULL, unanswered = character(0))
+}
+
+# One tick of the lookup. `fetch_for(misses)` gives NULL while a batch is in
+# flight, else the fetch for the misses, as names_worker_fetch() does. A name
+# without an answer goes out once per run, so the run always ends. Phases:
+# "match" for the names, "accepted" for the accepted names of the synonyms
+# without a category, then "done" with the snapshot.
+iucn_lookup_step <- function(state, fetch_for, batch_size = IUCN_LOOKUP_BATCH) {
+    if (identical(state$phase, "done")) {
+        return(state)
+    }
+    todo <- setdiff(colxr_unmemoized(state$targets), state$tried)
+    if (length(todo) > 0L) {
+        batch <- utils::head(todo, batch_size)
+        fetch <- fetch_for(batch)
+        if (is.null(fetch)) {
+            return(state)
+        }
+        # An answer the parser cannot read leaves the batch unanswered.
+        unanswered <- tryCatch(attr(colxr_match_names(batch, fetch = fetch), "unanswered"),
+                               error = function(e) batch)
+        state$tried <- c(state$tried, unanswered)
+        # The count in the download bar moves with each batch.
+        state$batches <- state$batches + 1L
+        return(state)
+    }
+    if (identical(state$phase, "match")) {
+        state$phase <- "accepted"
+        state$targets <- iucn_lookup_accepted(state$names)
+        return(state)
+    }
+    iucn_lookup_finish(state)
+}
+
+# The accepted names of the synonyms that have no category of their own.
+iucn_lookup_accepted <- function(names) {
+    matches <- colxr_match_names(names, fetch = gbif_offline_fetch)
+    syn <- matches$validation_status %in% "synonym" &
+        is.na(matches$iucnRedListCategory) & !is.na(matches$acceptedNameUsage)
+    colxr_clean_names(matches$acceptedNameUsage[syn])
+}
+
+# The snapshot from the answers in the memo. The lookup calls this at its end,
+# and a skip calls it at any phase, so the answers that came stay in the file.
+iucn_lookup_finish <- function(state) {
+    matches <- colxr_match_names(state$names, fetch = gbif_offline_fetch)
+    syn <- matches$validation_status %in% "synonym" &
+        is.na(matches$iucnRedListCategory) & !is.na(matches$acceptedNameUsage)
+    accepted <- matches$acceptedNameUsage[syn]
+    state$snapshot <- stats::setNames(
+        colxr_iucn_category(state$names, fetch = gbif_offline_fetch), state$names
+    )
+    # A synonym whose accepted name GBIF did not answer has no category yet.
+    state$unanswered <- union(colxr_unmemoized(state$names),
+                              matches$query_name[syn][accepted %in% colxr_unmemoized(accepted)])
+    state$phase <- "done"
+    state
+}
+
+# Names with an answer, for the count in the download bar.
+iucn_lookup_progress <- function(state) {
+    total <- length(state$names)
+    if (!identical(state$phase, "match")) {
+        return(list(done = total, total = total))
+    }
+    left <- setdiff(colxr_unmemoized(state$names), state$tried)
+    list(done = total - length(left), total = total)
+}
+
+# Names of the lookup that have a GBIF answer in the memo. A count that does
+# not move tells that GBIF does not answer, also while the batch waits.
+iucn_lookup_answered <- function(state) {
+    asked <- union(state$names, state$targets)
+    length(asked) - length(colxr_unmemoized(asked))
 }
