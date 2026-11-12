@@ -1198,6 +1198,26 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             }, ignoreInit = TRUE)
         }
 
+        # Shown before the first run: the distinct names the run will read.
+        # The gate carries the raw names, so the processed data stays unread.
+        pending_names_n <- shiny::reactive({
+            names_vec <- if (!is.null(validation_gate_r) && shiny::is.reactive(validation_gate_r)) {
+                validation_gate_r()$scientific_names
+            } else {
+                df <- mapped_data_r()
+                if (is.data.frame(df) && "scientificName" %in% names(df)) df$scientificName
+            }
+            if (is.null(names_vec)) return(NA_integer_)
+            tryCatch(
+                names_pending_count(
+                    names_vec,
+                    remove_authors = isTRUE(input$remove_authors %||% TRUE),
+                    ignore_qualifiers = isTRUE(input$ignore_qualifiers %||% TRUE)
+                ),
+                error = function(e) NA_integer_
+            )
+        })
+
         presentation <- mount_mod_validate_names_presentation(
             active_stream_filter = active_stream_filter,
             br_provider_ids = br_provider_ids,
@@ -1208,6 +1228,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             lang_r = lang_r,
             ns = ns,
             output = output,
+            pending_names_n = pending_names_n,
             problem_status_values = problem_status_values,
             provider_button_id = provider_button_id,
             provider_catalog = provider_catalog,

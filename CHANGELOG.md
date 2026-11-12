@@ -8,6 +8,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Added
+- **eventDate:** Convert month names, roman months, compact dates, 12-hour times, UTC and local or year intervals to ISO ([#319](https://github.com/rogerio-onza/saira/pull/319))
+- **eventDate:** Order the two ends of a day/month interval with the vote of the whole column ([#319](https://github.com/rogerio-onza/saira/pull/319))
 - **mapping:** Split a column with latitude and longitude in each cell, as `23°33'S 46°38'W` or `-23.55, -46.63`, between the two coordinate cards, and put it on both cards on auto-map, ADR-201
 - **mapping:** Add `SAIRA_PUBLIC=true` for a shared server, which reads aliases but saves no new ones, ADR-182
 - **export:** Move the measurements to a MeasurementOrFact extension file, one row per measurement, ADR-179
@@ -39,6 +41,11 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **export:** List blockers first in the pending card, with count chips that filter by severity ([#321](https://github.com/rogerio-onza/saira/pull/321))
+- **upload:** Show the file name in the drop area, hide the finished progress bar and remove the file stats boxes ([#322](https://github.com/rogerio-onza/saira/pull/322))
+- **mapping:** Join the auto-map summary and the date-year warning in one notice, and shorten the assistant buttons ([#322](https://github.com/rogerio-onza/saira/pull/322))
+- **names:** Show the query order as Flora BR and Fauna BR first, then GBIF ([#323](https://github.com/rogerio-onza/saira/pull/323))
+- **names:** Show dashes and the count of names to read before the first run, and label the mark as sensitive ([#323](https://github.com/rogerio-onza/saira/pull/323))
 - **names:** Send the GBIF requests of a names run from a separate R process, so the app stays responsive, ADR-212
 - **preview:** Show the record beside the Problems list on wide screens, and mark the column behind the problem, ADR-195 ([#278](https://github.com/rogerio-onza/saira/pull/278))
 - **build:** Build the Darwin Core catalogs from the TDWG list and one base terms file, in one script, ADR-189
@@ -112,6 +119,23 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **deps:** Install faunabr from CRAN, not from a GitHub commit, ADR-167
 
 ### Fixed
+- **eventDate:** Read no year in a time zone such as -0300 or a compact time such as T0930 ([#311](https://github.com/rogerio-onza/saira/pull/311))
+- **eventDate:** Read a month written as 3.0 when the date comes from day, month and year columns ([#312](https://github.com/rogerio-onza/saira/pull/312))
+- **coords:** Translate the hint before a run, and ask to map a field only when one is missing ([#313](https://github.com/rogerio-onza/saira/pull/313))
+- **names:** Translate the note about a catalog update in progress ([#313](https://github.com/rogerio-onza/saira/pull/313))
+- **build:** Accept Shiny options such as the port in run_app(), and log a normal session end as a message ([#314](https://github.com/rogerio-onza/saira/pull/314))
+- **coords:** Show a point at 0/0 as Zero/Equal, not as open sea, ADR-211 ([#315](https://github.com/rogerio-onza/saira/pull/315))
+- **coords:** Refuse a coordinate written in hexadecimal or with an exponent, such as 0x1A or 1e2 ([#316](https://github.com/rogerio-onza/saira/pull/316))
+- **eventDate:** Find the day, month and year columns in names like diaColeta or DD, MM, YYYY ([#317](https://github.com/rogerio-onza/saira/pull/317))
+- **eventDate:** Write one month when both ends of a four-column interval are the same month ([#318](https://github.com/rogerio-onza/saira/pull/318))
+- **export:** Keep the Mapping button on the blank basisOfRecord row when a required term is also missing ([#321](https://github.com/rogerio-onza/saira/pull/321))
+- **mapping:** Show no origin for an unmapped term in the List view instead of MANUAL ([#322](https://github.com/rogerio-onza/saira/pull/322))
+- **names:** Translate the provider taxonomic status in the report, and keep the active filter count readable in dark mode ([#323](https://github.com/rogerio-onza/saira/pull/323))
+- **coords:** Show the edit hint above the table as an instruction, not as a title ([#324](https://github.com/rogerio-onza/saira/pull/324))
+- **generalization:** Use the UI font in the species selector and justification, and frame the map on most points ([#325](https://github.com/rogerio-onza/saira/pull/325))
+- **ui:** Set Wiki definitions in the body font, show the Help issue button as outline, and keep the Export number labels on one line ([#326](https://github.com/rogerio-onza/saira/pull/326))
+- **ui:** Start the Mapping sidebar closed below 1100 px and keep the Export pending text readable on a phone ([#327](https://github.com/rogerio-onza/saira/pull/327))
+- **export:** Give each pending row its own button id, so every "Open" button works ([#327](https://github.com/rogerio-onza/saira/pull/327))
 - **preview:** Accept a GPS accuracy as `4.551` when the column writes decimals with a dot, ADR-210 ([#309](https://github.com/rogerio-onza/saira/pull/309))
 - **generalization:** Apply the category grid to a sensitive record with a GPS accuracy as `4.551`, ADR-210 ([#307](https://github.com/rogerio-onza/saira/pull/307))
 - **preview:** Break a long column name between its words in the record panel, so it never covers its value ([#308](https://github.com/rogerio-onza/saira/pull/308))
@@ -331,6 +355,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **names:** Show a name in the run list only with its last answer, and keep the scroll while the list grows, ADR-168
 
 ### Performance
+- **generalization:** Compute the spatial preview once per decision, shared by the alerts and the map ([#320](https://github.com/rogerio-onza/saira/pull/320))
 - **preview:** Check again only the columns that a mapping change touched, so the Preview count follows in under 1 s, ADR-196 ([#281](https://github.com/rogerio-onza/saira/pull/281))
 - **mapping:** Build again only the output columns that a mapping change touched, ADR-196 ([#281](https://github.com/rogerio-onza/saira/pull/281))
 - **coords:** Send the map only the markers that changed, with one marker for each place, ADR-190 ([#260](https://github.com/rogerio-onza/saira/pull/260))
@@ -339,6 +364,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Draw a closed column list only when it opens, so auto-map holds the page for half the time, ADR-202
 - **mapping:** Cut the page hold after an upload by a third with fewer browser messages, ADR-203
 - **upload:** Watch only the upload progress bars, not every change on the page, ADR-189
+- **export:** Skip the JSON object reader for dynamicProperties columns that hold only plain text ([#310](https://github.com/rogerio-onza/saira/pull/310))
 - **upload:** Free memory after a CSV read only for files of 50 MB or more, ADR-196 ([#283](https://github.com/rogerio-onza/saira/pull/283))
 - **dynamicProperties:** Read nested JSON without a second pass over each cell, ADR-190 ([#262](https://github.com/rogerio-onza/saira/pull/262))
 - **mapping:** Normalize each column name once in the name similarity score, ADR-196 ([#284](https://github.com/rogerio-onza/saira/pull/284))

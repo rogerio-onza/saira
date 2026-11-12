@@ -566,4 +566,16 @@
       span.textContent = badge.label || '';
     }
   };
+
+  // bslib closes the sidebar only below 576 px. Below 1100 px the 280 px
+  // sidebar squeezes the grid, so it starts closed once; the user can open it.
+  function closeNarrowSidebar() {
+    if (!window.matchMedia('(max-width: 1099.98px)').matches) return;
+    var Sidebar = window.bslib && window.bslib.Sidebar;
+    var aside = document.querySelector('.mapping-sidebar');
+    var layout = aside && aside.closest('.bslib-sidebar-layout');
+    var instance = layout && Sidebar && Sidebar.getInstance(layout);
+    if (instance) instance.toggle('close', true);
+  }
+  window.jQuery(document).one('shiny:connected', closeNarrowSidebar);
 })();

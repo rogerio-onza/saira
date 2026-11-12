@@ -155,16 +155,6 @@ a.help-chip:hover {
   background: var(--accent-fill-hover);
 }
 
-.help-button--danger,
-.help-button--danger:hover {
-  background: var(--error-fill);
-  color: var(--on-fill);
-}
-
-.help-button--danger:hover {
-  background: var(--error-fill-hover);
-}
-
 .help-button--outline {
   padding: 6px 12px;
   border-color: var(--border-strong);

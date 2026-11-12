@@ -24,6 +24,12 @@ as_coord_numeric <- function(x) {
     raw_chr[is.na(x)] <- NA_character_
     normalized <- gsub(",", ".", raw_chr, fixed = TRUE)
     num <- suppressWarnings(as.numeric(normalized))
+    if (!is.numeric(x)) {
+        # as.numeric() also reads hex ("0x1A") and exponent ("1e2") text. A
+        # numeric column keeps its values: as.character() writes 1e-05 there.
+        plain <- grepl("^\\s*[-+]?(\\d+\\.?\\d*|\\.\\d+)\\s*$", normalized, perl = TRUE)
+        num[!plain] <- NA_real_
+    }
     parse_failed <- !is.na(raw_chr) & nzchar(trimws(raw_chr)) & is.na(num)
     list(num = num, parse_failed = parse_failed)
 }
@@ -1065,8 +1071,10 @@ validate_coords_cc_df <- function(
 
     diagnostic <- rep("ok", n)
     diagnostic[reference_flag] <- "reference"
-    diagnostic[zero_equal] <- "zero_equal"
+    # The point 0/0 is always at sea, so the zero/equal cause wins over the
+    # sea symptom (ADR-211).
     diagnostic[sea_flag] <- "sea"
+    diagnostic[zero_equal] <- "zero_equal"
     diagnostic[validity_bounds] <- "validity_bounds"
     diagnostic[swapped] <- "swapped"
     diagnostic[validity_missing] <- "validity_missing"
@@ -2188,10 +2196,12 @@ coords_plottable <- function(lat, lon) {
 #' Map view that frames the drawable points
 #'
 #' @param lat,lon Numeric vectors of equal length.
+#' @param trim Share of points cut at each end of each axis, from 20 points
+#'   on, so a few far points do not open the map at ocean scale.
 #' @return NULL when no point can be drawn, `list(type = "point", lng, lat)`
 #'   for one location, or `list(type = "bounds", lng1, lat1, lng2, lat2)`.
 #' @noRd
-coords_map_view <- function(lat, lon) {
+coords_map_view <- function(lat, lon, trim = 0) {
     keep <- coords_plottable(lat, lon)
     if (!any(keep)) {
         return(NULL)
@@ -2202,7 +2212,16 @@ coords_map_view <- function(lat, lon) {
     if (isTRUE(all.equal(min(lon), max(lon))) && isTRUE(all.equal(min(lat), max(lat)))) {
         return(list(type = "point", lng = lon[[1]], lat = lat[[1]]))
     }
-    list(type = "bounds", lng1 = min(lon), lat1 = min(lat), lng2 = max(lon), lat2 = max(lat))
+    n <- length(lat)
+    # A 2 % share of fewer than 50 points rounds to zero points, so the cut
+    # is at least one point at each end.
+    cut <- if (trim > 0 && n >= 20L) max(1L, as.integer(floor(n * trim))) else 0L
+    lat_r <- sort(lat)[c(cut + 1L, n - cut)]
+    lon_r <- sort(lon)[c(cut + 1L, n - cut)]
+    if (lat_r[[1]] == lat_r[[2]] && lon_r[[1]] == lon_r[[2]]) {
+        return(list(type = "point", lng = lon_r[[1]], lat = lat_r[[1]]))
+    }
+    list(type = "bounds", lng1 = lon_r[[1]], lat1 = lat_r[[1]], lng2 = lon_r[[2]], lat2 = lat_r[[2]])
 }
 
 #' Keep a no-wrap Leaflet map filled by the world

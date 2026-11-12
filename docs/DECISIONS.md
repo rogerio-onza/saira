@@ -3732,6 +3732,13 @@ Formato: ADR leve (Architecture Decision Record).
   - Na Pre-visualizacao, `uncertainty_decimal_dot()` decide pela coluna. Se outro valor tem ponto com um numero de decimais diferente de tres (`12.3`, `7.25`), o ponto e decimal: `4.551` e valido, e `aprox. 4.551 m` sugere `4.551`. Sem esse sinal, a sugestao continua `4551`.
 - **Consequencias**: uma linha com `4.551` sai com a mesma grade das linhas vizinhas. Um `4551` sem ponto continua a contar como generalizacao anterior. A generalizacao nao usa o sinal da coluna, porque a leitura ambigua protege mais.
 
+## ADR-211: Zero/igual vence mar no diagnostico de Coordenadas
+
+- **Data**: 2026-11-10
+- **Status**: Aceito. Muda a ordem da ADR-034.
+- **Contexto**: auditoria de codigo e UX (COORD-01). Na ordem da ADR-034, `sea` vencia `zero_equal`. O ponto 0/0 esta sempre no mar, entao a pilula Zero/Igual nunca contava o caso que o nome anuncia, e a linha dizia "Em mar aberto".
+- **Decisao**: a ordem fica `validity`, `country`, `zero_equal`, `sea`, `reference`. Zero ou latitude igual a longitude e a causa, e o mar e a consequencia.
+- **Consequencias**: uma linha com 0/0, ou com latitude igual a longitude no mar, sai como Zero/Igual. As outras linhas no mar continuam como `sea`.
 ## ADR-212: Consultas GBIF da validacao de nomes num processo callr
 
 - **Data**: 2026-11-10
@@ -3745,4 +3752,4 @@ Formato: ADR leve (Architecture Decision Record).
   - Uma rodada que fica obsoleta, um reset ou o fim da rodada encerram o lote em curso (`names_worker_cancel()`).
   - Uma resposta que o parser nao le e erro do provedor, como no caminho sincrono.
   - Se o processo nao inicia, os nomes ficam sem resposta. O app nao envia os pedidos ele mesmo, porque nao consegue parar essa espera.
-- **Consequencias**: o R da sessao fica livre durante a espera da rede. A busca aproximada dos provedores BR continua no processo principal, porque e CPU, nao rede. A exportacao com IUCN reusa o memo. Sem uma rodada de nomes antes, ela ainda consulta a API no processo principal.
+- **Consequencias**: o R da sessao fica livre durante a espera da rede. A busca aproximada dos provedores BR continua no processo principal, porque e CPU, nao rede. A exportacao com IUCN reusa o memo, e consulta o resto antes do download (ADR-213).
