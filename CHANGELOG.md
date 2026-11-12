@@ -130,7 +130,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Keep the Mapping button on the blank basisOfRecord row when a required term is also missing ([#321](https://github.com/rogerio-onza/saira/pull/321))
 - **mapping:** Show no origin for an unmapped term in the List view instead of MANUAL ([#322](https://github.com/rogerio-onza/saira/pull/322))
 - **names:** Translate the provider taxonomic status in the report, and keep the active filter count readable in dark mode ([#323](https://github.com/rogerio-onza/saira/pull/323))
-- **coords:** Show the edit hint above the table as an instruction, not as a title
+- **coords:** Show the edit hint above the table as an instruction, not as a title ([#324](https://github.com/rogerio-onza/saira/pull/324))
 - **preview:** Accept a GPS accuracy as `4.551` when the column writes decimals with a dot, ADR-210 ([#309](https://github.com/rogerio-onza/saira/pull/309))
 - **generalization:** Apply the category grid to a sensitive record with a GPS accuracy as `4.551`, ADR-210 ([#307](https://github.com/rogerio-onza/saira/pull/307))
 - **preview:** Break a long column name between its words in the record panel, so it never covers its value ([#308](https://github.com/rogerio-onza/saira/pull/308))
