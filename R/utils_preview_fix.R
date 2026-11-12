@@ -775,7 +775,8 @@ parse_preview_edit <- function(term, value, taken = character(0), decimal_dot = 
             # One value carries no column vote, so "05/07/2016" would be read
             # month-first. Ask for ISO instead of guessing the order.
             dm <- regmatches(v, regexec("^(\\d{1,2})[/.-](\\d{1,2})[/.-]\\d{2,4}$", v))[[1]]
-            if (length(dm) == 3L && max(as.integer(dm[2:3])) <= 12L && dm[2] != dm[3]) {
+            if ((length(dm) == 3L && max(as.integer(dm[2:3])) <= 12L && dm[2] != dm[3]) ||
+                is_ambiguous_dmy(v)) {
                 return(fail("preview_fix_err_date_ambiguous"))
             }
             iso <- parse_dates_to_iso(v)

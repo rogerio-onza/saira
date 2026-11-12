@@ -155,6 +155,12 @@
     if (uploadCompleteLabel && finished && uploadCompleteLabel !== current) {
       bar.textContent = uploadCompleteLabel;
     }
+    // The dropzone names the file once the upload ends, so the finished bar
+    // hides (UX-05). A new upload writes a percentage and shows it again.
+    var progress = bar.closest(".shiny-file-input-progress");
+    if (progress) {
+      progress.classList.toggle("is-complete", finished || current === uploadCompleteLabel);
+    }
   }
 
   function localizeUploadProgress(previousLabel) {

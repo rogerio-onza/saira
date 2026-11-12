@@ -572,7 +572,7 @@ testthat::test_that("unchecked names leave the list for the block, and the retry
     gbif$up <- FALSE
     testthat::local_mocked_bindings(
         brprovider_data_available = function(provider_id) FALSE,
-        colxr_match_names = function(names) {
+        colxr_match_names = function(names, ...) {
             answered <- if (gbif$up) names else intersect(names, "Puma concolor")
             out <- data.frame(
                 query_name = answered,
@@ -596,7 +596,9 @@ testthat::test_that("unchecked names leave the list for the block, and the retry
         mod_validate_names_server,
         args = list(
             mapped_data_r = shiny::reactive(mapped_df),
-            lang_r = shiny::reactive("en")
+            lang_r = shiny::reactive("en"),
+            # The mocked GBIF lives in this process, not in the worker.
+            names_worker = NULL
         ),
         {
             rv$run_state <- state
@@ -658,7 +660,7 @@ testthat::test_that("module stream state grows incrementally per processed batch
     )
 
     testthat::with_mocked_bindings(
-        colxr_match_names = function(names) {
+        colxr_match_names = function(names, ...) {
             data.frame(
                 query_name = names,
                 scientificName = names,
@@ -725,7 +727,7 @@ testthat::test_that("cancel path marks unresolved names after abort flag", {
     )
 
     testthat::with_mocked_bindings(
-        colxr_match_names = function(names) {
+        colxr_match_names = function(names, ...) {
             data.frame(
                 query_name = names,
                 scientificName = names,
@@ -1199,6 +1201,90 @@ testthat::test_that("a change in the names stops a Names run in progress", {
             testthat::expect_null(rv$run_state)
             testthat::expect_null(validation_result())
             testthat::expect_identical(rv$last_run_status, "stale")
+        }
+    )
+})
+
+testthat::test_that("before the first run the stream panel shows dashes and the pending names", {
+    mapped_df <- data.frame(scientificName = c("Cebus apella", "Cebus apella", "Tangara fastuosa", ""), stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            session$flushReact()
+            html <- paste(output$stream_panel$html, collapse = " ")
+            testthat::expect_match(html, "2 unique names wait for the validation.", fixed = TRUE)
+            testthat::expect_match(html, "vn-pill-count\">—<", fixed = TRUE)
+
+            rv$stream_df <- data.frame(
+                query_name = "Cebus apella", validation_status = "accepted", provider = "gbif",
+                updated_at = as.POSIXct("2026-02-27 11:00:00", tz = "UTC"), display_order = 1L,
+                stringsAsFactors = FALSE
+            )
+            session$flushReact()
+            html <- paste(output$stream_panel$html, collapse = " ")
+            testthat::expect_false(grepl("wait for the validation", html, fixed = TRUE))
+            testthat::expect_false(grepl("vn-pill-count\">—<", html, fixed = TRUE))
+        }
+    )
+})
+
+testthat::test_that("the provider list shows the Brazilian step before GBIF", {
+    mapped_df <- data.frame(scientificName = "Cebus apella", stringsAsFactors = FALSE)
+
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("en")
+        ),
+        {
+            rv$selected_providers <- c("florabr", "gbif")
+            session$flushReact()
+            html <- paste(output$config_panel$html, collapse = " ")
+            testthat::expect_match(html, "vn-check-list-steps", fixed = TRUE)
+            testthat::expect_match(html, "1st", fixed = TRUE)
+            testthat::expect_match(html, ">then<", fixed = TRUE)
+
+            rv$selected_providers <- "gbif"
+            session$flushReact()
+            html <- paste(output$config_panel$html, collapse = " ")
+            testthat::expect_false(grepl("vn-check-list-steps", html, fixed = TRUE))
+        }
+    )
+})
+
+testthat::test_that("a stale run and a reset end the GBIF batch in the worker", {
+    worker <- names_worker_new()
+    kills <- 0L
+    worker$session <- list(kill = function() kills <<- kills + 1L)
+    original <- data.frame(scientificName = "Puma concolor")
+    mapped <- shiny::reactiveVal(original)
+    reset <- shiny::reactiveVal(0L)
+    shiny::testServer(
+        mod_validate_names_server,
+        args = list(mapped_data_r = shiny::reactive(mapped()), lang_r = shiny::reactive("en"),
+                    reset_signal_r = reset, names_worker = worker),
+        {
+            session$flushReact()
+            validated_input_rv(names_validation_input(original, TRUE, TRUE))
+            worker$call <- list(run_id = 1, names = "Puma concolor", started = Sys.time())
+            mapped(data.frame(scientificName = "Panthera onca"))
+            session$flushReact()
+            testthat::expect_identical(rv$last_run_status, "stale")
+            testthat::expect_null(worker$call)
+            testthat::expect_identical(kills, 1L)
+
+            worker$session <- list(kill = function() kills <<- kills + 1L)
+            worker$call <- list(run_id = 2, names = "Panthera onca", started = Sys.time())
+            reset(1L)
+            session$flushReact()
+            testthat::expect_null(worker$call)
+            testthat::expect_identical(kills, 2L)
         }
     )
 })

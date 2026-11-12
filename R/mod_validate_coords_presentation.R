@@ -192,16 +192,12 @@ mount_mod_validate_coords_presentation <- function(
                     if (isTRUE(view$report_stale())) {
                         shiny::p(class = "mb-1", shiny::strong(tr("validate_coords_stale", lang_r())))
                     },
-                    shiny::p(
-                        class = "mb-0",
-                        tr("validate_coords_pre_hint_prefix", lang_r()),
-                        shiny::strong("decimalLatitude"),
-                        ", ",
-                        shiny::strong("decimalLongitude"),
-                        " e ",
-                        shiny::strong("country"),
-                        tr("validate_coords_pre_hint_suffix", lang_r())
-                    )
+                    shiny::p(class = "mb-0", if (identical(quick_gate()$status, "ok")) {
+                        tr("validate_coords_pre_hint_ready", lang_r())
+                    } else {
+                        terms <- sprintf("<strong>%s</strong>", c("decimalLatitude", "decimalLongitude", "country"))
+                        shiny::HTML(do.call(sprintf, c(list(tr("validate_coords_pre_hint", lang_r())), as.list(terms))))
+                    })
                 )
             )
         )

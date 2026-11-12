@@ -136,16 +136,23 @@ build_dynamic_properties_json <- function(df, cols, keys = NULL) {
         blank <- is.na(v) | !nzchar(trimws(v))
         # A cell that already holds an object (a re-imported
         # dynamicProperties) gives its members, not one escaped string (AUD-08).
-        members <- json_object_member_list(v)
+        # Most columns hold plain text, so only the cells with a brace go
+        # through the object parser. A NULL list marks a column with none.
         is_obj <- grepl("{", v, fixed = TRUE)
-        is_obj[is_obj] <- !vapply(members[is_obj], is.null, logical(1))
+        members <- NULL
+        if (any(is_obj)) {
+            members <- vector("list", n)
+            members[is_obj] <- json_object_member_list(v[is_obj])
+            is_obj[is_obj] <- !vapply(members[is_obj], is.null, logical(1))
+        }
         piece <- character(n)
         text <- !blank & !is_obj
         piece[text] <- paste0(
             "\"", json_escape_string(resolved_keys[[j]]), "\":\"", json_escape_string(v[text]), "\""
         )
         parts_per_col[[j]] <- piece
-        members_per_col[[j]] <- members
+        # `[<-` with list(NULL) keeps the slot, `[[<-` with NULL drops it.
+        members_per_col[j] <- list(members)
         obj_rows <- obj_rows | is_obj
     }
 
@@ -168,7 +175,11 @@ build_dynamic_properties_json <- function(df, cols, keys = NULL) {
         row_id <- vector("list", n_cols)
         col_id <- vector("list", n_cols)
         for (j in seq_len(n_cols)) {
-            cell <- members_per_col[[j]][rows]
+            cell <- if (is.null(members_per_col[[j]])) {
+                vector("list", length(rows))
+            } else {
+                members_per_col[[j]][rows]
+            }
             obj <- !vapply(cell, is.null, logical(1))
             plain <- which(!obj & nzchar(parts_per_col[[j]][rows]))
             obj <- which(obj)

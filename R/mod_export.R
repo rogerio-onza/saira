@@ -19,6 +19,7 @@ mod_export_ui <- function(id) {
         # Mapping, scroll the targeted field card into view and flash it.
         shiny::tags$script(module_behavior_html("exportFocusField")),
         shiny::tags$script(module_behavior_html("exportBundleState")),
+        shiny::tags$script(module_behavior_html("exportPendingFilter")),
 
         shiny::div(
             class = "container-fluid export-page",
@@ -198,8 +199,6 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             s <- summary_r()
             if (length(s$missing_required) > 0L) {
                 on_navigate("mapping", term = s$missing_required[1L])
-            } else if (isTRUE(s$bor_blank_count > 0L)) {
-                on_navigate("mapping", term = "basisOfRecord")
             } else {
                 on_navigate("sensitive_coords")
             }
@@ -213,7 +212,10 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }, ignoreInit = TRUE)
         }
         navigate_on("go_fix_justification", "sensitive_coords")
-        for (id in c("go_preview_sci_blank", "go_preview_coord_invalid", "go_preview_date_range",
+        navigate_on("go_fix_bor", "mapping", term = "basisOfRecord")
+        # Each row has its own button id: a repeated id breaks the second button.
+        for (id in c("go_preview_sci_blank", "go_preview_coord_invalid", "go_preview_point_text",
+                     "go_preview_projected_point", "go_preview_date_range",
                      "go_preview_date_unparsed", "go_preview_formula", "go_preview_problems",
                      "go_preview_copies")) {
             navigate_on(id, "preview")
@@ -224,7 +226,9 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
         navigate_on("go_changes_preview", "preview")
         navigate_on("go_coords_stale", "validate_coords")
         navigate_on("go_coords_flags", "validate_coords")
-        navigate_on("go_map_unmapped", "mapping")
+        for (id in c("go_map_unmapped", "go_map_formula_headers", "go_map_formula_cells")) {
+            navigate_on(id, "mapping")
+        }
         navigate_on("go_map_establishment", "mapping", term = "establishmentMeans")
         navigate_on("go_map_occid", "mapping", term = "occurrenceID")
 
@@ -383,6 +387,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             pending_row <- function(severity, body, action_id = NULL, action_label = NULL) {
                 shiny::div(
                     class = paste0("export-pending-row is-", severity),
+                    `data-sev` = severity,
                     shiny::span(class = paste0("export-sev export-sev--", severity),
                                 tr(paste0("export_sev_", severity), lang)),
                     shiny::div(class = "export-pending-body", body),
@@ -394,6 +399,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }
             rows <- list()
             add <- function(x) rows[[length(rows) + 1L]] <<- x
+            sev_levels <- c("block", "warn", "info")
             if (length(s$failed_sources) > 0L) {
                 add(pending_row("block", sprintf(tr("export_blocked_source_failed", lang),
                                                  export_source_steps(s$failed_sources, lang))))
@@ -409,8 +415,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     sprintf(tr("export_blocked_bor_blank", lang), s$bor_blank_count), " ",
                     shiny::tags$code(format_row_list(s$bor_blank_rows))
                 ),
-                                if (length(s$missing_required) == 0L) "go_fix_terms",
-                                tr("export_action_mapping", lang)))
+                                "go_fix_bor", tr("export_action_mapping", lang)))
             }
             if (length(s$sci_blank_rows) > 0L) {
                 add(pending_row("block", shiny::tagList(
@@ -428,13 +433,13 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 add(pending_row("block", shiny::tagList(
                     sprintf(tr("export_blocked_point_text", lang), length(s$point_text_rows)), " ",
                     shiny::tags$code(format_row_list(s$point_text_rows))
-                ), "go_preview_coord_invalid", tr("export_action_preview", lang)))
+                ), "go_preview_point_text", tr("export_action_preview", lang)))
             }
             if (length(s$projected_point_rows) > 0L) {
                 add(pending_row("block", shiny::tagList(
                     sprintf(tr("export_blocked_projected_point", lang), length(s$projected_point_rows)), " ",
                     shiny::tags$code(format_row_list(s$projected_point_rows))
-                ), "go_preview_coord_invalid", tr("export_action_preview", lang)))
+                ), "go_preview_projected_point", tr("export_action_preview", lang)))
             }
             if (length(s$point_columns) > 0L) {
                 add(pending_row("block", shiny::tagList(
@@ -493,7 +498,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     shiny::strong(tr("export_formula_title", lang)), " ",
                     sprintf(tr("export_formula_header_body", lang), length(fu_headers)), " ",
                     shiny::tags$code(paste(fu_headers, collapse = ", "))
-                ), "go_map_unmapped", tr("export_action_mapping", lang)))
+                ), "go_map_formula_headers", tr("export_action_mapping", lang)))
             }
             if (is.list(fu) && isTRUE(fu$count > length(fu_headers))) {
                 fu_cells <- fu$sample[fu$sample$row > 0L, , drop = FALSE]
@@ -505,7 +510,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                                 fu_cells$row, fu_cells$column, fu_cells$value),
                         collapse = ", "
                     ))
-                ), "go_map_unmapped", tr("export_action_mapping", lang)))
+                ), "go_map_formula_cells", tr("export_action_mapping", lang)))
             }
             if (isTRUE(s$corrections$coord_fixes_stale > 0L)) {
                 add(pending_row("warn", sprintf(tr("export_coord_fixes_stale", lang), s$corrections$coord_fixes_stale),
@@ -574,6 +579,18 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }
             # With nothing to review, the card shows the saira-pintor and says
             # the package is ready.
+            # Blockers first, then warnings, then notes. order() keeps the
+            # code order inside each severity.
+            sevs <- vapply(rows, htmltools::tagGetAttribute, character(1), attr = "data-sev")
+            rows <- rows[order(match(sevs, sev_levels))]
+            sev_n <- table(factor(sevs, levels = sev_levels))
+            filter_chip <- function(filter, label, n) {
+                shiny::tags$button(
+                    type = "button", class = paste0("export-pending-chip is-", filter),
+                    `data-filter` = filter, `aria-pressed` = if (filter == "all") "true" else "false",
+                    label, shiny::span(class = "export-pending-chip-n", fmt_n(n))
+                )
+            }
             pending_card <- if (length(rows) == 0L) {
                 shiny::div(
                     class = "export-card export-ready",
@@ -587,7 +604,19 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             } else {
                 shiny::div(
                     class = "export-card export-pending",
-                    shiny::h2(class = "export-card-title", tr("export_pending_title", lang)),
+                    `data-filter` = "all",
+                    shiny::div(
+                        class = "export-pending-head",
+                        shiny::h2(class = "export-card-title", tr("export_pending_title", lang)),
+                        shiny::div(
+                            class = "export-pending-chips", role = "group",
+                            `aria-label` = tr("export_pending_filter_label", lang),
+                            filter_chip("all", tr("export_pending_filter_all", lang), length(rows)),
+                            lapply(sev_levels[sev_n > 0L], function(sev) {
+                                filter_chip(sev, tr(paste0("export_pending_filter_", sev), lang), sev_n[[sev]])
+                            })
+                        )
+                    ),
                     rows
                 )
             }
