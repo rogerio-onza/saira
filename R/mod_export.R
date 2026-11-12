@@ -19,6 +19,7 @@ mod_export_ui <- function(id) {
         # Mapping, scroll the targeted field card into view and flash it.
         shiny::tags$script(module_behavior_html("exportFocusField")),
         shiny::tags$script(module_behavior_html("exportBundleState")),
+        shiny::tags$script(module_behavior_html("exportPendingFilter")),
 
         shiny::div(
             class = "container-fluid export-page",
@@ -198,8 +199,6 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             s <- summary_r()
             if (length(s$missing_required) > 0L) {
                 on_navigate("mapping", term = s$missing_required[1L])
-            } else if (isTRUE(s$bor_blank_count > 0L)) {
-                on_navigate("mapping", term = "basisOfRecord")
             } else {
                 on_navigate("sensitive_coords")
             }
@@ -213,6 +212,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }, ignoreInit = TRUE)
         }
         navigate_on("go_fix_justification", "sensitive_coords")
+        navigate_on("go_fix_bor", "mapping", term = "basisOfRecord")
         # Each row has its own button id: a repeated id breaks the second button.
         for (id in c("go_preview_sci_blank", "go_preview_coord_invalid", "go_preview_point_text",
                      "go_preview_projected_point", "go_preview_date_range",
@@ -387,6 +387,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             pending_row <- function(severity, body, action_id = NULL, action_label = NULL) {
                 shiny::div(
                     class = paste0("export-pending-row is-", severity),
+                    `data-sev` = severity,
                     shiny::span(class = paste0("export-sev export-sev--", severity),
                                 tr(paste0("export_sev_", severity), lang)),
                     shiny::div(class = "export-pending-body", body),
@@ -398,6 +399,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }
             rows <- list()
             add <- function(x) rows[[length(rows) + 1L]] <<- x
+            sev_levels <- c("block", "warn", "info")
             if (length(s$failed_sources) > 0L) {
                 add(pending_row("block", sprintf(tr("export_blocked_source_failed", lang),
                                                  export_source_steps(s$failed_sources, lang))))
@@ -413,8 +415,7 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                     sprintf(tr("export_blocked_bor_blank", lang), s$bor_blank_count), " ",
                     shiny::tags$code(format_row_list(s$bor_blank_rows))
                 ),
-                                if (length(s$missing_required) == 0L) "go_fix_terms",
-                                tr("export_action_mapping", lang)))
+                                "go_fix_bor", tr("export_action_mapping", lang)))
             }
             if (length(s$sci_blank_rows) > 0L) {
                 add(pending_row("block", shiny::tagList(
@@ -578,6 +579,18 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             }
             # With nothing to review, the card shows the saira-pintor and says
             # the package is ready.
+            # Blockers first, then warnings, then notes. order() keeps the
+            # code order inside each severity.
+            sevs <- vapply(rows, htmltools::tagGetAttribute, character(1), attr = "data-sev")
+            rows <- rows[order(match(sevs, sev_levels))]
+            sev_n <- table(factor(sevs, levels = sev_levels))
+            filter_chip <- function(filter, label, n) {
+                shiny::tags$button(
+                    type = "button", class = paste0("export-pending-chip is-", filter),
+                    `data-filter` = filter, `aria-pressed` = if (filter == "all") "true" else "false",
+                    label, shiny::span(class = "export-pending-chip-n", fmt_n(n))
+                )
+            }
             pending_card <- if (length(rows) == 0L) {
                 shiny::div(
                     class = "export-card export-ready",
@@ -591,7 +604,19 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
             } else {
                 shiny::div(
                     class = "export-card export-pending",
-                    shiny::h2(class = "export-card-title", tr("export_pending_title", lang)),
+                    `data-filter` = "all",
+                    shiny::div(
+                        class = "export-pending-head",
+                        shiny::h2(class = "export-card-title", tr("export_pending_title", lang)),
+                        shiny::div(
+                            class = "export-pending-chips", role = "group",
+                            `aria-label` = tr("export_pending_filter_label", lang),
+                            filter_chip("all", tr("export_pending_filter_all", lang), length(rows)),
+                            lapply(sev_levels[sev_n > 0L], function(sev) {
+                                filter_chip(sev, tr(paste0("export_pending_filter_", sev), lang), sev_n[[sev]])
+                            })
+                        )
+                    ),
                     rows
                 )
             }

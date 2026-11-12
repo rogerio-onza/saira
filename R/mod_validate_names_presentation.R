@@ -31,7 +31,7 @@ mount_mod_validate_names_presentation <- function(
     output, problem_status_values, provider_button_id, provider_catalog,
     provider_runtime_status_for, quick_inputs, reviewed_query_keys, sensitivity_entries_df,
     session, stream_window_limit, validation_meta, view,
-    consume_report_fade
+    consume_report_fade, pending_names_n = function() NA_integer_
 ) {
     provider_runtime_badge <- function(status_obj) {
         key <- tolower(as.character(status_obj$status %||% "never_downloaded"))
@@ -79,12 +79,10 @@ mount_mod_validate_names_presentation <- function(
             shiny::div(
                 class = "vn-config-section vn-config-section-providers",
                 shiny::div(class = "vn-section-label", tr("validate_names_providers_card_title", lang_r())),
-                shiny::div(
-                    class = "vn-check-list",
-                    lapply(provider_catalog, function(item) {
+                {
+                    provider_rows <- lapply(provider_catalog, function(item) {
                         is_selected <- item$id %in% selected
                         is_locked <- isTRUE(item$locked)
-                        step <- provider_query_step(item$id, selected, br_provider_ids)
                         status_ui <- if (identical(item$type, "br")) {
                             provider_runtime_badge(provider_runtime_status_for(item$id))
                         } else if (is_locked) {
@@ -92,7 +90,6 @@ mount_mod_validate_names_presentation <- function(
                         }
                         content <- shiny::div(
                             class = "vn-check-row-content",
-                            shiny::span(class = "vn-check-step", if (is.na(step)) "" else step),
                             shiny::span(class = "vn-check-box", `aria-hidden` = "true"),
                             shiny::div(
                                 class = "vn-check-text",
@@ -122,7 +119,22 @@ mount_mod_validate_names_presentation <- function(
                             )
                         }
                     })
-                ),
+                    # GBIF reads only the names the Brazilian providers did
+                    # not find, so the list shows the two cascade steps.
+                    is_br <- vapply(provider_catalog, function(item) identical(item$type, "br"), logical(1))
+                    if (identical(provider_query_step("gbif", selected, br_provider_ids), 2L)) {
+                        shiny::div(
+                            class = "vn-check-list vn-check-list-steps",
+                            shiny::span(class = "vn-check-step", tr("validate_names_order_first", lang_r())),
+                            provider_rows[is_br],
+                            shiny::span(class = "vn-check-step-arrow", `aria-hidden` = "true", shiny::HTML("&rarr;")),
+                            shiny::span(class = "vn-check-step", tr("validate_names_order_then", lang_r())),
+                            provider_rows[!is_br]
+                        )
+                    } else {
+                        shiny::div(class = "vn-check-list", provider_rows)
+                    }
+                },
                 {
                     in_progress <- br_provider_ids[vapply(
                         br_provider_ids,
@@ -138,7 +150,7 @@ mount_mod_validate_names_presentation <- function(
                         shiny::div(
                             class = "vn-provider-note",
                             shiny::span(class = "vn-note-icon", shiny::HTML("&#8635;")),
-                            paste0("Background update in progress: ", paste(label, collapse = ", "))
+                            sprintf(tr("validate_names_provider_update_in_progress", lang_r()), paste(label, collapse = ", "))
                         )
                     }
                 }
@@ -273,6 +285,7 @@ mount_mod_validate_names_presentation <- function(
         # changes its rows and counts in place. A render per batch reset
         # the scroll and the focus of the list (DEP-07).
         running <- isTRUE(view$running())
+        starting <- isTRUE(view$starting())
         view <- if (running) {
             active_stream_filter()
             shiny::isolate(stream_view())
@@ -297,11 +310,16 @@ mount_mod_validate_names_presentation <- function(
             list(key = "translocated", class = "pill-translocated", label_key = "validate_names_stream_filter_translocated")
         )
 
+        no_rows <- !is.data.frame(stream_df) || nrow(stream_df) == 0L
+        # Before the first run the pills show a dash: zero would read as a
+        # result, and nothing was read yet.
+        not_run <- !running && no_rows && is.null(view$meta) && !starting
         pills_ui <- shiny::div(
             class = "vn-stream-pills",
             lapply(pill_defs, function(item) {
                 count_value <- suppressWarnings(as.integer(counts[[item$key]]))
                 if (is.na(count_value) || count_value < 0L) count_value <- 0L
+                if (not_run) count_value <- "\u2014"
                 is_active <- identical(active_filter, item$key)
                 shiny::actionButton(
                     inputId = ns(paste0("stream_filter_", item$key)),
@@ -324,9 +342,14 @@ mount_mod_validate_names_presentation <- function(
             length(view$unchecked) == 0L
         unchecked_ui <- vn_unchecked_block_ui(view$unchecked, view$meta, ns("retry_unchecked"), lang_r())
 
-        no_rows <- !is.data.frame(stream_df) || nrow(stream_df) == 0L
+        pending_n <- if (not_run) suppressWarnings(as.integer(pending_names_n())) else NA_integer_
         stream_body <- if (no_rows && !is.null(unchecked_ui)) {
             NULL
+        } else if (!is.na(pending_n) && pending_n > 0L) {
+            shiny::div(
+                class = "vn-stream-empty",
+                sprintf(tr("validate_names_stream_pending", lang_r()), format_count(pending_n, lang_r()))
+            )
         } else if (no_rows) {
             shiny::div(
                 class = "vn-stream-empty",
@@ -482,7 +505,7 @@ mount_mod_validate_names_presentation <- function(
         table_df <- data.frame(
             scientificName = scientific_name,
             validation_status = status_vec,
-            taxonomicStatus = taxonomic_status,
+            taxonomicStatus = taxonomic_status_label(taxonomic_status, lang_r()),
             review_original_name = review_original_name,
             is_sensitive = is_sensitive_vec,
             sensitive_name = sensitive_source,

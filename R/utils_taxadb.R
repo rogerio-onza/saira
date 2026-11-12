@@ -81,6 +81,18 @@ names_validation_input <- function(df, remove_authors = TRUE, ignore_qualifiers 
     )
 }
 
+# How many distinct taxonomic queries a Names run would send. Blank and
+# ignored names ("Genus sp.") do not count, as in the run itself.
+names_pending_count <- function(names_vec, remove_authors = TRUE, ignore_qualifiers = TRUE) {
+    if (!length(names_vec)) return(0L)
+    prepared <- prepare_taxadb_inputs(
+        unique(as.character(names_vec)),
+        remove_authors = remove_authors,
+        ignore_qualifiers = ignore_qualifiers
+    )
+    length(unique(stats::na.omit(prepared$query_name)))
+}
+
 prepare_taxadb_inputs <- function(
   names_vec,
   remove_authors = TRUE,
