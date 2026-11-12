@@ -24,15 +24,16 @@ Check the data in Darwin Core and correct values in the **Preview** step. Your s
 ## Find the problems
 
 ```{=html}
-<figure class="shot"><img src="../../assets/img/t07-problems-EN.png" width="1900" alt="Problems mode with the filters by type and the list by row highlighted"></figure>
+<figure class="shot"><img src="../../assets/img/t07-problems-EN.png" width="1900" alt="Problems mode with the filters by type, the list by row and the record panel highlighted"></figure>
 ```
 
 ::: {.marks}
 1. The filters split the problems by type, with the count. **Edited** shows what you already corrected.
 2. Each row has the term, the diagnosis, the value **In the spreadsheet** and the **Correction**.
+3. The record of the selected row, as it is in the spreadsheet. The column of the problem is marked.
 :::
 
-**In the spreadsheet** never changes. The export uses the **Correction** when there is one. Click a row to see the full record as it is in the spreadsheet.
+**In the spreadsheet** never changes. The export uses the **Correction** when there is one. The list opens on the first problem. Click another row to see its record. In a narrow window, the record shows below the list.
 
 ## Correct a value
 
@@ -58,6 +59,7 @@ When one type of problem in a term covers 20% of the records or more, and at lea
 |---|---|---|
 | Vocabulary | `anotado` in <span class="term">occurrenceStatus</span> | Choose a suggested value or one from the GBIF vocabulary. |
 | Date | `03/04/2021` | Day and month may be swapped. Write it as `YYYY-MM-DD`. |
+| Date | `2021-13-40` | Saíra did not read the date. Write it as `YYYY-MM-DD`. Saíra already reads month names, roman months, compact dates and intervals. |
 | Time | `25:70` | Write it as `HH:MM`. |
 | Count | `muitos` | Write a number. |
 | Count | `0` with <span class="term">occurrenceStatus</span> `present` | `0` means absence. Click **Mark absent** or correct the count. |

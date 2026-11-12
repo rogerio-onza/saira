@@ -71,6 +71,8 @@ Seis termos são obrigatórios: <span class="term">scientificName</span> <span c
 
 Se a mesma coluna vai para mais de um termo, o Saíra avisa. Confira se é intencional.
 
+Uma coluna com latitude e longitude em cada célula, como `23°33'S 46°38'W` ou `-23.55, -46.63`, vai para os dois cartões de coordenada. O Saíra divide cada célula entre os dois termos, sem o aviso.
+
 ## Confira os valores padronizados
 
 O Saíra traduz valores conhecidos para o vocabulário Darwin Core:

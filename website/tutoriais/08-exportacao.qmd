@@ -12,11 +12,11 @@ Resolva as pendências e baixe o Darwin Core Archive na etapa **Exportação**. 
 ## Resolva as pendências
 
 ```{=html}
-<figure class="shot"><img src="../assets/img/t07-export.png" width="1440" alt="Etapa Exportação bloqueada, com as pendências, o botão de correção, o cartão do pacote e o download desativado destacados"></figure>
+<figure class="shot"><img src="../assets/img/t07-export.png" width="1440" alt="Etapa Exportação bloqueada, com os filtros por tipo, o botão de correção, o cartão do pacote e o download desativado destacados"></figure>
 ```
 
 ::: {.marks}
-1. **Bloqueia** impede o download. **Aviso** deixa baixar. **Info** só informa.
+1. Os filtros contam as pendências por tipo: **Todas**, **Bloqueiam**, **Avisos** e **Informativos**. As que bloqueiam vêm primeiro. **Bloqueia** impede o download. **Aviso** deixa baixar. **Info** só informa.
 2. Cada pendência tem um botão que leva à etapa que resolve.
 3. O pacote: registros, correções, espécies generalizadas e arquivos.
 4. O download fica desativado enquanto houver pendência que bloqueia.
@@ -30,6 +30,8 @@ Resolva as pendências e baixe o Darwin Core Archive na etapa **Exportação**. 
 | Célula que parece fórmula de planilha, mapeada ou não | Bloqueia | [Pré-visualização](04-pre-visualizacao.qmd#casos-comuns) |
 | Coordenada inválida | Bloqueia | [Coordenadas](06-validacao-coordenadas.qmd) |
 | Generalização sem justificativa | Bloqueia | [Generalização](07-generalizacao.qmd#trate-uma-espécie-à-parte) |
+| Um campo de texto, um nome de coluna ou um <span class="term">occurrenceID</span> mostra o ponto de um registro protegido | Bloqueia | Pré-visualização, ou a planilha original para coluna não mapeada. |
+| O GBIF não respondeu à consulta IUCN | Bloqueia | **Tentar de novo**, ou **Exportar sem a IUCN que falta**. |
 | Decisão de uma etapa que o Saíra não conseguiu ler | Bloqueia | Abra de novo as etapas que a mensagem cita e confira. |
 | Data não lida, ano fora do intervalo, contagem zero sem status | Aviso | [Pré-visualização](04-pre-visualizacao.qmd#casos-comuns) |
 | Marcação de Coordenadas, problema aberto na Pré-visualização | Aviso | O botão da pendência leva à etapa. |
@@ -62,13 +64,13 @@ Clique em **Correções** para ver um exemplo por tipo: Nomes, Coordenadas, Paí
 O Saíra grava o status de conservação conforme as bases da [validação de nomes](05-validacao-nomes.qmd):
 
 - Flora BR ou Fauna BR → `mmaThreatStatus` e `mmaSource`;
-- GBIF → `iucnRedListCategory`, consultado na exportação.
+- GBIF → `iucnRedListCategory`, consultado quando você abre a Exportação.
 
 ```json
 {"mmaThreatStatus":"CR","mmaSource":"Portaria 1.704/2026","iucnRedListCategory":"NT"}
 ```
 
-Sem internet, a chave IUCN fica de fora e a exportação continua. As chaves MMA entram em registros do Brasil, pelo <span class="term">country</span> ou <span class="term">countryCode</span>, e em registros que o Saíra generalizou. Os demais registros ficam sem as chaves MMA.
+Enquanto a consulta IUCN roda, a lista de pendências mostra a consulta com a contagem. Se o GBIF não responde para alguns nomes, escolha **Tentar de novo** ou **Exportar sem a IUCN que falta**. Esses nomes saem sem a chave IUCN. As chaves MMA entram em registros do Brasil, pelo <span class="term">country</span> ou <span class="term">countryCode</span>, e em registros que o Saíra generalizou. Os demais registros ficam sem as chaves MMA.
 
 ## Arquivos do pacote
 

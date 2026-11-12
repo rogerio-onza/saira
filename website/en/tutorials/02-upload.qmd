@@ -10,13 +10,13 @@ Load the occurrence spreadsheet in the **Home** step.
 ## Send the file
 
 ```{=html}
-<figure class="shot"><img src="../../assets/img/t02-upload-EN.png" width="720" alt="Home step after the upload, with the format tabs, the upload area and the file summary highlighted"></figure>
+<figure class="shot"><img src="../../assets/img/t02-upload-EN.png" width="1328" alt="Home step after the upload, with the format tabs, the upload area and the file name highlighted"></figure>
 ```
 
 ::: {.marks}
 1. Choose the format: **Spreadsheet** for CSV, XLSX or TXT, **Camtrap DP** for the camera-trap ZIP.
 2. Drag the file to the upload area, or click it.
-3. Check the summary: records, columns and size.
+3. The area shows the file name. To replace the file, drop another one or click the area.
 :::
 
 | Format | Files |
@@ -50,7 +50,7 @@ In the **Camtrap DP** tab, Saíra accepts three kinds of `.zip`:
 
 - **Camtrap DP** with the `datapackage.json` descriptor and the `deployments`, `observations` and, if present, `media` tables.
 - The same tables **without the descriptor**. Saíra builds the descriptor from the CSVs.
-- The **Wildlife Insights export**. Saíra renames the columns to the Camtrap DP format. In an image project, each identified image becomes one record. In a sequence project, each identification of a sequence becomes one record, with the group size.
+- The **Wildlife Insights export**. Saíra renames the columns to the Camtrap DP format. In an image project, each identified image becomes one record. In a sequence project, each identification of a sequence becomes one record, with the group size. Saíra does not accept an export with both project types: export each type to its own file.
 
 Saíra joins the tables into one spreadsheet, with scientific name, date and location. After that, the workflow is the same as for a spreadsheet.
 

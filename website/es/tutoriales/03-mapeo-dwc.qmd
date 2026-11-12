@@ -71,6 +71,8 @@ Seis términos son obligatorios: <span class="term">scientificName</span> <span 
 
 Si la misma columna va a más de un término, Saíra le avisa. Verifique que sea intencional.
 
+Una columna con latitud y longitud en cada celda, como `23°33'S 46°38'W` o `-23.55, -46.63`, va a las dos tarjetas de coordenada. Saíra divide cada celda entre los dos términos, sin el aviso.
+
 ## Revise los valores estándar
 
 Saíra traduce valores conocidos al vocabulario Darwin Core:

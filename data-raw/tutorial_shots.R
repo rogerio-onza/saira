@@ -154,8 +154,8 @@ run_lang <- function(lang, theme = "light", scenario = "demo") {
     # The first upload moves to Mapeamento, so come back to the home.
     go("upload", 1)
     safe("t02-upload", {
-        # The summary renders after the upload settles and sits below the fold.
-        wait_js("!!document.querySelector('#upload-stats .stats-container')", 60)
+        # The drop area names the file once the upload settles.
+        wait_js("!!document.querySelector('.upload-dropzone-file')", 60)
         window(1200)
         # The dropzone is flex-filled to the viewport height, and the capture
         # resizes the viewport. Freeze its height so the marks stay on it.
@@ -164,8 +164,8 @@ run_lang <- function(lang, theme = "light", scenario = "demo") {
         # #upload-upload_mode is the hidden radio input, so mark the visible tabs.
         M("tutMarks.mark('.upload-mode-tabs', 1, {fit: true});
            tutMarks.mark('.upload-dropzone', 2, {radius: 16});
-           tutMarks.mark('#upload-stats .stats-container', 3);")
-        shot("t02-upload", c(".home-header", ".upload-mode-tabs", ".upload-dropzone", "#upload-stats .stats-container"))
+           tutMarks.mark('.upload-dropzone-file', 3, {corner: 'or'});")
+        shot("t02-upload", c(".home-header", ".upload-mode-tabs", ".upload-dropzone"))
         window(900)
     })
 
@@ -181,10 +181,10 @@ run_lang <- function(lang, theme = "light", scenario = "demo") {
     safe("t03-card", {
         C <- "#mapping-fieldcard_recordedBy"
         scroll_to(C)
-        M(sprintf("tutMarks.tag('%1$s', 'ex.:', 'tut-ex');
+        M(sprintf("tutMarks.tag('%1$s', '%2$s', 'tut-ex');
            tutMarks.mark('%1$s .field-status-badge', 1, {corner: 'or'});
            tutMarks.mark('%1$s .selectize-control', 2);
-           tutMarks.mark('#tut-ex', 3);", C))
+           tutMarks.mark('#tut-ex', 3);", C, tr("mapping_card_sample_prefix", lang)))
         shot("t03-card", C, 44)
     })
     safe("t03-bor-card", {
@@ -246,14 +246,14 @@ run_lang <- function(lang, theme = "light", scenario = "demo") {
         idle()
         app$set_inputs(`mapping-map_dynamicProperties` = c("ambiente", "nome_comum"))
         idle()
-        app$set_inputs(`mapping-dynprops_key_nome_comum` = "nomePopular")
+        app$set_inputs(`mapping-dynprops_key_nome_5fcomum` = "nomePopular")
         idle()
         Sys.sleep(1)
         scroll_to(C)
-        M(sprintf("tutMarks.tag('%1$s', 'ex.:', 'tut-ex2');
+        M(sprintf("tutMarks.tag('%1$s', '%2$s', 'tut-ex2');
            tutMarks.mark('%1$s .selectize-control', 1);
-           tutMarks.mark('#mapping-dynprops_key_nome_comum', 2);
-           tutMarks.mark('#tut-ex2', 3);", C))
+           tutMarks.mark('#mapping-dynprops_key_nome_5fcomum', 2);
+           tutMarks.mark('#tut-ex2', 3);", C, tr("mapping_card_sample_prefix", lang)))
         shot("t03-dyn", C, 44)
     })
 
@@ -469,7 +469,8 @@ shots_cases <- function() {
     Sys.sleep(1)
     safe("t07-problems", {
         M("tutMarks.mark('.preview-fix-pills', 1, {corner: 'ot'});
-           tutMarks.mark('#preview-rows_table', 2, {corner: 'ol'});")
+           tutMarks.mark('#preview-rows_table', 2, {corner: 'ol'});
+           tutMarks.mark('.preview-record', 3, {corner: 'ot'});")
         shot("t07-problems", "body", 0)
     })
     pill <- function(key) {
@@ -498,7 +499,7 @@ shots_cases <- function() {
     go("export", 3)
     window(1100)
     safe("t07-export", {
-        M("tutMarks.mark('.export-pending', 1, {corner: 'ot'});
+        M("tutMarks.mark('.export-pending-chips', 1, {corner: 'ot'});
            tutMarks.mark('#export-go_fix_terms', 2);
            tutMarks.mark('.export-files', 3, {corner: 'ot'});
            tutMarks.mark('.export-download-bar', 4, {corner: 'ot'});")
@@ -517,9 +518,10 @@ shots_cases <- function() {
             Array.from(panel.parentElement.children).forEach(function (el) {
                 if (el !== panel) el.style.visibility = 'hidden';
             });")
-        M("tutMarks.mark('.shiny-input-container:has(#validate_coords-utm_zone)', 1, {corner: 'ot'});
-           tutMarks.mark('.shiny-input-container:has(#validate_coords-utm_datum)', 2, {corner: 'ot'});
-           tutMarks.mark('#validate_coords-apply_utm', 3, {corner: 'or'});")
+        M("tutMarks.mark('.shiny-input-container:has(#validate_coords-utm_hemisphere)', 1, {corner: 'ot'});
+           tutMarks.mark('.shiny-input-container:has(#validate_coords-utm_zone)', 2, {corner: 'ot'});
+           tutMarks.mark('.shiny-input-container:has(#validate_coords-utm_datum)', 3, {corner: 'ot'});
+           tutMarks.mark('#validate_coords-apply_utm', 4, {corner: 'or'});")
         shot("t05-utm", ".coords-utm-band", 36)
     })
 }
@@ -571,6 +573,9 @@ shots_package <- function() {
     }
     idle()
     go("export", 3)
+    # The IUCN lookup runs before the package card shows.
+    wait_js("!!document.querySelector('.export-files')", 600)
+    idle()
     window(1250)
     safe("t07-package", {
         M("tutMarks.mark('.export-files', 1, {corner: 'ot'});

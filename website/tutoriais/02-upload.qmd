@@ -10,13 +10,13 @@ Carregue a planilha de ocorrências na etapa **Início**.
 ## Envie o arquivo
 
 ```{=html}
-<figure class="shot"><img src="../assets/img/t02-upload.png" width="720" alt="Etapa Início após o envio, com as abas de formato, a área de envio e o resumo do arquivo destacados"></figure>
+<figure class="shot"><img src="../assets/img/t02-upload.png" width="1328" alt="Etapa Início após o envio, com as abas de formato, a área de envio e o nome do arquivo destacados"></figure>
 ```
 
 ::: {.marks}
 1. Escolha o formato: **Planilha** para CSV, XLSX ou TXT, **Camtrap DP** para o ZIP de armadilha fotográfica.
 2. Arraste o arquivo para a área de envio, ou clique nela.
-3. Confira o resumo: registros, colunas e tamanho.
+3. A área mostra o nome do arquivo. Para trocar o arquivo, arraste outro ou clique na área.
 :::
 
 | Formato | Arquivos |
@@ -50,7 +50,7 @@ Na aba **Camtrap DP**, o Saíra aceita três tipos de `.zip`:
 
 - **Camtrap DP** com o descritor `datapackage.json` e as tabelas `deployments`, `observations` e, se houver, `media`.
 - As mesmas tabelas **sem o descritor**. O Saíra cria o descritor a partir dos CSVs.
-- A **exportação do Wildlife Insights**. O Saíra renomeia as colunas para o formato Camtrap DP. Em projeto de imagens, cada imagem identificada vira um registro. Em projeto de sequências, cada identificação da sequência vira um registro, com o tamanho do grupo.
+- A **exportação do Wildlife Insights**. O Saíra renomeia as colunas para o formato Camtrap DP. Em projeto de imagens, cada imagem identificada vira um registro. Em projeto de sequências, cada identificação da sequência vira um registro, com o tamanho do grupo. O Saíra não aceita export com os dois tipos de projeto: exporte cada tipo em um arquivo.
 
 O Saíra junta as tabelas numa planilha só, com nome científico, data e local. Depois o fluxo é igual ao de uma planilha.
 

@@ -52,6 +52,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **export:** Show the running IUCN lookup in the Pending card in place of the ready card ([#336](https://github.com/rogerio-onza/saira/pull/336))
 - **preview:** Show the record beside the Problems list on wide screens, and mark the column behind the problem, ADR-195 ([#278](https://github.com/rogerio-onza/saira/pull/278))
 - **build:** Build the Darwin Core catalogs from the TDWG list and one base terms file, in one script, ADR-189
+- **site:** Update the tutorials and screenshots for the v1.0 app: upload file name, UTM hemisphere, Preview record panel, Export severity filters and IUCN lookup
 - **site:** Link the home photos, species, pins and cards by key, and stop the build when they disagree, ADR-189
 - **site:** Show the install options on the landing page as three cards with the Windows, Linux and R logos: the app for Windows or Linux (the `.deb` on Ubuntu 24.04 or later), or the R package. The card of the visitor's system gets the filled button. Put Install first in the hero. Remove the open data section
 - **site:** Scramble the hero record card text to the next species when the photo changes

@@ -24,15 +24,16 @@ Confira os dados em Darwin Core e corrija valores na etapa **Pré-visualização
 ## Encontre os problemas
 
 ```{=html}
-<figure class="shot"><img src="../assets/img/t07-problems.png" width="1900" alt="Modo Problemas com os filtros por tipo e a lista por linha destacados"></figure>
+<figure class="shot"><img src="../assets/img/t07-problems.png" width="1900" alt="Modo Problemas com os filtros por tipo, a lista por linha e o painel do registro destacados"></figure>
 ```
 
 ::: {.marks}
 1. Os filtros separam os problemas por tipo, com a contagem. **Editadas** mostra o que você já corrigiu.
 2. Cada linha traz o termo, o diagnóstico, o valor **Na planilha** e a **Correção**.
+3. O registro da linha escolhida, como está na planilha. A coluna do problema fica marcada.
 :::
 
-**Na planilha** nunca muda. A exportação usa a **Correção** quando ela existe. Clique numa linha para ver o registro inteiro como está na planilha.
+**Na planilha** nunca muda. A exportação usa a **Correção** quando ela existe. A lista abre no primeiro problema. Clique em outra linha para ver o registro dela. Numa janela estreita, o registro aparece abaixo da lista.
 
 ## Corrija um valor
 
@@ -58,6 +59,7 @@ Quando um tipo de problema num termo cobre 20% dos registros ou mais, e pelo men
 |---|---|---|
 | Vocabulário | `anotado` em <span class="term">occurrenceStatus</span> | Escolha um valor sugerido ou do vocabulário GBIF. |
 | Data | `03/04/2021` | Dia e mês podem estar trocados. Escreva como `AAAA-MM-DD`. |
+| Data | `2021-13-40` | O Saíra não leu a data. Escreva como `AAAA-MM-DD`. O Saíra já lê nomes de mês, meses em romano, datas compactas e intervalos. |
 | Hora | `25:70` | Escreva como `HH:MM`. |
 | Contagem | `muitos` | Escreva um número. |
 | Contagem | `0` com <span class="term">occurrenceStatus</span> `present` | `0` indica ausência. Clique em **Marcar ausente** ou corrija a contagem. |
