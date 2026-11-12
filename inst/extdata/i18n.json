@@ -255,9 +255,9 @@
     "es": "Deja fuera los valores de los registros generalizados: los puntos reales están solo en el archivo privado."
   },
   "export_kpi_generalized": {
-    "pt": "Espécies generalizadas",
-    "en": "Generalized species",
-    "es": "Especies generalizadas"
+    "pt": "Generalizadas",
+    "en": "Generalized",
+    "es": "Generalizadas"
   },
   "export_kpi_generalized_sub": {
     "pt": "espécies com coordenada generalizada",
@@ -283,6 +283,31 @@
     "pt": "Pendências",
     "en": "To review",
     "es": "Pendientes"
+  },
+  "export_pending_filter_label": {
+    "pt": "Filtrar pendências",
+    "en": "Filter the items to review",
+    "es": "Filtrar pendientes"
+  },
+  "export_pending_filter_all": {
+    "pt": "Todas",
+    "en": "All",
+    "es": "Todos"
+  },
+  "export_pending_filter_block": {
+    "pt": "Bloqueiam",
+    "en": "Blocking",
+    "es": "Bloquean"
+  },
+  "export_pending_filter_warn": {
+    "pt": "Avisos",
+    "en": "Warnings",
+    "es": "Avisos"
+  },
+  "export_pending_filter_info": {
+    "pt": "Informativos",
+    "en": "Info",
+    "es": "Informativos"
   },
   "export_sev_block": {
     "pt": "Bloqueia",
@@ -579,21 +604,6 @@
     "en": "Follow the system",
     "es": "Seguir el sistema"
   },
-  "upload_stats_rows": {
-    "pt": "Registros",
-    "en": "Records",
-    "es": "Registros"
-  },
-  "upload_stats_cols": {
-    "pt": "Colunas",
-    "en": "Columns",
-    "es": "Columnas"
-  },
-  "upload_stats_size": {
-    "pt": "Tamanho",
-    "en": "Size",
-    "es": "Tamaño"
-  },
   "mapping_title": {
     "pt": "Mapeamento de Colunas",
     "en": "Column Mapping",
@@ -715,9 +725,9 @@
     "es": "%d especie(s) todavía sin grado definido."
   },
   "est_assistant_button": {
-    "pt": "Assistente establishmentMeans",
-    "en": "establishmentMeans Assistant",
-    "es": "Asistente establishmentMeans"
+    "pt": "Abrir assistente",
+    "en": "Open assistant",
+    "es": "Abrir asistente"
   },
   "est_assistant_title": {
     "pt": "establishmentMeans e degreeOfEstablishment por espécie",
@@ -850,9 +860,9 @@
     "es": "degreeOfEstablishment para %s en isla oceánica"
   },
   "bor_assistant_button": {
-    "pt": "Assistente basisOfRecord",
-    "en": "basisOfRecord Assistant",
-    "es": "Asistente basisOfRecord"
+    "pt": "Abrir assistente",
+    "en": "Open assistant",
+    "es": "Abrir asistente"
   },
   "bor_assistant_title": {
     "pt": "Assistente de mapeamento basisOfRecord",
@@ -2209,6 +2219,11 @@
     "en": "%s data updated%s.",
     "es": "%s datos actualizados%s."
   },
+  "validate_names_provider_update_in_progress": {
+    "pt": "Atualização em segundo plano: %s",
+    "en": "Background update in progress: %s",
+    "es": "Actualización en segundo plano: %s"
+  },
   "validate_names_provider_notify_update_failed": {
     "pt": "Falha ao atualizar %s em background.",
     "en": "%s background update failed.",
@@ -2273,6 +2288,21 @@
     "pt": "Nenhum nome processado ainda.",
     "en": "No names processed yet.",
     "es": "Todavía no se procesó ningún nombre."
+  },
+  "validate_names_stream_pending": {
+    "pt": "%s nomes únicos esperam a validação.",
+    "en": "%s unique names wait for the validation.",
+    "es": "%s nombres únicos esperan la validación."
+  },
+  "validate_names_order_first": {
+    "pt": "1º",
+    "en": "1st",
+    "es": "1.º"
+  },
+  "validate_names_order_then": {
+    "pt": "depois",
+    "en": "then",
+    "es": "después"
   },
   "validate_names_stream_empty_filter": {
     "pt": "Nenhum item para o filtro selecionado.",
@@ -2555,9 +2585,9 @@
     "es": "Archivo privado: coordenadas reales de las especies sensibles. No publicar en el IPT/GBIF. Uso exclusivo para el control del investigador."
   },
   "sensitive_mark_label": {
-    "pt": "marcar",
-    "en": "mark",
-    "es": "marcar"
+    "pt": "marcar sensível",
+    "en": "mark sensitive",
+    "es": "marcar sensible"
   },
   "sensitive_unmark_mma_warning": {
     "pt": "Esta espécie está na lista nacional MMA. Desmarcar é uma decisão de custodiante: as coordenadas serão publicadas sem generalização.",
@@ -3142,7 +3172,7 @@
   "validate_names_review_empty_title": {
     "pt": "Tudo resolvido",
     "en": "All resolved",
-    "es": "¡Todo resuelto!"
+    "es": "Todo resuelto"
   },
   "validate_names_review_empty_message": {
     "pt": "Não há mais nomes problemáticos pendentes de revisão.",
@@ -3304,15 +3334,15 @@
     "en": "Longitude not mapped. Map decimalLongitude before validating.",
     "es": "Longitud no mapeada. Mapee decimalLongitude antes de validar."
   },
-  "validate_coords_pre_hint_prefix": {
-    "pt": "Mapeie ",
-    "en": "Map ",
-    "es": "Mapee"
+  "validate_coords_pre_hint": {
+    "pt": "Mapeie %s, %s e %s na aba Mapeamento, depois clique em Validar.",
+    "en": "Map %s, %s and %s in the Mapping tab, then click Validate.",
+    "es": "Mapee %s, %s y %s en la pestaña Mapeo y luego haga clic en Validar."
   },
-  "validate_coords_pre_hint_suffix": {
-    "pt": " na aba Mapeamento, depois clique em Validar.",
-    "en": " in the Mapping tab, then click Validate.",
-    "es": " en la pestaña Mapeo y luego haga clic en Validar."
+  "validate_coords_pre_hint_ready": {
+    "pt": "Latitude, longitude e país estão mapeados. Clique em Validar para conferir as coordenadas.",
+    "en": "Latitude, longitude and country are mapped. Click Validate to check the coordinates.",
+    "es": "Latitud, longitud y país están mapeados. Haga clic en Validar para revisar las coordenadas."
   },
   "validate_coords_failed": {
     "pt": "Falha na validação de coordenadas: %s",
@@ -4402,12 +4432,12 @@
   "success_upload": {
     "pt": "Arquivo carregado.",
     "en": "File uploaded.",
-    "es": "¡Archivo cargado correctamente!"
+    "es": "Archivo cargado."
   },
   "success_download": {
     "pt": "Download iniciado.",
     "en": "Download started.",
-    "es": "¡Descarga iniciada!"
+    "es": "Descarga iniciada."
   },
   "loading": {
     "pt": "Carregando...",
@@ -4718,6 +4748,11 @@
     "pt": "Envie a planilha para começar",
     "en": "Upload your spreadsheet to start",
     "es": "Cargue la hoja de cálculo para comenzar"
+  },
+  "upload_dropzone_replace": {
+    "pt": "Arraste outro arquivo ou clique para trocar",
+    "en": "Drop another file or click to replace it",
+    "es": "Arrastre otro archivo o haga clic para cambiarlo"
   },
   "upload_complete_label": {
     "pt": "Envio concluído",

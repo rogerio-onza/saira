@@ -874,3 +874,35 @@ testthat::test_that("a fix card of an ended report applies nothing", {
         }
     )
 })
+
+testthat::test_that("the pre-run hint asks to map a field only when one is missing", {
+    mapped_df <- data.frame(decimalLatitude = -10, decimalLongitude = -50, country = "Brasil",
+                            stringsAsFactors = FALSE)
+    status <- shiny::reactiveVal("missing_country")
+    gate_r <- shiny::reactive(list(
+        coords_status = status(), has_data = TRUE,
+        lat_col = "decimalLatitude", lon_col = "decimalLongitude", country_col = "country",
+        has_lat = TRUE, has_lon = TRUE, has_country = identical(status(), "ok")
+    ))
+
+    shiny::testServer(
+        mod_validate_coords_server,
+        args = list(
+            mapped_data_r = shiny::reactive(mapped_df),
+            lang_r = shiny::reactive("es"),
+            validation_gate_r = gate_r
+        ),
+        {
+            session$flushReact()
+            missing <- output$pre_right_hint$html
+            testthat::expect_match(missing, "<strong>decimalLongitude</strong> y <strong>country</strong>", fixed = TRUE)
+            testthat::expect_match(missing, "Mapee <strong>", fixed = TRUE)
+
+            status("ok")
+            session$flushReact()
+            ready <- output$pre_right_hint$html
+            testthat::expect_match(ready, saira:::tr("validate_coords_pre_hint_ready", "es"), fixed = TRUE)
+            testthat::expect_no_match(ready, "Mapee", fixed = TRUE)
+        }
+    )
+})

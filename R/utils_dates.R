@@ -121,7 +121,10 @@ detect_eventdate_roles <- function(col_names) {
 # date. Prefix matching is deliberately not attempted, since in Portuguese it
 # misfires on ordinary column names ("anotacoes" -> ano, "mesorregiao" -> mes).
 detect_eventdate_dmy_roles <- function(col_names) {
-    normalized_names <- normalize_for_matching(col_names)
+    # "diaColeta" splits at the case change, so "dia" is a whole word.
+    normalized_names <- normalize_for_matching(
+        gsub("([[:lower:]])([[:upper:]])", "\\1 \\2", col_names, perl = TRUE)
+    )
     used <- rep(FALSE, length(normalized_names))
 
     pick_first <- function(pattern) {
@@ -135,8 +138,8 @@ detect_eventdate_dmy_roles <- function(col_names) {
 
     list(
         day = pick_first("\\b(day|dia|dd)\\b"),
-        month = pick_first("\\b(month|mo|mes)\\b"),
-        year = pick_first("\\b(year|yr|ano)\\b")
+        month = pick_first("\\b(month|mo|mes|mm)\\b"),
+        year = pick_first("\\b(year|yr|ano|yyyy|aaaa)\\b")
     )
 }
 
@@ -313,8 +316,8 @@ parse_month_to_number <- function(x) {
     }
 
     value <- trimws(as.character(x))
-    if (grepl("^\\d{1,2}$", value)) {
-        month_num <- suppressWarnings(as.integer(value))
+    if (grepl("^\\d{1,2}(\\.0+)?$", value)) {
+        month_num <- suppressWarnings(as.integer(sub("\\..*$", "", value)))
         if (!is.na(month_num) && month_num >= 1 && month_num <= 12) {
             return(sprintf("%02d", month_num))
         }
@@ -352,9 +355,13 @@ parse_month_to_number_vec <- function(x) {
     trimmed <- trimws(values)
     blank <- is.na(values) | !nzchar(trimmed)
 
-    numeric_like <- !blank & grepl("^\\d{1,2}$", trimmed)
+    # pandas writes a month column with gaps as floats ("3.0"), like the day
+    # and year columns.
+    numeric_like <- !blank & grepl("^\\d{1,2}(\\.0+)?$", trimmed)
     month_num <- rep(NA_integer_, n)
-    month_num[numeric_like] <- suppressWarnings(as.integer(trimmed[numeric_like]))
+    month_num[numeric_like] <- suppressWarnings(
+        as.integer(sub("\\..*$", "", trimmed[numeric_like]))
+    )
     in_range <- numeric_like & !is.na(month_num) & month_num >= 1L & month_num <= 12L
     out[in_range] <- sprintf("%02d", month_num[in_range])
 
@@ -417,13 +424,11 @@ build_eventdate_interval <- function(df, cols, fallback_raw = TRUE) {
 
     result <- rep(NA_character_, nrow(df))
     if (any(has_all_parts)) {
-        result[has_all_parts] <- sprintf(
-            "%04d-%s/%04d-%s",
-            start_year[has_all_parts],
-            start_month[has_all_parts],
-            end_year[has_all_parts],
-            end_month[has_all_parts]
-        )
+        start_iso <- sprintf("%04d-%s", start_year[has_all_parts], start_month[has_all_parts])
+        end_iso <- sprintf("%04d-%s", end_year[has_all_parts], end_month[has_all_parts])
+        # The same month at both ends is one month, as in the six-column path.
+        # An end before its start stays for the Preview interval check.
+        result[has_all_parts] <- ifelse(start_iso == end_iso, start_iso, paste0(start_iso, "/", end_iso))
     }
     if (isTRUE(fallback_raw) && any(failed_rows)) {
         # Built here rather than up front: it is only ever read on this branch,

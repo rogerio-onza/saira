@@ -279,7 +279,7 @@ mount_mod_sensitive_coords_presentation <- function(
                         ns("sensitive_justification"), label = NULL,
                         value = shiny::isolate(justification_rv()),
                         placeholder = tr("sensitive_justification_placeholder", lang),
-                        rows = 1, width = "100%"
+                        rows = 2, width = "100%"
                     )
                 ),
                 shiny::div(

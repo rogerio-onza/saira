@@ -359,16 +359,18 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             is_gen <- identical(input$sensitive_mode %||% "publish", "generalize")
             prev <- NULL
             if (is_gen) {
+                # With no what-if tier the map shows the real decision, which
+                # actual_preview_r() already computed for the alerts.
                 pt <- preview_tier_rv()
-                levels <- if (!is.null(pt)) {
-                    stats::setNames(rep(pt, nrow(ov)), ov$scientificName)
+                prev <- if (is.null(pt)) {
+                    actual_preview_r()
                 } else {
-                    species_levels_r()
+                    tryCatch(
+                        generalization_map_preview(df, stats::setNames(rep(pt, nrow(ov)), ov$scientificName),
+                                                   export_sensitivity_payload()),
+                        error = function(e) NULL
+                    )
                 }
-                prev <- tryCatch(
-                    generalization_map_preview(df, levels, export_sensitivity_payload()),
-                    error = function(e) NULL
-                )
             }
             # A point takes its threat colour once its species has a decision:
             # a group answer, an exception, or "publish" for everything.
@@ -530,7 +532,9 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             if (identical(sig, map_fitted_sig_rv())) return(invisible(NULL))
             map_fitted_sig_rv(sig)
             proxy <- leaflet::leafletProxy(ns("gen_map"))
-            view <- coords_map_view(lat[sel], lon[sel])
+            # The bulk of the points frames the map: a few points out of the
+            # country must not open it at ocean scale.
+            view <- coords_map_view(lat[sel], lon[sel], trim = 0.02)
             if (identical(view$type, "point")) {
                 leaflet::setView(proxy, lng = view$lng, lat = view$lat, zoom = 8)
             } else {
