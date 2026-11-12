@@ -4,9 +4,12 @@
 \alias{run_app}
 \title{Run the Saira Shiny Application}
 \usage{
-run_app(...)
+run_app(options = list(), ...)
 }
 \arguments{
+\item{options}{Named list of Shiny app options, such as `port`. They
+replace the defaults of the same name.}
+
 \item{...}{Additional arguments passed to shinyApp}
 }
 \value{

@@ -439,6 +439,66 @@
   color: var(--text-primary);
 }
 
+/* Count chips that filter the pending list by severity (UX-03, option C). */
+.export-pending-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.export-pending-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-chip);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.export-pending-chip.is-block {
+  color: var(--badge-missing-fg);
+}
+
+.export-pending-chip.is-warn {
+  color: var(--badge-suggested-fg);
+}
+
+.export-pending-chip.is-info {
+  color: var(--badge-manual-fg);
+}
+
+.export-pending-chip:hover {
+  border-color: var(--accent);
+}
+
+.export-pending-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-accent);
+}
+
+.export-pending-chip[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+}
+
+.export-pending-chip-n {
+  font-weight: var(--weight-semibold);
+}
+
+.export-pending[data-filter="block"] .export-pending-row:not(.is-block),
+.export-pending[data-filter="warn"] .export-pending-row:not(.is-warn),
+.export-pending[data-filter="info"] .export-pending-row:not(.is-info) {
+  display: none;
+}
+
 .export-pending-row {
   display: flex;
   align-items: flex-start;
@@ -459,6 +519,23 @@
   color: var(--text-primary);
 }
 
+/* Phone width: the badge and the button share the first line, the text
+   takes the full width below them. */
+@media (max-width: 575.98px) {
+  .export-pending-row {
+    flex-wrap: wrap;
+  }
+
+  .export-pending-body {
+    flex-basis: 100%;
+    order: 1;
+  }
+
+  .export-pending-action.btn {
+    margin-left: auto;
+  }
+}
+
 .export-pending-body code {
   display: block;
   margin-top: var(--space-1);
@@ -473,6 +550,18 @@
   padding: 0 var(--space-3);
   font-size: var(--text-sm);
   white-space: nowrap;
+}
+
+/* Two choices under the text of one row (IUCN lookup without an answer). */
+.export-pending-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.export-pending-actions .ph {
+  margin-right: var(--space-1);
 }
 
 .export-sev {
@@ -604,6 +693,48 @@
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
+}
+
+/* The IUCN lookup before the download (ADR-213). */
+.export-iucn-wait {
+  color: var(--text-primary);
+}
+
+.export-iucn-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* The choice when GBIF stops answering. It goes to a new line in a narrow
+   bar, so the text and the buttons are not cut. */
+.export-download-status:has(.export-iucn-stalled) {
+  flex-wrap: wrap;
+  row-gap: var(--space-2);
+}
+
+.export-iucn-stalled {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.export-iucn-stalled-text {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* On a phone the IUCN text gets the full width, and the download button goes
+   under it. Next to the button, the text broke after each word. */
+@media (max-width: 575.98px) {
+  .export-download-bar:has(.export-iucn-wait) {
+    flex-wrap: wrap;
+  }
+
+  .export-download-status:has(.export-iucn-wait) {
+    flex-basis: 100%;
+  }
 }
 
 .export-zip-name {

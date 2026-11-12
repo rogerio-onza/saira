@@ -17,8 +17,11 @@ NULL
 #' @return A reactive with legacy attributes by default, or a named list of
 #'   reactives when return_contract is \code{"list"}.
 #' @param return_contract Return a legacy reactive (default) or a named list of reactives.
+#' @param names_worker Worker that sends the GBIF requests of a names run from
+#'   a separate R process. \code{NULL} sends them from the app session.
 #' @export
-mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL, reset_signal_r = NULL, return_contract = c("legacy", "list")) {
+mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate_r = NULL, reset_signal_r = NULL, return_contract = c("legacy", "list"),
+                                      names_worker = names_worker_new()) {
     shiny::moduleServer(id, function(input, output, session) {
         ns <- session$ns
 
@@ -985,6 +988,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                     remove_authors = input$remove_authors %||% TRUE,
                     ignore_qualifiers = input$ignore_qualifiers %||% TRUE
                 ))
+                if (!is.null(names_worker)) names_worker_warm(names_worker)
                 run_card$last_sent <- NULL
                 rv$running <- TRUE
                 rv$starting <- FALSE
@@ -995,6 +999,14 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             },
             ignoreInit = TRUE
         )
+
+        # The GBIF requests of a run go to the worker (PERF-02).
+        if (!is.null(names_worker)) {
+            session$onSessionEnded(function() names_worker_stop(names_worker))
+        }
+        cancel_names_batch <- function() {
+            if (!is.null(names_worker)) names_worker_cancel(names_worker)
+        }
 
         shiny::observe({
             # rv$run_state is read under isolate(): the tick writes it, and a
@@ -1007,7 +1019,18 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             }
             shiny::invalidateLater(60, session)
 
-            state <- tryCatch(next_taxadb_run_step(state), error = function(e) {
+            adapters <- names_provider_adapters()
+            batch <- if (!is.null(names_worker)) next_colxr_batch(state)
+            misses <- if (length(batch) > 0L) colxr_unmemoized(batch) else character(0)
+            if (length(misses) > 0L) {
+                fetch <- names_worker_fetch(names_worker, state$run_id, misses)
+                if (is.null(fetch)) {
+                    return(invisible(NULL))
+                }
+                adapters <- names_provider_adapters(fetch = fetch)
+            }
+
+            state <- tryCatch(next_taxadb_run_step(state, adapters), error = function(e) {
                 state$error_message <- as.character(e$message)
                 state$phase <- "failed"
                 state$completed <- TRUE
@@ -1029,6 +1052,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             run_card$fade_report <- TRUE
             rv$running <- FALSE
             rv$starting <- FALSE
+            cancel_names_batch()
 
             if (identical(state$phase, "failed")) {
                 validated_input_rv(NULL)
@@ -1140,6 +1164,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 # Without run_state the tick of a run in progress stops.
                 rv$run_state <- NULL
                 rv$running <- FALSE
+                cancel_names_batch()
                 rv$last_run_status <- "stale"
                 rv$last_error <- NA_character_
                 shiny::showNotification(tr("validate_names_stale", lang_r()), type = "warning", id = session$ns("names_stale"))
@@ -1169,8 +1194,29 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
                 rv$starting <- FALSE
                 rv$running <- FALSE
                 rv$start_requested <- FALSE
+                cancel_names_batch()
             }, ignoreInit = TRUE)
         }
+
+        # Shown before the first run: the distinct names the run will read.
+        # The gate carries the raw names, so the processed data stays unread.
+        pending_names_n <- shiny::reactive({
+            names_vec <- if (!is.null(validation_gate_r) && shiny::is.reactive(validation_gate_r)) {
+                validation_gate_r()$scientific_names
+            } else {
+                df <- mapped_data_r()
+                if (is.data.frame(df) && "scientificName" %in% names(df)) df$scientificName
+            }
+            if (is.null(names_vec)) return(NA_integer_)
+            tryCatch(
+                names_pending_count(
+                    names_vec,
+                    remove_authors = isTRUE(input$remove_authors %||% TRUE),
+                    ignore_qualifiers = isTRUE(input$ignore_qualifiers %||% TRUE)
+                ),
+                error = function(e) NA_integer_
+            )
+        })
 
         presentation <- mount_mod_validate_names_presentation(
             active_stream_filter = active_stream_filter,
@@ -1182,6 +1228,7 @@ mod_validate_names_server <- function(id, mapped_data_r, lang_r, validation_gate
             lang_r = lang_r,
             ns = ns,
             output = output,
+            pending_names_n = pending_names_n,
             problem_status_values = problem_status_values,
             provider_button_id = provider_button_id,
             provider_catalog = provider_catalog,

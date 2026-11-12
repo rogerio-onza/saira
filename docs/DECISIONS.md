@@ -3731,3 +3731,42 @@ Formato: ADR leve (Architecture Decision Record).
   - A incerteza publicada continua a somar a leitura maior (4551 m), que e o limite seguro.
   - Na Pre-visualizacao, `uncertainty_decimal_dot()` decide pela coluna. Se outro valor tem ponto com um numero de decimais diferente de tres (`12.3`, `7.25`), o ponto e decimal: `4.551` e valido, e `aprox. 4.551 m` sugere `4.551`. Sem esse sinal, a sugestao continua `4551`.
 - **Consequencias**: uma linha com `4.551` sai com a mesma grade das linhas vizinhas. Um `4551` sem ponto continua a contar como generalizacao anterior. A generalizacao nao usa o sinal da coluna, porque a leitura ambigua protege mais.
+
+## ADR-211: Zero/igual vence mar no diagnostico de Coordenadas
+
+- **Data**: 2026-11-10
+- **Status**: Aceito. Muda a ordem da ADR-034.
+- **Contexto**: auditoria de codigo e UX (COORD-01). Na ordem da ADR-034, `sea` vencia `zero_equal`. O ponto 0/0 esta sempre no mar, entao a pilula Zero/Igual nunca contava o caso que o nome anuncia, e a linha dizia "Em mar aberto".
+- **Decisao**: a ordem fica `validity`, `country`, `zero_equal`, `sea`, `reference`. Zero ou latitude igual a longitude e a causa, e o mar e a consequencia.
+- **Consequencias**: uma linha com 0/0, ou com latitude igual a longitude no mar, sai como Zero/Igual. As outras linhas no mar continuam como `sea`.
+## ADR-212: Consultas GBIF da validacao de nomes num processo callr
+
+- **Data**: 2026-11-10
+- **Status**: Aceito.
+- **Contexto**: auditoria pre-v1 (PERF-02). `req_perform_parallel()` espera todas as respostas antes de voltar. Um lote de nomes com a API GBIF lenta segurava a sessao Shiny ate o fim do lote.
+- **Decisao**:
+  - Uma `callr::r_session` por sessao Shiny envia os pedidos GBIF de cada lote. A rodada inicia o processo no clique em Validar, e o processo carrega o saira enquanto os provedores BR respondem.
+  - O processo recebe so os nomes. O app guarda o memo COL XR, o parse e o estado da rodada. Depois do lote, o passo roda com `gbif_offline_fetch()`: um nome sem resposta nao gera um segundo pedido sincrono.
+  - Um lote pode esperar 60 s, e a rodada 300 s no total, contados no relogio desde o primeiro lote, com a carga do processo. O ultimo lote espera so o que resta do total. Depois disso, os nomes que faltam ficam sem resposta, e o botao Tentar de novo abre uma rodada nova.
+  - O objeto do worker e o unico dono do lote, do `run_id` e do orcamento (`names_worker_fetch()`). Uma resposta de um `run_id` antigo nao entra na rodada nova: o app encerra o processo e abre outro. Uma resposta que nao cobre o lote atual vai para o memo, e o tick seguinte envia o lote atual.
+  - Uma rodada que fica obsoleta, um reset ou o fim da rodada encerram o lote em curso (`names_worker_cancel()`).
+  - Uma resposta que o parser nao le e erro do provedor, como no caminho sincrono.
+  - Se o processo nao inicia, os nomes ficam sem resposta. O app nao envia os pedidos ele mesmo, porque nao consegue parar essa espera.
+- **Consequencias**: o R da sessao fica livre durante a espera da rede. A busca aproximada dos provedores BR continua no processo principal, porque e CPU, nao rede. A exportacao com IUCN reusa o memo, e consulta o resto antes do download (ADR-213).
+
+## ADR-213: Categoria IUCN consultada antes do download do pacote
+
+- **Data**: 2026-11-11
+- **Status**: Aceito.
+- **Contexto**: verificacao final das auditorias. Com IUCN marcado, o `downloadHandler` consultava a API GBIF no processo principal para cada nome fora do memo. Uma API lenta segurava a sessao durante o arquivo, e um nome sem resposta saia sem a categoria, sem aviso.
+- **Decisao**:
+  - A aba Exportar consulta a categoria IUCN antes do download (`mount_export_iucn()`), com um worker de nomes proprio (ADR-212). A consulta envia lotes de 20 nomes, so os nomes corrigidos distintos que faltam no memo, e depois os nomes aceitos dos sinonimos sem categoria.
+  - A consulta comeca so com a aba Exportar visivel, porque o GBIF vem marcado e o upload nao deve gerar pedidos. Uma consulta em curso continua se o usuario sai da aba.
+  - A chave da consulta sao os nomes corrigidos e a opcao IUCN. Uma chave nova abre um `run_id` novo, e o worker descarta o lote da chave antiga.
+  - Um nome sem resposta vai uma vez por rodada. O limite de espera e 120 s (`saira.export_iucn_budget_s`), so para a consulta sempre terminar.
+  - Durante a consulta, a barra mostra a contagem e o botao fica inerte ("Aguarde a IUCN"). Sem resposta nova do GBIF por 15 s (`saira.export_iucn_stall_s`), a barra oferece Tentar de novo e Exportar sem a IUCN que falta. Um GBIF lento que ainda responde nao mostra a escolha, para o arquivo sair completo. Sem rede, o pedido falha logo e a consulta termina em segundos.
+  - Com nomes sem resposta no fim, uma pendencia que bloqueia oferece a mesma escolha. Depois da escolha, a pendencia vira informacao, com Desfazer.
+  - Exportar sem a IUCN que falta para o worker e monta o snapshot com as respostas do memo (`iucn_lookup_finish()`). Os nomes com resposta mantem a categoria, e so os outros saem sem ela.
+  - O download passa o snapshot `iucn_by_name` para `apply_conservation_status()`, que nao envia pedido. Sem snapshot, o pacote sai sem a chave IUCN.
+- **Consequencias**: o download nao espera a rede. A categoria MMA e o resto do pacote nao dependem do GBIF. O arquivo privado de coordenadas nao espera a consulta. Uma rodada de nomes anterior deixa o memo pronto, e a consulta repete nenhum pedido.
+

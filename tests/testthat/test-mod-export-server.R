@@ -131,6 +131,36 @@ testthat::test_that("mod_export_server blocks the download and offers a fix CTA 
     )
 })
 
+testthat::test_that("the pending list sorts by severity, counts each one and keeps both mapping buttons", {
+    # A missing required term and a blank basisOfRecord at once used to share
+    # one button id, so the basisOfRecord row lost its button (UX-03).
+    df <- data.frame(
+        scientificName = c("Aus bus", "Cus dus"),
+        basisOfRecord = c("", "HumanObservation"),
+        stringsAsFactors = FALSE
+    )
+    shiny::testServer(
+        mod_export_server,
+        args = list(mapped_data_r = shiny::reactive(df), lang_r = shiny::reactive("en")),
+        {
+            session$flushReact()
+            s <- summary_r()
+            testthat::expect_gt(length(s$missing_required), 0L)
+            testthat::expect_gt(s$bor_blank_count, 0L)
+            html <- paste(output$summary$html, collapse = " ")
+            testthat::expect_match(html, "go_fix_terms", fixed = TRUE)
+            testthat::expect_match(html, "go_fix_bor", fixed = TRUE)
+
+            sev <- regmatches(html, gregexpr('data-sev="[a-z]+"', html))[[1]]
+            sev <- sub('data-sev="([a-z]+)"', "\\1", sev)
+            testthat::expect_identical(sev, sev[order(match(sev, c("block", "warn", "info")))])
+            testthat::expect_match(html, 'data-filter="all"', fixed = TRUE)
+            testthat::expect_match(html, sprintf("Blocking\\s*<span class=\"export-pending-chip-n\">%d</span>",
+                                                 sum(sev == "block")))
+        }
+    )
+})
+
 testthat::test_that("mod_export_server refuses a direct download while the export is blocked", {
     incomplete <- data.frame(
         scientificName = c("Aus bus", "Cus dus"),
@@ -174,7 +204,7 @@ testthat::test_that("mod_export_server blocks a blank name and a formula in an u
             html <- paste(output$summary$html, collapse = " ")
             testthat::expect_match(html, "scientificName is empty in 1 record", fixed = TRUE)
             testthat::expect_match(html, "1 cell(s) in unmapped columns", fixed = TRUE)
-            testthat::expect_match(html, "go_map_unmapped", fixed = TRUE)
+            testthat::expect_match(html, "go_map_formula_cells", fixed = TRUE)
             zip_path <- output$download_real
             testthat::expect_identical(zip::zip_list(zip_path)$filename, "export_error.csv")
         }
@@ -327,4 +357,67 @@ testthat::test_that("every export source that fails blocks the summary and the d
             testthat::expect_identical(zip::zip_list(zip_path)$filename, "export_error.csv", info = source)
         })
     }
+})
+
+testthat::test_that("mod_export_server waits for the IUCN lookup and its download sends no request (ADR-213)", {
+    saira:::colxr_match_cache$reset()
+    withr::defer(saira:::colxr_match_cache$reset())
+    df <- complete_df(3)
+    df$scientificName <- c("Panthera onca", "Caesalpinia echinata", "Down genus")
+    conservation <- shiny::reactive(list(include_mma = FALSE, include_iucn = TRUE))
+    occurrence_dynprops <- function(zip_path) {
+        dir <- tempfile()
+        zip::unzip(zip_path, exdir = dir)
+        utils::read.csv(file.path(dir, "occurrence.txt"), colClasses = "character")$dynamicProperties
+    }
+    html_of <- function(x) as.character(x$html)
+
+    # A batch in flight: the button waits and the hidden link gives no bundle.
+    testthat::local_mocked_bindings(names_worker_fetch = function(...) NULL, .package = "saira")
+    shiny::testServer(
+        mod_export_server,
+        args = list(mapped_data_r = shiny::reactive(df), lang_r = shiny::reactive("pt"),
+                    conservation_payload_r = conservation),
+        {
+            session$flushReact()
+            testthat::expect_match(html_of(output$download_btn_container), "Aguarde a IUCN", fixed = TRUE)
+            testthat::expect_match(html_of(output$download_status), "0 de 3 nomes", fixed = TRUE)
+            testthat::expect_identical(zip::zip_list(output$download_real)$filename, "export_error.csv")
+        }
+    )
+
+    # GBIF answers two names and not the third.
+    fixture <- function(name) {
+        file <- testthat::test_path("fixtures", "colxr", paste0(gsub(" ", "_", name), ".json"))
+        if (file.exists(file)) jsonlite::read_json(file)
+    }
+    testthat::local_mocked_bindings(
+        names_worker_fetch = function(worker, run_id, misses, ...) {
+            function(requests) lapply(requests, function(r) fixture(r$query$scientificName))
+        },
+        gbif_api_get_many = function(requests) stop("no request expected"),
+        .package = "saira"
+    )
+    shiny::testServer(
+        mod_export_server,
+        args = list(mapped_data_r = shiny::reactive(df), lang_r = shiny::reactive("pt"),
+                    conservation_payload_r = conservation),
+        {
+            for (i in 1:10) session$elapse(100)
+            summary_html <- html_of(output$summary)
+            testthat::expect_match(summary_html, "Exportar sem a IUCN que falta", fixed = TRUE)
+            testthat::expect_match(summary_html, "<strong>1 de 3</strong>", fixed = TRUE)
+            testthat::expect_match(html_of(output$download_btn_container), "Resolva as pend", fixed = TRUE)
+            testthat::expect_identical(zip::zip_list(output$download_real)$filename, "export_error.csv")
+
+            session$setInputs(go_iucn_skip = 1)
+            testthat::expect_match(html_of(output$summary), "go_iucn_undo", fixed = TRUE)
+            # The skip keeps the categories of the names that GBIF answered.
+            testthat::expect_match(html_of(output$summary), "Os outros 2 saem com a resposta do GBIF.", fixed = TRUE)
+            testthat::expect_identical(
+                occurrence_dynprops(output$download_real),
+                c("{\"iucnRedListCategory\":\"NT\"}", "{\"iucnRedListCategory\":\"EN\"}", "")
+            )
+        }
+    )
 })
