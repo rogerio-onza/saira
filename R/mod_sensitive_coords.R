@@ -532,7 +532,9 @@ mod_sensitive_coords_server <- function(id, data_r, lang_r,
             if (identical(sig, map_fitted_sig_rv())) return(invisible(NULL))
             map_fitted_sig_rv(sig)
             proxy <- leaflet::leafletProxy(ns("gen_map"))
-            view <- coords_map_view(lat[sel], lon[sel])
+            # The bulk of the points frames the map: a few points out of the
+            # country must not open it at ocean scale.
+            view <- coords_map_view(lat[sel], lon[sel], trim = 0.02)
             if (identical(view$type, "point")) {
                 leaflet::setView(proxy, lng = view$lng, lat = view$lat, zoom = 8)
             } else {

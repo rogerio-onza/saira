@@ -10110,9 +10110,24 @@ a.help-chip:hover {
     margin: 0;
 }
 
+/* A chosen species reads as a name, in italic serif. The prompt is UI
+   text, in the small sans of the other fields. */
 .sp-exc-matrix .selectize-input {
     font-family: var(--font-serif);
+    font-size: var(--text-sm);
     font-style: italic;
+}
+
+.sp-exc-matrix .selectize-input > input {
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-style: normal;
+}
+
+.sc-confirm-row .sp-justification textarea,
+.sc-confirm-row .sp-review-date input {
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
 }
 
 /* The prompt and a long name stop before the caret. */
