@@ -143,6 +143,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **generalization:** Generalize a protected point in free text also when its two axes use different forms, ADR-204 ([#330](https://github.com/rogerio-onza/saira/pull/330))
 - **names:** Stop asking GBIF again after three busy answers, so Names and the Export IUCN lookup cannot hang ([#331](https://github.com/rogerio-onza/saira/pull/331))
 - **preview:** Give the value as typed the free width of the Problems list, so short values are not cut ([#333](https://github.com/rogerio-onza/saira/pull/333))
+- **navbar:** Keep the Preview step name level with the other steps when it shows a count or a check ([#334](https://github.com/rogerio-onza/saira/pull/334))
 - **preview:** Accept a GPS accuracy as `4.551` when the column writes decimals with a dot, ADR-210 ([#309](https://github.com/rogerio-onza/saira/pull/309))
 - **generalization:** Apply the category grid to a sensitive record with a GPS accuracy as `4.551`, ADR-210 ([#307](https://github.com/rogerio-onza/saira/pull/307))
 - **preview:** Break a long column name between its words in the record panel, so it never covers its value ([#308](https://github.com/rogerio-onza/saira/pull/308))
