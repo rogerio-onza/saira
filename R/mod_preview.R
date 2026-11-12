@@ -674,6 +674,7 @@ mod_preview_server <- function(id, mapped_data_r, lang_r, full_data_r = mapped_d
                         list(targets = 3L, render = cut_js, className = "pf-mono pf-col-value"),
                         list(targets = 4L, render = fix_js, className = "pf-fix-cell pf-col-fix"),
                         list(targets = 1L, className = "pf-mono pf-col-term"),
+                        list(targets = 2L, className = "pf-col-problem"),
                         list(targets = c(6L, 7L), visible = FALSE),
                         list(targets = 5L, orderable = FALSE, className = "pf-col-action"),
                         list(targets = 0L, className = "pf-mono pf-col-row")
