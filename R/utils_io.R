@@ -981,6 +981,17 @@ date_text_without_time <- function(x) {
     vapply(split(flat, by_value), paste, character(1), collapse = "/", USE.NAMES = FALSE)
 }
 
+#' User text for the date-year warning
+#'
+#' @param issues Result of `date_year_issues()`.
+#' @param lang UI language code.
+#' @return Character scalar.
+#' @noRd
+date_year_warning_text <- function(issues, lang) {
+  sprintf(tr("notif_date_year_warning", lang),
+          issues$count, issues$min_year, issues$max_year)
+}
+
 #' Flag dates whose year is outside the plausible range
 #'
 #' A typo in a spreadsheet ("2098" for "2008") survives every format conversion:

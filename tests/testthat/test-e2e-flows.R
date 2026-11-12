@@ -86,9 +86,9 @@ testthat::test_that("E2E: Upload CSV, map fields, navigate to Preview", {
     app$upload_file(`upload-file` = csv_path)
     app$wait_for_idle(timeout = 10000)
 
-    # Verify upload stats appeared
-    upload_html <- app$get_html("#upload-stats")
-    testthat::expect_true(nchar(upload_html) > 0L)
+    # Verify the drop area names the uploaded file
+    upload_html <- app$get_html("#upload-dropzone_hint_text")
+    testthat::expect_true(grepl(basename(csv_path), upload_html, fixed = TRUE))
 })
 
 # --- Flow 2: Wiki search and filter ---
