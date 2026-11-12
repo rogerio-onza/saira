@@ -757,6 +757,15 @@ empty_map_meta <- function(terms) {
     stats::setNames(lapply(seq_along(terms), function(i) default_meta()), terms)
 }
 
+# The selections and metas with an empty entry for each term that has none.
+fill_map_terms <- function(values, meta, terms) {
+    values <- as.list(values)
+    meta <- as.list(meta)
+    values[setdiff(terms, names(values))] <- list("")
+    meta[setdiff(terms, names(meta))] <- list(default_meta())
+    list(values = values, meta = meta)
+}
+
 build_manual_meta <- function(previous_meta, has_value) {
     previous_score <- if (is.null(previous_meta) || is.null(previous_meta$score)) {
         NA_real_

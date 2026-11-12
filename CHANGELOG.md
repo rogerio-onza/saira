@@ -47,6 +47,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **names:** Show the query order as Flora BR and Fauna BR first, then GBIF ([#323](https://github.com/rogerio-onza/saira/pull/323))
 - **names:** Show dashes and the count of names to read before the first run, and label the mark as sensitive ([#323](https://github.com/rogerio-onza/saira/pull/323))
 - **names:** Send the GBIF requests of a names run from a separate R process, so the app stays responsive, ADR-212 ([#328](https://github.com/rogerio-onza/saira/pull/328))
+- **mapping:** Send every selection and meta write of the Mapping step through one command interface ([#329](https://github.com/rogerio-onza/saira/pull/329))
 - **preview:** Show the record beside the Problems list on wide screens, and mark the column behind the problem, ADR-195 ([#278](https://github.com/rogerio-onza/saira/pull/278))
 - **build:** Build the Darwin Core catalogs from the TDWG list and one base terms file, in one script, ADR-189
 - **site:** Link the home photos, species, pins and cards by key, and stop the build when they disagree, ADR-189
@@ -136,6 +137,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **ui:** Set Wiki definitions in the body font, show the Help issue button as outline, and keep the Export number labels on one line ([#326](https://github.com/rogerio-onza/saira/pull/326))
 - **ui:** Start the Mapping sidebar closed below 1100 px and keep the Export pending text readable on a phone ([#327](https://github.com/rogerio-onza/saira/pull/327))
 - **export:** Give each pending row its own button id, so every "Open" button works ([#327](https://github.com/rogerio-onza/saira/pull/327))
+- **mapping:** Show a card as edited when the user changes a column that auto-map chose ([#329](https://github.com/rogerio-onza/saira/pull/329))
 - **preview:** Accept a GPS accuracy as `4.551` when the column writes decimals with a dot, ADR-210 ([#309](https://github.com/rogerio-onza/saira/pull/309))
 - **generalization:** Apply the category grid to a sensitive record with a GPS accuracy as `4.551`, ADR-210 ([#307](https://github.com/rogerio-onza/saira/pull/307))
 - **preview:** Break a long column name between its words in the record panel, so it never covers its value ([#308](https://github.com/rogerio-onza/saira/pull/308))
