@@ -197,12 +197,23 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                 session$clientData[[paste0("output_", ns("download_status"), "_hidden")]]
             ))
         )
-        # The Pending card changes only when the lookup ends or the choice
-        # changes, not with each batch: a reactiveVal skips an equal value.
+        # The Pending card changes only when the lookup starts, stalls or ends,
+        # not with each batch: a reactiveVal skips an equal value. The count
+        # in the pending row is its own output for the same reason.
         iucn_row <- shiny::reactiveVal(NULL)
         shiny::observe({
             i <- iucn_r()
-            iucn_row(if (i$status %in% c("failed", "skipped")) i[c("status", "unanswered", "total")])
+            iucn_row(switch(i$status,
+                pending = list(status = "pending", stalled = isTRUE(i$stalled)),
+                failed = , skipped = i[c("status", "unanswered", "total")],
+                NULL
+            ))
+        })
+        output$iucn_pending_count <- shiny::renderText({
+            i <- iucn_r()
+            shiny::req(identical(i$status, "pending"))
+            lang <- lang_r()
+            sprintf(tr("export_iucn_wait_count", lang), format_count(i$done, lang), format_count(i$total, lang))
         })
 
         # The download flow (validation -> confirmation -> animated modal ->
@@ -434,7 +445,19 @@ mod_export_server <- function(id, mapped_data_r, lang_r,
                                                  export_source_steps(s$failed_sources, lang))))
             }
             iucn <- iucn_row()
-            if (identical(iucn$status, "failed")) {
+            if (identical(iucn$status, "pending")) {
+                stalled <- isTRUE(iucn$stalled)
+                text <- tr(if (stalled) "export_iucn_pending_stalled" else "export_iucn_pending", lang)
+                # The first count is in the HTML: the output fills in only
+                # after the browser binds it, which left an empty gap.
+                now <- shiny::isolate(iucn_r())
+                count <- shiny::span(
+                    id = ns("iucn_pending_count"), class = "shiny-text-output",
+                    sprintf(tr("export_iucn_wait_count", lang), fmt_n(now$done), fmt_n(now$total))
+                )
+                add(pending_row(if (stalled) "warn" else "info",
+                                shiny::HTML(sprintf(htmltools::htmlEscape(text), as.character(count)))))
+            } else if (identical(iucn$status, "failed")) {
                 count <- sprintf(tr("export_iucn_count", lang), fmt_n(iucn$unanswered), fmt_n(iucn$total))
                 action <- function(id, label) {
                     shiny::actionButton(ns(id), label, class = "btn btn-outline-secondary btn-sm export-pending-action")

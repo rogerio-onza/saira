@@ -382,9 +382,27 @@ testthat::test_that("mod_export_server waits for the IUCN lookup and its downloa
             session$flushReact()
             testthat::expect_match(html_of(output$download_btn_container), "Aguarde a IUCN", fixed = TRUE)
             testthat::expect_match(html_of(output$download_status), "0 de 3 nomes", fixed = TRUE)
+            # The Pending card says the lookup runs, not that the package is ready.
+            summary_html <- html_of(output$summary)
+            testthat::expect_match(summary_html, "Consulta IUCN em andamento", fixed = TRUE)
+            testthat::expect_no_match(summary_html, "export-ready", fixed = TRUE)
+            testthat::expect_identical(output$iucn_pending_count, "0 de 3 nomes")
             testthat::expect_identical(zip::zip_list(output$download_real)$filename, "export_error.csv")
         }
     )
+
+    # No new answer: the row turns into a warning that points to the bar.
+    withr::with_options(list(saira.export_iucn_stall_s = 0), shiny::testServer(
+        mod_export_server,
+        args = list(mapped_data_r = shiny::reactive(df), lang_r = shiny::reactive("en"),
+                    conservation_payload_r = conservation),
+        {
+            for (i in 1:3) session$elapse(100)
+            summary_html <- html_of(output$summary)
+            testthat::expect_match(summary_html, "GBIF does not answer", fixed = TRUE)
+            testthat::expect_match(summary_html, "is-warn", fixed = TRUE)
+        }
+    ))
 
     # GBIF answers two names and not the third.
     fixture <- function(name) {
