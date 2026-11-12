@@ -351,7 +351,8 @@ testthat::test_that("parse_month_to_number_vec matches the scalar helper element
     # "Março" guards the iconv transliteration inside normalize_for_matching().
     values <- c(
         "8", "08", "0", "13", "Aug", "August", "Ago", "Agosto",
-        "Mar\u00E7o", "  jun  ", "foo", "", NA, "12", "SET", "sept"
+        "Mar\u00E7o", "  jun  ", "foo", "", NA, "12", "SET", "sept",
+        "3.0", "12.00", "3.5", "13.0"
     )
 
     expected <- vapply(
@@ -1162,6 +1163,14 @@ testthat::test_that("build_eventdate_from_parts fails a day with a fraction", {
     out <- build_eventdate_from_parts(parts, names(parts))
     testthat::expect_identical(out$failed_rows, c(TRUE, TRUE, TRUE, FALSE, FALSE))
     testthat::expect_identical(out$values[4:5], c("2024-02-29", "2024-02-29"))
+})
+
+testthat::test_that("build_eventdate_from_parts reads the floats that pandas writes", {
+    parts <- data.frame(day = "15.0", month = c("3.0", "3.5"), year = "2024.0",
+                        stringsAsFactors = FALSE)
+    out <- build_eventdate_from_parts(parts, names(parts))
+    testthat::expect_identical(out$values[[1]], "2024-03-15")
+    testthat::expect_identical(out$failed_rows, c(FALSE, TRUE))
 })
 
 testthat::test_that("build_term_value: basisOfRecord applies mapping", {
