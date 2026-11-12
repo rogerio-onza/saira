@@ -7,6 +7,8 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-12
+
 ### Added
 - **eventDate:** Convert month names, roman months, compact dates, 12-hour times, UTC and local or year intervals to ISO ([#319](https://github.com/rogerio-onza/saira/pull/319))
 - **eventDate:** Order the two ends of a day/month interval with the vote of the whole column ([#319](https://github.com/rogerio-onza/saira/pull/319))
@@ -41,6 +43,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **mapping:** Give a translocated native a separate establishmentMeans answer for its records on an oceanic island, with a one-click "introduced" suggestion, ADR-143 ([#163](https://github.com/rogerio-onza/saira/pull/163))
 
 ### Changed
+- **names:** Update the bundled Flora e Funga do Brasil to 393.433 and Fauna do Brasil to 1.58
 - **export:** List blockers first in the pending card, with count chips that filter by severity ([#321](https://github.com/rogerio-onza/saira/pull/321))
 - **upload:** Show the file name in the drop area, hide the finished progress bar and remove the file stats boxes ([#322](https://github.com/rogerio-onza/saira/pull/322))
 - **mapping:** Join the auto-map summary and the date-year warning in one notice, and shorten the assistant buttons ([#322](https://github.com/rogerio-onza/saira/pull/322))
