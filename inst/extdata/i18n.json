@@ -284,6 +284,31 @@
     "en": "To review",
     "es": "Pendientes"
   },
+  "export_pending_filter_label": {
+    "pt": "Filtrar pendências",
+    "en": "Filter the items to review",
+    "es": "Filtrar pendientes"
+  },
+  "export_pending_filter_all": {
+    "pt": "Todas",
+    "en": "All",
+    "es": "Todos"
+  },
+  "export_pending_filter_block": {
+    "pt": "Bloqueiam",
+    "en": "Blocking",
+    "es": "Bloquean"
+  },
+  "export_pending_filter_warn": {
+    "pt": "Avisos",
+    "en": "Warnings",
+    "es": "Avisos"
+  },
+  "export_pending_filter_info": {
+    "pt": "Informativos",
+    "en": "Info",
+    "es": "Informativos"
+  },
   "export_sev_block": {
     "pt": "Bloqueia",
     "en": "Blocks",
@@ -2139,6 +2164,11 @@
     "en": "%s data updated%s.",
     "es": "%s datos actualizados%s."
   },
+  "validate_names_provider_update_in_progress": {
+    "pt": "Atualização em segundo plano: %s",
+    "en": "Background update in progress: %s",
+    "es": "Actualización en segundo plano: %s"
+  },
   "validate_names_provider_notify_update_failed": {
     "pt": "Falha ao atualizar %s em background.",
     "en": "%s background update failed.",
@@ -3072,7 +3102,7 @@
   "validate_names_review_empty_title": {
     "pt": "Tudo resolvido",
     "en": "All resolved",
-    "es": "¡Todo resuelto!"
+    "es": "Todo resuelto"
   },
   "validate_names_review_empty_message": {
     "pt": "Não há mais nomes problemáticos pendentes de revisão.",
@@ -3234,15 +3264,15 @@
     "en": "Longitude not mapped. Map decimalLongitude before validating.",
     "es": "Longitud no mapeada. Mapee decimalLongitude antes de validar."
   },
-  "validate_coords_pre_hint_prefix": {
-    "pt": "Mapeie ",
-    "en": "Map ",
-    "es": "Mapee"
+  "validate_coords_pre_hint": {
+    "pt": "Mapeie %s, %s e %s na aba Mapeamento, depois clique em Validar.",
+    "en": "Map %s, %s and %s in the Mapping tab, then click Validate.",
+    "es": "Mapee %s, %s y %s en la pestaña Mapeo y luego haga clic en Validar."
   },
-  "validate_coords_pre_hint_suffix": {
-    "pt": " na aba Mapeamento, depois clique em Validar.",
-    "en": " in the Mapping tab, then click Validate.",
-    "es": " en la pestaña Mapeo y luego haga clic en Validar."
+  "validate_coords_pre_hint_ready": {
+    "pt": "Latitude, longitude e país estão mapeados. Clique em Validar para conferir as coordenadas.",
+    "en": "Latitude, longitude and country are mapped. Click Validate to check the coordinates.",
+    "es": "Latitud, longitud y país están mapeados. Haga clic en Validar para revisar las coordenadas."
   },
   "validate_coords_failed": {
     "pt": "Falha na validação de coordenadas: %s",
@@ -4332,12 +4362,12 @@
   "success_upload": {
     "pt": "Arquivo carregado.",
     "en": "File uploaded.",
-    "es": "¡Archivo cargado correctamente!"
+    "es": "Archivo cargado."
   },
   "success_download": {
     "pt": "Download iniciado.",
     "en": "Download started.",
-    "es": "¡Descarga iniciada!"
+    "es": "Descarga iniciada."
   },
   "loading": {
     "pt": "Carregando...",
