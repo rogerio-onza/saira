@@ -424,13 +424,11 @@ build_eventdate_interval <- function(df, cols, fallback_raw = TRUE) {
 
     result <- rep(NA_character_, nrow(df))
     if (any(has_all_parts)) {
-        result[has_all_parts] <- sprintf(
-            "%04d-%s/%04d-%s",
-            start_year[has_all_parts],
-            start_month[has_all_parts],
-            end_year[has_all_parts],
-            end_month[has_all_parts]
-        )
+        start_iso <- sprintf("%04d-%s", start_year[has_all_parts], start_month[has_all_parts])
+        end_iso <- sprintf("%04d-%s", end_year[has_all_parts], end_month[has_all_parts])
+        # The same month at both ends is one month, as in the six-column path.
+        # An end before its start stays for the Preview interval check.
+        result[has_all_parts] <- ifelse(start_iso == end_iso, start_iso, paste0(start_iso, "/", end_iso))
     }
     if (isTRUE(fallback_raw) && any(failed_rows)) {
         # Built here rather than up front: it is only ever read on this branch,
