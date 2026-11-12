@@ -14,6 +14,51 @@
     "en": "You are running Saíra %s, but %s is installed. Restart R (the session) to load the update.",
     "es": "Está ejecutando Saíra %s, pero la versión instalada es %s. Reinicie R (la sesión) para cargar la actualización."
   },
+  "update_badge_aria": {
+    "pt": "%s. Nova versão disponível: v%s",
+    "en": "%s. New version available: v%s",
+    "es": "%s. Nueva versión disponible: v%s"
+  },
+  "update_available_title": {
+    "pt": "Saíra v%s disponível",
+    "en": "Saíra v%s is available",
+    "es": "Saíra v%s disponible"
+  },
+  "update_available_running": {
+    "pt": "Você usa a %s.",
+    "en": "You are using %s.",
+    "es": "Usted usa la %s."
+  },
+  "update_download_installer": {
+    "pt": "Baixar instalador",
+    "en": "Download the installer",
+    "es": "Descargar el instalador"
+  },
+  "update_see_notes": {
+    "pt": "Ver novidades",
+    "en": "See what is new",
+    "es": "Ver novedades"
+  },
+  "update_r_hint": {
+    "pt": "Para atualizar, rode no R e reinicie a sessão:",
+    "en": "To update, run this in R and restart the session:",
+    "es": "Para actualizar, ejecute esto en R y reinicie la sesión:"
+  },
+  "update_copy": {
+    "pt": "Copiar",
+    "en": "Copy",
+    "es": "Copiar"
+  },
+  "update_copied": {
+    "pt": "Copiado",
+    "en": "Copied",
+    "es": "Copiado"
+  },
+  "update_copy_aria": {
+    "pt": "Copiar o comando de atualização",
+    "en": "Copy the update command",
+    "es": "Copiar el comando de actualización"
+  },
   "version_badge_title": {
     "pt": "Ver as atualizações no site",
     "en": "See the releases on the website",

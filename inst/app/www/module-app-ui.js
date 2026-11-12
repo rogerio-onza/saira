@@ -139,4 +139,32 @@
       return create.apply(this, arguments);
     };
   }
+
+  // The X of a dropdown panel, as the new-release panel (ADR-215), closes it.
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('[data-dropdown-close]') : null;
+    var box = btn && btn.closest('.dropdown');
+    var toggle = box && box.querySelector('[data-bs-toggle="dropdown"]');
+    if (toggle && window.bootstrap) {
+      window.bootstrap.Dropdown.getOrCreateInstance(toggle).hide();
+      toggle.focus();
+    }
+  });
+
+  // A new release opens its panel once by itself (ADR-215). The server sets
+  // data-auto-open only the first time for each release. The flag keeps a
+  // language change, which renders the badge again, from a second opening.
+  var updateOpened = false;
+  $(document).on('shiny:value', function (e) {
+    if (e.name !== 'version_badge' || updateOpened) return;
+    var output = e.target;
+    setTimeout(function () {
+      var box = output.querySelector('.ver-update[data-auto-open="true"]');
+      var toggle = box && box.querySelector('[data-bs-toggle="dropdown"]');
+      // In the collapsed mobile menu the badge is hidden: keep only the dot.
+      if (!toggle || !toggle.offsetParent || !window.bootstrap) return;
+      updateOpened = true;
+      window.bootstrap.Dropdown.getOrCreateInstance(toggle).show();
+    }, 0);
+  });
 })();
