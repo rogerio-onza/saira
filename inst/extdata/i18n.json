@@ -424,6 +424,16 @@
     "en": "GBIF did not answer for %s names. Choose: try again, or export these names without the IUCN category. The MMA category and the rest of the package do not change.",
     "es": "GBIF no respondió para %s nombres. Elija: intentar de nuevo, o exportar esos nombres sin la categoría UICN. La categoría MMA y el resto del paquete no cambian."
   },
+  "export_iucn_pending": {
+    "pt": "Consulta IUCN em andamento: %s.",
+    "en": "IUCN lookup running: %s.",
+    "es": "Consulta UICN en curso: %s."
+  },
+  "export_iucn_pending_stalled": {
+    "pt": "O GBIF não responde (%s). Escolha na barra abaixo.",
+    "en": "GBIF does not answer (%s). Choose in the bar below.",
+    "es": "GBIF no responde (%s). Elija en la barra de abajo."
+  },
   "export_iucn_retry": {
     "pt": "Tentar de novo",
     "en": "Try again",
