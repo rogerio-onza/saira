@@ -116,7 +116,7 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **coords:** Translate the hint before a run, and ask to map a field only when one is missing ([#313](https://github.com/rogerio-onza/saira/pull/313))
 - **names:** Translate the note about a catalog update in progress ([#313](https://github.com/rogerio-onza/saira/pull/313))
 - **build:** Accept Shiny options such as the port in run_app(), and log a normal session end as a message ([#314](https://github.com/rogerio-onza/saira/pull/314))
-- **coords:** Show a point at 0/0 as Zero/Equal, not as open sea, ADR-211
+- **coords:** Show a point at 0/0 as Zero/Equal, not as open sea, ADR-211 ([#315](https://github.com/rogerio-onza/saira/pull/315))
 - **preview:** Accept a GPS accuracy as `4.551` when the column writes decimals with a dot, ADR-210 ([#309](https://github.com/rogerio-onza/saira/pull/309))
 - **generalization:** Apply the category grid to a sensitive record with a GPS accuracy as `4.551`, ADR-210 ([#307](https://github.com/rogerio-onza/saira/pull/307))
 - **preview:** Break a long column name between its words in the record panel, so it never covers its value ([#308](https://github.com/rogerio-onza/saira/pull/308))
