@@ -29,6 +29,18 @@ chromote::set_chrome_args(c(
 ))
 build_e2e_app <- function() {
     pkgload::load_all(app_root, export_all = FALSE, quiet = TRUE)
+    # The Export tab looks up the IUCN category through the names worker
+    # (ADR-213). The recorded answers keep the flows off the network. A name
+    # without a recording is a name GBIF does not know.
+    fixtures <- file.path(app_root, "tests", "testthat", "fixtures", "colxr")
+    answer_job <- eval(bquote(function(names, source_path = NULL) {
+        lapply(names, function(name) {
+            file <- file.path(.(fixtures), paste0(gsub(" ", "_", name), ".json"))
+            if (!file.exists(file)) file <- file.path(.(fixtures), "Pantera_onca.json")
+            jsonlite::read_json(file)
+        })
+    }))
+    utils::assignInNamespace("names_worker_job", answer_job, ns = "saira")
     # run_app() registers www (custom.css, upload-dropzone.js) and the 500 MB
     # upload limit; a bare shinyApp() served the pages without them.
     run_app()
@@ -475,7 +487,8 @@ testthat::test_that("E2E: slash dates export as ISO and an out-of-range year is 
     app$set_inputs(`mapping-custom_license` = "CC BY 4.0")
 
     app$click(selector = "a[data-value='export']")
-    app$wait_for_idle(timeout = 15000)
+    # The IUCN lookup polls its worker, so the app is not idle until it ends.
+    wait_until_js(app, "(document.getElementById('export-summary') || {}).textContent.indexOf('2098') >= 0")
 
     # The out-of-range year is named on screen, with its row.
     summary_html <- app$get_html("#export-summary")
@@ -648,7 +661,7 @@ testthat::test_that("E2E: an exact copy left out in the Preview stays out of the
     wait_until_js(app, "!!document.querySelector(\".preview-copy-set.is-out[data-row='3']\")")
 
     app$click(selector = "a[data-value='export']")
-    app$wait_for_idle(timeout = 15000)
+    wait_until_js(app, "(document.getElementById('export-summary') || {}).textContent.indexOf('exata') >= 0")
     testthat::expect_match(app$get_html("#export-summary"), "1 cópia(s) exata(s)", fixed = TRUE)
 
     wait_until_js(

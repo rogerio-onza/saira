@@ -79,7 +79,8 @@ prepare_export_product <- function(inputs, lang = "en") {
     # Conservation status (MMA and/or IUCN) in dynamicProperties, on the
     # corrected names and after the country fill. After the mask, so a
     # generalized row outside Brazil still gets the MMA category its
-    # dataGeneralizations cites. The GBIF IUCN call degrades to NA on failure.
+    # dataGeneralizations cites. The IUCN codes come from the lookup that ran
+    # before the download (ADR-213).
     masked$masked <- apply_conservation_status(
         masked$masked, inputs$conservation,
         generalized = seq_len(nrow(masked$masked)) %in% masked$rows

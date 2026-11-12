@@ -552,6 +552,18 @@
   white-space: nowrap;
 }
 
+/* Two choices under the text of one row (IUCN lookup without an answer). */
+.export-pending-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.export-pending-actions .ph {
+  margin-right: var(--space-1);
+}
+
 .export-sev {
   flex-shrink: 0;
   min-width: 4.75rem;
@@ -681,6 +693,48 @@
   align-items: center;
   gap: var(--space-3);
   min-width: 0;
+}
+
+/* The IUCN lookup before the download (ADR-213). */
+.export-iucn-wait {
+  color: var(--text-primary);
+}
+
+.export-iucn-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* The choice when GBIF stops answering. It goes to a new line in a narrow
+   bar, so the text and the buttons are not cut. */
+.export-download-status:has(.export-iucn-stalled) {
+  flex-wrap: wrap;
+  row-gap: var(--space-2);
+}
+
+.export-iucn-stalled {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.export-iucn-stalled-text {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* On a phone the IUCN text gets the full width, and the download button goes
+   under it. Next to the button, the text broke after each word. */
+@media (max-width: 575.98px) {
+  .export-download-bar:has(.export-iucn-wait) {
+    flex-wrap: wrap;
+  }
+
+  .export-download-status:has(.export-iucn-wait) {
+    flex-basis: 100%;
+  }
 }
 
 .export-zip-name {

@@ -399,6 +399,61 @@
     "en": "Fix the items to review",
     "es": "Resuelva los pendientes"
   },
+  "export_download_wait_iucn": {
+    "pt": "Aguarde a IUCN",
+    "en": "Waiting for IUCN",
+    "es": "Espere la UICN"
+  },
+  "export_iucn_wait": {
+    "pt": "Buscando a categoria IUCN no GBIF",
+    "en": "Looking up the IUCN category in GBIF",
+    "es": "Buscando la categoría UICN en GBIF"
+  },
+  "export_iucn_wait_count": {
+    "pt": "%s de %s nomes",
+    "en": "%s of %s names",
+    "es": "%s de %s nombres"
+  },
+  "export_iucn_count": {
+    "pt": "%s de %s",
+    "en": "%s of %s",
+    "es": "%s de %s"
+  },
+  "export_iucn_failed": {
+    "pt": "O GBIF não respondeu para %s nomes. Escolha: tentar de novo, ou exportar esses nomes sem a categoria IUCN. A categoria MMA e o resto do pacote não mudam.",
+    "en": "GBIF did not answer for %s names. Choose: try again, or export these names without the IUCN category. The MMA category and the rest of the package do not change.",
+    "es": "GBIF no respondió para %s nombres. Elija: intentar de nuevo, o exportar esos nombres sin la categoría UICN. La categoría MMA y el resto del paquete no cambian."
+  },
+  "export_iucn_retry": {
+    "pt": "Tentar de novo",
+    "en": "Try again",
+    "es": "Intentar de nuevo"
+  },
+  "export_iucn_skip": {
+    "pt": "Exportar sem a IUCN que falta",
+    "en": "Export without the missing IUCN",
+    "es": "Exportar sin la UICN que falta"
+  },
+  "export_iucn_skipped": {
+    "pt": "%s nome(s) sem resposta do GBIF saem sem a categoria IUCN.",
+    "en": "%s name(s) without a GBIF answer go out without the IUCN category.",
+    "es": "%s nombre(s) sin respuesta de GBIF salen sin la categoría UICN."
+  },
+  "export_iucn_skipped_kept": {
+    "pt": "Os outros %s saem com a resposta do GBIF.",
+    "en": "The other %s go out with the GBIF answer.",
+    "es": "Los otros %s salen con la respuesta de GBIF."
+  },
+  "export_iucn_stalled": {
+    "pt": "Sem resposta do GBIF.",
+    "en": "No answer from GBIF.",
+    "es": "Sin respuesta de GBIF."
+  },
+  "export_iucn_undo": {
+    "pt": "Desfazer",
+    "en": "Undo",
+    "es": "Deshacer"
+  },
   "export_blocked_missing": {
     "pt": "Termos obrigatórios faltando:",
     "en": "Required terms missing:",

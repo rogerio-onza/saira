@@ -61,6 +61,7 @@ Collate:
     'data_dictionary.R'
     'mod_export.R'
     'mod_export_download.R'
+    'mod_export_iucn.R'
     'mod_help.R'
     'mod_mapping.R'
     'mod_mapping_basis_assistant.R'

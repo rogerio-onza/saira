@@ -8,12 +8,15 @@
 #' Mount the DwC-A export download flow inside a module server
 #' @param sources Named list of the export decision sources (reactives or
 #'   NULL), the one list the export summary also captures.
+#' @param iucn_r Optional reactive from `mount_export_iucn()`. The bundle waits
+#'   for it, and the download reads its snapshot.
 #' @noRd
 mount_export_download <- function(input, output, session, lang_r,
                                   mapped_data_r,
                                   download_data_r,
                                   sources = list(),
                                   blocked_r = NULL,
+                                  iucn_r = NULL,
                                   on_export_success = NULL) {
     ns <- session$ns
         required_download_fields <- publication_required_terms()
@@ -56,19 +59,31 @@ mount_export_download <- function(input, output, session, lang_r,
                 )$export_blocked)
             }
         })
+        # The bundle waits for the IUCN lookup, and for a choice when GBIF did
+        # not answer. The private file has no IUCN key and does not wait. The
+        # button changes with the status only, not with each batch.
+        iucn_status <- shiny::reactiveVal("off")
+        if (shiny::is.reactive(iucn_r)) {
+            shiny::observe(iucn_status(iucn_r()$status))
+        }
+        bundle_blocked <- shiny::reactive({
+            isTRUE(export_blocked()) || iucn_status() %in% c("pending", "failed")
+        })
         output$download_btn_container <- shiny::renderUI({
             register_handlers_script <- module_behavior_call("exportDownloadHandlers", list(
                 clickChannel = download_click_channel, finishChannel = download_finish_channel
             ))
 
-            blocked <- export_blocked()
+            blocked <- bundle_blocked()
             inert <- isTRUE(is_exporting()) || blocked
 
             shiny::tagList(
                 shiny::actionButton(
                     inputId = ns("download_trigger"),
                     # A blocked bundle says what to do, the Pending card says what.
-                    label = if (blocked) {
+                    label = if (identical(iucn_status(), "pending") && !isTRUE(export_blocked())) {
+                        shiny::tagList(ph_icon("hourglass"), " ", tr("export_download_wait_iucn", lang_r()))
+                    } else if (blocked) {
                         shiny::tagList(ph_icon("lock"), " ", tr("export_download_resolve", lang_r()))
                     } else {
                         shiny::tagList(ph_icon("file-zipper"), " ", tr("export_download_zip", lang_r()))
@@ -287,7 +302,7 @@ mount_export_download <- function(input, output, session, lang_r,
                 show_download_validation_modal(validation_result)
                 return(invisible(NULL))
             }
-            if (isTRUE(export_blocked())) {
+            if (isTRUE(bundle_blocked())) {
                 return(invisible(NULL))
             }
 
@@ -295,7 +310,7 @@ mount_export_download <- function(input, output, session, lang_r,
         }, ignoreInit = TRUE)
 
         shiny::observeEvent(input$confirm_download_yes, {
-            if (isTRUE(is_exporting()) || isTRUE(export_blocked())) {
+            if (isTRUE(is_exporting()) || isTRUE(bundle_blocked())) {
                 return(invisible(NULL))
             }
 
@@ -336,7 +351,13 @@ mount_export_download <- function(input, output, session, lang_r,
                 stop(sprintf(tr("export_blocked_source_failed", lang_r()),
                              export_source_steps(names(src$failed), lang_r())), call. = FALSE)
             }
-            c(list(download_data = download_data()), src$values)
+            values <- src$values
+            # The IUCN codes come from the lookup that ran before the
+            # download, so the download sends no GBIF request (ADR-213).
+            if (is.list(values$conservation)) {
+                values$conservation$iucn_by_name <- if (shiny::is.reactive(iucn_r)) iucn_r()$snapshot
+            }
+            c(list(download_data = download_data()), values)
         }
 
         # The desktop shell asks before it closes when the data changed after
@@ -381,7 +402,7 @@ mount_export_download <- function(input, output, session, lang_r,
                     {
                         # The error branch below writes an error zip, so a
                         # blocked dataset never ships and never teaches aliases.
-                        if (isTRUE(export_blocked())) {
+                        if (isTRUE(bundle_blocked())) {
                             stop(tr("export_download_blocked", lang_r()), call. = FALSE)
                         }
                         product <- prepare_export_product(capture_export_inputs(), lang_r())
