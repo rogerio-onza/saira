@@ -3739,3 +3739,17 @@ Formato: ADR leve (Architecture Decision Record).
 - **Contexto**: auditoria de codigo e UX (COORD-01). Na ordem da ADR-034, `sea` vencia `zero_equal`. O ponto 0/0 esta sempre no mar, entao a pilula Zero/Igual nunca contava o caso que o nome anuncia, e a linha dizia "Em mar aberto".
 - **Decisao**: a ordem fica `validity`, `country`, `zero_equal`, `sea`, `reference`. Zero ou latitude igual a longitude e a causa, e o mar e a consequencia.
 - **Consequencias**: uma linha com 0/0, ou com latitude igual a longitude no mar, sai como Zero/Igual. As outras linhas no mar continuam como `sea`.
+## ADR-212: Consultas GBIF da validacao de nomes num processo callr
+
+- **Data**: 2026-11-10
+- **Status**: Aceito.
+- **Contexto**: auditoria pre-v1 (PERF-02). `req_perform_parallel()` espera todas as respostas antes de voltar. Um lote de nomes com a API GBIF lenta segurava a sessao Shiny ate o fim do lote.
+- **Decisao**:
+  - Uma `callr::r_session` por sessao Shiny envia os pedidos GBIF de cada lote. A rodada inicia o processo no clique em Validar, e o processo carrega o saira enquanto os provedores BR respondem.
+  - O processo recebe so os nomes. O app guarda o memo COL XR, o parse e o estado da rodada. Depois do lote, o passo roda com `gbif_offline_fetch()`: um nome sem resposta nao gera um segundo pedido sincrono.
+  - Um lote pode esperar 60 s, e a rodada 300 s no total, contados no relogio desde o primeiro lote, com a carga do processo. O ultimo lote espera so o que resta do total. Depois disso, os nomes que faltam ficam sem resposta, e o botao Tentar de novo abre uma rodada nova.
+  - O objeto do worker e o unico dono do lote, do `run_id` e do orcamento (`names_worker_fetch()`). Uma resposta de um `run_id` antigo nao entra na rodada nova: o app encerra o processo e abre outro. Uma resposta que nao cobre o lote atual vai para o memo, e o tick seguinte envia o lote atual.
+  - Uma rodada que fica obsoleta, um reset ou o fim da rodada encerram o lote em curso (`names_worker_cancel()`).
+  - Uma resposta que o parser nao le e erro do provedor, como no caminho sincrono.
+  - Se o processo nao inicia, os nomes ficam sem resposta. O app nao envia os pedidos ele mesmo, porque nao consegue parar essa espera.
+- **Consequencias**: o R da sessao fica livre durante a espera da rede. A busca aproximada dos provedores BR continua no processo principal, porque e CPU, nao rede. A exportacao com IUCN reusa o memo, e consulta o resto antes do download (ADR-213).
