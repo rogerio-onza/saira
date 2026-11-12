@@ -284,6 +284,31 @@
     "en": "To review",
     "es": "Pendientes"
   },
+  "export_pending_filter_label": {
+    "pt": "Filtrar pendências",
+    "en": "Filter the items to review",
+    "es": "Filtrar pendientes"
+  },
+  "export_pending_filter_all": {
+    "pt": "Todas",
+    "en": "All",
+    "es": "Todos"
+  },
+  "export_pending_filter_block": {
+    "pt": "Bloqueiam",
+    "en": "Blocking",
+    "es": "Bloquean"
+  },
+  "export_pending_filter_warn": {
+    "pt": "Avisos",
+    "en": "Warnings",
+    "es": "Avisos"
+  },
+  "export_pending_filter_info": {
+    "pt": "Informativos",
+    "en": "Info",
+    "es": "Informativos"
+  },
   "export_sev_block": {
     "pt": "Bloqueia",
     "en": "Blocks",

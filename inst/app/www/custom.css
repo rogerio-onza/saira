@@ -11152,6 +11152,66 @@ button.sc-scale-chip:hover .sc-level-chip {
   color: var(--text-primary);
 }
 
+/* Count chips that filter the pending list by severity (UX-03, option C). */
+.export-pending-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.export-pending-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-chip);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.export-pending-chip.is-block {
+  color: var(--badge-missing-fg);
+}
+
+.export-pending-chip.is-warn {
+  color: var(--badge-suggested-fg);
+}
+
+.export-pending-chip.is-info {
+  color: var(--badge-manual-fg);
+}
+
+.export-pending-chip:hover {
+  border-color: var(--accent);
+}
+
+.export-pending-chip:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring-accent);
+}
+
+.export-pending-chip[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+}
+
+.export-pending-chip-n {
+  font-weight: var(--weight-semibold);
+}
+
+.export-pending[data-filter="block"] .export-pending-row:not(.is-block),
+.export-pending[data-filter="warn"] .export-pending-row:not(.is-warn),
+.export-pending[data-filter="info"] .export-pending-row:not(.is-info) {
+  display: none;
+}
+
 .export-pending-row {
   display: flex;
   align-items: flex-start;
