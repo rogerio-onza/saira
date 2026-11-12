@@ -2,6 +2,17 @@
 
 <section class="release">
   <header class="release-head">
+    <span class="release-ver">v1.0.1</span>
+    <time class="release-date">2026-11-12</time>
+  </header>
+  <ul class="release-changes">
+    <li class="rel-item"><span class="rel-tag rel-changed">Changed</span><span class="rel-text"><strong>Threatened species</strong>: the flora follows Portaria GM/MMA 1.783/2026, which revokes Portaria 148/2022</span></li>
+    <li class="rel-item"><span class="rel-tag rel-added">Added</span><span class="rel-text"><strong>Version</strong>: the version badge tells you when a new version is out, with the installer or the R command</span></li>
+  </ul>
+</section>
+
+<section class="release">
+  <header class="release-head">
     <span class="release-ver">v1.0.0</span>
     <time class="release-date">2026-11-12</time>
   </header>

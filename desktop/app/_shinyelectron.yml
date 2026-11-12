@@ -1,7 +1,7 @@
 app:
   name: "Saíra"
   slug: saira-desktop
-  version: "1.0.0"
+  version: "1.0.1"
   description: "Padronize dados de biodiversidade em Darwin Core."
   author: "Rogério Nunes Oliveira"
 
