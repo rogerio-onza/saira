@@ -264,6 +264,49 @@ testthat::test_that("parse_dates_to_iso leaves an impossible time unparsed (AUD-
     )
 })
 
+testthat::test_that("parse_dates_to_iso reads month names, roman months, compact dates and intervals", {
+    input <- c("25 Dec 2023", "25-dez-2023", "dez/2023", "25 de dezembro de 2023",
+               "12-III-2020", "12.iii.2020", "20231225", "12345678", "Rio 2023")
+    testthat::expect_identical(
+        parse_dates_to_iso(input),
+        c("2023-12-25", "2023-12-25", "2023-12", "2023-12-25", "2020-03-12",
+          "2020-03-12", "2023-12-25", NA, NA)
+    )
+    testthat::expect_identical(
+        parse_dates_to_iso(c("25/12/2023 - 27/12/2023", "25/12/2023 a 27/12/2023",
+                             "1999-2005", "2005-1999")),
+        c("2023-12-25/2023-12-27", "2023-12-25/2023-12-27", "1999/2005", NA)
+    )
+})
+
+testthat::test_that("parse_dates_to_iso orders interval ends with the vote of the column", {
+    p <- parse_dates_to_iso
+    testthat::expect_identical(p(c("05/06/2023 - 07/06/2023", "25/12/2023")),
+                               c("2023-06-05/2023-06-07", "2023-12-25"))
+    testthat::expect_identical(p(c("05/06/2023 a 07/06/2023", "25/12/2023"))[[1]], "2023-06-05/2023-06-07")
+    testthat::expect_identical(p(c("05/06/2023 - 07/06/2023", "12/25/2023"))[[1]], "2023-05-06/2023-07-06")
+    testthat::expect_identical(p(c("28/12/2023 - 03/01/2024", "25/12/2023"))[[1]], "2023-12-28/2024-01-03")
+    # No vote, a tie or an impossible end leaves the value for the Preview.
+    testthat::expect_identical(p("05/06/2023 - 07/06/2023"), NA_character_)
+    testthat::expect_identical(p(c("05/06/2023 - 07/06/2023", "25/12/2023", "12/25/2023"))[[1]], NA_character_)
+    testthat::expect_identical(p(c("05/06/2023 - 31/02/2023", "25/12/2023"))[[1]], NA_character_)
+    testthat::expect_identical(p(c("31/04/2023", "05/06/2023 - 07/06/2023")), c(NA_character_, NA_character_))
+    # The export runs a second pass and keeps the values of the first.
+    first <- fix_dates_to_iso(data.frame(eventDate = c("05/06/2023 - 07/06/2023", "25/12/2023")))
+    testthat::expect_identical(fix_dates_to_iso(first), first)
+    testthat::expect_identical(first$eventDate, c("2023-06-05/2023-06-07", "2023-12-25"))
+})
+
+testthat::test_that("parse_dates_to_iso keeps fractional seconds, UTC and a 12-hour clock", {
+    input <- c("2023-12-25 14:30:00.123", "2023-12-25 00:00:00 UTC",
+               "25/12/2023 2:30 PM", "25/12/2023 12:05 am", "25/12/2023 13:05 PM")
+    testthat::expect_identical(
+        parse_dates_to_iso(input),
+        c("2023-12-25T14:30:00.123", "2023-12-25T00:00:00Z", "2023-12-25T14:30",
+          "2023-12-25T00:05", NA)
+    )
+})
+
 testthat::test_that("parse_dates_to_iso keeps the day-first vote when the column carries times", {
     # 25 > 12 proves day-first, and the vote has to survive the time suffix.
     input <- c("25/12/2023 08:00", "05/06/2023 08:00")
